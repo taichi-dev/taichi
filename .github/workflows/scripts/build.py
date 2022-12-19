@@ -15,16 +15,13 @@ import platform
 # -- third party --
 # -- own --
 from ci_common.dep import download_dep
-from ci_common.misc import banner, get_cache_home, is_manylinux2014
+from ci_common.misc import banner, get_cache_home, is_manylinux2014, env
 from ci_common.python import setup_python
 from ci_common.sccache import setup_sccache
 from ci_common.tinysh import git, sh, sudo, Command
 
 
 # -- code --
-env = os.environ
-
-
 @banner('Setup LLVM')
 def setup_llvm() -> None:
     '''

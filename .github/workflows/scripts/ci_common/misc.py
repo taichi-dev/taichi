@@ -2,7 +2,7 @@
 
 # -- stdlib --
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Optional
 import inspect
 import os
 import platform
@@ -27,7 +27,7 @@ def get_cache_home() -> Path:
     Get the cache home directory. All intermediate files should be stored here.
     '''
     if platform.system() == 'Windows':
-        return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
+        return Path(env['LOCALAPPDATA']) / 'build-cache'
     else:
         return Path.home() / '.cache' / 'build-cache'
 
@@ -55,3 +55,26 @@ def banner(msg: str) -> Callable:
         return wrapper
 
     return decorate
+
+
+class _EnvWrapper:
+
+    def __getitem__(self, name: str) -> str:
+        return os.environ[name]
+
+    def get(self, name: str, default: Optional[str] = None) -> Optional[str]:
+        return os.environ.get(name, default)
+
+    def __setitem__(self, name: str, value: str) -> None:
+        orig = os.environ.get(name)
+        os.environ[name] = value
+        new = os.environ[name]
+
+        G = escape_codes['bold_green']
+        R = escape_codes['bold_red']
+        N = escape_codes['reset']
+        print(f'{R}:: ENV -{name}={orig}{N}', file=sys.stderr, flush=True)
+        print(f'{G}:: ENV +{name}={new}{N}', file=sys.stderr, flush=True)
+
+
+env = _EnvWrapper()

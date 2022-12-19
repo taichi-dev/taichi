@@ -3,12 +3,11 @@
 # -- stdlib --
 from pathlib import Path
 from typing import Optional, Tuple
-import os
 import sys
 
 # -- third party --
 # -- own --
-from .misc import banner
+from .misc import banner, env
 from .tinysh import Command, sh
 
 
@@ -23,12 +22,12 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     home = Path.home().resolve()
 
     for d in ['miniconda', 'miniconda3', 'miniforge3']:
-        env = home / d / 'envs' / version
-        exe = env / 'bin' / 'python'
+        venv = home / d / 'envs' / version
+        exe = venv / 'bin' / 'python'
         if not exe.exists():
             continue
 
-        os.environ['PATH'] = f'{env / "bin"}:{os.environ["PATH"]}'
+        env['PATH'] = f'{venv / "bin"}:{env["PATH"]}'
         python = sh.bake(str(exe))
         pip = python.bake('-m', 'pip')
         break

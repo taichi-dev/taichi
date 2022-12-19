@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
-import os
 import platform
 
 # -- third party --
@@ -9,6 +8,7 @@ import platform
 from .dep import download_dep
 from .misc import get_cache_home, banner
 from .tinysh import sh, Command
+from .misc import env
 
 
 # -- code --
@@ -42,14 +42,14 @@ def setup_sccache() -> Command:
 
         exe.chmod(0o755)
 
-    os.environ['SCCACHE_LOG'] = 'error'
-    os.environ['TAICHI_CMAKE_ARGS'] += f' -DCMAKE_C_COMPILER_LAUNCHER={exe} -DCMAKE_CXX_COMPILER_LAUNCHER={exe}'
+    env['SCCACHE_LOG'] = 'error'
+    env['TAICHI_CMAKE_ARGS'] += f' -DCMAKE_C_COMPILER_LAUNCHER={exe} -DCMAKE_CXX_COMPILER_LAUNCHER={exe}'
 
     # <LocalCache>
     cache = root / 'cache'
     cache.mkdir(parents=True, exist_ok=True)
-    os.environ['SCCACHE_DIR'] = str(cache)
-    os.environ['SCCACHE_CACHE_SIZE'] = '40G'
+    env['SCCACHE_DIR'] = str(cache)
+    env['SCCACHE_CACHE_SIZE'] = '40G'
     # </LocalCache>
 
     return sh.bake(str(exe))

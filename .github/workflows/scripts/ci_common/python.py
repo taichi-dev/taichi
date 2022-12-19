@@ -2,18 +2,19 @@
 
 # -- stdlib --
 from pathlib import Path
+from typing import Optional, Tuple
 import os
 import sys
 
 # -- third party --
 # -- own --
-from .tinysh import sh
 from .misc import banner
+from .tinysh import Command, sh
 
 
 # -- code --
 @banner('Setup Python {version}')
-def setup_python(version=None):
+def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     assert version
 
     home = Path.home().resolve()

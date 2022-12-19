@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+from typing import Sequence, Any
 import os
 import platform
 
@@ -32,21 +33,21 @@ class CommandFailed(Exception):
 
 
 class Command:
-    def __init__(self, *args):
+    def __init__(self, *args: Sequence[str]):
         self.args = list(map(str, args))
 
-    def __getattribute__(self, name):
+    def __getattribute__(self, name: str) -> Any:
         if name in ('args', 'bake') or name.startswith('__'):
             return object.__getattribute__(self, name)
 
         return self.bake(name)
 
-    def bake(self, *moreargs):
+    def bake(self, *moreargs: Sequence[str]) -> 'Command':
         args = object.__getattribute__(self, 'args')
         cls = object.__getattribute__(self, '__class__')
         return cls(*args, *moreargs)
 
-    def __call__(self, *moreargs, ):
+    def __call__(self, *moreargs: Sequence[str]) -> None:
         args = object.__getattribute__(self, 'args')
         args = args + list(map(str, moreargs))
         cmd = ' '.join(map(quote, args))
@@ -58,7 +59,7 @@ class Command:
         return f"<Command '{shlex.join(self.args)}'>"
 
 
-def sudo(cmd):
+def sudo(cmd: Command) -> Command:
     if IS_WINDOWS:
         return cmd
     else:

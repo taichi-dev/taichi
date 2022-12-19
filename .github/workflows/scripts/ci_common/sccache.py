@@ -8,12 +8,12 @@ import platform
 # -- own --
 from .dep import download_dep
 from .misc import get_cache_home, banner
-from .tinysh import sh
+from .tinysh import sh, Command
 
 
 # -- code --
 @banner('Setup sccache')
-def setup_sccache():
+def setup_sccache() -> Command:
     root = get_cache_home() / 'sccache'
     bin = root / 'bin'
 

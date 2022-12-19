@@ -8,6 +8,8 @@ Uses colorama as an optional dependency to support color on Windows
 ---
 Copied from colorlog
 ---
+
+This file is currently only used to display colored banner.
 """
 
 __all__ = ('escape_codes', 'parse_colors')

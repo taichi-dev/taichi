@@ -2,6 +2,7 @@
 
 # -- stdlib --
 from pathlib import Path
+from typing import Callable
 import inspect
 import os
 import platform
@@ -11,20 +12,20 @@ import platform
 from .escapes import escape_codes
 
 # -- code --
-def is_manylinux2014():
+def is_manylinux2014() -> bool:
     # manylinux2014 builds in a special CentOS docker image
     return platform.system() == 'Linux' and Path('/etc/centos-release').exists()
 
 
-def get_cache_home():
+def get_cache_home() -> Path:
     if platform.system() == 'Windows':
         return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
     else:
         return Path.home() / '.cache' / 'build-cache'
 
 
-def banner(msg):
-    def decorate(f):
+def banner(msg: str) -> Callable:
+    def decorate(f: Callable) -> Callable:
         sig = inspect.signature(f)
         C = escape_codes['bold_cyan']
         R = escape_codes['bold_red']

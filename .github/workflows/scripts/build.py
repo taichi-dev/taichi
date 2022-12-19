@@ -5,7 +5,7 @@ import sys
 import os.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-import common
+import ci_common
 
 # -- stdlib --
 import glob
@@ -14,11 +14,11 @@ import platform
 
 # -- third party --
 # -- own --
-from common.dep import download_dep
-from common.misc import get_cache_home, banner
-from common.python import setup_python
-from common.sccache import setup_sccache
-from common.tinysh import git, sccache, sh, sudo
+from ci_common.dep import download_dep
+from ci_common.misc import banner, get_cache_home, is_manylinux2014
+from ci_common.python import setup_python
+from ci_common.sccache import setup_sccache
+from ci_common.tinysh import git, sh, sudo, Command
 
 
 # -- code --
@@ -26,7 +26,7 @@ env = os.environ
 
 
 @banner('Setup LLVM')
-def setup_llvm():
+def setup_llvm() -> None:
     u = platform.uname()
     if u.system == 'Linux':
         if 'AMDGPU_TEST' in env:
@@ -38,7 +38,7 @@ def setup_llvm():
             lnsf('/usr/bin/ld.lld-10',  '/usr/bin/ld.lld')
             env['LLVM_DIR'] = '/taichi-llvm-15'
             return
-        elif common.is_manylinux2014():
+        elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
             out = get_cache_home() / 'llvm15-manylinux2014'
             url = 'https://github.com/ailzhang/torchhub_example/releases/download/0.3/taichi-llvm-15-linux.zip'
@@ -59,7 +59,7 @@ def setup_llvm():
 
 
 @banner('Build Taichi Wheel')
-def build_wheel(python, pip):
+def build_wheel(python: Command, pip: Command) -> None:
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
     proj = env.get('PROJECT_NAME', 'taichi')
@@ -72,7 +72,7 @@ def build_wheel(python, pip):
         env['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 
     if platform.system() == 'Linux':
-        if common.is_manylinux2014():
+        if is_manylinux2014():
             extra.extend(['-p', 'manylinux2014_x86_64'])
         else:
             extra.extend(['-p', 'manylinux_2_27_x86_64'])
@@ -81,12 +81,17 @@ def build_wheel(python, pip):
     python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
-setup_llvm()
-sccache = setup_sccache()
-python, pip = setup_python(env['PY'])
-build_wheel(python, pip)
-sccache('-s')
+def main() -> None:
+    setup_llvm()
+    sccache = setup_sccache()
+    python, pip = setup_python(env['PY'])
+    build_wheel(python, pip)
+    sccache('-s')
 
-distfiles = glob.glob('dist/*.whl')
-if len(distfiles) != 1:
-    raise RuntimeError(f'Failed to produce exactly one wheel file: {distfiles}')
+    distfiles = glob.glob('dist/*.whl')
+    if len(distfiles) != 1:
+        raise RuntimeError(f'Failed to produce exactly one wheel file: {distfiles}')
+
+
+if __name__ == '__main__':
+    main()

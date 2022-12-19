@@ -610,7 +610,8 @@ class Kernel:
             mgr = prog.get_kernel_compilation_manager()
             compile_config = prog.config()
             device_caps = prog.get_current_device_caps()
-            ckd = mgr.load_or_compile(compile_config, device_caps, taichi_kernel)
+            ckd = mgr.load_or_compile(compile_config, device_caps,
+                                      taichi_kernel)
         self.runtime.compiled_functions[key] = self.get_function_body(
             taichi_kernel, ckd)
         self.compiled_kernels[key] = taichi_kernel
@@ -813,7 +814,7 @@ class Kernel:
                     prog.launch_kernel(ckd, launch_ctx)
                 else:
                     _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
-                                       launch_ctx)
+                                           launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)
                 raise e from None

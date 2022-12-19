@@ -603,11 +603,19 @@ class Kernel:
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.autodiff_mode)
         assert key not in self.runtime.compiled_functions
+        prog = impl.get_runtime().prog
+        # Make experiment on Vulkan
+        if prog.config().arch == _ti_core.vulkan:
+            # Compile (& Online Cache & Offline Cache)
+            mgr = prog.get_kernel_compilation_manager()
+            compile_config = prog.config()
+            device_caps = prog.get_current_device_caps()
+            ckd = mgr.load_or_compile(compile_config, device_caps, taichi_kernel)
         self.runtime.compiled_functions[key] = self.get_function_body(
-            taichi_kernel)
+            taichi_kernel, ckd)
         self.compiled_kernels[key] = taichi_kernel
 
-    def get_function_body(self, t_kernel):
+    def get_function_body(self, t_kernel, ckd):
         # The actual function body
         def func__(*args):
             assert len(args) == len(
@@ -799,7 +807,12 @@ class Kernel:
                 )
 
             try:
-                _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
+                prog = impl.get_runtime().prog
+                if prog.config().arch == _ti_core.vulkan:
+                    # Launch kernel
+                    prog.launch_kernel(ckd, launch_ctx)
+                else:
+                    _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
                                        launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)

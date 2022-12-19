@@ -9,6 +9,7 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
+#include "taichi/cache/kernel_compilation_manager.h"
 
 namespace taichi::lang {
 
@@ -149,6 +150,17 @@ class ProgramImpl {
   }
 
   virtual void finalize() {
+  }
+
+  // Refactor2023:FIXME: Temp design
+  virtual KernelCompilationManager &get_kernel_compilation_manager() {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  // Refactor2023:FIXME: Temp design
+  virtual void launch_kernel(const CompiledKernelData &compiled_kernel_data,
+                             RuntimeContext &ctx) {
+    TI_NOT_IMPLEMENTED;
   }
 
  private:

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <any>
 #include <memory>
+#include <optional>
 
 namespace taichi::lang {
 
@@ -26,6 +28,20 @@ class CompiledKernelData {
   virtual Err check() const {
     return Err::kNoError;
   }
+
+  // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
+  void set_handle(std::any handle) {
+    handle_ = std::move(handle);
+  }
+
+  // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
+  const std::optional<std::any> &get_handle() const {
+    return handle_;
+  }
+
+ private:
+  // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
+  std::optional<std::any> handle_;
 };
 
 }  // namespace taichi::lang

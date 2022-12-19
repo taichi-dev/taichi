@@ -100,7 +100,16 @@ class VulkanProgramImpl : public ProgramImpl {
   void dump_cache_data_to_disk() override;
 
   const std::unique_ptr<KernelCompilationManager>
-      &get_kernel_compilation_maanger();
+      &get_or_make_kernel_compilation_maanger();
+
+  // Refactor2023:FIXME: Temp design
+  KernelCompilationManager &get_kernel_compilation_manager() override {
+    return *get_or_make_kernel_compilation_maanger();
+  }
+
+  // Refactor2023:FIXME: Temp design
+  void launch_kernel(const CompiledKernelData &compiled_kernel_data,
+                     RuntimeContext &ctx) override;
 
   ~VulkanProgramImpl() override;
 

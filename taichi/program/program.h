@@ -29,7 +29,8 @@
 #include "taichi/system/threading.h"
 #include "taichi/system/unified_allocator.h"
 #include "taichi/program/sparse_matrix.h"
-#include "taichi/ir/mesh.h"
+#include "taichi/rhi/device_capability.h"
+#include "taichi/cache/kernel_compilation_manager.h"
 
 namespace taichi::lang {
 
@@ -332,6 +333,24 @@ class TI_DLL_EXPORT Program {
   ProgramImpl *get_program_impl() {
     TI_ASSERT(arch_uses_llvm(global_compile_config().arch));
     return program_impl_.get();
+  }
+
+  // Refactor2023:FIXME: Temp design
+  KernelCompilationManager &get_kernel_compilation_manager() {
+    return program_impl_->get_kernel_compilation_manager();
+  }
+
+  // Refactor2023:FIXME: Temp design
+  void launch_kernel(const CompiledKernelData &compiled_kernel_data,
+                     KernelLaunchContext &ctx) {
+    program_impl_->launch_kernel(compiled_kernel_data, ctx.get_context());
+  }
+
+  // Refactor2023:FIXME: Temp design
+  const DeviceCapabilityConfig &get_current_device_caps() const {
+    auto *device = program_impl_->get_compute_device();
+    TI_ASSERT(!!device);
+    return device->get_current_caps();
   }
 
   // TODO(zhanlue): Move these members and corresponding interfaces to

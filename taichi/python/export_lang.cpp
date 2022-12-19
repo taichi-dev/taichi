@@ -28,6 +28,8 @@
 #include "taichi/program/sparse_solver.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/codegen/compiled_kernel_data.h"
+#include "taichi/rhi/device_capability.h"
 
 #include "taichi/program/kernel_profiler.h"
 
@@ -325,7 +327,15 @@ void export_lang(py::module &m) {
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
-  py::class_<Device>(m, "Device");  // NOLINT(bugprone-unused-raii)
+  py::class_<Device>(m, "Device");     // NOLINT(bugprone-unused-raii)
+  py::class_<DeviceCapabilityConfig>(  // NOLINT(bugprone-unused-raii)
+      m, "DeviceCapabilityConfig");
+  py::class_<CompiledKernelData>(  // NOLINT(bugprone-unused-raii)
+      m, "CompiledKernelData");
+
+  py::class_<KernelCompilationManager>(m, "KernelCompilationManager")
+      .def("load_or_compile", &KernelCompilationManager::load_or_compile,
+           py::return_value_policy::reference);
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
@@ -357,6 +367,15 @@ void export_lang(py::module &m) {
       // Refactor2023:FIXME: Remove (Tmp)
       .def("get_compute_device", &Program::get_compute_device,
            py::return_value_policy::reference)
+      // Refactor2023:FIXME: Temp design
+      .def("get_kernel_compilation_manager",
+           &Program::get_kernel_compilation_manager,
+           py::return_value_policy::reference)
+      // Refactor2023:FIXME: Temp design
+      .def("get_current_device_caps", &Program::get_current_device_caps,
+           py::return_value_policy::reference)
+      // Refactor2023:FIXME: Temp design
+      .def("launch_kernel", &Program::launch_kernel)
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);

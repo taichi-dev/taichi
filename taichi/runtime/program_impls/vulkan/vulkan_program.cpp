@@ -84,7 +84,7 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
 
 FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
                                         Kernel *kernel) {
-  auto &mgr = get_kernel_compilation_maanger();
+  auto &mgr = get_or_make_kernel_compilation_maanger();
   const auto &compiled = mgr->load_or_compile(
       compile_config, vulkan_runtime_->get_ti_device()->get_current_caps(),
       *kernel);
@@ -200,11 +200,13 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
         snode_tree_mgr_->get_compiled_structs(),
-        get_kernel_compilation_maanger().get(), Arch::vulkan, *config, caps);
+        get_or_make_kernel_compilation_maanger().get(), Arch::vulkan, *config,
+        caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, get_kernel_compilation_maanger().get(),
-        Arch::vulkan, *config, caps);
+        aot_compiled_snode_structs_,
+        get_or_make_kernel_compilation_maanger().get(), Arch::vulkan, *config,
+        caps);
   }
 }
 
@@ -228,7 +230,7 @@ void VulkanProgramImpl::enqueue_compute_op_lambda(
 }
 
 void VulkanProgramImpl::dump_cache_data_to_disk() {
-  const auto &mgr = get_kernel_compilation_maanger();
+  const auto &mgr = get_or_make_kernel_compilation_maanger();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
                                config->offline_cache_cleaning_policy),
                            config->offline_cache_max_size_of_files,
@@ -237,7 +239,7 @@ void VulkanProgramImpl::dump_cache_data_to_disk() {
 }
 
 const std::unique_ptr<KernelCompilationManager>
-    &VulkanProgramImpl::get_kernel_compilation_maanger() {
+    &VulkanProgramImpl::get_or_make_kernel_compilation_maanger() {
   if (!kernel_compilation_mgr_) {
     KernelCompilationManager::Config init_config;
     // FIXME: Rm CompileConfig::offline_cache_file_path &
@@ -252,6 +254,26 @@ const std::unique_ptr<KernelCompilationManager>
         std::make_unique<KernelCompilationManager>(std::move(init_config));
   }
   return kernel_compilation_mgr_;
+}
+
+void VulkanProgramImpl::launch_kernel(
+    const CompiledKernelData &compiled_kernel_data,
+    RuntimeContext &ctx) {
+  const auto &spirv_compiled =
+      dynamic_cast<const spirv::CompiledKernelData &>(compiled_kernel_data);
+  // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
+  gfx::GfxRuntime::KernelHandle handle;
+  if (const auto &h = compiled_kernel_data.get_handle()) {
+    handle = std::any_cast<decltype(handle)>(*h);
+  } else {
+    const auto &spirv_data = spirv_compiled.get_internal_data();
+    gfx::GfxRuntime::RegisterParams params;
+    params.kernel_attribs = spirv_data.kernel_attribs;
+    params.task_spirv_source_codes = spirv_data.spirv_src;
+    params.num_snode_trees = spirv_data.num_snode_trees;
+    handle = vulkan_runtime_->register_taichi_kernel(std::move(params));
+  }
+  vulkan_runtime_->launch_kernel(handle, &ctx);
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

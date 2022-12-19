@@ -11,6 +11,9 @@ import sys
 
 # -- code --
 def ensure_dependencies():
+    '''
+    Automatically install dependencies if they are not installed.
+    '''
     p = Path(__file__).parent.parent / 'requirements.txt'
     if not p.exists():
         raise RuntimeError(f'Cannot find {p}')
@@ -29,7 +32,9 @@ def ensure_dependencies():
 
 
 def chdir_to_root():
-    # Change working directory to the root of the repository
+    '''
+    Change working directory to the root of the repository
+    '''
     root = Path('/')
     p = Path(__file__).resolve()
     while p != root:
@@ -40,10 +45,17 @@ def chdir_to_root():
 
 
 def set_common_env():
+    '''
+    Set common environment variables.
+    '''
     os.environ['TI_CI'] = '1'
 
 
 def early_init():
+    '''
+    Do early initialization.
+    This must be called before any other non-stdlib imports.
+    '''
     ensure_dependencies()
     chdir_to_root()
     set_common_env()

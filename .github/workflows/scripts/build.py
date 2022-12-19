@@ -5,7 +5,7 @@ import sys
 import os.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-import ci_common
+import ci_common  # noqa
 
 # -- stdlib --
 import glob
@@ -27,6 +27,9 @@ env = os.environ
 
 @banner('Setup LLVM')
 def setup_llvm() -> None:
+    '''
+    Download and install LLVM.
+    '''
     u = platform.uname()
     if u.system == 'Linux':
         if 'AMDGPU_TEST' in env:
@@ -60,6 +63,9 @@ def setup_llvm() -> None:
 
 @banner('Build Taichi Wheel')
 def build_wheel(python: Command, pip: Command) -> None:
+    '''
+    Build the Taichi wheel
+    '''
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
     proj = env.get('PROJECT_NAME', 'taichi')

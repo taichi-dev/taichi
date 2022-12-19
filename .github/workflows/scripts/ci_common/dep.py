@@ -16,8 +16,9 @@ from .tinysh import tar
 
 # -- code --
 def unzip(filename, extract_dir, strip=0):
-    """Unpack zip `filename` to `extract_dir`
-    """
+    '''
+    Unpack zip `filename` to `extract_dir`, optionally stripping `strip` components.
+    '''
     if not zipfile.is_zipfile(filename):
         raise Exception(f"{filename} is not a zip file")
 
@@ -51,6 +52,10 @@ def unzip(filename, extract_dir, strip=0):
 
 
 def download_dep(url, outdir, *, strip=0, force=False):
+    '''
+    Download a dependency archive from `url` and expand it to `outdir`,
+    optionally stripping `strip` components.
+    '''
     outdir = Path(outdir)
     if outdir.exists() and len(list(outdir.glob('*'))) > 0 and not force:
         return

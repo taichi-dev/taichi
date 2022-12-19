@@ -15,6 +15,9 @@ from .tinysh import Command, sh
 # -- code --
 @banner('Setup Python {version}')
 def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
+    '''
+    Find the required Python environment and return the `python` and `pip` commands.
+    '''
     assert version
 
     home = Path.home().resolve()

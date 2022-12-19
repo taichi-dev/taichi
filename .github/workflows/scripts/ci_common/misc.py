@@ -15,11 +15,17 @@ from .escapes import escape_codes
 
 # -- code --
 def is_manylinux2014() -> bool:
-    # manylinux2014 builds in a special CentOS docker image
+    '''
+    Are we in a manylinux2014 environment?
+    This means a particular CentOS docker image.
+    '''
     return platform.system() == 'Linux' and Path('/etc/centos-release').exists()
 
 
 def get_cache_home() -> Path:
+    '''
+    Get the cache home directory. All intermediate files should be stored here.
+    '''
     if platform.system() == 'Windows':
         return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
     else:
@@ -27,6 +33,9 @@ def get_cache_home() -> Path:
 
 
 def banner(msg: str) -> Callable:
+    '''
+    Decorate a function to print a banner before and after it.
+    '''
     def decorate(f: Callable) -> Callable:
         sig = inspect.signature(f)
         C = escape_codes['bold_cyan']

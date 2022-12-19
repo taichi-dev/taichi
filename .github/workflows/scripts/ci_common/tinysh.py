@@ -60,6 +60,9 @@ class Command:
 
 
 def sudo(cmd: Command) -> Command:
+    '''
+    Wrap a command with sudo.
+    '''
     if IS_WINDOWS:
         return cmd
     else:

@@ -14,6 +14,9 @@ from .tinysh import sh, Command
 # -- code --
 @banner('Setup sccache')
 def setup_sccache() -> Command:
+    '''
+    Download and install sccache, setup compiler wrappers, and return the `sccache` command.
+    '''
     root = get_cache_home() / 'sccache'
     bin = root / 'bin'
 

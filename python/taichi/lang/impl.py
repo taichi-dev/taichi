@@ -147,7 +147,11 @@ def _calc_slice(index, default_stop):
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
     # Directly evaluate in Python for non-Taichi types
-    if not isinstance(value, (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy, MeshRelationAccessProxy)) and not (is_taichi_class(value) and not is_matrix_class(value)):
+    if not isinstance(
+            value,
+        (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy,
+         MeshRelationAccessProxy)) and not (is_taichi_class(value)
+                                            and not is_matrix_class(value)):
         if len(_indices) == 1:
             _indices = _indices[0]
         return value.__getitem__(_indices)
@@ -263,8 +267,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         else:
             assert dim == 2
             multiple_indices = [
-                make_expr_group(i, j) for i in indices[0]
-                for j in indices[1]
+                make_expr_group(i, j) for i in indices[0] for j in indices[1]
             ]
             return_shape = (len(indices[0]), len(indices[1]))
         return Expr(

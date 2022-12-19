@@ -43,7 +43,7 @@ def set_common_env():
     os.environ['TI_CI'] = '1'
 
 
-def init():
+def early_init():
     ensure_dependencies()
     chdir_to_root()
     set_common_env()

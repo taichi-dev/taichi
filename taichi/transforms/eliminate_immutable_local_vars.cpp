@@ -16,7 +16,9 @@ class EliminateImmutableLocalVars : public BasicStmtVisitor {
   std::unordered_map<Stmt *, Stmt *> immutable_local_var_to_value_;
 
  public:
-  explicit EliminateImmutableLocalVars(const std::unordered_set<Stmt *> &immutable_local_vars) : immutable_local_vars_(immutable_local_vars) {
+  explicit EliminateImmutableLocalVars(
+      const std::unordered_set<Stmt *> &immutable_local_vars)
+      : immutable_local_vars_(immutable_local_vars) {
   }
 
   void visit(AllocaStmt *stmt) override {
@@ -34,14 +36,16 @@ class EliminateImmutableLocalVars : public BasicStmtVisitor {
 
   void visit(LocalStoreStmt *stmt) override {
     if (immutable_local_vars_.find(stmt->dest) != immutable_local_vars_.end()) {
-      TI_ASSERT(immutable_local_var_to_value_.find(stmt->dest) == immutable_local_var_to_value_.end());
+      TI_ASSERT(immutable_local_var_to_value_.find(stmt->dest) ==
+                immutable_local_var_to_value_.end());
       immutable_local_var_to_value_[stmt->dest] = stmt->val;
       modifier_.erase(stmt);
     }
   }
 
   static void run(IRNode *node) {
-    EliminateImmutableLocalVars pass(irpass::analysis::gather_immutable_local_vars(node));
+    EliminateImmutableLocalVars pass(
+        irpass::analysis::gather_immutable_local_vars(node));
     node->accept(&pass);
     pass.modifier_.modify_ir();
   }

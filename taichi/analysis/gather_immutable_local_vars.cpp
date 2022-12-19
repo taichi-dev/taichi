@@ -9,11 +9,7 @@ class GatherImmutableLocalVars : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
 
-  enum class AllocaStatus {
-    kCreated = 0,
-    kStoredOnce = 1,
-    kInvalid = 2
-  };
+  enum class AllocaStatus { kCreated = 0, kStoredOnce = 1, kInvalid = 2 };
   std::unordered_map<Stmt *, AllocaStatus> alloca_status_;
 
  public:

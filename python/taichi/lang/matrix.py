@@ -120,7 +120,8 @@ def _infer_entry_dt(entry):
 
 def _infer_array_dt(arr):
     assert len(arr) > 0
-    return functools.reduce(ti_python_core.promoted_type, map(_infer_entry_dt, arr))
+    return functools.reduce(ti_python_core.promoted_type,
+                            map(_infer_entry_dt, arr))
 
 
 def make_matrix(arr, dt=None):
@@ -138,7 +139,8 @@ def make_matrix(arr, dt=None):
             dt = _infer_array_dt(arr)
         else:
             dt = cook_dtype(dt)
-    return expr.Expr(impl.make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr]))
+    return expr.Expr(
+        impl.make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
 def is_vector(x):

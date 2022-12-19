@@ -1195,6 +1195,7 @@ def test_matrix_len():
 
     test()
 
+
 @test_utils.test()
 def test_cross_scope_matrix():
     a = ti.Matrix([[1, 2], [3, 4]])

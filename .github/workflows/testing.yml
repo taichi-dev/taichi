@@ -272,10 +272,7 @@ jobs:
     name: Build and Test (AMDGPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
-
     runs-on: [self-hosted, amdgpu]
-
-
     steps:
       - uses: actions/checkout@v3
         with:
@@ -301,9 +298,10 @@ jobs:
           PY: py38
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_CUDA:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Test
         id: test

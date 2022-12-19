@@ -1,5 +1,6 @@
 import taichi.lang
 from taichi._lib import core as _ti_core
+from taichi._logging import warn
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
@@ -289,6 +290,10 @@ class ScalarField(Field):
     def to_numpy(self, dtype=None):
         """Converts this field to a `numpy.ndarray`.
         """
+        if self.parent()._snode.ptr.type == _ti_core.SNodeType.dynamic:
+            warn(
+                "You are trying to convert a dynamic snode to a numpy array, be aware that inactive items in the snode will be converted to zeros in the resulting array."
+            )
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415

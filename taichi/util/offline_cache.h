@@ -173,13 +173,19 @@ class CacheCleaner {
       std::string lock_path =
           taichi::join_path(path, config.metadata_lock_name);
       if (!lock_with_file(lock_path)) {
-        TI_WARN("Lock {} failed", lock_path);
+        TI_WARN(
+            "Lock {} failed. You can remove this .lock file manually and try "
+            "again.",
+            lock_path);
         return;
       }
       auto _ = make_cleanup([&lock_path]() {
         TI_DEBUG("Stop cleaning cache");
         if (!unlock_with_file(lock_path)) {
-          TI_WARN("Unlock {} failed", lock_path);
+          TI_WARN(
+              "Unlock {} failed. You can remove this .lock file manually and "
+              "try again.",
+              lock_path);
         }
       });
       TI_DEBUG("Start cleaning cache");

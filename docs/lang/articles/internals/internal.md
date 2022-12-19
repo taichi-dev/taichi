@@ -343,5 +343,5 @@ assert mapping_b == {0: 1, 1: 0}
 # the virtual first index exposed to the user comes second in memory layout.
 ```
 
-Taichi supports up to 8 (`constexpr int taichi_max_num_indices = 8`)
+Taichi supports up to 12 (`constexpr int taichi_max_num_indices = 12`)
 virtual indices and physical indices.

@@ -4,24 +4,13 @@ sidebar_position: 1
 
 # Frequently Asked Questions
 
-## Can I enable auto compeletion for Taichi?
-
-Yes, Taichi's Python user-facing APIs should work natively with any language server for Python.
-
-Take VSCode as an example, you can install `Python` or `Pylance` extensions to get language support like signature help with type information, code completion etc.
-
-If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
-- invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
-- find `Python: Select Interpreter`
-- make sure you select the path to the Python interpreter you're using with a `taichi` package installed
+## Installation
 
 ### Why does my `pip` complain `package not found` when installing Taichi?
 
 You may have a Python interpreter with an unsupported version. Currently, Taichi only supports Python 3.7/3.8/3.9/3.10 (64-bit) . For more information about installation-specific issues, please check [Installation Troubleshooting](./install.md).
 
-### Does Taichi provide built-in constants such as `ti.pi`?
-
-There is no built-in constant such as `pi`. We recommended using `math.pi` directly.
+## Parallel programming
 
 ### Outer-most loops in Taichi kernels are by default parallel. How can I **serialize** one of them?
 
@@ -32,6 +21,96 @@ for _ in range(1):  # This "ghost" loop will be "parallelized", but with only on
     for i in range(100):  # The loop you want to serialize
         ...
 ```
+
+### Does Taichi provide a barrier synchronization function similar to `__syncthreads()` or `glMemoryBarrier()`?
+
+You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
+
+`__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.
+
+
+## Data structures
+
+### How do I declare a field with a **dynamic length**?
+
+The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python.
+
+:::tip
+An alternative solution is to allocate a large enough `dense` field, with a corresponding 0-D field
+`field_len[None]` tracking its length. In practice, programs allocating memory using `dynamic`
+SNodes may be less efficient than using `dense` SNodes, due to dynamic data structure
+maintenance overheads.
+:::
+
+### How can I swap elements between two fields in the Taichi scope? `a,b = b,a` does not work.
+
+Direct value assignments lead to semantic ambiguity. For example, `a = b` can mean data copy if `a` is pre-defined, or otherwise can serve to define and initialize `a`.
+
+You can swap two fields in the Taichi scope using a struct for:
+
+```python
+@ti.func
+def field_copy(src: ti.template(), dst: ti.template()):
+    for I in ti.grouped(src):
+        dst[I] = src[I]
+
+@ti.kernel
+def test():
+    # copy b to a
+    field_copy(b, a)
+    print(a[0])
+
+test()
+```
+
+### How do I compute the minimum/maximum of a field?
+
+Use `ti.automic.min/max` instead of `ti.min/max`. For example:
+
+```python
+for i in x:
+   ret = ti.atomic_min(ret, x[i])
+```
+
+
+### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
+
+These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
+
+
+## Developement related
+
+### Can I enable auto compeletion for Taichi?
+
+Yes, Taichi's Python user-facing APIs should work natively with any language server for Python.
+
+Take VSCode as an example, you can install `Python` or `Pylance` extensions to get language support like signature help with type information, code completion etc.
+
+If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
+- invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
+- find `Python: Select Interpreter`
+- make sure you select the path to the Python interpreter you're using with a `taichi` package installed
+
+### How to install Taichi on a server without Internet access?
+
+Follow these steps to install Taichi on a server without Internet access.
+
+1. From a computer with Internet access, pip download Taichi, ensuring that this computer has the same operating system as the target server:
+
+```plaintext
+pip download taichi
+```
+
+*This command downloads the wheel package of Taichi and all its dependencies.*
+
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
+
+```
+python -m pip install xxxx.whl
+```
+
+
+## Integration with other libs/softwares
 
 ### What is the most convenient way to load images into Taichi fields?
 
@@ -63,44 +142,15 @@ while gui.running:
 
 Besides, you can also pass numpy arrays or torch tensors into a Taichi kernel as arguments. See [Interacting with external arrays](../basic/external.md) for more details.
 
-### How do I declare a field with a **dynamic length**?
-
-The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python.
-
-:::tip
-An alternative solution is to allocate a large enough `dense` field, with a corresponding 0-D field
-`field_len[None]` tracking its length. In practice, programs allocating memory using `dynamic`
-SNodes may be less efficient than using `dense` SNodes, due to dynamic data structure
-maintenance overheads.
-:::
-
-### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
-
-These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
-
-### How to install Taichi on a server without Internet access?
-
-Follow these steps to install Taichi on a server without Internet access.
-
-1. From a computer with Internet access, pip download Taichi, ensuring that this computer has the same operating system as the target server:
-
-```plaintext
-pip download taichi
-```
-
-*This command downloads the wheel package of Taichi and all its dependencies.*
-
-2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
-
-```
-python -m pip install xxxx.whl
-```
 
 ### Can I integrate Taichi and Houdini?
 
 The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elements](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
+
+
+## Precision related
 
 ### How do I accurately initialize a vector or matrix with `f64` precision when my default floating-point precision (`default_fp`) is `f32`?
 
@@ -132,6 +182,8 @@ B = [0.200000000000, 0.000000000000]
 You may notice the value of `A` is slightly different from `[0.2, 0]`. This is because, by default, your float literals are converted to `ti.f32`, and `0.2` in `ti.f32` precision becomes `0.200000002980`. If you expect `A` and `B` to have `ti.f64` precision, use `ti.f64(0.2)` to preserve more effective digits here so that `0.2` keeps its `ti.f64` type.
 
 Alternatively, if you can afford having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
+
+## From Python to Taichi
 
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 
@@ -168,6 +220,8 @@ def test(arr: ti.types.ndarray()):
 test(array)
 ```
 
+## Visualization
+
 ### Does the Taichi's GUI system support color mapping when rendering simulation results?
 
 Taichi's GUI system can display colors when the field it accepts is a 3D vector field where each vector represents the RGB values of a pixel.
@@ -187,6 +241,8 @@ while gui.running: # Main loop
         gui.show()
     step += 1
 ```
+
+## Objective-oriented programming
 
 ### Why does inheritance fail? I created a parent class and a child class, both decorated with `@ti.data_oriented`, and placed fields under `@ti.kernel`.
 
@@ -232,6 +288,8 @@ class TriangleRasterizer:
                                               height // tile_size, n))
 ```
 
+## From Taichi to Python
+
 ### How can I write data in Taichi fields to files? `write()` does not work.
 
 You cannot save data in Taichi fields directly, but there is a workaround. Taichi allows interaction with external arrays. Use `to_numpy` to convert a Taichi field to a NumPy array, as explained in [this section](https://docs.taichi-lang.org/docs/master/external). Then write the Numpy array to files via `numpy.savetxt`.
@@ -269,6 +327,8 @@ This is different from the usual convention taken by popular third-party libs li
 
 Therefore, to display a NumPy array using `matplotlb`'s `imshow()`, you must rotate it 90 degrees clockwise.
 
+## Miscellaneous
+
 ### How does Taichi compare with Python packages designed for data science or machine learning?
 
 Popular packages designed for data science or machine learning include NumPy, JAX, PyTorch, and TensorFlow. A major difference between them and Taichi lies in the granularity of math operations.
@@ -303,39 +363,3 @@ In contrast, it is much more reassuring to keep everything in Python. Taichi acc
 Similar to Taichi, PyPy also accelerates Python code via just-in-time (JIT) compilation. PyPy is attractive because users can keep Python scripts as they are without even moderate modification. On the other hand, its strict conformity with Python rules leaves limited room for optimization.
 
 If you expect a greater leap in performance, Taichi can achieve the end. But you need to familiarize yourself with Taichi's syntax and assumptions, which differ from Python's slightly.
-
-### How do I compute the minimum/maximum of a field?
-
-Use `ti.automic.min/max` instead of `ti.min/max`. For example:
-
-```python
-for i in x:
-   ret = ti.atomic_min(ret, x[i])
-```
-
-### Does Taichi provide a barrier synchronization function similar to `__syncthreads()` or `glMemoryBarrier()`?
-
-You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
-
-`__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.
-
-### How can I swap elements between two fields in the Taichi scope? `a,b = b,a` does not work.
-
-Direct value assignments lead to semantic ambiguity. For example, `a = b` can mean data copy if `a` is pre-defined, or otherwise can serve to define and initialize `a`.
-
-You can swap two fields in the Taichi scope using a struct for:
-
-```python
-@ti.func
-def field_copy(src: ti.template(), dst: ti.template()):
-    for I in ti.grouped(src):
-        dst[I] = src[I]
-
-@ti.kernel
-def test():
-    # copy b to a
-    field_copy(b, a)
-    print(a[0])
-
-test()
-```

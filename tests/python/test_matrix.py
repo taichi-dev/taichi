@@ -1194,3 +1194,13 @@ def test_matrix_len():
         assert len(y) == 3
 
     test()
+
+@test_utils.test()
+def test_cross_scope_matrix():
+    a = ti.Matrix([[1, 2], [3, 4]])
+
+    @ti.kernel
+    def foo() -> ti.types.vector(4, ti.i32):
+        return ti.Vector([a[0, 0], a[0, 1], a[1, 0], a[1, 1]])
+
+    assert (foo() == [1, 2, 3, 4]).all()

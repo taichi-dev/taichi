@@ -53,6 +53,35 @@ def set_common_env():
     os.environ['TI_CI'] = '1'
 
 
+_Environ = os.environ.__class__
+
+
+class _EnvironWrapper(_Environ):
+
+    def __setitem__(self, name: str, value: str) -> None:
+        orig = self.get(name)
+        _Environ.__setitem__(self, name, value)
+        new = self[name]
+
+        if orig == new:
+            return
+
+        from .escapes import escape_codes
+
+        G = escape_codes['bold_green']
+        R = escape_codes['bold_red']
+        N = escape_codes['reset']
+        print(f'{R}:: ENV -{name}={orig}{N}', file=sys.stderr, flush=True)
+        print(f'{G}:: ENV +{name}={new}{N}', file=sys.stderr, flush=True)
+
+
+def monkey_patch_environ():
+    '''
+    Monkey patch os.environ to print changes.
+    '''
+    os.environ.__class__ = _EnvironWrapper
+
+
 def early_init():
     '''
     Do early initialization.
@@ -60,4 +89,5 @@ def early_init():
     '''
     ensure_dependencies()
     chdir_to_root()
+    monkey_patch_environ()
     set_common_env()

@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## For-loop decorators
 
-As discussed in previous topics, Taichi kernels automatically parallelize for-loops in the outermost scope. Our compiler sets the settings automatically to best explore the target architecture. Nonetheless, for Ninjas seeking the final few percent of speed, we give several APIs to allow developers to fine-tune their programmes. Specifying a proper `block dim`, for example, might result in a nearly 3x speed gain in [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
+As discussed in previous topics, Taichi kernels automatically parallelize for-loops in the outermost scope. Our compiler sets the settings automatically to best explore the target architecture. Nonetheless, for Ninjas seeking the final few percent of speed, we give several APIs to allow developers to fine-tune their programs. Specifying a proper `block dim`, for example, might result in a nearly 3x speed gain in [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
 
 You can use `ti.loop_config` to set the loop directives for the next for loop. Available directives are:
 
@@ -45,11 +45,11 @@ def fill():
 
 It is worthy to quickly discuss the **thread hierarchy** on contemporary GPU architectures in order to help you understand how the previously mentioned for-loop is parallelized.
 
-From fine-grained to coarse-grained, the computation units are as follows: **iteration** **thread** **block** **grid**.
+From fine-grained to coarse-grained, the computation units are as follows: **iteration**, **thread**, **block**, **grid**.
 
 - **iteration**: The **body of a for-loop** is an iteration. Each iteration corresponds to a different I value in the for-loop.
-- **thread**: Iterations are classified as threads. A thread is the smallest parallelized unit. All iterations inside a thread are **serial** in nature. To maximise parallel efficiency, we normally employ one iteration per thread.
-- **block**: Threads are organised into groups called blocks. **Parallel** execution is used for all threads within a block. Threads within a block can share **block local storage**.
+- **thread**: Iterations are classified as threads. A thread is the smallest parallelized unit. All iterations inside a thread are **serial** in nature. To maximize parallel efficiency, we normally employ one iteration per thread.
+- **block**: Threads are organized into groups called blocks. **Parallel** execution is used for all threads within a block. Threads within a block can share **block local storage**.
 - **grid**: Blocks are grouped into grids. A Grid is the minimal unit
   that being **launched** from the host. All blocks within a grid are
   executed in **parallel**. In Taichi, each **parallelized for-loop**

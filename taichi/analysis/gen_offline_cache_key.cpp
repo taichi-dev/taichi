@@ -272,6 +272,12 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->var);
   }
 
+  void visit(GetElementExpression *expr) override {
+    emit(ExprOpCode::GetElementExpression);
+    emit(expr->src);
+    emit(expr->index);
+  }
+
   void visit(Block *block) override {
     emit(StmtOpCode::EnterBlock);
     emit(static_cast<std::size_t>(block->statements.size()));

@@ -186,15 +186,15 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
 }
 
 TEST_F(CapiTest, TestBehaviorMapMemory) {
-  TiMemoryAllocateInfo allocate_info;
-  allocate_info.size = 1024;
-  allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-
-  auto inner = [this, allocate_info](TiArch arch) {
+  auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
     }
+
+    TiMemoryAllocateInfo allocate_info;
+    allocate_info.size = 1024;
+    allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 
     {
       TiRuntime runtime = ti_create_runtime(arch);

@@ -34,13 +34,13 @@ def banner(msg: str) -> Callable:
         N = escape_codes['reset']
         def wrapper(*args, **kwargs):
             _args = sig.bind(*args, **kwargs)
-            print(f'{C}:: -----BEGIN {msg}-----{N}'.format(**_args.arguments), file=sys.stderr)
+            print(f'{C}:: -----BEGIN {msg}-----{N}'.format(**_args.arguments), file=sys.stderr, flush=True)
             try:
                 ret = f(*args, **kwargs)
-                print(f'{C}:: -----END {msg}-----{N}'.format(**_args.arguments), file=sys.stderr)
+                print(f'{C}:: -----END {msg}-----{N}'.format(**_args.arguments), file=sys.stderr, flush=True)
                 return ret
             except BaseException as e:
-                print(f'{R}!! -----EXCEPTION {msg}-----{N}'.format(**_args.arguments), file=sys.stderr)
+                print(f'{R}!! -----EXCEPTION {msg}-----{N}'.format(**_args.arguments), file=sys.stderr, flush=True)
                 raise
 
         return wrapper

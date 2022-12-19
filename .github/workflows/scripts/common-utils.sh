@@ -168,10 +168,11 @@ function ci-docker-run-amdgpu {
     fi
 
     ci-docker-run \
-        --priviledged \
         --device=/dev/kfd \
         --device=/dev/dri \
+        --device=/dev/vga_arbiter \
         --group-add=video \
+        --group-add=render \
         -e DISPLAY=:$i \
         -e GPU_TEST=ON \
         -e AMDGPU_TEST=ON \

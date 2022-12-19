@@ -140,7 +140,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 }
 
 TEST_F(CapiTest, TestBehaviorFreeMemory) {
-  auto inner = [](TiArch arch) {
+  auto inner = [this](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
@@ -190,7 +190,7 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
   allocate_info.size = 1024;
   allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
 
-  auto inner = [&](TiArch arch) {
+  auto inner = [this, allocate_info](TiArch arch) {
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
@@ -529,120 +529,121 @@ TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
   inner(TI_ARCH_VULKAN);
 }
 
-void test_behavior_load_aot_module_impl(TiArch arch) {
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-  const std::string module_path = folder_dir + std::string("/module.tcm");
-
-  if (!ti::is_arch_available(arch)) {
-    TI_WARN("arch {} is not supported, so the test is skipped", arch);
-    return;
-  }
-  TiRuntime runtime = ti_create_runtime(arch);
-
-  // AOT module from tcm file, normal usage.
-  {
-    TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-    ASSERT_TAICHI_SUCCESS();
-    TI_ASSERT(module != TI_NULL_HANDLE);
-  }
-
-  // AOT module from filesystem directory, normal usage.
-  {
-    TiAotModule module = ti_load_aot_module(runtime, folder_dir);
-    ASSERT_TAICHI_SUCCESS();
-    TI_ASSERT(module != TI_NULL_HANDLE);
-  }
-
-  // Attempt to load aot module from tcm file, while runtime is null.
-  {
-    TiAotModule module =
-        ti_load_aot_module(TI_NULL_HANDLE, module_path.c_str());
-    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-    TI_ASSERT(module == TI_NULL_HANDLE);
-  }
-
-  // Attempt to load aot module from tcm file, while runtime is null.
-  {
-    TiAotModule module = ti_load_aot_module(TI_NULL_HANDLE, folder_dir);
-    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-    TI_ASSERT(module == TI_NULL_HANDLE);
-  }
-
-  // Attempt to load aot module without path.
-  {
-    TiAotModule module = ti_load_aot_module(runtime, nullptr);
-    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-    TI_ASSERT(module == TI_NULL_HANDLE);
-  }
-  // Attempt to load aot module with a invalid path.
-  {
-    TiAotModule module = ti_load_aot_module(runtime, "ssssss///");
-    EXPECT_TAICHI_ERROR(TI_ERROR_CORRUPTED_DATA);
-    TI_ASSERT(module == TI_NULL_HANDLE);
-  }
-  ti_destroy_runtime(runtime);
-}
-
 TEST_F(CapiTest, TestBehaviorLoadAOTModuleVulkan) {
+  auto test_behavior_load_aot_module_impl = [this](TiArch arch) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const std::string module_path = folder_dir + std::string("/module.tcm");
+
+    if (!ti::is_arch_available(arch)) {
+      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      return;
+    }
+    TiRuntime runtime = ti_create_runtime(arch);
+
+    // AOT module from tcm file, normal usage.
+    {
+      TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
+      ASSERT_TAICHI_SUCCESS();
+      TI_ASSERT(module != TI_NULL_HANDLE);
+    }
+
+    // AOT module from filesystem directory, normal usage.
+    {
+      TiAotModule module = ti_load_aot_module(runtime, folder_dir);
+      ASSERT_TAICHI_SUCCESS();
+      TI_ASSERT(module != TI_NULL_HANDLE);
+    }
+
+    // Attempt to load aot module from tcm file, while runtime is null.
+    {
+      TiAotModule module =
+          ti_load_aot_module(TI_NULL_HANDLE, module_path.c_str());
+      EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+      TI_ASSERT(module == TI_NULL_HANDLE);
+    }
+
+    // Attempt to load aot module from tcm file, while runtime is null.
+    {
+      TiAotModule module = ti_load_aot_module(TI_NULL_HANDLE, folder_dir);
+      EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+      TI_ASSERT(module == TI_NULL_HANDLE);
+    }
+
+    // Attempt to load aot module without path.
+    {
+      TiAotModule module = ti_load_aot_module(runtime, nullptr);
+      EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+      TI_ASSERT(module == TI_NULL_HANDLE);
+    }
+    // Attempt to load aot module with a invalid path.
+    {
+      TiAotModule module = ti_load_aot_module(runtime, "ssssss///");
+      EXPECT_TAICHI_ERROR(TI_ERROR_CORRUPTED_DATA);
+      TI_ASSERT(module == TI_NULL_HANDLE);
+    }
+    ti_destroy_runtime(runtime);
+  };
+
   test_behavior_load_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavior_destroy_aot_module_impl(TiArch arch) {
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-  const std::string module_path = folder_dir + std::string("/module.tcm");
-  if (!ti::is_arch_available(arch)) {
-    TI_WARN("arch {} is not supported, so the test is skipped", arch);
-    return;
-  }
-
-  TiRuntime runtime = ti_create_runtime(arch);
-  TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-  TI_ASSERT(module != TI_NULL_HANDLE);
-  ti_destroy_aot_module(module);
-  ASSERT_TAICHI_SUCCESS();
-  ti_destroy_runtime(runtime);
-
-  // Attempt to destroy a null handle.
-  ti_destroy_aot_module(TI_NULL_HANDLE);
-  EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-}
-
 TEST_F(CapiTest, TestBehaviorDestroyAotModuleVulkan) {
+  auto test_behavior_destroy_aot_module_impl = [this](TiArch arch) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const std::string module_path = folder_dir + std::string("/module.tcm");
+    if (!ti::is_arch_available(arch)) {
+      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      return;
+    }
+
+    TiRuntime runtime = ti_create_runtime(arch);
+    TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
+    TI_ASSERT(module != TI_NULL_HANDLE);
+    ti_destroy_aot_module(module);
+    ASSERT_TAICHI_SUCCESS();
+    ti_destroy_runtime(runtime);
+
+    // Attempt to destroy a null handle.
+    ti_destroy_aot_module(TI_NULL_HANDLE);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+  };
+
   test_behavior_destroy_aot_module_impl(TI_ARCH_VULKAN);
 }
 
-void test_behavior_get_cgraph_impl(TiArch arch) {
-  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-  const std::string module_path = folder_dir;
-  if (!ti::is_arch_available(arch)) {
-    TI_WARN("arch {} is not supported, so the test is skipped", arch);
-    return;
-  }
-
-  TiRuntime runtime = ti_create_runtime(arch);
-  TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-  TiComputeGraph cgraph = ti_get_aot_module_compute_graph(module, "run_graph");
-  ASSERT_TAICHI_SUCCESS();
-  TI_ASSERT(cgraph != TI_NULL_HANDLE);
-
-  // Attemp to get compute graph with null module.
-  cgraph = ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
-  EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-  TI_ASSERT(cgraph == TI_NULL_HANDLE);
-
-  // Attemp to get compute graph without graph name.
-  cgraph = ti_get_aot_module_compute_graph(module, nullptr);
-  EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-  TI_ASSERT(cgraph == TI_NULL_HANDLE);
-
-  // Attemp to get compute graph with invalid name.
-  cgraph = ti_get_aot_module_compute_graph(module, "#$#%*(");
-  EXPECT_TAICHI_ERROR(TI_ERROR_NAME_NOT_FOUND);
-  TI_ASSERT(cgraph == TI_NULL_HANDLE);
-
-  ti_destroy_runtime(runtime);
-}
-
 TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
+  auto test_behavior_get_cgraph_impl = [this](TiArch arch) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const std::string module_path = folder_dir;
+    if (!ti::is_arch_available(arch)) {
+      TI_WARN("arch {} is not supported, so the test is skipped", arch);
+      return;
+    }
+
+    TiRuntime runtime = ti_create_runtime(arch);
+    TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
+    TiComputeGraph cgraph =
+        ti_get_aot_module_compute_graph(module, "run_graph");
+    ASSERT_TAICHI_SUCCESS();
+    TI_ASSERT(cgraph != TI_NULL_HANDLE);
+
+    // Attemp to get compute graph with null module.
+    cgraph = ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+    TI_ASSERT(cgraph == TI_NULL_HANDLE);
+
+    // Attemp to get compute graph without graph name.
+    cgraph = ti_get_aot_module_compute_graph(module, nullptr);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
+    TI_ASSERT(cgraph == TI_NULL_HANDLE);
+
+    // Attemp to get compute graph with invalid name.
+    cgraph = ti_get_aot_module_compute_graph(module, "#$#%*(");
+    EXPECT_TAICHI_ERROR(TI_ERROR_NAME_NOT_FOUND);
+    TI_ASSERT(cgraph == TI_NULL_HANDLE);
+
+    ti_destroy_runtime(runtime);
+  };
+
   test_behavior_get_cgraph_impl(TI_ARCH_VULKAN);
 }

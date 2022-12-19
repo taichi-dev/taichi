@@ -122,7 +122,7 @@ def inside_taichi_scope():
         # Only print once
 ```
 
-In the Python scope, `ti.static print` acts identically to `print`. Unlike `print`, `ti.static` print outputs the expression only once at build time, incurring no runtime penalty.
+In the Python scope, `ti.static_print` acts identically to `print`. Unlike `print`, `ti.static_print` outputs the expression only once at build time, incurring no runtime penalty.
 
 ## Serial execution
 
@@ -225,13 +225,13 @@ When you are done with debugging, set `debug=False`. Then, the program ignores a
 
 ## Compile-time `ti.static_assert`
 
-Taichi, like `ti.static print`, includes a static version of `assert`; `ti.static assert` which may be used to create assertions on data types, dimensionality, and shapes.
+Taichi, like `ti.static_print`, includes a static version of `assert`; `ti.static_assert`, which may be used to create assertions on data types, dimensionality, and shapes.
 
 ```python
 ti.static_assert(cond, msg=None)
 ```
 
-It works whether or not `debug=True` is used. A false `ti.static assert` statement, like a false `assert` statement in the Python scope, causes a ` AssertionError`, as shown below:
+It works whether or not `debug=True` is used. A false `ti.static_assert` statement, like a false `assert` statement in the Python scope, causes an ` AssertionError`, as shown below:
 
 ```python
 @ti.func

@@ -1181,3 +1181,16 @@ def test_global_tmp_overwrite():
         return sig.sum() + p.sum()
 
     assert foo() == 4
+
+
+@test_utils.test(debug=True)
+def test_matrix_len():
+    @ti.kernel
+    def test():
+        x = ti.Vector([1, 0])
+        y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+
+        assert ti.static(len(x)) == 2
+        assert ti.static(len(y)) == 3
+
+    test()

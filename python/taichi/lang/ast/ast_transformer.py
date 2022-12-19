@@ -427,6 +427,15 @@ class ASTTransformer(Builder):
             id(pow): pow,
             id(operator.matmul): matrix_ops.matmul,
         }
+        if id(func) == id(len):
+            if len(args) != 1:
+                raise TaichiSyntaxError("len() takes exactly one argument.")
+            if isinstance(args[0], Expr) and args[0].ptr.is_tensor():
+                node.ptr = args[0].get_shape()[0]
+            else:
+                node.ptr = len(*args, **keywords)
+            return True
+
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
             if func is min or func is max:

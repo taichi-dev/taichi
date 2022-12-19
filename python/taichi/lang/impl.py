@@ -2,7 +2,6 @@ import numbers
 from types import FunctionType, MethodType
 from typing import Iterable, Sequence
 
-import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
@@ -147,6 +146,12 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
+    # Directly evaluate in Python for non-Taichi types
+    if not isinstance(value, (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy, MeshRelationAccessProxy)) and not (is_taichi_class(value) and not is_matrix_class(value)):
+        if len(_indices) == 1:
+            _indices = _indices[0]
+        return value.__getitem__(_indices)
+
     has_slice = False
 
     flattened_indices = []
@@ -168,9 +173,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices = ()
 
     if has_slice:
-        if not isinstance(value, Matrix) and not (isinstance(value, Expr)
-                                                  and value.is_tensor()):
-            raise SyntaxError(
+        if not (isinstance(value, Expr) and value.is_tensor()):
+            raise TaichiSyntaxError(
                 f"The type {type(value)} do not support index of slice type")
     else:
         indices_expr_group = make_expr_group(*indices)
@@ -239,42 +243,37 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         return Expr(
             _ti_core.subscript(value.ptr, indices_expr_group,
                                get_runtime().get_current_src_info()))
-    if isinstance(value, Expr):
-        # Index into TensorType
-        # value: IndexExpression with ret_type = TensorType
-        assert value.is_tensor()
+    assert isinstance(value, Expr)
+    # Index into TensorType
+    # value: IndexExpression with ret_type = TensorType
+    assert value.is_tensor()
 
-        if has_slice:
-            shape = value.get_shape()
-            dim = len(shape)
-            assert dim == len(indices)
-            indices = [
-                _calc_slice(index, shape[i])
-                if isinstance(index, slice) else [index]
-                for i, index in enumerate(indices)
+    if has_slice:
+        shape = value.get_shape()
+        dim = len(shape)
+        assert dim == len(indices)
+        indices = [
+            _calc_slice(index, shape[i])
+            if isinstance(index, slice) else [index]
+            for i, index in enumerate(indices)
+        ]
+        if dim == 1:
+            multiple_indices = [make_expr_group(i) for i in indices[0]]
+            return_shape = (len(indices[0]), )
+        else:
+            assert dim == 2
+            multiple_indices = [
+                make_expr_group(i, j) for i in indices[0]
+                for j in indices[1]
             ]
-            if dim == 1:
-                multiple_indices = [make_expr_group(i) for i in indices[0]]
-                return_shape = (len(indices[0]), )
-            else:
-                assert dim == 2
-                multiple_indices = [
-                    make_expr_group(i, j) for i in indices[0]
-                    for j in indices[1]
-                ]
-                return_shape = (len(indices[0]), len(indices[1]))
-            return Expr(
-                _ti_core.subscript_with_multiple_indices(
-                    value.ptr, multiple_indices, return_shape,
-                    get_runtime().get_current_src_info()))
+            return_shape = (len(indices[0]), len(indices[1]))
         return Expr(
-            _ti_core.subscript(value.ptr, indices_expr_group,
-                               get_runtime().get_current_src_info()))
-
-    # Directly evaluate in Python for non-Taichi types
-    if len(indices) == 1:
-        indices = indices[0]
-    return value.__getitem__(indices)
+            _ti_core.subscript_with_multiple_indices(
+                value.ptr, multiple_indices, return_shape,
+                get_runtime().get_current_src_info()))
+    return Expr(
+        _ti_core.subscript(value.ptr, indices_expr_group,
+                           get_runtime().get_current_src_info()))
 
 
 @taichi_scope

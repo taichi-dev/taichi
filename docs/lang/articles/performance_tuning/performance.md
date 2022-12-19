@@ -171,7 +171,7 @@ BLS does not come cheap. Remember that BLS is intended for stencil computations 
 
 Furthermore, recent generations of Nvidia GPU cards have closed the read-only access gap between global memory and shared memory. Currently, we discovered that BLS is more effective for storing the destinations of atomic actions.
 
-As a general rule of thumb, we recommnend running benchmarks to determine whether or not you should enable BLS.
+As a general rule of thumb, we recommend running benchmarks to determine whether or not you should enable BLS.
 :::
 
 ## Offline Cache

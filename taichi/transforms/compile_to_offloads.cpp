@@ -52,6 +52,9 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  irpass::eliminate_immutable_local_vars(ir);
+  print("Immutable local vars eliminated");
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir, config);
 

@@ -27,7 +27,7 @@ def ensure_dependencies():
     except ModuleNotFoundError:
         print('Installing dependencies...')
         if os.system(f'{sys.executable} -m pip install --user -U pip'):
-            raise Exception('Unable to install dependencies!')
+            raise Exception('Unable to upgrade pip!')
         if os.system(f'{sys.executable} -m pip install --user -U -r {p}'):
             raise Exception('Unable to install dependencies!')
         os.execl(sys.executable, sys.executable, *sys.argv)

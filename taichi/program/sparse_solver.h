@@ -85,15 +85,15 @@ class CuSparseSolver : public SparseSolver {
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
-  int *h_Q{nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
-  int *d_Q{nullptr};
-  int *h_csrRowPtrB{nullptr}; /* <int> n+1 */
-  int *h_csrColIndB{nullptr}; /* <int> nnzA */
-  float *h_csrValB{nullptr};  /* <float> nnzA */
-  int *h_mapBfromA{nullptr};  /* <int> nnzA */
-  int *d_csrRowPtrB{nullptr}; /* <int> n+1 */
-  int *d_csrColIndB{nullptr}; /* <int> nnzA */
-  float *d_csrValB{nullptr};  /* <float> nnzA */
+  int *h_Q_{nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
+  int *d_Q_{nullptr};
+  int *h_csrRowPtrB_{nullptr}; /* <int> n+1 */
+  int *h_csrColIndB_{nullptr}; /* <int> nnzA */
+  float *h_csrValB_{nullptr};  /* <float> nnzA */
+  int *h_mapBfromA_{nullptr};  /* <int> nnzA */
+  int *d_csrRowPtrB_{nullptr}; /* <int> n+1 */
+  int *d_csrColIndB_{nullptr}; /* <int> nnzA */
+  float *d_csrValB_{nullptr};  /* <float> nnzA */
  public:
   CuSparseSolver();
   ~CuSparseSolver() override;

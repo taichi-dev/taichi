@@ -214,57 +214,57 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 
   // step 1: reorder the sparse matrix
   float *h_csrValA = nullptr;
-  h_Q = (int *)malloc(sizeof(int) * colsA);
-  h_csrRowPtrB = (int *)malloc(sizeof(int) * (rowsA + 1));
-  h_csrColIndB = (int *)malloc(sizeof(int) * nnzA);
-  h_csrValB = (float *)malloc(sizeof(float) * nnzA);
+  h_Q_ = (int *)malloc(sizeof(int) * colsA);
+  h_csrRowPtrB_ = (int *)malloc(sizeof(int) * (rowsA + 1));
+  h_csrColIndB_ = (int *)malloc(sizeof(int) * nnzA);
+  h_csrValB_ = (float *)malloc(sizeof(float) * nnzA);
   h_csrValA = (float *)malloc(sizeof(float) * nnzA);
-  h_mapBfromA = (int *)malloc(sizeof(int) * nnzA);
-  assert(nullptr != h_Q);
-  assert(nullptr != h_csrRowPtrB);
-  assert(nullptr != h_csrColIndB);
-  assert(nullptr != h_csrValB);
-  assert(nullptr != h_mapBfromA);
+  h_mapBfromA_ = (int *)malloc(sizeof(int) * nnzA);
+  assert(nullptr != h_Q_);
+  assert(nullptr != h_csrRowPtrB_);
+  assert(nullptr != h_csrColIndB_);
+  assert(nullptr != h_csrValB_);
+  assert(nullptr != h_mapBfromA_);
 
-  CUDADriver::get_instance().memcpy_device_to_host(h_csrRowPtrB, d_csrRowPtrA,
+  CUDADriver::get_instance().memcpy_device_to_host(h_csrRowPtrB_, d_csrRowPtrA,
                                                    sizeof(int) * (rowsA + 1));
-  CUDADriver::get_instance().memcpy_device_to_host(h_csrColIndB, d_csrColIndA,
+  CUDADriver::get_instance().memcpy_device_to_host(h_csrColIndB_, d_csrColIndA,
                                                    sizeof(int) * nnzA);
   CUDADriver::get_instance().memcpy_device_to_host(h_csrValA, d_csrValA,
                                                    sizeof(float) * nnzA);
 
-  // compoute h_Q
+  // compoute h_Q_
   CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(
-      cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB, h_csrColIndB, h_Q);
-  CUDADriver::get_instance().malloc((void **)&d_Q, sizeof(int) * colsA);
-  CUDADriver::get_instance().memcpy_host_to_device((void *)d_Q, (void *)h_Q,
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_, h_Q_);
+  CUDADriver::get_instance().malloc((void **)&d_Q_, sizeof(int) * colsA);
+  CUDADriver::get_instance().memcpy_host_to_device((void *)d_Q_, (void *)h_Q_,
                                                    sizeof(int) * (colsA));
   size_t size_perm = 0;
   CUSOLVERDriver::get_instance().csSpXcsrperm_bufferSizeHost(
-      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB, h_csrColIndB,
-      h_Q, h_Q, &size_perm);
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
+      h_Q_, h_Q_, &size_perm);
   void *buffer_cpu = (void *)malloc(sizeof(char) * size_perm);
   assert(nullptr != buffer_cpu);
   for (int j = 0; j < nnzA; j++) {
-    h_mapBfromA[j] = j;
+    h_mapBfromA_[j] = j;
   }
   CUSOLVERDriver::get_instance().csSpXcsrpermHost(
-      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB, h_csrColIndB,
-      h_Q, h_Q, h_mapBfromA, buffer_cpu);
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
+      h_Q_, h_Q_, h_mapBfromA_, buffer_cpu);
   // B = A( mapBfromA )
   for (int j = 0; j < nnzA; j++) {
-    h_csrValB[j] = h_csrValA[h_mapBfromA[j]];
+    h_csrValB_[j] = h_csrValA[h_mapBfromA_[j]];
   }
-  CUDADriver::get_instance().malloc((void **)&d_csrRowPtrB,
+  CUDADriver::get_instance().malloc((void **)&d_csrRowPtrB_,
                                     sizeof(int) * (rowsA + 1));
-  CUDADriver::get_instance().malloc((void **)&d_csrColIndB, sizeof(int) * nnzA);
-  CUDADriver::get_instance().malloc((void **)&d_csrValB, sizeof(float) * nnzA);
+  CUDADriver::get_instance().malloc((void **)&d_csrColIndB_, sizeof(int) * nnzA);
+  CUDADriver::get_instance().malloc((void **)&d_csrValB_, sizeof(float) * nnzA);
   CUDADriver::get_instance().memcpy_host_to_device(
-      (void *)d_csrRowPtrB, (void *)h_csrRowPtrB, sizeof(int) * (rowsA + 1));
+      (void *)d_csrRowPtrB_, (void *)h_csrRowPtrB_, sizeof(int) * (rowsA + 1));
   CUDADriver::get_instance().memcpy_host_to_device(
-      (void *)d_csrColIndB, (void *)h_csrColIndB, sizeof(int) * nnzA);
+      (void *)d_csrColIndB_, (void *)h_csrColIndB_, sizeof(int) * nnzA);
   CUDADriver::get_instance().memcpy_host_to_device(
-      (void *)d_csrValB, (void *)h_csrValB, sizeof(float) * nnzA);
+      (void *)d_csrValB_, (void *)h_csrValB_, sizeof(float) * nnzA);
   free(h_csrValA);
   free(buffer_cpu);
 
@@ -273,7 +273,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 
   // step 3: analyze chol(A) to know structure of L
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB, d_csrColIndB, info_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB_, d_csrColIndB_, info_);
   is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
@@ -292,16 +292,16 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   size_t size_chol = 0;  // size of working space for csrlu
   // step 1: workspace for chol(A)
   CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB, d_csrRowPtrB,
-      d_csrColIndB, info_, &size_internal, &size_chol);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB_, d_csrRowPtrB_,
+      d_csrColIndB_, info_, &size_internal, &size_chol);
 
   if (size_chol > 0)
     CUDADriver::get_instance().malloc(&gpu_buffer_, sizeof(char) * size_chol);
 
   // step 2: compute A = L*L^T
   CUSOLVERDriver::get_instance().csSpScsrcholFactor(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB, d_csrRowPtrB,
-      d_csrColIndB, info_, gpu_buffer_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB_, d_csrRowPtrB_,
+      d_csrColIndB_, info_, gpu_buffer_);
   // step 3: check if the matrix is singular
   const float tol = 1.e-14;
   int singularity = 0;
@@ -341,7 +341,7 @@ void CuSparseSolver::solve_rf(Program *prog,
   CUSPARSEDriver::get_instance().cpCreateDnVec(&vec_b, (int)rowsA, (void *)d_b,
                                                CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpCreateSpVec(
-      &vec_Qb, (int)rowsA, (int)rowsA, d_Q, d_Qb, CUSPARSE_INDEX_32I,
+      &vec_Qb, (int)rowsA, (int)rowsA, d_Q_, d_Qb, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpGather(cusparse_handel_, vec_b, vec_Qb);
 
@@ -355,7 +355,7 @@ void CuSparseSolver::solve_rf(Program *prog,
   cusparseSpVecDescr_t vecX;
   cusparseDnVecDescr_t vecY;
   CUSPARSEDriver::get_instance().cpCreateSpVec(
-      &vecX, (int)colsA, (int)colsA, d_Q, d_z, CUSPARSE_INDEX_32I,
+      &vecX, (int)colsA, (int)colsA, d_Q_, d_z, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, (int)colsA, (void *)d_x,
                                                CUDA_R_32F);
@@ -414,16 +414,16 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
 
 CuSparseSolver::~CuSparseSolver() {
 #if defined(TI_WITH_CUDA)
-  if (h_Q != nullptr)
-    free(h_Q);
-  if (h_csrRowPtrB != nullptr)
-    free(h_csrRowPtrB);
-  if (h_csrColIndB != nullptr)
-    free(h_csrColIndB);
-  if (h_csrValB != nullptr)
-    free(h_csrValB);
-  if (h_mapBfromA != nullptr)
-    free(h_mapBfromA);
+  if (h_Q_ != nullptr)
+    free(h_Q_);
+  if (h_csrRowPtrB_ != nullptr)
+    free(h_csrRowPtrB_);
+  if (h_csrColIndB_ != nullptr)
+    free(h_csrColIndB_);
+  if (h_csrValB_ != nullptr)
+    free(h_csrValB_);
+  if (h_mapBfromA_ != nullptr)
+    free(h_mapBfromA_);
   if (info_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestroyCsrcholInfo(info_);
   if (cusolver_handle_ != nullptr)
@@ -434,14 +434,14 @@ CuSparseSolver::~CuSparseSolver() {
     CUSPARSEDriver::get_instance().cpDestroyMatDescr(descr_);
   if (gpu_buffer_ != nullptr)
     CUDADriver::get_instance().mem_free(gpu_buffer_);
-  if (d_Q != nullptr)
-    CUDADriver::get_instance().mem_free(d_Q);
-  if (d_csrRowPtrB != nullptr)
-    CUDADriver::get_instance().mem_free(d_csrRowPtrB);
-  if (d_csrColIndB != nullptr)
-    CUDADriver::get_instance().mem_free(d_csrColIndB);
-  if (d_csrValB != nullptr)
-    CUDADriver::get_instance().mem_free(d_csrValB);
+  if (d_Q_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_Q_);
+  if (d_csrRowPtrB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrRowPtrB_);
+  if (d_csrColIndB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrColIndB_);
+  if (d_csrValB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrValB_);
 #endif
 }
 std::unique_ptr<SparseSolver> make_cusparse_solver(

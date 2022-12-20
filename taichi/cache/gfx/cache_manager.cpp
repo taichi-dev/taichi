@@ -79,7 +79,8 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
       const KernelMetaData &kernel_meta) {
     std::vector<std::string> result;
     for (std::size_t i = 0; i < kernel_meta.num_files; ++i) {
-      result.push_back(kernel_meta.kernel_key + std::to_string(i) + ".spv");
+      result.push_back(kernel_meta.kernel_key + std::to_string(i) + "." +
+                       kSpirvCacheFilenameExt);
     }
     return result;
   }
@@ -95,7 +96,7 @@ struct CacheCleanerUtils<gfx::CacheManager::Metadata> {
   // To check if a file is cache file
   static bool is_valid_cache_file(const CacheCleanerConfig &config,
                                   const std::string &name) {
-    return filename_extension(name) == "spv";
+    return filename_extension(name) == kSpirvCacheFilenameExt;
   }
 };
 
@@ -121,20 +122,27 @@ CacheManager::CacheManager(Params &&init_params)
       auto exists =
           taichi::path_exists(taichi::join_path(path_, kAotMetadataFilename)) &&
           taichi::path_exists(taichi::join_path(path_, kGraphMetadataFilename));
-      if (exists && lock_with_file(lock_path)) {
-        auto _ = make_cleanup([&lock_path]() {
-          if (!unlock_with_file(lock_path)) {
-            TI_WARN(
-                "Unlock {} failed. You can remove this .lock file manually and "
-                "try again.",
-                lock_path);
-          }
-        });
-        gfx::AotModuleParams params;
-        params.module_path = path_;
-        params.runtime = runtime_;
-        params.enable_lazy_loading = true;
-        cached_module_ = gfx::make_aot_module(params, init_params.arch);
+      if (exists) {
+        if (lock_with_file(lock_path)) {
+          auto _ = make_cleanup([&lock_path]() {
+            if (!unlock_with_file(lock_path)) {
+              TI_WARN(
+                  "Unlock {} failed. You can remove this .lock file manually "
+                  "and try again.",
+                  lock_path);
+            }
+          });
+          gfx::AotModuleParams params;
+          params.module_path = path_;
+          params.runtime = runtime_;
+          params.enable_lazy_loading = true;
+          cached_module_ = gfx::make_aot_module(params, init_params.arch);
+        } else {
+          TI_WARN(
+              "Lock {} failed. You can run 'ti ticache clean -p {}' and try "
+              "again.",
+              lock_path, path_);
+        }
       }
     }
   }

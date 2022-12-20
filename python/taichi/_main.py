@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
+from taichi.lang import impl
 from taichi.tools import cc_compose, diagnose, video
 
 import taichi as ti
@@ -248,9 +249,9 @@ class TaichiMain:
             nrows += 1
         names = sorted(choices.keys())
         for k in range(nrows):
-            table.add_row(
-                *
-                [colormap(j, names[j]) for j in range(k, len(choices), nrows)])
+            table.add_row(*[
+                colormap(j, names[j]) for j in range(k, len(choices), nrows)
+            ])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
@@ -825,6 +826,27 @@ class TaichiMain:
         # TODO: support redirect output to lint.log
         import pylint  # pylint: disable=C0415
         pylint.lint.Run(options)
+
+    @staticmethod
+    @register
+    def ticache(arguments: list = sys.argv[2:]):
+        """Manage the ticache files manually"""
+        if len(arguments) < 1: return
+
+        subcmd = arguments[0]
+        arguments = arguments[1:]
+        if subcmd == 'clean':
+            parser = argparse.ArgumentParser(
+                prog='ti ticache',
+                description='Clean all ticache files in given path')
+            parser.add_argument(
+                '-p',
+                '--offline-cache-file-path',
+                dest='offline_cache_file_path',
+                default=impl.default_cfg().offline_cache_file_path)
+            args = parser.parse_args(arguments)
+            path = args.offline_cache_file_path
+            _ti_core.clean_offline_cache_files(path)
 
 
 def main():

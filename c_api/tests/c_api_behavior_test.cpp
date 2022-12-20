@@ -111,7 +111,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 
     // Out of memory
     {
-      TiMemoryAllocateInfo allocate_info {};
+      TiMemoryAllocateInfo allocate_info{};
       allocate_info.size = 1000000000000000000;
       allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
       TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
@@ -135,7 +135,7 @@ TEST_F(CapiTest, TestBehaviorAllocateMemory) {
 
     // runtime is null, allocate is not null;
     {
-      TiMemoryAllocateInfo allocate_info {};
+      TiMemoryAllocateInfo allocate_info{};
       allocate_info.size = 1024;
       TiMemory memory = ti_allocate_memory(TI_NULL_HANDLE, &allocate_info);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
@@ -163,7 +163,7 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
 
     // runtime is null and allocate_info is valid
     {
-      TiMemoryAllocateInfo allocate_info {};
+      TiMemoryAllocateInfo allocate_info{};
       allocate_info.size = 1024;
       allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
       TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
@@ -193,21 +193,21 @@ TEST_F(CapiTest, TestBehaviorMapMemory) {
 
     // runtime & memory are both null
     {
-      void* ptr = ti_map_memory(TI_NULL_HANDLE, TI_NULL_HANDLE);
+      void *ptr = ti_map_memory(TI_NULL_HANDLE, TI_NULL_HANDLE);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(ptr == nullptr);
     }
 
     // runtime is null, memory is valid
     {
-      void* ptr = ti_map_memory(TI_NULL_HANDLE, memory);
+      void *ptr = ti_map_memory(TI_NULL_HANDLE, memory);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(ptr == nullptr);
     }
 
     // runtime is valid, memory is null
     {
-      void* ptr = ti_map_memory(runtime, TI_NULL_HANDLE);
+      void *ptr = ti_map_memory(runtime, TI_NULL_HANDLE);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(ptr == nullptr);
     }
@@ -249,7 +249,7 @@ TEST_F(CapiTest, TestBehaviorUnmapMemory) {
 }
 
 inline TiImageAllocateInfo make_image_allocate_info() {
-  TiImageAllocateInfo allocate_info {};
+  TiImageAllocateInfo allocate_info{};
   allocate_info.dimension = TI_IMAGE_DIMENSION_2D;
   allocate_info.format = TI_FORMAT_RGBA8;
   allocate_info.extent.height = 16;
@@ -356,7 +356,7 @@ TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
     ti::Runtime runtime(arch);
     ti::Memory src = runtime.allocate_memory(2048);
     ti::Memory dst = runtime.allocate_memory(2048);
-    
+
     {
       TiMemorySlice src_memory = src.slice(128, 64);
       TiMemorySlice dst_memory = dst.slice(1024, 64);
@@ -496,7 +496,8 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 
     // Attemp to get compute graph with null module.
     {
-      TiComputeGraph cgraph = ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
+      TiComputeGraph cgraph =
+          ti_get_aot_module_compute_graph(TI_NULL_HANDLE, "run_graph");
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
       TI_ASSERT(cgraph == TI_NULL_HANDLE);
     }

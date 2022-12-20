@@ -116,7 +116,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 
 ```cpp
 ti_destroy_aot_module(aot_module);
@@ -177,10 +177,10 @@ named_arg2.argument = args[2];
 ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 ```
 
-When you have launched all kernels and compute graphs for this batch, you should `function.submit` and `function.wait` for the execution to finish.
+When you have launched all kernels and compute graphs for this batch, you should `function.flush` and `function.wait` for the execution to finish.
 
 ```cpp
-ti_submit(runtime);
+ti_flush(runtime);
 ti_wait(runtime);
 ```
 
@@ -538,7 +538,7 @@ Sets a signaled event primitive back to an unsignaled state.
 
 Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
 
-`function.submit`
+`function.flush`
 
 Submits all previously invoked device commands to the offload device for execution.
 

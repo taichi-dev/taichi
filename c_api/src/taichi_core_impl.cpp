@@ -842,7 +842,7 @@ void ti_launch_compute_graph(TiRuntime runtime,
   TI_CAPI_TRY_CATCH_END();
 }
 
-void ti_submit(TiRuntime runtime) {
+void ti_flush(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
 

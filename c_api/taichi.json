@@ -803,7 +803,7 @@
                     ]
                 },
                 {
-                    "name": "submit",
+                    "name": "flush",
                     "type": "function",
                     "parameters": [
                         {

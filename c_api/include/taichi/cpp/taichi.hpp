@@ -1017,8 +1017,8 @@ class Runtime {
     ti_transition_image(runtime_, image, layout);
   }
 
-  void submit() {
-    ti_submit(runtime_);
+  void flush() {
+    ti_flush(runtime_);
   }
   void wait() {
     ti_wait(runtime_);

@@ -144,7 +144,7 @@
 //
 // You can destroy an unused AOT module, but please ensure that there is no
 // kernel or compute graph related to it pending to
-// [`ti_submit`](#function-ti_submit).
+// [`ti_flush`](#function-ti_flush).
 //
 // ```cpp
 // ti_destroy_aot_module(aot_module);
@@ -211,11 +211,11 @@
 // ```
 //
 // When you have launched all kernels and compute graphs for this batch, you
-// should [`ti_submit`](#function-ti_submit) and [`ti_wait`](#function-ti_wait)
-// for the execution to finish.
+// should `function.flush` and [`ti_wait`](#function-ti_wait) for the execution
+// to finish.
 //
 // ```cpp
-// ti_submit(runtime);
+// ti_flush(runtime);
 // ti_wait(runtime);
 // ```
 //
@@ -964,11 +964,8 @@ ti_launch_compute_graph(TiRuntime runtime,
                         uint32_t arg_count,
                         const TiNamedArgument *args);
 
-// Function `ti_submit`
-//
-// Submits all previously invoked device commands to the offload device for
-// execution.
-TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);
+// Function `ti_flush`
+TI_DLL_EXPORT void TI_API_CALL ti_flush(TiRuntime runtime);
 
 // Function `ti_wait`
 //

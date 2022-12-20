@@ -116,7 +116,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 
 ```cpp
 ti_destroy_aot_module(aot_module);
@@ -177,10 +177,10 @@ named_arg2.argument = args[2];
 ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 ```
 
-When you have launched all kernels and compute graphs for this batch, you should [`ti_submit`](#function-ti_submit) and [`ti_wait`](#function-ti_wait) for the execution to finish.
+When you have launched all kernels and compute graphs for this batch, you should [`ti_flush`](#function-ti_flush) and [`ti_wait`](#function-ti_wait) for the execution to finish.
 
 ```cpp
-ti_submit(runtime);
+ti_flush(runtime);
 ti_wait(runtime);
 ```
 
@@ -258,16 +258,6 @@ typedef struct TiAotModule_t* TiAotModule;
 ```
 
 An ahead-of-time (AOT) compiled Taichi module, which contains a collection of kernels and compute graphs.
-
----
-### Handle `TiEvent`
-
-```c
-// handle.event
-typedef struct TiEvent_t* TiEvent;
-```
-
-A synchronization primitive to manage device execution flows in multiple queues.
 
 ---
 ### Handle `TiMemory`
@@ -1119,30 +1109,6 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(
 ```
 
 ---
-### Function `ti_create_event`
-
-```c
-// function.create_event
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(
-  TiRuntime runtime
-);
-```
-
-Creates an event primitive.
-
----
-### Function `ti_destroy_event`
-
-```c
-// function.destroy_event
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(
-  TiEvent event
-);
-```
-
-Destroys an event primitive.
-
----
 ### Function `ti_copy_memory_device_to_device` (Device Command)
 
 ```c
@@ -1229,50 +1195,11 @@ TI_DLL_EXPORT void TI_API_CALL ti_launch_compute_graph(
 Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
 ---
-### Function `ti_signal_event` (Device Command)
+### Function `ti_flush`
 
 ```c
-// function.signal_event
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call [`ti_reset_event`](#function-ti_reset_event-device-command) to reset it; otherwise, an undefined behavior would occur.
-
----
-### Function `ti_reset_event` (Device Command)
-
-```c
-// function.reset_event
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Sets a signaled event primitive back to an unsignaled state.
-
----
-### Function `ti_wait_event` (Device Command)
-
-```c
-// function.wait_event
-TI_DLL_EXPORT void TI_API_CALL ti_wait_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an undefined behavior would occur.
-
----
-### Function `ti_submit`
-
-```c
-// function.submit
-TI_DLL_EXPORT void TI_API_CALL ti_submit(
+// function.flush
+TI_DLL_EXPORT void TI_API_CALL ti_flush(
   TiRuntime runtime
 );
 ```

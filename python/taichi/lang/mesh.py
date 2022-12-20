@@ -619,7 +619,12 @@ class MeshElementFieldProxy:
             global_entry_expr_group = impl.make_expr_group(
                 *tuple([global_entry_expr]))
             if isinstance(attr, MatrixField):
-                setattr(self, key, impl.Expr(_ti_core.subscript(attr.ptr, global_entry_expr_group, impl.get_runtime().get_current_src_info())))
+                setattr(
+                    self, key,
+                    impl.Expr(
+                        _ti_core.subscript(
+                            attr.ptr, global_entry_expr_group,
+                            impl.get_runtime().get_current_src_info())))
             elif isinstance(attr, StructField):
                 raise RuntimeError(
                     'MeshTaichi has not support StructField yet')

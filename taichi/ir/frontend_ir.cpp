@@ -18,11 +18,16 @@ static bool is_primitive_or_tensor_type(DataType &type) {
   return type->is<PrimitiveType>() || type->is<TensorType>();
 }
 
-FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
+FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
+                                         SNodeOpType op_type,
                                          SNode *snode,
                                          const ExprGroup &indices,
                                          const Expr &val)
-    : op_type(op_type), snode(snode), indices(indices), val(val) {
+    : op_type(op_type), snode(snode), val(val) {
+  this->indices = indices;
+  std::vector<Expr> expanded_exprs = builder->expand_expr(this->indices.exprs);
+  this->indices.exprs = expanded_exprs;
+
   if (val.expr != nullptr) {
     TI_ASSERT(op_type == SNodeOpType::append);
   } else {
@@ -923,6 +928,25 @@ void AtomicOpExpression::flatten(FlattenContext *ctx) {
   stmt->tb = tb;
 }
 
+SNodeOpExpression::SNodeOpExpression(ASTBuilder *builder,
+                                     SNode *snode,
+                                     SNodeOpType op_type,
+                                     const ExprGroup &indices)
+    : snode(snode), op_type(op_type) {
+  std::vector<Expr> expanded_indices = builder->expand_expr(indices.exprs);
+  this->indices = indices;
+  this->indices.exprs = std::move(expanded_indices);
+}
+
+SNodeOpExpression::SNodeOpExpression(ASTBuilder *builder,
+                                     SNode *snode,
+                                     SNodeOpType op_type,
+                                     const ExprGroup &indices,
+                                     const std::vector<Expr> &values)
+    : SNodeOpExpression(builder, snode, op_type, indices) {
+  this->values = builder->expand_expr(values);
+}
+
 void SNodeOpExpression::type_check(CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
@@ -1469,14 +1493,36 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 
 void ASTBuilder::insert_snode_activate(SNode *snode,
                                        const ExprGroup &expr_group) {
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
-                                               expr_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(this, SNodeOpType::activate,
+                                               snode, expr_group));
 }
 
 void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                          const ExprGroup &expr_group) {
-  this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
-                                               expr_group));
+  this->insert(Stmt::make<FrontendSNodeOpStmt>(this, SNodeOpType::deactivate,
+                                               snode, expr_group));
+}
+
+Expr ASTBuilder::snode_append(SNode *snode,
+                              const ExprGroup &indices,
+                              const std::vector<Expr> &vals) {
+  return Expr::make<SNodeOpExpression>(this, snode, SNodeOpType::append,
+                                       indices, vals);
+}
+
+Expr ASTBuilder::snode_is_active(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(this, snode, SNodeOpType::is_active,
+                                       indices);
+}
+
+Expr ASTBuilder::snode_length(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(this, snode, SNodeOpType::length,
+                                       indices);
+}
+
+Expr ASTBuilder::snode_get_addr(SNode *snode, const ExprGroup &indices) {
+  return Expr::make<SNodeOpExpression>(this, snode, SNodeOpType::get_addr,
+                                       indices);
 }
 
 std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {

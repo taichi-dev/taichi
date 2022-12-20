@@ -1,11 +1,7 @@
 #!/usr/bin/python3 -u
 
 # -- prioritized --
-import sys
-import os.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
-
-import ci_common  # noqa
+import ci_common  # noqa, early initialization happens here
 
 # -- stdlib --
 import glob
@@ -22,9 +18,6 @@ from ci_common.tinysh import git, sh, sudo, Command
 
 
 # -- code --
-env = os.environ
-
-
 @banner('Setup LLVM')
 def setup_llvm() -> None:
     '''
@@ -32,14 +25,14 @@ def setup_llvm() -> None:
     '''
     u = platform.uname()
     if u.system == 'Linux':
-        if 'AMDGPU_TEST' in env:
+        if 'AMDGPU_TEST' in os.environ:
             # FIXME: AMDGPU bots are currently maintained separately,
             #        we should unify them with the rest of the bots.
             lnsf = sudo(sh.ln.bake('-sf'))
             lnsf('/usr/bin/clang++-10', '/usr/bin/clang++')
             lnsf('/usr/bin/clang-10',   '/usr/bin/clang')
             lnsf('/usr/bin/ld.lld-10',  '/usr/bin/ld.lld')
-            env['LLVM_DIR'] = '/taichi-llvm-15'
+            os.environ['LLVM_DIR'] = '/taichi-llvm-15'
             return
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
@@ -58,7 +51,7 @@ def setup_llvm() -> None:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
     download_dep(url, out, strip=1)
-    env['LLVM_DIR'] = str(out)
+    os.environ['LLVM_DIR'] = str(out)
 
 
 @banner('Build Taichi Wheel')
@@ -68,14 +61,14 @@ def build_wheel(python: Command, pip: Command) -> None:
     '''
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
-    proj = env.get('PROJECT_NAME', 'taichi')
+    proj = os.environ.get('PROJECT_NAME', 'taichi')
     proj_tags = []
     extra = []
 
     if proj == 'taichi-nightly':
         proj_tags.extend(['egg_info', '--tag-date'])
         # Include C-API in nightly builds
-        env['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
+        os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 
     if platform.system() == 'Linux':
         if is_manylinux2014():
@@ -90,8 +83,12 @@ def build_wheel(python: Command, pip: Command) -> None:
 def main() -> None:
     setup_llvm()
     sccache = setup_sccache()
-    python, pip = setup_python(env['PY'])
+
+    # NOTE: We use conda/venv to build wheels, which may not be the same python
+    #       running this script.
+    python, pip = setup_python(os.environ['PY'])
     build_wheel(python, pip)
+
     sccache('-s')
 
     distfiles = glob.glob('dist/*.whl')

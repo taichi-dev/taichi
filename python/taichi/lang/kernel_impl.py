@@ -605,6 +605,7 @@ class Kernel:
         assert key not in self.runtime.compiled_functions
         prog = impl.get_runtime().prog
         # Make experiment on Vulkan
+        ckd = None
         if prog.config().arch == _ti_core.vulkan:
             # Compile (& Online Cache & Offline Cache)
             mgr = prog.get_kernel_compilation_manager()
@@ -811,6 +812,7 @@ class Kernel:
                 prog = impl.get_runtime().prog
                 if prog.config().arch == _ti_core.vulkan:
                     # Launch kernel
+                    assert ckd is not None
                     prog.launch_kernel(ckd, launch_ctx)
                 else:
                     _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,

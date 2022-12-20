@@ -166,10 +166,10 @@ TEST_F(CapiTest, TestBehaviorAllocMemoryNoAllocInfo) {
   inner(TI_ARCH_VULKAN);
 }
 
-TEST_F(CapiTest, TestBehaviorAllocMemoryNoRuntime){
-  auto inner = [&](TiArch arch){
-    if(!ti::is_arch_available(arch)){
-      TI_WARN("arch {} is not supported, so this test is skipped",arch);
+TEST_F(CapiTest, TestBehaviorAllocMemoryNoRuntime) {
+  auto inner = [&](TiArch arch) {
+    if (!ti::is_arch_available(arch)) {
+      TI_WARN("arch {} is not supported, so this test is skipped", arch);
       return;
     }
     // runtime is null, allocate is not null;

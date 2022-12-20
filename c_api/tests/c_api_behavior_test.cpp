@@ -131,7 +131,7 @@ TEST_F(CapiTest, TestBehaviorAllocInvalidMemory) {
     allocateInfo.size = 1000000000000000000;
     allocateInfo.usage = TI_MEMORY_USAGE_STORAGE_BIT;
     TiMemory memory = ti_allocate_memory(runtime, &allocateInfo);
-    CHECK_TAICHI_ERROR_IS(TI_ERROR_OUT_OF_MEMORY);
+    EXPECT_TAICHI_ERROR(TI_ERROR_OUT_OF_MEMORY);
     TI_ASSERT(memory == TI_NULL_HANDLE);
     ti_destroy_runtime(runtime);
   };
@@ -146,7 +146,7 @@ TEST_F(CapiTest, TestBehaviorAllocMemoryNoArg) {
     }
     // runtime and allocate_info are both null
     ti_allocate_memory(TI_NULL_HANDLE, nullptr);
-    CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
   };
   inner(TI_ARCH_VULKAN);
 }
@@ -160,7 +160,7 @@ TEST_F(CapiTest, TestBehaviorAllocMemoryNoAllocInfo) {
     // runtime is not null, allocate_info is null
     TiRuntime runtime = ti_create_runtime(arch);
     ti_allocate_memory(runtime, nullptr);
-    CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
     ti_destroy_runtime(runtime);
   };
   inner(TI_ARCH_VULKAN);
@@ -176,7 +176,7 @@ TEST_F(CapiTest, TestBehaviorAllocMemoryNoRuntime) {
     TiMemoryAllocateInfo allocateInfo;
     allocateInfo.size = 1024;
     ti_allocate_memory(TI_NULL_HANDLE, &allocateInfo);
-    CHECK_TAICHI_ERROR_IS(TI_ERROR_ARGUMENT_NULL);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
   };
   inner(TI_ARCH_VULKAN);
 }
@@ -190,10 +190,10 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
 
     {
       TiRuntime runtime = ti_create_runtime(arch);
-      TiMemoryAllocateInfo *allocateInfo = new TiMemoryAllocateInfo;
-      allocateInfo->size = 1024;
-      allocateInfo->usage = TI_MEMORY_USAGE_STORAGE_BIT;
-      TiMemory memory = ti_allocate_memory(runtime, allocateInfo);
+      TiMemoryAllocateInfo *allocate_info = new TiMemoryAllocateInfo;
+      allocate_info->size = 1024;
+      allocate_info->usage = TI_MEMORY_USAGE_STORAGE_BIT;
+      TiMemory memory = ti_allocate_memory(runtime, allocate_info);
       ti_free_memory(runtime, memory);
       ASSERT_TAICHI_SUCCESS();
       ti_destroy_runtime(runtime);
@@ -208,10 +208,10 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
     // runtime is null and allocate_info is valid
     {
       TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
-      TiMemoryAllocateInfo allocateInfo;
-      allocateInfo.size = 1024;
-      allocateInfo.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-      TiMemory memory = ti_allocate_memory(runtime, &allocateInfo);
+      TiMemoryAllocateInfo allocate_info;
+      allocate_info.size = 1024;
+      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
+      TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
       ti_free_memory(TI_NULL_HANDLE, memory);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
       ti_destroy_runtime(runtime);

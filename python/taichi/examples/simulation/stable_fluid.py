@@ -27,7 +27,7 @@ parser.add_argument('-a',
                     help='The arch (backend) to run this example on')
 args, unknowns = parser.parse_known_args()
 
-res = 256
+res = 512
 dt = 0.03
 p_jacobi_iters = 500  # 40 for a quicker but less accurate result
 f_strength = 10000.0

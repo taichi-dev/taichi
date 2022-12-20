@@ -1,15 +1,24 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
-from pathlib import Path
 import importlib
 import os
 import sys
+from pathlib import Path
 
 # -- third party --
 # -- own --
 
+
 # -- code --
+def is_in_venv() -> bool:
+    '''
+    Are we in a virtual environment?
+    '''
+    return hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix')
+                                           and sys.base_prefix != sys.prefix)
+
+
 def ensure_dependencies():
     '''
     Automatically install dependencies if they are not installed.
@@ -17,6 +26,8 @@ def ensure_dependencies():
     p = Path(__file__).parent.parent / 'requirements.txt'
     if not p.exists():
         raise RuntimeError(f'Cannot find {p}')
+
+    user = '' if is_in_venv() else '--user'
 
     with open(p) as f:
         deps = [i.strip().split('=')[0] for i in f.read().splitlines()]
@@ -26,9 +37,9 @@ def ensure_dependencies():
             importlib.import_module(dep)
     except ModuleNotFoundError:
         print('Installing dependencies...')
-        if os.system(f'{sys.executable} -m pip install --user -U pip'):
+        if os.system(f'{sys.executable} -m pip install {user} -U pip'):
             raise Exception('Unable to upgrade pip!')
-        if os.system(f'{sys.executable} -m pip install --user -U -r {p}'):
+        if os.system(f'{sys.executable} -m pip install {user} -U -r {p}'):
             raise Exception('Unable to install dependencies!')
         os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -57,7 +68,6 @@ _Environ = os.environ.__class__
 
 
 class _EnvironWrapper(_Environ):
-
     def __setitem__(self, name: str, value: str) -> None:
         orig = self.get(name)
         _Environ.__setitem__(self, name, value)

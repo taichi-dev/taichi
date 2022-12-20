@@ -1,4 +1,4 @@
-#!/usr/bin/python3 -u
+#!/usr/bin/env python3
 
 # -- prioritized --
 import ci_common  # isort: skip, early initialization happens here

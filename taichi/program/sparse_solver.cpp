@@ -191,19 +191,15 @@ CuSparseSolver::CuSparseSolver() {
   }
 #endif
 }
-// Reference:
-// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
-void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+
+void CuSparseSolver::reorder(const CuSparseMatrix &A){
 #if defined(TI_WITH_CUDA)
-  // Retrive the info of the sparse matrix
-  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
-  size_t rowsA = A->num_rows();
-  size_t colsA = A->num_cols();
-  size_t nnzA = A->get_nnz();
-  void *d_csrRowPtrA = A->get_row_ptr();
-  void *d_csrColIndA = A->get_col_ind();
-  void *d_csrValA = A->get_val_ptr();
+  size_t rowsA = A.num_rows();
+  size_t colsA = A.num_cols();
+  size_t nnzA = A.get_nnz();
+  void *d_csrRowPtrA = A.get_row_ptr();
+  void *d_csrColIndA = A.get_col_ind();
+  void *d_csrValA = A.get_val_ptr();
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);
@@ -211,8 +207,6 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
                                               CUSPARSE_MATRIX_TYPE_GENERAL);
   CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_,
                                                    CUSPARSE_INDEX_BASE_ZERO);
-
-  // step 1: reorder the sparse matrix
   float *h_csrValA = nullptr;
   h_Q_ = (int *)malloc(sizeof(int) * colsA);
   h_csrRowPtrB_ = (int *)malloc(sizeof(int) * (rowsA + 1));
@@ -267,11 +261,26 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
       (void *)d_csrValB_, (void *)h_csrValB_, sizeof(float) * nnzA);
   free(h_csrValA);
   free(buffer_cpu);
+#endif
+}
+
+// Reference:
+// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
+void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
+  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
+
+  // step 1: reorder the sparse matrix
+  reorder(A);
 
   // step 2: create opaque info structure
   CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&info_);
 
   // step 3: analyze chol(A) to know structure of L
+  size_t rowsA = A.num_rows();
+  size_t nnzA = A.get_nnz();
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
       cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB_, d_csrColIndB_, info_);
   is_analyzed_ = true;

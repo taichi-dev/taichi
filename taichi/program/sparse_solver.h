@@ -94,6 +94,8 @@ class CuSparseSolver : public SparseSolver {
   int *d_csrRowPtrB_{nullptr}; /* <int> n+1 */
   int *d_csrColIndB_{nullptr}; /* <int> nnzA */
   float *d_csrValB_{nullptr};  /* <float> nnzA */
+
+  void reorder(const CuSparseMatrix &sm);
  public:
   CuSparseSolver();
   ~CuSparseSolver() override;

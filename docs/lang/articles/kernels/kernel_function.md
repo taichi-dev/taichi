@@ -145,26 +145,6 @@ def myKernel(m: mat2x3) -> float:
 
 m = mat2x3([2,4,6], [8,10,12])
 print(myKernel(m))  #will return 10
-#### Struct/Dataclass Types
-We can take advantage of Taichi's type system and create our own dataclass to pass into the kernel function.
-
-In the following example, we created a Rectangle class `Rectangle` and passed an instance of the class `a` into the kernel function to calculate its area.
-
-```python
-import taichi as ti
-@ti.kernel
-def myKernel(a: Rectangle):
-    return a.length * a.height
-
-@ti.dataclass
-class Rectangle:
-    length: float
-    width: float
-
-rectangle = Rectangle(2,2)
-print(myKernel(rectangle))  #will print 4
-
-```
 
 #### Matrix Fields
 We can use the ti.Matrix() function to declare our own [Matrix Field](https://docs.taichi-lang.org/docs/master/field#matrix-fields) and pass it into the kernel. This also works for [Vector Fields](https://docs.taichi-lang.org/docs/master/field#vector-fields)

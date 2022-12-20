@@ -206,6 +206,37 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
   return pipeline;
 }
 
+vkapi::IVkPipeline VulkanPipeline::graphics_pipeline_dynamic(
+    const VulkanRenderPassDesc &renderpass_desc) {
+  if (graphics_pipeline_dynamic_.find(renderpass_desc) !=
+      graphics_pipeline_dynamic_.end()) {
+    return graphics_pipeline_dynamic_.at(renderpass_desc);
+  }
+
+  std::vector<VkFormat> color_attachment_formats;
+  for (const auto &color_attachment : renderpass_desc.color_attachments) {
+    color_attachment_formats.push_back(color_attachment.first);
+  }
+
+  VkPipelineRenderingCreateInfoKHR rendering_info;
+  rendering_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+  rendering_info.pNext = nullptr;
+  rendering_info.viewMask = 0;
+  rendering_info.colorAttachmentCount =
+      renderpass_desc.color_attachments.size();
+  rendering_info.pColorAttachmentFormats = color_attachment_formats.data();
+  rendering_info.depthAttachmentFormat = renderpass_desc.depth_attachment;
+  rendering_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+  vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline_dynamic(
+      device_, &graphics_pipeline_template_->pipeline_info, &rendering_info,
+      pipeline_layout_);
+
+  graphics_pipeline_dynamic_[renderpass_desc] = pipeline;
+
+  return pipeline;
+}
+
 void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
   std::unordered_set<uint32_t> sets_used;
 
@@ -827,8 +858,11 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
     return;
 
   if (pipeline->is_graphics()) {
-    vkapi::IVkPipeline vk_pipeline = pipeline->graphics_pipeline(
-        current_renderpass_desc_, current_renderpass_);
+    vkapi::IVkPipeline vk_pipeline =
+        ti_device_->vk_caps().dynamic_rendering
+            ? pipeline->graphics_pipeline_dynamic(current_renderpass_desc_)
+            : pipeline->graphics_pipeline(current_renderpass_desc_,
+                                          current_renderpass_);
     vkCmdBindPipeline(buffer_->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       vk_pipeline->pipeline);
 
@@ -1021,6 +1055,89 @@ void VulkanCommandList::begin_renderpass(int x0,
   current_renderpass_desc_.color_attachments.clear();
   rp_desc.clear_depth = depth_clear;
 
+  VkRect2D render_area;
+  render_area.offset = {x0, y0};
+  render_area.extent = {uint32_t(x1 - x0), uint32_t(y1 - y0)};
+
+  viewport_width_ = render_area.extent.width;
+  viewport_height_ = render_area.extent.height;
+
+  // Dynamic rendering codepath
+  if (ti_device_->vk_caps().dynamic_rendering) {
+    current_dynamic_targets_.clear();
+
+    std::vector<VkRenderingAttachmentInfoKHR> color_attachment_infos(
+        num_color_attachments);
+    for (uint32_t i = 0; i < num_color_attachments; i++) {
+      auto [image, view, format] =
+          ti_device_->get_vk_image(color_attachments[i]);
+      bool clear = color_clear[i];
+      rp_desc.color_attachments.emplace_back(format, clear);
+
+      VkRenderingAttachmentInfoKHR &attachment_info = color_attachment_infos[i];
+      attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+      attachment_info.pNext = nullptr;
+      attachment_info.imageView = view->view;
+      attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+      attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
+      attachment_info.resolveImageView = VK_NULL_HANDLE;
+      attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      attachment_info.loadOp =
+          clear ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+      attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      if (clear) {
+        attachment_info.clearValue.color = {
+            {clear_colors[i][0], clear_colors[i][1], clear_colors[i][2],
+             clear_colors[i][3]}};
+      }
+
+      current_dynamic_targets_.push_back(image);
+    }
+
+    VkRenderingInfoKHR render_info{};
+    render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+    render_info.pNext = nullptr;
+    render_info.flags = 0;
+    render_info.renderArea = render_area;
+    render_info.layerCount = 1;
+    render_info.viewMask = 0;
+    render_info.colorAttachmentCount = num_color_attachments;
+    render_info.pColorAttachments = color_attachment_infos.data();
+    render_info.pDepthAttachment = nullptr;
+    render_info.pStencilAttachment = nullptr;
+
+    VkRenderingAttachmentInfo depth_attachment_info;
+    if (depth_attachment) {
+      auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
+      rp_desc.depth_attachment = format;
+
+      depth_attachment_info.sType =
+          VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+      depth_attachment_info.pNext = nullptr;
+      depth_attachment_info.imageView = view->view;
+      depth_attachment_info.imageLayout =
+          VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+      depth_attachment_info.resolveMode = VK_RESOLVE_MODE_NONE;
+      depth_attachment_info.resolveImageView = VK_NULL_HANDLE;
+      depth_attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+      depth_attachment_info.loadOp = depth_clear ? VK_ATTACHMENT_LOAD_OP_CLEAR
+                                                 : VK_ATTACHMENT_LOAD_OP_LOAD;
+      depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+      depth_attachment_info.clearValue.depthStencil = {0.0, 0};
+
+      render_info.pDepthAttachment = &depth_attachment_info;
+
+      current_dynamic_targets_.push_back(image);
+    } else {
+      rp_desc.depth_attachment = VK_FORMAT_UNDEFINED;
+    }
+
+    vkCmdBeginRenderingKHR(buffer_->buffer, &render_info);
+
+    return;
+  }
+
+  // VkRenderpass & VkFramebuffer codepath
   bool has_depth = false;
 
   if (depth_attachment) {
@@ -1059,14 +1176,7 @@ void VulkanCommandList::begin_renderpass(int x0,
   fb_desc.height = y1 - y0;
   fb_desc.renderpass = current_renderpass_;
 
-  viewport_width_ = fb_desc.width;
-  viewport_height_ = fb_desc.height;
-
   current_framebuffer_ = ti_device_->get_framebuffer(fb_desc);
-
-  VkRect2D render_area;
-  render_area.offset = {x0, y0};
-  render_area.extent = {uint32_t(x1 - x0), uint32_t(y1 - y0)};
 
   VkRenderPassBeginInfo begin_info{};
   begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1084,6 +1194,47 @@ void VulkanCommandList::begin_renderpass(int x0,
 }
 
 void VulkanCommandList::end_renderpass() {
+  if (ti_device_->vk_caps().dynamic_rendering) {
+    vkCmdEndRenderingKHR(buffer_->buffer);
+
+    if (0) {
+      std::vector<VkImageMemoryBarrier> memory_barriers(
+          current_dynamic_targets_.size());
+      for (int i = 0; i < current_dynamic_targets_.size(); i++) {
+        VkImageMemoryBarrier &barrier = memory_barriers[i];
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.pNext = nullptr;
+        barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+        barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        // FIXME: Change this spec to stay in color attachment
+        barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = current_dynamic_targets_[i]->image;
+        barrier.subresourceRange.aspectMask =
+            VK_IMAGE_ASPECT_COLOR_BIT | VK_IMAGE_ASPECT_DEPTH_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+      }
+
+      vkCmdPipelineBarrier(buffer_->buffer,
+                           VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                           VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           /*dependencyFlags=*/0, /*memoryBarrierCount=*/0,
+                           /*pMemoryBarriers=*/nullptr,
+                           /*bufferMemoryBarrierCount=*/0,
+                           /*pBufferMemoryBarriers=*/nullptr,
+                           /*imageMemoryBarrierCount=*/memory_barriers.size(),
+                           /*pImageMemoryBarriers=*/memory_barriers.data());
+    }
+    current_dynamic_targets_.clear();
+
+    return;
+  }
+
   vkCmdEndRenderPass(buffer_->buffer);
 
   current_renderpass_ = VK_NULL_HANDLE;
@@ -1325,6 +1476,12 @@ void VulkanCommandList::set_line_width(float width) {
 }
 
 vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
+  if (ti_device_->vk_caps().dynamic_rendering) {
+    vkapi::IVkRenderPass rp =
+        ti_device_->get_renderpass(current_renderpass_desc_);
+    buffer_->refs.push_back(rp);
+    return rp;
+  }
   return current_renderpass_;
 }
 
@@ -1377,12 +1534,6 @@ VulkanDevice::~VulkanDevice() {
   // be properly deallocated before VulkanDevice destruction. This isn't
   // the most proper fix but is less intrusive compared to other
   // approaches.
-  for (auto &alloc : allocations_) {
-    alloc.second.buffer.reset();
-  }
-  for (auto &alloc : image_allocations_) {
-    alloc.second.image.reset();
-  }
   allocations_.clear();
   image_allocations_.clear();
 
@@ -1424,13 +1575,7 @@ std::unique_ptr<DeviceEvent> VulkanDevice::create_event() {
 }
 
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
-  DeviceAllocation handle;
-
-  handle.device = this;
-  handle.alloc_id = alloc_cnt_++;
-
-  allocations_[handle.alloc_id] = {};
-  AllocationInternal &alloc = allocations_[handle.alloc_id];
+  AllocationInternal &alloc = allocations_.acquire();
 
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1526,21 +1671,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc.addr = vkGetBufferDeviceAddressKHR(device_, &info);
   }
 
-  return handle;
-}
-
-VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
-    const DeviceAllocation &alloc) {
-  auto map_pair = allocations_.find(alloc.alloc_id);
-  assert(map_pair != allocations_.end() && "Invalid memory handle");
-  return map_pair->second;
-}
-
-const VulkanDevice::AllocationInternal &VulkanDevice::get_alloc_internal(
-    const DeviceAllocation &alloc) const {
-  const auto &map_pair = allocations_.find(alloc.alloc_id);
-  assert(map_pair != allocations_.cend() && "Invalid memory handle");
-  return map_pair->second;
+  return DeviceAllocation{this, (uint64_t)&alloc};
 }
 
 RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
@@ -1552,7 +1683,7 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
     return RhiResult::invalid_usage;
   }
 
-  if (alloc_int.alloc_info.size < offset + size) {
+  if (size != VK_WHOLE_SIZE && alloc_int.alloc_info.size < offset + size) {
     RHI_LOG_ERROR("Mapping out of range");
     return RhiResult::invalid_usage;
   }
@@ -1589,28 +1720,21 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
 }
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
-  get_alloc_internal(handle);
-
-  allocations_.erase(handle.alloc_id);
+  allocations_.release(&get_alloc_internal(handle));
 }
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
-  const AllocationInternal &alloc_int = get_alloc_internal(handle);
-  return uint64_t(alloc_int.addr);
+  return uint64_t(get_alloc_internal(handle).addr);
 }
 
 RhiResult VulkanDevice::map_range(DevicePtr ptr,
                                   uint64_t size,
                                   void **mapped_ptr) {
-  AllocationInternal &alloc_int = get_alloc_internal(ptr);
-
-  return map_internal(alloc_int, ptr.offset, size, mapped_ptr);
+  return map_internal(get_alloc_internal(ptr), ptr.offset, size, mapped_ptr);
 }
 
 RhiResult VulkanDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
-  AllocationInternal &alloc_int = get_alloc_internal(alloc);
-
-  return map_internal(alloc_int, 0, alloc_int.alloc_info.size, mapped_ptr);
+  return map_internal(get_alloc_internal(alloc), 0, VK_WHOLE_SIZE, mapped_ptr);
 }
 
 void VulkanDevice::unmap(DevicePtr ptr) {
@@ -1827,18 +1951,10 @@ std::unique_ptr<Surface> VulkanDevice::create_surface(
 
 std::tuple<VkDeviceMemory, size_t, size_t>
 VulkanDevice::get_vkmemory_offset_size(const DeviceAllocation &alloc) const {
-  auto buffer_alloc = allocations_.find(alloc.alloc_id);
-  if (buffer_alloc != allocations_.end()) {
-    return std::make_tuple(buffer_alloc->second.alloc_info.deviceMemory,
-                           buffer_alloc->second.alloc_info.offset,
-                           buffer_alloc->second.alloc_info.size);
-  } else {
-    const ImageAllocInternal &image_alloc =
-        image_allocations_.at(alloc.alloc_id);
-    return std::make_tuple(image_alloc.alloc_info.deviceMemory,
-                           image_alloc.alloc_info.offset,
-                           image_alloc.alloc_info.size);
-  }
+  auto &buffer_alloc = get_alloc_internal(alloc);
+  return std::make_tuple(buffer_alloc.alloc_info.deviceMemory,
+                         buffer_alloc.alloc_info.offset,
+                         buffer_alloc.alloc_info.size);
 }
 
 vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
@@ -1850,7 +1966,7 @@ vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
 
 std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
 VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
-  const ImageAllocInternal &alloc_int = image_allocations_.at(alloc.alloc_id);
+  const ImageAllocInternal &alloc_int = get_image_alloc_internal(alloc);
 
   return std::make_tuple(alloc_int.image, alloc_int.view,
                          alloc_int.image->format);
@@ -1874,7 +1990,8 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer,
                                                size_t size,
                                                VkDeviceMemory memory,
                                                VkDeviceSize offset) {
-  AllocationInternal alloc_int{};
+  AllocationInternal &alloc_int = allocations_.acquire();
+
   alloc_int.external = true;
   alloc_int.buffer = buffer;
   alloc_int.mapped = nullptr;
@@ -1890,31 +2007,20 @@ DeviceAllocation VulkanDevice::import_vkbuffer(vkapi::IVkBuffer buffer,
   alloc_int.alloc_info.deviceMemory = memory;
   alloc_int.alloc_info.offset = offset;
 
-  DeviceAllocation alloc;
-  alloc.device = this;
-  alloc.alloc_id = alloc_cnt_++;
-
-  allocations_[alloc.alloc_id] = alloc_int;
-
-  return alloc;
+  return DeviceAllocation{this, reinterpret_cast<uint64_t>(&alloc_int)};
 }
 
 DeviceAllocation VulkanDevice::import_vk_image(vkapi::IVkImage image,
                                                vkapi::IVkImageView view,
                                                VkImageLayout layout) {
-  ImageAllocInternal alloc_int;
+  ImageAllocInternal &alloc_int = image_allocations_.acquire();
+
   alloc_int.external = true;
   alloc_int.image = image;
   alloc_int.view = view;
   alloc_int.view_lods.emplace_back(view);
 
-  DeviceAllocation alloc;
-  alloc.device = this;
-  alloc.alloc_id = alloc_cnt_++;
-
-  image_allocations_[alloc.alloc_id] = alloc_int;
-
-  return alloc;
+  return DeviceAllocation{this, reinterpret_cast<uint64_t>(&alloc_int)};
 }
 
 vkapi::IVkImageView VulkanDevice::get_vk_imageview(
@@ -1925,16 +2031,11 @@ vkapi::IVkImageView VulkanDevice::get_vk_imageview(
 vkapi::IVkImageView VulkanDevice::get_vk_lod_imageview(
     const DeviceAllocation &alloc,
     int lod) const {
-  return image_allocations_.at(alloc.alloc_id).view_lods[lod];
+  return get_image_alloc_internal(alloc).view_lods[lod];
 }
 
 DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
-  DeviceAllocation handle;
-  handle.device = this;
-  handle.alloc_id = alloc_cnt_++;
-
-  image_allocations_[handle.alloc_id] = {};
-  ImageAllocInternal &alloc = image_allocations_[handle.alloc_id];
+  ImageAllocInternal &alloc = image_allocations_.acquire();
 
   int num_mip_levels = 1;
 
@@ -2056,25 +2157,17 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
         vkapi::create_image_view(device_, alloc.image, &view_info));
   }
 
+  DeviceAllocation handle{this, reinterpret_cast<uint64_t>(&alloc)};
+
   if (params.initial_layout != ImageLayout::undefined) {
     image_transition(handle, ImageLayout::undefined, params.initial_layout);
   }
-
-#ifdef TI_VULKAN_DEBUG_ALLOCATIONS
-  TI_TRACE("Allocate VK image {}, alloc_id={}", (void *)alloc.image,
-           handle.alloc_id);
-#endif
 
   return handle;
 }
 
 void VulkanDevice::destroy_image(DeviceAllocation handle) {
-  auto map_pair = image_allocations_.find(handle.alloc_id);
-
-  RHI_ASSERT(map_pair != image_allocations_.end() &&
-             "Invalid handle (double free?) {}");
-
-  image_allocations_.erase(handle.alloc_id);
+  image_allocations_.release(&get_image_alloc_internal(handle));
 }
 
 vkapi::IVkRenderPass VulkanDevice::get_renderpass(

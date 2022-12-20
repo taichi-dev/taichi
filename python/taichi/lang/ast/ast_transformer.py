@@ -427,6 +427,13 @@ class ASTTransformer(Builder):
             id(pow): pow,
             id(operator.matmul): matrix_ops.matmul,
         }
+
+        # Builtin 'len' function on Matrix Expr
+        if id(func) == id(len) and len(args) == 1:
+            if isinstance(args[0], Expr) and args[0].ptr.is_tensor():
+                node.ptr = args[0].get_shape()[0]
+                return True
+
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
             if func is min or func is max:
@@ -1392,13 +1399,21 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.body)
         build_stmt(ctx, node.orelse)
 
-        if is_taichi_class(node.test.ptr) or is_taichi_class(
-                node.body.ptr) or is_taichi_class(node.orelse.ptr):
+        has_tensor_type = False
+        if isinstance(node.test.ptr, expr.Expr) and node.test.ptr.is_tensor():
+            has_tensor_type = True
+        if isinstance(node.body.ptr, expr.Expr) and node.body.ptr.is_tensor():
+            has_tensor_type = True
+        if isinstance(node.orelse.ptr,
+                      expr.Expr) and node.orelse.ptr.is_tensor():
+            has_tensor_type = True
+
+        if has_tensor_type:
             node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
                                      node.orelse.ptr)
             warnings.warn_explicit(
                 'Using conditional expression for element-wise select operation on '
-                'Taichi vectors/matrices is deprecated. '
+                'Taichi vectors/matrices will be deprecated starting from Taichi v1.5.0 '
                 'Please use "ti.select" instead.',
                 DeprecationWarning,
                 ctx.file,

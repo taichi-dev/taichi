@@ -562,7 +562,8 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
 }
 
 void GLDevice::dealloc_memory(DeviceAllocation handle) {
-  glDeleteBuffers(1, &handle.alloc_id);
+  GLuint buffer = GLuint(handle.alloc_id);
+  glDeleteBuffers(1, &buffer);
   check_opengl_error("glDeleteBuffers");
 }
 
@@ -714,7 +715,8 @@ DeviceAllocation GLDevice::create_image(const ImageParams &params) {
 }
 
 void GLDevice::destroy_image(DeviceAllocation handle) {
-  glDeleteTextures(1, &handle.alloc_id);
+  GLuint texture = GLuint(handle.alloc_id);
+  glDeleteTextures(1, &texture);
   check_opengl_error("glDeleteTextures");
   image_to_dims_.erase(handle.alloc_id);
   image_to_int_format_.erase(handle.alloc_id);

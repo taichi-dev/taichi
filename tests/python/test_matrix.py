@@ -1181,3 +1181,27 @@ def test_global_tmp_overwrite():
         return sig.sum() + p.sum()
 
     assert foo() == 4
+
+
+@test_utils.test(debug=True)
+def test_matrix_len():
+    @ti.kernel
+    def test():
+        x = ti.Vector([1, 0])
+        y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+
+        assert len(x) == 2
+        assert len(y) == 3
+
+    test()
+
+
+@test_utils.test()
+def test_cross_scope_matrix():
+    a = ti.Matrix([[1, 2], [3, 4]])
+
+    @ti.kernel
+    def foo() -> ti.types.vector(4, ti.i32):
+        return ti.Vector([a[0, 0], a[0, 1], a[1, 0], a[1, 1]])
+
+    assert (foo() == [1, 2, 3, 4]).all()

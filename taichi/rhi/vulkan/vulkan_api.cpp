@@ -369,6 +369,38 @@ IVkPipeline create_graphics_pipeline(VkDevice device,
   return obj;
 }
 
+IVkPipeline create_graphics_pipeline_dynamic(
+    VkDevice device,
+    VkGraphicsPipelineCreateInfo *create_info,
+    VkPipelineRenderingCreateInfoKHR *rendering_info,
+    IVkPipelineLayout layout,
+    IVkPipelineCache cache,
+    IVkPipeline base_pipeline) {
+  IVkPipeline obj = std::make_shared<DeviceObjVkPipeline>();
+  obj->device = device;
+  obj->ref_layout = layout;
+  obj->ref_cache = cache;
+  obj->ref_renderpass = nullptr;
+
+  create_info->pNext = rendering_info;
+  create_info->layout = layout->layout;
+
+  if (base_pipeline) {
+    create_info->basePipelineHandle = base_pipeline->pipeline;
+    create_info->basePipelineIndex = -1;
+  } else {
+    create_info->basePipelineHandle = VK_NULL_HANDLE;
+    create_info->basePipelineIndex = 0;
+  }
+
+  VkResult res =
+      vkCreateGraphicsPipelines(device, cache ? cache->cache : VK_NULL_HANDLE,
+                                1, create_info, nullptr, &obj->pipeline);
+  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create graphics pipeline");
+
+  return obj;
+}
+
 IVkPipeline create_raytracing_pipeline(
     VkDevice device,
     VkRayTracingPipelineCreateInfoKHR *create_info,

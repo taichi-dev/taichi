@@ -5,6 +5,10 @@
 
 namespace taichi::lang {
 
+// The GatherImmutableLocalVars pass gathers all immutable local vars as input
+// to the EliminateImmutableLocalVars pass. An immutable local var is an alloca
+// which is stored only once (in the same block) and only loaded after that
+// store.
 class GatherImmutableLocalVars : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;

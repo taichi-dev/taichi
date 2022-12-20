@@ -237,7 +237,7 @@ def test_sign(x: float) -> float:
     # Error: multiple return statements
 ```
 
-To fix this, we reccomend that you can save the result in a local variable and return it at the end:
+To fix this, we recommend that you can save the result in a local variable and return it at the end:
 
 ```python
 @ti.kernel

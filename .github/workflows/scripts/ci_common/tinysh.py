@@ -60,7 +60,7 @@ class Command:
         for v in PREFIX_STACK:
             prefixes.extend(v)
 
-        env = {}
+        env = os.environ.copy()
         for v in ENVIRON_STACK:
             env.update(v)
 

@@ -122,7 +122,7 @@ def inside_taichi_scope():
         # Only print once
 ```
 
-`ti.static_print` acts similarly to `print` in the Python scope. But unlike `print`, `ti.static_print` outputs the expression only once at compile time, incurring no runtime penalty.
+In the Taichi scope, `ti.static_print` acts similarly to `print`. But unlike `print`, `ti.static_print` outputs the expression only once at compile time, incurring no runtime penalty.
 
 ## Serial execution
 

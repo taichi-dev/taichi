@@ -68,7 +68,7 @@ class Command:
 
         code = os.spawnvpe(os.P_WAIT, args[0], args[1:], env)
         if code:
-            cmd = shlex.join(args)
+            cmd = ' '.join([quote(v) for v in args])
             raise CommandFailed(cmd, code)
 
     def __repr__(self) -> str:

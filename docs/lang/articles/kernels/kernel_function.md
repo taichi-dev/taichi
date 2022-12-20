@@ -129,7 +129,7 @@ myKernel(1, 1.0)  # Prints 2.0
 ```
 
 #### Vectors/Matrices
-In addition to primative types, we can also define predefined arrays and pass them into the kernel function. Vectors are represented as arrays and Matrices are represented as a group of arrays.
+In addition to primitive types, we can also pass vectors and matrices into the kernel function. Vectors are represented as 1D arrays and Matrices are represented as 2D rectangular arrays.
 
 In the following example, we pass a 2x3 matrix `arr` into `myKernel()` *by reference*:
 ```python {13,17}

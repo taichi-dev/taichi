@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Debugging
 
-To aid with simultaneous programming debugging, Taichi has the following mechanisms:
+To aid with debugging your parallel programs, Taichi has the following mechanisms:
 
 1. `print` in the Taichi scope checks the value of a variable.
 2. Serialization of your program or a specific parallel for loop.
@@ -15,7 +15,7 @@ To aid with simultaneous programming debugging, Taichi has the following mechani
 ## Runtime `print` in Taichi scope
 
 
-One of the most naive ways to debug code is to print particular messagea to check how your code runs in different states. You can call `print()` in the Taichi scope to debug your program:
+One of the most naive ways to debug code is to print particular messages to check how your code runs in different states. You can call `print()` in the Taichi scope to debug your program:
 
 ```python
 print(*args, sep='', end='\n')
@@ -69,11 +69,11 @@ def inside_taichi_scope():
 `print` in the Taichi scope is supported on the CPU, CUDA, and Vulkan backends only.
 
 :::note
-To enable printing on vulkan backend, please
-- make sure validation layer is installed via [vulkan sdk](https://vulkan.lunarg.com/sdk/home).
-- turn on debug mode by `ti.init(debug=True)`.
+To enable printing on Vulkan, please
+- make sure the validation layer is installed via [vulkan sdk](https://vulkan.lunarg.com/sdk/home).
+- turn on debug mode via `ti.init(debug=True)`.
 
-**Note printing is not supported on macOS vulkan backend.**
+**Printing is not supported on the macOS Vulkan backend.**
 :::
 
 :::note
@@ -122,11 +122,11 @@ def inside_taichi_scope():
         # Only print once
 ```
 
-In the Python scope, `ti.static_print` acts identically to `print`. Unlike `print`, `ti.static_print` outputs the expression only once at build time, incurring no runtime penalty.
+`ti.static_print` acts similarly to `print` in the Python scope. But unlike `print`, `ti.static_print` outputs the expression only once at compile time, incurring no runtime penalty.
 
 ## Serial execution
 
-Because threads are processed in random order, Taichi's automated parallelization technique may result in non-deterministic behaviour. Serializing program execution may be advantageous for debugging purposes, such as achieving reproducible results or identifying data races. You have the option of serialising the complete Taichi program or a single for loop.
+Because threads are processed in random order, Taichi's automated parallelization may result in non-deterministic behaviour. Serializing program execution may be advantageous for debugging purposes, such as achieving reproducible results or identifying data races. You have the option of serialising the complete Taichi program or a single for loop.
 
 ### Serialize an entire Taichi program
 
@@ -225,13 +225,13 @@ When you are done with debugging, set `debug=False`. Then, the program ignores a
 
 ## Compile-time `ti.static_assert`
 
-Taichi, like `ti.static_print`, includes a static version of `assert`; `ti.static_assert`, which may be used to create assertions on data types, dimensionality, and shapes.
+Besides `ti.static_print`, Taichi also provides a static version of `assert`: `ti.static_assert`, which may be used to create assertions on data types, dimensionality, and shapes.
 
 ```python
 ti.static_assert(cond, msg=None)
 ```
 
-It works whether or not `debug=True` is used. A false `ti.static_assert` statement, like a false `assert` statement in the Python scope, causes an ` AssertionError`, as shown below:
+It works whether or not `debug=True` is used. A false `ti.static_assert` statement, like a false `assert` statement in the Python scope, causes an `AssertionError`, as shown below:
 
 ```python
 @ti.func
@@ -243,7 +243,7 @@ def copy(dst: ti.template(), src: ti.template()):
 
 ## Conciser tracebacks in Taichi scope
 
-Taichi reports the traceback of an error in the **Taichi scope**. For example, the above snippet triggers an `AssertionError`, with a lengthy traceback message::
+Taichi reports the traceback of an error in the **Taichi scope**. For example, the code snippet below triggers an `AssertionError`, with a lengthy traceback message:
 
 ```python
 import taichi as ti

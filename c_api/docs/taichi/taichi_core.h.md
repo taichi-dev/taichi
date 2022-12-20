@@ -502,14 +502,6 @@ Allocates a device image with provided parameters.
 
 Frees an image allocation.
 
-`function.create_event`
-
-Creates an event primitive.
-
-`function.destroy_event`
-
-Destroys an event primitive.
-
 `function.copy_memory_device_to_device`
 
 Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.

@@ -89,15 +89,6 @@ typedef struct TiVulkanImageInteropInfo {
   VkImageUsageFlags usage;
 } TiVulkanImageInteropInfo;
 
-// Structure `TiVulkanEventInteropInfo`
-//
-// Necessary detail to share the same Vulkan event synchronization primitive
-// between Taichi and the user application.
-typedef struct TiVulkanEventInteropInfo {
-  // Vulkan event handle.
-  VkEvent event;
-} TiVulkanEventInteropInfo;
-
 // Function `ti_create_vulkan_runtime_ext`
 //
 // Creates a Vulkan Taichi runtime with user-controlled capability settings.
@@ -152,21 +143,6 @@ TI_DLL_EXPORT void TI_API_CALL
 ti_export_vulkan_image(TiRuntime runtime,
                        TiImage image,
                        TiVulkanImageInteropInfo *interop_info);
-
-// Function `ti_import_vulkan_event`
-//
-// Imports the Vulkan event owned by Taichi to external procedures.
-TI_DLL_EXPORT TiEvent TI_API_CALL
-ti_import_vulkan_event(TiRuntime runtime,
-                       const TiVulkanEventInteropInfo *interop_info);
-
-// Function `ti_export_vulkan_event`
-//
-// Exports a Vulkan event from external procedures to Taichi.
-TI_DLL_EXPORT void TI_API_CALL
-ti_export_vulkan_event(TiRuntime runtime,
-                       TiEvent event,
-                       TiVulkanEventInteropInfo *interop_info);
 
 #ifdef __cplusplus
 }  // extern "C"

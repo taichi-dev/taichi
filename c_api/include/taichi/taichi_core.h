@@ -281,12 +281,6 @@ typedef struct TiRuntime_t *TiRuntime;
 // kernels and compute graphs.
 typedef struct TiAotModule_t *TiAotModule;
 
-// Handle `TiEvent`
-//
-// A synchronization primitive to manage device execution flows in multiple
-// queues.
-typedef struct TiEvent_t *TiEvent;
-
 // Handle `TiMemory`
 //
 // A contiguous allocation of device memory.
@@ -915,16 +909,6 @@ ti_create_sampler(TiRuntime runtime, const TiSamplerCreateInfo *create_info);
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(TiRuntime runtime,
                                                   TiSampler sampler);
 
-// Function `ti_create_event`
-//
-// Creates an event primitive.
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
-
-// Function `ti_destroy_event`
-//
-// Destroys an event primitive.
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(TiEvent event);
-
 // Function `ti_copy_memory_device_to_device` (Device Command)
 //
 // Copies the data in a contiguous subsection of the device memory to another
@@ -979,28 +963,6 @@ ti_launch_compute_graph(TiRuntime runtime,
                         TiComputeGraph compute_graph,
                         uint32_t arg_count,
                         const TiNamedArgument *args);
-
-// Function `ti_signal_event` (Device Command)
-//
-// Sets an event primitive to a signaled state so that the queues waiting for it
-// can go on execution. If the event has been signaled, you *must* call
-// [`ti_reset_event`](#function-ti_reset_event-device-command) to reset it;
-// otherwise, an undefined behavior would occur.
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
-                                               TiEvent event);
-
-// Function `ti_reset_event` (Device Command)
-//
-// Sets a signaled event primitive back to an unsignaled state.
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
-
-// Function `ti_wait_event` (Device Command)
-//
-// Waits until an event primitive transitions to a signaled state. The awaited
-// event *must* be signaled by an external procedure or a previous invocation to
-// [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an
-// undefined behavior would occur.
-TI_DLL_EXPORT void TI_API_CALL ti_wait_event(TiRuntime runtime, TiEvent event);
 
 // Function `ti_submit`
 //

@@ -351,16 +351,6 @@ class VulkanPipeline : public Pipeline {
   vkapi::IVkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
-class VulkanDeviceEvent : public DeviceEvent {
- public:
-  explicit VulkanDeviceEvent(vkapi::IVkEvent event) : vkapi_ref(event) {
-  }
-  ~VulkanDeviceEvent() override {
-  }
-
-  vkapi::IVkEvent vkapi_ref{nullptr};
-};
-
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
@@ -597,7 +587,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
-  std::unique_ptr<DeviceEvent> create_event() override;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;

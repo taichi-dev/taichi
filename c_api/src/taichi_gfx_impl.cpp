@@ -57,15 +57,6 @@ void GfxRuntime::transition_image(const taichi::lang::DeviceAllocation &image,
 void GfxRuntime::submit() {
   get_gfx_runtime().flush();
 }
-void GfxRuntime::signal_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().signal_event(event);
-}
-void GfxRuntime::reset_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().reset_event(event);
-}
-void GfxRuntime::wait_event(taichi::lang::DeviceEvent *event) {
-  get_gfx_runtime().wait_event(event);
-}
 void GfxRuntime::wait() {
   // (penguinliong) It's currently waiting for the entire runtime to stop.
   // Should be simply waiting for its fence to finish.

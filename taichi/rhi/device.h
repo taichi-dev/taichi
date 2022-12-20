@@ -422,8 +422,6 @@ class Device {
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
-  virtual std::unique_ptr<DeviceEvent> create_event(){TI_NOT_IMPLEMENTED}
-
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {
     return std::make_unique<DeviceAllocationGuard>(

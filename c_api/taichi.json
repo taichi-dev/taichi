@@ -53,11 +53,6 @@
                     "is_dispatchable": true
                 },
                 {
-                    "name": "event",
-                    "type": "handle",
-                    "is_dispatchable": true
-                },
-                {
                     "name": "memory",
                     "type": "handle",
                     "is_dispatchable": false
@@ -690,28 +685,6 @@
                     ]
                 },
                 {
-                    "name": "create_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        }
-                    ]
-                },
-                {
-                    "name": "destroy_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
                     "name": "copy_memory_device_to_device",
                     "type": "function",
                     "is_device_command": true,
@@ -826,45 +799,6 @@
                             "name": "args",
                             "type": "structure.named_argument",
                             "count": "arg_count"
-                        }
-                    ]
-                },
-                {
-                    "name": "signal_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "reset_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "wait_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
                         }
                     ]
                 },
@@ -1165,16 +1099,6 @@
                     ]
                 },
                 {
-                    "name": "vulkan_event_interop_info",
-                    "type": "structure",
-                    "fields": [
-                        {
-                            "name": "event",
-                            "type": "VkEvent"
-                        }
-                    ]
-                },
-                {
                     "name": "create_vulkan_runtime",
                     "type": "function",
                     "is_extension": true,
@@ -1308,41 +1232,6 @@
                         {
                             "name": "interop_info",
                             "type": "structure.vulkan_image_interop_info",
-                            "by_mut": true
-                        }
-                    ]
-                },
-                {
-                    "name": "import_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
-                            "by_ref": true
-                        }
-                    ]
-                },
-                {
-                    "name": "export_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
                             "by_mut": true
                         }
                     ]

@@ -81,6 +81,8 @@ const char *describe_error(TiError error) {
       return "invalid state";
     case TI_ERROR_INCOMPATIBLE_MODULE:
       return "incompatible module";
+    case TI_ERROR_OUT_OF_MEMORY:
+      return "out of memory";
     default:
       return "unknown error";
   }

@@ -136,16 +136,10 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     ti::Memory mem = runtime.allocate_memory(100);
     mem.map();
 
-    char err_msg[1024]{0};
-    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
-
-    TI_ASSERT(err == TI_ERROR_INVALID_STATE);
-    TI_ASSERT(std::string(err_msg).find("Assertion failure") !=
-              std::string::npos);
-    TI_ASSERT(std::string(err_msg).find("RHI map memory failed") !=
-              std::string::npos);
-
-    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "Assertion failure",
+                        /*reset_error=*/false);
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "RHI map memory failed",
+                        /*reset_error=*/true);
   }
 }
 
@@ -161,12 +155,7 @@ TEST_F(CapiTest, FailOutOfRangeReadWrite) {
 
     arr.write(data);
 
-    char err_msg[1024]{0};
-    TiError err = ti_get_last_error(sizeof(err_msg), err_msg);
-
-    TI_ASSERT(err == TI_ERROR_ARGUMENT_OUT_OF_RANGE);
-
-    ti_set_last_error(TI_ERROR_SUCCESS, nullptr);
+    EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_OUT_OF_RANGE);
   }
 }
 

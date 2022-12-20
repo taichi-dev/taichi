@@ -515,6 +515,10 @@
                         },
                         {
                             "type": "enumeration.arch"
+                        },
+                        {
+                            "name": "device_index",
+                            "type": "uint32_t"
                         }
                     ]
                 },

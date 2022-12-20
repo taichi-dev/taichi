@@ -208,9 +208,11 @@ void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_END();
 }
 
-TiRuntime ti_create_runtime(TiArch arch) {
+TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
+  // FIXME: (penguinliong) Support device selection.
+  TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {

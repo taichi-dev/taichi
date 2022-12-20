@@ -884,7 +884,7 @@ class Runtime {
         should_destroy_(std::exchange(b.should_destroy_, false)) {
   }
   Runtime(TiArch arch)
-      : arch_(arch), runtime_(ti_create_runtime(arch)), should_destroy_(true) {
+      : arch_(arch), runtime_(ti_create_runtime(arch, 0)), should_destroy_(true) {
   }
   Runtime(TiArch arch, TiRuntime runtime, bool should_destroy)
       : arch_(arch), runtime_(runtime), should_destroy_(should_destroy) {

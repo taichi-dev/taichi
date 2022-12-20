@@ -48,7 +48,7 @@
 // any problem with runtime instance coexistence.
 //
 // ```cpp
-// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 // ```
 //
 // When your program runs to the end, ensure that:
@@ -211,8 +211,8 @@
 // ```
 //
 // When you have launched all kernels and compute graphs for this batch, you
-// should `function.flush` and [`ti_wait`](#function-ti_wait) for the execution
-// to finish.
+// should [`ti_flush`](#function-ti_flush) and [`ti_wait`](#function-ti_wait)
+// for the execution to finish.
 //
 // ```cpp
 // ti_flush(runtime);
@@ -839,7 +839,8 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
 // Function `ti_create_runtime`
 //
 // Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
-TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
+TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch,
+                                                      uint32_t device_index);
 
 // Function `ti_destroy_runtime`
 //
@@ -965,6 +966,9 @@ ti_launch_compute_graph(TiRuntime runtime,
                         const TiNamedArgument *args);
 
 // Function `ti_flush`
+//
+// Submits all previously invoked device commands to the offload device for
+// execution.
 TI_DLL_EXPORT void TI_API_CALL ti_flush(TiRuntime runtime);
 
 // Function `ti_wait`

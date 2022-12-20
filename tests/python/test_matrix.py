@@ -1205,3 +1205,13 @@ def test_cross_scope_matrix():
         return ti.Vector([a[0, 0], a[0, 1], a[1, 0], a[1, 1]])
 
     assert (foo() == [1, 2, 3, 4]).all()
+
+
+@test_utils.test(debug=True)
+def test_matrix_type_inference():
+    @ti.kernel
+    def foo():
+        a = ti.Vector([1, 2.5])[1]  # should be f32 instead of i32
+        assert a == 2.5
+
+    foo()

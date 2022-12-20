@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
-from typing import Sequence, Any
 import os
 import platform
+from contextlib import contextmanager
+from typing import Any, Mapping, Sequence
 
 # -- third party --
 # -- own --
@@ -32,9 +33,13 @@ class CommandFailed(Exception):
         return f'Command {self.cmd} failed with code {self.code}'
 
 
+ENVIRON_STACK = []
+PREFIX_STACK = []
+
+
 class Command:
-    def __init__(self, *args: Sequence[str]):
-        self.args = list(map(str, args))
+    def __init__(self, *args: str):
+        self.args = list((map(str, args)))
 
     def __getattribute__(self, name: str) -> Any:
         if name in ('args', 'bake') or name.startswith('__'):
@@ -50,23 +55,75 @@ class Command:
     def __call__(self, *moreargs: Sequence[str]) -> None:
         args = object.__getattribute__(self, 'args')
         args = args + list(map(str, moreargs))
-        cmd = ' '.join(map(quote, args))
-        code = os.system(cmd)
+
+        prefixes = []
+        for v in PREFIX_STACK:
+            prefixes.extend(v)
+
+        env = {}
+        for v in ENVIRON_STACK:
+            env.update(v)
+
+        args = prefixes + args
+
+        code = os.spawnvpe(os.P_WAIT, args[0], args[1:], env)
         if code:
+            cmd = shlex.join(args)
             raise CommandFailed(cmd, code)
 
     def __repr__(self) -> str:
         return f"<Command '{shlex.join(self.args)}'>"
 
 
-def sudo(cmd: Command) -> Command:
+@contextmanager
+def environ(*envs: Mapping[str, str]):
+    '''
+    Set command environment variables.
+    '''
+    global ENVIRON_STACK
+
+    this = {}
+    for env in envs:
+        this.update(env)
+
+    try:
+        ENVIRON_STACK.append(this)
+        yield
+    finally:
+        assert ENVIRON_STACK[-1] is this
+        ENVIRON_STACK.pop()
+
+
+@contextmanager
+def prefix(*args: str):
+    '''
+    Set command prefixes.
+    '''
+    global PREFIX_STACK
+
+    l = list(map(str, args))
+
+    try:
+        PREFIX_STACK.insert(0, l)
+        yield
+    finally:
+        assert PREFIX_STACK[0] is l
+        PREFIX_STACK.pop(0)
+
+
+@contextmanager
+def _nop_contextmanager():
+    yield
+
+
+def sudo():
     '''
     Wrap a command with sudo.
     '''
     if IS_WINDOWS:
-        return cmd
+        return _nop_contextmanager()
     else:
-        return Command('sudo', *cmd.args)
+        return prefix('sudo')
 
 
 sh = Command()

@@ -1,7 +1,7 @@
 #!/usr/bin/python3 -u
 
 # -- prioritized --
-import ci_common  # noqa, early initialization happens here
+import ci_common  # isort: skip, early initialization happens here
 
 # -- stdlib --
 import glob
@@ -14,12 +14,12 @@ from ci_common.dep import download_dep
 from ci_common.misc import banner, get_cache_home, is_manylinux2014
 from ci_common.python import setup_python
 from ci_common.sccache import setup_sccache
-from ci_common.tinysh import git, sh, sudo, Command
+from ci_common.tinysh import Command, environ, git, sh
 
 
 # -- code --
 @banner('Setup LLVM')
-def setup_llvm() -> None:
+def setup_llvm(env_out: dict) -> None:
     '''
     Download and install LLVM.
     '''
@@ -28,11 +28,11 @@ def setup_llvm() -> None:
         if 'AMDGPU_TEST' in os.environ:
             # FIXME: AMDGPU bots are currently maintained separately,
             #        we should unify them with the rest of the bots.
-            lnsf = sudo(sh.ln.bake('-sf'))
+            lnsf = sh.sudo.ln.bake('-sf')
             lnsf('/usr/bin/clang++-10', '/usr/bin/clang++')
-            lnsf('/usr/bin/clang-10',   '/usr/bin/clang')
-            lnsf('/usr/bin/ld.lld-10',  '/usr/bin/ld.lld')
-            os.environ['LLVM_DIR'] = '/taichi-llvm-15'
+            lnsf('/usr/bin/clang-10', '/usr/bin/clang')
+            lnsf('/usr/bin/ld.lld-10', '/usr/bin/ld.lld')
+            env_out['LLVM_DIR'] = '/taichi-llvm-15'
             return
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
@@ -51,17 +51,17 @@ def setup_llvm() -> None:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
     download_dep(url, out, strip=1)
-    os.environ['LLVM_DIR'] = str(out)
+    env_out['LLVM_DIR'] = str(out)
 
 
 @banner('Build Taichi Wheel')
-def build_wheel(python: Command, pip: Command) -> None:
+def build_wheel(python: Command, pip: Command, env: dict) -> None:
     '''
     Build the Taichi wheel
     '''
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
-    proj = os.environ.get('PROJECT_NAME', 'taichi')
+    proj = env['PROJECT_NAME']
     proj_tags = []
     extra = []
 
@@ -76,24 +76,32 @@ def build_wheel(python: Command, pip: Command) -> None:
         else:
             extra.extend(['-p', 'manylinux_2_27_x86_64'])
 
-    python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir', './', '--save')
-    python('setup.py', *proj_tags, 'bdist_wheel', *extra)
+    python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
+           './', '--save')
+
+    with environ(env):
+        python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
 def main() -> None:
-    setup_llvm()
-    sccache = setup_sccache()
+    env = {
+        'TAICHI_CMAKE_ARGS': os.environ.get('TAICHI_CMAKE_ARGS', ''),
+        'PROJECT_NAME': os.environ.get('PROJECT_NAME', 'taichi'),
+    }
+    setup_llvm(env)
+    sccache = setup_sccache(env)
 
     # NOTE: We use conda/venv to build wheels, which may not be the same python
     #       running this script.
     python, pip = setup_python(os.environ['PY'])
-    build_wheel(python, pip)
+    build_wheel(python, pip, env)
 
     sccache('-s')
 
     distfiles = glob.glob('dist/*.whl')
     if len(distfiles) != 1:
-        raise RuntimeError(f'Failed to produce exactly one wheel file: {distfiles}')
+        raise RuntimeError(
+            f'Failed to produce exactly one wheel file: {distfiles}')
 
 
 if __name__ == '__main__':

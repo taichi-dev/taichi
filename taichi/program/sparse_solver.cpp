@@ -197,7 +197,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
   size_t colsA = A->num_cols();
   size_t nnzA = A->get_nnz();
@@ -284,7 +284,7 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
   size_t nnzA = A->get_nnz();
 
@@ -327,7 +327,7 @@ void CuSparseSolver::solve_rf(Program *prog,
   }
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
   size_t colsA = A->num_cols();
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);

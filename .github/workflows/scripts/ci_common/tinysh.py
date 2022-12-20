@@ -66,7 +66,7 @@ class Command:
 
         args = prefixes + args
 
-        code = os.spawnvpe(os.P_WAIT, args[0], args[1:], env)
+        code = os.spawnvpe(os.P_WAIT, args[0], args, env)
         if code:
             cmd = ' '.join([quote(v) for v in args])
             raise CommandFailed(cmd, code)

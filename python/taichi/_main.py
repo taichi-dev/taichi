@@ -831,7 +831,8 @@ class TaichiMain:
     @register
     def ticache(arguments: list = sys.argv[2:]):
         """Manage the ticache files manually"""
-        if len(arguments) < 1: return
+        if len(arguments) < 1:
+            return
 
         subcmd = arguments[0]
         arguments = arguments[1:]

@@ -238,7 +238,8 @@ def test_cli_ticache():
             if file.endswith(exts):
                 found = True
                 break
-        if found: break
+        if found:
+            break
     assert found
 
     with patch_sys_argv_helper(["ti", "ticache", "clean", "-p",

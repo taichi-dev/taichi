@@ -1,18 +1,18 @@
 import argparse
-import tempfile
-import shutil
 import copy
-import sys
 import os
+import shutil
+import sys
+import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from taichi._main import TaichiMain
-from tests import test_utils
 
 import taichi as ti
+from tests import test_utils
 
 
 @contextmanager

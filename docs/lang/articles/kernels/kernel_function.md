@@ -131,24 +131,20 @@ myKernel(1, 1.0)  # Prints 2.0
 #### Vectors/Matrices
 In addition to primitive types, we can also pass vectors and matrices into the kernel function. Vectors are represented as 1D arrays and Matrices are represented as 2D rectangular arrays.
 
-In the following example, we pass a 2x3 matrix `arr` into `myKernel()` *by reference*:
+In the following example, we pass a 2x3 matrix `arr` into `myKernel()` *by value*:
 ```python {13,17}
 import taichi as ti
 ti.init()
 
+mat2x3 = ti.types.matrix(2, 3, float)
 
 @ti.kernel
-def myKernel(arr: array):
-    #get the number at position arr[1][1]
-    for i in range(len(arr)):
-        for j in range(len(arr[i])):
-            if i == 1 and j == 1:
-                return arr[i][j]
+def myKernel(m: mat2x3) -> float:
+    # We simply return the element m[1][1]
+    return m[1][1]
 
-arr = [[2,4,6], [8,10,12]]
-print(myKernel(arr))  #will return 10
-
-```
+m = mat2x3([2,4,6], [8,10,12])
+print(myKernel(m))  #will return 10
 #### Struct/Dataclass Types
 We can take advantage of Taichi's type system and create our own dataclass to pass into the kernel function.
 

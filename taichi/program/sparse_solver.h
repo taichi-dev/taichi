@@ -103,10 +103,6 @@ class CuSparseSolver : public SparseSolver {
   void analyze_pattern(const SparseMatrix &sm) override;
 
   void factorize(const SparseMatrix &sm) override;
-  void solve_cu(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                const Ndarray &x);
   void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,

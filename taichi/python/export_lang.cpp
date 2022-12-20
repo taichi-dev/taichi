@@ -1292,7 +1292,6 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
       .def("factorize", &CuSparseSolver::factorize)
       .def("solve_rf", &CuSparseSolver::solve_rf)
-      .def("solve_cu", &CuSparseSolver::solve_cu)
       .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);

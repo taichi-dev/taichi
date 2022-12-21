@@ -87,39 +87,51 @@ bool try_demangle_name(const std::string &mangled_name,
   return true;
 }
 
-void clean_offline_cache_files(const std::string &path) {
+std::size_t clean_offline_cache_files(const std::string &path) {
   std::vector<const char *> sub_dirs = {kLlvmCachSubPath, kSpirvCacheSubPath,
                                         kMetalCacheSubPath};
+
   auto is_cache_filename = [](const std::string &name) {
     const auto ext = taichi::filename_extension(name);
     return ext == kLlvmCacheFilenameBCExt || ext == kLlvmCacheFilenameLLExt ||
            ext == kSpirvCacheFilenameExt || ext == kMetalCacheFilenameExt ||
            ext == "lock" || ext == "tcb";
   };
+
+  std::size_t count = 0;
+
   // Temp implementation. We will refactor the offline cache
-  taichi::traverse_directory(path, [&sub_dirs, &is_cache_filename, &path](
-                                       const std::string &name, bool is_dir) {
-    if (is_dir) {  // ~/.cache/taichi/ticache/llvm ...
-      for (auto subdir : sub_dirs) {
-        auto subpath = taichi::join_path(path, subdir);
-        if (taichi::path_exists(subpath)) {
-          taichi::traverse_directory(
-              subpath, [&is_cache_filename, &subpath](const std::string &name,
-                                                      bool is_dir) {
-                if (is_cache_filename(name) && !is_dir) {
-                  const auto fpath = taichi::join_path(subpath, name);
-                  TI_TRACE("Remove {}", fpath);
-                  taichi::remove(fpath);
-                }
-              });
+  taichi::traverse_directory(
+      path, [&count, &sub_dirs, &is_cache_filename, &path](
+                const std::string &name, bool is_dir) {
+        if (is_dir) {  // ~/.cache/taichi/ticache/llvm ...
+          for (auto subdir : sub_dirs) {
+            auto subpath = taichi::join_path(path, subdir);
+
+            if (taichi::path_exists(subpath)) {
+              taichi::traverse_directory(
+                  subpath, [&count, &is_cache_filename, &subpath](
+                               const std::string &name, bool is_dir) {
+                    if (is_cache_filename(name) && !is_dir) {
+                      const auto fpath = taichi::join_path(subpath, name);
+                      TI_TRACE("Removing {}", fpath);
+                      bool ok = taichi::remove(fpath);
+                      count += ok ? 1 : 0;
+                      TI_WARN_IF(!ok, "Remove {} failed", fpath);
+                    }
+                  });
+            }
+          }
+        } else if (is_cache_filename(name)) {
+          const auto fpath = taichi::join_path(path, name);
+          TI_TRACE("Removing {}", fpath);
+          bool ok = taichi::remove(fpath);
+          count += ok ? 1 : 0;
+          TI_WARN_IF(!ok, "Remove {} failed", fpath);
         }
-      }
-    } else if (is_cache_filename(name)) {
-      const auto fpath = taichi::join_path(path, name);
-      TI_TRACE("Remove {}", fpath);
-      taichi::remove(fpath);
-    }
-  });
+      });
+
+  return count;
 }
 
 }  // namespace taichi::lang::offline_cache

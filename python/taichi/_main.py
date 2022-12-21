@@ -831,23 +831,42 @@ class TaichiMain:
     @register
     def cache(arguments: list = sys.argv[2:]):
         """Manage the offline cache files manually"""
-        if not arguments:
-            return
-
-        subcmd = arguments[0]
-        arguments = arguments[1:]
-        if subcmd == 'clean':
-            parser = argparse.ArgumentParser(
-                prog='ti cache clean',
-                description='Clean all offline cache files in given path')
+        def clean(cmd_args, parser):
             parser.add_argument(
                 '-p',
                 '--offline-cache-file-path',
                 dest='offline_cache_file_path',
                 default=impl.default_cfg().offline_cache_file_path)
-            args = parser.parse_args(arguments)
-            path = args.offline_cache_file_path
-            _ti_core.clean_offline_cache_files(path)
+            args = parser.parse_args(cmd_args)
+            path = os.path.abspath(args.offline_cache_file_path)
+            count = _ti_core.clean_offline_cache_files(path)
+            print(f'Deleted {count} offline cache files in {path}')
+
+        # TODO(PGZXB): Provide more tools to manage the offline cache files
+        subcmds_map = {
+            'clean': (clean, 'Clean all offline cache files in given path')
+        }
+
+        def print_help():
+            print('usage: ti cache <command> [<args>]')
+            for name, value in subcmds_map.items():
+                _, description = value
+                print(f'\t{name}\t|-> {description}')
+
+        if not arguments:
+            print_help()
+            return
+
+        subcmd = arguments[0]
+        if subcmd not in subcmds_map:
+            print(f"'ti cache {subcmd}' is not a valid command!")
+            print_help()
+            return
+
+        func, description = subcmds_map[subcmd]
+        parser = argparse.ArgumentParser(prog=f'ti cache {subcmd}',
+                                         description=description)
+        func(cmd_args=arguments[1:], parser=parser)
 
 
 def main():

@@ -301,7 +301,7 @@ bool try_demangle_name(const std::string &mangled_name,
                        std::string &key);
 
 // utils to manage the offline cache files
-void clean_offline_cache_files(const std::string &path);
+std::size_t clean_offline_cache_files(const std::string &path);
 
 }  // namespace offline_cache
 }  // namespace taichi::lang

@@ -13,6 +13,8 @@
 
 namespace taichi::lang {
 
+class ASTBuilder;
+
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
   int num_cpu_threads{0};
@@ -585,20 +587,16 @@ class IndexExpression : public Expression {
   std::vector<ExprGroup> indices_group;
   std::vector<int> ret_shape;
 
-  IndexExpression(const Expr &var,
+  IndexExpression(ASTBuilder *buidler,
+                  const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "")
-      : var(var), indices_group({indices}) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
-  IndexExpression(const Expr &var,
+  IndexExpression(ASTBuilder *buidler,
+                  const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "")
-      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   void type_check(CompileConfig *config) override;
 
@@ -988,6 +986,10 @@ class ASTBuilder {
                                 std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
+  Expr expr_subscript(const Expr &expr,
+                      const ExprGroup &indices,
+                      std::string tb = "");
+
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,

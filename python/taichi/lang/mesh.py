@@ -605,6 +605,8 @@ def _TetMesh():
 class MeshElementFieldProxy:
     def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
                  entry_expr: impl.Expr):
+        ast_builder = impl.get_runtime().prog.current_ast_builder()
+
         self.mesh = mesh
         self.element_type = element_type
         self.entry_expr = entry_expr
@@ -622,7 +624,7 @@ class MeshElementFieldProxy:
                 setattr(
                     self, key,
                     impl.Expr(
-                        _ti_core.subscript(
+                        ast_builder.expr_subscript(
                             attr.ptr, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
             elif isinstance(attr, StructField):
@@ -633,7 +635,7 @@ class MeshElementFieldProxy:
                 setattr(
                     self, key,
                     impl.Expr(
-                        _ti_core.subscript(
+                        ast_builder.expr_subscript(
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 

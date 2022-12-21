@@ -86,21 +86,34 @@ TEST(FrontendTypeInference, TernaryOp) {
 }
 
 TEST(FrontendTypeInference, GlobalPtr_Field) {
+  auto prog = std::make_unique<Program>(Arch::x64);
+  auto func = []() {};
+  auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
+  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
+  auto ast_builder = prog->current_ast_builder();
+
   auto global_var =
       Expr::make<FieldExpression>(PrimitiveType::u8, Identifier(0));
   auto index = value<int32>(2);
   index->type_check(nullptr);
-  auto global_ptr = global_var[ExprGroup(index)];
+  auto global_ptr = ast_builder->expr_subscript(global_var, ExprGroup(index));
   global_ptr->type_check(nullptr);
   EXPECT_EQ(global_ptr->ret_type, PrimitiveType::u8);
 }
 
 TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
+  auto prog = std::make_unique<Program>(Arch::x64);
+  auto func = []() {};
+  auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
+  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
+  auto ast_builder = prog->current_ast_builder();
+
   auto index = value<float32>(2);
   index->type_check(nullptr);
   auto external_tensor =
       Expr::make<ExternalTensorExpression>(PrimitiveType::u16, 1, 0, 0);
-  auto global_ptr = external_tensor[ExprGroup(index)];
+  auto global_ptr =
+      ast_builder->expr_subscript(external_tensor, ExprGroup(index));
   EXPECT_THROW(global_ptr->type_check(nullptr), TaichiTypeError);
 }
 
@@ -118,7 +131,8 @@ TEST(FrontendTypeInference, TensorElement) {
   var->ret_type = prog->current_ast_builder()->get_last_stmt()->ret_type;
   auto index = value<int32>(2);
   index->type_check(nullptr);
-  auto tensor_element = Expr::make<IndexExpression>(var, ExprGroup(index));
+  auto tensor_element =
+      Expr::make<IndexExpression>(ast_builder, var, ExprGroup(index));
   tensor_element->type_check(nullptr);
   EXPECT_EQ(tensor_element->ret_type, PrimitiveType::u32);
 }

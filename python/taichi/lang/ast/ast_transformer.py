@@ -837,14 +837,15 @@ class ASTTransformer(Builder):
                                                       node.attr)
                 attr_len = len(node.attr)
                 if attr_len == 1:
-                    node.ptr = Expr(
-                        _ti_core.subscript(
-                            node.value.ptr.ptr,
-                            make_expr_group(keygroup.index(node.attr)),
-                            impl.get_runtime().get_current_src_info()))
+                    node.ptr = Expr(impl.get_runtime(
+                    ).prog.current_ast_builder().expr_subscript(
+                        node.value.ptr.ptr,
+                        make_expr_group(keygroup.index(node.attr)),
+                        impl.get_runtime().get_current_src_info()))
                 else:
                     node.ptr = Expr(
                         _ti_core.subscript_with_multiple_indices(
+                            impl.get_runtime().prog.current_ast_builder(),
                             node.value.ptr.ptr, [
                                 make_expr_group(keygroup.index(ch))
                                 for ch in node.attr

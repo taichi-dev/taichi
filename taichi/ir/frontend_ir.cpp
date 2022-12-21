@@ -687,6 +687,37 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
   stmt->ret_type = this->dt;
 }
 
+IndexExpression::IndexExpression(ASTBuilder *builder,
+                                 const Expr &var,
+                                 const ExprGroup &indices,
+                                 std::string tb)
+    : var(var) {
+  std::vector<Expr> expanded_indices = builder->expand_expr(indices.exprs);
+  auto expanded_expr_group = ExprGroup();
+  expanded_expr_group.exprs = expanded_indices;
+
+  this->indices_group = {std::move(expanded_expr_group)};
+
+  this->tb = tb;
+}
+
+IndexExpression::IndexExpression(ASTBuilder *builder,
+                                 const Expr &var,
+                                 const std::vector<ExprGroup> &indices_group,
+                                 const std::vector<int> &ret_shape,
+                                 std::string tb)
+    : var(var), ret_shape(ret_shape) {
+  std::vector<ExprGroup> expanded_indices_group;
+  for (auto &expr_group : indices_group) {
+    std::vector<Expr> expanded_exprs = builder->expand_expr(expr_group.exprs);
+    auto expanded_expr_group = ExprGroup();
+    expanded_expr_group.exprs = expanded_exprs;
+    expanded_indices_group.emplace_back(std::move(expanded_expr_group));
+  }
+
+  this->tb = tb;
+}
+
 bool IndexExpression::is_field() const {
   return var.is<FieldExpression>();
 }
@@ -1356,7 +1387,8 @@ Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
     for (int d = 0; d < (int)shape.size(); ++d)
       indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
     this->insert(std::make_unique<FrontendAssignStmt>(
-        Expr::make<IndexExpression>(var, indices, tb), elements.exprs[i]));
+        Expr::make<IndexExpression>(this, var, indices, tb),
+        elements.exprs[i]));
   }
   return var;
 }
@@ -1376,6 +1408,15 @@ void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
   stmt->set_tb(tb);
   this->insert(std::move(stmt));
+}
+
+Expr ASTBuilder::expr_subscript(const Expr &expr,
+                                const ExprGroup &indices,
+                                std::string tb) {
+  TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
+            expr.is<ExternalTensorExpression>() ||
+            is_tensor(expr.expr->ret_type));
+  return Expr::make<IndexExpression>(this, expr, indices, tb);
 }
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
@@ -1477,9 +1518,7 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
 }
 
 std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
-  TI_ASSERT(exprs.size() > 0);
-
-  if (exprs.size() > 1) {
+  if (exprs.size() > 1 || exprs.size() == 0) {
     return exprs;
   }
 
@@ -1518,7 +1557,7 @@ std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
   if (shape.size() == 1) {
     for (int i = 0; i < shape[0]; i++) {
       auto ind = Expr(std::make_shared<IndexExpression>(
-          id_expr, ExprGroup(Expr(i)), index_expr->tb));
+          this, id_expr, ExprGroup(Expr(i)), index_expr->tb));
       ind.expr->ret_type = tensor_type->get_element_type();
       expanded_exprs.push_back(ind);
     }
@@ -1527,7 +1566,7 @@ std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
     for (int i = 0; i < shape[0]; i++) {
       for (int j = 0; j < shape[1]; j++) {
         auto ind = Expr(std::make_shared<IndexExpression>(
-            id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
+            this, id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
         ind.expr->ret_type = tensor_type->get_element_type();
         expanded_exprs.push_back(ind);
       }

@@ -9,9 +9,8 @@ from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import SNodeGradType
-from taichi.lang.exception import (TaichiCompilationError, TaichiIndexError,
-                                   TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
@@ -146,6 +145,8 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
+    ast_builder = get_runtime().prog.current_ast_builder()
+
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
             value,
@@ -165,9 +166,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         elif isinstance(_index, slice):
             ind = [_index]
             has_slice = True
-        elif isinstance(_index, Expr) and _index.is_tensor():
-            # Expand Expr with TensorType return
-            ind = [Expr(e) for e in ast_builder.expand_expr([_index.ptr])]
         else:
             ind = [_index]
         flattened_indices += ind
@@ -219,14 +217,12 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
         field_dim = snode.num_active_indices()
-        if field_dim != index_dim:
-            raise TaichiIndexError(
-                f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
-            )
+
         if isinstance(value, MatrixField):
             return Expr(
-                _ti_core.subscript(value.ptr, indices_expr_group,
-                                   get_runtime().get_current_src_info()))
+                ast_builder.expr_subscript(
+                    value.ptr, indices_expr_group,
+                    get_runtime().get_current_src_info()))
         if isinstance(value, StructField):
             entries = {
                 k: subscript(ast_builder, v, *indices)
@@ -235,18 +231,15 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(entries)
         return Expr(
-            _ti_core.subscript(_var, indices_expr_group,
-                               get_runtime().get_current_src_info()))
+            ast_builder.expr_subscript(_var, indices_expr_group,
+                                       get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
         dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
-        if dim != index_dim + element_dim:
-            raise IndexError(
-                f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
-            )
+
         return Expr(
-            _ti_core.subscript(value.ptr, indices_expr_group,
-                               get_runtime().get_current_src_info()))
+            ast_builder.expr_subscript(value.ptr, indices_expr_group,
+                                       get_runtime().get_current_src_info()))
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType
@@ -272,11 +265,12 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             return_shape = (len(indices[0]), len(indices[1]))
         return Expr(
             _ti_core.subscript_with_multiple_indices(
-                value.ptr, multiple_indices, return_shape,
+                get_runtime().prog.current_ast_builder(), value.ptr,
+                multiple_indices, return_shape,
                 get_runtime().get_current_src_info()))
     return Expr(
-        _ti_core.subscript(value.ptr, indices_expr_group,
-                           get_runtime().get_current_src_info()))
+        ast_builder.expr_subscript(value.ptr, indices_expr_group,
+                                   get_runtime().get_current_src_info()))
 
 
 @taichi_scope
@@ -288,9 +282,11 @@ def make_stride_expr(_var, _indices, shape, stride):
 
 @taichi_scope
 def make_index_expr(_var, _indices):
+
+    ast_builder = get_runtime().prog.current_ast_builder()
     return Expr(
-        _ti_core.subscript(_var, make_expr_group(*_indices),
-                           get_runtime().get_current_src_info()))
+        ast_builder.expr_subscript(_var, make_expr_group(*_indices),
+                                   get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:

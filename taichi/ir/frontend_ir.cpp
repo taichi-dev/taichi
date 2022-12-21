@@ -1526,9 +1526,7 @@ Expr ASTBuilder::snode_get_addr(SNode *snode, const ExprGroup &indices) {
 }
 
 std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
-  TI_ASSERT(exprs.size() > 0);
-
-  if (exprs.size() > 1) {
+  if (exprs.size() > 1 || exprs.size() == 0) {
     return exprs;
   }
 

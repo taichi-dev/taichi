@@ -106,10 +106,10 @@ class SparseSolver:
             f"The parameter type: {type(b)} is not supported in linear solvers for now."
         )
 
-    def solve_rf(self, sparse_matrix, b, x):
+    def solve_lu(self, sparse_matrix, b, x):
         if isinstance(sparse_matrix, SparseMatrix) and isinstance(
                 b, Ndarray) and isinstance(x, Ndarray):
-            self.solver.solve_rf(get_runtime().prog, sparse_matrix.matrix,
+            self.solver.solve_lu(get_runtime().prog, sparse_matrix.matrix,
                                  b.arr, x.arr)
         else:
             raise TaichiRuntimeError(

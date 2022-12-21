@@ -383,6 +383,74 @@ void CuSparseSolver::solve_rf(Program *prog,
 #endif
 }
 
+void CuSparseSolver::solve_lu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                const Ndarray &x){
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
+  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
+
+  // step 1: reorder the sparse matrix
+  reorder(A);
+
+  // step 2: create opaque info structure
+  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&info_);    
+
+  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for nnz(L+U)
+  size_t rowsA = A.num_rows();
+  size_t colsA = A.num_cols();
+  size_t nnzA = A.get_nnz();
+  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, info_);
+
+  // step 4: workspace for LU(B)
+  size_t size_lu = 0;
+  size_t buffer_size = 0;
+  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, info_, &buffer_size, &size_lu);
+
+  void *buffer_cpu = (void*)malloc(sizeof(char)*size_lu);
+  assert(nullptr != buffer_cpu);
+  
+  // step 5: compute Ppivot * B = L * U
+  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, info_,1.0f, buffer_cpu);
+
+  // step 6: check singularity by tol
+  int singularity = 0;
+  const float tol = 1.e-6;
+  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, info_, tol, &singularity);
+  TI_ASSERT(singularity == -1);
+
+  // step 7: solve L*U*x = b
+  size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
+  float *h_b = (float*)malloc(sizeof(float)*rowsA);
+  float *h_b_hat = (float*)malloc(sizeof(float)*rowsA);
+  float *h_x = (float*)malloc(sizeof(float)*colsA);
+  float *h_x_hat = (float*)malloc(sizeof(float)*colsA);
+  assert(nullptr != h_b);
+  assert(nullptr != h_b_hat);
+  assert(nullptr != h_x);
+  assert(nullptr != h_x_hat);
+  CUDADriver::get_instance().memcpy_device_to_host((void*)h_b, (void*)d_b, sizeof(float)*rowsA);
+  CUDADriver::get_instance().memcpy_device_to_host((void*)h_x, (void*)d_x, sizeof(float)*colsA);
+  for(int j = 0; j < rowsA; j++){
+    h_b_hat[j] = h_b[h_Q_[j]];
+  }
+  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, info_, buffer_cpu);
+  for(int j = 0; j < colsA; j++){
+    h_x[h_Q_[j]] = h_x_hat[j];
+  }
+  CUDADriver::get_instance().memcpy_host_to_device((void*)d_x, (void*)h_x, sizeof(float)*colsA);
+
+  free(h_b);
+  free(h_b_hat);
+  free(h_x);
+  free(h_x_hat);
+  free(buffer_cpu);
+#endif
+}
+
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
                                                  const std::string &solver_type,
                                                  const std::string &ordering) {

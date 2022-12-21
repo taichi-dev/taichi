@@ -683,7 +683,8 @@ class StructType(CompoundType):
             else:  # set from kwargs
                 data = kwargs.get(name, 0)
 
-            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, Struct)):
+            if isinstance(dtype, CompoundType) and not isinstance(
+                    data, (dict, Struct)):
                 data = dtype(data)
 
             d[name] = data

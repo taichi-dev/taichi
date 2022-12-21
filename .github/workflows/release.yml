@@ -87,7 +87,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           PY: ${{ matrix.conda_python }}
           PROJECT_NAME: ${{ matrix.name }}
@@ -139,7 +139,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-test \
              registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
-             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
           PY: ${{ matrix.conda_python }}
@@ -192,7 +192,7 @@ jobs:
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
@@ -239,7 +239,7 @@ jobs:
       - name: Build
         run: |
           brew install molten-vk
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           PY: ${{ matrix.python }}

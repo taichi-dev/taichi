@@ -806,7 +806,7 @@ class Kernel:
                     compile_config = prog.config()
                     device_caps = prog.get_current_device_caps()
                     ckd = mgr.load_or_compile(compile_config, device_caps,
-                                                t_kernel)
+                                              t_kernel)
                     # Launch kernel
                     prog.launch_kernel(ckd, launch_ctx)
                 else:

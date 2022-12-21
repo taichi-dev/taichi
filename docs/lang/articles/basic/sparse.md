@@ -13,7 +13,7 @@ Figure: A 3D fluid simulation that uses both particles and grids. Left to right:
 
 ## Motivation
 
-In large-scale spatial computing, such as physical modelling, graphics, and 3D reconstruction, high-resolution 2D/3D grids are frequently required. However, if we employ dense data structures, these grids tend to require a significant amount of memory space and processing (see [field](./field.md) and [field advanced](./layout.md)). While a programmer may allocate large dense grids to store spatial data (particularly physical qualities such as a density or velocity field), they may only be interested in a tiny percentage of this dense grid because the remainder may be empty space (vacuum or air).
+In large-scale spatial computing, such as physical modelling, graphics, and 3D reconstruction, high-resolution 2D/3D grids are frequently required. However, if we employ dense data structures, these grids tend to consume a significant amount of memory space and processing (see [field](./field.md) and [field advanced](./layout.md)). While a programmer may allocate large dense grids to store spatial data (particularly physical qualities such as a density or velocity field), they may only be interested in a tiny percentage of this dense grid because the remainder may be empty space (vacuum or air).
 
 To illustrate this idea, the regions of interest in sparse grids shown below may only occupy a small fraction of the whole bounding box.
 If we can leverage such "spatial sparsity" and focus computation on the regions we care about,
@@ -30,9 +30,9 @@ The key to leveraging spatial sparsity is replacing *dense* grids with *sparse* 
 :::
 
 Sparse data structures are traditionally based on [Quadtrees](https://en.wikipedia.org/wiki/Quadtree) (2D) and
-[Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Since dereferencing pointers is relatively costly on modern computer architectures, Quadtrees and Octrees are more performance friendly as they use shallower trees with larger branching factors, thus making basic operations less complex and more consistent.
-[VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
-In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi spatially sparse data structures include:
+[Octrees](https://en.wikipedia.org/wiki/Octree) (3D). Given that dereferencing pointers is relatively costly on modern computer architectures, Quadtrees and Octrees are less performance friendly than shallower trees with larger branching factors, such as
+[VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf).
+In Taichi, you can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi spatially sparse data structures include:
 
 - Array and List access time, which is the equivalent to accessing a dense data structure.
 - Automatic parallelization when iterating.
@@ -55,9 +55,9 @@ Sparse matrices are usually **not** implemented in Taichi via spatially sparse d
 
 Spatially sparse data structures in Taichi are composed of `pointer`, `bitmasked`, `dynamic`, and `dense` SNodes. A SNode tree merely composed of `dense` SNodes is **not** a spatially sparse data structure.
 
-On a spatially sparse data structure, we consider a pixel, voxel, or a grid node to be *active* if it is allocated and involved in the computation.
+On a spatially sparse data structure, we consider a pixel, a voxel, or a grid node to be *active* if it is allocated and involved in the computation.
 The rest of the grid simply becomes *inactive*.
-In SNode terms, the *activity* of a leaf or intermediate cell is represented as a Boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell, Taichi automatically activates it. Taichi also provides manual manipulation of the activity of a cell, see [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
+In SNode terms, the *activity* of a leaf or intermediate cell is represented as a Boolean value. The activity value of a cell is `True` if and only if the cell is *active*. When writing to an inactive cell, Taichi automatically activates it. Taichi also provides manual manipulation of the activity of a cell: See [Explicitly manipulating and querying sparsity](#explicitly-manipulating-and-querying-sparsity).
 
 :::note
 Reading an inactive pixel returns zero.
@@ -106,7 +106,7 @@ def print_active():
 
 Executing the `activate()` function automatically activates `block[1,1]`, which includes `x[2,3]`, and `block[1,2]`, which includes `x[2,4]`. Other pixels of `block[1,1]` (`x[2,2], x[3,2], x[3,3]`) and `block[1,2]` (`x[2,5], x[3,4], x[3,5]`) are also implicitly activated because all pixels in the dense block share the same activity value.
 
-In fact, the sparse field is an SNode tree shown in the following figure. You can use a `for` loop to loop over the different levels of the SNode tree like the `print_active()` function in the previous example. A parallelized loop over a block (`for i, j in block`) would loop over all active `pointer` SNodes. A parallelized loop over a pixel`for i, j in pixel` would loop over all active `dense` SNodes.
+In fact, the sparse field is an SNode tree shown in the following figure. You can use a `for` loop to loop over the different levels of the SNode tree like the `print_active()` function in the previous example. A parallelized loop over a block `for i, j in block` would loop over all active `pointer` SNodes. A parallelized loop over a pixel `for i, j in pixel` would loop over all active `dense` SNodes.
 
 <center>
 

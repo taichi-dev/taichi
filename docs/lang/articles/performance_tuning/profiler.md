@@ -48,7 +48,7 @@ ti.profiler.print_scoped_profiler_info()
 2. Use `ti.profiler.print kernel profiler info()` to see the profiling results. There are two printing methods:
     1. In "count" mode (the default), profiling recordings with the same kernel name are counted as a single profiling result.
     2. The profiler displays a list of kernels launched on hardware during the profiling period in "trace" mode. This option displays more comprehensive performance and hardware characteristics for each kernel.
-3. Use `ti.profiler.clear kernel profiler info()` to clear the entries in this profiler.
+3. Use `ti.profiler.clear_kernel_profiler_info()` to clear the entries in this profiler.
 
 For example:
 

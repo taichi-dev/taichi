@@ -395,18 +395,12 @@ SType IRBuilder::get_pointer_type(const SType &value_type,
 SType IRBuilder::get_underlying_image_type(const SType &primitive_type,
                                            int num_dimensions) {
   auto key = std::make_pair(primitive_type.id, num_dimensions);
-  TI_ASSERT(sampled_image_underlying_image_type_.find(key) !=
-            sampled_image_underlying_image_type_.end());
-  return sampled_image_underlying_image_type_[key];
-}
 
-SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
-                                        int num_dimensions) {
-  auto key = std::make_pair(primitive_type.id, num_dimensions);
-  auto it = sampled_image_ptr_tbl_.find(key);
-  if (it != sampled_image_ptr_tbl_.end()) {
+  auto it = sampled_image_underlying_image_type_.find(key);
+  if (it != sampled_image_underlying_image_type_.end()) {
     return it->second;
   }
+
   int img_id = id_counter_++;
   spv::Dim dim;
   if (num_dimensions == 1) {
@@ -424,6 +418,25 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
                spv::ImageFormatUnknown)
       .commit(&global_);
 
+  SType image_type;
+  image_type.id = img_id;
+  image_type.flag = TypeKind::kImage;
+  sampled_image_underlying_image_type_[key] = image_type;
+
+  return image_type;
+}
+
+SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
+                                        int num_dimensions) {
+  auto key = std::make_pair(primitive_type.id, num_dimensions);
+  auto it = sampled_image_ptr_tbl_.find(key);
+  if (it != sampled_image_ptr_tbl_.end()) {
+    return it->second;
+  }
+
+  SType image_type = get_underlying_image_type(primitive_type, num_dimensions);
+  int img_id = image_type.id;
+
   SType sampled_t;
   sampled_t.id = id_counter_++;
   sampled_t.flag = TypeKind::kImage;
@@ -431,11 +444,6 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
       .add_seq(sampled_t, img_id)
       .commit(&global_);
   sampled_image_ptr_tbl_[key] = sampled_t;
-
-  SType image_type;
-  image_type.id = img_id;
-  image_type.flag = TypeKind::kImage;
-  sampled_image_underlying_image_type_[key] = image_type;
 
   return sampled_t;
 }

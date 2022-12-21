@@ -27,7 +27,6 @@ def _get_expected_matrix_apis():
         'determinant',
         'diag',
         'dot',
-        'entries',
         'field',
         'fill',
         'identity',

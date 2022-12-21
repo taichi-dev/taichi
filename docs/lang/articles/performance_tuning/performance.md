@@ -133,7 +133,7 @@ hierarchy matches `ti.root.(sparse SNode)+.dense`), Taichi will assign one CUDA
 thread block to each `dense` container (or `dense` block). BLS optimization works
 specifically for such kinds of fields.
 
-BLS intends to enhance stencil computing processes by utilising CUDA shared memory. This optimization begins with users annotating the set of fields they want to cache using `ti.block local`. At *compile time*, Taichi tries to identify the accessing range in relation to the `dense` block of these annotated fields. If Taichi is successful, it creates code that first loads all of the accessible data in range into a *block local* buffer (CUDA's shared memory), then replaces all accesses to the relevant slots into this buffer.
+BLS intends to enhance stencil computing processes by utilizing CUDA shared memory. This optimization begins with users annotating the set of fields they want to cache using `ti.block local`. At *compile time*, Taichi tries to identify the accessing range in relation to the `dense` block of these annotated fields. If Taichi is successful, it creates code that first loads all of the accessible data in range into a *block local* buffer (CUDA's shared memory), then replaces all accesses to the relevant slots into this buffer.
 
 Here is an example illustrating the usage of BLS. `a` is a sparse field with a
 block size of `4x4`.

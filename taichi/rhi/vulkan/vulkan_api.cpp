@@ -274,7 +274,7 @@ IVkPipelineLayout create_pipeline_layout(
 
   std::vector<VkDescriptorSetLayout> layouts;
   layouts.reserve(set_layouts.size());
-  for (auto l : set_layouts) {
+  for (auto &l : set_layouts) {
     layouts.push_back(l->layout);
   }
 
@@ -445,7 +445,7 @@ IVkPipeline create_raytracing_pipeline(
   return obj;
 }
 
-IVkSampler create_sampler(VkDevice device, VkSamplerCreateInfo &info) {
+IVkSampler create_sampler(VkDevice device, const VkSamplerCreateInfo &info) {
   IVkSampler sampler = std::make_shared<DeviceObjVkSampler>();
   sampler->device = device;
 

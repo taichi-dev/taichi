@@ -165,8 +165,12 @@ const Pipeline &Renderable::pipeline() const {
 }
 
 void Renderable::create_bindings() {
-  resource_set_ = app_context_->device().create_resource_set_unique();
-  raster_state_ = app_context_->device().create_raster_resources_unique();
+  if (!resource_set_) {
+    resource_set_ = app_context_->device().create_resource_set_unique();
+  }
+  if (!raster_state_) {
+    raster_state_ = app_context_->device().create_raster_resources_unique();
+  }
 
   raster_state_->vertex_buffer(vertex_buffer_.get_ptr(0), 0);
   raster_state_->index_buffer(index_buffer_.get_ptr(0), 32);

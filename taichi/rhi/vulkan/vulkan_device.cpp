@@ -140,15 +140,16 @@ RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(*params.device), name_(params.name) {
+    : device_(params.device->vk_device()),
+      ti_device_(*params.device),
+      name_(params.name) {
   create_descriptor_set_layout(params);
   create_shader_stages(params);
   create_pipeline_layout();
   create_compute_pipeline(params);
 
   for (VkShaderModule shader_module : shader_modules_) {
-    vkDestroyShaderModule(device_.vk_device(), shader_module,
-                          kNoVkAllocCallbacks);
+    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
   }
   shader_modules_.clear();
 }
@@ -158,7 +159,9 @@ VulkanPipeline::VulkanPipeline(
     const RasterParams &raster_params,
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
-    : device_(*params.device), name_(params.name) {
+    : device_(params.device->vk_device()),
+      ti_device_(*params.device),
+      name_(params.name) {
   this->graphics_pipeline_template_ =
       std::make_unique<GraphicsPipelineTemplate>();
 
@@ -170,8 +173,7 @@ VulkanPipeline::VulkanPipeline(
 
 VulkanPipeline::~VulkanPipeline() {
   for (VkShaderModule shader_module : shader_modules_) {
-    vkDestroyShaderModule(device_.vk_device(), shader_module,
-                          kNoVkAllocCallbacks);
+    vkDestroyShaderModule(device_, shader_module, kNoVkAllocCallbacks);
   }
   shader_modules_.clear();
 }
@@ -200,8 +202,8 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
   }
 
   vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline(
-      device_.vk_device(), &graphics_pipeline_template_->pipeline_info,
-      renderpass, pipeline_layout_);
+      device_, &graphics_pipeline_template_->pipeline_info, renderpass,
+      pipeline_layout_);
 
   graphics_pipeline_[renderpass] = pipeline;
 
@@ -231,8 +233,8 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline_dynamic(
   rendering_info.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 
   vkapi::IVkPipeline pipeline = vkapi::create_graphics_pipeline_dynamic(
-      device_.vk_device(), &graphics_pipeline_template_->pipeline_info,
-      &rendering_info, pipeline_layout_);
+      device_, &graphics_pipeline_template_->pipeline_info, &rendering_info,
+      pipeline_layout_);
 
   graphics_pipeline_dynamic_[renderpass_desc] = pipeline;
 
@@ -254,38 +256,32 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
                                                desc_sets.data());
     RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
-    set_templates_.resize(set_count, VulkanResourceSet(device_));
-    set_layouts_.resize(set_count, nullptr);
-
     for (SpvReflectDescriptorSet *desc_set : desc_sets) {
       uint32_t set_index = desc_set->set;
-      VulkanResourceSet &set = set_templates_[set_index];
+      if (set_templates_.find(set_index) == set_templates_.end()) {
+        set_templates_.insert({set_index, VulkanResourceSet(&ti_device_)});
+      }
+      VulkanResourceSet &set = set_templates_.at(set_index);
 
       for (int i = 0; i < desc_set->binding_count; i++) {
         SpvReflectDescriptorBinding *desc_binding = desc_set->bindings[i];
 
         if (desc_binding->descriptor_type ==
             SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-          set.rw_buffer(desc_binding->binding, kDeviceNullPtr,
-                                     0);
+          set.rw_buffer(desc_binding->binding, kDeviceNullPtr, 0);
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-          set.buffer(desc_binding->binding, kDeviceNullPtr,
-                                  0);
+          set.buffer(desc_binding->binding, kDeviceNullPtr, 0);
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-          set.image(desc_binding->binding,
-                                 kDeviceNullAllocation, {});
+          set.image(desc_binding->binding, kDeviceNullAllocation, {});
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-          set.rw_image(desc_binding->binding,
-                                    kDeviceNullAllocation, {});
+          set.rw_image(desc_binding->binding, kDeviceNullAllocation, {});
         } else {
           RHI_LOG_ERROR("Unrecognized binding ignored");
         }
       }
-
-      set_layouts_[set_index] = params.device->get_desc_set_layout(set);
     }
 
     // Handle special vertex shaders stuff
@@ -340,6 +336,19 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     }
     spvReflectDestroyShaderModule(&module);
   }
+
+  // We need to verify the set layouts are all continous
+  uint32_t max_set = 0;
+  for (auto &[index, layout_template] : set_templates_) {
+    max_set = std::max(index, max_set);
+  }
+  RHI_ASSERT(max_set + 1 == set_templates_.size() &&
+             "Sets must be continous & start with 0");
+
+  set_layouts_.resize(set_templates_.size(), nullptr);
+  for (auto &[index, layout_template] : set_templates_) {
+    set_layouts_[index] = ti_device_.get_desc_set_layout(layout_template);
+  }
 }
 
 void VulkanPipeline::create_shader_stages(const Params &params) {
@@ -347,8 +356,7 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
     VkPipelineShaderStageCreateInfo &shader_stage_info =
         shader_stages_.emplace_back();
 
-    auto [result, shader_module] =
-        create_shader_module(device_.vk_device(), code_view);
+    auto [result, shader_module] = create_shader_module(device_, code_view);
     RHI_ASSERT(result == RhiResult::success);
 
     shader_stage_info.sType =
@@ -362,8 +370,7 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
 }
 
 void VulkanPipeline::create_pipeline_layout() {
-  pipeline_layout_ =
-      vkapi::create_pipeline_layout(device_.vk_device(), set_layouts_);
+  pipeline_layout_ = vkapi::create_pipeline_layout(device_, set_layouts_);
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
@@ -371,8 +378,8 @@ void VulkanPipeline::create_compute_pipeline(const Params &params) {
   RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf), "Compiling Vulkan pipeline %s",
                      params.name.data());
   RHI_LOG_DEBUG(msg_buf);
-  pipeline_ = vkapi::create_compute_pipeline(
-      device_.vk_device(), 0, shader_stages_[0], pipeline_layout_);
+  pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
+                                             pipeline_layout_);
 }
 
 void VulkanPipeline::create_graphics_pipeline(
@@ -577,9 +584,7 @@ void VulkanPipeline::create_graphics_pipeline(
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 }
 
-VulkanResourceSet::VulkanResourceSet(
-    VulkanDevice &device)
-    : device_(device) {
+VulkanResourceSet::VulkanResourceSet(VulkanDevice *device) : device_(device) {
 }
 
 VulkanResourceSet::~VulkanResourceSet() {
@@ -589,9 +594,9 @@ ShaderResourceSet &VulkanResourceSet::rw_buffer(uint32_t binding,
                                                 DevicePtr ptr,
                                                 size_t size) {
   dirty_ = true;
-  
+
   vkapi::IVkBuffer buffer =
-      (ptr != kDeviceNullPtr) ? device_.get_vkbuffer(ptr) : nullptr;
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
   bindings_[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                         Buffer{buffer, ptr.offset, size}};
   return *this;
@@ -606,9 +611,9 @@ ShaderResourceSet &VulkanResourceSet::buffer(uint32_t binding,
                                              DevicePtr ptr,
                                              size_t size) {
   dirty_ = true;
-  
+
   vkapi::IVkBuffer buffer =
-      (ptr != kDeviceNullPtr) ? device_.get_vkbuffer(ptr) : nullptr;
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
   bindings_[binding] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                         Buffer{buffer, ptr.offset, size}};
   return *this;
@@ -623,7 +628,7 @@ ShaderResourceSet &VulkanResourceSet::image(uint32_t binding,
                                             DeviceAllocation alloc,
                                             ImageSamplerConfig sampler_config) {
   dirty_ = true;
-  
+
   vkapi::IVkSampler sampler = nullptr;
   vkapi::IVkImageView view = nullptr;
 
@@ -642,8 +647,8 @@ ShaderResourceSet &VulkanResourceSet::image(uint32_t binding,
     sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
     sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-    sampler = vkapi::create_sampler(device_.vk_device(), sampler_info);
-    view = device_.get_vk_imageview(alloc);
+    sampler = vkapi::create_sampler(device_->vk_device(), sampler_info);
+    view = device_->get_vk_imageview(alloc);
   }
 
   bindings_[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -656,13 +661,13 @@ ShaderResourceSet &VulkanResourceSet::rw_image(uint32_t binding,
                                                DeviceAllocation alloc,
                                                int lod) {
   dirty_ = true;
-  
+
   vkapi::IVkImageView view = (alloc != kDeviceNullAllocation)
-                                 ? device_.get_vk_lod_imageview(alloc, lod)
+                                 ? device_->get_vk_lod_imageview(alloc, lod)
                                  : nullptr;
 
-  bindings_[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, Image{view}};
-  
+  bindings_[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, Image{view}};
+
   return *this;
 }
 
@@ -671,8 +676,14 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
     // If nothing changed directly return the set
     return {RhiResult::success, set_};
   }
-  
-  vkapi::IVkDescriptorSetLayout new_layout = device_.get_desc_set_layout(*this);
+
+  if (bindings_.size() <= 0) {
+    // A set can't be empty
+    return {RhiResult::invalid_usage, nullptr};
+  }
+
+  vkapi::IVkDescriptorSetLayout new_layout =
+      device_->get_desc_set_layout(*this);
   if (new_layout != layout_) {
     // Layout changed, reset `set`
     set_ = nullptr;
@@ -681,12 +692,13 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
 
   if (!set_) {
     // If set_ is null, create a new one
-    auto [status, set_] = device_.alloc_desc_set(layout_);
+    auto [status, new_set] = device_->alloc_desc_set(layout_);
     if (status != RhiResult::success) {
       return {status, nullptr};
     }
+    set_ = new_set;
   }
-  
+
   std::forward_list<VkDescriptorBufferInfo> buffer_infos;
   std::forward_list<VkDescriptorImageInfo> image_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
@@ -747,7 +759,7 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
     }
   }
 
-  vkUpdateDescriptorSets(device_.vk_device(), desc_writes.size(),
+  vkUpdateDescriptorSets(device_->vk_device(), desc_writes.size(),
                          desc_writes.data(), /*descriptorCopyCount=*/0,
                          /*pDescriptorCopies=*/nullptr);
 
@@ -758,17 +770,30 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
 
 RasterResources &VulkanRasterResources::vertex_buffer(DevicePtr ptr,
                                                       uint32_t binding) {
-  vertex_buffers[binding] = ptr;
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  if (buffer == nullptr) {
+    vertex_buffers.erase(binding);
+  } else {
+    vertex_buffers[binding] = {buffer, ptr.offset};
+  }
   return *this;
 }
 
 RasterResources &VulkanRasterResources::index_buffer(DevicePtr ptr,
                                                      size_t index_width) {
-  index_ptr = ptr;
-  if (index_width == 32) {
-    index_type = VK_INDEX_TYPE_UINT32;
-  } else if (index_width == 16) {
-    index_type = VK_INDEX_TYPE_UINT16;
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  if (buffer == nullptr) {
+    index_binding = BufferBinding();
+    index_type = VK_INDEX_TYPE_MAX_ENUM;
+  } else {
+    index_binding = {buffer, ptr.offset};
+    if (index_width == 32) {
+      index_type = VK_INDEX_TYPE_UINT32;
+    } else if (index_width == 16) {
+      index_type = VK_INDEX_TYPE_UINT16;
+    }
   }
   return *this;
 }
@@ -847,6 +872,9 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
 RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                    int set_index) {
   VulkanResourceSet *set = static_cast<VulkanResourceSet *>(res);
+  if (set->get_bindings().size() <= 0) {
+    return RhiResult::success;
+  }
 
   auto [status, vk_set] = set->finalize();
   if (status != RhiResult::success) {
@@ -854,6 +882,12 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
   }
 
   vkapi::IVkDescriptorSetLayout set_layout = set->get_layout();
+
+  if (current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
+      set_layout) {
+    return RhiResult::invalid_usage;
+  }
+
   VkPipelineLayout pipeline_layout =
       current_pipeline_->pipeline_layout()->layout;
   VkPipelineBindPoint bind_point = current_pipeline_->is_graphics()
@@ -881,19 +915,18 @@ RhiResult VulkanCommandList::bind_raster_resources(RasterResources *_res) {
     return RhiResult::not_supported;
   }
 
-  if (res->index_ptr != kDeviceNullPtr) {
+  if (res->index_binding.buffer != nullptr) {
     // We have a valid index buffer
-    auto index_buffer = ti_device_->get_vkbuffer(res->index_ptr);
+    vkapi::IVkBuffer index_buffer = res->index_binding.buffer;
     vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
-                         res->index_ptr.offset, res->index_type);
+                         res->index_binding.offset, res->index_type);
     buffer_->refs.push_back(index_buffer);
   }
 
-  for (auto &[binding, ptr] : res->vertex_buffers) {
-    auto buffer = ti_device_->get_vkbuffer(ptr);
-    vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer->buffer,
-                           &ptr.offset);
-    buffer_->refs.push_back(buffer);
+  for (auto &[binding, buffer] : res->vertex_buffers) {
+    vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer.buffer->buffer,
+                           &buffer.offset);
+    buffer_->refs.push_back(buffer.buffer);
   }
 
   return RhiResult::success;
@@ -1672,6 +1705,14 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   allocations_.release(&get_alloc_internal(handle));
+}
+
+ShaderResourceSet *VulkanDevice::create_resource_set() {
+  return new VulkanResourceSet(this);
+}
+
+RasterResources *VulkanDevice::create_raster_resources() {
+  return new VulkanRasterResources(this);
 }
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {

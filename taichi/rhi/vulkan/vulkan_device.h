@@ -70,10 +70,10 @@ struct RenderPassDescHasher {
 };
 
 struct VulkanFramebufferDesc {
-  std::vector<vkapi::IVkImageView> attachments;
-  uint32_t width;
-  uint32_t height;
-  vkapi::IVkRenderPass renderpass;
+  std::vector<vkapi::IVkImageView> attachments{};
+  uint32_t width{0};
+  uint32_t height{0};
+  vkapi::IVkRenderPass renderpass{nullptr};
 
   bool operator==(const VulkanFramebufferDesc &other) const {
     return width == other.width && height == other.height &&
@@ -96,7 +96,7 @@ struct FramebufferDescHasher {
 };
 
 class VulkanResourceSet : public ShaderResourceSet {
-public:
+ public:
   struct Buffer {
     vkapi::IVkBuffer buffer{nullptr};
     VkDeviceSize offset{0};
@@ -135,9 +135,9 @@ public:
       return !(*this == rhs);
     }
   };
-   
+
   struct Binding {
-    VkDescriptorType type;
+    VkDescriptorType type{VK_DESCRIPTOR_TYPE_MAX_ENUM};
     std::variant<Buffer, Image, Texture> res;
 
     bool operator==(const Binding &other) const {
@@ -221,8 +221,9 @@ public:
     }
   };
 
-  explicit VulkanResourceSet(VulkanDevice &device);
-  ~VulkanResourceSet() final;
+  explicit VulkanResourceSet(VulkanDevice *device);
+  VulkanResourceSet(const VulkanResourceSet &other) = default;
+  ~VulkanResourceSet() override;
 
   ShaderResourceSet &rw_buffer(uint32_t binding,
                                DevicePtr ptr,
@@ -238,18 +239,18 @@ public:
                               int lod) final;
 
   rhi_impl::RhiReturn<vkapi::IVkDescriptorSet> finalize();
-  
+
   vkapi::IVkDescriptorSetLayout get_layout() {
     return layout_;
   }
-  
+
   const std::map<uint32_t, Binding> &get_bindings() const {
     return bindings_;
   }
 
  private:
   std::map<uint32_t, Binding> bindings_;
-  VulkanDevice &device_;
+  VulkanDevice *device_;
 
   vkapi::IVkDescriptorSetLayout layout_{nullptr};
   vkapi::IVkDescriptorSet set_{nullptr};
@@ -259,15 +260,25 @@ public:
 
 class VulkanRasterResources : public RasterResources {
  public:
-  std::unordered_map<uint32_t, DevicePtr> vertex_buffers;
-  DevicePtr index_ptr{kDeviceNullAllocation};
+  VulkanRasterResources(VulkanDevice *device) : device_(device) {
+  }
+
+  struct BufferBinding {
+    vkapi::IVkBuffer buffer{nullptr};
+    size_t offset{0};
+  };
+
+  std::unordered_map<uint32_t, BufferBinding> vertex_buffers;
+  BufferBinding index_binding;
   VkIndexType index_type{VK_INDEX_TYPE_MAX_ENUM};
 
-  VulkanRasterResources() = default;
-  ~VulkanRasterResources() final = default;
+  ~VulkanRasterResources() override = default;
 
   RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final;
   RasterResources &index_buffer(DevicePtr ptr, size_t index_width) final;
+
+ private:
+  VulkanDevice *device_;
 };
 
 // VulkanPipeline maps to a vkapi::IVkPipeline, or a SPIR-V module (a GLSL
@@ -343,7 +354,8 @@ class VulkanPipeline : public Pipeline {
     VkGraphicsPipelineCreateInfo pipeline_info{};
   };
 
-  VulkanDevice &device_;  // not owned
+  VulkanDevice &ti_device_;  // not owned
+  VkDevice device_{VK_NULL_HANDLE};  // not owned
 
   std::string name_;
 
@@ -359,7 +371,7 @@ class VulkanPipeline : public Pipeline {
                      RenderPassDescHasher>
       graphics_pipeline_dynamic_;
 
-  std::vector<VulkanResourceSet> set_templates_;
+  std::unordered_map<uint32_t, VulkanResourceSet> set_templates_;
   std::vector<vkapi::IVkDescriptorSetLayout> set_layouts_;
   std::vector<VkShaderModule> shader_modules_;
   vkapi::IVkPipeline pipeline_{VK_NULL_HANDLE};
@@ -495,16 +507,16 @@ class VulkanSurface : public Surface {
 
   SurfaceConfig config_;
 
-  VulkanDevice *device_;
-  VkSurfaceKHR surface_;
-  VkSwapchainKHR swapchain_;
-  vkapi::IVkSemaphore image_available_;
+  VulkanDevice *device_{nullptr};
+  VkSurfaceKHR surface_{VK_NULL_HANDLE};
+  VkSwapchainKHR swapchain_{VK_NULL_HANDLE};
+  vkapi::IVkSemaphore image_available_{nullptr};
 #ifdef ANDROID
-  ANativeWindow *window_;
+  ANativeWindow *window_{nullptr};
 #else
-  GLFWwindow *window_;
+  GLFWwindow *window_{nullptr};
 #endif
-  BufferFormat image_format_;
+  BufferFormat image_format_{BufferFormat::unknown};
 
   uint32_t image_index_{0};
 
@@ -588,13 +600,13 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
  public:
   struct Params {
     PFN_vkGetInstanceProcAddr get_proc_addr{nullptr};
-    VkInstance instance;
-    VkPhysicalDevice physical_device;
-    VkDevice device;
-    VkQueue compute_queue;
-    uint32_t compute_queue_family_index;
-    VkQueue graphics_queue;
-    uint32_t graphics_queue_family_index;
+    VkInstance instance{VK_NULL_HANDLE};
+    VkPhysicalDevice physical_device{VK_NULL_HANDLE};
+    VkDevice device{VK_NULL_HANDLE};
+    VkQueue compute_queue{VK_NULL_HANDLE};
+    uint32_t compute_queue_family_index{0};
+    VkQueue graphics_queue{VK_NULL_HANDLE};
+    uint32_t graphics_queue_family_index{0};
   };
 
   VulkanDevice();
@@ -615,13 +627,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
-  ShaderResourceSet *create_resource_set() final {
-    return new VulkanResourceSet(*this);
-  }
-  
-  RasterResources *create_raster_resources() final {
-    return new VulkanRasterResources;
-  }
+  ShaderResourceSet *create_resource_set() final;
+
+  RasterResources *create_raster_resources() final;
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
@@ -723,17 +731,17 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   VulkanCapabilities vk_caps_;
 
-  VkInstance instance_;
-  VkDevice device_;
-  VkPhysicalDevice physical_device_;
-  VmaAllocator allocator_;
+  VkInstance instance_{VK_NULL_HANDLE};
+  VkDevice device_{VK_NULL_HANDLE};
+  VkPhysicalDevice physical_device_{VK_NULL_HANDLE};
+  VmaAllocator allocator_{nullptr};
   VmaAllocator allocator_export_{nullptr};
 
-  VkQueue compute_queue_;
-  uint32_t compute_queue_family_index_;
+  VkQueue compute_queue_{VK_NULL_HANDLE};
+  uint32_t compute_queue_family_index_{0};
 
-  VkQueue graphics_queue_;
-  uint32_t graphics_queue_family_index_;
+  VkQueue graphics_queue_{VK_NULL_HANDLE};
+  uint32_t graphics_queue_family_index_{0};
 
   struct ThreadLocalStreams;
   std::unique_ptr<ThreadLocalStreams> compute_streams_{nullptr};
@@ -756,10 +764,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   // Images / Image views
   struct ImageAllocInternal {
     bool external{false};
-    VmaAllocationInfo alloc_info;
+    VmaAllocationInfo alloc_info{};
     vkapi::IVkImage image{nullptr};
     vkapi::IVkImageView view{nullptr};
-    std::vector<vkapi::IVkImageView> view_lods;
+    std::vector<vkapi::IVkImageView> view_lods{};
   };
 
   // Since we use the pointer to AllocationInternal as the `alloc_id`,

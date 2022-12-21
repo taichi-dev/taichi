@@ -51,7 +51,6 @@ enum class BlendFactor : uint32_t {
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
-struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
@@ -101,7 +100,7 @@ constexpr DevicePtr kDeviceNullPtr{};
 struct ImageSamplerConfig {};
 
 // A set of shader resources (that is bound at once)
-class ShaderResourceSet {
+class TI_DLL_EXPORT ShaderResourceSet {
  public:
   virtual ~ShaderResourceSet() = default;
 
@@ -137,7 +136,7 @@ class ShaderResourceSet {
    * Bind an entire read-only buffer resource (Constants / UBO)
    * @params[in] binding The binding index of the resource
    * @params[in] alloc The Device Allocation that is going to be bound
-   */ 
+   */
   virtual ShaderResourceSet &buffer(uint32_t binding,
                                     DeviceAllocation alloc) = 0;
 
@@ -166,7 +165,7 @@ class ShaderResourceSet {
 };
 
 // A set of states / resources for rasterization
-class RasterResources {
+class TI_DLL_EXPORT RasterResources {
  public:
   virtual ~RasterResources() = default;
 
@@ -228,7 +227,7 @@ enum class BufferFormat : uint32_t {
 #undef PER_BUFFER_FORMAT
 };
 
-class Pipeline {
+class TI_DLL_EXPORT Pipeline {
  public:
   virtual ~Pipeline() {
   }
@@ -271,13 +270,13 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
-class DeviceEvent {
+class TI_DLL_EXPORT DeviceEvent {
  public:
   virtual ~DeviceEvent() {
   }
 };
 
-class CommandList {
+class TI_DLL_EXPORT CommandList {
  public:
   virtual ~CommandList() {
   }
@@ -294,6 +293,7 @@ class CommandList {
    * - If the set index is already bound, the previous binding will be
    *   overwritten.
    * - A set index can only be bound with a single ShaderResourceSet.
+   * - If the input set is empty, this command is a no-op.
    * @params[in] res The ShaderResourceSet to be bound.
    * @params[in] set_index The index the resources will be bound to.
    * @return The binding result code
@@ -308,6 +308,7 @@ class CommandList {
 
   /**
    * Bind RasterResources to the command list.
+   * - If the input resource is empty, this command is a no-op.
    * @params res The RasterResources to be bound.
    * @return The binding result code
    *         `success` If the binding succeded
@@ -435,7 +436,7 @@ enum class AllocUsage : int {
 
 MAKE_ENUM_FLAGS(AllocUsage)
 
-class StreamSemaphoreObject {
+class TI_DLL_EXPORT StreamSemaphoreObject {
  public:
   virtual ~StreamSemaphoreObject() {
   }
@@ -443,7 +444,7 @@ class StreamSemaphoreObject {
 
 using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 
-class Stream {
+class TI_DLL_EXPORT Stream {
  public:
   virtual ~Stream() {
   }
@@ -463,7 +464,7 @@ class Stream {
   }
 };
 
-class Device {
+class TI_DLL_EXPORT Device {
   DeviceCapabilityConfig caps_{};
 
  public:
@@ -604,7 +605,7 @@ class Device {
   }
 };
 
-class Surface {
+class TI_DLL_EXPORT Surface {
  public:
   virtual ~Surface() {
   }

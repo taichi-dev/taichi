@@ -11,38 +11,6 @@
 namespace taichi::lang {
 namespace cpu {
 
-class CpuResourceSet : public ShaderResourceSet {
- public:
-  ~CpuResourceSet() override = default;
-  ShaderResourceSet &rw_buffer(uint32_t binding,
-                               DevicePtr ptr,
-                               size_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  ShaderResourceSet &rw_buffer(uint32_t binding,
-                               DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  ShaderResourceSet &buffer(uint32_t binding,
-                            DevicePtr ptr,
-                            size_t size) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  ShaderResourceSet &image(uint32_t binding,
-                           DeviceAllocation alloc,
-                           ImageSamplerConfig sampler_config) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  ShaderResourceSet &rw_image(uint32_t binding,
-                              DeviceAllocation alloc,
-                              int lod) override {
-    TI_NOT_IMPLEMENTED;
-  }
-};
-
 class CpuPipeline : public Pipeline {
  public:
   ~CpuPipeline() override {
@@ -56,12 +24,10 @@ class CpuCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) override {
-    TI_NOT_IMPLEMENTED;
-  }
-  RhiResult bind_raster_resources(RasterResources *res) override {
-    TI_NOT_IMPLEMENTED;
-  }
+                                  int set_index = 0) override{
+      TI_NOT_IMPLEMENTED};
+  RhiResult bind_raster_resources(RasterResources *res) override{
+      TI_NOT_IMPLEMENTED};
   void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
   void memory_barrier() override{TI_NOT_IMPLEMENTED};
@@ -106,9 +72,7 @@ class CpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
-  ShaderResourceSet *create_resource_set() override {
-    return new CpuResourceSet;
-  }
+  ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

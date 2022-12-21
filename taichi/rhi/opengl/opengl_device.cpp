@@ -3,14 +3,9 @@
 
 #include "spirv_glsl.hpp"
 
-#include "taichi/rhi/impl_support.h"
-
 namespace taichi::lang {
-
-using namespace rhi_impl;
-
 namespace opengl {
-  
+
 namespace {
 const std::unordered_map<BufferFormat, GLuint> format_to_gl_internal_format = {
     {BufferFormat::r8, GL_R8},
@@ -318,7 +313,7 @@ void GLCommandList::bind_pipeline(Pipeline *p) {
 }
 
 RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index) {
+                                               int set_index) {
   GLResourceSet *set = static_cast<GLResourceSet *>(res);
   for (auto &[binding, buffer] : set->ssbo_binding_map()) {
     auto cmd = std::make_unique<CmdBindBufferToIndex>();

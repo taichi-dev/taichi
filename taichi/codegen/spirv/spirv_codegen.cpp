@@ -1736,22 +1736,21 @@ class TaskCodegen : public IRVisitor {
     std::vector<spirv::Value> buffers;
     if (caps_->get(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
-      std::unordered_set<BufferInfo, BufferInfoHasher> unique_bufs;
       // One buffer can be bound to different bind points but has to be unique
       // in OpEntryPoint interface declarations.
       // From Spec: before SPIR-V version 1.4, duplication of these interface id
       // is tolerated. Starting with version 1.4, an interface id must not
       // appear more than once.
+      std::unordered_set<spirv::Value, spirv::ValueHasher> entry_point_values;
       for (const auto &bb : task_attribs_.buffer_binds) {
-        if (unique_bufs.count(bb.buffer) == 0) {
-          for (auto &it : buffer_value_map_) {
-            if (it.first.first == bb.buffer) {
-              buffers.push_back(it.second);
-            }
+        for (auto &it : buffer_value_map_) {
+          if (it.first.first == bb.buffer) {
+            entry_point_values.insert(it.second);
           }
-          unique_bufs.insert(bb.buffer);
         }
       }
+      buffers.insert(buffers.end(), entry_point_values.begin(),
+                     entry_point_values.end());
     }
     ir_->commit_kernel_function(kernel_function_, "main", buffers,
                                 group_size);  // kernel entry
@@ -2307,6 +2306,7 @@ class TaskCodegen : public IRVisitor {
 
     args_buffer_value_ =
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
+    get_buffer_value(BufferInfo(BufferType::Args, 0), PrimitiveType::i32);
   }
 
   void compile_ret_struct() {
@@ -2336,6 +2336,7 @@ class TaskCodegen : public IRVisitor {
 
     ret_buffer_value_ =
         ir_->buffer_struct_argument(ret_struct_type_, 0, 1, "rets");
+    get_buffer_value(BufferInfo(BufferType::Rets, 0), PrimitiveType::i32);
   }
 
   std::vector<BufferBind> get_buffer_binds() {

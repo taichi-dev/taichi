@@ -14,6 +14,9 @@ void check_opengl_error(const std::string &msg = "OpenGL");
 
 class GLResourceSet : public ShaderResourceSet {
  public:
+  GLResourceSet() = default;
+  explicit GLResourceSet(const GLResourceSet &other) = default;
+
   ~GLResourceSet() override;
 
   GLResourceSet &rw_buffer(uint32_t binding, DevicePtr ptr, size_t size) final;

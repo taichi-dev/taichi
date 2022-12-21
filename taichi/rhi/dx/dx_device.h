@@ -21,7 +21,9 @@ void check_dx_error(HRESULT hr, const char *msg);
 
 class Dx11ResourceSet : public ShaderResourceSet {
  public:
-  ~Dx11ResourceSet() final;
+  Dx11ResourceSet() = default;
+  ~Dx11ResourceSet() override;
+
   ShaderResourceSet &rw_buffer(uint32_t binding,
                                DevicePtr ptr,
                                size_t size) final;
@@ -34,7 +36,6 @@ class Dx11ResourceSet : public ShaderResourceSet {
   ShaderResourceSet &rw_image(uint32_t binding,
                               DeviceAllocation alloc,
                               int lod) final;
-
 
   const std::unordered_map<uint32_t, uint32_t> &uav_binding_to_alloc_id() {
     return uav_binding_to_alloc_id_;
@@ -50,7 +51,7 @@ class Dx11ResourceSet : public ShaderResourceSet {
 };
 
 class Dx11RasterResources : public RasterResources {
-  ~Dx11RasterResources() final = default;
+  ~Dx11RasterResources() override = default;
 
   RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final {
     TI_NOT_IMPLEMENTED;
@@ -71,6 +72,7 @@ class Dx11Pipeline : public Pipeline {
                const std::string &name,
                Dx11Device *device);
   ~Dx11Pipeline() override;
+
   ID3D11ComputeShader *get_program() {
     return compute_shader_;
   }

@@ -80,8 +80,7 @@ def _gen_swizzles(cls):
                     checker(instance, pattern)
                     res = []
                     for ch in pattern:
-                        res.append(
-                            instance._get_entry(key_group.index(ch)))
+                        res.append(instance._get_entry(key_group.index(ch)))
                     return Vector(res)
 
                 @python_scope

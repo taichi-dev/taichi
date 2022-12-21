@@ -163,13 +163,9 @@ TEST_F(CapiTest, TestBehaviorFreeMemory) {
 
     // runtime is null and allocate_info is valid
     {
-      TiMemoryAllocateInfo allocate_info{};
-      allocate_info.size = 1024;
-      allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-      TiMemory memory = ti_allocate_memory(runtime, &allocate_info);
+      TiMemory memory = runtime.allocate_memory(1024);
       ti_free_memory(TI_NULL_HANDLE, memory);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-      ti_free_memory(runtime, memory);
     }
 
     // runtime is not null and allocate_info is null
@@ -334,7 +330,6 @@ TEST_F(CapiTest, TestBehaviorFreeImage) {
       TiImage image = runtime.allocate_image(make_image_allocate_info());
       ti_free_image(TI_NULL_HANDLE, image);
       EXPECT_TAICHI_ERROR(TI_ERROR_ARGUMENT_NULL);
-      ti_free_image(runtime, image);
     }
 
     // Runtime is valid, image is null

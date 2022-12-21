@@ -513,6 +513,20 @@ class Device {
   virtual void wait_idle() = 0;
 
   /**
+   * Create a new shader resource set
+   * @return The new shader resource set pointer
+   */
+  virtual ShaderResourceSet *create_resource_set() = 0;
+
+  /**
+   * Create a new shader resource set (wrapped in unique ptr)
+   * @return The new shader resource set unique pointer
+   */
+  inline std::unique_ptr<ShaderResourceSet> create_resource_set_unique() {
+    return std::unique_ptr<ShaderResourceSet>(this->create_resource_set());
+  }
+
+  /**
    * Map a range within a DeviceAllocation memory into host address space.
    *
    * @param[in] ptr The Device Pointer to map.
@@ -693,6 +707,20 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
       std::string name = "Pipeline") = 0;
 
   virtual Stream *get_graphics_stream() = 0;
+
+  /**
+   * Create a new raster resources set
+   * @return The new RasterResources pointer
+   */
+  virtual RasterResources *create_raster_resources() = 0;
+
+  /**
+   * Create a new raster resources set (wrapped in unique ptr)
+   * @return The new RasterResources unique pointer
+   */
+  inline std::unique_ptr<RasterResources> create_raster_resources_unique() {
+    return std::unique_ptr<RasterResources>(this->create_raster_resources());
+  }
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;

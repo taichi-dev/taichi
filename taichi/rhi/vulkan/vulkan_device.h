@@ -615,6 +615,14 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
+  ShaderResourceSet *create_resource_set() final {
+    return new VulkanResourceSet(*this);
+  }
+  
+  RasterResources *create_raster_resources() final {
+    return new VulkanRasterResources;
+  }
+
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 

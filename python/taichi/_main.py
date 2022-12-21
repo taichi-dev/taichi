@@ -831,7 +831,7 @@ class TaichiMain:
     @register
     def cache(arguments: list = sys.argv[2:]):
         """Manage the offline cache files manually"""
-        if len(arguments) < 1:
+        if not arguments:
             return
 
         subcmd = arguments[0]

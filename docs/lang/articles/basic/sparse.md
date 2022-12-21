@@ -34,7 +34,7 @@ Sparse data structures are traditionally based on [Quadtrees](https://en.wikiped
 [VDB](https://www.openvdb.org/) and [SPGrid](http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf) are such examples.
 In Taichi, programmers can compose data structures similar to VDB and SPGrid with SNodes. The advantages of Taichi spatially sparse data structures include:
 
-- Array and List access time, which is the equivalent to accessing a dense data structure.
+- Access with indices, which just like accessing a dense data structure.
 - Automatic parallelization when iterating.
 - Automatic memory access optimization.
 

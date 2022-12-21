@@ -358,6 +358,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
       indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
     }
     auto ret = Stmt::make<FrontendReturnStmt>(
+        current_ast_builder(),
         ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
     this->current_ast_builder()->insert(std::move(ret));
   });

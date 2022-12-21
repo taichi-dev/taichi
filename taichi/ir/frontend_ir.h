@@ -13,6 +13,8 @@
 
 namespace taichi::lang {
 
+class ASTBuilder;
+
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
   int num_cpu_threads{0};

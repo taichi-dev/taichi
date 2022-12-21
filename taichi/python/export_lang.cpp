@@ -375,7 +375,12 @@ void export_lang(py::module &m) {
       .def("get_current_device_caps", &Program::get_current_device_caps,
            py::return_value_policy::reference)
       // Refactor2023:FIXME: Temp design
-      .def("launch_kernel", &Program::launch_kernel)
+      .def("launch_kernel",
+           [](Program *self, const CompiledKernelData &compiled_kernel_data,
+              KernelLaunchContext &ctx) {
+             py::gil_scoped_release release;
+             self->launch_kernel(compiled_kernel_data, ctx);
+           })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);

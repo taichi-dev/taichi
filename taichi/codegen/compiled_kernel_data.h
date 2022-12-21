@@ -30,7 +30,7 @@ class CompiledKernelData {
   }
 
   // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
-  void set_handle(std::any handle) {
+  void set_handle(std::any handle) const {
     handle_ = std::move(handle);
   }
 
@@ -41,7 +41,7 @@ class CompiledKernelData {
 
  private:
   // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
-  std::optional<std::any> handle_;
+  mutable std::optional<std::any> handle_;
 };
 
 }  // namespace taichi::lang

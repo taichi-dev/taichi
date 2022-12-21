@@ -259,19 +259,20 @@ const std::unique_ptr<KernelCompilationManager>
 void VulkanProgramImpl::launch_kernel(
     const CompiledKernelData &compiled_kernel_data,
     RuntimeContext &ctx) {
-  const auto &spirv_compiled =
-      dynamic_cast<const spirv::CompiledKernelData &>(compiled_kernel_data);
   // Refactor2023:FIXME: Temp solution. Remove it after making Runtime stateless
   gfx::GfxRuntime::KernelHandle handle;
   if (const auto &h = compiled_kernel_data.get_handle()) {
     handle = std::any_cast<decltype(handle)>(*h);
   } else {
+    const auto &spirv_compiled =
+        dynamic_cast<const spirv::CompiledKernelData &>(compiled_kernel_data);
     const auto &spirv_data = spirv_compiled.get_internal_data();
     gfx::GfxRuntime::RegisterParams params;
     params.kernel_attribs = spirv_data.kernel_attribs;
     params.task_spirv_source_codes = spirv_data.spirv_src;
     params.num_snode_trees = spirv_data.num_snode_trees;
     handle = vulkan_runtime_->register_taichi_kernel(std::move(params));
+    compiled_kernel_data.set_handle(handle);
   }
   vulkan_runtime_->launch_kernel(handle, &ctx);
 }

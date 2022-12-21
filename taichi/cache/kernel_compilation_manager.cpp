@@ -131,7 +131,9 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
     if (iter != kernels.end()) {
       auto &k = iter->second;
       TI_ASSERT(k.arch == arch);
-      if (auto loaded = load_cache_file(gukk, arch)) {
+      if (k.compiled_kernel_data) {
+        return k.compiled_kernel_data.get();
+      } else if (auto loaded = load_cache_file(gukk, arch)) {
         TI_DEBUG("Create kernel '{}' from cache (key='{}')",
                  kernel_def.get_name(), gukk);
         k.last_used_at = std::time(nullptr);

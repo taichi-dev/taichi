@@ -280,10 +280,13 @@ class Scalarize : public BasicStmtVisitor {
       } else {
         Stmt *print_stmt = std::get<Stmt *>(content);
         if (print_stmt->is<MatrixInitStmt>()) {
+          new_contents.push_back("[");
           auto matrix_init_stmt = print_stmt->cast<MatrixInitStmt>();
           for (size_t j = 0; j < matrix_init_stmt->values.size(); j++) {
             new_contents.push_back(matrix_init_stmt->values[j]);
+            new_contents.push_back(", ");
           }
+          new_contents.push_back("]");
         } else {
           new_contents.push_back(print_stmt);
         }

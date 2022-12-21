@@ -670,9 +670,12 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
-  // TODO: typecheck matrix
   for (auto &arg : elements) {
     TI_ASSERT_TYPE_CHECKED(arg);
+    if (arg->ret_type != dt.get_element_type()) {
+      arg = cast(arg, dt.get_element_type());
+      arg->type_check(config);
+    }
   }
   ret_type = dt;
 }
@@ -1569,8 +1572,9 @@ Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_local_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  ctx->push_back<LocalLoadStmt>(ptr_stmt);
-  return ctx->back_stmt();
+  auto local_load = ctx->push_back<LocalLoadStmt>(ptr_stmt);
+  local_load->ret_type = local_load->src->ret_type.ptr_removed();
+  return local_load;
 }
 
 Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {

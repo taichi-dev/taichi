@@ -30,6 +30,13 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(SNodeOpType op_type,
   }
 }
 
+FrontendReturnStmt::FrontendReturnStmt(ASTBuilder *builder,
+                                       const ExprGroup &group) {
+  values = group;
+  auto expanded_exprs = builder->expand_expr(values.exprs);
+  values.exprs = std::move(expanded_exprs);
+}
+
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
@@ -1278,7 +1285,7 @@ Expr ASTBuilder::insert_patch_idx_expr() {
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
-  this->insert(Stmt::make<FrontendReturnStmt>(group));
+  this->insert(Stmt::make<FrontendReturnStmt>(this, group));
 }
 
 void ASTBuilder::create_print(

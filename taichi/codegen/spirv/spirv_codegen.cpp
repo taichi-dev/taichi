@@ -91,7 +91,7 @@ class TaskCodegen : public IRVisitor {
 
   void fill_snode_to_root() {
     for (int root = 0; root < compiled_structs_.size(); ++root) {
-      for (auto [node_id, node] : compiled_structs_[root].snode_descriptors) {
+      for (auto &[node_id, node] : compiled_structs_[root].snode_descriptors) {
         snode_to_root_[node_id] = root;
       }
     }

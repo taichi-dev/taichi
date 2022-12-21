@@ -148,5 +148,12 @@ class SyncedPtrStableObjectList {
   std::vector<void *> free_nodes_;
 };
 
+// A helper to combine hash
+template <class T>
+inline void hash_combine(std::size_t &seed, const T &v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 }  // namespace rhi_impl
 }  // namespace taichi::lang

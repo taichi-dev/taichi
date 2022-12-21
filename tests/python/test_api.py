@@ -51,7 +51,6 @@ def _get_expected_matrix_apis():
         'unit',
         'zero',
         'get_shape',
-        'element_type',
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)

@@ -242,7 +242,7 @@ def test_cli_ticache():
             break
     assert found
 
-    with patch_sys_argv_helper(["ti", "ticache", "clean", "-p",
+    with patch_sys_argv_helper(["ti", "cache", "clean", "-p",
                                 tmp_path]) as custom_argv:
         cli = TaichiMain()
         cli()

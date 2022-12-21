@@ -139,8 +139,7 @@ CacheManager::CacheManager(Params &&init_params)
           cached_module_ = gfx::make_aot_module(params, init_params.arch);
         } else {
           TI_WARN(
-              "Lock {} failed. You can run 'ti ticache clean -p {}' and try "
-              "again.",
+              "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
               lock_path, path_);
         }
       }

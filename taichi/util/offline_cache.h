@@ -182,8 +182,7 @@ class CacheCleaner {
           taichi::join_path(path, config.metadata_lock_name);
       if (!lock_with_file(lock_path)) {
         TI_WARN(
-            "Lock {} failed. You can run 'ti ticache clean -p {}' and try "
-            "again.",
+            "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
             lock_path, path);
         return;
       }
@@ -301,7 +300,7 @@ bool try_demangle_name(const std::string &mangled_name,
                        std::string &primal_name,
                        std::string &key);
 
-// utils to manage ticache files
+// utils to manage the offline cache files
 void clean_offline_cache_files(const std::string &path);
 
 }  // namespace offline_cache

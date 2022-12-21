@@ -249,9 +249,9 @@ class TaichiMain:
             nrows += 1
         names = sorted(choices.keys())
         for k in range(nrows):
-            table.add_row(
-                *
-                [colormap(j, names[j]) for j in range(k, len(choices), nrows)])
+            table.add_row(*[
+                colormap(j, names[j]) for j in range(k, len(choices), nrows)
+            ])
 
         parser = argparse.ArgumentParser(prog='ti example',
                                          description=f"{self.example.__doc__}")
@@ -829,8 +829,8 @@ class TaichiMain:
 
     @staticmethod
     @register
-    def ticache(arguments: list = sys.argv[2:]):
-        """Manage the ticache files manually"""
+    def cache(arguments: list = sys.argv[2:]):
+        """Manage the offline cache files manually"""
         if len(arguments) < 1:
             return
 
@@ -838,8 +838,8 @@ class TaichiMain:
         arguments = arguments[1:]
         if subcmd == 'clean':
             parser = argparse.ArgumentParser(
-                prog='ti ticache',
-                description='Clean all ticache files in given path')
+                prog='ti cache clean',
+                description='Clean all offline cache files in given path')
             parser.add_argument(
                 '-p',
                 '--offline-cache-file-path',

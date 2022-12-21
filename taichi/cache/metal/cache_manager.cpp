@@ -64,7 +64,7 @@ CacheManager::CacheManager(Params &&init_params)
       offline_cache::load_metadata_with_checking(cached_data_, filepath);
     } else {
       TI_WARN(
-          "Lock {} failed. You can run 'ti ticache clean -p {}' and try again.",
+          "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
           lock_path, config_.cache_path);
     }
   }

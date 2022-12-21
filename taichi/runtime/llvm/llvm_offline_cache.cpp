@@ -138,7 +138,7 @@ bool LlvmOfflineCacheFileReader::load_meta_data(
     });
     return Error::kNoError == load_metadata_with_checking(data, tcb_path);
   }
-  TI_WARN("Lock {} failed. You can run 'ti ticache clean -p {}' and try again.",
+  TI_WARN("Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
           lock_path, cache_file_path);
   return false;
 }

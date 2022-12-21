@@ -464,18 +464,18 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const int group_x = (attribs.advisory_total_num_threads +
                          attribs.advisory_num_threads_per_group - 1) /
                         attribs.advisory_num_threads_per_group;
-    ResourceBinder *binder = vp->resource_binder();
+    std::unique_ptr<ShaderResourceSet> bindings = device_->create_resource_set_unique();
     for (auto &bind : attribs.buffer_binds) {
       if (bind.buffer.type == BufferType::ExtArr) {
-        binder->rw_buffer(0, bind.binding, any_arrays.at(bind.buffer.root_id));
+        bindings->rw_buffer(bind.binding, any_arrays.at(bind.buffer.root_id));
       } else if (args_buffer && bind.buffer.type == BufferType::Args) {
-        binder->buffer(0, bind.binding, *args_buffer);
+        bindings->buffer(bind.binding, *args_buffer);
       } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
-        binder->rw_buffer(0, bind.binding, *ret_buffer);
+        bindings->rw_buffer(bind.binding, *ret_buffer);
       } else {
         DeviceAllocation *alloc = ti_kernel->get_buffer_bind(bind.buffer);
         if (alloc) {
-          binder->rw_buffer(0, bind.binding, *alloc);
+          bindings->rw_buffer(bind.binding, *alloc);
         }
       }
     }
@@ -484,10 +484,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
         transition_image(texture, ImageLayout::shader_read_write);
-        binder->rw_image(0, bind.binding, texture, 0);
+        bindings->rw_image(bind.binding, texture, 0);
       } else {
         transition_image(texture, ImageLayout::shader_read);
-        binder->image(0, bind.binding, texture, {});
+        bindings->image(bind.binding, texture, {});
       }
     }
 
@@ -506,7 +506,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
 
     current_cmdlist_->bind_pipeline(vp);
-    current_cmdlist_->bind_resources(binder);
+    current_cmdlist_->bind_shader_resources(bindings.get());
     current_cmdlist_->dispatch(group_x);
     current_cmdlist_->memory_barrier();
   }

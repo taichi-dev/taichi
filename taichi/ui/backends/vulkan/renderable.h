@@ -67,6 +67,8 @@ class Renderable {
   AppContext *app_context_;
 
   std::unique_ptr<taichi::lang::Pipeline> pipeline_{nullptr};
+  std::unique_ptr<taichi::lang::ShaderResourceSet> resource_set_{nullptr};
+  std::unique_ptr<taichi::lang::RasterResources> raster_state_{nullptr};
 
   taichi::lang::DeviceAllocation vertex_buffer_;
   taichi::lang::DeviceAllocation index_buffer_;

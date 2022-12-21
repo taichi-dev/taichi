@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
-from pathlib import Path
-from typing import Optional, Tuple
 import os
 import sys
+from pathlib import Path
+from typing import Optional, Tuple
 
 # -- third party --
 # -- own --

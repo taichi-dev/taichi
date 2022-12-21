@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+import shutil
+import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
-import zipfile
-import shutil
 
 # -- third party --
 import requests
@@ -84,7 +84,11 @@ def download_dep(url, outdir, *, strip=0, force=False):
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
-            prog = tqdm.tqdm(unit="B", unit_scale=True, unit_divisor=1024, total=total_size, desc=name)
+            prog = tqdm.tqdm(unit="B",
+                             unit_scale=True,
+                             unit_divisor=1024,
+                             total=total_size,
+                             desc=name)
             with prog, open(local_cached, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     sz = f.write(chunk)

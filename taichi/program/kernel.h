@@ -122,14 +122,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   }
 
   [[nodiscard]] std::string get_name() const override;
-  /**
-   * Whether the given |arch| is supported in the lower() method.
-   *
-   * @param arch: The arch to check
-   * @return: True if supported.
-   */
-  // Refactor2023:FIXME: Remove
-  static bool supports_lowering(Arch arch);
 
   void set_kernel_key_for_cache(const std::string &kernel_key) const {
     kernel_key_ = kernel_key;
@@ -138,9 +130,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() const {
     return kernel_key_;
   }
-
-  // Refactor2023:FIXME: Remove
-  void offload_to_executable(const CompileConfig &config, IRNode *stmt);
 
   // Refactor2023:FIXME: Remove
   FunctionType get_compiled_func() {

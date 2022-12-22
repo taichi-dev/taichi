@@ -341,27 +341,6 @@ void Kernel::init(Program &program,
   func();
 }
 
-// static
-bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
-         (arch == Arch::metal);
-}
-
-void Kernel::offload_to_executable(const CompileConfig &config, IRNode *stmt) {
-  bool verbose = config.print_ir;
-  if ((is_accessor && !config.print_accessor_ir) ||
-      (is_evaluator && !config.print_evaluator_ir))
-    verbose = false;
-  irpass::offload_to_executable(
-      stmt, config, this, verbose,
-      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
-      /*lower_global_access=*/true,
-      /*make_thread_local=*/config.make_thread_local,
-      /*make_block_local=*/
-      is_extension_supported(config.arch, Extension::bls) &&
-          config.make_block_local);
-}
-
 // Refactor2023:FIXME: Remove (:Temp)
 void launch_kernel(Program *prog,
                    const CompileConfig &compile_config,

@@ -2645,7 +2645,6 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
 
   const auto &config = *compile_config;
-  kernel->offload_to_executable(config, ir);
 
   emit_to_module();
   eliminate_unused_functions();

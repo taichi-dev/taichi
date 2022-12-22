@@ -17,6 +17,7 @@
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
+#include "taichi/program/extension.h"
 #include "taichi/analysis/offline_cache_util.h"
 
 namespace taichi::lang {
@@ -116,8 +117,21 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
       tlctx->fetch_this_thread_struct_module();
       auto offload = irpass::analysis::clone(offloads[i].get());
       irpass::re_id(offload.get());
-      auto new_data =
-          this->compile_task(&config, nullptr, offload->as<OffloadedStmt>());
+      bool verbose = config.print_ir;
+      if ((kernel->is_accessor && !config.print_accessor_ir) ||
+          (kernel->is_evaluator && !config.print_evaluator_ir))
+        verbose = false;
+      auto stmt = offload->as<OffloadedStmt>();
+      irpass::offload_to_executable(
+          stmt, config, kernel, verbose,
+          /*determine_ad_stack_size=*/kernel->autodiff_mode ==
+              AutodiffMode::kReverse,
+          /*lower_global_access=*/true,
+          /*make_thread_local=*/config.make_thread_local,
+          /*make_block_local=*/
+          is_extension_supported(config.arch, Extension::bls) &&
+              config.make_block_local);
+      auto new_data = this->compile_task(&config, nullptr, stmt);
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
     if (kernel->is_evaluator) {

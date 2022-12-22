@@ -254,7 +254,6 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
     const CompileConfig *config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  kernel->offload_to_executable(*config, ir);
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen =
@@ -281,7 +280,7 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
 LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
   const auto &config = *get_compile_config();
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
-  irpass::ast_to_ir(config, *kernel, false);
+  irpass::ast_to_ir(config, *kernel, true);
 
   auto res = compile_task(&config);
   std::vector<std::unique_ptr<LLVMCompiledTask>> data;

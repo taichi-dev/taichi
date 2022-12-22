@@ -613,8 +613,9 @@ class MeshElementFieldProxy:
 
         element_field = self.mesh.fields[self.element_type]
         for key, attr in element_field.field_dict.items():
+
             global_entry_expr = impl.Expr(
-                _ti_core.get_index_conversion(
+                ast_builder.mesh_index_conversion(
                     self.mesh.mesh_ptr, element_type, entry_expr,
                     ConvType.l2r if element_field.attr_dict[key].reorder else
                     ConvType.l2g))  # transform index space
@@ -652,10 +653,11 @@ class MeshElementFieldProxy:
 
     @property
     def id(self):  # return the global non-reordered index
+        ast_builder = impl.get_runtime().prog.current_ast_builder()
         l2g_expr = impl.Expr(
-            _ti_core.get_index_conversion(self.mesh.mesh_ptr,
-                                          self.element_type, self.entry_expr,
-                                          ConvType.l2g))
+            ast_builder.mesh_index_conversion(self.mesh.mesh_ptr,
+                                              self.element_type,
+                                              self.entry_expr, ConvType.l2g))
         return l2g_expr
 
 

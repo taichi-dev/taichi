@@ -887,12 +887,11 @@ class MeshIndexConversionExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  MeshIndexConversionExpression(mesh::Mesh *mesh,
+  MeshIndexConversionExpression(ASTBuilder *builder,
+                                mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
-  }
+                                mesh::ConvType conv_type);
 
   void flatten(FlattenContext *ctx) override;
 
@@ -989,6 +988,11 @@ class ASTBuilder {
   Expr expr_subscript(const Expr &expr,
                       const ExprGroup &indices,
                       std::string tb = "");
+
+  Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                             mesh::MeshElementType idx_type,
+                             const Expr &idx,
+                             mesh::ConvType &conv_type);
 
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   void create_assert_stmt(const Expr &cond,

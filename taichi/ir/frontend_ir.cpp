@@ -692,6 +692,11 @@ IndexExpression::IndexExpression(ASTBuilder *builder,
                                  const ExprGroup &indices,
                                  std::string tb)
     : var(var) {
+  // IndexExpression without ret_shape is used for matrix indexing,
+  // where each entry of ExprGroup is interpreted as indexing into a specific
+  // axis. For example, mat[0][3, 4] has indices_group={0, [3, 4]}, where [3, 4]
+  // corresponds to "n"-axis and "m"-axis of the matrix. Therefore we expand
+  // indices_group={0, [3, 4]} into {0, 3, 4} to avoid TensorType in indices.
   std::vector<Expr> expanded_indices = builder->expand_expr(indices.exprs);
   auto expanded_expr_group = ExprGroup();
   expanded_expr_group.exprs = expanded_indices;
@@ -706,15 +711,12 @@ IndexExpression::IndexExpression(ASTBuilder *builder,
                                  const std::vector<ExprGroup> &indices_group,
                                  const std::vector<int> &ret_shape,
                                  std::string tb)
-    : var(var), ret_shape(ret_shape) {
-  std::vector<ExprGroup> expanded_indices_group;
-  for (auto &expr_group : indices_group) {
-    std::vector<Expr> expanded_exprs = builder->expand_expr(expr_group.exprs);
-    auto expanded_expr_group = ExprGroup();
-    expanded_expr_group.exprs = expanded_exprs;
-    expanded_indices_group.emplace_back(std::move(expanded_expr_group));
-  }
-
+    : var(var), indices_group(indices_group), ret_shape(ret_shape) {
+  // IndexExpression with ret_shape is used for matrix slicing, where each entry
+  // of ExprGroup is interpreted as a group of indices to return within each
+  // axis. For example, mat[0, 3:5] has indices_group={0, [3, 4]}, where [3, 4]
+  // means "m"-axis will return a TensorType with size of 2. In this case, we
+  // should not expand indices_group due to its special semantics.
   this->tb = tb;
 }
 
@@ -1187,6 +1189,20 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+MeshIndexConversionExpression::MeshIndexConversionExpression(
+    ASTBuilder *builder,
+    mesh::Mesh *mesh,
+    mesh::MeshElementType idx_type,
+    const Expr idx,
+    mesh::ConvType conv_type)
+    : mesh(mesh), idx_type(idx_type), conv_type(conv_type) {
+  if (idx.is<IdExpression>() && idx.get_ret_type() == PrimitiveType::unknown) {
+    this->idx = idx;
+  } else {
+    this->idx = builder->expand_expr({idx})[0];
+  }
+}
+
 void MeshIndexConversionExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
@@ -1574,6 +1590,14 @@ std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
   }
 
   return expanded_exprs;
+}
+
+Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                                       mesh::MeshElementType idx_type,
+                                       const Expr &idx,
+                                       mesh::ConvType &conv_type) {
+  return Expr::make<MeshIndexConversionExpression>(this, mesh_ptr.ptr.get(),
+                                                   idx_type, idx, conv_type);
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

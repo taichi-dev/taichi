@@ -310,6 +310,7 @@ void export_lang(py::module &m) {
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
       .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
@@ -1034,13 +1035,6 @@ void export_lang(py::module &m) {
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
           return Expr::make<MeshRelationAccessExpression>(
               mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
-
-  m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
-           const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(
-              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")

@@ -146,7 +146,6 @@ def _calc_slice(index, default_stop):
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
     ast_builder = get_runtime().prog.current_ast_builder()
-
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
             value,
@@ -191,13 +190,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value,
                   (MeshReorderedScalarFieldProxy,
                    MeshReorderedMatrixFieldProxy)) and not skip_reordered:
+
         assert index_dim == 1
         reordered_index = tuple([
             Expr(
-                _ti_core.get_index_conversion(value.mesh_ptr,
-                                              value.element_type,
-                                              Expr(indices[0]).ptr,
-                                              ConvType.g2r))
+                ast_builder.mesh_index_conversion(value.mesh_ptr,
+                                                  value.element_type,
+                                                  Expr(indices[0]).ptr,
+                                                  ConvType.g2r))
         ])
         return subscript(ast_builder,
                          value,
@@ -262,6 +262,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 make_expr_group(i, j) for i in indices[0] for j in indices[1]
             ]
             return_shape = (len(indices[0]), len(indices[1]))
+
         return Expr(
             _ti_core.subscript_with_multiple_indices(
                 get_runtime().prog.current_ast_builder(), value.ptr,

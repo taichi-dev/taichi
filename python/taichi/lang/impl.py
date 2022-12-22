@@ -236,7 +236,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if isinstance(value, AnyArray):
         dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
-
         return Expr(
             ast_builder.expr_subscript(value.ptr, indices_expr_group,
                                        get_runtime().get_current_src_info()))

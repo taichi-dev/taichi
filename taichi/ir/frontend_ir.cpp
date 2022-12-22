@@ -1518,60 +1518,61 @@ void ASTBuilder::insert_snode_deactivate(SNode *snode,
 }
 
 std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
-  if (exprs.size() > 1 || exprs.size() == 0) {
+  if (exprs.size() == 0) {
     return exprs;
   }
 
-  Expr index_expr = exprs[0];
-  TI_ASSERT_TYPE_CHECKED(index_expr);
-  if (!index_expr->ret_type->is<TensorType>()) {
-    return exprs;
-  }
-
-  // Expand TensorType expr
-  /*
-    Before:
-      TensorType<4 x i32> index = Expr;
-
-    After:
-      TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
-      i32 ind0 = IndexExpression(id_expr, 0)
-      i32 ind1 = IndexExpression(id_expr, 1)
-      i32 ind2 = IndexExpression(id_expr, 2)
-      i32 ind3 = IndexExpression(id_expr, 3)
-
-      return {ind0, ind1, ind2, ind3}
-
-  */
   std::vector<Expr> expanded_exprs;
+  for (auto expr : exprs) {
+    TI_ASSERT_TYPE_CHECKED(expr);
+    if (!expr->ret_type->is<TensorType>()) {
+      expanded_exprs.push_back(expr);
+    } else {
+      // Expand TensorType expr
+      /*
+        Before:
+          TensorType<4 x i32> index = Expr;
 
-  auto tensor_type = index_expr->ret_type->cast<TensorType>();
+        After:
+          TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+          i32 ind0 = IndexExpression(id_expr, 0)
+          i32 ind1 = IndexExpression(id_expr, 1)
+          i32 ind2 = IndexExpression(id_expr, 2)
+          i32 ind3 = IndexExpression(id_expr, 3)
 
-  Expr id_expr;
-  if (index_expr.is<IdExpression>()) {
-    id_expr = index_expr;
-  } else {
-    id_expr = make_var(index_expr, index_expr->tb);
-  }
-  auto shape = tensor_type->get_shape();
-  if (shape.size() == 1) {
-    for (int i = 0; i < shape[0]; i++) {
-      auto ind = Expr(std::make_shared<IndexExpression>(
-          this, id_expr, ExprGroup(Expr(i)), index_expr->tb));
-      ind.expr->ret_type = tensor_type->get_element_type();
-      expanded_exprs.push_back(ind);
-    }
-  } else {
-    TI_ASSERT(shape.size() == 2);
-    for (int i = 0; i < shape[0]; i++) {
-      for (int j = 0; j < shape[1]; j++) {
-        auto ind = Expr(std::make_shared<IndexExpression>(
-            this, id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
-        ind.expr->ret_type = tensor_type->get_element_type();
-        expanded_exprs.push_back(ind);
+          return {ind0, ind1, ind2, ind3}
+
+      */
+      auto tensor_type = expr->ret_type->cast<TensorType>();
+
+      Expr id_expr;
+      if (expr.is<IdExpression>()) {
+        id_expr = expr;
+      } else {
+        id_expr = make_var(expr, expr->tb);
+      }
+      auto shape = tensor_type->get_shape();
+      if (shape.size() == 1) {
+        for (int i = 0; i < shape[0]; i++) {
+          auto ind = Expr(std::make_shared<IndexExpression>(
+              this, id_expr, ExprGroup(Expr(i)), expr->tb));
+          ind.expr->ret_type = tensor_type->get_element_type();
+          expanded_exprs.push_back(ind);
+        }
+      } else {
+        TI_ASSERT(shape.size() == 2);
+        for (int i = 0; i < shape[0]; i++) {
+          for (int j = 0; j < shape[1]; j++) {
+            auto ind = Expr(std::make_shared<IndexExpression>(
+                this, id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+            ind.expr->ret_type = tensor_type->get_element_type();
+            expanded_exprs.push_back(ind);
+          }
+        }
       }
     }
   }
+
   return expanded_exprs;
 }
 

@@ -335,7 +335,6 @@ class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.compiled_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
         self.compiling_callable = None  # pointer to instance of lang::Kernel/Function
@@ -354,7 +353,10 @@ class PyTaichi:
         self._signal_handler_registry = None
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions)
+        count = 0
+        for k in self.kernels:
+            count += len(k.compiled_kernels)
+        return count
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)

@@ -492,6 +492,7 @@ class Kernel:
 
     def reset(self):
         self.runtime = impl.get_runtime()
+        self.compiled_kernels = {}
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -551,7 +552,7 @@ class Kernel:
             key = (self.func, 0, self.autodiff_mode)
         self.runtime.materialize()
 
-        if key in self.runtime.compiled_functions:
+        if key in self.compiled_kernels:
             return
 
         grad_suffix = ""
@@ -602,268 +603,262 @@ class Kernel:
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.autodiff_mode)
-        assert key not in self.runtime.compiled_functions
-        self.runtime.compiled_functions[key] = self.get_function_body(
-            taichi_kernel)
+        assert key not in self.compiled_kernels
         self.compiled_kernels[key] = taichi_kernel
 
-    def get_function_body(self, t_kernel):
-        # The actual function body
-        def func__(*args):
-            assert len(args) == len(
-                self.arguments
-            ), f'{len(self.arguments)} arguments needed but {len(args)} provided'
+    def _launch_kernel(self, t_kernel, *args):
+        assert len(args) == len(
+            self.arguments
+        ), f'{len(self.arguments)} arguments needed but {len(args)} provided'
 
-            tmps = []
-            callbacks = []
+        tmps = []
+        callbacks = []
 
-            actual_argument_slot = 0
-            launch_ctx = t_kernel.make_launch_context()
-            for i, v in enumerate(args):
-                needed = self.arguments[i].annotation
-                if isinstance(needed, template):
-                    continue
-                provided = type(v)
-                # Note: do not use sth like "needed == f32". That would be slow.
-                if id(needed) in primitive_types.real_type_ids:
-                    if not isinstance(v, (float, int)):
-                        raise TaichiRuntimeTypeError.get(
-                            i, needed.to_string(), provided)
-                    launch_ctx.set_arg_float(actual_argument_slot, float(v))
-                elif id(needed) in primitive_types.integer_type_ids:
-                    if not isinstance(v, int):
-                        raise TaichiRuntimeTypeError.get(
-                            i, needed.to_string(), provided)
-                    if is_signed(cook_dtype(needed)):
-                        launch_ctx.set_arg_int(actual_argument_slot, int(v))
-                    else:
-                        launch_ctx.set_arg_uint(actual_argument_slot, int(v))
-                elif isinstance(needed, sparse_matrix_builder):
-                    # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
-                    launch_ctx.set_arg_uint(actual_argument_slot,
-                                            v._get_ndarray_addr())
-                elif isinstance(needed,
-                                ndarray_type.NdarrayType) and isinstance(
-                                    v, taichi.lang._ndarray.Ndarray):
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
-                elif isinstance(needed,
-                                texture_type.TextureType) and isinstance(
-                                    v, taichi.lang._texture.Texture):
-                    launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
-                elif isinstance(needed,
-                                texture_type.RWTextureType) and isinstance(
-                                    v, taichi.lang._texture.Texture):
-                    launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
-                elif isinstance(needed, ndarray_type.NdarrayType):
-                    # Element shapes are already specialized in Taichi codegen.
-                    # The shape information for element dims are no longer needed.
-                    # Therefore we strip the element shapes from the shape vector,
-                    # so that it only holds "real" array shapes.
-                    is_soa = needed.layout == Layout.SOA
-                    array_shape = v.shape
-                    if needed.dtype is None or id(
-                            needed.dtype) in primitive_types.type_ids:
-                        element_dim = 0
-                    else:
-                        element_dim = needed.dtype.ndim
-                        array_shape = v.shape[
-                            element_dim:] if is_soa else v.shape[:-element_dim]
-                    if isinstance(v, np.ndarray):
-                        if v.flags.c_contiguous:
-                            launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot, int(v.ctypes.data),
-                                v.nbytes, array_shape)
-                        elif v.flags.f_contiguous:
-                            # TODO: A better way that avoids copying is saving strides info.
-                            tmp = np.ascontiguousarray(v)
-                            # Purpose: DO NOT GC |tmp|!
-                            tmps.append(tmp)
-
-                            def callback(original, updated):
-                                np.copyto(original, np.asfortranarray(updated))
-
-                            callbacks.append(
-                                functools.partial(callback, v, tmp))
-                            launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot, int(tmp.ctypes.data),
-                                tmp.nbytes, array_shape)
-                        else:
-                            raise ValueError(
-                                "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
-                            )
-                    elif has_pytorch() and isinstance(v, torch.Tensor):
-                        if not v.is_contiguous():
-                            raise ValueError(
-                                "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
-                            )
-                        taichi_arch = self.runtime.prog.config().arch
-
-                        def get_call_back(u, v):
-                            def call_back():
-                                u.copy_(v)
-
-                            return call_back
-
-                        tmp = v
-                        if str(v.device).startswith(
-                                'cuda') and taichi_arch != _ti_core.Arch.cuda:
-                            # Getting a torch CUDA tensor on Taichi non-cuda arch:
-                            # We just replace it with a CPU tensor and by the end of kernel execution we'll use the callback to copy the values back to the original CUDA tensor.
-                            host_v = v.to(device='cpu', copy=True)
-                            tmp = host_v
-                            callbacks.append(get_call_back(v, host_v))
-
+        actual_argument_slot = 0
+        launch_ctx = t_kernel.make_launch_context()
+        for i, v in enumerate(args):
+            needed = self.arguments[i].annotation
+            if isinstance(needed, template):
+                continue
+            provided = type(v)
+            # Note: do not use sth like "needed == f32". That would be slow.
+            if id(needed) in primitive_types.real_type_ids:
+                if not isinstance(v, (float, int)):
+                    raise TaichiRuntimeTypeError.get(
+                        i, needed.to_string(), provided)
+                launch_ctx.set_arg_float(actual_argument_slot, float(v))
+            elif id(needed) in primitive_types.integer_type_ids:
+                if not isinstance(v, int):
+                    raise TaichiRuntimeTypeError.get(
+                        i, needed.to_string(), provided)
+                if is_signed(cook_dtype(needed)):
+                    launch_ctx.set_arg_int(actual_argument_slot, int(v))
+                else:
+                    launch_ctx.set_arg_uint(actual_argument_slot, int(v))
+            elif isinstance(needed, sparse_matrix_builder):
+                # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
+                launch_ctx.set_arg_uint(actual_argument_slot,
+                                        v._get_ndarray_addr())
+            elif isinstance(needed,
+                            ndarray_type.NdarrayType) and isinstance(
+                                v, taichi.lang._ndarray.Ndarray):
+                launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
+            elif isinstance(needed,
+                            texture_type.TextureType) and isinstance(
+                                v, taichi.lang._texture.Texture):
+                launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
+            elif isinstance(needed,
+                            texture_type.RWTextureType) and isinstance(
+                                v, taichi.lang._texture.Texture):
+                launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
+            elif isinstance(needed, ndarray_type.NdarrayType):
+                # Element shapes are already specialized in Taichi codegen.
+                # The shape information for element dims are no longer needed.
+                # Therefore we strip the element shapes from the shape vector,
+                # so that it only holds "real" array shapes.
+                is_soa = needed.layout == Layout.SOA
+                array_shape = v.shape
+                if needed.dtype is None or id(
+                        needed.dtype) in primitive_types.type_ids:
+                    element_dim = 0
+                else:
+                    element_dim = needed.dtype.ndim
+                    array_shape = v.shape[
+                        element_dim:] if is_soa else v.shape[:-element_dim]
+                if isinstance(v, np.ndarray):
+                    if v.flags.c_contiguous:
                         launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp.data_ptr()),
-                            tmp.element_size() * tmp.nelement(), array_shape)
-                    elif has_paddle() and isinstance(v, paddle.Tensor):
-                        # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
-                        def get_call_back(u, v):
-                            def call_back():
-                                u.copy_(v, False)
+                            actual_argument_slot, int(v.ctypes.data),
+                            v.nbytes, array_shape)
+                    elif v.flags.f_contiguous:
+                        # TODO: A better way that avoids copying is saving strides info.
+                        tmp = np.ascontiguousarray(v)
+                        # Purpose: DO NOT GC |tmp|!
+                        tmps.append(tmp)
 
-                            return call_back
+                        def callback(original, updated):
+                            np.copyto(original, np.asfortranarray(updated))
 
-                        tmp = v.value().get_tensor()
-                        taichi_arch = self.runtime.prog.config().arch
-                        if v.place.is_gpu_place():
-                            if taichi_arch != _ti_core.Arch.cuda:
-                                # Paddle cuda tensor on Taichi non-cuda arch
-                                host_v = v.cpu()
-                                tmp = host_v.value().get_tensor()
-                                callbacks.append(get_call_back(v, host_v))
-                        elif v.place.is_cpu_place():
-                            if taichi_arch == _ti_core.Arch.cuda:
-                                # Paddle cpu tensor on Taichi cuda arch
-                                gpu_v = v.cuda()
-                                tmp = gpu_v.value().get_tensor()
-                                callbacks.append(get_call_back(v, gpu_v))
-                        else:
-                            # Paddle do support many other backends like XPU, NPU, MLU, IPU
-                            raise TaichiRuntimeTypeError(
-                                f"Taichi do not support backend {v.place} that Paddle support"
-                            )
+                        callbacks.append(
+                            functools.partial(callback, v, tmp))
                         launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(tmp._ptr()),
-                            v.element_size() * v.size, array_shape)
-                    else:
-                        raise TaichiRuntimeTypeError.get(
-                            i, needed.to_string(), v)
-
-                elif isinstance(needed, MatrixType):
-                    if needed.dtype in primitive_types.real_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, (int, float)):
-                                    raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_float(
-                                    actual_argument_slot, float(val))
-                                actual_argument_slot += 1
-                    elif needed.dtype in primitive_types.integer_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, int):
-                                    raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(), type(val))
-                                if is_signed(needed.dtype):
-                                    launch_ctx.set_arg_int(
-                                        actual_argument_slot, int(val))
-                                else:
-                                    launch_ctx.set_arg_uint(
-                                        actual_argument_slot, int(val))
-                                actual_argument_slot += 1
+                            actual_argument_slot, int(tmp.ctypes.data),
+                            tmp.nbytes, array_shape)
                     else:
                         raise ValueError(
-                            f'Matrix dtype {needed.dtype} is not integer type or real type.'
+                            "Non contiguous numpy arrays are not supported, please call np.ascontiguousarray(arr) before passing it into taichi kernel."
                         )
-                    continue
+                elif has_pytorch() and isinstance(v, torch.Tensor):
+                    if not v.is_contiguous():
+                        raise ValueError(
+                            "Non contiguous tensors are not supported, please call tensor.contiguous() before passing it into taichi kernel."
+                        )
+                    taichi_arch = self.runtime.prog.config().arch
+
+                    def get_call_back(u, v):
+                        def call_back():
+                            u.copy_(v)
+
+                        return call_back
+
+                    tmp = v
+                    if str(v.device).startswith(
+                            'cuda') and taichi_arch != _ti_core.Arch.cuda:
+                        # Getting a torch CUDA tensor on Taichi non-cuda arch:
+                        # We just replace it with a CPU tensor and by the end of kernel execution we'll use the callback to copy the values back to the original CUDA tensor.
+                        host_v = v.to(device='cpu', copy=True)
+                        tmp = host_v
+                        callbacks.append(get_call_back(v, host_v))
+
+                    launch_ctx.set_arg_external_array_with_shape(
+                        actual_argument_slot, int(tmp.data_ptr()),
+                        tmp.element_size() * tmp.nelement(), array_shape)
+                elif has_paddle() and isinstance(v, paddle.Tensor):
+                    # For now, paddle.fluid.core.Tensor._ptr() is only available on develop branch
+                    def get_call_back(u, v):
+                        def call_back():
+                            u.copy_(v, False)
+
+                        return call_back
+
+                    tmp = v.value().get_tensor()
+                    taichi_arch = self.runtime.prog.config().arch
+                    if v.place.is_gpu_place():
+                        if taichi_arch != _ti_core.Arch.cuda:
+                            # Paddle cuda tensor on Taichi non-cuda arch
+                            host_v = v.cpu()
+                            tmp = host_v.value().get_tensor()
+                            callbacks.append(get_call_back(v, host_v))
+                    elif v.place.is_cpu_place():
+                        if taichi_arch == _ti_core.Arch.cuda:
+                            # Paddle cpu tensor on Taichi cuda arch
+                            gpu_v = v.cuda()
+                            tmp = gpu_v.value().get_tensor()
+                            callbacks.append(get_call_back(v, gpu_v))
+                    else:
+                        # Paddle do support many other backends like XPU, NPU, MLU, IPU
+                        raise TaichiRuntimeTypeError(
+                            f"Taichi do not support backend {v.place} that Paddle support"
+                        )
+                    launch_ctx.set_arg_external_array_with_shape(
+                        actual_argument_slot, int(tmp._ptr()),
+                        v.element_size() * v.size, array_shape)
+                else:
+                    raise TaichiRuntimeTypeError.get(
+                        i, needed.to_string(), v)
+
+            elif isinstance(needed, MatrixType):
+                if needed.dtype in primitive_types.real_types:
+                    for a in range(needed.n):
+                        for b in range(needed.m):
+                            val = v[a, b] if needed.ndim == 2 else v[a]
+                            if not isinstance(val, (int, float)):
+                                raise TaichiRuntimeTypeError.get(
+                                    i, needed.dtype.to_string(), type(val))
+                            launch_ctx.set_arg_float(
+                                actual_argument_slot, float(val))
+                            actual_argument_slot += 1
+                elif needed.dtype in primitive_types.integer_types:
+                    for a in range(needed.n):
+                        for b in range(needed.m):
+                            val = v[a, b] if needed.ndim == 2 else v[a]
+                            if not isinstance(val, int):
+                                raise TaichiRuntimeTypeError.get(
+                                    i, needed.dtype.to_string(), type(val))
+                            if is_signed(needed.dtype):
+                                launch_ctx.set_arg_int(
+                                    actual_argument_slot, int(val))
+                            else:
+                                launch_ctx.set_arg_uint(
+                                    actual_argument_slot, int(val))
+                            actual_argument_slot += 1
                 else:
                     raise ValueError(
-                        f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
+                        f'Matrix dtype {needed.dtype} is not integer type or real type.'
                     )
-                actual_argument_slot += 1
-
-            if actual_argument_slot > 8 and impl.current_cfg(
-            ).arch == _ti_core.cc:
-                raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+                continue
+            else:
+                raise ValueError(
+                    f'Argument type mismatch. Expecting {needed}, got {type(v)}.'
                 )
+            actual_argument_slot += 1
 
-            if actual_argument_slot > 64 and impl.current_cfg(
-            ).arch != _ti_core.cc:
-                raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
-                )
+        if actual_argument_slot > 8 and impl.current_cfg(
+        ).arch == _ti_core.cc:
+            raise TaichiRuntimeError(
+                f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+            )
 
-            try:
-                prog = impl.get_runtime().prog
-                if prog.config().arch == _ti_core.vulkan:
-                    # Compile (& Online Cache & Offline Cache)
-                    mgr = prog.get_kernel_compilation_manager()
-                    compile_config = prog.config()
-                    device_caps = prog.get_current_device_caps()
-                    ckd = mgr.load_or_compile(compile_config, device_caps,
-                                              t_kernel)
-                    # Launch kernel
-                    prog.launch_kernel(ckd, launch_ctx)
-                else:
-                    _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
-                                           launch_ctx)
-            except Exception as e:
-                e = handle_exception_from_cpp(e)
-                raise e from None
+        if actual_argument_slot > 64 and impl.current_cfg(
+        ).arch != _ti_core.cc:
+            raise TaichiRuntimeError(
+                f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+            )
 
-            ret = None
-            ret_dt = self.return_type
-            has_ret = ret_dt is not None
+        try:
+            prog = impl.get_runtime().prog
+            if prog.config().arch == _ti_core.vulkan:
+                # Compile (& Online Cache & Offline Cache)
+                mgr = prog.get_kernel_compilation_manager()
+                compile_config = prog.config()
+                device_caps = prog.get_current_device_caps()
+                ckd = mgr.load_or_compile(compile_config, device_caps,
+                                            t_kernel)
+                # Launch kernel
+                prog.launch_kernel(ckd, launch_ctx)
+            else:
+                _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
+                                        launch_ctx)
+        except Exception as e:
+            e = handle_exception_from_cpp(e)
+            raise e from None
 
-            if has_ret or self.has_print:
-                runtime_ops.sync()
+        ret = None
+        ret_dt = self.return_type
+        has_ret = ret_dt is not None
 
-            if has_ret:
-                if id(ret_dt) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt)):
-                        launch_ctx.get_ret_int(
-                            impl.get_runtime().prog.get_compute_device(), 0)
-                        ret = launch_ctx.get_ret_int(
-                            impl.get_runtime().prog.get_compute_device(), 0)
-                    else:
-                        ret = launch_ctx.get_ret_uint(
-                            impl.get_runtime().prog.get_compute_device(), 0)
-                elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = launch_ctx.get_ret_float(
+        if has_ret or self.has_print:
+            runtime_ops.sync()
+
+        if has_ret:
+            if id(ret_dt) in primitive_types.integer_type_ids:
+                if is_signed(cook_dtype(ret_dt)):
+                    launch_ctx.get_ret_int(
                         impl.get_runtime().prog.get_compute_device(), 0)
-                elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt.dtype)):
-                        it = iter(
-                            launch_ctx.get_ret_int_tensor(
-                                impl.get_runtime().prog.get_compute_device(),
-                                0))
-                    else:
-                        it = iter(
-                            launch_ctx.get_ret_uint_tensor(
-                                impl.get_runtime().prog.get_compute_device(),
-                                0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
+                    ret = launch_ctx.get_ret_int(
+                        impl.get_runtime().prog.get_compute_device(), 0)
+                else:
+                    ret = launch_ctx.get_ret_uint(
+                        impl.get_runtime().prog.get_compute_device(), 0)
+            elif id(ret_dt) in primitive_types.real_type_ids:
+                ret = launch_ctx.get_ret_float(
+                    impl.get_runtime().prog.get_compute_device(), 0)
+            elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
+                if is_signed(cook_dtype(ret_dt.dtype)):
+                    it = iter(
+                        launch_ctx.get_ret_int_tensor(
+                            impl.get_runtime().prog.get_compute_device(),
+                            0))
                 else:
                     it = iter(
-                        launch_ctx.get_ret_float_tensor(
-                            impl.get_runtime().prog.get_compute_device(), 0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
-            if callbacks:
-                for c in callbacks:
-                    c()
+                        launch_ctx.get_ret_uint_tensor(
+                            impl.get_runtime().prog.get_compute_device(),
+                            0))
+                ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                for _ in range(ret_dt.n)],
+                                ndim=getattr(ret_dt, 'ndim', 2))
+            else:
+                it = iter(
+                    launch_ctx.get_ret_float_tensor(
+                        impl.get_runtime().prog.get_compute_device(), 0))
+                ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                for _ in range(ret_dt.n)],
+                                ndim=getattr(ret_dt, 'ndim', 2))
+        if callbacks:
+            for c in callbacks:
+                c()
 
-            return ret
-
-        return func__
+        return ret
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)
@@ -902,7 +897,8 @@ class Kernel:
             )
             impl.current_cfg().opt_level = 1
         key = self.ensure_compiled(*args)
-        return self.runtime.compiled_functions[key](*args)
+        kernel_cpp = self.compiled_kernels[key]
+        return self._launch_kernel(kernel_cpp, *args)
 
 
 # For a Taichi class definition like below:

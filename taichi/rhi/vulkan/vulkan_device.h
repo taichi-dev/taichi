@@ -415,10 +415,6 @@ class VulkanCommandList : public CommandList {
                   ImageLayout src_img_layout,
                   const ImageCopyParams &params) override;
 
-  void signal_event(DeviceEvent *event) override;
-  void reset_event(DeviceEvent *event) override;
-  void wait_event(DeviceEvent *event) override;
-
   vkapi::IVkRenderPass current_renderpass();
 
   // Vulkan specific functions

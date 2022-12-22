@@ -54,7 +54,7 @@ void GfxRuntime::transition_image(const taichi::lang::DeviceAllocation &image,
                                   taichi::lang::ImageLayout layout) {
   get_gfx_runtime().transition_image(image, layout);
 }
-void GfxRuntime::submit() {
+void GfxRuntime::flush() {
   get_gfx_runtime().flush();
 }
 void GfxRuntime::wait() {

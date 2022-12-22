@@ -232,12 +232,6 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
-class DeviceEvent {
- public:
-  virtual ~DeviceEvent() {
-  }
-};
-
 class CommandList {
  public:
   virtual ~CommandList() {
@@ -332,15 +326,6 @@ class CommandList {
                           ImageLayout dst_img_layout,
                           ImageLayout src_img_layout,
                           const ImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
-  }
-  virtual void signal_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
-  }
-  virtual void reset_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
-  }
-  virtual void wait_event(DeviceEvent *event) {
     TI_NOT_IMPLEMENTED
   }
 };

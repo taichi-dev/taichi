@@ -526,18 +526,6 @@ Launches a Taichi kernel with the provided arguments. The arguments *must* have 
 
 Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
-`function.signal_event`
-
-Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call `function.reset_event` to reset it; otherwise, an undefined behavior would occur.
-
-`function.reset_event`
-
-Sets a signaled event primitive back to an unsignaled state.
-
-`function.wait_event`
-
-Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
-
 `function.flush`
 
 Submits all previously invoked device commands to the offload device for execution.

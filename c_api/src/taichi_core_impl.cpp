@@ -848,7 +848,7 @@ void ti_flush(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
 
-  ((Runtime *)runtime)->submit();
+  ((Runtime *)runtime)->flush();
   TI_CAPI_TRY_CATCH_END();
 }
 void ti_wait(TiRuntime runtime) {

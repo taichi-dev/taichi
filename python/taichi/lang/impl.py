@@ -133,7 +133,10 @@ def _calc_slice(index, default_stop):
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
     # Directly evaluate in Python for non-Taichi types
-    if not isinstance(value, (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy, MeshRelationAccessProxy, SharedArray)):
+    if not isinstance(
+            value,
+        (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy,
+         MeshRelationAccessProxy, SharedArray)):
         if len(_indices) == 1:
             _indices = _indices[0]
         return value.__getitem__(_indices)

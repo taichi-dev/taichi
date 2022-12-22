@@ -653,8 +653,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (is_tensor(ret_type)) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(make_tensor_access_single_element(ctx, var_stmt, indices,
-                                                        shape, tb));
+      stmts.push_back(
+          make_tensor_access_single_element(ctx, var_stmt, indices, shape, tb));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
@@ -782,9 +782,9 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
-                              var->ret_type->cast<TensorType>()->get_shape(),
-                              tb);
+    stmt =
+        make_tensor_access(ctx, var, indices_group, ret_type,
+                           var->ret_type->cast<TensorType>()->get_shape(), tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "

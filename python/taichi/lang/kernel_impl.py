@@ -624,13 +624,13 @@ class Kernel:
             # Note: do not use sth like "needed == f32". That would be slow.
             if id(needed) in primitive_types.real_type_ids:
                 if not isinstance(v, (float, int)):
-                    raise TaichiRuntimeTypeError.get(
-                        i, needed.to_string(), provided)
+                    raise TaichiRuntimeTypeError.get(i, needed.to_string(),
+                                                     provided)
                 launch_ctx.set_arg_float(actual_argument_slot, float(v))
             elif id(needed) in primitive_types.integer_type_ids:
                 if not isinstance(v, int):
-                    raise TaichiRuntimeTypeError.get(
-                        i, needed.to_string(), provided)
+                    raise TaichiRuntimeTypeError.get(i, needed.to_string(),
+                                                     provided)
                 if is_signed(cook_dtype(needed)):
                     launch_ctx.set_arg_int(actual_argument_slot, int(v))
                 else:
@@ -639,17 +639,14 @@ class Kernel:
                 # Pass only the base pointer of the ti.types.sparse_matrix_builder() argument
                 launch_ctx.set_arg_uint(actual_argument_slot,
                                         v._get_ndarray_addr())
-            elif isinstance(needed,
-                            ndarray_type.NdarrayType) and isinstance(
-                                v, taichi.lang._ndarray.Ndarray):
+            elif isinstance(needed, ndarray_type.NdarrayType) and isinstance(
+                    v, taichi.lang._ndarray.Ndarray):
                 launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
-            elif isinstance(needed,
-                            texture_type.TextureType) and isinstance(
-                                v, taichi.lang._texture.Texture):
+            elif isinstance(needed, texture_type.TextureType) and isinstance(
+                    v, taichi.lang._texture.Texture):
                 launch_ctx.set_arg_texture(actual_argument_slot, v.tex)
-            elif isinstance(needed,
-                            texture_type.RWTextureType) and isinstance(
-                                v, taichi.lang._texture.Texture):
+            elif isinstance(needed, texture_type.RWTextureType) and isinstance(
+                    v, taichi.lang._texture.Texture):
                 launch_ctx.set_arg_rw_texture(actual_argument_slot, v.tex)
             elif isinstance(needed, ndarray_type.NdarrayType):
                 # Element shapes are already specialized in Taichi codegen.
@@ -668,8 +665,8 @@ class Kernel:
                 if isinstance(v, np.ndarray):
                     if v.flags.c_contiguous:
                         launch_ctx.set_arg_external_array_with_shape(
-                            actual_argument_slot, int(v.ctypes.data),
-                            v.nbytes, array_shape)
+                            actual_argument_slot, int(v.ctypes.data), v.nbytes,
+                            array_shape)
                     elif v.flags.f_contiguous:
                         # TODO: A better way that avoids copying is saving strides info.
                         tmp = np.ascontiguousarray(v)
@@ -679,8 +676,7 @@ class Kernel:
                         def callback(original, updated):
                             np.copyto(original, np.asfortranarray(updated))
 
-                        callbacks.append(
-                            functools.partial(callback, v, tmp))
+                        callbacks.append(functools.partial(callback, v, tmp))
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp.ctypes.data),
                             tmp.nbytes, array_shape)
@@ -744,8 +740,7 @@ class Kernel:
                         actual_argument_slot, int(tmp._ptr()),
                         v.element_size() * v.size, array_shape)
                 else:
-                    raise TaichiRuntimeTypeError.get(
-                        i, needed.to_string(), v)
+                    raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
 
             elif isinstance(needed, MatrixType):
                 if needed.dtype in primitive_types.real_types:
@@ -755,8 +750,8 @@ class Kernel:
                             if not isinstance(val, (int, float)):
                                 raise TaichiRuntimeTypeError.get(
                                     i, needed.dtype.to_string(), type(val))
-                            launch_ctx.set_arg_float(
-                                actual_argument_slot, float(val))
+                            launch_ctx.set_arg_float(actual_argument_slot,
+                                                     float(val))
                             actual_argument_slot += 1
                 elif needed.dtype in primitive_types.integer_types:
                     for a in range(needed.n):
@@ -766,8 +761,8 @@ class Kernel:
                                 raise TaichiRuntimeTypeError.get(
                                     i, needed.dtype.to_string(), type(val))
                             if is_signed(needed.dtype):
-                                launch_ctx.set_arg_int(
-                                    actual_argument_slot, int(val))
+                                launch_ctx.set_arg_int(actual_argument_slot,
+                                                       int(val))
                             else:
                                 launch_ctx.set_arg_uint(
                                     actual_argument_slot, int(val))
@@ -783,8 +778,7 @@ class Kernel:
                 )
             actual_argument_slot += 1
 
-        if actual_argument_slot > 8 and impl.current_cfg(
-        ).arch == _ti_core.cc:
+        if actual_argument_slot > 8 and impl.current_cfg().arch == _ti_core.cc:
             raise TaichiRuntimeError(
                 f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
             )
@@ -803,12 +797,12 @@ class Kernel:
                 compile_config = prog.config()
                 device_caps = prog.get_current_device_caps()
                 ckd = mgr.load_or_compile(compile_config, device_caps,
-                                            t_kernel)
+                                          t_kernel)
                 # Launch kernel
                 prog.launch_kernel(ckd, launch_ctx)
             else:
                 _ti_core.launch_kernel(impl.get_runtime().prog, t_kernel,
-                                        launch_ctx)
+                                       launch_ctx)
         except Exception as e:
             e = handle_exception_from_cpp(e)
             raise e from None
@@ -837,23 +831,21 @@ class Kernel:
                 if is_signed(cook_dtype(ret_dt.dtype)):
                     it = iter(
                         launch_ctx.get_ret_int_tensor(
-                            impl.get_runtime().prog.get_compute_device(),
-                            0))
+                            impl.get_runtime().prog.get_compute_device(), 0))
                 else:
                     it = iter(
                         launch_ctx.get_ret_uint_tensor(
-                            impl.get_runtime().prog.get_compute_device(),
-                            0))
+                            impl.get_runtime().prog.get_compute_device(), 0))
                 ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                for _ in range(ret_dt.n)],
-                                ndim=getattr(ret_dt, 'ndim', 2))
+                              for _ in range(ret_dt.n)],
+                             ndim=getattr(ret_dt, 'ndim', 2))
             else:
                 it = iter(
                     launch_ctx.get_ret_float_tensor(
                         impl.get_runtime().prog.get_compute_device(), 0))
                 ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                for _ in range(ret_dt.n)],
-                                ndim=getattr(ret_dt, 'ndim', 2))
+                              for _ in range(ret_dt.n)],
+                             ndim=getattr(ret_dt, 'ndim', 2))
         if callbacks:
             for c in callbacks:
                 c()

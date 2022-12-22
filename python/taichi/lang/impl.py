@@ -2,13 +2,12 @@ import numbers
 from types import FunctionType, MethodType
 from typing import Iterable, Sequence
 
-import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
-from taichi.lang.any_array import AnyArray, AnyArrayAccess
+from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import SNodeGradType
 from taichi.lang.exception import (TaichiCompilationError, TaichiIndexError,
                                    TaichiRuntimeError, TaichiSyntaxError,
@@ -17,8 +16,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                Vector, VectorNdarray, _IntermediateMatrix,
-                                _MatrixFieldElement, make_matrix)
+                                VectorNdarray, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -26,8 +24,9 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.simt.block import SharedArray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
-                              python_scope, taichi_scope, warning)
+from taichi.lang.util import (cook_dtype, get_traceback, is_matrix_class,
+                              is_taichi_class, python_scope, taichi_scope,
+                              warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
 
@@ -58,18 +57,11 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        if current_cfg().real_matrix:
-            if rhs.ndim == 1:
-                entries = [rhs(i) for i in range(rhs.n)]
-            else:
-                entries = [[rhs(i, j) for j in range(rhs.m)]
-                           for i in range(rhs.n)]
-            return make_matrix(entries)
-        if (isinstance(rhs, Vector)
-                or getattr(rhs, "ndim", None) == 1) and rhs.m == 1:
-            # _IntermediateMatrix may reach here
-            return Vector(rhs.to_list(), ndim=rhs.ndim)
-        return Matrix(rhs.to_list(), ndim=rhs.ndim)
+        if rhs.ndim == 1:
+            entries = [rhs(i) for i in range(rhs.n)]
+        else:
+            entries = [[rhs(i, j) for j in range(rhs.m)] for i in range(rhs.n)]
+        return make_matrix(entries)
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
@@ -154,12 +146,15 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
-    if isinstance(value, np.ndarray):
+    # Directly evaluate in Python for non-Taichi types
+    if not isinstance(
+            value,
+        (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy,
+         MeshRelationAccessProxy)) and not (is_taichi_class(value)
+                                            and not is_matrix_class(value)):
+        if len(_indices) == 1:
+            _indices = _indices[0]
         return value.__getitem__(_indices)
-
-    if isinstance(value, (tuple, list, dict)):
-        assert len(_indices) == 1
-        return value[_indices[0]]
 
     has_slice = False
 
@@ -182,15 +177,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices = ()
 
     if has_slice:
-        if not isinstance(value, Matrix) and not (isinstance(value, Expr)
-                                                  and value.is_tensor()):
-            raise SyntaxError(
+        if not (isinstance(value, Expr) and value.is_tensor()):
+            raise TaichiSyntaxError(
                 f"The type {type(value)} do not support index of slice type")
     else:
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value):
+    if is_taichi_class(value) and not is_matrix_class(value):
         return value._subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)
@@ -230,11 +224,9 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            if current_cfg().real_matrix:
-                return Expr(
-                    _ti_core.subscript(value.ptr, indices_expr_group,
-                                       get_runtime().get_current_src_info()))
-            return _MatrixFieldElement(value, indices_expr_group)
+            return Expr(
+                _ti_core.subscript(value.ptr, indices_expr_group,
+                                   get_runtime().get_current_src_info()))
         if isinstance(value, StructField):
             entries = {
                 k: subscript(ast_builder, v, *indices)
@@ -252,56 +244,39 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             raise IndexError(
                 f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
-        if element_dim == 0 or current_cfg().real_matrix:
-            return Expr(
-                _ti_core.subscript(value.ptr, indices_expr_group,
-                                   get_runtime().get_current_src_info()))
-        n = value.element_shape()[0]
-        m = 1 if element_dim == 1 else value.element_shape()[1]
-        any_array_access = AnyArrayAccess(value, indices)
-        ret = _IntermediateMatrix(n,
-                                  m, [
-                                      any_array_access.subscript(i, j)
-                                      for i in range(n) for j in range(m)
-                                  ],
-                                  ndim=element_dim)
-        ret.any_array_access = any_array_access
-        return ret
-    if isinstance(value, Expr):
-        # Index into TensorType
-        # value: IndexExpression with ret_type = TensorType
-        assert current_cfg().real_matrix
-        assert value.is_tensor()
-
-        if has_slice:
-            shape = value.get_shape()
-            dim = len(shape)
-            assert dim == len(indices)
-            indices = [
-                _calc_slice(index, shape[i])
-                if isinstance(index, slice) else [index]
-                for i, index in enumerate(indices)
-            ]
-            if dim == 1:
-                multiple_indices = [make_expr_group(i) for i in indices[0]]
-                return_shape = (len(indices[0]), )
-            else:
-                assert dim == 2
-                multiple_indices = [
-                    make_expr_group(i, j) for i in indices[0]
-                    for j in indices[1]
-                ]
-                return_shape = (len(indices[0]), len(indices[1]))
-            return Expr(
-                _ti_core.subscript_with_multiple_indices(
-                    value.ptr, multiple_indices, return_shape,
-                    get_runtime().get_current_src_info()))
         return Expr(
             _ti_core.subscript(value.ptr, indices_expr_group,
                                get_runtime().get_current_src_info()))
+    assert isinstance(value, Expr)
+    # Index into TensorType
+    # value: IndexExpression with ret_type = TensorType
+    assert value.is_tensor()
 
-    # Directly evaluate in Python for non-Taichi types
-    return value.__getitem__(*indices)
+    if has_slice:
+        shape = value.get_shape()
+        dim = len(shape)
+        assert dim == len(indices)
+        indices = [
+            _calc_slice(index, shape[i])
+            if isinstance(index, slice) else [index]
+            for i, index in enumerate(indices)
+        ]
+        if dim == 1:
+            multiple_indices = [make_expr_group(i) for i in indices[0]]
+            return_shape = (len(indices[0]), )
+        else:
+            assert dim == 2
+            multiple_indices = [
+                make_expr_group(i, j) for i in indices[0] for j in indices[1]
+            ]
+            return_shape = (len(indices[0]), len(indices[1]))
+        return Expr(
+            _ti_core.subscript_with_multiple_indices(
+                value.ptr, multiple_indices, return_shape,
+                get_runtime().get_current_src_info()))
+    return Expr(
+        _ti_core.subscript(value.ptr, indices_expr_group,
+                           get_runtime().get_current_src_info()))
 
 
 @taichi_scope
@@ -1071,9 +1046,10 @@ def static(x, *xs):
         return [static(x)] + [static(x) for x in xs]
 
     if isinstance(x,
-                  (bool, int, float, range, list, tuple, enumerate, _Ndrange,
-                   GroupedNDRange, zip, filter, map)) or x is None:
+                  (bool, int, float, range, list, tuple, enumerate,
+                   GroupedNDRange, _Ndrange, zip, filter, map)) or x is None:
         return x
+
     if isinstance(x, AnyArray):
         return x
     if isinstance(x, Field):

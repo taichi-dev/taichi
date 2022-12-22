@@ -17,7 +17,7 @@
 
 #include "taichi/inc/constants.h"
 
-static_assert(taichi_max_num_indices == 8,
+static_assert(taichi_max_num_indices == 12,
               "Please update kTaichiMaxNumIndices");
 static_assert(sizeof(char *) == 8, "Metal pointers are 64-bit.");
 #define METAL_BEGIN_RUNTIME_STRUCTS_DEF
@@ -28,7 +28,7 @@ static_assert(sizeof(char *) == 8, "Metal pointers are 64-bit.");
 // clang-format off
 METAL_BEGIN_RUNTIME_STRUCTS_DEF
 STR(
-    constant constexpr int kTaichiMaxNumIndices = 8;
+    constant constexpr int kTaichiMaxNumIndices = 12;
     constant constexpr int kTaichiNumChunks = 1024;
     constant constexpr int kAlignment = 8;
     using PtrOffset = int32_t;

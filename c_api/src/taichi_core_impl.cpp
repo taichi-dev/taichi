@@ -81,6 +81,8 @@ const char *describe_error(TiError error) {
       return "invalid state";
     case TI_ERROR_INCOMPATIBLE_MODULE:
       return "incompatible module";
+    case TI_ERROR_OUT_OF_MEMORY:
+      return "out of memory";
     default:
       return "unknown error";
   }
@@ -379,7 +381,9 @@ void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
   TI_CAPI_ARGUMENT_NULL_RV(devmem);
 
   Runtime *runtime2 = (Runtime *)runtime;
-  out = runtime2->get().map(devmem2devalloc(*runtime2, devmem));
+  TI_ASSERT(runtime2->get().map(devmem2devalloc(*runtime2, devmem), &out) ==
+                taichi::lang::RhiResult::success &&
+            "RHI map memory failed");
   TI_CAPI_TRY_CATCH_END();
   return out;
 }
@@ -504,6 +508,11 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
+  if (dst_memory->size != src_memory->size) {
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT,
+                      "The size of memory slices are not match");
+    return;
+  }
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)

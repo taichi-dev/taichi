@@ -78,7 +78,8 @@ def test_struct_whole_access():
         assert y[i].b == int(1.01 * i)
 
 
-def _test_struct_fill():
+@test_utils.test()
+def test_struct_fill():
     n = 32
 
     # also tests implicit cast
@@ -115,16 +116,6 @@ def _test_struct_fill():
 
 
 @test_utils.test()
-def test_struct_fill():
-    _test_struct_fill()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_struct_fill_matrix_scalarize():
-    _test_struct_fill()
-
-
-@test_utils.test()
 def test_matrix_type():
     n = 32
     vec2f = ti.types.vector(2, ti.f32)
@@ -152,7 +143,8 @@ def test_matrix_type():
         assert np.allclose(x[i].to_numpy(), np.array([i + 1, i, i]))
 
 
-def _test_struct_type():
+@test_utils.test()
+def test_struct_type():
     n = 32
     vec3f = ti.types.vector(3, float)
     line3f = ti.types.struct(linedir=vec3f, length=float)
@@ -213,16 +205,6 @@ def _test_struct_type():
         assert x[i].line.length == 5.0
 
 
-@test_utils.test()
-def test_struct_type():
-    _test_struct_type()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_struct_type_matrix_scalarize():
-    _test_struct_type()
-
-
 @test_utils.test(exclude=ti.cc)
 def test_dataclass():
     # example struct class type
@@ -264,7 +246,8 @@ def test_dataclass():
     assert np.isclose(get_area_field(), 4.0 * 3.14 * 4.0)
 
 
-def _test_struct_assign():
+@test_utils.test()
+def test_struct_assign():
     n = 32
     vec3f = ti.types.vector(3, float)
     line3f = ti.types.struct(linedir=vec3f, length=float)
@@ -300,16 +283,6 @@ def _test_struct_assign():
         assert x[i].idx == i
         assert np.allclose(x[i].line.linedir.to_numpy(), 1.0)
         assert x[i].line.length == i + 0.5
-
-
-@test_utils.test()
-def test_struct_assign():
-    _test_struct_assign()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_struct_assign_matrix_scalarize():
-    _test_struct_assign()
 
 
 @test_utils.test()

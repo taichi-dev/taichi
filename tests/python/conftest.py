@@ -1,8 +1,14 @@
 import sys
 
 import pytest
+# rerunfailures use xdist version number to determine if it is compatible
+# but we are using a forked version of xdist(with git hash as it's version),
+# so we need to override it
+import pytest_rerunfailures
 
 import taichi as ti
+
+pytest_rerunfailures.works_with_current_xdist = lambda: True
 
 
 @pytest.fixture(autouse=True)

@@ -167,6 +167,13 @@ IVkPipeline create_graphics_pipeline(VkDevice device,
                                      IVkPipelineLayout layout,
                                      IVkPipelineCache cache = nullptr,
                                      IVkPipeline base_pipeline = nullptr);
+IVkPipeline create_graphics_pipeline_dynamic(
+    VkDevice device,
+    VkGraphicsPipelineCreateInfo *create_info,
+    VkPipelineRenderingCreateInfoKHR *rendering_info,
+    IVkPipelineLayout layout,
+    IVkPipelineCache cache = nullptr,
+    IVkPipeline base_pipeline = nullptr);
 IVkPipeline create_raytracing_pipeline(
     VkDevice device,
     VkRayTracingPipelineCreateInfoKHR *create_info,
@@ -243,7 +250,6 @@ IVkFramebuffer create_framebuffer(VkFramebufferCreateFlags flags,
 // VkBuffer
 struct DeviceObjVkBuffer : public DeviceObj {
   VkBuffer buffer{VK_NULL_HANDLE};
-  size_t size{0};
   VkBufferUsageFlags usage{0};
   VmaAllocator allocator{nullptr};
   VmaAllocation allocation{nullptr};
@@ -258,7 +264,6 @@ IVkBuffer create_buffer(VkDevice device,
 // Importing external buffer
 IVkBuffer create_buffer(VkDevice device,
                         VkBuffer buffer,
-                        size_t size,
                         VkBufferUsageFlags usage);
 
 // VkBufferView

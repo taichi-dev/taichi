@@ -180,7 +180,8 @@ def test_ndarray_compound_element():
     assert c.element_type.shape() == (3, 4)
 
 
-def _test_ndarray_copy_from_ndarray():
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_copy_from_ndarray():
     n = 16
     a = ti.ndarray(ti.i32, shape=n)
     b = ti.ndarray(ti.i32, shape=n)
@@ -220,18 +221,7 @@ def _test_ndarray_copy_from_ndarray():
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_copy_from_ndarray():
-    _test_ndarray_copy_from_ndarray()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_ndarray_copy_from_ndarray_matrix_scalarize():
-    _test_ndarray_copy_from_ndarray()
-
-
-def _test_ndarray_deepcopy():
+def test_ndarray_deepcopy():
     n = 16
     x = ti.ndarray(ti.i32, shape=n)
     x[0] = 1
@@ -326,18 +316,6 @@ def test_ndarray_rw_cache():
         c_a[None] = c_b[10]
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_deepcopy():
-    _test_ndarray_deepcopy()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_ndarray_deepcopy_matrix_scalarize():
-    _test_ndarray_deepcopy()
-
-
 def _test_ndarray_numpy_io():
     n = 7
     m = 4
@@ -421,15 +399,8 @@ def test_matrix_ndarray_taichi_scope():
     _test_matrix_ndarray_taichi_scope()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_matrix_ndarray_taichi_scope_real_matrix():
-    _test_matrix_ndarray_taichi_scope()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_matrix_ndarray_taichi_scope_real_matrix_scalarize():
     _test_matrix_ndarray_taichi_scope()
 
 
@@ -454,15 +425,8 @@ def test_matrix_ndarray_taichi_scope_struct_for():
     _test_matrix_ndarray_taichi_scope_struct_for()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_matrix_ndarray_taichi_scope_struct_for_real_matrix():
-    _test_matrix_ndarray_taichi_scope_struct_for()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_matrix_ndarray_taichi_scope_struct_for_matrix_scalarize():
     _test_matrix_ndarray_taichi_scope_struct_for()
 
 
@@ -500,14 +464,7 @@ def test_vector_ndarray_taichi_scope():
     _test_vector_ndarray_taichi_scope()
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_vector_ndarray_taichi_scope_matrix_scalarize():
-    _test_vector_ndarray_taichi_scope()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_vector_ndarray_taichi_scope_real_matrix():
     _test_vector_ndarray_taichi_scope()
 
@@ -664,15 +621,8 @@ def test_ndarray_grouped():
     _test_ndarray_grouped()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_ndarray_grouped_real_matrix():
-    _test_ndarray_grouped()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_ndarray_grouped_real_matrix_scalarize():
     _test_ndarray_grouped()
 
 
@@ -719,10 +669,8 @@ def test_gaussian_kernel():
     assert test_utils.allclose(res, np_arr)
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_ndarray_numpy_matrix_scalarize():
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_numpy_matrix():
     boundary_box_np = np.array([[0, 0, 0], [1, 1, 1]], dtype=np.float32)
     boundary_box = ti.Vector.ndarray(3, ti.f32, shape=2)
     boundary_box.from_numpy(boundary_box_np)

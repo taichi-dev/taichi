@@ -6,12 +6,12 @@ sidebar_position: 1
 
 ## Overview
 
-To facilitate code debugging and code optimization, Taichi provides a set of profiling tools, which collect hardware and Taichi-related information to quantify program performance and analyze where the bottleneck is.
+Taichi includes a collection of profiling tools to help with code debugging and optimization. These tools collect hardware and Taichi-related information to measure program performance and identify bottlenecks.
 
 Currently, Taichi provides two profiling tools:
 
-- `ScopedProfiler` analyzes the performance of the Taichi JIT compiler (host).
-- `KernelProfiler` analyzes the performance of Taichi kernels (device). Its advanced mode, which works with the CUDA backend only, provides detailed low-level performance metrics, such as memory bandwidth consumption.
+- `ScopedProfiler`, which is responsible for analyzing the performance of the Taichi JIT compiler (host).
+- `KernelProfiler`, which is responsible for analyzing the performance of Taichi kernels (device). Its advanced mode, which works with the CUDA backend only, provides detailed low-level performance metrics, such as memory bandwidth consumption.
 
 ## ScopedProfiler
 
@@ -21,7 +21,7 @@ This profiler is enabled by default. To display results in a hierarchical format
 
 For example:
 
-```python {13}
+```python {12}
 import taichi as ti
 
 ti.init(arch=ti.cpu)
@@ -44,12 +44,11 @@ ti.profiler.print_scoped_profiler_info()
 
 `KernelProfiler` retrieves the kernel profiling records from the backend, counts them in the Python scope, and prints the results to the console. Note that `kernel_profiler` supports CPU and CUDA only. Ensure that you call `ti.sync()` before performance profiling if your program is running on GPU.
 
-1. To enable this profiler, set `kernel_profiler=True` when calling `ti.init()`.
-2. To display the profiling results, call `ti.profiler.print_kernel_profiler_info()`. There are two modes of printing:
-    - In `'count'` mode (default), the profiling records under the same kernel name are counted as one profiling result.
-    - In `'trace'` mode, the profiler shows you a list of kernels launched on hardware during the profiling period.
-    This mode provides more detailed performance information and runtime hardware metrics for each kernel.
-3. To clear the records in this profiler, call `ti.profiler.clear_kernel_profiler_info()`.
+1. To enable this profiler, set `kernel profiler=True` while executing `ti.init()`.
+2. Use `ti.profiler.print kernel profiler info()` to see the profiling results. There are two printing methods:
+    1. In "count" mode (the default), profiling recordings with the same kernel name are counted as a single profiling result.
+    2. The profiler displays a list of kernels launched on hardware during the profiling period in "trace" mode. This option displays more comprehensive performance and hardware characteristics for each kernel.
+3. Use `ti.profiler.clear_kernel_profiler_info()` to clear the entries in this profiler.
 
 For example:
 
@@ -112,7 +111,7 @@ X64 Profiler(count)
 
 ### Advanced mode
 
-For the CUDA backend, `KernelProfiler` has an experimental GPU profiling toolkit based on the Nvidia CUPTI, which has low and deterministic profiling overhead and can capture more than 6,000 hardware metrics.
+`KernelProfiler` offers an experimental GPU profiling toolkit based on the Nvidia CUPTI for the CUDA backend, which has minimal and predictable profiling overhead and can record over 6,000 hardware metrics.
 
 Prerequisites to using CUPTI:
 

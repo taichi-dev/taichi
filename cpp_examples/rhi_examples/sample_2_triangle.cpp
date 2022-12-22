@@ -13,6 +13,12 @@ struct Vertex {
   glm::vec3 color;
 };
 
+const std::vector<Vertex> vertices = {
+    {{0.0, 0.5}, {1.0, 0.0, 0.0}},
+    {{0.5, -0.5}, {0.0, 1.0, 0.0}},
+    {{-0.5, -0.5}, {0.0, 0.0, 1.0}},
+};
+
 class SampleApp : public App {
  public:
   SampleApp() : App(1920, 1080, "Sample 2: Triangle") {
@@ -61,10 +67,9 @@ class SampleApp : public App {
           /* host_write = */ true,
           /* host_read = */ false, /* export_sharing = */ false,
           /* usage = */ AllocUsage::Vertex});
-      Vertex *mapped = (Vertex *)device->map(*vertex_buffer);
-      mapped[0] = {{0.0, 0.5}, {1.0, 0.0, 0.0}};
-      mapped[1] = {{0.5, -0.5}, {0.0, 1.0, 0.0}};
-      mapped[2] = {{-0.5, -0.5}, {0.0, 0.0, 1.0}};
+      void *mapped{nullptr};
+      TI_ASSERT(device->map(*vertex_buffer, &mapped) == RhiResult::success);
+      memcpy(mapped, vertices.data(), sizeof(Vertex) * vertices.size());
       device->unmap(*vertex_buffer);
     }
 

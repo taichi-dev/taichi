@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <optional>
+#include <list>
 
 #include <taichi/rhi/device.h>
 #include <taichi/rhi/vulkan/vulkan_utils.h>
@@ -195,17 +196,9 @@ class VulkanResourceBinder : public ResourceBinder {
     }
   };
 
-  struct VulkanBindings : public Bindings {
-    std::vector<
-        std::pair<vkapi::IVkDescriptorSetLayout, vkapi::IVkDescriptorSet>>
-        sets;
-  };
-
   explicit VulkanResourceBinder(
       VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_COMPUTE);
   ~VulkanResourceBinder() override;
-
-  std::unique_ptr<Bindings> materialize() override;
 
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -292,6 +285,9 @@ class VulkanPipeline : public Pipeline {
       const VulkanRenderPassDesc &renderpass_desc,
       vkapi::IVkRenderPass renderpass);
 
+  vkapi::IVkPipeline graphics_pipeline_dynamic(
+      const VulkanRenderPassDesc &renderpass_desc);
+
   const std::string &name() const {
     return name_;
   }
@@ -310,8 +306,9 @@ class VulkanPipeline : public Pipeline {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
 
-  static VkShaderModule create_shader_module(VkDevice device,
-                                             const SpirvCodeView &code);
+  static rhi_impl::RhiReturn<VkShaderModule> create_shader_module(
+      VkDevice device,
+      const SpirvCodeView &code);
 
   struct GraphicsPipelineTemplate {
     VkPipelineViewportStateCreateInfo viewport_state{};
@@ -341,6 +338,12 @@ class VulkanPipeline : public Pipeline {
   std::unordered_map<vkapi::IVkRenderPass, vkapi::IVkPipeline>
       graphics_pipeline_;
 
+  // For KHR_dynamic_rendering
+  std::unordered_map<VulkanRenderPassDesc,
+                     vkapi::IVkPipeline,
+                     RenderPassDescHasher>
+      graphics_pipeline_dynamic_;
+
   VulkanResourceBinder resource_binder_;
   std::vector<vkapi::IVkDescriptorSetLayout> set_layouts_;
   std::vector<VkShaderModule> shader_modules_;
@@ -367,8 +370,6 @@ class VulkanCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override;
   void bind_resources(ResourceBinder *binder) override;
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override;
   void buffer_barrier(DevicePtr ptr, size_t size) override;
   void buffer_barrier(DeviceAllocation alloc) override;
   void memory_barrier() override;
@@ -452,6 +453,7 @@ class VulkanCommandList : public CommandList {
       currently_used_sets_;
 
   // Renderpass & raster pipeline
+  std::vector<vkapi::IVkImage> current_dynamic_targets_;
   VulkanRenderPassDesc current_renderpass_desc_;
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
@@ -562,12 +564,13 @@ class VulkanStream : public Stream {
 };
 
 struct VulkanCapabilities {
-  uint32_t vk_api_version;
-  bool physical_device_features2;
-  bool external_memory;
-  bool wide_line;
-  bool surface;
-  bool present;
+  uint32_t vk_api_version{0};
+  bool physical_device_features2{false};
+  bool external_memory{false};
+  bool wide_line{false};
+  bool surface{false};
+  bool present{false};
+  bool dynamic_rendering{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -601,12 +604,11 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;
 
-  // Mapping can fail and will return nullptr
-  void *map_range(DevicePtr ptr, uint64_t size) override;
-  void *map(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
 
   // Strictly intra device copy
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
@@ -665,7 +667,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
 
-  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer);
+  DeviceAllocation import_vkbuffer(vkapi::IVkBuffer buffer,
+                                   size_t size,
+                                   VkDeviceMemory memory,
+                                   VkDeviceSize offset);
 
   DeviceAllocation import_vk_image(vkapi::IVkImage image,
                                    vkapi::IVkImageView view,
@@ -717,27 +722,31 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   // Memory allocation
   struct AllocationInternal {
-    bool external{false};
+    // Allocation info from VMA or set by `import_vkbuffer`
     VmaAllocationInfo alloc_info;
-    vkapi::IVkBuffer buffer;
-    void *mapped{nullptr};
+    // VkBuffer handle (reference counted)
+    vkapi::IVkBuffer buffer{nullptr};
+    // Buffer Device Address
     VkDeviceAddress addr{0};
+    // If mapped, the currently mapped address
+    void *mapped{nullptr};
+    // Is the allocation external (imported) or not (VMA)
+    bool external{false};
   };
-
-  unordered_map<uint32_t, AllocationInternal> allocations_;
-
-  uint32_t alloc_cnt_ = 0;
 
   // Images / Image views
   struct ImageAllocInternal {
     bool external{false};
     VmaAllocationInfo alloc_info;
-    vkapi::IVkImage image;
-    vkapi::IVkImageView view;
+    vkapi::IVkImage image{nullptr};
+    vkapi::IVkImageView view{nullptr};
     std::vector<vkapi::IVkImageView> view_lods;
   };
 
-  unordered_map<uint32_t, ImageAllocInternal> image_allocations_;
+  // Since we use the pointer to AllocationInternal as the `alloc_id`,
+  // **pointer stability** is important.
+  rhi_impl::SyncedPtrStableObjectList<AllocationInternal> allocations_;
+  rhi_impl::SyncedPtrStableObjectList<ImageAllocInternal> image_allocations_;
 
   // Renderpass
   unordered_map<VulkanRenderPassDesc,
@@ -755,11 +764,23 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                 VulkanResourceBinder::SetLayoutHasher>
       desc_set_layouts_;
   vkapi::IVkDescriptorPool desc_pool_{nullptr};
+
+  // Internal implementaion functions
+  inline static AllocationInternal &get_alloc_internal(
+      const DeviceAllocation &alloc) {
+    return *reinterpret_cast<AllocationInternal *>(alloc.alloc_id);
+  }
+
+  inline static ImageAllocInternal &get_image_alloc_internal(
+      const DeviceAllocation &alloc) {
+    return *reinterpret_cast<ImageAllocInternal *>(alloc.alloc_id);
+  }
+
+  RhiResult map_internal(AllocationInternal &alloc_int,
+                         size_t offset,
+                         size_t size,
+                         void **mapped_ptr);
 };
-
-VkFormat buffer_format_ti_to_vk(BufferFormat f);
-
-BufferFormat buffer_format_vk_to_ti(VkFormat f);
 
 }  // namespace vulkan
 }  // namespace taichi::lang

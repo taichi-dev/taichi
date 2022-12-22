@@ -153,6 +153,21 @@ class Memory {
     unmap();
   }
 
+  TiMemorySlice slice(size_t offset, size_t size) const {
+    if (offset + size > size_) {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
+      return {};
+    }
+    TiMemorySlice slice{};
+    slice.memory = memory_;
+    slice.offset = offset;
+    slice.size = size;
+    return slice;
+  }
+  TiMemorySlice slice() const {
+    return slice(0, size_);
+  }
+
   constexpr size_t size() const {
     return size_;
   }
@@ -269,6 +284,13 @@ class NdArray {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
     write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
+  }
+
+  TiMemorySlice slice(size_t offset, size_t size) const {
+    return memory_.slice(offset, size);
+  }
+  TiMemorySlice slice() const {
+    return memory_.slice();
   }
 
   constexpr TiDataType elem_type() const {

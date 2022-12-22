@@ -21,20 +21,16 @@ def _get_expected_matrix_apis():
     base = [
         'all',
         'any',
-        'any_array_access',
         'cast',
         'cols',
         'cross',
         'determinant',
         'diag',
         'dot',
-        'dynamic_index_stride',
-        'entries',
         'field',
         'fill',
         'identity',
         'inverse',
-        'local_tensor_proxy',
         'max',
         'min',
         'ndarray',
@@ -54,7 +50,6 @@ def _get_expected_matrix_apis():
         'unit',
         'zero',
         'get_shape',
-        'element_type',
     ]
     res = base + _get_matrix_swizzle_apis()
     return sorted(res)

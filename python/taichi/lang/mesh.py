@@ -6,7 +6,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
+from taichi.lang.matrix import Matrix, MatrixField
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
 from taichi.types import u16, u32
@@ -619,8 +619,12 @@ class MeshElementFieldProxy:
             global_entry_expr_group = impl.make_expr_group(
                 *tuple([global_entry_expr]))
             if isinstance(attr, MatrixField):
-                setattr(self, key,
-                        _MatrixFieldElement(attr, global_entry_expr_group))
+                setattr(
+                    self, key,
+                    impl.Expr(
+                        _ti_core.subscript(
+                            attr.ptr, global_entry_expr_group,
+                            impl.get_runtime().get_current_src_info())))
             elif isinstance(attr, StructField):
                 raise RuntimeError(
                     'MeshTaichi has not support StructField yet')

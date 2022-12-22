@@ -1250,49 +1250,6 @@ class Vector(Matrix):
         return VectorNdarray(n, dtype, shape)
 
 
-class _IntermediateMatrix(Matrix):
-    """Intermediate matrix class for compiler internal use only.
-
-    Args:
-        n (int): Number of rows of the matrix.
-        m (int): Number of columns of the matrix.
-        entries (List[Expr]): All entries of the matrix.
-    """
-    def __init__(self, n, m, entries, ndim=None):
-        assert isinstance(entries, list)
-        assert n * m == len(entries), "Number of entries doesn't match n * m"
-        self.n = n
-        self.m = m
-        if ndim is not None:
-            self.ndim = ndim
-        else:
-            if len(entries) == 0:
-                self.ndim = 0
-            else:
-                self.ndim = 2 if isinstance(entries[0], Iterable) else 1
-        self._impl = _PyScopeMatrixImpl(m, n, entries)
-
-
-class _MatrixFieldElement(_IntermediateMatrix):
-    """Matrix field element class for compiler internal use only.
-
-    Args:
-        field (MatrixField): The matrix field.
-        indices (taichi_python.ExprGroup): Indices of the element.
-    """
-    def __init__(self, field, indices):
-        super().__init__(
-            field.n,
-            field.m, [
-                expr.Expr(
-                    ti_python_core.subscript(
-                        e.ptr, indices,
-                        impl.get_runtime().get_current_src_info()))
-                for e in field._get_field_members()
-            ],
-            ndim=getattr(field, "ndim", 2))
-
-
 class MatrixField(Field):
     """Taichi matrix field with SNode implementation.
 

@@ -841,9 +841,11 @@ void TaichiLLVMContext::update_runtime_jit_module(
   }
 
   if (arch_ == Arch::amdgpu) {
+#ifdef TI_WITH_AMDGPU
     llvm::legacy::PassManager module_pass_manager;
     module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
     module_pass_manager.run(*module);
+#endif
   }
 
   eliminate_unused_functions(module.get(), [](std::string func_name) {

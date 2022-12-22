@@ -19,11 +19,11 @@ def is_in_venv() -> bool:
                                            and sys.base_prefix != sys.prefix)
 
 
-def ensure_dependencies():
+def ensure_dependencies(fn='requirements.txt'):
     '''
     Automatically install dependencies if they are not installed.
     '''
-    p = Path(__file__).parent.parent / 'requirements.txt'
+    p = Path(__file__).parent.parent / fn
     if not p.exists():
         raise RuntimeError(f'Cannot find {p}')
 

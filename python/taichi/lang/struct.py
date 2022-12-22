@@ -681,10 +681,12 @@ class StructType(CompoundType):
             if index < len(args):  # set from args
                 data = args[index]
             else:  # set from kwargs
-                if isinstance(dtype, StructType):
-                    data = kwargs.get(name, dtype(0))
-                else:
-                    data = kwargs.get(name, 0)
+                data = kwargs.get(name, 0)
+
+            # If dtype is CompoundType and data is a scalar, it cannot be
+            # casted in the self.cast call later. We need an initialization here.
+            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, Struct)):
+                data = dtype(data)
 
             d[name] = data
 

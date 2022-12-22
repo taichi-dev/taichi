@@ -759,14 +759,29 @@ void IndexExpression::type_check(CompileConfig *) {
   TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape),
                                                     end(ret_shape), 1,
                                                     std::multiplies<>()));
+  int index_dim = indices_group[0].size();
+  bool has_slice = !ret_shape.empty();
   if (!ret_shape.empty()) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
     auto element_type = var->ret_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
   } else if (is_field()) {  // field
-    ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
+    auto field_expr = var.cast<FieldExpression>();
+    ret_type = field_expr->dt->get_compute_type();
+    int field_dim = field_expr->snode->num_active_indices;
+    if (!has_slice && field_dim != index_dim) {
+      throw TaichiTypeError(
+          fmt::format("Field with dim {} accessed with indices of dim {}",
+                      field_dim, index_dim));
+    }
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
+    int matrix_dim = matrix_field_expr->element_shape.size();
+    if (!has_slice && matrix_dim != index_dim) {
+      throw TaichiTypeError(
+          fmt::format("Matrix with dim {} accessed with indices of dim {}",
+                      matrix_dim, index_dim));
+    }
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]
                                                    .cast<FieldExpression>()
@@ -774,7 +789,12 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
-    int index_dim = indices_group[0].exprs.size();
+    int element_dim = external_tensor_expr->dt.get_shape().size();
+    if (!has_slice && total_dim != index_dim + element_dim) {
+      throw TaichiTypeError(
+          fmt::format("Array with dim {} accessed with indices of dim {}",
+                      total_dim - element_dim, index_dim));
+    }
 
     if (index_dim == total_dim) {
       // Access all the way to a single element

@@ -280,11 +280,30 @@ class Scalarize : public BasicStmtVisitor {
       } else {
         Stmt *print_stmt = std::get<Stmt *>(content);
         if (print_stmt->is<MatrixInitStmt>()) {
-          new_contents.push_back("[");
           auto matrix_init_stmt = print_stmt->cast<MatrixInitStmt>();
-          for (size_t j = 0; j < matrix_init_stmt->values.size(); j++) {
-            new_contents.push_back(matrix_init_stmt->values[j]);
-            new_contents.push_back(", ");
+          auto tensor_shape =
+              print_stmt->ret_type->as<TensorType>()->get_shape();
+
+          bool is_matrix = tensor_shape.size() == 2;
+          int m = tensor_shape[0];
+          int n = is_matrix ? tensor_shape[1] : 1;
+
+          new_contents.push_back("[");
+          if (is_matrix) {
+            for (size_t i = 0; i < m; i++) {
+              new_contents.push_back("[");
+              for (size_t j = 0; j < n; j++) {
+                size_t index = i * n + j;
+                new_contents.push_back(matrix_init_stmt->values[index]);
+                new_contents.push_back(", ");
+              }
+              new_contents.push_back("], ");
+            }
+          } else {
+            for (size_t i = 0; i < m; i++) {
+              new_contents.push_back(matrix_init_stmt->values[i]);
+              new_contents.push_back(", ");
+            }
           }
           new_contents.push_back("]");
         } else {
@@ -292,7 +311,25 @@ class Scalarize : public BasicStmtVisitor {
         }
       }
     }
-    modifier_.insert_before(stmt, Stmt::make<PrintStmt>(new_contents));
+
+    // Merge string contents
+    std::vector<std::variant<Stmt *, std::string>> merged_contents;
+    std::string merged_string = "";
+    for (const auto &content : new_contents) {
+      if (auto string_content = std::get_if<std::string>(&content)) {
+        merged_string += *string_content;
+      } else {
+        if (!merged_string.empty()) {
+          merged_contents.push_back(merged_string);
+          merged_string = "";
+        }
+        merged_contents.push_back(content);
+      }
+    }
+    if (!merged_string.empty())
+      merged_contents.push_back(merged_string);
+
+    modifier_.insert_before(stmt, Stmt::make<PrintStmt>(merged_contents));
     modifier_.erase(stmt);
   }
 

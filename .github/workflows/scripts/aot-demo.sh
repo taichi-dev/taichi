@@ -4,8 +4,8 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-export TAICHI_AOT_DEMO_URL=https://github.com/taichi-dev/taichi-aot-demo
-export TAICHI_AOT_DEMO_BRANCH=master
+export TAICHI_AOT_DEMO_URL=https://github.com/PENGUINLIONG/taichi-aot-demo
+export TAICHI_AOT_DEMO_BRANCH=fix-cgraph-demo
 
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=fix-include

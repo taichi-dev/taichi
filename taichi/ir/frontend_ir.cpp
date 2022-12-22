@@ -776,11 +776,16 @@ void IndexExpression::type_check(CompileConfig *) {
     }
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
-    int matrix_dim = matrix_field_expr->element_shape.size();
-    if (!has_slice && matrix_dim != index_dim) {
+    int element_dim = matrix_field_expr->element_shape.size();
+    int outter_dim = matrix_field_expr->fields[0]
+                         .cast<FieldExpression>()
+                         ->snode->num_active_indices;
+
+    if (!has_slice && outter_dim != index_dim &&
+        outter_dim + element_dim != index_dim) {
       throw TaichiTypeError(
           fmt::format("Matrix with dim {} accessed with indices of dim {}",
-                      matrix_dim, index_dim));
+                      outter_dim + element_dim, index_dim));
     }
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]

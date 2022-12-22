@@ -27,21 +27,21 @@ class ShaderResourceSetImpl : public ShaderResourceSet {
 
   // RW buffers
   ShaderResourceSet &rw_buffer(uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override {
+                               DevicePtr ptr,
+                               size_t size) override {
     bind_buffer(binding, ptr, ptr.offset, /*is_constant=*/false);
     return *this;
   }
   ShaderResourceSet &rw_buffer(uint32_t binding,
-                 DeviceAllocation alloc) override {
+                               DeviceAllocation alloc) override {
     bind_buffer(binding, alloc, /*offset=*/0, /*is_constant=*/false);
     return *this;
   }
 
   // Constant buffers
   ShaderResourceSet &buffer(uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override {
+                            DevicePtr ptr,
+                            size_t size) override {
     bind_buffer(binding, ptr, ptr.offset, /*is_constant=*/false);
     return *this;
   }

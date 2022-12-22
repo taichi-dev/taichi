@@ -140,8 +140,8 @@ RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(params.device->vk_device()),
-      ti_device_(*params.device),
+    : ti_device_(*params.device),
+      device_(params.device->vk_device()),
       name_(params.name) {
   create_descriptor_set_layout(params);
   create_shader_stages(params);
@@ -159,8 +159,8 @@ VulkanPipeline::VulkanPipeline(
     const RasterParams &raster_params,
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
-    : device_(params.device->vk_device()),
-      ti_device_(*params.device),
+    : ti_device_(*params.device),
+      device_(params.device->vk_device()),
       name_(params.name) {
   this->graphics_pipeline_template_ =
       std::make_unique<GraphicsPipelineTemplate>();

@@ -354,7 +354,7 @@ class VulkanPipeline : public Pipeline {
     VkGraphicsPipelineCreateInfo pipeline_info{};
   };
 
-  VulkanDevice &ti_device_;  // not owned
+  VulkanDevice &ti_device_;          // not owned
   VkDevice device_{VK_NULL_HANDLE};  // not owned
 
   std::string name_;

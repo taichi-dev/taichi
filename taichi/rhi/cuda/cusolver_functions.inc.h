@@ -24,11 +24,11 @@ PER_CUSOLVER_FUNCTION(csSpScsrcholZeroPivot, cusolverSpScsrcholZeroPivot, cusolv
 PER_CUSOLVER_FUNCTION(csSpScsrcholSolve, cusolverSpScsrcholSolve,  cusolverSpHandle_t ,int ,void *,void *,csrcholInfo_t ,void *);
 
 // cusolver preview API for LU
-PER_CUSOLVER_FUNCTION(csSpCreateCsrluInfoHost, cusolverSpCreateCsrluInfoHost, csrcholInfo_t*);
-PER_CUSOLVER_FUNCTION(csSpDestroyCsrluInfoHost, cusolverSpDestroyCsrluInfoHost, csrcholInfo_t);
-PER_CUSOLVER_FUNCTION(csSpXcsrluAnalysisHost, cusolverSpXcsrluAnalysisHost,  cusolverSpHandle_t,int ,int ,const cusparseMatDescr_t , void *, void *,csrcholInfo_t );
-PER_CUSOLVER_FUNCTION(csSpScsrluBufferInfoHost, cusolverSpScsrluBufferInfoHost,  cusolverSpHandle_t ,int ,int ,const cusparseMatDescr_t ,void *,void *,void *,csrcholInfo_t ,size_t *,size_t *);
-PER_CUSOLVER_FUNCTION(csSpScsrluFactorHost, cusolverSpScsrluFactorHost, cusolverSpHandle_t ,int ,int ,const cusparseMatDescr_t ,void *,void *,void *,csrcholInfo_t,float, void *);
-PER_CUSOLVER_FUNCTION(csSpScsrluZeroPivotHost, cusolverSpScsrluZeroPivotHost, cusolverSpHandle_t, csrcholInfo_t ,float ,void *);
-PER_CUSOLVER_FUNCTION(csSpScsrluSolveHost, cusolverSpScsrluSolveHost,  cusolverSpHandle_t ,int ,void *,void *,csrcholInfo_t ,void *);
+PER_CUSOLVER_FUNCTION(csSpCreateCsrluInfoHost, cusolverSpCreateCsrluInfoHost, csrluInfoHost_t*);
+PER_CUSOLVER_FUNCTION(csSpDestroyCsrluInfoHost, cusolverSpDestroyCsrluInfoHost, csrluInfoHost_t);
+PER_CUSOLVER_FUNCTION(csSpXcsrluAnalysisHost, cusolverSpXcsrluAnalysisHost,  cusolverSpHandle_t,int ,int ,const cusparseMatDescr_t , void *, void *,csrluInfoHost_t );
+PER_CUSOLVER_FUNCTION(csSpScsrluBufferInfoHost, cusolverSpScsrluBufferInfoHost,  cusolverSpHandle_t ,int ,int ,const cusparseMatDescr_t ,void *,void *,void *,csrluInfoHost_t ,size_t *,size_t *);
+PER_CUSOLVER_FUNCTION(csSpScsrluFactorHost, cusolverSpScsrluFactorHost, cusolverSpHandle_t ,int ,int ,const cusparseMatDescr_t ,void *,void *,void *,csrluInfoHost_t,float, void *);
+PER_CUSOLVER_FUNCTION(csSpScsrluZeroPivotHost, cusolverSpScsrluZeroPivotHost, cusolverSpHandle_t, csrluInfoHost_t ,float ,void *);
+PER_CUSOLVER_FUNCTION(csSpScsrluSolveHost, cusolverSpScsrluSolveHost,  cusolverSpHandle_t ,int ,void *,void *,csrluInfoHost_t ,void *);
 

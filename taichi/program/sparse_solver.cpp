@@ -396,29 +396,29 @@ void CuSparseSolver::solve_lu(Program *prog,
   reorder(A);
 
   // step 2: create opaque info structure
-  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&info_);    
+  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);    
 
   // step 3: analyze LU(B) to know structure of Q and R, and upper bound for nnz(L+U)
   size_t rowsA = A.num_rows();
   size_t colsA = A.num_cols();
   size_t nnzA = A.get_nnz();
-  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, info_);
+  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, lu_info_);
 
   // step 4: workspace for LU(B)
   size_t size_lu = 0;
   size_t buffer_size = 0;
-  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, info_, &buffer_size, &size_lu);
+  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
 
   void *buffer_cpu = (void*)malloc(sizeof(char)*size_lu);
   assert(nullptr != buffer_cpu);
   
   // step 5: compute Ppivot * B = L * U
-  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, info_,1.0f, buffer_cpu);
+  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_,1.0f, buffer_cpu);
 
   // step 6: check singularity by tol
   int singularity = 0;
   const float tol = 1.e-6;
-  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, info_, tol, &singularity);
+  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, lu_info_, tol, &singularity);
   TI_ASSERT(singularity == -1);
 
   // step 7: solve L*U*x = b
@@ -437,7 +437,7 @@ void CuSparseSolver::solve_lu(Program *prog,
   for(int j = 0; j < rowsA; j++){
     h_b_hat[j] = h_b[h_Q_[j]];
   }
-  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, info_, buffer_cpu);
+  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, buffer_cpu);
   for(int j = 0; j < colsA; j++){
     h_x[h_Q_[j]] = h_x_hat[j];
   }
@@ -503,6 +503,8 @@ CuSparseSolver::~CuSparseSolver() {
     free(h_mapBfromA_);
   if (info_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestroyCsrcholInfo(info_);
+  if(lu_info_ != nullptr)
+    CUSOLVERDriver::get_instance().csSpDestroyCsrluInfoHost(lu_info_);
   if (cusolver_handle_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
   if (cusparse_handel_ != nullptr)

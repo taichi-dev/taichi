@@ -78,6 +78,7 @@ DECLARE_EIGEN_LU_SOLVER(float64, LU, COLAMD);
 class CuSparseSolver : public SparseSolver {
  private:
   csrcholInfo_t info_{nullptr};
+  csrluInfoHost_t lu_info_{nullptr};
   cusolverSpHandle_t cusolver_handle_{nullptr};
   cusparseHandle_t cusparse_handel_{nullptr};
   cusparseMatDescr_t descr_{nullptr};

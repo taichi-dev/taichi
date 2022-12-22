@@ -77,7 +77,7 @@ for i in x:
 
 These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
 
-## Arithmetic operations
+## Operations
 
 ### In Taichi v1.3.0, the matmul result of a vector and a transposed vector gives a scalar instead of a matrix.
 

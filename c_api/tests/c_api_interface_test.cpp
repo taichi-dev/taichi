@@ -136,10 +136,18 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     ti::Memory mem = runtime.allocate_memory(100);
     mem.map();
 
+#ifdef __APPLE__
+    // Vulkan Validation aren't supported on MacOS platform
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "Assertion failure",
+                        /*reset_error=*/false);
+    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "RHI map memory failed",
+                        /*reset_error=*/true);
+#else
     EXPECT_TAICHI_ERROR(
         TI_ERROR_INVALID_STATE,
         "Mapping Memory without VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT set",
         /*reset_error=*/true);
+#endif
   }
 }
 

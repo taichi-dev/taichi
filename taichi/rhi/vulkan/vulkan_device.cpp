@@ -924,8 +924,9 @@ RhiResult VulkanCommandList::bind_raster_resources(RasterResources *_res) {
   }
 
   for (auto &[binding, buffer] : res->vertex_buffers) {
+    VkDeviceSize offset_vk = buffer.offset;
     vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer.buffer->buffer,
-                           &buffer.offset);
+                           &offset_vk);
     buffer_->refs.push_back(buffer.buffer);
   }
 

@@ -681,10 +681,10 @@ class StructType(CompoundType):
             if index < len(args):  # set from args
                 data = args[index]
             else:  # set from kwargs
-                data = kwargs.get(name, 0)
-
-            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, Struct)):
-                data = dtype(data)
+                if isinstance(dtype, CompoundType):
+                    data = kwargs.get(name, dtype(0))
+                else:
+                    data = kwargs.get(name, 0)
 
             d[name] = data
 

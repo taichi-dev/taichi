@@ -138,7 +138,7 @@ class VulkanResourceSet : public ShaderResourceSet {
 
   struct Binding {
     VkDescriptorType type{VK_DESCRIPTOR_TYPE_MAX_ENUM};
-    std::variant<Buffer, Image, Texture> res;
+    std::variant<Buffer, Image, Texture> res{Buffer()};
 
     bool operator==(const Binding &other) const {
       return other.type == type && other.res == res;

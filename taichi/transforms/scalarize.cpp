@@ -295,7 +295,7 @@ class Scalarize : public BasicStmtVisitor {
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
                 new_contents.push_back(matrix_init_stmt->values[index]);
-                new_contents.push_back(", ");
+    if (j != n - 1) new_contents.push_back(", ");
               }
               new_contents.push_back("], ");
             }

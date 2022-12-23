@@ -116,7 +116,7 @@ def test_gpu_sparse_solver():
     fill(A_builder, A_coo.row, A_coo.col, A_coo.data)
     A_ti = A_builder.build()
     x_ti = ti.ndarray(shape=ncols, dtype=ti.float32)
-    
+
     # solve Ax=b using numpy
     b_np = b.to_numpy()
     x_np = np.linalg.solve(A_psd, b_np)
@@ -138,8 +138,9 @@ def test_gpu_sparse_solver():
 
 
 @pytest.mark.parametrize("dtype", [ti.f32])
+@pytest.mark.parametrize("solver_type", ["LLT", "LU"])
 @test_utils.test(arch=ti.cuda)
-def test_gpu_sparse_solver2(dtype):
+def test_gpu_sparse_solver2(dtype, solver_type):
     n = 10
     A = np.random.rand(n, n)
     A_psd = np.dot(A, A.transpose())
@@ -156,7 +157,7 @@ def test_gpu_sparse_solver2(dtype):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    solver = ti.linalg.SparseSolver(dtype=dtype)
+    solver = ti.linalg.SparseSolver(dtype=dtype, solver_type=solver_type)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)

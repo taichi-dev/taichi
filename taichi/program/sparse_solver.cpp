@@ -176,6 +176,10 @@ INSTANTIATE_LU_SOLVE_RF(float64, LU, AMD, Eigen::VectorXd)
 INSTANTIATE_LU_SOLVE_RF(float64, LU, COLAMD, Eigen::VectorXd)
 
 CuSparseSolver::CuSparseSolver() {
+  init_solver();
+}
+
+void CuSparseSolver::init_solver(){
 #if defined(TI_WITH_CUDA)
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
@@ -191,7 +195,6 @@ CuSparseSolver::CuSparseSolver() {
   }
 #endif
 }
-
 void CuSparseSolver::reorder(const CuSparseMatrix &A){
 #if defined(TI_WITH_CUDA)
   size_t rowsA = A.num_rows();
@@ -267,6 +270,18 @@ void CuSparseSolver::reorder(const CuSparseMatrix &A){
 // Reference:
 // https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
 void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+  switch (solver_type_){
+    case SolverType::Cholesky:                            
+      analyze_pattern_cholesky(sm);
+      break;
+    case SolverType::LU:
+      analyze_pattern_lu(sm);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm){
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
@@ -288,9 +303,21 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
   TI_NOT_IMPLEMENTED
 #endif
 }
-
+void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm){}
 void CuSparseSolver::factorize(const SparseMatrix &sm) {
-#if defined(TI_WITH_CUDA)
+  switch (solver_type_){
+    case SolverType::Cholesky:                            
+      factorize_cholesky(sm);
+      break;
+    case SolverType::LU:
+      factorize_lu(sm);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm){
+  #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
   CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
@@ -322,12 +349,21 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   TI_NOT_IMPLEMENTED
 #endif
 }
-
+void CuSparseSolver::factorize_lu(const SparseMatrix &sm){}
 void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
                               const Ndarray &x) {
-  solve_cholesky(prog, sm, b, x);
+  switch (solver_type_){
+    case SolverType::Cholesky:                            
+      solve_cholesky(prog, sm, b, x);
+      break;
+    case SolverType::LU:
+      solve_lu(prog, sm, b, x);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
 }
 
 void CuSparseSolver::solve_cholesky(Program *prog,
@@ -534,6 +570,6 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering) {
-  return std::make_unique<CuSparseSolver>();
+  return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::Cholesky);
 }
 }  // namespace taichi::lang

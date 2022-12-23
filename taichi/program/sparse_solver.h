@@ -76,7 +76,13 @@ DECLARE_EIGEN_LU_SOLVER(float64, LU, AMD);
 DECLARE_EIGEN_LU_SOLVER(float64, LU, COLAMD);
 
 class CuSparseSolver : public SparseSolver {
+ public:
+ enum class SolverType {
+    Cholesky,
+    LU
+  };
  private:
+  SolverType solver_type_{SolverType::Cholesky};
   csrcholInfo_t info_{nullptr};
   csrluInfoHost_t lu_info_{nullptr};
   cusolverSpHandle_t cusolver_handle_{nullptr};
@@ -96,9 +102,11 @@ class CuSparseSolver : public SparseSolver {
   int *d_csrColIndB_{nullptr}; /* <int> nnzA */
   float *d_csrValB_{nullptr};  /* <float> nnzA */
 
-  void reorder(const CuSparseMatrix &sm);
  public:
   CuSparseSolver();
+  explicit CuSparseSolver(SolverType solver_type): solver_type_(solver_type){
+    init_solver();
+  }
   ~CuSparseSolver() override;
   bool compute(const SparseMatrix &sm) override {
     TI_NOT_IMPLEMENTED;
@@ -115,6 +123,12 @@ class CuSparseSolver : public SparseSolver {
     TI_NOT_IMPLEMENTED;
   };
   private:
+  void init_solver();
+  void reorder(const CuSparseMatrix &sm);
+  void analyze_pattern_cholesky(const SparseMatrix &sm);
+  void analyze_pattern_lu(const SparseMatrix &sm);
+  void factorize_cholesky(const SparseMatrix &sm);
+  void factorize_lu(const SparseMatrix &sm);
   void solve_cholesky(Program *prog,
                  const SparseMatrix &sm,
                  const Ndarray &b,

@@ -731,11 +731,10 @@ class TextureOpExpression : public Expression {
   Expr texture_ptr;
   ExprGroup args;
 
-  explicit TextureOpExpression(TextureOpType op,
+  explicit TextureOpExpression(ASTBuilder *builder,
+                               TextureOpType op,
                                Expr texture_ptr,
-                               const ExprGroup &args)
-      : op(op), texture_ptr(texture_ptr), args(args) {
-  }
+                               const ExprGroup &args);
 
   void type_check(CompileConfig *config) override;
 
@@ -978,7 +977,9 @@ class ASTBuilder {
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
-
+  Expr make_texture_op_expr(const TextureOpType &op,
+                            const Expr &texture_ptr,
+                            const ExprGroup &args);
   /*
    * This function allocates the space for a new item (a struct or a scalar)
    * in the Dynamic SNode, and assigns values to the elements inside it.

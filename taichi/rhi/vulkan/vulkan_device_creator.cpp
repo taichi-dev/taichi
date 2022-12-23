@@ -38,6 +38,20 @@ bool check_validation_layer_support() {
   return true;
 }
 
+bool vk_ignore_validation_warning(const std::string &msg_name) {
+  if (msg_name == "UNASSIGNED-DEBUG-PRINTF") {
+    // Ignore truncated Debug Printf message
+    return true;
+  }
+
+  if (msg_name == "VUID_Undefined") {
+    // FIXME: Remove this branch after upgrading Vulkan driver for built bots
+    return true;
+  }
+
+  return false;
+}
+
 VKAPI_ATTR VkBool32 VKAPI_CALL
 vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -56,14 +70,18 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     char msg_buf[512];
     snprintf(msg_buf, sizeof(msg_buf), "Vulkan validation layer: %d, %s",
              message_type, p_callback_data->pMessage);
+
 #ifdef TI_BUILD_TESTS
-    TI_ERROR(msg_buf);
+    auto msg_name = std::string(p_callback_data->pMessageIdName);
+    if (!vk_ignore_validation_warning(msg_name))
+      TI_ERROR(msg_buf);
+  }
 #else
     RHI_LOG_ERROR(msg_buf);
 #endif
-  }
+}
 
-  return VK_FALSE;
+return VK_FALSE;
 }
 
 void populate_debug_messenger_create_info(

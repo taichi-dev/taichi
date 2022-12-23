@@ -1,5 +1,6 @@
 import numpy as np
 from pytest import approx
+from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
@@ -416,3 +417,38 @@ def test_dataclass():
         assert A.mass == 2.0
 
     test()
+
+
+@test_utils.test(arch=get_host_arch_list())
+def test_name_collision():
+    # https://github.com/taichi-dev/taichi/issues/6652
+    @ti.dataclass
+    class Foo:
+        zoo: ti.f32
+
+    @ti.dataclass
+    class Bar:
+        @ti.func
+        def zoo(self):
+            return 0
+
+    Foo()  # instantiate struct with zoo as member first
+    Bar()  # then instantiate struct with zoo as method
+
+
+@test_utils.test(debug=True)
+def test_dataclass_as_member():
+    # https://github.com/taichi-dev/taichi/issues/6884
+    @ti.dataclass
+    class A:
+        i: int
+        j: float
+
+    @ti.dataclass
+    class B:
+        a1: A
+        a2: A
+
+    a = A(1, 2.0)
+    b = B(a)
+    assert (b.a1.i == 1 and b.a1.j == 2.0)

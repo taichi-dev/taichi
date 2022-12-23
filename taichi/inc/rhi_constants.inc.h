@@ -7,6 +7,7 @@
 // should not.
 #ifdef PER_DEVICE_CAPABILITY
 // SPIR-V Caps
+PER_DEVICE_CAPABILITY(reserved)
 PER_DEVICE_CAPABILITY(spirv_version)
 PER_DEVICE_CAPABILITY(spirv_has_int8)
 PER_DEVICE_CAPABILITY(spirv_has_int16)

@@ -235,6 +235,7 @@ class Tape:
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, 'grad'):
+                self.loss.grad.fill(1.0)
                 func.grad(*args)
 
         self.gradient_evaluated = True
@@ -294,11 +295,11 @@ def grad_replaced(func):
         >>>     for I in ti.grouped(x):
         >>>         x.grad[I] = y.grad[I] / a
         >>>
-        >>> @ti.grad_replaced
+        >>> @ti.ad.grad_replaced
         >>> def foo(a):
         >>>     multiply(a)
         >>>
-        >>> @ti.grad_for(foo)
+        >>> @ti.ad.grad_for(foo)
         >>> def foo_grad(a):
         >>>     multiply_grad(a)"""
     def decorated(*args, **kwargs):

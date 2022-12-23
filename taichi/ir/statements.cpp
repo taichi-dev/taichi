@@ -85,9 +85,12 @@ MatrixOfMatrixPtrStmt::MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts,
   TI_STMT_REG_FIELDS;
 }
 
-MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input, Stmt *offset_input) {
+MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
+                             Stmt *offset_input,
+                             const std::string &tb) {
   origin = origin_input;
   offset = offset_input;
+  this->tb = tb;
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
       origin->is<MatrixOfMatrixPtrStmt>()) {
@@ -121,7 +124,8 @@ bool SNodeOpStmt::activation_related(SNodeOpType op) {
 }
 
 bool SNodeOpStmt::need_activation(SNodeOpType op) {
-  return op == SNodeOpType::activate || op == SNodeOpType::append;
+  return op == SNodeOpType::activate || op == SNodeOpType::append ||
+         op == SNodeOpType::allocate;
 }
 
 ExternalTensorShapeAlongAxisStmt::ExternalTensorShapeAlongAxisStmt(int axis,
@@ -269,6 +273,16 @@ GetChStmt::GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized)
     : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
   TI_ASSERT(input_ptr->is<SNodeLookupStmt>());
   input_snode = input_ptr->as<SNodeLookupStmt>()->snode;
+  output_snode = input_snode->ch[chid].get();
+  TI_STMT_REG_FIELDS;
+}
+
+GetChStmt::GetChStmt(Stmt *input_ptr,
+                     SNode *snode,
+                     int chid,
+                     bool is_bit_vectorized)
+    : input_ptr(input_ptr), chid(chid), is_bit_vectorized(is_bit_vectorized) {
+  input_snode = snode;
   output_snode = input_snode->ch[chid].get();
   TI_STMT_REG_FIELDS;
 }

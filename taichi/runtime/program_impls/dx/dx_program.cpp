@@ -13,9 +13,9 @@ namespace directx11 {
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(gfx::run_codegen(
-      kernel, Arch::dx11, runtime->get_ti_device()->get_current_caps(),
-      snode_tree_mgr->get_compiled_structs()));
+  auto handle = runtime->register_taichi_kernel(
+      gfx::run_codegen(kernel, Arch::dx11, runtime->get_ti_device()->get_caps(),
+                       snode_tree_mgr->get_compiled_structs()));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -80,15 +80,6 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
   return get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false});
-}
-
-std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
-  spirv::lower(&kernel);
-  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams = gfx::run_codegen(
-      &kernel, Arch::dx11, get_compute_device()->get_current_caps(),
-      compiled_structs);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 
 }  // namespace taichi::lang

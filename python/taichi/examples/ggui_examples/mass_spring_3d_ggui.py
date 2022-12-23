@@ -110,7 +110,7 @@ def substep():
         if offset_to_center.norm() <= ball_radius:
             # Velocity projection
             normal = offset_to_center.normalized()
-            v[i] -= min(v[i].dot(normal), 0) * normal
+            v[i] -= ti.min(v[i].dot(normal), 0) * normal
         x[i] += dt * v[i]
 
 

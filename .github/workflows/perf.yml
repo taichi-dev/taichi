@@ -29,10 +29,10 @@ jobs:
 
           ci-docker-run-gpu --name taichi-benchmark-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: py38
+          PY: '3.8'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -53,5 +53,5 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
         env:
-          PY: py38
+          PY: '3.8'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}

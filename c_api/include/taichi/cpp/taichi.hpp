@@ -1,13 +1,32 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <cstddef>
 #include <cstring>
 #include <list>
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 #include "taichi/taichi.h"
 
 namespace ti {
+
+inline std::vector<TiArch> get_available_archs() {
+  uint32_t narch = 0;
+  ti_get_available_archs(&narch, nullptr);
+  std::vector<TiArch> archs(narch);
+  ti_get_available_archs(&narch, archs.data());
+  return archs;
+}
+inline bool is_arch_available(TiArch arch) {
+  std::vector<TiArch> archs = get_available_archs();
+  for (size_t i = 0; i < archs.size(); ++i) {
+    if (archs.at(i) == arch) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // Token type for half-precision floats.
 struct half {
@@ -134,6 +153,21 @@ class Memory {
     unmap();
   }
 
+  TiMemorySlice slice(size_t offset, size_t size) const {
+    if (offset + size > size_) {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
+      return {};
+    }
+    TiMemorySlice slice{};
+    slice.memory = memory_;
+    slice.offset = offset;
+    slice.size = size;
+    return slice;
+  }
+  TiMemorySlice slice() const {
+    return slice(0, size_);
+  }
+
   constexpr size_t size() const {
     return size_;
   }
@@ -149,6 +183,8 @@ template <typename T>
 class NdArray {
   Memory memory_{};
   TiNdArray ndarray_{};
+  size_t elem_count_{};
+  size_t scalar_count_{};
 
  public:
   constexpr bool is_valid() const {
@@ -158,16 +194,29 @@ class NdArray {
     memory_.destroy();
   }
 
-  NdArray() {
+  NdArray() : elem_count_(1), scalar_count_(1) {
   }
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
-      : memory_(std::move(b.memory_)), ndarray_(std::exchange(b.ndarray_, {})) {
+      : memory_(std::move(b.memory_)),
+        ndarray_(std::exchange(b.ndarray_, {})),
+        elem_count_(std::exchange(b.elem_count_, 1)),
+        scalar_count_(std::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
-      : memory_(std::move(memory)), ndarray_(ndarray) {
+      : memory_(std::move(memory)),
+        ndarray_(ndarray),
+        elem_count_(1),
+        scalar_count_(1) {
     if (ndarray.memory != memory_) {
       ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "ndarray.memory != memory");
+    }
+    for (uint32_t i = 0; i < ndarray_.shape.dim_count; ++i) {
+      elem_count_ *= ndarray_.shape.dims[i];
+    }
+    scalar_count_ *= elem_count_;
+    for (uint32_t i = 0; i < ndarray_.elem_shape.dim_count; ++i) {
+      scalar_count_ *= ndarray_.elem_shape.dims[i];
     }
   }
   ~NdArray() {
@@ -179,6 +228,8 @@ class NdArray {
     destroy();
     memory_ = std::move(b.memory_);
     ndarray_ = std::exchange(b.ndarray_, {});
+    elem_count_ = std::exchange(b.elem_count_, 1);
+    scalar_count_ = std::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -189,7 +240,21 @@ class NdArray {
     return memory_.unmap();
   }
 
+  inline size_t scalar_count() const {
+    return scalar_count_;
+  }
+  inline size_t elem_count() const {
+    return elem_count_;
+  }
+
   inline void read(T *dst, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray read ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be read");
+      return;
+    }
     memory_.read(dst, count * sizeof(T));
   }
   inline void read(std::vector<T> &dst) const {
@@ -202,6 +267,13 @@ class NdArray {
     read((T *)dst.data(), dst.size() * (sizeof(U) / sizeof(T)));
   }
   inline void write(const T *src, size_t count) const {
+    if (count > scalar_count_) {
+      ti_set_last_error(
+          TI_ERROR_ARGUMENT_OUT_OF_RANGE,
+          "ndarray write ouf of range; please ensure you specified the correct "
+          "number of elements (rather than size-in-bytes) to be written");
+      return;
+    }
     memory_.write(src, count * sizeof(T));
   }
   inline void write(const std::vector<T> &src) const {
@@ -212,6 +284,13 @@ class NdArray {
     static_assert(sizeof(U) % sizeof(T) == 0,
                   "sizeof(U) must be a multiple of sizeof(T)");
     write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
+  }
+
+  TiMemorySlice slice(size_t offset, size_t size) const {
+    return memory_.slice(offset, size);
+  }
+  TiMemorySlice slice() const {
+    return memory_.slice();
   }
 
   constexpr TiDataType elem_type() const {
@@ -606,59 +685,178 @@ class AotModule {
   }
 };
 
-class Event {
-  TiRuntime runtime_{TI_NULL_HANDLE};
-  TiEvent event_{TI_NULL_HANDLE};
-  bool should_destroy_{false};
+class CapabilityLevelConfigBuilder;
+class CapabilityLevelConfig {
+ public:
+  std::vector<TiCapabilityLevelInfo> cap_level_infos;
+
+  CapabilityLevelConfig() : cap_level_infos() {
+  }
+  CapabilityLevelConfig(std::vector<TiCapabilityLevelInfo> &&capabilities)
+      : cap_level_infos(std::move(capabilities)) {
+  }
+
+  static CapabilityLevelConfigBuilder builder();
+
+  uint32_t get(TiCapability capability) const {
+    for (size_t i = 0; i < cap_level_infos.size(); ++i) {
+      const TiCapabilityLevelInfo &cap_level_info = cap_level_infos.at(i);
+      if (cap_level_info.capability == capability) {
+        return cap_level_info.level;
+      }
+    }
+    return 0;
+  }
+
+  void set(TiCapability capability, uint32_t level) {
+    std::vector<TiCapabilityLevelInfo>::iterator it = cap_level_infos.begin();
+    for (; it != cap_level_infos.end(); ++it) {
+      if (it->capability == capability) {
+        it->level = level;
+        return;
+      }
+    }
+    TiCapabilityLevelInfo cap_level_info{};
+    cap_level_info.capability = capability;
+    cap_level_info.level = level;
+    cap_level_infos.emplace_back(std::move(cap_level_info));
+  }
+};
+
+class CapabilityLevelConfigBuilder {
+  typedef CapabilityLevelConfigBuilder Self;
+  std::map<TiCapability, uint32_t> cap_level_infos;
 
  public:
-  constexpr bool is_valid() const {
-    return event_ != nullptr;
+  CapabilityLevelConfigBuilder() : cap_level_infos() {
   }
-  inline void destroy() {
-    if (should_destroy_) {
-      ti_destroy_event(event_);
-      event_ = TI_NULL_HANDLE;
-      should_destroy_ = false;
+  CapabilityLevelConfigBuilder(const Self &) = delete;
+  Self &operator=(const Self &) = delete;
+
+  Self &spirv_version(uint32_t major, uint32_t minor) {
+    if (major == 1) {
+      if (minor == 3) {
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10300;
+      } else if (minor == 4) {
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10400;
+      } else if (minor == 5) {
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10500;
+      } else {
+        ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "minor");
+      }
+    } else {
+      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "major");
     }
+    return *this;
   }
-
-  Event() {
+  Self &spirv_has_int8(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT8] = value ? TI_TRUE : TI_FALSE;
+    return *this;
   }
-  Event(const Event &) = delete;
-  Event(Event &&b) : event_(b.event_), should_destroy_(b.should_destroy_) {
+  Self &spirv_has_int16(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
+    return *this;
   }
-  Event(TiRuntime runtime, TiEvent event, bool should_destroy)
-      : runtime_(runtime), event_(event), should_destroy_(should_destroy) {
+  Self &spirv_has_int64(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
+    return *this;
   }
-  ~Event() {
-    destroy();
+  Self &spirv_has_float16(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT16] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
   }
-
-  Event &operator=(const Event &) = delete;
-  Event &operator=(Event &&b) {
-    event_ = detail::move_handle(b.event_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+  Self &spirv_has_float64(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT64] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_i64(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_float16(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_float16_add(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_float16_minmax(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_float64(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_atomic_float64_add(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_variable_ptr(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_physical_storage_buffer(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_subgroup_basic(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_subgroup_vote(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_subgroup_arithmetic(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_subgroup_ballot(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_non_semantic_info(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO] =
+        value ? TI_TRUE : TI_FALSE;
+    return *this;
+  }
+  Self &spirv_has_no_integer_wrap_decoration(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
 
-  void reset(TiEvent event_) {
-    ti_reset_event(runtime_, event_);
-  }
-  void signal(TiEvent event_) {
-    ti_signal_event(runtime_, event_);
-  }
-  void wait(TiEvent event_) {
-    ti_wait_event(runtime_, event_);
-  }
-
-  constexpr TiEvent event() const {
-    return event_;
-  }
-  constexpr operator TiEvent() const {
-    return event_;
+  CapabilityLevelConfig build() {
+    std::vector<TiCapabilityLevelInfo> out{};
+    for (const auto &pair : cap_level_infos) {
+      TiCapabilityLevelInfo cap_level_info{};
+      cap_level_info.capability = pair.first;
+      cap_level_info.level = pair.second;
+      out.emplace_back(std::move(cap_level_info));
+    }
+    return CapabilityLevelConfig{std::move(out)};
   }
 };
+
+inline CapabilityLevelConfigBuilder CapabilityLevelConfig::builder() {
+  return {};
+}
 
 class Runtime {
   TiArch arch_{TI_ARCH_MAX_ENUM};
@@ -685,8 +883,10 @@ class Runtime {
         runtime_(detail::move_handle(b.runtime_)),
         should_destroy_(std::exchange(b.should_destroy_, false)) {
   }
-  Runtime(TiArch arch)
-      : arch_(arch), runtime_(ti_create_runtime(arch)), should_destroy_(true) {
+  Runtime(TiArch arch, uint32_t device_index = 0)
+      : arch_(arch),
+        runtime_(ti_create_runtime(arch, device_index)),
+        should_destroy_(true) {
   }
   Runtime(TiArch arch, TiRuntime runtime, bool should_destroy)
       : arch_(arch), runtime_(runtime), should_destroy_(should_destroy) {
@@ -697,9 +897,26 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
+    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
     should_destroy_ = std::exchange(b.should_destroy_, false);
     return *this;
+  }
+
+  void set_capabilities_ext(
+      const std::vector<TiCapabilityLevelInfo> &capabilities) {
+    ti_set_runtime_capabilities_ext(runtime_, (uint32_t)capabilities.size(),
+                                    capabilities.data());
+  }
+  void set_capabilities_ext(const CapabilityLevelConfig &capabilities) {
+    set_capabilities_ext(capabilities.cap_level_infos);
+  }
+  CapabilityLevelConfig get_capabilities() const {
+    uint32_t n = 0;
+    ti_get_runtime_capabilities(runtime_, &n, nullptr);
+    std::vector<TiCapabilityLevelInfo> devcaps(n);
+    ti_get_runtime_capabilities(runtime_, &n, devcaps.data());
+    return CapabilityLevelConfig{std::move(devcaps)};
   }
 
   Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {
@@ -782,6 +999,14 @@ class Runtime {
     return load_aot_module(path.c_str());
   }
 
+  AotModule create_aot_module(const void *tcm, size_t size) {
+    TiAotModule aot_module = ti_create_aot_module(runtime_, tcm, size);
+    return AotModule(runtime_, aot_module, true);
+  }
+  AotModule create_aot_module(const std::vector<uint8_t> &tcm) {
+    return create_aot_module(tcm.data(), tcm.size());
+  }
+
   void copy_memory_device_to_device(const TiMemorySlice &dst_memory,
                                     const TiMemorySlice &src_memory) {
     ti_copy_memory_device_to_device(runtime_, &dst_memory, &src_memory);
@@ -794,8 +1019,8 @@ class Runtime {
     ti_transition_image(runtime_, image, layout);
   }
 
-  void submit() {
-    ti_submit(runtime_);
+  void flush() {
+    ti_flush(runtime_);
   }
   void wait() {
     ti_wait(runtime_);

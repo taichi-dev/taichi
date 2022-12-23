@@ -11,7 +11,7 @@
 #endif
 #endif
 
-#include "miniz.h"
+#include "taichi/common/miniz.h"
 
 namespace taichi {
 

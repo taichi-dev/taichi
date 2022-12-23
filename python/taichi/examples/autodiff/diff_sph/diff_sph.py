@@ -46,7 +46,7 @@ class SGD:
     @ti.kernel
     def _step(self, w: ti.template()):
         for I in ti.grouped(w):
-            w[I] -= min(max(w.grad[I], -20.0), 20.0) * self.lr
+            w[I] -= ti.min(ti.max(w.grad[I], -20.0), 20.0) * self.lr
 
     def zero_grad(self):
         for w in self.params:
@@ -427,7 +427,7 @@ def update_density(t: ti.int32):
 @ti.kernel
 def update_pressure(t: ti.int32):
     for bs, i in ti.ndrange(BATCH_SIZE, particle_num):
-        pre[bs, t, i] = pressure_scale * max(
+        pre[bs, t, i] = pressure_scale * ti.max(
             pow(den[bs, t, i] / rest_density, gamma) - 1, 0)
 
 

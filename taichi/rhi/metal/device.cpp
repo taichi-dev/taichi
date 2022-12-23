@@ -25,10 +25,6 @@ class ResourceBinderImpl : public ResourceBinder {
   explicit ResourceBinderImpl(const Device *dev) : dev_(dev) {
   }
 
-  std::unique_ptr<Bindings> materialize() override {
-    TI_NOT_IMPLEMENTED;
-    return nullptr;
-  }
   // RW buffers
   void rw_buffer(uint32_t set,
                  uint32_t binding,
@@ -122,10 +118,6 @@ class CommandListImpl : public CommandList {
         static_cast<ResourceBinderImpl *>(binder)->binding_map();
   }
 
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override {
-    TI_NOT_IMPLEMENTED;
-  }
   void buffer_barrier(DevicePtr ptr, size_t size) override {
     TI_NOT_IMPLEMENTED;
   }
@@ -330,24 +322,25 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     return std::make_unique<PipelineImpl>(std::move(pipeline));
   }
 
-  void *map_range(DevicePtr ptr, uint64_t size) override {
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
     auto *mem = find(ptr).mem;
     if (!mem) {
-      return nullptr;
+      return RhiResult::error;
     }
     if ((ptr.offset + size) > mem->size()) {
-      TI_ERROR("Range exceeded");
-      return nullptr;
+      return RhiResult::error;
     }
-    return (mem->ptr() + ptr.offset);
+    *mapped_ptr = (mem->ptr() + ptr.offset);
+    return RhiResult::success;
   }
 
-  void *map(DeviceAllocation alloc) override {
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final {
     auto *mem = find(alloc).mem;
     if (!mem) {
-      return nullptr;
+      return RhiResult::error;
     }
-    return mem->ptr();
+    *mapped_ptr = mem->ptr();
+    return RhiResult::success;
   }
 
   void unmap(DevicePtr ptr) override {

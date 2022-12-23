@@ -1,5 +1,6 @@
 #include "taichi/program/sparse_matrix.h"
 
+#include <unordered_map>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -24,6 +25,11 @@
         }                                                                      \
   }
 
+#define INSTANTIATE_SPMV(type, storage)                               \
+  template void                                                       \
+  EigenSparseMatrix<Eigen::SparseMatrix<type, Eigen::storage>>::spmv( \
+      Program *prog, const Ndarray &x, const Ndarray &y);
+
 namespace {
 using Pair = std::pair<std::string, std::string>;
 struct key_hash {
@@ -35,12 +41,12 @@ struct key_hash {
 };
 
 template <typename T, typename T1, typename T2>
-void print_triplet_from_csr(int64_t n_rows,
-                            int n_cols,
-                            T *row,
-                            T1 *col,
-                            T2 *value,
-                            std::ostringstream &ostr) {
+void print_triplets_from_csr(int64_t n_rows,
+                             int n_cols,
+                             T *row,
+                             T1 *col,
+                             T2 *value,
+                             std::ostringstream &ostr) {
   using Triplets = Eigen::Triplet<T2>;
   std::vector<Triplets> trips;
   for (int64_t i = 1; i <= n_rows; ++i) {
@@ -57,6 +63,20 @@ void print_triplet_from_csr(int64_t n_rows,
   ostr << Eigen::MatrixXf(m.cast<float>()).format(clean_fmt);
 }
 
+template <typename T, typename T1, typename T2>
+T2 get_element_from_csr(int row,
+                        int col,
+                        T *row_data,
+                        T1 *col_data,
+                        T2 *value) {
+  for (T i = row_data[row]; i < row_data[row + 1]; ++i) {
+    if (col == col_data[i])
+      return value[i];
+  }
+  // zero entry
+  return 0;
+}
+
 }  // namespace
 
 namespace taichi::lang {
@@ -65,53 +85,48 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
                                          DataType dtype,
-                                         const std::string &storage_format)
+                                         const std::string &storage_format,
+                                         Program *prog)
     : rows_(rows),
       cols_(cols),
       max_num_triplets_(max_num_triplets),
       dtype_(dtype),
-      storage_format_(storage_format) {
+      storage_format_(storage_format),
+      prog_(prog) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
-  data_base_ptr_ =
-      std::make_unique<uchar[]>(max_num_triplets_ * 3 * element_size);
-}
-
-template <typename T, typename G>
-void SparseMatrixBuilder::print_template() {
-  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
-             num_triplets_, max_num_triplets_);
-  T *data = reinterpret_cast<T *>(data_base_ptr_.get());
-  for (int64 i = 0; i < num_triplets_; i++) {
-    fmt::print("({}, {}) val={}\n", ((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
-               taichi_union_cast<T>(data[i * 3 + 2]));
-  }
-  fmt::print("\n");
+  ndarray_data_base_ptr_ = std::make_unique<Ndarray>(
+      prog_, dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
 }
 
 void SparseMatrixBuilder::print_triplets() {
-  auto element_size = data_type_size(dtype_);
-  switch (element_size) {
-    case 4:
-      print_template<float32, int32>();
-      break;
-    case 8:
-      print_template<float64, int64>();
-      break;
-    default:
-      TI_ERROR("Unsupported sparse matrix data type!");
-      break;
+  num_triplets_ = ndarray_data_base_ptr_->read_int(std::vector<int>{0});
+  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
+             num_triplets_, max_num_triplets_);
+  for (int i = 0; i < num_triplets_; i++) {
+    auto idx = 3 * i + 1;
+    auto row = ndarray_data_base_ptr_->read_int(std::vector<int>{idx});
+    auto col = ndarray_data_base_ptr_->read_int(std::vector<int>{idx + 1});
+    auto val = ndarray_data_base_ptr_->read_float(std::vector<int>{idx + 2});
+    fmt::print("[{}, {}] = {}\n", row, col, val);
   }
+}
+
+intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
+  return prog_->get_ndarray_data_ptr_as_int(ndarray_data_base_ptr_.get());
 }
 
 template <typename T, typename G>
 void SparseMatrixBuilder::build_template(std::unique_ptr<SparseMatrix> &m) {
   using V = Eigen::Triplet<T>;
   std::vector<V> triplets;
-  T *data = reinterpret_cast<T *>(data_base_ptr_.get());
+  auto ptr = get_ndarray_data_ptr();
+  G *data = reinterpret_cast<G *>(ptr);
+  num_triplets_ = data[0];
+  data += 1;
   for (int i = 0; i < num_triplets_; i++) {
-    triplets.push_back(V(((G *)data)[i * 3], ((G *)data)[i * 3 + 1],
-                         taichi_union_cast<T>(data[i * 3 + 2])));
+    triplets.push_back(
+        V(data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2])));
   }
   m->build_triplets(static_cast<void *>(&triplets));
   clear();
@@ -136,8 +151,66 @@ std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build() {
   return sm;
 }
 
+std::unique_ptr<SparseMatrix> SparseMatrixBuilder::build_cuda() {
+  TI_ASSERT(built_ == false);
+  built_ = true;
+  auto sm = make_cu_sparse_matrix(rows_, cols_, dtype_);
+#ifdef TI_WITH_CUDA
+  CUDADriver::get_instance().memcpy_device_to_host(
+      &num_triplets_, (void *)get_ndarray_data_ptr(), sizeof(int));
+  auto len = 3 * num_triplets_ + 1;
+  std::vector<float32> trips(len);
+  CUDADriver::get_instance().memcpy_device_to_host(
+      (void *)trips.data(), (void *)get_ndarray_data_ptr(),
+      len * sizeof(float32));
+  std::unordered_map<int, std::tuple<int, int, float32>> entries;
+  for (auto i = 0; i < num_triplets_; i++) {
+    int row = taichi_union_cast<int>(trips[3 * i + 1]);
+    int col = taichi_union_cast<int>(trips[3 * i + 2]);
+    auto val = trips[i * 3 + 3];
+    auto e_idx = row * cols_ + col;
+    if (entries.find(e_idx) == entries.end()) {
+      entries[e_idx] = std::make_tuple(row, col, val);
+    } else {
+      auto [r, c, v] = entries[e_idx];
+      entries[e_idx] = std::make_tuple(r, c, v + val);
+    }
+  }
+  auto entry_size = entries.size();
+  int *row_host = (int *)malloc(sizeof(int) * entry_size);
+  int *col_host = (int *)malloc(sizeof(int) * entry_size);
+  float32 *value_host = (float32 *)malloc(sizeof(float32) * entry_size);
+  int count = 0;
+  for (auto entry : entries) {
+    auto [row, col, value] = entry.second;
+    row_host[count] = row;
+    col_host[count] = col;
+    value_host[count] = value;
+    count++;
+  }
+  void *row_device = nullptr, *col_device = nullptr, *value_device = nullptr;
+  CUDADriver::get_instance().malloc(&row_device, entry_size * sizeof(int));
+  CUDADriver::get_instance().malloc(&col_device, entry_size * sizeof(int));
+  CUDADriver::get_instance().malloc(&value_device,
+                                    entry_size * sizeof(float32));
+  CUDADriver::get_instance().memcpy_host_to_device(row_device, (void *)row_host,
+                                                   entry_size * sizeof(int));
+  CUDADriver::get_instance().memcpy_host_to_device(col_device, (void *)col_host,
+                                                   entry_size * sizeof(int));
+  CUDADriver::get_instance().memcpy_host_to_device(
+      value_device, (void *)value_host, entry_size * sizeof(float32));
+  sm->build_csr_from_coo(row_device, col_device, value_device, entry_size);
+  clear();
+  free(row_host);
+  free(col_host);
+  free(value_host);
+#endif
+  return sm;
+}
+
 void SparseMatrixBuilder::clear() {
   built_ = false;
+  ndarray_data_base_ptr_->write_int(std::vector<int>{0}, 0);
   num_triplets_ = 0;
 }
 
@@ -162,6 +235,31 @@ void EigenSparseMatrix<EigenMatrix>::build_triplets(void *triplets_adr) {
     TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
   }
 }
+
+template <class EigenMatrix>
+void EigenSparseMatrix<EigenMatrix>::spmv(Program *prog,
+                                          const Ndarray &x,
+                                          const Ndarray &y) {
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  std::string sdtype = taichi::lang::data_type_name(dtype_);
+  if (sdtype == "f32") {
+    Eigen::Map<Eigen::VectorXf>((float *)dY, cols_) =
+        matrix_.template cast<float>() *
+        Eigen::Map<Eigen::VectorXf>((float *)dX, cols_);
+  } else if (sdtype == "f64") {
+    Eigen::Map<Eigen::VectorXd>((double *)dY, cols_) =
+        matrix_.template cast<double>() *
+        Eigen::Map<Eigen::VectorXd>((double *)dX, cols_);
+  } else {
+    TI_ERROR("Unsupported sparse matrix data type {}!", sdtype);
+  }
+}
+
+INSTANTIATE_SPMV(float32, ColMajor)
+INSTANTIATE_SPMV(float32, RowMajor)
+INSTANTIATE_SPMV(float64, ColMajor)
+INSTANTIATE_SPMV(float64, RowMajor)
 
 std::unique_ptr<SparseMatrix> make_sparse_matrix(
     int rows,
@@ -195,9 +293,13 @@ std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
 std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
                                                     int rows,
                                                     int cols,
-                                                    DataType dt) {
-  return std::unique_ptr<SparseMatrix>(
-      std::make_unique<CuSparseMatrix>(mat, rows, cols, dt));
+                                                    DataType dt,
+                                                    void *csr_row_ptr,
+                                                    void *csr_col_ind,
+                                                    void *csr_val_,
+                                                    int nnz) {
+  return std::unique_ptr<SparseMatrix>(std::make_unique<CuSparseMatrix>(
+      mat, rows, cols, dt, csr_row_ptr, csr_col_ind, csr_val_, nnz));
 }
 
 template <typename T>
@@ -276,14 +378,20 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
       &matrix_, rows_, cols_, nnz, csr_row_offset_ptr, coo_col_ptr,
       coo_values_ptr, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I,
       CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
-  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
-  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
-  CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
-  // TODO: free csr_row_offset_ptr
-  // CUDADriver::get_instance().mem_free(csr_row_offset_ptr);
-  CUDADriver::get_instance().mem_free(d_values_sorted);
-  CUDADriver::get_instance().mem_free(d_permutation);
-  CUDADriver::get_instance().mem_free(dbuffer);
+  if (vec_permutation)
+    CUSPARSEDriver::get_instance().cpDestroySpVec(vec_permutation);
+  if (vec_values)
+    CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_values);
+  if (cusparse_handle)
+    CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
+  if (coo_row_ptr)
+    CUDADriver::get_instance().mem_free(coo_row_ptr);
+  if (d_values_sorted)
+    CUDADriver::get_instance().mem_free(d_values_sorted);
+  if (d_permutation)
+    CUDADriver::get_instance().mem_free(d_permutation);
+  if (dbuffer)
+    CUDADriver::get_instance().mem_free(dbuffer);
   csr_row_ptr_ = csr_row_offset_ptr;
   csr_col_ind_ = coo_col_ptr;
   csr_val_ = coo_values_ptr;
@@ -293,21 +401,14 @@ void CuSparseMatrix::build_csr_from_coo(void *coo_row_ptr,
 
 CuSparseMatrix::~CuSparseMatrix() {
 #if defined(TI_WITH_CUDA)
-  CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
-#endif
-}
-void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
-                                              SparseMatrix &sm,
-                                              const Ndarray &row_coo,
-                                              const Ndarray &col_coo,
-                                              const Ndarray &val_coo) {
-#if defined(TI_WITH_CUDA)
-  size_t coo_row_ptr = prog->get_ndarray_data_ptr_as_int(&row_coo);
-  size_t coo_col_ptr = prog->get_ndarray_data_ptr_as_int(&col_coo);
-  size_t coo_val_ptr = prog->get_ndarray_data_ptr_as_int(&val_coo);
-  int nnz = val_coo.get_nelement();
-  sm.build_csr_from_coo((void *)coo_row_ptr, (void *)coo_col_ptr,
-                        (void *)coo_val_ptr, nnz);
+  if (matrix_)
+    CUSPARSEDriver::get_instance().cpDestroySpMat(matrix_);
+  if (csr_row_ptr_)
+    CUDADriver::get_instance().mem_free(csr_row_ptr_);
+  if (csr_col_ind_)
+    CUDADriver::get_instance().mem_free(csr_col_ind_);
+  if (csr_val_)
+    CUDADriver::get_instance().mem_free(csr_val_);
 #endif
 }
 
@@ -423,7 +524,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
   CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrB);
   CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrC);
   CUDADriver::get_instance().mem_free(buffer);
-  return make_cu_sparse_matrix(matrix_C, rows_, cols_, PrimitiveType::f32);
+  return make_cu_sparse_matrix(matrix_C, rows_, cols_, PrimitiveType::f32,
+                               drow_offsets_C, dcol_indices_C, dvalues_C, nnzC);
+  ;
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();
@@ -433,7 +536,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::addition(
 std::unique_ptr<SparseMatrix> CuSparseMatrix::matmul(
     const CuSparseMatrix &other) const {
 #if defined(TI_WITH_CUDA)
-  return gemm(other, 1.0f, 1.0f);
+  return gemm(other, 1.0f, 0.0f);
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();
@@ -446,7 +549,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
                                                    const float alpha,
                                                    const float beta) const {
 #if defined(TI_WITH_CUDA)
-  cusparseHandle_t handle;
+  cusparseHandle_t handle = nullptr;
   CUSPARSEDriver::get_instance().cpCreate(&handle);
   cusparseOperation_t op_A = CUSPARSE_OPERATION_NON_TRANSPOSE;
   cusparseOperation_t op_B = CUSPARSE_OPERATION_NON_TRANSPOSE;
@@ -468,7 +571,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpCreateSpGEMM(&spgemm_desc);
 
   // 3. ask buffer_size1 bytes for external memory
-  void *d_buffer1;
+  void *d_buffer1 = nullptr;
   size_t buffer_size1 = 0;
   CUSPARSEDriver::get_instance().cpSpGEMM_workEstimation(
       handle, op_A, op_B, &alpha, this->matrix_, other.matrix_, &beta, mat_C,
@@ -486,7 +589,7 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpSpGEMM_compute(
       handle, op_A, op_B, &alpha, mat_A, mat_B, &beta, mat_C, CUDA_R_32F,
       CUSPARSE_SPGEMM_DEFAULT, spgemm_desc, &buffer_size2, nullptr);
-  void *d_buffer2;
+  void *d_buffer2 = nullptr;
   CUDADriver::get_instance().malloc((void **)&d_buffer2, buffer_size2);
 
   // 6. compute the intermediate product of A * B
@@ -522,7 +625,9 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::gemm(const CuSparseMatrix &other,
   CUSPARSEDriver::get_instance().cpDestroy(handle);
   CUSPARSEDriver::get_instance().cpDestroySpGEMM(spgemm_desc);
 
-  return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32);
+  return make_cu_sparse_matrix(mat_C, nrows_A, ncols_B, PrimitiveType::f32,
+                               d_csr_row_ptr_C, d_csr_col_ind_C, d_values_C,
+                               nnz_C);
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();
@@ -583,14 +688,16 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
   CUDADriver::get_instance().mem_free(buffer);
   CUSPARSEDriver::get_instance().cpDestroy(handle);
-  return make_cu_sparse_matrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32);
+  return make_cu_sparse_matrix(mat_AT, ncols_A, nrows_A, PrimitiveType::f32,
+                               d_csr_row_ptr_AT, d_csr_col_ptr_AT, d_csr_val_AT,
+                               nnz);
 #else
   TI_NOT_IMPLEMENTED;
   return std::unique_ptr<SparseMatrix>();
 #endif
 }
 
-void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, Ndarray &y) {
+void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
 #if defined(TI_WITH_CUDA)
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
   size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
@@ -647,9 +754,48 @@ const std::string CuSparseMatrix::to_string() const {
   CUDADriver::get_instance().memcpy_device_to_host((void *)hV, (void *)dV,
                                                    (nnz) * sizeof(float));
 
-  print_triplet_from_csr<int, int, float>(rows, cols, hR, hC, hV, ostr);
+  print_triplets_from_csr<int, int, float>(rows, cols, hR, hC, hV, ostr);
+  delete[] hR;
+  delete[] hC;
+  delete[] hV;
 #endif
   return ostr.str();
+}
+
+float CuSparseMatrix::get_element(int row, int col) const {
+  float res = 0.0f;
+#ifdef TI_WITH_CUDA
+  size_t rows, cols, nnz;
+  float *dR;
+  int *dC, *dV;
+  cusparseIndexType_t row_type, column_type;
+  cusparseIndexBase_t idx_base;
+  cudaDataType value_type;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      matrix_, &rows, &cols, &nnz, (void **)&dR, (void **)&dC, (void **)&dV,
+      &row_type, &column_type, &idx_base, &value_type);
+
+  TI_ASSERT(row < rows);
+  TI_ASSERT(col < cols);
+
+  auto *hR = new int[rows + 1];
+  auto *hC = new int[nnz];
+  auto *hV = new float[nnz];
+
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hR, (void *)dR,
+                                                   (rows + 1) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hC, (void *)dC,
+                                                   (nnz) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hV, (void *)dV,
+                                                   (nnz) * sizeof(float));
+
+  res = get_element_from_csr<int, int, float>(row, col, hR, hC, hV);
+
+  delete[] hR;
+  delete[] hC;
+  delete[] hV;
+#endif  // TI_WITH_CUDA
+  return res;
 }
 
 }  // namespace taichi::lang

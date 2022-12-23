@@ -40,7 +40,6 @@ TEST(IRPromotionTest, TensorType) {
   builder.create_add(lhs_mat, rhs_mat);
   auto ir = builder.extract_ir();
   auto config = CompileConfig();
-  config.real_matrix = true;
   auto *block = ir->as<Block>();
   irpass::type_check(block, config);
 

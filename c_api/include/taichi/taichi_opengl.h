@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef TI_WITH_OPENGL
-#define TI_WITH_OPENGL 1
-#endif  // TI_WITH_OPENGL
-
 #include <taichi/taichi.h>
 
 #ifdef __cplusplus

@@ -535,9 +535,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
       stmt_to_offloaded_[const_zero_stmt] = offloaded;
       for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-        TypedConstant offset(i *
-                             data_type_size(tensor_type->get_element_type()));
-        auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
+        auto const_offset_stmt =
+            replacement.push_back<ConstStmt>(TypedConstant(i));
         auto ptr_offset_stmt =
             replacement.push_back<MatrixPtrStmt>(ptr, const_offset_stmt);
         auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(

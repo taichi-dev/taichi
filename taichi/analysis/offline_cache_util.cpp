@@ -64,7 +64,7 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config->demote_no_access_mesh_fors);
   serializer(config->experimental_auto_mesh_local);
   serializer(config->auto_mesh_local_default_occupacy);
-  serializer(config->real_matrix);
+  serializer(config->dynamic_index);
   serializer(config->real_matrix_scalarize);
   serializer.finalize();
 

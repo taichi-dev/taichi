@@ -181,7 +181,7 @@ def compile_mpm88(arch, save_compute_graph):
         grid_v = ti.Vector.ndarray(2, ti.f32, shape=(n_grid, n_grid))
         grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 
-        mod = ti.aot.Module(arch)
+        mod = ti.aot.Module()
         mod.add_graph('init', g_init)
         mod.add_graph('update', g_update)
         mod.save(tmpdir, '')
@@ -195,7 +195,7 @@ def compile_mpm88(arch, save_compute_graph):
         grid_v = ti.Vector.ndarray(2, ti.f32, shape=(n_grid, n_grid))
         grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 
-        mod = ti.aot.Module(arch)
+        mod = ti.aot.Module()
         mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'J': J})
         mod.add_kernel(substep_reset_grid,
                        template_args={

@@ -202,7 +202,7 @@ if __name__ == "__main__":
     print('running in graph mode')
 
     # Serialize!
-    mod = ti.aot.Module(arch)
+    mod = ti.aot.Module()
 
     mod.add_kernel(initialize,
                    template_args={

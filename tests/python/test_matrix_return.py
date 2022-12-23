@@ -15,13 +15,8 @@ def test_vector_return():
     _test_vector_return()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_vector_return_real_matrix():
-    _test_vector_return()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_vector_return_real_matrix_scalarize():
     _test_vector_return()
 
 
@@ -38,15 +33,8 @@ def test_matrix_return():
     _test_matrix_return()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_matrix_return_real_matrix():
-    _test_matrix_return()
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_matrix_return_real_matrix_scalarize():
     _test_matrix_return()
 
 
@@ -68,11 +56,6 @@ def test_matrix_return_limit():
     _test_matrix_return_limit()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_matrix_return_limit_real_matrix():
-    _test_matrix_return_limit()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_matrix_return_limit_real_matrix_scalarize():
     _test_matrix_return_limit()

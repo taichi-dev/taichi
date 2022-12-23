@@ -761,6 +761,56 @@ bool IndexExpression::is_global() const {
   return is_field() || is_matrix_field() || is_ndarray();
 }
 
+static void field_validation(FieldExpression *field_expr,
+                             int index_dim,
+                             bool has_slice) {
+  int field_dim = field_expr->snode->num_active_indices;
+
+  int has_dynamic = 0;
+  if (field_expr->snode->parent &&
+      field_expr->snode->parent->type == SNodeType::dynamic) {
+    has_dynamic = 1;
+  }
+
+  /*
+    Indexing to dynamic snode can be special, you can either index all the way
+    to place snode, or stop at the dynamic snode.
+  */
+  if (!has_slice && field_dim != index_dim &&
+      field_dim != has_dynamic + index_dim) {
+    throw TaichiTypeError(
+        fmt::format("Field with dim {} accessed with indices of dim {}",
+                    field_dim, index_dim));
+  }
+}
+
+static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
+                                    int index_dim,
+                                    bool has_slice) {
+  auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
+  int element_dim = matrix_field_expr->element_shape.size();
+  int outter_dim = field_expr->snode->num_active_indices;
+
+  int has_dynamic = 0;
+  if (field_expr->snode->parent &&
+      field_expr->snode->parent->type == SNodeType::dynamic) {
+    has_dynamic = 1;
+  }
+
+  /*
+    Indexing to dynamic snode can be special, you can either index all the way
+    to place snode, or stop at the dynamic snode.
+  */
+  if (!has_slice && outter_dim != index_dim &&
+      outter_dim != index_dim + has_dynamic &&
+      outter_dim + element_dim != index_dim &&
+      outter_dim + element_dim != index_dim + has_dynamic) {
+    throw TaichiTypeError(
+        fmt::format("Matrix with dim {} accessed with indices of dim {}",
+                    outter_dim + element_dim, index_dim));
+  }
+}
+
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
@@ -773,28 +823,16 @@ void IndexExpression::type_check(CompileConfig *) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
     auto element_type = var->ret_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
+
   } else if (is_field()) {  // field
     auto field_expr = var.cast<FieldExpression>();
+    field_validation(field_expr.get(), index_dim, has_slice);
     ret_type = field_expr->dt->get_compute_type();
-    int field_dim = field_expr->snode->num_active_indices;
-    if (!has_slice && field_dim != index_dim) {
-      throw TaichiTypeError(
-          fmt::format("Field with dim {} accessed with indices of dim {}",
-                      field_dim, index_dim));
-    }
+
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
-    int element_dim = matrix_field_expr->element_shape.size();
-    int outter_dim = matrix_field_expr->fields[0]
-                         .cast<FieldExpression>()
-                         ->snode->num_active_indices;
+    matrix_field_validation(matrix_field_expr.get(), index_dim, has_slice);
 
-    if (!has_slice && outter_dim != index_dim &&
-        outter_dim + element_dim != index_dim) {
-      throw TaichiTypeError(
-          fmt::format("Matrix with dim {} accessed with indices of dim {}",
-                      outter_dim + element_dim, index_dim));
-    }
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]
                                                    .cast<FieldExpression>()

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/type.h"
+#include "taichi/util/hash.h"
 
 #include <mutex>
 
@@ -32,6 +33,8 @@ class TypeFactory {
   Type *get_quant_float_type(Type *digits_type,
                              Type *exponent_type,
                              Type *compute_type);
+
+  Type *get_struct_type(const std::vector<const Type *> &elements);
 
   BitStructType *get_bit_struct_type(
       PrimitiveType *physical_type,
@@ -77,6 +80,9 @@ class TypeFactory {
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> quant_array_types_;
+
+  std::unordered_map<std::vector<const Type *>, std::unique_ptr<Type>> struct_types_;
+  std::mutex struct_mut_;
 
   std::mutex mut_;
 };

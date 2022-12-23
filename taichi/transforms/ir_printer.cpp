@@ -92,7 +92,7 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(FrontendExprStmt *stmt) override {
-    print("{}", (stmt->val));
+    print("{}", expr_to_string(stmt->val));
   }
 
   void visit(FrontendBreakStmt *stmt) override {
@@ -113,6 +113,18 @@ class IRPrinter : public IRVisitor {
           alloca->ident.name());
   }
 
+  void visit(FrontendFuncCallStmt *stmt) override {
+    std::string args;
+    for (int i = 0; i < stmt->args.exprs.size(); i++) {
+      if (i) {
+        args += ", ";
+      }
+      args += expr_to_string(stmt->args.exprs[i]);
+    }
+    print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
+          stmt->id, stmt->func->get_name(),
+          args, stmt->ident.name());
+  }
   void visit(FrontendAssertStmt *assert) override {
     print("{} : assert {}", assert->name(), expr_to_string(assert->cond));
   }
@@ -823,6 +835,15 @@ class IRPrinter : public IRVisitor {
     }
     result += "]";
     print(result);
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    std::string index = "";
+    for (int i = 0; i < stmt->indices.size(); i++) {
+      index += ", ";
+      index += std::to_string(stmt->indices[i]);
+    }
+    print("{}{} = get_element({}{})", stmt->type_hint(), stmt->name(), stmt->src->name(), index);
   }
 
  private:

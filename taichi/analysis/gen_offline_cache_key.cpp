@@ -238,12 +238,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->axis);
   }
 
-  void visit(FuncCallExpression *expr) override {
-    emit(ExprOpCode::FuncCallExpression);
-    emit(expr->func);
-    emit(expr->args.exprs);
-  }
-
   void visit(MeshPatchIndexExpression *expr) override {
     emit(ExprOpCode::MeshPatchIndexExpression);
   }
@@ -277,7 +271,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(GetElementExpression *expr) override {
     emit(ExprOpCode::GetElementExpression);
     emit(expr->src);
-    emit(expr->index);
+    emit(expr->indices);
   }
 
   void visit(Block *block) override {

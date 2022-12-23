@@ -277,6 +277,24 @@ class FrontendReturnStmt : public Stmt {
   TI_DEFINE_ACCEPT
 };
 
+class FrontendFuncCallStmt : public Stmt {
+ public:
+  Identifier ident;
+  Function *func;
+  ExprGroup args;
+
+  explicit FrontendFuncCallStmt(const Identifier &id, Function *func, const ExprGroup &args)
+      : ident(id), func(func), args(args) {
+    ret_type = func->ret_type;
+  }
+
+  bool is_container_statement() const override {
+    return false;
+  }
+
+  TI_DEFINE_ACCEPT
+};
+
 // Expressions
 
 class ArgLoadExpression : public Expression {
@@ -805,30 +823,14 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class FuncCallExpression : public Expression {
- public:
-  Function *func;
-  ExprGroup args;
-
-  void type_check(CompileConfig *config) override;
-
-  FuncCallExpression(Function *func, const ExprGroup &args)
-      : func(func), args(args) {
-  }
-
-  void flatten(FlattenContext *ctx) override;
-
-  TI_DEFINE_ACCEPT_FOR_EXPRESSION
-};
-
 class GetElementExpression : public Expression {
  public:
   Expr src;
-  int index;
+  std::vector<int> indices;
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
+  GetElementExpression(const Expr &src, std::vector<int> indices) : src(src), indices(indices) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -989,6 +991,7 @@ class ASTBuilder {
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  Expr expr_func_call(Function *, const ExprGroup &);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);

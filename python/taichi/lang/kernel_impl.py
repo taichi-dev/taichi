@@ -269,16 +269,14 @@ class Func:
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
         func_call = Expr(
-            _ti_core.make_func_call_expr(
+            impl.get_runtime().prog.current_ast_builder().expr_func_call(
                 self.taichi_functions[key.instance_id], non_template_args))
-        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
-            func_call.ptr)
         if self.return_type is None:
             return None
         if id(self.return_type) in primitive_types.type_ids:
-            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):
-            return self.return_type.from_real_func_ret(func_call)[0]
+            return self.return_type.from_real_func_ret(func_call, (0, ))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):

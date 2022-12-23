@@ -1548,6 +1548,7 @@ class MatrixType(CompoundType):
             self.dtype = cook_dtype(dtype)
         else:
             self.dtype = None
+        self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ), self.dtype)
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.
@@ -1627,11 +1628,11 @@ class MatrixType(CompoundType):
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
-    def from_real_func_ret(self, func_ret, ret_index=0):
+    def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
-            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
-            for i in range(ret_index, ret_index + self.m * self.n)
-        ]), ret_index + self.m * self.n
+            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, ret_index + (i, )))
+            for i in range(self.m * self.n)
+        ])
 
     def cast(self, mat):
         if in_python_scope():

@@ -39,6 +39,13 @@ class TI_DLL_EXPORT Type {
                    typeid(T).name());
     return p;
   }
+  template <typename T>
+  const T *as() const {
+    auto p = dynamic_cast<const T *>(this);
+    TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
+                   typeid(T).name());
+    return p;
+  }
 
   bool is_primitive(PrimitiveTypeID type) const;
 
@@ -56,7 +63,7 @@ class TI_DLL_EXPORT DataType {
   DataType();
 
   // NOLINTNEXTLINE(google-explicit-constructor)
-  DataType(Type *ptr) : ptr_(ptr) {
+  DataType(const Type *ptr) : ptr_((Type *)ptr) {
   }
 
   DataType(const DataType &o) : ptr_(o.ptr_) {
@@ -191,6 +198,42 @@ class TensorType : public Type {
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
+};
+
+class StructType : public Type {
+ public:
+  explicit StructType(std::vector<const Type *> elements)
+      : elements_(std::move(elements)) {
+  }
+
+  std::string to_string() const override;
+
+  Type *get_element_type(const std::vector<int> &indices) const;
+  const std::vector<const Type *> &elements() const {
+    return elements_;
+  }
+
+  int get_num_elements() const {
+    int num = 0;
+    for (const auto &element : elements_) {
+      if (auto struct_type = element->cast<StructType>()) {
+        num += struct_type->get_num_elements();
+      } else if (auto tensor_type = element->cast<TensorType>()) {
+        num += tensor_type->get_num_elements();
+      } else {
+        TI_ASSERT(element->is<PrimitiveType>());
+        num += 1;
+      }
+    }
+    return num;
+  }
+
+  Type *get_compute_type() override {
+    return this;
+  }
+
+ private:
+  std::vector<const Type *> elements_;
 };
 
 class QuantIntType : public Type {

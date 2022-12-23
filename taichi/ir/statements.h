@@ -1082,12 +1082,12 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
 class GetElementStmt : public Stmt {
  public:
   Stmt *src;
-  int index;
-  GetElementStmt(Stmt *src, int index) : src(src), index(index) {
+  std::vector<int> indices;
+  GetElementStmt(Stmt *src, std::vector<int> indices) : src(src), indices(std::move(indices)) {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, src, index);
+  TI_STMT_DEF_FIELDS(ret_type, src, indices);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

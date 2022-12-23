@@ -136,6 +136,14 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
   return TypeFactory::get_instance().get_tensor_type(shape, element);
 }
 
+Type *TypeFactory::get_struct_type(const std::vector<const Type *> &elements) {
+  std::lock_guard<std::mutex> _(struct_mut_);
+  if (struct_types_.find(elements) == struct_types_.end()) {
+    struct_types_[elements] = std::make_unique<StructType>(elements);
+  }
+  return struct_types_[elements].get();
+}
+
 namespace {
 static bool compare_types(DataType x, DataType y) {
   // Is the first type "bigger" than the second type?

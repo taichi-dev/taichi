@@ -296,6 +296,7 @@ void export_lang(py::module &m) {
       .def("expr_alloca", &ASTBuilder::expr_alloca)
       .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
+      .def("expr_func_call", &ASTBuilder::expr_func_call)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
@@ -443,6 +444,10 @@ void export_lang(py::module &m) {
            [&](Program *program, const DataType &dt) {
              return program->current_callable->insert_ret(dt);
            })
+      .def("finalize_rets",
+           [&](Program *program) {
+        return program->current_callable->finalize_rets();
+      })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
@@ -823,11 +828,8 @@ void export_lang(py::module &m) {
                                                         with_runtime_context);
         });
 
-  m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
-
   m.def("make_get_element_expr",
-        Expr::make<GetElementExpression, const Expr &, int>);
+        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",
@@ -1157,7 +1159,14 @@ void export_lang(py::module &m) {
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def("get_struct_type", [&](TypeFactory *factory, std::vector<DataType> elements) {
+        std::vector<const Type *> types;
+        for (auto &element : elements) {
+          types.push_back(element);
+        }
+        return DataType(factory->get_struct_type(types));
+      }, py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

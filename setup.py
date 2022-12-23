@@ -109,6 +109,8 @@ def get_cmake_args():
     num_threads = os.getenv('BUILD_NUM_THREADS', multiprocessing.cpu_count())
     cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
 
+    use_msbuild = False
+
     if (os.getenv('DEBUG', '0') in ('1', 'ON')):
         cfg = 'Debug'
     elif (os.getenv('RELWITHDEBINFO', '0') in ('1', 'ON')):
@@ -121,7 +123,12 @@ def get_cmake_args():
     if cfg:
         build_options.extend(['--build-type', cfg])
     if sys.platform == 'win32':
-        build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+        if (os.getenv('TAICHI_USE_MSBUILD', '0') in ('1', 'ON')):
+            use_msbuild = True
+        if use_msbuild:
+            build_options.extend(['-G', 'Visual Studio 17 2022'])
+        else:
+            build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
     sys.argv[2:2] = build_options
 
     cmake_args += [
@@ -132,6 +139,9 @@ def get_cmake_args():
 
     if sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
+    elif use_msbuild:
+        # /M uses multi-threaded build (similar to -j)
+        os.environ['SKBUILD_BUILD_OPTIONS'] = f'/M'
     if sys.platform == "darwin":
         if platform.machine() == "arm64":
             cmake_args += ["-DCMAKE_OSX_ARCHITECTURES=arm64"]
@@ -140,11 +150,12 @@ def get_cmake_args():
     return cmake_args
 
 
-def exclude_paths(manifest_files):
+# Control files to be included in package data
+def cmake_install_manifest_filter(manifest_files):
     return [
         f for f in manifest_files
-        if f.endswith(('.so', 'pyd',
-                       '.bc')) or os.path.basename(f) == 'libMoltenVK.dylib'
+        if f.endswith(('.so', 'pyd', '.bc', '.h',
+                       '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
     ]
 
 
@@ -174,7 +185,7 @@ setup(name=project_name,
       },
       classifiers=classifiers,
       cmake_args=get_cmake_args(),
-      cmake_process_manifest_hook=exclude_paths,
+      cmake_process_manifest_hook=cmake_install_manifest_filter,
       cmdclass={
           'egg_info': EggInfo,
           'clean': Clean

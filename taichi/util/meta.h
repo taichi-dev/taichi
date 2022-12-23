@@ -8,6 +8,7 @@
 #include <cstring>
 #include <string>
 #include <map>
+#include <vector>
 #include <functional>
 #include <memory>
 #include <iostream>

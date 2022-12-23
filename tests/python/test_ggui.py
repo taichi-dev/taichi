@@ -282,8 +282,7 @@ def test_set_image_with_texture():
 
     @ti.kernel
     def init_img(img: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=4,
-                                          channel_format=ti.f32,
+                                          fmt=ti.Format.rgba32f,
                                           lod=0)):
         for i, j in ti.ndrange(512, 512):
             img.store(ti.Vector([i, j]),

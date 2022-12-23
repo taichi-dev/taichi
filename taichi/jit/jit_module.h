@@ -70,8 +70,7 @@ class JITModule {
               std::size_t shared_mem_bytes,
               Args... args) {
     auto arg_pointers = JITModule::get_arg_pointers(args...);
-    launch_with_arg_pointers(name, grid_dim, block_dim, shared_mem_bytes,
-                             arg_pointers);
+    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers);
   }
 
   virtual void launch(const std::string &name,

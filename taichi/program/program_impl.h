@@ -79,13 +79,6 @@ class ProgramImpl {
       const DeviceCapabilityConfig &caps) = 0;
 
   /**
-   * Compile a taichi::lang::Kernel to taichi::lang::aot::Kernel.
-   */
-  virtual std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  /**
    * Dump Offline-cache data to disk
    */
   virtual void dump_cache_data_to_disk() {

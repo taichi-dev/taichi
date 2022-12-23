@@ -13,6 +13,12 @@ struct Vertex {
   glm::vec3 color;
 };
 
+const std::vector<Vertex> vertices = {
+    {{0.0, 0.5}, {1.0, 0.0, 0.0}},
+    {{0.5, -0.5}, {0.0, 1.0, 0.0}},
+    {{-0.5, -0.5}, {0.0, 0.0, 1.0}},
+};
+
 class SampleApp : public App {
  public:
   SampleApp() : App(1920, 1080, "Sample 2: Triangle") {
@@ -35,17 +41,19 @@ class SampleApp : public App {
       RasterParams raster_params;  // use default
 
       // Setup vertex input parameters
+      // FIXME: Switch to designated initializers when we enable C++20
       std::vector<VertexInputBinding> vertex_inputs = {
-          {.binding = 0, .stride = sizeof(Vertex), .instance = false}};
+          {/* binding = */ 0, /* stride = */ sizeof(Vertex),
+           /* instance = */ false}};
       std::vector<VertexInputAttribute> vertex_attrs = {
-          {.location = 0,
-           .binding = 0,
-           .format = BufferFormat::rg32f,
-           .offset = offsetof(Vertex, pos)},
-          {.location = 1,
-           .binding = 0,
-           .format = BufferFormat::rgb32f,
-           .offset = offsetof(Vertex, color)}};
+          {/* location = */ 0,
+           /*  binding = */ 0,
+           /*   format = */ BufferFormat::rg32f,
+           /*   offset = */ offsetof(Vertex, pos)},
+          {/* location = */ 1,
+           /*  binding = */ 0,
+           /*   format = */ BufferFormat::rgb32f,
+           /*   offset = */ offsetof(Vertex, color)}};
 
       // Create pipeline
       pipeline = device->create_raster_pipeline(src_desc, raster_params,
@@ -54,14 +62,14 @@ class SampleApp : public App {
 
     // Create the vertex buffer
     {
-      vertex_buffer = device->allocate_memory_unique(
-          Device::AllocParams{.size = 3 * sizeof(Vertex),
-                              .host_write = true,
-                              .usage = AllocUsage::Vertex});
-      Vertex *mapped = (Vertex *)device->map(*vertex_buffer);
-      mapped[0] = {{0.0, 0.5}, {1.0, 0.0, 0.0}};
-      mapped[1] = {{0.5, -0.5}, {0.0, 1.0, 0.0}};
-      mapped[2] = {{-0.5, -0.5}, {0.0, 0.0, 1.0}};
+      vertex_buffer = device->allocate_memory_unique(Device::AllocParams{
+          /* size = */ 3 * sizeof(Vertex),
+          /* host_write = */ true,
+          /* host_read = */ false, /* export_sharing = */ false,
+          /* usage = */ AllocUsage::Vertex});
+      void *mapped{nullptr};
+      TI_ASSERT(device->map(*vertex_buffer, &mapped) == RhiResult::success);
+      memcpy(mapped, vertices.data(), sizeof(Vertex) * vertices.size());
       device->unmap(*vertex_buffer);
     }
 

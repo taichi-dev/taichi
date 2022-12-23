@@ -7,8 +7,9 @@ namespace aot_test_utils {
 static void write_devalloc(taichi::lang::DeviceAllocation &alloc,
                            const void *data,
                            size_t size) {
-  char *const device_arr_ptr =
-      reinterpret_cast<char *>(alloc.device->map(alloc));
+  void *device_arr_ptr{nullptr};
+  TI_ASSERT(alloc.device->map(alloc, &device_arr_ptr) ==
+            taichi::lang::RhiResult::success);
   std::memcpy(device_arr_ptr, data, size);
   alloc.device->unmap(alloc);
 }
@@ -16,8 +17,9 @@ static void write_devalloc(taichi::lang::DeviceAllocation &alloc,
 static void load_devalloc(taichi::lang::DeviceAllocation &alloc,
                           void *data,
                           size_t size) {
-  char *const device_arr_ptr =
-      reinterpret_cast<char *>(alloc.device->map(alloc));
+  void *device_arr_ptr{nullptr};
+  TI_ASSERT(alloc.device->map(alloc, &device_arr_ptr) ==
+            taichi::lang::RhiResult::success);
   std::memcpy(data, device_arr_ptr, size);
   alloc.device->unmap(alloc);
 }
@@ -74,7 +76,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
 
   // Retrieve kernels/fields/etc from AOT module
   auto root_size = vk_module->get_root_size();
-  EXPECT_EQ(root_size, 64);
+  EXPECT_EQ(root_size, 40);
   gfx_runtime->add_root_buffer(root_size);
 
   auto simple_ret_kernel = vk_module->get_kernel("simple_ret");

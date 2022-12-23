@@ -11,17 +11,17 @@ def compile_graph_aot(arch):
         return
 
     @ti.kernel
-    def run0(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+    def run0(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += base + i
 
     @ti.kernel
-    def run1(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+    def run1(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += base + i
 
     @ti.kernel
-    def run2(base: int, arr: ti.types.ndarray(field_dim=1, dtype=ti.i32)):
+    def run2(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
         for i in arr:
             arr[i] += base + i
 
@@ -48,7 +48,7 @@ def compile_graph_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    mod = ti.aot.Module(arch)
+    mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
     mod.save(tmpdir, '')
 

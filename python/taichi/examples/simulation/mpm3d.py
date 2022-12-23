@@ -38,7 +38,7 @@ def substep():
     for I in ti.grouped(F_grid_m):
         F_grid_v[I] = ti.zero(F_grid_v[I])
         F_grid_m[I] = 0
-    ti.block_dim(n_grid)
+    ti.loop_config(block_dim=n_grid)
     for p in F_x:
         Xp = F_x[p] / dx
         base = int(Xp - 0.5)
@@ -60,8 +60,8 @@ def substep():
         F_grid_v[I][1] -= dt * gravity
         cond = (I < bound) & (F_grid_v[I] < 0) | \
                (I > n_grid - bound) & (F_grid_v[I] > 0)
-        F_grid_v[I] = 0 if cond else F_grid_v[I]
-    ti.block_dim(n_grid)
+        F_grid_v[I] = ti.select(cond, 0, F_grid_v[I])
+    ti.loop_config(block_dim=n_grid)
     for p in F_x:
         Xp = F_x[p] / dx
         base = int(Xp - 0.5)

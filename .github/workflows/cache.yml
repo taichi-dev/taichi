@@ -1,0 +1,22 @@
+name: Sync Near Cache
+on:
+  workflow_dispatch:
+
+env:
+  TI_CI: "1"
+
+jobs:
+  sync_cache:
+    name: Sync cache
+    runs-on:
+    - self-hosted
+    - Linux
+    steps:
+      - name: Sync Cache
+        run: |
+          .github/workflows/scripts/sync-cache.py
+        env:
+          BOT_MINIO_ACCESS_KEY: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          BOT_MINIO_SECRET_KEY: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          BOT_OSS_ACCESS_KEY: ${{ secrets.BOT_OSS_ACCESS_KEY }}
+          BOT_OSS_SECRET_KEY: ${{ secrets.BOT_OSS_SECRET_KEY }}

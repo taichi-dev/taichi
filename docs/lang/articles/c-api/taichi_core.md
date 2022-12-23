@@ -35,7 +35,8 @@ The following section provides a brief introduction to the Taichi C-API.
 You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
-TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+// Create a Taichi Runtime on Vulkan device at index 0.
+TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 ```
 
 When your program runs to the end, ensure that:
@@ -116,7 +117,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 
 ```cpp
 ti_destroy_aot_module(aot_module);
@@ -177,10 +178,10 @@ named_arg2.argument = args[2];
 ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 ```
 
-When you have launched all kernels and compute graphs for this batch, you should [`ti_submit`](#function-ti_submit) and [`ti_wait`](#function-ti_wait) for the execution to finish.
+When you have launched all kernels and compute graphs for this batch, you should [`ti_flush`](#function-ti_flush) and [`ti_wait`](#function-ti_wait) for the execution to finish.
 
 ```cpp
-ti_submit(runtime);
+ti_flush(runtime);
 ti_wait(runtime);
 ```
 
@@ -260,16 +261,6 @@ typedef struct TiAotModule_t* TiAotModule;
 An ahead-of-time (AOT) compiled Taichi module, which contains a collection of kernels and compute graphs.
 
 ---
-### Handle `TiEvent`
-
-```c
-// handle.event
-typedef struct TiEvent_t* TiEvent;
-```
-
-A synchronization primitive to manage device execution flows in multiple queues.
-
----
 ### Handle `TiMemory`
 
 ```c
@@ -325,7 +316,6 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 ```c
 // enumeration.error
 typedef enum TiError {
-  TI_ERROR_TRUNCATED = 1,
   TI_ERROR_SUCCESS = 0,
   TI_ERROR_NOT_SUPPORTED = -1,
   TI_ERROR_CORRUPTED_DATA = -2,
@@ -336,13 +326,14 @@ typedef enum TiError {
   TI_ERROR_ARGUMENT_NOT_FOUND = -7,
   TI_ERROR_INVALID_INTEROP = -8,
   TI_ERROR_INVALID_STATE = -9,
+  TI_ERROR_INCOMPATIBLE_MODULE = -10,
+  TI_ERROR_OUT_OF_MEMORY = -11,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 ```
 
-Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
+Errors reported by the Taichi C-API.
 
-- `TI_ERROR_TRUNCATED`: The output data is truncated because the user-provided buffer is too small.
 - `TI_ERROR_SUCCESS`: The Taichi C-API invocation finished gracefully.
 - `TI_ERROR_NOT_SUPPORTED`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `TI_ERROR_CORRUPTED_DATA`: Provided data is corrupted.
@@ -353,6 +344,7 @@ Errors reported by the Taichi C-API. Enumerants greater than or equal to zero ar
 - `TI_ERROR_ARGUMENT_NOT_FOUND`: One or more kernel arguments are missing.
 - `TI_ERROR_INVALID_INTEROP`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `TI_ERROR_INVALID_STATE`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
+- `TI_ERROR_INCOMPATIBLE_MODULE`: The AOT module is not compatible with the current runtime.
 
 ---
 ### Enumeration `TiArch`
@@ -384,6 +376,52 @@ Types of backend archs.
 - `TI_ARCH_CUDA`: NVIDIA CUDA GPU backend.
 - `TI_ARCH_VULKAN`: Vulkan GPU backend.
 - `TI_ARCH_OPENGL`: OpenGL GPU backend.
+
+---
+### Enumeration `TiCapability`
+
+```c
+// enumeration.capability
+typedef enum TiCapability {
+  TI_CAPABILITY_RESERVED = 0,
+  TI_CAPABILITY_SPIRV_VERSION = 1,
+  TI_CAPABILITY_SPIRV_HAS_INT8 = 2,
+  TI_CAPABILITY_SPIRV_HAS_INT16 = 3,
+  TI_CAPABILITY_SPIRV_HAS_INT64 = 4,
+  TI_CAPABILITY_SPIRV_HAS_FLOAT16 = 5,
+  TI_CAPABILITY_SPIRV_HAS_FLOAT64 = 6,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64 = 7,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16 = 8,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD = 9,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX = 10,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT = 11,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT_ADD = 12,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT_MINMAX = 13,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64 = 14,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD = 15,
+  TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_MINMAX = 16,
+  TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR = 17,
+  TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER = 18,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC = 19,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE = 20,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC = 21,
+  TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT = 22,
+  TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO = 23,
+  TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION = 24,
+  TI_CAPABILITY_MAX_ENUM = 0xffffffff,
+} TiCapability;
+```
+
+---
+### Structure `TiCapabilityLevelInfo`
+
+```c
+// structure.capability_level_info
+typedef struct TiCapabilityLevelInfo {
+  TiCapability capability;
+  uint32_t level;
+} TiCapabilityLevelInfo;
+```
 
 ---
 ### Enumeration `TiDataType`
@@ -869,6 +907,24 @@ A named argument value to feed compute graphs.
 - `argument`: Argument body.
 
 ---
+### Function `ti_get_available_archs`
+
+```c
+// function.get_available_archs
+TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(
+  uint32_t* arch_count,
+  TiArch* archs
+);
+```
+
+Gets a list of available archs on the current platform. An arch is only available if:
+
+1. The Runtime library is compiled with its support;
+2. The current platform is installed with a capable hardware or an emulation software.
+
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing.
+
+---
 ### Function `ti_get_last_error`
 
 ```c
@@ -879,7 +935,7 @@ TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
 );
 ```
 
-Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
 - `message_size`: Size of textual error message in `message`
 - `message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
@@ -895,7 +951,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
 );
 ```
 
-Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `error`: Semantical error code.
 - `message`: A null-terminated string of the textual error message or `nullptr` for empty error message.
@@ -906,11 +962,15 @@ Set the provided error as the last error raised by Taichi C-API invocations. It 
 ```c
 // function.create_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
-  TiArch arch
+  TiArch arch,
+  uint32_t device_index
 );
 ```
 
 Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
+
+- `arch`: Arch of Taichi Runtime.
+- `device_index`: The index of device in `arch` to create Taichi Runtime on.
 
 ---
 ### Function `ti_destroy_runtime`
@@ -923,6 +983,35 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
 ```
 
 Destroys a Taichi Runtime.
+
+---
+### Function `ti_set_runtime_capabilities_ext`
+
+```c
+// function.set_runtime_capabilities
+TI_DLL_EXPORT void TI_API_CALL ti_set_runtime_capabilities_ext(
+  TiRuntime runtime,
+  uint32_t capability_count,
+  const TiCapabilityLevelInfo* capabilities
+);
+```
+
+---
+### Function `ti_get_runtime_capabilities`
+
+```c
+// function.get_runtime_capabilities
+TI_DLL_EXPORT void TI_API_CALL ti_get_runtime_capabilities(
+  TiRuntime runtime,
+  uint32_t* capability_count,
+  TiCapabilityLevelInfo* capabilities
+);
+```
+
+Gets all capabilities available on the runtime instance.
+
+- `capability_count`: The total number of capabilities available.
+- `capabilities`: Returned capabilities.
 
 ---
 ### Function `ti_allocate_memory`
@@ -1025,30 +1114,6 @@ TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(
 ```
 
 ---
-### Function `ti_create_event`
-
-```c
-// function.create_event
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(
-  TiRuntime runtime
-);
-```
-
-Creates an event primitive.
-
----
-### Function `ti_destroy_event`
-
-```c
-// function.destroy_event
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(
-  TiEvent event
-);
-```
-
-Destroys an event primitive.
-
----
 ### Function `ti_copy_memory_device_to_device` (Device Command)
 
 ```c
@@ -1135,50 +1200,11 @@ TI_DLL_EXPORT void TI_API_CALL ti_launch_compute_graph(
 Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
 ---
-### Function `ti_signal_event` (Device Command)
+### Function `ti_flush`
 
 ```c
-// function.signal_event
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call [`ti_reset_event`](#function-ti_reset_event-device-command) to reset it; otherwise, an undefined behavior would occur.
-
----
-### Function `ti_reset_event` (Device Command)
-
-```c
-// function.reset_event
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Sets a signaled event primitive back to an unsignaled state.
-
----
-### Function `ti_wait_event` (Device Command)
-
-```c
-// function.wait_event
-TI_DLL_EXPORT void TI_API_CALL ti_wait_event(
-  TiRuntime runtime,
-  TiEvent event
-);
-```
-
-Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an undefined behavior would occur.
-
----
-### Function `ti_submit`
-
-```c
-// function.submit
-TI_DLL_EXPORT void TI_API_CALL ti_submit(
+// function.flush
+TI_DLL_EXPORT void TI_API_CALL ti_flush(
   TiRuntime runtime
 );
 ```
@@ -1210,6 +1236,18 @@ TI_DLL_EXPORT TiAotModule TI_API_CALL ti_load_aot_module(
 
 Loads a pre-compiled AOT module from the file system.
 Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to load the AOT module from the specified path.
+
+---
+### Function `ti_create_aot_module`
+
+```c
+// function.create_aot_module
+TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(
+  TiRuntime runtime,
+  const void* tcm,
+  uint64_t size
+);
+```
 
 ---
 ### Function `ti_destroy_aot_module`

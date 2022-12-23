@@ -1,3 +1,4 @@
+import warnings
 from contextlib import contextmanager
 from glob import glob
 from pathlib import Path, PurePosixPath
@@ -81,16 +82,24 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch, caps=None):
+    def __init__(self, arch=None, caps=None):
         """Creates a new AOT module instance
 
         Args:
-          arch: Target backend architecture. This must match the one specified
-            in :func:`~taichi.lang.init`.
+          arch: Target backend architecture. Default to the one initialized in :func:`~taichi.lang.init` if not specified.
           caps (List[str]): Enabled device capabilities.
         """
         if caps is None:
             caps = []
+        curr_arch = impl.current_cfg().arch
+        if arch is None:
+            arch = curr_arch
+        elif arch != curr_arch:
+            # TODO: we'll support this eventually but not yet...
+            warnings.warn(
+                f"AOT compilation to a different arch than the current one is not yet supported, switching to {curr_arch}"
+            )
+            arch = curr_arch
 
         self._arch = arch
         self._kernels = []
@@ -199,14 +208,18 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
-    def save(self, filepath, filename):
+    def save(self, filepath, filename=None):
         """
         Args:
           filepath (str): path to a folder to store aot files.
           filename (str): filename prefix for stored aot files.
         """
+        if filename is not None:
+            warnings.warn(
+                "Specifying filename is no-op and will be removed in release v1.4.0",
+                DeprecationWarning)
         filepath = str(PurePosixPath(Path(filepath)))
-        self._aot_builder.dump(filepath, filename)
+        self._aot_builder.dump(filepath, "")
 
     def archive(self, filepath: str):
         """

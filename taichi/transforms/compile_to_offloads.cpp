@@ -52,8 +52,11 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
-  if (config.real_matrix && config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
+  irpass::eliminate_immutable_local_vars(ir);
+  print("Immutable local vars eliminated");
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir, config);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
@@ -147,7 +150,7 @@ void compile_to_offloads(IRNode *ir,
   //  in full_simplify().
   if (config.opt_level > 0 && config.cfg_optimization) {
     irpass::cfg_optimization(ir, false, /*autodiff_enabled*/ false,
-                             config.real_matrix);
+                             !config.real_matrix_scalarize);
     print("Optimized by CFG");
     irpass::analysis::verify(ir);
   }
@@ -336,6 +339,14 @@ void compile_function(IRNode *ir,
     irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir, config);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   irpass::lower_access(ir, config, {{}, true});

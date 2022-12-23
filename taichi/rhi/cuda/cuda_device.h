@@ -16,8 +16,6 @@ class CudaResourceBinder : public ResourceBinder {
   ~CudaResourceBinder() override {
   }
 
-  std::unique_ptr<Bindings> materialize() override{TI_NOT_IMPLEMENTED};
-
   void rw_buffer(uint32_t set,
                  uint32_t binding,
                  DevicePtr ptr,
@@ -49,9 +47,6 @@ class CudaCommandList : public CommandList {
 
   void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
   void bind_resources(ResourceBinder *binder) override{TI_NOT_IMPLEMENTED};
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override{
-      TI_NOT_IMPLEMENTED};
   void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
   void memory_barrier() override{TI_NOT_IMPLEMENTED};
@@ -115,11 +110,13 @@ class CudaDevice : public LlvmDevice {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
-  void *map(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
+    TI_NOT_IMPLEMENTED;
+  }
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) final;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 

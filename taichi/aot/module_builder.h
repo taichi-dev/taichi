@@ -64,11 +64,6 @@ class AotModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  virtual void add_compiled_kernel(const std::string &identifier,
-                                   aot::Kernel *kernel) {
-    TI_NOT_IMPLEMENTED;
-  }
-
   virtual void add_per_backend_tmpl(const std::string &identifier,
                                     const std::string &key,
                                     Kernel *kernel) {

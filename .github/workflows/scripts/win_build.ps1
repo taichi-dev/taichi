@@ -65,7 +65,6 @@ if ($llvmVer -eq "10") {
     $env:LLVM_DIR = "$libsDir\taichi_llvm_15"
 	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang_15\\bin\\clang++.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15\\bin\\llvm-as.exe"
-    $env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
 } else {
     throw "Unsupported LLVM version"
 }
@@ -73,6 +72,7 @@ if ($llvmVer -eq "10") {
 $env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 
 if ($installVulkan) {
+    $env:VULKAN_SDK = "C:\VulkanSDK\1.2.189.0"
     if (-not (Test-Path $env:VULKAN_SDK)) {
         Info("Download and install Vulkan")
         Invoke-WebRequest `
@@ -82,7 +82,6 @@ if ($installVulkan) {
         $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S")
         $installer.WaitForExit();
     }
-    $env:VULKAN_SDK = "C:\VulkanSDK\1.2.189.0"
     $env:PATH += ";$env:VULKAN_SDK\Bin"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
 }

@@ -1,13 +1,24 @@
 #pragma once
+
 #include <string>
 #include <vector>
-#include "taichi/util/lang_util.h"
+#include <assert.h>
+#include <initializer_list>
 
-#include "taichi/jit/jit_module.h"
-#include "taichi/program/compile_config.h"
+#include "taichi/common/logging.h"
+
 #include "taichi/rhi/device_capability.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
+
+enum class RhiResult {
+  success = 0,
+  error = -1,
+  invalid_usage = -2,
+  not_supported = -3,
+  out_of_memory = -4,
+};
 
 constexpr size_t kBufferSizeEntireSize = size_t(-1);
 
@@ -44,7 +55,7 @@ struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
-using DeviceAllocationId = uint32_t;
+using DeviceAllocationId = uint64_t;
 
 struct TI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
@@ -93,10 +104,6 @@ class ResourceBinder {
  public:
   virtual ~ResourceBinder() {
   }
-
-  struct Bindings {};
-
-  virtual std::unique_ptr<Bindings> materialize() = 0;
 
   // In Vulkan this is called Storage Buffer (shader can store)
   virtual void rw_buffer(uint32_t set,
@@ -174,15 +181,11 @@ enum class PolygonMode : int {
   Point = 2,
 };
 
-enum class TI_DLL_EXPORT BufferFormat : uint32_t {
+enum class BufferFormat : uint32_t {
 #define PER_BUFFER_FORMAT(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_BUFFER_FORMAT
 };
-
-std::pair<DataType, uint32_t> buffer_format2type_channels(BufferFormat format);
-BufferFormat type_channels2buffer_format(const DataType &type,
-                                         uint32_t num_channels);
 
 class Pipeline {
  public:
@@ -192,13 +195,13 @@ class Pipeline {
   virtual ResourceBinder *resource_binder() = 0;
 };
 
-enum class TI_DLL_EXPORT ImageDimension {
+enum class ImageDimension {
 #define PER_IMAGE_DIMENSION(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_DIMENSION
 };
 
-enum class TI_DLL_EXPORT ImageLayout {
+enum class ImageLayout {
 #define PER_IMAGE_LAYOUT(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
 #undef PER_IMAGE_LAYOUT
@@ -229,12 +232,6 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
-class DeviceEvent {
- public:
-  virtual ~DeviceEvent() {
-  }
-};
-
 class CommandList {
  public:
   virtual ~CommandList() {
@@ -242,8 +239,6 @@ class CommandList {
 
   virtual void bind_pipeline(Pipeline *p) = 0;
   virtual void bind_resources(ResourceBinder *binder) = 0;
-  virtual void bind_resources(ResourceBinder *binder,
-                              ResourceBinder::Bindings *bindings) = 0;
   virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
   virtual void buffer_barrier(DeviceAllocation alloc) = 0;
   virtual void memory_barrier() = 0;
@@ -333,15 +328,6 @@ class CommandList {
                           const ImageCopyParams &params) {
     TI_NOT_IMPLEMENTED
   }
-  virtual void signal_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
-  }
-  virtual void reset_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
-  }
-  virtual void wait_event(DeviceEvent *event) {
-    TI_NOT_IMPLEMENTED
-  }
 };
 
 struct PipelineSourceDesc {
@@ -391,6 +377,8 @@ class Stream {
 };
 
 class Device {
+  DeviceCapabilityConfig caps_{};
+
  public:
   virtual ~Device(){};
 
@@ -419,15 +407,13 @@ class Device {
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") = 0;
 
-  virtual std::unique_ptr<DeviceEvent> create_event(){TI_NOT_IMPLEMENTED}
-
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
   }
 
-  virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
+  virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -437,11 +423,47 @@ class Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
-  // Mapping can fail and will return nullptr
-  virtual void *map_range(DevicePtr ptr, uint64_t size) = 0;
-  virtual void *map(DeviceAllocation alloc) = 0;
+  /**
+   * Map a range within a DeviceAllocation memory into host address space.
+   *
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
+  virtual RhiResult map_range(DevicePtr ptr,
+                              uint64_t size,
+                              void **mapped_ptr) = 0;
 
+  /**
+   * Map an entire DeviceAllocation into host address space.
+   * @param[in] ptr The Device Pointer to map.
+   * @param[in] size The size of the mapped region.
+   * @param[out] mapped_ptr Outputs the pointer to the mapped region.
+   * @return The result status.
+   *         `success` when the mapping is successful.
+   *         `invalid_usage` when the memory is not host visible.
+   *         `invalid_usage` when trying to map the memory multiple times.
+   *         `invalid_usage` when `ptr.offset + size` is out-of-bounds.
+   *         `error` when the mapping failed for other reasons.
+   */
+  virtual RhiResult map(DeviceAllocation alloc, void **mapped_ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] ptr The DevicePtr to unmap.
+   */
   virtual void unmap(DevicePtr ptr) = 0;
+
+  /**
+   * Unmap a previously mapped DevicePtr or DeviceAllocation.
+   * @param[in] alloc The DeviceAllocation to unmap
+   */
   virtual void unmap(DeviceAllocation alloc) = 0;
 
   // Directly share memory in the form of alias
@@ -471,9 +493,11 @@ class Device {
 
   // Get all supported capabilities of the current created device.
   virtual Arch arch() const = 0;
-  virtual const DeviceCapabilityConfig &get_current_caps() const {
-    static DeviceCapabilityConfig default_cfg;
-    return default_cfg;
+  inline const DeviceCapabilityConfig &get_caps() const {
+    return caps_;
+  }
+  inline void set_caps(DeviceCapabilityConfig &&caps) {
+    caps_ = std::move(caps);
   }
 };
 

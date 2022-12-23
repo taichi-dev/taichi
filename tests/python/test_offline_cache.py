@@ -83,6 +83,8 @@ def current_thread_ext_options():
     return {
         'offline_cache': True,
         'offline_cache_file_path': tmp_offline_cache_file_path(),
+        'cuda_stack_limit': 1024,
+        'device_memory_GB': 0.2,
     }
 
 
@@ -250,17 +252,20 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
     def added_files(arch):
         return cache_files_cnt(curr_arch) - count_of_cache_file
 
-    ti.init(arch=curr_arch,
+    def my_init():
+        ti.init(
+            arch=curr_arch,
             enable_fallback=False,
             offline_cache=False,
-            offline_cache_file_path=backend_specified_cache_path(curr_arch))
+            offline_cache_file_path=backend_specified_cache_path(curr_arch),
+            cuda_stack_limit=1024,
+            device_memory_GB=0.1)
+
+    my_init()
     res1 = kernel(*args)
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            offline_cache=False,
-            offline_cache_file_path=backend_specified_cache_path(curr_arch))
+    my_init()
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
     res2 = kernel(*args)
 
@@ -327,12 +332,12 @@ def test_multiple_ib_with_offline_cache(curr_arch):
             enable_fallback=False,
             **current_thread_ext_options())
     assert added_files(curr_arch) == expected_num_cache_files(
-        curr_arch, [1] * 8)
+        curr_arch, [1] * 9)
     helper()
 
     ti.reset()
     assert added_files(curr_arch) == expected_num_cache_files(
-        curr_arch, [1] * 8)
+        curr_arch, [1] * 9)
 
 
 @pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
@@ -511,9 +516,8 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         only_init(max_size)
         for kernel, args, get_res, num_offloads in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
-            if curr_arch in [ti.vulkan]:
-                sleep(
-                    1)  # make sure the kernels are not used in the same second
+            # The timestamp used by cache cleaning is at second precision, so we should make sure the kernels are not used in the same second
+            sleep(1)
 
     kernel_count = len(simple_kernels_to_test)
     count_of_cache_file = cache_files_cnt(curr_arch)
@@ -548,8 +552,9 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
 
 # FIXME: Change to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
-@pytest.mark.parametrize(
-    'curr_arch', [ti.cpu] if ti.cpu in test_utils.expected_archs() else [])
+@pytest.mark.run_in_serial
+@pytest.mark.parametrize('curr_arch',
+                         {ti.cpu, ti.cuda} & supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     count_of_cache_file = cache_files_cnt(curr_arch)
@@ -586,26 +591,26 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
         assert get_sum() == 99 * 50
 
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+
+    def my_init():
+        ti.init(arch=curr_arch,
+                enable_fallback=False,
+                **{
+                    **current_thread_ext_options(), 'cuda_stack_limit': 4096
+                })
+
+    my_init()
     helper1()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    my_init()
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1])
     helper1()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    my_init()
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch, [1])
     helper2()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    my_init()
     assert added_files(curr_arch) == expected_num_cache_files(
         curr_arch, [1, 1])
     helper2()

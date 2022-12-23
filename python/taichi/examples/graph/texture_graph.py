@@ -13,8 +13,7 @@ texture = ti.Texture(ti.Format.r32f, (128, 128))
 
 @ti.kernel
 def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=1,
-                                          channel_format=ti.f32,
+                                          fmt=ti.Format.r32f,
                                           lod=0)):
     for i, j in ti.ndrange(128, 128):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / 128), ti.f32)
@@ -22,7 +21,7 @@ def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
 
 
 @ti.kernel
-def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
+def paint(t: ti.f32, pixels: ti.types.ndarray(ndim=2),
           tex: ti.types.texture(num_dimensions=2)):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
@@ -38,7 +37,7 @@ def paint(t: ti.f32, pixels: ti.types.ndarray(field_dim=2),
 
 
 @ti.kernel
-def copy_to_field(pixels: ti.types.ndarray(field_dim=2)):
+def copy_to_field(pixels: ti.types.ndarray(ndim=2)):
     for I in ti.grouped(pixels):
         img[I] = pixels[I]
 

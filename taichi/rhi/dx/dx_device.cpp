@@ -25,10 +25,6 @@ void check_dx_error(HRESULT hr, const char *msg) {
   }
 }
 
-std::unique_ptr<ResourceBinder::Bindings> Dx11ResourceBinder::materialize() {
-  TI_NOT_IMPLEMENTED;
-}
-
 void Dx11ResourceBinder::rw_buffer(uint32_t set,
                                    uint32_t binding,
                                    DevicePtr ptr,
@@ -126,11 +122,6 @@ void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
   }
-}
-
-void Dx11CommandList::bind_resources(ResourceBinder *binder,
-                                     ResourceBinder::Bindings *bindings) {
-  TI_NOT_IMPLEMENTED;
 }
 
 void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) {
@@ -515,7 +506,10 @@ Dx11Device::Dx11Device() {
   if (kD3d11DebugEnabled) {
     info_queue_ = std::make_unique<Dx11InfoQueue>(device_);
   }
-  caps_.set(DeviceCapability::spirv_version, 0x10300);
+
+  DeviceCapabilityConfig caps{};
+  caps.set(DeviceCapability::spirv_version, 0x10300);
+  set_caps(std::move(caps));
 
   stream_ = std::make_unique<Dx11Stream>(this);
 }
@@ -709,11 +703,15 @@ std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
   return std::make_unique<Dx11Pipeline>(src, name, this);
 }
 
-void *Dx11Device::map_range(DevicePtr ptr, uint64_t size) {
-  return static_cast<uint8_t *>(map(DeviceAllocation(ptr))) + ptr.offset;
+RhiResult Dx11Device::map_range(DevicePtr ptr,
+                                uint64_t size,
+                                void **mapped_ptr) {
+  RhiResult res = Dx11Device::map(DeviceAllocation(ptr), mapped_ptr);
+  *mapped_ptr = static_cast<uint8_t *>(*mapped_ptr) + ptr.offset;
+  return res;
 }
 
-void *Dx11Device::map(DeviceAllocation alloc) {
+RhiResult Dx11Device::map(DeviceAllocation alloc, void **mapped_ptr) {
   uint32_t alloc_id = alloc.alloc_id;
   BufferTuple &buf_tuple = alloc_id_to_buffer_[alloc_id];
   ID3D11Buffer *buf = nullptr;
@@ -740,7 +738,9 @@ void *Dx11Device::map(DeviceAllocation alloc) {
 
   buf_tuple.mapped = buf;
 
-  return mapped.pData;
+  *mapped_ptr = mapped.pData;
+
+  return RhiResult::success;
 }
 
 void Dx11Device::unmap(DevicePtr ptr) {

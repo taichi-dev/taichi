@@ -298,7 +298,6 @@ void export_lang(py::module &m) {
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
-      .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
@@ -1003,10 +1002,6 @@ void export_lang(py::module &m) {
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
                  const std::vector<int> &, std::string>);
-
-  m.def("make_stride_expr",
-        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
-                   const std::vector<int> &, int>);
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());

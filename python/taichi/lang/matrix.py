@@ -139,7 +139,8 @@ def make_matrix(arr, dt=None):
         else:
             dt = cook_dtype(dt)
     return expr.Expr(
-        impl.make_matrix_expr(shape, dt, [expr.Expr(elt).ptr for elt in arr]))
+        impl.get_runtime().prog.current_ast_builder().make_matrix_expr(
+            shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
 def is_vector(x):

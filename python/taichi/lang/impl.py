@@ -24,24 +24,10 @@ from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
 from taichi.lang.simt.block import SharedArray
 from taichi.lang.snode import SNode
 from taichi.lang.struct import Struct, StructField, _IntermediateStruct
-from taichi.lang.util import (cook_dtype, get_traceback, is_matrix_class,
-                              is_taichi_class, python_scope, taichi_scope,
-                              warning)
+from taichi.lang.util import (cook_dtype, get_traceback, is_taichi_class,
+                              python_scope, taichi_scope, warning)
 from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
                                           u8, u32, u64)
-
-
-@taichi_scope
-def expr_init_local_tensor(shape, element_type, elements):
-    return get_runtime().prog.current_ast_builder().expr_alloca_local_tensor(
-        shape, element_type, elements,
-        get_runtime().get_current_src_info())
-
-
-@taichi_scope
-def make_matrix_expr(shape, element_type, elements):
-    return get_runtime().prog.current_ast_builder().make_matrix_expr(
-        shape, element_type, elements)
 
 
 @taichi_scope
@@ -150,8 +136,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
     if not isinstance(
             value,
         (Expr, Field, AnyArray, SparseMatrixProxy, MeshElementFieldProxy,
-         MeshRelationAccessProxy)) and not (is_taichi_class(value)
-                                            and not is_matrix_class(value)):
+         MeshRelationAccessProxy, SharedArray)):
         if len(_indices) == 1:
             _indices = _indices[0]
         return value.__getitem__(_indices)
@@ -184,8 +169,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         indices_expr_group = make_expr_group(*indices)
         index_dim = indices_expr_group.size()
 
-    if is_taichi_class(value) and not is_matrix_class(value):
-        return value._subscript(*indices)
+    if isinstance(value, SharedArray):
+        return value.subscript(*indices)
     if isinstance(value, MeshElementFieldProxy):
         return value.subscript(*indices)
     if isinstance(value, MeshRelationAccessProxy):
@@ -224,9 +209,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 f'Field with dim {field_dim} accessed with indices of dim {index_dim}'
             )
         if isinstance(value, MatrixField):
-            return Expr(
-                _ti_core.subscript(value.ptr, indices_expr_group,
-                                   get_runtime().get_current_src_info()))
+            return make_index_expr(value.ptr, indices_expr_group)
         if isinstance(value, StructField):
             entries = {
                 k: subscript(ast_builder, v, *indices)
@@ -234,9 +217,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             }
             entries['__struct_methods'] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(
-            _ti_core.subscript(_var, indices_expr_group,
-                               get_runtime().get_current_src_info()))
+        return make_index_expr(_var, indices_expr_group)
     if isinstance(value, AnyArray):
         dim = _ti_core.get_external_tensor_dim(value.ptr)
         element_dim = len(value.element_shape())
@@ -244,9 +225,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             raise IndexError(
                 f'Field with dim {dim - element_dim} accessed with indices of dim {index_dim}'
             )
-        return Expr(
-            _ti_core.subscript(value.ptr, indices_expr_group,
-                               get_runtime().get_current_src_info()))
+        return make_index_expr(value.ptr, indices_expr_group)
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType
@@ -274,22 +253,13 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             _ti_core.subscript_with_multiple_indices(
                 value.ptr, multiple_indices, return_shape,
                 get_runtime().get_current_src_info()))
-    return Expr(
-        _ti_core.subscript(value.ptr, indices_expr_group,
-                           get_runtime().get_current_src_info()))
+    return make_index_expr(value.ptr, indices_expr_group)
 
 
 @taichi_scope
-def make_stride_expr(_var, _indices, shape, stride):
+def make_index_expr(_var, indices_expr_group):
     return Expr(
-        _ti_core.make_stride_expr(_var, make_expr_group(*_indices), shape,
-                                  stride))
-
-
-@taichi_scope
-def make_index_expr(_var, _indices):
-    return Expr(
-        _ti_core.subscript(_var, make_expr_group(*_indices),
+        _ti_core.subscript(_var, indices_expr_group,
                            get_runtime().get_current_src_info()))
 
 

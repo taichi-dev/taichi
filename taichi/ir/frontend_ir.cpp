@@ -764,6 +764,9 @@ bool IndexExpression::is_global() const {
 static void field_validation(FieldExpression *field_expr,
                              int index_dim,
                              bool has_slice) {
+  TI_ASSERT(field_expr != nullptr);
+  if (field_expr->snode == nullptr)
+    return;
   int field_dim = field_expr->snode->num_active_indices;
 
   int has_dynamic = 0;
@@ -771,7 +774,6 @@ static void field_validation(FieldExpression *field_expr,
       field_expr->snode->parent->type == SNodeType::dynamic) {
     has_dynamic = 1;
   }
-
   /*
     Indexing to dynamic snode can be special, you can either index all the way
     to place snode, or stop at the dynamic snode.
@@ -787,8 +789,13 @@ static void field_validation(FieldExpression *field_expr,
 static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
                                     int index_dim,
                                     bool has_slice) {
+  TI_ASSERT(matrix_field_expr != nullptr);
+  TI_ASSERT(!matrix_field_expr->fields.empty());
   auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
   int element_dim = matrix_field_expr->element_shape.size();
+
+  if (field_expr->snode == nullptr)
+    return;
   int outter_dim = field_expr->snode->num_active_indices;
 
   int has_dynamic = 0;
@@ -817,7 +824,7 @@ void IndexExpression::type_check(CompileConfig *) {
   TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape),
                                                     end(ret_shape), 1,
                                                     std::multiplies<>()));
-  int index_dim = indices_group[0].size();
+  int index_dim = indices_group.empty() ? 0 : indices_group[0].size();
   bool has_slice = !ret_shape.empty();
   if (!ret_shape.empty()) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");

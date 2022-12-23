@@ -138,17 +138,6 @@ Runtime &AotModule::runtime() {
   return *runtime_;
 }
 
-Event::Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event)
-    : runtime_(&runtime), event_(std::move(event)) {
-}
-
-taichi::lang::DeviceEvent &Event::get() {
-  return *event_;
-}
-Runtime &Event::runtime() {
-  return *runtime_;
-}
-
 // -----------------------------------------------------------------------------
 
 void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
@@ -219,9 +208,11 @@ void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_END();
 }
 
-TiRuntime ti_create_runtime(TiArch arch) {
+TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
+  // FIXME: (penguinliong) Support device selection.
+  TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
@@ -467,27 +458,6 @@ TiSampler ti_create_sampler(TiRuntime runtime,
 void ti_destroy_sampler(TiRuntime runtime, TiSampler sampler) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_NOT_SUPPORTED(ti_destroy_sampler);
-  TI_CAPI_TRY_CATCH_END();
-}
-
-TiEvent ti_create_event(TiRuntime runtime) {
-  TiEvent out = TI_NULL_HANDLE;
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL_RV(runtime);
-
-  Runtime *runtime2 = (Runtime *)runtime;
-  std::unique_ptr<taichi::lang::DeviceEvent> event =
-      runtime2->get().create_event();
-  Event *event2 = new Event(*runtime2, std::move(event));
-  out = (TiEvent)event2;
-  TI_CAPI_TRY_CATCH_END();
-  return out;
-}
-void ti_destroy_event(TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  delete (Event *)event;
   TI_CAPI_TRY_CATCH_END();
 }
 
@@ -874,38 +844,11 @@ void ti_launch_compute_graph(TiRuntime runtime,
   TI_CAPI_TRY_CATCH_END();
 }
 
-void ti_signal_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_reset_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_wait_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_submit(TiRuntime runtime) {
+void ti_flush(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
 
-  ((Runtime *)runtime)->submit();
+  ((Runtime *)runtime)->flush();
   TI_CAPI_TRY_CATCH_END();
 }
 void ti_wait(TiRuntime runtime) {

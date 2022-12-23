@@ -685,60 +685,6 @@ class AotModule {
   }
 };
 
-class Event {
-  TiRuntime runtime_{TI_NULL_HANDLE};
-  TiEvent event_{TI_NULL_HANDLE};
-  bool should_destroy_{false};
-
- public:
-  constexpr bool is_valid() const {
-    return event_ != nullptr;
-  }
-  inline void destroy() {
-    if (should_destroy_) {
-      ti_destroy_event(event_);
-      event_ = TI_NULL_HANDLE;
-      should_destroy_ = false;
-    }
-  }
-
-  Event() {
-  }
-  Event(const Event &) = delete;
-  Event(Event &&b) : event_(b.event_), should_destroy_(b.should_destroy_) {
-  }
-  Event(TiRuntime runtime, TiEvent event, bool should_destroy)
-      : runtime_(runtime), event_(event), should_destroy_(should_destroy) {
-  }
-  ~Event() {
-    destroy();
-  }
-
-  Event &operator=(const Event &) = delete;
-  Event &operator=(Event &&b) {
-    event_ = detail::move_handle(b.event_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
-    return *this;
-  }
-
-  void reset(TiEvent event_) {
-    ti_reset_event(runtime_, event_);
-  }
-  void signal(TiEvent event_) {
-    ti_signal_event(runtime_, event_);
-  }
-  void wait(TiEvent event_) {
-    ti_wait_event(runtime_, event_);
-  }
-
-  constexpr TiEvent event() const {
-    return event_;
-  }
-  constexpr operator TiEvent() const {
-    return event_;
-  }
-};
-
 class CapabilityLevelConfigBuilder;
 class CapabilityLevelConfig {
  public:
@@ -937,8 +883,10 @@ class Runtime {
         runtime_(detail::move_handle(b.runtime_)),
         should_destroy_(std::exchange(b.should_destroy_, false)) {
   }
-  Runtime(TiArch arch)
-      : arch_(arch), runtime_(ti_create_runtime(arch)), should_destroy_(true) {
+  Runtime(TiArch arch, uint32_t device_index = 0)
+      : arch_(arch),
+        runtime_(ti_create_runtime(arch, device_index)),
+        should_destroy_(true) {
   }
   Runtime(TiArch arch, TiRuntime runtime, bool should_destroy)
       : arch_(arch), runtime_(runtime), should_destroy_(should_destroy) {
@@ -1071,8 +1019,8 @@ class Runtime {
     ti_transition_image(runtime_, image, layout);
   }
 
-  void submit() {
-    ti_submit(runtime_);
+  void flush() {
+    ti_flush(runtime_);
   }
   void wait() {
     ti_wait(runtime_);

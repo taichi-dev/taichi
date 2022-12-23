@@ -54,7 +54,6 @@
 #include "taichi/runtime/llvm/llvm_context_pass.h"
 #endif
 
-
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
 #include <filesystem>

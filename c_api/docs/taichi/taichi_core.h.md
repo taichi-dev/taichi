@@ -35,6 +35,7 @@ The following section provides a brief introduction to the Taichi C-API.
 You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
+// Create a Taichi Runtime on Vulkan device at index 0.
 TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 ```
 
@@ -466,6 +467,9 @@ Sets the provided error as the last error raised by Taichi C-API invocations. It
 `function.create_runtime`
 
 Creates a Taichi Runtime with the specified `enumeration.arch`.
+
+- `function.create_runtime.arch`: Arch of Taichi Runtime.
+- `function.create_runtime.device_index`: The index of device in `function.create_runtime.arch` to create Taichi Runtime on.
 
 `function.destroy_runtime`
 

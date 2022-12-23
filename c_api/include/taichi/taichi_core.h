@@ -48,6 +48,7 @@
 // any problem with runtime instance coexistence.
 //
 // ```cpp
+// // Create a Taichi Runtime on Vulkan device at index 0.
 // TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 // ```
 //
@@ -839,8 +840,12 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
 // Function `ti_create_runtime`
 //
 // Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
-TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch,
-                                                      uint32_t device_index);
+TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
+    // Arch of Taichi Runtime.
+    TiArch arch,
+    // The index of device in `function.create_runtime.arch` to create Taichi
+    // Runtime on.
+    uint32_t device_index);
 
 // Function `ti_destroy_runtime`
 //

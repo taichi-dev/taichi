@@ -110,13 +110,19 @@ class CuSparseSolver : public SparseSolver {
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 const Ndarray &x);
-  void solve_lu(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                const Ndarray &x);              
+            
   bool info() override {
     TI_NOT_IMPLEMENTED;
   };
+  private:
+  void solve_cholesky(Program *prog,
+                 const SparseMatrix &sm,
+                 const Ndarray &b,
+                 const Ndarray &x);
+  void solve_lu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                const Ndarray &x);  
 };
 
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,

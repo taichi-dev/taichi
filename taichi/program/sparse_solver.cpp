@@ -327,6 +327,13 @@ void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
                               const Ndarray &x) {
+  solve_cholesky(prog, sm, b, x);
+}
+
+void CuSparseSolver::solve_cholesky(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                const Ndarray &x){
 #if defined(TI_WITH_CUDA)
   if (is_analyzed_ == false) {
     analyze_pattern(sm);

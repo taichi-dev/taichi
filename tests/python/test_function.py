@@ -431,6 +431,24 @@ def test_func_matrix_arg_with_error():
         test_error()
 
 
+@test_utils.test(debug=True)
+def test_func_struct_arg():
+    @ti.dataclass
+    class C:
+        i: int
+
+    @ti.func
+    def f(c: C):
+        return c.i
+
+    @ti.kernel
+    def k():
+        c = C(i=2)
+        assert f(c) == 2
+
+    k()
+
+
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_real_func_matrix_arg():
     @ti.experimental.real_func

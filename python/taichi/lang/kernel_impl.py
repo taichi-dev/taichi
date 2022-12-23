@@ -334,6 +334,8 @@ class Func:
                     pass
                 elif isinstance(annotation, MatrixType):
                     pass
+                elif isinstance(annotation, StructType):
+                    pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
                 elif isinstance(annotation, template):

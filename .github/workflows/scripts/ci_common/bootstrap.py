@@ -69,7 +69,7 @@ _Environ = os.environ.__class__
 
 class _EnvironWrapper(_Environ):
     def __setitem__(self, name: str, value: str) -> None:
-        orig = self.get(name)
+        orig = self.get(name, '')
         _Environ.__setitem__(self, name, value)
         new = self[name]
 

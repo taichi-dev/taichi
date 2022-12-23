@@ -614,7 +614,6 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
                                         Stmt *var_stmt,
                                         const ExprGroup &indices,
                                         const std::vector<int> &shape,
-                                        int stride,
                                         const std::string &tb) {
   bool needs_dynamic_index = false;
   for (int i = 0; i < (int)indices.size(); ++i) {
@@ -641,11 +640,6 @@ Stmt *make_tensor_access_single_element(Expression::FlattenContext *ctx,
     }
     offset_stmt = ctx->push_back<ConstStmt>(TypedConstant(offset));
   }
-  if (stride != 1) {
-    Stmt *stride_stmt = ctx->push_back<ConstStmt>(TypedConstant(stride));
-    offset_stmt = ctx->push_back<BinaryOpStmt>(BinaryOpType::mul, offset_stmt,
-                                               stride_stmt);
-  }
   return ctx->push_back<MatrixPtrStmt>(var_stmt, offset_stmt, tb);
 }
 
@@ -654,7 +648,6 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::vector<ExprGroup> &indices_group,
                          DataType ret_type,
                          std::vector<int> shape,
-                         int stride,
                          const std::string &tb) {
   auto var_stmt = flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
@@ -665,13 +658,13 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
   if (is_tensor(ret_type)) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
-      stmts.push_back(make_tensor_access_single_element(ctx, var_stmt, indices,
-                                                        shape, stride, tb));
+      stmts.push_back(
+          make_tensor_access_single_element(ctx, var_stmt, indices, shape, tb));
     }
     return ctx->push_back<MatrixOfMatrixPtrStmt>(stmts, ret_type);
   }
   return make_tensor_access_single_element(ctx, var_stmt, indices_group[0],
-                                           shape, stride, tb);
+                                           shape, tb);
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
@@ -897,30 +890,15 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
-                              var->ret_type->cast<TensorType>()->get_shape(), 1,
-                              tb);
+    stmt =
+        make_tensor_access(ctx, var, indices_group, ret_type,
+                           var->ret_type->cast<TensorType>()->get_shape(), tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
   stmt->tb = tb;
-}
-
-void StrideExpression::type_check(CompileConfig *) {
-  // This is an ugly hack for global tensors
-  if (var.is<IndexExpression>() &&
-      var.cast<IndexExpression>()->var.is<FieldExpression>())
-    ret_type = var->ret_type;
-  else
-    throw TaichiTypeError(
-        "Invalid StrideExpression: The source being indexed must be an element "
-        "of a field");
-}
-
-void StrideExpression::flatten(FlattenContext *ctx) {
-  stmt = make_tensor_access(ctx, var, {indices}, ret_type, shape, stride, tb);
 }
 
 void RangeAssumptionExpression::type_check(CompileConfig *) {
@@ -1011,7 +989,6 @@ void AtomicOpExpression::type_check(CompileConfig *config) {
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT(
       dest.is<IdExpression>() || dest.is<IndexExpression>() ||
-      dest.is<StrideExpression>() ||
       (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
@@ -1479,33 +1456,6 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
   return mat;
 }
 
-Expr ASTBuilder::expr_alloca_local_tensor(const std::vector<int> &shape,
-                                          const DataType &element_type,
-                                          const ExprGroup &elements,
-                                          std::string tb) {
-  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
-  this->insert(std::make_unique<FrontendAllocaStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
-      element_type));
-  var->ret_type = this->get_last_stmt()->ret_type;
-  for (int i = 0; i < (int)elements.exprs.size(); ++i) {
-    ExprGroup reversed_indices;
-    int linearized_index = i;
-    for (int d = (int)shape.size() - 1; d >= 0; --d) {
-      reversed_indices.push_back(
-          Expr::make<ConstExpression, int32>(linearized_index % shape[d]));
-      linearized_index /= shape[d];
-    }
-    ExprGroup indices;
-    for (int d = 0; d < (int)shape.size(); ++d)
-      indices.push_back(reversed_indices[(int)shape.size() - 1 - d]);
-    this->insert(std::make_unique<FrontendAssignStmt>(
-        Expr::make<IndexExpression>(this, var, indices, tb),
-        elements.exprs[i]));
-  }
-  return var;
-}
-
 Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
                                           const DataType &element_type) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
@@ -1771,8 +1721,6 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
     } else {
       return flatten_global_load(ptr_stmt, ctx);
     }
-  } else if (ptr.is<StrideExpression>()) {
-    return flatten_global_load(ptr_stmt, ctx);
   } else if (ptr.is<ArgLoadExpression>() &&
              ptr.cast<ArgLoadExpression>()->is_ptr) {
     return flatten_global_load(ptr_stmt, ctx);

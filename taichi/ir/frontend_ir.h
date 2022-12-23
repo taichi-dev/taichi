@@ -621,34 +621,6 @@ class IndexExpression : public Expression {
   bool is_tensor() const;
 };
 
-class StrideExpression : public Expression {
- public:
-  // `var` must be an IndexExpression on a FieldExpression
-  // therefore the access is always global
-  Expr var;
-  ExprGroup indices;
-  std::vector<int> shape;
-  int stride{0};
-
-  StrideExpression(const Expr &var,
-                   const ExprGroup &indices,
-                   const std::vector<int> &shape,
-                   int stride)
-      : var(var), indices(indices), shape(shape), stride(stride) {
-    // TODO: shape & indices check
-  }
-
-  void type_check(CompileConfig *config) override;
-
-  void flatten(FlattenContext *ctx) override;
-
-  bool is_lvalue() const override {
-    return true;
-  }
-
-  TI_DEFINE_ACCEPT_FOR_EXPRESSION
-};
-
 class RangeAssumptionExpression : public Expression {
  public:
   Expr input, base;
@@ -980,10 +952,6 @@ class ASTBuilder {
                                  const ExprGroup &args,
                                  const ExprGroup &outputs);
   Expr expr_alloca();
-  Expr expr_alloca_local_tensor(const std::vector<int> &shape,
-                                const DataType &element_type,
-                                const ExprGroup &elements,
-                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   Expr expr_subscript(const Expr &expr,

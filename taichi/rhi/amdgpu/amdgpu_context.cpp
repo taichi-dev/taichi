@@ -10,7 +10,8 @@
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 #include "taichi/analysis/offline_cache_util.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 AMDGPUContext::AMDGPUContext()
     : driver_(AMDGPUDriver::get_instance_without_context()) {
@@ -88,4 +89,5 @@ AMDGPUContext &AMDGPUContext::get_instance() {
   return *context;
 }
 
-TLANG_NAMESPACE_END
+}
+}

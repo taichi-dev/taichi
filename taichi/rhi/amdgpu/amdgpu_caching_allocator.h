@@ -3,6 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/math/arithmetic.h"
 #include "taichi/rhi/llvm/llvm_device.h"
+#include "taichi/inc/constants.h"
 #include <stdint.h>
 #include <map>
 

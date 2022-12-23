@@ -7,7 +7,8 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 class AMDGPUDriver;
 
@@ -94,4 +95,5 @@ class AMDGPUContext {
   static AMDGPUContext &get_instance();
 };
 
-TLANG_NAMESPACE_END
+}
+}

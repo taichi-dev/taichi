@@ -4,7 +4,8 @@
 
 #include "taichi/system/dynamic_loader.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 constexpr uint32 HIP_EVENT_DEFAULT = 0x0;
 constexpr uint32 HIP_STREAM_DEFAULT = 0x0;
@@ -114,4 +115,6 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
   // bool rocm_version_valid_{false};
 };
 
-TLANG_NAMESPACE_END
+
+}
+}

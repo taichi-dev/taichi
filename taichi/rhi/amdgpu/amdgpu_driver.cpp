@@ -4,7 +4,8 @@
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/util/environ_config.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 std::string get_amdgpu_error_message(uint32 err) {
   auto err_name_ptr =
@@ -77,4 +78,5 @@ AMDGPUDriver &AMDGPUDriver::get_instance() {
   return get_instance_without_context();
 }
 
-TLANG_NAMESPACE_END
+}
+}

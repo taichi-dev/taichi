@@ -73,15 +73,13 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 
 #ifdef TI_BUILD_TESTS
     auto msg_name = std::string(p_callback_data->pMessageIdName);
-    if (!vk_ignore_validation_warning(msg_name))
-      TI_ERROR(msg_buf);
-  }
+    if (!vk_ignore_validation_warning(msg_name)) TI_ERROR(msg_buf);
 #else
     RHI_LOG_ERROR(msg_buf);
 #endif
-}
+  }
 
-return VK_FALSE;
+  return VK_FALSE;
 }
 
 void populate_debug_messenger_create_info(

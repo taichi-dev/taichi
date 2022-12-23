@@ -95,5 +95,5 @@ class AMDGPUContext {
   static AMDGPUContext &get_instance();
 };
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

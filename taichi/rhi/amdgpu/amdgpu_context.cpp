@@ -89,5 +89,5 @@ AMDGPUContext &AMDGPUContext::get_instance() {
   return *context;
 }
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

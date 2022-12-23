@@ -133,3 +133,4 @@ git = sh.git
 # pip = python.bake('-m', 'pip')
 sccache = sh.sccache
 tar = sh.tar
+bash = sh.bash

@@ -1,18 +1,31 @@
 # -*- coding: utf-8 -*-
 
-# -- stdlib --
 import os
-import sys
-from pathlib import Path
+import platform
+import shutil
 from typing import Optional, Tuple
 
-# -- third party --
-# -- own --
-from .misc import banner
+from .dep import download_dep
+from .misc import banner, get_cache_home
 from .tinysh import Command, sh
 
 
-# -- code --
+def setup_miniforge3(prefix):
+    u = platform.uname()
+    if u.system == "Linux":
+        url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Linux-x86_64.sh'
+    elif (u.system, u.machine) == ("Darwin", "arm64"):
+        url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-MacOSX-arm64.sh'
+    elif (u.system, u.machine) == ("Darwin", "x86_64"):
+        url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-MacOSX-x86_64.sh'
+    elif u.system == "Windows":
+        url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe'
+    else:
+        raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
+
+    download_dep(url, prefix, args=['-bfp', str(prefix)])
+
+
 @banner('Setup Python {version}')
 def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     '''
@@ -20,25 +33,26 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     '''
     assert version
 
-    home = Path.home().resolve()
+    prefix = get_cache_home() / 'miniforge3'
+    setup_miniforge3(prefix)
+    conda_path = prefix / 'bin' / 'conda'
+    if not conda_path.exists():
+        shutil.rmtree(prefix, ignore_errors=True)
+        setup_miniforge3(prefix)
+        if not conda_path.exists():
+            raise RuntimeError(f"Failed to setup miniforge3 at {prefix}")
 
-    for d in ['miniconda', 'miniconda3', 'miniforge3']:
-        env = home / d / 'envs' / version
-        exe = env / 'bin' / 'python'
-        if not exe.exists():
-            continue
+    conda = sh.bake(str(conda_path))
 
-        os.environ['PATH'] = f'{env / "bin"}:{os.environ["PATH"]}'
-        python = sh.bake(str(exe))
-        pip = python.bake('-m', 'pip')
-        break
-    else:
-        v = sys.version_info
-        if f'{v.major}.{v.minor}' == version:
-            python = sh.bake(sys.executable)
-            pip = python.bake('-m', 'pip')
-        else:
-            raise ValueError(f'No python {version} found')
+    env = prefix / 'envs' / version
+    exe = env / 'bin' / 'python'
+
+    if not exe.exists():
+        conda.create('-y', '-n', version, f'python={version}')
+
+    os.environ['PATH'] = f'{env / "bin"}:{os.environ["PATH"]}'
+    python = sh.bake(str(exe))
+    pip = python.bake('-m', 'pip')
 
     pip.install('-U', 'pip')
     pip.uninstall('-y', 'taichi', 'taichi-nightly')

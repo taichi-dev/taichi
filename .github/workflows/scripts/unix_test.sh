@@ -19,6 +19,12 @@ if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/dri/*
 fi
 
+if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
+    # No FORTRAN compiler is currently working reliably on M1 Macs
+    # We can't just pip install scipy, using conda instead
+    conda install -y scipy
+fi
+
 python3 -m pip install dist/*.whl
 if [ -z "$GPU_TEST" ]; then
     python3 -m pip install -r requirements_test.txt
@@ -67,11 +73,6 @@ EOF
     popd
 
     pushd repos/difftaichi
-    if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
-        # No FORTRAN compiler is currently working reliably on M1 Macs
-        # We can't just pip install scipy, using conda instead
-        conda install -y scipy
-    fi
     pip install -r requirements.txt
     popd
 

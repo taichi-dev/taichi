@@ -38,7 +38,8 @@ bool check_validation_layer_support() {
   return true;
 }
 
-bool vk_ignore_validation_warning(const std::string &msg_name) {
+[[maybe_unused]] bool vk_ignore_validation_warning(
+    const std::string &msg_name) {
   if (msg_name == "UNASSIGNED-DEBUG-PRINTF") {
     // Ignore truncated Debug Printf message
     return true;

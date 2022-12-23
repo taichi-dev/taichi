@@ -287,6 +287,10 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
+      .def("expr_snode_get_addr", &ASTBuilder::snode_get_addr)
+      .def("expr_snode_append", &ASTBuilder::snode_append)
+      .def("expr_snode_is_active", &ASTBuilder::snode_is_active)
+      .def("expr_snode_length", &ASTBuilder::snode_length)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
@@ -808,11 +812,6 @@ void export_lang(py::module &m) {
       .def("push_back", &ExprGroup::push_back);
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
-
-  m.def("expr_snode_get_addr", &snode_get_addr);
-  m.def("expr_snode_append", &snode_append);
-  m.def("expr_snode_is_active", &snode_is_active);
-  m.def("expr_snode_length", &snode_length);
 
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args,

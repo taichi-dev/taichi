@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+import shutil
+import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
-import zipfile
-import shutil
 
 # -- third party --
 import requests
@@ -51,6 +51,10 @@ def unzip(filename, extract_dir, strip=0):
         ar.close()
 
 
+def escape_url(url):
+    return url.replace('/', '_').replace(':', '_')
+
+
 def download_dep(url, outdir, *, strip=0, force=False):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
@@ -64,27 +68,37 @@ def download_dep(url, outdir, *, strip=0, force=False):
 
     parsed = urlparse(url)
     name = Path(parsed.path).name
-    escaped = url.replace('/', '_').replace(':', '_')
+    escaped = escape_url(url)
     depcache = get_cache_home() / 'deps'
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
+    near_caches = [
+        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
+        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+    ]
+
     if not local_cached.exists():
-        cached_url = f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
-        try:
-            resp = requests.head(cached_url, timeout=1)
-            if resp.ok:
-                print('Using near cache: ', cached_url)
-                url = cached_url
-        except Exception:
-            pass
+        for u in near_caches:
+            try:
+                resp = requests.head(u, timeout=1)
+                if resp.ok:
+                    print('Using near cache: ', u)
+                    url = u
+                    break
+            except Exception:
+                pass
 
         import tqdm
 
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
             total_size = int(r.headers.get('content-length', 0))
-            prog = tqdm.tqdm(unit="B", unit_scale=True, unit_divisor=1024, total=total_size, desc=name)
+            prog = tqdm.tqdm(unit="B",
+                             unit_scale=True,
+                             unit_divisor=1024,
+                             total=total_size,
+                             desc=name)
             with prog, open(local_cached, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     sz = f.write(chunk)

@@ -149,11 +149,13 @@ TEST(FrontendTypeInference, AtomicOp) {
 }
 
 TEST(FrontendTypeInference, SNodeOp) {
+  auto prog = std::make_unique<Program>(Arch::x64);
   auto snode = std::make_unique<SNode>(0, SNodeType::root);
   snode->dt = PrimitiveType::u8;
   auto index = value<int32>(2);
   index->type_check(nullptr);
-  auto snode_op = snode_get_addr(snode.get(), ExprGroup(index));
+  auto snode_op = prog->current_ast_builder()->snode_get_addr(snode.get(),
+                                                              ExprGroup(index));
   snode_op->type_check(nullptr);
   EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
 }

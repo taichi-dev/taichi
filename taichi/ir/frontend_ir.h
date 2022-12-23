@@ -90,7 +90,8 @@ class FrontendSNodeOpStmt : public Stmt {
   ExprGroup indices;
   Expr val;
 
-  FrontendSNodeOpStmt(SNodeOpType op_type,
+  FrontendSNodeOpStmt(ASTBuilder *builder,
+                      SNodeOpType op_type,
                       SNode *snode,
                       const ExprGroup &indices,
                       const Expr &val = Expr(nullptr));
@@ -730,16 +731,16 @@ class SNodeOpExpression : public Expression {
   ExprGroup indices;
   std::vector<Expr> values;  // Only for op_type==append
 
-  SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
-  }
+  SNodeOpExpression(ASTBuilder *builder,
+                    SNode *snode,
+                    SNodeOpType op_type,
+                    const ExprGroup &indices);
 
-  SNodeOpExpression(SNode *snode,
+  SNodeOpExpression(ASTBuilder *builder,
+                    SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
-                    const std::vector<Expr> &values)
-      : snode(snode), op_type(op_type), indices(indices), values(values) {
-  }
+                    const std::vector<Expr> &values);
 
   void type_check(CompileConfig *config) override;
 
@@ -1013,6 +1014,21 @@ class ASTBuilder {
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
+
+  /*
+   * This function allocates the space for a new item (a struct or a scalar)
+   * in the Dynamic SNode, and assigns values to the elements inside it.
+   *
+   * When appending a struct, the size of vals must be equal to
+   * the number of elements in the struct. When appending a scalar,
+   * the size of vals must be one.
+   */
+  Expr snode_append(SNode *snode,
+                    const ExprGroup &indices,
+                    const std::vector<Expr> &vals);
+  Expr snode_is_active(SNode *snode, const ExprGroup &indices);
+  Expr snode_length(SNode *snode, const ExprGroup &indices);
+  Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
   std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
 

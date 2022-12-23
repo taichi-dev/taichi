@@ -1,4 +1,3 @@
-import functools
 import numbers
 import warnings
 
@@ -6,34 +5,6 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
 from taichi.lang.util import get_traceback
-
-
-def _get_expanded_indices(indices):
-    if isinstance(indices, matrix.Matrix):
-        indices = indices.entries
-    elif isinstance(indices, expr.Expr) and indices.is_tensor():
-        indices = [
-            expr.Expr(x)
-            for x in impl.get_runtime().prog.current_ast_builder().expand_expr(
-                [indices.ptr])
-        ]
-    return indices
-
-
-def _expand_indices(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        # indices is the second argument to ti.append, ti.activate, ...
-        if len(args) > 1:
-            args = list(args)
-            args[1] = _get_expanded_indices(args[1])
-        else:
-            assert "indices" in kwargs.keys()
-            kwargs["indices"] = _get_expanded_indices(kwargs["indices"])
-
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 class SNode:
@@ -414,7 +385,6 @@ def rescale_index(a, b, I):
     return _rescale_index()
 
 
-@_expand_indices
 def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
@@ -424,14 +394,14 @@ def append(node, indices, val):
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
     ptrs = expr._get_flattened_ptrs(val)
-    append_expr = expr.Expr(_ti_core.expr_snode_append(
-        node._snode.ptr, expr.make_expr_group(indices), ptrs),
-                            tb=impl.get_runtime().get_current_src_info())
+    append_expr = expr.Expr(
+        impl.get_runtime().prog.current_ast_builder().expr_snode_append(
+            node._snode.ptr, expr.make_expr_group(indices), ptrs),
+        tb=impl.get_runtime().get_current_src_info())
     a = impl.expr_init(append_expr)
     return a
 
 
-@_expand_indices
 def is_active(node, indices):
     """Explicitly query whether a cell in a SNode `node` at location
     `indices` is active or not.
@@ -444,11 +414,10 @@ def is_active(node, indices):
         bool: the cell `node[indices]` is active or not.
     """
     return expr.Expr(
-        _ti_core.expr_snode_is_active(node._snode.ptr,
-                                      expr.make_expr_group(indices)))
+        impl.get_runtime().prog.current_ast_builder().expr_snode_is_active(
+            node._snode.ptr, expr.make_expr_group(indices)))
 
 
-@_expand_indices
 def activate(node, indices):
     """Explicitly activate a cell of `node` at location `indices`.
 
@@ -460,7 +429,6 @@ def activate(node, indices):
         node._snode.ptr, expr.make_expr_group(indices))
 
 
-@_expand_indices
 def deactivate(node, indices):
     """Explicitly deactivate a cell of `node` at location `indices`.
 
@@ -475,7 +443,6 @@ def deactivate(node, indices):
         node._snode.ptr, expr.make_expr_group(indices))
 
 
-@_expand_indices
 def length(node, indices):
     """Return the length of the dynamic SNode `node` at index `indices`.
 
@@ -487,11 +454,10 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_snode_length(node._snode.ptr,
-                                   expr.make_expr_group(indices)))
+        impl.get_runtime().prog.current_ast_builder().expr_snode_length(
+            node._snode.ptr, expr.make_expr_group(indices)))
 
 
-@_expand_indices
 def get_addr(f, indices):
     """Query the memory address (on CUDA/x64) of field `f` at index `indices`.
 
@@ -505,8 +471,8 @@ def get_addr(f, indices):
         ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_snode_get_addr(f._snode.ptr,
-                                     expr.make_expr_group(indices)))
+        impl.get_runtime().prog.current_ast_builder().expr_snode_get_addr(
+            f._snode.ptr, expr.make_expr_group(indices)))
 
 
 __all__ = [

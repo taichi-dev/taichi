@@ -11,8 +11,10 @@ class ExpressionVisitor;
 
 // always a tree - used as rvalues
 class Expression {
- public:
+ protected:
   Stmt *stmt;
+
+ public:
   std::string tb;
   std::map<std::string, std::string> attributes;
   DataType ret_type;
@@ -52,6 +54,10 @@ class Expression {
   }
 
   virtual ~Expression() {
+  }
+
+  Stmt *get_flattened_stmt() const {
+    return stmt;
   }
 };
 

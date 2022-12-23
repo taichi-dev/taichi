@@ -6,6 +6,9 @@ from tests import test_utils
 #TODO: validation layer support on macos vulkan backend is not working.
 vk_on_mac = (ti.vulkan, 'Darwin')
 
+#TODO: capfd doesn't function well on CUDA backend on Windows
+cuda_on_windows = (ti.cuda, 'Windows')
+
 
 # Not really testable..
 # Just making sure it does not crash
@@ -101,7 +104,8 @@ def test_print_multiple_threads():
     ti.sync()
 
 
-def _test_print_list():
+@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac], debug=True)
+def test_print_list():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
     y = ti.Vector.field(3, dtype=ti.f32, shape=())
 
@@ -119,19 +123,6 @@ def _test_print_list():
 
     func(233.3)
     ti.sync()
-
-
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac], debug=True)
-def test_print_list():
-    _test_print_list()
-
-
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac],
-                 debug=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_print_list_matrix_scalarize():
-    _test_print_list()
 
 
 @test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac], debug=True)
@@ -196,3 +187,17 @@ def test_print_i64():
 
     func(-2**63 + 2**31)
     ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_seq(capfd):
+    @ti.kernel
+    def foo():
+        print("inside kernel")
+
+    foo()
+    print("outside kernel")
+    out = capfd.readouterr().out
+    assert "inside kernel\noutside kernel" in out

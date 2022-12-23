@@ -82,25 +82,30 @@ void ScalarPointerLowerer::run() {
         const int prev = total_shape[k];
         total_shape[k] /= snode->extractors[k].shape;
         const int next = total_shape[k];
+        // Upon first extraction on axis k, "indices_[k_]" is the user
+        // coordinate on axis k and "prev" is the total shape of axis k.
+        // Unless it is an invalid out-of-bound access, we can assume
+        // "indices_[k_] < prev" so we don't need a mod here.
         if (is_first_extraction[k]) {
-          // Upon first extraction on axis k, "indices_[k_]" is the user
-          // coordinate on axis k and "prev" is the total shape of axis k.
-          // Unless it is an invalid out-of-bound access, we can assume
-          // "indices_[k_] < prev" so we don't need a mod here.
-          auto const_next = lowered_->push_back<ConstStmt>(TypedConstant(next));
-          extracted = lowered_->push_back<BinaryOpStmt>(
-              BinaryOpType::div, indices_[k_], const_next);
-          is_first_extraction[k] = false;
+          extracted = indices_[k_];
         } else {
-          extracted = generate_mod_x_div_y(lowered_, indices_[k_], prev, next);
+          extracted = generate_mod(lowered_, indices_[k_], prev);
         }
+        extracted = generate_div(lowered_, extracted, next);
       } else {
         const int end = start_bits[k];
         start_bits[k] -= snode->extractors[k].num_bits;
         const int begin = start_bits[k];
-        extracted =
-            lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
+        if (is_first_extraction[k] && begin == 0) {
+          // Similar optimization as above. In this case the full user
+          // coordinate is extracted so we don't need a BitExtractStmt.
+          extracted = indices_[k_];
+        } else {
+          extracted =
+              lowered_->push_back<BitExtractStmt>(indices_[k_], begin, end);
+        }
       }
+      is_first_extraction[k] = false;
       lowered_indices.push_back(extracted);
       strides.push_back(snode->extractors[k].shape);
     }

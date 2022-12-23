@@ -28,8 +28,12 @@ endif()
 if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     if (MSVC)
+        # C4244: conversion from 'type1' to 'type2', possible loss of data
+        # C4267: conversion from 'size_t' to 'type', possible loss of data
+        # C4624: destructor was implicitly defined as deleted because a base class destructor is inaccessible or deleted
+        # These warnings are not emitted on Clang (mostly within LLVM source code)
         set(CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /bigobj /wd4244 /wd4267 /nologo /Zi /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
+            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /bigobj /wd4244 /wd4267 /wd4624 /nologo /MP /Zi /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -target x86_64-pc-windows-msvc")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -gcodeview")
@@ -74,6 +78,17 @@ endif()
     # [Global] By evaluating "constexpr", compiler throws a warning for functions known to be dead at compile time.
     # However, some of these "constexpr" are debug flags and will be manually enabled upon debugging.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
+
+    # CLANG_VERSION_MAJOR is set in check_clang_version
+    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 15)
+      # [Global] FIXME: Newly introduced flag in clang-15
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unqualified-std-cast-call ")
+    endif()
+
+    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 13)
+      # [Global] FIXME: Newly introduced flag in clang-13
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable ")
+    endif()
 endif ()
 
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")

@@ -392,13 +392,15 @@ SType IRBuilder::get_pointer_type(const SType &value_type,
   return t;
 }
 
-SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
-                                        int num_dimensions) {
+SType IRBuilder::get_underlying_image_type(const SType &primitive_type,
+                                           int num_dimensions) {
   auto key = std::make_pair(primitive_type.id, num_dimensions);
-  auto it = sampled_image_ptr_tbl_.find(key);
-  if (it != sampled_image_ptr_tbl_.end()) {
+
+  auto it = sampled_image_underlying_image_type_.find(key);
+  if (it != sampled_image_underlying_image_type_.end()) {
     return it->second;
   }
+
   int img_id = id_counter_++;
   spv::Dim dim;
   if (num_dimensions == 1) {
@@ -415,6 +417,26 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
                /*Depth=*/0, /*Arrayed=*/0, /*MS=*/0, /*Sampled=*/1,
                spv::ImageFormatUnknown)
       .commit(&global_);
+
+  SType image_type;
+  image_type.id = img_id;
+  image_type.flag = TypeKind::kImage;
+  sampled_image_underlying_image_type_[key] = image_type;
+
+  return image_type;
+}
+
+SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
+                                        int num_dimensions) {
+  auto key = std::make_pair(primitive_type.id, num_dimensions);
+  auto it = sampled_image_ptr_tbl_.find(key);
+  if (it != sampled_image_ptr_tbl_.end()) {
+    return it->second;
+  }
+
+  SType image_type = get_underlying_image_type(primitive_type, num_dimensions);
+  int img_id = image_type.id;
+
   SType sampled_t;
   sampled_t.id = id_counter_++;
   sampled_t.flag = TypeKind::kImage;
@@ -422,6 +444,7 @@ SType IRBuilder::get_sampled_image_type(const SType &primitive_type,
       .add_seq(sampled_t, img_id)
       .commit(&global_);
   sampled_image_ptr_tbl_[key] = sampled_t;
+
   return sampled_t;
 }
 
@@ -806,8 +829,18 @@ Value IRBuilder::sample_texture(Value texture_var,
 Value IRBuilder::fetch_texel(Value texture_var,
                              const std::vector<Value> &args,
                              Value lod) {
-  auto image = this->load_variable(
+  auto sampled_image = this->load_variable(
       texture_var, this->get_sampled_image_type(f32_type(), args.size()));
+
+  // OpImageFetch requires operand with OpImageType
+  // We have to extract the underlying OpImage from OpSampledImage here
+  SType image_type = get_underlying_image_type(f32_type(), args.size());
+  Value image_val = new_value(image_type, ValueKind::kNormal);
+
+  ib_.begin(spv::OpImage)
+      .add_seq(image_type, image_val, sampled_image)
+      .commit(&function_);
+
   Value uv;
   if (args.size() == 1) {
     uv = args[0];
@@ -820,8 +853,8 @@ Value IRBuilder::fetch_texel(Value texture_var,
     TI_ERROR("Unsupported number of texture coordinates");
   }
   uint32_t lod_operand = 0x2;
-  auto res_vec4 =
-      make_value(spv::OpImageFetch, t_v4_fp32_, image, uv, lod_operand, lod);
+  auto res_vec4 = make_value(spv::OpImageFetch, t_v4_fp32_, image_val, uv,
+                             lod_operand, lod);
   return res_vec4;
 }
 

@@ -214,6 +214,7 @@ def test_different_argument_type():
     assert run() == 3
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_recursion():
     @ti.experimental.real_func
@@ -234,6 +235,7 @@ def test_recursion():
     assert get_sum() == 99 * 50
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=32768)
 def test_deep_recursion():
     @ti.experimental.real_func
@@ -338,6 +340,14 @@ def test_ref():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref_atomic():
+    # FIXME: failed test on Pascal (and potentially older) architecture.
+    # Please remove this guardiance when you fix this issue
+    cur_arch = ti.lang.impl.get_runtime().prog.config().arch
+    if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
+        pytest.skip(
+            'Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information'
+        )
+
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):
         a += a
@@ -356,19 +366,19 @@ def test_func_ndarray_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
-    def test(a: ti.types.ndarray(field_dim=1)):
+    def test(a: ti.types.ndarray(ndim=1)):
         a[0] = [100, 100, 100]
 
     @ti.kernel
-    def test_k(x: ti.types.ndarray(field_dim=1)):
+    def test_k(x: ti.types.ndarray(ndim=1)):
         test(x)
 
     @ti.func
-    def test_error_func(a: ti.types.ndarray(field_dim=1, element_dim=1)):
-        a[0] = [100, 100, 100]
+    def test_error_func(a: ti.types.ndarray(dtype=ti.math.vec2, ndim=1)):
+        a[0] = [100, 100]
 
     @ti.kernel
-    def test_error(x: ti.types.ndarray(field_dim=1)):
+    def test_error(x: ti.types.ndarray(ndim=1)):
         test_error_func(x)
 
     arr = ti.ndarray(vec3, shape=(4))
@@ -383,7 +393,8 @@ def test_func_ndarray_arg():
         test_error(arr)
 
 
-def _test_func_matrix_arg():
+@test_utils.test(debug=True)
+def test_func_matrix_arg():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -401,7 +412,8 @@ def _test_func_matrix_arg():
     test_k()
 
 
-def _test_func_matrix_arg_with_error():
+@test_utils.test()
+def test_func_matrix_arg_with_error():
     vec3 = ti.types.vector(3, ti.f32)
 
     @ti.func
@@ -419,15 +431,70 @@ def _test_func_matrix_arg_with_error():
         test_error()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
-def test_func_matrix_arg():
-    _test_func_matrix_arg()
-    _test_func_matrix_arg_with_error()
+@test_utils.test(debug=True)
+def test_func_struct_arg():
+    @ti.dataclass
+    class C:
+        i: int
+
+    @ti.func
+    def f(c: C):
+        return c.i
+
+    @ti.kernel
+    def k():
+        c = C(i=2)
+        assert f(c) == 2
+
+    k()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 debug=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_func_matrix_arg_real_matrix():
-    _test_func_matrix_arg()
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_matrix_arg():
+    @ti.experimental.real_func
+    def mat_arg(a: ti.math.mat2, b: ti.math.vec2) -> float:
+        return a[0, 0] + a[0, 1] + a[1, 0] + a[1, 1] + b[0] + b[1]
+
+    b = ti.Vector.field(n=2, dtype=float, shape=())
+    b[()][0] = 5
+    b[()][1] = 6
+
+    @ti.kernel
+    def foo() -> float:
+        a = ti.math.mat2(1, 2, 3, 4)
+        return mat_arg(a, b[()])
+
+    assert foo() == pytest.approx(21)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_struct_ret():
+    s = ti.types.struct(a=ti.i16, b=ti.f64)
+
+    @ti.experimental.real_func
+    def bar() -> s:
+        return s(a=123, b=ti.f64(1.2345e300))
+
+    @ti.kernel
+    def foo() -> ti.f64:
+        a = bar()
+        return a.a * a.b
+
+    assert foo() == pytest.approx(123 * 1.2345e300)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_real_func_struct_ret_with_matrix():
+    s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
+    s1 = ti.types.struct(a=ti.f32, b=s0)
+
+    @ti.experimental.real_func
+    def bar() -> s1:
+        return s1(a=1, b=s0(a=ti.Vector([100, 0.2, 3], dt=ti.f32), b=65537))
+
+    @ti.kernel
+    def foo() -> ti.f32:
+        s = bar()
+        return s.a + s.b.a[0] + s.b.a[1] + s.b.a[2] + s.b.b
+
+    assert foo() == pytest.approx(105.2)

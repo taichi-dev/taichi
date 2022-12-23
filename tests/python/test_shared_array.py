@@ -15,9 +15,8 @@ def test_shared_array_nested_loop():
     reference = np.zeros(N).astype(np.float32)
 
     @ti.kernel
-    def calc(v: ti.types.ndarray(field_dim=1),
-             d: ti.types.ndarray(field_dim=1),
-             a: ti.types.ndarray(field_dim=1)):
+    def calc(v: ti.types.ndarray(ndim=1), d: ti.types.ndarray(ndim=1),
+             a: ti.types.ndarray(ndim=1)):
         for i in range(N):
             acc = 0.0
             v_val = v[i]
@@ -26,9 +25,9 @@ def test_shared_array_nested_loop():
             a[i] = acc
 
     @ti.kernel
-    def calc_shared_array(v: ti.types.ndarray(field_dim=1),
-                          d: ti.types.ndarray(field_dim=1),
-                          a: ti.types.ndarray(field_dim=1)):
+    def calc_shared_array(v: ti.types.ndarray(ndim=1),
+                          d: ti.types.ndarray(ndim=1),
+                          a: ti.types.ndarray(ndim=1)):
         ti.loop_config(block_dim=block_dim)
         for i in range(nBlocks * block_dim):
             tid = i % block_dim

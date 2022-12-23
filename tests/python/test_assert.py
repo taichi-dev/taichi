@@ -107,6 +107,19 @@ def test_assert_ok():
     func()
 
 
+@test_utils.test(require=ti.extension.assertion,
+                 debug=True,
+                 check_out_of_bound=True,
+                 gdb_trigger=False)
+def test_assert_with_check_oob():
+    @ti.kernel
+    def func():
+        n = 15
+        assert n >= 0
+
+    func()
+
+
 @test_utils.test(arch=get_host_arch_list())
 def test_static_assert_message():
     x = 3

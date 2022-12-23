@@ -153,7 +153,7 @@ def _test_python(args):
             # auto-complete file names
             if not f.startswith('test_'):
                 f = 'test_' + f
-            if not f.endswith('.py'):
+            if not (f.endswith('.py') or f.endswith('.ipynb')):
                 f = f + '.py'
             file = os.path.join(test_dir, f)
             has_tests = False
@@ -164,6 +164,7 @@ def _test_python(args):
     else:
         # run all the tests
         pytest_args = [test_dir]
+    pytest_args += ['--nbmake']
     if args.verbose:
         pytest_args += ['-v']
     if args.rerun:
@@ -194,9 +195,6 @@ def _test_python(args):
         threads = min(8, cpu_count())  # To prevent running out of memory
     except NotImplementedError:
         threads = 2
-
-    if not os.environ.get('TI_DEVICE_MEMORY_GB'):
-        os.environ['TI_DEVICE_MEMORY_GB'] = '1.0'  # Discussion: #769
 
     env_threads = os.environ.get('TI_TEST_THREADS', '')
     threads = args.threads or env_threads or threads

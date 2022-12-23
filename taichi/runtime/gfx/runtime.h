@@ -110,10 +110,6 @@ class TI_DLL_EXPORT GfxRuntime {
   void untrack_image(DeviceAllocation image);
   void transition_image(DeviceAllocation image, ImageLayout layout);
 
-  void signal_event(DeviceEvent *event);
-  void reset_event(DeviceEvent *event);
-  void wait_event(DeviceEvent *event);
-
   void synchronize();
 
   StreamSemaphore flush();

@@ -5,11 +5,11 @@
 namespace taichi::lang {
 void Dispatch::compile(
     std::vector<aot::CompiledDispatch> &compiled_dispatches) {
-  if (kernel_->compiled_aot_kernel() == nullptr) {
-    kernel_->compile_to_aot_kernel();
-  }
-  aot::CompiledDispatch dispatch{kernel_->get_name(), symbolic_args_,
-                                 kernel_->compiled_aot_kernel()};
+  aot::CompiledDispatch dispatch;
+  dispatch.kernel_name = kernel_->get_name();
+  dispatch.symbolic_args = symbolic_args_;
+  dispatch.ti_kernel = kernel_;
+  dispatch.compiled_kernel = nullptr;
   compiled_dispatches.push_back(std::move(dispatch));
 }
 

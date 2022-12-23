@@ -208,17 +208,17 @@ def test_args_with_many_ndarrays():
     def ti_import_cluster_data(
         center: ti.types.vector(3,
                                 ti.f32), particle_num: int, cluster_num: int,
-        permu_num: int, particlePosition: ti.types.ndarray(field_dim=1),
-        outClusterPosition: ti.types.ndarray(field_dim=1),
-        outClusterOffsets: ti.types.ndarray(field_dim=1),
-        outClusterSizes: ti.types.ndarray(field_dim=1),
-        outClusterIndices: ti.types.ndarray(field_dim=1),
-        particle_pos: ti.types.ndarray(field_dim=1),
-        particle_prev_pos: ti.types.ndarray(field_dim=1),
-        particle_rest_pos: ti.types.ndarray(field_dim=1),
-        cluster_rest_mass_center: ti.types.ndarray(field_dim=1),
-        cluster_begin: ti.types.ndarray(field_dim=1),
-        particle_index: ti.types.ndarray(field_dim=1)):
+        permu_num: int, particlePosition: ti.types.ndarray(ndim=1),
+        outClusterPosition: ti.types.ndarray(ndim=1),
+        outClusterOffsets: ti.types.ndarray(ndim=1),
+        outClusterSizes: ti.types.ndarray(ndim=1),
+        outClusterIndices: ti.types.ndarray(ndim=1),
+        particle_pos: ti.types.ndarray(ndim=1),
+        particle_prev_pos: ti.types.ndarray(ndim=1),
+        particle_rest_pos: ti.types.ndarray(ndim=1),
+        cluster_rest_mass_center: ti.types.ndarray(ndim=1),
+        cluster_begin: ti.types.ndarray(ndim=1),
+        particle_index: ti.types.ndarray(ndim=1)):
 
         added_permu_num = outClusterIndices.shape[0]
 

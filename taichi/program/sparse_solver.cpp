@@ -303,7 +303,27 @@ void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm){
   TI_NOT_IMPLEMENTED
 #endif
 }
-void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm){}
+void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm){
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
+  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
+
+  // step 1: reorder the sparse matrix
+  reorder(A);
+
+  // step 2: create opaque info structure
+  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);    
+
+  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for nnz(L+U)
+  size_t rowsA = A.num_rows();
+  size_t nnzA = A.get_nnz();
+  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, lu_info_);
+  is_analyzed_ = true;
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
 void CuSparseSolver::factorize(const SparseMatrix &sm) {
   switch (solver_type_){
     case SolverType::Cholesky:                            
@@ -349,7 +369,35 @@ void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm){
   TI_NOT_IMPLEMENTED
 #endif
 }
-void CuSparseSolver::factorize_lu(const SparseMatrix &sm){}
+void CuSparseSolver::factorize_lu(const SparseMatrix &sm){
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  // step 4: workspace for LU(B)
+  size_t size_lu = 0;
+  size_t buffer_size = 0;
+  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
+
+  if(cpu_buffer_) free(cpu_buffer_);
+  cpu_buffer_ = (void*)malloc(sizeof(char)*size_lu);
+  assert(nullptr != cpu_buffer_);
+  
+  // step 5: compute Ppivot * B = L * U
+  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_,1.0f, cpu_buffer_);
+
+  // step 6: check singularity by tol
+  int singularity = 0;
+  const float tol = 1.e-6;
+  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, lu_info_, tol, &singularity);
+  TI_ASSERT(singularity == -1);
+  is_factorized_ = true;
+#else
+  TI_NOT_IMPLEMENTED
+#endif 
+}
 void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
@@ -431,38 +479,18 @@ void CuSparseSolver::solve_lu(Program *prog,
                 const Ndarray &b,
                 const Ndarray &x){
 #if defined(TI_WITH_CUDA)
+  if (is_analyzed_ == false) {
+    analyze_pattern(sm);
+  }
+  if (is_factorized_ == false) {
+    factorize(sm);
+  }
+
   // Retrive the info of the sparse matrix
-  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
-  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
-
-  // step 1: reorder the sparse matrix
-  reorder(A);
-
-  // step 2: create opaque info structure
-  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);    
-
-  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for nnz(L+U)
-  size_t rowsA = A.num_rows();
-  size_t colsA = A.num_cols();
-  size_t nnzA = A.get_nnz();
-  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, lu_info_);
-
-  // step 4: workspace for LU(B)
-  size_t size_lu = 0;
-  size_t buffer_size = 0;
-  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
-
-  void *buffer_cpu = (void*)malloc(sizeof(char)*size_lu);
-  assert(nullptr != buffer_cpu);
-  
-  // step 5: compute Ppivot * B = L * U
-  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_,1.0f, buffer_cpu);
-
-  // step 6: check singularity by tol
-  int singularity = 0;
-  const float tol = 1.e-6;
-  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, lu_info_, tol, &singularity);
-  TI_ASSERT(singularity == -1);
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t colsA = A->num_cols();
 
   // step 7: solve L*U*x = b
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
@@ -480,7 +508,7 @@ void CuSparseSolver::solve_lu(Program *prog,
   for(int j = 0; j < rowsA; j++){
     h_b_hat[j] = h_b[h_Q_[j]];
   }
-  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, buffer_cpu);
+  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, cpu_buffer_);
   for(int j = 0; j < colsA; j++){
     h_x[h_Q_[j]] = h_x_hat[j];
   }
@@ -490,7 +518,8 @@ void CuSparseSolver::solve_lu(Program *prog,
   free(h_b_hat);
   free(h_x);
   free(h_x_hat);
-  free(buffer_cpu);
+#else
+  TI_NOT_IMPLEMENTED
 #endif
 }
 
@@ -544,6 +573,8 @@ CuSparseSolver::~CuSparseSolver() {
     free(h_csrValB_);
   if (h_mapBfromA_ != nullptr)
     free(h_mapBfromA_);
+  if (cpu_buffer_ != nullptr)
+    free(cpu_buffer_);
   if (info_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestroyCsrcholInfo(info_);
   if(lu_info_ != nullptr)
@@ -570,6 +601,12 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering) {
-  return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::Cholesky);
+  if (solver_type == "LLT" || solver_type == "LDLT") {
+    return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::Cholesky);
+  } else if (solver_type == "LU") {
+    return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::LU);
+  } else {
+    TI_ERROR("Not supported sparse solver type: {}", solver_type);
+  }
 }
 }  // namespace taichi::lang

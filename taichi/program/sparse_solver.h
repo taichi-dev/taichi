@@ -89,6 +89,7 @@ class CuSparseSolver : public SparseSolver {
   cusparseHandle_t cusparse_handel_{nullptr};
   cusparseMatDescr_t descr_{nullptr};
   void *gpu_buffer_{nullptr};
+  void *cpu_buffer_{nullptr};
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
@@ -101,7 +102,6 @@ class CuSparseSolver : public SparseSolver {
   int *d_csrRowPtrB_{nullptr}; /* <int> n+1 */
   int *d_csrColIndB_{nullptr}; /* <int> nnzA */
   float *d_csrValB_{nullptr};  /* <float> nnzA */
-
  public:
   CuSparseSolver();
   explicit CuSparseSolver(SolverType solver_type): solver_type_(solver_type){

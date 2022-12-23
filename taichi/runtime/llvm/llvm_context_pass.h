@@ -1,19 +1,10 @@
-#include "llvm/Analysis/TargetTransformInfo.h"
+#pragma once
+  
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IRReader/IRReader.h"
-#include "llvm/Linker/Linker.h"
-#include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/Host.h"
-#include "llvm/MC/TargetRegistry.h"
-#include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/CommandLine.h"
-#include "llvm/Support/CodeGen.h"
-#include "llvm/Target/TargetOptions.h"
-#include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/Instructions.h"
@@ -26,6 +17,7 @@
 namespace taichi {
 namespace lang {
 using namespace llvm;
+#if defined(TI_WITH_AMDGPU)
 struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
     static char ID;
     AMDGPUConvertAllocaInstAddressSpacePass() : FunctionPass(ID) {}
@@ -126,6 +118,7 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
 
 char AMDGPUConvertAllocaInstAddressSpacePass::ID = 0;
 char AMDGPUConvertFuncParamAddressSpacePass::ID = 0;
+#endif
 
 } // namespace lang
 } // namespace taichi

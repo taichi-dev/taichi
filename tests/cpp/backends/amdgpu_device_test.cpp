@@ -23,14 +23,16 @@ TEST(AMDGPU, CreateDeviceAndAlloc) {
   // The purpose of the device_alloc_guard is to rule out double free
   const taichi::lang::DeviceAllocationGuard device_alloc_guard(device_alloc);
   // Map to CPU, write some values, then check those values
-  void *mapped = device->map(device_alloc);
+  void *mapped;
+  EXPECT_EQ(device->map(device_alloc, &mapped), RhiResult::success);
+
   int *mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     mapped_int[i] = i;
   }
   device->unmap(device_alloc);
+  EXPECT_EQ(device->map(device_alloc, &mapped), RhiResult::success);
 
-  mapped = device->map(device_alloc);
   mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     EXPECT_EQ(mapped_int[i], i);
@@ -63,7 +65,9 @@ TEST(AMDGPU, ImportMemory) {
 
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);
   device->memcpy_internal(device_dest.get_ptr(0), device_alloc.get_ptr(0), 400);
-  void *mapped = device->map(device_dest);
+  void *mapped;
+  EXPECT_EQ(device->map(device_dest, &mapped), RhiResult::success);
+
   int *mapped_int = reinterpret_cast<int *>(mapped);
 
   for (int i = 0; i < 100; i++) {

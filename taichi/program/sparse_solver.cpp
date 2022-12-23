@@ -179,7 +179,7 @@ CuSparseSolver::CuSparseSolver() {
   init_solver();
 }
 
-void CuSparseSolver::init_solver(){
+void CuSparseSolver::init_solver() {
 #if defined(TI_WITH_CUDA)
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
@@ -195,7 +195,7 @@ void CuSparseSolver::init_solver(){
   }
 #endif
 }
-void CuSparseSolver::reorder(const CuSparseMatrix &A){
+void CuSparseSolver::reorder(const CuSparseMatrix &A) {
 #if defined(TI_WITH_CUDA)
   size_t rowsA = A.num_rows();
   size_t colsA = A.num_cols();
@@ -231,30 +231,32 @@ void CuSparseSolver::reorder(const CuSparseMatrix &A){
                                                    sizeof(float) * nnzA);
 
   // compoute h_Q_
-  CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(
-      cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_, h_Q_);
+  CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(cusolver_handle_, rowsA,
+                                                    nnzA, descr_, h_csrRowPtrB_,
+                                                    h_csrColIndB_, h_Q_);
   CUDADriver::get_instance().malloc((void **)&d_Q_, sizeof(int) * colsA);
   CUDADriver::get_instance().memcpy_host_to_device((void *)d_Q_, (void *)h_Q_,
                                                    sizeof(int) * (colsA));
   size_t size_perm = 0;
   CUSOLVERDriver::get_instance().csSpXcsrperm_bufferSizeHost(
-      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
-      h_Q_, h_Q_, &size_perm);
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_,
+      h_csrColIndB_, h_Q_, h_Q_, &size_perm);
   void *buffer_cpu = (void *)malloc(sizeof(char) * size_perm);
   assert(nullptr != buffer_cpu);
   for (int j = 0; j < nnzA; j++) {
     h_mapBfromA_[j] = j;
   }
   CUSOLVERDriver::get_instance().csSpXcsrpermHost(
-      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
-      h_Q_, h_Q_, h_mapBfromA_, buffer_cpu);
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_,
+      h_csrColIndB_, h_Q_, h_Q_, h_mapBfromA_, buffer_cpu);
   // B = A( mapBfromA )
   for (int j = 0; j < nnzA; j++) {
     h_csrValB_[j] = h_csrValA[h_mapBfromA_[j]];
   }
   CUDADriver::get_instance().malloc((void **)&d_csrRowPtrB_,
                                     sizeof(int) * (rowsA + 1));
-  CUDADriver::get_instance().malloc((void **)&d_csrColIndB_, sizeof(int) * nnzA);
+  CUDADriver::get_instance().malloc((void **)&d_csrColIndB_,
+                                    sizeof(int) * nnzA);
   CUDADriver::get_instance().malloc((void **)&d_csrValB_, sizeof(float) * nnzA);
   CUDADriver::get_instance().memcpy_host_to_device(
       (void *)d_csrRowPtrB_, (void *)h_csrRowPtrB_, sizeof(int) * (rowsA + 1));
@@ -270,8 +272,8 @@ void CuSparseSolver::reorder(const CuSparseMatrix &A){
 // Reference:
 // https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
 void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
-  switch (solver_type_){
-    case SolverType::Cholesky:                            
+  switch (solver_type_) {
+    case SolverType::Cholesky:
       analyze_pattern_cholesky(sm);
       break;
     case SolverType::LU:
@@ -281,7 +283,7 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
       TI_NOT_IMPLEMENTED
   }
 }
-void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm){
+void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
@@ -297,13 +299,14 @@ void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm){
   size_t rowsA = A.num_rows();
   size_t nnzA = A.get_nnz();
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB_, d_csrColIndB_, info_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB_, d_csrColIndB_,
+      info_);
   is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
 }
-void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm){
+void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
@@ -313,20 +316,23 @@ void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm){
   reorder(A);
 
   // step 2: create opaque info structure
-  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);    
+  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);
 
-  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for nnz(L+U)
+  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for
+  // nnz(L+U)
   size_t rowsA = A.num_rows();
   size_t nnzA = A.get_nnz();
-  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(cusolver_handle_, rowsA, nnzA,descr_, h_csrRowPtrB_, h_csrColIndB_, lu_info_);
+  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
+      lu_info_);
   is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
 }
 void CuSparseSolver::factorize(const SparseMatrix &sm) {
-  switch (solver_type_){
-    case SolverType::Cholesky:                            
+  switch (solver_type_) {
+    case SolverType::Cholesky:
       factorize_cholesky(sm);
       break;
     case SolverType::LU:
@@ -336,8 +342,8 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
       TI_NOT_IMPLEMENTED
   }
 }
-void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm){
-  #if defined(TI_WITH_CUDA)
+void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
   CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
@@ -369,7 +375,7 @@ void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm){
   TI_NOT_IMPLEMENTED
 #endif
 }
-void CuSparseSolver::factorize_lu(const SparseMatrix &sm){
+void CuSparseSolver::factorize_lu(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
@@ -379,31 +385,37 @@ void CuSparseSolver::factorize_lu(const SparseMatrix &sm){
   // step 4: workspace for LU(B)
   size_t size_lu = 0;
   size_t buffer_size = 0;
-  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
+  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_,
+      h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
 
-  if(cpu_buffer_) free(cpu_buffer_);
-  cpu_buffer_ = (void*)malloc(sizeof(char)*size_lu);
+  if (cpu_buffer_)
+    free(cpu_buffer_);
+  cpu_buffer_ = (void *)malloc(sizeof(char) * size_lu);
   assert(nullptr != cpu_buffer_);
-  
+
   // step 5: compute Ppivot * B = L * U
-  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_, h_csrColIndB_, lu_info_,1.0f, cpu_buffer_);
+  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_,
+      h_csrColIndB_, lu_info_, 1.0f, cpu_buffer_);
 
   // step 6: check singularity by tol
   int singularity = 0;
   const float tol = 1.e-6;
-  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(cusolver_handle_, lu_info_, tol, &singularity);
+  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(
+      cusolver_handle_, lu_info_, tol, &singularity);
   TI_ASSERT(singularity == -1);
   is_factorized_ = true;
 #else
   TI_NOT_IMPLEMENTED
-#endif 
+#endif
 }
 void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
                               const Ndarray &x) {
-  switch (solver_type_){
-    case SolverType::Cholesky:                            
+  switch (solver_type_) {
+    case SolverType::Cholesky:
       solve_cholesky(prog, sm, b, x);
       break;
     case SolverType::LU:
@@ -415,9 +427,9 @@ void CuSparseSolver::solve_rf(Program *prog,
 }
 
 void CuSparseSolver::solve_cholesky(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                const Ndarray &x){
+                                    const SparseMatrix &sm,
+                                    const Ndarray &b,
+                                    const Ndarray &x) {
 #if defined(TI_WITH_CUDA)
   if (is_analyzed_ == false) {
     analyze_pattern(sm);
@@ -475,9 +487,9 @@ void CuSparseSolver::solve_cholesky(Program *prog,
 }
 
 void CuSparseSolver::solve_lu(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                const Ndarray &x){
+                              const SparseMatrix &sm,
+                              const Ndarray &b,
+                              const Ndarray &x) {
 #if defined(TI_WITH_CUDA)
   if (is_analyzed_ == false) {
     analyze_pattern(sm);
@@ -495,24 +507,28 @@ void CuSparseSolver::solve_lu(Program *prog,
   // step 7: solve L*U*x = b
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
   size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
-  float *h_b = (float*)malloc(sizeof(float)*rowsA);
-  float *h_b_hat = (float*)malloc(sizeof(float)*rowsA);
-  float *h_x = (float*)malloc(sizeof(float)*colsA);
-  float *h_x_hat = (float*)malloc(sizeof(float)*colsA);
+  float *h_b = (float *)malloc(sizeof(float) * rowsA);
+  float *h_b_hat = (float *)malloc(sizeof(float) * rowsA);
+  float *h_x = (float *)malloc(sizeof(float) * colsA);
+  float *h_x_hat = (float *)malloc(sizeof(float) * colsA);
   assert(nullptr != h_b);
   assert(nullptr != h_b_hat);
   assert(nullptr != h_x);
   assert(nullptr != h_x_hat);
-  CUDADriver::get_instance().memcpy_device_to_host((void*)h_b, (void*)d_b, sizeof(float)*rowsA);
-  CUDADriver::get_instance().memcpy_device_to_host((void*)h_x, (void*)d_x, sizeof(float)*colsA);
-  for(int j = 0; j < rowsA; j++){
+  CUDADriver::get_instance().memcpy_device_to_host((void *)h_b, (void *)d_b,
+                                                   sizeof(float) * rowsA);
+  CUDADriver::get_instance().memcpy_device_to_host((void *)h_x, (void *)d_x,
+                                                   sizeof(float) * colsA);
+  for (int j = 0; j < rowsA; j++) {
     h_b_hat[j] = h_b[h_Q_[j]];
   }
-  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, cpu_buffer_);
-  for(int j = 0; j < colsA; j++){
+  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(
+      cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, cpu_buffer_);
+  for (int j = 0; j < colsA; j++) {
     h_x[h_Q_[j]] = h_x_hat[j];
   }
-  CUDADriver::get_instance().memcpy_host_to_device((void*)d_x, (void*)h_x, sizeof(float)*colsA);
+  CUDADriver::get_instance().memcpy_host_to_device((void *)d_x, (void *)h_x,
+                                                   sizeof(float) * colsA);
 
   free(h_b);
   free(h_b_hat);
@@ -577,7 +593,7 @@ CuSparseSolver::~CuSparseSolver() {
     free(cpu_buffer_);
   if (info_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestroyCsrcholInfo(info_);
-  if(lu_info_ != nullptr)
+  if (lu_info_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestroyCsrluInfoHost(lu_info_);
   if (cusolver_handle_ != nullptr)
     CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
@@ -602,7 +618,8 @@ std::unique_ptr<SparseSolver> make_cusparse_solver(
     const std::string &solver_type,
     const std::string &ordering) {
   if (solver_type == "LLT" || solver_type == "LDLT") {
-    return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::Cholesky);
+    return std::make_unique<CuSparseSolver>(
+        CuSparseSolver::SolverType::Cholesky);
   } else if (solver_type == "LU") {
     return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::LU);
   } else {

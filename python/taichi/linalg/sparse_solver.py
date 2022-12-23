@@ -100,12 +100,12 @@ class SparseSolver:
             return self.solver.solve(b)
         if isinstance(b, Ndarray):
             x = ScalarNdarray(b.dtype, [self.matrix.m])
-            self.solver.solve_rf(get_runtime().prog, self.matrix.matrix, b.arr, x.arr)
+            self.solver.solve_rf(get_runtime().prog, self.matrix.matrix, b.arr,
+                                 x.arr)
             return x
         raise TaichiRuntimeError(
             f"The parameter type: {type(b)} is not supported in linear solvers for now."
         )
-
 
     def info(self):
         """Check if the linear systems are solved successfully.

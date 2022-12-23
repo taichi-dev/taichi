@@ -77,10 +77,8 @@ DECLARE_EIGEN_LU_SOLVER(float64, LU, COLAMD);
 
 class CuSparseSolver : public SparseSolver {
  public:
- enum class SolverType {
-    Cholesky,
-    LU
-  };
+  enum class SolverType { Cholesky, LU };
+
  private:
   SolverType solver_type_{SolverType::Cholesky};
   csrcholInfo_t info_{nullptr};
@@ -93,7 +91,8 @@ class CuSparseSolver : public SparseSolver {
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
-  int *h_Q_{nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
+  int *h_Q_{
+      nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
   int *d_Q_{nullptr};
   int *h_csrRowPtrB_{nullptr}; /* <int> n+1 */
   int *h_csrColIndB_{nullptr}; /* <int> nnzA */
@@ -104,7 +103,7 @@ class CuSparseSolver : public SparseSolver {
   float *d_csrValB_{nullptr};  /* <float> nnzA */
  public:
   CuSparseSolver();
-  explicit CuSparseSolver(SolverType solver_type): solver_type_(solver_type){
+  explicit CuSparseSolver(SolverType solver_type) : solver_type_(solver_type) {
     init_solver();
   }
   ~CuSparseSolver() override;
@@ -118,11 +117,12 @@ class CuSparseSolver : public SparseSolver {
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 const Ndarray &x);
-            
+
   bool info() override {
     TI_NOT_IMPLEMENTED;
   };
-  private:
+
+ private:
   void init_solver();
   void reorder(const CuSparseMatrix &sm);
   void analyze_pattern_cholesky(const SparseMatrix &sm);
@@ -130,13 +130,13 @@ class CuSparseSolver : public SparseSolver {
   void factorize_cholesky(const SparseMatrix &sm);
   void factorize_lu(const SparseMatrix &sm);
   void solve_cholesky(Program *prog,
-                 const SparseMatrix &sm,
-                 const Ndarray &b,
-                 const Ndarray &x);
+                      const SparseMatrix &sm,
+                      const Ndarray &b,
+                      const Ndarray &x);
   void solve_lu(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
-                const Ndarray &x);  
+                const Ndarray &x);
 };
 
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,

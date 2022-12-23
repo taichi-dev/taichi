@@ -100,15 +100,16 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
 }
 
 template <typename T, typename G>
-void SparseMatrixBuilder::print_triplets_template(){
+void SparseMatrixBuilder::print_triplets_template() {
   auto ptr = get_ndarray_data_ptr();
   G *data = reinterpret_cast<G *>(ptr);
   num_triplets_ = data[0];
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
-            num_triplets_,max_num_triplets_);
+             num_triplets_, max_num_triplets_);
   data += 1;
-  for (int i = 0; i < num_triplets_; i++){
-      fmt::print("[{}, {}] = {}\n", data[i * 3], data[i * 3 + 1], taichi_union_cast<T>(data[i * 3 + 2]));
+  for (int i = 0; i < num_triplets_; i++) {
+    fmt::print("[{}, {}] = {}\n", data[i * 3], data[i * 3 + 1],
+               taichi_union_cast<T>(data[i * 3 + 2]));
   }
 }
 
@@ -127,12 +128,12 @@ void SparseMatrixBuilder::print_triplets_eigen() {
   }
 }
 
-void SparseMatrixBuilder::print_triplets_cuda(){
+void SparseMatrixBuilder::print_triplets_cuda() {
 #ifdef TI_WITH_CUDA
   CUDADriver::get_instance().memcpy_device_to_host(
       &num_triplets_, (void *)get_ndarray_data_ptr(), sizeof(int));
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
-            num_triplets_,max_num_triplets_);    
+             num_triplets_, max_num_triplets_);
   auto len = 3 * num_triplets_ + 1;
   std::vector<float32> trips(len);
   CUDADriver::get_instance().memcpy_device_to_host(

@@ -31,4 +31,3 @@ PER_CUSOLVER_FUNCTION(csSpScsrluBufferInfoHost, cusolverSpScsrluBufferInfoHost, 
 PER_CUSOLVER_FUNCTION(csSpScsrluFactorHost, cusolverSpScsrluFactorHost, cusolverSpHandle_t ,int ,int ,const cusparseMatDescr_t ,void *,void *,void *,csrluInfoHost_t,float, void *);
 PER_CUSOLVER_FUNCTION(csSpScsrluZeroPivotHost, cusolverSpScsrluZeroPivotHost, cusolverSpHandle_t, csrluInfoHost_t ,float ,void *);
 PER_CUSOLVER_FUNCTION(csSpScsrluSolveHost, cusolverSpScsrluSolveHost,  cusolverSpHandle_t ,int ,void *,void *,csrluInfoHost_t ,void *);
-

@@ -54,6 +54,26 @@ def setup_llvm(env_out: dict) -> None:
     env_out['LLVM_DIR'] = str(out)
 
 
+@banner('Setup Vulkan 1.3.236.0')
+def setup_vulkan(env: dict):
+    u = platform.uname()
+    if u.system == "Linux":
+        url = 'https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz'
+        prefix = get_cache_home() / 'vulkan-1.3.236.0'
+        download_dep(url, prefix, strip=1)
+        sdk = prefix / 'x86_64'
+        env['VULKAN_SDK'] = str(sdk)
+        env['PATH'] = str(sdk / "bin") + ':' + env["PATH"]
+        env['LD_LIBRARY_PATH'] = str(sdk / "lib") + ':' + env.get(
+            "LD_LIBRARY_PATH", "")
+        env['VK_LAYER_PATH'] = str(sdk / 'etc' / 'vulkan' / 'explicit_layer.d')
+    # elif (u.system, u.machine) == ("Darwin", "arm64"):
+    # elif (u.system, u.machine) == ("Darwin", "x86_64"):
+    # elif u.system == "Windows":
+    else:
+        return
+
+
 @banner('Build Taichi Wheel')
 def build_wheel(python: Command, pip: Command, env: dict) -> None:
     '''
@@ -68,7 +88,7 @@ def build_wheel(python: Command, pip: Command, env: dict) -> None:
     if proj == 'taichi-nightly':
         proj_tags.extend(['egg_info', '--tag-date'])
         # Include C-API in nightly builds
-        os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
+        env['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 
     if platform.system() == 'Linux':
         if is_manylinux2014():
@@ -85,15 +105,18 @@ def build_wheel(python: Command, pip: Command, env: dict) -> None:
 
 def main() -> None:
     env = {
+        'PATH': os.environ['PATH'],
+        'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH', ''),
         'TAICHI_CMAKE_ARGS': os.environ.get('TAICHI_CMAKE_ARGS', ''),
         'PROJECT_NAME': os.environ.get('PROJECT_NAME', 'taichi'),
     }
     setup_llvm(env)
+    setup_vulkan(env)
     sccache = setup_sccache(env)
 
     # NOTE: We use conda/venv to build wheels, which may not be the same python
     #       running this script.
-    python, pip = setup_python(os.environ['PY'])
+    python, pip = setup_python(env, os.environ['PY'])
     build_wheel(python, pip, env)
 
     sccache('-s')

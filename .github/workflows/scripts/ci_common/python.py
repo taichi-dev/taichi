@@ -27,7 +27,8 @@ def setup_miniforge3(prefix):
 
 
 @banner('Setup Python {version}')
-def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
+def setup_python(env_out: dict,
+                 version: Optional[str] = None) -> Tuple[Command, Command]:
     '''
     Find the required Python environment and return the `python` and `pip` commands.
     '''
@@ -50,7 +51,7 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     if not exe.exists():
         conda.create('-y', '-n', version, f'python={version}')
 
-    os.environ['PATH'] = f'{env / "bin"}:{os.environ["PATH"]}'
+    env_out['PATH'] = f'{env / "bin"}:{env_out["PATH"]}'
     python = sh.bake(str(exe))
     pip = python.bake('-m', 'pip')
 

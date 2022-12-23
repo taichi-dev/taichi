@@ -286,10 +286,10 @@ class Scalarize : public BasicStmtVisitor {
 
           bool is_matrix = tensor_shape.size() == 2;
           int m = tensor_shape[0];
-          int n = is_matrix ? tensor_shape[1] : 1;
 
           new_contents.push_back("[");
           if (is_matrix) {
+            int n = tensor_shape[1];
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back("[");
               for (size_t j = 0; j < n; j++) {
@@ -298,12 +298,16 @@ class Scalarize : public BasicStmtVisitor {
                 if (j != n - 1)
                   new_contents.push_back(", ");
               }
-              new_contents.push_back("], ");
+              new_contents.push_back("]");
+
+              if (i != m - 1)
+                new_contents.push_back(", ");
             }
           } else {
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back(matrix_init_stmt->values[i]);
-              new_contents.push_back(", ");
+              if (i != m - 1)
+                new_contents.push_back(", ");
             }
           }
           new_contents.push_back("]");

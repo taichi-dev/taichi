@@ -46,7 +46,12 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+if (${CMAKE_GENERATOR} STREQUAL "Xcode")
+  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+  message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
+else()
+  target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+endif()
 target_enable_function_level_linking(${TAICHI_C_API_NAME})
 
 # Strip shared library

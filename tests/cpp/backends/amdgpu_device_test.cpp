@@ -14,9 +14,9 @@ TEST(AMDGPU, CreateDeviceAndAlloc) {
       std::make_unique<amdgpu::AmdgpuDevice>();
   EXPECT_TRUE(device != nullptr);
   taichi::lang::Device::AllocParams params;
-  params.size = 1048576;
-  params.host_read = false;
-  params.host_write = false;
+  params.size = 400;
+  params.host_read = true;
+  params.host_write = true;
   const taichi::lang::DeviceAllocation device_alloc =
       device->allocate_memory(params);
 
@@ -27,14 +27,14 @@ TEST(AMDGPU, CreateDeviceAndAlloc) {
   EXPECT_EQ(device->map(device_alloc, &mapped), RhiResult::success);
 
   int *mapped_int = reinterpret_cast<int *>(mapped);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < params.size / sizeof(int); i++) {
     mapped_int[i] = i;
   }
   device->unmap(device_alloc);
   EXPECT_EQ(device->map(device_alloc, &mapped), RhiResult::success);
 
   mapped_int = reinterpret_cast<int *>(mapped);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < params.size / sizeof(int); i++) {
     EXPECT_EQ(mapped_int[i], i);
   }
   device->unmap(device_alloc);
@@ -46,31 +46,32 @@ TEST(AMDGPU, ImportMemory) {
   EXPECT_TRUE(device != nullptr);
 
   int *ptr = nullptr;
-  AMDGPUDriver::get_instance().malloc_managed((void **)&ptr, 400,
+  size_t mem_size = 400;
+  AMDGPUDriver::get_instance().malloc_managed((void **)&ptr, mem_size,
                                               HIP_MEM_ATTACH_GLOBAL);
   const taichi::lang::DeviceAllocation device_alloc =
-      device->import_memory(ptr, 400);
+      device->import_memory(ptr, mem_size);
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < mem_size / sizeof(int); i++) {
     ptr[i] = i;
   }
 
   taichi::lang::Device::AllocParams params;
   params.size = 400;
-  params.host_read = false;
-  params.host_write = false;
+  params.host_read = true;
+  params.host_write = true;
   const taichi::lang::DeviceAllocation device_dest =
       device->allocate_memory(params);
   const taichi::lang::DeviceAllocationGuard device_dest_guard(device_dest);
 
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);
-  device->memcpy_internal(device_dest.get_ptr(0), device_alloc.get_ptr(0), 400);
+  device->memcpy_internal(device_dest.get_ptr(0), device_alloc.get_ptr(0), params.size);
   void *mapped;
   EXPECT_EQ(device->map(device_dest, &mapped), RhiResult::success);
 
   int *mapped_int = reinterpret_cast<int *>(mapped);
 
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < params.size / sizeof(int); i++) {
     EXPECT_EQ(mapped_int[i], i);
   }
   device->unmap(device_dest);
@@ -83,22 +84,6 @@ TEST(AMDGPU, CreateContextAndGetMemInfo) {
   auto free_size = AMDGPUContext::get_instance().get_free_memory();
   EXPECT_GE(total_size, free_size);
   EXPECT_GE(free_size, 0);
-}
-
-TEST(AMDGPU, LaunchKernel) {
-  // NOT_IMPLEMENTED
-  // runtime part
-  // vec kernel
-}
-
-TEST(AMDGPU, FetchResult) {
-  // NOT_IMPLEMENTED
-  // runtime part
-  // reduce kernel
-}
-
-TEST(AMDGPU, CodeGen) {
-  // NOT_IMPLEMENTED
 }
 
 }  // namespace lang

@@ -11,7 +11,7 @@ namespace opengl {
 class GLDevice;
 
 void check_opengl_error(const std::string &msg = "OpenGL");
-extern void* kGetOpenglProcAddr;
+extern void *kGetOpenglProcAddr;
 
 class GLResourceBinder : public ResourceBinder {
  public:

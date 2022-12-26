@@ -110,6 +110,7 @@ def get_cmake_args():
     cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
 
     use_msbuild = False
+    use_xcode = False
 
     if (os.getenv('DEBUG', '0') in ('1', 'ON')):
         cfg = 'Debug'
@@ -129,6 +130,11 @@ def get_cmake_args():
             build_options.extend(['-G', 'Visual Studio 17 2022'])
         else:
             build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+    if sys.platform == "darwin":
+        if (os.getenv('TAICHI_USE_XCODE', '0') in ('1', 'ON')):
+            use_xcode = True
+        if use_xcode:
+            build_options.extend(['-G', 'Xcode', '--skip-generator-test'])
     sys.argv[2:2] = build_options
 
     cmake_args += [
@@ -137,7 +143,9 @@ def get_cmake_args():
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
     ]
 
-    if sys.platform != 'win32':
+    if sys.platform == "darwin" and use_xcode:
+        os.environ['SKBUILD_BUILD_OPTIONS'] = f'-jobs {num_threads}'
+    elif sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
     elif use_msbuild:
         # /M uses multi-threaded build (similar to -j)

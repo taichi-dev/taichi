@@ -11,7 +11,7 @@ import requests
 
 # -- own --
 from .misc import get_cache_home
-from .tinysh import tar
+from .tinysh import bash, sh, tar
 
 
 # -- code --
@@ -51,7 +51,11 @@ def unzip(filename, extract_dir, strip=0):
         ar.close()
 
 
-def download_dep(url, outdir, *, strip=0, force=False):
+def escape_url(url):
+    return url.replace('/', '_').replace(':', '_')
+
+
+def download_dep(url, outdir, *, strip=0, force=False, args=[]):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -64,20 +68,26 @@ def download_dep(url, outdir, *, strip=0, force=False):
 
     parsed = urlparse(url)
     name = Path(parsed.path).name
-    escaped = url.replace('/', '_').replace(':', '_')
+    escaped = escape_url(url)
     depcache = get_cache_home() / 'deps'
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
+    near_caches = [
+        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
+        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+    ]
+
     if not local_cached.exists():
-        cached_url = f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
-        try:
-            resp = requests.head(cached_url, timeout=1)
-            if resp.ok:
-                print('Using near cache: ', cached_url)
-                url = cached_url
-        except Exception:
-            pass
+        for u in near_caches:
+            try:
+                resp = requests.head(u, timeout=1)
+                if resp.ok:
+                    print('Using near cache: ', u)
+                    url = u
+                    break
+            except Exception:
+                pass
 
         import tqdm
 
@@ -100,5 +110,10 @@ def download_dep(url, outdir, *, strip=0, force=False):
         unzip(local_cached, outdir, strip=strip)
     elif name.endswith('.tar.gz') or name.endswith('.tgz'):
         tar('-xzf', local_cached, '-C', outdir, f'--strip-components={strip}')
+    elif name.endswith('.sh'):
+        bash(local_cached, *args)
+    elif name.endswith('.exe') or '.' not in name:
+        local_cached.chmod(0o755)
+        sh.bake(local_cached)(*args)
     else:
         raise RuntimeError(f'Unknown file type: {name}')

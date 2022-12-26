@@ -48,7 +48,8 @@
 // any problem with runtime instance coexistence.
 //
 // ```cpp
-// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+// // Create a Taichi Runtime on Vulkan device at index 0.
+// TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 // ```
 //
 // When your program runs to the end, ensure that:
@@ -144,7 +145,7 @@
 //
 // You can destroy an unused AOT module, but please ensure that there is no
 // kernel or compute graph related to it pending to
-// [`ti_submit`](#function-ti_submit).
+// [`ti_flush`](#function-ti_flush).
 //
 // ```cpp
 // ti_destroy_aot_module(aot_module);
@@ -211,11 +212,11 @@
 // ```
 //
 // When you have launched all kernels and compute graphs for this batch, you
-// should [`ti_submit`](#function-ti_submit) and [`ti_wait`](#function-ti_wait)
+// should [`ti_flush`](#function-ti_flush) and [`ti_wait`](#function-ti_wait)
 // for the execution to finish.
 //
 // ```cpp
-// ti_submit(runtime);
+// ti_flush(runtime);
 // ti_wait(runtime);
 // ```
 //
@@ -280,12 +281,6 @@ typedef struct TiRuntime_t *TiRuntime;
 // An ahead-of-time (AOT) compiled Taichi module, which contains a collection of
 // kernels and compute graphs.
 typedef struct TiAotModule_t *TiAotModule;
-
-// Handle `TiEvent`
-//
-// A synchronization primitive to manage device execution flows in multiple
-// queues.
-typedef struct TiEvent_t *TiEvent;
 
 // Handle `TiMemory`
 //
@@ -845,7 +840,12 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
 // Function `ti_create_runtime`
 //
 // Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
-TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
+TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
+    // Arch of Taichi Runtime.
+    TiArch arch,
+    // The index of device in `function.create_runtime.arch` to create Taichi
+    // Runtime on.
+    uint32_t device_index);
 
 // Function `ti_destroy_runtime`
 //
@@ -915,16 +915,6 @@ ti_create_sampler(TiRuntime runtime, const TiSamplerCreateInfo *create_info);
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(TiRuntime runtime,
                                                   TiSampler sampler);
 
-// Function `ti_create_event`
-//
-// Creates an event primitive.
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_create_event(TiRuntime runtime);
-
-// Function `ti_destroy_event`
-//
-// Destroys an event primitive.
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_event(TiEvent event);
-
 // Function `ti_copy_memory_device_to_device` (Device Command)
 //
 // Copies the data in a contiguous subsection of the device memory to another
@@ -980,33 +970,11 @@ ti_launch_compute_graph(TiRuntime runtime,
                         uint32_t arg_count,
                         const TiNamedArgument *args);
 
-// Function `ti_signal_event` (Device Command)
-//
-// Sets an event primitive to a signaled state so that the queues waiting for it
-// can go on execution. If the event has been signaled, you *must* call
-// [`ti_reset_event`](#function-ti_reset_event-device-command) to reset it;
-// otherwise, an undefined behavior would occur.
-TI_DLL_EXPORT void TI_API_CALL ti_signal_event(TiRuntime runtime,
-                                               TiEvent event);
-
-// Function `ti_reset_event` (Device Command)
-//
-// Sets a signaled event primitive back to an unsignaled state.
-TI_DLL_EXPORT void TI_API_CALL ti_reset_event(TiRuntime runtime, TiEvent event);
-
-// Function `ti_wait_event` (Device Command)
-//
-// Waits until an event primitive transitions to a signaled state. The awaited
-// event *must* be signaled by an external procedure or a previous invocation to
-// [`ti_reset_event`](#function-ti_reset_event-device-command); otherwise, an
-// undefined behavior would occur.
-TI_DLL_EXPORT void TI_API_CALL ti_wait_event(TiRuntime runtime, TiEvent event);
-
-// Function `ti_submit`
+// Function `ti_flush`
 //
 // Submits all previously invoked device commands to the offload device for
 // execution.
-TI_DLL_EXPORT void TI_API_CALL ti_submit(TiRuntime runtime);
+TI_DLL_EXPORT void TI_API_CALL ti_flush(TiRuntime runtime);
 
 // Function `ti_wait`
 //

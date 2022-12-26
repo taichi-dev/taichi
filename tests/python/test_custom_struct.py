@@ -434,3 +434,21 @@ def test_name_collision():
 
     Foo()  # instantiate struct with zoo as member first
     Bar()  # then instantiate struct with zoo as method
+
+
+@test_utils.test(debug=True)
+def test_dataclass_as_member():
+    # https://github.com/taichi-dev/taichi/issues/6884
+    @ti.dataclass
+    class A:
+        i: int
+        j: float
+
+    @ti.dataclass
+    class B:
+        a1: A
+        a2: A
+
+    a = A(1, 2.0)
+    b = B(a)
+    assert (b.a1.i == 1 and b.a1.j == 2.0)

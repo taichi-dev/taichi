@@ -27,9 +27,6 @@ class GfxRuntime : public Runtime {
   virtual void transition_image(
       const taichi::lang::DeviceAllocation &image,
       taichi::lang::ImageLayout layout) override final;
-  virtual void signal_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void reset_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void wait_event(taichi::lang::DeviceEvent *event) override final;
-  virtual void submit() override final;
+  virtual void flush() override final;
   virtual void wait() override final;
 };

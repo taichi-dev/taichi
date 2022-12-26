@@ -77,6 +77,11 @@ for i in x:
 
 These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
 
+## Operations
+
+### In Taichi v1.3.0, the matmul result of a vector and a transposed vector gives a scalar instead of a matrix.
+
+Taichi distinguishes vectors from matrices starting from v1.3.0, as explained in the [release note](https://github.com/taichi-dev/taichi/releases/tag/v1.3.0). `transpose()` on a vector is no longer allowed. Use `a.outer_product(b)`, instead of `a @ b.transpose()`, to find the outer product of two vectors.
 
 ## Developement related
 

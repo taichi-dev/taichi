@@ -187,3 +187,4 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
 ```
 
 Exports a Vulkan image from external procedures to Taichi.
+

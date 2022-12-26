@@ -1548,7 +1548,7 @@ class MatrixType(CompoundType):
             self.dtype = cook_dtype(dtype)
         else:
             self.dtype = None
-        self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ), self.dtype)
+        self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ), self.dtype) if self.dtype else None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.

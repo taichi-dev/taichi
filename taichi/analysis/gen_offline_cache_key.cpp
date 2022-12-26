@@ -398,6 +398,12 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(stmt->values.exprs);
   }
 
+  void visit(FrontendFuncCallStmt *expr) override {
+    emit(StmtOpCode::FrontendFuncCallStmt);
+    emit(expr->func);
+    emit(expr->args.exprs);
+  }
+
   void visit(FrontendExternalFuncStmt *stmt) override {
     // Note: The result of serializing FrontendExternalFuncStmt is not parsable
     // now

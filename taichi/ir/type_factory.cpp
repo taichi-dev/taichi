@@ -36,6 +36,14 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   return tensor_types_[key].get();
 }
 
+Type *TypeFactory::get_struct_type(const std::vector<const Type *> &elements) {
+  std::lock_guard<std::mutex> _(struct_mut_);
+  if (struct_types_.find(elements) == struct_types_.end()) {
+    struct_types_[elements] = std::make_unique<StructType>(elements);
+  }
+  return struct_types_[elements].get();
+}
+
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   auto key = std::make_pair(element, is_bit_pointer);
   if (pointer_types_.find(key) == pointer_types_.end()) {

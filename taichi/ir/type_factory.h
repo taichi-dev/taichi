@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/ir/type.h"
+#include "taichi/util/hash.h"
 
 #include <mutex>
 
@@ -20,6 +21,8 @@ class TypeFactory {
   PrimitiveType *get_primitive_real_type(int bits);
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
+
+  Type *get_struct_type(const std::vector<const Type *> &elements);
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
@@ -56,6 +59,10 @@ class TypeFactory {
 
   // TODO: use unordered map
   std::map<std::pair<std::string, Type *>, std::unique_ptr<Type>> tensor_types_;
+
+  std::unordered_map<std::vector<const Type *>, std::unique_ptr<Type>>
+      struct_types_;
+  std::mutex struct_mut_;
 
   // TODO: is_bit_ptr?
   std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;

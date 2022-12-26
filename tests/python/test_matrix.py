@@ -529,7 +529,9 @@ def test_matrix_field_dynamic_index_multiple_materialize():
             assert a[i][j] == (i if j == i % 3 else 0)
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True, debug=True)
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
 def test_local_vector_initialized_in_a_loop():
     @ti.kernel
     def foo():

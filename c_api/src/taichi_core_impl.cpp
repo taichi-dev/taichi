@@ -225,7 +225,7 @@ TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
-#ifdef TI_BUILD_TESTS
+#ifdef TI_BUILD_CI
       auto param = make_vulkan_runtime_creator_params();
       param.enable_validation_layer = true;
       auto vulkan_runtime = new VulkanRuntimeOwned(std::move(param));

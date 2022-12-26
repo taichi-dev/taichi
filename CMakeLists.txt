@@ -64,6 +64,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
+option(TI_BUILD_CI "(Internal Use) Enable certain validations and possible debuggers for Taichi CI system" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
 
 if(LINUX OR APPLE)

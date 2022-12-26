@@ -103,7 +103,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_BUILD_CI:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -149,6 +149,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=ON
             -DTI_WITH_BACKTRACE:BOOL=ON
+            -DTI_BUILD_CI:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
@@ -214,6 +215,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_BUILD_CI:BOOL=ON
             -DTI_WITH_C_API=ON
 
       - name: Check C-API Export Symbols
@@ -302,6 +304,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_WITH_OPENGL:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_BUILD_CI:BOOL=ON
 
       - name: Test
         id: test
@@ -370,6 +373,7 @@ jobs:
             -DTI_WITH_DX12:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_BUILD_CI:BOOL=ON
             -DTI_WITH_BACKTRACE=ON
             -DTI_WITH_C_API=ON
 
@@ -431,6 +435,7 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_BUILD_CI:BOOL=ON
             -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_WITH_C_API=ON
 

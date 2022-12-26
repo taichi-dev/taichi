@@ -78,5 +78,5 @@ AMDGPUDriver &AMDGPUDriver::get_instance() {
   return get_instance_without_context();
 }
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

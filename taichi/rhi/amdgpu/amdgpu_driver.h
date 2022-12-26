@@ -115,6 +115,5 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
   // bool rocm_version_valid_{false};
 };
 
-
-}
-}
+}  // namespace lang
+}  // namespace taichi

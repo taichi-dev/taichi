@@ -84,7 +84,8 @@ RhiResult AmdgpuDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
   size_t size = info.size;
   info.mapped = new char[size];
   // FIXME: there should be a better way to do this...
-  AMDGPUDriver::get_instance().memcpy_device_to_host(info.mapped, info.ptr, size);
+  AMDGPUDriver::get_instance().memcpy_device_to_host(info.mapped, info.ptr,
+                                                     size);
   *mapped_ptr = info.mapped;
   return RhiResult::success;
 }
@@ -92,7 +93,7 @@ RhiResult AmdgpuDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
 void AmdgpuDevice::unmap(DeviceAllocation alloc) {
   AllocInfo &info = allocations_[alloc.alloc_id];
   AMDGPUDriver::get_instance().memcpy_host_to_device(info.ptr, info.mapped,
-                                                   info.size);
+                                                     info.size);
   delete[] static_cast<char *>(info.mapped);
   return;
 }

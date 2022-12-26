@@ -35,6 +35,13 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
   }
 }
 
+FuncCallExpression::FuncCallExpression(ASTBuilder *builder,
+                                       Function *func,
+                                       const ExprGroup &args)
+    : func(func), args(args) {
+  this->args.exprs = builder->expand_expr(args.exprs);
+}
+
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
@@ -1474,6 +1481,10 @@ Expr ASTBuilder::snode_length(SNode *snode, const ExprGroup &indices) {
 Expr ASTBuilder::snode_get_addr(SNode *snode, const ExprGroup &indices) {
   return Expr::make<SNodeOpExpression>(this, snode, SNodeOpType::get_addr,
                                        indices);
+}
+
+Expr ASTBuilder::insert_func_call_expr(Function *func, const ExprGroup &args) {
+  return Expr::make<FuncCallExpression>(this, func, args);
 }
 
 std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {

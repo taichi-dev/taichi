@@ -787,9 +787,9 @@ class FuncCallExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  FuncCallExpression(Function *func, const ExprGroup &args)
-      : func(func), args(args) {
-  }
+  FuncCallExpression(ASTBuilder *builder,
+                     Function *func,
+                     const ExprGroup &args);
 
   void flatten(FlattenContext *ctx) override;
 
@@ -978,6 +978,7 @@ class ASTBuilder {
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
+  Expr insert_func_call_expr(Function *func, const ExprGroup &args);
 
   /*
    * This function allocates the space for a new item (a struct or a scalar)

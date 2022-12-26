@@ -248,6 +248,7 @@ class Func:
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
+        ast_builder = impl.get_runtime().prog.current_ast_builder()
         assert self.is_real_function
         non_template_args = []
         for i, kernel_arg in enumerate(self.arguments):
@@ -258,18 +259,12 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif isinstance(args[i],
-                                impl.Expr) and args[i].ptr.is_tensor():
-                    non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().prog.
-                        current_ast_builder().expand_expr([args[i].ptr])
-                    ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
         func_call = Expr(
-            _ti_core.make_func_call_expr(
+            ast_builder.insert_func_call_expr(
                 self.taichi_functions[key.instance_id], non_template_args))
         impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
             func_call.ptr)

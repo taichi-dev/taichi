@@ -574,9 +574,9 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   GLint size = 0;
   glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
   check_opengl_error("glGetBufferParameteriv");
-  return size;
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   check_opengl_error("glBindBuffer");
+  return size;
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(
@@ -886,7 +886,9 @@ void GLCommandList::CmdImageToBuffer::execute() {
                 (void *)offset);
   check_opengl_error("glGetTexImage");
   glBindTexture(image_dims, /*target=*/0);
+  check_opengl_error("glBindTexture");
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, /*target=*/0);
+  check_opengl_error("glBindBuffer");
 }
 
 }  // namespace opengl

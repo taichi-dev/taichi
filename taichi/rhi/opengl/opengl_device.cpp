@@ -507,6 +507,7 @@ void GLStream::command_sync() {
 }
 
 GLDevice::GLDevice() : stream_(this) {
+  initialize_opengl(false, true);
   DeviceCapabilityConfig caps{};
   if (!is_gles()) {
     // 64bit isn't supported in ES profile

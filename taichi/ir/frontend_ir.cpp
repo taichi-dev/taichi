@@ -224,7 +224,7 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
                  elt_type->to_string());
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   auto matrix_expr = Expr::make<MatrixExpression>(
-      broadcast_values, tensor_type->get_shape(), elt->ret_type);
+      nullptr, broadcast_values, tensor_type->get_shape(), elt->ret_type);
   matrix_expr->type_check(nullptr);
   return matrix_expr;
 }
@@ -686,6 +686,15 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
   }
   stmt = ctx->push_back<MatrixInitStmt>(values);
   stmt->ret_type = this->dt;
+}
+
+MatrixExpression::MatrixExpression(ASTBuilder *builder,
+                                   const std::vector<Expr> &elements,
+                                   std::vector<int> shape,
+                                   DataType element_type) {
+  if (builder)
+    this->elements = builder->expand_expr(elements);
+  this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
 }
 
 bool IndexExpression::is_field() const {
@@ -1335,7 +1344,8 @@ Expr ASTBuilder::expr_alloca() {
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  auto mat =
+      Expr(std::make_shared<MatrixExpression>(this, elements, shape, dt));
   return mat;
 }
 

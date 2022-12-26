@@ -563,12 +563,10 @@ class MatrixExpression : public Expression {
   std::vector<Expr> elements;
   DataType dt;
 
-  MatrixExpression(const std::vector<Expr> &elements,
+  MatrixExpression(ASTBuilder *builder,
+                   const std::vector<Expr> &elements,
                    std::vector<int> shape,
-                   DataType element_type)
-      : elements(elements) {
-    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
-  }
+                   DataType element_type);
 
   void type_check(CompileConfig *config) override;
 

@@ -108,7 +108,7 @@ def _infer_entry_dt(entry):
     if isinstance(entry, float):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
-        dt = entry.ptr.get_ret_type()
+        dt = entry.ptr.get_ret_type().element_type()
         if dt == ti_python_core.DataType_unknown:
             raise TaichiTypeError(
                 'Element type of the matrix cannot be inferred. Please set dt instead for now.'
@@ -123,17 +123,43 @@ def _infer_array_dt(arr):
                             map(_infer_entry_dt, arr))
 
 
+def flatten_array(arr):
+    assert len(arr) > 0
+    shape = [len(arr), None]
+
+    ret_arr = []
+    for element in arr:
+        m = 0
+        if isinstance(element, expr.Expr) and element.is_tensor():
+            m = len(element.get_ret_type().shape())
+            # Will expand in MatrixExpression constructor
+            ret_arr.append(element)
+        elif isinstance(element, Iterable):
+            m = len(element)
+            ret_arr.extend([e for e in element])
+        else:
+            ret_arr.append(element)
+
+        # Sanity check
+        if shape[1]:
+            assert m == shape[1]
+
+        shape[1] = m
+
+    if shape[1] == 0:
+        # Scalar elements
+        shape.pop()
+
+    return ret_arr, shape
+
+
 def make_matrix(arr, dt=None):
     if len(arr) == 0:
         # the only usage of an empty vector is to serve as field indices
         shape = [0]
         dt = primitive_types.i32
     else:
-        if isinstance(arr[0], Iterable):  # matrix
-            shape = [len(arr), len(arr[0])]
-            arr = [elt for row in arr for elt in row]
-        else:  # vector
-            shape = [len(arr)]
+        arr, shape = flatten_array(arr)
         if dt is None:
             dt = _infer_array_dt(arr)
         else:

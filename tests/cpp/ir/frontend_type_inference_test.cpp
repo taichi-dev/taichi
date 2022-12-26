@@ -189,7 +189,8 @@ TEST(FrontendTypeInference, TensorTypeUnification) {
   auto element = Expr::make<ConstExpression, int32>(1);
   std::vector<Expr> elements = {element, element};
   std::vector<int> shape = {2, 1};
-  auto mat = Expr::make<MatrixExpression>(elements, shape, PrimitiveType::i32);
+  auto mat = Expr::make<MatrixExpression>(nullptr, elements, shape,
+                                          PrimitiveType::i32);
   mat->type_check(nullptr);
   auto const_val = Expr::make<ConstExpression, int32>(2);
   const_val->type_check(nullptr);

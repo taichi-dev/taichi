@@ -65,7 +65,8 @@ TEST(AMDGPU, ImportMemory) {
   const taichi::lang::DeviceAllocationGuard device_dest_guard(device_dest);
 
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);
-  device->memcpy_internal(device_dest.get_ptr(0), device_alloc.get_ptr(0), params.size);
+  device->memcpy_internal(device_dest.get_ptr(0), device_alloc.get_ptr(0),
+                          params.size);
   void *mapped;
   EXPECT_EQ(device->map(device_dest, &mapped), RhiResult::success);
 

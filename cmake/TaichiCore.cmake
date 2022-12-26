@@ -35,6 +35,10 @@ if(ANDROID)
     set(TI_WITH_DX12 OFF)
 endif()
 
+if (TI_WITH_AMDGPU AND TI_WITH_CUDA)
+    message(WARNING "Compiling CUDA and AMDGPU backends simultaneously")
+endif()
+
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
     # https://stackoverflow.com/a/32259072/12003165

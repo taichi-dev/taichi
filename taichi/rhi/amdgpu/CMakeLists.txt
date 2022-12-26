@@ -15,7 +15,6 @@ target_include_directories(${AMDGPU_RHI}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/eigen
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
     ${LLVM_INCLUDE_DIRS}
   )
 

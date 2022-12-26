@@ -298,6 +298,7 @@ jobs:
           PY: '3.8'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_CUDA:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_WITH_OPENGL:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON

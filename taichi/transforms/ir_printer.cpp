@@ -122,8 +122,7 @@ class IRPrinter : public IRVisitor {
       args += expr_to_string(stmt->args.exprs[i]);
     }
     print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
-          stmt->id, stmt->func->get_name(),
-          args, stmt->ident.name());
+          stmt->id, stmt->func->get_name(), args, stmt->ident.name());
   }
   void visit(FrontendAssertStmt *assert) override {
     print("{} : assert {}", assert->name(), expr_to_string(assert->cond));
@@ -843,7 +842,8 @@ class IRPrinter : public IRVisitor {
       index += ", ";
       index += std::to_string(stmt->indices[i]);
     }
-    print("{}{} = get_element({}{})", stmt->type_hint(), stmt->name(), stmt->src->name(), index);
+    print("{}{} = get_element({}{})", stmt->type_hint(), stmt->name(),
+          stmt->src->name(), index);
   }
 
  private:

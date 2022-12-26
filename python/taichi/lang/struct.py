@@ -677,8 +677,8 @@ class StructType(CompoundType):
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
                 elements.append(dtype)
-        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(elements)
-
+        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
+            elements)
 
     def __call__(self, *args, **kwargs):
         d = {}
@@ -707,11 +707,12 @@ class StructType(CompoundType):
             name, dtype = pair
             print(dtype)
             if isinstance(dtype, CompoundType):
-                d[name] = dtype.from_real_func_ret(
-                    func_ret, ret_index + (index, ))
+                d[name] = dtype.from_real_func_ret(func_ret,
+                                                   ret_index + (index, ))
             else:
                 d[name] = expr.Expr(
-                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index, )))
+                    _ti_core.make_get_element_expr(func_ret.ptr,
+                                                   ret_index + (index, )))
 
         return Struct(d)
 

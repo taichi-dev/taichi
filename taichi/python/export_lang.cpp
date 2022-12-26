@@ -446,8 +446,8 @@ void export_lang(py::module &m) {
            })
       .def("finalize_rets",
            [&](Program *program) {
-        return program->current_callable->finalize_rets();
-      })
+             return program->current_callable->finalize_rets();
+           })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
@@ -1160,13 +1160,16 @@ void export_lang(py::module &m) {
             return factory->create_tensor_type(shape, element_type);
           },
           py::return_value_policy::reference)
-      .def("get_struct_type", [&](TypeFactory *factory, std::vector<DataType> elements) {
-        std::vector<const Type *> types;
-        for (auto &element : elements) {
-          types.push_back(element);
-        }
-        return DataType(factory->get_struct_type(types));
-      }, py::return_value_policy::reference);
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory, std::vector<DataType> elements) {
+            std::vector<const Type *> types;
+            for (auto &element : elements) {
+              types.push_back(element);
+            }
+            return DataType(factory->get_struct_type(types));
+          },
+          py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
         py::return_value_policy::reference);

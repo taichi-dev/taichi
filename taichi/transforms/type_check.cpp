@@ -417,7 +417,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetElementStmt *stmt) override {
-    stmt->ret_type = stmt->src->ret_type->as<StructType>()->get_element_type(stmt->indices);
+    stmt->ret_type =
+        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->indices);
   }
 
   void visit(ArgLoadStmt *stmt) override {

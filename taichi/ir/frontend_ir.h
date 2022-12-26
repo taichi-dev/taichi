@@ -283,7 +283,9 @@ class FrontendFuncCallStmt : public Stmt {
   Function *func;
   ExprGroup args;
 
-  explicit FrontendFuncCallStmt(const Identifier &id, Function *func, const ExprGroup &args)
+  explicit FrontendFuncCallStmt(const Identifier &id,
+                                Function *func,
+                                const ExprGroup &args)
       : ident(id), func(func), args(args) {
     ret_type = func->ret_type;
   }
@@ -830,7 +832,8 @@ class GetElementExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, std::vector<int> indices) : src(src), indices(indices) {
+  GetElementExpression(const Expr &src, std::vector<int> indices)
+      : src(src), indices(indices) {
   }
 
   void flatten(FlattenContext *ctx) override;

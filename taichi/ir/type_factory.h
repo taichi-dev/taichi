@@ -60,7 +60,7 @@ class TypeFactory {
   // TODO: use unordered map
   std::map<std::pair<std::string, Type *>, std::unique_ptr<Type>> tensor_types_;
 
-  std::unordered_map<std::vector<const Type *>, std::unique_ptr<Type>>
+  std::unordered_map<std::vector<const Type *>, std::unique_ptr<Type>, hashing::Hasher<std::vector<const Type *>>>
       struct_types_;
   std::mutex struct_mut_;
 

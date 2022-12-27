@@ -5,6 +5,7 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
+#include "taichi/common/utils.h"
 
 bool is_vulkan_available() {
 #ifdef TI_WITH_VULKAN
@@ -225,14 +226,14 @@ TiRuntime ti_create_runtime(TiArch arch) {
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
-#ifdef TI_BUILD_CI
-      auto param = make_vulkan_runtime_creator_params();
-      param.enable_validation_layer = true;
-      auto vulkan_runtime = new VulkanRuntimeOwned(std::move(param));
-#else
-      auto vulkan_runtime = new VulkanRuntimeOwned;
-#endif
-
+      VulkanRuntimeOwned *vulkan_runtime;
+      if (is_ci()) {
+        auto param = make_vulkan_runtime_creator_params();
+        param.enable_validation_layer = true;
+        vulkan_runtime = new VulkanRuntimeOwned(std::move(param));
+      } else {
+        vulkan_runtime = new VulkanRuntimeOwned;
+      }
       out = (TiRuntime)(static_cast<Runtime *>(vulkan_runtime));
       break;
     }

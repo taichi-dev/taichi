@@ -9,6 +9,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/common/utils.h"
 
 namespace taichi::lang {
 namespace vulkan {
@@ -72,13 +73,13 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     snprintf(msg_buf, sizeof(msg_buf), "Vulkan validation layer: %d, %s",
              message_type, p_callback_data->pMessage);
 
-#ifdef TI_BUILD_CI
-    auto msg_name = std::string(p_callback_data->pMessageIdName);
-    if (!vk_ignore_validation_warning(msg_name))
-      TI_ERROR(msg_buf);
-#else
-    RHI_LOG_ERROR(msg_buf);
-#endif
+    if (is_ci()) {
+      auto msg_name = std::string(p_callback_data->pMessageIdName);
+      if (!vk_ignore_validation_warning(msg_name))
+        TI_ERROR(msg_buf);
+    } else {
+      RHI_LOG_ERROR(msg_buf);
+    }
   }
 
   return VK_FALSE;

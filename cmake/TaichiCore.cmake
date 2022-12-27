@@ -97,10 +97,6 @@ if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
 endif()
 
-if(TI_BUILD_CI)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_BUILD_CI")
-endif()
-
 ## This version var is only used to locate slim_libdevice.10.bc
 if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)

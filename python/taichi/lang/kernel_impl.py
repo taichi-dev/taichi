@@ -262,7 +262,7 @@ class Func:
                                 impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
                         Expr(x) for x in impl.get_runtime().prog.
-                        current_ast_builder().expand_expr([args[i].ptr])
+                        current_ast_builder().expand_exprs([args[i].ptr])
                     ])
                 else:
                     non_template_args.append(args[i])

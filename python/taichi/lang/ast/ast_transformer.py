@@ -156,7 +156,7 @@ class ASTTransformer(Builder):
                 raise ValueError(
                     'Matrices with more than one columns cannot be unpacked')
 
-            values = ctx.ast_builder.expand_expr([values.ptr])
+            values = ctx.ast_builder.expand_exprs([values.ptr])
             if len(values) == 1:
                 values = values[0]
 
@@ -302,7 +302,7 @@ class ASTTransformer(Builder):
         if isinstance(_iter, impl.Expr) and _iter.ptr.is_tensor():
             shape = _iter.ptr.get_shape()
             flattened = [
-                Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
+                Expr(x) for x in ctx.ast_builder.expand_exprs([_iter.ptr])
             ]
             _iter = reshape_list(flattened, shape)
 
@@ -514,7 +514,7 @@ class ASTTransformer(Builder):
                     # Expand Expr with Matrix-type return into list of Exprs
                     arg_list = [
                         Expr(x)
-                        for x in ctx.ast_builder.expand_expr([arg_list.ptr])
+                        for x in ctx.ast_builder.expand_exprs([arg_list.ptr])
                     ]
 
                 for i in arg_list:
@@ -730,7 +730,7 @@ class ASTTransformer(Builder):
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Expr) and values.ptr.is_tensor():
-                    values = ctx.ast_builder.expand_expr([values.ptr])
+                    values = ctx.ast_builder.expand_exprs([values.ptr])
                 else:
                     assert isinstance(values, Matrix)
                     values = itertools.chain.from_iterable(values.to_list()) if\

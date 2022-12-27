@@ -164,7 +164,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 f"The type {type(value)} do not support index of slice type")
     else:
         indices_expr_group = make_expr_group(*indices)
-        index_dim = indices_expr_group.size()
 
     if isinstance(value, SharedArray):
         return value.subscript(*indices)
@@ -176,7 +175,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                   (MeshReorderedScalarFieldProxy,
                    MeshReorderedMatrixFieldProxy)) and not skip_reordered:
 
-        assert index_dim == 1
         reordered_index = tuple([
             Expr(
                 ast_builder.mesh_index_conversion(value.mesh_ptr,
@@ -201,7 +199,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 raise RuntimeError(
                     f"Gradient {_var.get_expr_name()} has not been placed, check whether `needs_grad=True`"
                 )
-        field_dim = snode.num_active_indices()
 
         if isinstance(value, MatrixField):
             return Expr(
@@ -219,8 +216,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             ast_builder.expr_subscript(_var, indices_expr_group,
                                        get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
-        dim = _ti_core.get_external_tensor_dim(value.ptr)
-        element_dim = len(value.element_shape())
         return Expr(
             ast_builder.expr_subscript(value.ptr, indices_expr_group,
                                        get_runtime().get_current_src_info()))

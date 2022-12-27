@@ -588,13 +588,11 @@ class IndexExpression : public Expression {
   std::vector<ExprGroup> indices_group;
   std::vector<int> ret_shape;
 
-  IndexExpression(ASTBuilder *buidler,
-                  const Expr &var,
+  IndexExpression(const Expr &var,
                   const ExprGroup &indices,
                   std::string tb = "");
 
-  IndexExpression(ASTBuilder *buidler,
-                  const Expr &var,
+  IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
                   std::string tb = "");
@@ -860,8 +858,7 @@ class MeshIndexConversionExpression : public Expression {
 
   void type_check(CompileConfig *config) override;
 
-  MeshIndexConversionExpression(ASTBuilder *builder,
-                                mesh::Mesh *mesh,
+  MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
                                 mesh::ConvType conv_type);
@@ -998,7 +995,7 @@ class ASTBuilder {
   Expr snode_length(SNode *snode, const ExprGroup &indices);
   Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
-  std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
+  std::vector<Expr> expand_exprs(const std::vector<Expr> &exprs);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

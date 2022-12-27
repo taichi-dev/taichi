@@ -312,7 +312,7 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
-      .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("expand_exprs", &ASTBuilder::expand_exprs)
       .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
       .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
@@ -987,10 +987,10 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript_with_multiple_indices",
-        Expr::make<IndexExpression, ASTBuilder *, const Expr &,
-                   const std::vector<ExprGroup> &, const std::vector<int> &,
-                   std::string>);
+  m.def(
+      "subscript_with_multiple_indices",
+      Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
+                 const std::vector<int> &, std::string>);
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());

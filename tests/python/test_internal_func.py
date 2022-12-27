@@ -6,7 +6,8 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
+@test_utils.test(
+    exclude=[ti.metal, ti.opengl, ti.gles, ti.cuda, ti.vulkan, ti.cc])
 def test_basic():
     @ti.kernel
     def test():
@@ -16,7 +17,8 @@ def test_basic():
     test()
 
 
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
+@test_utils.test(
+    exclude=[ti.metal, ti.opengl, ti.gles, ti.cuda, ti.vulkan, ti.cc])
 def test_host_polling():
     return
 
@@ -30,7 +32,8 @@ def test_host_polling():
         time.sleep(0.1)
 
 
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
+@test_utils.test(
+    exclude=[ti.metal, ti.opengl, ti.gles, ti.cuda, ti.vulkan, ti.cc])
 def test_list_manager():
     @ti.kernel
     def test():
@@ -40,7 +43,8 @@ def test_list_manager():
     test()
 
 
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
+@test_utils.test(
+    exclude=[ti.metal, ti.opengl, ti.gles, ti.cuda, ti.vulkan, ti.cc])
 def test_node_manager():
     @ti.kernel
     def test():
@@ -50,7 +54,8 @@ def test_node_manager():
     test()
 
 
-@test_utils.test(exclude=[ti.metal, ti.opengl, ti.cuda, ti.vulkan, ti.cc])
+@test_utils.test(
+    exclude=[ti.metal, ti.opengl, ti.gles, ti.cuda, ti.vulkan, ti.cc])
 def test_node_manager_gc():
     @ti.kernel
     def test_cpu():

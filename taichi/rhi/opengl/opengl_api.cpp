@@ -23,6 +23,7 @@ int opengl_max_grid_dim = 1024;
 // TODO: Properly support setting GLES/GLSL in opengl backend
 // without this global static boolean.
 static bool kUseGles = false;
+static std::optional<bool> supported;  // std::nullopt
 void *kGetOpenglProcAddr;
 
 static void glfw_error_callback(int code, const char *description) {

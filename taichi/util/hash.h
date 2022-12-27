@@ -11,7 +11,7 @@ inline void hash_combine(size_t &seed, size_t value) {
 }
 }  // namespace
 
-template<typename T>
+template <typename T>
 struct Hasher {
  public:
   size_t operator()(T const &val) const {
@@ -30,4 +30,4 @@ struct Hasher<std::vector<T>> {
     return ret;
   }
 };
-}  // namespace std
+}  // namespace taichi::hashing

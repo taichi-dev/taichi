@@ -70,13 +70,19 @@ class TypeFactory {
                      hashing::Hasher<std::pair<Type *, bool>>>
       pointer_types_;
 
-  std::unordered_map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<int, bool, Type *>>>
+  std::unordered_map<std::tuple<int, bool, Type *>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::tuple<int, bool, Type *>>>
       quant_int_types_;
 
-  std::unordered_map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<Type *, Type *, float64>>>
+  std::unordered_map<std::tuple<Type *, Type *, float64>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::tuple<Type *, Type *, float64>>>
       quant_fixed_types_;
 
-  std::unordered_map<std::tuple<Type *, Type *, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<Type *, Type *, Type *>>>
+  std::unordered_map<std::tuple<Type *, Type *, Type *>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::tuple<Type *, Type *, Type *>>>
       quant_float_types_;
 
   // TODO: avoid duplication

@@ -81,7 +81,8 @@ class TypeFactory {
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> quant_array_types_;
 
-  std::unordered_map<std::vector<const Type *>, std::unique_ptr<Type>,
+  std::unordered_map<std::vector<const Type *>,
+                     std::unique_ptr<Type>,
                      taichi::hashing::Hasher<std::vector<const Type *>>>
       struct_types_;
   std::mutex struct_mut_;

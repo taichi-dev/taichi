@@ -30,4 +30,14 @@ struct Hasher<std::vector<T>> {
     return ret;
   }
 };
+
+template <typename T1, typename T2>
+struct Hasher<std::pair<T1, T2>> {
+ public:
+  size_t operator()(std::pair<T1, T2> const &val) const {
+    size_t ret = Hasher<T1>{}(val.first);
+    hash_combine(ret, Hasher<T2>{}(val.second));
+    return ret;
+  }
+};
 }  // namespace taichi::hashing

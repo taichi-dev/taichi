@@ -54,14 +54,12 @@ class TypeFactory {
 
   std::unordered_map<PrimitiveTypeID, std::unique_ptr<Type>> primitive_types_;
 
-  // TODO: use unordered map
-  std::map<std::pair<int, Type *>, std::unique_ptr<Type>> vector_types_;
+  std::unordered_map<std::pair<int, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::pair<int, Type *>>> vector_types_;
 
-  // TODO: use unordered map
-  std::map<std::pair<std::string, Type *>, std::unique_ptr<Type>> tensor_types_;
+  std::unordered_map<std::pair<std::string, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::pair<std::string, Type *>>> tensor_types_;
 
   // TODO: is_bit_ptr?
-  std::map<std::pair<Type *, bool>, std::unique_ptr<Type>> pointer_types_;
+  std::unordered_map<std::pair<Type *, bool>, std::unique_ptr<Type>, hashing::Hasher<std::pair<Type *, bool>>> pointer_types_;
 
   // TODO: use unordered map
   std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>

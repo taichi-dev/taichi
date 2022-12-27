@@ -61,16 +61,13 @@ class TypeFactory {
   // TODO: is_bit_ptr?
   std::unordered_map<std::pair<Type *, bool>, std::unique_ptr<Type>, hashing::Hasher<std::pair<Type *, bool>>> pointer_types_;
 
-  // TODO: use unordered map
-  std::map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>>
+  std::unordered_map<std::tuple<int, bool, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<int, bool, Type *>>>
       quant_int_types_;
 
-  // TODO: use unordered map
-  std::map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>>
+  std::unordered_map<std::tuple<Type *, Type *, float64>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<Type *, Type *, float64>>>
       quant_fixed_types_;
 
-  // TODO: use unordered map
-  std::map<std::tuple<Type *, Type *, Type *>, std::unique_ptr<Type>>
+  std::unordered_map<std::tuple<Type *, Type *, Type *>, std::unique_ptr<Type>, hashing::Hasher<std::tuple<Type *, Type *, Type *>>>
       quant_float_types_;
 
   // TODO: avoid duplication

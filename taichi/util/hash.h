@@ -40,4 +40,23 @@ struct Hasher<std::pair<T1, T2>> {
     return ret;
   }
 };
+
+template <typename... Ts>
+struct Hasher<std::tuple<Ts...>> {
+ public:
+  size_t operator()(std::tuple<Ts...> const &val) const {
+    return hash<std::tuple_size_v<std::tuple<Ts...>> - 1>(val);
+  };
+ private:
+  template<int N>
+  size_t hash(std::tuple<Ts...> const &val) const {
+    size_t ret = hash<N - 1>(val);
+    hash_combine(ret, Hasher<std::tuple_element_t<N, std::tuple<Ts...>>>{}(std::get<N>(val)));
+    return ret;
+  }
+  template <>
+  size_t hash<0>(std::tuple<Ts...> const &val) const {
+    return Hasher<std::tuple_element_t<0, std::tuple<Ts...>>>{}(std::get<0>(val));
+  }
+};
 }  // namespace taichi::hashing

@@ -1102,34 +1102,12 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FuncCallExpression::type_check(CompileConfig *) {
-  for (auto &arg : args.exprs) {
-    TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
-  }
-  ret_type = PrimitiveType::u64;
-  ret_type.set_is_pointer(true);
-}
-
-void FuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> stmt_args;
-  for (auto &arg : args.exprs) {
-    stmt_args.push_back(flatten_rvalue(arg, ctx));
-  }
-  ctx->push_back<FuncCallStmt>(func, stmt_args);
-  stmt = ctx->back_stmt();
-}
-
 void GetElementExpression::type_check(CompileConfig *config) {
-  TI_ASSERT_TYPE_CHECKED(src);
-  auto func_call = src.cast<FuncCallExpression>();
-  TI_ASSERT(func_call);
-  TI_ASSERT(index < func_call->func->rets.size());
-  ret_type = func_call->func->rets[index].dt;
+  ret_type = PrimitiveType::gen; // Temporarily set to u64, will change later
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<GetElementStmt>(src->get_flattened_stmt(), index);
+  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index);
   stmt = ctx->back_stmt();
 }
 // Mesh related.
@@ -1329,6 +1307,15 @@ Expr ASTBuilder::expr_alloca() {
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
+  return var;
+}
+
+Expr ASTBuilder::expr_func_call(Function *func, const ExprGroup &args) {
+  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+  this->insert(std::make_unique<FrontendFuncCallStmt>(
+      std::static_pointer_cast<IdExpression>(var.expr)->id, func, args));
+  var.expr->ret_type = PrimitiveType::u64;
+  var.expr->ret_type.set_is_pointer(true);
   return var;
 }
 

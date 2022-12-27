@@ -404,6 +404,13 @@ class TypeCheck : public IRVisitor {
     stmt->ret_type = stmt->input->ret_type;
   }
 
+  void visit(FrontendFuncCallStmt *stmt) override {
+    auto *func = stmt->func;
+    TI_ASSERT(func);
+    stmt->ret_type = PrimitiveType::u64;
+    stmt->ret_type.set_is_pointer(true);
+  }
+
   void visit(FuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);

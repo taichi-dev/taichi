@@ -301,6 +301,7 @@ void export_lang(py::module &m) {
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
+      .def("expr_func_call", &ASTBuilder::expr_func_call)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
       .def("end_frontend_range_for", &ASTBuilder::pop_scope)
       .def("begin_frontend_struct_for_on_snode",
@@ -820,9 +821,6 @@ void export_lang(py::module &m) {
           return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
                                                         with_runtime_context);
         });
-
-  m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("make_get_element_expr",
         Expr::make<GetElementExpression, const Expr &, int>);

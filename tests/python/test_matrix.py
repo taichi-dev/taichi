@@ -187,14 +187,12 @@ def _test_local_matrix_non_constant_index():
             assert func2(i, j, 10) == 10 * (i + j + 1)
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True)
+@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_non_constant_index_real_matrix():
     _test_local_matrix_non_constant_index()
 

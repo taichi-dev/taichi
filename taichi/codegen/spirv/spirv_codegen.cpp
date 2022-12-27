@@ -248,10 +248,13 @@ class TaskCodegen : public IRVisitor {
     auto dt = stmt->element_type().ptr_removed();
     if (stmt->offset_used_as_index()) {
       if (stmt->origin->is<AllocaStmt>()) {
-        spirv::SType ptr_type = ir_->get_pointer_type(ir_->get_primitive_type(dt), origin_val.stype.storage_class);
-        ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val, offset_val);
+        spirv::SType ptr_type = ir_->get_pointer_type(
+            ir_->get_primitive_type(dt), origin_val.stype.storage_class);
+        ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
+                                  offset_val);
       } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
-        spirv::Value dt_bytes = ir_->int_immediate_number(ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
+        spirv::Value dt_bytes = ir_->int_immediate_number(
+            ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
         spirv::Value offset_bytes = ir_->mul(dt_bytes, offset_val);
         ptr_val = ir_->add(origin_val, offset_bytes);
         ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];

@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## For-loop decorators
 
-As discussed in previous topics, Taichi kernels automatically parallelize for-loops in the outermost scope. Our compiler sets the settings automatically to best explore the target architecture. Nonetheless, for Ninjas seeking the final few percent of speed, we give several APIs to allow developers to fine-tune their programs. Specifying a proper `block dim`, for example, might result in a nearly 3x speed gain in [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
+As discussed in previous topics, Taichi kernels automatically parallelize for-loops in the outermost scope. Our compiler sets the settings automatically to best explore the target architecture. Nonetheless, for Ninjas seeking the final few percent of speed, we give several APIs to allow developers to fine-tune their programs. Specifying a proper `block_dim`, for example, might result in a nearly 3x speed gain in [examples/mpm3d.py](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/mpm3d.py).
 
 You can use `ti.loop_config` to set the loop directives for the next for loop. Available directives are:
 
@@ -45,13 +45,12 @@ def fill():
 
 It is worthy to quickly discuss the **thread hierarchy** on contemporary GPU architectures in order to help you understand how the previously mentioned for-loop is parallelized.
 
-From fine-grained to coarse-grained, the computation units are as follows: **iteration**, **thread**, **block**, **grid**.
+From fine-grained to coarse-grained, the computation units are as follows: **iteration**, **thread**, **block**, and **grid**.
 
-- **iteration**: The **body of a for-loop** is an iteration. Each iteration corresponds to a different I value in the for-loop.
-- **thread**: Iterations are classified as threads. A thread is the smallest parallelized unit. All iterations inside a thread are **serial** in nature. To maximize parallel efficiency, we normally employ one iteration per thread.
-- **block**: Threads are organized into groups called blocks. **Parallel** execution is used for all threads within a block. Threads within a block can share **block local storage**.
-- **grid**: Blocks are grouped into grids. A Grid is the minimal unit
-  that being **launched** from the host. All blocks within a grid are
+- **Iteration**: The **body of a for-loop** is an iteration. Each iteration corresponds to a different `i` value in the for-loop.
+- **Thread**: Iterations are classified as threads. A thread is the smallest parallelized unit. All iterations inside a thread are **serial** in nature. To maximize parallel efficiency, we normally employ one iteration per thread.
+- **Block**: Threads are organized into groups called blocks. All threads within a block are executed in **parallel** and can share **block local storage**.
+- **Grid**: Blocks are grouped into grids. A grid is the minimal unit that is **launched** from the host. All blocks within a grid are
   executed in **parallel**. In Taichi, each **parallelized for-loop**
   is represented as a grid.
 
@@ -80,11 +79,11 @@ def func():
 
 ## Data layouts
 
-Because Taichi separates data structures from processing, developers may experiment with alternative data layouts. Choosing an efficient layout, like in other programming languages, may significantly enhance performance.Please consult the [Fields (advanced)](../basic/layout.md) section for further information on advanced data layouts in Taichi.
+Because Taichi separates data structures from computation, developers may experiment with alternative data layouts. Choosing an efficient layout, like in other programming languages, may significantly enhance performance. Please consult the [Fields (advanced)](../basic/layout.md) section for further information on advanced data layouts in Taichi.
 
 ## Local Storage Optimizations
 
-Taichi has a few speed enhancements that take use of *fast memory* (e.g., CUDA shared memory, L1 cache). Simply, Taichi replaces access to global memory (slow) with access to local memory (quick) wherever feasible, and writes data in local memory (e.g., CUDA shared memory) back to global memory at the conclusion. Such changes keep the original program's meaning (will be explained later).
+Taichi has a few speed enhancements that take use of *fast memory* (e.g., CUDA shared memory, L1 cache). Simply, Taichi replaces access to global memory (slow) with access to local memory (quick) wherever feasible, and writes data in local memory (e.g., CUDA shared memory) back to global memory at the conclusion. Such changes keep the original program's semantics (will be explained later).
 
 ### Thread Local Storage (TLS)
 
@@ -109,9 +108,9 @@ sum()
 
 Taichi's parallel loop is implemented internally with [Grid-Stride Loops](https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/).
 This means that each physical CUDA thread may handle several items in `x`.
-In other words, the number of threads started for'sum' can be less than the form of `x`.
+In other words, the number of threads started for `sum` can be less than the shape of `x`.
 
-One optimization offered by this method is the substitution of a *thread-local* memory access for a global memory access. Instead of directly and atomically adding `x[i]` to the global memory destination's[None],' Taichi preallocates a thread-local buffer upon entering the thread, accumulates (*non-atomically*) the value of `x` into this buffer, and then atomically adds the result of the buffer back to`s[None]` before exiting the thread. If each thread handles `N` items in `x`, the number of atomic additions is reduced to one-Nth of its original amount.
+One optimization offered by this method is the substitution of a *thread-local* memory access for a global memory access. Instead of directly and atomically adding `x[i]` to the global memory destination `s[None]`, Taichi preallocates a thread-local buffer upon entering the thread, accumulates (*non-atomically*) the value of `x` into this buffer, and then atomically adds the result of the buffer back to `s[None]` before exiting the thread. If each thread handles `N` items in `x`, the number of atomic additions is reduced to one-Nth of its original amount.
 
 Additionally, the last atomic add to the global memory `s[None]` is optimized using
 CUDA's warp-level intrinsics, further reducing the number of required atomic adds.
@@ -125,7 +124,7 @@ of 8M floats on an Nvidia GeForce RTX 3090 card:
 * TLS disabled: 5.2 x 1e3 us
 * TLS enabled: 5.7 x 1e1 us
 
-TLS has resulted in a 100x increase in speed. We also demonstrate that TLS reduction sum achieves equivalent performance to CUDA implementations; for more information, see [benchmark](https://github.com/taichi-dev/taichi benchmark/tree/main/reduce sum).
+TLS has resulted in a 100x increase in speed. We also demonstrate that TLS reduction sum achieves equivalent performance to CUDA implementations; for more information, see the [benchmark](https://github.com/taichi-dev/taichi_benchmark/tree/main/reduce_sum) report.
 
 ### Block Local Storage (BLS)
 
@@ -134,7 +133,7 @@ hierarchy matches `ti.root.(sparse SNode)+.dense`), Taichi will assign one CUDA
 thread block to each `dense` container (or `dense` block). BLS optimization works
 specifically for such kinds of fields.
 
-BLS intends to enhance stencil computing processes by utilising CUDA shared memory. This optimization begins with users annotating the set of fields they want to cache using `ti.block local`. At *compile time*, Taichi tries to identify the accessing range in relation to the `dense` block of these annotated fields. If Taichi is successful, it creates code that first loads all of the accessible data in range into a *block local* buffer (CUDA's shared memory), then replaces all accesses to the relevant slots into this buffer.
+BLS intends to enhance stencil computing processes by utilizing CUDA shared memory. This optimization begins with users annotating the set of fields they want to cache using `ti.block local`. At *compile time*, Taichi tries to identify the accessing range in relation to the `dense` block of these annotated fields. If Taichi is successful, it creates code that first loads all of the accessible data in range into a *block local* buffer (CUDA's shared memory), then replaces all accesses to the relevant slots into this buffer.
 
 Here is an example illustrating the usage of BLS. `a` is a sparse field with a
 block size of `4x4`.
@@ -164,7 +163,7 @@ buffer is shown below:
 
 You do not need to be concerned about these fundamental elements as a user.
 Taichi automatically does all inference and global/block-local mapping.
-That is, Taichi will preallocate a CUDA shared memory buffer of size `5x6`, preload `a`'s contents into this buffer, then replace all `a` (global memory) accesses with the buffer in the loop body. While this basic example does not change `a` itself, if a block-cached field is written, Taichi will produce code that returns the buffer to global memory.
+That is, Taichi will preallocate a CUDA shared memory buffer of size `5x6`, preload `a`'s contents into this buffer, then replace all `a` (global memory) accesses with the buffer in the loop body. While this basic example does not change `a` itself, if a block-cached field is written, Taichi produces code that returns the buffer to global memory.
 
 :::note
 BLS does not come cheap. Remember that BLS is intended for stencil computations with a high number of overlapping global memory accesses. If this is not the case, pre-loading and post-storing may actually degrade performance.
@@ -176,7 +175,7 @@ As a general rule of thumb, we recommend running benchmarks to determine wheth
 
 ## Offline Cache
 
-The first time a Taichi kernel is called, it is implicitly compiled. To decrease the cost in subsequent function calls, the compilation results are retained in a *online* in-memory cache. It may be loaded and launched immediately as long as the kernel function remains unaltered. When the application exits, the cache is no longer accessible. When you restart the programme, Taichi must recompile all kernel routines and rebuild the *online* in-memory cache. Because of the compilation overhead, the first launch of a Taichi function can typically be slow.
+The first time a Taichi kernel is called, it is implicitly compiled. To decrease the cost in subsequent function calls, the compilation results are retained in an *online* in-memory cache. The kernel can be loaded and launched immediately as long as it remains unaltered. When the application exits, the cache is no longer accessible. When you restart the programme, Taichi must recompile all kernel routines and rebuild the *online* in-memory cache. Because of the compilation overhead, the first launch of a Taichi function can typically be slow.
 
 We address this problem by introducing the *offline* cache feature, which dumps and saves the compilation cache on disk for future runs. The first launch overhead can be drastically reduced in repeated runs. Taichi now constructs and maintains an offline cache by default, as well as providing several options in `ti.init()` for configuring the offline cache behavior.
 * `offline_cache: bool`: Enables or disables offline cache. Default: `True`.

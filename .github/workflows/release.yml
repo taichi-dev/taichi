@@ -50,15 +50,15 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo 'matrix={"include":[{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports py38, py39, and py310(conda), so change matrix.
+            # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
             echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports py38 and py310(conda), so change matrix.
+            # M1 only supports 3.8 and 3.10(conda), so change matrix.
             echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           fi
 
@@ -87,9 +87,9 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -112,7 +112,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
 
   build_and_test_manylinux2014:
     name: Build and Upload (manylinux2014)
@@ -139,10 +139,10 @@ jobs:
 
           ci-docker-run-gpu --name taichi-test \
              registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
-             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=OFF
@@ -165,7 +165,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cuda,cpu"
 
   build_and_test_mac:
@@ -192,7 +192,7 @@ jobs:
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
@@ -239,7 +239,7 @@ jobs:
       - name: Build
         run: |
           brew install molten-vk
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           PY: ${{ matrix.python }}

@@ -3,7 +3,7 @@
 set -x
 
 setup_python() {
-    for conda in miniconda miniconda3 miniforge3; do
+    for conda in .cache/build-cache/miniforge3 miniconda miniconda3 miniforge3; do
         if [[ -d $HOME/$conda ]]; then
             source $HOME/$conda/bin/activate
             conda activate "$PY"

@@ -140,7 +140,7 @@ jobs:
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           CXX: clang++
           TAICHI_CMAKE_ARGS: >-
@@ -203,10 +203,10 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: py38
+          PY: '3.8'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -235,7 +235,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: py38
+          PY: '3.8'
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
@@ -249,7 +249,7 @@ jobs:
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
         env:
-          PY: py38
+          PY: '3.8'
           TI_DEVICE_MEMORY_GB: '1'
 
       - name: Save wheel if test failed
@@ -292,10 +292,10 @@ jobs:
 
           ci-docker-run-amdgpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: py38
+          PY: '3.8'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_CUDA:BOOL=OFF
@@ -313,7 +313,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: py38
+          PY: '3.8'
           TI_WANTED_ARCHS: 'cpu,amdgpu'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '0'
@@ -421,7 +421,7 @@ jobs:
           prepare-build-cache
           brew install molten-vk
           brew install llvm@15
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PY: ${{ matrix.python }}
           CXX: clang++
@@ -480,7 +480,7 @@ jobs:
       contents: read
     env:
       REDIS_HOST: 172.16.5.8
-      PY: py39
+      PY: '3.9'
     steps:
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -511,7 +511,7 @@ jobs:
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON

@@ -185,14 +185,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     }
   }
 
-  void visit(StrideExpression *expr) override {
-    emit(ExprOpCode::StrideExpression);
-    emit(expr->var);
-    emit(expr->indices.exprs);
-    emit(expr->shape);
-    emit(expr->stride);
-  }
-
   void visit(RangeAssumptionExpression *expr) override {
     emit(ExprOpCode::RangeAssumptionExpression);
     emit(expr->input);

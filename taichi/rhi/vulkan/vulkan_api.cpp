@@ -56,12 +56,6 @@ DeviceObjVkFramebuffer::~DeviceObjVkFramebuffer() {
   vkDestroyFramebuffer(device, framebuffer, nullptr);
 }
 
-DeviceObjVkEvent::~DeviceObjVkEvent() {
-  if (!external) {
-    vkDestroyEvent(device, event, nullptr);
-  }
-}
-
 DeviceObjVkSemaphore::~DeviceObjVkSemaphore() {
   vkDestroySemaphore(device, semaphore, nullptr);
 }
@@ -99,22 +93,6 @@ DeviceObjVkQueryPool::~DeviceObjVkQueryPool() {
 IDeviceObj create_device_obj(VkDevice device) {
   IDeviceObj obj = std::make_shared<DeviceObj>();
   obj->device = device;
-  return obj;
-}
-
-IVkEvent create_event(VkDevice device,
-                      VkSemaphoreCreateFlags flags,
-                      void *pnext) {
-  IVkEvent obj = std::make_shared<DeviceObjVkEvent>();
-  obj->device = device;
-
-  VkEventCreateInfo info{};
-  info.sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO;
-  info.pNext = pnext;
-  info.flags = flags;
-
-  VkResult res = vkCreateEvent(device, &info, nullptr, &obj->event);
-  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create event");
   return obj;
 }
 
@@ -547,7 +525,9 @@ IVkBuffer create_buffer(VkDevice device,
 
   VkResult res = vmaCreateBuffer(allocator, buffer_info, alloc_info,
                                  &buffer->buffer, &buffer->allocation, nullptr);
-  assert(res != VK_ERROR_OUT_OF_DEVICE_MEMORY);
+  if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+    throw std::bad_alloc();
+  }  // FIXME: (damnkk) Should be removed when RHI error codes are ready
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create buffer");
 
   return buffer;

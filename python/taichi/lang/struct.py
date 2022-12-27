@@ -681,20 +681,24 @@ class StructType(CompoundType):
             elements)
 
     def __call__(self, *args, **kwargs):
+        """Create an instance of this struct type."""
         d = {}
         items = self.members.items()
+        # iterate over the members of this struct
         for index, pair in enumerate(items):
-            name, dtype = pair
-            if isinstance(dtype, CompoundType):
-                if index < len(args):
-                    d[name] = dtype(args[index])
-                else:
-                    d[name] = kwargs.get(name, dtype(0))
-            else:
-                if index < len(args):
-                    d[name] = args[index]
-                else:
-                    d[name] = kwargs.get(name, 0)
+            name, dtype = pair  # (member name, member type)
+            if index < len(args):  # set from args
+                data = args[index]
+            else:  # set from kwargs
+                data = kwargs.get(name, 0)
+
+            # If dtype is CompoundType and data is a scalar, it cannot be
+            # casted in the self.cast call later. We need an initialization here.
+            if isinstance(dtype, CompoundType) and not isinstance(
+                    data, (dict, Struct)):
+                data = dtype(data)
+
+            d[name] = data
 
         entries = Struct(d)
         struct = self.cast(entries)

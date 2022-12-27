@@ -419,8 +419,6 @@ class LowerAST : public IRVisitor {
       } else {
         fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
       }
-    } else if (dest.is<StrideExpression>()) {
-      fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
     } else {
       TI_ASSERT(dest.is<ArgLoadExpression>() &&
                 dest.cast<ArgLoadExpression>()->is_ptr);

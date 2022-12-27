@@ -76,35 +76,67 @@ DECLARE_EIGEN_LU_SOLVER(float64, LU, AMD);
 DECLARE_EIGEN_LU_SOLVER(float64, LU, COLAMD);
 
 class CuSparseSolver : public SparseSolver {
+ public:
+  enum class SolverType { Cholesky, LU };
+
  private:
+  SolverType solver_type_{SolverType::Cholesky};
   csrcholInfo_t info_{nullptr};
+  csrluInfoHost_t lu_info_{nullptr};
   cusolverSpHandle_t cusolver_handle_{nullptr};
   cusparseHandle_t cusparse_handel_{nullptr};
   cusparseMatDescr_t descr_{nullptr};
   void *gpu_buffer_{nullptr};
+  void *cpu_buffer_{nullptr};
   bool is_analyzed_{false};
   bool is_factorized_{false};
 
+  int *h_Q_{
+      nullptr}; /* <int> n,  B = Q*A*Q' or B = A(Q,Q) by MATLAB notation */
+  int *d_Q_{nullptr};
+  int *h_csrRowPtrB_{nullptr}; /* <int> n+1 */
+  int *h_csrColIndB_{nullptr}; /* <int> nnzA */
+  float *h_csrValB_{nullptr};  /* <float> nnzA */
+  int *h_mapBfromA_{nullptr};  /* <int> nnzA */
+  int *d_csrRowPtrB_{nullptr}; /* <int> n+1 */
+  int *d_csrColIndB_{nullptr}; /* <int> nnzA */
+  float *d_csrValB_{nullptr};  /* <float> nnzA */
  public:
   CuSparseSolver();
-  ~CuSparseSolver() override = default;
+  explicit CuSparseSolver(SolverType solver_type) : solver_type_(solver_type) {
+    init_solver();
+  }
+  ~CuSparseSolver() override;
   bool compute(const SparseMatrix &sm) override {
     TI_NOT_IMPLEMENTED;
   };
   void analyze_pattern(const SparseMatrix &sm) override;
 
   void factorize(const SparseMatrix &sm) override;
-  void solve_cu(Program *prog,
-                const SparseMatrix &sm,
-                const Ndarray &b,
-                const Ndarray &x);
   void solve_rf(Program *prog,
                 const SparseMatrix &sm,
                 const Ndarray &b,
                 const Ndarray &x);
+
   bool info() override {
     TI_NOT_IMPLEMENTED;
   };
+
+ private:
+  void init_solver();
+  void reorder(const CuSparseMatrix &sm);
+  void analyze_pattern_cholesky(const SparseMatrix &sm);
+  void analyze_pattern_lu(const SparseMatrix &sm);
+  void factorize_cholesky(const SparseMatrix &sm);
+  void factorize_lu(const SparseMatrix &sm);
+  void solve_cholesky(Program *prog,
+                      const SparseMatrix &sm,
+                      const Ndarray &b,
+                      const Ndarray &x);
+  void solve_lu(Program *prog,
+                const SparseMatrix &sm,
+                const Ndarray &b,
+                const Ndarray &x);
 };
 
 std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,

@@ -1451,24 +1451,6 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
   buffer_->refs.push_back(src_vk_image);
 }
 
-void VulkanCommandList::signal_event(DeviceEvent *event) {
-  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
-  vkCmdSetEvent(buffer_->buffer, event2->vkapi_ref->event,
-                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-}
-void VulkanCommandList::reset_event(DeviceEvent *event) {
-  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
-  vkCmdResetEvent(buffer_->buffer, event2->vkapi_ref->event,
-                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-}
-void VulkanCommandList::wait_event(DeviceEvent *event) {
-  VulkanDeviceEvent *event2 = static_cast<VulkanDeviceEvent *>(event);
-  vkCmdWaitEvents(buffer_->buffer, 1, &event2->vkapi_ref->event,
-                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                  VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, nullptr, 0, nullptr, 0,
-                  nullptr);
-}
-
 void VulkanCommandList::set_line_width(float width) {
   if (ti_device_->vk_caps().wide_line) {
     vkCmdSetLineWidth(buffer_->buffer, width);
@@ -1567,11 +1549,6 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
   params.name = name;
 
   return std::make_unique<VulkanPipeline>(params);
-}
-
-std::unique_ptr<DeviceEvent> VulkanDevice::create_event() {
-  return std::unique_ptr<DeviceEvent>(
-      new VulkanDeviceEvent(vkapi::create_event(device_, 0)));
 }
 
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {

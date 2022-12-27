@@ -682,3 +682,27 @@ def test_read_kernel_with_texture():
     m.add_kernel(read, template_args={"tex": tex, "arr": arr})
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_rwtexture_with_ndarray():
+    @ti.kernel
+    def init_texture_from_ndarray(tex: ti.types.rw_texture(num_dimensions=2,
+                                                           fmt=ti.Format.r32f,
+                                                           lod=0),
+                                  img: ti.types.ndarray(field_dim=2)):
+        for i, j in img:
+            tex.store(ti.Vector([i, j]),
+                      ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.)
+
+    m = ti.aot.Module()
+    tex = ti.Texture(ti.Format.r32f, (128, 128))
+    img = ti.ndarray(ti.f32, (128, 128))
+    m.add_kernel(
+        init_texture_from_ndarray,
+        template_args={
+            "img": img,
+        },
+    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)

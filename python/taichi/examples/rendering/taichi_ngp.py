@@ -1106,4 +1106,5 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default=None)
     parser.add_argument('--gui', action='store_true', default=False)
     parser.add_argument('--print_profile', action='store_true', default=False)
-    main(parser.parse_args())
+    cmd_args, _ = parser.parse_known_args()
+    main(cmd_args)

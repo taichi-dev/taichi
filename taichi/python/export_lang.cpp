@@ -291,10 +291,13 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
+      .def("expr_snode_get_addr", &ASTBuilder::snode_get_addr)
+      .def("expr_snode_append", &ASTBuilder::snode_append)
+      .def("expr_snode_is_active", &ASTBuilder::snode_is_active)
+      .def("expr_snode_length", &ASTBuilder::snode_length)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
-      .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("expr_func_call", &ASTBuilder::expr_func_call)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
@@ -327,8 +330,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
-           py::return_value_policy::reference)
+      .def("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -816,11 +818,6 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("expr_snode_get_addr", &snode_get_addr);
-  m.def("expr_snode_append", &snode_append);
-  m.def("expr_snode_is_active", &snode_is_active);
-  m.def("expr_snode_length", &snode_length);
-
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args,
             bool with_runtime_context) {
@@ -1007,10 +1004,6 @@ void export_lang(py::module &m) {
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
                  const std::vector<int> &, std::string>);
 
-  m.def("make_stride_expr",
-        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
-                   const std::vector<int> &, int>);
-
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->element_dim;
@@ -1140,6 +1133,8 @@ void export_lang(py::module &m) {
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
+  m.def("promoted_type", promoted_type);
+
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
@@ -1201,7 +1196,8 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
+      .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)
@@ -1304,7 +1300,6 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
       .def("factorize", &CuSparseSolver::factorize)
       .def("solve_rf", &CuSparseSolver::solve_rf)
-      .def("solve_cu", &CuSparseSolver::solve_cu)
       .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);

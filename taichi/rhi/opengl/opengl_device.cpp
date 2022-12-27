@@ -597,26 +597,14 @@ RhiResult GLDevice::map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) {
 }
 
 RhiResult GLDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
-  TI_ASSERT_INFO(
-      buffer_to_access_.find(alloc.alloc_id) != buffer_to_access_.end(),
-      "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   check_opengl_error("glBindBuffer");
-  // This is pure stupidity.
-  // Why does `glMapBuffer` and `glMapBufferRange` uses two TOTALLY different
-  // enums? Whoever came up with the API is DRUNK!
-  GLbitfield access = buffer_to_access_.at(alloc.alloc_id);
-  GLenum access_oldapi;
-  if (bool(access & GL_MAP_READ_BIT) && bool(access & GL_MAP_WRITE_BIT)) {
-    access_oldapi = GL_READ_WRITE;
-  } else if (access & GL_MAP_WRITE_BIT) {
-    access_oldapi = GL_WRITE_ONLY;
-  } else {
-    access_oldapi = GL_READ_ONLY;
-  }
-  *mapped_ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, access_oldapi);
-  check_opengl_error("glMapBuffer");
-  return RhiResult::success;
+
+  int size = 0;
+  glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
+  check_opengl_error("glGetBufferParameteriv");
+
+  return map_range(alloc.get_ptr(0), size, mapped_ptr);
 }
 
 void GLDevice::unmap(DevicePtr ptr) {

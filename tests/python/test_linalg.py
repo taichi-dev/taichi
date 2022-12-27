@@ -185,7 +185,7 @@ def _test_polar_decomp(dim, dt):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@test_utils.test(default_fp=ti.f32, exclude=ti.opengl)
+@test_utils.test(default_fp=ti.f32, exclude=[ti.opengl, ti.gles])
 def test_polar_decomp_f32(dim):
     _test_polar_decomp(dim, ti.f32)
 

@@ -73,7 +73,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
     } else {
       glfwMakeContextCurrent(window);
-      get_proc_addr = (void *)glfwGetProcAddress;
+      get_proc_addr = (void *)&glfwGetProcAddress;
       if (use_gles) {
         opengl_version = gladLoadGLES2(glfwGetProcAddress);
       } else {
@@ -149,7 +149,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
       eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
 
-      get_proc_addr = (void *)glad_eglGetProcAddress;
+      get_proc_addr = (void *)&glad_eglGetProcAddress;
       if (use_gles) {
         opengl_version = gladLoadGLES2(glad_eglGetProcAddress);
       } else {

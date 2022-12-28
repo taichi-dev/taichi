@@ -12,7 +12,6 @@ TypeFactory &TypeFactory::get_instance() {
 TypeFactory::TypeFactory() {
 }
 
-
 Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   std::lock_guard<std::mutex> _(primitive_mut_);
 

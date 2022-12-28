@@ -227,6 +227,21 @@ class Union(EntryBase):
                 self.variants += [Field(x)]
 
 
+class Callback(EntryBase):
+    def __init__(self, j):
+        super().__init__(j, "callback")
+        self.return_value_type = None
+        self.params = []
+
+        if "parameters" in j:
+            for x in j["parameters"]:
+                field = Field(x)
+                if field.name.snake_case == "@return":
+                    self.return_value_type = field.type
+                else:
+                    self.params += [field]
+
+
 class Function(EntryBase):
     def __init__(self, j):
         super().__init__(j, "function")
@@ -374,6 +389,8 @@ class Module:
                         self.declr_reg.register(Structure(k))
                     elif ty == "union":
                         self.declr_reg.register(Union(k))
+                    elif ty == "callback":
+                        self.declr_reg.register(Callback(k))
                     elif ty == "function":
                         self.declr_reg.register(Function(k))
                     else:

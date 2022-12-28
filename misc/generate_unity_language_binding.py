@@ -1,8 +1,8 @@
 import re
 
-from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
-                         Enumeration, Field, Function, Handle, Module,
-                         Structure, Union)
+from taichi_json import (Alias, BitField, BuiltInType, Callback, Definition,
+                         EntryBase, Enumeration, Field, Function, Handle,
+                         Module, Structure, Union)
 
 RESERVED_WORD_TRANSFORM = {
     'event': 'event_',
@@ -14,7 +14,7 @@ def get_type_name(x: EntryBase):
     ty = type(x)
     if ty in [BuiltInType]:
         return x.type_name
-    elif ty in [Alias, Handle, Enumeration, Structure, Union]:
+    elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
         return x.name.upper_camel_case
     elif ty in [BitField]:
         return x.name.extend('flag_bits').upper_camel_case
@@ -153,6 +153,10 @@ def get_declr(x: EntryBase):
             out += [f"  {get_union_variant(variant)};"]
         out += ["}"]
         return '\n'.join(out)
+
+    elif ty is Callback:
+        print(f"ignored callback type '{get_type_name(x)}'")
+        return ""
 
     elif ty is Function:
 

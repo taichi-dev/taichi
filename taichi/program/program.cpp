@@ -478,9 +478,8 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
 void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
   // This is a temporary solution to bypass device api.
   // Should be moved to CommandList once available in CUDA.
-  program_impl_->fill_ndarray(
-      ndarray->ndarray_alloc_,
-      ndarray->get_nelement(), val);
+  program_impl_->fill_ndarray(ndarray->ndarray_alloc_, ndarray->get_nelement(),
+                              val);
 }
 
 Program::~Program() {

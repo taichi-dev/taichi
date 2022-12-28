@@ -22,12 +22,13 @@ def setup_miniforge3(prefix):
         download_dep(url, prefix, args=['-bfp', str(prefix)])
     elif u.system == "Windows":
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe'
-        download_dep(url,
-                     prefix,
-                     args=[
-                         '/InstallationType=JustMe', '/RegisterPython=0', '/S',
-                         f'/D={prefix}'
-                     ])
+        download_dep(
+            url,
+            prefix,
+            args=[
+                # '/InstallationType=JustMe', '/RegisterPython=0', '/S',
+                # f'/D={prefix}'
+            ])
     else:
         raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
 

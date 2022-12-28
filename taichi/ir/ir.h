@@ -609,6 +609,19 @@ class DelayedIRModifier {
   void mark_as_modified();
 };
 
+// ImmediateIRModifier aims at replacing Stmt::replace_usages_with, which visits
+// the whole tree for a single replacement. ImmediateIRModifier is currently
+// associated with a pass, visits the whole tree once at the beginning of that
+// pass, and performs a single replacement with constant time.
+class ImmediateIRModifier {
+ private:
+  std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> stmt_usages_;
+
+ public:
+  explicit ImmediateIRModifier(IRNode *root);
+  void replace_usages_with(Stmt *old_stmt, Stmt *new_stmt);
+};
+
 template <typename T>
 inline void StmtFieldManager::operator()(const char *key, T &&value) {
   using decay_T = typename std::decay<T>::type;

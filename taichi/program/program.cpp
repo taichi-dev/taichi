@@ -123,7 +123,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   } else if (config.arch == Arch::opengl) {
 #ifdef TI_WITH_OPENGL
-    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    TI_ASSERT(opengl::initialize_opengl(false));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+  } else if (config.arch == Arch::gles) {
+#ifdef TI_WITH_OPENGL
+    TI_ASSERT(opengl::initialize_opengl(true));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
@@ -552,6 +559,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
       this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles ||
       this_thread_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }

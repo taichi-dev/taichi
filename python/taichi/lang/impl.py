@@ -245,8 +245,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
 
         return Expr(
             _ti_core.subscript_with_multiple_indices(
-                get_runtime().prog.current_ast_builder(), value.ptr,
-                multiple_indices, return_shape,
+                value.ptr, multiple_indices, return_shape,
                 get_runtime().get_current_src_info()))
     return Expr(
         ast_builder.expr_subscript(value.ptr, indices_expr_group,

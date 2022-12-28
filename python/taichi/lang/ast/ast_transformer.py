@@ -845,7 +845,6 @@ class ASTTransformer(Builder):
                 else:
                     node.ptr = Expr(
                         _ti_core.subscript_with_multiple_indices(
-                            impl.get_runtime().prog.current_ast_builder(),
                             node.value.ptr.ptr, [
                                 make_expr_group(keygroup.index(ch))
                                 for ch in node.attr

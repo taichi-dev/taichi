@@ -119,6 +119,7 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None):
         sh.bake(local_cached)(*args)
     elif name.endswith('.exe') and args is not None:
         local_cached.chmod(0o755)
-        start(local_cached, *args)
+        sh.bake(local_cached)(*args)
+        # start(local_cached, *args)
     else:
         raise RuntimeError(f'Unknown file type: {name}')

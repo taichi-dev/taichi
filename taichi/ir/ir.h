@@ -612,7 +612,7 @@ class DelayedIRModifier {
 // ImmediateIRModifier aims at replacing Stmt::replace_usages_with, which visits
 // the whole tree for a single replacement. ImmediateIRModifier is currently
 // associated with a pass, visits the whole tree once at the beginning of that
-// pass, and performs a single replacement with constant time.
+// pass, and performs a single replacement with amortized constant time.
 class ImmediateIRModifier {
  private:
   std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> stmt_usages_;

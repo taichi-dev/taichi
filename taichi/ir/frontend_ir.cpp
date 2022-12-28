@@ -741,12 +741,9 @@ bool IndexExpression::is_global() const {
   return is_field() || is_matrix_field() || is_ndarray();
 }
 
-static void field_validation(FieldExpression *field_expr,
-                             int index_dim,
-                             bool has_slice) {
+static void field_validation(FieldExpression *field_expr, int index_dim) {
   TI_ASSERT(field_expr != nullptr);
-  if (field_expr->snode == nullptr)
-    return;
+  TI_ASSERT(field_expr->snode != nullptr);
   int field_dim = field_expr->snode->num_active_indices;
 
   int has_dynamic = 0;
@@ -758,8 +755,7 @@ static void field_validation(FieldExpression *field_expr,
     Indexing to dynamic snode can be special, you can either index all the way
     to place snode, or stop at the dynamic snode.
   */
-  if (!has_slice && field_dim != index_dim &&
-      field_dim != has_dynamic + index_dim) {
+  if (field_dim != index_dim && field_dim != has_dynamic + index_dim) {
     throw TaichiTypeError(
         fmt::format("Field with dim {} accessed with indices of dim {}",
                     field_dim, index_dim));
@@ -767,15 +763,13 @@ static void field_validation(FieldExpression *field_expr,
 }
 
 static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
-                                    int index_dim,
-                                    bool has_slice) {
+                                    int index_dim) {
   TI_ASSERT(matrix_field_expr != nullptr);
   TI_ASSERT(!matrix_field_expr->fields.empty());
   auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
   int element_dim = matrix_field_expr->element_shape.size();
 
-  if (field_expr->snode == nullptr)
-    return;
+  TI_ASSERT(field_expr->snode != nullptr);
   int outter_dim = field_expr->snode->num_active_indices;
 
   int has_dynamic = 0;
@@ -788,8 +782,7 @@ static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
     Indexing to dynamic snode can be special, you can either index all the way
     to place snode, or stop at the dynamic snode.
   */
-  if (!has_slice && outter_dim != index_dim &&
-      outter_dim != index_dim + has_dynamic &&
+  if (outter_dim != index_dim && outter_dim != index_dim + has_dynamic &&
       outter_dim + element_dim != index_dim &&
       outter_dim + element_dim != index_dim + has_dynamic) {
     throw TaichiTypeError(
@@ -806,19 +799,19 @@ void IndexExpression::type_check(CompileConfig *) {
                                                     std::multiplies<>()));
   int index_dim = indices_group.empty() ? 0 : indices_group[0].size();
   bool has_slice = !ret_shape.empty();
-  if (!ret_shape.empty()) {
+  if (has_slice) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
     auto element_type = var->ret_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
 
   } else if (is_field()) {  // field
     auto field_expr = var.cast<FieldExpression>();
-    field_validation(field_expr.get(), index_dim, has_slice);
+    field_validation(field_expr.get(), index_dim);
     ret_type = field_expr->dt->get_compute_type();
 
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
-    matrix_field_validation(matrix_field_expr.get(), index_dim, has_slice);
+    matrix_field_validation(matrix_field_expr.get(), index_dim);
 
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]
@@ -828,7 +821,7 @@ void IndexExpression::type_check(CompileConfig *) {
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
     int element_dim = external_tensor_expr->dt.get_shape().size();
-    if (!has_slice && total_dim != index_dim + element_dim) {
+    if (total_dim != index_dim + element_dim) {
       throw TaichiTypeError(
           fmt::format("Array with dim {} accessed with indices of dim {}",
                       total_dim - element_dim, index_dim));

@@ -75,12 +75,12 @@ function Setup-VS {
             foreach($edition in 'Enterprise','Professional','Community','BuildTools') {
                 $vsPath = Join-Path $vsBase $ver $edition
                 $clangPath = Join-Path $vsPath "VC\Tools\Llvm\x64\bin\clang.exe"
-                if (Test-Path $clangPath) {
+                #if (Test-Path $clangPath) {
                     $devShellModule = Get-Item $(Join-Path $vsPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
                     Import-Module $devShellModule
                     Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation -DevCmdArguments "-arch=x64"
                     return
-                }
+                #}
             }
         }
     }

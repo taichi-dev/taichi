@@ -345,7 +345,7 @@ jobs:
           - os: windows-2019
             llvmVer : '15'
             archs: "cpu,cuda,opengl"
-            runsOn: [self-hosted, windows, cuda, OpenGL]
+            runsOn: [self-hosted, windows, cuda, OpenGL, msvc-debug]
     runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:

@@ -5,7 +5,6 @@
 
 namespace taichi::hashing {
 
-
 template <typename T>
 struct Hasher {
  public:

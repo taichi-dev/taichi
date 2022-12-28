@@ -157,14 +157,6 @@ jobs:
       #  with:
       #    limit-access-to-actor: true
 
-      - name: Test
-        id: test
-        if: needs.check_files.outputs.run_job == 'true'
-        run: .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: ${{ matrix.wanted_archs }}
-          TI_SKIP_CPP_TESTS: Disabled because Vulkan is supported but not working on buildbot4
-
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
         uses: actions/upload-artifact@v3
@@ -225,33 +217,6 @@ jobs:
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
-      - name: Test
-        id: test
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
-        env:
-          PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
-
-      - name: Build & Run C-API Headless Demos (Desktop)
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
-        env:
-          PY: '3.8'
-          TI_DEVICE_MEMORY_GB: '1'
-
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
         uses: actions/upload-artifact@v3
@@ -302,21 +267,6 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=OFF
             -DTI_WITH_OPENGL:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
-
-      - name: Test
-        id: test
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-amdgpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
-             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
-        env:
-          PY: '3.8'
-          TI_WANTED_ARCHS: 'cpu,amdgpu'
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -373,19 +323,6 @@ jobs:
             -DTI_WITH_BACKTRACE=ON
             -DTI_WITH_C_API=ON
 
-      - name: Test
-        id: test
-        shell: pwsh
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
-        env:
-          PY: "3.7"
-          TI_WANTED_ARCHS: ${{ matrix.archs }}
-          TI_SKIP_VERSION_CHECK: ON
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
-
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
         uses: actions/upload-artifact@v3
@@ -440,17 +377,6 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
-
-      - name: Test
-        id: test
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: 'cpu,metal,vulkan'
-          PY: ${{ matrix.python }}
-          PLATFORM: 'm1'
-          TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

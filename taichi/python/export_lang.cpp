@@ -1151,6 +1151,16 @@ void export_lang(py::module &m) {
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
           },
+          py::return_value_policy::reference)
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory, std::vector<DataType> elements) {
+            std::vector<const Type *> types;
+            for (auto &element : elements) {
+              types.push_back(element);
+            }
+            return DataType(factory->get_struct_type(types));
+          },
           py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,

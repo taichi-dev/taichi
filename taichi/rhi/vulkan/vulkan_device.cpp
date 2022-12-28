@@ -890,7 +890,7 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
       set_layout) {
     // WARN: we have a layout mismatch
     RHI_LOG_ERROR("Layout mismatch");
-    
+
     auto &templates = current_pipeline_->get_resource_set_templates();
     VulkanResourceSet &set_template = templates.at(set_index);
 
@@ -907,7 +907,7 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
                binding.second.type);
       RHI_LOG_ERROR(msg);
     }
-    
+
     return RhiResult::invalid_usage;
   }
 

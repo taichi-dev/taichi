@@ -2232,7 +2232,7 @@ class TaskCodegen : public IRVisitor {
 
     if (buffer.type == BufferType::Args) {
       compile_args_struct();
-      
+
       buffer_binding_map_[key] = 0;
       buffer_value_map_[key] = args_buffer_value_;
       return args_buffer_value_;

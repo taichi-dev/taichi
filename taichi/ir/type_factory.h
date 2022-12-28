@@ -53,16 +53,13 @@ class TypeFactory {
   TypeFactory();
 
   std::unordered_map<PrimitiveTypeID, std::unique_ptr<Type>> primitive_types_;
-
-  std::unordered_map<std::pair<int, Type *>,
-                     std::unique_ptr<Type>,
-                     hashing::Hasher<std::pair<int, Type *>>>
-      vector_types_;
+  std::mutex primitive_mut_;
 
   std::unordered_map<std::pair<std::string, Type *>,
                      std::unique_ptr<Type>,
                      hashing::Hasher<std::pair<std::string, Type *>>>
       tensor_types_;
+  std::mutex tensor_mut_;
 
   std::unordered_map<std::vector<const Type *>,
                      std::unique_ptr<Type>,
@@ -75,29 +72,31 @@ class TypeFactory {
                      std::unique_ptr<Type>,
                      hashing::Hasher<std::pair<Type *, bool>>>
       pointer_types_;
+  std::mutex pointer_mut_;
 
   std::unordered_map<std::tuple<int, bool, Type *>,
                      std::unique_ptr<Type>,
                      hashing::Hasher<std::tuple<int, bool, Type *>>>
       quant_int_types_;
+  std::mutex quant_int_mut_;
 
   std::unordered_map<std::tuple<Type *, Type *, float64>,
                      std::unique_ptr<Type>,
                      hashing::Hasher<std::tuple<Type *, Type *, float64>>>
       quant_fixed_types_;
+  std::mutex quant_fixed_mut_;
 
   std::unordered_map<std::tuple<Type *, Type *, Type *>,
                      std::unique_ptr<Type>,
                      hashing::Hasher<std::tuple<Type *, Type *, Type *>>>
       quant_float_types_;
+  std::mutex quant_float_mut_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<BitStructType>> bit_struct_types_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> quant_array_types_;
-
-  std::mutex mut_;
 };
 
 DataType promoted_type(DataType a, DataType b);

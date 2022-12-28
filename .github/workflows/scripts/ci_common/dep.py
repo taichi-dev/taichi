@@ -73,22 +73,24 @@ def download_dep(url, outdir, *, strip=0, force=False, args=[]):
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
-    near_caches = [
-        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
-        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+    urls = [
+        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}',
+        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}',
+        url,
     ]
 
-    if not local_cached.exists():
-        for u in near_caches:
-            try:
-                resp = requests.head(u, timeout=1)
-                if resp.ok:
-                    print('Using near cache: ', u)
-                    url = u
-                    break
-            except Exception:
-                pass
+    size = -1
+    for u in urls:
+        try:
+            resp = requests.head(u, timeout=1)
+            if resp.ok:
+                url = u
+                size = int(resp.headers['Content-Length'])
+                break
+        except Exception:
+            pass
 
+    if not local_cached.exists() or local_cached.stat().st_size != size:
         import tqdm
 
         with requests.get(url, stream=True) as r:

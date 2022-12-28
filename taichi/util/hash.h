@@ -5,7 +5,6 @@
 
 namespace taichi::hashing {
 
-
 template <typename T>
 struct Hasher {
  public:
@@ -17,7 +16,8 @@ struct Hasher {
 namespace {
 template <typename T>
 inline void hash_combine(size_t &seed, T const &value) {
-  // Reference: https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine
+  // Reference:
+  // https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine
   seed ^= Hasher<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 }  // namespace

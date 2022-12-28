@@ -14,16 +14,23 @@ def setup_miniforge3(prefix):
     u = platform.uname()
     if u.system == "Linux":
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Linux-x86_64.sh'
+        download_dep(url, prefix, args=['-bfp', str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "arm64"):
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-MacOSX-arm64.sh'
+        download_dep(url, prefix, args=['-bfp', str(prefix)])
     elif (u.system, u.machine) == ("Darwin", "x86_64"):
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-MacOSX-x86_64.sh'
+        download_dep(url, prefix, args=['-bfp', str(prefix)])
     elif u.system == "Windows":
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe'
+        download_dep(url,
+                     prefix,
+                     args=[
+                         '/InstallationType=JustMe', '/RegisterPython=0', '/S',
+                         f'/D={prefix}'
+                     ])
     else:
         raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
-
-    download_dep(url, prefix, args=['-bfp', str(prefix)])
 
 
 @banner('Setup Python {version}')

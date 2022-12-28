@@ -322,6 +322,11 @@ class VulkanPipeline : public Pipeline {
     return graphics_pipeline_template_ != nullptr;
   }
 
+  std::unordered_map<uint32_t, VulkanResourceSet>
+      &get_resource_set_templates() {
+    return set_templates_;
+  }
+
  private:
   void create_descriptor_set_layout(const Params &params);
   void create_shader_stages(const Params &params);

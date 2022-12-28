@@ -108,9 +108,6 @@ class TaskCodegen : public IRVisitor {
     kernel_function_ = ir_->new_function();  // void main();
     ir_->debug_name(spv::OpName, kernel_function_, "main");
 
-    compile_args_struct();
-    compile_ret_struct();
-
     if (task_ir_->task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(task_ir_);
     } else if (task_ir_->task_type == OffloadedTaskType::range_for) {
@@ -2234,12 +2231,16 @@ class TaskCodegen : public IRVisitor {
     }
 
     if (buffer.type == BufferType::Args) {
+      compile_args_struct();
+      
       buffer_binding_map_[key] = 0;
       buffer_value_map_[key] = args_buffer_value_;
       return args_buffer_value_;
     }
 
     if (buffer.type == BufferType::Rets) {
+      compile_ret_struct();
+
       buffer_binding_map_[key] = 1;
       buffer_value_map_[key] = ret_buffer_value_;
       return ret_buffer_value_;
@@ -2306,7 +2307,6 @@ class TaskCodegen : public IRVisitor {
 
     args_buffer_value_ =
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
-    get_buffer_value(BufferInfo(BufferType::Args, 0), PrimitiveType::i32);
   }
 
   void compile_ret_struct() {
@@ -2336,7 +2336,6 @@ class TaskCodegen : public IRVisitor {
 
     ret_buffer_value_ =
         ir_->buffer_struct_argument(ret_struct_type_, 0, 1, "rets");
-    get_buffer_value(BufferInfo(BufferType::Rets, 0), PrimitiveType::i32);
   }
 
   std::vector<BufferBind> get_buffer_binds() {
@@ -2525,7 +2524,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     size_t last_size;
     bool success = true;
-    do {
+    {
       last_size = optimized_spv.size();
       bool result = false;
       TI_ERROR_IF(
@@ -2534,9 +2533,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
           "SPIRV optimization failed");
       if (result) {
         success = false;
-        break;
       }
-    } while (last_size != optimized_spv.size());
+    }
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());

@@ -337,17 +337,20 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     spvReflectDestroyShaderModule(&module);
   }
 
-  // We need to verify the set layouts are all continous
-  uint32_t max_set = 0;
-  for (auto &[index, layout_template] : set_templates_) {
-    max_set = std::max(index, max_set);
-  }
-  RHI_ASSERT(max_set + 1 == set_templates_.size() &&
-             "Sets must be continous & start with 0");
+  // A program can have no binding sets at all.
+  if (set_templates_.size()) {
+    // We need to verify the set layouts are all continous
+    uint32_t max_set = 0;
+    for (auto &[index, layout_template] : set_templates_) {
+      max_set = std::max(index, max_set);
+    }
+    RHI_ASSERT(max_set + 1 == set_templates_.size() &&
+               "Sets must be continous & start with 0");
 
-  set_layouts_.resize(set_templates_.size(), nullptr);
-  for (auto &[index, layout_template] : set_templates_) {
-    set_layouts_[index] = ti_device_.get_desc_set_layout(layout_template);
+    set_layouts_.resize(set_templates_.size(), nullptr);
+    for (auto &[index, layout_template] : set_templates_) {
+      set_layouts_[index] = ti_device_.get_desc_set_layout(layout_template);
+    }
   }
 }
 
@@ -885,6 +888,26 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
 
   if (current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
       set_layout) {
+    // WARN: we have a layout mismatch
+    RHI_LOG_ERROR("Layout mismatch");
+    
+    auto &templates = current_pipeline_->get_resource_set_templates();
+    VulkanResourceSet &set_template = templates.at(set_index);
+
+    for (const auto &template_binding : set_template.get_bindings()) {
+      char msg[512];
+      snprintf(msg, 512, "Template binding %d: (VkDescriptorType) %d",
+               template_binding.first, template_binding.second.type);
+      RHI_LOG_ERROR(msg);
+    }
+
+    for (const auto &binding : set->get_bindings()) {
+      char msg[512];
+      snprintf(msg, 512, "Binding %d: (VkDescriptorType) %d", binding.first,
+               binding.second.type);
+      RHI_LOG_ERROR(msg);
+    }
+    
     return RhiResult::invalid_usage;
   }
 

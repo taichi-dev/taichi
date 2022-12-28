@@ -11,17 +11,18 @@ import platform
 # -- third party --
 # -- own --
 from ci_common.dep import download_dep
-from ci_common.misc import banner, get_cache_home, is_manylinux2014
+from ci_common.misc import (banner, concat_paths, get_cache_home,
+                            is_manylinux2014)
 from ci_common.python import setup_python
 from ci_common.sccache import setup_sccache
 from ci_common.tinysh import Command, environ, git, sh
 
 
 # -- code --
-@banner('Setup LLVM')
-def setup_llvm(env_out: dict) -> None:
+@banner('Setup Clang')
+def setup_clang(env_out: dict) -> None:
     '''
-    Download and install LLVM.
+    Setup Clang.
     '''
     u = platform.uname()
     if u.system == 'Linux':
@@ -32,6 +33,30 @@ def setup_llvm(env_out: dict) -> None:
             lnsf('/usr/bin/clang++-10', '/usr/bin/clang++')
             lnsf('/usr/bin/clang-10', '/usr/bin/clang')
             lnsf('/usr/bin/ld.lld-10', '/usr/bin/ld.lld')
+    elif (u.system, u.machine) == ('Windows', 'AMD64'):
+        out = get_cache_home() / 'clang-15'
+        url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
+        download_dep(url, out)
+        env_out['PATH'] = concat_paths(out / 'bin', env_out.get('PATH'))
+        env_out[
+            'TAICHI_CMAKE_ARGS'] += ' -DCLANG_EXECUTABLE=clang++.exe'  # TODO: Can this be omitted?
+        env_out[
+            'TAICHI_CMAKE_ARGS'] += ' -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang'
+    else:
+        # TODO: unify all
+        pass
+
+
+@banner('Setup LLVM')
+def setup_llvm(env_out: dict) -> None:
+    '''
+    Download and install LLVM.
+    '''
+    u = platform.uname()
+    if u.system == 'Linux':
+        if 'AMDGPU_TEST' in os.environ:
+            # FIXME: AMDGPU bots are currently maintained separately,
+            #        we should unify them with the rest of the bots.
             env_out['LLVM_DIR'] = '/taichi-llvm-15'
             return
         elif is_manylinux2014():
@@ -47,10 +72,15 @@ def setup_llvm(env_out: dict) -> None:
     elif (u.system, u.machine) == ('Darwin', 'x86_64'):
         out = get_cache_home() / 'llvm15-mac'
         url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/llvm-15-mac10.15.zip'
+    elif (u.system, u.machine) == ('Windows', 'AMD64'):
+        out = get_cache_home() / 'llvm15-win'
+        url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip'
+        env_out['TAICHI_CMAKE_ARGS'] += " -DLLVM_AS_EXECUTABLE=llvm-as.exe"
     else:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
     download_dep(url, out, strip=1)
+    env_out['PATH'] = concat_paths(out / 'bin', env_out.get('PATH'))
     env_out['LLVM_DIR'] = str(out)
 
 
@@ -110,6 +140,7 @@ def main() -> None:
         'TAICHI_CMAKE_ARGS': os.environ.get('TAICHI_CMAKE_ARGS', ''),
         'PROJECT_NAME': os.environ.get('PROJECT_NAME', 'taichi'),
     }
+    setup_clang(env)
     setup_llvm(env)
     setup_vulkan(env)
     sccache = setup_sccache(env)

@@ -6,7 +6,7 @@ import os
 import platform
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 # -- third party --
 # -- own --
@@ -65,3 +65,10 @@ def banner(msg: str) -> Callable:
         return wrapper
 
     return decorate
+
+
+def concat_paths(*paths: Any) -> str:
+    '''
+    Concatenate paths together.
+    '''
+    return os.pathsep.join(str(p) for p in paths if p)

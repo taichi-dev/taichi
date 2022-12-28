@@ -127,7 +127,7 @@ def get_cmake_args():
         if (os.getenv('TAICHI_USE_MSBUILD', '0') in ('1', 'ON')):
             use_msbuild = True
         if use_msbuild:
-            build_options.extend(['-G', 'Visual Studio 16 2019'])
+            build_options.extend(['-G', 'Visual Studio 17 2022'])
         else:
             build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
     if sys.platform == "darwin":
@@ -162,7 +162,7 @@ def get_cmake_args():
 def cmake_install_manifest_filter(manifest_files):
     return [
         f for f in manifest_files
-        if f.endswith(('.so', 'pyd', '.bc', '.h',
+        if f.endswith(('.so', 'pyd', '.dll', '.bc', '.h',
                        '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
     ]
 

@@ -71,7 +71,7 @@ function Setup-VS {
     Info "Setting up Visual Studio"
     foreach($progRoot in $env:ProgramFiles, ${env:ProgramFiles(x86)}) {
         $vsBase = Join-Path $progRoot 'Microsoft Visual Studio'
-        foreach($ver in '2022','2019') {
+        foreach($ver in '2022') {
             foreach($edition in 'Enterprise','Professional','Community','BuildTools') {
                 $vsPath = Join-Path $vsBase $ver $edition
                 $clangPath = Join-Path $vsPath "VC\Tools\Llvm\x64\bin\clang.exe"

@@ -414,7 +414,10 @@ void Program::finalize() {
   TI_TRACE("Program finalizing...");
 
   synchronize();
+  ndarrays_.clear();
+  textures_.clear();
   memory_pool_->terminate();
+  program_impl_->dump_cache_data_to_disk();
   if (arch_uses_llvm(this_thread_config().arch)) {
     program_impl_->finalize();
   }
@@ -423,7 +426,6 @@ void Program::finalize() {
 
   finalized_ = true;
   num_instances_ -= 1;
-  program_impl_->dump_cache_data_to_disk();
   configs.clear();
   configs[main_thread_id_] = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));

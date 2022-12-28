@@ -54,5 +54,6 @@ class SharedArray:
 
     @taichi_scope
     def subscript(self, *indices):
-        return impl.make_index_expr(self.shared_array_proxy,
-                                    make_expr_group(*indices))
+        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        return ast_builder.expr_subscript(self.shared_array_proxy,
+                                          make_expr_group(*indices))

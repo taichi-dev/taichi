@@ -252,15 +252,6 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                                    get_runtime().get_current_src_info()))
 
 
-@taichi_scope
-def make_index_expr(_var, indices_expr_group):
-
-    ast_builder = get_runtime().prog.current_ast_builder()
-    return Expr(
-        ast_builder.expr_subscript(_var, indices_expr_group,
-                                   get_runtime().get_current_src_info()))
-
-
 class SrcInfoGuard:
     def __init__(self, info_stack, info):
         self.info_stack = info_stack

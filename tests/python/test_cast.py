@@ -5,7 +5,7 @@ from tests import test_utils
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
-@test_utils.test(exclude=ti.opengl)
+@test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_cast_uint_to_float(dtype):
     @ti.kernel
     def func(a: dtype) -> ti.f32:
@@ -19,7 +19,7 @@ def test_cast_uint_to_float(dtype):
 
 
 @pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
-@test_utils.test(exclude=ti.opengl)
+@test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_cast_float_to_uint(dtype):
     @ti.kernel
     def func(a: ti.f32) -> dtype:

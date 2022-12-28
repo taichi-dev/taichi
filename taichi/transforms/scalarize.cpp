@@ -517,6 +517,17 @@ class Scalarize : public BasicStmtVisitor {
     scalarize_load_stmt<LocalLoadStmt>(stmt);
   }
 
+  void visit(ArgLoadStmt *stmt) override {
+    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    auto arg_load =
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+
+    stmt->replace_usages_with(arg_load.get());
+
+    modifier_.insert_before(stmt, std::move(arg_load));
+    modifier_.erase(stmt);
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
@@ -631,17 +642,6 @@ class ScalarizePointers : public BasicStmtVisitor {
         modifier_.erase(stmt);
       }
     }
-  }
-
-  void visit(ArgLoadStmt *stmt) override {
-    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
-    auto arg_load =
-        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
-
-    stmt->replace_usages_with(arg_load.get());
-
-    modifier_.insert_before(stmt, std::move(arg_load));
-    modifier_.erase(stmt);
   }
 
  private:

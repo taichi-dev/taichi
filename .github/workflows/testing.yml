@@ -304,7 +304,8 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          python .\.github\workflows\scripts\build.py
+          . .github\workflows\scripts\common-utils.ps1
+          Invoke python .\.github\workflows\scripts\build.py
         env:
           PY: "3.7"
           TAICHI_CMAKE_ARGS: >-

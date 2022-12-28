@@ -5,11 +5,6 @@
 
 namespace taichi::hashing {
 
-namespace {
-inline void hash_combine(size_t &seed, size_t value) {
-  seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-}  // namespace
 
 template <typename T>
 struct Hasher {
@@ -19,13 +14,22 @@ struct Hasher {
   }
 };
 
+namespace {
+template <typename T>
+inline void hash_combine(size_t &seed, T const &value) {
+  // Reference:
+  // https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine
+  seed ^= Hasher<T>{}(value) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+}  // namespace
+
 template <typename T>
 struct Hasher<std::vector<T>> {
  public:
   size_t operator()(std::vector<T> const &vec) const {
     size_t ret = 0;
     for (const auto &i : vec) {
-      hash_combine(ret, Hasher<T>()(i));
+      hash_combine(ret, i);
     }
     return ret;
   }
@@ -36,7 +40,7 @@ struct Hasher<std::pair<T1, T2>> {
  public:
   size_t operator()(std::pair<T1, T2> const &val) const {
     size_t ret = Hasher<T1>{}(val.first);
-    hash_combine(ret, Hasher<T2>{}(val.second));
+    hash_combine(ret, val.second);
     return ret;
   }
 };
@@ -52,8 +56,7 @@ struct Hasher<std::tuple<Ts...>> {
   template <int N>
   size_t hash(std::tuple<Ts...> const &val) const {
     size_t ret = hash<N - 1>(val);
-    hash_combine(ret, Hasher<std::tuple_element_t<N, std::tuple<Ts...>>>{}(
-                          std::get<N>(val)));
+    hash_combine(ret, std::get<N>(val));
     return ret;
   }
   template <>
@@ -62,4 +65,5 @@ struct Hasher<std::tuple<Ts...>> {
         std::get<0>(val));
   }
 };
+
 }  // namespace taichi::hashing

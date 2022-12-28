@@ -47,6 +47,14 @@ class TI_DLL_EXPORT Type {
     return p;
   }
 
+  template <typename T>
+  const T *as() const {
+    auto p = dynamic_cast<const T *>(this);
+    TI_ASSERT_INFO(p != nullptr, "Cannot treat {} as {}", this->to_string(),
+                   typeid(T).name());
+    return p;
+  }
+
   bool is_primitive(PrimitiveTypeID type) const;
 
   virtual Type *get_compute_type() {

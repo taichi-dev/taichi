@@ -435,7 +435,7 @@ def test_matrix_field_dynamic_index_stride():
             assert v[i][j] == i * j
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(require=ti.extension.dynamic_index)
 def test_matrix_field_dynamic_index_different_path_length():
     v = ti.Vector.field(2, ti.i32)
     x = v.get_scalar_field(0)
@@ -448,7 +448,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(require=ti.extension.dynamic_index)
 def test_matrix_field_dynamic_index_not_pure_dense():
     v = ti.Vector.field(2, ti.i32)
     x = v.get_scalar_field(0)
@@ -461,7 +461,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(require=ti.extension.dynamic_index)
 def test_matrix_field_dynamic_index_different_cell_size_bytes():
     temp = ti.field(ti.f32)
 
@@ -476,7 +476,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(require=ti.extension.dynamic_index)
 def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     temp_a = ti.field(ti.f32)
     temp_b = ti.field(ti.f32)
@@ -492,7 +492,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(require=ti.extension.dynamic_index)
 def test_matrix_field_dynamic_index_different_stride():
     temp = ti.field(ti.f32)
 
@@ -507,7 +507,7 @@ def test_matrix_field_dynamic_index_different_stride():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], dynamic_index=True)
+@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_matrix_field_dynamic_index_multiple_materialize():
     @ti.kernel
     def empty():
@@ -529,7 +529,9 @@ def test_matrix_field_dynamic_index_multiple_materialize():
             assert a[i][j] == (i if j == i % 3 else 0)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], dynamic_index=True, debug=True)
+@test_utils.test(require=ti.extension.dynamic_index,
+                 dynamic_index=True,
+                 debug=True)
 def test_local_vector_initialized_in_a_loop():
     @ti.kernel
     def foo():

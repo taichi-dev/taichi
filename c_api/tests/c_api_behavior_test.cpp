@@ -8,7 +8,7 @@
 
 TEST_F(CapiTest, TestBehaviorCreateRuntime) {
   auto inner = [this](TiArch arch) {
-    TiRuntime runtime = ti_create_runtime(arch);
+    TiRuntime runtime = ti_create_runtime(arch, 0);
     TI_ASSERT(runtime == TI_NULL_HANDLE);
     EXPECT_TAICHI_ERROR(TI_ERROR_NOT_SUPPORTED);
   };

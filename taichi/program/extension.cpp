@@ -21,8 +21,10 @@ bool is_extension_supported(Arch arch, Extension ext) {
         Extension::assertion, Extension::dynamic_index, Extension::mesh}},
       // TODO: supporting quant in metal(tests randomly crashed)
       {Arch::metal,
-       {Extension::adstack, Extension::assertion, Extension::sparse}},
+       {Extension::adstack, Extension::assertion, Extension::dynamic_index,
+        Extension::sparse}},
       {Arch::opengl, {Extension::extfunc}},
+      {Arch::gles, {}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };
   // if (with_opengl_extension_data64())

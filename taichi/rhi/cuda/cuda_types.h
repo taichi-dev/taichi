@@ -561,4 +561,6 @@ struct csrcholInfoHost;
 typedef struct csrcholInfoHost *csrcholInfoHost_t;
 struct csrcholInfo;
 typedef struct csrcholInfo *csrcholInfo_t;
+struct csrluInfoHost;
+typedef struct csrluInfoHost *csrluInfoHost_t;
 #endif

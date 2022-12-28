@@ -243,7 +243,11 @@ class SparseMatrixBuilder:
 
     def print_triplets(self):
         """Print the triplets stored in the builder"""
-        self.ptr.print_triplets()
+        taichi_arch = get_runtime().prog.config().arch
+        if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+            self.ptr.print_triplets_eigen()
+        elif taichi_arch == _ti_core.Arch.cuda:
+            self.ptr.print_triplets_cuda()
 
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""

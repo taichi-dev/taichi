@@ -92,20 +92,6 @@ Necessary detail to share the same piece of Vulkan image between Taichi and exte
 - `usage`: Vulkan image usage. In most cases, Taichi requires the `VK_IMAGE_USAGE_STORAGE_BIT` and the `VK_IMAGE_USAGE_SAMPLED_BIT`.
 
 ---
-### Structure `TiVulkanEventInteropInfo`
-
-```c
-// structure.vulkan_event_interop_info
-typedef struct TiVulkanEventInteropInfo {
-  VkEvent event;
-} TiVulkanEventInteropInfo;
-```
-
-Necessary detail to share the same Vulkan event synchronization primitive between Taichi and the user application.
-
-- `event`: Vulkan event handle.
-
----
 ### Function `ti_create_vulkan_runtime_ext`
 
 ```c
@@ -201,30 +187,3 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
 ```
 
 Exports a Vulkan image from external procedures to Taichi.
-
----
-### Function `ti_import_vulkan_event`
-
-```c
-// function.import_vulkan_event
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_import_vulkan_event(
-  TiRuntime runtime,
-  const TiVulkanEventInteropInfo* interop_info
-);
-```
-
-Imports the Vulkan event owned by Taichi to external procedures.
-
----
-### Function `ti_export_vulkan_event`
-
-```c
-// function.export_vulkan_event
-TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_event(
-  TiRuntime runtime,
-  TiEvent event,
-  TiVulkanEventInteropInfo* interop_info
-);
-```
-
-Exports a Vulkan event from external procedures to Taichi.

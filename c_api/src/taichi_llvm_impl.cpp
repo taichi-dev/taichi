@@ -125,8 +125,8 @@ void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
   TI_NOT_IMPLEMENTED;
 }
 
-void LlvmRuntime::submit() {
-  // (penguinliong) Submit in LLVM backends is a nop atm.
+void LlvmRuntime::flush() {
+  // (penguinliong) Flush in LLVM backends is a nop atm.
   // TI_NOT_IMPLEMENTED;
 }
 

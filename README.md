@@ -136,8 +136,6 @@ If you wish to try our our experimental features or build Taichi Lang for your o
 [![Issue status graph](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_issues.svg)](https://github.com/taichi-dev/taichi/issues)
 [![Pull request status graph](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_prs.svg)](https://github.com/taichi-dev/taichi/pulls)
 [![Trending topics](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_words.svg)](https://github.com/taichi-dev/taichi/commits)
-[![Top contributors](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_users.svg)](https://github.com/taichi-dev/taichi/graphs/contributors)
-[![Activity map](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_map.svg)](https://github.com/taichi-dev/taichi/commits)
 
 ## Contributing
 

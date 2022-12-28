@@ -288,14 +288,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    strategy:
-      matrix:
-        include:
-          - os: windows-2019
-            llvmVer : '15'
-            archs: "cpu,cuda,opengl"
-            runsOn: [self-hosted, windows, cuda, OpenGL]
-    runs-on: ${{ matrix.runsOn }}
+    runs-on: [self-hosted, windows, cuda, OpenGL]
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       - uses: actions/checkout@v3
@@ -311,7 +304,7 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer ${{ matrix.llvmVer }} -installVulkan -libsDir "$env:LocalAppData/buildbot"
+          python .\.github\workflows\scripts\build.py
         env:
           PY: "3.7"
           TAICHI_CMAKE_ARGS: >-

@@ -480,7 +480,7 @@ void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
   // Should be moved to CommandList once available in CUDA.
   program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
-      ndarray->get_nelement() * ndarray->get_element_size(), val);
+      ndarray->get_nelement(), val);
 }
 
 Program::~Program() {

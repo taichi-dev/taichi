@@ -335,7 +335,8 @@ class Scalarize : public BasicStmtVisitor {
     if (!merged_string.empty())
       merged_contents.push_back(merged_string);
 
-    delayed_modifier_.insert_before(stmt, Stmt::make<PrintStmt>(merged_contents));
+    delayed_modifier_.insert_before(stmt,
+                                    Stmt::make<PrintStmt>(merged_contents));
     delayed_modifier_.erase(stmt);
   }
 
@@ -586,7 +587,8 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         scalarized_local_tensor_map_[stmt].push_back(
             scalarized_alloca_stmt.get());
-        delayed_modifier_.insert_before(stmt, std::move(scalarized_alloca_stmt));
+        delayed_modifier_.insert_before(stmt,
+                                        std::move(scalarized_alloca_stmt));
       }
 
       delayed_modifier_.erase(stmt);

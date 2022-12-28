@@ -39,7 +39,8 @@ class GatherStatementUsages : public BasicStmtVisitor {
     default_visit(stmt);
   }
 
-  static std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> run(IRNode *node) {
+  static std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> run(
+      IRNode *node) {
     GatherStatementUsages pass;
     node->accept(&pass);
     return pass.stmt_usages_;
@@ -48,7 +49,8 @@ class GatherStatementUsages : public BasicStmtVisitor {
 
 namespace irpass::analysis {
 
-std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> gather_statement_usages(IRNode *root) {
+std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>>
+gather_statement_usages(IRNode *root) {
   return GatherStatementUsages::run(root);
 }
 

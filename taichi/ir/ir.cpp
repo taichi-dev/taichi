@@ -501,7 +501,8 @@ ImmediateIRModifier::ImmediateIRModifier(IRNode *root) {
 }
 
 void ImmediateIRModifier::replace_usages_with(Stmt *old_stmt, Stmt *new_stmt) {
-  if (stmt_usages_.find(old_stmt) == stmt_usages_.end()) return;
+  if (stmt_usages_.find(old_stmt) == stmt_usages_.end())
+    return;
   for (auto &[usage, i] : stmt_usages_.at(old_stmt)) {
     usage->set_operand(i, new_stmt);
   }

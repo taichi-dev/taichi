@@ -94,9 +94,11 @@ class TypeFactory {
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<BitStructType>> bit_struct_types_;
+  std::mutex bit_struct_mut_;
 
   // TODO: avoid duplication
   std::vector<std::unique_ptr<Type>> quant_array_types_;
+  std::mutex quant_array_mut_;
 };
 
 DataType promoted_type(DataType a, DataType b);

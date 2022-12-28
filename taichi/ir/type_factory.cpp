@@ -108,6 +108,8 @@ BitStructType *TypeFactory::get_bit_struct_type(
     const std::vector<int> &member_bit_offsets,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users) {
+  std::lock_guard<std::mutex> _(bit_struct_mut_);
+
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
       physical_type, member_types, member_bit_offsets, member_exponents,
       member_exponent_users));
@@ -117,6 +119,8 @@ BitStructType *TypeFactory::get_bit_struct_type(
 Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
                                         Type *element_type,
                                         int num_elements) {
+  std::lock_guard<std::mutex> _(quant_array_mut_);
+
   quant_array_types_.push_back(std::make_unique<QuantArrayType>(
       physical_type, element_type, num_elements));
   return quant_array_types_.back().get();

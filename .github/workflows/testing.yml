@@ -536,7 +536,7 @@ jobs:
             -DTI_WITH_LLVM:BOOL=OFF
             -DTI_WITH_C_API=ON
 
-      - name: Test For Android AOT (export core)
+      - name: Test For Android AOT
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh

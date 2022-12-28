@@ -40,6 +40,14 @@ The language has broad applications spanning real-time physical simulation, nume
 - Portability: Write your code once and run it everywhere. Currently, Taichi Lang supports most mainstream GPU APIs, such as CUDA and Vulkan.
 - ... and many more features! A cross-platform, Vulkan-based 3D visualizer, [differentiable programming](https://docs.taichi-lang.org/docs/differentiable_programming),  [quantized computation](https://github.com/taichi-dev/quantaichi) (experimental), etc.
 
+## [![Repography logo](https://images.repography.com/logo.svg)](https://repography.com) / Recent activity [![Time period](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_badge.svg)](https://repography.com)
+[![Timeline graph](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_timeline.svg)](https://github.com/taichi-dev/taichi/commits)
+[![Issue status graph](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_issues.svg)](https://github.com/taichi-dev/taichi/issues)
+[![Pull request status graph](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_prs.svg)](https://github.com/taichi-dev/taichi/pulls)
+[![Trending topics](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_words.svg)](https://github.com/taichi-dev/taichi/commits)
+[![Top contributors](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_users.svg)](https://github.com/taichi-dev/taichi/graphs/contributors)
+[![Activity map](https://images.repography.com/32602247/taichi-dev/taichi/recent-activity/RlhQybvihwEjfE7ngXyQR9tudBDYAvl27v-NVNMxUrg_map.svg)](https://github.com/taichi-dev/taichi/commits)
+
 ## Getting Started
 
 ### Installation

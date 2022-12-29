@@ -823,7 +823,7 @@ void export_lang(py::module &m) {
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("make_get_element_expr",
-        Expr::make<GetElementExpression, const Expr &, int>);
+        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",

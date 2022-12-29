@@ -99,7 +99,7 @@ void OpenglProgramImpl::finalize() {
 }
 
 OpenglProgramImpl::~OpenglProgramImpl() {
-  //finalize();
+  finalize();
 }
 
 const std::unique_ptr<gfx::CacheManager>

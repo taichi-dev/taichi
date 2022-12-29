@@ -77,7 +77,6 @@ struct CompileConfig {
 
   // Opengl backend options:
   bool allow_nv_shader_extension{true};
-  bool use_gles{false};
 
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};

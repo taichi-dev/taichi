@@ -574,7 +574,6 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
             impl.get_runtime().prog.finalize_rets()
-
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):

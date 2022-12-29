@@ -494,6 +494,10 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
        result_buffer});
 }
 
+void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
+  cuda_device()->dealloc_memory(handle);
+}
+
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
                                        std::size_t size,
                                        uint32_t data) {

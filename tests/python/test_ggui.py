@@ -456,9 +456,9 @@ def test_draw_lines():
     render()
     if (platform.system() == 'Darwin'):
         # TODO:Fix the bug that mac not support wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac', 0.2)
     else:
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines', 0.2)
     window.destroy()
 
 
@@ -639,10 +639,10 @@ def test_draw_part_of_lines():
     if (platform.system() == 'Darwin'):
         # TODO:Fix the bug that mac not support wide lines
         verify_image(window.get_image_buffer_as_numpy(),
-                     'test_draw_part_of_lines.mac', 0.2)
+                     'test_draw_part_of_lines.mac')
     else:
         verify_image(window.get_image_buffer_as_numpy(),
-                     'test_draw_part_of_lines', 0.2)
+                     'test_draw_part_of_lines')
     window.destroy()
 
 

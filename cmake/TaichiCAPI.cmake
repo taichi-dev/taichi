@@ -80,7 +80,7 @@ if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_C_API_NAME}.dll
                 ${C_API_OUTPUT_DIRECTORY}/${TAICHI_C_API_NAME}.dll)
-else(${CMAKE_GENERATOR} STREQUAL "XCode")
+elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
   # XCode is also a multi-config generator
   add_custom_command(
         TARGET ${TAICHI_C_API_NAME} POST_BUILD

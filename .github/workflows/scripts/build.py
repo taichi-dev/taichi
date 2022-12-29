@@ -66,20 +66,23 @@ def setup_llvm(env_out: dict) -> None:
         else:
             out = get_cache_home() / 'llvm15'
             url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip'
+        download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ('Darwin', 'arm64'):
         out = get_cache_home() / 'llvm15-m1'
         url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip'
+        download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ('Darwin', 'x86_64'):
         out = get_cache_home() / 'llvm15-mac'
         url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/llvm-15-mac10.15.zip'
+        download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
-        out = get_cache_home() / 'llvm15-win'
+        out = get_cache_home() / 'llvm15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip'
         env_out['TAICHI_CMAKE_ARGS'] += " -DLLVM_AS_EXECUTABLE=llvm-as.exe"
+        download_dep(url, out, strip=0)
     else:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
-    download_dep(url, out, strip=1)
     env_out['PATH'] = concat_paths(out / 'bin', env_out.get('PATH'))
     env_out['LLVM_DIR'] = str(out)
 

@@ -28,7 +28,7 @@ function build-and-smoke-test-android-aot-demo {
 
     rm -rf taichi-aot-demo
     # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
-    git clone --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
+    git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
 
     # Install taichi-python
     pip install /taichi-wheel/*.whl

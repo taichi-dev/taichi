@@ -536,8 +536,9 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 // TEST_F(CapiTest, TestCompatGetCgraph) {
 //   auto test_compat_get_cgraph_impl = [this](TiArch arch) {
 //     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-//     const std::string module_path = folder_dir + std::string("/test/mpm88.cgraph1.tcm");
-//     if (!ti::is_arch_available(arch)) {
+//     const std::string module_path = folder_dir +
+//     std::string("/test/mpm88.cgraph1.tcm"); if (!ti::is_arch_available(arch))
+//     {
 //       TI_WARN("arch {} is not supported, so the test is skipped", arch);
 //       return;
 //     }
@@ -550,4 +551,3 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 //   test_compat_get_cgraph_impl(TI_ARCH_OPENGL);
 //   test_compat_get_cgraph_impl(TI_ARCH_VULKAN);
 // }
-

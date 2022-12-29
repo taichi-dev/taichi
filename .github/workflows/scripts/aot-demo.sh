@@ -38,7 +38,7 @@ function build-and-smoke-test-android-aot-demo {
     ./scripts/build-android-app.sh E3_implicit_fem
 
     run-android-app \
-        framework/android/app/build/outputs/apk/release/E3_implicit_fem-release-unsigned.apk \
+        framework/android/app/build/outputs/apk/debug/E3_implicit_fem-debug.apk \
         org.taichi.aot_demo/android.app.NativeActivity
 }
 

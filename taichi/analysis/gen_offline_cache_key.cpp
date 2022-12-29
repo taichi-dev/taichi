@@ -263,7 +263,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(GetElementExpression *expr) override {
     emit(ExprOpCode::GetElementExpression);
     emit(expr->src);
-    emit(expr->indices);
+    emit(expr->index);
   }
 
   void visit(Block *block) override {

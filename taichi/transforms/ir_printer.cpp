@@ -838,9 +838,9 @@ class IRPrinter : public IRVisitor {
 
   void visit(GetElementStmt *stmt) override {
     std::string index = "";
-    for (int i = 0; i < stmt->indices.size(); i++) {
+    for (int i = 0; i < stmt->index.size(); i++) {
       index += ", ";
-      index += std::to_string(stmt->indices[i]);
+      index += std::to_string(stmt->index[i]);
     }
     print("{}{} = get_element({}{})", stmt->type_hint(), stmt->name(),
           stmt->src->name(), index);

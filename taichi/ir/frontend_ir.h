@@ -803,12 +803,12 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 class GetElementExpression : public Expression {
  public:
   Expr src;
-  std::vector<int> indices;
+  std::vector<int> index;
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, std::vector<int> indices)
-      : src(src), indices(indices) {
+  GetElementExpression(const Expr &src, std::vector<int> index)
+      : src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;

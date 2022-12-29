@@ -2732,13 +2732,13 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
   auto *real_func = stmt->src->as<FuncCallStmt>()->func;
   //  auto &rets = real_func->rets;
   auto *real_func_ret_type = tlctx->get_data_type(real_func->ret_type);
-  std::vector<llvm::Value *> indices;
-  indices.push_back(tlctx->get_constant(0));
-  for (auto &i : stmt->indices) {
-    indices.push_back(tlctx->get_constant(i));
+  std::vector<llvm::Value *> index;
+  index.push_back(tlctx->get_constant(0));
+  for (auto &i : stmt->index) {
+    index.push_back(tlctx->get_constant(i));
   }
   auto *gep =
-      builder->CreateGEP(real_func_ret_type, llvm_val[stmt->src], indices);
+      builder->CreateGEP(real_func_ret_type, llvm_val[stmt->src], index);
   auto *val = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), gep);
   llvm_val[stmt] = val;
 }

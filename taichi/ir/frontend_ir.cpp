@@ -1105,11 +1105,11 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 void GetElementExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
 
-  ret_type = src->ret_type->as<StructType>()->get_element_type(indices);
+  ret_type = src->ret_type->as<StructType>()->get_element_type(index);
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), indices);
+  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index);
   stmt = ctx->back_stmt();
 }
 // Mesh related.

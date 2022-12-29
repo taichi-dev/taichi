@@ -244,7 +244,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit("get_element(");
     expr->src->accept(this);
     emit(", ");
-    emit_vector(expr->indices);
+    emit_vector(expr->index);
     emit(")");
   }
 

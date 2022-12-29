@@ -236,7 +236,7 @@ jobs:
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
+          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
@@ -343,7 +343,7 @@ jobs:
         include:
           - os: windows-2019
             llvmVer : '15'
-            archs: "cpu,cuda,opengl"
+            archs: "cpu,cuda,opengl,gles"
             runsOn: [self-hosted, windows, cuda, OpenGL]
     runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}

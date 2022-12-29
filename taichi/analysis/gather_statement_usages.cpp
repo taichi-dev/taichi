@@ -22,11 +22,7 @@ class GatherStatementUsages : public BasicStmtVisitor {
     for (int i = 0; i < ops.size(); i++) {
       auto &op = ops[i];
       if (op != nullptr) {
-        if (stmt_usages_.find(op) == stmt_usages_.end()) {
-          stmt_usages_[op] = {{stmt, i}};
-        } else {
-          stmt_usages_.at(op).push_back({stmt, i});
-        }
+        stmt_usages_[op].push_back({stmt, i});
       }
     }
   }

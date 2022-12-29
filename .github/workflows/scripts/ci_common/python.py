@@ -70,7 +70,12 @@ def setup_python(env_out: dict,
     if windows:
         exe = env / 'python.exe'
         env_out['PATH'] = concat_paths(env, env / 'Scripts',
+                                       prefix / 'Library' / 'bin',
                                        env_out.get('PATH'))
+        import os
+        os.environ['PATH'] = concat_paths(env, env / 'Scripts',
+                                          prefix / 'Library' / 'bin',
+                                          os.environ.get('PATH'))
     else:
         exe = env / 'bin' / 'python'
         env_out['PATH'] = concat_paths(env / 'bin', env_out.get('PATH'))

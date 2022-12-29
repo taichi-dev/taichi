@@ -709,7 +709,6 @@ class StructType(CompoundType):
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
-            print(dtype)
             if isinstance(dtype, CompoundType):
                 d[name] = dtype.from_real_func_ret(func_ret,
                                                    ret_index + (index, ))

@@ -5,7 +5,7 @@ import shutil
 from typing import Optional, Tuple
 
 from .dep import download_dep
-from .misc import banner, get_cache_home
+from .misc import banner, concat_paths, get_cache_home
 from .tinysh import Command, sh
 
 
@@ -22,13 +22,20 @@ def setup_miniforge3(prefix):
         download_dep(url, prefix, args=['-bfp', str(prefix)])
     elif u.system == "Windows":
         url = 'https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe'
-        download_dep(
-            url,
-            prefix,
-            args=[
-                # '/InstallationType=JustMe', '/RegisterPython=0', '/S',
-                # f'/D={prefix}'
-            ])
+        download_dep(url,
+                     prefix,
+                     args=[
+                         '/S',
+                         '/InstallationType=JustMe',
+                         '/RegisterPython=0',
+                         '/KeepPkgCache=0',
+                         '/AddToPath=0',
+                         '/NoRegistry=1',
+                         '/NoShortcut=1',
+                         '/NoScripts=1',
+                         '/CheckPathLength=1',
+                         f'/D={prefix}',
+                     ])
     else:
         raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
 
@@ -41,9 +48,16 @@ def setup_python(env_out: dict,
     '''
     assert version
 
+    windows = platform.system() == "Windows"
+
     prefix = get_cache_home() / 'miniforge3'
     setup_miniforge3(prefix)
-    conda_path = prefix / 'bin' / 'conda'
+
+    if windows:
+        conda_path = prefix / 'Scripts' / 'conda.exe'
+    else:
+        conda_path = prefix / 'bin' / 'conda'
+
     if not conda_path.exists():
         shutil.rmtree(prefix, ignore_errors=True)
         setup_miniforge3(prefix)
@@ -53,12 +67,17 @@ def setup_python(env_out: dict,
     conda = sh.bake(str(conda_path))
 
     env = prefix / 'envs' / version
-    exe = env / 'bin' / 'python'
+    if windows:
+        exe = env / 'python.exe'
+        env_out['PATH'] = concat_paths(env, env / 'Scripts',
+                                       env_out.get('PATH'))
+    else:
+        exe = env / 'bin' / 'python'
+        env_out['PATH'] = concat_paths(env / 'bin', env_out.get('PATH'))
 
     if not exe.exists():
         conda.create('-y', '-n', version, f'python={version}')
 
-    env_out['PATH'] = f'{env / "bin"}:{env_out["PATH"]}'
     python = sh.bake(str(exe))
     pip = python.bake('-m', 'pip')
 

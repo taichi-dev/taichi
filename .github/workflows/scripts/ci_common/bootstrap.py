@@ -51,7 +51,7 @@ def chdir_to_root():
     root = Path('/')
     p = Path(__file__).resolve()
     while p != root:
-        if (p / '.git').exists():
+        if (p / 'setup.py').exists():
             os.chdir(p)
             break
         p = p.parent

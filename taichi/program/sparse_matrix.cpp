@@ -99,17 +99,53 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       prog_, dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
 }
 
-void SparseMatrixBuilder::print_triplets() {
-  num_triplets_ = ndarray_data_base_ptr_->read_int(std::vector<int>{0});
+template <typename T, typename G>
+void SparseMatrixBuilder::print_triplets_template() {
+  auto ptr = get_ndarray_data_ptr();
+  G *data = reinterpret_cast<G *>(ptr);
+  num_triplets_ = data[0];
   fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
              num_triplets_, max_num_triplets_);
+  data += 1;
   for (int i = 0; i < num_triplets_; i++) {
-    auto idx = 3 * i + 1;
-    auto row = ndarray_data_base_ptr_->read_int(std::vector<int>{idx});
-    auto col = ndarray_data_base_ptr_->read_int(std::vector<int>{idx + 1});
-    auto val = ndarray_data_base_ptr_->read_float(std::vector<int>{idx + 2});
+    fmt::print("[{}, {}] = {}\n", data[i * 3], data[i * 3 + 1],
+               taichi_union_cast<T>(data[i * 3 + 2]));
+  }
+}
+
+void SparseMatrixBuilder::print_triplets_eigen() {
+  auto element_size = data_type_size(dtype_);
+  switch (element_size) {
+    case 4:
+      print_triplets_template<float32, int32>();
+      break;
+    case 8:
+      print_triplets_template<float64, int64>();
+      break;
+    default:
+      TI_ERROR("Unsupported sparse matrix data type!");
+      break;
+  }
+}
+
+void SparseMatrixBuilder::print_triplets_cuda() {
+#ifdef TI_WITH_CUDA
+  CUDADriver::get_instance().memcpy_device_to_host(
+      &num_triplets_, (void *)get_ndarray_data_ptr(), sizeof(int));
+  fmt::print("n={}, m={}, num_triplets={} (max={})\n", rows_, cols_,
+             num_triplets_, max_num_triplets_);
+  auto len = 3 * num_triplets_ + 1;
+  std::vector<float32> trips(len);
+  CUDADriver::get_instance().memcpy_device_to_host(
+      (void *)trips.data(), (void *)get_ndarray_data_ptr(),
+      len * sizeof(float32));
+  for (auto i = 0; i < num_triplets_; i++) {
+    int row = taichi_union_cast<int>(trips[3 * i + 1]);
+    int col = taichi_union_cast<int>(trips[3 * i + 2]);
+    auto val = trips[i * 3 + 3];
     fmt::print("[{}, {}] = {}\n", row, col, val);
   }
+#endif
 }
 
 intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {

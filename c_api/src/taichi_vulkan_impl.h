@@ -52,4 +52,7 @@ class VulkanRuntimeOwned : public VulkanRuntime {
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
 
+taichi::lang::vulkan::VulkanDeviceCreator::Params
+make_vulkan_runtime_creator_params();
+
 #endif  // TI_WITH_VULKAN

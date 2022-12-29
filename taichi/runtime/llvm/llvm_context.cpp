@@ -148,6 +148,13 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
                                    /*scalable=*/false);
     }
     return llvm::ArrayType::get(element_type, num_elements);
+  } else if (dt->is<StructType>()) {
+    std::vector<llvm::Type *> types;
+    auto struct_type = dt->cast<StructType>();
+    for (const auto &element : struct_type->elements()) {
+      types.push_back(get_data_type(element));
+    }
+    return llvm::StructType::get(*ctx, types);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;

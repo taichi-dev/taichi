@@ -9,6 +9,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
+#include "taichi/common/utils.h"
 
 namespace taichi::lang {
 namespace vulkan {
@@ -38,17 +39,26 @@ bool check_validation_layer_support() {
   return true;
 }
 
+[[maybe_unused]] bool vk_ignore_validation_warning(
+    const std::string &msg_name) {
+  if (msg_name == "UNASSIGNED-DEBUG-PRINTF") {
+    // Ignore truncated Debug Printf message
+    return true;
+  }
+
+  if (msg_name == "VUID_Undefined") {
+    // FIXME: Remove this branch after upgrading Vulkan driver for built bots
+    return true;
+  }
+
+  return false;
+}
+
 VKAPI_ATTR VkBool32 VKAPI_CALL
 vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                   VkDebugUtilsMessageTypeFlagsEXT message_type,
                   const VkDebugUtilsMessengerCallbackDataEXT *p_callback_data,
                   void *p_user_data) {
-  if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-    char msg_buf[512];
-    snprintf(msg_buf, sizeof(msg_buf), "Vulkan validation layer: %d, %s",
-             message_type, p_callback_data->pMessage);
-    RHI_LOG_ERROR(msg_buf);
-  }
   if (message_type == VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT &&
       message_severity == VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT &&
       strstr(p_callback_data->pMessage, "DEBUG-PRINTF") != nullptr) {
@@ -57,6 +67,21 @@ vk_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
     auto const pos = msg.find_last_of("|");
     std::cout << msg.substr(pos + 2);
   }
+
+  if (message_severity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+    char msg_buf[512];
+    snprintf(msg_buf, sizeof(msg_buf), "Vulkan validation layer: %d, %s",
+             message_type, p_callback_data->pMessage);
+
+    if (is_ci()) {
+      auto msg_name = std::string(p_callback_data->pMessageIdName);
+      if (!vk_ignore_validation_warning(msg_name))
+        TI_ERROR(msg_buf);
+    } else {
+      RHI_LOG_ERROR(msg_buf);
+    }
+  }
+
   return VK_FALSE;
 }
 

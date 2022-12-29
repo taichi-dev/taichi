@@ -51,9 +51,11 @@ def test_aot_field_range_hint():
         m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
-            range_hint = res['aot_data']['kernels']['init']['tasks'][0][
-                'range_hint']
-            assert range_hint == '64'
+            for kernel in res['kernels']:
+                if kernel['name'] == 'init':
+                    range_hint2 = kernel['tasks_attribs'][0][
+                        'range_for_attribs']
+                    assert range_hint2["end"] - range_hint2["begin"] == 64
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -62,7 +64,7 @@ def test_aot_bind_id():
     density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
 
     @ti.kernel
-    def init(x: ti.f32, density1: ti.types.ndarray(field_dim=2)):
+    def init(x: ti.f32, density1: ti.types.ndarray(ndim=2)):
         for i, j in density1:
             density[i, j] = x
             density1[i, j] = x + 1
@@ -73,13 +75,14 @@ def test_aot_bind_id():
         m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
-            buffer_binds = res['aot_data']['kernels']['init']['tasks'][0][
-                'buffer_binds']
-            for buffer_bind in buffer_binds:
-                if buffer_bind['buffer']['type'] == 0:  # Root
-                    assert buffer_bind['binding'] != -1
-                elif buffer_bind['buffer']['type'] == 2:  # Rets
-                    assert buffer_bind['binding'] != -1
+            for kernel in res['kernels']:
+                if kernel['name'] == 'init':
+                    buffer_binds = kernel['tasks_attribs'][0]['buffer_binds']
+                    for buffer_bind in buffer_binds:
+                        if buffer_bind['buffer']['type'] == 0:  # Root
+                            assert buffer_bind['binding'] != -1
+                        elif buffer_bind['buffer']['type'] == 2:  # Rets
+                            assert buffer_bind['binding'] != -1
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -135,10 +138,8 @@ def test_non_dense_snode():
         m.add_field('y', y)
 
 
-@pytest.mark.parametrize('use_gles', [True, False])
-@test_utils.test(arch=[ti.opengl, ti.vulkan])
-def test_mpm88_aot(use_gles):
-    ti.init(ti.lang.impl.current_cfg().arch, use_gles=use_gles)
+@test_utils.test(arch=[ti.opengl, ti.gles, ti.vulkan])
+def test_mpm88_aot():
     n_particles = 8192
     n_grid = 128
     dx = 1 / n_grid
@@ -427,10 +428,10 @@ def test_mpm88_ndarray():
     E = 400
 
     @ti.kernel
-    def substep(x: ti.types.ndarray(element_dim=1),
-                v: ti.types.ndarray(element_dim=1),
-                C: ti.types.ndarray(element_dim=2), J: ti.types.ndarray(),
-                grid_v: ti.types.ndarray(element_dim=1),
+    def substep(x: ti.types.ndarray(dtype=ti.math.vec2),
+                v: ti.types.ndarray(dtype=ti.math.vec2),
+                C: ti.types.ndarray(dtype=ti.math.mat2), J: ti.types.ndarray(),
+                grid_v: ti.types.ndarray(dtype=ti.math.vec2),
                 grid_m: ti.types.ndarray()):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
@@ -520,8 +521,10 @@ def test_aot_ndarray_template_mixed():
         m.save(tmpdir, '')
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
-            args_count = res['aot_data']['kernels']['run']['args_count']
-            assert args_count == 2, res  # `arr` and `val1`
+            for kernel in res['kernels']:
+                if kernel['name'] == 'run':
+                    args_count = len(kernel['ctx_attribs']['arg_attribs_vec_'])
+                    assert args_count == 2, res  # `arr` and `val1`
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -589,10 +592,52 @@ def test_vulkan_cgraph_short():
 
     g.run({'a': a, 'c': c})
 
-    m = ti.aot.Module(caps=['spirv_has_int8'])
+    m = ti.aot.Module(caps=[ti.DeviceCapability.spirv_has_int8])
     m.add_graph('g_init', g)
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_devcap():
+    module = ti.aot.Module(
+        ti.vulkan,
+        caps=[
+            ti.DeviceCapability.spirv_has_float16,
+            ti.DeviceCapability.spirv_has_atomic_float16_minmax
+        ])
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        module.save(tmpdir)
+
+        with open(tmpdir + "/metadata.json") as f:
+            j = json.load(f)
+            caps = j["required_caps"]
+            for cap in caps:
+                key = cap["key"]
+                if key == "spirv_version":
+                    assert cap["value"] == 0x10300
+                elif key == "spirv_has_float16":
+                    assert cap["value"] == 1
+                elif key == "spirv_has_atomic_float16_minmax":
+                    assert cap["value"] == 1
+                else:
+                    assert False
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_devcap_weird_user_input():
+    with pytest.raises(RuntimeError,
+                       match='unexpected device capability name'):
+        ti.aot.Module(ti.vulkan,
+                      caps=[
+                          "Never gonna give you up"
+                          "Never gonna let you down"
+                          "Never gonna run around and desert you"
+                          "Never gonna make you cry"
+                          "Never gonna say goodbye"
+                          "Never gonna tell a lie and hurt you"
+                      ])
 
 
 @test_utils.test(arch=[ti.vulkan])
@@ -603,3 +648,59 @@ def test_module_arch_fallback():
             r'AOT compilation to a different arch than the current one is not yet supported, switching'
     ):
         m = ti.aot.Module(ti.cpu)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_save_kernel_with_rwtexture():
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2,
+                                       fmt=ti.Format.r32f,
+                                       lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    m = ti.aot.Module()
+    m.add_kernel(write)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_read_kernel_with_texture():
+    @ti.kernel
+    def read(tex: ti.types.texture(num_dimensions=2), arr: ti.types.ndarray()):
+        for i, j in arr:
+            arr[i, j] = tex.fetch(ti.Vector([i, j]), 0).x
+
+    res = (128, 128)
+    tex = ti.Texture(ti.Format.r32f, res)
+    arr = ti.ndarray(ti.f32, res)
+
+    m = ti.aot.Module()
+    m.add_kernel(read, template_args={"tex": tex, "arr": arr})
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_rwtexture_with_ndarray():
+    @ti.kernel
+    def init_texture_from_ndarray(tex: ti.types.rw_texture(num_dimensions=2,
+                                                           fmt=ti.Format.r32f,
+                                                           lod=0),
+                                  img: ti.types.ndarray(field_dim=2)):
+        for i, j in img:
+            tex.store(ti.Vector([i, j]),
+                      ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.)
+
+    m = ti.aot.Module()
+    tex = ti.Texture(ti.Format.r32f, (128, 128))
+    img = ti.ndarray(ti.f32, (128, 128))
+    m.add_kernel(
+        init_texture_from_ndarray,
+        template_args={
+            "img": img,
+        },
+    )
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)

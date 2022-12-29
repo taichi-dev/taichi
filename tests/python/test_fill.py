@@ -1,3 +1,5 @@
+from taichi.lang import impl
+
 import taichi as ti
 from tests import test_utils
 
@@ -65,3 +67,11 @@ def test_fill_matrix_field_with_matrix():
     for i in range(n):
         for j in range(m):
             assert (val[i, j] == mat).all()
+
+
+@test_utils.test()
+def test_fill_vector_field_recompile():
+    a = ti.Vector.field(2, ti.i32, shape=3)
+    for i in range(2):
+        a.fill(ti.Vector([0, 0]))
+    assert impl.get_runtime().get_num_compiled_functions() == 1

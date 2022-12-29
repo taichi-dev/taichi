@@ -6,6 +6,7 @@
 #include <optional>
 #include <atomic>
 #include <stack>
+#include <shared_mutex>
 
 #define TI_RUNTIME_HOST
 #include "taichi/aot/module_builder.h"
@@ -22,7 +23,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
-#include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
@@ -124,11 +124,21 @@ class TI_DLL_EXPORT Program {
   ~Program();
 
   CompileConfig &this_thread_config() {
+    // std::unordered_map is not thread safe even if we do the rehash in
+    // advance, so we need to add a lock to protect it.
+    std::shared_lock<std::shared_mutex> read_lock(config_map_mut);
     auto thread_id = std::this_thread::get_id();
     if (!configs.count(thread_id)) {
+      read_lock.unlock();
+      std::unique_lock<std::shared_mutex> write_lock(config_map_mut);
       configs[thread_id] = configs[main_thread_id_];
+      return configs[thread_id];
     }
     return configs[thread_id];
+  }
+
+  const CompileConfig &config() {
+    return configs[main_thread_id_];
   }
 
   struct KernelProfilerQueryResult {
@@ -395,6 +405,7 @@ class TI_DLL_EXPORT Program {
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   std::vector<std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
+  std::shared_mutex config_map_mut;
 };
 
 }  // namespace taichi::lang

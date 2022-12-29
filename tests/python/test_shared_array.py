@@ -4,7 +4,8 @@ import taichi as ti
 from tests import test_utils
 
 
-def _test_shared_array_nested_loop():
+@test_utils.test(arch=[ti.cuda, ti.vulkan])
+def test_shared_array_nested_loop():
     block_dim = 128
     nBlocks = 64
     N = nBlocks * block_dim
@@ -14,9 +15,8 @@ def _test_shared_array_nested_loop():
     reference = np.zeros(N).astype(np.float32)
 
     @ti.kernel
-    def calc(v: ti.types.ndarray(field_dim=1),
-             d: ti.types.ndarray(field_dim=1),
-             a: ti.types.ndarray(field_dim=1)):
+    def calc(v: ti.types.ndarray(ndim=1), d: ti.types.ndarray(ndim=1),
+             a: ti.types.ndarray(ndim=1)):
         for i in range(N):
             acc = 0.0
             v_val = v[i]
@@ -25,9 +25,9 @@ def _test_shared_array_nested_loop():
             a[i] = acc
 
     @ti.kernel
-    def calc_shared_array(v: ti.types.ndarray(field_dim=1),
-                          d: ti.types.ndarray(field_dim=1),
-                          a: ti.types.ndarray(field_dim=1)):
+    def calc_shared_array(v: ti.types.ndarray(ndim=1),
+                          d: ti.types.ndarray(ndim=1),
+                          a: ti.types.ndarray(ndim=1)):
         ti.loop_config(block_dim=block_dim)
         for i in range(nBlocks * block_dim):
             tid = i % block_dim
@@ -45,15 +45,3 @@ def _test_shared_array_nested_loop():
     calc(v_arr, d_arr, reference)
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr)
-
-
-@test_utils.test(arch=[ti.cuda, ti.vulkan])
-def test_shared_array_nested_loop():
-    _test_shared_array_nested_loop()
-
-
-@test_utils.test(arch=[ti.cuda, ti.vulkan],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_shared_array_nested_loop_matrix_scalarize():
-    _test_shared_array_nested_loop()

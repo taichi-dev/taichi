@@ -103,6 +103,31 @@ std::string TensorType::to_string() const {
   return s;
 }
 
+std::string StructType::to_string() const {
+  std::string s = "struct(";
+  for (int i = 0; i < elements_.size(); i++) {
+    if (i) {
+      s += ", ";
+    }
+    s += std::to_string(i) + ": " + elements_[i]->to_string();
+  }
+  s += ")";
+  return s;
+}
+
+Type *StructType::get_element_type(const std::vector<int> &indices) const {
+  const Type *type_now = this;
+  for (auto ind : indices) {
+    if (auto tensor_type = type_now->cast<TensorType>()) {
+      TI_ASSERT(ind < tensor_type->get_num_elements())
+      type_now = tensor_type->get_element_type();
+    } else {
+      type_now = type_now->as<StructType>()->elements_[ind];
+    }
+  }
+  return (Type *)type_now;
+}
+
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;

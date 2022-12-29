@@ -112,7 +112,8 @@ class Offloader {
           offloaded->const_end = true;
           offloaded->end_value = val->val.val_int32();
         } else {
-          if ((arch == Arch::opengl || arch == Arch::vulkan) &&
+          if ((arch == Arch::opengl || arch == Arch::vulkan ||
+               arch == Arch::gles) &&
               demotable_axis_load(s->end)) {
             // TODO: We need to update codegen for each backend gradually so
             // let's limit it to opengl backend for now.
@@ -385,7 +386,8 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
         (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
-    if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan) &&
+    if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan ||
+         config_.arch == Arch::gles) &&
         demotable_axis_load(stmt))
       return;
     // Not yet allocated
@@ -535,9 +537,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
       auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
       stmt_to_offloaded_[const_zero_stmt] = offloaded;
       for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-        TypedConstant offset(i *
-                             data_type_size(tensor_type->get_element_type()));
-        auto const_offset_stmt = replacement.push_back<ConstStmt>(offset);
+        auto const_offset_stmt =
+            replacement.push_back<ConstStmt>(TypedConstant(i));
         auto ptr_offset_stmt =
             replacement.push_back<MatrixPtrStmt>(ptr, const_offset_stmt);
         auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(

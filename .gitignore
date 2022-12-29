@@ -58,6 +58,7 @@ __pycache__
 !docs/**/*.jpg
 !docs/**/*.png
 !tests/python/expected/*.png
+!python/taichi/examples/algorithm/circle-packing/*.png
 *.egg-info
 .tlang_cache
 /taichi/common/version.h
@@ -89,3 +90,4 @@ imgui.ini
 .cache
 .do-not-clean
 *.dylib
+*.ply

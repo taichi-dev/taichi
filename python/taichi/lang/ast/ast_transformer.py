@@ -1,6 +1,7 @@
 import ast
 import collections.abc
 import itertools
+import operator
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -17,9 +18,9 @@ from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
-from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.snode import append, deactivate
+from taichi.lang.snode import append, deactivate, length
+from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -112,7 +113,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Assign(ctx, node):
         build_stmt(ctx, node.value)
-
         is_static_assign = isinstance(
             node.value, ast.Call) and node.value.func.ptr is impl.static
 
@@ -152,6 +152,10 @@ class ASTTransformer(Builder):
 
         # Unpack: a, b, c = ti.Vector([1., 2., 3.])
         if isinstance(values, impl.Expr) and values.ptr.is_tensor():
+            if len(values.get_shape()) > 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+
             values = ctx.ast_builder.expand_expr([values.ptr])
             if len(values) == 1:
                 values = values[0]
@@ -295,8 +299,7 @@ class ASTTransformer(Builder):
         with ctx.static_scope_guard():
             _iter = build_stmt(ctx, node.generators[now_comp].iter)
 
-        if impl.current_cfg().real_matrix and isinstance(
-                _iter, impl.Expr) and _iter.ptr.is_tensor():
+        if isinstance(_iter, impl.Expr) and _iter.ptr.is_tensor():
             shape = _iter.ptr.get_shape()
             flattened = [
                 Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
@@ -416,12 +419,21 @@ class ASTTransformer(Builder):
             id(min): ti_ops.min,
             id(max): ti_ops.max,
             id(int): impl.ti_int,
+            id(bool): impl.ti_bool,
             id(float): impl.ti_float,
             id(any): matrix_ops.any,
             id(all): matrix_ops.all,
             id(abs): abs,
             id(pow): pow,
+            id(operator.matmul): matrix_ops.matmul,
         }
+
+        # Builtin 'len' function on Matrix Expr
+        if id(func) == id(len) and len(args) == 1:
+            if isinstance(args[0], Expr) and args[0].ptr.is_tensor():
+                node.ptr = args[0].get_shape()[0]
+                return True
+
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
             if func is min or func is max:
@@ -498,8 +510,7 @@ class ASTTransformer(Builder):
         for arg in node.args:
             if isinstance(arg, ast.Starred):
                 arg_list = arg.ptr
-                if impl.current_cfg().real_matrix and isinstance(
-                        arg_list, Expr):
+                if isinstance(arg_list, Expr) and arg_list.is_tensor():
                     # Expand Expr with Matrix-type return into list of Exprs
                     arg_list = [
                         Expr(x)
@@ -522,8 +533,7 @@ class ASTTransformer(Builder):
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr
 
-        if ((id(func) == id(Matrix)
-             or id(func) == id(Vector))) and impl.current_cfg().real_matrix:
+        if id(func) == id(Matrix) or id(func) == id(Vector):
             node.ptr = matrix.make_matrix(*args, **keywords)
             return node.ptr
 
@@ -536,7 +546,6 @@ class ASTTransformer(Builder):
         if hasattr(node.func, 'caller'):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
-
         node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
 
@@ -562,8 +571,9 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type)
-
+                kernel_arguments.decl_ret(ctx.func.return_type,
+                                          ctx.is_real_function)
+            impl.get_runtime().prog.finalize_rets()
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -647,57 +657,40 @@ class ASTTransformer(Builder):
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
 
-                        if current_cfg().real_matrix:
-                            # with real_matrix=True, "data" is expected to be an Expr here
-                            # Therefore we simply call "impl.expr_init_func(data)" to perform:
-                            #
-                            # TensorType* t = alloca()
-                            # assign(t, data)
-                            #
-                            # We created local variable "t" - a copy of the passed-in argument "data"
-                            if not isinstance(
-                                    data,
-                                    expr.Expr) or not data.ptr.is_tensor():
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
-                                )
+                        # "data" is expected to be an Expr here,
+                        # so we simply call "impl.expr_init_func(data)" to perform:
+                        #
+                        # TensorType* t = alloca()
+                        # assign(t, data)
+                        #
+                        # We created local variable "t" - a copy of the passed-in argument "data"
+                        if not isinstance(
+                                data, expr.Expr) or not data.ptr.is_tensor():
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
+                            )
 
-                            element_shape = data.ptr.get_ret_type().shape()
-                            if len(element_shape
-                                   ) != ctx.func.arguments[i].annotation.ndim:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
-                                )
+                        element_shape = data.ptr.get_ret_type().shape()
+                        if len(element_shape
+                               ) != ctx.func.arguments[i].annotation.ndim:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
+                            )
 
-                            assert ctx.func.arguments[i].annotation.ndim > 0
-                            if element_shape[0] != ctx.func.arguments[
-                                    i].annotation.n:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {element_shape[0]}."
-                                )
+                        assert ctx.func.arguments[i].annotation.ndim > 0
+                        if element_shape[0] != ctx.func.arguments[
+                                i].annotation.n:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {element_shape[0]}."
+                            )
 
-                            if ctx.func.arguments[
-                                    i].annotation.ndim == 2 and element_shape[
-                                        1] != ctx.func.arguments[
-                                            i].annotation.m:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
-                                )
-                        else:
-                            if not isinstance(data, Matrix):
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
-                                )
+                        if ctx.func.arguments[
+                                i].annotation.ndim == 2 and element_shape[
+                                    1] != ctx.func.arguments[i].annotation.m:
+                            raise TaichiSyntaxError(
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
+                            )
 
-                            if data.m != ctx.func.arguments[i].annotation.m:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {data.m}."
-                                )
-
-                            if data.n != ctx.func.arguments[i].annotation.n:
-                                raise TaichiSyntaxError(
-                                    f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {data.n}."
-                                )
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
                         continue
 
@@ -747,6 +740,11 @@ class ASTTransformer(Builder):
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
                         for exp in values
                     ]))
+            elif isinstance(ctx.func.return_type, StructType):
+                values = node.value.ptr
+                assert isinstance(values, Struct)
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(expr._get_flattened_ptrs(values)))
             else:
                 raise TaichiSyntaxError(
                     "The return type is not supported now!")
@@ -771,7 +769,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_attribute_if_is_dynamic_snode_method(ctx, node):
         is_subscript = isinstance(node.value, ast.Subscript)
-        names = ("append", "deactivate")
+        names = ("append", "deactivate", "length")
         if node.attr not in names:
             return False
         if is_subscript:
@@ -791,8 +789,10 @@ class ASTTransformer(Builder):
             return False
         if node.attr == "append":
             node.ptr = lambda val: append(x.parent(), indices, val)
-        else:
+        elif node.attr == "deactivate":
             node.ptr = lambda: deactivate(x.parent(), indices)
+        else:
+            node.ptr = lambda: length(x.parent(), indices)
         return True
 
     @staticmethod
@@ -833,6 +833,8 @@ class ASTTransformer(Builder):
                       Expr) and not hasattr(node.value.ptr, node.attr):
             if node.attr in Matrix._swizzle_to_keygroup:
                 keygroup = Matrix._swizzle_to_keygroup[node.attr]
+                Matrix._keygroup_to_checker[keygroup](node.value.ptr,
+                                                      node.attr)
                 attr_len = len(node.attr)
                 if attr_len == 1:
                     node.ptr = Expr(
@@ -1173,9 +1175,10 @@ class ASTTransformer(Builder):
                     f"Group for should have 1 loop target, found {len(targets)}"
                 )
             target = targets[0]
-            target_var = impl.expr_init(
-                matrix.Vector([0] * len(ndrange_var.dimensions),
-                              dt=primitive_types.i32))
+            mat = matrix.make_matrix([0] * len(ndrange_var.dimensions),
+                                     dt=primitive_types.i32)
+            target_var = impl.expr_init(mat)
+
             ctx.create_variable(target, target_var)
             I = impl.expr_init(ndrange_loop_var)
             for i in range(len(ndrange_var.dimensions)):
@@ -1215,15 +1218,9 @@ class ASTTransformer(Builder):
                 expr_group = expr.make_expr_group(loop_indices)
                 impl.begin_frontend_struct_for(ctx.ast_builder, expr_group,
                                                loop_var)
-                if impl.current_cfg().real_matrix:
-                    ctx.create_variable(
-                        target,
-                        matrix.make_matrix(loop_indices,
-                                           dt=primitive_types.i32))
-                else:
-                    ctx.create_variable(
-                        target,
-                        matrix.Vector(loop_indices, dt=primitive_types.i32))
+                ctx.create_variable(
+                    target,
+                    matrix.make_matrix(loop_indices, dt=primitive_types.i32))
                 build_stmts(ctx, node.body)
                 ctx.ast_builder.end_frontend_struct_for()
             else:
@@ -1394,13 +1391,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Expr(ctx, node):
         build_stmt(ctx, node.value)
-        if not isinstance(node.value, ast.Call):
-            return None
-        is_taichi_function = getattr(node.value.func.ptr,
-                                     '_is_taichi_function', False)
-        if is_taichi_function and node.value.func.ptr._is_real_function:
-            func_call_result = node.value.ptr
-            ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)
         return None
 
     @staticmethod
@@ -1409,13 +1399,21 @@ class ASTTransformer(Builder):
         build_stmt(ctx, node.body)
         build_stmt(ctx, node.orelse)
 
-        if is_taichi_class(node.test.ptr) or is_taichi_class(
-                node.body.ptr) or is_taichi_class(node.orelse.ptr):
+        has_tensor_type = False
+        if isinstance(node.test.ptr, expr.Expr) and node.test.ptr.is_tensor():
+            has_tensor_type = True
+        if isinstance(node.body.ptr, expr.Expr) and node.body.ptr.is_tensor():
+            has_tensor_type = True
+        if isinstance(node.orelse.ptr,
+                      expr.Expr) and node.orelse.ptr.is_tensor():
+            has_tensor_type = True
+
+        if has_tensor_type:
             node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
                                      node.orelse.ptr)
             warnings.warn_explicit(
                 'Using conditional expression for element-wise select operation on '
-                'Taichi vectors/matrices is deprecated. '
+                'Taichi vectors/matrices will be deprecated starting from Taichi v1.5.0 '
                 'Please use "ti.select" instead.',
                 DeprecationWarning,
                 ctx.file,

@@ -20,6 +20,8 @@ PER_CUSPARSE_FUNCTION(cpCreateIdentityPermutation, cusparseCreateIdentityPermuta
 PER_CUSPARSE_FUNCTION(cpXcoosort_bufferSizeExt, cusparseXcoosort_bufferSizeExt, cusparseHandle_t,int ,int,int, void* ,void* ,void*);
 PER_CUSPARSE_FUNCTION(cpXcoosortByRow, cusparseXcoosortByRow, cusparseHandle_t,int,int,int,void* ,void* ,void* ,void*);
 PER_CUSPARSE_FUNCTION(cpGather, cusparseGather, cusparseHandle_t, cusparseDnVecDescr_t, cusparseSpVecDescr_t);
+PER_CUSPARSE_FUNCTION(cpScatter, cusparseScatter, cusparseHandle_t, cusparseSpVecDescr_t, cusparseDnVecDescr_t);
+PER_CUSPARSE_FUNCTION(cpSsctr, cusparseSsctr, cusparseHandle_t, int, void*, void*, void*, cusparseIndexBase_t);
 PER_CUSPARSE_FUNCTION(cpSetPointerMode, cusparseSetPointerMode, cusparseHandle_t, cusparsePointerMode_t);
 PER_CUSPARSE_FUNCTION(cpCsrSetPointers, cusparseCsrSetPointers, cusparseSpMatDescr_t,void*, void*, void*);
 

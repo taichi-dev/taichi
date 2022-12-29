@@ -24,7 +24,9 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
   ubo.two_sided = info.two_sided;
   ubo.has_attribute = info.mesh_attribute_info.has_attribute;
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -69,7 +71,9 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   }
 
   {
-    void *mapped = app_context_->device().map(storage_buffer_);
+    void *mapped{nullptr};
+    TI_ASSERT(app_context_->device().map(storage_buffer_, &mapped) ==
+              RhiResult::success);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     app_context_->device().unmap(storage_buffer_);
   }

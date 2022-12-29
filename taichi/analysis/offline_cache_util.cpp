@@ -52,9 +52,8 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   if (config->arch == Arch::cc) {
     serializer(config->cc_compile_cmd);
     serializer(config->cc_link_cmd);
-  } else if (config->arch == Arch::opengl) {
+  } else if (config->arch == Arch::opengl || config->arch == Arch::gles) {
     serializer(config->allow_nv_shader_extension);
-    serializer(config->use_gles);
   }
   serializer(config->make_mesh_block_local);
   serializer(config->optimize_mesh_reordered_mapping);
@@ -65,7 +64,6 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config->experimental_auto_mesh_local);
   serializer(config->auto_mesh_local_default_occupacy);
   serializer(config->dynamic_index);
-  serializer(config->real_matrix);
   serializer(config->real_matrix_scalarize);
   serializer.finalize();
 

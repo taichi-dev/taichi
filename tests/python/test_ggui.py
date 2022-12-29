@@ -282,8 +282,7 @@ def test_set_image_with_texture():
 
     @ti.kernel
     def init_img(img: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=4,
-                                          channel_format=ti.f32,
+                                          fmt=ti.Format.rgba32f,
                                           lod=0)):
         for i, j in ti.ndrange(512, 512):
             img.store(ti.Vector([i, j]),
@@ -361,7 +360,9 @@ def test_get_camera_view_and_projection_matrix():
     assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)
 
 
-def _test_fetching_color_attachment():
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_fetching_color_attachment():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
 
@@ -385,20 +386,6 @@ def _test_fetching_color_attachment():
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
-def test_fetching_color_attachment():
-    _test_fetching_color_attachment()
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_fetching_color_attachment_matrix_scalarize():
-    _test_fetching_color_attachment()
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")

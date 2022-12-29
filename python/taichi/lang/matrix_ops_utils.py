@@ -98,8 +98,35 @@ def arg_foreach_check(*arg_indices, fns=[], logic='or', msg=None):
     return check
 
 
+def get_list_shape(x):
+    outer_shape = [len(x)]
+    inner_shape = None
+    for element in x:
+        if isinstance(element, list):
+            cur_shape = get_list_shape(element)
+        else:
+            cur_shape = []
+
+        if inner_shape:
+            assert curr_shape == inner_shape
+        else:
+            inner_shape = cur_shape
+
+    return outer_shape + inner_shape
+
+
 def same_shapes(*xs):
-    shapes = [x.get_shape() for x in xs]
+    shapes = []
+    for x in xs:
+        if isinstance(x, Matrix):
+            shapes.append(x.get_shape())
+        elif isinstance(x, list):
+            shapes.append(tuple(get_list_shape(x)))
+        elif isinstance(x, Expr):
+            shapes.append(tuple(x.ptr.get_ret_type().shape()))
+        else:
+            return False, f'same_shapes() received an unexpected argument of type: {x}'
+
     if len(set(shapes)) != 1:
         return False, f'required shapes to be the same, got shapes {shapes}'
     return True, None
@@ -145,3 +172,10 @@ def check_matmul(x, y):
         if x_shape[1] != y_shape[0]:
             return False, f'dimension mismatch between {x_shape} and {y_shape} for matrix multiplication'
     return True, None
+
+
+def check_transpose(x):
+    ok, msg = assert_tensor(x)
+    if ok and len(x.get_shape()) == 1:
+        return False, '`transpose()` cannot apply to a vector. If you want something like `a @ b.transpose()`, write `a.outer_product(b)` instead.'
+    return ok, msg

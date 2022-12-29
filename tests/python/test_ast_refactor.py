@@ -852,8 +852,8 @@ def test_dict():
         foo(2)
 
 
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_single_listcomp_matrix_scalarize():
+@test_utils.test()
+def test_single_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -871,7 +871,8 @@ def test_single_listcomp_matrix_scalarize():
     assert foo(5) == 1
 
 
-def _test_listcomp():
+@test_utils.test()
+def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -888,16 +889,6 @@ def _test_listcomp():
         return ret
 
     assert foo(5) == 1 + 4 + 9 + 16
-
-
-@test_utils.test()
-def test_listcomp():
-    _test_listcomp()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_listcomp_matrix_scalarize():
-    _test_listcomp()
 
 
 @test_utils.test()
@@ -936,7 +927,8 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(x: ti.types.ndarray(element_dim=2), y: ti.types.ndarray()):
+    def run(x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)),
+            y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]

@@ -84,6 +84,7 @@ special_init_cfgs = [
     platform.system() == 'Windows',
     reason="XDG Base Directory Specification is only supported on *nix.",
 )
+@test_utils.test()
 def test_xdg_basedir(tmpdir):
     orig_cache = os.environ.get("XDG_CACHE_HOME", None)
     try:
@@ -108,6 +109,7 @@ def test_xdg_basedir(tmpdir):
 
 
 @pytest.mark.parametrize('key,values', init_args.items())
+@test_utils.test()
 def test_init_arg(key, values):
     default, values = values
 
@@ -150,11 +152,13 @@ def test_init_arch(arch):
         assert ti.lang.impl.current_cfg().arch == arch
 
 
+@test_utils.test(arch=ti.cpu)
 def test_init_bad_arg():
     with pytest.raises(KeyError):
         ti.init(_test_mode=True, debug=True, foo_bar=233)
 
 
+@test_utils.test(arch=ti.cpu)
 def test_init_require_version():
     ti_python_core = ti._lib.utils.import_ti_python_core()
     require_version = '{}.{}.{}'.format(ti_python_core.get_version_major(),
@@ -163,6 +167,7 @@ def test_init_require_version():
     ti.init(_test_mode=True, debug=True, require_version=require_version)
 
 
+@test_utils.test(arch=ti.cpu)
 def test_init_bad_require_version():
     with pytest.raises(Exception):
         ti_python_core = ti._lib.utils.import_ti_python_core()
@@ -177,7 +182,7 @@ def test_init_bad_require_version():
 
 @pytest.mark.parametrize(
     'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
-@test_utils.test()
+@test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
@@ -185,7 +190,7 @@ def test_supported_log_levels(level):
 
 @pytest.mark.parametrize(
     'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
-@test_utils.test()
+@test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)
     ti.set_logging_level(level)

@@ -53,11 +53,6 @@
                     "is_dispatchable": true
                 },
                 {
-                    "name": "event",
-                    "type": "handle",
-                    "is_dispatchable": true
-                },
-                {
                     "name": "memory",
                     "type": "handle",
                     "is_dispatchable": false
@@ -86,7 +81,6 @@
                     "name": "error",
                     "type": "enumeration",
                     "cases": {
-                        "truncated": 1,
                         "success": 0,
                         "not_supported": -1,
                         "corrupted_data": -2,
@@ -96,7 +90,9 @@
                         "argument_out_of_range": -6,
                         "argument_not_found": -7,
                         "invalid_interop": -8,
-                        "invalid_state": -9
+                        "invalid_state": -9,
+                        "incompatible_module": -10,
+                        "out_of_memory": -11
                     }
                 },
                 {
@@ -460,6 +456,23 @@
                     ]
                 },
                 {
+                    "name": "get_available_archs",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "arch_count",
+                            "type": "uint32_t",
+                            "by_mut": true
+                        },
+                        {
+                            "name": "archs",
+                            "type": "enumeration.arch",
+                            "count": "arch_count",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
                     "name": "get_last_error",
                     "type": "function",
                     "parameters": [
@@ -502,6 +515,10 @@
                         },
                         {
                             "type": "enumeration.arch"
+                        },
+                        {
+                            "name": "device_index",
+                            "type": "uint32_t"
                         }
                     ]
                 },
@@ -528,8 +545,28 @@
                         },
                         {
                             "name": "capabilities",
-                            "type": "enumeration.capability",
+                            "type": "structure.capability_level_info",
                             "count": "capability_count"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_runtime_capabilities",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "capability_count",
+                            "type": "uint32_t",
+                            "by_mut": true
+                        },
+                        {
+                            "name": "capabilities",
+                            "type": "structure.capability_level_info",
+                            "count": "capability_count",
+                            "by_mut": true
                         }
                     ]
                 },
@@ -652,28 +689,6 @@
                     ]
                 },
                 {
-                    "name": "create_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        }
-                    ]
-                },
-                {
-                    "name": "destroy_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
                     "name": "copy_memory_device_to_device",
                     "type": "function",
                     "is_device_command": true,
@@ -792,46 +807,7 @@
                     ]
                 },
                 {
-                    "name": "signal_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "reset_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "wait_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "submit",
+                    "name": "flush",
                     "type": "function",
                     "parameters": [
                         {
@@ -862,6 +838,27 @@
                         {
                             "name": "module_path",
                             "type": "const char*"
+                        }
+                    ]
+                },
+                {
+                    "name": "create_aot_module",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "tcm",
+                            "type": "const void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
                         }
                     ]
                 },
@@ -951,12 +948,6 @@
         },
         {
             "name": "taichi/taichi_cuda.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_CUDA",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
@@ -996,12 +987,6 @@
         },
         {
             "name": "taichi/taichi_vulkan.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_VULKAN",
-                    "value": "1"
-                }
-            ],
             "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
@@ -1114,16 +1099,6 @@
                         {
                             "name": "usage",
                             "type": "VkImageUsageFlags"
-                        }
-                    ]
-                },
-                {
-                    "name": "vulkan_event_interop_info",
-                    "type": "structure",
-                    "fields": [
-                        {
-                            "name": "event",
-                            "type": "VkEvent"
                         }
                     ]
                 },
@@ -1264,52 +1239,11 @@
                             "by_mut": true
                         }
                     ]
-                },
-                {
-                    "name": "import_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
-                            "by_ref": true
-                        }
-                    ]
-                },
-                {
-                    "name": "export_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
-                            "by_mut": true
-                        }
-                    ]
                 }
             ]
         },
         {
             "name": "taichi/taichi_opengl.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_OPENGL",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

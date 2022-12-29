@@ -53,6 +53,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     } else {
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
       glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);

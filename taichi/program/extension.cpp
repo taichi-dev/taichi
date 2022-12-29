@@ -26,6 +26,7 @@ bool is_extension_supported(Arch arch, Extension ext) {
       {Arch::opengl, {Extension::dynamic_index, Extension::extfunc}},
       {Arch::gles, {}},
       {Arch::vulkan, {Extension::dynamic_index}},
+      {Arch::dx11, {Extension::dynamic_index}},
       {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };
   // if (with_opengl_extension_data64())

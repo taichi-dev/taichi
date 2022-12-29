@@ -72,6 +72,22 @@ set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
     ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
+    
+if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
+  # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_C_API_NAME}.dll
+                ${C_API_OUTPUT_DIRECTORY}/${TAICHI_C_API_NAME}.dll)
+else(${CMAKE_GENERATOR} STREQUAL "XCode")
+  # XCode is also a multi-config generator
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_C_API_NAME}.dylib
+                ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.dylib)
+endif()
 
 target_include_directories(${TAICHI_C_API_NAME}
     PUBLIC

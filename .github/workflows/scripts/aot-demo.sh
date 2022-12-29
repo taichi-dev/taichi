@@ -17,6 +17,8 @@ export TAICHI_UNITY_EXAMPLE_BRANCH=main
 
 
 function build-and-smoke-test-android-aot-demo {
+    setup-android-ndk-env
+
     pushd taichi
     GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
     setup_python

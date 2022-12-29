@@ -4,8 +4,8 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-export TAICHI_AOT_DEMO_URL=https://github.com/jim19930609/taichi-aot-demo.git
-export TAICHI_AOT_DEMO_BRANCH=fix_android_app
+export TAICHI_AOT_DEMO_URL=https://github.com/taichi-dev/taichi-aot-demo
+export TAICHI_AOT_DEMO_BRANCH=master
 
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=main

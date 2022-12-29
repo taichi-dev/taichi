@@ -94,6 +94,11 @@ TEST(FrontendTypeInference, GlobalPtr_Field) {
 
   auto global_var =
       Expr::make<FieldExpression>(PrimitiveType::u8, Identifier(0));
+  SNode snode;
+  snode.num_active_indices = 1;
+  std::dynamic_pointer_cast<FieldExpression>(global_var.expr)
+      ->set_snode(&snode);
+
   auto index = value<int32>(2);
   index->type_check(nullptr);
   auto global_ptr = ast_builder->expr_subscript(global_var, ExprGroup(index));

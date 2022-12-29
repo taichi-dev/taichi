@@ -1438,47 +1438,54 @@ void ASTBuilder::insert_expr_stmt(const Expr &val) {
 
 void ASTBuilder::insert_snode_activate(SNode *snode,
                                        const ExprGroup &expr_group) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(expr_group.exprs);
+  ExprGroup expanded_group;
+  expanded_group.exprs = this->expand_expr(expr_group.exprs);
   this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::activate, snode,
-                                               expanded_exprs));
+                                               expanded_group));
 }
 
 void ASTBuilder::insert_snode_deactivate(SNode *snode,
                                          const ExprGroup &expr_group) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(expr_group.exprs);
+  ExprGroup expanded_group;
+  expanded_group.exprs = this->expand_expr(expr_group.exprs);
   this->insert(Stmt::make<FrontendSNodeOpStmt>(SNodeOpType::deactivate, snode,
-                                               expanded_exprs));
+                                               expanded_group));
 }
 
 Expr ASTBuilder::snode_append(SNode *snode,
                               const ExprGroup &indices,
                               const std::vector<Expr> &vals) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(indices.exprs);
+  ExprGroup expanded_exprs;
+  expanded_exprs.exprs = this->expand_expr(indices.exprs);
   std::vector<Expr> expanded_vals = this->expand_expr(vals);
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append,
                                        expanded_exprs, expanded_vals);
 }
 
 Expr ASTBuilder::snode_is_active(SNode *snode, const ExprGroup &indices) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(indices.exprs);
+  ExprGroup expanded_exprs;
+  expanded_exprs.exprs = this->expand_expr(indices.exprs);
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active,
                                        expanded_exprs);
 }
 
 Expr ASTBuilder::snode_length(SNode *snode, const ExprGroup &indices) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(indices.exprs);
+  ExprGroup expanded_exprs;
+  expanded_exprs.exprs = this->expand_expr(indices.exprs);
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length,
                                        expanded_exprs);
 }
 
 Expr ASTBuilder::snode_get_addr(SNode *snode, const ExprGroup &indices) {
-  std::vector<Expr> expanded_exprs = this->expand_expr(indices.exprs);
+  ExprGroup expanded_exprs;
+  expanded_exprs.exprs = this->expand_expr(indices.exprs);
   return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr,
                                        expanded_exprs);
 }
 
 Expr ASTBuilder::insert_func_call_expr(Function *func, const ExprGroup &args) {
-  auto expanded_args = this->expand_expr(args.exprs);
+  ExprGroup expanded_args;
+  expanded_args.exprs = this->expand_expr(args.exprs);
   return Expr::make<FuncCallExpression>(func, expanded_args);
 }
 

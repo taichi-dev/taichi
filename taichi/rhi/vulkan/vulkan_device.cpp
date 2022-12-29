@@ -888,26 +888,7 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
 
   if (current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
       set_layout) {
-    // WARN: we have a layout mismatch
-    RHI_LOG_ERROR("Layout mismatch");
-
-    auto &templates = current_pipeline_->get_resource_set_templates();
-    VulkanResourceSet &set_template = templates.at(set_index);
-
-    for (const auto &template_binding : set_template.get_bindings()) {
-      char msg[512];
-      snprintf(msg, 512, "Template binding %d: (VkDescriptorType) %d",
-               template_binding.first, template_binding.second.type);
-      RHI_LOG_ERROR(msg);
-    }
-
-    for (const auto &binding : set->get_bindings()) {
-      char msg[512];
-      snprintf(msg, 512, "Binding %d: (VkDescriptorType) %d", binding.first,
-               binding.second.type);
-      RHI_LOG_ERROR(msg);
-    }
-
+    // We have a layout mismatch
     return RhiResult::invalid_usage;
   }
 

@@ -49,19 +49,13 @@ add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
 if (${CMAKE_GENERATOR} STREQUAL "Xcode")
   target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
   message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
-elseif(WIN32)
-  # On Windows, we either use lld-link or MSVC linker.
-  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
 else()
   target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
 endif()
 target_enable_function_level_linking(${TAICHI_C_API_NAME})
 
 # Strip shared library
-if (NOT WIN32)
-  # Both lld-link and MSVC linker don't support this flag
-  set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
-endif()
+set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.

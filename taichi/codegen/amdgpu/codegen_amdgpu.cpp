@@ -6,7 +6,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/io.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
@@ -20,7 +19,8 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/codegen/codegen_utils.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 using namespace llvm;
 
@@ -53,28 +53,28 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
 #define UNARY_STD(x)                                                    \
   else if (op == UnaryOpType::x) {                                      \
     if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {        \
-      llvm_val[stmt] = create_call("__ocml_" #x "_f16", input);         \
+      llvm_val[stmt] = call("__ocml_" #x "_f16", input);         \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) { \
-      llvm_val[stmt] = create_call("__ocml_" #x "_f32", input);         \
+      llvm_val[stmt] = call("__ocml_" #x "_f32", input);         \
     } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) { \
-      llvm_val[stmt] = create_call("__ocml_" #x "_f64", input);         \
+      llvm_val[stmt] = call("__ocml_" #x "_f64", input);         \
     } else {                                                            \
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
   }
     if (op == UnaryOpType::logic_not) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = create_call("logic_not_i32", input);
+        llvm_val[stmt] = call("logic_not_i32", input);
       } else {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::abs) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
-        llvm_val[stmt] = create_call("__ocml_fasb_f16", input);
+        llvm_val[stmt] = call("__ocml_fasb_f16", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call("__ocml_fabs_f32", input);
+        llvm_val[stmt] = call("__ocml_fabs_f32", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
-        llvm_val[stmt] = create_call("__ocml_fabs_f64", input);
+        llvm_val[stmt] = call("__ocml_fabs_f64", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto ashr = builder->CreateAShr(input, 31);
         auto xor_i32 = builder->CreateXor(ashr, input);
@@ -189,7 +189,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
     }
     TI_ASSERT(fast_reductions.at(prim_type).find(op) !=
               fast_reductions.at(prim_type).end());
-    return create_call(fast_reductions.at(prim_type).at(op),
+    return call(fast_reductions.at(prim_type).at(op),
                        {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }
 
@@ -226,7 +226,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
     auto epilogue = create_xlogue(stmt->tls_epilogue);
 
     auto [begin, end] = get_range_for_bounds(stmt);
-    create_call("gpu_parallel_range_for",
+    call("gpu_parallel_range_for",
                 {get_arg(0), begin, end, tls_prologue, body, epilogue,
                  tlctx->get_constant(stmt->tls_size)});
   }
@@ -241,7 +241,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->config.saturating_grid_dim;
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -259,7 +259,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->config.saturating_grid_dim;
+      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -286,9 +286,9 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     if (stmt->bls_size > 0)
       create_bls_buffer(stmt);
+#if defined(TI_WITH_AMDGPU)
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
     using Type = OffloadedStmt::TaskType;
@@ -311,7 +311,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       }
       finalize_offloaded_task_function();
       // TODO
-      // use amdgpu jargon to replace nvidia's
+      // use amdgpu-jargons to replace nvidias'
       current_task->grid_dim = stmt->grid_dim;
       if (stmt->task_type == Type::range_for) {
         if (stmt->const_begin && stmt->const_end) {
@@ -342,6 +342,9 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       current_task = nullptr;
     }
     current_offload = nullptr;
+#else
+  TI_NOT_IMPLEMENTED
+#endif
   }
 
   void visit(ExternalFuncCallStmt *stmt) override {
@@ -355,7 +358,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
-    llvm_val[stmt] = create_call("RuntimeContext_get_extra_args",
+    llvm_val[stmt] = call("RuntimeContext_get_extra_args",
                                  {get_context(), tlctx->get_constant(arg_id),
                                   tlctx->get_constant(axis)});
   }
@@ -371,17 +374,17 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
 
     if (op == BinaryOpType::pow) {
       if (ret_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
-        llvm_val[stmt] = create_call("__ocml_pow_f16", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_pow_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call("__ocml_pow_f32", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_pow_f32", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] = create_call("__ocml_pow_f64", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_pow_f64", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto sitofp_lhs_ =
             builder->CreateSIToFP(lhs, llvm::Type::getDoubleTy(*llvm_context));
         auto sitofp_rhs_ =
             builder->CreateSIToFP(rhs, llvm::Type::getDoubleTy(*llvm_context));
-        auto ret_ = create_call("__ocml_pow_f64", {sitofp_lhs_, sitofp_rhs_});
+        auto ret_ = call("__ocml_pow_f64", {sitofp_lhs_, sitofp_rhs_});
         llvm_val[stmt] =
             builder->CreateFPToSI(ret_, llvm::Type::getInt32Ty(*llvm_context));
       } else {
@@ -389,11 +392,11 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       }
     } else if (op == BinaryOpType::atan2) {
       if (ret_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
-        llvm_val[stmt] = create_call("__ocml_atan2_f16", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_atan2_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
-        llvm_val[stmt] = create_call("__ocml_atan2_f32", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_atan2_f32", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
-        llvm_val[stmt] = create_call("__ocml_atan2_f64", {lhs, rhs});
+        llvm_val[stmt] = call("__ocml_atan2_f64", {lhs, rhs});
       } else {
         TI_NOT_IMPLEMENTED
       }
@@ -410,7 +413,7 @@ std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenAMDGPU::make_codegen_llvm(
 }
 #endif  // TI_WITH_LLVM
 
-LLVMCompiledData KernelCodeGenAMDGPU::compile_task(
+LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenAMDGPU gen(kernel, stmt);
@@ -421,34 +424,23 @@ FunctionType KernelCodeGenAMDGPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
 
-  std::vector<LLVMCompiledData> data = compile_kernel_to_module();
   AMDGPUModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};
 
-  return converter.convert(this->kernel, std::move(data));
+  return converter.convert(this->kernel, compile_kernel_to_module());
 }
 
 FunctionType AMDGPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
-    std::vector<LLVMCompiledData> &&data) const {
-  std::vector<JITModule *> amdgpu_modules;
-  std::vector<std::vector<OffloadedTask>> offloaded_tasks;
-  amdgpu_modules.reserve(data.size());
-  for (auto &datum : data) {
-    auto &mod = datum.module;
-    auto &tasks = datum.tasks;
-    for (const auto &task : tasks) {
-      llvm::Function *func = mod->getFunction(task.name);
-      TI_ASSERT(func);
-      func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
-    }
+    LLVMCompiledKernel data) const {
+    auto &mod = data.module;
+    auto &tasks = data.tasks;
     auto jit = tlctx_->jit.get();
-    amdgpu_modules.push_back(
-        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg));
-    offloaded_tasks.push_back(std::move(tasks));
-  }
-  return [amdgpu_modules, kernel_name, args, offloaded_tasks,
+    auto amdgpu_module = 
+        jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+
+  return [amdgpu_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {
     AMDGPUContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
@@ -494,14 +486,13 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
                                         sizeof(RuntimeContext));
     AMDGPUDriver::get_instance().memcpy_host_to_device(
         context_pointer, &context, sizeof(RuntimeContext));
-    for (int i = 0; i < offloaded_tasks.size(); i++) {
-      for (auto &task : offloaded_tasks[i]) {
-        TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-                 task.block_dim);
-        amdgpu_modules[i]->launch(task.name, task.grid_dim, task.block_dim, 0,
-                                  (void *)&context_pointer,
-                                  (int)sizeof(RuntimeContext *));
-      }
+
+    for (auto &task : offloaded_tasks) {
+      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
+                task.block_dim);
+      amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+                                (void *)&context_pointer,
+                                (int)sizeof(RuntimeContext *));
     }
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     TI_TRACE("Launching kernel");
@@ -520,4 +511,6 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
   };
 }
 
-TLANG_NAMESPACE_END
+
+}
+}

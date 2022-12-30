@@ -215,6 +215,13 @@ if(TI_WITH_LLVM)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
     endif()
 
+    if (TI_WITH_AMDGPU)
+        llvm_map_components_to_libnames(llvm_amdgpu_libs AMDGPU)
+        add_subdirectory(taichi/rhi/amdgpu)
+        add_subdirectory(taichi/codegen/amdgpu)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_rhi)
+    endif()
+
     if (TI_WITH_DX12)
         llvm_map_components_to_libnames(llvm_directx_libs DirectX)
 

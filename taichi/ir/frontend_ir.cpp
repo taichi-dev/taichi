@@ -1103,7 +1103,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 }
 
 void GetElementExpression::type_check(CompileConfig *config) {
-    ret_type = src->ret_type->as<StructType>()->get_element_type({index});
+  ret_type = src->ret_type->as<StructType>()->get_element_type({index});
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {

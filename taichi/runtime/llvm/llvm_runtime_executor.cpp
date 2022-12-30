@@ -6,9 +6,15 @@
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
+#include "taichi/rhi/amdgpu/amdgpu_driver.h"
+#include "taichi/rhi/amdgpu/amdgpu_device.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_context.h"
+#endif
+
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/rhi/amdgpu/amdgpu_context.h"
 #endif
 
 namespace taichi::lang {
@@ -118,7 +124,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
 #if defined(TI_WITH_AMDGPU)
   if (config.arch == Arch::amdgpu) {
     AMDGPUContext::get_instance().set_debug(config.debug);
-    device_ = std::make_shared<amdgpu::AMDGPUDevice>();
+    device_ = std::make_shared<amdgpu::AmdgpuDevice>();
 
     this->maybe_initialize_amdgpu_llvm_context();
   }

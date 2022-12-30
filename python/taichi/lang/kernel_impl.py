@@ -269,7 +269,7 @@ class Func:
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
         func_call = Expr(
-            impl.get_runtime().prog.current_ast_builder().expr_func_call(
+            impl.get_runtime().prog.current_ast_builder().insert_func_call(
                 self.taichi_functions[key.instance_id], non_template_args))
         if self.return_type is None:
             return None

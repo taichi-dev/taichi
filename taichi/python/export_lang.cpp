@@ -300,7 +300,6 @@ void export_lang(py::module &m) {
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
-      .def("expr_func_call", &ASTBuilder::expr_func_call)
       .def("begin_frontend_range_for", &ASTBuilder::begin_frontend_range_for)
       .def("end_frontend_range_for", &ASTBuilder::pop_scope)
       .def("begin_frontend_struct_for_on_snode",
@@ -317,6 +316,7 @@ void export_lang(py::module &m) {
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("insert_func_call", &ASTBuilder::insert_func_call)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)

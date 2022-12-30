@@ -1103,7 +1103,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 }
 
 void GetElementExpression::type_check(CompileConfig *config) {
-  ret_type = PrimitiveType::gen; // Temporarily set to u64, will change later
+    ret_type = src->ret_type->as<StructType>()->get_element_type({index});
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
@@ -1310,12 +1310,11 @@ Expr ASTBuilder::expr_alloca() {
   return var;
 }
 
-Expr ASTBuilder::expr_func_call(Function *func, const ExprGroup &args) {
+Expr ASTBuilder::insert_func_call(Function *func, const ExprGroup &args) {
   auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
   this->insert(std::make_unique<FrontendFuncCallStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, func, args));
-  var.expr->ret_type = PrimitiveType::u64;
-  var.expr->ret_type.set_is_pointer(true);
+  var.expr->ret_type = func->ret_type;
   return var;
 }
 

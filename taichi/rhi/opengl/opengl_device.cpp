@@ -241,11 +241,6 @@ void GLResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
 }
 
-std::unique_ptr<ResourceBinder::Bindings> GLResourceBinder::materialize() {
-  TI_NOT_IMPLEMENTED;
-  return nullptr;
-}
-
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
                        const std::string &name) {
   GLuint shader_id;
@@ -363,11 +358,6 @@ void GLCommandList::bind_resources(ResourceBinder *_binder) {
     cmd->target = device_->get_image_gl_dims(texture);
     recorded_commands_.push_back(std::move(cmd));
   }
-}
-
-void GLCommandList::bind_resources(ResourceBinder *binder,
-                                   ResourceBinder::Bindings *bindings) {
-  TI_NOT_IMPLEMENTED;
 }
 
 template <typename T>
@@ -517,12 +507,14 @@ void GLStream::command_sync() {
 }
 
 GLDevice::GLDevice() : stream_(this) {
+  DeviceCapabilityConfig caps{};
   if (!is_gles()) {
     // 64bit isn't supported in ES profile
-    caps_.set(DeviceCapability::spirv_has_int64, true);
-    caps_.set(DeviceCapability::spirv_has_float64, true);
+    caps.set(DeviceCapability::spirv_has_int64, true);
+    caps.set(DeviceCapability::spirv_has_float64, true);
   }
-  caps_.set(DeviceCapability::spirv_version, 0x10300);
+  caps.set(DeviceCapability::spirv_version, 0x10300);
+  set_caps(std::move(caps));
 }
 
 GLDevice::~GLDevice() {
@@ -530,7 +522,6 @@ GLDevice::~GLDevice() {
 
 DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLenum target_hint = GL_SHADER_STORAGE_BUFFER;
-
   if (params.usage && AllocUsage::Storage) {
     target_hint = GL_SHADER_STORAGE_BUFFER;
   } else if (params.usage && AllocUsage::Uniform) {
@@ -540,14 +531,19 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   } else if (params.host_read && params.host_write) {
     target_hint = GL_COPY_READ_BUFFER;
   }
-
   GLuint buffer;
   glGenBuffers(1, &buffer);
   check_opengl_error("glGenBuffers");
   glBindBuffer(target_hint, buffer);
   check_opengl_error("glBindBuffer");
+
   glBufferData(target_hint, params.size, nullptr,
                params.host_read ? GL_STATIC_COPY : GL_DYNAMIC_READ);
+  GLuint alloc_res = glGetError();
+
+  if (alloc_res == GL_OUT_OF_MEMORY) {
+    throw std::bad_alloc();
+  }
   check_opengl_error("glBufferData");
 
   DeviceAllocation alloc;
@@ -566,7 +562,8 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
 }
 
 void GLDevice::dealloc_memory(DeviceAllocation handle) {
-  glDeleteBuffers(1, &handle.alloc_id);
+  GLuint buffer = GLuint(handle.alloc_id);
+  glDeleteBuffers(1, &buffer);
   check_opengl_error("glDeleteBuffers");
 }
 
@@ -587,27 +584,27 @@ std::unique_ptr<Pipeline> GLDevice::create_pipeline(
   return std::make_unique<GLPipeline>(src, name);
 }
 
-void *GLDevice::map_range(DevicePtr ptr, uint64_t size) {
+RhiResult GLDevice::map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) {
   TI_ASSERT_INFO(
       buffer_to_access_.find(ptr.alloc_id) != buffer_to_access_.end(),
       "Buffer not created with host_read or write");
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ptr.alloc_id);
   check_opengl_error("glBindBuffer");
-  void *mapped = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
-                                  buffer_to_access_.at(ptr.alloc_id));
+  *mapped_ptr = glMapBufferRange(GL_SHADER_STORAGE_BUFFER, ptr.offset, size,
+                                 buffer_to_access_.at(ptr.alloc_id));
   check_opengl_error("glMapBufferRange");
-  return mapped;
+  return RhiResult::success;
 }
 
-void *GLDevice::map(DeviceAllocation alloc) {
-  int size = 0;
+RhiResult GLDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, alloc.alloc_id);
   check_opengl_error("glBindBuffer");
 
+  int size = 0;
   glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &size);
   check_opengl_error("glGetBufferParameteriv");
 
-  return map_range(alloc.get_ptr(0), size);
+  return map_range(alloc.get_ptr(0), size, mapped_ptr);
 }
 
 void GLDevice::unmap(DevicePtr ptr) {
@@ -706,7 +703,8 @@ DeviceAllocation GLDevice::create_image(const ImageParams &params) {
 }
 
 void GLDevice::destroy_image(DeviceAllocation handle) {
-  glDeleteTextures(1, &handle.alloc_id);
+  GLuint texture = GLuint(handle.alloc_id);
+  glDeleteTextures(1, &texture);
   check_opengl_error("glDeleteTextures");
   image_to_dims_.erase(handle.alloc_id);
   image_to_int_format_.erase(handle.alloc_id);

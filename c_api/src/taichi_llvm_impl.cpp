@@ -125,8 +125,8 @@ void LlvmRuntime::buffer_copy(const taichi::lang::DevicePtr &dst,
   TI_NOT_IMPLEMENTED;
 }
 
-void LlvmRuntime::submit() {
-  // (penguinliong) Submit in LLVM backends is a nop atm.
+void LlvmRuntime::flush() {
+  // (penguinliong) Flush in LLVM backends is a nop atm.
   // TI_NOT_IMPLEMENTED;
 }
 
@@ -135,8 +135,6 @@ void LlvmRuntime::wait() {
 }
 
 }  // namespace capi
-
-#endif  // TI_WITH_LLVM
 
 // function.export_cpu_runtime
 void ti_export_cpu_memory(TiRuntime runtime,
@@ -197,3 +195,5 @@ void ti_export_cuda_memory(TiRuntime runtime,
   TI_NOT_IMPLEMENTED;
 #endif
 }
+
+#endif  // TI_WITH_LLVM

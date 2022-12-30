@@ -10,6 +10,8 @@ namespace taichi::lang {
 class OpenglProgramImpl : public ProgramImpl {
  public:
   explicit OpenglProgramImpl(CompileConfig &config);
+  ~OpenglProgramImpl() override;
+
   FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
 
   std::size_t get_snode_num_dynamically_allocated(
@@ -29,6 +31,8 @@ class OpenglProgramImpl : public ProgramImpl {
   void synchronize() override {
     runtime_->synchronize();
   }
+
+  void finalize() override;
 
   StreamSemaphore flush() override {
     return runtime_->flush();
@@ -61,8 +65,6 @@ class OpenglProgramImpl : public ProgramImpl {
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
-
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
   void dump_cache_data_to_disk() override;
 

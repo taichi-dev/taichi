@@ -48,7 +48,7 @@ def substep():
         # deformation gradient update
         F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p]
         # Hardening coefficient: snow gets harder when compressed
-        h = max(0.1, min(5, ti.exp(10 * (1.0 - Jp[p]))))
+        h = ti.max(0.1, ti.min(5, ti.exp(10 * (1.0 - Jp[p]))))
         if material[p] == 1:  # jelly, make it softer
             h = 0.3
         mu, la = mu_0 * h, lambda_0 * h

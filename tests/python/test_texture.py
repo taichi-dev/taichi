@@ -46,8 +46,7 @@ def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
 
 @ti.kernel
 def make_texture_2d(tex: ti.types.rw_texture(
-    num_dimensions=2, num_channels=1, channel_format=ti.f32, lod=0), n: ti.i32
-                    ):
+    num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
@@ -55,8 +54,7 @@ def make_texture_2d(tex: ti.types.rw_texture(
 
 @ti.kernel
 def make_texture_3d(tex: ti.types.rw_texture(
-    num_dimensions=3, num_channels=1, channel_format=ti.f32, lod=0), n: ti.i32
-                    ):
+    num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j, k in ti.ndrange(n, n, n):
         div = ti.cast(i / n, ti.f32)
         if div > 0.5:
@@ -88,6 +86,7 @@ def test_texture_compiled_functions():
     texture1 = ti.Texture(ti.Format.r32f, (n1, n1))
     n2 = 256
     texture2 = ti.Texture(ti.Format.r32f, (n2, n2))
+    texture3 = ti.Texture(ti.Format.r8, (n1, n1))
 
     make_texture_2d(texture1, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 1
@@ -95,11 +94,17 @@ def test_texture_compiled_functions():
     make_texture_2d(texture2, n2)
     assert impl.get_runtime().get_num_compiled_functions() == 1
 
-    paint(0.1, texture1, n1)
+    make_texture_2d(texture3, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 2
 
+    paint(0.1, texture1, n1)
+    assert impl.get_runtime().get_num_compiled_functions() == 3
+
     paint(0.2, texture2, n2)
-    assert impl.get_runtime().get_num_compiled_functions() == 2
+    assert impl.get_runtime().get_num_compiled_functions() == 3
+
+    paint(0.3, texture3, n1)
+    assert impl.get_runtime().get_num_compiled_functions() == 4
 
 
 @test_utils.test(arch=supported_archs_texture_excluding_load_store)
@@ -124,7 +129,7 @@ def test_texture_from_ndarray():
     tex = ti.Texture(ti.Format.r32f, res)
 
     @ti.kernel
-    def init_taichi_logo_ndarray(f: ti.types.ndarray(field_dim=2)):
+    def init_taichi_logo_ndarray(f: ti.types.ndarray(ndim=2)):
         for i, j in f:
             f[i, j] = [taichi_logo(ti.Vector([i / res[0], j / res[1]])), 0]
 
@@ -161,8 +166,7 @@ def test_rw_texture_2d_struct_for():
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       num_channels=1,
-                                       channel_format=ti.f32,
+                                       fmt=ti.Format.r32f,
                                        lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
@@ -183,8 +187,7 @@ def test_rw_texture_2d_struct_for_dim_check():
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       num_channels=1,
-                                       channel_format=ti.f32,
+                                       fmt=ti.Format.r32f,
                                        lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))

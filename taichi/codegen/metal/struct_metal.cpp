@@ -289,7 +289,7 @@ class StructCompiler {
     emit("");
   }
 
-  size_t compute_snode_size(const SNode *sn) {
+  size_t compute_snode_size(SNode *sn) {
     if (sn->is_place()) {
       return metal_data_type_bytes(to_metal_type(sn->dt));
     }
@@ -312,12 +312,13 @@ class StructCompiler {
     } else {
       for (const auto &ch : sn->ch) {
         const size_t ch_offset = ch_size;
-        const auto *ch_sn = ch.get();
+        auto *ch_sn = ch.get();
         ch_size += compute_snode_size(ch_sn);
         if (!ch_sn->is_place()) {
           snode_descriptors_.find(ch_sn->id)->second.mem_offset_in_parent =
               ch_offset;
         }
+        ch_sn->offset_bytes_in_parent_cell = ch_offset;
       }
     }
 
@@ -341,6 +342,7 @@ class StructCompiler {
 
     TI_ASSERT(snode_descriptors_.find(sn->id) == snode_descriptors_.end());
     snode_descriptors_[sn->id] = sn_desc;
+    sn->cell_size_bytes = sn_desc.stride;
     return sn_desc.stride;
   }
 

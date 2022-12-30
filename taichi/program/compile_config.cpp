@@ -9,12 +9,11 @@ CompileConfig::CompileConfig() {
   simd_width = default_simd_width(arch);
   opt_level = 1;
   external_optimization_level = 3;
-  packed = false;
+  packed = true;
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;
   print_evaluator_ir = false;
-  print_benchmark_stat = false;
   use_llvm = true;
   demote_dense_struct_fors = true;
   advanced_optimization = true;
@@ -23,7 +22,6 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
-  lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
   lower_access = true;
@@ -46,8 +44,7 @@ CompileConfig::CompileConfig() {
   make_block_local = true;
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
-  real_matrix = false;
-  real_matrix_scalarize = false;
+  real_matrix_scalarize = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

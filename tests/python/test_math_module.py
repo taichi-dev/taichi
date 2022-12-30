@@ -93,7 +93,7 @@ def test_vector_types_f64():
     test()
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 @ti.kernel
 def test_translate():
     error = 0
@@ -106,7 +106,7 @@ def test_translate():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 @ti.kernel
 def test_scale():
     error = 0
@@ -118,7 +118,7 @@ def test_scale():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 @ti.kernel
 def test_rotation2d():
     error = 0
@@ -128,7 +128,7 @@ def test_rotation2d():
     assert error == 0
 
 
-@test_utils.test()
+@test_utils.test(debug=True)
 @ti.kernel
 def test_rotation3d():
     error = 0

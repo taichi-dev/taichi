@@ -66,7 +66,7 @@ The following Python script defines a Taichi AOT module for generating and savin
 ```python
 import taichi as ti
 
-ti.init(arch=ti.opengl, use_gles=True, allow_nv_shader_extension=False)
+ti.init(arch=ti.gles, allow_nv_shader_extension=False)
 
 # Define constants for computation
 G = 1
@@ -126,7 +126,7 @@ aot()
 
 **In line 3, you initialize Taichi:**
 
-1. Set `use_gles` to `True` to generate GLES compute shaders for Android.
+1. Set `arch=ti.gles` to generate GLES compute shaders for Android.
 2. Set `allow_nv_shader_extension` to `False` to prevent the generated GLES compute shaders from using Nvidia GL extensions on Android.
 
 > This setting is because Android supports GLES APIs but GLES does not support `NV_SHADER_EXTENSION`.

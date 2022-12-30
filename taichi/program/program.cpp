@@ -17,7 +17,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -74,6 +73,8 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
   main_thread_id_ = std::this_thread::get_id();
+  // Rehash in advance to avoid rehashing during compilation
+  configs.rehash(default_compile_config.num_compile_threads + 1);
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;
   auto &config = this_thread_config();
@@ -122,7 +123,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   } else if (config.arch == Arch::opengl) {
 #ifdef TI_WITH_OPENGL
-    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    TI_ASSERT(opengl::initialize_opengl(false));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+  } else if (config.arch == Arch::gles) {
+#ifdef TI_WITH_OPENGL
+    TI_ASSERT(opengl::initialize_opengl(true));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
@@ -161,8 +169,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
       config.check_out_of_bound = false;
     }
   }
-
-  stat.clear();
 
   Timelines::get_instance().set_enabled(config.timeline);
 
@@ -236,14 +242,7 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  // Normal mode shouldn't be affected by `sync` flag.
-  if (arch_uses_llvm(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl ||
-      this_thread_config().arch == Arch::dx12) {
-    program_impl_->synchronize();
-  }
+  program_impl_->synchronize();
 }
 
 StreamSemaphore Program::flush() {
@@ -413,39 +412,6 @@ void Program::finalize() {
   synchronize();
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
-  if (this_thread_config().print_benchmark_stat) {
-    const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
-    const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
-    if (current_test != nullptr) {
-      if (output_dir == nullptr)
-        output_dir = ".";
-      std::string file_name = current_test;
-      auto slash_pos = file_name.find_last_of('/');
-      if (slash_pos != std::string::npos)
-        file_name = file_name.substr(slash_pos + 1);
-      auto py_pos = file_name.find(".py::");
-      TI_ASSERT(py_pos != std::string::npos);
-      file_name =
-          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
-      auto first_space_pos = file_name.find_first_of(' ');
-      TI_ASSERT(first_space_pos != std::string::npos);
-      file_name = file_name.substr(0, first_space_pos);
-      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
-        file_name[lt_pos] = '_';
-      }
-      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
-        file_name[gt_pos] = '_';
-      }
-      file_name += ".dat";
-      file_name = std::string(output_dir) + "/" + file_name;
-      TI_INFO("Saving benchmark result to {}", file_name);
-      std::ofstream ofs(file_name);
-      TI_ASSERT(ofs);
-      std::string stat_string;
-      stat.print(&stat_string);
-      ofs << stat_string;
-    }
-  }
 
   synchronize();
   memory_pool_->terminate();
@@ -458,6 +424,8 @@ void Program::finalize() {
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
+  configs.clear();
+  configs[main_thread_id_] = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
@@ -474,11 +442,6 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
-            this_thread_config().arch == Arch::metal ||
-            this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl ||
-            this_thread_config().arch == Arch::dx12);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
@@ -596,6 +559,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
       this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles ||
       this_thread_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }

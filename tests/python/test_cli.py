@@ -1,6 +1,9 @@
 import argparse
 import copy
+import os
+import shutil
 import sys
+import tempfile
 from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
@@ -9,6 +12,7 @@ import pytest
 from taichi._main import TaichiMain
 
 import taichi as ti
+from tests import test_utils
 
 
 @contextmanager
@@ -194,19 +198,6 @@ def test_cli_regression():
         assert args.gui == True
 
 
-def test_cli_benchmark():
-    with patch_sys_argv_helper(
-        ["ti", "benchmark", "a.py", "b.py", "-T", "-v", "-r2",
-         "-t4"]) as custom_argv:
-        cli = TaichiMain(test_mode=True)
-        args = cli()
-        assert args.files == ["a.py", "b.py"]
-        assert args.tprt == True
-        assert args.verbose == True
-        assert args.rerun == "2"
-        assert args.threads == "4"
-
-
 def test_cli_debug():
     with patch_sys_argv_helper(["ti", "debug", "a.py"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
@@ -219,3 +210,45 @@ def test_cli_run():
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.filename == "a.py"
+
+
+def test_cli_cache():
+    archs = {ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.gles}
+    archs = {v for v in archs if v in test_utils.expected_archs()}
+    exts = ('ll', 'bc', 'spv', 'metal', 'tcb', 'lock')
+    tmp_path = tempfile.mkdtemp()
+
+    @ti.kernel
+    def simple_kernel(a: ti.i32) -> ti.i32:
+        return -a
+
+    def launch_kernel(arch):
+        ti.init(arch=arch,
+                offline_cache=True,
+                offline_cache_file_path=tmp_path)
+        simple_kernel(128)
+        ti.reset()
+
+    for arch in archs:
+        launch_kernel(arch)
+
+    found = False
+    for root, dirs, files in os.walk(tmp_path):
+        for file in files:
+            if file.endswith(exts):
+                found = True
+                break
+        if found:
+            break
+    assert found
+
+    with patch_sys_argv_helper(["ti", "cache", "clean", "-p",
+                                tmp_path]) as custom_argv:
+        cli = TaichiMain()
+        cli()
+
+    for root, dirs, files in os.walk(tmp_path):
+        for file in files:
+            assert not file.endswith(exts)
+
+    shutil.rmtree(tmp_path)

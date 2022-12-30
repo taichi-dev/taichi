@@ -13,7 +13,7 @@ void aot_save(taichi::Arch arch) {
 
   // program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->dense(Axis(0), n, false);
+  auto *pointer = &root->dense(Axis(0), n, false, "");
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);

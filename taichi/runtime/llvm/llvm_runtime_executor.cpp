@@ -27,24 +27,27 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
 LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
                                          KernelProfilerBase *profiler)
     : config_(&config) {
-  runtime_mem_info_ = Runtime::create(config.arch);
   if (config.arch == Arch::cuda) {
-    if (!runtime_mem_info_) {
-      TI_WARN("Taichi is not compiled with CUDA.");
-      config.arch = host_arch();
-    } else if (!is_cuda_api_available()) {
+#if defined(TI_WITH_CUDA)
+    if (!is_cuda_api_available()) {
       TI_WARN("No CUDA driver API detected.");
       config.arch = host_arch();
-    } else if (!runtime_mem_info_->detected()) {
+    } else if (!CUDAContext::get_instance().detected()) {
       TI_WARN("No CUDA device detected.");
       config.arch = host_arch();
     } else {
       // CUDA runtime created successfully
     }
+#else
+    TI_WARN("Taichi is not compiled with CUDA.");
+    config.arch = host_arch();
+#endif
+
     if (config.arch != Arch::cuda) {
       TI_WARN("Falling back to {}.", arch_name(host_arch()));
     }
   }
+
   snode_tree_buffer_manager_ = std::make_unique<SNodeTreeBufferManager>(this);
   thread_pool_ = std::make_unique<ThreadPool>(config.cpu_max_num_threads);
   preallocated_device_buffer_ = nullptr;
@@ -94,8 +97,8 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     device_ = std::make_shared<cpu::CpuDevice>();
   }
 
-  if (config.kernel_profiler && runtime_mem_info_) {
-    runtime_mem_info_->set_profiler(profiler);
+  if (config.kernel_profiler) {
+    profiler_ = profiler;
   }
 
 #if defined(TI_WITH_CUDA)
@@ -109,6 +112,15 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     device_ = std::make_shared<cuda::CudaDevice>();
 
     this->maybe_initialize_cuda_llvm_context();
+  }
+#endif
+
+#if defined(TI_WITH_AMDGPU)
+  if (config.arch == Arch::amdgpu) {
+    AMDGPUContext::get_instance().set_debug(config.debug);
+    device_ = std::make_shared<amdgpu::AMDGPUDevice>();
+
+    this->maybe_initialize_amdgpu_llvm_context();
   }
 #endif
 
@@ -145,6 +157,14 @@ void LlvmRuntimeExecutor::maybe_initialize_cuda_llvm_context() {
   if (config_->arch == Arch::cuda && llvm_context_device_ == nullptr) {
     llvm_context_device_ =
         std::make_unique<TaichiLLVMContext>(config_, Arch::cuda);
+    llvm_context_device_->init_runtime_jit_module();
+  }
+}
+
+void LlvmRuntimeExecutor::maybe_initialize_amdgpu_llvm_context() {
+  if (config_->arch == Arch::amdgpu && llvm_context_device_ == nullptr) {
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(config_, Arch::amdgpu);
     llvm_context_device_->init_runtime_jit_module();
   }
 }
@@ -497,8 +517,7 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 }
 
 void LlvmRuntimeExecutor::finalize() {
-  if (runtime_mem_info_)
-    runtime_mem_info_->set_profiler(nullptr);
+  profiler_ = nullptr;
 #if defined(TI_WITH_CUDA)
   if (preallocated_device_buffer_ != nullptr) {
     cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
@@ -516,7 +535,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     CUDADriver::get_instance().malloc(
         (void **)result_buffer_ptr,
         sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = runtime_mem_info_->get_total_memory();
+    const auto total_mem = CUDAContext::get_instance().get_total_memory();
     if (config_->device_memory_fraction == 0) {
       TI_ASSERT(config_->device_memory_GB > 0);
       prealloc_size = std::size_t(config_->device_memory_GB * (1UL << 30));
@@ -569,19 +588,30 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     num_rand_states = config_->cpu_max_num_threads;
   }
 
-  TI_TRACE("Allocating {} random states (used by CUDA only)", num_rand_states);
+  TI_TRACE("Launching runtime_initialize");
 
-  runtime_jit->call<void *, void *, std::size_t, void *, int, int, void *,
-                    void *, void *>(
-      "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
-      preallocated_device_buffer_, starting_rand_state, num_rand_states,
-      (void *)&taichi_allocate_aligned, (void *)std::printf,
-      (void *)std::vsnprintf);
+  runtime_jit
+      ->call<void *, void *, std::size_t, void *, int, void *, void *, void *>(
+          "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
+          preallocated_device_buffer_, num_rand_states,
+          (void *)&taichi_allocate_aligned, (void *)std::printf,
+          (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
   llvm_runtime_ = fetch_result<void *>(taichi_result_buffer_ret_value_id,
                                        *result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
+
+  if (config_->arch == Arch::cuda) {
+    TI_TRACE("Initializing {} random states using CUDA", num_rand_states);
+    runtime_jit->launch<void *, int>(
+        "runtime_initialize_rand_states_cuda", config_->saturating_grid_dim,
+        config_->max_block_dim, 0, llvm_runtime_, starting_rand_state);
+  } else {
+    TI_TRACE("Initializing {} random states (serially)", num_rand_states);
+    runtime_jit->call<void *, int>("runtime_initialize_rand_states_serial",
+                                   llvm_runtime_, starting_rand_state);
+  }
 
   if (arch_use_host_memory(config_->arch)) {
     runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime_);

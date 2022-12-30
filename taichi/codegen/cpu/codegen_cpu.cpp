@@ -7,7 +7,6 @@
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
@@ -104,12 +103,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT, loop_index_load,
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
@@ -124,12 +119,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         builder->CreateStore(
             builder->CreateAdd(loop_index_load, tlctx->get_constant(1)),
             loop_index);
@@ -169,7 +160,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
     if (stmt->bls_size > 0)

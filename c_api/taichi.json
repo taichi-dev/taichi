@@ -1249,6 +1249,44 @@
             ],
             "declarations": [
                 {
+                    "name": "opengl_runtime_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "get_proc_addr",
+                            "type": "void*"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_opengl_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_opengl_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
                     "name": "opengl_memory_interop_info",
                     "type": "structure",
                     "fields": [

@@ -23,14 +23,13 @@ int opengl_max_grid_dim = 1024;
 // TODO: Properly support setting GLES/GLSL in opengl backend
 // without this global static boolean.
 static bool kUseGles = false;
+static std::optional<bool> supported;  // std::nullopt
 
 static void glfw_error_callback(int code, const char *description) {
   TI_WARN("GLFW Error {}: {}", code, description);
 }
 
 bool initialize_opengl(bool use_gles, bool error_tolerance) {
-  static std::optional<bool> supported;  // std::nullopt
-
   TI_TRACE("initialize_opengl({}, {}) called", use_gles, error_tolerance);
 
   if (supported.has_value()) {  // this function has been called before
@@ -54,6 +53,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     } else {
+      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
       glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -203,6 +203,12 @@ bool is_opengl_api_available(bool use_gles) {
 
 bool is_gles() {
   return kUseGles;
+}
+
+void reset_opengl() {
+  supported = std::nullopt;
+  kUseGles = false;
+  glfwTerminate();
 }
 
 std::shared_ptr<Device> make_opengl_device() {

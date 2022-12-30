@@ -13,7 +13,7 @@ TypeFactory::TypeFactory() {
 }
 
 Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
-  std::lock_guard<std::mutex> _(mut_);
+  std::lock_guard<std::mutex> _(primitive_mut_);
 
   if (primitive_types_.find(id) == primitive_types_.end()) {
     primitive_types_[id] = std::make_unique<PrimitiveType>(id);
@@ -23,6 +23,8 @@ Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
 }
 
 Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
+  std::lock_guard<std::mutex> _(tensor_mut_);
+
   auto encode = [](const std::vector<int> &shape) -> std::string {
     std::string s;
     for (int i = 0; i < (int)shape.size(); ++i)
@@ -36,7 +38,24 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   return tensor_types_[key].get();
 }
 
+Type *TypeFactory::get_struct_type(const std::vector<const Type *> &elements) {
+  std::lock_guard<std::mutex> _(struct_mut_);
+
+  if (struct_types_.find(elements) == struct_types_.end()) {
+    for (const auto &element : elements) {
+      TI_ASSERT_INFO(
+          element->is<PrimitiveType>() || element->is<TensorType>() ||
+              element->is<StructType>() || element->is<PointerType>(),
+          "Unsupported struct element type: " + element->to_string());
+    }
+    struct_types_[elements] = std::make_unique<StructType>(elements);
+  }
+  return struct_types_[elements].get();
+}
+
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
+  std::lock_guard<std::mutex> _(pointer_mut_);
+
   auto key = std::make_pair(element, is_bit_pointer);
   if (pointer_types_.find(key) == pointer_types_.end()) {
     pointer_types_[key] =
@@ -48,6 +67,8 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
 Type *TypeFactory::get_quant_int_type(int num_bits,
                                       bool is_signed,
                                       Type *compute_type) {
+  std::lock_guard<std::mutex> _(quant_int_mut_);
+
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
   if (quant_int_types_.find(key) == quant_int_types_.end()) {
     quant_int_types_[key] =
@@ -59,6 +80,8 @@ Type *TypeFactory::get_quant_int_type(int num_bits,
 Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
                                         Type *compute_type,
                                         float64 scale) {
+  std::lock_guard<std::mutex> _(quant_fixed_mut_);
+
   auto key = std::make_tuple(digits_type, compute_type, scale);
   if (quant_fixed_types_.find(key) == quant_fixed_types_.end()) {
     quant_fixed_types_[key] =
@@ -70,6 +93,8 @@ Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
 Type *TypeFactory::get_quant_float_type(Type *digits_type,
                                         Type *exponent_type,
                                         Type *compute_type) {
+  std::lock_guard<std::mutex> _(quant_float_mut_);
+
   auto key = std::make_tuple(digits_type, exponent_type, compute_type);
   if (quant_float_types_.find(key) == quant_float_types_.end()) {
     quant_float_types_[key] = std::make_unique<QuantFloatType>(
@@ -84,6 +109,8 @@ BitStructType *TypeFactory::get_bit_struct_type(
     const std::vector<int> &member_bit_offsets,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users) {
+  std::lock_guard<std::mutex> _(bit_struct_mut_);
+
   bit_struct_types_.push_back(std::make_unique<BitStructType>(
       physical_type, member_types, member_bit_offsets, member_exponents,
       member_exponent_users));
@@ -93,6 +120,8 @@ BitStructType *TypeFactory::get_bit_struct_type(
 Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
                                         Type *element_type,
                                         int num_elements) {
+  std::lock_guard<std::mutex> _(quant_array_mut_);
+
   quant_array_types_.push_back(std::make_unique<QuantArrayType>(
       physical_type, element_type, num_elements));
   return quant_array_types_.back().get();

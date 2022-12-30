@@ -15,6 +15,7 @@ namespace taichi::lang {
 class AotModuleBuilder;
 class Ndarray;
 class Texture;
+class Kernel;
 
 namespace aot {
 // Currently only scalar, matrix and ndarray are supported.
@@ -149,6 +150,7 @@ struct CompiledDispatch {
   std::string kernel_name;
   std::vector<Arg> symbolic_args;
   Kernel *compiled_kernel{nullptr};
+  taichi::lang::Kernel *ti_kernel{nullptr};
 
   TI_IO_DEF(kernel_name, symbolic_args);
 };

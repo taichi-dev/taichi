@@ -90,10 +90,10 @@ void autograd() {
     };
 
     auto *snode =
-        &root->dense(Axis(0), n, false).insert_children(SNodeType::place);
+        &root->dense(Axis(0), n, false, "").insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
-        &root->dense(Axis(0), n, false).insert_children(SNodeType::place));
+        &root->dense(Axis(0), n, false, "").insert_children(SNodeType::place));
     snode->get_adjoint()->dt = PrimitiveType::f32;
     snode->get_adjoint()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;

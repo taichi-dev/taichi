@@ -15,7 +15,7 @@ losses = ti.field(float, shape=N_loss, needs_dual=True, needs_grad=True)
 def func():
     for j in range(N_loss):
         for i in range(N_param):
-            losses[j] = ti.sin(j / 16 * np.pi) * ti.sin(
+            losses[j] += ti.sin(j / 16 * np.pi) * ti.sin(
                 i / 16 * np.pi) * params[i]
 
 

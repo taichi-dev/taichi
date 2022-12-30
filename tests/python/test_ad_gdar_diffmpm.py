@@ -85,7 +85,7 @@ def test_gdar_mpm():
                 for j in ti.static(range(3)):
                     offset = ti.Vector([i, j])
                     dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
-                    weight = w[i](0) * w[j](1)
+                    weight = w[i][0] * w[j][1]
                     grid_v_in[f, base + offset] += weight * (p_mass * v[f, p] +
                                                              affine @ dpos)
                     grid_m_in[f, base + offset] += weight * p_mass
@@ -122,8 +122,8 @@ def test_gdar_mpm():
             for i in ti.static(range(3)):
                 for j in ti.static(range(3)):
                     dpos = ti.cast(ti.Vector([i, j]), real) - fx
-                    g_v = grid_v_out[f, base(0) + i, base(1) + j]
-                    weight = w[i](0) * w[j](1)
+                    g_v = grid_v_out[f, base[0] + i, base[1] + j]
+                    weight = w[i][0] * w[j][1]
                     new_v += weight * g_v
                     new_C += 4 * weight * g_v.outer_product(dpos) * inv_dx
 

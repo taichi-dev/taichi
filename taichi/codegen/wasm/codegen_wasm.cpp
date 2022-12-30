@@ -7,7 +7,6 @@
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
-#include "taichi/util/statistics.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
@@ -64,11 +63,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
       // test block
       builder->SetInsertPoint(loop_test);
       llvm::Value *cond;
-#ifdef TI_LLVM_15
       auto *loop_var_load = builder->CreateLoad(begin->getType(), loop_var);
-#else
-      auto *loop_var_load = builder->CreateLoad(loop_var);
-#endif
       if (!stmt->reversed) {
         cond = builder->CreateICmp(llvm::CmpInst::Predicate::ICMP_SLT,
                                    loop_var_load, end);
@@ -220,7 +215,6 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
       kernel->lower();
     }
     // emit_to_module
-    stat.add("codegen_taichi_kernel_function");
     auto offloaded_task_name = init_taichi_kernel_function();
     ir->accept(this);
     finalize_taichi_kernel_function();

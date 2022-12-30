@@ -4,7 +4,7 @@ import numpy as np
 from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import _IntermediateMatrix
+from taichi.lang.matrix import Matrix
 from taichi.types.utils import is_integral
 
 
@@ -144,7 +144,7 @@ class GroupedNDRange:
 
     def __iter__(self):
         for ind in self.r:
-            yield _IntermediateMatrix(len(ind), 1, list(ind), ndim=1)
+            yield Matrix(list(ind))
 
 
 __all__ = ['ndrange']

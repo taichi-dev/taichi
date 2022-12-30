@@ -252,15 +252,6 @@ bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args) {
   TI_AUTO_PROF;
-  // @archibate found that `debug=True` will cause JIT kernels
-  // to evaluate incorrectly (always return 0), so we simply
-  // disable constant_fold when config.debug is turned on.
-  // Discussion:
-  // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (config.debug) {
-    TI_TRACE("config.debug enabled, ignoring constant fold");
-    return false;
-  }
   if (!config.advanced_optimization)
     return false;
   return ConstantFold::run(root, args.program);

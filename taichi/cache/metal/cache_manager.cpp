@@ -33,7 +33,7 @@ struct CacheCleanerUtils<metal::CacheManager::Metadata> {
   static std::vector<std::string> get_cache_files(
       const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
-    std::string fn = kernel_meta.kernel_key + ".metal";
+    std::string fn = kernel_meta.kernel_key + "." + kMetalCacheFilenameExt;
     return {fn};
   }
 
@@ -46,7 +46,7 @@ struct CacheCleanerUtils<metal::CacheManager::Metadata> {
   // To check if a file is cache file
   static bool is_valid_cache_file(const CacheCleanerConfig &config,
                                   const std::string &name) {
-    return filename_extension(name) == "metal";
+    return filename_extension(name) == kMetalCacheFilenameExt;
   }
 };
 
@@ -59,9 +59,15 @@ CacheManager::CacheManager(Params &&init_params)
   if (config_.mode == MemAndDiskCache) {
     const auto filepath = join_path(config_.cache_path, kMetadataFilename);
     const auto lock_path = join_path(config_.cache_path, kMetadataLockName);
-    if (lock_with_file(lock_path)) {
-      auto _ = make_unlocker(lock_path);
-      offline_cache::load_metadata_with_checking(cached_data_, filepath);
+    if (path_exists(filepath)) {
+      if (lock_with_file(lock_path)) {
+        auto _ = make_unlocker(lock_path);
+        offline_cache::load_metadata_with_checking(cached_data_, filepath);
+      } else {
+        TI_WARN(
+            "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
+            lock_path, config_.cache_path);
+      }
     }
   }
 }

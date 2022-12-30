@@ -1,5 +1,6 @@
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
+from taichi.lang.expr import make_expr_group
 from taichi.lang.util import taichi_scope
 
 
@@ -52,5 +53,6 @@ class SharedArray:
         self.shared_array_proxy = impl.expr_init_shared_array(shape, dtype)
 
     @taichi_scope
-    def _subscript(self, *indices, get_ref=False):
-        return impl.make_index_expr(self.shared_array_proxy, (indices, ))
+    def subscript(self, *indices):
+        return impl.make_index_expr(self.shared_array_proxy,
+                                    make_expr_group(*indices))

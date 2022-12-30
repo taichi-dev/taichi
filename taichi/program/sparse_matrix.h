@@ -19,30 +19,37 @@ class SparseMatrixBuilder {
                       int cols,
                       int max_num_triplets,
                       DataType dtype,
-                      const std::string &storage_format);
+                      const std::string &storage_format,
+                      Program *prog);
 
-  void print_triplets();
+  void print_triplets_eigen();
+  void print_triplets_cuda();
+
+  intptr_t get_ndarray_data_ptr() const;
 
   std::unique_ptr<SparseMatrix> build();
+
+  std::unique_ptr<SparseMatrix> build_cuda();
 
   void clear();
 
  private:
   template <typename T, typename G>
-  void print_template();
+  void build_template(std::unique_ptr<SparseMatrix> &);
 
   template <typename T, typename G>
-  void build_template(std::unique_ptr<SparseMatrix> &);
+  void print_triplets_template();
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<uchar[]> data_base_ptr_{nullptr};
+  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
   std::string storage_format_{"col_major"};
+  Program *prog_{nullptr};
 };
 
 class SparseMatrix {
@@ -84,7 +91,7 @@ class SparseMatrix {
     return nullptr;
   }
 
-  inline DataType get_data_type() {
+  inline const DataType get_data_type() const {
     return dtype_;
   }
 
@@ -194,6 +201,8 @@ class EigenSparseMatrix : public SparseMatrix {
     return matrix_ * b;
   }
 
+  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+
  private:
   EigenMatrix matrix_;
 };
@@ -214,8 +223,17 @@ class CuSparseMatrix : public SparseMatrix {
   explicit CuSparseMatrix(cusparseSpMatDescr_t A,
                           int rows,
                           int cols,
-                          DataType dt)
-      : SparseMatrix(rows, cols, dt), matrix_(A) {
+                          DataType dt,
+                          void *csr_row_ptr,
+                          void *csr_col_ind,
+                          void *csr_val,
+                          int nnz)
+      : SparseMatrix(rows, cols, dt),
+        matrix_(A),
+        csr_row_ptr_(csr_row_ptr),
+        csr_col_ind_(csr_col_ind),
+        csr_val_(csr_val),
+        nnz_(nnz) {
   }
   CuSparseMatrix(const CuSparseMatrix &sm)
       : SparseMatrix(sm.rows_, sm.cols_, sm.dtype_), matrix_(sm.matrix_) {
@@ -262,11 +280,13 @@ class CuSparseMatrix : public SparseMatrix {
                           void *coo_values_ptr,
                           int nnz) override;
 
-  void spmv(Program *prog, const Ndarray &x, Ndarray &y);
+  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
 
   const void *get_matrix() const override {
     return &matrix_;
   };
+
+  float get_element(int row, int col) const;
 
   const std::string to_string() const override;
 
@@ -284,7 +304,7 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
  private:
-  cusparseSpMatDescr_t matrix_;
+  cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};
   void *csr_col_ind_{nullptr};
   void *csr_val_{nullptr};
@@ -302,14 +322,13 @@ std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(int rows,
 std::unique_ptr<SparseMatrix> make_cu_sparse_matrix(cusparseSpMatDescr_t mat,
                                                     int rows,
                                                     int cols,
-                                                    DataType dt);
+                                                    DataType dt,
+                                                    void *csr_row_ptr,
+                                                    void *csr_col_ind,
+                                                    void *csr_val_,
+                                                    int nnz);
 
 void make_sparse_matrix_from_ndarray(Program *prog,
                                      SparseMatrix &sm,
                                      const Ndarray &ndarray);
-void make_sparse_matrix_from_ndarray_cusparse(Program *prog,
-                                              SparseMatrix &sm,
-                                              const Ndarray &row_indices,
-                                              const Ndarray &col_indices,
-                                              const Ndarray &values);
 }  // namespace taichi::lang

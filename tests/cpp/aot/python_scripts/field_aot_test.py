@@ -104,7 +104,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
 
         run_graph = g_builder.compile()
 
-        m = ti.aot.Module(arch)
+        m = ti.aot.Module()
 
         m.add_field("x", x)
         m.add_field("y", y)
@@ -112,7 +112,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
         m.add_graph('run_graph', run_graph)
         m.save(dir_name, '')
     else:
-        m = ti.aot.Module(arch)
+        m = ti.aot.Module()
 
         m.add_kernel(init_fields, template_args={})
         m.add_kernel(check_init_x, template_args={})

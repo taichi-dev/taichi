@@ -1,9 +1,9 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
 option(TI_WITH_LLVM "Build with LLVM backends" ON)
-option(TI_LLVM_15 "Switch to LLVM 15" OFF)
 option(TI_WITH_METAL "Build with the Metal backend" ON)
 option(TI_WITH_CUDA "Build with the CUDA backend" ON)
 option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
+option(TI_WITH_AMDGPU "Build with the AMDGPU backend" OFF)
 option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
 option(TI_WITH_CC "Build with the C backend" ON)
 option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
@@ -35,6 +35,10 @@ if(ANDROID)
     set(TI_WITH_DX12 OFF)
 endif()
 
+if (TI_WITH_AMDGPU AND TI_WITH_CUDA)
+    message(WARNING "Compiling CUDA and AMDGPU backends simultaneously")
+endif()
+
 if(UNIX AND NOT APPLE)
     # Handy helper for Linux
     # https://stackoverflow.com/a/32259072/12003165
@@ -54,12 +58,20 @@ if (APPLE)
         set(TI_WITH_CC OFF)
         message(WARNING "C backend not supported on OS X. Setting TI_WITH_CC to OFF.")
     endif()
+    if (TI_WITH_AMDGPU)
+        set(TI_WITH_AMDGPU OFF)
+        message(WARNING "AMDGPU backend not supported on OS X. Setting TI_WITH_AMDGPU to OFF.")
+    endif()
 endif()
 
 if (WIN32)
     if (TI_WITH_CC)
         set(TI_WITH_CC OFF)
         message(WARNING "C backend not supported on Windows. Setting TI_WITH_CC to OFF.")
+    endif()
+    if (TI_WITH_AMDGPU)
+        set(TI_WITH_AMDGPU OFF)
+        message(WARNING "AMDGPU backend not supported on Windows. Setting TI_WITH_AMDGPU to OFF.")
     endif()
 endif()
 
@@ -98,12 +110,6 @@ if(TI_WITH_LLVM)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_LLVM")
 endif()
 
-if (TI_LLVM_15)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_LLVM_15")
-else()
-    set(TI_WITH_DX12 OFF)
-endif()
-
 ## This version var is only used to locate slim_libdevice.10.bc
 if(NOT CUDA_VERSION)
     set(CUDA_VERSION 10.0)
@@ -113,6 +119,12 @@ if (TI_WITH_CUDA)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA")
   file(GLOB TAICHI_CUDA_RUNTIME_SOURCE "taichi/runtime/cuda/runtime.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CUDA_RUNTIME_SOURCE})
+endif()
+
+if (TI_WITH_AMDGPU)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_AMDGPU")
+# file(GLOB TAICHI_AMDGPU_RUNTIME_SOURCE "taichi/runtime/amdgpu/runtime.cpp")
+  list(APPEND TAIHI_CORE_SOURCE ${TAICHI_AMDGPU_RUNTIME_SOURCE})
 endif()
 
 if (TI_WITH_DX12)
@@ -125,10 +137,6 @@ if (TI_WITH_CC)
   file(GLOB TAICHI_CC_SOURCE "taichi/codegen/cc/*.h" "taichi/codegen/cc/*.cpp")
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
-
-# This compiles all the libraries with -fPIC, which is critical to link a static
-# library into a shared lib.
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
@@ -224,6 +232,12 @@ if(TI_WITH_LLVM)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_runtime)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
+    endif()
+
+    if (TI_WITH_AMDGPU)
+        llvm_map_components_to_libnames(llvm_amdgpu_libs AMDGPU)
+        add_subdirectory(taichi/rhi/amdgpu)
+        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_rhi)
     endif()
 
     if (TI_WITH_DX12)
@@ -332,12 +346,19 @@ endif()
 if (TI_WITH_VULKAN)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
     if (APPLE)
-        find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
-        configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
-        message(STATUS "MoltenVK library ${MOLTEN_VK}")
-        if (EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
-            install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
+        # The latest Molten-vk v1.2.0 and v1.1.11 breaks GGUI: mpm3d_ggui.py
+        # So we have to manually download and install Molten-vk v1.10.0
+        #
+        # Uncomment the following lines if the mpm3d_ggui.py runs well with the latest Molten-vk
+        #find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
+        #configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
+        #message(STATUS "MoltenVK library ${MOLTEN_VK}")
+
+        if(NOT EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
+            execute_process(COMMAND curl -L -o ${CMAKE_BINARY_DIR}/libMoltenVK.zip https://github.com/taichi-dev/taichi_assets/files/9977436/libMoltenVK.dylib.zip)
+            execute_process(COMMAND tar -xf ${CMAKE_BINARY_DIR}/libMoltenVK.zip --directory ${CMAKE_BINARY_DIR})
         endif()
+        install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
     endif()
     add_subdirectory(taichi/rhi/vulkan)
     add_subdirectory(taichi/runtime/program_impls/vulkan)
@@ -430,6 +451,13 @@ if(TI_WITH_PYTHON)
     # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+    endif()
+
+    if (TI_WITH_BACKTRACE)
+        # Defined by external/backward-cpp:
+        # This will add libraries, definitions and include directories needed by backward
+        # by setting each property on the target.
+        target_link_libraries(${CORE_WITH_PYBIND_LIBRARY_NAME} PRIVATE ${BACKWARD_ENABLE})
     endif()
 
     if(TI_WITH_GGUI)

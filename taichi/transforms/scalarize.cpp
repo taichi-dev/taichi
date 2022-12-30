@@ -9,14 +9,24 @@
 
 namespace taichi::lang {
 
+static bool is_alloca_scalarizable(AllocaStmt *stmt) {
+  /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
+  auto alloca = stmt->as<AllocaStmt>();
+  if (alloca->is_shared)
+    return false;
+
+  return true;
+}
+
 class Scalarize : public BasicStmtVisitor {
  public:
-  DelayedIRModifier modifier_;
+  ImmediateIRModifier immediate_modifier_;
+  DelayedIRModifier delayed_modifier_;
 
-  explicit Scalarize(IRNode *node) {
+  explicit Scalarize(IRNode *node) : immediate_modifier_(node) {
     node->accept(this);
 
-    modifier_.modify_ir();
+    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -66,12 +76,12 @@ class Scalarize : public BasicStmtVisitor {
         auto scalarized_stmt = std::make_unique<T>(matrix_ptr_stmt.get(),
                                                    matrix_init_stmt->values[i]);
 
-        modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
-        modifier_.insert_before(stmt, std::move(scalarized_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -118,19 +128,19 @@ class Scalarize : public BasicStmtVisitor {
 
         matrix_init_values.push_back(scalarized_stmt.get());
 
-        modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
-        modifier_.insert_before(stmt, std::move(scalarized_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(scalarized_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = src_dtype;
 
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -171,20 +181,23 @@ class Scalarize : public BasicStmtVisitor {
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
+        if (stmt->is_cast()) {
+          unary_stmt->cast_type = stmt->cast_type;
+        }
         unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());
 
-        modifier_.insert_before(stmt, std::move(unary_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(unary_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = operand_dtype;
 
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -214,19 +227,16 @@ class Scalarize : public BasicStmtVisitor {
   void visit(BinaryOpStmt *stmt) override {
     auto lhs_dtype = stmt->lhs->ret_type;
     auto rhs_dtype = stmt->rhs->ret_type;
-
-    if (lhs_dtype->is<PrimitiveType>() && rhs_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
-    // BinaryOpExpression::type_check() should have taken care of the
-    // broadcasting and neccessary conversions. So we simply add an assertion
-    // here to make sure that the operands are of the same shape and dtype
-    TI_ASSERT(lhs_dtype == rhs_dtype);
-
-    if (lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>()) {
+    if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
+      // Make sure broadcasting has been correctly applied by
+      // BinaryOpExpression::type_check().
+      TI_ASSERT(lhs_dtype->is<TensorType>() && rhs_dtype->is<TensorType>());
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
+      TI_ASSERT(lhs_dtype->cast<TensorType>()->get_shape() ==
+                rhs_dtype->cast<TensorType>()->get_shape());
       // Scalarization for LoadStmt should have already replaced both operands
-      // to MatrixInitStmt
+      // to MatrixInitStmt.
       TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
       TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
 
@@ -247,17 +257,17 @@ class Scalarize : public BasicStmtVisitor {
         matrix_init_values.push_back(binary_stmt.get());
         binary_stmt->ret_type = primitive_type;
 
-        modifier_.insert_before(stmt, std::move(binary_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(binary_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = stmt->ret_type;
 
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -272,16 +282,62 @@ class Scalarize : public BasicStmtVisitor {
         Stmt *print_stmt = std::get<Stmt *>(content);
         if (print_stmt->is<MatrixInitStmt>()) {
           auto matrix_init_stmt = print_stmt->cast<MatrixInitStmt>();
-          for (size_t j = 0; j < matrix_init_stmt->values.size(); j++) {
-            new_contents.push_back(matrix_init_stmt->values[j]);
+          auto tensor_shape =
+              print_stmt->ret_type->as<TensorType>()->get_shape();
+
+          bool is_matrix = tensor_shape.size() == 2;
+          int m = tensor_shape[0];
+
+          new_contents.push_back("[");
+          if (is_matrix) {
+            int n = tensor_shape[1];
+            for (size_t i = 0; i < m; i++) {
+              new_contents.push_back("[");
+              for (size_t j = 0; j < n; j++) {
+                size_t index = i * n + j;
+                new_contents.push_back(matrix_init_stmt->values[index]);
+                if (j != n - 1)
+                  new_contents.push_back(", ");
+              }
+              new_contents.push_back("]");
+
+              if (i != m - 1)
+                new_contents.push_back(", ");
+            }
+          } else {
+            for (size_t i = 0; i < m; i++) {
+              new_contents.push_back(matrix_init_stmt->values[i]);
+              if (i != m - 1)
+                new_contents.push_back(", ");
+            }
           }
+          new_contents.push_back("]");
         } else {
           new_contents.push_back(print_stmt);
         }
       }
     }
-    modifier_.insert_before(stmt, Stmt::make<PrintStmt>(new_contents));
-    modifier_.erase(stmt);
+
+    // Merge string contents
+    std::vector<std::variant<Stmt *, std::string>> merged_contents;
+    std::string merged_string = "";
+    for (const auto &content : new_contents) {
+      if (auto string_content = std::get_if<std::string>(&content)) {
+        merged_string += *string_content;
+      } else {
+        if (!merged_string.empty()) {
+          merged_contents.push_back(merged_string);
+          merged_string = "";
+        }
+        merged_contents.push_back(content);
+      }
+    }
+    if (!merged_string.empty())
+      merged_contents.push_back(merged_string);
+
+    delayed_modifier_.insert_before(stmt,
+                                    Stmt::make<PrintStmt>(merged_contents));
+    delayed_modifier_.erase(stmt);
   }
 
   /*
@@ -312,21 +368,16 @@ class Scalarize : public BasicStmtVisitor {
   void visit(AtomicOpStmt *stmt) override {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
     auto val_dtype = stmt->val->ret_type;
-
-    if (dest_dtype->is<PrimitiveType>() && val_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
-    // AtomicOpExpression::type_check() have taken care of the broadcasting,
-    // but the type conversions are delayed until irpass::type_check().
-    // So we only check for the shape here.
-    TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
-    TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
-              val_dtype->cast<TensorType>()->get_shape());
-
-    if (dest_dtype->is<TensorType>() && val_dtype->is<TensorType>()) {
+    if (dest_dtype->is<TensorType>() || val_dtype->is<TensorType>()) {
+      // Make sure broadcasting has been correctly applied by
+      // AtomicOpExpression::type_check().
+      TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
+      TI_ASSERT(dest_dtype->cast<TensorType>()->get_shape() ==
+                val_dtype->cast<TensorType>()->get_shape());
       // Scalarization for LoadStmt should have already replaced val operand
-      // to MatrixInitStmt
+      // to MatrixInitStmt.
       TI_ASSERT(stmt->val->is<MatrixInitStmt>());
 
       auto val_matrix_init_stmt = stmt->val->cast<MatrixInitStmt>();
@@ -354,19 +405,19 @@ class Scalarize : public BasicStmtVisitor {
 
         matrix_init_values.push_back(atomic_stmt.get());
 
-        modifier_.insert_before(stmt, std::move(const_stmt));
-        modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
-        modifier_.insert_before(stmt, std::move(atomic_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(atomic_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = stmt->ret_type;
 
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -401,20 +452,18 @@ class Scalarize : public BasicStmtVisitor {
     auto cond_dtype = stmt->op1->ret_type;
     auto op2_dtype = stmt->op2->ret_type;
     auto op3_dtype = stmt->op3->ret_type;
-
-    if (cond_dtype->is<PrimitiveType>() && op2_dtype->is<PrimitiveType>() &&
-        op3_dtype->is<PrimitiveType>()) {
-      return;
-    }
-
-    // TernaryOpExpression::type_check() have taken care of the broadcasting,
-    // but the type conversions are delayed until irpass::type_check().
-    // So we only check for the shape here.
-    TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
-    TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
-
-    if (cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
+    if (cond_dtype->is<TensorType>() || op2_dtype->is<TensorType>() ||
         op3_dtype->is<TensorType>()) {
+      // Make sure broadcasting has been correctly applied by
+      // TernaryOpExpression::type_check().
+      TI_ASSERT(cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
+                op3_dtype->is<TensorType>());
+      // However, since the type conversions are delayed until
+      // irpass::type_check(), we only check for the shape here.
+      TI_ASSERT(cond_dtype.get_shape() == op2_dtype.get_shape());
+      TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+      // Scalarization for LoadStmt should have already replaced all operands
+      // to MatrixInitStmt.
       TI_ASSERT(stmt->op1->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
@@ -440,17 +489,17 @@ class Scalarize : public BasicStmtVisitor {
         matrix_init_values.push_back(ternary_stmt.get());
         ternary_stmt->ret_type = primitive_type;
 
-        modifier_.insert_before(stmt, std::move(ternary_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(ternary_stmt));
       }
 
       auto matrix_init_stmt =
           std::make_unique<MatrixInitStmt>(matrix_init_values);
       matrix_init_stmt->ret_type = stmt->ret_type;
 
-      stmt->replace_usages_with(matrix_init_stmt.get());
-      modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -470,21 +519,33 @@ class Scalarize : public BasicStmtVisitor {
     scalarize_load_stmt<LocalLoadStmt>(stmt);
   }
 
+  void visit(ArgLoadStmt *stmt) override {
+    auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    auto arg_load =
+        std::make_unique<ArgLoadStmt>(stmt->arg_id, ret_type, stmt->is_ptr);
+
+    immediate_modifier_.replace_usages_with(stmt, arg_load.get());
+
+    delayed_modifier_.insert_before(stmt, std::move(arg_load));
+    delayed_modifier_.erase(stmt);
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
 
 class ScalarizePointers : public BasicStmtVisitor {
  public:
-  DelayedIRModifier modifier_;
+  ImmediateIRModifier immediate_modifier_;
+  DelayedIRModifier delayed_modifier_;
 
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  explicit ScalarizePointers(IRNode *node) {
+  explicit ScalarizePointers(IRNode *node) : immediate_modifier_(node) {
     node->accept(this);
 
-    modifier_.modify_ir();
+    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -514,7 +575,7 @@ class ScalarizePointers : public BasicStmtVisitor {
   */
   void visit(AllocaStmt *stmt) override {
     auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
-    if (tensor_type) {
+    if (tensor_type && is_alloca_scalarizable(stmt)) {
       auto primitive_type = tensor_type->get_element_type();
 
       TI_ASSERT(scalarized_local_tensor_map_.count(stmt) == 0);
@@ -526,10 +587,11 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         scalarized_local_tensor_map_[stmt].push_back(
             scalarized_alloca_stmt.get());
-        modifier_.insert_before(stmt, std::move(scalarized_alloca_stmt));
+        delayed_modifier_.insert_before(stmt,
+                                        std::move(scalarized_alloca_stmt));
       }
 
-      modifier_.erase(stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -546,7 +608,8 @@ class ScalarizePointers : public BasicStmtVisitor {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
-      if (tensor_type) {
+      TI_ASSERT(tensor_type != nullptr);
+      if (is_alloca_scalarizable(alloca_stmt)) {
         int num_elements = tensor_type->get_num_elements();
         TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
 
@@ -556,14 +619,31 @@ class ScalarizePointers : public BasicStmtVisitor {
 
         // TODO(zhanlue): loose this contraint once dynamic indexing is properly
         // handled
-        TI_ASSERT(stmt->offset->is<ConstStmt>());
+        if (!stmt->offset->is<ConstStmt>()) {
+          // Removing this line will fail TI_ASSERT in ~DelayedIRModifier()
+          delayed_modifier_.modify_ir();
+          throw TaichiSyntaxError(fmt::format(
+              "{}The index of a Matrix/Vector must be a compile-time constant "
+              "integer.\n"
+              "This is because matrix operations will be **unrolled** at "
+              "compile-time for performance reason.\n"
+              "If you want to *iterate through matrix elements*, use a static "
+              "range:\n"
+              "    for i in ti.static(range(3)):\n"
+              "        print(i, \"-th component is\", vec[i])\n"
+              "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
+              "with-for-loops for more details."
+              "Or turn on ti.init(..., dynamic_index=True) to support indexing "
+              "with variables!",
+              stmt->tb));
+        }
         int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 
         TI_ASSERT(offset < scalarized_alloca_stmts.size());
         auto alloca_stmt = scalarized_alloca_stmts[offset];
 
-        stmt->replace_usages_with(alloca_stmt);
-        modifier_.erase(stmt);
+        immediate_modifier_.replace_usages_with(stmt, alloca_stmt);
+        delayed_modifier_.erase(stmt);
       }
     }
   }
@@ -574,10 +654,10 @@ class ScalarizePointers : public BasicStmtVisitor {
 
 namespace irpass {
 
-void scalarize(IRNode *root) {
+void scalarize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  if (!root->get_kernel()->program->this_thread_config().dynamic_index) {
+  if (!config.dynamic_index) {
     ScalarizePointers scalarize_pointers_pass(root);
   }
 }

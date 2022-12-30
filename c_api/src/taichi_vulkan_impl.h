@@ -3,6 +3,7 @@
 
 #include "taichi_core_impl.h"
 #include "taichi_gfx_impl.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "taichi/rhi/vulkan/vulkan_device_creator.h"
 
@@ -50,5 +51,8 @@ class VulkanRuntimeOwned : public VulkanRuntime {
   virtual taichi::lang::Device &get() override final;
   virtual taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override final;
 };
+
+taichi::lang::vulkan::VulkanDeviceCreator::Params
+make_vulkan_runtime_creator_params();
 
 #endif  // TI_WITH_VULKAN

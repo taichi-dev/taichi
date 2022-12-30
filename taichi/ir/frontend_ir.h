@@ -13,6 +13,8 @@
 
 namespace taichi::lang {
 
+class ASTBuilder;
+
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
   int num_cpu_threads{0};
@@ -88,7 +90,8 @@ class FrontendSNodeOpStmt : public Stmt {
   ExprGroup indices;
   Expr val;
 
-  FrontendSNodeOpStmt(SNodeOpType op_type,
+  FrontendSNodeOpStmt(ASTBuilder *builder,
+                      SNodeOpType op_type,
                       SNode *snode,
                       const ExprGroup &indices,
                       const Expr &val = Expr(nullptr));
@@ -553,7 +556,7 @@ class MatrixFieldExpression : public Expression {
 
 /**
  * Creating a local matrix;
- * lowered from ti.Matrix with real_matrix=True
+ * lowered from ti.Matrix
  */
 class MatrixExpression : public Expression {
  public:
@@ -620,34 +623,6 @@ class IndexExpression : public Expression {
   bool is_matrix_field() const;
   bool is_ndarray() const;
   bool is_tensor() const;
-};
-
-class StrideExpression : public Expression {
- public:
-  // `var` must be an IndexExpression on a FieldExpression
-  // therefore the access is always global
-  Expr var;
-  ExprGroup indices;
-  std::vector<int> shape;
-  int stride{0};
-
-  StrideExpression(const Expr &var,
-                   const ExprGroup &indices,
-                   const std::vector<int> &shape,
-                   int stride)
-      : var(var), indices(indices), shape(shape), stride(stride) {
-    // TODO: shape & indices check
-  }
-
-  void type_check(CompileConfig *config) override;
-
-  void flatten(FlattenContext *ctx) override;
-
-  bool is_lvalue() const override {
-    return true;
-  }
-
-  TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
 class RangeAssumptionExpression : public Expression {
@@ -730,18 +705,18 @@ class SNodeOpExpression : public Expression {
   SNode *snode;
   SNodeOpType op_type;
   ExprGroup indices;
-  Expr value;
+  std::vector<Expr> values;  // Only for op_type==append
 
-  SNodeOpExpression(SNode *snode, SNodeOpType op_type, const ExprGroup &indices)
-      : snode(snode), op_type(op_type), indices(indices) {
-  }
+  SNodeOpExpression(ASTBuilder *builder,
+                    SNode *snode,
+                    SNodeOpType op_type,
+                    const ExprGroup &indices);
 
-  SNodeOpExpression(SNode *snode,
+  SNodeOpExpression(ASTBuilder *builder,
+                    SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
-                    const Expr &value)
-      : snode(snode), op_type(op_type), indices(indices), value(value) {
-  }
+                    const std::vector<Expr> &values);
 
   void type_check(CompileConfig *config) override;
 
@@ -814,6 +789,21 @@ class FuncCallExpression : public Expression {
 
   FuncCallExpression(Function *func, const ExprGroup &args)
       : func(func), args(args) {
+  }
+
+  void flatten(FlattenContext *ctx) override;
+
+  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+};
+
+class GetElementExpression : public Expression {
+ public:
+  Expr src;
+  int index;
+
+  void type_check(CompileConfig *config) override;
+
+  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -967,10 +957,6 @@ class ASTBuilder {
                                  const ExprGroup &args,
                                  const ExprGroup &outputs);
   Expr expr_alloca();
-  Expr expr_alloca_local_tensor(const std::vector<int> &shape,
-                                const DataType &element_type,
-                                const ExprGroup &elements,
-                                std::string tb);
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
@@ -992,6 +978,21 @@ class ASTBuilder {
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
+
+  /*
+   * This function allocates the space for a new item (a struct or a scalar)
+   * in the Dynamic SNode, and assigns values to the elements inside it.
+   *
+   * When appending a struct, the size of vals must be equal to
+   * the number of elements in the struct. When appending a scalar,
+   * the size of vals must be one.
+   */
+  Expr snode_append(SNode *snode,
+                    const ExprGroup &indices,
+                    const std::vector<Expr> &vals);
+  Expr snode_is_active(SNode *snode, const ExprGroup &indices);
+  Expr snode_length(SNode *snode, const ExprGroup &indices);
+  Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
   std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
 
@@ -1052,8 +1053,8 @@ class FrontendContext {
   }
 };
 
-void flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
-void flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
+Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
 }  // namespace taichi::lang

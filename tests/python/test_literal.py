@@ -41,7 +41,8 @@ def test_literal_keywords_error():
         keywords_error()
 
 
-def _test_literal_compound_error():
+@test_utils.test()
+def test_literal_compound_error():
     @ti.kernel
     def expr_error():
         a = ti.Vector([1])
@@ -53,16 +54,6 @@ def _test_literal_compound_error():
             "A primitive type cannot decorate an expression with a compound type."
     ):
         expr_error()
-
-
-@test_utils.test()
-def test_literal_compound_error():
-    _test_literal_compound_error()
-
-
-@test_utils.test(real_matrix=True)
-def test_literal_compound_error_real_matrix():
-    _test_literal_compound_error()
 
 
 @test_utils.test()

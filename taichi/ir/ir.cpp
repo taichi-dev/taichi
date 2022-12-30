@@ -4,7 +4,7 @@
 #include <thread>
 #include <unordered_map>
 
-// #include "taichi/ir/analysis.h"
+#include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
 
@@ -407,6 +407,7 @@ std::unique_ptr<Block> Block::clone() const {
 }
 
 DelayedIRModifier::~DelayedIRModifier() {
+  // TODO: destructors should not be interrupted
   TI_ASSERT(to_insert_before_.empty());
   TI_ASSERT(to_insert_after_.empty());
   TI_ASSERT(to_erase_.empty());
@@ -493,6 +494,18 @@ bool DelayedIRModifier::modify_ir() {
 
 void DelayedIRModifier::mark_as_modified() {
   modified_ = true;
+}
+
+ImmediateIRModifier::ImmediateIRModifier(IRNode *root) {
+  stmt_usages_ = irpass::analysis::gather_statement_usages(root);
+}
+
+void ImmediateIRModifier::replace_usages_with(Stmt *old_stmt, Stmt *new_stmt) {
+  if (stmt_usages_.find(old_stmt) == stmt_usages_.end())
+    return;
+  for (auto &[usage, i] : stmt_usages_.at(old_stmt)) {
+    usage->set_operand(i, new_stmt);
+  }
 }
 
 }  // namespace taichi::lang

@@ -35,7 +35,8 @@ The following section provides a brief introduction to the Taichi C-API.
 You *must* create a runtime instance before working with Taichi, and *only* one runtime per thread. Currently, we do not officially claim that multiple runtime instances can coexist in a process, but please feel free to [file an issue with us](https://github.com/taichi-dev/taichi/issues) if you run into any problem with runtime instance coexistence.
 
 ```cpp
-TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN);
+// Create a Taichi Runtime on Vulkan device at index 0.
+TiRuntime runtime = ti_create_runtime(TI_ARCH_VULKAN, 0);
 ```
 
 When your program runs to the end, ensure that:
@@ -116,7 +117,7 @@ TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 
 `/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
 
-You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_submit`](#function-ti_submit).
+You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 
 ```cpp
 ti_destroy_aot_module(aot_module);
@@ -177,10 +178,10 @@ named_arg2.argument = args[2];
 ti_launch_compute_graph(runtime, compute_graph, named_args.size(), named_args.data());
 ```
 
-When you have launched all kernels and compute graphs for this batch, you should `function.submit` and `function.wait` for the execution to finish.
+When you have launched all kernels and compute graphs for this batch, you should `function.flush` and `function.wait` for the execution to finish.
 
 ```cpp
-ti_submit(runtime);
+ti_flush(runtime);
 ti_wait(runtime);
 ```
 
@@ -244,9 +245,8 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 `enumeration.error`
 
-Errors reported by the Taichi C-API. Enumerants greater than or equal to zero are success states.
+Errors reported by the Taichi C-API.
 
-- `enumeration.error.truncated`: The output data is truncated because the user-provided buffer is too small.
 - `enumeration.error.success`: The Taichi C-API invocation finished gracefully.
 - `enumeration.error.not_supported`: The invoked API, or the combination of parameters is not supported by the Taichi C-API.
 - `enumeration.error.corrupted_data`: Provided data is corrupted.
@@ -257,6 +257,7 @@ Errors reported by the Taichi C-API. Enumerants greater than or equal to zero ar
 - `enumeration.error.argument_not_found`: One or more kernel arguments are missing.
 - `enumeration.error.invalid_interop`: The intended interoperation is not possible on the current arch. For example, attempts to export a Vulkan object from a CUDA runtime are not allowed.
 - `enumeration.error.invalid_state`: The Taichi C-API enters an unrecoverable invalid state. Related Taichi objects are potentially corrupted. The users *should* release the contaminated resources for stability. Please feel free to file an issue if you encountered this error in a normal routine.
+- `enumeration.error.incompatible_module`: The AOT module is not compatible with the current runtime.
 
 `enumeration.arch`
 
@@ -440,16 +441,25 @@ A named argument value to feed compute graphs.
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
 
+`function.get_available_archs`
+
+Gets a list of available archs on the current platform. An arch is only available if:
+
+1. The Runtime library is compiled with its support;
+2. The current platform is installed with a capable hardware or an emulation software.
+
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to `function.create_runtime` with that arch is guaranteed failing.
+
 `function.get_last_error`
 
-Get the last error raised by Taichi C-API invocations. Returns the semantical error code.
+Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
 - `function.get_last_error.message_size`: Size of textual error message in `function.get_last_error.message`
 - `function.get_last_error.message`: Text buffer for the textual error message. Ignored when `message_size` is 0.
 
 `function.set_last_error`
 
-Set the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
+Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
 - `function.set_last_error.error`: Semantical error code.
 - `function.set_last_error.message`: A null-terminated string of the textual error message or `nullptr` for empty error message.
@@ -458,9 +468,19 @@ Set the provided error as the last error raised by Taichi C-API invocations. It 
 
 Creates a Taichi Runtime with the specified `enumeration.arch`.
 
+- `function.create_runtime.arch`: Arch of Taichi Runtime.
+- `function.create_runtime.device_index`: The index of device in `function.create_runtime.arch` to create Taichi Runtime on.
+
 `function.destroy_runtime`
 
 Destroys a Taichi Runtime.
+
+`function.get_runtime_capabilities`
+
+Gets all capabilities available on the runtime instance.
+
+- `function.get_runtime_capabilities.capability_count`: The total number of capabilities available.
+- `function.get_runtime_capabilities.capabilities`: Returned capabilities.
 
 `function.allocate_memory`
 
@@ -486,14 +506,6 @@ Allocates a device image with provided parameters.
 
 Frees an image allocation.
 
-`function.create_event`
-
-Creates an event primitive.
-
-`function.destroy_event`
-
-Destroys an event primitive.
-
 `function.copy_memory_device_to_device`
 
 Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
@@ -518,19 +530,7 @@ Launches a Taichi kernel with the provided arguments. The arguments *must* have 
 
 Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
-`function.signal_event`
-
-Sets an event primitive to a signaled state so that the queues waiting for it can go on execution. If the event has been signaled, you *must* call `function.reset_event` to reset it; otherwise, an undefined behavior would occur.
-
-`function.reset_event`
-
-Sets a signaled event primitive back to an unsignaled state.
-
-`function.wait_event`
-
-Waits until an event primitive transitions to a signaled state. The awaited event *must* be signaled by an external procedure or a previous invocation to `function.reset_event`; otherwise, an undefined behavior would occur.
-
-`function.submit`
+`function.flush`
 
 Submits all previously invoked device commands to the offload device for execution.
 

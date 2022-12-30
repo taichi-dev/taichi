@@ -36,8 +36,9 @@ ti.init(arch=ti.cpu)
 ```
 
 We choose `ti.cpu` here despite the fact that running Taichi on a GPU backend can be much faster. This is mainly because we need to make sure that you can run our source code without any editing or additional configurations to your platform. Please note:
-    - If you choose a GPU backend, for example `ti.cuda`, ensure that you have installed it on your system; otherwise, Taichi will raise an error.
-    - The [GGUI](../visualization/ggui.md) we use for 3D rendering only supports CUDA and Vulkan, and x86 for now. If you choose a different backend, consider switching the GGUI system we provide in the source code.
+
+- If you choose a GPU backend, for example `ti.cuda`, ensure that you have installed it on your system; otherwise, Taichi will raise an error.
+- The [GGUI](../visualization/ggui.md) we use for 3D rendering only supports CUDA and Vulkan, and x86 for now. If you choose a different backend, consider switching the GGUI system we provide in the source code.
 
 ## Modelling
 
@@ -463,7 +464,7 @@ window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (1024, 1024),
 canvas = window.get_canvas()
 canvas.set_background_color((1, 1, 1))
 scene = ti.ui.Scene()
-camera = ti.ui.make_camera()
+camera = ti.ui.Camera()
 
 current_t = 0.0
 initialize_mass_points()

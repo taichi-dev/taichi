@@ -35,6 +35,7 @@ def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
     if (ti.lang.impl.current_cfg().arch == ti.opengl
             or ti.lang.impl.current_cfg().arch == ti.vulkan
+            or ti.lang.impl.current_cfg().arch == ti.gles
             or ti.lang.impl.current_cfg().arch == ti.dx11) and dtype == ti.f32:
         # OpenGL/Vulkan are not capable of such large number in its float32...
         N = 1024 * 16
@@ -88,7 +89,7 @@ def test_reduction_single_i32(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@test_utils.test(exclude=ti.opengl)
+@test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_reduction_single_u32(op):
     _test_reduction_single(ti.u32, lambda x, y: x % 2**32 == y % 2**32, op)
 
@@ -106,7 +107,7 @@ def test_reduction_single_i64(op):
 
 
 @pytest.mark.parametrize('op', [OP_ADD])
-@test_utils.test(exclude=ti.opengl, require=ti.extension.data64)
+@test_utils.test(exclude=[ti.opengl, ti.gles], require=ti.extension.data64)
 def test_reduction_single_u64(op):
     _test_reduction_single(ti.u64, lambda x, y: x % 2**64 == y % 2**64, op)
 

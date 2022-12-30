@@ -33,6 +33,11 @@ if (TI_WITH_CUDA)
     target_link_libraries(llvm_runtime PRIVATE cuda_rhi)
 endif()
 
+if (TI_WITH_AMDGPU)
+    target_link_libraries(llvm_runtime PRIVATE ${llvm_ptx_libs})
+    target_link_libraries(llvm_runtime PRIVATE amdgpu_rhi) 
+endif()
+
 if (TI_WITH_DX12)
     target_link_libraries(llvm_runtime PRIVATE ${llvm_directx_libs})
     target_link_libraries(llvm_runtime PRIVATE dx12_rhi)

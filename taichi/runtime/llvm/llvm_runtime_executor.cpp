@@ -115,6 +115,15 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   }
 #endif
 
+#if defined(TI_WITH_AMDGPU)
+  if (config.arch == Arch::amdgpu) {
+    AMDGPUContext::get_instance().set_debug(config.debug);
+    device_ = std::make_shared<amdgpu::AMDGPUDevice>();
+
+    this->maybe_initialize_amdgpu_llvm_context();
+  }
+#endif
+
 #ifdef TI_WITH_DX12
   if (config.arch == Arch::dx12) {
     // FIXME: add dx12 device.
@@ -148,6 +157,14 @@ void LlvmRuntimeExecutor::maybe_initialize_cuda_llvm_context() {
   if (config_->arch == Arch::cuda && llvm_context_device_ == nullptr) {
     llvm_context_device_ =
         std::make_unique<TaichiLLVMContext>(config_, Arch::cuda);
+    llvm_context_device_->init_runtime_jit_module();
+  }
+}
+
+void LlvmRuntimeExecutor::maybe_initialize_amdgpu_llvm_context() {
+  if (config_->arch == Arch::amdgpu && llvm_context_device_ == nullptr) {
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(config_, Arch::amdgpu);
     llvm_context_device_->init_runtime_jit_module();
   }
 }

@@ -2735,7 +2735,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
   auto *real_func = stmt->src->as<FuncCallStmt>()->func;
-  auto *real_func_ret_type = get_real_func_ret_type(real_func);
+  auto *real_func_ret_type = tlctx->get_data_type(real_func->ret_type);
   std::vector<llvm::Value *> index;
   index.push_back(tlctx->get_constant(0));
   for (auto &i : stmt->index) {

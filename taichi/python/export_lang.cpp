@@ -444,6 +444,10 @@ void export_lang(py::module &m) {
            [&](Program *program, const DataType &dt) {
              return program->current_callable->insert_ret(dt);
            })
+      .def("finalize_rets",
+           [&](Program *program) {
+             return program->current_callable->finalize_rets();
+           })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));

@@ -7,7 +7,7 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.matrix import Matrix
+from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
@@ -663,13 +663,22 @@ class StructType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
         self.methods = {}
+        elements = []
         for k, dtype in kwargs.items():
             if k == '__struct_methods':
                 self.methods = dtype
-            elif isinstance(dtype, CompoundType):
+            elif isinstance(dtype, StructType):
                 self.members[k] = dtype
+                elements.append(dtype.dtype)
+            elif isinstance(dtype, MatrixType):
+                self.members[k] = dtype
+                elements.append(dtype.tensor_type.ptr)
             else:
-                self.members[k] = cook_dtype(dtype)
+                dtype = cook_dtype(dtype)
+                self.members[k] = dtype
+                elements.append(dtype)
+        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
+            elements)
 
     def __call__(self, *args, **kwargs):
         """Create an instance of this struct type."""

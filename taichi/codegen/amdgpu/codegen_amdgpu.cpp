@@ -482,6 +482,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     }
 
     void *context_pointer;
+    auto arg_size = sizeof(RuntimeContext);
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
                                         sizeof(RuntimeContext));
     AMDGPUDriver::get_instance().memcpy_host_to_device(
@@ -491,8 +492,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            (void *)&context_pointer,
-                            (int)sizeof(RuntimeContext *));
+                            { (void *)&context_pointer, (void *)&arg_size });
     }
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     TI_TRACE("Launching kernel");

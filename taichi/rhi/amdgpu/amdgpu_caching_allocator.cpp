@@ -3,7 +3,6 @@
 namespace taichi {
 namespace lang {
 namespace amdgpu {
-
 AmdgpuCachingAllocator::AmdgpuCachingAllocator(LlvmDevice *device)
     : device_(device) {
 }

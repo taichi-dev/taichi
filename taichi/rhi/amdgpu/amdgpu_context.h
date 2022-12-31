@@ -36,11 +36,10 @@ class AMDGPUContext {
 
   void launch(void *func,
               const std::string &task_name,
-              void *arg_pointers,
+              const std::vector<void *> &arg_pointers,
               unsigned grid_dim,
               unsigned block_dim,
-              std::size_t dynamic_shared_mem_bytes,
-              int arg_bytes);
+              std::size_t dynamic_shared_mem_bytes);
 
   void set_debug(bool debug) {
     debug_ = debug;

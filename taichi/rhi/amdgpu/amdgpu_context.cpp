@@ -63,15 +63,14 @@ std::string AMDGPUContext::get_device_name() {
 
 void AMDGPUContext::launch(void *func,
                            const std::string &task_name,
-                           void *arg_pointers,
+                           const std::vector<void *> &arg_pointers,
                            unsigned grid_dim,
                            unsigned block_dim,
-                           std::size_t dynamic_shared_mem_bytes,
-                           int arg_bytes) {
+                           std::size_t dynamic_shared_mem_bytes) {
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
-    void *config[] = {(void *)0x01, const_cast<void *>(arg_pointers),
-                      (void *)0x02, &arg_bytes, (void *)0x03};
+    void *config[] = {(void *)0x01, arg_pointers[0],
+                      (void *)0x02, arg_pointers[1], (void *)0x03};
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
                           dynamic_shared_mem_bytes, nullptr, nullptr,
                           reinterpret_cast<void **>(&config));

@@ -77,6 +77,10 @@ class JITModuleCUDA : public JITModule {
   bool direct_dispatch() const override {
     return false;
   }
+
+  Arch module_arch() const override {
+    return Arch::cuda;
+  }
 };
 
 class JITSessionCUDA : public JITSession {

@@ -68,6 +68,7 @@ void AMDGPUContext::launch(void *func,
                            unsigned block_dim,
                            std::size_t dynamic_shared_mem_bytes) {
   if (grid_dim > 0) {
+
     std::lock_guard<std::mutex> _(lock_);
     void *config[] = {(void *)0x01, arg_pointers[0],
                       (void *)0x02, arg_pointers[1], (void *)0x03};

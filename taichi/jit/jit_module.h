@@ -6,6 +6,7 @@
 #include "taichi/inc/constants.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 
@@ -44,15 +45,47 @@ class JITModule {
     return ret;
   }
 
+  static int get_args_bytes() {
+    return 0;
+  }
+
+  template <typename... Args, typename T>
+  static int get_args_bytes(T t, Args ...args) {
+    return get_args_bytes(args...) + sizeof(T); 
+  }
+
+  static void init_args_pointers(char *packed_args) {
+    return ;
+  }
+
+  template <typename... Args, typename T>
+  static void init_args_pointers(char *packed_args, T t, Args ...args) {
+      std::memcpy(packed_args, &t, sizeof(t));
+      init_args_pointers(packed_args + sizeof(t), args...);
+      return ;
+  }
+
   // Note: **call** is for serial functions
   // Note: args must pass by value
+  // Note: AMDGPU need to pass args by extra_arg currently
   template <typename... Args>
   void call(const std::string &name, Args... args) {
     if (direct_dispatch()) {
       get_function<Args...>(name)(args...);
     } else {
-      auto arg_pointers = JITModule::get_arg_pointers(args...);
-      call(name, arg_pointers);
+      if (module_arch() == Arch::cuda) {
+        auto arg_pointers = JITModule::get_arg_pointers(args...);
+        call(name, arg_pointers);
+      }
+      else if (module_arch() == Arch::amdgpu) {
+        auto arg_bytes = JITModule::get_args_bytes(args...);
+        char packed_args[arg_bytes];
+        JITModule::init_args_pointers(packed_args, args...);
+        call(name, { (void*)packed_args , (void*)&arg_bytes});
+      }
+      else {
+        TI_ERROR("unknown module arch")
+      }
     }
   }
 
@@ -81,9 +114,8 @@ class JITModule {
     TI_NOT_IMPLEMENTED
   }
 
-  // directly call the function (e.g. on CPU), or via another runtime system
-  // (e.g. cudaLaunch)?
   virtual bool direct_dispatch() const = 0;
+  virtual Arch module_arch() const = 0;
 
   virtual ~JITModule() {
   }

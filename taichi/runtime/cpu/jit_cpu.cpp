@@ -82,6 +82,9 @@ class JITModuleCPU : public JITModule {
   bool direct_dispatch() const override {
     return true;
   }
+  Arch module_arch() const override {
+    TI_NOT_IMPLEMENTED
+  }
 };
 
 class JITSessionCPU : public JITSession {

@@ -74,14 +74,22 @@ class JITModule {
       get_function<Args...>(name)(args...);
     } else {
       if (module_arch() == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
         auto arg_pointers = JITModule::get_arg_pointers(args...);
         call(name, arg_pointers);
+#else
+  TI_NOT_IMPLEMENTED
+#endif
       }
       else if (module_arch() == Arch::amdgpu) {
+#if defined(TI_WITH_CUDA)
         auto arg_bytes = JITModule::get_args_bytes(args...);
         char packed_args[arg_bytes];
         JITModule::init_args_pointers(packed_args, args...);
         call(name, { (void*)packed_args , (void*)&arg_bytes});
+#else
+  TI_NOT_IMPLEMENTED
+#endif
       }
       else {
         TI_ERROR("unknown module arch")

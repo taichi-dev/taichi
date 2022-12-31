@@ -332,10 +332,10 @@ void VulkanDeviceCreator::create_instance(uint32_t vk_api_version,
   }
 
   std::unordered_set<std::string> extensions;
-  for (auto &ext : get_required_extensions(params_.enable_validation_layer)) {
+  for (auto ext : get_required_extensions(params_.enable_validation_layer)) {
     extensions.insert(std::string(ext));
   }
-  for (auto &ext : params_.additional_instance_extensions) {
+  for (auto ext : params_.additional_instance_extensions) {
     extensions.insert(std::string(ext));
   }
 

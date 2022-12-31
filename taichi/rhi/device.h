@@ -51,6 +51,7 @@ enum class BlendFactor : uint32_t {
 class Device;
 struct DeviceAllocation;
 struct DevicePtr;
+struct LLVMRuntime;
 
 // TODO: Figure out how to support images. Temporary solutions is to have all
 // opque types such as images work as an allocation
@@ -99,93 +100,52 @@ constexpr DevicePtr kDeviceNullPtr{};
 // TODO: fill this with the required options
 struct ImageSamplerConfig {};
 
-// A set of shader resources (that is bound at once)
-class TI_DLL_EXPORT ShaderResourceSet {
+class ResourceBinder {
  public:
-  virtual ~ShaderResourceSet() = default;
-
-  /**
-   * Bind a RW subregion of a buffer resource (StorgeBuffer / SSBO)
-   * @params[in] binding The binding index of the resource
-   * @params[in] ptr The Device Pointer that is going to be bound
-   * @params[in] size The size of the bound region of the buffer
-   */
-  virtual ShaderResourceSet &rw_buffer(uint32_t binding,
-                                       DevicePtr ptr,
-                                       size_t size) = 0;
-
-  /**
-   * Bind an entire RW buffer resource (StorgeBuffer / SSBO)
-   * @params[in] binding The binding index of the resource
-   * @params[in] alloc The Device Allocation that is going to be bound
-   */
-  virtual ShaderResourceSet &rw_buffer(uint32_t binding,
-                                       DeviceAllocation alloc) = 0;
-
-  /**
-   * Bind a read-only subregion of a buffer resource (Constants / UBO)
-   * @params[in] binding The binding index of the resource
-   * @params[in] ptr The Device Pointer that is going to be bound
-   * @params[in] size The size of the bound region of the buffer
-   */
-  virtual ShaderResourceSet &buffer(uint32_t binding,
-                                    DevicePtr ptr,
-                                    size_t size) = 0;
-
-  /**
-   * Bind an entire read-only buffer resource (Constants / UBO)
-   * @params[in] binding The binding index of the resource
-   * @params[in] alloc The Device Allocation that is going to be bound
-   */
-  virtual ShaderResourceSet &buffer(uint32_t binding,
-                                    DeviceAllocation alloc) = 0;
-
-  /**
-   * Bind a read-only image resource (SRV / Texture)
-   * @params[in] binding The binding index of the resource
-   * @params[in] alloc The Device Allocation that is going to be bound
-   * @params[in] sampler_config The texture sampling configuration
-   */
-  virtual ShaderResourceSet &image(uint32_t binding,
-                                   DeviceAllocation alloc,
-                                   ImageSamplerConfig sampler_config) {
-    TI_NOT_IMPLEMENTED;
+  virtual ~ResourceBinder() {
   }
 
-  /**
-   * Bind a RW image resource (UAV / Storage Image)
-   * @params binding The binding index of the resource
-   * @params alloc The Device Allocation that is going to be bound
-   */
-  virtual ShaderResourceSet &rw_image(uint32_t binding,
-                                      DeviceAllocation alloc,
-                                      int lod) {
-    TI_NOT_IMPLEMENTED
-  }
-};
+  // In Vulkan this is called Storage Buffer (shader can store)
+  virtual void rw_buffer(uint32_t set,
+                         uint32_t binding,
+                         DevicePtr ptr,
+                         size_t size) = 0;
+  virtual void rw_buffer(uint32_t set,
+                         uint32_t binding,
+                         DeviceAllocation alloc) = 0;
 
-// A set of states / resources for rasterization
-class TI_DLL_EXPORT RasterResources {
- public:
-  virtual ~RasterResources() = default;
+  // In Vulkan this is called Uniform Buffer (shader can only load)
+  virtual void buffer(uint32_t set,
+                      uint32_t binding,
+                      DevicePtr ptr,
+                      size_t size) = 0;
+  virtual void buffer(uint32_t set,
+                      uint32_t binding,
+                      DeviceAllocation alloc) = 0;
 
-  /**
-   * Set a vertex buffer for the rasterization
-   * @params ptr The Device Pointer to the vertices data
-   * @params binding The binding index of the vertex buffer
-   */
-  virtual RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
+  virtual void image(uint32_t set,
+                     uint32_t binding,
+                     DeviceAllocation alloc,
+                     ImageSamplerConfig sampler_config) {
     TI_NOT_IMPLEMENTED
   }
 
-  /**
-   * Set an index buffer for the rasterization
-   * @params ptr The Device Pointer to the vertices data
-   * @params index_width The index data width (in bits).
-   *                     index_width = 32 -> uint32 index
-   *                     index_width = 16 -> uint16 index
-   */
-  virtual RasterResources &index_buffer(DevicePtr ptr, size_t index_width) {
+  virtual void rw_image(uint32_t set,
+                        uint32_t binding,
+                        DeviceAllocation alloc,
+                        int lod) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Set vertex buffer (not implemented in compute only device)
+  virtual void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  // Set index buffer (not implemented in compute only device)
+  // index_width = 4 -> uint32 index
+  // index_width = 2 -> uint16 index
+  virtual void index_buffer(DevicePtr ptr, size_t index_width) {
     TI_NOT_IMPLEMENTED
   }
 };
@@ -227,10 +187,12 @@ enum class BufferFormat : uint32_t {
 #undef PER_BUFFER_FORMAT
 };
 
-class TI_DLL_EXPORT Pipeline {
+class Pipeline {
  public:
   virtual ~Pipeline() {
   }
+
+  virtual ResourceBinder *resource_binder() = 0;
 };
 
 enum class ImageDimension {
@@ -270,48 +232,13 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
-class TI_DLL_EXPORT CommandList {
+class CommandList {
  public:
   virtual ~CommandList() {
   }
 
-  /**
-   * Bind a pipeline to the command list.
-   * Doing so resets all bound resources.
-   * @params[in] pipeline The pipeline to be bound
-   */
   virtual void bind_pipeline(Pipeline *p) = 0;
-
-  /**
-   * Bind a ShaderResourceSet to a set index.
-   * - If the set index is already bound, the previous binding will be
-   *   overwritten.
-   * - A set index can only be bound with a single ShaderResourceSet.
-   * - If the input set is empty, this command is a no-op.
-   * @params[in] res The ShaderResourceSet to be bound.
-   * @params[in] set_index The index the resources will be bound to.
-   * @return The binding result code
-   *         `success` If the binding succeded
-   *         `invalid_usage` If `res` is incompatible with current pipeline
-   *         `not_supported` If some bindings are not supported by the backend
-   *         `out_of_memory` If binding failed due to OOM conditions
-   *         `error` If binding failed due to other reasons
-   */
-  virtual RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                          int set_index = 0) = 0;
-
-  /**
-   * Bind RasterResources to the command list.
-   * - If the input resource is empty, this command is a no-op.
-   * @params res The RasterResources to be bound.
-   * @return The binding result code
-   *         `success` If the binding succeded
-   *         `invalid_usage` If `res` is incompatible with current pipeline
-   *         `not_supported` If some bindings are not supported by the backend
-   *         `error` If binding failed due to other reasons
-   */
-  virtual RhiResult bind_raster_resources(RasterResources *res) = 0;
-
+  virtual void bind_resources(ResourceBinder *binder) = 0;
   virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
   virtual void buffer_barrier(DeviceAllocation alloc) = 0;
   virtual void memory_barrier() = 0;
@@ -421,7 +348,7 @@ enum class AllocUsage : int {
 
 MAKE_ENUM_FLAGS(AllocUsage)
 
-class TI_DLL_EXPORT StreamSemaphoreObject {
+class StreamSemaphoreObject {
  public:
   virtual ~StreamSemaphoreObject() {
   }
@@ -429,7 +356,7 @@ class TI_DLL_EXPORT StreamSemaphoreObject {
 
 using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 
-class TI_DLL_EXPORT Stream {
+class Stream {
  public:
   virtual ~Stream() {
   }
@@ -449,7 +376,7 @@ class TI_DLL_EXPORT Stream {
   }
 };
 
-class TI_DLL_EXPORT Device {
+class Device {
   DeviceCapabilityConfig caps_{};
 
  public:
@@ -495,20 +422,6 @@ class TI_DLL_EXPORT Device {
 
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
-
-  /**
-   * Create a new shader resource set
-   * @return The new shader resource set pointer
-   */
-  virtual ShaderResourceSet *create_resource_set() = 0;
-
-  /**
-   * Create a new shader resource set (wrapped in unique ptr)
-   * @return The new shader resource set unique pointer
-   */
-  inline std::unique_ptr<ShaderResourceSet> create_resource_set_unique() {
-    return std::unique_ptr<ShaderResourceSet>(this->create_resource_set());
-  }
 
   /**
    * Map a range within a DeviceAllocation memory into host address space.
@@ -588,7 +501,7 @@ class TI_DLL_EXPORT Device {
   }
 };
 
-class TI_DLL_EXPORT Surface {
+class Surface {
  public:
   virtual ~Surface() {
   }
@@ -691,20 +604,6 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
       std::string name = "Pipeline") = 0;
 
   virtual Stream *get_graphics_stream() = 0;
-
-  /**
-   * Create a new raster resources set
-   * @return The new RasterResources pointer
-   */
-  virtual RasterResources *create_raster_resources() = 0;
-
-  /**
-   * Create a new raster resources set (wrapped in unique ptr)
-   * @return The new RasterResources unique pointer
-   */
-  inline std::unique_ptr<RasterResources> create_raster_resources_unique() {
-    return std::unique_ptr<RasterResources>(this->create_raster_resources());
-  }
 
   virtual std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) = 0;

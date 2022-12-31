@@ -86,16 +86,6 @@ struct Value {
   SType stype;
   // Additional flags about the value
   ValueKind flag{ValueKind::kNormal};
-
-  bool operator==(const Value &rhs) const {
-    return id == rhs.id;
-  }
-};
-
-struct ValueHasher {
-  size_t operator()(const spirv::Value &v) const {
-    return std::hash<uint32_t>()(v.id);
-  }
 };
 
 // Represent the SPIRV Label

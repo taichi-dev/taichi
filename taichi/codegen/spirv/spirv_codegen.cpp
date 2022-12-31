@@ -91,7 +91,7 @@ class TaskCodegen : public IRVisitor {
 
   void fill_snode_to_root() {
     for (int root = 0; root < compiled_structs_.size(); ++root) {
-      for (auto &[node_id, node] : compiled_structs_[root].snode_descriptors) {
+      for (auto [node_id, node] : compiled_structs_[root].snode_descriptors) {
         snode_to_root_[node_id] = root;
       }
     }
@@ -107,6 +107,9 @@ class TaskCodegen : public IRVisitor {
     ir_->init_header();
     kernel_function_ = ir_->new_function();  // void main();
     ir_->debug_name(spv::OpName, kernel_function_, "main");
+
+    compile_args_struct();
+    compile_ret_struct();
 
     if (task_ir_->task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(task_ir_);
@@ -1746,21 +1749,22 @@ class TaskCodegen : public IRVisitor {
     std::vector<spirv::Value> buffers;
     if (caps_->get(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
+      std::unordered_set<BufferInfo, BufferInfoHasher> unique_bufs;
       // One buffer can be bound to different bind points but has to be unique
       // in OpEntryPoint interface declarations.
       // From Spec: before SPIR-V version 1.4, duplication of these interface id
       // is tolerated. Starting with version 1.4, an interface id must not
       // appear more than once.
-      std::unordered_set<spirv::Value, spirv::ValueHasher> entry_point_values;
       for (const auto &bb : task_attribs_.buffer_binds) {
-        for (auto &it : buffer_value_map_) {
-          if (it.first.first == bb.buffer) {
-            entry_point_values.insert(it.second);
+        if (unique_bufs.count(bb.buffer) == 0) {
+          for (auto &it : buffer_value_map_) {
+            if (it.first.first == bb.buffer) {
+              buffers.push_back(it.second);
+            }
           }
+          unique_bufs.insert(bb.buffer);
         }
       }
-      buffers.insert(buffers.end(), entry_point_values.begin(),
-                     entry_point_values.end());
     }
     ir_->commit_kernel_function(kernel_function_, "main", buffers,
                                 group_size);  // kernel entry
@@ -2244,16 +2248,12 @@ class TaskCodegen : public IRVisitor {
     }
 
     if (buffer.type == BufferType::Args) {
-      compile_args_struct();
-
       buffer_binding_map_[key] = 0;
       buffer_value_map_[key] = args_buffer_value_;
       return args_buffer_value_;
     }
 
     if (buffer.type == BufferType::Rets) {
-      compile_ret_struct();
-
       buffer_binding_map_[key] = 1;
       buffer_value_map_[key] = ret_buffer_value_;
       return ret_buffer_value_;
@@ -2537,7 +2537,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     size_t last_size;
     bool success = true;
-    {
+    do {
       last_size = optimized_spv.size();
       bool result = false;
       TI_ERROR_IF(
@@ -2546,8 +2546,9 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
           "SPIRV optimization failed");
       if (result) {
         success = false;
+        break;
       }
-    }
+    } while (last_size != optimized_spv.size());
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());

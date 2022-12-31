@@ -11,10 +11,33 @@
 namespace taichi::lang {
 namespace cuda {
 
+class CudaResourceBinder : public ResourceBinder {
+ public:
+  ~CudaResourceBinder() override {
+  }
+
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DevicePtr ptr,
+                 size_t size) override{TI_NOT_IMPLEMENTED};
+  void rw_buffer(uint32_t set,
+                 uint32_t binding,
+                 DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
+
+  void buffer(uint32_t set,
+              uint32_t binding,
+              DevicePtr ptr,
+              size_t size) override{TI_NOT_IMPLEMENTED};
+  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override{
+      TI_NOT_IMPLEMENTED};
+};
+
 class CudaPipeline : public Pipeline {
  public:
   ~CudaPipeline() override {
   }
+
+  ResourceBinder *resource_binder() override{TI_NOT_IMPLEMENTED};
 };
 
 class CudaCommandList : public CommandList {
@@ -23,10 +46,7 @@ class CudaCommandList : public CommandList {
   }
 
   void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
-  RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) final{TI_NOT_IMPLEMENTED};
-  RhiResult bind_raster_resources(RasterResources *res) final{
-      TI_NOT_IMPLEMENTED};
+  void bind_resources(ResourceBinder *binder) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
   void memory_barrier() override{TI_NOT_IMPLEMENTED};
@@ -83,8 +103,6 @@ class CudaDevice : public LlvmDevice {
   DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
-
-  ShaderResourceSet *create_resource_set() final{TI_NOT_IMPLEMENTED};
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,

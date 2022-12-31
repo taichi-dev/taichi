@@ -182,42 +182,62 @@ void check_opengl_error(const std::string &msg) {
   }
 }
 
-GLResourceSet::~GLResourceSet() {
+GLResourceBinder::~GLResourceBinder() {
 }
 
-GLResourceSet &GLResourceSet::rw_buffer(uint32_t binding,
-                                        DevicePtr ptr,
-                                        size_t size) {
-  ssbo_binding_map_[binding] = {GLuint(ptr.alloc_id), ptr.offset, size};
-  return *this;
+void GLResourceBinder::rw_buffer(uint32_t set,
+                                 uint32_t binding,
+                                 DevicePtr ptr,
+                                 size_t size) {
+  // FIXME: Implement ranged bind
+  TI_NOT_IMPLEMENTED;
 }
 
-GLResourceSet &GLResourceSet::rw_buffer(uint32_t binding,
-                                        DeviceAllocation alloc) {
-  return rw_buffer(binding, alloc.get_ptr(0), -1);
+void GLResourceBinder::rw_buffer(uint32_t set,
+                                 uint32_t binding,
+                                 DeviceAllocation alloc) {
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
+  ssbo_binding_map_[binding] = alloc.alloc_id;
 }
 
-GLResourceSet &GLResourceSet::buffer(uint32_t binding,
-                                     DevicePtr ptr,
-                                     size_t size) {
-  ubo_binding_map_[binding] = {GLuint(ptr.alloc_id), ptr.offset, size};
-  return *this;
+void GLResourceBinder::buffer(uint32_t set,
+                              uint32_t binding,
+                              DevicePtr ptr,
+                              size_t size) {
+  // FIXME: Implement ranged bind
+  TI_NOT_IMPLEMENTED;
 }
 
-GLResourceSet &GLResourceSet::buffer(uint32_t binding, DeviceAllocation alloc) {
-  return buffer(binding, alloc.get_ptr(0), -1);
+void GLResourceBinder::buffer(uint32_t set,
+                              uint32_t binding,
+                              DeviceAllocation alloc) {
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
+  ubo_binding_map_[binding] = alloc.alloc_id;
 }
 
-GLResourceSet &GLResourceSet::image(uint32_t binding,
-                                    DeviceAllocation alloc,
-                                    ImageSamplerConfig sampler_config) {
+void GLResourceBinder::image(uint32_t set,
+                             uint32_t binding,
+                             DeviceAllocation alloc,
+                             ImageSamplerConfig sampler_config) {
+  TI_ASSERT_INFO(set == 0, "OpenGL only supports set = 0, requested set = {}",
+                 set);
   texture_binding_map_[binding] = alloc.alloc_id;
-  return *this;
 }
 
-GLResourceSet &GLResourceSet::rw_image(uint32_t binding,
-                                       DeviceAllocation alloc,
-                                       int lod) {
+void GLResourceBinder::rw_image(uint32_t set,
+                                uint32_t binding,
+                                DeviceAllocation alloc,
+                                int lod) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void GLResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
   TI_NOT_IMPLEMENTED;
 }
 
@@ -302,6 +322,10 @@ GLPipeline::~GLPipeline() {
   check_opengl_error("glDeleteShader");
 }
 
+ResourceBinder *GLPipeline::resource_binder() {
+  return &binder_;
+}
+
 GLCommandList::~GLCommandList() {
 }
 
@@ -312,39 +336,33 @@ void GLCommandList::bind_pipeline(Pipeline *p) {
   recorded_commands_.push_back(std::move(cmd));
 }
 
-RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
-                                               int set_index) {
-  GLResourceSet *set = static_cast<GLResourceSet *>(res);
-  for (auto &[binding, buffer] : set->ssbo_binding_map()) {
+void GLCommandList::bind_resources(ResourceBinder *_binder) {
+  GLResourceBinder *binder = static_cast<GLResourceBinder *>(_binder);
+  for (auto &[binding, buffer] : binder->ssbo_binding_map()) {
     auto cmd = std::make_unique<CmdBindBufferToIndex>();
-    cmd->buffer = buffer.buffer;
-    cmd->offset = buffer.offset;
-    cmd->size = buffer.size;
+    cmd->buffer = buffer;
     cmd->index = binding;
     recorded_commands_.push_back(std::move(cmd));
   }
-  for (auto &[binding, buffer] : set->ubo_binding_map()) {
+  for (auto &[binding, buffer] : binder->ubo_binding_map()) {
     auto cmd = std::make_unique<CmdBindBufferToIndex>();
-    cmd->buffer = buffer.buffer;
-    cmd->offset = buffer.offset;
-    cmd->size = buffer.size;
+    cmd->buffer = buffer;
     cmd->index = binding;
     cmd->target = GL_UNIFORM_BUFFER;
     recorded_commands_.push_back(std::move(cmd));
   }
-  for (auto &[binding, texture] : set->texture_binding_map()) {
+  for (auto &[binding, texture] : binder->texture_binding_map()) {
     auto cmd = std::make_unique<CmdBindTextureToIndex>();
     cmd->texture = texture;
     cmd->index = binding;
     cmd->target = device_->get_image_gl_dims(texture);
     recorded_commands_.push_back(std::move(cmd));
   }
-
-  return RhiResult::success;
 }
 
-RhiResult GLCommandList::bind_raster_resources(RasterResources *res) {
-  TI_NOT_IMPLEMENTED;
+template <typename T>
+std::initializer_list<T> make_init_list(std::initializer_list<T> &&l) {
+  return l;
 }
 
 void GLCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
@@ -716,6 +734,7 @@ void GLDevice::image_to_buffer(DevicePtr dst_buf,
 }
 
 GLSurface::~GLSurface() {
+  TI_NOT_IMPLEMENTED;
 }
 
 StreamSemaphore GLSurface::acquire_next_image() {
@@ -753,14 +772,9 @@ void GLCommandList::CmdBindPipeline::execute() {
 }
 
 void GLCommandList::CmdBindBufferToIndex::execute() {
-  if (size == -1) {
-    glBindBufferBase(target, index, buffer);
-    check_opengl_error("glBindBufferBase");
-  } else {
-    glBindBufferRange(target, index, buffer, GLintptr(offset),
-                      GLsizeiptr(size));
-    check_opengl_error("glBindBufferRange");
-  }
+  check_opengl_error("before");
+  glBindBufferBase(target, index, buffer);
+  check_opengl_error("glBindBufferBase");
 }
 
 void GLCommandList::CmdBindTextureToIndex::execute() {

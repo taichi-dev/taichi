@@ -44,7 +44,7 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
   CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);
 
   void *dst_ptr{nullptr};
-  TI_ASSERT(vk_dev->map_range(staging, size, &dst_ptr) == RhiResult::success);
+  TI_ASSERT(vk_dev->map_range(dst, size, &dst_ptr) == RhiResult::success);
   void *src_ptr = (uint8_t *)src_alloc_info.ptr + src.offset;
 
   memcpy(dst_ptr, src_ptr, size);

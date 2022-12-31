@@ -25,51 +25,59 @@ void check_dx_error(HRESULT hr, const char *msg) {
   }
 }
 
-ShaderResourceSet &Dx11ResourceSet::rw_buffer(uint32_t binding,
-                                              DevicePtr ptr,
-                                              size_t size) {
+void Dx11ResourceBinder::rw_buffer(uint32_t set,
+                                   uint32_t binding,
+                                   DevicePtr ptr,
+                                   size_t size) {
   TI_NOT_IMPLEMENTED;
-  return *this;
 }
 
-ShaderResourceSet &Dx11ResourceSet::rw_buffer(uint32_t binding,
-                                              DeviceAllocation alloc) {
+void Dx11ResourceBinder::rw_buffer(uint32_t set,
+                                   uint32_t binding,
+                                   DeviceAllocation alloc) {
   uav_binding_to_alloc_id_[binding] = alloc.alloc_id;
-  return *this;
 }
 
-ShaderResourceSet &Dx11ResourceSet::buffer(uint32_t binding,
-                                           DevicePtr ptr,
-                                           size_t size) {
+void Dx11ResourceBinder::buffer(uint32_t set,
+                                uint32_t binding,
+                                DevicePtr ptr,
+                                size_t size) {
   TI_NOT_IMPLEMENTED;
-  return *this;
 }
 
-ShaderResourceSet &Dx11ResourceSet::buffer(uint32_t binding,
-                                           DeviceAllocation alloc) {
+void Dx11ResourceBinder::buffer(uint32_t set,
+                                uint32_t binding,
+                                DeviceAllocation alloc) {
   // args_t now use constant buffers.
   // Example:
   // cbuffer args_t : register(b0)
   // { ... }
   cb_binding_to_alloc_id_[binding] = alloc.alloc_id;
-  return *this;
 }
 
-ShaderResourceSet &Dx11ResourceSet::image(uint32_t binding,
-                                          DeviceAllocation alloc,
-                                          ImageSamplerConfig sampler_config) {
+void Dx11ResourceBinder::image(uint32_t set,
+                               uint32_t binding,
+                               DeviceAllocation alloc,
+                               ImageSamplerConfig sampler_config) {
   TI_NOT_IMPLEMENTED;
-  return *this;
 }
 
-ShaderResourceSet &Dx11ResourceSet::rw_image(uint32_t binding,
-                                             DeviceAllocation alloc,
-                                             int lod) {
+void Dx11ResourceBinder::rw_image(uint32_t set,
+                                  uint32_t binding,
+                                  DeviceAllocation alloc,
+                                  int lod) {
   TI_NOT_IMPLEMENTED;
-  return *this;
 }
 
-Dx11ResourceSet::~Dx11ResourceSet() {
+void Dx11ResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
+  TI_NOT_IMPLEMENTED;
+}
+
+void Dx11ResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
+  TI_NOT_IMPLEMENTED;
+}
+
+Dx11ResourceBinder::~Dx11ResourceBinder() {
 }
 
 Dx11CommandList::Dx11CommandList(Dx11Device *ti_device) : device_(ti_device) {
@@ -94,16 +102,11 @@ void Dx11CommandList::bind_pipeline(Pipeline *p) {
   d3d11_deferred_context_->CSSetShader(pipeline->get_program(), nullptr, 0);
 }
 
-RhiResult Dx11CommandList::bind_shader_resources(ShaderResourceSet *res,
-                                                 int set_index) {
-  Dx11ResourceSet *set = static_cast<Dx11ResourceSet *>(res);
-  if (set_index > 0) {
-    // TODO: Add remapping?
-    return RhiResult::not_supported;
-  }
+void Dx11CommandList::bind_resources(ResourceBinder *binder_) {
+  Dx11ResourceBinder *binder = static_cast<Dx11ResourceBinder *>(binder_);
 
   // UAV
-  for (auto &[binding, alloc_id] : set->uav_binding_to_alloc_id()) {
+  for (auto &[binding, alloc_id] : binder->uav_binding_to_alloc_id()) {
     ID3D11UnorderedAccessView *uav =
         device_->alloc_id_to_uav(d3d11_deferred_context_, alloc_id);
     d3d11_deferred_context_->CSSetUnorderedAccessViews(binding, 1, &uav,
@@ -111,7 +114,7 @@ RhiResult Dx11CommandList::bind_shader_resources(ShaderResourceSet *res,
   }
 
   // CBV
-  for (auto &[binding, alloc_id] : set->cb_binding_to_alloc_id()) {
+  for (auto &[binding, alloc_id] : binder->cb_binding_to_alloc_id()) {
     auto cb_buffer =
         device_->alloc_id_to_cb_buffer(d3d11_deferred_context_, alloc_id);
 
@@ -119,12 +122,6 @@ RhiResult Dx11CommandList::bind_shader_resources(ShaderResourceSet *res,
 
     cb_slot_watermark_ = std::max(cb_slot_watermark_, int(binding));
   }
-
-  return RhiResult::success;
-}
-
-RhiResult Dx11CommandList::bind_raster_resources(RasterResources *res) {
-  TI_NOT_IMPLEMENTED;
 }
 
 void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) {
@@ -947,6 +944,10 @@ Dx11Pipeline::Dx11Pipeline(const PipelineSourceDesc &desc,
 }
 
 Dx11Pipeline::~Dx11Pipeline() {
+}
+
+ResourceBinder *Dx11Pipeline::resource_binder() {
+  return &binder_;
 }
 
 }  // namespace directx11

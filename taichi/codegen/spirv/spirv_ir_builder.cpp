@@ -835,7 +835,11 @@ Value IRBuilder::fetch_texel(Value texture_var,
   // OpImageFetch requires operand with OpImageType
   // We have to extract the underlying OpImage from OpSampledImage here
   SType image_type = get_underlying_image_type(f32_type(), args.size());
-  Value image_val = make_value(spv::OpImage, image_type, sampled_image);
+  Value image_val = new_value(image_type, ValueKind::kNormal);
+
+  ib_.begin(spv::OpImage)
+      .add_seq(image_type, image_val, sampled_image)
+      .commit(&function_);
 
   Value uv;
   if (args.size() == 1) {

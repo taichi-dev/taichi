@@ -165,15 +165,9 @@ const Pipeline &Renderable::pipeline() const {
 }
 
 void Renderable::create_bindings() {
-  if (!resource_set_) {
-    resource_set_ = app_context_->device().create_resource_set_unique();
-  }
-  if (!raster_state_) {
-    raster_state_ = app_context_->device().create_raster_resources_unique();
-  }
-
-  raster_state_->vertex_buffer(vertex_buffer_.get_ptr(0), 0);
-  raster_state_->index_buffer(index_buffer_.get_ptr(0), 32);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->vertex_buffer(vertex_buffer_.get_ptr(0), 0);
+  binder->index_buffer(index_buffer_.get_ptr(0), 32);
 }
 
 void Renderable::create_graphics_pipeline() {
@@ -293,16 +287,13 @@ void Renderable::destroy_storage_buffers() {
 }
 
 void Renderable::cleanup() {
-  resource_set_.reset();
-  raster_state_.reset();
   free_buffers();
   pipeline_.reset();
 }
 
 void Renderable::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_raster_resources(raster_state_.get());
-  command_list->bind_shader_resources(resource_set_.get());
+  command_list->bind_resources(pipeline_->resource_binder());
 
   if (indexed_) {
     command_list->draw_indexed(config_.draw_index_count,

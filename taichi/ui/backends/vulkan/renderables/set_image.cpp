@@ -321,8 +321,9 @@ void SetImage::update_index_buffer() {
 
 void SetImage::create_bindings() {
   Renderable::create_bindings();
-  resource_set_->image(0, texture_, {});
-  resource_set_->buffer(1, uniform_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->image(0, 0, texture_, {});
+  binder->buffer(0, 1, uniform_buffer_);
 }
 
 void SetImage::cleanup() {

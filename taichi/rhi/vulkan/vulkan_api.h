@@ -65,7 +65,7 @@ struct DeviceObjVkDescriptorSet : public DeviceObj {
   VkDescriptorSet set{VK_NULL_HANDLE};
   IVkDescriptorSetLayout ref_layout{nullptr};
   IVkDescriptorPool ref_pool{nullptr};
-  std::vector<IDeviceObj> ref_binding_objs;
+  std::unordered_map<uint32_t, IDeviceObj> ref_binding_objs;
   ~DeviceObjVkDescriptorSet() override;
 };
 using IVkDescriptorSet = std::shared_ptr<DeviceObjVkDescriptorSet>;
@@ -171,14 +171,6 @@ IVkPipeline create_raytracing_pipeline(
     VkDeferredOperationKHR deferredOperation = VK_NULL_HANDLE,
     IVkPipelineCache cache = nullptr,
     IVkPipeline base_pipeline = nullptr);
-
-// VkSampler
-struct DeviceObjVkSampler : public DeviceObj {
-  VkSampler sampler{VK_NULL_HANDLE};
-  ~DeviceObjVkSampler() override;
-};
-using IVkSampler = std::shared_ptr<DeviceObjVkSampler>;
-IVkSampler create_sampler(VkDevice device, const VkSamplerCreateInfo &info);
 
 // VkImage
 struct DeviceObjVkImage : public DeviceObj {

@@ -55,7 +55,8 @@ void Triangles::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
 
 void Triangles::create_bindings() {
   Renderable::create_bindings();
-  resource_set_->buffer(0, uniform_buffer_);
+  ResourceBinder *binder = pipeline_->resource_binder();
+  binder->buffer(0, 0, uniform_buffer_);
 }
 
 }  // namespace vulkan

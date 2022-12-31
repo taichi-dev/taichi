@@ -80,9 +80,8 @@ void Particles::init_particles(AppContext *app_context,
 
 void Particles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
-  binder->rw_buffer(0, 1, storage_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
+  resource_set_->rw_buffer(1, storage_buffer_);
 }
 
 }  // namespace vulkan

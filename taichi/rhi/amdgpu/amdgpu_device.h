@@ -1,32 +1,26 @@
 #pragma once
-
-#include <set>
-#include <unordered_map>
 #include <vector>
+#include <set>
 
 #include "taichi/common/core.h"
+#include "taichi/rhi/amdgpu/amdgpu_driver.h"
+#include "taichi/rhi/amdgpu/amdgpu_caching_allocator.h"
+#include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
-#include "taichi/system/virtual_memory.h"
 
-namespace taichi::lang {
-namespace cpu {
+namespace taichi {
+namespace lang {
+namespace amdgpu {
 
-class CpuPipeline : public Pipeline {
+class AmdgpuCommandList : public CommandList {
  public:
-  ~CpuPipeline() override {
-  }
-};
-
-class CpuCommandList : public CommandList {
- public:
-  ~CpuCommandList() override {
+  ~AmdgpuCommandList() override {
   }
 
   void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) override{
-      TI_NOT_IMPLEMENTED};
-  RhiResult bind_raster_resources(RasterResources *res) override{
+                                  int set_index = 0) final{TI_NOT_IMPLEMENTED};
+  RhiResult bind_raster_resources(RasterResources *res) final{
       TI_NOT_IMPLEMENTED};
   void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
@@ -39,9 +33,9 @@ class CpuCommandList : public CommandList {
       TI_NOT_IMPLEMENTED};
 };
 
-class CpuStream : public Stream {
+class AmdgpuStream : public Stream {
  public:
-  ~CpuStream() override{};
+  ~AmdgpuStream() override{};
 
   std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
   StreamSemaphore submit(CommandList *cmdlist,
@@ -55,24 +49,27 @@ class CpuStream : public Stream {
   void command_sync() override{TI_NOT_IMPLEMENTED};
 };
 
-class CpuDevice : public LlvmDevice {
+class AmdgpuDevice : public LlvmDevice {
  public:
   struct AllocInfo {
     void *ptr{nullptr};
     size_t size{0};
+    bool is_imported{false};
+    bool use_preallocated{true};
     bool use_cached{false};
+    void *mapped{nullptr};
   };
 
   AllocInfo get_alloc_info(const DeviceAllocation handle);
 
-  ~CpuDevice() override{};
+  ~AmdgpuDevice() override{};
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
-  ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
+  ShaderResourceSet *create_resource_set() final{TI_NOT_IMPLEMENTED};
 
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
@@ -80,15 +77,17 @@ class CpuDevice : public LlvmDevice {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
+    TI_NOT_IMPLEMENTED;
+  }
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) final;
-
-  DeviceAllocation import_memory(void *ptr, size_t size);
+  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) override;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
+
+  DeviceAllocation import_memory(void *ptr, size_t size);
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
@@ -96,16 +95,16 @@ class CpuDevice : public LlvmDevice {
 
  private:
   std::vector<AllocInfo> allocations_;
-  std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
-      virtual_memories_;
-
   void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
+  std::unique_ptr<AmdgpuCachingAllocator> caching_allocator_{nullptr};
 };
 
-}  // namespace cpu
+}  // namespace amdgpu
 
-}  // namespace taichi::lang
+}  // namespace lang
+
+}  // namespace taichi

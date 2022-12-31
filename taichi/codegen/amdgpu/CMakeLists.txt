@@ -14,4 +14,4 @@ target_include_directories(amdgpu_codegen
   )
 
 target_link_libraries(amdgpu_codegen PRIVATE taichi_util)
-target_link_libraries(amdgpu_codegen PRIVATE amdgpu_runtime)
+# target_link_libraries(amdgpu_codegen PRIVATE amdgpu_runtime)

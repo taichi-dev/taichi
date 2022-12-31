@@ -492,7 +492,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            { (void *)&context_pointer, (void *)&arg_size });
+                            {(void *)&context_pointer, (void *)&arg_size});
     }
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     TI_TRACE("Launching kernel");

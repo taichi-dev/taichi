@@ -73,6 +73,12 @@ class SampleApp : public App {
       device->unmap(*vertex_buffer);
     }
 
+    // Define the raster state
+    {
+      raster_resources = device->create_raster_resources_unique();
+      raster_resources->vertex_buffer(vertex_buffer->get_ptr(0), 0);
+    }
+
     TI_INFO("App Init Done");
   }
 
@@ -94,10 +100,7 @@ class SampleApp : public App {
 
     // Bind our triangle pipeline
     cmdlist->bind_pipeline(pipeline.get());
-    // Get the binder and bind our vertex buffer
-    auto resource_binder = pipeline->resource_binder();
-    resource_binder->vertex_buffer(vertex_buffer->get_ptr(0), 0);
-    cmdlist->bind_resources(resource_binder);
+    cmdlist->bind_raster_resources(raster_resources.get());
     // Render the triangle
     cmdlist->draw(3, 0);
     // End rendering
@@ -110,9 +113,10 @@ class SampleApp : public App {
   }
 
  public:
-  std::unique_ptr<Pipeline> pipeline;
+  std::unique_ptr<Pipeline> pipeline{nullptr};
+  std::unique_ptr<RasterResources> raster_resources{nullptr};
 
-  std::unique_ptr<DeviceAllocationGuard> vertex_buffer;
+  std::unique_ptr<DeviceAllocationGuard> vertex_buffer{nullptr};
 };
 
 int main() {

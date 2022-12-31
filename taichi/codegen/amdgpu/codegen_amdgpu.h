@@ -42,5 +42,5 @@ class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
                        LLVMCompiledKernel data) const override;
 };
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

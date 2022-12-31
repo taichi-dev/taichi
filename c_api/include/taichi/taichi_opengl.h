@@ -1,6 +1,6 @@
 #pragma once
 
-#include <taichi/taichi.h> 
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {

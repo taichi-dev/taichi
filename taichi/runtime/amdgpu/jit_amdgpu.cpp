@@ -123,5 +123,5 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
 }
 #endif
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

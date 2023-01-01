@@ -38,5 +38,5 @@ static class RuntimeAMDGPUInjector {
   }
 } injector;
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

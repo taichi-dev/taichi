@@ -149,5 +149,5 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     CompileConfig *config,
     Arch arch);
 
-}
-}
+}  // namespace lang
+}  // namespace taichi

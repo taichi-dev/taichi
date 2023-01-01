@@ -82,7 +82,7 @@ class JITModule {
 #endif
       }
       else if (module_arch() == Arch::amdgpu) {
-#if defined(TI_WITH_CUDA)
+#if defined(TI_WITH_AMDGPU)
         auto arg_bytes = JITModule::get_args_bytes(args...);
         char packed_args[arg_bytes];
         JITModule::init_args_pointers(packed_args, args...);

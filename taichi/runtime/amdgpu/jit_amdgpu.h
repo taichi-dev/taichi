@@ -19,11 +19,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#ifdef TI_LLVM_15
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
@@ -70,21 +66,18 @@ class JITModuleAMDGPU : public JITModule {
   }
 
   void call(const std::string &name,
-            void *arg_pointers,
-            int arg_bytes) override {
-    launch(name, 1, 1, 0, arg_pointers, arg_bytes);
+            const std::vector<void *> &arg_pointers) override {
+    launch(name, 1, 1, 0, arg_pointers);
   }
 
   void launch(const std::string &name,
               std::size_t grid_dim,
               std::size_t block_dim,
               std::size_t dynamic_shared_mem_bytes,
-              void *arg_pointers,
-              int arg_bytes) override {
+              std::vector<void *> &arg_pointers) override {
     auto func = lookup_function(name);
     AMDGPUContext::get_instance().launch(func, name, arg_pointers, grid_dim,
-                                         block_dim, dynamic_shared_mem_bytes,
-                                         arg_bytes);
+                                         block_dim, dynamic_shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {
@@ -133,6 +126,7 @@ class JITSessionAMDGPU : public JITSession {
   }
 
   uint64 get_random_num() {
+    // Note: ROCm is available only on Linux OS.
     static std::random_device device("/dev/urandom");
     static std::mt19937_64 *rng = new std::mt19937_64(device());
     return (*rng)();

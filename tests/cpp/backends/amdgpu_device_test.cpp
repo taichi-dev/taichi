@@ -99,29 +99,31 @@ TEST(AMDGPU, CreateContextAndGetMemInfo) {
   EXPECT_GE(free_size, 0);
 }
 
-const std::string program = 
-        "define dso_local void @runtime_add(double* %0, double* %1, double* %2) #4 {\n"
-        "%4 = alloca double*, align 8\n"
-        "%5 = alloca double*, align 8\n"
-        "%6 = alloca double*, align 8\n"
-        "store double* %0, double** %4, align 8\n"
-        "store double* %1, double** %5, align 8\n"
-        "store double* %2, double** %6, align 8\n"
-        "%7 = load double*, double** %4, align 8\n"
-        "%8 = load double, double* %7, align 8\n"
-        "%9 = load double*, double** %5, align 8\n"
-        "%10 = load double, double* %9, align 8\n"
-        "%11 = fadd contract double %8, %10\n"
-        "%12 = load double*, double** %6, align 8\n"
-        "store double %11, double* %12, align 8\n"
-        "ret void\n"
-        "}\n";
+const std::string program =
+    "define dso_local void @runtime_add(double* %0, double* %1, double* %2) #4 "
+    "{\n"
+    "%4 = alloca double*, align 8\n"
+    "%5 = alloca double*, align 8\n"
+    "%6 = alloca double*, align 8\n"
+    "store double* %0, double** %4, align 8\n"
+    "store double* %1, double** %5, align 8\n"
+    "store double* %2, double** %6, align 8\n"
+    "%7 = load double*, double** %4, align 8\n"
+    "%8 = load double, double* %7, align 8\n"
+    "%9 = load double*, double** %5, align 8\n"
+    "%10 = load double, double* %9, align 8\n"
+    "%11 = fadd contract double %8, %10\n"
+    "%12 = load double*, double** %6, align 8\n"
+    "store double %11, double* %12, align 8\n"
+    "ret void\n"
+    "}\n";
 
 TEST(AMDGPU, ConvertAllocaInstAddressSpacePass) {
   llvm::LLVMContext llvm_context;
   llvm::SMDiagnostic diagnostic_err;
-  std::unique_ptr<llvm::Module> llvm_module = 
-      llvm::parseIR(llvm::MemoryBuffer::getMemBuffer(program)->getMemBufferRef(), diagnostic_err, llvm_context);
+  std::unique_ptr<llvm::Module> llvm_module = llvm::parseIR(
+      llvm::MemoryBuffer::getMemBuffer(program)->getMemBufferRef(),
+      diagnostic_err, llvm_context);
   llvm::legacy::FunctionPassManager function_pass_manager(llvm_module.get());
   function_pass_manager.add(new AMDGPUConvertAllocaInstAddressSpacePass());
   function_pass_manager.doInitialization();
@@ -142,29 +144,29 @@ TEST(AMDGPU, ConvertAllocaInstAddressSpacePass) {
       auto cast_inst = llvm::dyn_cast<AddrSpaceCastInst>(&inst);
       if (!cast_inst)
         continue;
-      cast_num ++;
+      cast_num++;
     }
     EXPECT_EQ(cast_num, 3);
   }
 }
 
 TEST(AMDGPU, ConvertFuncParamAddressSpacePass) {
-    llvm::LLVMContext llvm_context;
-    llvm::SMDiagnostic diagnostic_err;
-    std::unique_ptr<llvm::Module> llvm_module = 
-        llvm::parseIR(llvm::MemoryBuffer::getMemBuffer(program)->getMemBufferRef(), diagnostic_err, llvm_context);
-    llvm::legacy::PassManager module_pass_manager;
-    module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
-    module_pass_manager.run(*llvm_module);
-    auto func = llvm_module->getFunction("runtime_add");
-    for (llvm::Function::arg_iterator I = func->arg_begin(), E = func->arg_end();
-          I != E; ++I) {
-      if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
-        EXPECT_EQ(I->getType()->getPointerAddressSpace(), 1);
-      }
+  llvm::LLVMContext llvm_context;
+  llvm::SMDiagnostic diagnostic_err;
+  std::unique_ptr<llvm::Module> llvm_module = llvm::parseIR(
+      llvm::MemoryBuffer::getMemBuffer(program)->getMemBufferRef(),
+      diagnostic_err, llvm_context);
+  llvm::legacy::PassManager module_pass_manager;
+  module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
+  module_pass_manager.run(*llvm_module);
+  auto func = llvm_module->getFunction("runtime_add");
+  for (llvm::Function::arg_iterator I = func->arg_begin(), E = func->arg_end();
+       I != E; ++I) {
+    if (I->getType()->getTypeID() == llvm::Type::PointerTyID) {
+      EXPECT_EQ(I->getType()->getPointerAddressSpace(), 1);
     }
+  }
 }
-
 
 }  // namespace lang
 }  // namespace taichi

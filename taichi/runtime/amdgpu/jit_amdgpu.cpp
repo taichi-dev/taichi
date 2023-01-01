@@ -1,7 +1,8 @@
 #include "taichi/runtime/amdgpu/jit_amdgpu.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 #if defined(TI_WITH_AMDGPU)
 JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
@@ -122,4 +123,5 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
 }
 #endif
 
-TLANG_NAMESPACE_END
+}
+}

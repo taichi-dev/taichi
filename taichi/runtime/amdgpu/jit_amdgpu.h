@@ -40,7 +40,8 @@
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 #if defined(TI_WITH_AMDGPU)
 
@@ -88,6 +89,10 @@ class JITModuleAMDGPU : public JITModule {
 
   bool direct_dispatch() const override {
     return false;
+  }
+
+  Arch module_arch() const override {
+    return Arch::amdgpu;
   }
 };
 
@@ -150,4 +155,5 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     CompileConfig *config,
     Arch arch);
 
-TLANG_NAMESPACE_END
+}
+}

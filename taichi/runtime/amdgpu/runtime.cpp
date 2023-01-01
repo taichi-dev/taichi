@@ -1,7 +1,8 @@
 #include "taichi/runtime/runtime.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 
-TLANG_NAMESPACE_BEGIN
+namespace taichi {
+namespace lang {
 
 #if !defined(TI_WITH_AMDGPU)
 static_assert(
@@ -37,4 +38,5 @@ static class RuntimeAMDGPUInjector {
   }
 } injector;
 
-TLANG_NAMESPACE_END
+}
+}

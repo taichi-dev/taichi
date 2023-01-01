@@ -193,15 +193,6 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
                 {llvm_val[stmt->dest], llvm_val[stmt->val]});
   }
 
-#ifndef TI_LLVM_15
-  llvm::Value *atomic_op_using_cas(
-      llvm::Value *output_address,
-      llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) override {
-    TI_NOT_IMPLEMENTED
-  }
-#endif  // TI_LLVM_15
-
   void visit(RangeForStmt *for_stmt) override {
     create_naive_range_for(for_stmt);
   }

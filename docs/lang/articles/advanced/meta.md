@@ -10,9 +10,9 @@ sidebar_position: 1
 
 To put it shortly: A metaprogram is a program that writes (or modifies) programs.
 
-As a scripting language, Python is very well suited for metaprogramming, for example, you can use a decorator to modify the behavior of a functions, or use `setattr` to modify the attributes of an object, or use `type` to define classes at runtime.
+As a scripting language, Python is very well suited for metaprogramming. For example, you can use a decorator to modify the behavior of a function, or use `setattr` to modify the attributes of an object, or use `type` to define classes at runtime.
 
-Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are known to the compiler.
+Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are known to the compiler. How can you change the 
 
 Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
 

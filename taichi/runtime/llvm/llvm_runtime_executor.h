@@ -49,6 +49,8 @@ class LlvmRuntimeExecutor {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer);
 
+  void deallocate_memory_ndarray(DeviceAllocation handle);
+
   void check_runtime_error(uint64 *result_buffer);
 
   uint64_t *get_ndarray_alloc_info_ptr(const DeviceAllocation &alloc);
@@ -127,6 +129,8 @@ class LlvmRuntimeExecutor {
    * Not thread safe.
    */
   void maybe_initialize_cuda_llvm_context();
+
+  void maybe_initialize_amdgpu_llvm_context();
 
   void finalize();
 

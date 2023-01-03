@@ -59,13 +59,15 @@ CacheManager::CacheManager(Params &&init_params)
   if (config_.mode == MemAndDiskCache) {
     const auto filepath = join_path(config_.cache_path, kMetadataFilename);
     const auto lock_path = join_path(config_.cache_path, kMetadataLockName);
-    if (lock_with_file(lock_path)) {
-      auto _ = make_unlocker(lock_path);
-      offline_cache::load_metadata_with_checking(cached_data_, filepath);
-    } else {
-      TI_WARN(
-          "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
-          lock_path, config_.cache_path);
+    if (path_exists(filepath)) {
+      if (lock_with_file(lock_path)) {
+        auto _ = make_unlocker(lock_path);
+        offline_cache::load_metadata_with_checking(cached_data_, filepath);
+      } else {
+        TI_WARN(
+            "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
+            lock_path, config_.cache_path);
+      }
     }
   }
 }

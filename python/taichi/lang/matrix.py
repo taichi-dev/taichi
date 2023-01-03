@@ -1436,8 +1436,11 @@ class MatrixType(CompoundType):
         #                 Remove the None dtype when we are ready to break legacy code.
         if dtype is not None:
             self.dtype = cook_dtype(dtype)
+            self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ),
+                                          self.dtype)
         else:
             self.dtype = None
+            self.tensor_type = None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.

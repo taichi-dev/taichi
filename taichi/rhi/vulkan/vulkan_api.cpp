@@ -42,6 +42,10 @@ DeviceObjVkPipeline::~DeviceObjVkPipeline() {
   vkDestroyPipeline(device, pipeline, nullptr);
 }
 
+DeviceObjVkSampler::~DeviceObjVkSampler() {
+  vkDestroySampler(device, sampler, nullptr);
+}
+
 DeviceObjVkImage::~DeviceObjVkImage() {
   if (allocation) {
     vmaDestroyImage(allocator, image, allocation);
@@ -146,7 +150,10 @@ IVkDescriptorPool create_descriptor_pool(
   obj->device = device;
   VkResult res =
       vkCreateDescriptorPool(device, create_info, nullptr, &obj->pool);
-  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create descriptor pool");
+  if (res != VK_SUCCESS) {
+    // All failure condition listed in spec are OOM
+    return nullptr;
+  }
   return obj;
 }
 
@@ -245,7 +252,7 @@ IVkPipelineLayout create_pipeline_layout(
 
   std::vector<VkDescriptorSetLayout> layouts;
   layouts.reserve(set_layouts.size());
-  for (auto l : set_layouts) {
+  for (auto &l : set_layouts) {
     layouts.push_back(l->layout);
   }
 
@@ -414,6 +421,17 @@ IVkPipeline create_raytracing_pipeline(
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create raytracing pipeline");
 
   return obj;
+}
+
+IVkSampler create_sampler(VkDevice device, const VkSamplerCreateInfo &info) {
+  IVkSampler sampler = std::make_shared<DeviceObjVkSampler>();
+  sampler->device = device;
+
+  BAIL_ON_VK_BAD_RESULT_NO_RETURN(
+      vkCreateSampler(device, &info, nullptr, &sampler->sampler),
+      "failed to create texture sampler!");
+
+  return sampler;
 }
 
 IVkImage create_image(VkDevice device,

@@ -11,7 +11,7 @@ namespace metal {
 #ifdef TI_PLATFORM_OSX
 namespace {
 
-class ResourceBinderImpl : public ResourceBinder {
+class ShaderResourceSetImpl : public ShaderResourceSet {
  public:
   struct Binding {
     DeviceAllocationId alloc_id{0};
@@ -22,31 +22,32 @@ class ResourceBinderImpl : public ResourceBinder {
   };
   using BindingMap = std::unordered_map<uint32_t, Binding>;
 
-  explicit ResourceBinderImpl(const Device *dev) : dev_(dev) {
+  explicit ShaderResourceSetImpl(const Device *dev) : dev_(dev) {
   }
 
   // RW buffers
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override {
-    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DevicePtr ptr,
+                               size_t size) override {
+    bind_buffer(binding, ptr, ptr.offset, /*is_constant=*/false);
+    return *this;
   }
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/false);
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DeviceAllocation alloc) override {
+    bind_buffer(binding, alloc, /*offset=*/0, /*is_constant=*/false);
+    return *this;
   }
 
   // Constant buffers
-  void buffer(uint32_t set,
-              uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override {
-    bind_buffer(set, binding, ptr, ptr.offset, /*is_constant=*/false);
+  ShaderResourceSet &buffer(uint32_t binding,
+                            DevicePtr ptr,
+                            size_t size) override {
+    bind_buffer(binding, ptr, ptr.offset, /*is_constant=*/false);
+    return *this;
   }
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override {
-    bind_buffer(set, binding, alloc, /*offset=*/0, /*is_constant=*/true);
+  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) override {
+    bind_buffer(binding, alloc, /*offset=*/0, /*is_constant=*/true);
+    return *this;
   }
 
   const BindingMap &binding_map() const {
@@ -54,12 +55,10 @@ class ResourceBinderImpl : public ResourceBinder {
   }
 
  private:
-  void bind_buffer(uint32_t set,
-                   uint32_t binding,
+  void bind_buffer(uint32_t binding,
                    const DeviceAllocation &alloc,
                    uint64_t offset,
                    bool is_constant) {
-    TI_ASSERT(set == 0);
     TI_ASSERT(alloc.device == dev_);
     binding_map_[binding] = {alloc.alloc_id, offset, is_constant};
   }
@@ -74,11 +73,6 @@ class PipelineImpl : public Pipeline {
       : pipeline_state_(std::move(pipeline)) {
   }
 
-  ResourceBinder *resource_binder() override {
-    // TODO: Hmm, why do we need this interface?
-    return nullptr;
-  }
-
   MTLComputePipelineState *mtl_pipeline_state() {
     return pipeline_state_.get();
   }
@@ -91,7 +85,7 @@ class CommandListImpl : public CommandList {
  private:
   struct ComputeEncoderBuilder {
     MTLComputePipelineState *pipeline{nullptr};
-    ResourceBinderImpl::BindingMap binding_map;
+    ShaderResourceSetImpl::BindingMap binding_map;
   };
 
  public:
@@ -113,9 +107,15 @@ class CommandListImpl : public CommandList {
         static_cast<PipelineImpl *>(p)->mtl_pipeline_state();
   }
 
-  void bind_resources(ResourceBinder *binder) override {
+  RhiResult bind_shader_resources(ShaderResourceSet *res,
+                                  int set_index = 0) final {
     get_or_make_compute_builder()->binding_map =
-        static_cast<ResourceBinderImpl *>(binder)->binding_map();
+        static_cast<ShaderResourceSetImpl *>(res)->binding_map();
+    return RhiResult::success;
+  }
+
+  RhiResult bind_raster_resources(RasterResources *res) final {
+    TI_NOT_IMPLEMENTED;
   }
 
   void buffer_barrier(DevicePtr ptr, size_t size) override {
@@ -320,6 +320,10 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
         new_compute_pipeline_state_with_function(device_, mtl_func.get());
     TI_ASSERT(pipeline != nullptr);
     return std::make_unique<PipelineImpl>(std::move(pipeline));
+  }
+
+  ShaderResourceSet *create_resource_set() final {
+    return new ShaderResourceSetImpl(this);
   }
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {

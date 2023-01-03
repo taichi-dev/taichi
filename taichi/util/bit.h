@@ -78,13 +78,9 @@ constexpr int bit_length() {
   return std::is_same<T, bool>() ? 1 : sizeof(T) * 8;
 }
 
-#define TI_BIT_FIELD(T, name, start)                    \
-  T get_##name() const {                                \
-    return (T)Base::get<start, bit::bit_length<T>()>(); \
-  }                                                     \
-  void set_##name(const T &val) {                       \
-    Base::set<start, bit::bit_length<T>()>(val);        \
-  }
+#define TI_BIT_FIELD(T, name, start)                                           \
+  T get_##name() const { return (T)Base::get<start, bit::bit_length<T>()>(); } \
+  void set_##name(const T &val) { Base::set<start, bit::bit_length<T>()>(val); }
 
 template <typename T, int N>
 TI_FORCE_INLINE constexpr T product(const std::array<T, N> arr) {

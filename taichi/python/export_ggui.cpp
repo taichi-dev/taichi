@@ -60,12 +60,11 @@ struct PyGui {
   void end() {
     gui->end();
   }
-  void text(std::string text, py::tuple color) {
-    if (color == py::none()) {
-      gui->text(text);
-    } else {
-      gui->text(text, tuple_to_vec3(color));
-    }
+  void text(std::string text) {
+    gui->text(text);
+  }
+  void text_colored(std::string text, py::tuple color) {
+    gui->text(text, tuple_to_vec3(color));
   }
   bool checkbox(std::string name, bool old_value) {
     return gui->checkbox(name, old_value);
@@ -525,6 +524,7 @@ void export_ggui(py::module &m) {
       .def("begin", &PyGui::begin)
       .def("end", &PyGui::end)
       .def("text", &PyGui::text)
+      .def("text_colored", &PyGui::text_colored)
       .def("checkbox", &PyGui::checkbox)
       .def("slider_int", &PyGui::slider_int)
       .def("slider_float", &PyGui::slider_float)

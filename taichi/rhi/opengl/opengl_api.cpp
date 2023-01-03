@@ -24,6 +24,7 @@ int opengl_max_grid_dim = 1024;
 // without this global static boolean.
 static bool kUseGles = false;
 static std::optional<bool> supported;  // std::nullopt
+void *kGetOpenglProcAddr;
 
 static void glfw_error_callback(int code, const char *description) {
   TI_WARN("GLFW Error {}: {}", code, description);
@@ -44,6 +45,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
   // Code below is guaranteed to be called at most once.
   int opengl_version = 0;
+  void *get_proc_addr = nullptr;
 
   if (glfwInit()) {
     glfwSetErrorCallback(glfw_error_callback);
@@ -53,7 +55,6 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     } else {
-      glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
       glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
       glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -73,6 +74,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
     } else {
       glfwMakeContextCurrent(window);
+      get_proc_addr = (void *)&glfwGetProcAddress;
       if (use_gles) {
         opengl_version = gladLoadGLES2(glfwGetProcAddress);
       } else {
@@ -148,6 +150,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
       eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, egl_context);
 
+      get_proc_addr = (void *)&glad_eglGetProcAddress;
       if (use_gles) {
         opengl_version = gladLoadGLES2(glad_eglGetProcAddress);
       } else {
@@ -194,6 +197,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
 
   supported = std::make_optional<bool>(true);
   kUseGles = use_gles;
+  kGetOpenglProcAddr = get_proc_addr;
   return true;
 }
 

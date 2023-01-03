@@ -1124,8 +1124,8 @@ void GetElementExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto func_call = src.cast<FuncCallExpression>();
   TI_ASSERT(func_call);
-  TI_ASSERT(index < func_call->func->rets.size());
-  ret_type = func_call->func->rets[index].dt;
+  TI_ASSERT(index[0] < func_call->func->rets.size());
+  ret_type = func_call->func->rets[index[0]].dt;
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {

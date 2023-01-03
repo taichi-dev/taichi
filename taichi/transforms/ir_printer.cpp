@@ -825,6 +825,16 @@ class IRPrinter : public IRVisitor {
     print(result);
   }
 
+  void visit(GetElementStmt *stmt) override {
+    std::string index = "";
+    for (int i = 0; i < stmt->index.size(); i++) {
+      index += ", ";
+      index += std::to_string(stmt->index[i]);
+    }
+    print("{}{} = get_element({}{})", stmt->type_hint(), stmt->name(),
+          stmt->src->name(), index);
+  }
+
  private:
   std::string expr_to_string(Expr &expr) {
     return expr_to_string(expr.expr.get());

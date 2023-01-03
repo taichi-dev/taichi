@@ -276,7 +276,7 @@ class Func:
         if self.return_type is None:
             return None
         if id(self.return_type) in primitive_types.type_ids:
-            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):
             return self.return_type.from_real_func_ret(func_call)[0]
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")

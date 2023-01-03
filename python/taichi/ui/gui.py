@@ -362,7 +362,9 @@ class GUI:
 
         Args:
             pos (numpy.array): The positions of the circles.
-            radius (Union[Number, numpy.array], optional): The radius of the circles in pixel. Default is 1.
+            radius (Union[Number, numpy.array], optional): The radius of the circles in pixel. \
+                Can be either a number, which will be applied to all circles, or a 1D NumPy array of the same length as `pos`. \
+                The default is 1.
             color (int, optional): The color of the circles. Default is 0xFFFFFF.
             palette (list[int], optional): The List of colors from which to
                 choose to draw. Default is None.

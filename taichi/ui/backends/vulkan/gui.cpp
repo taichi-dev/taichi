@@ -152,6 +152,13 @@ void Gui::text(std::string text) {
   }
   ImGui::Text("%s", text.c_str());
 }
+void Gui::text(std::string text, glm::vec3 color) {
+  if (!initialized()) {
+    return;
+  }
+  ImGui::TextColored(ImVec4(color[0], color[1], color[2], 1.0f), "%s",
+                     text.c_str());
+}
 bool Gui::checkbox(std::string name, bool old_value) {
   if (!initialized()) {
     return old_value;

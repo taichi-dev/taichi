@@ -13,6 +13,7 @@ class GuiBase {
                      float height) = 0;
   virtual void end() = 0;
   virtual void text(std::string text) = 0;
+  virtual void text(std::string text, glm::vec3 color) = 0;
   virtual bool checkbox(std::string name, bool old_value) = 0;
   virtual int slider_int(std::string name,
                          int old_value,

@@ -58,10 +58,10 @@ class Gui:
         """
         self.gui.end()
 
-    def text(self, text):
+    def text(self, text, color = None):
         """Declares a line of text.
         """
-        self.gui.text(text)
+        self.gui.text(text, color)
 
     def checkbox(self, text, old_value):
         """Declares a checkbox, and returns whether or not it has been checked.

@@ -37,6 +37,7 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
              float height) override;
   void end() override;
   void text(std::string text) override;
+  void text(std::string text, glm::vec3 color) override;
   bool checkbox(std::string name, bool old_value) override;
   int slider_int(std::string name,
                  int old_value,

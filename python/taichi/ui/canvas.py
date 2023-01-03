@@ -113,7 +113,7 @@ class Canvas:
                 3D location of a vertex.
             radius (Union[float, numpy.array]): radius of the circles in pixels. \
                 Can be either a single number, which will be applied to all circles, or a 1D NumPy array of the same length as `centers`.\
-                The `i-th` item in the array will
+                The `i-th` item in the array will be the radius for the `i-th` circle in `centers`.
             color: a global color for the triangles as 3 floats representing \
                 RGB values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where \

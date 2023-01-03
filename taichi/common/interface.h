@@ -325,12 +325,8 @@ class InterfaceHolder {
     }                                                                \
   } ImplementationInjector_##base_class_name##class_name##instance;
 
-#define TI_NAME(alias)                            \
-  virtual std::string get_name() const override { \
-    return get_name_static();                     \
-  }                                               \
-  static std::string get_name_static() {          \
-    return alias;                                 \
-  }
+#define TI_NAME(alias)                                                        \
+  virtual std::string get_name() const override { return get_name_static(); } \
+  static std::string get_name_static() { return alias; }
 
 }  // namespace taichi

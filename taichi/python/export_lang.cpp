@@ -316,6 +316,7 @@ void export_lang(py::module &m) {
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("insert_func_call", &ASTBuilder::insert_func_call)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -822,9 +823,6 @@ void export_lang(py::module &m) {
           return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
                                                         with_runtime_context);
         });
-
-  m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("make_get_element_expr",
         Expr::make<GetElementExpression, const Expr &, std::vector<int>>);

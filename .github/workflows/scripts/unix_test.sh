@@ -80,6 +80,11 @@ EOF
     popd
 fi
 
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+python3 -m tests/cpp/aot/python_scripts/aot_module_test.py --arch=vulkan
+python3 -m pip uninstall taichi taichi-nightly -y
+
+
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
 fi

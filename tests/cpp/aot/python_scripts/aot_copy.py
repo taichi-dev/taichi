@@ -100,5 +100,5 @@ if __name__ == "__main__":
         compile_graph_aot(arch=ti.vulkan)
     elif args.arch == "opengl":
         compile_graph_aot(arch=ti.opengl)
-    else: 
+    else:
         assert False

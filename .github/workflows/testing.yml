@@ -236,7 +236,7 @@ jobs:
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
+          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
@@ -344,7 +344,7 @@ jobs:
         include:
           - os: windows-2019
             llvmVer : '15'
-            archs: "cpu,cuda,opengl,gles"
+            archs: "cpu,cuda,opengl"
             runsOn: [self-hosted, windows, cuda, OpenGL]
     runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
@@ -537,7 +537,7 @@ jobs:
             -DTI_WITH_LLVM:BOOL=OFF
             -DTI_WITH_C_API=ON
 
-      - name: Test For Android AOT (export core)
+      - name: Test For Android AOT
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh

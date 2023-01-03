@@ -163,9 +163,7 @@ class ExpressionVisitor {
   bool invoke_default_visitor_{false};
 };
 
-#define TI_DEFINE_ACCEPT_FOR_EXPRESSION              \
-  void accept(ExpressionVisitor *visitor) override { \
-    visitor->visit(this);                            \
-  }
+#define TI_DEFINE_ACCEPT_FOR_EXPRESSION \
+  void accept(ExpressionVisitor *visitor) override { visitor->visit(this); }
 
 }  // namespace taichi::lang

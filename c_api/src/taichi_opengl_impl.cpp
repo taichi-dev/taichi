@@ -3,7 +3,6 @@
 
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
-      device_(),
       gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
           host_result_buffer_.data(), &device_}) {
   taichi::lang::DeviceCapabilityConfig caps{};
@@ -17,14 +16,6 @@ taichi::lang::Device &OpenglRuntime::get() {
 }
 taichi::lang::gfx::GfxRuntime &OpenglRuntime::get_gfx_runtime() {
   return gfx_runtime_;
-}
-
-void ti_export_opengl_runtime(TiRuntime runtime,
-                              TiOpenglRuntimeInteropInfo *interop_info) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  // FIXME: (penguinliogn)
-  interop_info->get_proc_addr = taichi::lang::opengl::kGetOpenglProcAddr;
-  TI_CAPI_TRY_CATCH_END();
 }
 
 void ti_export_opengl_memory(TiRuntime runtime,

@@ -517,8 +517,7 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 
 TEST_F(CapiTest, TestCompatLoadAOT) {
   auto test_compat_load_aot_impl = [this](TiArch arch) {
-    // const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-    const auto folder_dir = "C:/Users/admin/Desktop/newFile";
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
     const std::string module_path =
         folder_dir + std::string("/compat-module.tcm");
     std::cout << module_path << std::endl;
@@ -539,14 +538,14 @@ TEST_F(CapiTest, TestCompatGetCgraph) {
   auto test_compat_get_cgraph_impl = [this](TiArch arch) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
     const std::string module_path =
-        folder_dir + std::string("/test/mpm88.cgraph1.tcm");
+        folder_dir + std::string("/compat-module.tcm");
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;
     }
     ti::Runtime runtime(arch);
     TiAotModule module = ti_load_aot_module(runtime, module_path.c_str());
-    TiComputeGraph graph = ti_get_aot_module_compute_graph(module, "init");
+    TiComputeGraph graph = ti_get_aot_module_compute_graph(module, "run_graph");
     ASSERT_TAICHI_SUCCESS();
     TI_ASSERT(graph != TI_NULL_HANDLE);
   };

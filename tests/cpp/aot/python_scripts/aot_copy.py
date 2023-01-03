@@ -61,8 +61,8 @@ def compile_graph_aot(arch):
     run_graph = g_builder.compile()
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
-    #pathdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
-    pathdir = "C:/Users/admin/Desktop/newFile"
+    pathdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
+    #pathdir = "C:/Users/admin/Desktop/newFile"
     tmpdir = pathdir + "/compat-module.tcm"
 
     mod = ti.aot.Module()
@@ -81,7 +81,7 @@ def compile_graph_aot(arch):
     with open(pathdir + "/compat_module/metadata.json", "w",
               encoding="UTF-8") as e:
         json_new_data = json.dumps(list1, ensure_ascii=False, indent=4)
-        e.write(json_new_data)
+        e.write(json_new_data[1:len(json_new_data)])
     os.remove(pathdir + "/compat-module.zip")
     zip_files(pathdir + '/compat_module')
     shutil.rmtree(pathdir + '/compat_module')

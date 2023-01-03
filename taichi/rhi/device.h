@@ -29,9 +29,7 @@ constexpr size_t kBufferSizeEntireSize = size_t(-1);
   inline name operator&(name a, name b) {      \
     return static_cast<name>(int(a) & int(b)); \
   }                                            \
-  inline bool operator&&(name a, name b) {     \
-    return (int(a) & int(b)) != 0;             \
-  }
+  inline bool operator&&(name a, name b) { return (int(a) & int(b)) != 0; }
 
 enum class BlendOp : uint32_t { add, subtract, reverse_subtract, min, max };
 

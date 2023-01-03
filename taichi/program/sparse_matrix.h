@@ -140,6 +140,10 @@ class EigenSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
+  void *get_matrix() {
+    return &matrix_;
+  };
+
   virtual EigenSparseMatrix &operator+=(const EigenSparseMatrix &other) {
     this->matrix_ += other.matrix_;
     return *this;

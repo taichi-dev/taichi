@@ -26,6 +26,7 @@
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
+#include "taichi/program/conjugate_gradient.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/ir/mesh.h"
 
@@ -1306,6 +1307,13 @@ void export_lang(py::module &m) {
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
 
+  py::class_<CG>(m, "CG")
+      .def(py::init<SparseMatrix &, int, float, bool>())
+      .def("solve", &CG::solve)
+      .def("set_x", &CG::set_x)
+      .def("get_x", &CG::get_x)
+      .def("set_b", &CG::set_b);
+  m.def("make_cg_solver", &make_cg_solver);
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

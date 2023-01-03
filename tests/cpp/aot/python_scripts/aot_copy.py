@@ -62,7 +62,6 @@ def compile_graph_aot(arch):
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     pathdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
-    #pathdir = "C:/Users/admin/Desktop/newFile"
     tmpdir = pathdir + "/compat-module.tcm"
 
     mod = ti.aot.Module()
@@ -101,5 +100,5 @@ if __name__ == "__main__":
         compile_graph_aot(arch=ti.vulkan)
     elif args.arch == "opengl":
         compile_graph_aot(arch=ti.opengl)
-    else:
+    else: 
         assert False

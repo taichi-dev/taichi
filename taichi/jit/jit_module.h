@@ -34,32 +34,32 @@ class JITModule {
     return ret;
   }
 
-  static std::vector<void *> get_arg_pointers() {
+  inline std::vector<void *> get_arg_pointers() {
     return std::vector<void *>();
   }
 
   template <typename... Args, typename T>
-  static std::vector<void *> get_arg_pointers(T &t, Args &...args) {
+  inline std::vector<void *> get_arg_pointers(T &t, Args &...args) {
     auto ret = get_arg_pointers(args...);
     ret.insert(ret.begin(), &t);
     return ret;
   }
 
-  static int get_args_bytes() {
+  inline int get_args_bytes() {
     return 0;
   }
 
   template <typename... Args, typename T>
-  static int get_args_bytes(T t, Args ...args) {
+  inline int get_args_bytes(T t, Args ...args) {
     return get_args_bytes(args...) + sizeof(T); 
   }
 
-  static void init_args_pointers(char *packed_args) {
+  inline void init_args_pointers(char *packed_args) {
     return ;
   }
 
   template <typename... Args, typename T>
-  static void init_args_pointers(char *packed_args, T t, Args ...args) {
+  inline void init_args_pointers(char *packed_args, T t, Args ...args) {
       std::memcpy(packed_args, &t, sizeof(t));
       init_args_pointers(packed_args + sizeof(t), args...);
       return ;

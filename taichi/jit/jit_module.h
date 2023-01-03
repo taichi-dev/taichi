@@ -50,19 +50,19 @@ class JITModule {
   }
 
   template <typename... Args, typename T>
-  inline int get_args_bytes(T t, Args ...args) {
-    return get_args_bytes(args...) + sizeof(T); 
+  inline int get_args_bytes(T t, Args... args) {
+    return get_args_bytes(args...) + sizeof(T);
   }
 
   inline void init_args_pointers(char *packed_args) {
-    return ;
+    return;
   }
 
   template <typename... Args, typename T>
-  inline void init_args_pointers(char *packed_args, T t, Args ...args) {
-      std::memcpy(packed_args, &t, sizeof(t));
-      init_args_pointers(packed_args + sizeof(t), args...);
-      return ;
+  inline void init_args_pointers(char *packed_args, T t, Args... args) {
+    std::memcpy(packed_args, &t, sizeof(t));
+    init_args_pointers(packed_args + sizeof(t), args...);
+    return;
   }
 
   // Note: **call** is for serial functions
@@ -78,20 +78,18 @@ class JITModule {
         auto arg_pointers = JITModule::get_arg_pointers(args...);
         call(name, arg_pointers);
 #else
-  TI_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
 #endif
-      }
-      else if (module_arch() == Arch::amdgpu) {
+      } else if (module_arch() == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
         auto arg_bytes = JITModule::get_args_bytes(args...);
         char packed_args[arg_bytes];
         JITModule::init_args_pointers(packed_args, args...);
-        call(name, { (void*)packed_args , (void*)&arg_bytes});
+        call(name, {(void *)packed_args, (void *)&arg_bytes});
 #else
-  TI_NOT_IMPLEMENTED
+        TI_NOT_IMPLEMENTED
 #endif
-      }
-      else {
+      } else {
         TI_ERROR("unknown module arch")
       }
     }

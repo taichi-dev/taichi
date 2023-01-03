@@ -178,7 +178,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 ## Logging
 
-- To set the logging level: `ti.init(log_level=ti.TRACE)` or  `ti.set_logging_level(ti.TRACE)` enables the TRACE level. The environment variable `TI_LOG_LEVEL` serves the same purpose.
+- To set the logging level: `ti.init(log_level=ti.TRACE)` or `ti.set_logging_level(ti.TRACE)` enables the TRACE level. The environment variable `TI_LOG_LEVEL` serves the same purpose.
 - To eliminate verbose outputs: `ti.init(verbose=False)`.
 
 ## Develop

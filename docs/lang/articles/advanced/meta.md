@@ -8,7 +8,7 @@ sidebar_position: 1
 >
 > from Wikipedia: https://en.wikipedia.org/wiki/Metaprogramming.
 
-To put in shortly: A metaprogram is a program that writes (or modifies) programs.
+To put it shortly: A metaprogram is a program that writes (or modifies) programs.
 
 As a scripting language, Python is very well suited for metaprogramming, for example, you can use a decorator to modify the behavior of a functions, or use `setattr` to modify the attributes of an object, or use `type` to define classes at runtime.
 

@@ -55,6 +55,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiIndexError>(m, "TaichiIndexError",
+                                           PyExc_IndexError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
   py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",

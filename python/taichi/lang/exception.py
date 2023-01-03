@@ -56,13 +56,15 @@ def handle_exception_from_cpp(exc):
         return TaichiTypeError(str(exc))
     if isinstance(exc, core.TaichiSyntaxError):
         return TaichiSyntaxError(str(exc))
+    if isinstance(exc, core.TaichiIndexError):
+        return TaichiIndexError(str(exc))
     if isinstance(exc, core.TaichiAssertionError):
         return TaichiAssertionError(str(exc))
     return exc
 
 
 __all__ = [
-    'TaichiSyntaxError', 'TaichiTypeError', 'TaichiCompilationError',
-    'TaichiNameError', 'TaichiRuntimeError', 'TaichiRuntimeTypeError',
-    'TaichiAssertionError'
+    'TaichiSyntaxError', 'TaichiTypeError', 'TaichiIndexError',
+    'TaichiCompilationError', 'TaichiNameError', 'TaichiRuntimeError',
+    'TaichiRuntimeTypeError', 'TaichiAssertionError'
 ]

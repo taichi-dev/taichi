@@ -746,13 +746,10 @@ static void field_validation(FieldExpression *field_expr, int index_dim) {
   TI_ASSERT(field_expr->snode != nullptr);
   int field_dim = field_expr->snode->num_active_indices;
 
-  if (!field_expr->snode->parent ||
-      field_expr->snode->parent->type != SNodeType::dynamic) {
-    if (field_dim != index_dim) {
-      throw TaichiSyntaxError(
-          fmt::format("Field with dim {} accessed with indices of dim {}",
-                      field_dim, index_dim));
-    }
+  if (field_dim != index_dim) {
+    throw TaichiIndexError(
+        fmt::format("Field with dim {} accessed with indices of dim {}",
+                    field_dim, index_dim));
   }
 }
 
@@ -766,13 +763,10 @@ static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
   TI_ASSERT(field_expr->snode != nullptr);
   int outter_dim = field_expr->snode->num_active_indices;
 
-  if (!field_expr->snode->parent ||
-      field_expr->snode->parent->type != SNodeType::dynamic) {
-    if (outter_dim != index_dim && outter_dim + element_dim != index_dim) {
-      throw TaichiSyntaxError(
-          fmt::format("Matrix with dim {} accessed with indices of dim {}",
-                      outter_dim + element_dim, index_dim));
-    }
+  if (outter_dim != index_dim && outter_dim + element_dim != index_dim) {
+    throw TaichiIndexError(
+        fmt::format("Matrix with dim {} accessed with indices of dim {}",
+                    outter_dim + element_dim, index_dim));
   }
 }
 

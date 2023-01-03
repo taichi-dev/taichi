@@ -14,7 +14,8 @@ from taichi.lang._ndrange import _Ndrange, ndrange
 from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
-from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
+                                   TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
@@ -816,7 +817,17 @@ class ASTTransformer(Builder):
         # whether it is a method of Dynamic SNode and build the expression if it is by calling
         # build_attribute_if_is_dynamic_snode_method. If we find that it is not a method of Dynamic SNode,
         # we continue to process it as a normal attribute node.
-        build_stmt(ctx, node.value)
+        try:
+            build_stmt(ctx, node.value)
+        except Exception as e:
+            e = handle_exception_from_cpp(e)
+            if isinstance(e, TaichiIndexError):
+                node.value.ptr = None
+                if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                        ctx, node):
+                    return node.ptr
+            raise e
+
         if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
                 ctx, node):
             return node.ptr

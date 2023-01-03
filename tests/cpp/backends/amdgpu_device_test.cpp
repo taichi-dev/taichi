@@ -99,7 +99,8 @@ TEST(AMDGPU, CreateContextAndGetMemInfo) {
   EXPECT_GE(free_size, 0);
 }
 
-const std::string program =
+TEST(AMDGPU, ConvertAllocaInstAddressSpacePass) {
+  const std::string program =
     "define dso_local void @runtime_add(double* %0, double* %1, double* %2) #4 "
     "{\n"
     "%4 = alloca double*, align 8\n"
@@ -117,8 +118,6 @@ const std::string program =
     "store double %11, double* %12, align 8\n"
     "ret void\n"
     "}\n";
-
-TEST(AMDGPU, ConvertAllocaInstAddressSpacePass) {
   llvm::LLVMContext llvm_context;
   llvm::SMDiagnostic diagnostic_err;
   std::unique_ptr<llvm::Module> llvm_module = llvm::parseIR(
@@ -151,6 +150,24 @@ TEST(AMDGPU, ConvertAllocaInstAddressSpacePass) {
 }
 
 TEST(AMDGPU, ConvertFuncParamAddressSpacePass) {
+  const std::string program =
+    "define dso_local void @runtime_add(double* %0, double* %1, double* %2) #4 "
+    "{\n"
+    "%4 = alloca double*, align 8\n"
+    "%5 = alloca double*, align 8\n"
+    "%6 = alloca double*, align 8\n"
+    "store double* %0, double** %4, align 8\n"
+    "store double* %1, double** %5, align 8\n"
+    "store double* %2, double** %6, align 8\n"
+    "%7 = load double*, double** %4, align 8\n"
+    "%8 = load double, double* %7, align 8\n"
+    "%9 = load double*, double** %5, align 8\n"
+    "%10 = load double, double* %9, align 8\n"
+    "%11 = fadd contract double %8, %10\n"
+    "%12 = load double*, double** %6, align 8\n"
+    "store double %11, double* %12, align 8\n"
+    "ret void\n"
+    "}\n";
   llvm::LLVMContext llvm_context;
   llvm::SMDiagnostic diagnostic_err;
   std::unique_ptr<llvm::Module> llvm_module = llvm::parseIR(

@@ -517,9 +517,10 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 
 TEST_F(CapiTest, TestCompatLoadAOT) {
   auto test_compat_load_aot_impl = [this](TiArch arch) {
-    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
-    const std::string module_path =
-        folder_dir + std::string("/test/mpm88.cgraph1.tcm");
+    //const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const auto folder_dir = "C:/Users/admin/Desktop/newFile";
+    const std::string module_path = folder_dir+std::string("/compat-module.tcm");
+    std::cout<<module_path<<std::endl;
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
       return;

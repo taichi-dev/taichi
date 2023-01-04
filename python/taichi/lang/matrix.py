@@ -305,6 +305,7 @@ class Matrix(TaichiOperations):
                        for i in range(self.n)],
                       ndim=self.ndim)
 
+    @python_scope
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
 
@@ -450,6 +451,7 @@ class Matrix(TaichiOperations):
     def _members(self):
         return self.entries
 
+    @python_scope
     def to_list(self):
         """Return this matrix as a 1D `list`.
 
@@ -460,7 +462,7 @@ class Matrix(TaichiOperations):
             return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
-    @taichi_scope
+    @python_scope
     def cast(self, dtype):
         """Cast the matrix elements to a specified data type.
 
@@ -487,6 +489,7 @@ class Matrix(TaichiOperations):
              for i in range(self.n)],
             ndim=self.ndim)
 
+    @python_scope
     def trace(self):
         """The sum of a matrix diagonal elements.
 
@@ -505,6 +508,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.trace(self)
 
+    @python_scope
     def inverse(self):
         """Returns the inverse of this matrix.
 
@@ -520,6 +524,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops.inverse(self)
 
+    @python_scope
     def normalized(self, eps=0):
         """Normalize a vector, i.e. matrices with the second dimension being
         equal to one.
@@ -540,6 +545,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.normalized(self, eps)
 
+    @python_scope
     def transpose(self):
         """Returns the transpose of a matrix.
 
@@ -556,7 +562,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.transpose(self)
 
-    @taichi_scope
+    @python_scope
     def determinant(a):
         """Returns the determinant of this matrix.
 
@@ -596,6 +602,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.diag(dim, val)
 
+    @python_scope
     def sum(self):
         """Return the sum of all elements.
 
@@ -609,6 +616,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.sum(self)
 
+    @python_scope
     def norm(self, eps=0):
         """Returns the square root of the sum of the absolute squares
         of its elements.
@@ -629,6 +637,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.norm(self, eps=eps)
 
+    @python_scope
     def norm_inv(self, eps=0):
         """The inverse of the matrix :func:`~taichi.lang.matrix.Matrix.norm`.
 
@@ -642,24 +651,28 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.norm_inv(self, eps=eps)
 
+    @python_scope
     def norm_sqr(self):
         """Returns the sum of the absolute squares of its elements."""
         # pylint: disable=C0415
         from taichi.lang import matrix_ops
         return matrix_ops.norm_sqr(self)
 
+    @python_scope
     def max(self):
         """Returns the maximum element value."""
         # pylint: disable=C0415
         from taichi.lang import matrix_ops
         return matrix_ops.max(self)
 
+    @python_scope
     def min(self):
         """Returns the minimum element value."""
         # pylint: disable=C0415
         from taichi.lang import matrix_ops
         return matrix_ops.min(self)
 
+    @python_scope
     def any(self):
         """Test whether any element not equal zero.
 
@@ -676,6 +689,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.any(self)
 
+    @python_scope
     def all(self):
         """Test whether all element not equal zero.
 
@@ -692,6 +706,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.all(self)
 
+    @python_scope
     def fill(self, val):
         """Fills the matrix with a specified value.
 
@@ -1089,6 +1104,7 @@ class Matrix(TaichiOperations):
         # using matrices as template arguments.
         return id(self)
 
+    @python_scope
     def dot(self, other):
         """Performs the dot product of two vectors.
 
@@ -1110,6 +1126,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops.dot(self, other)
 
+    @python_scope
     def cross(self, other):
         """Performs the cross product with the input vector (1-D Matrix).
 
@@ -1130,6 +1147,7 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops.cross(self, other)
 
+    @python_scope
     def outer_product(self, other):
         """Performs the outer product with the input Vector (1-D Matrix).
 
@@ -1173,6 +1191,7 @@ class Vector(Matrix):
         return (self.n, )
 
     @classmethod
+    @python_scope
     def field(cls, n, dtype, *args, **kwargs):
         """ti.Vector.field"""
         ndim = kwargs.get("ndim", 1)

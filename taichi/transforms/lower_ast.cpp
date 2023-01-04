@@ -83,11 +83,12 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
-    auto block = stmt->parent;
+    Block * block = stmt->parent;
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());
     std::vector<Stmt *> args;
+    args.reserve(stmt->args.exprs.size());
     auto fctx = make_flatten_ctx();
     for (const auto &arg : stmt->args.exprs) {
       args.push_back(flatten_rvalue(arg, &fctx));

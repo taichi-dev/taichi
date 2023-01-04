@@ -112,15 +112,15 @@ class Dx11CommandList : public CommandList {
   Dx11CommandList(Dx11Device *ti_device);
   ~Dx11CommandList() override;
 
-  void bind_pipeline(Pipeline *p) override;
+  void bind_pipeline(Pipeline *p) noexcept final;
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) final;
-  RhiResult bind_raster_resources(RasterResources *res) final;
-  void buffer_barrier(DevicePtr ptr, size_t size) override;
-  void buffer_barrier(DeviceAllocation alloc) override;
-  void memory_barrier() override;
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
+                                  int set_index = 0) noexcept final;
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final;
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final;
+  void buffer_barrier(DeviceAllocation alloc) noexcept final;
+  void memory_barrier() noexcept final;
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
 
   // These are not implemented in compute only device

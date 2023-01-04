@@ -37,8 +37,9 @@ class CpuCommandList : public CommandList {
       TI_NOT_IMPLEMENTED};
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept override{
       TI_NOT_IMPLEMENTED};
-  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept override{
-      TI_NOT_IMPLEMENTED};
+  RhiResult dispatch(uint32_t x,
+                     uint32_t y = 1,
+                     uint32_t z = 1) noexcept override{TI_NOT_IMPLEMENTED};
 };
 
 class CpuStream : public Stream {

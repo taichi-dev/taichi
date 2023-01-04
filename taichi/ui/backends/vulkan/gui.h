@@ -30,26 +30,26 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
   void init_render_resources(VkRenderPass render_pass);
   void cleanup_render_resources();
 
-  void begin(std::string name,
+  void begin(const std::string& name,
              float x,
              float y,
              float width,
              float height) override;
   void end() override;
-  void text(std::string text) override;
-  void text(std::string text, glm::vec3 color) override;
-  bool checkbox(std::string name, bool old_value) override;
-  int slider_int(std::string name,
+  void text(const std::string& text) override;
+  void text(const std::string& text, glm::vec3 color) override;
+  bool checkbox(const std::string& name, bool old_value) override;
+  int slider_int(const std::string& name,
                  int old_value,
                  int minimum,
                  int maximum) override;
-  float slider_float(std::string name,
+  float slider_float(const std::string& name,
                      float old_value,
                      float minimum,
                      float maximum) override;
   // TODO: consider renaming this?
-  glm::vec3 color_edit_3(std::string name, glm::vec3 old_value) override;
-  bool button(std::string text) override;
+  glm::vec3 color_edit_3(const std::string& name, glm::vec3 old_value) override;
+  bool button(const std::string& text) override;
 
   void draw(taichi::lang::CommandList *cmd_list);
 

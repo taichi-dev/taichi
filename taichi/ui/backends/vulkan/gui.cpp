@@ -131,7 +131,7 @@ float Gui::abs_y(float y) {
   return y * app_context_->config.height;
 }
 
-void Gui::begin(std::string name, float x, float y, float width, float height) {
+void Gui::begin(const std::string& name, float x, float y, float width, float height) {
   if (!initialized()) {
     return;
   }
@@ -146,34 +146,34 @@ void Gui::end() {
   }
   ImGui::End();
 }
-void Gui::text(std::string text) {
+void Gui::text(const std::string& text) {
   if (!initialized()) {
     return;
   }
   ImGui::Text("%s", text.c_str());
 }
-void Gui::text(std::string text, glm::vec3 color) {
+void Gui::text(const std::string& text, glm::vec3 color) {
   if (!initialized()) {
     return;
   }
   ImGui::TextColored(ImVec4(color[0], color[1], color[2], 1.0f), "%s",
                      text.c_str());
 }
-bool Gui::checkbox(std::string name, bool old_value) {
+bool Gui::checkbox(const std::string& name, bool old_value) {
   if (!initialized()) {
     return old_value;
   }
   ImGui::Checkbox(name.c_str(), &old_value);
   return old_value;
 }
-int Gui::slider_int(std::string name, int old_value, int minimum, int maximum) {
+int Gui::slider_int(const std::string& name, int old_value, int minimum, int maximum) {
   if (!initialized()) {
     return old_value;
   }
   ImGui::SliderInt(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
-float Gui::slider_float(std::string name,
+float Gui::slider_float(const std::string& name,
                         float old_value,
                         float minimum,
                         float maximum) {
@@ -183,14 +183,14 @@ float Gui::slider_float(std::string name,
   ImGui::SliderFloat(name.c_str(), &old_value, minimum, maximum);
   return old_value;
 }
-glm::vec3 Gui::color_edit_3(std::string name, glm::vec3 old_value) {
+glm::vec3 Gui::color_edit_3(const std::string& name, glm::vec3 old_value) {
   if (!initialized()) {
     return old_value;
   }
   ImGui::ColorEdit3(name.c_str(), (float *)&old_value);
   return old_value;
 }
-bool Gui::button(std::string text) {
+bool Gui::button(const std::string& text) {
   if (!initialized()) {
     return false;
   }

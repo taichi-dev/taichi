@@ -34,11 +34,6 @@ class AMDGPUContext {
     return dev_count_ != 0;
   }
 
-  void pack_args(std::vector<void *> arg_pointers,
-                 std::vector<int> arg_sizes, char *arg_packed);
-
-  int get_args_byte(std::vector<int> arg_sizes)
-
   void launch(void *func,
               const std::string &task_name,
               void *arg_pointers,

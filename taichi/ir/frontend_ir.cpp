@@ -753,23 +753,6 @@ static void field_validation(FieldExpression *field_expr, int index_dim) {
   }
 }
 
-static void matrix_field_validation(MatrixFieldExpression *matrix_field_expr,
-                                    int index_dim) {
-  TI_ASSERT(matrix_field_expr != nullptr);
-  TI_ASSERT(!matrix_field_expr->fields.empty());
-  auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
-  int element_dim = matrix_field_expr->element_shape.size();
-
-  TI_ASSERT(field_expr->snode != nullptr);
-  int outter_dim = field_expr->snode->num_active_indices;
-
-  if (outter_dim != index_dim && outter_dim + element_dim != index_dim) {
-    throw TaichiIndexError(
-        fmt::format("Matrix with dim {} accessed with indices of dim {}",
-                    outter_dim + element_dim, index_dim));
-  }
-}
-
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
@@ -790,7 +773,10 @@ void IndexExpression::type_check(CompileConfig *) {
 
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
-    matrix_field_validation(matrix_field_expr.get(), index_dim);
+
+    TI_ASSERT(!matrix_field_expr->fields.empty());
+    auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
+    field_validation(field_expr.get(), index_dim);
 
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]

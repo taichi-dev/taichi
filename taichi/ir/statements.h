@@ -1083,8 +1083,8 @@ class GetElementStmt : public Stmt {
  public:
   Stmt *src;
   std::vector<int> index;
-  GetElementStmt(Stmt *src, std::vector<int> index)
-      : src(src), index(std::move(index)) {
+  GetElementStmt(Stmt *src, const std::vector<int> &index)
+      : src(src), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

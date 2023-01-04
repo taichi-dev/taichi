@@ -1124,6 +1124,9 @@ void GetElementExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
   auto func_call = src.cast<FuncCallExpression>();
   TI_ASSERT(func_call);
+  // The return values are flattened now,
+  // so the length of stmt->index is 1.
+  // Will be refactored soon.
   TI_ASSERT(index[0] < func_call->func->rets.size());
   ret_type = func_call->func->rets[index[0]].dt;
 }

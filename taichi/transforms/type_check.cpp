@@ -414,6 +414,9 @@ class TypeCheck : public IRVisitor {
   void visit(GetElementStmt *stmt) override {
     TI_ASSERT(stmt->src->is<FuncCallStmt>());
     auto *func = stmt->src->as<FuncCallStmt>()->func;
+    // The return values are flattened now,
+    // so the length of stmt->index is 1.
+    // Will be refactored soon.
     TI_ASSERT(stmt->index[0] < func->rets.size());
     stmt->ret_type = func->rets[stmt->index[0]].dt;
   }

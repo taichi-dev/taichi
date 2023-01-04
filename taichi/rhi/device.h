@@ -384,7 +384,9 @@ class TI_DLL_EXPORT CommandList {
    * - `invalid_operation` if the current pipeline has variable block size
    * - `not_supported` if the requested X, Y, or Z is not supported
    */
-  virtual RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept = 0;
+  virtual RhiResult dispatch(uint32_t x,
+                             uint32_t y = 1,
+                             uint32_t z = 1) noexcept = 0;
 
   struct ComputeSize {
     uint32_t x{0};
@@ -409,7 +411,8 @@ class TI_DLL_EXPORT CommandList {
    * - `not_supported` if the requested sizes are not supported
    * - `error` if the operation failed due to other reasons
    */
-  virtual RhiResult dispatch(ComputeSize grid_size, ComputeSize block_size) noexcept {
+  virtual RhiResult dispatch(ComputeSize grid_size,
+                             ComputeSize block_size) noexcept {
     return RhiResult::not_supported;
   }
 

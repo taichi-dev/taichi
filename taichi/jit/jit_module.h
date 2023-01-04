@@ -7,7 +7,6 @@
 #include "taichi/inc/constants.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/kernel_profiler.h"
-#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 

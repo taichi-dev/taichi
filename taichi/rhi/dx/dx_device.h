@@ -121,7 +121,7 @@ class Dx11CommandList : public CommandList {
   void memory_barrier() noexcept final;
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
   // These are not implemented in compute only device
   void begin_renderpass(int x0,

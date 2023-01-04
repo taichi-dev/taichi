@@ -399,7 +399,7 @@ class VulkanCommandList : public CommandList {
   void memory_barrier() noexcept final;
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
   void begin_renderpass(int x0,
                         int y0,
                         int x1,
@@ -714,6 +714,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   constexpr const VulkanCapabilities &vk_caps() const {
     return vk_caps_;
   }
+  
+  const VkPhysicalDeviceProperties &get_vk_physical_device_props() const {
+    return vk_device_properties_;
+  }
 
  private:
   friend VulkanSurface;
@@ -722,6 +726,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   [[nodiscard]] RhiResult new_descriptor_pool();
 
   VulkanCapabilities vk_caps_;
+  VkPhysicalDeviceProperties vk_device_properties_;
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDevice device_{VK_NULL_HANDLE};

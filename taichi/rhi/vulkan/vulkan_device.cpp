@@ -1080,8 +1080,15 @@ void VulkanCommandList::buffer_fill(DevicePtr ptr,
   buffer_->refs.push_back(buffer);
 }
 
-void VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept {
+  auto &dev_props = ti_device_->get_vk_physical_device_props();
+  if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
+      y > dev_props.limits.maxComputeWorkGroupCount[1] ||
+      z > dev_props.limits.maxComputeWorkGroupCount[2]) {
+    return RhiResult::not_supported;
+  }
   vkCmdDispatch(buffer_->buffer, x, y, z);
+  return RhiResult::success;
 }
 
 vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
@@ -1553,6 +1560,8 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   create_vma_allocator();
   RHI_ASSERT(new_descriptor_pool() == RhiResult::success &&
              "Failed to allocate initial descriptor pool");
+  
+  vkGetPhysicalDeviceProperties(physical_device_, &vk_device_properties_);
 }
 
 VulkanDevice::~VulkanDevice() {

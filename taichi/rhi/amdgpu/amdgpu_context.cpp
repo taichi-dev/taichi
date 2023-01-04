@@ -124,7 +124,7 @@ void AMDGPUContext::launch(void *func,
   pack_args(arg_pointers, arg_sizes, packed_arg);
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
-    void *config[] = {(void *)0x01, (void *)pack_args, (void *)0x02,
+    void *config[] = {(void *)0x01, (void *)packed_arg, (void *)0x02,
                       (void *)&pack_size, (void *)0x03};
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
                           dynamic_shared_mem_bytes, nullptr, nullptr,

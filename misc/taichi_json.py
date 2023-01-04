@@ -5,6 +5,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import List
 
+
 class Version:
     def __init__(self, ver: str) -> None:
         if ver.startswith('v'):
@@ -322,7 +323,8 @@ class Documentation:
 class Module:
     all_modules = {}
 
-    def __init__(self, version: Version, j: dict, builtin_tys: List[BuiltInType]):
+    def __init__(self, version: Version, j: dict,
+                 builtin_tys: List[BuiltInType]):
         self.name = j["name"]
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry(builtin_tys)

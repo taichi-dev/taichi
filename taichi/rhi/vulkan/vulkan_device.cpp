@@ -966,7 +966,7 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
     return;
   }
 
-  if (saturate_uadd(ptr.offset, size) > buffer_size) {
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
     size = VK_WHOLE_SIZE;
   }
 
@@ -1034,11 +1034,11 @@ void VulkanCommandList::buffer_copy(DevicePtr dst,
   size_t dst_size = ti_device_->get_vkbuffer_size(dst);
 
   // Clamp to minimum available size
-  if (saturate_uadd(src.offset, size) > src_size) {
-    size = saturate_usub(src_size, src.offset);
+  if (saturate_uadd<size_t>(src.offset, size) > src_size) {
+    size = saturate_usub<size_t>(src_size, src.offset);
   }
-  if (saturate_uadd(dst.offset, size) > dst_size) {
-    size = saturate_usub(dst_size, dst.offset);
+  if (saturate_uadd<size_t>(dst.offset, size) > dst_size) {
+    size = saturate_usub<size_t>(dst_size, dst.offset);
   }
 
   if (size == 0) {
@@ -1072,7 +1072,7 @@ void VulkanCommandList::buffer_fill(DevicePtr ptr,
     return;
   }
 
-  if (saturate_uadd(ptr.offset, size) > buffer_size) {
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
     size = VK_WHOLE_SIZE;
   }
 

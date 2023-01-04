@@ -123,7 +123,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   } else if (config.arch == Arch::opengl) {
 #ifdef TI_WITH_OPENGL
-    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    TI_ASSERT(opengl::initialize_opengl(false));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+  } else if (config.arch == Arch::gles) {
+#ifdef TI_WITH_OPENGL
+    TI_ASSERT(opengl::initialize_opengl(true));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
@@ -417,6 +424,8 @@ void Program::finalize() {
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
+  configs.clear();
+  configs[main_thread_id_] = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
@@ -475,12 +484,13 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   return reinterpret_cast<intptr_t>(data_ptr);
 }
 
-void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
+void Program::fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val) {
   // This is a temporary solution to bypass device api.
   // Should be moved to CommandList once available in CUDA.
   program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
-      ndarray->get_nelement() * ndarray->get_element_size(), val);
+      ndarray->get_nelement() * ndarray->get_element_size() / sizeof(uint32_t),
+      val);
 }
 
 Program::~Program() {
@@ -550,6 +560,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
       this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles ||
       this_thread_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }

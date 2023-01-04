@@ -10,6 +10,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/exceptions.h"
+#include "taichi/common/one_or_more.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/mesh.h"
 #include "taichi/ir/type_factory.h"
@@ -104,8 +105,10 @@ class Identifier {
 
 #ifdef TI_WITH_LLVM
 using stmt_vector = llvm::SmallVector<pStmt, 8>;
+using stmt_ref_vector = llvm::SmallVector<Stmt *, 2>;
 #else
 using stmt_vector = std::vector<pStmt>;
+using stmt_ref_vector = std::vector<Stmt *>;
 #endif
 
 class VecStatement {
@@ -193,6 +196,33 @@ class IRVisitor {
 struct CompileConfig;
 class Kernel;
 
+using stmt_refs = one_or_more<Stmt *>;
+
+namespace ir_traits {
+
+// FIXME: Use C++ 20 concepts to replace `dynamic_cast<T>() != nullptr`
+
+class Store {
+ public:
+  virtual ~Store() = default;
+
+  // Get the list of sinks/destinations of the store operation
+  virtual stmt_refs get_store_destination() const = 0;
+
+  // If store_stmt provides one data source, return the data.
+  virtual Stmt *get_store_data() const = 0;
+};
+
+class Load {
+ public:
+  virtual ~Load() = default;
+
+  // If load_stmt loads some variables or a stack, return the pointers of them.
+  virtual stmt_refs get_load_pointers() const = 0;
+};
+
+}  // namespace ir_traits
+
 class IRNode {
  public:
   Kernel *kernel;
@@ -242,10 +272,8 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT                     \
-  void accept(IRVisitor *visitor) override { \
-    visitor->visit(this);                    \
-  }
+#define TI_DEFINE_ACCEPT \
+  void accept(IRVisitor *visitor) override { visitor->visit(this); }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \
@@ -577,6 +605,19 @@ class DelayedIRModifier {
 
   // Force the next call of modify_ir() to return true.
   void mark_as_modified();
+};
+
+// ImmediateIRModifier aims at replacing Stmt::replace_usages_with, which visits
+// the whole tree for a single replacement. ImmediateIRModifier is currently
+// associated with a pass, visits the whole tree once at the beginning of that
+// pass, and performs a single replacement with amortized constant time.
+class ImmediateIRModifier {
+ private:
+  std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> stmt_usages_;
+
+ public:
+  explicit ImmediateIRModifier(IRNode *root);
+  void replace_usages_with(Stmt *old_stmt, Stmt *new_stmt);
 };
 
 template <typename T>

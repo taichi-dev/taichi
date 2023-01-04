@@ -199,7 +199,6 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
-      .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
@@ -210,7 +209,6 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
-      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -292,10 +290,13 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
+      .def("expr_snode_get_addr", &ASTBuilder::snode_get_addr)
+      .def("expr_snode_append", &ASTBuilder::snode_append)
+      .def("expr_snode_is_active", &ASTBuilder::snode_is_active)
+      .def("expr_snode_length", &ASTBuilder::snode_length)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
-      .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
@@ -327,8 +328,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
-           py::return_value_policy::reference)
+      .def("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -444,6 +444,10 @@ void export_lang(py::module &m) {
            [&](Program *program, const DataType &dt) {
              return program->current_callable->insert_ret(dt);
            })
+      .def("finalize_rets",
+           [&](Program *program) {
+             return program->current_callable->finalize_rets();
+           })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
@@ -472,16 +476,16 @@ void export_lang(py::module &m) {
            })
       .def("fill_float",
            [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<uint32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<uint32_t &>(val));
            })
       .def("fill_int",
            [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<int32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<int32_t &>(val));
            })
       .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast(ndarray, val);
+        program->fill_ndarray_fast_u32(ndarray, val);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -812,11 +816,6 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("expr_snode_get_addr", &snode_get_addr);
-  m.def("expr_snode_append", &snode_append);
-  m.def("expr_snode_is_active", &snode_is_active);
-  m.def("expr_snode_length", &snode_length);
-
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args,
             bool with_runtime_context) {
@@ -1006,10 +1005,6 @@ void export_lang(py::module &m) {
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
                  const std::vector<int> &, std::string>);
 
-  m.def("make_stride_expr",
-        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
-                   const std::vector<int> &, int>);
-
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->element_dim;
@@ -1139,6 +1134,8 @@ void export_lang(py::module &m) {
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
 
+  m.def("promoted_type", promoted_type);
+
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
   // TypeFactory on Python-scope pointer destruction.
@@ -1157,6 +1154,16 @@ void export_lang(py::module &m) {
           [&](TypeFactory *factory, std::vector<int> shape,
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
+          },
+          py::return_value_policy::reference)
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory, std::vector<DataType> elements) {
+            std::vector<const Type *> types;
+            for (auto &element : elements) {
+              types.push_back(element);
+            }
+            return DataType(factory->get_struct_type(types));
           },
           py::return_value_policy::reference);
 
@@ -1190,7 +1197,8 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
+      .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)
@@ -1293,7 +1301,6 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
       .def("factorize", &CuSparseSolver::factorize)
       .def("solve_rf", &CuSparseSolver::solve_rf)
-      .def("solve_cu", &CuSparseSolver::solve_cu)
       .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);

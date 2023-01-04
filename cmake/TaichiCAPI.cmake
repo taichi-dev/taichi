@@ -19,9 +19,7 @@ endif()
 
 endfunction()
 
-
 set(TAICHI_C_API_NAME taichi_c_api)
-
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
 
 if (TI_WITH_LLVM)
@@ -48,7 +46,18 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+if (${CMAKE_GENERATOR} STREQUAL "Xcode")
+  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+  message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
+elseif (MSVC)
+  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+else()
+  target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+endif()
+target_enable_function_level_linking(${TAICHI_C_API_NAME})
+
+# Strip shared library
+set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
@@ -63,6 +72,22 @@ set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
     ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
+
+if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
+  # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_C_API_NAME}.dll
+                ${C_API_OUTPUT_DIRECTORY}/${TAICHI_C_API_NAME}.dll)
+elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
+  # XCode is also a multi-config generator
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_C_API_NAME}.dylib
+                ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.dylib)
+endif()
 
 target_include_directories(${TAICHI_C_API_NAME}
     PUBLIC

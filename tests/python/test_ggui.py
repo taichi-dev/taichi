@@ -360,7 +360,9 @@ def test_get_camera_view_and_projection_matrix():
     assert (abs(projection_matrix[3, 2] - 1.0001000e-1) <= 1e-5)
 
 
-def _test_fetching_color_attachment():
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_fetching_color_attachment():
     window = ti.ui.Window('test', (640, 480), show_window=False)
     canvas = window.get_canvas()
 
@@ -384,20 +386,6 @@ def _test_fetching_color_attachment():
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_set_image')
     window.destroy()
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs)
-def test_fetching_color_attachment():
-    _test_fetching_color_attachment()
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_fetching_color_attachment_matrix_scalarize():
-    _test_fetching_color_attachment()
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
@@ -468,9 +456,11 @@ def test_draw_lines():
     render()
     if (platform.system() == 'Darwin'):
         # TODO:Fix the bug that mac not support wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac',
+                     0.2)
     else:
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines',
+                     0.2)
     window.destroy()
 
 

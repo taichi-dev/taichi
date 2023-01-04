@@ -54,9 +54,7 @@ def test_indices_i64():
         assert (val[i] == i + 1)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda],
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
+@test_utils.test()
 def test_indices_with_matrix():
     grid_m = ti.field(dtype=ti.i32, shape=(10, 10))
 

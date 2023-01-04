@@ -8,18 +8,18 @@ Modern processor cores compute orders of magnitude faster than their equipped me
 
 After familiarizing yourself with the basics of Taichi [Fields](./field.md), this article helps you one step further by explaining the underlying memory layout that is essential to write high-performance Taichi programs. In particular, we present how to organize an efficient data layout and how to manage memory occupancy.
 
-## Organize an efficient data layout
+## Organizing an efficient data layout
 
 In this section, we introduce how to organize data layouts in Taichi fields. The central principle of efficient data layout is _locality_. Generally speaking, a program with desirable locality has at least one of the following features:
 
-* Dense data structure
-* Loop over data in small-range (within 32KB is good for most processors)
-* Sequential load/store
+* Dense data structures
+* Small-range data looping (within 32KB is good for most processors)
+* Sequentially loading and storing data
 
 :::note
 
 
-Be aware that data are always fetched from memory in blocks (pages). The hardware has little knowledge about how a specific data element is used in the block. The processor blindly fetch the entire block according to the requested memory address. Therefore, the memory bandwidth is wasted when data are not fully utilized.
+Be aware that data is traditionally fetched from memory in blocks (pages). In addition, the hardware itself has little knowledge about how a specific data element is used in the block. The processor blindly fetches the entire block according to the requested memory address. Thus, the memory bandwidth is wasted when data are not fully utilized.
 
 For sparse fields, see the [Sparse computation](./sparse.md).
 
@@ -29,13 +29,14 @@ For sparse fields, see the [Sparse computation](./sparse.md).
 
 <!-- haidong: what's else optional in ti.root? -->
 In basic usages, we use the `shape` descriptor to construct a field. Taichi provides flexible statements to describe more advanced data organizations, the `ti.root.X`.
-Let's get some familiarity with examples:
+Here are some examples:
 
 * Declare a 0-D field:
 
 ```python {1-2}
 x = ti.field(ti.f32)
 ti.root.place(x)
+
 # is equivalent to:
 x = ti.field(ti.f32, shape=())
 ```
@@ -45,6 +46,7 @@ x = ti.field(ti.f32, shape=())
 ```python {1-2}
 x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).place(x)
+
 # is equivalent to:
 x = ti.field(ti.f32, shape=3)
 ```
@@ -71,23 +73,27 @@ x = ti.field(ti.f32, shape=(3,4))
 
 The above 2D array built with nested `dense` statements is *not* equivalent to the 2D array built with `ti.field`.
 Although both statements result in a 2D array of the same shape, they have
-different layers of `SNodeTree`. In other words,
+different layers of `SNodeTree`, as shown below:
+
+The following snippet has two `SNodeTree` layers below the root:
 ```python
 x = ti.field(ti.f32)
 ti.root.dense(ti.i, 3).dense(ti.j, 4).place(x)
 ```
-has two `SNodeTree` layers below the root;
+
+The following snippet only has one `SNodeTree` below the root:
 ```python
 x = ti.field(ti.f32)
 ti.root.dense(ti.ij, (3, 4)).place(x)
+
 # or equivalently
 x = ti.field(ti.f32, shape=(3,4))
 ```
-has only one `SNodeTree` layer below the root. See the sketch below:
+See the sketch below for a visualization that illustrates the difference between these layers:
 
 ![2D data-layout sketch](https://user-images.githubusercontent.com/2747993/190545525-305563dc-d09e-4af2-b99b-166d5c4398d0.png)
 
-The difference here is subtle because both arrays are row-major, but it may have slight performance impact
+The difference here is subtle as both arrays are row-major, but it may have slight performance impact
 because the overhead of calculating the `SNodeTree` index is different for the two.
 
 :::
@@ -96,22 +102,22 @@ In a nutshell, the `ti.root.X` statement progressively binds a shape to the corr
 By nesting multiple statements, we can construct a field with higher dimensions.
 <!-- haidong: how far can we go? how many default axis exist? -->
 
-In order to traverse the nested statements, you can use `struct-for`:
+In order to traverse the nested statements, you can use a `for` loop:
 
 ```python {1}
 for i, j in A:
     A[i, j] += 1
 ```
 
-The order to access `A`, namely the order to iterate `i` and `j`, affects the program performance subtly. The Taichi compiler is capable of automatically deducing the underlying data layout and applying a proper access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
+The Taichi compiler is capable of automatically deducing the underlying data layout and applying a proper data access order. This is an advantage over most general-purpose programming languages where the access order has to be optimized manually.
 
 ### Row-major versus column-major
 
-Memory address space is linear as you may have learned from a computer architecture course. Without loss of generality, we omit the differences in data types and assume each data element has size 1. Moreover, we denote the starting memory address of a field as `base`, and the indexing formula for 1D Taichi fields is `base + i` for the `i`-th element.
+One important thing to note about memory addresses is that their space is linear. Without loss of generality, we omit the differences in data types and assume each data element has size 1. Moreover, we denote the starting memory address of a field as `base`, and the indexing formula for 1D Taichi fields is `base + i` for the `i-th` element.
 
 For multi-dimensional fields, we can flatten the high-dimension index into the linear memory address space in two ways: Taking a 2D field of shape `(M, N)` as an instance, we can either store `M` rows with `N`-length 1D buffers, say the _row-major_ way, or store `N` columns, say the _column-major_ way. The index flatten formula for the `(i, j)`-th element is `base + i * N + j` for row-major and `base + j * M + i` for column-major, respectively.
 
-We can easily derive that elements in the same row are close in memory for row-major fields. The selection of the optimal layout is based on how the elements are accessed, namely, the access patterns. Patterns such as frequently accessing elements of the same row in a column-major field typically lead to performance degradation.
+Trivially, elements in the same row are close in memory for row-major fields. The selection of the optimal layout is based on how the elements are accessed, namely, the access patterns. Patterns such as frequently accessing elements of the same row in a column-major field typically lead to performance degradation.
 
 The default Taichi field layout is row-major. With the `ti.root` statements, fields can be defined as follows:
 
@@ -128,7 +134,7 @@ In the code above, the axis denotation in the rightmost `dense` statement indica
 #       y:  y[0, 0]  y[1, 0]  y[2, 0]  y[0, 1]  y[1, 1]  y[2, 1]
 ```
 
-It is worth noting that the accessor is unified for Taichi fields: the `(i, j)`-th element in the field is accessed with the identical 2D index `x[i, j]` and `y[i, j]`. Taichi handles the layout variants and applies proper indexing equations internally. Thanks to this feature, users can specify their desired layout at definition, and use the fields without concerning about the underlying memory organizations. To change the layout, it's sufficient to just swap the order of `dense` statements, and leave rest of the code intact.
+It is worth noting that the accessor is unified for Taichi fields: the `(i, j)-th` element in the field is accessed with the identical 2D index `x[i, j]` and `y[i, j]`. Taichi handles the layout variants and applies proper indexing equations internally. Thanks to this feature, users can specify their desired layout at definition, and use the fields without concerning about the underlying memory organizations. To change the layout, we can simply swap the order of `dense` statements, and leave rest of the code intact.
 
 :::note
 
@@ -154,9 +160,7 @@ The accessors of `x` and `y` are in reverse order between row-major arrays and c
 
 ### AoS versus SoA
 
-AoS means _array of structures_ and SoA means _structure of arrays_. Consider an RGB image with 4 pixels and 3 color channels, an AoS layout stores `RGBRGBRGBRGB` while an SoA layout stores `RRRRGGGGBBBB`.
-
-The selection of AoS or SoA layout largely depends on the access pattern to the field. Let's discuss a scenario to process large RGB images. The two layouts have the following arrangements in memory:
+AoS means _array of structures_ and SoA means _structure of arrays_. Consider an RGB image with four pixels and three color channels: an AoS layout stores `RGBRGBRGBRGB` while an SoA layout stores `RRRRGGGGBBBB`. The selection of an AoS or SoA layout largely depends on the access pattern to the field. Let's discuss a scenario to process large RGB images. The two layouts have the following arrangements in memory:
 
 ```
 # address: low ...................... high
@@ -305,7 +309,7 @@ relatively close addresses.**  -->
 
 ### AoS extension: hierarchical fields
 <!-- haidong: I hope to remove this subsection. This content just repeats the AoS topic -->
-Sometimes we want to access memory in a complex but fixed pattern, like traversing an image in 8x8 blocks. The apparent best practice is to flatten each 8x8 block and concatenate them together. From a Taichi user's perspective, however, the field is no longer a flat buffer. It now has a hierarchy with two levels: The image level and the block level. Equivalently, the field is an array of implicit 8x8 block structures.
+Sometimes we want to access memory in a complex but fixed pattern, like traversing an image in 8x8 blocks. The apparent best practice is to flatten each 8x8 block and concatenate them together. However, the field is no longer a flat buffer as it now has a hierarchy with two levels: The image level and the block level. Equivalently, the field is an array of implicit 8x8 block structures.
 
 We demonstrate the statements as follows:
 
@@ -333,7 +337,7 @@ We highly recommend that you use power-of-two block size so that accelerated ind
 
 ### Manual field allocation and destruction
 
-Generally Taichi manages memory allocation and destruction without disturbing the users. However, there are times that users want explicit control over their memory allocations.
+Generally, Taichi manages memory allocation and destruction without disturbing the users. However, there are times that users want explicit control over their memory allocations.
 
 In this scenario, Taichi provides the `FieldsBuilder` for manual field memory allocation and destruction. `FieldsBuilder` features identical declaration APIs as `ti.root`. The extra step is to invoke `finalize()` at the end of all declarations. The `finalize()` returns an `SNodeTree` object to handle subsequent destructions.
 
@@ -363,4 +367,4 @@ func(y)
 fb2_snode_tree.destroy()  # Destruction
 ```
 
-Actually, the above demonstrated `ti.root` statements are implemented with `FieldsBuilder`, despite that `ti.root` has the capability to automatically manage memory allocations and recycling.
+The above demonstrated `ti.root` statements are implemented with `FieldsBuilder`, despite that `ti.root` has the capability to automatically manage memory allocations and recycling.

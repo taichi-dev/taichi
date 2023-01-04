@@ -44,8 +44,9 @@ class HostDeviceContextBlitter {
       return;
     }
 
-    char *const device_base =
-        reinterpret_cast<char *>(device_->map(*device_args_buffer_));
+    void *device_base{nullptr};
+    TI_ASSERT(device_->map(*device_args_buffer_, &device_base) ==
+              RhiResult::success);
 
 #define TO_DEVICE(short_type, type)               \
   if (arg.dtype == PrimitiveTypeID::short_type) { \
@@ -56,7 +57,7 @@ class HostDeviceContextBlitter {
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      char *device_ptr = device_base + arg.offset_in_mem;
+      void *device_ptr = (uint8_t *)device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
           if (host_ctx_->device_allocation_type[i] ==
@@ -66,8 +67,9 @@ class HostDeviceContextBlitter {
             uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
             if (access & uint32_t(irpass::ExternalPtrAccess::READ)) {
               DeviceAllocation buffer = ext_arrays.at(i);
-              char *const device_arr_ptr =
-                  reinterpret_cast<char *>(device_->map(buffer));
+              void *device_arr_ptr{nullptr};
+              TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
+                        RhiResult::success);
               const void *host_ptr = host_ctx_->get_arg<void *>(i);
               std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
               device_->unmap(buffer);
@@ -111,7 +113,8 @@ class HostDeviceContextBlitter {
       } while (false);
     }
 
-    char *device_ptr = device_base + ctx_attribs_->extra_args_mem_offset();
+    void *device_ptr =
+        (uint8_t *)device_base + ctx_attribs_->extra_args_mem_offset();
     std::memcpy(device_ptr, host_ctx_->extra_args,
                 ctx_attribs_->extra_args_bytes());
 
@@ -158,8 +161,9 @@ class HostDeviceContextBlitter {
           uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
           if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
             DeviceAllocation buffer = ext_array_shadows.at(i);
-            char *const device_arr_ptr =
-                reinterpret_cast<char *>(device_->map(buffer));
+            void *device_arr_ptr{nullptr};
+            TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
+                      RhiResult::success);
             void *host_ptr = host_ctx_->get_arg<void *>(i);
             std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
             device_->unmap(buffer);
@@ -171,8 +175,9 @@ class HostDeviceContextBlitter {
     if (!ctx_attribs_->has_rets())
       return require_sync;
 
-    char *const device_base =
-        reinterpret_cast<char *>(device_->map(*device_ret_buffer_));
+    void *device_base{nullptr};
+    TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==
+              RhiResult::success);
 
 #define TO_HOST(short_type, type, offset)                            \
   if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \
@@ -186,7 +191,7 @@ class HostDeviceContextBlitter {
       // Note that we are copying the i-th return value on Metal to the i-th
       // *arg* on the host context.
       const auto &ret = ctx_attribs_->rets()[i];
-      char *device_ptr = device_base + ret.offset_in_mem;
+      void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
       const auto dt = PrimitiveType::get(ret.dtype);
       const auto num = ret.stride / data_type_size(dt);
       for (int j = 0; j < num; ++j) {
@@ -424,26 +429,21 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
               ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
 
           // Alloc ext arr
-          if (ext_array_size[i]) {
-            bool host_write =
-                access & uint32_t(irpass::ExternalPtrAccess::READ);
-            auto allocated = device_->allocate_memory_unique(
-                {ext_array_size[i], host_write, false,
-                 /*export_sharing=*/false, AllocUsage::Storage});
-            any_arrays[i] = *allocated.get();
-            allocated_buffers.push_back(std::move(allocated));
+          size_t alloc_size = std::max(size_t(32), ext_array_size.at(i));
+          bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);
+          auto allocated = device_->allocate_memory_unique(
+              {alloc_size, host_write, false, /*export_sharing=*/false,
+               AllocUsage::Storage});
+          any_arrays[i] = *allocated.get();
+          allocated_buffers.push_back(std::move(allocated));
 
-            bool host_read =
-                access & uint32_t(irpass::ExternalPtrAccess::WRITE);
-            if (host_read) {
-              auto allocated = device_->allocate_memory_unique(
-                  {ext_array_size[i], false, true,
-                   /*export_sharing=*/false, AllocUsage::None});
-              any_array_shadows[i] = *allocated.get();
-              allocated_buffers.push_back(std::move(allocated));
-            }
-          } else {
-            any_arrays[i] = kDeviceNullAllocation;
+          bool host_read = access & uint32_t(irpass::ExternalPtrAccess::WRITE);
+          if (host_read) {
+            auto allocated = device_->allocate_memory_unique(
+                {alloc_size, false, true, /*export_sharing=*/false,
+                 AllocUsage::None});
+            any_array_shadows[i] = *allocated.get();
+            allocated_buffers.push_back(std::move(allocated));
           }
         }
       }
@@ -464,19 +464,23 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const int group_x = (attribs.advisory_total_num_threads +
                          attribs.advisory_num_threads_per_group - 1) /
                         attribs.advisory_num_threads_per_group;
-    ResourceBinder *binder = vp->resource_binder();
+    std::unique_ptr<ShaderResourceSet> bindings =
+        device_->create_resource_set_unique();
     for (auto &bind : attribs.buffer_binds) {
+      // We might have to bind a invalid buffer (this is fine as long as
+      // shader don't do anything with it)
       if (bind.buffer.type == BufferType::ExtArr) {
-        binder->rw_buffer(0, bind.binding, any_arrays.at(bind.buffer.root_id));
-      } else if (args_buffer && bind.buffer.type == BufferType::Args) {
-        binder->buffer(0, bind.binding, *args_buffer);
-      } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
-        binder->rw_buffer(0, bind.binding, *ret_buffer);
+        bindings->rw_buffer(bind.binding, any_arrays.at(bind.buffer.root_id));
+      } else if (bind.buffer.type == BufferType::Args) {
+        bindings->buffer(bind.binding,
+                         args_buffer ? *args_buffer : kDeviceNullAllocation);
+      } else if (bind.buffer.type == BufferType::Rets) {
+        bindings->rw_buffer(bind.binding,
+                            ret_buffer ? *ret_buffer : kDeviceNullAllocation);
       } else {
         DeviceAllocation *alloc = ti_kernel->get_buffer_bind(bind.buffer);
-        if (alloc) {
-          binder->rw_buffer(0, bind.binding, *alloc);
-        }
+        bindings->rw_buffer(bind.binding,
+                            alloc ? *alloc : kDeviceNullAllocation);
       }
     }
 
@@ -484,10 +488,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
         transition_image(texture, ImageLayout::shader_read_write);
-        binder->rw_image(0, bind.binding, texture, 0);
+        bindings->rw_image(bind.binding, texture, 0);
       } else {
         transition_image(texture, ImageLayout::shader_read);
-        binder->image(0, bind.binding, texture, {});
+        bindings->image(bind.binding, texture, {});
       }
     }
 
@@ -506,7 +510,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
 
     current_cmdlist_->bind_pipeline(vp);
-    current_cmdlist_->bind_resources(binder);
+    RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
+    TI_ERROR_IF(status != RhiResult::success,
+                "Resource binding error : RhiResult({})", status);
     current_cmdlist_->dispatch(group_x);
     current_cmdlist_->memory_barrier();
   }
@@ -574,22 +580,6 @@ void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
   ensure_current_cmdlist();
   current_cmdlist_->image_transition(image, last_layout, layout);
   last_layout = layout;
-}
-
-void GfxRuntime::signal_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->signal_event(event);
-  submit_current_cmdlist_if_timeout();
-}
-void GfxRuntime::reset_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->reset_event(event);
-  submit_current_cmdlist_if_timeout();
-}
-void GfxRuntime::wait_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->wait_event(event);
-  submit_current_cmdlist_if_timeout();
 }
 
 void GfxRuntime::synchronize() {

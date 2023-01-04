@@ -10,7 +10,6 @@ from taichi.lang import impl
 from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
                                    TaichiSyntaxError,
                                    handle_exception_from_cpp)
-from taichi.lang.matrix import Matrix
 
 
 class Builder:
@@ -246,9 +245,6 @@ class ASTTransformerContext:
             if name in s:
                 return s[name]
         if name in self.global_vars:
-            if isinstance(self.global_vars[name],
-                          Matrix) and impl.current_cfg().real_matrix:
-                return impl.expr_init(self.global_vars[name])
             return self.global_vars[name]
         try:
             return getattr(builtins, name)

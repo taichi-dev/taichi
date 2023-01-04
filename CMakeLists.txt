@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
+include("cmake/utils.cmake")
+
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
@@ -63,6 +65,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
+
+if(LINUX OR APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+endif()
 
 if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
@@ -175,6 +181,10 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
+if (TI_WITH_AMDGPU)
+    set(AMDGPU_ARCH "amdgpu")
+endif()
+
 if (TI_WITH_DX12)
     set(DX12_ARCH "dx12")
 endif()
@@ -185,16 +195,6 @@ endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
-
-option(TI_EXPORT_CORE "export taichi core" OFF)
-
-if(ANDROID)
-    set(TI_EXPORT_CORE ON)
-endif()
-
-if (TI_EXPORT_CORE)
-  include(cmake/TaichiExportCore.cmake)
-endif()
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 

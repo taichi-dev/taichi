@@ -46,15 +46,16 @@ Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {
 void Triangles::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
 
 void Triangles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
 }
 
 }  // namespace vulkan

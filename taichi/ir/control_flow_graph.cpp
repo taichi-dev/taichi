@@ -409,7 +409,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     }
     if (store_ptrs.size() == 1) {
       // Dead store elimination
-      auto store_ptr = store_ptrs.front();
+      auto store_ptr = *store_ptrs.begin();
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
@@ -472,7 +472,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     if (load_ptrs.size() == 1 && store_ptrs.empty()) {
       // Identical load elimination
-      auto load_ptr = load_ptrs.front();
+      auto load_ptr = load_ptrs.begin()[0];
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.

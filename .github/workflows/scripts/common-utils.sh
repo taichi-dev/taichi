@@ -3,7 +3,7 @@
 set -x
 
 setup_python() {
-    for conda in miniconda miniconda3 miniforge3; do
+    for conda in .cache/build-cache/miniforge3 miniconda miniconda3 miniforge3; do
         if [[ -d $HOME/$conda ]]; then
             source $HOME/$conda/bin/activate
             conda activate "$PY"
@@ -170,6 +170,7 @@ function ci-docker-run-amdgpu {
     ci-docker-run \
         --device=/dev/kfd \
         --device=/dev/dri \
+        --device=/dev/vga_arbiter \
         --group-add=video \
         -e DISPLAY=:$i \
         -e GPU_TEST=ON \

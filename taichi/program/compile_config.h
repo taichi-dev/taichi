@@ -12,7 +12,6 @@ struct CompileConfig {
   bool check_out_of_bound;
   bool validate_autodiff;
   int simd_width;
-  bool lazy_compilation;
   int opt_level;
   int external_optimization_level;
   int max_vector_width;
@@ -42,7 +41,6 @@ struct CompileConfig {
   bool make_block_local;
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
-  bool real_matrix;
   bool real_matrix_scalarize;
   DataType default_fp;
   DataType default_ip;
@@ -78,7 +76,6 @@ struct CompileConfig {
 
   // Opengl backend options:
   bool allow_nv_shader_extension{true};
-  bool use_gles{false};
 
   bool quant_opt_store_fusion{true};
   bool quant_opt_atomic_demotion{true};

@@ -11,35 +11,10 @@
 namespace taichi::lang {
 namespace cpu {
 
-class CpuResourceBinder : public ResourceBinder {
- public:
-  ~CpuResourceBinder() override {
-  }
-
-  std::unique_ptr<Bindings> materialize() override{TI_NOT_IMPLEMENTED};
-
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override{TI_NOT_IMPLEMENTED};
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
-
-  void buffer(uint32_t set,
-              uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override{TI_NOT_IMPLEMENTED};
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override{
-      TI_NOT_IMPLEMENTED};
-};
-
 class CpuPipeline : public Pipeline {
  public:
   ~CpuPipeline() override {
   }
-
-  ResourceBinder *resource_binder() override{TI_NOT_IMPLEMENTED};
 };
 
 class CpuCommandList : public CommandList {
@@ -48,9 +23,10 @@ class CpuCommandList : public CommandList {
   }
 
   void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
-  void bind_resources(ResourceBinder *binder) override{TI_NOT_IMPLEMENTED};
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override{
+  RhiResult bind_shader_resources(ShaderResourceSet *res,
+                                  int set_index = 0) override{
+      TI_NOT_IMPLEMENTED};
+  RhiResult bind_raster_resources(RasterResources *res) override{
       TI_NOT_IMPLEMENTED};
   void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
   void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
@@ -96,17 +72,19 @@ class CpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
+
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
-  void *map(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) final;
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 

@@ -19,10 +19,11 @@ def test_matrix_arg():
 
     @ti.kernel
     def foo2(var: ti.i32, mat: ti.types.matrix(3, 2, ti.i32)) -> ti.i32:
+        res = mat
         for i in ti.static(range(3)):
             for j in ti.static(range(2)):
-                mat[i, j] += var
-        return mat[2, 1]
+                res[i, j] += var
+        return res[2, 1]
 
     assert foo2(3, mat3) == 9
 

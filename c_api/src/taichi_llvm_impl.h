@@ -33,7 +33,7 @@ class LlvmRuntime : public Runtime {
                    const taichi::lang::DevicePtr &src,
                    size_t size) override;
 
-  void submit() override;
+  void flush() override;
 
   void wait() override;
 

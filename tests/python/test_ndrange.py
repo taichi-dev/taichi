@@ -221,7 +221,8 @@ def test_ndrange_ast_transform():
             assert A[i, j] == r
 
 
-def _test_grouped_ndrange_star():
+@test_utils.test()
+def test_grouped_ndrange_star():
     @ti.kernel
     def foo() -> ti.i32:
         ret = 0
@@ -230,16 +231,6 @@ def _test_grouped_ndrange_star():
         return ret
 
     assert foo() == 36
-
-
-@test_utils.test()
-def test_grouped_ndrange_star():
-    _test_grouped_ndrange_star()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_grouped_ndrange_star_matrix_scalarize():
-    _test_grouped_ndrange_star()
 
 
 @test_utils.test()

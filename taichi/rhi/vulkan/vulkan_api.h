@@ -18,17 +18,6 @@ struct DeviceObj {
 using IDeviceObj = std::shared_ptr<DeviceObj>;
 IDeviceObj create_device_obj(VkDevice device);
 
-// VkEvent
-struct DeviceObjVkEvent : public DeviceObj {
-  bool external{false};
-  VkEvent event{VK_NULL_HANDLE};
-  ~DeviceObjVkEvent() override;
-};
-using IVkEvent = std::shared_ptr<DeviceObjVkEvent>;
-IVkEvent create_event(VkDevice device,
-                      VkEventCreateFlags flags,
-                      void *pnext = nullptr);
-
 // VkSemaphore
 struct DeviceObjVkSemaphore : public DeviceObj {
   VkSemaphore semaphore{VK_NULL_HANDLE};
@@ -76,7 +65,7 @@ struct DeviceObjVkDescriptorSet : public DeviceObj {
   VkDescriptorSet set{VK_NULL_HANDLE};
   IVkDescriptorSetLayout ref_layout{nullptr};
   IVkDescriptorPool ref_pool{nullptr};
-  std::unordered_map<uint32_t, IDeviceObj> ref_binding_objs;
+  std::vector<IDeviceObj> ref_binding_objs;
   ~DeviceObjVkDescriptorSet() override;
 };
 using IVkDescriptorSet = std::shared_ptr<DeviceObjVkDescriptorSet>;
@@ -167,6 +156,13 @@ IVkPipeline create_graphics_pipeline(VkDevice device,
                                      IVkPipelineLayout layout,
                                      IVkPipelineCache cache = nullptr,
                                      IVkPipeline base_pipeline = nullptr);
+IVkPipeline create_graphics_pipeline_dynamic(
+    VkDevice device,
+    VkGraphicsPipelineCreateInfo *create_info,
+    VkPipelineRenderingCreateInfoKHR *rendering_info,
+    IVkPipelineLayout layout,
+    IVkPipelineCache cache = nullptr,
+    IVkPipeline base_pipeline = nullptr);
 IVkPipeline create_raytracing_pipeline(
     VkDevice device,
     VkRayTracingPipelineCreateInfoKHR *create_info,
@@ -175,6 +171,14 @@ IVkPipeline create_raytracing_pipeline(
     VkDeferredOperationKHR deferredOperation = VK_NULL_HANDLE,
     IVkPipelineCache cache = nullptr,
     IVkPipeline base_pipeline = nullptr);
+
+// VkSampler
+struct DeviceObjVkSampler : public DeviceObj {
+  VkSampler sampler{VK_NULL_HANDLE};
+  ~DeviceObjVkSampler() override;
+};
+using IVkSampler = std::shared_ptr<DeviceObjVkSampler>;
+IVkSampler create_sampler(VkDevice device, const VkSamplerCreateInfo &info);
 
 // VkImage
 struct DeviceObjVkImage : public DeviceObj {
@@ -243,7 +247,6 @@ IVkFramebuffer create_framebuffer(VkFramebufferCreateFlags flags,
 // VkBuffer
 struct DeviceObjVkBuffer : public DeviceObj {
   VkBuffer buffer{VK_NULL_HANDLE};
-  size_t size{0};
   VkBufferUsageFlags usage{0};
   VmaAllocator allocator{nullptr};
   VmaAllocation allocation{nullptr};
@@ -258,7 +261,6 @@ IVkBuffer create_buffer(VkDevice device,
 // Importing external buffer
 IVkBuffer create_buffer(VkDevice device,
                         VkBuffer buffer,
-                        size_t size,
                         VkBufferUsageFlags usage);
 
 // VkBufferView

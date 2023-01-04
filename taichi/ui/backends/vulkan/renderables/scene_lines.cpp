@@ -51,21 +51,23 @@ void SceneLines::update_ubo(const SceneLinesInfo &info, const Scene &scene) {
   ubo.scene = scene.current_ubo_;
   ubo.color = info.color;
   ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
 
 void SceneLines::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
-  binder->rw_buffer(0, 1, storage_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
+  resource_set_->rw_buffer(1, storage_buffer_);
 }
 
 void SceneLines::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
+  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_shader_resources(resource_set_.get());
   command_list->set_line_width(curr_width_);
 
   if (indexed_) {

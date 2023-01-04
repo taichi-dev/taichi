@@ -13,6 +13,12 @@ struct Vertex {
   glm::vec3 color;
 };
 
+const std::vector<Vertex> vertices = {
+    {{0.0, 0.5}, {1.0, 0.0, 0.0}},
+    {{0.5, -0.5}, {0.0, 1.0, 0.0}},
+    {{-0.5, -0.5}, {0.0, 0.0, 1.0}},
+};
+
 class SampleApp : public App {
  public:
   SampleApp() : App(1920, 1080, "Sample 2: Triangle") {
@@ -61,11 +67,16 @@ class SampleApp : public App {
           /* host_write = */ true,
           /* host_read = */ false, /* export_sharing = */ false,
           /* usage = */ AllocUsage::Vertex});
-      Vertex *mapped = (Vertex *)device->map(*vertex_buffer);
-      mapped[0] = {{0.0, 0.5}, {1.0, 0.0, 0.0}};
-      mapped[1] = {{0.5, -0.5}, {0.0, 1.0, 0.0}};
-      mapped[2] = {{-0.5, -0.5}, {0.0, 0.0, 1.0}};
+      void *mapped{nullptr};
+      TI_ASSERT(device->map(*vertex_buffer, &mapped) == RhiResult::success);
+      memcpy(mapped, vertices.data(), sizeof(Vertex) * vertices.size());
       device->unmap(*vertex_buffer);
+    }
+
+    // Define the raster state
+    {
+      raster_resources = device->create_raster_resources_unique();
+      raster_resources->vertex_buffer(vertex_buffer->get_ptr(0), 0);
     }
 
     TI_INFO("App Init Done");
@@ -89,10 +100,7 @@ class SampleApp : public App {
 
     // Bind our triangle pipeline
     cmdlist->bind_pipeline(pipeline.get());
-    // Get the binder and bind our vertex buffer
-    auto resource_binder = pipeline->resource_binder();
-    resource_binder->vertex_buffer(vertex_buffer->get_ptr(0), 0);
-    cmdlist->bind_resources(resource_binder);
+    cmdlist->bind_raster_resources(raster_resources.get());
     // Render the triangle
     cmdlist->draw(3, 0);
     // End rendering
@@ -105,9 +113,10 @@ class SampleApp : public App {
   }
 
  public:
-  std::unique_ptr<Pipeline> pipeline;
+  std::unique_ptr<Pipeline> pipeline{nullptr};
+  std::unique_ptr<RasterResources> raster_resources{nullptr};
 
-  std::unique_ptr<DeviceAllocationGuard> vertex_buffer;
+  std::unique_ptr<DeviceAllocationGuard> vertex_buffer{nullptr};
 };
 
 int main() {

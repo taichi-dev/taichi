@@ -5,6 +5,7 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
+#include "taichi/common/utils.h"
 
 bool is_vulkan_available() {
 #ifdef TI_WITH_VULKAN
@@ -81,6 +82,8 @@ const char *describe_error(TiError error) {
       return "invalid state";
     case TI_ERROR_INCOMPATIBLE_MODULE:
       return "incompatible module";
+    case TI_ERROR_OUT_OF_MEMORY:
+      return "out of memory";
     default:
       return "unknown error";
   }
@@ -133,17 +136,6 @@ taichi::lang::aot::Module &AotModule::get() {
   return *aot_module_;
 }
 Runtime &AotModule::runtime() {
-  return *runtime_;
-}
-
-Event::Event(Runtime &runtime, std::unique_ptr<taichi::lang::DeviceEvent> event)
-    : runtime_(&runtime), event_(std::move(event)) {
-}
-
-taichi::lang::DeviceEvent &Event::get() {
-  return *event_;
-}
-Runtime &Event::runtime() {
   return *runtime_;
 }
 
@@ -217,13 +209,23 @@ void ti_set_last_error(TiError error, const char *message) {
   TI_CAPI_TRY_CATCH_END();
 }
 
-TiRuntime ti_create_runtime(TiArch arch) {
+TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
+  // FIXME: (penguinliong) Support device selection.
+  TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {
-      out = (TiRuntime)(static_cast<Runtime *>(new VulkanRuntimeOwned));
+      VulkanRuntimeOwned *vulkan_runtime;
+      if (is_ci()) {
+        auto param = make_vulkan_runtime_creator_params();
+        param.enable_validation_layer = true;
+        vulkan_runtime = new VulkanRuntimeOwned(std::move(param));
+      } else {
+        vulkan_runtime = new VulkanRuntimeOwned;
+      }
+      out = (TiRuntime)(static_cast<Runtime *>(vulkan_runtime));
       break;
     }
 #endif  // TI_WITH_VULKAN
@@ -371,7 +373,9 @@ void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
   TI_CAPI_ARGUMENT_NULL_RV(devmem);
 
   Runtime *runtime2 = (Runtime *)runtime;
-  out = runtime2->get().map(devmem2devalloc(*runtime2, devmem));
+  TI_ASSERT(runtime2->get().map(devmem2devalloc(*runtime2, devmem), &out) ==
+                taichi::lang::RhiResult::success &&
+            "RHI map memory failed");
   TI_CAPI_TRY_CATCH_END();
   return out;
 }
@@ -466,27 +470,6 @@ void ti_destroy_sampler(TiRuntime runtime, TiSampler sampler) {
   TI_CAPI_TRY_CATCH_END();
 }
 
-TiEvent ti_create_event(TiRuntime runtime) {
-  TiEvent out = TI_NULL_HANDLE;
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL_RV(runtime);
-
-  Runtime *runtime2 = (Runtime *)runtime;
-  std::unique_ptr<taichi::lang::DeviceEvent> event =
-      runtime2->get().create_event();
-  Event *event2 = new Event(*runtime2, std::move(event));
-  out = (TiEvent)event2;
-  TI_CAPI_TRY_CATCH_END();
-  return out;
-}
-void ti_destroy_event(TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  delete (Event *)event;
-  TI_CAPI_TRY_CATCH_END();
-}
-
 void ti_copy_memory_device_to_device(TiRuntime runtime,
                                      const TiMemorySlice *dst_memory,
                                      const TiMemorySlice *src_memory) {
@@ -496,6 +479,11 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
   TI_CAPI_ARGUMENT_NULL(dst_memory->memory);
   TI_CAPI_ARGUMENT_NULL(src_memory);
   TI_CAPI_ARGUMENT_NULL(src_memory->memory);
+  if (dst_memory->size != src_memory->size) {
+    ti_set_last_error(TI_ERROR_INVALID_ARGUMENT,
+                      "The size of memory slices are not match");
+    return;
+  }
 
   Runtime *runtime2 = (Runtime *)runtime;
   auto dst = devmem2devalloc(*runtime2, dst_memory->memory)
@@ -865,38 +853,11 @@ void ti_launch_compute_graph(TiRuntime runtime,
   TI_CAPI_TRY_CATCH_END();
 }
 
-void ti_signal_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->signal_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_reset_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->reset_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_wait_event(TiRuntime runtime, TiEvent event) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-
-  ((Runtime *)runtime)->wait_event(&((Event *)event)->get());
-  TI_CAPI_TRY_CATCH_END();
-}
-
-void ti_submit(TiRuntime runtime) {
+void ti_flush(TiRuntime runtime) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
 
-  ((Runtime *)runtime)->submit();
+  ((Runtime *)runtime)->flush();
   TI_CAPI_TRY_CATCH_END();
 }
 void ti_wait(TiRuntime runtime) {

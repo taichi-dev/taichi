@@ -54,8 +54,8 @@ __global__ void fd(float *a, float *b, int *c, int n) {
   // i = (i * 1e-10f);
   // i = i * i * i * i * i % m;
   // b_s[i % m] = 1;
-  //#define C(x) i += (i >> x);
-  //#define C(x) i += (i >> x);
+  // #define C(x) i += (i >> x);
+  // #define C(x) i += (i >> x);
   //  for (int t = 0; t < 240; t++)
   //    C(30);
   i += int(sin(i * 1e-20f));

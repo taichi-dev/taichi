@@ -26,7 +26,7 @@ static void comet_run(TiArch arch, const std::string &folder_dir) {
   g_init["arr"] = arg_array;
   g_init.launch();
 
-  runtime.submit();
+  runtime.flush();
   runtime.wait();
   for (int i = 0; i < 10000; i++) {
     g_update["arg"] = arg_array;

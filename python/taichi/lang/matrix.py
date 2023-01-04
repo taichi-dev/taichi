@@ -1522,7 +1522,8 @@ class MatrixType(CompoundType):
 
     def from_real_func_ret(self, func_ret, ret_index=0):
         return self([
-            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
+            expr.Expr(ti_python_core.make_get_element_expr(
+                func_ret.ptr, (i, )))
             for i in range(ret_index, ret_index + self.m * self.n)
         ]), ret_index + self.m * self.n
 

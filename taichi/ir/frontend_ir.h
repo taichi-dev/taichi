@@ -799,11 +799,12 @@ class FuncCallExpression : public Expression {
 class GetElementExpression : public Expression {
  public:
   Expr src;
-  int index;
+  std::vector<int> index;
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
+  GetElementExpression(const Expr &src, std::vector<int> index)
+      : src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;

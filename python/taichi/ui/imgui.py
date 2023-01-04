@@ -58,7 +58,7 @@ class Gui:
         """
         self.gui.end()
 
-    def text(self, text, color = None):
+    def text(self, text, color=None):
         """Declares a line of text.
         """
         if color is None:

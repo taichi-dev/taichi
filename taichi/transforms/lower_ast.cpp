@@ -83,7 +83,7 @@ class LowerAST : public IRVisitor {
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
-    Block * block = stmt->parent;
+    Block *block = stmt->parent;
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());

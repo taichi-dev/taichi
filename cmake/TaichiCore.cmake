@@ -25,7 +25,6 @@ set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(ANDROID)
     set(TI_WITH_VULKAN ON)
-    set(TI_EXPORT_CORE ON)
     set(TI_WITH_LLVM OFF)
     set(TI_WITH_METAL OFF)
     set(TI_WITH_CUDA OFF)
@@ -435,8 +434,6 @@ target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 if(TI_WITH_PYTHON)
     message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
-    # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
-    # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
         # NO_EXTRAS is required here to avoid llvm symbol error during build
         file(GLOB TAICHI_PYBIND_SOURCE

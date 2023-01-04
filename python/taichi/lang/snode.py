@@ -1,9 +1,39 @@
+import functools
 import numbers
+import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
 from taichi.lang.field import BitpackedFields, Field
-from taichi.lang.util import get_traceback, is_taichi_class
+from taichi.lang.util import get_traceback
+
+
+def _get_expanded_indices(indices):
+    if isinstance(indices, matrix.Matrix):
+        indices = indices.entries
+    elif isinstance(indices, expr.Expr) and indices.is_tensor():
+        indices = [
+            expr.Expr(x)
+            for x in impl.get_runtime().prog.current_ast_builder().expand_expr(
+                [indices.ptr])
+        ]
+    return indices
+
+
+def _expand_indices(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # indices is the second argument to ti.append, ti.activate, ...
+        if len(args) > 1:
+            args = list(args)
+            args[1] = _get_expanded_indices(args[1])
+        else:
+            assert "indices" in kwargs.keys()
+            kwargs["indices"] = _get_expanded_indices(kwargs["indices"])
+
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 class SNode:
@@ -47,6 +77,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn(
+                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -74,6 +108,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiCompilationError(
+                "Dynamic SNode on metal backend is deprecated and removed in this release."
+            )
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -91,6 +129,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            warnings.warn(
+                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
+                DeprecationWarning)
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -344,38 +386,35 @@ def rescale_index(a, b, I):
     Returns:
         Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
+
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
     assert isinstance(
         b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
-        I = matrix.Vector(I)
+        n = len(I)
     else:
         assert isinstance(
-            I, matrix.Matrix
-        ), "The third argument must be an index (list or ti.Vector)"
-    entries = [I(i) for i in range(I.n)]
-    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
-        if a.shape[n] > b.shape[n]:
-            entries[n] = I(n) // (a.shape[n] // b.shape[n])
-        if a.shape[n] < b.shape[n]:
-            entries[n] = I(n) * (b.shape[n] // a.shape[n])
-    return matrix.Vector(entries)
+            I, (expr.Expr, matrix.Matrix)
+        ), "The third argument must be an index (list, ti.Vector, or Expr with TensorType)"
+        n = I.n
+
+    from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
+
+    @pyfunc
+    def _rescale_index():
+        result = matrix.Vector([I[i] for i in range(n)])
+        for i in impl.static(range(min(n, min(len(a.shape), len(b.shape))))):
+            if a.shape[i] > b.shape[i]:
+                result[i] = I[i] // (a.shape[i] // b.shape[i])
+            if a.shape[i] < b.shape[i]:
+                result[i] = I[i] * (b.shape[i] // a.shape[i])
+        return result
+
+    return _rescale_index()
 
 
-def _get_flattened_ptrs(val):
-    if is_taichi_class(val):
-        ptrs = []
-        for item in val._members:
-            ptrs.extend(_get_flattened_ptrs(item))
-        return ptrs
-    if impl.current_cfg().real_matrix and isinstance(
-            val, expr.Expr) and val.ptr.is_tensor():
-        return impl.get_runtime().prog.current_ast_builder().expand_expr(
-            [val.ptr])
-    return [expr.Expr(val).ptr]
-
-
+@_expand_indices
 def append(node, indices, val):
     """Append a value `val` to a SNode `node` at index `indices`.
 
@@ -384,7 +423,7 @@ def append(node, indices, val):
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
-    ptrs = _get_flattened_ptrs(val)
+    ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(_ti_core.expr_snode_append(
         node._snode.ptr, expr.make_expr_group(indices), ptrs),
                             tb=impl.get_runtime().get_current_src_info())
@@ -392,6 +431,7 @@ def append(node, indices, val):
     return a
 
 
+@_expand_indices
 def is_active(node, indices):
     """Explicitly query whether a cell in a SNode `node` at location
     `indices` is active or not.
@@ -408,6 +448,7 @@ def is_active(node, indices):
                                       expr.make_expr_group(indices)))
 
 
+@_expand_indices
 def activate(node, indices):
     """Explicitly activate a cell of `node` at location `indices`.
 
@@ -419,6 +460,7 @@ def activate(node, indices):
         node._snode.ptr, expr.make_expr_group(indices))
 
 
+@_expand_indices
 def deactivate(node, indices):
     """Explicitly deactivate a cell of `node` at location `indices`.
 
@@ -433,6 +475,7 @@ def deactivate(node, indices):
         node._snode.ptr, expr.make_expr_group(indices))
 
 
+@_expand_indices
 def length(node, indices):
     """Return the length of the dynamic SNode `node` at index `indices`.
 
@@ -448,6 +491,7 @@ def length(node, indices):
                                    expr.make_expr_group(indices)))
 
 
+@_expand_indices
 def get_addr(f, indices):
     """Query the memory address (on CUDA/x64) of field `f` at index `indices`.
 

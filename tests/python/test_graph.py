@@ -355,8 +355,7 @@ def test_texture():
 
     @ti.kernel
     def make_texture(tex: ti.types.rw_texture(num_dimensions=2,
-                                              num_channels=1,
-                                              channel_format=ti.f32,
+                                              fmt=ti.Format.r32f,
                                               lod=0)):
         for i, j in ti.ndrange(128, 128):
             tex.store(ti.Vector([i, j]), ti.Vector([0.1, 0.0, 0.0, 0.0]))
@@ -458,8 +457,7 @@ def test_texture_struct_for():
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       num_channels=1,
-                                       channel_format=ti.f32,
+                                       fmt=ti.Format.r32f,
                                        lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))

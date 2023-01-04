@@ -20,7 +20,8 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.impl import current_cfg
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
-from taichi.lang.snode import append, deactivate
+from taichi.lang.snode import append, deactivate, length
+from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
 from taichi.types import (annotations, ndarray_type, primitive_types,
                           texture_type)
@@ -152,6 +153,10 @@ class ASTTransformer(Builder):
 
         # Unpack: a, b, c = ti.Vector([1., 2., 3.])
         if isinstance(values, impl.Expr) and values.ptr.is_tensor():
+            if len(values.get_shape()) > 1:
+                raise ValueError(
+                    'Matrices with more than one columns cannot be unpacked')
+
             values = ctx.ast_builder.expand_expr([values.ptr])
             if len(values) == 1:
                 values = values[0]
@@ -416,6 +421,7 @@ class ASTTransformer(Builder):
             id(min): ti_ops.min,
             id(max): ti_ops.max,
             id(int): impl.ti_int,
+            id(bool): impl.ti_bool,
             id(float): impl.ti_float,
             id(any): matrix_ops.any,
             id(all): matrix_ops.all,
@@ -562,7 +568,8 @@ class ASTTransformer(Builder):
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
-                kernel_arguments.decl_ret(ctx.func.return_type)
+                kernel_arguments.decl_ret(ctx.func.return_type,
+                                          ctx.is_real_function)
 
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
@@ -747,6 +754,11 @@ class ASTTransformer(Builder):
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
                         for exp in values
                     ]))
+            elif isinstance(ctx.func.return_type, StructType):
+                values = node.value.ptr
+                assert isinstance(values, Struct)
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(expr._get_flattened_ptrs(values)))
             else:
                 raise TaichiSyntaxError(
                     "The return type is not supported now!")
@@ -771,7 +783,7 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_attribute_if_is_dynamic_snode_method(ctx, node):
         is_subscript = isinstance(node.value, ast.Subscript)
-        names = ("append", "deactivate")
+        names = ("append", "deactivate", "length")
         if node.attr not in names:
             return False
         if is_subscript:
@@ -791,8 +803,10 @@ class ASTTransformer(Builder):
             return False
         if node.attr == "append":
             node.ptr = lambda val: append(x.parent(), indices, val)
-        else:
+        elif node.attr == "deactivate":
             node.ptr = lambda: deactivate(x.parent(), indices)
+        else:
+            node.ptr = lambda: length(x.parent(), indices)
         return True
 
     @staticmethod
@@ -1401,13 +1415,6 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_Expr(ctx, node):
         build_stmt(ctx, node.value)
-        if not isinstance(node.value, ast.Call):
-            return None
-        is_taichi_function = getattr(node.value.func.ptr,
-                                     '_is_taichi_function', False)
-        if is_taichi_function and node.value.func.ptr._is_real_function:
-            func_call_result = node.value.ptr
-            ctx.ast_builder.insert_expr_stmt(func_call_result.ptr)
         return None
 
     @staticmethod

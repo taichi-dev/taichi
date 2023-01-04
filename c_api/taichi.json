@@ -96,7 +96,8 @@
                         "argument_not_found": -7,
                         "invalid_interop": -8,
                         "invalid_state": -9,
-                        "incompatible_module": -10
+                        "incompatible_module": -10,
+                        "out_of_memory": -11
                     }
                 },
                 {
@@ -460,6 +461,23 @@
                     ]
                 },
                 {
+                    "name": "get_available_archs",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "arch_count",
+                            "type": "uint32_t",
+                            "by_mut": true
+                        },
+                        {
+                            "name": "archs",
+                            "type": "enumeration.arch",
+                            "count": "arch_count",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
                     "name": "get_last_error",
                     "type": "function",
                     "parameters": [
@@ -511,6 +529,25 @@
                     "parameters": [
                         {
                             "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "set_runtime_capabilities",
+                    "type": "function",
+                    "is_extension": true,
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "capability_count",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "capabilities",
+                            "type": "structure.capability_level_info",
+                            "count": "capability_count"
                         }
                     ]
                 },
@@ -867,6 +904,27 @@
                     ]
                 },
                 {
+                    "name": "create_aot_module",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.aot_module"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "tcm",
+                            "type": "const void*"
+                        },
+                        {
+                            "name": "size",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
                     "name": "destroy_aot_module",
                     "type": "function",
                     "parameters": [
@@ -952,12 +1010,6 @@
         },
         {
             "name": "taichi/taichi_cuda.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_CUDA",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],
@@ -997,12 +1049,6 @@
         },
         {
             "name": "taichi/taichi_vulkan.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_VULKAN",
-                    "value": "1"
-                }
-            ],
             "doc": "taichi/taichi_vulkan.h.md",
             "required_modules": [
                 "taichi/taichi_core.h"
@@ -1305,12 +1351,6 @@
         },
         {
             "name": "taichi/taichi_opengl.h",
-            "default_definitions": [
-                {
-                    "name": "TI_WITH_OPENGL",
-                    "value": "1"
-                }
-            ],
             "required_modules": [
                 "taichi/taichi_core.h"
             ],

@@ -421,6 +421,7 @@ class Matrix(TaichiOperations):
         0
     """
     _is_taichi_class = True
+    _is_matrix_class = True
     __array_priority__ = 1000
 
     def __init__(self, arr, dt=None, is_ref=False, ndim=None):
@@ -664,6 +665,9 @@ class Matrix(TaichiOperations):
             return self._impl.subscript_scope_ignored(indices)
         is_global_mat = isinstance(self, _MatrixFieldElement)
         return self._impl._subscript(is_global_mat, *indices)
+
+    def _make_matrix(self):
+        return make_matrix(self._impl.entries)
 
     def to_list(self):
         """Return this matrix as a 1D `list`.
@@ -1542,7 +1546,12 @@ class MatrixField(Field):
         """
         if isinstance(val, numbers.Number) or (isinstance(val, expr.Expr)
                                                and not val.is_tensor()):
-            val = list(list(val for _ in range(self.m)) for _ in range(self.n))
+            if self.ndim == 2:
+                val = list(
+                    list(val for _ in range(self.m)) for _ in range(self.n))
+            else:
+                assert self.ndim == 1
+                val = list(val for _ in range(self.n))
         elif isinstance(val, Matrix):
             val = val.to_list()
         else:
@@ -1770,6 +1779,12 @@ class MatrixType(CompoundType):
 
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
+
+    def from_real_func_ret(self, func_ret, ret_index=0):
+        return self([
+            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
+            for i in range(ret_index, ret_index + self.m * self.n)
+        ]), ret_index + self.m * self.n
 
     def cast(self, mat):
         if in_python_scope():

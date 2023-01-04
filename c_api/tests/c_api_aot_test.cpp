@@ -85,7 +85,7 @@ TEST_F(CapiTest, AotTestCpuField) {
 }
 
 TEST_F(CapiTest, AotTestCudaField) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     field_aot_test(arch);
   }
@@ -97,21 +97,21 @@ TEST_F(CapiTest, AotTestCpuKernel) {
 }
 
 TEST_F(CapiTest, AotTestCudaKernel) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestVulkanKernel) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestOpenglKernel) {
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);
   }

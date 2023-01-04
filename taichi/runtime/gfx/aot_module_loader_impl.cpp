@@ -5,7 +5,6 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/aot/graph_data.h"
-#include "taichi/common/virtual_dir.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -27,22 +26,25 @@ class AotModuleImpl : public aot::Module {
       : module_path_(params.module_path),
         runtime_(params.runtime),
         device_api_backend_(device_api_backend) {
-    auto dir = io::VirtualDir::open(params.module_path);
-    TI_ERROR_IF(dir == nullptr, "cannot open aot module '{}'",
-                params.module_path);
+    std::unique_ptr<io::VirtualDir> dir_alt =
+        io::VirtualDir::from_fs_dir(module_path_);
+    const io::VirtualDir *dir =
+        params.dir == nullptr ? dir_alt.get() : params.dir;
 
     bool succ = true;
 
-    std::vector<uint8_t> metadata_tcb{};
-    succ = dir->load_file("metadata.tcb", metadata_tcb) != 0 &&
-           read_from_binary(ti_aot_data_, metadata_tcb.data(),
-                            metadata_tcb.size());
+    std::vector<uint8_t> metadata_json{};
+    succ = dir->load_file("metadata.json", metadata_json) != 0;
 
     if (!succ) {
       mark_corrupted();
-      TI_WARN("'metadata.tcb' cannot be read");
+      TI_WARN("'metadata.json' cannot be read");
       return;
     }
+    auto json = liong::json::parse(
+        (const char *)metadata_json.data(),
+        (const char *)(metadata_json.data() + metadata_json.size()));
+    liong::json::deserialize(json, ti_aot_data_);
 
     if (!params.enable_lazy_loading) {
       for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {

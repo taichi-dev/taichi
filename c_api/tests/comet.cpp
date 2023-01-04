@@ -35,7 +35,7 @@ static void comet_run(TiArch arch, const std::string &folder_dir) {
 }
 
 TEST_F(CapiTest, CometTestCuda) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;

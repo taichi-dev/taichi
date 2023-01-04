@@ -131,28 +131,27 @@ std::size_t Ndarray::get_nelement() const {
   return nelement_;
 }
 
-template <typename T>
-T Ndarray::read(const std::vector<int> &I) const {
+TypedConstant Ndarray::read(const std::vector<int> &I) const {
   prog_->synchronize();
   size_t index = flatten_index(total_shape_, I);
-  size_t size_ = sizeof(T);
+  size_t size = data_type_size(get_element_data_type());
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = false;
   alloc_params.host_read = true;
-  alloc_params.size = size_;
+  alloc_params.size = size;
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
   auto staging_buf_ =
       this->ndarray_alloc_.device->allocate_memory_unique(alloc_params);
   staging_buf_->device->memcpy_internal(
       staging_buf_->get_ptr(),
-      this->ndarray_alloc_.get_ptr(/*offset=*/index * sizeof(T)), size_);
+      this->ndarray_alloc_.get_ptr(/*offset=*/index * size), size);
 
   char *const device_arr_ptr =
       reinterpret_cast<char *>(staging_buf_->device->map(*staging_buf_));
   TI_ASSERT(device_arr_ptr);
 
-  T data;
-  std::memcpy(&data, device_arr_ptr, size_);
+  TypedConstant data(get_element_data_type());
+  std::memcpy(&data.value_bits, device_arr_ptr, size);
   staging_buf_->device->unmap(*staging_buf_);
   return data;
 }
@@ -184,15 +183,15 @@ void Ndarray::write(const std::vector<int> &I, T val) const {
 }
 
 int64 Ndarray::read_int(const std::vector<int> &i) {
-  return read<int>(i);
+  return read(i).val_int();
 }
 
 uint64 Ndarray::read_uint(const std::vector<int> &i) {
-  return read<uint>(i);
+  return read(i).val_uint();
 }
 
 float64 Ndarray::read_float(const std::vector<int> &i) {
-  return read<float>(i);
+  return read(i).val_float();
 }
 
 void Ndarray::write_int(const std::vector<int> &i, int64 val) {

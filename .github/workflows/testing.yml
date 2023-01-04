@@ -103,7 +103,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -148,6 +148,7 @@ jobs:
             -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=ON
+            -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
@@ -211,8 +212,18 @@ jobs:
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_CC:BOOL=ON
             -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+
+      - name: Check C-API Export Symbols
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
       - name: Test
         id: test
@@ -240,6 +251,74 @@ jobs:
         env:
           PY: py38
           TI_DEVICE_MEMORY_GB: '1'
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
+          retention-days: 7
+
+  build_and_test_amdgpu_linux:
+    name: Build and Test (AMDGPU)
+    needs: check_files
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+
+    runs-on: [self-hosted, amdgpu]
+
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build & Install
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-amdgpu --name taichi-build \
+            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
+            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+
+        env:
+          PY: py38
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_CUDA:BOOL=OFF
+
+      - name: Test
+        id: test
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-amdgpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.3 \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: py38
+          TI_WANTED_ARCHS: 'cpu,amdgpu'
+          TI_DEVICE_MEMORY_GB: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -293,6 +372,7 @@ jobs:
             -DTI_WITH_DX12:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_BACKTRACE=ON
             -DTI_WITH_C_API=ON
 
       - name: Test
@@ -353,7 +433,15 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_WITH_C_API=ON
+
+      - name: Check C-API Export Symbols
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
       - name: Test
         id: test
@@ -403,6 +491,7 @@ jobs:
           submodules: "recursive"
 
       - name: Prepare Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: >-
           . .github/workflows/scripts/common-utils.sh;
           prepare-build-cache;
@@ -418,6 +507,7 @@ jobs:
           " >> $GITHUB_ENV;
 
       - name: Build Host Taichi
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
@@ -432,6 +522,7 @@ jobs:
             -DTI_WITH_C_API=OFF
 
       - name: Build For Android
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
@@ -448,6 +539,7 @@ jobs:
             -DTI_WITH_C_API=ON
 
       - name: Test For Android AOT (export core)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -456,6 +548,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
       - name: Prepare Unity Build Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -464,6 +557,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-unity-demo \
@@ -471,6 +565,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-unity-demo
 
       - name: Run Taichi-UnityExample (C-API)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
@@ -479,6 +574,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
       - name: Build & Run C-API Headless Demos (Android)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .

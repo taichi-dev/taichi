@@ -149,8 +149,10 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
     }
   }
 
-  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
-  converted.dump_json(json_path);
+  std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
+  std::fstream f(output_dir + "/metadata.json",
+                 std::ios::trunc | std::ios::out);
+  f.write(json.data(), json.size());
 
   dump_graph(output_dir);
 }

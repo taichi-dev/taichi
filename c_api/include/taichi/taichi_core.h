@@ -350,6 +350,7 @@ typedef enum TiError {
   TI_ERROR_INVALID_STATE = -9,
   // The AOT module is not compatible with the current runtime.
   TI_ERROR_INCOMPATIBLE_MODULE = -10,
+  TI_ERROR_OUT_OF_MEMORY = -11,
   TI_ERROR_MAX_ENUM = 0xffffffff,
 } TiError;
 
@@ -802,10 +803,26 @@ typedef struct TiNamedArgument {
   TiArgument argument;
 } TiNamedArgument;
 
+// Function `ti_get_available_archs`
+//
+// Gets a list of available archs on the current platform. An arch is only
+// available if:
+//
+// 1. The Runtime library is compiled with its support;
+// 2. The current platform is installed with a capable hardware or an emulation
+// software.
+//
+// An available arch has at least one device available, i.e., device index 0 is
+// always available. If an arch is not available on the current platform, a call
+// to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is
+// guaranteed failing.
+TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
+                                                      TiArch *archs);
+
 // Function `ti_get_last_error`
 //
-// Get the last error raised by Taichi C-API invocations. Returns the semantical
-// error code.
+// Gets the last error raised by Taichi C-API invocations. Returns the
+// semantical error code.
 TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
     // Size of textual error message in `function.get_last_error.message`
     uint64_t message_size,
@@ -815,7 +832,7 @@ TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
 
 // Function `ti_set_last_error`
 //
-// Set the provided error as the last error raised by Taichi C-API invocations.
+// Sets the provided error as the last error raised by Taichi C-API invocations.
 // It can be useful in extended validation procedures in Taichi C-API wrappers
 // and helper libraries.
 TI_DLL_EXPORT void TI_API_CALL ti_set_last_error(
@@ -835,10 +852,20 @@ TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(TiArch arch);
 // Destroys a Taichi Runtime.
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(TiRuntime runtime);
 
+// Function `ti_set_runtime_capabilities_ext`
+TI_DLL_EXPORT void TI_API_CALL
+ti_set_runtime_capabilities_ext(TiRuntime runtime,
+                                uint32_t capability_count,
+                                const TiCapabilityLevelInfo *capabilities);
+
 // Function `ti_get_runtime_capabilities`
+//
+// Gets all capabilities available on the runtime instance.
 TI_DLL_EXPORT void TI_API_CALL
 ti_get_runtime_capabilities(TiRuntime runtime,
+                            // The total number of capabilities available.
                             uint32_t *capability_count,
+                            // Returned capabilities.
                             TiCapabilityLevelInfo *capabilities);
 
 // Function `ti_allocate_memory`
@@ -994,6 +1021,11 @@ TI_DLL_EXPORT void TI_API_CALL ti_wait(TiRuntime runtime);
 // to load the AOT module from the specified path.
 TI_DLL_EXPORT TiAotModule TI_API_CALL
 ti_load_aot_module(TiRuntime runtime, const char *module_path);
+
+// Function `ti_create_aot_module`
+TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(TiRuntime runtime,
+                                                           const void *tcm,
+                                                           uint64_t size);
 
 // Function `ti_destroy_aot_module`
 //

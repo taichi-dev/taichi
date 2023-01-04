@@ -172,3 +172,10 @@ def check_matmul(x, y):
         if x_shape[1] != y_shape[0]:
             return False, f'dimension mismatch between {x_shape} and {y_shape} for matrix multiplication'
     return True, None
+
+
+def check_transpose(x):
+    ok, msg = assert_tensor(x)
+    if ok and len(x.get_shape()) == 1:
+        return False, '`transpose()` cannot apply to a vector. If you want something like `a @ b.transpose()`, write `a.outer_product(b)` instead.'
+    return ok, msg

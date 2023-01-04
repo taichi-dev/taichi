@@ -960,7 +960,7 @@ RhiResult VulkanCommandList::bind_raster_resources(
 void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
   auto buffer = ti_device_->get_vkbuffer(ptr);
   size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
- 
+
   // Clamp to buffer size
   if (ptr.offset > buffer_size) {
     return;
@@ -969,7 +969,7 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
   if (saturate_uadd(ptr.offset, size) > buffer_size) {
     size = VK_WHOLE_SIZE;
   }
-  
+
   VkBufferMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
   barrier.pNext = nullptr;
@@ -1032,7 +1032,7 @@ void VulkanCommandList::buffer_copy(DevicePtr dst,
                                     size_t size) noexcept {
   size_t src_size = ti_device_->get_vkbuffer_size(src);
   size_t dst_size = ti_device_->get_vkbuffer_size(dst);
-  
+
   // Clamp to minimum available size
   if (saturate_uadd(src.offset, size) > src_size) {
     size = saturate_usub(src_size, src.offset);
@@ -1063,7 +1063,7 @@ void VulkanCommandList::buffer_fill(DevicePtr ptr,
                                     uint32_t data) noexcept {
   // Align to 4 bytes
   ptr.offset = ptr.offset & size_t(-4);
-  
+
   auto buffer = ti_device_->get_vkbuffer(ptr);
   size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
 

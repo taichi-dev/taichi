@@ -367,7 +367,7 @@ class TI_DLL_EXPORT CommandList {
   virtual void buffer_fill(DevicePtr ptr,
                            size_t size,
                            uint32_t data) noexcept = 0;
-  
+
   virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
 
   struct ComputeSize {

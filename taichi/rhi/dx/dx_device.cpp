@@ -192,7 +192,6 @@ void Dx11CommandList::buffer_fill(DevicePtr ptr,
   // Align to 4 bytes
   ptr.offset = ptr.offset & size_t(-4);
 
-
   // Check for overflow
   if (ptr.offset > desc.ByteWidth) {
     return;

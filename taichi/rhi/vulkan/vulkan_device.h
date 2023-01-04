@@ -714,7 +714,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   constexpr const VulkanCapabilities &vk_caps() const {
     return vk_caps_;
   }
-  
+
   const VkPhysicalDeviceProperties &get_vk_physical_device_props() const {
     return vk_device_properties_;
   }

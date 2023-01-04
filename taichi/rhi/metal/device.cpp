@@ -172,7 +172,7 @@ class CommandListImpl : public CommandList {
   }
 
   RhiResult dispatch(CommandList::ComputeSize grid_size,
-                CommandList::ComputeSize block_size) noexcept override {
+                     CommandList::ComputeSize block_size) noexcept override {
     auto encoder = new_compute_command_encoder(command_buffer_.get());
     if (encoder == nullptr) {
       return RhiResult::error;

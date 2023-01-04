@@ -226,7 +226,7 @@
 #pragma once
 
 #ifndef TI_C_API_VERSION
-#define TI_C_API_VERSION 1000002
+#define TI_C_API_VERSION 1004000
 #endif  // TI_C_API_VERSION
 
 #include <taichi/taichi.h>
@@ -371,6 +371,7 @@ typedef enum TiArch {
   TI_ARCH_AMDGPU = 11,
   // Vulkan GPU backend.
   TI_ARCH_VULKAN = 12,
+  TI_ARCH_GLES = 13,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
@@ -797,6 +798,9 @@ typedef struct TiNamedArgument {
   // Argument body.
   TiArgument argument;
 } TiNamedArgument;
+
+// Function `ti_get_version`
+TI_DLL_EXPORT uint32_t TI_API_CALL ti_get_version();
 
 // Function `ti_get_available_archs`
 //

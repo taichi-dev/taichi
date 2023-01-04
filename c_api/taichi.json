@@ -1,5 +1,4 @@
 {
-    "version": "1.0.2",
     "modules": [
         {
             "name": "taichi/taichi_platform.h",
@@ -452,6 +451,16 @@
                         },
                         {
                             "type": "structure.argument"
+                        }
+                    ]
+                },
+                {
+                    "name": "get_version",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "uint32_t"
                         }
                     ]
                 },

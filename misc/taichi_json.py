@@ -1,5 +1,6 @@
 import glob
 import json
+import os
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -355,6 +356,8 @@ class Module:
     @staticmethod
     def load_all(builtin_tys):
         def ver2int(ver: str) -> int:
+            if ver.startswith('v'):
+                ver = ver[1:]
             xs = [int(x) for x in ver.split('.')]
             assert len(xs) <= 3
             xs += ['0'] * (3 - len(xs))
@@ -368,7 +371,13 @@ class Module:
         with open("c_api/taichi.json") as f:
             j = json.load(f)
 
-        version = ver2int(j["version"])
+        version = 0
+        try:
+            with open("version.txt") as f:
+                version = ver2int(f.readline())
+        except:
+            print("faild to load c-api version")
+
         print("taichi c-api version is:", version)
 
         for k in j["modules"]:

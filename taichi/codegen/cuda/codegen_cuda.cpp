@@ -627,6 +627,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
+    std::vector<DeviceAllocation> temporary_devallocs(args.size());
 
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
@@ -655,7 +656,13 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             //   host.
             // See CUDA driver API `cuPointerGetAttribute` for more details.
             transferred = true;
-            CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
+
+            auto result_buffer = context.result_buffer;
+            DeviceAllocation devalloc =
+                executor->allocate_memory_ndarray(arr_sz, result_buffer);
+            device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
+            temporary_devallocs[i] = devalloc;
+
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], arg_buffers[i], arr_sz);
           } else {
@@ -703,7 +710,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           CUDADriver::get_instance().memcpy_device_to_host(
               arg_buffers[i], (void *)device_buffers[i],
               context.array_runtime_sizes[i]);
-          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+          executor->deallocate_memory_ndarray(temporary_devallocs[i]);
         }
       }
     }

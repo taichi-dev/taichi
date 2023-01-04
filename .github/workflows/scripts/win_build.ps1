@@ -69,7 +69,8 @@ if ($llvmVer -eq "10") {
     throw "Unsupported LLVM version"
 }
 
-$env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+$env:TAICHI_USE_MSBUILD = 1
+# $env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 
 if ($installVulkan) {
     $env:VULKAN_SDK = "C:\VulkanSDK\1.3.236.0"

@@ -15,7 +15,7 @@ constexpr bool kD3d11DebugEnabled = false;
 // force software rendering.
 constexpr bool kD3d11ForceRef = false;
 // Enable to spawn a debug window and swapchain
-//#define TAICHI_DX11_DEBUG_WINDOW
+// #define TAICHI_DX11_DEBUG_WINDOW
 
 void check_dx_error(HRESULT hr, const char *msg);
 

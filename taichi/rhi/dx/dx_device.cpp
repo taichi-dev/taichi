@@ -213,7 +213,7 @@ void Dx11CommandList::buffer_fill(DevicePtr ptr,
   // FIXME: what if the default is not a raw buffer?
 }
 
-RhiResult Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept {
   // Set SPIRV_Cross_NumWorkgroups's CB slot based on the watermark
   auto cb_slot = cb_slot_watermark_ + 1;
   auto spirv_cross_numworkgroups_cb =

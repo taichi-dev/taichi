@@ -35,11 +35,13 @@ class JITModule {
   }
 
   inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers() {
-    return std::make_tuple(std::vector<void *>(), std::vector<int>() );
+    return std::make_tuple(std::vector<void *>(), std::vector<int>());
   }
 
   template <typename... Args, typename T>
-  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers(T &t, Args &...args) {
+  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers(
+      T &t,
+      Args &...args) {
     auto [arg_pointers, arg_sizes] = get_arg_pointers(args...);
     arg_pointers.insert(arg_pointers.begin(), &t);
     arg_sizes.insert(arg_sizes.begin(), sizeof(t));
@@ -53,8 +55,7 @@ class JITModule {
   void call(const std::string &name, Args... args) {
     if (direct_dispatch()) {
       get_function<Args...>(name)(args...);
-    } 
-    else {
+    } else {
       auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
       call(name, arg_pointers, arg_sizes);
     }
@@ -75,7 +76,8 @@ class JITModule {
               std::size_t shared_mem_bytes,
               Args... args) {
     auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
-    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers, arg_sizes);
+    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers,
+           arg_sizes);
   }
 
   virtual void launch(const std::string &name,

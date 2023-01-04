@@ -68,13 +68,14 @@ int AMDGPUContext::get_args_byte(std::vector<int> arg_sizes) {
     naive_add += size;
     if (size < 32) {
       if ((byte_cnt + size) % 32 > (byte_cnt) % 32 ||
-          (byte_cnt + size) % 32 == 0) byte_cnt += size;
-      else byte_cnt += 32 - byte_cnt % 32 + size;
-    }
-    else {
-      if (byte_cnt % 32 != 0) 
+          (byte_cnt + size) % 32 == 0)
+        byte_cnt += size;
+      else
         byte_cnt += 32 - byte_cnt % 32 + size;
-      else 
+    } else {
+      if (byte_cnt % 32 != 0)
+        byte_cnt += 32 - byte_cnt % 32 + size;
+      else
         byte_cnt += size;
     }
   }
@@ -82,7 +83,8 @@ int AMDGPUContext::get_args_byte(std::vector<int> arg_sizes) {
 }
 
 void AMDGPUContext::pack_args(std::vector<void *> arg_pointers,
-                              std::vector<int> arg_sizes, char *arg_packed) {
+                              std::vector<int> arg_sizes,
+                              char *arg_packed) {
   int byte_cnt = 0;
   for (int ii = 0; ii < arg_pointers.size(); ii++) {
     // The parameter is taken as a vec4
@@ -95,16 +97,15 @@ void AMDGPUContext::pack_args(std::vector<void *> arg_pointers,
         int padding_size = 32 - byte_cnt % 32;
         byte_cnt += padding_size;
         std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
-        byte_cnt += arg_sizes[ii]; 
+        byte_cnt += arg_sizes[ii];
       }
     } else {
       if (byte_cnt % 32 != 0) {
         int padding_size = 32 - byte_cnt % 32;
-        byte_cnt+= padding_size;
+        byte_cnt += padding_size;
         std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
         byte_cnt += arg_sizes[ii];
-      }
-      else {
+      } else {
         std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
         byte_cnt += arg_sizes[ii];
       }

@@ -1052,7 +1052,6 @@ void VulkanCommandList::buffer_copy(DevicePtr dst,
 
   auto src_buffer = ti_device_->get_vkbuffer(src);
   auto dst_buffer = ti_device_->get_vkbuffer(dst);
-  size_t src_remain_size = ti_device_->get_vkbuffer_size(src) - src.offset;
   vkCmdCopyBuffer(buffer_->buffer, src_buffer->buffer, dst_buffer->buffer,
                   /*regionCount=*/1, &copy_region);
   buffer_->refs.push_back(src_buffer);

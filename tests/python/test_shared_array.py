@@ -47,19 +47,18 @@ def _test_shared_array_nested_loop():
     assert np.allclose(reference, a_arr)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cuda, ti.vulkan])
 def test_shared_array_nested_loop():
-    arch = ti.lang.impl.get_runtime().prog.config().arch
-    if arch == ti.cuda or arch == ti.vulkan:
         _test_shared_array_nested_loop()
-    else:
-        with pytest.raises(
-                ti.TaichiCompilationError,
-                match=
-                r"ti\.block\.SharedArray is not supported in current arch .*\. Please use Vulkan or CUDA backends instead\."
-        ):
-            _test_shared_array_nested_loop()
 
+@test_utils.test(arch=[ti.cpu])
+def test_shared_array_exception():
+    with pytest.raises(
+            ti.TaichiCompilationError,
+            match=
+            r"ti\.block\.SharedArray is not supported in current arch .*\. Please use Vulkan or CUDA backends instead\."
+    ):
+        _test_shared_array_nested_loop()
 
 @test_utils.test(arch=[ti.cuda, ti.vulkan],
                  real_matrix=True,

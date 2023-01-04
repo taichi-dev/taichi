@@ -676,9 +676,14 @@ class ExtractPointers : public BasicStmtVisitor {
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
 
-  std::unordered_map<std::pair<Stmt *, int>, Stmt *, hashing::Hasher<std::pair<Stmt *, int>>>
-      first_matrix_ptr_;  // mapping an (AllocaStmt, integer) pair to the first MatrixPtrStmt representing it
-  std::unordered_map<int, Stmt *> first_const_;  // mapping an integer to the first ConstStmt representing it
+  std::unordered_map<std::pair<Stmt *, int>,
+                     Stmt *,
+                     hashing::Hasher<std::pair<Stmt *, int>>>
+      first_matrix_ptr_;  // mapping an (AllocaStmt, integer) pair to the first
+                          // MatrixPtrStmt representing it
+  std::unordered_map<int, Stmt *>
+      first_const_;  // mapping an integer to the first ConstStmt representing
+                     // it
   Block *top_level_;
 
   explicit ExtractPointers(IRNode *root) : immediate_modifier_(root) {
@@ -702,10 +707,10 @@ class ExtractPointers : public BasicStmtVisitor {
         }
         auto key = std::make_pair(alloca_stmt, offset);
         if (first_matrix_ptr_.count(key) == 0) {
-          auto extracted = std::make_unique<MatrixPtrStmt>(alloca_stmt, first_const_[offset]);
+          auto extracted = std::make_unique<MatrixPtrStmt>(
+              alloca_stmt, first_const_[offset]);
           first_matrix_ptr_[key] = extracted.get();
-          delayed_modifier_.insert_after(alloca_stmt,
-                                         std::move(extracted));
+          delayed_modifier_.insert_after(alloca_stmt, std::move(extracted));
         }
         auto new_stmt = first_matrix_ptr_[key];
         immediate_modifier_.replace_usages_with(stmt, new_stmt);

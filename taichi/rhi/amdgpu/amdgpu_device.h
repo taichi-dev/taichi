@@ -17,17 +17,20 @@ class AmdgpuCommandList : public CommandList {
   ~AmdgpuCommandList() override {
   }
 
-  void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
+  void bind_pipeline(Pipeline *p) noexcept final{TI_NOT_IMPLEMENTED};
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) final{TI_NOT_IMPLEMENTED};
-  RhiResult bind_raster_resources(RasterResources *res) final{
+                                  int set_index = 0) noexcept final{
       TI_NOT_IMPLEMENTED};
-  void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
-  void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
-  void memory_barrier() override{TI_NOT_IMPLEMENTED};
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override{
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final{
       TI_NOT_IMPLEMENTED};
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override{
+  void buffer_barrier(DevicePtr ptr,
+                      size_t size) noexcept final{TI_NOT_IMPLEMENTED};
+  void buffer_barrier(DeviceAllocation alloc) noexcept final{
+      TI_NOT_IMPLEMENTED};
+  void memory_barrier() noexcept final{TI_NOT_IMPLEMENTED};
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final{
+      TI_NOT_IMPLEMENTED};
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final{
       TI_NOT_IMPLEMENTED};
   void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override{
       TI_NOT_IMPLEMENTED};

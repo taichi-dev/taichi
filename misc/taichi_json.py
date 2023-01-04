@@ -1,9 +1,33 @@
 import glob
 import json
-import os
 import re
 from collections import defaultdict
 from pathlib import Path
+from typing import List
+
+class Version:
+    def __init__(self, ver: str) -> None:
+        if ver.startswith('v'):
+            ver = ver[1:]
+        xs = [int(x) for x in ver.split('.')]
+        assert len(xs) <= 3
+        xs += ['0'] * (3 - len(xs))
+
+        self.major = xs[0]
+        self.minor = xs[1]
+        self.patch = xs[2]
+
+    def to_int(self) -> int:
+        version_number = 0
+        version_number += self.major
+        version_number *= 1000
+        version_number += self.minor
+        version_number *= 1000
+        version_number += self.patch
+        return version_number
+
+    def __str__(self) -> str:
+        return f"{self.major}.{self.minor}.{self.patch}"
 
 
 class Name:
@@ -13,7 +37,7 @@ class Name:
         self._prefix = prefix
         self._suffix = suffix
 
-    def extend(self, subname):
+    def extend(self, subname) -> 'Name':
         if isinstance(subname, str):
             subname = Name(subname)
         assert isinstance(subname, Name)
@@ -50,7 +74,7 @@ class DeclarationRegistry:
         self._imported = {}
         self._builtin_tys = dict((x.id, x) for x in builtin_tys)
 
-    def resolve(self, id: str):
+    def resolve(self, id: str) -> 'EntryBase':
         if id in self._builtin_tys:
             return self._builtin_tys[id]
         elif id in self._inner:
@@ -97,6 +121,7 @@ class EntryBase:
         assert "name" in j
         self.vendor = None
         self.is_extension = False
+        self.since = None
 
         prefix = []
         suffix = []
@@ -118,6 +143,9 @@ class EntryBase:
             if version > 1:
                 suffix += [str(version)]
             self.version = version
+
+        if "since" in j:
+            self.since = Version(j["since"])
 
         self.name = Name(j["name"], prefix, suffix)
         self.id = f"{clazz}.{self.name}"
@@ -294,7 +322,7 @@ class Documentation:
 class Module:
     all_modules = {}
 
-    def __init__(self, version, j, builtin_tys):
+    def __init__(self, version: Version, j: dict, builtin_tys: List[BuiltInType]):
         self.name = j["name"]
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry(builtin_tys)
@@ -307,7 +335,7 @@ class Module:
         if "default_definitions" in j:
             for jj in j["default_definitions"]:
                 name = jj["name"]
-                value = jj["value"] if "value" in jj else str(version)
+                value = jj["value"] if "value" in jj else str(version.to_int())
                 self.default_definitions += [(name, value)]
 
         if "doc" in j:
@@ -355,26 +383,14 @@ class Module:
 
     @staticmethod
     def load_all(builtin_tys):
-        def ver2int(ver: str) -> int:
-            if ver.startswith('v'):
-                ver = ver[1:]
-            xs = [int(x) for x in ver.split('.')]
-            assert len(xs) <= 3
-            xs += ['0'] * (3 - len(xs))
-
-            version_number = 0
-            for i in range(3):
-                version_number = version_number * 1000 + xs[i]
-            return version_number
-
         j = None
         with open("c_api/taichi.json") as f:
             j = json.load(f)
 
-        version = 0
+        version = Version("v0")
         try:
             with open("version.txt") as f:
-                version = ver2int(f.readline())
+                version = Version(f.readline())
         except:
             print("faild to load c-api version")
 

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <functional>
+#include <tuple>
 
 #include "taichi/inc/constants.h"
 #include "taichi/util/lang_util.h"
@@ -34,35 +35,16 @@ class JITModule {
     return ret;
   }
 
-  inline std::vector<void *> get_arg_pointers() {
-    return std::vector<void *>();
+  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers() {
+    return std::make_tuple(std::vector<void *>(), std::vector<int>() );
   }
 
   template <typename... Args, typename T>
-  inline std::vector<void *> get_arg_pointers(T &t, Args &...args) {
-    auto ret = get_arg_pointers(args...);
-    ret.insert(ret.begin(), &t);
-    return ret;
-  }
-
-  inline int get_args_bytes() {
-    return 0;
-  }
-
-  template <typename... Args, typename T>
-  inline int get_args_bytes(T t, Args... args) {
-    return get_args_bytes(args...) + sizeof(T);
-  }
-
-  inline void init_args_pointers(char *packed_args) {
-    return;
-  }
-
-  template <typename... Args, typename T>
-  inline void init_args_pointers(char *packed_args, T t, Args... args) {
-    std::memcpy(packed_args, &t, sizeof(t));
-    init_args_pointers(packed_args + sizeof(t), args...);
-    return;
+  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers(T &t, Args &...args) {
+    auto [arg_pointers, arg_sizes] = get_arg_pointers(args...);
+    arg_pointers.insert(arg_pointers.begin(), &t);
+    arg_sizes.insert(arg_sizes.begin(), sizeof(t));
+    return std::make_tuple(arg_pointers, arg_sizes);
   }
 
   // Note: **call** is for serial functions
@@ -72,31 +54,16 @@ class JITModule {
   void call(const std::string &name, Args... args) {
     if (direct_dispatch()) {
       get_function<Args...>(name)(args...);
-    } else {
-      if (module_arch() == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-        auto arg_pointers = JITModule::get_arg_pointers(args...);
-        call(name, arg_pointers);
-#else
-        TI_NOT_IMPLEMENTED
-#endif
-      } else if (module_arch() == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-        auto arg_bytes = JITModule::get_args_bytes(args...);
-        char packed_args[arg_bytes];
-        JITModule::init_args_pointers(packed_args, args...);
-        call(name, {(void *)packed_args, (void *)&arg_bytes});
-#else
-        TI_NOT_IMPLEMENTED
-#endif
-      } else {
-        TI_ERROR("unknown module arch")
-      }
+    } 
+    else {
+      auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
+      call(name, arg_pointers, arg_sizes);
     }
   }
 
   virtual void call(const std::string &name,
-                    const std::vector<void *> &arg_pointers) {
+                    const std::vector<void *> &arg_pointers,
+                    const std::vector<int> &arg_sizes) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -108,20 +75,20 @@ class JITModule {
               std::size_t block_dim,
               std::size_t shared_mem_bytes,
               Args... args) {
-    auto arg_pointers = JITModule::get_arg_pointers(args...);
-    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers);
+    auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
+    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers, arg_sizes);
   }
 
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
                       std::size_t shared_mem_bytes,
-                      const std::vector<void *> &arg_pointers) {
+                      const std::vector<void *> &arg_pointers,
+                      const std::vector<int> &arg_sizes) {
     TI_NOT_IMPLEMENTED
   }
 
   virtual bool direct_dispatch() const = 0;
-  virtual Arch module_arch() const = 0;
 
   virtual ~JITModule() {
   }

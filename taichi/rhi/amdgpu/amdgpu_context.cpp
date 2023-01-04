@@ -61,17 +61,71 @@ std::string AMDGPUContext::get_device_name() {
   return str;
 }
 
+int AMDGPUContext::get_args_byte(std::vector<int> arg_sizes) {
+  int byte_cnt = 0;
+  int naive_add = 0;
+  for (auto &size : arg_sizes) {
+    naive_add += size;
+    if (size < 32) {
+      if ((byte_cnt + size) % 32 > (byte_cnt) % 32 ||
+          (byte_cnt + size) % 32 == 0) byte_cnt += size;
+      else byte_cnt += 32 - byte_cnt % 32 + size;
+    }
+    else {
+      if (byte_cnt % 32 != 0) 
+        byte_cnt += 32 - byte_cnt % 32 + size;
+      else 
+        byte_cnt += size;
+    }
+  }
+  return byte_cnt;
+}
+
+void AMDGPUContext::pack_args(std::vector<void *> arg_pointers,
+                              std::vector<int> arg_sizes, char *arg_packed) {
+  int byte_cnt = 0;
+  for (int ii = 0; ii < arg_pointers.size(); ii++) {
+    // The parameter is taken as a vec4
+    if (arg_sizes[ii] < 32) {
+      if ((byte_cnt + arg_sizes[ii]) % 32 > (byte_cnt % 32) ||
+          (byte_cnt + arg_sizes[ii]) % 32 == 0) {
+        std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
+        byte_cnt += arg_sizes[ii];
+      } else {
+        int padding_size = 32 - byte_cnt % 32;
+        byte_cnt += padding_size;
+        std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
+        byte_cnt += arg_sizes[ii]; 
+      }
+    } else {
+      if (byte_cnt % 32 != 0) {
+        int padding_size = 32 - byte_cnt % 32;
+        byte_cnt+= padding_size;
+        std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
+        byte_cnt += arg_sizes[ii];
+      }
+      else {
+        std::memcpy(arg_packed + byte_cnt, arg_pointers[ii], arg_sizes[ii]);
+        byte_cnt += arg_sizes[ii];
+      }
+    }
+  }
+}
+
 void AMDGPUContext::launch(void *func,
                            const std::string &task_name,
                            const std::vector<void *> &arg_pointers,
+                           const std::vector<int> &arg_sizes,
                            unsigned grid_dim,
                            unsigned block_dim,
                            std::size_t dynamic_shared_mem_bytes) {
-  assert(arg_pointers.size() == 2);
+  auto pack_size = get_args_byte(arg_sizes);
+  char *packed_arg = (char *)std::malloc(pack_size);
+  pack_args(arg_pointers, arg_sizes, packed_arg);
   if (grid_dim > 0) {
     std::lock_guard<std::mutex> _(lock_);
-    void *config[] = {(void *)0x01, arg_pointers[0], (void *)0x02,
-                      arg_pointers[1], (void *)0x03};
+    void *config[] = {(void *)0x01, (void *)pack_args, (void *)0x02,
+                      (void *)&pack_size, (void *)0x03};
     driver_.launch_kernel(func, grid_dim, 1, 1, block_dim, 1, 1,
                           dynamic_shared_mem_bytes, nullptr, nullptr,
                           reinterpret_cast<void **>(&config));

@@ -5,7 +5,8 @@ param (
     [switch]$installVulkan = $false,
     [switch]$develop = $false,
     [switch]$install = $false,
-    [string]$libsDir = "."
+    [string]$libsDir = ".",
+    [string]$llvmVer = "10"
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,14 +49,28 @@ function DownloadDep {
     }
 }
 
-DownloadDep LLVM-15 llvm-15.zip taichi_llvm_15 `
-    https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip
-DownloadDep Clang-15 clang-15.zip taichi_clang_15 `
-    https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip
-$env:LLVM_DIR = "$libsDir\taichi_llvm_15"
-$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang_15\\bin\\clang++.exe"
-$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15\\bin\\llvm-as.exe"
-$env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+if ($llvmVer -eq "10") {
+    DownloadDep LLVM llvm.zip taichi_llvm `
+        https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/taichi-llvm-10.0.0-msvc2019.zip
+    DownloadDep Clang clang.zip taichi_clang `
+        https://github.com/taichi-dev/taichi_assets/releases/download/llvm10/clang-10.0.0-win.zip
+    $env:LLVM_DIR = "$libsDir\taichi_llvm"
+	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang\\bin\\clang++.exe"
+	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm\\bin\\llvm-as.exe"
+} elseif ($llvmVer -eq "15") {
+    DownloadDep LLVM-15 llvm-15.zip taichi_llvm_15 `
+        https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip
+    DownloadDep Clang-15 clang-15.zip taichi_clang_15 `
+		https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip
+    $env:LLVM_DIR = "$libsDir\taichi_llvm_15"
+	$env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_clang_15\\bin\\clang++.exe"
+	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=$($libsDir -replace "\\", "\\")\\taichi_llvm_15\\bin\\llvm-as.exe"
+} else {
+    throw "Unsupported LLVM version"
+}
+
+$env:TAICHI_USE_MSBUILD = 1
+# $env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 
 if ($installVulkan) {
     $env:VULKAN_SDK = "C:\VulkanSDK\1.3.236.0"

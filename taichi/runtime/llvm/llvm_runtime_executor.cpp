@@ -11,6 +11,12 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/rhi/amdgpu/amdgpu_driver.h"
+#include "taichi/rhi/amdgpu/amdgpu_device.h"
+#include "taichi/rhi/amdgpu/amdgpu_context.h"
+#endif
+
 namespace taichi::lang {
 namespace {
 void assert_failed_host(const char *msg) {
@@ -115,6 +121,15 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   }
 #endif
 
+#if defined(TI_WITH_AMDGPU)
+  if (config.arch == Arch::amdgpu) {
+    AMDGPUContext::get_instance().set_debug(config.debug);
+    device_ = std::make_shared<amdgpu::AmdgpuDevice>();
+
+    this->maybe_initialize_amdgpu_llvm_context();
+  }
+#endif
+
 #ifdef TI_WITH_DX12
   if (config.arch == Arch::dx12) {
     // FIXME: add dx12 device.
@@ -148,6 +163,14 @@ void LlvmRuntimeExecutor::maybe_initialize_cuda_llvm_context() {
   if (config_->arch == Arch::cuda && llvm_context_device_ == nullptr) {
     llvm_context_device_ =
         std::make_unique<TaichiLLVMContext>(config_, Arch::cuda);
+    llvm_context_device_->init_runtime_jit_module();
+  }
+}
+
+void LlvmRuntimeExecutor::maybe_initialize_amdgpu_llvm_context() {
+  if (config_->arch == Arch::amdgpu && llvm_context_device_ == nullptr) {
+    llvm_context_device_ =
+        std::make_unique<TaichiLLVMContext>(config_, Arch::amdgpu);
     llvm_context_device_->init_runtime_jit_module();
   }
 }
@@ -469,6 +492,10 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
        tlctx->runtime_jit_module,
        get_llvm_runtime(),
        result_buffer});
+}
+
+void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
+  cuda_device()->dealloc_memory(handle);
 }
 
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,

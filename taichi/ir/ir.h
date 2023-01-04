@@ -272,10 +272,8 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT                     \
-  void accept(IRVisitor *visitor) override { \
-    visitor->visit(this);                    \
-  }
+#define TI_DEFINE_ACCEPT \
+  void accept(IRVisitor *visitor) override { visitor->visit(this); }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \

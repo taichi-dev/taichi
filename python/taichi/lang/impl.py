@@ -4,6 +4,7 @@ from typing import Iterable, Sequence
 
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
+from taichi._snode.snode_tree import SNodeTree
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._ndrange import GroupedNDRange, _Ndrange
 from taichi.lang._texture import RWTextureAccessor
@@ -326,9 +327,21 @@ class PyTaichi:
             if not root.finalized:
                 root._allocate_adjoint_checkbit()
 
-        root.finalize(raise_warning=not is_first_call)
+        global root_snode_tree
+        _root_snode_tree = root.finalize(raise_warning=not is_first_call)
+        root_snode_tree.ptr = _root_snode_tree.ptr
+        print("root snode tree ", root_snode_tree.ptr)
         global _root_fb
         _root_fb = FieldsBuilder()
+
+        # Grad snode tree
+        global root_grad_snode_tree
+        _root_grad_snode_tree = root_grad.finalize(
+            raise_warning=not is_first_call)
+        root_grad_snode_tree.ptr = _root_grad_snode_tree.ptr
+        print("root grad snode tree ", root_grad_snode_tree.ptr)
+        global _root_grad_fb
+        _root_grad_fb = FieldsBuilder()
 
     @staticmethod
     def _finalize_root_fb_for_aot():
@@ -555,6 +568,8 @@ class _Root:
 
 
 root = _Root()
+root_snode_tree = SNodeTree(
+    ptr=None)  # TODO: This is hack for recording default root snode tree id
 """Root of the declared Taichi :func:`~taichi.lang.impl.field`s.
 
 See also https://docs.taichi-lang.org/docs/layout
@@ -565,12 +580,72 @@ Example::
     >>> ti.root.pointer(ti.ij, 4).dense(ti.ij, 8).place(x)
 """
 
+_root_grad_fb = _UninitializedRootFieldsBuilder()
+
+
+class _RootGrad:
+    """Wrapper around the default root FieldsBuilder instance."""
+    @staticmethod
+    def parent(n=1):
+        """Same as :func:`taichi.SNode.parent`"""
+        return _root_grad_fb.root.parent(n)
+
+    @staticmethod
+    def _loop_range():
+        """Same as :func:`taichi.SNode.loop_range`"""
+        return _root_grad_fb.root._loop_range()
+
+    @staticmethod
+    def _get_children():
+        """Same as :func:`taichi.SNode.get_children`"""
+        return _root_grad_fb.root._get_children()
+
+    # TODO: Record all of the SNodeTrees that finalized under 'ti.root'
+    @staticmethod
+    def deactivate_all():
+        warning(
+            """'ti.root.deactivate_all()' would deactivate all finalized snodes."""
+        )
+        deactivate_all_snodes()
+
+    @property
+    def shape(self):
+        """Same as :func:`taichi.SNode.shape`"""
+        return _root_grad_fb.root.shape
+
+    @property
+    def _id(self):
+        return _root_grad_fb.root._id
+
+    def __getattr__(self, item):
+        return getattr(_root_grad_fb, item)
+
+    def __repr__(self):
+        return 'ti.root_grad'
+
+
+root_grad = _RootGrad()
+root_grad_snode_tree = SNodeTree(ptr=None)
+
 
 def _create_snode(axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number],
                   same_level: bool):
     dim = len(axis_seq)
     assert dim == len(shape_seq)
     snode = root
+    if same_level:
+        snode = snode.dense(axes(*axis_seq), shape_seq)
+    else:
+        for i in range(dim):
+            snode = snode.dense(axes(axis_seq[i]), (shape_seq[i], ))
+    return snode
+
+
+def _create_grad_snode(axis_seq: Sequence[int],
+                       shape_seq: Sequence[numbers.Number], same_level: bool):
+    dim = len(axis_seq)
+    assert dim == len(shape_seq)
+    snode = root_grad
     if same_level:
         snode = snode.dense(axes(*axis_seq), shape_seq)
     else:
@@ -730,8 +805,10 @@ def field(dtype,
         same_level = order is None
         _create_snode(axis_seq, shape_seq, same_level).place(x, offset=offset)
         if needs_grad:
-            _create_snode(axis_seq, shape_seq, same_level).place(x_grad,
-                                                                 offset=offset)
+            # _create_snode(axis_seq, shape_seq, same_level).place(x_grad,
+            #                                                      offset=offset)
+            _create_grad_snode(axis_seq, shape_seq,
+                               same_level).place(x_grad, offset=offset)
         if needs_dual:
             _create_snode(axis_seq, shape_seq, same_level).place(x_dual,
                                                                  offset=offset)
@@ -1086,5 +1163,6 @@ def mesh_relation_access(mesh, from_index, to_element_type):
 
 __all__ = [
     'axes', 'deactivate_all_snodes', 'field', 'grouped', 'ndarray', 'one',
-    'root', 'static', 'static_assert', 'static_print', 'stop_grad', 'zero'
+    'root', 'root_snode_tree', 'root_grad', 'root_grad_snode_tree', 'static',
+    'static_assert', 'static_print', 'stop_grad', 'zero'
 ]

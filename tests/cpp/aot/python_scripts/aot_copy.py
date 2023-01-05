@@ -107,13 +107,7 @@ if __name__ == "__main__":
     parser.add_argument("--arch", type=str)
     args = parser.parse_args()
 
-    if args.arch == "cpu":
-        compile_graph_aot(arch=ti.cpu)
-    elif args.arch == "cuda":
-        compile_graph_aot(arch=ti.cuda)
-    elif args.arch == "vulkan":
-        compile_graph_aot(arch=ti.vulkan)
-    elif args.arch == "opengl":
-        compile_graph_aot(arch=ti.opengl)
+    if args.arch == "vulkan":
+        main(arch=ti.vulkan)
     else:
         assert False

@@ -743,8 +743,8 @@ namespace irpass {
 void scalarize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  auto scalarizable_alloas = GatherScalarizableLocalPointers::run(root);
-  ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_alloas);
+  auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
+  ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_allocas);
   ExtractLocalPointers extract_pointers_pass(root);
 }
 

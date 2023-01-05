@@ -45,7 +45,6 @@ Kernel::Kernel(Program &program,
   is_evaluator = false;
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
-  this->ir->as<Block>()->kernel = this;
 
   arch = program.this_thread_config().arch;
 
@@ -384,7 +383,6 @@ void Kernel::init(Program &program,
   }
 
   func();
-  ir->as<Block>()->kernel = this;
 }
 
 // static

@@ -1851,7 +1851,7 @@ void VulkanDevice::wait_idle() {
 RhiResult VulkanStream::new_command_list(CommandList **out_cmdlist) noexcept {
   vkapi::IVkCommandBuffer buffer =
       vkapi::allocate_command_buffer(command_pool_);
-  
+
   if (buffer == nullptr) {
     return RhiResult::out_of_memory;
   }

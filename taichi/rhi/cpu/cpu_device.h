@@ -46,7 +46,8 @@ class CpuStream : public Stream {
  public:
   ~CpuStream() override{};
 
-  RhiResult new_command_list(CommandList **out_cmdlist) noexcept override{TI_NOT_IMPLEMENTED};
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept override{
+      TI_NOT_IMPLEMENTED};
   StreamSemaphore submit(CommandList *cmdlist,
                          const std::vector<StreamSemaphore> &wait_semaphores =
                              {}) override{TI_NOT_IMPLEMENTED};

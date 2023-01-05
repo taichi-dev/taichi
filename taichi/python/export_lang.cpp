@@ -3,7 +3,6 @@
 #include <optional>
 #include <string>
 #include "taichi/ir/snode.h"
-#include "taichi/program/function.h"
 
 #if TI_WITH_LLVM
 #include "llvm/Config/llvm-config.h"

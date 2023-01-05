@@ -130,7 +130,6 @@ def compile_graph_aot(arch):
     tcm_path = dir_name + "/module.tcm"
     mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
-    mod.save(dir_name)
     mod.archive(tcm_path)
 
 

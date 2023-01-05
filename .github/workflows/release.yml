@@ -61,7 +61,8 @@ jobs:
               echo Version number mismatch
               # exit 1
             fi
-            pip install --no-index -f dist taichi==$VER
+            # pip install --no-index -f dist taichi==$VER
+            pip install --no-index -f dist taichi
             if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
               echo Taichi init version number mismatch!!
               exit 1

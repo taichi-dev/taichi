@@ -85,21 +85,54 @@ import taichi as ti
 #     shutil.rmtree(pathdir + '/compat_module')
 #     os.rename(pathdir + "/compat_module.zip", tmpdir)
 
-
-def main(arch):
+def compile_graph_aot(arch):
     ti.init(arch=arch)
 
     if ti.lang.impl.current_cfg().arch != arch:
         return
 
-    arr = ti.ndarray(int, shape=16)
-    dir_name = str(os.environ["TI_OFFLINE_CACHE_FILE_PATH"])
-    m = ti.aot.Module()
+    @ti.kernel
+    def run0(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += base + i
 
+    @ti.kernel
+    def run1(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += base + i
+
+    @ti.kernel
+    def run2(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
+        for i in arr:
+            arr[i] += base + i
+
+    arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                       'arr',
+                       ti.i32,
+                       field_dim=1,
+                       element_shape=(1, ))
+
+    base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
+
+    base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base2', ti.i32)
+
+    base2 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', ti.i32)
+
+    g_builder = ti.graph.GraphBuilder()
+
+    g_builder.dispatch(run0, base0, arr)
+    g_builder.dispatch(run1, base1, arr)
+    g_builder.dispatch(run2, base2, arr)
+
+    run_graph = g_builder.compile()
+
+    dir_name = str(os.environ["TI_OFFLINE_CACHE_FILE_PATH"])
     tcm_path = dir_name + "/module.tcm"
-    m.save(dir_name)
-    m.archive(tcm_path)
-    print(tcm_path)
+    mod = ti.aot.Module()
+    mod.add_graph('run_graph', run_graph)
+    mod.save(dir_name)
+    mod.archive(tcm_path)
+
 
 
 if __name__ == "__main__":
@@ -107,7 +140,14 @@ if __name__ == "__main__":
     parser.add_argument("--arch", type=str)
     args = parser.parse_args()
 
-    if args.arch == "vulkan":
-        main(arch=ti.vulkan)
+    if args.arch == "cpu":
+        compile_graph_aot(arch=ti.cpu)
+    elif args.arch == "cuda":
+        compile_graph_aot(arch=ti.cuda)
+    elif args.arch == "vulkan":
+        compile_graph_aot(arch=ti.vulkan)
+    elif args.arch == "opengl":
+        compile_graph_aot(arch=ti.opengl)
     else:
         assert False
+

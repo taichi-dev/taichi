@@ -126,7 +126,7 @@ def compile_graph_aot(arch):
 
     run_graph = g_builder.compile()
 
-    dir_name = str(os.environ["TI_OFFLINE_CACHE_FILE_PATH"])
+    dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
     tcm_path = dir_name + "/module.tcm"
     mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)

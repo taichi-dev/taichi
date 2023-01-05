@@ -360,25 +360,60 @@ class TI_DLL_EXPORT CommandList {
    * - (Encouraged behavior) If the `size` is -1 (max of size_t) the underlying
    *   API might provide a faster code path.
    * @params[in] ptr The start of the memory region.
-   *                 ptr.offset will be aligned down to a multiple of 4 bytes.
+   * - ptr.offset will be aligned down to a multiple of 4 bytes.
    * @params[in] size The size of the region.
-   *                  The size will be clamped to the underlying buffer's size.
+   * - The size will be clamped to the underlying buffer's size.
    */
   virtual void buffer_fill(DevicePtr ptr,
                            size_t size,
                            uint32_t data) noexcept = 0;
 
-  virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
+  /**
+   * Enqueues a compute operation with {X, Y, Z} amount of workgroups.
+   * The block size / workgroup size is pre-determined within the pipeline.
+   * - This is only valid if the pipeline has a predetermined block size
+   * - This API has a device-dependent variable max values for X, Y, Z
+   * - The currently bound pipeline will be dispatched
+   * - The enqueued operation starts in CommandList API ordering.
+   * - The enqueued operation may end out-of-order, but it respects barriers
+   * @params[in] x The number of workgroups in X dimension
+   * @params[in] y The number of workgroups in Y dimension
+   * @params[in] z The number of workgroups in Y dimension
+   * @return The status of this operation
+   * - `success` if the operation is successful
+   * - `invalid_operation` if the current pipeline has variable block size
+   * - `not_supported` if the requested X, Y, or Z is not supported
+   */
+  virtual RhiResult dispatch(uint32_t x,
+                             uint32_t y = 1,
+                             uint32_t z = 1) noexcept = 0;
 
   struct ComputeSize {
     uint32_t x{0};
     uint32_t y{0};
     uint32_t z{0};
   };
-  // Some GPU APIs can set the block (workgroup, threadsgroup) size at
-  // dispatch time.
-  virtual void dispatch(ComputeSize grid_size, ComputeSize block_size) {
-    dispatch(grid_size.x, grid_size.y, grid_size.z);
+
+  /**
+   * Enqueues a compute operation with `grid_size` amount of threads.
+   * The workgroup size is dynamic and specified through `block_size`
+   * - This is only valid if the pipeline has a predetermined block size
+   * - This API has a device-dependent variable max values for `grid_size`
+   * - This API has a device-dependent supported values for `block_size`
+   * - The currently bound pipeline will be dispatched
+   * - The enqueued operation starts in CommandList API ordering.
+   * - The enqueued operation may end out-of-order, but it respects barriers
+   * @params[in] grid_size The number of threads dispatch
+   * @params[in] block_size The shape of each block / workgroup / threadsgroup
+   * @return The status of this operation
+   * - `success` if the operation is successful
+   * - `invalid_operation` if the current pipeline has variable block size
+   * - `not_supported` if the requested sizes are not supported
+   * - `error` if the operation failed due to other reasons
+   */
+  virtual RhiResult dispatch(ComputeSize grid_size,
+                             ComputeSize block_size) noexcept {
+    return RhiResult::not_supported;
   }
 
   // These are not implemented in compute only device

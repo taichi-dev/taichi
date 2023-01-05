@@ -513,7 +513,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
-    current_cmdlist_->dispatch(group_x);
+    status = current_cmdlist_->dispatch(group_x);
+    TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
+                status);
     current_cmdlist_->memory_barrier();
   }
 

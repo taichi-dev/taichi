@@ -6,7 +6,6 @@ import zipfile
 
 import taichi as ti
 
-
 # def zip_files(srcDir):
 #     dstdir = srcDir + ".zip"
 #     z = zipfile.ZipFile(dstdir, 'w', zipfile.ZIP_DEFLATED)
@@ -17,7 +16,6 @@ import taichi as ti
 #             z.write(os.path.join(dirpath, filename), fpath + filename)
 
 #     z.close()
-
 
 # def compile_graph_aot(arch):
 #     ti.init(arch=arch)
@@ -102,7 +100,6 @@ def main(arch):
     m.save(dir_name)
     m.archive(tcm_path)
     print(tcm_path)
-
 
 
 if __name__ == "__main__":

@@ -168,9 +168,10 @@ class TaichiMain:
         dy = tile_size / height
 
         examples = [
-            "poisson_disk_sampling", "mass_spring_3d_ggui", "circle_packing_image",
-            "snow_phaseField", "sdf_renderer", "cornell_box", "karman_vortex_street",
-            "euler", "fractal", "mpm128", "pbf2d", "mass_spring_game"
+            "poisson_disk_sampling", "mass_spring_3d_ggui",
+            "circle_packing_image", "snow_phaseField", "sdf_renderer",
+            "cornell_box", "karman_vortex_street", "euler", "fractal",
+            "mpm128", "pbf2d", "mass_spring_game"
         ]
 
         def valid_mouse_position(mou_x, mou_y):

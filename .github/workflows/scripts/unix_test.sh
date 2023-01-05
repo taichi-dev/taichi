@@ -12,14 +12,14 @@ export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 
-setup_python
-
-[[ "$IN_DOCKER" == "true" ]] && cd taichi
-
 pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 # python3  tests/cpp/aot/python_scripts/aot_copy.py --arch=vulkan
 python3 -m pip uninstall taichi-nightly -y
 #python3 -m pip install taichi 
+setup_python
+
+[[ "$IN_DOCKER" == "true" ]] && cd taichi
+
 
 if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd

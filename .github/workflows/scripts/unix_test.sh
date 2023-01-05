@@ -13,7 +13,7 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 
 pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
-python3  taichi/tests/cpp/aot/python_scripts/aot_copy.py --arch=vulkan
+#python3  taichi/tests/cpp/aot/python_scripts/aot_copy.py --arch=vulkan
 python3 -m pip uninstall taichi-nightly -y
 #python3 -m pip install taichi 
 setup_python

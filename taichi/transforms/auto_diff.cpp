@@ -31,19 +31,6 @@ class NonLinearOps {
 
 class IndependentBlocksJudger : public BasicStmtVisitor {
  public:
-  inline static const std::set<TernaryOpType> ternary_collections{
-      TernaryOpType::select};
-  inline static const std::set<UnaryOpType> unary_collections{
-      UnaryOpType::abs,  UnaryOpType::sin,  UnaryOpType::cos,
-      UnaryOpType::tanh, UnaryOpType::asin, UnaryOpType::acos,
-      UnaryOpType::exp,  UnaryOpType::log,  UnaryOpType::sqrt};
-  inline static const std::set<BinaryOpType> binary_collections{
-      BinaryOpType::mul, BinaryOpType::div, BinaryOpType::atan2,
-      BinaryOpType::pow};
-};
-
-class IndependentBlocksJudger : public BasicStmtVisitor {
- public:
   using BasicStmtVisitor::visit;
 
   // Check whether the target stmt is used by the UnaryOpStmts who requires

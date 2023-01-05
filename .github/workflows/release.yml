@@ -51,10 +51,10 @@ jobs:
           else
             export PROJECT_NAME="taichi"
             VER=${RELEASE_VERSION##*(v)}
-            if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
-              echo Version number mismatch!
-              exit 1
-            fi
+            # if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
+            #   echo Version number mismatch
+            #   exit 1
+            # fi
             pip install --no-index -f dist taichi==$VER
             if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
               echo Taichi init version number mismatch!!

@@ -35,8 +35,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   }
 }
 
-FunctionType LlvmProgramImpl::compile(Kernel *kernel,
-                                      OffloadedStmt *offloaded) {
+FunctionType LlvmProgramImpl::compile(Kernel *kernel) {
   auto codegen = KernelCodeGen::create(kernel->arch, kernel);
   return codegen->compile_to_function();
 }

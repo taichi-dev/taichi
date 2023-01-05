@@ -141,6 +141,10 @@ Runtime &AotModule::runtime() {
 
 // -----------------------------------------------------------------------------
 
+uint32_t ti_get_version() {
+  return TI_C_API_VERSION;
+}
+
 void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
   if (arch_count == nullptr) {
     return;
@@ -214,6 +218,7 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
   TI_CAPI_TRY_CATCH_BEGIN();
   // FIXME: (penguinliong) Support device selection.
   TI_CAPI_NOT_SUPPORTED_IF_RV(device_index != 0);
+  TI_INFO("Taichi Runtime C-API version is: {}", TI_C_API_VERSION);
   switch (arch) {
 #ifdef TI_WITH_VULKAN
     case TI_ARCH_VULKAN: {

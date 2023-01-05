@@ -1503,7 +1503,7 @@ class MatrixType(CompoundType):
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
                     impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    current_ast_builder().expand_exprs([x.ptr])
                 ]
             elif isinstance(x, Matrix):
                 entries += x.entries
@@ -1522,7 +1522,8 @@ class MatrixType(CompoundType):
 
     def from_real_func_ret(self, func_ret, ret_index=0):
         return self([
-            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
+            expr.Expr(ti_python_core.make_get_element_expr(
+                func_ret.ptr, (i, )))
             for i in range(ret_index, ret_index + self.m * self.n)
         ]), ret_index + self.m * self.n
 
@@ -1615,7 +1616,7 @@ class VectorType(MatrixType):
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
                     impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    current_ast_builder().expand_exprs([x.ptr])
                 ]
             else:
                 entries.append(x)

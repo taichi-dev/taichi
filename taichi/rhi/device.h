@@ -20,7 +20,7 @@ enum class RhiResult {
   out_of_memory = -4,
 };
 
-constexpr size_t kBufferSizeEntireSize = size_t(-1);
+constexpr size_t kBufferSizeEntireSize = std::numeric_limits<size_t>::max();
 
 #define MAKE_ENUM_FLAGS(name)                  \
   inline name operator|(name a, name b) {      \
@@ -278,7 +278,7 @@ class TI_DLL_EXPORT CommandList {
    * Doing so resets all bound resources.
    * @params[in] pipeline The pipeline to be bound
    */
-  virtual void bind_pipeline(Pipeline *p) = 0;
+  virtual void bind_pipeline(Pipeline *p) noexcept = 0;
 
   /**
    * Bind a ShaderResourceSet to a set index.
@@ -296,7 +296,7 @@ class TI_DLL_EXPORT CommandList {
    *         `error` If binding failed due to other reasons
    */
   virtual RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                          int set_index = 0) = 0;
+                                          int set_index = 0) noexcept = 0;
 
   /**
    * Bind RasterResources to the command list.
@@ -308,24 +308,112 @@ class TI_DLL_EXPORT CommandList {
    *         `not_supported` If some bindings are not supported by the backend
    *         `error` If binding failed due to other reasons
    */
-  virtual RhiResult bind_raster_resources(RasterResources *res) = 0;
+  virtual RhiResult bind_raster_resources(RasterResources *res) noexcept = 0;
 
-  virtual void buffer_barrier(DevicePtr ptr, size_t size) = 0;
-  virtual void buffer_barrier(DeviceAllocation alloc) = 0;
-  virtual void memory_barrier() = 0;
-  virtual void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) = 0;
-  virtual void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) = 0;
-  virtual void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) = 0;
+  /**
+   * Insert a memory barrier into the command list.
+   * The barrier affects a continous region of memory.
+   * Changes to memory before the barrier will be visible to accesses after the
+   * barrier (API command ordering). i.e. Command later to this barrier will see
+   * the changes made by commands before this barrier.
+   * This barrier is limited in scope to the Stream that the command list is
+   * submitted to. Other Streams or Devices may not observe this barrier.
+   * @params[in] ptr The pointer to the start of the region
+   * @params[in] size The size of the memory region.
+   *                  Size is clamped to the underlying buffer size.
+   */
+  virtual void buffer_barrier(DevicePtr ptr, size_t size) noexcept = 0;
+
+  /**
+   * Insert a memory barrier into the command list.
+   * The barrier affects an entire buffer.
+   * Behaviour is the same as `buffer_barrier(DevicePtr, size_t)`
+   * @params[in] alloc The memory allocation of this barrier
+   */
+  virtual void buffer_barrier(DeviceAllocation alloc) noexcept = 0;
+
+  /**
+   * Insert a memory barrier into the command list.
+   * The barrier affects all global memory.
+   * Behaviour is the same as `buffer_barrier(DevicePtr, size_t)`
+   * @params[in] alloc The memory allocation of this barrier
+   */
+  virtual void memory_barrier() noexcept = 0;
+
+  /**
+   * Insert a buffer copy operation into the command list.
+   * @params[in] src The source Device Pointer
+   * @params[in] dst The destination Device Pointer
+   * @params[in] size The size of the region to be copied.
+   *                  The size will be clamped to the minimum between
+   *                  `dst.size - dst.offset` and `src.size - src.offset`
+   */
+  virtual void buffer_copy(DevicePtr dst,
+                           DevicePtr src,
+                           size_t size) noexcept = 0;
+
+  /**
+   * Insert a memory region fill operation into the command list
+   * The memory region will be filled with the given (bit precise) value.
+   * - (Encouraged behavior) If the `data` is 0, the underlying API might
+   *   provide a faster code path.
+   * - (Encouraged behavior) If the `size` is -1 (max of size_t) the underlying
+   *   API might provide a faster code path.
+   * @params[in] ptr The start of the memory region.
+   * - ptr.offset will be aligned down to a multiple of 4 bytes.
+   * @params[in] size The size of the region.
+   * - The size will be clamped to the underlying buffer's size.
+   */
+  virtual void buffer_fill(DevicePtr ptr,
+                           size_t size,
+                           uint32_t data) noexcept = 0;
+
+  /**
+   * Enqueues a compute operation with {X, Y, Z} amount of workgroups.
+   * The block size / workgroup size is pre-determined within the pipeline.
+   * - This is only valid if the pipeline has a predetermined block size
+   * - This API has a device-dependent variable max values for X, Y, Z
+   * - The currently bound pipeline will be dispatched
+   * - The enqueued operation starts in CommandList API ordering.
+   * - The enqueued operation may end out-of-order, but it respects barriers
+   * @params[in] x The number of workgroups in X dimension
+   * @params[in] y The number of workgroups in Y dimension
+   * @params[in] z The number of workgroups in Y dimension
+   * @return The status of this operation
+   * - `success` if the operation is successful
+   * - `invalid_operation` if the current pipeline has variable block size
+   * - `not_supported` if the requested X, Y, or Z is not supported
+   */
+  virtual RhiResult dispatch(uint32_t x,
+                             uint32_t y = 1,
+                             uint32_t z = 1) noexcept = 0;
 
   struct ComputeSize {
     uint32_t x{0};
     uint32_t y{0};
     uint32_t z{0};
   };
-  // Some GPU APIs can set the block (workgroup, threadsgroup) size at
-  // dispatch time.
-  virtual void dispatch(ComputeSize grid_size, ComputeSize block_size) {
-    dispatch(grid_size.x, grid_size.y, grid_size.z);
+
+  /**
+   * Enqueues a compute operation with `grid_size` amount of threads.
+   * The workgroup size is dynamic and specified through `block_size`
+   * - This is only valid if the pipeline has a predetermined block size
+   * - This API has a device-dependent variable max values for `grid_size`
+   * - This API has a device-dependent supported values for `block_size`
+   * - The currently bound pipeline will be dispatched
+   * - The enqueued operation starts in CommandList API ordering.
+   * - The enqueued operation may end out-of-order, but it respects barriers
+   * @params[in] grid_size The number of threads dispatch
+   * @params[in] block_size The shape of each block / workgroup / threadsgroup
+   * @return The status of this operation
+   * - `success` if the operation is successful
+   * - `invalid_operation` if the current pipeline has variable block size
+   * - `not_supported` if the requested sizes are not supported
+   * - `error` if the operation failed due to other reasons
+   */
+  virtual RhiResult dispatch(ComputeSize grid_size,
+                             ComputeSize block_size) noexcept {
+    return RhiResult::not_supported;
   }
 
   // These are not implemented in compute only device

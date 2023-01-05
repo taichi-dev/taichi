@@ -51,7 +51,8 @@ def test_shared_array_nested_loop():
 @test_utils.test(arch=[ti.cpu])
 def test_shared_array_nested_loop_exception():
     with pytest.raises(
-        ti.TaichiCompilationError,
-        match=r"ti\.block\.SharedArray is not supported in current arch .*\. Please use Vulkan or CUDA backends instead\."
+            ti.TaichiCompilationError,
+            match=
+            r"ti\.block\.SharedArray is not supported in current arch .*\. Please use Vulkan or CUDA backends instead\."
     ):
         test_shared_array_nested_loop()

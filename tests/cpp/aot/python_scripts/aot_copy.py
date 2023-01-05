@@ -93,7 +93,7 @@ def main(arch):
         return
 
     arr = ti.ndarray(int, shape=16)
-    dir_name = './tests/cpp/aot/aot_test_module/'
+    dir_name = str(os.environ["TI_OFFLINE_CACHE_FILE_PATH"])
     m = ti.aot.Module()
 
     tcm_path = dir_name + "/module.tcm"

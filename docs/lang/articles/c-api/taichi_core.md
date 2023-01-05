@@ -191,6 +191,8 @@ ti_wait(runtime);
 
 ### Alias `TiBool`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // alias.bool
 typedef uint32_t TiBool;
@@ -200,6 +202,8 @@ A boolean value. Can be either [`TI_TRUE`](#definition-ti_true) or [`TI_FALSE`](
 
 ---
 ### Definition `TI_FALSE`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // definition.false
@@ -211,6 +215,8 @@ A condition or a predicate is not satisfied; a statement is invalid.
 ---
 ### Definition `TI_TRUE`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // definition.true
 #define TI_TRUE 1
@@ -220,6 +226,8 @@ A condition or a predicate is satisfied; a statement is valid.
 
 ---
 ### Alias `TiFlags`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // alias.flags
@@ -233,6 +241,8 @@ A bit field that can be used to represent 32 orthogonal flags. Bits unspecified 
 ---
 ### Definition `TI_NULL_HANDLE`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // definition.null_handle
 #define TI_NULL_HANDLE 0
@@ -242,6 +252,8 @@ A sentinal invalid handle that will never be produced from a valid call to Taich
 
 ---
 ### Handle `TiRuntime`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // handle.runtime
@@ -253,6 +265,8 @@ Taichi runtime represents an instance of a logical backend and its internal dyna
 ---
 ### Handle `TiAotModule`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // handle.aot_module
 typedef struct TiAotModule_t* TiAotModule;
@@ -262,6 +276,8 @@ An ahead-of-time (AOT) compiled Taichi module, which contains a collection of ke
 
 ---
 ### Handle `TiMemory`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // handle.memory
@@ -273,6 +289,8 @@ A contiguous allocation of device memory.
 ---
 ### Handle `TiImage`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // handle.image
 typedef struct TiImage_t* TiImage;
@@ -281,17 +299,9 @@ typedef struct TiImage_t* TiImage;
 A contiguous allocation of device image.
 
 ---
-### Handle `TiSampler`
-
-```c
-// handle.sampler
-typedef struct TiSampler_t* TiSampler;
-```
-
-An image sampler. [`TI_NULL_HANDLE`](#definition-ti_null_handle) represents a default image sampler provided by the runtime implementation. The filter modes and address modes of default samplers depend on backend implementation.
-
----
 ### Handle `TiKernel`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // handle.kernel
@@ -303,6 +313,8 @@ A Taichi kernel that can be launched on the offload target for execution.
 ---
 ### Handle `TiComputeGraph`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // handle.compute_graph
 typedef struct TiComputeGraph_t* TiComputeGraph;
@@ -312,6 +324,8 @@ A collection of Taichi kernels (a compute graph) to launch on the offload target
 
 ---
 ### Enumeration `TiError`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.error
@@ -349,6 +363,8 @@ Errors reported by the Taichi C-API.
 ---
 ### Enumeration `TiArch`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // enumeration.arch
 typedef enum TiArch {
@@ -365,6 +381,7 @@ typedef enum TiArch {
   TI_ARCH_OPENCL = 10,
   TI_ARCH_AMDGPU = 11,
   TI_ARCH_VULKAN = 12,
+  TI_ARCH_GLES = 13,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 ```
@@ -379,6 +396,8 @@ Types of backend archs.
 
 ---
 ### Enumeration `TiCapability`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.capability
@@ -412,8 +431,12 @@ typedef enum TiCapability {
 } TiCapability;
 ```
 
+Device capabilities.
+
 ---
 ### Structure `TiCapabilityLevelInfo`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.capability_level_info
@@ -423,8 +446,12 @@ typedef struct TiCapabilityLevelInfo {
 } TiCapabilityLevelInfo;
 ```
 
+An integral device capability level. It currently is not guaranteed that a higher level value is compatible with a lower level value.
+
 ---
 ### Enumeration `TiDataType`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.data_type
@@ -464,6 +491,8 @@ Elementary (primitive) data types. There might be vendor-specific constraints on
 ---
 ### Enumeration `TiArgumentType`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // enumeration.argument_type
 typedef enum TiArgumentType {
@@ -485,6 +514,8 @@ Types of kernel and compute graph argument.
 ---
 ### BitField `TiMemoryUsageFlags`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // bit_field.memory_usage
 typedef enum TiMemoryUsageFlagBits {
@@ -505,6 +536,8 @@ Usages of a memory allocation. Taichi requires kernel argument memories to be al
 
 ---
 ### Structure `TiMemoryAllocateInfo`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.memory_allocate_info
@@ -528,6 +561,8 @@ Parameters of a newly allocated memory.
 ---
 ### Structure `TiMemorySlice`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.memory_slice
 typedef struct TiMemorySlice {
@@ -546,6 +581,8 @@ A subsection of a memory allocation. The sum of `offset` and `size` cannot excee
 ---
 ### Structure `TiNdShape`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.nd_shape
 typedef struct TiNdShape {
@@ -561,6 +598,8 @@ Multi-dimensional size of an ND-array. Dimension sizes after `dim_count` are ign
 
 ---
 ### Structure `TiNdArray`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.nd_array
@@ -582,6 +621,8 @@ Multi-dimensional array of dense primitive data.
 ---
 ### BitField `TiImageUsageFlags`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // bit_field.image_usage
 typedef enum TiImageUsageFlagBits {
@@ -600,6 +641,8 @@ Usages of an image allocation. Taichi requires kernel argument images to be allo
 
 ---
 ### Enumeration `TiImageDimension`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.image_dimension
@@ -625,6 +668,8 @@ Dimensions of an image allocation.
 
 ---
 ### Enumeration `TiImageLayout`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.image_layout
@@ -658,6 +703,8 @@ typedef enum TiImageLayout {
 
 ---
 ### Enumeration `TiFormat`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // enumeration.format
@@ -710,8 +757,12 @@ typedef enum TiFormat {
 } TiFormat;
 ```
 
+Texture formats. The availability of texture formats depends on runtime support.
+
 ---
 ### Structure `TiImageOffset`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.image_offset
@@ -733,6 +784,8 @@ Offsets of an image in X, Y, Z, and array layers.
 ---
 ### Structure `TiImageExtent`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.image_extent
 typedef struct TiImageExtent {
@@ -752,6 +805,8 @@ Extents of an image in X, Y, Z, and array layers.
 
 ---
 ### Structure `TiImageAllocateInfo`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.image_allocate_info
@@ -777,6 +832,8 @@ Parameters of a newly allocated image.
 ---
 ### Structure `TiImageSlice`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.image_slice
 typedef struct TiImageSlice {
@@ -795,45 +852,9 @@ A subsection of a memory allocation. The sum of `offset` and `extent` in each di
 - `mip_level`: The subsectioned mip-level.
 
 ---
-### Enumeration `TiFilter`
-
-```c
-// enumeration.filter
-typedef enum TiFilter {
-  TI_FILTER_NEAREST = 0,
-  TI_FILTER_LINEAR = 1,
-  TI_FILTER_MAX_ENUM = 0xffffffff,
-} TiFilter;
-```
-
----
-### Enumeration `TiAddressMode`
-
-```c
-// enumeration.address_mode
-typedef enum TiAddressMode {
-  TI_ADDRESS_MODE_REPEAT = 0,
-  TI_ADDRESS_MODE_MIRRORED_REPEAT = 1,
-  TI_ADDRESS_MODE_CLAMP_TO_EDGE = 2,
-  TI_ADDRESS_MODE_MAX_ENUM = 0xffffffff,
-} TiAddressMode;
-```
-
----
-### Structure `TiSamplerCreateInfo`
-
-```c
-// structure.sampler_create_info
-typedef struct TiSamplerCreateInfo {
-  TiFilter mag_filter;
-  TiFilter min_filter;
-  TiAddressMode address_mode;
-  float max_anisotropy;
-} TiSamplerCreateInfo;
-```
-
----
 ### Structure `TiTexture`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.texture
@@ -857,6 +878,8 @@ Image data bound to a sampler.
 ---
 ### Union `TiArgumentValue`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // union.argument_value
 typedef union TiArgumentValue {
@@ -877,6 +900,8 @@ A scalar or structured argument value.
 ---
 ### Structure `TiArgument`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.argument
 typedef struct TiArgument {
@@ -893,6 +918,8 @@ An argument value to feed kernels.
 ---
 ### Structure `TiNamedArgument`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.named_argument
 typedef struct TiNamedArgument {
@@ -907,7 +934,22 @@ A named argument value to feed compute graphs.
 - `argument`: Argument body.
 
 ---
+### Function `ti_get_version`
+
+> Stable since Taichi version: 1.4.0
+
+```c
+// function.get_version
+TI_DLL_EXPORT uint32_t TI_API_CALL ti_get_version(
+);
+```
+
+Get the current taichi version. It has the same value as `TI_C_API_VERSION` as defined in `taichi_core.h`.
+
+---
 ### Function `ti_get_available_archs`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.get_available_archs
@@ -927,6 +969,8 @@ An available arch has at least one device available, i.e., device index 0 is alw
 ---
 ### Function `ti_get_last_error`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.get_last_error
 TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
@@ -942,6 +986,8 @@ Gets the last error raised by Taichi C-API invocations. Returns the semantical e
 
 ---
 ### Function `ti_set_last_error`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.set_last_error
@@ -959,6 +1005,8 @@ Sets the provided error as the last error raised by Taichi C-API invocations. It
 ---
 ### Function `ti_create_runtime`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.create_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL ti_create_runtime(
@@ -975,6 +1023,8 @@ Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
 ---
 ### Function `ti_destroy_runtime`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.destroy_runtime
 TI_DLL_EXPORT void TI_API_CALL ti_destroy_runtime(
@@ -987,6 +1037,8 @@ Destroys a Taichi Runtime.
 ---
 ### Function `ti_set_runtime_capabilities_ext`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.set_runtime_capabilities
 TI_DLL_EXPORT void TI_API_CALL ti_set_runtime_capabilities_ext(
@@ -996,8 +1048,12 @@ TI_DLL_EXPORT void TI_API_CALL ti_set_runtime_capabilities_ext(
 );
 ```
 
+Force override the list of available capabilities in the runtime instance.
+
 ---
 ### Function `ti_get_runtime_capabilities`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.get_runtime_capabilities
@@ -1016,6 +1072,8 @@ Gets all capabilities available on the runtime instance.
 ---
 ### Function `ti_allocate_memory`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.allocate_memory
 TI_DLL_EXPORT TiMemory TI_API_CALL ti_allocate_memory(
@@ -1028,6 +1086,8 @@ Allocates a contiguous device memory with provided parameters.
 
 ---
 ### Function `ti_free_memory`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.free_memory
@@ -1042,6 +1102,8 @@ Frees a memory allocation.
 ---
 ### Function `ti_map_memory`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.map_memory
 TI_DLL_EXPORT void* TI_API_CALL ti_map_memory(
@@ -1054,6 +1116,8 @@ Maps a device memory to a host-addressable space. You *must* ensure that the dev
 
 ---
 ### Function `ti_unmap_memory`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.unmap_memory
@@ -1068,6 +1132,8 @@ Unmaps a device memory and makes any host-side changes about the memory visible 
 ---
 ### Function `ti_allocate_image`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.allocate_image
 TI_DLL_EXPORT TiImage TI_API_CALL ti_allocate_image(
@@ -1081,6 +1147,8 @@ Allocates a device image with provided parameters.
 ---
 ### Function `ti_free_image`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.free_image
 TI_DLL_EXPORT void TI_API_CALL ti_free_image(
@@ -1092,29 +1160,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_free_image(
 Frees an image allocation.
 
 ---
-### Function `ti_create_sampler`
-
-```c
-// function.create_sampler
-TI_DLL_EXPORT TiSampler TI_API_CALL ti_create_sampler(
-  TiRuntime runtime,
-  const TiSamplerCreateInfo* create_info
-);
-```
-
----
-### Function `ti_destroy_sampler`
-
-```c
-// function.destroy_sampler
-TI_DLL_EXPORT void TI_API_CALL ti_destroy_sampler(
-  TiRuntime runtime,
-  TiSampler sampler
-);
-```
-
----
 ### Function `ti_copy_memory_device_to_device` (Device Command)
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.copy_memory_device_to_device
@@ -1128,21 +1176,9 @@ TI_DLL_EXPORT void TI_API_CALL ti_copy_memory_device_to_device(
 Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
 
 ---
-### Function `ti_copy_image_device_to_device` (Device Command)
-
-```c
-// function.copy_image_device_to_device
-TI_DLL_EXPORT void TI_API_CALL ti_copy_image_device_to_device(
-  TiRuntime runtime,
-  const TiImageSlice* dst_image,
-  const TiImageSlice* src_image
-);
-```
-
-Copies the image data in a contiguous subsection of the device image to another subsection. The two subsections *must not* overlap.
-
----
 ### Function `ti_track_image_ext`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.track_image
@@ -1158,6 +1194,8 @@ Tracks the device image with the provided image layout. Because Taichi tracks im
 ---
 ### Function `ti_transition_image` (Device Command)
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.transition_image
 TI_DLL_EXPORT void TI_API_CALL ti_transition_image(
@@ -1171,6 +1209,8 @@ Transitions the image to the provided image layout. Because Taichi tracks image 
 
 ---
 ### Function `ti_launch_kernel` (Device Command)
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.launch_kernel
@@ -1187,6 +1227,8 @@ Launches a Taichi kernel with the provided arguments. The arguments *must* have 
 ---
 ### Function `ti_launch_compute_graph` (Device Command)
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.launch_compute_graph
 TI_DLL_EXPORT void TI_API_CALL ti_launch_compute_graph(
@@ -1202,6 +1244,8 @@ Launches a Taichi compute graph with provided named arguments. The named argumen
 ---
 ### Function `ti_flush`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.flush
 TI_DLL_EXPORT void TI_API_CALL ti_flush(
@@ -1214,6 +1258,8 @@ Submits all previously invoked device commands to the offload device for executi
 ---
 ### Function `ti_wait`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.wait
 TI_DLL_EXPORT void TI_API_CALL ti_wait(
@@ -1225,6 +1271,8 @@ Waits until all previously invoked device commands are executed. Any invoked com
 
 ---
 ### Function `ti_load_aot_module`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.load_aot_module
@@ -1240,6 +1288,8 @@ Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to l
 ---
 ### Function `ti_create_aot_module`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.create_aot_module
 TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(
@@ -1249,8 +1299,13 @@ TI_DLL_EXPORT TiAotModule TI_API_CALL ti_create_aot_module(
 );
 ```
 
+Creates a pre-compiled AOT module from TCM data.
+Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to create the AOT module from TCM data.
+
 ---
 ### Function `ti_destroy_aot_module`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.destroy_aot_module
@@ -1263,6 +1318,8 @@ Destroys a loaded AOT module and releases all related resources.
 
 ---
 ### Function `ti_get_aot_module_kernel`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.get_aot_module_kernel
@@ -1277,6 +1334,8 @@ Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the module does not ha
 
 ---
 ### Function `ti_get_aot_module_compute_graph`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.get_aot_module_compute_graph

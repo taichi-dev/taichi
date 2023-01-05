@@ -23,6 +23,10 @@ class TaichiSyntaxError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 };
 
+class TaichiIndexError : public TaichiExceptionImpl {
+  using TaichiExceptionImpl::TaichiExceptionImpl;
+};
+
 class TaichiRuntimeError : public TaichiExceptionImpl {
   using TaichiExceptionImpl::TaichiExceptionImpl;
 };

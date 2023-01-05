@@ -305,7 +305,7 @@ GLPipeline::~GLPipeline() {
 GLCommandList::~GLCommandList() {
 }
 
-void GLCommandList::bind_pipeline(Pipeline *p) {
+void GLCommandList::bind_pipeline(Pipeline *p) noexcept {
   GLPipeline *pipeline = static_cast<GLPipeline *>(p);
   auto cmd = std::make_unique<CmdBindPipeline>();
   cmd->program = pipeline->get_program();
@@ -313,7 +313,7 @@ void GLCommandList::bind_pipeline(Pipeline *p) {
 }
 
 RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
-                                               int set_index) {
+                                               int set_index) noexcept {
   GLResourceSet *set = static_cast<GLResourceSet *>(res);
   for (auto &[binding, buffer] : set->ssbo_binding_map()) {
     auto cmd = std::make_unique<CmdBindBufferToIndex>();
@@ -343,23 +343,25 @@ RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
   return RhiResult::success;
 }
 
-RhiResult GLCommandList::bind_raster_resources(RasterResources *res) {
+RhiResult GLCommandList::bind_raster_resources(RasterResources *res) noexcept {
   TI_NOT_IMPLEMENTED;
 }
 
-void GLCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
+void GLCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
   recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
-void GLCommandList::buffer_barrier(DeviceAllocation alloc) {
+void GLCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {
   recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
-void GLCommandList::memory_barrier() {
+void GLCommandList::memory_barrier() noexcept {
   recorded_commands_.push_back(std::make_unique<CmdBufferBarrier>());
 }
 
-void GLCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+void GLCommandList::buffer_copy(DevicePtr dst,
+                                DevicePtr src,
+                                size_t size) noexcept {
   auto cmd = std::make_unique<CmdBufferCopy>();
   cmd->src = src.alloc_id;
   cmd->dst = dst.alloc_id;
@@ -369,7 +371,9 @@ void GLCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   recorded_commands_.push_back(std::move(cmd));
 }
 
-void GLCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+void GLCommandList::buffer_fill(DevicePtr ptr,
+                                size_t size,
+                                uint32_t data) noexcept {
   auto cmd = std::make_unique<CmdBufferFill>();
   cmd->buffer = ptr.alloc_id;
   cmd->offset = ptr.offset;
@@ -489,6 +493,7 @@ void GLStream::command_sync() {
 }
 
 GLDevice::GLDevice() : stream_(this) {
+  initialize_opengl(false, true);
   DeviceCapabilityConfig caps{};
   if (!is_gles()) {
     // 64bit isn't supported in ES profile
@@ -555,9 +560,9 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   GLint size = 0;
   glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &size);
   check_opengl_error("glGetBufferParameteriv");
-  return size;
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   check_opengl_error("glBindBuffer");
+  return size;
 }
 
 std::unique_ptr<Pipeline> GLDevice::create_pipeline(
@@ -871,7 +876,9 @@ void GLCommandList::CmdImageToBuffer::execute() {
                 (void *)offset);
   check_opengl_error("glGetTexImage");
   glBindTexture(image_dims, /*target=*/0);
+  check_opengl_error("glBindTexture");
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, /*target=*/0);
+  check_opengl_error("glBindBuffer");
 }
 
 }  // namespace opengl

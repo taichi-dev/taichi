@@ -825,6 +825,11 @@ class IRPrinter : public IRVisitor {
     print(result);
   }
 
+  void visit(GetElementStmt *stmt) override {
+    print("{}{} = get_element({}, {})", stmt->type_hint(), stmt->name(),
+          stmt->src->name(), fmt::join(stmt->index, ", "));
+  }
+
  private:
   std::string expr_to_string(Expr &expr) {
     return expr_to_string(expr.expr.get());

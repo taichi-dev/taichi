@@ -590,18 +590,12 @@ class IndexExpression : public Expression {
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "")
-      : var(var), indices_group({indices}) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "")
-      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   void type_check(CompileConfig *config) override;
 
@@ -782,14 +776,16 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
 
 class FrontendFuncCallStmt : public Stmt {
  public:
-  Identifier ident;
+  std::optional<Identifier> ident;
   Function *func;
   ExprGroup args;
 
-  explicit FrontendFuncCallStmt(const Identifier &id,
-                                Function *func,
-                                const ExprGroup &args)
+  explicit FrontendFuncCallStmt(
+      Function *func,
+      const ExprGroup &args,
+      const std::optional<Identifier> &id = std::nullopt)
       : ident(id), func(func), args(args) {
+    TI_ASSERT(id.has_value() == !func->rets.empty());
   }
 
   bool is_container_statement() const override {
@@ -871,9 +867,7 @@ class MeshIndexConversionExpression : public Expression {
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
-  }
+                                mesh::ConvType conv_type);
 
   void flatten(FlattenContext *ctx) override;
 
@@ -963,8 +957,17 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
+  Expr expr_subscript(const Expr &expr,
+                      const ExprGroup &indices,
+                      std::string tb = "");
+
+  Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                             mesh::MeshElementType idx_type,
+                             const Expr &idx,
+                             mesh::ConvType &conv_type);
+
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
-  Expr insert_func_call(Function *func, const ExprGroup &args);
+  std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);
@@ -999,7 +1002,7 @@ class ASTBuilder {
   Expr snode_length(SNode *snode, const ExprGroup &indices);
   Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
-  std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
+  std::vector<Expr> expand_exprs(const std::vector<Expr> &exprs);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

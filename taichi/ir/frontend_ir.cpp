@@ -25,7 +25,7 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
                                          const Expr &val)
     : op_type(op_type), snode(snode), val(val) {
   this->indices = indices;
-  std::vector<Expr> expanded_exprs = builder->expand_expr(this->indices.exprs);
+  std::vector<Expr> expanded_exprs = builder->expand_exprs(this->indices.exprs);
   this->indices.exprs = expanded_exprs;
 
   if (val.expr != nullptr) {
@@ -688,6 +688,26 @@ void MatrixExpression::flatten(FlattenContext *ctx) {
   stmt->ret_type = this->dt;
 }
 
+IndexExpression::IndexExpression(const Expr &var,
+                                 const ExprGroup &indices,
+                                 std::string tb)
+    : var(var), indices_group({indices}) {
+  this->tb = tb;
+}
+
+IndexExpression::IndexExpression(const Expr &var,
+                                 const std::vector<ExprGroup> &indices_group,
+                                 const std::vector<int> &ret_shape,
+                                 std::string tb)
+    : var(var), indices_group(indices_group), ret_shape(ret_shape) {
+  // IndexExpression with ret_shape is used for matrix slicing, where each entry
+  // of ExprGroup is interpreted as a group of indices to return within each
+  // axis. For example, mat[0, 3:5] has indices_group={0, [3, 4]}, where [3, 4]
+  // means "m"-axis will return a TensorType with size of 2. In this case, we
+  // should not expand indices_group due to its special semantics.
+  this->tb = tb;
+}
+
 bool IndexExpression::is_field() const {
   return var.is<FieldExpression>();
 }
@@ -721,20 +741,43 @@ bool IndexExpression::is_global() const {
   return is_field() || is_matrix_field() || is_ndarray();
 }
 
+static void field_validation(FieldExpression *field_expr, int index_dim) {
+  TI_ASSERT(field_expr != nullptr);
+  TI_ASSERT(field_expr->snode != nullptr);
+  int field_dim = field_expr->snode->num_active_indices;
+
+  if (field_dim != index_dim) {
+    throw TaichiIndexError(
+        fmt::format("Field with dim {} accessed with indices of dim {}",
+                    field_dim, index_dim));
+  }
+}
+
 void IndexExpression::type_check(CompileConfig *) {
   // TODO: Change to type-based solution
   // Currently, dimension compatibility check happens in Python
   TI_ASSERT(indices_group.size() == std::accumulate(begin(ret_shape),
                                                     end(ret_shape), 1,
                                                     std::multiplies<>()));
-  if (!ret_shape.empty()) {
+  int index_dim = indices_group.empty() ? 0 : indices_group[0].size();
+  bool has_slice = !ret_shape.empty();
+  if (has_slice) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
     auto element_type = var->ret_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
+
   } else if (is_field()) {  // field
-    ret_type = var.cast<FieldExpression>()->dt->get_compute_type();
+    auto field_expr = var.cast<FieldExpression>();
+    field_validation(field_expr.get(), index_dim);
+    ret_type = field_expr->dt->get_compute_type();
+
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
+
+    TI_ASSERT(!matrix_field_expr->fields.empty());
+    auto field_expr = matrix_field_expr->fields[0].cast<FieldExpression>();
+    field_validation(field_expr.get(), index_dim);
+
     ret_type = TypeFactory::create_tensor_type(matrix_field_expr->element_shape,
                                                matrix_field_expr->fields[0]
                                                    .cast<FieldExpression>()
@@ -742,7 +785,12 @@ void IndexExpression::type_check(CompileConfig *) {
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
-    int index_dim = indices_group[0].exprs.size();
+    int element_dim = external_tensor_expr->dt.get_shape().size();
+    if (total_dim != index_dim + element_dim) {
+      throw TaichiTypeError(
+          fmt::format("Array with dim {} accessed with indices of dim {}",
+                      total_dim - element_dim, index_dim));
+    }
 
     if (index_dim == total_dim) {
       // Access all the way to a single element
@@ -910,7 +958,7 @@ SNodeOpExpression::SNodeOpExpression(ASTBuilder *builder,
                                      SNodeOpType op_type,
                                      const ExprGroup &indices)
     : snode(snode), op_type(op_type) {
-  std::vector<Expr> expanded_indices = builder->expand_expr(indices.exprs);
+  std::vector<Expr> expanded_indices = builder->expand_exprs(indices.exprs);
   this->indices = indices;
   this->indices.exprs = std::move(expanded_indices);
 }
@@ -921,7 +969,7 @@ SNodeOpExpression::SNodeOpExpression(ASTBuilder *builder,
                                      const ExprGroup &indices,
                                      const std::vector<Expr> &values)
     : SNodeOpExpression(builder, snode, op_type, indices) {
-  this->values = builder->expand_expr(values);
+  this->values = builder->expand_exprs(values);
 }
 
 void SNodeOpExpression::type_check(CompileConfig *config) {
@@ -1138,6 +1186,14 @@ void MeshRelationAccessExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+MeshIndexConversionExpression::MeshIndexConversionExpression(
+    mesh::Mesh *mesh,
+    mesh::MeshElementType idx_type,
+    const Expr idx,
+    mesh::ConvType conv_type)
+    : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
+}
+
 void MeshIndexConversionExpression::type_check(CompileConfig *) {
   ret_type = PrimitiveType::i32;
 }
@@ -1310,12 +1366,18 @@ Expr ASTBuilder::expr_alloca() {
   return var;
 }
 
-Expr ASTBuilder::insert_func_call(Function *func, const ExprGroup &args) {
-  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
-  this->insert(std::make_unique<FrontendFuncCallStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, func, args));
-  var.expr->ret_type = func->ret_type;
-  return var;
+std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
+                                                 const ExprGroup &args) {
+  if (func->ret_type) {
+    auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+    this->insert(std::make_unique<FrontendFuncCallStmt>(
+        func, args, std::static_pointer_cast<IdExpression>(var.expr)->id));
+    var.expr->ret_type = func->ret_type;
+    return var;
+  } else {
+    this->insert(std::make_unique<FrontendFuncCallStmt>(func, args));
+    return std::nullopt;
+  }
 }
 
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
@@ -1340,6 +1402,25 @@ void ASTBuilder::expr_assign(const Expr &lhs, const Expr &rhs, std::string tb) {
   auto stmt = std::make_unique<FrontendAssignStmt>(lhs, rhs);
   stmt->set_tb(tb);
   this->insert(std::move(stmt));
+}
+
+Expr ASTBuilder::expr_subscript(const Expr &expr,
+                                const ExprGroup &indices,
+                                std::string tb) {
+  TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
+            expr.is<ExternalTensorExpression>() ||
+            is_tensor(expr.expr->ret_type));
+
+  // IndexExpression without ret_shape is used for matrix indexing,
+  // where each entry of ExprGroup is interpreted as indexing into a specific
+  // axis. For example, mat[3, 4] has indices_group={[3, 4]}, where [3, 4]
+  // corresponds to "n"-axis and "m"-axis of the matrix. Therefore we expand
+  // indices_group={[3, 4]} into {3, 4} to avoid TensorType in indices.
+  std::vector<Expr> expanded_indices = this->expand_exprs(indices.exprs);
+  auto expanded_expr_group = ExprGroup();
+  expanded_expr_group.exprs = expanded_indices;
+
+  return Expr::make<IndexExpression>(expr, expanded_expr_group, tb);
 }
 
 void ASTBuilder::create_assert_stmt(const Expr &cond,
@@ -1462,62 +1543,82 @@ Expr ASTBuilder::snode_get_addr(SNode *snode, const ExprGroup &indices) {
                                        indices);
 }
 
-std::vector<Expr> ASTBuilder::expand_expr(const std::vector<Expr> &exprs) {
-  if (exprs.size() > 1 || exprs.size() == 0) {
+std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
+  if (exprs.size() == 0) {
     return exprs;
   }
 
-  Expr index_expr = exprs[0];
-  TI_ASSERT_TYPE_CHECKED(index_expr);
-  if (!index_expr->ret_type->is<TensorType>()) {
-    return exprs;
-  }
-
-  // Expand TensorType expr
-  /*
-    Before:
-      TensorType<4 x i32> index = Expr;
-
-    After:
-      TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
-      i32 ind0 = IndexExpression(id_expr, 0)
-      i32 ind1 = IndexExpression(id_expr, 1)
-      i32 ind2 = IndexExpression(id_expr, 2)
-      i32 ind3 = IndexExpression(id_expr, 3)
-
-      return {ind0, ind1, ind2, ind3}
-
-  */
   std::vector<Expr> expanded_exprs;
+  for (auto expr : exprs) {
+    TI_ASSERT_TYPE_CHECKED(expr);
+    if (!expr->ret_type->is<TensorType>()) {
+      expanded_exprs.push_back(expr);
+    } else {
+      // Expand TensorType expr
+      /*
+        Before:
+          TensorType<4 x i32> index = Expr;
 
-  auto tensor_type = index_expr->ret_type->cast<TensorType>();
+        After:
+          TensorType<4 x i32>* id_expr = FrontendAllocaStmt(TensorType<4 x i32>)
+          i32 ind0 = IndexExpression(id_expr, 0)
+          i32 ind1 = IndexExpression(id_expr, 1)
+          i32 ind2 = IndexExpression(id_expr, 2)
+          i32 ind3 = IndexExpression(id_expr, 3)
 
-  Expr id_expr;
-  if (index_expr.is<IdExpression>()) {
-    id_expr = index_expr;
-  } else {
-    id_expr = make_var(index_expr, index_expr->tb);
-  }
-  auto shape = tensor_type->get_shape();
-  if (shape.size() == 1) {
-    for (int i = 0; i < shape[0]; i++) {
-      auto ind = Expr(std::make_shared<IndexExpression>(
-          id_expr, ExprGroup(Expr(i)), index_expr->tb));
-      ind.expr->ret_type = tensor_type->get_element_type();
-      expanded_exprs.push_back(ind);
-    }
-  } else {
-    TI_ASSERT(shape.size() == 2);
-    for (int i = 0; i < shape[0]; i++) {
-      for (int j = 0; j < shape[1]; j++) {
-        auto ind = Expr(std::make_shared<IndexExpression>(
-            id_expr, ExprGroup(Expr(i), Expr(j)), index_expr->tb));
-        ind.expr->ret_type = tensor_type->get_element_type();
-        expanded_exprs.push_back(ind);
+          return {ind0, ind1, ind2, ind3}
+
+      */
+      auto tensor_type = expr->ret_type->cast<TensorType>();
+
+      Expr id_expr;
+      if (expr.is<IdExpression>()) {
+        id_expr = expr;
+      } else {
+        id_expr = make_var(expr, expr->tb);
+      }
+      auto shape = tensor_type->get_shape();
+      if (shape.size() == 1) {
+        for (int i = 0; i < shape[0]; i++) {
+          auto ind = Expr(std::make_shared<IndexExpression>(
+              id_expr, ExprGroup(Expr(i)), expr->tb));
+          ind.expr->ret_type = tensor_type->get_element_type();
+          expanded_exprs.push_back(ind);
+        }
+      } else {
+        TI_ASSERT(shape.size() == 2);
+        for (int i = 0; i < shape[0]; i++) {
+          for (int j = 0; j < shape[1]; j++) {
+            auto ind = Expr(std::make_shared<IndexExpression>(
+                id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
+            ind.expr->ret_type = tensor_type->get_element_type();
+            expanded_exprs.push_back(ind);
+          }
+        }
       }
     }
   }
+
   return expanded_exprs;
+}
+
+Expr ASTBuilder::mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                                       mesh::MeshElementType idx_type,
+                                       const Expr &idx,
+                                       mesh::ConvType &conv_type) {
+  Expr expanded_idx;
+  if (idx.is<IdExpression>() && idx.get_ret_type() == PrimitiveType::unknown) {
+    expanded_idx = idx;
+  } else {
+    if (idx.expr->ret_type->is<TensorType>()) {
+      TI_ASSERT(idx.expr->ret_type->cast<TensorType>()->get_num_elements() ==
+                1);
+    }
+    expanded_idx = this->expand_exprs({idx})[0];
+  }
+
+  return Expr::make<MeshIndexConversionExpression>(mesh_ptr.ptr.get(), idx_type,
+                                                   expanded_idx, conv_type);
 }
 
 void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {

@@ -262,17 +262,18 @@ class Func:
                                 impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
                         Expr(x) for x in impl.get_runtime().prog.
-                        current_ast_builder().expand_expr([args[i].ptr])
+                        current_ast_builder().expand_exprs([args[i].ptr])
                     ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        func_call = Expr(
-            impl.get_runtime().prog.current_ast_builder().insert_func_call(
-                self.taichi_functions[key.instance_id], non_template_args))
+        func_call = impl.get_runtime().prog.current_ast_builder(
+        ).insert_func_call(self.taichi_functions[key.instance_id],
+                           non_template_args)
         if self.return_type is None:
             return None
+        func_call = Expr(func_call)
         if id(self.return_type) in primitive_types.type_ids:
             return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):

@@ -26,12 +26,6 @@ Expr bit_cast(const Expr &input, DataType dt) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
-Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<FieldExpression>() || is<MatrixFieldExpression>() ||
-            is<ExternalTensorExpression>() || is_tensor(expr->ret_type));
-  return Expr::make<IndexExpression>(*this, indices);
-}
-
 Expr &Expr::operator=(const Expr &o) {
   set(o);
   return *this;

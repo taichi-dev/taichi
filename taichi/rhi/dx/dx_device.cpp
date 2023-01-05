@@ -929,8 +929,9 @@ Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
 Dx11Stream::~Dx11Stream() {
 }
 
-std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
-  return std::make_unique<Dx11CommandList>(device_);
+RhiResult Dx11Stream::new_command_list(CommandList **out_cmdlist) {
+  *out_cmdlist = new Dx11CommandList(device_);
+  return RhiResult::Success;
 }
 
 StreamSemaphore Dx11Stream::submit(

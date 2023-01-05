@@ -111,7 +111,8 @@ void GraphicsDevice::image_transition(DeviceAllocation img,
                                       ImageLayout old_layout,
                                       ImageLayout new_layout) {
   Stream *stream = get_graphics_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd_list->image_transition(img, old_layout, new_layout);
   stream->submit_synced(cmd_list.get());
 }
@@ -120,7 +121,8 @@ void GraphicsDevice::buffer_to_image(DeviceAllocation dst_img,
                                      ImageLayout img_layout,
                                      const BufferImageCopyParams &params) {
   Stream *stream = get_graphics_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd_list->buffer_to_image(dst_img, src_buf, img_layout, params);
   stream->submit_synced(cmd_list.get());
 }
@@ -129,7 +131,8 @@ void GraphicsDevice::image_to_buffer(DevicePtr dst_buf,
                                      ImageLayout img_layout,
                                      const BufferImageCopyParams &params) {
   Stream *stream = get_graphics_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd_list->image_to_buffer(dst_buf, src_img, img_layout, params);
   stream->submit_synced(cmd_list.get());
 }

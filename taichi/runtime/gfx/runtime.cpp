@@ -597,7 +597,8 @@ StreamSemaphore GfxRuntime::flush() {
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
     current_cmdlist_ = nullptr;
   } else {
-    auto cmdlist = device_->get_compute_stream()->new_command_list();
+    auto [cmdlist, res] = device_->get_compute_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());
   }
@@ -613,7 +614,9 @@ void GfxRuntime::ensure_current_cmdlist() {
   if (!current_cmdlist_) {
     ctx_buffers_.clear();
     current_cmdlist_pending_since_ = high_res_clock::now();
-    current_cmdlist_ = device_->get_compute_stream()->new_command_list();
+    auto [cmdlist, res] = device_->get_compute_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
+    current_cmdlist_ = std::move(cmdlist);
   }
 }
 void GfxRuntime::submit_current_cmdlist_if_timeout() {
@@ -643,7 +646,8 @@ void GfxRuntime::init_nonroot_buffers() {
 
   // Need to zero fill the buffers, otherwise there could be NaN.
   Stream *stream = device_->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] = device_->get_compute_stream()->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
 
   cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
@@ -663,7 +667,8 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
            /*host_write=*/false, /*host_read=*/false,
            /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] = device_->get_compute_stream()->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());

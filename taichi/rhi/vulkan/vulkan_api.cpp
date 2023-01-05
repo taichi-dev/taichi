@@ -219,7 +219,9 @@ IVkCommandBuffer allocate_command_buffer(IVkCommandPool pool,
     info.commandBufferCount = 1;
 
     VkResult res = vkAllocateCommandBuffers(pool->device, &info, &cmdbuf);
-    BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to allocate command buffer");
+    if (res != VK_SUCCESS) {
+      return nullptr;
+    }
   }
 
   IVkCommandBuffer obj = std::make_shared<DeviceObjVkCommandBuffer>();

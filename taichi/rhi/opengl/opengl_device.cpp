@@ -464,8 +464,9 @@ void GLCommandList::run_commands() {
 GLStream::~GLStream() {
 }
 
-std::unique_ptr<CommandList> GLStream::new_command_list() {
-  return std::make_unique<GLCommandList>(device_);
+RhiResult GLStream::new_command_list(CommandList **out_cmdlist) {
+  *out_cmdlist = new GLCommandList(device_);
+  return RhiResult::success;
 }
 
 StreamSemaphore GLStream::submit(

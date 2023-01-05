@@ -209,7 +209,8 @@ void Texture::from_ndarray(Ndarray *ndarray) {
                            ImageLayout::transfer_dst);
 
   Stream *stream = device->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
 
   BufferImageCopyParams params;
   params.buffer_row_length = ndarray->shape[0];
@@ -250,7 +251,8 @@ void Texture::from_snode(SNode *snode) {
   DevicePtr devptr = get_device_ptr(prog_, snode);
 
   Stream *stream = device->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
 
   BufferImageCopyParams params;
   params.buffer_row_length = snode->shape_along_axis(0);

@@ -520,7 +520,14 @@ class TI_DLL_EXPORT Stream {
   virtual ~Stream() {
   }
 
-  virtual std::unique_ptr<CommandList> new_command_list() = 0;
+  virtual RhiResult new_command_list(CommandList **out_cmdlist) noexcept = 0;
+  
+  inline std::pair<std::unique_ptr<CommandList>, RhiResult> new_command_list_unique() {
+    CommandList *cmdlist{nullptr};
+    RhiResult res = this->new_command_list(&cmdlist);
+    return std::make_pair(std::unique_ptr<CommandList>(cmdlist), res);
+  }
+  
   virtual StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;

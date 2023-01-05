@@ -22,7 +22,7 @@ def load_pr_tags():
 def find_latest_tag_commit(tags):
     for tag in reversed(tags):
         s = re.match(r'v\s*([\d.]+)', tag.name)
-        print(f'Latest version tag is: {tag.name}')
+        print(f'Latest version tag is: {tag.name}', file=sys.stderr)
         if s is not None:
             return tag.commit
 

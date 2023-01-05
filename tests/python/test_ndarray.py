@@ -694,6 +694,7 @@ def test_ndarray_python_scope_read_64bit(dtype):
     for i in range(n):
         assert a[i] == i + 2**40
 
+
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_init_as_zero():
     a = ti.ndarray(dtype=ti.f32, shape=(6, 10))

@@ -230,19 +230,30 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         assert dim == len(indices)
         indices = [
             _calc_slice(index, shape[i])
-            if isinstance(index, slice) else [index]
+            if isinstance(index, slice) else index
             for i, index in enumerate(indices)
         ]
         if dim == 1:
+            assert isinstance(indices[0], list)
             multiple_indices = [make_expr_group(i) for i in indices[0]]
             return_shape = (len(indices[0]), )
         else:
             assert dim == 2
-            multiple_indices = [
-                make_expr_group(i, j) for i in indices[0] for j in indices[1]
-            ]
-            return_shape = (len(indices[0]), len(indices[1]))
-
+            if isinstance(indices[0], list) and isinstance(indices[1], list):
+                multiple_indices = [
+                    make_expr_group(i, j) for i in indices[0] for j in indices[1]
+                ]
+                return_shape = (len(indices[0]), len(indices[1]))
+            elif isinstance(indices[0], list):  # indices[1] is not list
+                multiple_indices = [
+                    make_expr_group(i, indices[1]) for i in indices[0]
+                ]
+                return_shape = (len(indices[0]), )
+            else:  # indices[0] is not list while indices[1] is list
+                multiple_indices = [
+                    make_expr_group(indices[0], j) for j in indices[1]
+                ]
+                return_shape = (len(indices[1]), )
         return Expr(
             _ti_core.subscript_with_multiple_indices(
                 value.ptr, multiple_indices, return_shape,

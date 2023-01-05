@@ -416,15 +416,16 @@ class Matrix(TaichiOperations):
         return args[0] * self.m + args[1]
 
     def _get_slice(self, a, b):
-        if not isinstance(a, slice):
-            a = [a]
-        else:
+        if isinstance(a, slice):
             a = range(a.start or 0, a.stop or self.n, a.step or 1)
-        if not isinstance(b, slice):
-            b = [b]
-        else:
+        if isinstance(b, slice):
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
-        return Matrix([[self._get_entry(i, j) for j in b] for i in a])
+        if isinstance(a, range) and isinstance(b, range):
+            return Matrix([[self._get_entry(i, j) for j in b] for i in a])
+        if isinstance(a, range):  # b is not range
+            return Vector([self._get_entry(i, b) for i in a])
+        # a is not range while b is range
+        return Vector([self._get_entry(a, j) for j in b])
 
     @python_scope
     def _set_entry(self, i, j, item):

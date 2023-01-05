@@ -69,20 +69,6 @@ def test_matrix_slice_with_variable():
     assert (c1 == ti.Matrix([[4, 5, 6]])).all()
 
 
-@test_utils.test(dynamic_index=False)
-def test_matrix_slice_with_variable_invalid():
-    @ti.kernel
-    def test_one_col_slice() -> ti.types.matrix(1, 3, dtype=ti.i32):
-        m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
-        index = 1
-        return m[index, :]
-
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match='index of a Matrix/Vector must be a compile-time constant'):
-        test_one_col_slice()
-
-
 @test_utils.test()
 def test_matrix_slice_write():
     @ti.kernel

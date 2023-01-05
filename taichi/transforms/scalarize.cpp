@@ -9,15 +9,6 @@
 
 namespace taichi::lang {
 
-static bool is_alloca_scalarizable(AllocaStmt *stmt) {
-  /* Do not scalarize AllocaStmt allocated for CUDA SharedArray */
-  auto alloca = stmt->as<AllocaStmt>();
-  if (alloca->is_shared)
-    return false;
-
-  return true;
-}
-
 class Scalarize : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
@@ -534,15 +525,55 @@ class Scalarize : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 };
 
-class ScalarizePointers : public BasicStmtVisitor {
+// The GatherScalarizableLocalPointers gathers all local TensorType allocas
+// only indexed with constants, which can then be scalarized in the
+// ScalarizeLocalPointers pass.
+class GatherScalarizableLocalPointers : public BasicStmtVisitor {
+ private:
+  using BasicStmtVisitor::visit;
+
+  std::unordered_map<Stmt *, bool> is_alloca_scalarizable_;
+
+ public:
+  void visit(AllocaStmt *stmt) override {
+    if (stmt->ret_type.ptr_removed()->is<TensorType>()) {
+      TI_ASSERT(is_alloca_scalarizable_.count(stmt) == 0);
+      is_alloca_scalarizable_[stmt] = !stmt->is_shared;
+    }
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<AllocaStmt>()) {
+      TI_ASSERT(is_alloca_scalarizable_.count(stmt->origin) == 1);
+      if (!stmt->offset->is<ConstStmt>()) {
+        is_alloca_scalarizable_[stmt->origin] = false;
+      }
+    }
+  }
+
+  static std::unordered_set<Stmt *> run(IRNode *node) {
+    GatherScalarizableLocalPointers pass;
+    node->accept(&pass);
+    std::unordered_set<Stmt *> result;
+    for (auto &[k, v] : pass.is_alloca_scalarizable_) {
+      if (v) {
+        result.insert(k);
+      }
+    }
+    return result;
+  }
+};
+
+class ScalarizeLocalPointers : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
 
+  std::unordered_set<Stmt *> scalarizable_allocas_;
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  explicit ScalarizePointers(IRNode *node) : immediate_modifier_(node) {
+  explicit ScalarizeLocalPointers(IRNode *node, const std::unordered_set<Stmt *> &scalarizable_allocas) : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
     node->accept(this);
 
     delayed_modifier_.modify_ir();
@@ -574,8 +605,9 @@ class ScalarizePointers : public BasicStmtVisitor {
       scalarized_local_tensor_map_[addr] = {addr0, addr1, addr2, addr3}
   */
   void visit(AllocaStmt *stmt) override {
-    auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
-    if (tensor_type && is_alloca_scalarizable(stmt)) {
+    if (scalarizable_allocas_.count(stmt) == 1) {
+      auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
+      TI_ASSERT(tensor_type != nullptr);
       auto primitive_type = tensor_type->get_element_type();
 
       TI_ASSERT(scalarized_local_tensor_map_.count(stmt) == 0);
@@ -604,47 +636,26 @@ class ScalarizePointers : public BasicStmtVisitor {
       stmt->replace_all_usages_with(scalarized_alloca_stmt)
   */
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<AllocaStmt>()) {
+    if (stmt->origin->is<AllocaStmt>() && scalarizable_allocas_.count(stmt->origin) == 1) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();
       TI_ASSERT(tensor_type != nullptr);
-      if (is_alloca_scalarizable(alloca_stmt)) {
-        int num_elements = tensor_type->get_num_elements();
-        TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
+      int num_elements = tensor_type->get_num_elements();
+      TI_ASSERT(scalarized_local_tensor_map_.count(alloca_stmt));
 
-        const auto &scalarized_alloca_stmts =
-            scalarized_local_tensor_map_[alloca_stmt];
-        TI_ASSERT(scalarized_alloca_stmts.size() == num_elements);
+      const auto &scalarized_alloca_stmts =
+          scalarized_local_tensor_map_[alloca_stmt];
+      TI_ASSERT(scalarized_alloca_stmts.size() == num_elements);
 
-        // TODO(zhanlue): loose this contraint once dynamic indexing is properly
-        // handled
-        if (!stmt->offset->is<ConstStmt>()) {
-          // Removing this line will fail TI_ASSERT in ~DelayedIRModifier()
-          delayed_modifier_.modify_ir();
-          throw TaichiSyntaxError(fmt::format(
-              "{}The index of a Matrix/Vector must be a compile-time constant "
-              "integer.\n"
-              "This is because matrix operations will be **unrolled** at "
-              "compile-time for performance reason.\n"
-              "If you want to *iterate through matrix elements*, use a static "
-              "range:\n"
-              "    for i in ti.static(range(3)):\n"
-              "        print(i, \"-th component is\", vec[i])\n"
-              "See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-"
-              "with-for-loops for more details."
-              "Or turn on ti.init(..., dynamic_index=True) to support indexing "
-              "with variables!",
-              stmt->tb));
-        }
-        int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
+      TI_ASSERT(stmt->offset->is<ConstStmt>());
+      int offset = stmt->offset->cast<ConstStmt>()->val.val_int32();
 
-        TI_ASSERT(offset < scalarized_alloca_stmts.size());
-        auto alloca_stmt = scalarized_alloca_stmts[offset];
+      TI_ASSERT(offset < scalarized_alloca_stmts.size());
+      auto new_stmt = scalarized_alloca_stmts[offset];
 
-        immediate_modifier_.replace_usages_with(stmt, alloca_stmt);
-        delayed_modifier_.erase(stmt);
-      }
+      immediate_modifier_.replace_usages_with(stmt, new_stmt);
+      delayed_modifier_.erase(stmt);
     }
   }
 
@@ -652,7 +663,7 @@ class ScalarizePointers : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 };
 
-// The ExtractPointers pass aims at removing redundant ConstStmts and
+// The ExtractLocalPointers pass aims at removing redundant ConstStmts and
 // MatrixPtrStmts generated for any (AllocaStmt, integer) pair by extracting
 // a unique copy for any future usage.
 //
@@ -671,7 +682,7 @@ class ScalarizePointers : public BasicStmtVisitor {
 //   <i32> $47812 = const 1  [REDUNDANT]
 //   <*f32> $47813 = shift ptr [$47738 + $47812]  [REDUNDANT]
 //   <f32> $47814 = local load [$47813]
-class ExtractPointers : public BasicStmtVisitor {
+class ExtractLocalPointers : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
@@ -686,7 +697,7 @@ class ExtractPointers : public BasicStmtVisitor {
                      // it
   Block *top_level_;
 
-  explicit ExtractPointers(IRNode *root) : immediate_modifier_(root) {
+  explicit ExtractLocalPointers(IRNode *root) : immediate_modifier_(root) {
     TI_ASSERT(root->is<Block>());
     top_level_ = root->as<Block>();
     root->accept(this);
@@ -728,11 +739,9 @@ namespace irpass {
 void scalarize(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
-  if (!config.dynamic_index) {
-    ScalarizePointers scalarize_pointers_pass(root);
-  } else {
-    ExtractPointers extract_pointers_pass(root);
-  }
+  auto scalarizable_alloas = GatherScalarizableLocalPointers::run(root);
+  ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_alloas);
+  ExtractLocalPointers extract_pointers_pass(root);
 }
 
 }  // namespace irpass

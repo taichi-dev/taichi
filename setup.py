@@ -21,14 +21,13 @@ from skbuild.command.egg_info import egg_info
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 classifiers = [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 5 - Production/Stable',
     'Topic :: Software Development :: Compilers',
     'Topic :: Multimedia :: Graphics',
     'Topic :: Games/Entertainment :: Simulation',
     'Intended Audience :: Science/Research',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: Apache Software License',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',

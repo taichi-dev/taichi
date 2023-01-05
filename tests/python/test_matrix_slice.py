@@ -54,14 +54,12 @@ def test_matrix_slice_invalid():
 @test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
 def test_matrix_slice_with_variable():
     @ti.kernel
-    def test_one_row_slice(
-            index: ti.i32) -> ti.types.vector(2, dtype=ti.i32):
+    def test_one_row_slice(index: ti.i32) -> ti.types.vector(2, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
         return m[:, index]
 
     @ti.kernel
-    def test_one_col_slice(
-            index: ti.i32) -> ti.types.vector(3, dtype=ti.i32):
+    def test_one_col_slice(index: ti.i32) -> ti.types.vector(3, dtype=ti.i32):
         m = ti.Matrix([[1, 2, 3], [4, 5, 6]])
         return m[index, :]
 

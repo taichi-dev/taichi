@@ -229,8 +229,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         dim = len(shape)
         assert dim == len(indices)
         indices = [
-            _calc_slice(index, shape[i])
-            if isinstance(index, slice) else index
+            _calc_slice(index, shape[i]) if isinstance(index, slice) else index
             for i, index in enumerate(indices)
         ]
         if dim == 1:
@@ -241,7 +240,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             assert dim == 2
             if isinstance(indices[0], list) and isinstance(indices[1], list):
                 multiple_indices = [
-                    make_expr_group(i, j) for i in indices[0] for j in indices[1]
+                    make_expr_group(i, j) for i in indices[0]
+                    for j in indices[1]
                 ]
                 return_shape = (len(indices[0]), len(indices[1]))
             elif isinstance(indices[0], list):  # indices[1] is not list

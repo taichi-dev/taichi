@@ -102,7 +102,25 @@ def setup_vulkan(env: dict):
         env['VK_LAYER_PATH'] = str(sdk / 'etc' / 'vulkan' / 'explicit_layer.d')
     # elif (u.system, u.machine) == ("Darwin", "arm64"):
     # elif (u.system, u.machine) == ("Darwin", "x86_64"):
-    # elif u.system == "Windows":
+    elif (u.system, u.machine) == ('Windows', 'AMD64'):
+        url = 'https://sdk.lunarg.com/sdk/download/1.3.236.0/windows/VulkanSDK-1.3.236.0-Installer.exe'
+        prefix = get_cache_home() / 'vulkan-1.3.236.0'
+        download_dep(url,
+                     prefix,
+                     args=[
+                         '--accept-licenses',
+                         '--default-answer',
+                         '--confirm-command',
+                         'install',
+                         'com.lunarg.vulkan.sdl2',
+                         'com.lunarg.vulkan.glm',
+                         'com.lunarg.vulkan.volk',
+                         'com.lunarg.vulkan.vma',
+                         'com.lunarg.vulkan.debug',
+                     ])
+        env['VULKAN_SDK'] = str(prefix)
+        env['VK_SDK_PATH'] = str(prefix)
+        env['PATH'] = str(prefix / "Bin") + ';' + env["PATH"]
     else:
         return
 

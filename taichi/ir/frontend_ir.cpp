@@ -38,7 +38,7 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
 FrontendReturnStmt::FrontendReturnStmt(ASTBuilder *builder,
                                        const ExprGroup &group) {
   values = group;
-  auto expanded_exprs = builder->expand_expr(values.exprs);
+  auto expanded_exprs = builder->expand_exprs(values.exprs);
   values.exprs = std::move(expanded_exprs);
 }
 

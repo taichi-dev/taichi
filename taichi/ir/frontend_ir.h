@@ -270,7 +270,7 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  explicit FrontendReturnStmt(ASTBuilder *builder, const ExprGroup &group);
+  explicit FrontendReturnStmt(const ExprGroup &group);
 
   bool is_container_statement() const override {
     return false;

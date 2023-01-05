@@ -35,11 +35,7 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
   }
 }
 
-FrontendReturnStmt::FrontendReturnStmt(ASTBuilder *builder,
-                                       const ExprGroup &group) {
-  values = group;
-  auto expanded_exprs = builder->expand_exprs(values.exprs);
-  values.exprs = std::move(expanded_exprs);
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
 }
 
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
@@ -1345,7 +1341,10 @@ Expr ASTBuilder::insert_patch_idx_expr() {
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
-  this->insert(Stmt::make<FrontendReturnStmt>(this, group));
+  auto expanded_exprs = this->expand_exprs(group.exprs);
+  ExprGroup expanded_expr_group;
+  expanded_expr_group.exprs = std::move(expanded_exprs);
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
 }
 
 void ASTBuilder::create_print(

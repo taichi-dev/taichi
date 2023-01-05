@@ -7,12 +7,12 @@ ti.init(arch=arch)
 vec3 = tm.vec3
 vec4 = tm.vec4
 
+
 @ti.func
 def quat_mul(v1, v2):
-    return vec4(
-        v1.x * v2.x - tm.dot(v1.yzw, v2.yzw),
-        v1.x * v2.yzw + v2.x * v1.yzw + tm.cross(v1.yzw, v2.yzw)
-    )
+    return vec4(v1.x * v2.x - tm.dot(v1.yzw, v2.yzw),
+                v1.x * v2.yzw + v2.x * v1.yzw + tm.cross(v1.yzw, v2.yzw))
+
 
 @ti.func
 def quat_conj(q):
@@ -52,29 +52,18 @@ def compute_normal(z, c):
     while z_curr.norm() < max_norm and iterations < iters:
         cz = quat_conj(z_curr)
 
-        J0 = vec4(
-            tm.dot(J0, cz),
-            tm.dot(J0.xy, z_curr.yx),
-            tm.dot(J0.xz, z_curr.zx),
-            tm.dot(J0.xw, z_curr.wx)
-        )
-        J1 = vec4(
-            tm.dot(J1, cz),
-            tm.dot(J1.xy, z_curr.yx),
-            tm.dot(J1.xz, z_curr.zx),
-            tm.dot(J1.xw, z_curr.wx)
-        )
-        J2 = vec4(
-            tm.dot(J2, cz),
-            tm.dot(J2.xy, z_curr.yx),
-            tm.dot(J2.xz, z_curr.zx),
-            tm.dot(J2.xw, z_curr.wx)
-        )
+        J0 = vec4(tm.dot(J0, cz), tm.dot(J0.xy, z_curr.yx),
+                  tm.dot(J0.xz, z_curr.zx), tm.dot(J0.xw, z_curr.wx))
+        J1 = vec4(tm.dot(J1, cz), tm.dot(J1.xy, z_curr.yx),
+                  tm.dot(J1.xz, z_curr.zx), tm.dot(J1.xw, z_curr.wx))
+        J2 = vec4(tm.dot(J2, cz), tm.dot(J2.xy, z_curr.yx),
+                  tm.dot(J2.xz, z_curr.zx), tm.dot(J2.xw, z_curr.wx))
 
         z_curr = quat_mul(z_curr, z_curr) + c
         iterations += 1
 
-    return tm.normalize(tm.vec3(tm.dot(z_curr, J0), tm.dot(z_curr, J1), tm.dot(z_curr, J2)))
+    return tm.normalize(
+        tm.vec3(tm.dot(z_curr, J0), tm.dot(z_curr, J1), tm.dot(z_curr, J2)))
 
 
 image_res = (1280, 720)
@@ -91,26 +80,27 @@ class Julia:
         light_color = vec3(1)
 
         light_dir = tm.normalize(light_pos - pos)
-        return light_color * surface_color * ti.max(0, tm.dot(light_dir, normal))
+        return light_color * surface_color * ti.max(0, tm.dot(
+            light_dir, normal))
 
     @ti.kernel
     def march(self, time_arg: float):
         time = time_arg * 0.15
         c = 0.45 * ti.cos(
-            vec4(0.5, 3.9, 1.4, 1.1) + time *
-            vec4(1.2, 1.7, 1.3, 2.5)) - vec4(0.3, 0, 0, 0)
+            vec4(0.5, 3.9, 1.4, 1.1) + time * vec4(1.2, 1.7, 1.3, 2.5)) - vec4(
+                0.3, 0, 0, 0)
 
         r = 1.8
-        o3 = tm.normalize(vec3(
-            r * ti.cos(0.3 + 0.37 * time), 0.3 +
-            0.8 * r * ti.cos(1.0 + 0.33 * time), r * ti.cos(2.2 + 0.31 * time)
-        )) * r
+        o3 = tm.normalize(
+            vec3(r * ti.cos(0.3 + 0.37 * time),
+                 0.3 + 0.8 * r * ti.cos(1.0 + 0.33 * time),
+                 r * ti.cos(2.2 + 0.31 * time))) * r
         ta = vec3(0)
         cr = 0.1 * ti.cos(0.1 * time)
 
         for x, y in self.image:
-            p = (-tm.vec2(image_res) +
-                 2.0 * tm.vec2(x, y)) / (image_res[1] * 0.75)
+            p = (-tm.vec2(image_res) + 2.0 * tm.vec2(x, y)) / (image_res[1] *
+                                                               0.75)
 
             cw = tm.normalize(ta - o3)
             cp = vec3(ti.sin(cr), ti.cos(cr), 0)

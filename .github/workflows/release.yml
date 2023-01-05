@@ -27,14 +27,8 @@ jobs:
         id: changelog
         run: |
           pip3 install gitpython
-          content=$(python3 misc/make_changelog.py)
-          echo $content
-          # Escape multiline strings:
-          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
-          echo "content=$content" >>  $GITHUB_OUTPUT
+          python3 misc/make_changelog.py > CHANGELOG.md
+          cat CHANGELOG.md
 
       - name: Create tag
         run: |
@@ -46,5 +40,6 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
-          body: ${{ steps.changelog.outputs.content }}
+          body_path: CHANGELOG.md
+          generate_release_notes: true
           tag_name: ${{ github.event.inputs.version }}

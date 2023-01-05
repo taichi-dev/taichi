@@ -43,7 +43,6 @@ def main(ver=None, repo_dir='.'):
         return f'{c.summary} (by **{c.author}**)'
 
     notable_changes = {}
-    all_changes = []
 
     details = load_pr_tags()
 
@@ -75,17 +74,11 @@ def main(ver=None, repo_dir='.'):
                     f'** Warning: tag {tag.lower()} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
                 )
 
-        all_changes.append(format(c))
-
     res = 'Highlights:\n'
     for tag in sorted(notable_changes.keys()):
         res += f'   - **{details[tag]}**\n'
         for item in notable_changes[tag]:
             res += f'      - {item}\n'
-
-    res += '\nFull changelog:\n'
-    for c in all_changes:
-        res += f'   - {c}\n'
 
     return res
 

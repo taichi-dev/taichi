@@ -517,7 +517,7 @@ TEST_F(CapiTest, TestBehaviorGetCgraphVulkan) {
 
 TEST_F(CapiTest, TestCompatLoadAOT) {
   auto test_compat_load_aot_impl = [this](TiArch arch) {
-    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const auto folder_dir = "./tests/cpp/aot/aot_test_module";
     const std::string module_path = folder_dir + std::string("/module.tcm");
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);
@@ -533,7 +533,7 @@ TEST_F(CapiTest, TestCompatLoadAOT) {
 
 TEST_F(CapiTest, TestCompatGetCgraph) {
   auto test_compat_get_cgraph_impl = [this](TiArch arch) {
-    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+    const auto folder_dir = "./tests/cpp/aot/aot_test_module";
     const std::string module_path = folder_dir + std::string("/module.tcm");
     if (!ti::is_arch_available(arch)) {
       TI_WARN("arch {} is not supported, so the test is skipped", arch);

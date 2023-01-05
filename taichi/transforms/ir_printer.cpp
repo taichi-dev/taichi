@@ -113,17 +113,6 @@ class IRPrinter : public IRVisitor {
           alloca->ident.name());
   }
 
-  void visit(FrontendFuncCallStmt *stmt) override {
-    std::string args;
-    for (int i = 0; i < stmt->args.exprs.size(); i++) {
-      if (i) {
-        args += ", ";
-      }
-      args += expr_to_string(stmt->args.exprs[i]);
-    }
-    print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
-          stmt->id, stmt->func->get_name(), args, stmt->ident.name());
-  }
   void visit(FrontendAssertStmt *assert) override {
     print("{} : assert {}", assert->name(), expr_to_string(assert->cond));
   }
@@ -303,6 +292,18 @@ class IRPrinter : public IRVisitor {
     } else {
       print("{} continue", stmt->name());
     }
+  }
+
+  void visit(FrontendFuncCallStmt *stmt) override {
+    std::string args;
+    for (int i = 0; i < stmt->args.exprs.size(); i++) {
+      if (i) {
+        args += ", ";
+      }
+      args += expr_to_string(stmt->args.exprs[i]);
+    }
+    print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
+          stmt->id, stmt->func->get_name(), args, stmt->ident->name());
   }
 
   void visit(FuncCallStmt *stmt) override {

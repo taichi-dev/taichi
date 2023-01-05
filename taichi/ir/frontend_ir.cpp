@@ -1368,12 +1368,18 @@ Expr ASTBuilder::expr_alloca() {
   return var;
 }
 
-Expr ASTBuilder::expr_func_call(Function *func, const ExprGroup &args) {
-  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
-  this->insert(std::make_unique<FrontendFuncCallStmt>(
-      std::static_pointer_cast<IdExpression>(var.expr)->id, func, args));
-  var.expr->ret_type = func->ret_type;
-  return var;
+std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
+                                                 const ExprGroup &args) {
+  if (func->ret_type) {
+    auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+    this->insert(std::make_unique<FrontendFuncCallStmt>(
+        func, args, std::static_pointer_cast<IdExpression>(var.expr)->id));
+    var.expr->ret_type = func->ret_type;
+    return var;
+  } else {
+    this->insert(std::make_unique<FrontendFuncCallStmt>(func, args));
+    return std::nullopt;
+  }
 }
 
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,

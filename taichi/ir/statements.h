@@ -1082,8 +1082,9 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
 class GetElementStmt : public Stmt {
  public:
   Stmt *src;
-  int index;
-  GetElementStmt(Stmt *src, int index) : src(src), index(index) {
+  std::vector<int> index;
+  GetElementStmt(Stmt *src, const std::vector<int> &index)
+      : src(src), index(index) {
     TI_STMT_REG_FIELDS;
   }
 

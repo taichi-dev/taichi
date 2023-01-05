@@ -2,6 +2,9 @@ ci:
   autoupdate_schedule: quarterly
   autoupdate_commit_msg: '[misc] Update pre-commit hooks'
 
+default_language_version:
+    python: python3.10
+
 exclude: ^((tests/python/test_exception)\.py$|external/)
 repos:
   - repo: https://github.com/google/yapf

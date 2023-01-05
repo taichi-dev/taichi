@@ -246,6 +246,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit(")");
   }
 
+  void visit(GetElementExpression *expr) override {
+    emit("get_element(");
+    expr->src->accept(this);
+    emit(", ");
+    emit_vector(expr->index);
+    emit(")");
+  }
+
   static std::string expr_to_string(Expr &expr) {
     std::ostringstream oss;
     ExpressionHumanFriendlyPrinter printer(&oss);

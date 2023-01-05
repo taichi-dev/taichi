@@ -102,33 +102,33 @@ class CommandListImpl : public CommandList {
     inflight_label_ = label;
   }
 
-  void bind_pipeline(Pipeline *p) override {
+  void bind_pipeline(Pipeline *p) noexcept final {
     get_or_make_compute_builder()->pipeline =
         static_cast<PipelineImpl *>(p)->mtl_pipeline_state();
   }
 
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) final {
+                                  int set_index = 0) noexcept final {
     get_or_make_compute_builder()->binding_map =
         static_cast<ShaderResourceSetImpl *>(res)->binding_map();
     return RhiResult::success;
   }
 
-  RhiResult bind_raster_resources(RasterResources *res) final {
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final {
     TI_NOT_IMPLEMENTED;
   }
 
-  void buffer_barrier(DevicePtr ptr, size_t size) override {
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final {
     TI_NOT_IMPLEMENTED;
   }
-  void buffer_barrier(DeviceAllocation alloc) override {
+  void buffer_barrier(DeviceAllocation alloc) noexcept final {
     TI_NOT_IMPLEMENTED;
   }
-  void memory_barrier() override {
+  void memory_barrier() noexcept final {
     TI_NOT_IMPLEMENTED;
   }
 
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override {
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final {
     TI_ERROR_IF(dst.device != src.device,
                 "dst and src must be from the same MTLDevice");
     TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
@@ -146,7 +146,7 @@ class CommandListImpl : public CommandList {
     finish_encoder(encoder.get());
   }
 
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override {
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final {
     TI_ERROR_IF(inflight_compute_builder_.has_value(), "Inflight compute");
     if ((data & 0xff) != data) {
       // TODO: Maybe create a shader just for this filling purpose?
@@ -167,14 +167,16 @@ class CommandListImpl : public CommandList {
     finish_encoder(encoder.get());
   }
 
-  void dispatch(uint32_t x, uint32_t y, uint32_t z) override {
+  RhiResult dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept final {
     TI_ERROR("Please call dispatch(grid_size, block_size) instead");
   }
 
-  void dispatch(CommandList::ComputeSize grid_size,
-                CommandList::ComputeSize block_size) override {
+  RhiResult dispatch(CommandList::ComputeSize grid_size,
+                     CommandList::ComputeSize block_size) noexcept override {
     auto encoder = new_compute_command_encoder(command_buffer_.get());
-    TI_ASSERT(encoder != nullptr);
+    if (encoder == nullptr) {
+      return RhiResult::error;
+    }
     metal::set_label(encoder.get(), inflight_label_);
     const auto &builder = inflight_compute_builder_.value();
     set_compute_pipeline_state(encoder.get(), builder.pipeline);
@@ -183,7 +185,9 @@ class CommandListImpl : public CommandList {
     };
     for (const auto &[idx, b] : builder.binding_map) {
       auto *buf = alloc_buf_mapper_->find(b.alloc_id).buffer;
-      TI_ASSERT(buf != nullptr);
+      if (buf == nullptr) {
+        return RhiResult::error;
+      }
       set_mtl_buffer(encoder.get(), buf, b.offset, idx);
     }
     const auto num_blocks_x = ceil_div(grid_size.x, block_size.x);
@@ -193,6 +197,7 @@ class CommandListImpl : public CommandList {
                           num_blocks_z, block_size.x, block_size.y,
                           block_size.z);
     finish_encoder(encoder.get());
+    return RhiResult::success;
   }
 
   // Graphics commands are not implemented on Metal

@@ -24,8 +24,7 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType OpenglProgramImpl::compile(Kernel *kernel,
-                                        OffloadedStmt *offloaded) {
+FunctionType OpenglProgramImpl::compile(Kernel *kernel) {
   return register_params_to_executable(
       get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
 }

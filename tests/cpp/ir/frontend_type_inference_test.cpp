@@ -88,8 +88,7 @@ TEST(FrontendTypeInference, GlobalPtr_Field) {
   auto prog = std::make_unique<Program>(Arch::x64);
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
-  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
-  auto ast_builder = prog->current_ast_builder();
+  auto *ast_builder = &kernel->context->builder();
 
   auto global_var =
       Expr::make<FieldExpression>(PrimitiveType::u8, Identifier(0));
@@ -109,8 +108,7 @@ TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
   auto prog = std::make_unique<Program>(Arch::x64);
   auto func = []() {};
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
-  Callable::CurrentCallableGuard _(kernel->program, kernel.get());
-  auto ast_builder = prog->current_ast_builder();
+  auto *ast_builder = &kernel->context->builder();
 
   auto index = value<float32>(2);
   index->type_check(nullptr);
@@ -152,12 +150,14 @@ TEST(FrontendTypeInference, AtomicOp) {
 
 TEST(FrontendTypeInference, SNodeOp) {
   auto prog = std::make_unique<Program>(Arch::x64);
+  auto func = []() {};
+  auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
   auto snode = std::make_unique<SNode>(0, SNodeType::root);
   snode->dt = PrimitiveType::u8;
   auto index = value<int32>(2);
   index->type_check(nullptr);
-  auto snode_op = prog->current_ast_builder()->snode_get_addr(snode.get(),
-                                                              ExprGroup(index));
+  auto snode_op =
+      kernel->context->builder().snode_get_addr(snode.get(), ExprGroup(index));
   snode_op->type_check(nullptr);
   EXPECT_EQ(snode_op->ret_type, PrimitiveType::u64);
 }

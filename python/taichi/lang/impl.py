@@ -131,7 +131,7 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
-    ast_builder = get_runtime().prog.current_ast_builder()
+    ast_builder = get_runtime().compiling_callable.ast_builder()
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
             value,

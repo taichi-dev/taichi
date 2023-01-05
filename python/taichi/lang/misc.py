@@ -709,8 +709,7 @@ def global_thread_idx():
         >>>
         test()
     """
-    return impl.get_runtime().prog.current_ast_builder(
-    ).insert_thread_idx_expr()
+    return impl.get_runtime().compiling_callable.ast_builder().insert_thread_idx_expr()
 
 
 def mesh_patch_idx():

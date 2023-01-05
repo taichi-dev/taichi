@@ -395,7 +395,7 @@ def append(node, indices, val):
     """
     ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_append(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_append(
             node._snode.ptr, expr.make_expr_group(indices), ptrs),
         tb=impl.get_runtime().get_current_src_info())
     a = impl.expr_init(append_expr)
@@ -414,7 +414,7 @@ def is_active(node, indices):
         bool: the cell `node[indices]` is active or not.
     """
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_is_active(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_is_active(
             node._snode.ptr, expr.make_expr_group(indices)))
 
 
@@ -454,7 +454,7 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_length(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_length(
             node._snode.ptr, expr.make_expr_group(indices)))
 
 
@@ -471,7 +471,7 @@ def get_addr(f, indices):
         ti.u64: The memory address of `f[indices]`.
     """
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_get_addr(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_get_addr(
             f._snode.ptr, expr.make_expr_group(indices)))
 
 

@@ -248,8 +248,14 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
-    emit(R"({} {}(0);)", metal_data_type_name(alloca->element_type()),
-         alloca->raw_name());
+    if (alloca->ret_type->is<TensorType>()) {
+      auto tensor_type = alloca->ret_type->as<TensorType>();
+      emit("{} {}[{}];", metal_data_type_name(tensor_type->get_element_type()),
+           alloca->raw_name(), tensor_type->get_num_elements());
+    } else {
+      emit(R"({} {}(0);)", metal_data_type_name(alloca->element_type()),
+           alloca->raw_name());
+    }
   }
 
   void visit(ConstStmt *const_stmt) override {
@@ -437,6 +443,23 @@ class KernelCodegenImpl : public IRVisitor {
     }
   }
 
+  void visit(MatrixPtrStmt *stmt) override {
+    const auto dt = stmt->origin->ret_type.ptr_removed().get_element_type();
+    if (stmt->offset_used_as_index()) {
+      const auto fmt_str = stmt->origin->is<AllocaStmt>()
+                               ? "thread {}& {} = {}[{}];"
+                               : "device {}* {} = {} + {};";
+      emit(fmt_str, metal_data_type_name(dt), stmt->raw_name(),
+           stmt->origin->raw_name(), stmt->offset->raw_name());
+    } else {  // offset used as bytes
+      emit(
+          "device {}* {} = reinterpret_cast<device "
+          "{}*>(reinterpret_cast<device byte*>({}) + {});",
+          metal_data_type_name(dt), stmt->raw_name(), metal_data_type_name(dt),
+          stmt->origin->raw_name(), stmt->offset->raw_name());
+    }
+  }
+
   void visit(ExternalPtrStmt *stmt) override {
     // Used mostly for transferring data between host (e.g. numpy array) and
     // Metal.
@@ -484,7 +507,8 @@ class KernelCodegenImpl : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    const auto dt = metal_data_type_name(stmt->element_type().ptr_removed());
+    const auto dt = metal_data_type_name(
+        stmt->element_type().ptr_removed().get_element_type());
     emit("device {}* {} = reinterpret_cast<device {}*>({} + {});", dt,
          stmt->raw_name(), dt, kGlobalTmpsBufferName, stmt->offset);
   }

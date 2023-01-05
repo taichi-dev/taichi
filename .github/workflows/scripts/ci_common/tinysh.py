@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# -- stdlib --
 import os
 import platform
+import sys
 from contextlib import contextmanager
 from typing import Any, Mapping, Sequence
 
-# -- third party --
-# -- own --
-
-# -- code --
+from .escapes import escape_codes
 
 # A minimal and naive imitiation of the sh library, which can work on Windows.
 # NOT written as a general purpose library, wild assumptions are made.
@@ -36,6 +33,9 @@ class CommandFailed(Exception):
 ENVIRON_STACK = []
 PREFIX_STACK = []
 
+P = escape_codes['bold_purple']
+N = escape_codes['reset']
+
 
 class Command:
     def __init__(self, *args: str):
@@ -60,11 +60,23 @@ class Command:
         for v in PREFIX_STACK:
             prefixes.extend(v)
 
-        env = os.environ.copy()
+        overlay = {}
         for v in ENVIRON_STACK:
-            env.update(v)
+            overlay.update(v)
 
         args = prefixes + args
+        cmd = ' '.join([quote(v) for v in args])
+
+        print(f'{P}:: RUN {cmd}{N}', file=sys.stderr, flush=True)
+        if overlay:
+            print(f'{P}>> WITH ADDITIONAL ENVS:{N}',
+                  file=sys.stderr,
+                  flush=True)
+            for k, v in overlay.items():
+                print(f'{P}       {k}={v}{N}', file=sys.stderr, flush=True)
+
+        env = os.environ.copy()
+        env.update(overlay)
 
         code = os.spawnvpe(os.P_WAIT, args[0], args, env)
         if code:
@@ -133,3 +145,4 @@ git = sh.git
 # pip = python.bake('-m', 'pip')
 sccache = sh.sccache
 tar = sh.tar
+bash = sh.bash

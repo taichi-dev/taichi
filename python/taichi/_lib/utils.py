@@ -175,9 +175,11 @@ _print_taichi_header()
 
 def try_get_wheel_tag(module):
     try:
-        import wheel.metadata  # pylint: disable=import-outside-toplevel
+        from email.parser import \
+            Parser  # pylint: disable=import-outside-toplevel
         wheel_path = f'{module.__path__[0]}-{".".join(map(str, module.__version__))}.dist-info/WHEEL'
-        meta = wheel.metadata.read_pkg_info(wheel_path)
+        with open(wheel_path, 'r') as f:
+            meta = Parser().parse(f)
         return meta.get('Tag')
     except Exception:
         return None

@@ -7,7 +7,7 @@ from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.matrix import Matrix
+from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
@@ -663,29 +663,42 @@ class StructType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
         self.methods = {}
+        elements = []
         for k, dtype in kwargs.items():
             if k == '__struct_methods':
                 self.methods = dtype
-            elif isinstance(dtype, CompoundType):
+            elif isinstance(dtype, StructType):
                 self.members[k] = dtype
+                elements.append(dtype.dtype)
+            elif isinstance(dtype, MatrixType):
+                self.members[k] = dtype
+                elements.append(dtype.tensor_type.ptr)
             else:
-                self.members[k] = cook_dtype(dtype)
+                dtype = cook_dtype(dtype)
+                self.members[k] = dtype
+                elements.append(dtype)
+        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
+            elements)
 
     def __call__(self, *args, **kwargs):
+        """Create an instance of this struct type."""
         d = {}
         items = self.members.items()
+        # iterate over the members of this struct
         for index, pair in enumerate(items):
-            name, dtype = pair
-            if isinstance(dtype, CompoundType):
-                if index < len(args):
-                    d[name] = dtype(args[index])
-                else:
-                    d[name] = kwargs.get(name, dtype(0))
-            else:
-                if index < len(args):
-                    d[name] = args[index]
-                else:
-                    d[name] = kwargs.get(name, 0)
+            name, dtype = pair  # (member name, member type)
+            if index < len(args):  # set from args
+                data = args[index]
+            else:  # set from kwargs
+                data = kwargs.get(name, 0)
+
+            # If dtype is CompoundType and data is a scalar, it cannot be
+            # casted in the self.cast call later. We need an initialization here.
+            if isinstance(dtype, CompoundType) and not isinstance(
+                    data, (dict, Struct)):
+                data = dtype(data)
+
+            d[name] = data
 
         entries = Struct(d)
         struct = self.cast(entries)
@@ -701,7 +714,8 @@ class StructType(CompoundType):
                     func_ret, ret_index)
             else:
                 d[name] = expr.Expr(
-                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index))
+                    _ti_core.make_get_element_expr(func_ret.ptr,
+                                                   (ret_index, )))
                 ret_index += 1
 
         return Struct(d), ret_index

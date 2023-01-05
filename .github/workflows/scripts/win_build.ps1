@@ -69,14 +69,15 @@ if ($llvmVer -eq "10") {
     throw "Unsupported LLVM version"
 }
 
-$env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
+$env:TAICHI_USE_MSBUILD = 1
+# $env:TAICHI_CMAKE_ARGS += " -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang"
 
 if ($installVulkan) {
-    $env:VULKAN_SDK = "C:\VulkanSDK\1.2.189.0"
+    $env:VULKAN_SDK = "C:\VulkanSDK\1.3.236.0"
     if (-not (Test-Path $env:VULKAN_SDK)) {
         Info("Download and install Vulkan")
         Invoke-WebRequest `
-            -Uri 'https://sdk.lunarg.com/sdk/download/1.2.189.0/windows/VulkanSDK-1.2.189.0-Installer.exe' `
+            -Uri 'https://sdk.lunarg.com/sdk/download/1.3.236.0/windows/VulkanSDK-1.3.236.0-Installer.exe' `
             -MaximumRetryCount 10 -RetryIntervalSec 5 `
             -OutFile VulkanSDK.exe
         $installer = Start-Process -FilePath VulkanSDK.exe -Wait -PassThru -ArgumentList @("/S")

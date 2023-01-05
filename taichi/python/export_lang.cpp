@@ -42,10 +42,6 @@ bool test_threading();
 
 namespace taichi::lang {
 
-Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[ExprGroup(index)];
-}
-
 std::string libdevice_path();
 
 }  // namespace taichi::lang
@@ -59,6 +55,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiIndexError>(m, "TaichiIndexError",
+                                           PyExc_IndexError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
   py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
@@ -209,7 +207,6 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
-      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -317,7 +314,9 @@ void export_lang(py::module &m) {
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
       .def("make_texture_op_expr", &ASTBuilder::make_texture_op_expr)
-      .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("expand_exprs", &ASTBuilder::expand_exprs)
+      .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
+      .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -330,8 +329,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
-           py::return_value_policy::reference)
+      .def("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -447,6 +445,10 @@ void export_lang(py::module &m) {
            [&](Program *program, const DataType &dt) {
              return program->current_callable->insert_ret(dt);
            })
+      .def("finalize_rets",
+           [&](Program *program) {
+             return program->current_callable->finalize_rets();
+           })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
@@ -475,16 +477,16 @@ void export_lang(py::module &m) {
            })
       .def("fill_float",
            [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<uint32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<uint32_t &>(val));
            })
       .def("fill_int",
            [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<int32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<int32_t &>(val));
            })
       .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast(ndarray, val);
+        program->fill_ndarray_fast_u32(ndarray, val);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -826,7 +828,7 @@ void export_lang(py::module &m) {
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("make_get_element_expr",
-        Expr::make<GetElementExpression, const Expr &, int>);
+        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",
@@ -859,8 +861,6 @@ void export_lang(py::module &m) {
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
-
-  m.def("expr_index", expr_index);
 
   m.def("expr_assume_in_range", assume_range);
 
@@ -989,13 +989,6 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript",
-        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
-          Expr idx_expr = expr[expr_group];
-          idx_expr.set_tb(tb);
-          return idx_expr;
-        });
-
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
@@ -1038,13 +1031,6 @@ void export_lang(py::module &m) {
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
           return Expr::make<MeshRelationAccessExpression>(
               mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
-
-  m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
-           const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(
-              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")
@@ -1151,6 +1137,16 @@ void export_lang(py::module &m) {
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
           },
+          py::return_value_policy::reference)
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory, std::vector<DataType> elements) {
+            std::vector<const Type *> types;
+            for (auto &element : elements) {
+              types.push_back(element);
+            }
+            return DataType(factory->get_struct_type(types));
+          },
           py::return_value_policy::reference);
 
   m.def("get_type_factory_instance", TypeFactory::get_instance,
@@ -1183,7 +1179,8 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
+      .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)
@@ -1286,7 +1283,6 @@ void export_lang(py::module &m) {
       .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
       .def("factorize", &CuSparseSolver::factorize)
       .def("solve_rf", &CuSparseSolver::solve_rf)
-      .def("solve_cu", &CuSparseSolver::solve_cu)
       .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);

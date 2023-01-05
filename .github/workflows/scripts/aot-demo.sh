@@ -4,7 +4,7 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
-export TAICHI_AOT_DEMO_URL=https://github.com/taichi-dev/taichi-aot-demo
+export TAICHI_AOT_DEMO_URL=https://github.com/bobcao3/taichi-aot-demo
 export TAICHI_AOT_DEMO_BRANCH=master
 
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
@@ -17,6 +17,8 @@ export TAICHI_UNITY_EXAMPLE_BRANCH=main
 
 
 function build-and-smoke-test-android-aot-demo {
+    setup-android-ndk-env
+
     pushd taichi
     GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
     setup_python
@@ -26,26 +28,20 @@ function build-and-smoke-test-android-aot-demo {
 
     rm -rf taichi-aot-demo
     # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
-    git clone --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
+    git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
 
-    APP_ROOT=taichi-aot-demo/implicit_fem
-    ANDROID_APP_ROOT=$APP_ROOT/android
-    JNI_PATH=$ANDROID_APP_ROOT/app/src/main/jniLibs/arm64-v8a/
-
+    # Install taichi-python
     pip install /taichi-wheel/*.whl
-    pushd $APP_ROOT/python
-    sudo chmod 0777 $HOME/.cache
-    python implicit_fem.py --aot
-    popd
-    mkdir -p $JNI_PATH
-    cp taichi/build/libtaichi_export_core.so $JNI_PATH
-    cd $ANDROID_APP_ROOT
-    sed -i "s/TaichiAOT/AOT-$GIT_COMMIT/g" app/src/main/res/values/strings.xml
-    ./gradlew build
+
+    # Build Android Apps
+    cd taichi-aot-demo
+    ./scripts/build-taichi-android.sh
+    ./scripts/build-android.sh
+    ./scripts/build-android-app.sh E3_implicit_fem
 
     run-android-app \
-        app/build/outputs/apk/debug/app-debug.apk \
-        com.taichigraphics.aot_demos.implicit_fem/android.app.NativeActivity
+        framework/android/app/build/outputs/apk/debug/E3_implicit_fem-debug.apk \
+        org.taichi.aot_demo/android.app.NativeActivity
 }
 
 function prepare-unity-build-env {

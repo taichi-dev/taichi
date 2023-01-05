@@ -425,7 +425,7 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_activate(
+    impl.get_runtime().current_ast_builder.insert_activate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -439,7 +439,7 @@ def deactivate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+    impl.get_runtime().current_ast_builder.insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 

@@ -573,7 +573,10 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  explicit ScalarizeLocalPointers(IRNode *node, const std::unordered_set<Stmt *> &scalarizable_allocas) : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
+  explicit ScalarizeLocalPointers(
+      IRNode *node,
+      const std::unordered_set<Stmt *> &scalarizable_allocas)
+      : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
     node->accept(this);
 
     delayed_modifier_.modify_ir();
@@ -636,7 +639,8 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
       stmt->replace_all_usages_with(scalarized_alloca_stmt)
   */
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<AllocaStmt>() && scalarizable_allocas_.count(stmt->origin) == 1) {
+    if (stmt->origin->is<AllocaStmt>() &&
+        scalarizable_allocas_.count(stmt->origin) == 1) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
       auto tensor_type =
           alloca_stmt->ret_type.ptr_removed()->cast<TensorType>();

@@ -61,6 +61,7 @@ if (!$llvmVer.CompareTo("10")) {
     $env:LLVM_DIR = "C://taichi_llvm_15"
 }
 
+$env:TAICHI_USE_MSBUILD = 1
 $env:TAICHI_CMAKE_ARGS =' -DCMAKE_CXX_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang++.exe -DCMAKE_C_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang.exe'
 if (!$llvmVer.CompareTo("10")) {
     $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=C:\\taichi_clang\\bin\\clang++.exe"

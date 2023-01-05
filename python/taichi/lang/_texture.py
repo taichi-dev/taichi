@@ -13,7 +13,8 @@ def _get_entries(mat):
     if isinstance(mat, Matrix):
         return mat.entries
     assert isinstance(mat, Expr) and mat.is_tensor()
-    return impl.get_runtime().prog.current_ast_builder().expand_expr([mat.ptr])
+    return impl.get_runtime().prog.current_ast_builder().expand_exprs(
+        [mat.ptr])
 
 
 class TextureSampler:

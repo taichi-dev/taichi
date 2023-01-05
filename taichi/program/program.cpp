@@ -191,10 +191,10 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
+FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel, offloaded);
+  auto ret = program_impl_->compile(&kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -362,10 +362,13 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   auto &ker = kernel([snode, this] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
+    ASTBuilder *builder = this->current_ast_builder();
+    auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
+        builder->expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
     this->current_ast_builder()->insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
@@ -383,9 +386,13 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   auto &ker = kernel([snode, this] {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto expr = Expr(snode_to_fields_.at(snode))[indices];
+    ASTBuilder *builder = current_ast_builder();
+    auto expr =
+        builder->expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
     this->current_ast_builder()->insert_assignment(
         expr,
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
@@ -484,12 +491,13 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   return reinterpret_cast<intptr_t>(data_ptr);
 }
 
-void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
+void Program::fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val) {
   // This is a temporary solution to bypass device api.
   // Should be moved to CommandList once available in CUDA.
   program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
-      ndarray->get_nelement() * ndarray->get_element_size(), val);
+      ndarray->get_nelement() * ndarray->get_element_size() / sizeof(uint32_t),
+      val);
 }
 
 Program::~Program() {

@@ -42,10 +42,6 @@ bool test_threading();
 
 namespace taichi::lang {
 
-Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[ExprGroup(index)];
-}
-
 std::string libdevice_path();
 
 }  // namespace taichi::lang
@@ -59,6 +55,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiIndexError>(m, "TaichiIndexError",
+                                           PyExc_IndexError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
   py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
@@ -316,7 +314,9 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
-      .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("expand_exprs", &ASTBuilder::expand_exprs)
+      .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
+      .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -477,16 +477,16 @@ void export_lang(py::module &m) {
            })
       .def("fill_float",
            [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<uint32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<uint32_t &>(val));
            })
       .def("fill_int",
            [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<int32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<int32_t &>(val));
            })
       .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast(ndarray, val);
+        program->fill_ndarray_fast_u32(ndarray, val);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -859,8 +859,6 @@ void export_lang(py::module &m) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
-  m.def("expr_index", expr_index);
-
   m.def("expr_assume_in_range", assume_range);
 
   m.def("expr_loop_unique", loop_unique);
@@ -991,13 +989,6 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript",
-        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
-          Expr idx_expr = expr[expr_group];
-          idx_expr.set_tb(tb);
-          return idx_expr;
-        });
-
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
@@ -1040,13 +1031,6 @@ void export_lang(py::module &m) {
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
           return Expr::make<MeshRelationAccessExpression>(
               mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
-
-  m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
-           const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(
-              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")

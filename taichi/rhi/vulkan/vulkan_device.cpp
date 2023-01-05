@@ -140,7 +140,9 @@ RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)
-    : device_(params.device->vk_device()), name_(params.name) {
+    : ti_device_(*params.device),
+      device_(params.device->vk_device()),
+      name_(params.name) {
   create_descriptor_set_layout(params);
   create_shader_stages(params);
   create_pipeline_layout();
@@ -157,7 +159,9 @@ VulkanPipeline::VulkanPipeline(
     const RasterParams &raster_params,
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs)
-    : device_(params.device->vk_device()), name_(params.name) {
+    : ti_device_(*params.device),
+      device_(params.device->vk_device()),
+      name_(params.name) {
   this->graphics_pipeline_template_ =
       std::make_unique<GraphicsPipelineTemplate>();
 
@@ -218,7 +222,7 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline_dynamic(
     color_attachment_formats.push_back(color_attachment.first);
   }
 
-  VkPipelineRenderingCreateInfoKHR rendering_info;
+  VkPipelineRenderingCreateInfoKHR rendering_info{};
   rendering_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
   rendering_info.pNext = nullptr;
   rendering_info.viewMask = 0;
@@ -238,8 +242,6 @@ vkapi::IVkPipeline VulkanPipeline::graphics_pipeline_dynamic(
 }
 
 void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
-  std::unordered_set<uint32_t> sets_used;
-
   for (auto &code_view : params.code) {
     SpvReflectShaderModule module;
     SpvReflectResult result =
@@ -255,31 +257,31 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
 
     for (SpvReflectDescriptorSet *desc_set : desc_sets) {
-      uint32_t set = desc_set->set;
+      uint32_t set_index = desc_set->set;
+      if (set_templates_.find(set_index) == set_templates_.end()) {
+        set_templates_.insert({set_index, VulkanResourceSet(&ti_device_)});
+      }
+      VulkanResourceSet &set = set_templates_.at(set_index);
+
       for (int i = 0; i < desc_set->binding_count; i++) {
         SpvReflectDescriptorBinding *desc_binding = desc_set->bindings[i];
 
         if (desc_binding->descriptor_type ==
             SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-          resource_binder_.rw_buffer(set, desc_binding->binding, kDeviceNullPtr,
-                                     0);
+          set.rw_buffer(desc_binding->binding, kDeviceNullPtr, 0);
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-          resource_binder_.buffer(set, desc_binding->binding, kDeviceNullPtr,
-                                  0);
+          set.buffer(desc_binding->binding, kDeviceNullPtr, 0);
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-          resource_binder_.image(set, desc_binding->binding,
-                                 kDeviceNullAllocation, {});
+          set.image(desc_binding->binding, kDeviceNullAllocation, {});
         } else if (desc_binding->descriptor_type ==
                    SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-          resource_binder_.rw_image(set, desc_binding->binding,
-                                    kDeviceNullAllocation, {});
+          set.rw_image(desc_binding->binding, kDeviceNullAllocation, {});
         } else {
           RHI_LOG_ERROR("Unrecognized binding ignored");
         }
       }
-      sets_used.insert(set);
     }
 
     // Handle special vertex shaders stuff
@@ -335,14 +337,21 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     spvReflectDestroyShaderModule(&module);
   }
 
-  for (uint32_t set : sets_used) {
-    vkapi::IVkDescriptorSetLayout layout =
-        params.device->get_desc_set_layout(resource_binder_.get_set(set));
+  // A program can have no binding sets at all.
+  if (set_templates_.size()) {
+    // We need to verify the set layouts are all continous
+    uint32_t max_set = 0;
+    for (auto &[index, layout_template] : set_templates_) {
+      max_set = std::max(index, max_set);
+    }
+    RHI_ASSERT(max_set + 1 == set_templates_.size() &&
+               "Sets must be continous & start with 0");
 
-    set_layouts_.push_back(layout);
+    set_layouts_.resize(set_templates_.size(), nullptr);
+    for (auto &[index, layout_template] : set_templates_) {
+      set_layouts_[index] = ti_device_.get_desc_set_layout(layout_template);
+    }
   }
-
-  resource_binder_.lock_layout();
 }
 
 void VulkanPipeline::create_shader_stages(const Params &params) {
@@ -381,7 +390,7 @@ void VulkanPipeline::create_graphics_pipeline(
     const std::vector<VertexInputBinding> &vertex_inputs,
     const std::vector<VertexInputAttribute> &vertex_attrs) {
   // Use dynamic viewport state. These two are just dummies
-  VkViewport viewport;
+  VkViewport viewport{};
   viewport.width = 1;
   viewport.height = 1;
   viewport.x = 0;
@@ -389,9 +398,7 @@ void VulkanPipeline::create_graphics_pipeline(
   viewport.minDepth = 0.0;
   viewport.maxDepth = 1.0;
 
-  VkRect2D scissor;
-  scissor.offset = {0, 0};
-  scissor.extent = {1, 1};
+  VkRect2D scissor{/*offset*/ {0, 0}, /*extent*/ {1, 1}};
 
   VkPipelineViewportStateCreateInfo &viewport_state =
       graphics_pipeline_template_->viewport_state;
@@ -580,244 +587,218 @@ void VulkanPipeline::create_graphics_pipeline(
   pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 }
 
-VulkanResourceBinder::VulkanResourceBinder(VkPipelineBindPoint bind_point)
-    : bind_point_(bind_point) {
+VulkanResourceSet::VulkanResourceSet(VulkanDevice *device) : device_(device) {
 }
 
-VulkanResourceBinder::~VulkanResourceBinder() {
-  for (auto &set_pair : sets_) {
-    Set &set = set_pair.second;
-    for (auto &binding_pair : set.bindings) {
-      VkSampler sampler = binding_pair.second.sampler;
-      if (sampler != VK_NULL_HANDLE) {
-        Device *dev = binding_pair.second.ptr.device;
-        vkDestroySampler(static_cast<VulkanDevice *>(dev)->vk_device(), sampler,
-                         kNoVkAllocCallbacks);
-      }
+VulkanResourceSet::~VulkanResourceSet() {
+}
+
+ShaderResourceSet &VulkanResourceSet::rw_buffer(uint32_t binding,
+                                                DevicePtr ptr,
+                                                size_t size) {
+  dirty_ = true;
+
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  bindings_[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                        Buffer{buffer, ptr.offset, size}};
+  return *this;
+}
+
+ShaderResourceSet &VulkanResourceSet::rw_buffer(uint32_t binding,
+                                                DeviceAllocation alloc) {
+  return rw_buffer(binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
+}
+
+ShaderResourceSet &VulkanResourceSet::buffer(uint32_t binding,
+                                             DevicePtr ptr,
+                                             size_t size) {
+  dirty_ = true;
+
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  bindings_[binding] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                        Buffer{buffer, ptr.offset, size}};
+  return *this;
+}
+
+ShaderResourceSet &VulkanResourceSet::buffer(uint32_t binding,
+                                             DeviceAllocation alloc) {
+  return buffer(binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
+}
+
+ShaderResourceSet &VulkanResourceSet::image(uint32_t binding,
+                                            DeviceAllocation alloc,
+                                            ImageSamplerConfig sampler_config) {
+  dirty_ = true;
+
+  vkapi::IVkSampler sampler = nullptr;
+  vkapi::IVkImageView view = nullptr;
+
+  if (alloc != kDeviceNullAllocation) {
+    VkSamplerCreateInfo sampler_info{};
+    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    sampler_info.magFilter = VK_FILTER_LINEAR;
+    sampler_info.minFilter = VK_FILTER_LINEAR;
+    sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler_info.anisotropyEnable = VK_FALSE;
+    sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    sampler_info.unnormalizedCoordinates = VK_FALSE;
+    sampler_info.compareEnable = VK_FALSE;
+    sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
+    sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+    sampler = vkapi::create_sampler(device_->vk_device(), sampler_info);
+    view = device_->get_vk_imageview(alloc);
+  }
+
+  bindings_[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                        Texture{view, sampler}};
+
+  return *this;
+}
+
+ShaderResourceSet &VulkanResourceSet::rw_image(uint32_t binding,
+                                               DeviceAllocation alloc,
+                                               int lod) {
+  dirty_ = true;
+
+  vkapi::IVkImageView view = (alloc != kDeviceNullAllocation)
+                                 ? device_->get_vk_lod_imageview(alloc, lod)
+                                 : nullptr;
+
+  bindings_[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, Image{view}};
+
+  return *this;
+}
+
+RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
+  if (!dirty_ && set_) {
+    // If nothing changed directly return the set
+    return {RhiResult::success, set_};
+  }
+
+  if (bindings_.size() <= 0) {
+    // A set can't be empty
+    return {RhiResult::invalid_usage, nullptr};
+  }
+
+  vkapi::IVkDescriptorSetLayout new_layout =
+      device_->get_desc_set_layout(*this);
+  if (new_layout != layout_) {
+    // Layout changed, reset `set`
+    set_ = nullptr;
+    layout_ = new_layout;
+  }
+
+  if (!set_) {
+    // If set_ is null, create a new one
+    auto [status, new_set] = device_->alloc_desc_set(layout_);
+    if (status != RhiResult::success) {
+      return {status, nullptr};
     }
-  }
-}
-
-VkSampler create_sampler(ImageSamplerConfig config, VkDevice device) {
-  VkSampler sampler = VK_NULL_HANDLE;
-
-  // todo: fill these using the information from the ImageSamplerConfig
-  VkSamplerCreateInfo sampler_info{};
-  sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-  sampler_info.magFilter = VK_FILTER_LINEAR;
-  sampler_info.minFilter = VK_FILTER_LINEAR;
-  sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  sampler_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  sampler_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-  sampler_info.anisotropyEnable = VK_FALSE;
-  sampler_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-  sampler_info.unnormalizedCoordinates = VK_FALSE;
-  sampler_info.compareEnable = VK_FALSE;
-  sampler_info.compareOp = VK_COMPARE_OP_ALWAYS;
-  sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-  if (vkCreateSampler(device, &sampler_info, nullptr, &sampler) != VK_SUCCESS) {
-    throw std::runtime_error("failed to create texture sampler!");
-  }
-  return sampler;
-}
-
-#define CHECK_SET_BINDINGS                                          \
-  bool set_not_found = (sets_.find(set) == sets_.end());            \
-  if (set_not_found) {                                              \
-    if (layout_locked_) {                                           \
-      return;                                                       \
-    } else {                                                        \
-      sets_[set] = {};                                              \
-    }                                                               \
-  }                                                                 \
-  auto &bindings = sets_.at(set).bindings;                          \
-  if (layout_locked_ && bindings.find(binding) == bindings.end()) { \
-    return;                                                         \
+    set_ = new_set;
   }
 
-void VulkanResourceBinder::rw_buffer(uint32_t set,
-                                     uint32_t binding,
-                                     DevicePtr ptr,
-                                     size_t size) {
-  CHECK_SET_BINDINGS;
-
-  if (layout_locked_) {
-    RHI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-  } else {
-    if (bindings.find(binding) != bindings.end()) {
-      RHI_LOG_ERROR("Overriding last binding");
-    }
-  }
-
-  Binding new_binding = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ptr, size};
-  bindings[binding] = new_binding;
-}
-
-void VulkanResourceBinder::rw_buffer(uint32_t set,
-                                     uint32_t binding,
-                                     DeviceAllocation alloc) {
-  rw_buffer(set, binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
-}
-
-void VulkanResourceBinder::buffer(uint32_t set,
-                                  uint32_t binding,
-                                  DevicePtr ptr,
-                                  size_t size) {
-  CHECK_SET_BINDINGS;
-
-  if (layout_locked_) {
-    RHI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-  } else {
-    if (bindings.find(binding) != bindings.end()) {
-      RHI_LOG_ERROR("Overriding last binding");
-    }
-  }
-
-  Binding new_binding = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ptr, size};
-  bindings[binding] = new_binding;
-}
-
-void VulkanResourceBinder::buffer(uint32_t set,
-                                  uint32_t binding,
-                                  DeviceAllocation alloc) {
-  buffer(set, binding, alloc.get_ptr(0), VK_WHOLE_SIZE);
-}
-
-void VulkanResourceBinder::image(uint32_t set,
-                                 uint32_t binding,
-                                 DeviceAllocation alloc,
-                                 ImageSamplerConfig sampler_config) {
-  CHECK_SET_BINDINGS
-  if (layout_locked_) {
-    RHI_ASSERT(bindings.at(binding).type ==
-               VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-  } else {
-    if (bindings.find(binding) != bindings.end()) {
-      RHI_LOG_ERROR("Overriding last binding");
-    }
-  }
-  if (bindings[binding].sampler != VK_NULL_HANDLE) {
-    Device *dev = bindings[binding].ptr.device;
-    vkDestroySampler(static_cast<VulkanDevice *>(dev)->vk_device(),
-                     bindings[binding].sampler, kNoVkAllocCallbacks);
-  }
-  bindings[binding] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                       alloc.get_ptr(0), VK_WHOLE_SIZE};
-  if (alloc.device) {
-    VulkanDevice *device = static_cast<VulkanDevice *>(alloc.device);
-    bindings[binding].sampler =
-        create_sampler(sampler_config, device->vk_device());
-  }
-}
-
-void VulkanResourceBinder::rw_image(uint32_t set,
-                                    uint32_t binding,
-                                    DeviceAllocation alloc,
-                                    int lod) {
-  CHECK_SET_BINDINGS
-  if (layout_locked_) {
-    RHI_ASSERT(bindings.at(binding).type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-  } else {
-    if (bindings.find(binding) != bindings.end()) {
-      RHI_LOG_ERROR("Overriding last binding");
-    }
-  }
-  bindings[binding] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, alloc.get_ptr(0),
-                       VK_WHOLE_SIZE};
-}
-
-#undef CHECK_SET_BINDINGS
-
-void VulkanResourceBinder::vertex_buffer(DevicePtr ptr, uint32_t binding) {
-  vertex_buffers_[binding] = ptr;
-}
-
-void VulkanResourceBinder::index_buffer(DevicePtr ptr, size_t index_width) {
-  index_buffer_ = ptr;
-  if (index_width == 32) {
-    index_type_ = VK_INDEX_TYPE_UINT32;
-  } else if (index_width == 16) {
-    index_type_ = VK_INDEX_TYPE_UINT16;
-  } else {
-    RHI_LOG_ERROR("unsupported index width");
-  }
-}
-
-void VulkanResourceBinder::write_to_set(uint32_t index,
-                                        VulkanDevice &device,
-                                        vkapi::IVkDescriptorSet set) {
-  std::vector<VkDescriptorBufferInfo> buffer_infos;
-  std::vector<VkDescriptorImageInfo> image_infos;
-  std::vector<bool> is_image;
+  std::forward_list<VkDescriptorBufferInfo> buffer_infos;
+  std::forward_list<VkDescriptorImageInfo> image_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
 
-  for (auto &pair : sets_.at(index).bindings) {
+  for (auto &pair : bindings_) {
     uint32_t binding = pair.first;
+    VkDescriptorType type = pair.second.type;
+    auto &resource = pair.second.res;
 
-    if (pair.second.ptr != kDeviceNullPtr) {
-      VkDescriptorBufferInfo &buffer_info = buffer_infos.emplace_back();
-      VkDescriptorImageInfo &image_info = image_infos.emplace_back();
+    VkWriteDescriptorSet &write = desc_writes.emplace_back();
+    write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    write.pNext = nullptr;
+    write.dstSet = set_->set;
+    write.dstBinding = binding;
+    write.dstArrayElement = 0;
+    write.descriptorCount = 1;
+    write.descriptorType = type;
+    write.pImageInfo = nullptr;
+    write.pBufferInfo = nullptr;
+    write.pTexelBufferView = nullptr;
 
-      if (pair.second.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
-          pair.second.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        auto buffer = device.get_vkbuffer(pair.second.ptr);
-        buffer_info.buffer = buffer->buffer;
-        buffer_info.offset = pair.second.ptr.offset;
-        buffer_info.range = pair.second.size;
-        is_image.push_back(false);
-        set->ref_binding_objs[binding] = buffer;
-      } else if (pair.second.type ==
-                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-        auto view = std::get<1>(device.get_vk_image(pair.second.ptr));
-        image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        image_info.imageView = view->view;
-        image_info.sampler = pair.second.sampler;
-        is_image.push_back(true);
-        set->ref_binding_objs[binding] = view;
-      } else if (pair.second.type == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-        auto view =
-            device.get_vk_lod_imageview(pair.second.ptr, pair.second.image_lod);
-        image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-        image_info.imageView = view->view;
-        is_image.push_back(true);
-        set->ref_binding_objs[binding] = view;
-      } else {
-        RHI_LOG_ERROR("Ignoring unsupported Descriptor Type");
+    if (Buffer *buf = std::get_if<Buffer>(&resource)) {
+      VkDescriptorBufferInfo &buffer_info = buffer_infos.emplace_front();
+      buffer_info.buffer = buf->buffer ? buf->buffer->buffer : VK_NULL_HANDLE;
+      buffer_info.offset = buf->offset;
+      buffer_info.range = buf->size;
+
+      write.pBufferInfo = &buffer_info;
+      if (buf->buffer) {
+        set_->ref_binding_objs.push_back(buf->buffer);
       }
+    } else if (Image *img = std::get_if<Image>(&resource)) {
+      VkDescriptorImageInfo &image_info = image_infos.emplace_front();
+      image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+      image_info.imageView = img->view ? img->view->view : VK_NULL_HANDLE;
+      image_info.sampler = VK_NULL_HANDLE;
 
-      VkWriteDescriptorSet &write = desc_writes.emplace_back();
-      write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-      write.pNext = nullptr;
-      write.dstSet = set->set;
-      write.dstBinding = binding;
-      write.dstArrayElement = 0;
-      write.descriptorCount = 1;
-      write.descriptorType = pair.second.type;
-      write.pImageInfo = nullptr;
-      write.pBufferInfo = nullptr;
-      write.pTexelBufferView = nullptr;
-    }
-  }
+      write.pImageInfo = &image_info;
+      if (img->view) {
+        set_->ref_binding_objs.push_back(img->view);
+      }
+    } else if (Texture *tex = std::get_if<Texture>(&resource)) {
+      VkDescriptorImageInfo &image_info = image_infos.emplace_front();
+      image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+      image_info.imageView = tex->view ? tex->view->view : VK_NULL_HANDLE;
+      image_info.sampler =
+          tex->sampler ? tex->sampler->sampler : VK_NULL_HANDLE;
 
-  // Set these pointers later as std::vector resize can relocate the pointers
-  int i = 0;
-  for (auto &write : desc_writes) {
-    if (is_image[i]) {
-      write.pImageInfo = &image_infos[i];
+      write.pImageInfo = &image_info;
+      if (tex->view) {
+        set_->ref_binding_objs.push_back(tex->view);
+      }
+      if (tex->sampler) {
+        set_->ref_binding_objs.push_back(tex->sampler);
+      }
     } else {
-      write.pBufferInfo = &buffer_infos[i];
+      RHI_LOG_ERROR("Ignoring unsupported Descriptor Type");
     }
-    i++;
   }
 
-  vkUpdateDescriptorSets(device.vk_device(), desc_writes.size(),
+  vkUpdateDescriptorSets(device_->vk_device(), desc_writes.size(),
                          desc_writes.data(), /*descriptorCopyCount=*/0,
                          /*pDescriptorCopies=*/nullptr);
+
+  dirty_ = false;
+
+  return {RhiResult::success, set_};
 }
 
-void VulkanResourceBinder::lock_layout() {
-  layout_locked_ = true;
+RasterResources &VulkanRasterResources::vertex_buffer(DevicePtr ptr,
+                                                      uint32_t binding) {
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  if (buffer == nullptr) {
+    vertex_buffers.erase(binding);
+  } else {
+    vertex_buffers[binding] = {buffer, ptr.offset};
+  }
+  return *this;
+}
+
+RasterResources &VulkanRasterResources::index_buffer(DevicePtr ptr,
+                                                     size_t index_width) {
+  vkapi::IVkBuffer buffer =
+      (ptr != kDeviceNullPtr) ? device_->get_vkbuffer(ptr) : nullptr;
+  if (buffer == nullptr) {
+    index_binding = BufferBinding();
+    index_type = VK_INDEX_TYPE_MAX_ENUM;
+  } else {
+    index_binding = {buffer, ptr.offset};
+    if (index_width == 32) {
+      index_type = VK_INDEX_TYPE_UINT32;
+    } else if (index_width == 16) {
+      index_type = VK_INDEX_TYPE_UINT16;
+    }
+  }
+  return *this;
 }
 
 VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
@@ -851,7 +832,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
 VulkanCommandList::~VulkanCommandList() {
 }
 
-void VulkanCommandList::bind_pipeline(Pipeline *p) {
+void VulkanCommandList::bind_pipeline(Pipeline *p) noexcept {
   auto pipeline = static_cast<VulkanPipeline *>(p);
 
   if (current_pipeline_ == pipeline)
@@ -866,7 +847,7 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
     vkCmdBindPipeline(buffer_->buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       vk_pipeline->pipeline);
 
-    VkViewport viewport;
+    VkViewport viewport{};
     viewport.width = viewport_width_;
     viewport.height = viewport_height_;
     viewport.x = 0;
@@ -874,9 +855,8 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
     viewport.minDepth = 0.0;
     viewport.maxDepth = 1.0;
 
-    VkRect2D scissor;
-    scissor.offset = {0, 0};
-    scissor.extent = {viewport_width_, viewport_height_};
+    VkRect2D scissor{/*offset*/ {0, 0},
+                     /*extent*/ {viewport_width_, viewport_height_}};
 
     vkCmdSetViewport(buffer_->buffer, 0, 1, &viewport);
     vkCmdSetScissor(buffer_->buffer, 0, 1, &scissor);
@@ -892,67 +872,105 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
   current_pipeline_ = pipeline;
 }
 
-void VulkanCommandList::bind_resources(ResourceBinder *ti_binder) {
-  VulkanResourceBinder *binder = static_cast<VulkanResourceBinder *>(ti_binder);
-
-  for (auto &pair : binder->get_sets()) {
-    VkPipelineLayout pipeline_layout =
-        current_pipeline_->pipeline_layout()->layout;
-
-    vkapi::IVkDescriptorSetLayout layout =
-        ti_device_->get_desc_set_layout(pair.second);
-
-    vkapi::IVkDescriptorSet set = nullptr;
-
-    if (currently_used_sets_.find(pair.second) != currently_used_sets_.end()) {
-      set = currently_used_sets_.at(pair.second);
-    }
-
-    if (!set) {
-      set = ti_device_->alloc_desc_set(layout);
-      binder->write_to_set(pair.first, *ti_device_, set);
-      currently_used_sets_[pair.second] = set;
-    }
-
-    VkPipelineBindPoint bind_point;
-    if (current_pipeline_->is_graphics()) {
-      bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    } else {
-      bind_point = VK_PIPELINE_BIND_POINT_COMPUTE;
-    }
-
-    vkCmdBindDescriptorSets(buffer_->buffer, bind_point, pipeline_layout,
-                            /*firstSet=*/0,
-                            /*descriptorSetCount=*/1, &set->set,
-                            /*dynamicOffsetCount=*/0,
-                            /*pDynamicOffsets=*/nullptr);
-    buffer_->refs.push_back(set);
+RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
+                                                   int set_index) noexcept {
+  VulkanResourceSet *set = static_cast<VulkanResourceSet *>(res);
+  if (set->get_bindings().size() <= 0) {
+    return RhiResult::success;
   }
 
-  if (current_pipeline_->is_graphics()) {
-    auto [idx_ptr, type] = binder->get_index_buffer();
-    if (idx_ptr.device) {
-      auto index_buffer = ti_device_->get_vkbuffer(idx_ptr);
-      vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
-                           idx_ptr.offset, type);
-      buffer_->refs.push_back(index_buffer);
+  auto [status, vk_set] = set->finalize();
+  if (status != RhiResult::success) {
+    return status;
+  }
+
+  vkapi::IVkDescriptorSetLayout set_layout = set->get_layout();
+
+  if (current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
+      set_layout) {
+    // WARN: we have a layout mismatch
+    RHI_LOG_ERROR("Layout mismatch");
+
+    auto &templates = current_pipeline_->get_resource_set_templates();
+    VulkanResourceSet &set_template = templates.at(set_index);
+
+    for (const auto &template_binding : set_template.get_bindings()) {
+      char msg[512];
+      snprintf(msg, 512, "Template binding %d: (VkDescriptorType) %d",
+               template_binding.first, template_binding.second.type);
+      RHI_LOG_ERROR(msg);
     }
 
-    for (auto [binding, ptr] : binder->get_vertex_buffers()) {
-      auto buffer = ti_device_->get_vkbuffer(ptr);
-      vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer->buffer,
-                             &ptr.offset);
-      buffer_->refs.push_back(buffer);
+    for (const auto &binding : set->get_bindings()) {
+      char msg[512];
+      snprintf(msg, 512, "Binding %d: (VkDescriptorType) %d", binding.first,
+               binding.second.type);
+      RHI_LOG_ERROR(msg);
     }
+
+    return RhiResult::invalid_usage;
   }
+
+  VkPipelineLayout pipeline_layout =
+      current_pipeline_->pipeline_layout()->layout;
+  VkPipelineBindPoint bind_point = current_pipeline_->is_graphics()
+                                       ? VK_PIPELINE_BIND_POINT_GRAPHICS
+                                       : VK_PIPELINE_BIND_POINT_COMPUTE;
+
+  vkCmdBindDescriptorSets(buffer_->buffer, bind_point, pipeline_layout,
+                          /*firstSet=*/set_index,
+                          /*descriptorSetCount=*/1, &vk_set->set,
+                          /*dynamicOffsetCount=*/0,
+                          /*pDynamicOffsets=*/nullptr);
+  buffer_->refs.push_back(vk_set);
+
+  return RhiResult::success;
 }
 
-void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
-  RHI_ASSERT(ptr.device == ti_device_);
+RhiResult VulkanCommandList::bind_raster_resources(
+    RasterResources *_res) noexcept {
+  VulkanRasterResources *res = static_cast<VulkanRasterResources *>(_res);
 
+  if (!current_pipeline_->is_graphics()) {
+    return RhiResult::invalid_usage;
+  }
+
+  if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
+    return RhiResult::not_supported;
+  }
+
+  if (res->index_binding.buffer != nullptr) {
+    // We have a valid index buffer
+    vkapi::IVkBuffer index_buffer = res->index_binding.buffer;
+    vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
+                         res->index_binding.offset, res->index_type);
+    buffer_->refs.push_back(index_buffer);
+  }
+
+  for (auto &[binding, buffer] : res->vertex_buffers) {
+    VkDeviceSize offset_vk = buffer.offset;
+    vkCmdBindVertexBuffers(buffer_->buffer, binding, 1, &buffer.buffer->buffer,
+                           &offset_vk);
+    buffer_->refs.push_back(buffer.buffer);
+  }
+
+  return RhiResult::success;
+}
+
+void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
   auto buffer = ti_device_->get_vkbuffer(ptr);
+  size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
 
-  VkBufferMemoryBarrier barrier;
+  // Clamp to buffer size
+  if (ptr.offset > buffer_size) {
+    return;
+  }
+
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
+    size = VK_WHOLE_SIZE;
+  }
+
+  VkBufferMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
   barrier.pNext = nullptr;
   barrier.buffer = buffer->buffer;
@@ -981,12 +999,12 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
   buffer_->refs.push_back(buffer);
 }
 
-void VulkanCommandList::buffer_barrier(DeviceAllocation alloc) {
-  buffer_barrier(DevicePtr{alloc, 0}, VK_WHOLE_SIZE);
+void VulkanCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {
+  buffer_barrier(DevicePtr{alloc, 0}, std::numeric_limits<size_t>::max());
 }
 
-void VulkanCommandList::memory_barrier() {
-  VkMemoryBarrier barrier;
+void VulkanCommandList::memory_barrier() noexcept {
+  VkMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   barrier.pNext = nullptr;
   barrier.srcAccessMask =
@@ -1009,11 +1027,29 @@ void VulkanCommandList::memory_barrier() {
       /*pImageMemoryBarriers=*/nullptr);
 }
 
-void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+void VulkanCommandList::buffer_copy(DevicePtr dst,
+                                    DevicePtr src,
+                                    size_t size) noexcept {
+  size_t src_size = ti_device_->get_vkbuffer_size(src);
+  size_t dst_size = ti_device_->get_vkbuffer_size(dst);
+
+  // Clamp to minimum available size
+  if (saturate_uadd<size_t>(src.offset, size) > src_size) {
+    size = saturate_usub<size_t>(src_size, src.offset);
+  }
+  if (saturate_uadd<size_t>(dst.offset, size) > dst_size) {
+    size = saturate_usub<size_t>(dst_size, dst.offset);
+  }
+
+  if (size == 0) {
+    return;
+  }
+
   VkBufferCopy copy_region{};
   copy_region.srcOffset = src.offset;
   copy_region.dstOffset = dst.offset;
   copy_region.size = size;
+
   auto src_buffer = ti_device_->get_vkbuffer(src);
   auto dst_buffer = ti_device_->get_vkbuffer(dst);
   vkCmdCopyBuffer(buffer_->buffer, src_buffer->buffer, dst_buffer->buffer,
@@ -1022,10 +1058,25 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   buffer_->refs.push_back(dst_buffer);
 }
 
-void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+void VulkanCommandList::buffer_fill(DevicePtr ptr,
+                                    size_t size,
+                                    uint32_t data) noexcept {
+  // Align to 4 bytes
+  ptr.offset = ptr.offset & size_t(-4);
+
   auto buffer = ti_device_->get_vkbuffer(ptr);
-  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset,
-                  (size == kBufferSizeEntireSize) ? VK_WHOLE_SIZE : size, data);
+  size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
+
+  // Check for overflow
+  if (ptr.offset > buffer_size) {
+    return;
+  }
+
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
+    size = VK_WHOLE_SIZE;
+  }
+
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
   buffer_->refs.push_back(buffer);
 }
 
@@ -1055,9 +1106,8 @@ void VulkanCommandList::begin_renderpass(int x0,
   current_renderpass_desc_.color_attachments.clear();
   rp_desc.clear_depth = depth_clear;
 
-  VkRect2D render_area;
-  render_area.offset = {x0, y0};
-  render_area.extent = {uint32_t(x1 - x0), uint32_t(y1 - y0)};
+  VkRect2D render_area{/*offset*/ {x0, y0},
+                       /*extent*/ {uint32_t(x1 - x0), uint32_t(y1 - y0)}};
 
   viewport_width_ = render_area.extent.width;
   viewport_height_ = render_area.extent.height;
@@ -1106,7 +1156,7 @@ void VulkanCommandList::begin_renderpass(int x0,
     render_info.pDepthAttachment = nullptr;
     render_info.pStencilAttachment = nullptr;
 
-    VkRenderingAttachmentInfo depth_attachment_info;
+    VkRenderingAttachmentInfo depth_attachment_info{};
     if (depth_attachment) {
       auto [image, view, format] = ti_device_->get_vk_image(*depth_attachment);
       rp_desc.depth_attachment = format;
@@ -1427,10 +1477,9 @@ void VulkanCommandList::blit_image(DeviceAllocation dst_img,
                                    ImageLayout dst_img_layout,
                                    ImageLayout src_img_layout,
                                    const ImageCopyParams &params) {
-  VkOffset3D blit_size;
-  blit_size.x = params.width;
-  blit_size.y = params.height;
-  blit_size.z = params.depth;
+  VkOffset3D blit_size{/*x*/ int(params.width),
+                       /*y*/ int(params.height),
+                       /*z*/ int(params.depth)};
   VkImageBlit blit{};
   blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
   blit.srcSubresource.layerCount = 1;
@@ -1502,7 +1551,8 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   graphics_queue_family_index_ = params.graphics_queue_family_index;
 
   create_vma_allocator();
-  new_descriptor_pool();
+  RHI_ASSERT(new_descriptor_pool() == RhiResult::success &&
+             "Failed to allocate initial descriptor pool");
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -1698,6 +1748,14 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
 
 void VulkanDevice::dealloc_memory(DeviceAllocation handle) {
   allocations_.release(&get_alloc_internal(handle));
+}
+
+ShaderResourceSet *VulkanDevice::create_resource_set() {
+  return new VulkanResourceSet(this);
+}
+
+RasterResources *VulkanDevice::create_raster_resources() {
+  return new VulkanRasterResources(this);
 }
 
 uint64_t VulkanDevice::get_memory_physical_pointer(DeviceAllocation handle) {
@@ -1899,7 +1957,7 @@ std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(
   params.device = this;
   params.name = name;
 
-  for (auto src_desc : src) {
+  for (auto &src_desc : src) {
     SpirvCodeView &code = params.code.emplace_back();
     code.data = (uint32_t *)src_desc.data;
     code.size = src_desc.size;
@@ -1939,6 +1997,12 @@ vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
   const AllocationInternal &alloc_int = get_alloc_internal(alloc);
 
   return alloc_int.buffer;
+}
+
+size_t VulkanDevice::get_vkbuffer_size(const DeviceAllocation &alloc) const {
+  const AllocationInternal &alloc_int = get_alloc_internal(alloc);
+
+  return alloc_int.alloc_info.size;
 }
 
 std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
@@ -2156,10 +2220,10 @@ vkapi::IVkRenderPass VulkanDevice::get_renderpass(
   std::vector<VkAttachmentDescription> attachments;
   std::vector<VkAttachmentReference> color_attachments;
 
-  VkAttachmentReference depth_attachment;
+  VkAttachmentReference depth_attachment{};
 
   uint32_t i = 0;
-  for (auto [format, clear] : desc.color_attachments) {
+  for (auto &[format, clear] : desc.color_attachments) {
     VkAttachmentDescription &description = attachments.emplace_back();
     description.flags = 0;
     description.format = format;
@@ -2231,10 +2295,10 @@ vkapi::IVkRenderPass VulkanDevice::get_renderpass(
 }
 
 vkapi::IVkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
-    VulkanResourceBinder::Set &set) {
+    VulkanResourceSet &set) {
   if (desc_set_layouts_.find(set) == desc_set_layouts_.end()) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
-    for (auto &pair : set.bindings) {
+    for (const auto &pair : set.get_bindings()) {
       bindings.push_back(VkDescriptorSetLayoutBinding{
           /*binding=*/pair.first, pair.second.type, /*descriptorCount=*/1,
           VK_SHADER_STAGE_ALL,
@@ -2257,20 +2321,22 @@ vkapi::IVkDescriptorSetLayout VulkanDevice::get_desc_set_layout(
   }
 }
 
-vkapi::IVkDescriptorSet VulkanDevice::alloc_desc_set(
+RhiReturn<vkapi::IVkDescriptorSet> VulkanDevice::alloc_desc_set(
     vkapi::IVkDescriptorSetLayout layout) {
-  // TODO: Currently we assume the calling code has called get_desc_set_layout
-  // before allocating a desc set. Either we should guard against this or
-  // maintain this assumption in other parts of the VulkanBackend
+  // This returns nullptr if can't allocate (OOM or pool is full)
   vkapi::IVkDescriptorSet set =
       vkapi::allocate_descriptor_sets(desc_pool_, layout);
 
   if (set == nullptr) {
-    new_descriptor_pool();
+    RhiResult status = new_descriptor_pool();
+    // Allocating new descriptor pool failed
+    if (status != RhiResult::success) {
+      return {status, nullptr};
+    }
     set = vkapi::allocate_descriptor_sets(desc_pool_, layout);
   }
 
-  return set;
+  return {RhiResult::success, set};
 }
 
 void VulkanDevice::create_vma_allocator() {
@@ -2357,7 +2423,7 @@ void VulkanDevice::create_vma_allocator() {
   vmaCreateAllocator(&allocatorInfo, &allocator_export_);
 }
 
-void VulkanDevice::new_descriptor_pool() {
+RhiResult VulkanDevice::new_descriptor_pool() {
   std::vector<VkDescriptorPoolSize> pool_sizes{
       {VK_DESCRIPTOR_TYPE_SAMPLER, 64},
       {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 256},
@@ -2376,7 +2442,15 @@ void VulkanDevice::new_descriptor_pool() {
   pool_info.maxSets = 64;
   pool_info.poolSizeCount = pool_sizes.size();
   pool_info.pPoolSizes = pool_sizes.data();
-  desc_pool_ = vkapi::create_descriptor_pool(device_, &pool_info);
+  auto new_desc_pool = vkapi::create_descriptor_pool(device_, &pool_info);
+
+  if (!new_desc_pool) {
+    return RhiResult::out_of_memory;
+  }
+
+  desc_pool_ = new_desc_pool;
+
+  return RhiResult::success;
 }
 
 VkPresentModeKHR choose_swap_present_mode(
@@ -2540,7 +2614,7 @@ void VulkanSurface::create_swap_chain() {
   this->width_ = extent.width;
   this->height_ = extent.height;
 
-  VkSwapchainCreateInfoKHR createInfo;
+  VkSwapchainCreateInfoKHR createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   createInfo.pNext = nullptr;
   createInfo.flags = 0;
@@ -2602,7 +2676,7 @@ void VulkanSurface::create_swap_chain() {
 }
 
 void VulkanSurface::destroy_swap_chain() {
-  for (auto alloc : swapchain_images_) {
+  for (auto &alloc : swapchain_images_) {
     std::get<1>(device_->get_vk_image(alloc)) = nullptr;
     device_->destroy_image(alloc);
   }
@@ -2644,7 +2718,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 
 StreamSemaphore VulkanSurface::acquire_next_image() {
   if (!config_.window_handle) {
-    image_index_ = (image_index_ + 1) % swapchain_images_.size();
+    image_index_ = (image_index_ + 1) % uint32_t(swapchain_images_.size());
     return nullptr;
   } else {
     vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
@@ -2694,7 +2768,7 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   auto *stream = device_->get_graphics_stream();
 
   auto [w, h] = get_size();
-  size_t size_bytes = w * h * 4;
+  size_t size_bytes = size_t(w * h) * sizeof(float);
 
   if (depth_buffer_ == kDeviceNullAllocation) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
@@ -2725,7 +2799,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   auto *stream = device_->get_graphics_stream();
   DeviceAllocation img_alloc = swapchain_images_[image_index_];
   auto [w, h] = get_size();
-  size_t size_bytes = w * h * 4;
+  size_t size_bytes = size_t(w * h) * sizeof(uint8_t) * 4;
 
   /*
   if (screenshot_image_ == kDeviceNullAllocation) {

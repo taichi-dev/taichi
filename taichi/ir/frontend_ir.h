@@ -610,18 +610,12 @@ class IndexExpression : public Expression {
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "")
-      : var(var), indices_group({indices}) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "")
-      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   void type_check(CompileConfig *config) override;
 
@@ -872,9 +866,7 @@ class MeshIndexConversionExpression : public Expression {
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
-  }
+                                mesh::ConvType conv_type);
 
   void flatten(FlattenContext *ctx) override;
 
@@ -964,6 +956,15 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
+  Expr expr_subscript(const Expr &expr,
+                      const ExprGroup &indices,
+                      std::string tb = "");
+
+  Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                             mesh::MeshElementType idx_type,
+                             const Expr &idx,
+                             mesh::ConvType &conv_type);
+
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
   Expr expr_func_call(Function *, const ExprGroup &);
   void create_assert_stmt(const Expr &cond,
@@ -1000,7 +1001,7 @@ class ASTBuilder {
   Expr snode_length(SNode *snode, const ExprGroup &indices);
   Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
-  std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
+  std::vector<Expr> expand_exprs(const std::vector<Expr> &exprs);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

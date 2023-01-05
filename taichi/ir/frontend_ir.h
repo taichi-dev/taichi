@@ -725,8 +725,7 @@ class TextureOpExpression : public Expression {
   Expr texture_ptr;
   ExprGroup args;
 
-  explicit TextureOpExpression(ASTBuilder *builder,
-                               TextureOpType op,
+  explicit TextureOpExpression(TextureOpType op,
                                Expr texture_ptr,
                                const ExprGroup &args);
 

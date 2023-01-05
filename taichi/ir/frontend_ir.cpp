@@ -1033,12 +1033,10 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-TextureOpExpression::TextureOpExpression(ASTBuilder *builder,
-                                         TextureOpType op,
+TextureOpExpression::TextureOpExpression(TextureOpType op,
                                          Expr texture_ptr,
                                          const ExprGroup &args)
     : op(op), texture_ptr(texture_ptr), args(args) {
-  this->args.exprs = builder->expand_exprs(args.exprs);
 }
 
 void TextureOpExpression::type_check(CompileConfig *config) {
@@ -1665,7 +1663,9 @@ void ASTBuilder::pop_scope() {
 Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
                                       const Expr &texture_ptr,
                                       const ExprGroup &args) {
-  return Expr::make<TextureOpExpression>(this, op, texture_ptr, args);
+  ExprGroup expanded_args;
+  expanded_args.exprs = this->expand_exprs(args.exprs);
+  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args);
 }
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

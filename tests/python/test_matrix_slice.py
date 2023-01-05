@@ -49,7 +49,7 @@ def test_matrix_slice_invalid():
         foo2()
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
+@test_utils.test()
 def test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice(
@@ -99,7 +99,7 @@ def test_matrix_slice_write():
                                            [1, 1, 1, 1]])).all()
 
 
-@test_utils.test(dynamic_index=True)
+@test_utils.test()
 def test_matrix_slice_write_dynamic_index():
     @ti.kernel
     def foo(i: ti.i32) -> ti.types.matrix(3, 4, ti.i32):

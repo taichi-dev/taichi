@@ -187,7 +187,7 @@ def _test_local_matrix_non_constant_index():
             assert func2(i, j, 10) == 10 * (i + j + 1)
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
+@test_utils.test()
 def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
@@ -226,7 +226,7 @@ def test_matrix_ndarray_non_constant_index():
     assert v[3][9] == 9
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
@@ -377,7 +377,7 @@ def test_copy_matrix_in_taichi_scope():
     test()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], dynamic_index=True, debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_matrix_field_dynamic_index_stride():
     # placeholders
     temp_a = ti.field(ti.f32)
@@ -429,7 +429,7 @@ def test_matrix_field_dynamic_index_stride():
             assert v[i][j] == i * j
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_dynamic_index_different_path_length():
     v = ti.Vector.field(2, ti.i32)
     x = v.get_scalar_field(0)
@@ -442,7 +442,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_dynamic_index_not_pure_dense():
     v = ti.Vector.field(2, ti.i32)
     x = v.get_scalar_field(0)
@@ -455,7 +455,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_dynamic_index_different_cell_size_bytes():
     temp = ti.field(ti.f32)
 
@@ -470,7 +470,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     temp_a = ti.field(ti.f32)
     temp_b = ti.field(ti.f32)
@@ -486,7 +486,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(require=ti.extension.dynamic_index)
+@test_utils.test()
 def test_matrix_field_dynamic_index_different_stride():
     temp = ti.field(ti.f32)
 
@@ -501,7 +501,7 @@ def test_matrix_field_dynamic_index_different_stride():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test(require=ti.extension.dynamic_index, dynamic_index=True)
+@test_utils.test()
 def test_matrix_field_dynamic_index_multiple_materialize():
     @ti.kernel
     def empty():
@@ -523,9 +523,7 @@ def test_matrix_field_dynamic_index_multiple_materialize():
             assert a[i][j] == (i if j == i % 3 else 0)
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_local_vector_initialized_in_a_loop():
     @ti.kernel
     def foo():
@@ -1157,9 +1155,7 @@ def test_cross_scope_matrix_atomic_ops():
     assert (x[1, 3] == [100, 10, 1]).all()
 
 
-@test_utils.test(require=ti.extension.dynamic_index,
-                 dynamic_index=True,
-                 debug=True)
+@test_utils.test(debug=True)
 def test_global_tmp_overwrite():
     # https://github.com/taichi-dev/taichi/issues/6663
     @ti.kernel

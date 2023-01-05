@@ -456,11 +456,12 @@ void export_lang(py::module &m) {
           "create_ndarray",
           [&](Program *program, const DataType &dt,
               const std::vector<int> &shape,
-              ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout);
+              ExternalArrayLayout layout, bool zero_fill) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
+          py::arg("zero_fill") = false,
           py::return_value_policy::reference)
       .def(
           "create_texture",

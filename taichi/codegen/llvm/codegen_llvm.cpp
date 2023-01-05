@@ -306,11 +306,14 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(Kernel *kernel,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(
-          module == nullptr ? get_llvm_program(kernel->program)
-                                  ->get_llvm_context(kernel->arch)
-                                  ->new_module("kernel")
-                            : std::move(module),
-          get_llvm_program(kernel->program)->get_llvm_context(kernel->arch)),
+          module == nullptr
+              ? get_llvm_program(kernel->program)
+                    ->get_llvm_context(
+                        kernel->program->this_thread_config().arch)
+                    ->new_module("kernel")
+              : std::move(module),
+          get_llvm_program(kernel->program)
+              ->get_llvm_context(kernel->program->this_thread_config().arch)),
       kernel(kernel),
       ir(ir),
       prog(kernel->program) {
@@ -884,8 +887,9 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
 llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
                                            DataType dt,
                                            llvm::Value *value) {
-  if (!arch_is_cpu(kernel->arch)) {
-    TI_WARN("print not supported on arch {}", arch_name(kernel->arch));
+  if (!arch_is_cpu(prog->this_thread_config().arch)) {
+    TI_WARN("print not supported on arch {}",
+            arch_name(prog->this_thread_config().arch));
     return nullptr;
   }
   std::vector<llvm::Value *> args;
@@ -2574,7 +2578,8 @@ FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
 }
 
 void TaskCodeGenLLVM::initialize_context() {
-  tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  tlctx =
+      get_llvm_program(prog)->get_llvm_context(prog->this_thread_config().arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }

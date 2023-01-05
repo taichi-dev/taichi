@@ -53,10 +53,9 @@ jobs:
             VER=$(echo $RELEASE_VERSION | sed 's/^v//')
             if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
               echo Version number mismatch
-              # exit 1
+              exit 1
             fi
-            # pip install -f dist taichi==$VER
-            pip install -f dist taichi
+            pip install -f dist taichi==$VER
             if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
               echo Taichi init version number mismatch!!
               exit 1

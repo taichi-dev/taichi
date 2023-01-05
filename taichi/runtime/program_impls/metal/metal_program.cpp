@@ -45,9 +45,7 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config_)
     : ProgramImpl(config_) {
 }
 
-FunctionType MetalProgramImpl::compile(Kernel *kernel,
-                                       OffloadedStmt *offloaded) {
-  TI_ASSERT(offloaded == nullptr);
+FunctionType MetalProgramImpl::compile(Kernel *kernel) {
   return metal::compiled_kernel_to_metal_executable(
       get_cache_manager()->load_or_compile(config, kernel),
       metal_kernel_mgr_.get());

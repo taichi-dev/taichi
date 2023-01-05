@@ -147,7 +147,7 @@ class TaichiMain:
         slide_bar = 14
         top_margin = 6
         left_margin = 7
-        bottom_margin = 23
+        bottom_margin = 32
         row_spacing = 32
         col_spacing = 11
         tile_size = 128
@@ -168,8 +168,9 @@ class TaichiMain:
         dy = tile_size / height
 
         examples = [
-            "sdf_renderer", "cornell_box", "rasterizer", "euler", "fractal",
-            "mpm128", "pbf2d", "mass_spring_game"
+            "poisson_disk_sampling", "mass_spring_3d_ggui", "circle_packing_image",
+            "snow_phaseField", "sdf_renderer", "cornell_box", "karman_vortex_street",
+            "euler", "fractal", "mpm128", "pbf2d", "mass_spring_game"
         ]
 
         def valid_mouse_position(mou_x, mou_y):

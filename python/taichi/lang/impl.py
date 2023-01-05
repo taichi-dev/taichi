@@ -1005,6 +1005,9 @@ def static(x, *xs):
     if len(xs):  # for python-ish pointer assign: x, y = ti.static(y, x)
         return [static(x)] + [static(x) for x in xs]
 
+    if isinstance(x, Expr):
+        return x.ptr.eval()
+
     if isinstance(x,
                   (bool, int, float, range, list, tuple, enumerate,
                    GroupedNDRange, _Ndrange, zip, filter, map)) or x is None:

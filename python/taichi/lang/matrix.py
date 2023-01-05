@@ -460,7 +460,7 @@ class Matrix(TaichiOperations):
             return [self(i) for i in range(self.n)]
         return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
 
-    @taichi_scope
+    @python_scope
     def cast(self, dtype):
         """Cast the matrix elements to a specified data type.
 

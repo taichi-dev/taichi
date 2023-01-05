@@ -47,6 +47,7 @@ std::string libdevice_path();
 }  // namespace taichi::lang
 
 namespace taichi {
+
 void export_lang(py::module &m) {
   using namespace taichi::lang;
   using namespace std::placeholders;
@@ -798,15 +799,94 @@ void export_lang(py::module &m) {
       .def("get_expr_name",
            [](Expr *expr) { return expr->cast<FieldExpression>()->name; })
       .def("get_raw_address", [](Expr *expr) { return (uint64)expr; })
-      .def("get_underlying_ptr_address", [](Expr *e) {
-        // The reason that there are both get_raw_address() and
-        // get_underlying_ptr_address() is that Expr itself is mostly wrapper
-        // around its underlying |expr| (of type Expression). Expr |e| can be
-        // temporary, while the underlying |expr| is mostly persistent.
-        //
-        // Same get_raw_address() implies that get_underlying_ptr_address() are
-        // also the same. The reverse is not true.
-        return (uint64)e->expr.get();
+      .def("get_underlying_ptr_address",
+           [](Expr *e) {
+             // The reason that there are both get_raw_address() and
+             // get_underlying_ptr_address() is that Expr itself is mostly
+             // wrapper around its underlying |expr| (of type Expression). Expr
+             // |e| can be temporary, while the underlying |expr| is mostly
+             // persistent.
+             //
+             // Same get_raw_address() implies that get_underlying_ptr_address()
+             // are also the same. The reverse is not true.
+             return (uint64)e->expr.get();
+           })
+      .def("eval", [](Expr *expr) -> py::object {
+        /*
+          This function is used in ti.static() to evaluate the expression at
+          compile time. Currently, we only support evaluating the following
+          expressions:
+          1. an Expr is a ConstExpression
+          2. an Expr is an IndexExpression with constant indices, and index into
+          MatrixExpression with constant elements.
+        */
+        Expr ret_expr;
+        if (auto expression = expr->cast<ConstExpression>()) {
+          ret_expr = *expr;
+        } else if (auto expression = expr->cast<IndexExpression>()) {
+          auto mat_expression = expression->var.cast<MatrixExpression>();
+          TI_ASSERT(mat_expression != nullptr);
+          auto ret_type = mat_expression->ret_type->as<TensorType>();
+          TI_ASSERT(ret_type != nullptr);
+
+          auto tensor_shape = ret_type->get_shape();
+          int index = 0;
+          TI_ASSERT(tensor_shape.size() <= 2);
+          if (tensor_shape.size() == 1) {
+            auto index_expr =
+                expression->indices_group[0][0].cast<ConstExpression>();
+            TI_ASSERT(index_expr != nullptr);
+            index = index_expr->val.val_int32();
+          } else if (tensor_shape.size() == 2) {
+            auto index_expr_0 =
+                expression->indices_group[0][0].cast<ConstExpression>();
+            auto index_expr_1 =
+                expression->indices_group[0][1].cast<ConstExpression>();
+            TI_ASSERT(index_expr_0 != nullptr);
+            TI_ASSERT(index_expr_1 != nullptr);
+            index = index_expr_0->val.val_int32() * tensor_shape[1] +
+                    index_expr_1->val.val_int32();
+          } else {
+            TI_NOT_IMPLEMENTED;
+          }
+
+          TI_ASSERT(index < mat_expression->elements.size());
+          ret_expr = mat_expression->elements[index];
+        } else {
+          TI_ERROR("Unable to evaluate expression.");
+        }
+
+        auto const_expr = ret_expr.cast<ConstExpression>();
+        TI_ASSERT(const_expr != nullptr);
+        auto dtype = const_expr->val.dt->cast<PrimitiveType>();
+        TI_ASSERT(dtype != nullptr);
+        switch (dtype->type) {
+          case PrimitiveTypeID::i32:
+            return py::cast(const_expr->val.val_int32());
+          case PrimitiveTypeID::i64:
+            return py::cast(const_expr->val.val_int64());
+          case PrimitiveTypeID::f32:
+            return py::cast(const_expr->val.val_float32());
+          case PrimitiveTypeID::f64:
+            return py::cast(const_expr->val.val_float64());
+          case PrimitiveTypeID::i8:
+            return py::cast(const_expr->val.val_int8());
+          case PrimitiveTypeID::i16:
+            return py::cast(const_expr->val.val_int16());
+          case PrimitiveTypeID::u8:
+            return py::cast(const_expr->val.val_uint8());
+          case PrimitiveTypeID::u16:
+            return py::cast(const_expr->val.val_uint16());
+          case PrimitiveTypeID::u32:
+            return py::cast(const_expr->val.val_uint32());
+          case PrimitiveTypeID::u64:
+            return py::cast(const_expr->val.val_uint64());
+          default:
+            TI_NOT_IMPLEMENTED;
+        }
+
+        TI_UNREACHABLE;
+        return py::cast(0);
       });
 
   py::class_<ExprGroup>(m, "ExprGroup")

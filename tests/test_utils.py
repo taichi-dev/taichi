@@ -191,8 +191,7 @@ class TestParam:
 
 
 if os.environ.get('TI_LITE_TEST', ''):
-    _test_features = {
-    }
+    _test_features = {}
 else:
     _test_features = {
         # "dynamic_index": [TestParam(True, [])]

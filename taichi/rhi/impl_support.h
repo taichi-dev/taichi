@@ -5,6 +5,7 @@
 #include <forward_list>
 #include <unordered_set>
 #include <mutex>
+#include <type_traits>
 
 namespace taichi::lang {
 
@@ -39,6 +40,25 @@ void disabled_function([[maybe_unused]] Ts... C) {
 #endif
 
 #define RHI_ASSERT(cond) assert(cond);
+
+template <typename T>
+constexpr auto saturate_uadd(T a, T b) {
+  static_assert(std::is_unsigned<T>::value);
+  const T c = a + b;
+  if (c < a) {
+    return std::numeric_limits<T>::max();
+  }
+  return c;
+}
+
+template <typename T>
+constexpr auto saturate_usub(T x, T y) {
+  static_assert(std::is_unsigned<T>::value);
+  T res = x - y;
+  res &= -(res <= x);
+
+  return res;
+}
 
 // Wrapped return-code & object tuple for simplicity
 // Easier to read then std::pair
@@ -147,6 +167,13 @@ class SyncedPtrStableObjectList {
   std::forward_list<storage_block> objects_;
   std::vector<void *> free_nodes_;
 };
+
+// A helper to combine hash
+template <class T>
+inline void hash_combine(std::size_t &seed, const T &v) {
+  std::hash<T> hasher;
+  seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
 
 }  // namespace rhi_impl
 }  // namespace taichi::lang

@@ -137,6 +137,10 @@ class TI_DLL_EXPORT Program {
     return configs[thread_id];
   }
 
+  const CompileConfig &config() {
+    return configs[main_thread_id_];
+  }
+
   struct KernelProfilerQueryResult {
     int counter{0};
     double min{0.0};
@@ -204,8 +208,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  // TODO(Lin): remove the offloaded parameter
-  FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
+  FunctionType compile(Kernel &kernel);
 
   void check_runtime_error();
 
@@ -335,7 +338,7 @@ class TI_DLL_EXPORT Program {
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
-  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
+  void fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val);
 
   ASTBuilder *current_ast_builder() {
     return current_callable ? &current_callable->context->builder() : nullptr;

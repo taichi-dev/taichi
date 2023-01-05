@@ -19,11 +19,11 @@ def is_in_venv() -> bool:
                                            and sys.base_prefix != sys.prefix)
 
 
-def ensure_dependencies():
+def ensure_dependencies(fn='requirements.txt'):
     '''
     Automatically install dependencies if they are not installed.
     '''
-    p = Path(__file__).parent.parent / 'requirements.txt'
+    p = Path(__file__).parent.parent / fn
     if not p.exists():
         raise RuntimeError(f'Cannot find {p}')
 
@@ -69,7 +69,7 @@ _Environ = os.environ.__class__
 
 class _EnvironWrapper(_Environ):
     def __setitem__(self, name: str, value: str) -> None:
-        orig = self.get(name)
+        orig = self.get(name, '')
         _Environ.__setitem__(self, name, value)
         new = self[name]
 

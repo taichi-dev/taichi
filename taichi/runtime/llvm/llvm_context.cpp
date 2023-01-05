@@ -15,6 +15,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
+#ifdef TI_WITH_AMDGPU
+#include "llvm/IR/IntrinsicsAMDGPU.h"
+#endif  // TI_WITH_AMDGPU
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
@@ -43,6 +46,9 @@
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/codegen_utils.h"
+#ifdef TI_WITH_AMDGPU
+#include "taichi/runtime/llvm/llvm_context_pass.h"
+#endif
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -148,6 +154,13 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
                                    /*scalable=*/false);
     }
     return llvm::ArrayType::get(element_type, num_elements);
+  } else if (dt->is<StructType>()) {
+    std::vector<llvm::Type *> types;
+    auto struct_type = dt->cast<StructType>();
+    for (const auto &element : struct_type->elements()) {
+      types.push_back(get_data_type(element));
+    }
+    return llvm::StructType::get(*ctx, types);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;
@@ -324,22 +337,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   auto ctx = get_this_thread_context();
   std::unique_ptr<llvm::Module> module = module_from_bitcode_file(
       fmt::format("{}/{}", runtime_lib_dir(), file), ctx);
-  if (arch_ == Arch::cuda) {
-    module->setTargetTriple("nvptx64-nvidia-cuda");
-
-#if defined(TI_WITH_CUDA)
-    auto func = module->getFunction("cuda_compute_capability");
-    if (func) {
-      func->deleteBody();
-      auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
-      IRBuilder<> builder(*ctx);
-      builder.SetInsertPoint(bb);
-      builder.CreateRet(
-          get_constant(CUDAContext::get_instance().get_compute_capability()));
-      TaichiLLVMContext::mark_inline(func);
-    }
-#endif
-
+  if (arch_ == Arch::cuda || arch_ == Arch::amdgpu) {
     auto patch_intrinsic = [&](std::string name, Intrinsic::ID intrin,
                                bool ret = true,
                                std::vector<llvm::Type *> types = {},
@@ -384,93 +382,124 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       TaichiLLVMContext::mark_inline(func);
     };
 
-    patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
-    patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
-    patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
-    patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
-    patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
-    patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
-    patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
-    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-    patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
-    patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
-
-    patch_intrinsic("cuda_all", Intrinsic::nvvm_vote_all);
-    patch_intrinsic("cuda_all_sync", Intrinsic::nvvm_vote_all_sync);
-
-    patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
-    patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
-
-    patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
-    patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
-
-    patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
-    patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
-
-    patch_intrinsic("cuda_shfl_down_sync_i32",
-                    Intrinsic::nvvm_shfl_sync_down_i32);
-    patch_intrinsic("cuda_shfl_down_sync_f32",
-                    Intrinsic::nvvm_shfl_sync_down_f32);
-
-    patch_intrinsic("cuda_shfl_up_sync_i32", Intrinsic::nvvm_shfl_sync_up_i32);
-    patch_intrinsic("cuda_shfl_up_sync_f32", Intrinsic::nvvm_shfl_sync_up_f32);
-
-    patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
-
-    patch_intrinsic("cuda_shfl_sync_f32", Intrinsic::nvvm_shfl_sync_idx_f32);
-
-    patch_intrinsic("cuda_shfl_xor_sync_i32",
-                    Intrinsic::nvvm_shfl_sync_bfly_i32);
-
-    patch_intrinsic("cuda_match_any_sync_i32",
-                    Intrinsic::nvvm_match_any_sync_i32);
-
-    // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    /*
-    nvvm_match_all_sync_i32
-    Args:
-        1. u32 mask
-        2. i32 value
-        3. i32 *pred
-    */
-    /*
-    patch_intrinsic("cuda_match_all_sync_i32p",
-                    Intrinsic::nvvm_math_all_sync_i32);
-    */
-
-    // LLVM 10.0.0 seems to have a bug on this intrinsic function
-    /*
-    patch_intrinsic("cuda_match_any_sync_i64",
-                    Intrinsic::nvvm_match_any_sync_i64);
-                    */
-
-    patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
-                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-    patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
-                    {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
-
     patch_atomic_add("atomic_add_i32", llvm::AtomicRMWInst::Add);
-
     patch_atomic_add("atomic_add_i64", llvm::AtomicRMWInst::Add);
-
+    patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
     patch_atomic_add("atomic_add_f32", llvm::AtomicRMWInst::FAdd);
 
-    patch_atomic_add("atomic_add_f64", llvm::AtomicRMWInst::FAdd);
+    if (arch_ == Arch::cuda) {
+      module->setTargetTriple("nvptx64-nvidia-cuda");
 
-    patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
-
-    link_module_with_cuda_libdevice(module);
-
-    // To prevent potential symbol name conflicts, we use "cuda_vprintf"
-    // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
-    // linking
-    for (auto &f : *module) {
-      if (f.getName() == "cuda_vprintf") {
-        f.setName("vprintf");
+#if defined(TI_WITH_CUDA)
+      auto func = module->getFunction("cuda_compute_capability");
+      if (func) {
+        func->deleteBody();
+        auto bb = llvm::BasicBlock::Create(*ctx, "entry", func);
+        IRBuilder<> builder(*ctx);
+        builder.SetInsertPoint(bb);
+        builder.CreateRet(
+            get_constant(CUDAContext::get_instance().get_compute_capability()));
+        TaichiLLVMContext::mark_inline(func);
       }
+#endif
+
+      patch_intrinsic("thread_idx", Intrinsic::nvvm_read_ptx_sreg_tid_x);
+      patch_intrinsic("cuda_clock_i64", Intrinsic::nvvm_read_ptx_sreg_clock64);
+      patch_intrinsic("block_idx", Intrinsic::nvvm_read_ptx_sreg_ctaid_x);
+      patch_intrinsic("block_dim", Intrinsic::nvvm_read_ptx_sreg_ntid_x);
+      patch_intrinsic("grid_dim", Intrinsic::nvvm_read_ptx_sreg_nctaid_x);
+      patch_intrinsic("block_barrier", Intrinsic::nvvm_barrier0, false);
+      patch_intrinsic("warp_barrier", Intrinsic::nvvm_bar_warp_sync, false);
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+      patch_intrinsic("grid_memfence", Intrinsic::nvvm_membar_gl, false);
+      patch_intrinsic("system_memfence", Intrinsic::nvvm_membar_sys, false);
+
+      patch_intrinsic("cuda_all", Intrinsic::nvvm_vote_all);
+      patch_intrinsic("cuda_all_sync", Intrinsic::nvvm_vote_all_sync);
+
+      patch_intrinsic("cuda_any", Intrinsic::nvvm_vote_any);
+      patch_intrinsic("cuda_any_sync", Intrinsic::nvvm_vote_any_sync);
+
+      patch_intrinsic("cuda_uni", Intrinsic::nvvm_vote_uni);
+      patch_intrinsic("cuda_uni_sync", Intrinsic::nvvm_vote_uni_sync);
+
+      patch_intrinsic("cuda_ballot", Intrinsic::nvvm_vote_ballot);
+      patch_intrinsic("cuda_ballot_sync", Intrinsic::nvvm_vote_ballot_sync);
+
+      patch_intrinsic("cuda_shfl_down_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_down_i32);
+      patch_intrinsic("cuda_shfl_down_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_down_f32);
+
+      patch_intrinsic("cuda_shfl_up_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_up_i32);
+      patch_intrinsic("cuda_shfl_up_sync_f32",
+                      Intrinsic::nvvm_shfl_sync_up_f32);
+
+      patch_intrinsic("cuda_shfl_sync_i32", Intrinsic::nvvm_shfl_sync_idx_i32);
+
+      patch_intrinsic("cuda_shfl_sync_f32", Intrinsic::nvvm_shfl_sync_idx_f32);
+
+      patch_intrinsic("cuda_shfl_xor_sync_i32",
+                      Intrinsic::nvvm_shfl_sync_bfly_i32);
+
+      patch_intrinsic("cuda_match_any_sync_i32",
+                      Intrinsic::nvvm_match_any_sync_i32);
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
+      /*
+      nvvm_match_all_sync_i32
+      Args:
+          1. u32 mask
+          2. i32 value
+          3. i32 *pred
+      */
+      /*
+      patch_intrinsic("cuda_match_all_sync_i32p",
+                      Intrinsic::nvvm_math_all_sync_i32);
+      */
+
+      // LLVM 10.0.0 seems to have a bug on this intrinsic function
+      /*
+      patch_intrinsic("cuda_match_any_sync_i64",
+                      Intrinsic::nvvm_match_any_sync_i64);
+                      */
+
+      patch_intrinsic("ctlz_i32", Intrinsic::ctlz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+      patch_intrinsic("cttz_i32", Intrinsic::cttz, true,
+                      {llvm::Type::getInt32Ty(*ctx)}, {get_constant(false)});
+
+      patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
+
+      link_module_with_cuda_libdevice(module);
+
+      // To prevent potential symbol name conflicts, we use "cuda_vprintf"
+      // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
+      // linking
+      for (auto &f : *module) {
+        if (f.getName() == "cuda_vprintf") {
+          f.setName("vprintf");
+        }
+      }
+
+      // runtime_module->print(llvm::errs(), nullptr);
     }
 
-    // runtime_module->print(llvm::errs(), nullptr);
+    if (arch_ == Arch::amdgpu) {
+      module->setTargetTriple("amdgcn-amd-amdhsa");
+#ifdef TI_WITH_AMDGPU
+      llvm::legacy::FunctionPassManager function_pass_manager(module.get());
+      function_pass_manager.add(new AMDGPUConvertAllocaInstAddressSpacePass());
+      function_pass_manager.doInitialization();
+      for (auto func = module->begin(); func != module->end(); ++func) {
+        function_pass_manager.run(*func);
+      }
+      function_pass_manager.doFinalization();
+      patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
+      patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+#endif
+    }
   }
 
   return module;
@@ -787,6 +816,14 @@ void TaichiLLVMContext::update_runtime_jit_module(
         // std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
     }
+  }
+
+  if (arch_ == Arch::amdgpu) {
+#ifdef TI_WITH_AMDGPU
+    llvm::legacy::PassManager module_pass_manager;
+    module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
+    module_pass_manager.run(*module);
+#endif
   }
 
   eliminate_unused_functions(module.get(), [](std::string func_name) {

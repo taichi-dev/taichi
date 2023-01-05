@@ -22,7 +22,8 @@ class SparseMatrixBuilder {
                       const std::string &storage_format,
                       Program *prog);
 
-  void print_triplets();
+  void print_triplets_eigen();
+  void print_triplets_cuda();
 
   intptr_t get_ndarray_data_ptr() const;
 
@@ -35,6 +36,9 @@ class SparseMatrixBuilder {
  private:
   template <typename T, typename G>
   void build_template(std::unique_ptr<SparseMatrix> &);
+
+  template <typename T, typename G>
+  void print_triplets_template();
 
  private:
   uint64 num_triplets_{0};

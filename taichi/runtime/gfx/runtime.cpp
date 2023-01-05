@@ -464,19 +464,23 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const int group_x = (attribs.advisory_total_num_threads +
                          attribs.advisory_num_threads_per_group - 1) /
                         attribs.advisory_num_threads_per_group;
-    ResourceBinder *binder = vp->resource_binder();
+    std::unique_ptr<ShaderResourceSet> bindings =
+        device_->create_resource_set_unique();
     for (auto &bind : attribs.buffer_binds) {
+      // We might have to bind a invalid buffer (this is fine as long as
+      // shader don't do anything with it)
       if (bind.buffer.type == BufferType::ExtArr) {
-        binder->rw_buffer(0, bind.binding, any_arrays.at(bind.buffer.root_id));
-      } else if (args_buffer && bind.buffer.type == BufferType::Args) {
-        binder->buffer(0, bind.binding, *args_buffer);
-      } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
-        binder->rw_buffer(0, bind.binding, *ret_buffer);
+        bindings->rw_buffer(bind.binding, any_arrays.at(bind.buffer.root_id));
+      } else if (bind.buffer.type == BufferType::Args) {
+        bindings->buffer(bind.binding,
+                         args_buffer ? *args_buffer : kDeviceNullAllocation);
+      } else if (bind.buffer.type == BufferType::Rets) {
+        bindings->rw_buffer(bind.binding,
+                            ret_buffer ? *ret_buffer : kDeviceNullAllocation);
       } else {
         DeviceAllocation *alloc = ti_kernel->get_buffer_bind(bind.buffer);
-        if (alloc) {
-          binder->rw_buffer(0, bind.binding, *alloc);
-        }
+        bindings->rw_buffer(bind.binding,
+                            alloc ? *alloc : kDeviceNullAllocation);
       }
     }
 
@@ -484,10 +488,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
         transition_image(texture, ImageLayout::shader_read_write);
-        binder->rw_image(0, bind.binding, texture, 0);
+        bindings->rw_image(bind.binding, texture, 0);
       } else {
         transition_image(texture, ImageLayout::shader_read);
-        binder->image(0, bind.binding, texture, {});
+        bindings->image(bind.binding, texture, {});
       }
     }
 
@@ -506,7 +510,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
 
     current_cmdlist_->bind_pipeline(vp);
-    current_cmdlist_->bind_resources(binder);
+    RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
+    TI_ERROR_IF(status != RhiResult::success,
+                "Resource binding error : RhiResult({})", status);
     current_cmdlist_->dispatch(group_x);
     current_cmdlist_->memory_barrier();
   }
@@ -574,22 +580,6 @@ void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
   ensure_current_cmdlist();
   current_cmdlist_->image_transition(image, last_layout, layout);
   last_layout = layout;
-}
-
-void GfxRuntime::signal_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->signal_event(event);
-  submit_current_cmdlist_if_timeout();
-}
-void GfxRuntime::reset_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->reset_event(event);
-  submit_current_cmdlist_if_timeout();
-}
-void GfxRuntime::wait_event(DeviceEvent *event) {
-  ensure_current_cmdlist();
-  current_cmdlist_->wait_event(event);
-  submit_current_cmdlist_if_timeout();
 }
 
 void GfxRuntime::synchronize() {

@@ -86,6 +86,16 @@ struct Value {
   SType stype;
   // Additional flags about the value
   ValueKind flag{ValueKind::kNormal};
+
+  bool operator==(const Value &rhs) const {
+    return id == rhs.id;
+  }
+};
+
+struct ValueHasher {
+  size_t operator()(const spirv::Value &v) const {
+    return std::hash<uint32_t>()(v.id);
+  }
 };
 
 // Represent the SPIRV Label
@@ -330,6 +340,8 @@ class IRBuilder {
                          spv::StorageClass storage_class);
   // Get an image type
   SType get_sampled_image_type(const SType &primitive_type, int num_dimensions);
+  SType get_underlying_image_type(const SType &primitive_type,
+                                  int num_dimensions);
   SType get_storage_image_type(BufferFormat format, int num_dimensions);
   // Get a value_type[num_elems] type
   SType get_array_type(const SType &value_type, uint32_t num_elems);
@@ -608,6 +620,9 @@ class IRBuilder {
   // map from value to its pointer type
   std::map<std::pair<uint32_t, spv::StorageClass>, SType> pointer_type_tbl_;
   std::map<std::pair<uint32_t, int>, SType> sampled_image_ptr_tbl_;
+  std::map<std::pair<uint32_t, int>, SType>
+      sampled_image_underlying_image_type_;
+
   std::map<std::pair<BufferFormat, int>, SType> storage_image_ptr_tbl_;
 
   // map from constant int to its value

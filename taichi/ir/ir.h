@@ -272,10 +272,8 @@ class IRNode {
   std::unique_ptr<IRNode> clone();
 };
 
-#define TI_DEFINE_ACCEPT                     \
-  void accept(IRVisitor *visitor) override { \
-    visitor->visit(this);                    \
-  }
+#define TI_DEFINE_ACCEPT \
+  void accept(IRVisitor *visitor) override { visitor->visit(this); }
 
 #define TI_DEFINE_CLONE                                             \
   std::unique_ptr<Stmt> clone() const override {                    \
@@ -607,6 +605,19 @@ class DelayedIRModifier {
 
   // Force the next call of modify_ir() to return true.
   void mark_as_modified();
+};
+
+// ImmediateIRModifier aims at replacing Stmt::replace_usages_with, which visits
+// the whole tree for a single replacement. ImmediateIRModifier is currently
+// associated with a pass, visits the whole tree once at the beginning of that
+// pass, and performs a single replacement with amortized constant time.
+class ImmediateIRModifier {
+ private:
+  std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>> stmt_usages_;
+
+ public:
+  explicit ImmediateIRModifier(IRNode *root);
+  void replace_usages_with(Stmt *old_stmt, Stmt *new_stmt);
 };
 
 template <typename T>

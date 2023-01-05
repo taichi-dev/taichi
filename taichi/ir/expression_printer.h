@@ -145,16 +145,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit(']');
   }
 
-  void visit(StrideExpression *expr) override {
-    expr->var->accept(this);
-    emit('[');
-    emit_vector(expr->indices.exprs);
-    emit("] (");
-    emit_vector(expr->shape);
-    emit(", stride = ", expr->stride);
-    emit(')');
-  }
-
   void visit(RangeAssumptionExpression *expr) override {
     emit("assume_in_range({");
     expr->base->accept(this);
@@ -253,6 +243,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   void visit(ReferenceExpression *expr) override {
     emit("ref(");
     expr->var->accept(this);
+    emit(")");
+  }
+
+  void visit(GetElementExpression *expr) override {
+    emit("get_element(");
+    expr->src->accept(this);
+    emit(", ");
+    emit_vector(expr->index);
     emit(")");
   }
 

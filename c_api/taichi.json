@@ -53,11 +53,6 @@
                     "is_dispatchable": true
                 },
                 {
-                    "name": "event",
-                    "type": "handle",
-                    "is_dispatchable": true
-                },
-                {
                     "name": "memory",
                     "type": "handle",
                     "is_dispatchable": false
@@ -520,6 +515,10 @@
                         },
                         {
                             "type": "enumeration.arch"
+                        },
+                        {
+                            "name": "device_index",
+                            "type": "uint32_t"
                         }
                     ]
                 },
@@ -690,28 +689,6 @@
                     ]
                 },
                 {
-                    "name": "create_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        }
-                    ]
-                },
-                {
-                    "name": "destroy_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
                     "name": "copy_memory_device_to_device",
                     "type": "function",
                     "is_device_command": true,
@@ -830,46 +807,7 @@
                     ]
                 },
                 {
-                    "name": "signal_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "reset_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "wait_event",
-                    "type": "function",
-                    "is_device_command": true,
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        }
-                    ]
-                },
-                {
-                    "name": "submit",
+                    "name": "flush",
                     "type": "function",
                     "parameters": [
                         {
@@ -1165,16 +1103,6 @@
                     ]
                 },
                 {
-                    "name": "vulkan_event_interop_info",
-                    "type": "structure",
-                    "fields": [
-                        {
-                            "name": "event",
-                            "type": "VkEvent"
-                        }
-                    ]
-                },
-                {
                     "name": "create_vulkan_runtime",
                     "type": "function",
                     "is_extension": true,
@@ -1311,41 +1239,6 @@
                             "by_mut": true
                         }
                     ]
-                },
-                {
-                    "name": "import_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "name": "@return",
-                            "type": "handle.event"
-                        },
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
-                            "by_ref": true
-                        }
-                    ]
-                },
-                {
-                    "name": "export_vulkan_event",
-                    "type": "function",
-                    "parameters": [
-                        {
-                            "type": "handle.runtime"
-                        },
-                        {
-                            "type": "handle.event"
-                        },
-                        {
-                            "name": "interop_info",
-                            "type": "structure.vulkan_event_interop_info",
-                            "by_mut": true
-                        }
-                    ]
                 }
             ]
         },
@@ -1355,6 +1248,44 @@
                 "taichi/taichi_core.h"
             ],
             "declarations": [
+                {
+                    "name": "opengl_runtime_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "get_proc_addr",
+                            "type": "void*"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_opengl_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_opengl_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.opengl_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
                 {
                     "name": "opengl_memory_interop_info",
                     "type": "structure",

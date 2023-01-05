@@ -24,8 +24,7 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType OpenglProgramImpl::compile(Kernel *kernel,
-                                        OffloadedStmt *offloaded) {
+FunctionType OpenglProgramImpl::compile(Kernel *kernel) {
   return register_params_to_executable(
       get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
 }
@@ -90,6 +89,16 @@ void OpenglProgramImpl::dump_cache_data_to_disk() {
                            config->offline_cache_max_size_of_files,
                            config->offline_cache_cleaning_factor);
   mgr->dump_with_merging();
+}
+
+void OpenglProgramImpl::finalize() {
+  runtime_.reset();
+  device_.reset();
+  opengl::reset_opengl();
+}
+
+OpenglProgramImpl::~OpenglProgramImpl() {
+  finalize();
 }
 
 const std::unique_ptr<gfx::CacheManager>

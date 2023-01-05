@@ -26,6 +26,8 @@ VulkanRuntimeImported::Workaround::Workaround(
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
   vk_device.vk_caps().vk_api_version = api_version;
+  // FIXME: (penguinliong) Workaround missing vulkan caps from import.
+  vk_device.vk_caps().external_memory = true;
 
   taichi::lang::DeviceCapabilityConfig caps{};
 
@@ -332,44 +334,6 @@ void ti_export_vulkan_image(TiRuntime runtime,
   interop_info->sample_count = VK_SAMPLE_COUNT_1_BIT;
   interop_info->tiling = VK_IMAGE_TILING_OPTIMAL;
   interop_info->usage = image2->usage;
-  TI_CAPI_TRY_CATCH_END();
-}
-
-TiEvent ti_import_vulkan_event(TiRuntime runtime,
-                               const TiVulkanEventInteropInfo *interop_info) {
-  TiEvent out = TI_NULL_HANDLE;
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL_RV(runtime);
-  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
-  TI_CAPI_ARGUMENT_NULL_RV(interop_info->event);
-  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, vulkan);
-
-  Runtime *runtime2 = (Runtime *)runtime;
-
-  vkapi::IVkEvent event = std::make_unique<vkapi::DeviceObjVkEvent>();
-  event->device = runtime2->as_vk()->get_vk().vk_device();
-  event->event = interop_info->event;
-  event->external = true;
-
-  std::unique_ptr<taichi::lang::DeviceEvent> event2(
-      new taichi::lang::vulkan::VulkanDeviceEvent(std::move(event)));
-
-  out = (TiEvent) new Event(*runtime2, std::move(event2));
-  TI_CAPI_TRY_CATCH_END();
-  return out;
-}
-void ti_export_vulkan_event(TiRuntime runtime,
-                            TiEvent event,
-                            TiVulkanEventInteropInfo *interop_info) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-  TI_CAPI_ARGUMENT_NULL(interop_info);
-  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
-
-  auto event2 =
-      (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
-  interop_info->event = event2->vkapi_ref->event;
   TI_CAPI_TRY_CATCH_END();
 }
 

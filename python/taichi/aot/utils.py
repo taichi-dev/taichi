@@ -29,6 +29,10 @@ def produce_injected_args_from_template(kernel, template_args):
         anno = arg.annotation
         if isinstance(anno, template_types):
             injected_args.append(template_args[arg.name])
+        elif isinstance(anno, RWTextureType):
+            texture_shape = (2, ) * anno.num_dimensions
+            fmt = anno.fmt
+            injected_args.append(Texture(fmt, texture_shape))
         else:
             injected_args.append(0)
     return injected_args

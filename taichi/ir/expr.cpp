@@ -26,12 +26,6 @@ Expr bit_cast(const Expr &input, DataType dt) {
   return Expr::make<UnaryOpExpression>(UnaryOpType::cast_bits, input, dt);
 }
 
-Expr Expr::operator[](const ExprGroup &indices) const {
-  TI_ASSERT(is<FieldExpression>() || is<MatrixFieldExpression>() ||
-            is<ExternalTensorExpression>() || is_tensor(expr->ret_type));
-  return Expr::make<IndexExpression>(*this, indices);
-}
-
 Expr &Expr::operator=(const Expr &o) {
   set(o);
   return *this;
@@ -81,25 +75,6 @@ Expr::Expr(const Identifier &id) : Expr() {
 
 Expr expr_rand(DataType dt) {
   return Expr::make<RandExpression>(dt);
-}
-
-Expr snode_append(SNode *snode,
-                  const ExprGroup &indices,
-                  const std::vector<Expr> &vals) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::append, indices,
-                                       vals);
-}
-
-Expr snode_is_active(SNode *snode, const ExprGroup &indices) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::is_active, indices);
-}
-
-Expr snode_length(SNode *snode, const ExprGroup &indices) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::length, indices);
-}
-
-Expr snode_get_addr(SNode *snode, const ExprGroup &indices) {
-  return Expr::make<SNodeOpExpression>(snode, SNodeOpType::get_addr, indices);
 }
 
 Expr assume_range(const Expr &expr, const Expr &base, int low, int high) {

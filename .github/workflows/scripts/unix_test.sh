@@ -5,7 +5,7 @@ set -ex
 
 export PYTHONUNBUFFERED=1
 
-export TAICHI_AOT_FOLDER_PATH="taichi/tests/"
+export TAICHI_AOT_FOLDER_PATH="taichi/tests"
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH

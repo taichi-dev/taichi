@@ -12,7 +12,7 @@ from taichi.types.texture_type import FORMAT2TY_CH
 def _get_entries(mat):
     if isinstance(mat, Matrix):
         return mat.entries
-    return mat
+    return [mat]
 
 
 class TextureSampler:

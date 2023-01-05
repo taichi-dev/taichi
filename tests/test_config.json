@@ -214,6 +214,14 @@
     "CapiTest.TestBehaviorGetCgraphVulkan": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=vulkan"
+    ],
+    "CapiTest.TestCompatLoadAOT": [
+        ["cpp", "aot", "python_scripts", "aot_copy.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.TestCompatGetCgraph": [
+        ["cpp", "aot", "python_scripts", "aot_copy.py"],
+        "--arch=vulkan"
     ]
 }
 }

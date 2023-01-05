@@ -138,6 +138,15 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_print(std::string tag, llvm::Value *value);
 
+  void create_return(const std::vector<Stmt *> &elements);
+
+  void create_return(llvm::Value *buffer,
+                     llvm::Type *buffer_type,
+                     const std::vector<Stmt *> &elements,
+                     const Type *now_type,
+                     int &now_element,
+                     std::vector<llvm::Value *> &now_ind);
+
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
                             int addr_space = 0);

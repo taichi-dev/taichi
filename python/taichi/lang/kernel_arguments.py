@@ -104,9 +104,7 @@ def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
 
 def decl_ret(dtype, real_func=False):
     if isinstance(dtype, StructType):
-        for member in dtype.members.values():
-            decl_ret(member, real_func)
-        return
+        dtype = dtype.dtype
     if isinstance(dtype, MatrixType):
         if real_func:
             for i in range(dtype.n * dtype.m):

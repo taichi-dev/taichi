@@ -464,7 +464,7 @@ void GLCommandList::run_commands() {
 GLStream::~GLStream() {
 }
 
-RhiResult GLStream::new_command_list(CommandList **out_cmdlist) {
+RhiResult GLStream::new_command_list(CommandList **out_cmdlist) noexcept {
   *out_cmdlist = new GLCommandList(device_);
   return RhiResult::success;
 }

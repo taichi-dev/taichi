@@ -326,11 +326,22 @@ jobs:
 
       - name: Upload to PyPI
         run: |
+          set -ex
           ls -l dist/
           if [ -z "$RELEASE_VERSION" ]; then
             export PROJECT_NAME="taichi-nightly"
           else
             export PROJECT_NAME="taichi"
+            VER=$(echo $RELEASE_VERSION | sed 's/^v//')
+            if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
+              echo Version number mismatch
+              exit 1
+            fi
+            pip install -f dist taichi==$VER
+            if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
+              echo Taichi init version number mismatch!!
+              exit 1
+            fi
           fi
           python -m pip install requests twine
           python misc/upload_release.py

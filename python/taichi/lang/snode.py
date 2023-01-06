@@ -413,9 +413,9 @@ def is_active(node, indices):
     Returns:
         bool: the cell `node[indices]` is active or not.
     """
-    return expr.Expr(
-        impl.get_runtime().compiling_callable.ast_builder().expr_snode_is_active(
-            node._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_is_active(node._snode.ptr,
+                                          expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -470,9 +470,9 @@ def get_addr(f, indices):
     Returns:
         ti.u64: The memory address of `f[indices]`.
     """
-    return expr.Expr(
-        impl.get_runtime().compiling_callable.ast_builder().expr_snode_get_addr(
-            f._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_get_addr(f._snode.ptr,
+                                         expr.make_expr_group(indices)))
 
 
 __all__ = [

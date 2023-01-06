@@ -740,7 +740,7 @@ class ExtractLocalPointers : public BasicStmtVisitor {
 
 namespace irpass {
 
-void scalarize(IRNode *root, const CompileConfig &config) {
+void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);

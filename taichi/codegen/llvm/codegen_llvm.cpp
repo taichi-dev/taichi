@@ -2723,27 +2723,28 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
          llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
   }
   llvm::Value *result_buffer = nullptr;
-  auto *ret_type = get_real_func_ret_type(stmt->func);
-  result_buffer = builder->CreateAlloca(ret_type);
-  auto *result_buffer_u64 = builder->CreatePointerCast(
-      result_buffer, llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0));
-  call("RuntimeContext_set_result_buffer", new_ctx, result_buffer_u64);
+  if (stmt->ret_type) {
+    auto *ret_type = tlctx->get_data_type(stmt->ret_type);
+    result_buffer = builder->CreateAlloca(ret_type);
+    auto *result_buffer_u64 = builder->CreatePointerCast(
+        result_buffer,
+        llvm::PointerType::get(tlctx->get_data_type<uint64>(), 0));
+    call("RuntimeContext_set_result_buffer", new_ctx, result_buffer_u64);
+  }
   call(llvm_func, new_ctx);
   llvm_val[stmt] = result_buffer;
   call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
-  auto *real_func = stmt->src->as<FuncCallStmt>()->func;
-  auto *real_func_ret_type = tlctx->get_data_type(real_func->ret_type);
+  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type);
   std::vector<llvm::Value *> index;
   index.reserve(stmt->index.size() + 1);
   index.push_back(tlctx->get_constant(0));
   for (auto &i : stmt->index) {
     index.push_back(tlctx->get_constant(i));
   }
-  auto *gep =
-      builder->CreateGEP(real_func_ret_type, llvm_val[stmt->src], index);
+  auto *gep = builder->CreateGEP(struct_type, llvm_val[stmt->src], index);
   auto *val = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), gep);
   llvm_val[stmt] = val;
 }

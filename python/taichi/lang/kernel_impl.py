@@ -268,13 +268,12 @@ class Func:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        func_call = Expr(
-            _ti_core.make_func_call_expr(
-                self.taichi_functions[key.instance_id], non_template_args))
-        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
-            func_call.ptr)
+        func_call = impl.get_runtime().prog.current_ast_builder(
+        ).insert_func_call(self.taichi_functions[key.instance_id],
+                           non_template_args)
         if self.return_type is None:
             return None
+        func_call = Expr(func_call)
         if id(self.return_type) in primitive_types.type_ids:
             return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):

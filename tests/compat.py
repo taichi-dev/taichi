@@ -70,6 +70,7 @@ def generate():
 def run():
     aot_files = glob.glob('tests/cpp/aot/python_scripts/*.py')
     init_dict(run_dict, aot_files)
+    print(run_dict)
     for x in aot_files:
         path_name = pathlib.Path(x).name[:-3]
         os.environ[

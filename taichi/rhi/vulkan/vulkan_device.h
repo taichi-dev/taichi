@@ -630,7 +630,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   }
 
   RhiResult create_pipeline_cache(
-      PipelineCache **out_cache, size_t initial_size = 0,
+      PipelineCache **out_cache,
+      size_t initial_size = 0,
       const void *initial_data = nullptr) noexcept final;
 
   RhiResult create_pipeline(Pipeline **out_pipeline,

@@ -9,12 +9,9 @@ curr_dir = os.path.dirname(os.path.abspath(__file__))
 build_dir = os.path.join(curr_dir, '../build')
 cpp_test_filename = 'taichi_cpp_tests'
 capi_test_filename = 'taichi_c_api_tests'
-capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
-cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)
+cpp_tests_path = os.path.join(build_dir, capi_test_filename)
+c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
 
-
-cpp_tests_path = os.path.join(curr_dir[:-6],'/build/taichi_cpp_tests') 
-c_api_tests_path = os.path.join(curr_dir[:-6],'/build/taichi_c_api_tests')
 
 # aot_copy_list = [c_api_tests+'--gtest_filter=CapiTest.TestCompat*']
 # graph_aot_test_list = [c_api_tests+' --gtest_filter=CapiTest.TestCompatLoadAOT']

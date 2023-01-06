@@ -2742,11 +2742,11 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
+                                    llvm::Type *buffer_type,
                                     const std::vector<Stmt *> &elements,
                                     const Type *current_type,
                                     int &current_element,
                                     std::vector<llvm::Value *> &current_index) {
-  auto *buffer_type = buffer->getType()->getPointerElementType();
   if (auto primitive_type = current_type->cast<PrimitiveType>()) {
     TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
     auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
@@ -2756,8 +2756,8 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     int i = 0;
     for (const auto &element_type : struct_type->elements()) {
       current_index.push_back(tlctx->get_constant(i++));
-      create_return(buffer, elements, element_type, current_element,
-                    current_index);
+      create_return(buffer, buffer_type, elements, element_type,
+                    current_element, current_index);
       current_index.pop_back();
     }
   } else {
@@ -2766,8 +2766,8 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     Type *element_type = tensor_type->get_element_type();
     for (int i = 0; i < num_elements; i++) {
       current_index.push_back(tlctx->get_constant(i));
-      create_return(buffer, elements, element_type, current_element,
-                    current_index);
+      create_return(buffer, buffer_type, elements, element_type,
+                    current_element, current_index);
       current_index.pop_back();
     }
   }
@@ -2779,10 +2779,10 @@ void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
   auto buffer_type = tlctx->get_data_type(ret_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));
-  buffer->getType()->print(llvm::errs());
   int current_element = 0;
   std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
-  create_return(buffer, elements, ret_type, current_element, current_index);
+  create_return(buffer, buffer_type, elements, ret_type, current_element,
+                current_index);
 };
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

@@ -405,6 +405,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
  private:
   void create_return(llvm::Value *buffer,
+                     llvm::Type *buffer_type,
                      const std::vector<Stmt *> &elements,
                      const Type *current_type,
                      int &current_element,

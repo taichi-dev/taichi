@@ -27,7 +27,6 @@ echo wanted arch: $env:TI_WANTED_ARCHS
 Invoke pip install -r requirements_test.txt
 Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 
-Invoke python tests/run_tests.py -k "test_function" -a cpu -s
 # Run C++ tests
 Invoke python tests/run_tests.py --cpp
 

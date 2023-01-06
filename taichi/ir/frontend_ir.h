@@ -774,20 +774,25 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class FuncCallExpression : public Expression {
+class FrontendFuncCallStmt : public Stmt {
  public:
+  std::optional<Identifier> ident;
   Function *func;
   ExprGroup args;
 
-  void type_check(CompileConfig *config) override;
-
-  FuncCallExpression(Function *func, const ExprGroup &args)
-      : func(func), args(args) {
+  explicit FrontendFuncCallStmt(
+      Function *func,
+      const ExprGroup &args,
+      const std::optional<Identifier> &id = std::nullopt)
+      : ident(id), func(func), args(args) {
+    TI_ASSERT(id.has_value() == !func->rets.empty());
   }
 
-  void flatten(FlattenContext *ctx) override;
+  bool is_container_statement() const override {
+    return false;
+  }
 
-  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+  TI_DEFINE_ACCEPT
 };
 
 class GetElementExpression : public Expression {
@@ -962,6 +967,7 @@ class ASTBuilder {
                              mesh::ConvType &conv_type);
 
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);

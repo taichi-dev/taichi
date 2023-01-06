@@ -465,7 +465,8 @@ Ndarray *Program::create_ndarray(const DataType type,
       // Device api support for dx12 & metal backend are not complete yet
       Stream *stream =
           program_impl_->get_compute_device()->get_compute_stream();
-      auto cmdlist = stream->new_command_list();
+      auto [cmdlist, res] = stream->new_command_list_unique();
+      TI_ASSERT(res == RhiResult::success);
       cmdlist->buffer_fill(arr->ndarray_alloc_.get_ptr(0),
                            arr->get_element_size() * arr->get_nelement(),
                            /*data=*/0);

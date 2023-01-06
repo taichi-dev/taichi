@@ -32,6 +32,9 @@ int Callable::insert_texture_arg(const DataType &dt) {
 }
 
 void Callable::finalize_rets() {
+  if (rets.empty()) {
+    return;
+  }
   std::vector<const Type *> types;
   types.reserve(rets.size());
   for (const auto &ret : rets) {

@@ -5,10 +5,9 @@ import os
 import pathlib
 import subprocess
 
-curr_dir = os.path.dirname(os.path.abspath(__file__))
-build_dir = os.path.join(curr_dir, '../build')
-cpp_tests_path = os.path.join(build_dir,'taichi_cpp_tests.exe') 
-c_api_tests_path = os.path.join(build_dir,'taichi_c_api_tests.exe')
+curr_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+cpp_tests_path = os.path.join(curr_dir,'/build/taichi_cpp_tests') 
+c_api_tests_path = os.path.join(curr_dir,'/build/taichi_c_api_tests')
 
 # aot_copy_list = [c_api_tests+'--gtest_filter=CapiTest.TestCompat*']
 # graph_aot_test_list = [c_api_tests+' --gtest_filter=CapiTest.TestCompatLoadAOT']

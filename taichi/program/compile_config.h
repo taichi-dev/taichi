@@ -106,6 +106,8 @@ struct CompileConfig {
   size_t cuda_stack_limit{8192};
 
   CompileConfig();
+
+  void fit();
 };
 
 extern TI_DLL_EXPORT CompileConfig default_compile_config;

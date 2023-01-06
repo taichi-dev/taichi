@@ -213,20 +213,6 @@ def test():
     print(length(v))
 ```
 
-In practical terms, `ti.types.matrix` only would suffice your need for vector/matrix customization because Taichi treats vectors as a special kind of matrices, i.e., matrices with one column.
-
-In fact, calling `ti.types.vector()` produces a matrix type of a single column:
-
-```
-vec3 = ti.types.vector(3, float)  # Equivalent to vec3 = ti.types.matrix(3, 1, float)
-```
-
-Similarly, `ti.Vector()` simply converts the input into a matrix of a single column:
-
-```python
-v = ti.Vector([1, 1, 1])  # equivalent to v = ti.Matrix([[1], [1], [1]])
-```
-
 
 ### Struct types and dataclass
 

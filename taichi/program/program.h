@@ -320,7 +320,8 @@ class TI_DLL_EXPORT Program {
   Ndarray *create_ndarray(
       const DataType type,
       const std::vector<int> &shape,
-      ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+      ExternalArrayLayout layout = ExternalArrayLayout::kNull,
+      bool zero_fill = false);
 
   Texture *create_texture(const DataType type,
                           int num_channels,

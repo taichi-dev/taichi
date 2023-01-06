@@ -929,9 +929,9 @@ Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
 Dx11Stream::~Dx11Stream() {
 }
 
-RhiResult Dx11Stream::new_command_list(CommandList **out_cmdlist) {
+RhiResult Dx11Stream::new_command_list(CommandList **out_cmdlist) noexcept {
   *out_cmdlist = new Dx11CommandList(device_);
-  return RhiResult::Success;
+  return RhiResult::success;
 }
 
 StreamSemaphore Dx11Stream::submit(

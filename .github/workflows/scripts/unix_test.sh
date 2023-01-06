@@ -14,10 +14,12 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
-python3 tests/compat.py 
+python3 tests/compat.py --kind=generate
 python3 -m pip uninstall taichi-nightly -y
 
 setup_python
+
+python3 tests/compat.py --kind=run
 
 if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd
@@ -84,7 +86,6 @@ EOF
     python3 run.py --log=DEBUG --runners 1 timelines
     popd
 fi
-
 
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then

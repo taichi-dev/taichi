@@ -19,11 +19,6 @@ python3 -m pip uninstall taichi-nightly -y
 
 setup_python
 
-
-
-[[ "$IN_DOCKER" == "true" ]] && cd taichi
-
-
 if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd
     sudo chmod 666 /dev/dri/*

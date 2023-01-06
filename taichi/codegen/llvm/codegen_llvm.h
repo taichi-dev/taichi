@@ -95,8 +95,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_mesh_xlogue_function_type();
 
-  llvm::Type *get_real_func_ret_type(Function *real_func);
-
   llvm::Value *get_root(int snode_tree_id);
 
   llvm::Value *get_runtime();

@@ -186,3 +186,13 @@ def test_deprecated_source_inspect():
             pass
 
         print(getsourcelines(func))
+
+
+@pytest.mark.parametrize("value", [True, False])
+def test_deprecated_dynamic_index(value):
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Dynamic index is supported by default and the switch will be removed in v1.5.0."
+    ):
+        ti.init(dynamic_index=value)

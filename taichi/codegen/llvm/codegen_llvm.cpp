@@ -2741,14 +2741,6 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-llvm::Type *TaskCodeGenLLVM::get_real_func_ret_type(Function *real_func) {
-  std::vector<llvm::Type *> tps;
-  for (auto &ret : real_func->rets) {
-    tps.push_back(tlctx->get_data_type(ret.dt));
-  }
-  return llvm::StructType::get(*llvm_context, tps);
-}
-
 void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
                                     const std::vector<Stmt *> &elements,
                                     const Type *current_type,

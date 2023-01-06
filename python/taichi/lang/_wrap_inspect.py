@@ -2,7 +2,6 @@ import atexit
 import inspect
 import os
 import tempfile
-import warnings
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource

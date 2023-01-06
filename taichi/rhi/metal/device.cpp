@@ -307,25 +307,37 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
     allocations_.erase(handle.alloc_id);
   }
 
-  std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
-                                            std::string name) override {
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name = "Pipeline",
+                            PipelineCache *cache = nullptr) noexcept {
     if (only_for_dev_allocation_) {
-      TI_ERROR("only_for_dev_allocation");
-      return nullptr;
+      RHI_LOG_ERROR("only_for_dev_allocation");
+      return RhiResult::not_supported;
     }
-    TI_ASSERT(src.type == PipelineSourceType::metal_src);
-    TI_ASSERT(src.stage == PipelineStageType::compute);
+    if (src.type != PipelineSourceType::metal_src ||
+        src.stage == PipelineStageType::compute) {
+      return RhiResult::invalid_usage;
+    }
     // FIXME: infer version/fast_math
     std::string src_code{static_cast<const char *>(src.data), src.size};
     auto kernel_lib = new_library_with_source(
         device_, src_code, /*fast_math=*/false, kMslVersionNone);
-    TI_ASSERT(kernel_lib != nullptr);
+    if (kernel_lib == nullptr) {
+      return RhiResult::error;
+    }
     auto mtl_func = new_function_with_name(kernel_lib.get(), name);
-    TI_ASSERT(mtl_func != nullptr);
+    if (mtl_func == nullptr) {
+      return RhiResult::error;
+    }
     auto pipeline =
         new_compute_pipeline_state_with_function(device_, mtl_func.get());
-    TI_ASSERT(pipeline != nullptr);
-    return std::make_unique<PipelineImpl>(std::move(pipeline));
+    if (pipeline == nullptr) {
+      return RhiResult::error;
+    }
+    *out_pipeline = new PipelineImpl(std::move(pipeline));
+
+    return RhiResult::success;
   }
 
   ShaderResourceSet *create_resource_set() final {

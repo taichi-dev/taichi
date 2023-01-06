@@ -281,6 +281,27 @@ class VulkanRasterResources : public RasterResources {
   VulkanDevice *device_;
 };
 
+class VulkanPipelineCache : public PipelineCache {
+ public:
+  VulkanPipelineCache(VulkanDevice *device,
+                      size_t initial_size,
+                      const void *initial_data);
+  ~VulkanPipelineCache() final;
+
+  void *data() noexcept final;
+  size_t size() noexcept final;
+
+  vkapi::IVkPipelineCache vk_pipeline_cache() {
+    return cache_;
+  }
+  
+ private:
+  VulkanDevice *device_{nullptr};
+  vkapi::IVkPipelineCache cache_{nullptr};
+  std::vector<uint8_t> data_shadow_;
+  size_t size_{0};
+};
+
 // VulkanPipeline maps to a vkapi::IVkPipeline, or a SPIR-V module (a GLSL
 // compute shader).
 class VulkanPipeline : public Pipeline {
@@ -289,6 +310,7 @@ class VulkanPipeline : public Pipeline {
     VulkanDevice *device{nullptr};
     std::vector<SpirvCodeView> code;
     std::string name{"Pipeline"};
+    vkapi::IVkPipelineCache cache{nullptr};
   };
 
   explicit VulkanPipeline(const Params &params);
@@ -337,7 +359,7 @@ class VulkanPipeline : public Pipeline {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
 
-  static rhi_impl::RhiReturn<VkShaderModule> create_shader_module(
+  static VkShaderModule create_shader_module(
       VkDevice device,
       const SpirvCodeView &code);
 
@@ -608,9 +630,14 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return Arch::vulkan;
   }
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override;
+  RhiResult create_pipeline_cache(PipelineCache **out_cache,
+                                  size_t initial_size = 0,
+                                  const void *initial_data = nullptr) noexcept;
+  
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;

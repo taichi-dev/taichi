@@ -320,7 +320,8 @@ IVkPipeline create_compute_pipeline(VkDevice device,
   VkResult res =
       vkCreateComputePipelines(device, cache ? cache->cache : VK_NULL_HANDLE, 1,
                                &info, nullptr, &obj->pipeline);
-  BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "failed to create compute pipeline");
+  RHI_THROW_UNLESS(res == VK_SUCCESS,
+                   std::runtime_error("vkCreateComputePipelines failed"));
 
   return obj;
 }

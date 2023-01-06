@@ -1271,9 +1271,9 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
   if (std::any_of(types.begin(), types.end(),
                   [](const DataType &t) { return t.is_pointer(); })) {
     TI_NOT_IMPLEMENTED
-  } else if (now_real_func) {
+  } else if (current_real_func) {
     TI_ASSERT(stmt->values.size() ==
-              now_real_func->ret_type->get_num_elements());
+              current_real_func->ret_type->get_num_elements());
     create_return(stmt->values);
   } else {
     TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
@@ -2699,11 +2699,11 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     auto guard = get_function_creation_guard(
         {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
         stmt->func->get_name());
-    Function *old_real_func = now_real_func;
-    now_real_func = stmt->func;
+    Function *old_real_func = current_real_func;
+    current_real_func = stmt->func;
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
-    now_real_func = old_real_func;
+    current_real_func = old_real_func;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
   auto *new_ctx = call("allocate_runtime_context", get_runtime());
@@ -2750,46 +2750,46 @@ llvm::Type *TaskCodeGenLLVM::get_real_func_ret_type(Function *real_func) {
 }
 
 void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
-                                    llvm::Type *buffer_type,
                                     const std::vector<Stmt *> &elements,
-                                    const Type *now_type,
-                                    int &now_element,
-                                    std::vector<llvm::Value *> &now_ind) {
-  if (auto primitive_type = now_type->cast<PrimitiveType>()) {
-    TI_ASSERT((Type *)elements[now_element]->ret_type == now_type);
-    auto *gep = builder->CreateGEP(buffer_type, buffer, now_ind);
-    builder->CreateStore(llvm_val[elements[now_element]], gep);
-    now_element++;
-  } else if (auto struct_type = now_type->cast<StructType>()) {
+                                    const Type *current_type,
+                                    int &current_element,
+                                    std::vector<llvm::Value *> &current_index) {
+  auto *buffer_type = buffer->getType()->getPointerElementType();
+  if (auto primitive_type = current_type->cast<PrimitiveType>()) {
+    TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
+    auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
+    builder->CreateStore(llvm_val[elements[current_element]], gep);
+    current_element++;
+  } else if (auto struct_type = current_type->cast<StructType>()) {
     int i = 0;
     for (const auto &element_type : struct_type->elements()) {
-      now_ind.push_back(tlctx->get_constant(i++));
-      create_return(buffer, buffer_type, elements, element_type, now_element,
-                    now_ind);
-      now_ind.pop_back();
+      current_index.push_back(tlctx->get_constant(i++));
+      create_return(buffer, elements, element_type, current_element,
+                    current_index);
+      current_index.pop_back();
     }
   } else {
-    auto tensor_type = now_type->as<TensorType>();
+    auto tensor_type = current_type->as<TensorType>();
     int num_elements = tensor_type->get_num_elements();
     Type *element_type = tensor_type->get_element_type();
     for (int i = 0; i < num_elements; i++) {
-      now_ind.push_back(tlctx->get_constant(i));
-      create_return(buffer, buffer_type, elements, element_type, now_element,
-                    now_ind);
-      now_ind.pop_back();
+      current_index.push_back(tlctx->get_constant(i));
+      create_return(buffer, elements, element_type, current_element,
+                    current_index);
+      current_index.pop_back();
     }
   }
 }
 
 void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
   auto buffer = call("RuntimeContext_get_result_buffer", get_context());
-  auto ret_type = now_real_func->ret_type;
+  auto ret_type = current_real_func->ret_type;
   auto buffer_type = tlctx->get_data_type(ret_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));
-  int now_element = 0;
-  std::vector<llvm::Value *> now_ind = {tlctx->get_constant(0)};
-  create_return(buffer, buffer_type, elements, ret_type, now_element, now_ind);
+  int current_element = 0;
+  std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
+  create_return(buffer, elements, ret_type, current_element, current_index);
 };
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

@@ -60,7 +60,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   bool returned{false};
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> struct_for_tls_sizes;
-  Function *now_real_func{nullptr};
+  Function *current_real_func{nullptr};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -139,13 +139,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *create_print(std::string tag, llvm::Value *value);
 
   void create_return(const std::vector<Stmt *> &elements);
-
-  void create_return(llvm::Value *buffer,
-                     llvm::Type *buffer_type,
-                     const std::vector<Stmt *> &elements,
-                     const Type *now_type,
-                     int &now_element,
-                     std::vector<llvm::Value *> &now_ind);
 
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
@@ -411,6 +404,13 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   llvm::Value *bitcast_to_u64(llvm::Value *val, DataType type);
 
   ~TaskCodeGenLLVM() override = default;
+
+ private:
+  void create_return(llvm::Value *buffer,
+                     const std::vector<Stmt *> &elements,
+                     const Type *current_type,
+                     int &current_element,
+                     std::vector<llvm::Value *> &current_index);
 };
 
 }  // namespace taichi::lang

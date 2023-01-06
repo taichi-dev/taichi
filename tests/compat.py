@@ -45,12 +45,12 @@ def init_dict(run_dict, aot_files):
         run_dict[path_name] = []
     for cpp_test_name, value in test_config["aot_test_cases"].items():
         if value[1] != "--arch=vulkan": continue
-        run_dict[value[0][3][:-3]].append(cpp_tests_path) 
+        run_dict[value[0][3][:-3]].append(cpp_tests_path)
         run_dict[value[0][3][:-3]].append(f"--gtest_filter={cpp_test_name}")
 
     for cpp_test_name, value in test_config["capi_aot_test_cases"].items():
         if value[1] != "--arch=vulkan": continue
-        run_dict[value[0][3][:-3]].append(cpp_tests_path) 
+        run_dict[value[0][3][:-3]].append(cpp_tests_path)
         run_dict[value[0][3][:-3]].append(f"--gtest_filter={cpp_test_name}")
 
 

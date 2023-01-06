@@ -42,13 +42,11 @@ class KernelCodeGen {
   IRNode *ir;
 
  public:
-  KernelCodeGen(Kernel *kernel, IRNode *ir);
+  explicit KernelCodeGen(Kernel *kernel);
 
   virtual ~KernelCodeGen() = default;
 
-  static std::unique_ptr<KernelCodeGen> create(Arch arch,
-                                               Kernel *kernel,
-                                               Stmt *stmt = nullptr);
+  static std::unique_ptr<KernelCodeGen> create(Arch arch, Kernel *kernel);
 
   virtual FunctionType compile_to_function() = 0;
   virtual bool supports_offline_cache() const {

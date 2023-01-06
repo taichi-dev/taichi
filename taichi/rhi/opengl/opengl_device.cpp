@@ -382,12 +382,13 @@ void GLCommandList::buffer_fill(DevicePtr ptr,
   recorded_commands_.push_back(std::move(cmd));
 }
 
-void GLCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult GLCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept {
   auto cmd = std::make_unique<CmdDispatch>();
   cmd->x = x;
   cmd->y = y;
   cmd->z = z;
   recorded_commands_.push_back(std::move(cmd));
+  return RhiResult::success;
 }
 
 void GLCommandList::begin_renderpass(int x0,

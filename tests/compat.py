@@ -6,7 +6,7 @@ import pathlib
 import subprocess
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
-build_dir = os.path.join(curr_dir, "../build")
+build_dir = os.path.join(curr_dir, '../build')
 cpp_tests_path = build_dir + '/taichi_cpp_tests.exe'
 c_api_tests_path = build_dir + '/taichi_c_api_tests.exe'
 
@@ -66,7 +66,7 @@ def generate():
 
 
 def run():
-    aot_files = glob.glob("tests/cpp/aot/python_scripts/*.py")
+    aot_files = glob.glob('tests/cpp/aot/python_scripts/*.py')
     init_dict(run_dict, aot_files)
     for x in aot_files:
         path_name = pathlib.Path(x).name[:-3]

@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.adstack, dynamic_index=True)
+@test_utils.test(require=ti.extension.adstack)
 def test_polar_decompose_2D():
     # `polar_decompose3d` in current Taichi version (v1.1) does not support autodiff,
     # becasue it mixed usage of for-loops and statements without looping.

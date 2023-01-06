@@ -372,6 +372,11 @@ def init(arch=None,
                 "also be removed then. Make sure your code doesn't rely on it.",
                 DeprecationWarning)
 
+    if "dynamic_index" in kwargs:
+        warnings.warn(
+            "Dynamic index is supported by default and the switch will be removed in v1.5.0.",
+            DeprecationWarning)
+
     if "default_up" in kwargs:
         raise KeyError(
             "'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead."

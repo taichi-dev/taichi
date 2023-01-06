@@ -37,7 +37,7 @@ def test_deprecate_element_shape_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.'
     ):
 
         @ti.kernel
@@ -50,7 +50,7 @@ def test_deprecate_element_dim_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.'
     ):
 
         @ti.kernel
@@ -63,7 +63,7 @@ def test_deprecate_field_dim_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead."
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead."
     ):
 
         @ti.kernel

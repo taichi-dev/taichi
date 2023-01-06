@@ -184,16 +184,6 @@ class TI_DLL_EXPORT Program {
 
   void visualize_layout(const std::string &fn);
 
-  Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "",
-                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
-    // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
-    // Expr::set_allow_store(false);
-    kernels.emplace_back(std::move(func));
-    return *kernels.back();
-  }
-
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  AutodiffMode autodiff_mode = AutodiffMode::kNone) {
@@ -208,8 +198,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  // TODO(Lin): remove the offloaded parameter
-  FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
+  FunctionType compile(Kernel &kernel);
 
   void check_runtime_error();
 

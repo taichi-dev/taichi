@@ -167,14 +167,16 @@ class CommandListImpl : public CommandList {
     finish_encoder(encoder.get());
   }
 
-  void dispatch(uint32_t x, uint32_t y, uint32_t z) override {
+  RhiResult dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept final {
     TI_ERROR("Please call dispatch(grid_size, block_size) instead");
   }
 
-  void dispatch(CommandList::ComputeSize grid_size,
-                CommandList::ComputeSize block_size) override {
+  RhiResult dispatch(CommandList::ComputeSize grid_size,
+                     CommandList::ComputeSize block_size) noexcept override {
     auto encoder = new_compute_command_encoder(command_buffer_.get());
-    TI_ASSERT(encoder != nullptr);
+    if (encoder == nullptr) {
+      return RhiResult::error;
+    }
     metal::set_label(encoder.get(), inflight_label_);
     const auto &builder = inflight_compute_builder_.value();
     set_compute_pipeline_state(encoder.get(), builder.pipeline);
@@ -183,7 +185,9 @@ class CommandListImpl : public CommandList {
     };
     for (const auto &[idx, b] : builder.binding_map) {
       auto *buf = alloc_buf_mapper_->find(b.alloc_id).buffer;
-      TI_ASSERT(buf != nullptr);
+      if (buf == nullptr) {
+        return RhiResult::error;
+      }
       set_mtl_buffer(encoder.get(), buf, b.offset, idx);
     }
     const auto num_blocks_x = ceil_div(grid_size.x, block_size.x);
@@ -193,6 +197,7 @@ class CommandListImpl : public CommandList {
                           num_blocks_z, block_size.x, block_size.y,
                           block_size.z);
     finish_encoder(encoder.get());
+    return RhiResult::success;
   }
 
   // Graphics commands are not implemented on Metal

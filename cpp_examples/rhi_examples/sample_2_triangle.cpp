@@ -84,7 +84,8 @@ class SampleApp : public App {
 
   std::vector<StreamSemaphore> render_loop(
       StreamSemaphore image_available_semaphore) override {
-    auto cmdlist = device->get_graphics_stream()->new_command_list();
+    auto [cmdlist, res] = device->get_graphics_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
 
     // Set-up our frame buffer attachment
     DeviceAllocation surface_image = surface->get_target_image();

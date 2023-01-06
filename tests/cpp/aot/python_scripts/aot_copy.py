@@ -6,14 +6,6 @@ import zipfile
 
 import taichi as ti
 
-import argparse
-import json
-import os
-import shutil
-import zipfile
-
-import taichi as ti
-
 
 def zip_files(srcDir):
     dstdir = srcDir + ".zip"
@@ -80,13 +72,11 @@ def compile_graph_aot(arch):
     zip_extract = zip_file.extractall(pathdir + "/module")
     zip_file.close()
     list1 = []
-    with open(pathdir + "/module/metadata.json", 'r',
-              encoding='utf8') as fp:
+    with open(pathdir + "/module/metadata.json", 'r', encoding='utf8') as fp:
         json_data = json.load(fp)
         json_data.pop("required_caps")
         list1.append(json_data)
-    with open(pathdir + "/module/metadata.json", "w",
-              encoding="UTF-8") as e:
+    with open(pathdir + "/module/metadata.json", "w", encoding="UTF-8") as e:
         json_new_data = json.dumps(list1, ensure_ascii=False, indent=4)
         e.write(json_new_data[1:len(json_new_data)])
     os.remove(pathdir + "/module.zip")
@@ -110,4 +100,3 @@ if __name__ == "__main__":
         compile_graph_aot(arch=ti.opengl)
     else:
         assert False
-

@@ -18,7 +18,7 @@ parser.add_argument('-s',
 parser.add_argument('place_holder', nargs='*')
 args = parser.parse_args()
 
-ti.init(arch=ti.cuda, dynamic_index=True)
+ti.init(arch=ti.cuda)
 
 if args.gui == 'auto':
     if _ti_core.GGUI_AVAILABLE and ti.lang.impl.current_cfg().arch == ti.cuda:

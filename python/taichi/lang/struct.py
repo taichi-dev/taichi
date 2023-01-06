@@ -714,7 +714,8 @@ class StructType(CompoundType):
                     func_ret, ret_index)
             else:
                 d[name] = expr.Expr(
-                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index))
+                    _ti_core.make_get_element_expr(func_ret.ptr,
+                                                   (ret_index, )))
                 ret_index += 1
 
         return Struct(d), ret_index

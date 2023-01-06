@@ -22,7 +22,7 @@ def load_pr_tags():
 def find_latest_tag_commit(tags):
     for tag in reversed(tags):
         s = re.match(r'v\s*([\d.]+)', tag.name)
-        print(f'Latest version tag is: {tag.name}')
+        print(f'Latest version tag is: {tag.name}', file=sys.stderr)
         if s is not None:
             return tag.commit
 
@@ -43,7 +43,6 @@ def main(ver=None, repo_dir='.'):
         return f'{c.summary} (by **{c.author}**)'
 
     notable_changes = {}
-    all_changes = []
 
     details = load_pr_tags()
 
@@ -75,17 +74,11 @@ def main(ver=None, repo_dir='.'):
                     f'** Warning: tag {tag.lower()} undefined in the "details" dict. Please include the tag into "details", unless the tag is a typo.'
                 )
 
-        all_changes.append(format(c))
-
     res = 'Highlights:\n'
     for tag in sorted(notable_changes.keys()):
         res += f'   - **{details[tag]}**\n'
         for item in notable_changes[tag]:
             res += f'      - {item}\n'
-
-    res += '\nFull changelog:\n'
-    for c in all_changes:
-        res += f'   - {c}\n'
 
     return res
 

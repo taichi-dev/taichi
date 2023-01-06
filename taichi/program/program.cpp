@@ -191,10 +191,10 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
+FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel, offloaded);
+  auto ret = program_impl_->compile(&kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -359,14 +359,17 @@ Arch Program::get_accessor_arch() {
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
+    ASTBuilder &builder = kernel->context->builder();
+    auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
+    builder.insert(std::move(ret));
   });
   ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
@@ -380,13 +383,17 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 Kernel &Program::get_snode_writer(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto expr = Expr(snode_to_fields_.at(snode))[indices];
-    this->current_ast_builder()->insert_assignment(
+    ASTBuilder &builder = kernel->context->builder();
+    auto expr =
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
+    builder.insert_assignment(
         expr,
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
                                       snode->dt->get_compute_type()),
@@ -448,8 +455,25 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
-                                 ExternalArrayLayout layout) {
-  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape, layout));
+                                 ExternalArrayLayout layout,
+                                 bool zero_fill) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+  if (zero_fill) {
+    Arch arch = this_thread_config().arch;
+    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+      fill_ndarray_fast_u32(arr.get(), /*data=*/0);
+    } else if (arch != Arch::dx12 && arch != Arch::metal) {
+      // Device api support for dx12 & metal backend are not complete yet
+      Stream *stream =
+          program_impl_->get_compute_device()->get_compute_stream();
+      auto cmdlist = stream->new_command_list();
+      cmdlist->buffer_fill(arr->ndarray_alloc_.get_ptr(0),
+                           arr->get_element_size() * arr->get_nelement(),
+                           /*data=*/0);
+      stream->submit_synced(cmdlist.get());
+    }
+  }
+  ndarrays_.emplace_back(std::move(arr));
   return ndarrays_.back().get();
 }
 

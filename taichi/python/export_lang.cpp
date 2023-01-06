@@ -42,10 +42,6 @@ bool test_threading();
 
 namespace taichi::lang {
 
-Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[ExprGroup(index)];
-}
-
 std::string libdevice_path();
 
 }  // namespace taichi::lang
@@ -59,6 +55,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiIndexError>(m, "TaichiIndexError",
+                                           PyExc_IndexError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
   py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
@@ -315,7 +313,9 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
-      .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("expand_exprs", &ASTBuilder::expand_exprs)
+      .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
+      .def("expr_subscript", &ASTBuilder::expr_subscript)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -455,13 +455,13 @@ void export_lang(py::module &m) {
       .def(
           "create_ndarray",
           [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape,
-              ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout);
+              const std::vector<int> &shape, ExternalArrayLayout layout,
+              bool zero_fill) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::return_value_policy::reference)
+          py::arg("zero_fill") = false, py::return_value_policy::reference)
       .def(
           "create_texture",
           [&](Program *program, const DataType &dt, int num_channels,
@@ -827,7 +827,7 @@ void export_lang(py::module &m) {
         Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
 
   m.def("make_get_element_expr",
-        Expr::make<GetElementExpression, const Expr &, int>);
+        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",
@@ -860,8 +860,6 @@ void export_lang(py::module &m) {
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
-
-  m.def("expr_index", expr_index);
 
   m.def("expr_assume_in_range", assume_range);
 
@@ -993,13 +991,6 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript",
-        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
-          Expr idx_expr = expr[expr_group];
-          idx_expr.set_tb(tb);
-          return idx_expr;
-        });
-
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
@@ -1042,13 +1033,6 @@ void export_lang(py::module &m) {
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
           return Expr::make<MeshRelationAccessExpression>(
               mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
-
-  m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
-           const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(
-              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")

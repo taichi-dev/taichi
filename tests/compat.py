@@ -12,7 +12,6 @@ capi_test_filename = 'taichi_c_api_tests'
 cpp_tests_path = os.path.join(build_dir, capi_test_filename)
 c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
 
-
 # aot_copy_list = [c_api_tests+'--gtest_filter=CapiTest.TestCompat*']
 # graph_aot_test_list = [c_api_tests+' --gtest_filter=CapiTest.TestCompatLoadAOT']
 # aot_module_test_list = [c_api_tests+' --gtest_filter=CapiTest.TestBehaviorLoadAOTModuleVulkan']

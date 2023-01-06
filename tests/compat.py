@@ -5,9 +5,16 @@ import os
 import pathlib
 import subprocess
 
-curr_dir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
-cpp_tests_path = os.path.join(curr_dir[:-6], '/build/taichi_cpp_tests')
-c_api_tests_path = os.path.join(curr_dir[:-6], '/build/taichi_c_api_tests')
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+build_dir = os.path.join(curr_dir, '../build')
+cpp_test_filename = 'taichi_cpp_tests'
+capi_test_filename = 'taichi_c_api_tests'
+capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
+cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)
+
+
+cpp_tests_path = os.path.join(curr_dir[:-6],'/build/taichi_cpp_tests') 
+c_api_tests_path = os.path.join(curr_dir[:-6],'/build/taichi_c_api_tests')
 
 # aot_copy_list = [c_api_tests+'--gtest_filter=CapiTest.TestCompat*']
 # graph_aot_test_list = [c_api_tests+' --gtest_filter=CapiTest.TestCompatLoadAOT']
@@ -74,7 +81,7 @@ def run():
         if len(os.listdir('tests/cpp/aot/python_scripts/' + path_name)) == 0:
             continue
         for i in run_dict[path_name]:
-            subprocess.check_call(i)
+            subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
 
 
 if __name__ == "__main__":

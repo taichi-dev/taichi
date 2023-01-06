@@ -286,7 +286,7 @@ class VulkanPipelineCache : public PipelineCache {
   VulkanPipelineCache(VulkanDevice *device,
                       size_t initial_size,
                       const void *initial_data);
-  ~VulkanPipelineCache() final;
+  ~VulkanPipelineCache() override;
 
   void *data() noexcept final;
   size_t size() noexcept final;
@@ -632,7 +632,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   RhiResult create_pipeline_cache(PipelineCache **out_cache,
                                   size_t initial_size = 0,
-                                  const void *initial_data = nullptr) noexcept;
+                                  const void *initial_data = nullptr) noexcept final;
   
   RhiResult create_pipeline(Pipeline **out_pipeline,
                             const PipelineSourceDesc &src,

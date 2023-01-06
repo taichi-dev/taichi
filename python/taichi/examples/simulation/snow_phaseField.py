@@ -2,8 +2,6 @@
     space discretization: finite difference method, time integration: Runge-Kutta method
     repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
     more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
-import os
-
 import numpy as np
 
 import taichi as ti

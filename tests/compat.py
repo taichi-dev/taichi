@@ -69,7 +69,7 @@ def run():
     for x in aot_files:
         path_name = pathlib.Path(x).name[:-3]
         os.environ["TAICHI_AOT_FOLDER_PATH"] = 'tests/cpp/aot/python_scripts/'+path_name
-        if len(os.listdir('tests/cpp/aot/python_scripts/'+path_name)): continue
+        if len(os.listdir('tests/cpp/aot/python_scripts/'+path_name))==0 : continue
         for i in run_dict[path_name]:
             subprocess.check_call(i)
 

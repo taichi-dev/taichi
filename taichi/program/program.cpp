@@ -455,8 +455,25 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
-                                 ExternalArrayLayout layout) {
-  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape, layout));
+                                 ExternalArrayLayout layout,
+                                 bool zero_fill) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+  if (zero_fill) {
+    Arch arch = this_thread_config().arch;
+    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+      fill_ndarray_fast_u32(arr.get(), /*data=*/0);
+    } else if (arch != Arch::dx12 && arch != Arch::metal) {
+      // Device api support for dx12 & metal backend are not complete yet
+      Stream *stream =
+          program_impl_->get_compute_device()->get_compute_stream();
+      auto cmdlist = stream->new_command_list();
+      cmdlist->buffer_fill(arr->ndarray_alloc_.get_ptr(0),
+                           arr->get_element_size() * arr->get_nelement(),
+                           /*data=*/0);
+      stream->submit_synced(cmdlist.get());
+    }
+  }
+  ndarrays_.emplace_back(std::move(arr));
   return ndarrays_.back().get();
 }
 

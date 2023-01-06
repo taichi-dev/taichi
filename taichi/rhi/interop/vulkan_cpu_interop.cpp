@@ -51,7 +51,8 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
   vk_dev->unmap(staging);
 
   auto stream = vk_dev->get_compute_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd_list->buffer_copy(dst, staging, size);
   stream->submit_synced(cmd_list.get());
 }

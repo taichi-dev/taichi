@@ -59,7 +59,8 @@ void Gui::init_render_resources(VkRenderPass render_pass) {
   // Upload Fonts
   {
     auto stream = device.get_graphics_stream();
-    std::unique_ptr<CommandList> cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     VkCommandBuffer command_buffer =
         static_cast<VulkanCommandList *>(cmd_list.get())
             ->vk_command_buffer()

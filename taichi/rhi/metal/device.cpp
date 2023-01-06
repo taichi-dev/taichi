@@ -229,11 +229,12 @@ class StreamImpl : public Stream {
       : command_queue_(command_queue), alloc_buf_mapper_(alloc_buf_mapper) {
   }
 
-  std::unique_ptr<CommandList> new_command_list() override {
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final {
     auto cb = new_command_buffer(command_queue_);
     TI_ASSERT(cb != nullptr);
     set_label(cb.get(), fmt::format("command_buffer_{}", list_counter_++));
-    return std::make_unique<CommandListImpl>(std::move(cb), alloc_buf_mapper_);
+    *out_cmdlist = new CommandListImpl(std::move(cb), alloc_buf_mapper_);
+    return RhiResult::success;
   }
 
   StreamSemaphore submit(
@@ -361,7 +362,8 @@ class DeviceImpl : public Device, public AllocToMTLBufferMapper {
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override {
     Stream *stream = get_compute_stream();
-    std::unique_ptr<CommandList> cmd = stream->new_command_list();
+    auto [cmd, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success);
     cmd->buffer_copy(dst, src, size);
     stream->submit_synced(cmd.get());
   }

@@ -935,12 +935,12 @@ RhiResult VulkanCommandList::bind_raster_resources(
     return RhiResult::invalid_usage;
   }
 
-  if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
-    return RhiResult::not_supported;
-  }
-
   if (res->index_binding.buffer != nullptr) {
     // We have a valid index buffer
+    if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
+      return RhiResult::not_supported;
+    }
+
     vkapi::IVkBuffer index_buffer = res->index_binding.buffer;
     vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                          res->index_binding.offset, res->index_type);
@@ -1809,7 +1809,8 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    uint64_t size) {
   // TODO: always create a queue specifically for transfer
   Stream *stream = get_compute_stream();
-  std::unique_ptr<CommandList> cmd = stream->new_command_list();
+  auto [cmd, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd->buffer_copy(dst, src, size);
   stream->submit_synced(cmd.get());
 }
@@ -1847,11 +1848,16 @@ void VulkanDevice::wait_idle() {
   }
 }
 
-std::unique_ptr<CommandList> VulkanStream::new_command_list() {
+RhiResult VulkanStream::new_command_list(CommandList **out_cmdlist) noexcept {
   vkapi::IVkCommandBuffer buffer =
       vkapi::allocate_command_buffer(command_pool_);
 
-  return std::make_unique<VulkanCommandList>(&device_, this, buffer);
+  if (buffer == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
+  *out_cmdlist = new VulkanCommandList(&device_, this, buffer);
+  return RhiResult::success;
 }
 
 StreamSemaphore VulkanStream::submit(
@@ -2788,13 +2794,12 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
     depth_buffer_ = device_->allocate_memory(params);
   }
 
-  std::unique_ptr<CommandList> cmd_list{nullptr};
-
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
-  cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
                              ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
@@ -2832,8 +2837,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  std::unique_ptr<CommandList> cmd_list{nullptr};
-
   /*
   if (config_.window_handle) {
     // TODO: check if blit is supported, and use copy_image if not
@@ -2851,7 +2854,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
-  cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(img_alloc, ImageLayout::present_src,
                              ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory

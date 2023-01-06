@@ -204,7 +204,7 @@ class GLStream : public Stream {
   }
   ~GLStream() override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;

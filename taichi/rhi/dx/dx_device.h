@@ -94,7 +94,7 @@ class Dx11Stream : public Stream {
   Dx11Stream(Dx11Device *);
   ~Dx11Stream() override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;

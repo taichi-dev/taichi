@@ -206,9 +206,8 @@ VulkanPipeline::~VulkanPipeline() {
   shader_modules_.clear();
 }
 
-VkShaderModule VulkanPipeline::create_shader_module(
-    VkDevice device,
-    const SpirvCodeView &code) {
+VkShaderModule VulkanPipeline::create_shader_module(VkDevice device,
+                                                    const SpirvCodeView &code) {
   VkShaderModuleCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   create_info.codeSize = code.size;
@@ -217,7 +216,8 @@ VkShaderModule VulkanPipeline::create_shader_module(
   VkShaderModule shader_module;
   VkResult res = vkCreateShaderModule(device, &create_info, kNoVkAllocCallbacks,
                                       &shader_module);
-  RHI_THROW_UNLESS(res == VK_SUCCESS, std::runtime_error("vkCreateShaderModule failed"));
+  RHI_THROW_UNLESS(res == VK_SUCCESS,
+                   std::runtime_error("vkCreateShaderModule failed"));
   return shader_module;
 }
 
@@ -278,9 +278,8 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
 
     uint32_t set_count = 0;
     result = spvReflectEnumerateDescriptorSets(&module, &set_count, nullptr);
-    RHI_THROW_UNLESS(
-        result == SPV_REFLECT_RESULT_SUCCESS,
-        std::runtime_error("Failed to enumerate number of sets"));
+    RHI_THROW_UNLESS(result == SPV_REFLECT_RESULT_SUCCESS,
+                     std::runtime_error("Failed to enumerate number of sets"));
     std::vector<SpvReflectDescriptorSet *> desc_sets(set_count);
     result = spvReflectEnumerateDescriptorSets(&module, &set_count,
                                                desc_sets.data());

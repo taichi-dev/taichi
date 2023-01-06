@@ -294,7 +294,7 @@ class VulkanPipelineCache : public PipelineCache {
   vkapi::IVkPipelineCache vk_pipeline_cache() {
     return cache_;
   }
-  
+
  private:
   VulkanDevice *device_{nullptr};
   vkapi::IVkPipelineCache cache_{nullptr};
@@ -359,9 +359,8 @@ class VulkanPipeline : public Pipeline {
       const std::vector<VertexInputBinding> &vertex_inputs,
       const std::vector<VertexInputAttribute> &vertex_attrs);
 
-  static VkShaderModule create_shader_module(
-      VkDevice device,
-      const SpirvCodeView &code);
+  static VkShaderModule create_shader_module(VkDevice device,
+                                             const SpirvCodeView &code);
 
   struct GraphicsPipelineTemplate {
     VkPipelineViewportStateCreateInfo viewport_state{};
@@ -630,10 +629,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return Arch::vulkan;
   }
 
-  RhiResult create_pipeline_cache(PipelineCache **out_cache,
-                                  size_t initial_size = 0,
-                                  const void *initial_data = nullptr) noexcept final;
-  
+  RhiResult create_pipeline_cache(
+      PipelineCache **out_cache, size_t initial_size = 0,
+      const void *initial_data = nullptr) noexcept final;
+
   RhiResult create_pipeline(Pipeline **out_pipeline,
                             const PipelineSourceDesc &src,
                             std::string name,

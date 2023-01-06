@@ -750,14 +750,13 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   alloc_id_to_buffer_.erase(alloc_id);
 }
 
-RhiResult Dx11Device::create_pipeline(
-    Pipeline **out_pipeline,
-    const PipelineSourceDesc &src,
-    std::string name,
-    PipelineCache *cache) noexcept {
+RhiResult Dx11Device::create_pipeline(Pipeline **out_pipeline,
+                                      const PipelineSourceDesc &src,
+                                      std::string name,
+                                      PipelineCache *cache) noexcept {
   try {
     *out_pipeline = new Dx11Pipeline(src, name, this);
-  } catch (std::bad_alloc&) {
+  } catch (std::bad_alloc &) {
     *out_pipeline = nullptr;
     return RhiResult::out_of_memory;
   }

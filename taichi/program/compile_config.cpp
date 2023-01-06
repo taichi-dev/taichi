@@ -72,7 +72,7 @@ void CompileConfig::fit() {
     // TODO: allow users to run in debug mode without out-of-bound checks
     check_out_of_bound = true;
   }
-  if (arch == Arch::cc || arch_uses_spirv(arch)) {
+  if (arch == Arch::cc) {
     demote_dense_struct_fors = true;
   }
   offline_cache::disable_offline_cache_if_needed(this);

@@ -184,16 +184,6 @@ class TI_DLL_EXPORT Program {
 
   void visualize_layout(const std::string &fn);
 
-  Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "",
-                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
-    // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
-    // Expr::set_allow_store(false);
-    kernels.emplace_back(std::move(func));
-    return *kernels.back();
-  }
-
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  AutodiffMode autodiff_mode = AutodiffMode::kNone) {
@@ -330,7 +320,8 @@ class TI_DLL_EXPORT Program {
   Ndarray *create_ndarray(
       const DataType type,
       const std::vector<int> &shape,
-      ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+      ExternalArrayLayout layout = ExternalArrayLayout::kNull,
+      bool zero_fill = false);
 
   Texture *create_texture(const DataType type,
                           int num_channels,

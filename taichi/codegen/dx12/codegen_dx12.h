@@ -12,8 +12,7 @@ namespace taichi::lang {
 
 class KernelCodeGenDX12 : public KernelCodeGen {
  public:
-  KernelCodeGenDX12(Kernel *kernel, IRNode *ir = nullptr)
-      : KernelCodeGen(kernel, ir) {
+  explicit KernelCodeGenDX12(Kernel *kernel) : KernelCodeGen(kernel) {
   }
   struct CompileResult {
     std::vector<std::vector<uint8_t>> task_dxil_source_codes;

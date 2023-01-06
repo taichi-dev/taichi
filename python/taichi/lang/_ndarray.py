@@ -224,8 +224,10 @@ class ScalarNdarray(Ndarray):
     def __init__(self, dtype, arr_shape):
         super().__init__()
         self.dtype = cook_dtype(dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            self.dtype, arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(self.dtype,
+                                                          arr_shape,
+                                                          layout=Layout.NULL,
+                                                          zero_fill=True)
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
 

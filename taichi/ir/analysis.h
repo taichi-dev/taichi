@@ -76,7 +76,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 
 std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
 void check_fields_registered(IRNode *root);
-std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel = nullptr);
+std::unique_ptr<IRNode> clone(IRNode *root);
 int count_statements(IRNode *root);
 
 /**

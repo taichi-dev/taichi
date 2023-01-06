@@ -16,7 +16,6 @@ TEST(TensorType, eliminateImmutableLocalVars) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 

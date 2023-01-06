@@ -168,12 +168,12 @@ class Scalarize : public BasicStmtVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = operand_tensor_type->get_num_elements();
-      auto primitive_type = operand_tensor_type->get_element_type();
+      auto primitive_type = stmt->ret_type.get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
         if (stmt->is_cast()) {
-          unary_stmt->cast_type = stmt->cast_type;
+          unary_stmt->cast_type = stmt->cast_type.get_element_type();
         }
         unary_stmt->ret_type = primitive_type;
         matrix_init_values.push_back(unary_stmt.get());

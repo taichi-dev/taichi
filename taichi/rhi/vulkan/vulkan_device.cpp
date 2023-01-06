@@ -935,12 +935,12 @@ RhiResult VulkanCommandList::bind_raster_resources(
     return RhiResult::invalid_usage;
   }
 
-  if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
-    return RhiResult::not_supported;
-  }
-
   if (res->index_binding.buffer != nullptr) {
     // We have a valid index buffer
+    if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
+      return RhiResult::not_supported;
+    }
+
     vkapi::IVkBuffer index_buffer = res->index_binding.buffer;
     vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                          res->index_binding.offset, res->index_type);

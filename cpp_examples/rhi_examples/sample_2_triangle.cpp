@@ -101,7 +101,9 @@ class SampleApp : public App {
 
     // Bind our triangle pipeline
     cmdlist->bind_pipeline(pipeline.get());
-    cmdlist->bind_raster_resources(raster_resources.get());
+    res = cmdlist->bind_raster_resources(raster_resources.get());
+    TI_ASSERT_INFO(res == RhiResult::success,
+                   "Raster res bind fault: RhiResult({})", res);
     // Render the triangle
     cmdlist->draw(3, 0);
     // End rendering

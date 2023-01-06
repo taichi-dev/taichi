@@ -48,7 +48,10 @@ for x in aot_files:
         try:
             subprocess.check_call(["python", x,"--arch=cpu"])
         except subprocess.CalledProcessError:
-            subprocess.check_call(["python", x, "--arch=cuda"])
+            try: 
+                subprocess.check_call(["python", x, "--arch=cuda"])
+            except subprocess.CalledProcessError:
+                subprocess.check_call(["python",x,"--arch=opengl"])
     
 
 

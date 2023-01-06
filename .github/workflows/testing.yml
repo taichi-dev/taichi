@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
-          git submodules foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 
       - uses: actions/checkout@v3
         with:

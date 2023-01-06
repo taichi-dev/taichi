@@ -184,7 +184,7 @@ def compile_mpm88(arch, save_compute_graph):
         mod = ti.aot.Module()
         mod.add_graph('init', g_init)
         mod.add_graph('update', g_update)
-        mod.save(tmpdir, '')
+        mod.save(tmpdir)
     else:
         pos = ti.Vector.ndarray(3, ti.f32, n_particles)
         x = ti.Vector.ndarray(2, ti.f32, shape=(n_particles))
@@ -226,7 +226,7 @@ def compile_mpm88(arch, save_compute_graph):
                            'pos': pos
                        })
 
-        mod.save(tmpdir, '')
+        mod.save(tmpdir)
 
 
 if __name__ == "__main__":

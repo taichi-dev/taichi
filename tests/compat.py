@@ -77,6 +77,7 @@ def run():
         if len(os.listdir('tests/cpp/aot/python_scripts/' + path_name)) == 0:
             continue
         for i in run_dict[path_name]:
+            print(os.listdir(build_dir))
             subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
 
 

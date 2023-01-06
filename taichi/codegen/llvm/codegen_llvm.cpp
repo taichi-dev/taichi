@@ -2779,7 +2779,7 @@ void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
   auto buffer_type = tlctx->get_data_type(ret_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));
-  buffer->getType()->dump();
+  buffer->getType()->print(llvm::errs());
   int current_element = 0;
   std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
   create_return(buffer, elements, ret_type, current_element, current_index);

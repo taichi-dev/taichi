@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -42,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE

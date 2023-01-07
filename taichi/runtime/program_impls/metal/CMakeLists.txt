@@ -9,9 +9,13 @@ target_sources(metal_program_impl
 target_include_directories(metal_program_impl
   PRIVATE
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/external/eigen
+    ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${PROJECT_SOURCE_DIR}/external/SPIRV-Tools/include
     ${LLVM_INCLUDE_DIRS}
   )
 
-target_link_libraries(metal_program_impl PUBLIC metal_codegen)
-target_link_libraries(metal_program_impl PUBLIC metal_cache)
-target_link_libraries(metal_program_impl PUBLIC metal_runtime)
+  target_link_libraries(metal_program_impl PRIVATE spirv_codegen)
+  target_link_libraries(metal_program_impl PRIVATE gfx_runtime)
+  target_link_libraries(metal_program_impl PRIVATE gfx_cache)
+  target_link_libraries(metal_program_impl PRIVATE metal_rhi)

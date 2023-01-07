@@ -1,10 +1,15 @@
 #pragma once
 #include <memory>
 #include "taichi/common/logging.h"
-#include "taichi/rhi/device.h"
-#include "taichi/runtime/metal/api.h"
+#include "taichi/rhi/metal/metal_api.h"
 
 #ifdef __OBJC__
+// FIXME: (penguinliong) HACK. If not so errors are raised when Taichi
+// targets 10.16 (which is a macOS version never existed, wth) while the SDK is
+// for 12.3. Note that Xcode version is locked against macOS version. Once your
+// macOS is upgraded to a higher version you basically cannot rollback. So
+// honestly the case is pretty common.
+#define _Nullable_result
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -63,9 +68,9 @@ class MetalPipeline : public Pipeline {
                          MetalWorkgroupSize workgroup_size);
   ~MetalPipeline() override;
 
-  static MetalPipeline* create(const MetalDevice &device,
-                                               const uint32_t *spv_data,
-                                               size_t spv_size);
+  static MetalPipeline *create(const MetalDevice &device,
+                               const uint32_t *spv_data,
+                               size_t spv_size);
   void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
@@ -202,7 +207,7 @@ class MetalDevice : public Device {
     return mtl_device_;
   }
 
-  static std::unique_ptr<MetalDevice> create();
+  static MetalDevice *create();
   void destroy();
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;

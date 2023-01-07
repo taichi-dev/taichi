@@ -1,12 +1,5 @@
-#include "taichi/rhi/metal/metal_device.h"
 #include "spirv_msl.hpp"
-#include "taichi/common/logging.h"
-#include "taichi/rhi/device.h"
-#include "taichi/runtime/metal/api.h"
-#include <cstddef>
-#include <cstdio>
-#include <functional>
-#include <memory>
+#include "taichi/rhi/metal/metal_device.h"
 
 namespace taichi::lang {
 namespace metal {
@@ -45,9 +38,6 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
   options.enable_decoration_binding = true;
   compiler.set_msl_options(options);
   std::string msl = compiler.compile();
-
-  std::printf("%s", msl.c_str());
-  std::fflush(stdout);
 
   MTLLibrary_id mtl_library = nil;
   {
@@ -329,14 +319,17 @@ void MetalStream::command_sync() {
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   MTLCommandQueue_id compute_queue = [mtl_device newCommandQueue];
   compute_stream_ = std::make_unique<MetalStream>(*this, compute_queue);
+
+  DeviceCapabilityConfig caps{};
+  caps.set(DeviceCapability::spirv_version, 0x10300);
+  set_caps(std::move(caps));
 }
 MetalDevice::~MetalDevice() { destroy(); }
 
-std::unique_ptr<MetalDevice> MetalDevice::create() {
+MetalDevice *MetalDevice::create() {
   MTLDevice_id mtl_device = MTLCreateSystemDefaultDevice();
 
-  std::unique_ptr<MetalDevice> out = std::make_unique<MetalDevice>(mtl_device);
-  return out;
+  return new MetalDevice(mtl_device);
 }
 void MetalDevice::destroy() {
   is_destroyed_ = true;

@@ -295,9 +295,9 @@ endif()
 if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
 
-    if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-        message(FATAL_ERROR "-- Metal backend must be compiled with AppleClang, but you are using ${CMAKE_CXX_COMPILER_ID}")
-    endif()
+    #if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    #    message(FATAL_ERROR "-- Metal backend must be compiled with AppleClang, but you are using ${CMAKE_CXX_COMPILER_ID}")
+    #endif()
 
     add_subdirectory(taichi/rhi/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)

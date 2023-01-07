@@ -285,7 +285,21 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcep
 MetalStream::MetalStream(const MetalDevice &device,
                          MTLCommandQueue_id mtl_command_queue)
     : device_(&device), mtl_command_queue_(mtl_command_queue) {}
-MetalStream::~MetalStream() { [mtl_command_queue_ release]; }
+MetalStream::~MetalStream() { 
+  destroy();
+ }
+
+MetalStream *MetalStream::create(const MetalDevice &device) {
+  MTLCommandQueue_id compute_queue = [device.mtl_device() newCommandQueue];
+  return new MetalStream(device, compute_queue);
+}
+void MetalStream::destroy() {
+  if (!is_destroyed_) {
+    command_sync();
+    [mtl_command_queue_ release];
+    is_destroyed_ = true;
+  }
+}
 
 RhiResult MetalStream::new_command_list(CommandList **out_cmdlist) noexcept {
   *out_cmdlist = new MetalCommandList(*device_);
@@ -324,8 +338,7 @@ void MetalStream::command_sync() {
 }
 
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
-  MTLCommandQueue_id compute_queue = [mtl_device newCommandQueue];
-  compute_stream_ = std::make_unique<MetalStream>(*this, compute_queue);
+  compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
   DeviceCapabilityConfig caps{};
   caps.set(DeviceCapability::spirv_version, 0x10300);
@@ -339,11 +352,15 @@ MetalDevice *MetalDevice::create() {
   return new MetalDevice(mtl_device);
 }
 void MetalDevice::destroy() {
-  is_destroyed_ = true;
-  TI_WARN_IF(memory_allocs_.size() != 0,
-             "metal device memory leaked: {} unreleased memory allocations",
-             memory_allocs_.size());
-  [mtl_device_ release];
+  if (!is_destroyed_) {
+    compute_stream_.reset();
+    TI_WARN_IF(memory_allocs_.size() != 0,
+              "metal device memory leaked: {} unreleased memory allocations",
+              memory_allocs_.size());
+    memory_allocs_.clear();
+    [mtl_device_ release];
+    is_destroyed_ = true;
+  }
 }
 
 DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {

@@ -164,6 +164,9 @@ class MetalStream : public Stream {
                        MTLCommandQueue_id mtl_command_queue);
   ~MetalStream() override;
 
+  static MetalStream *create(const MetalDevice &device);
+  void destroy();
+
   MTLCommandQueue_id mtl_command_queue() const {
     return mtl_command_queue_;
   }
@@ -182,6 +185,7 @@ class MetalStream : public Stream {
   const MetalDevice *device_;
   MTLCommandQueue_id mtl_command_queue_;
   std::vector<MTLCommandBuffer_id> pending_cmdbufs_;
+  bool is_destroyed_{false};
 };
 
 class MetalDevice : public Device {

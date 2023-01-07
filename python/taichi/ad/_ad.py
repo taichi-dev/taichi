@@ -213,6 +213,9 @@ class Tape:
         from taichi._kernels import clear_loss  # pylint: disable=C0415
         clear_loss(self.loss)
 
+        if self.checkpointer and self.enable_checkpointing:
+            self.checkpointer.reset()
+
         # Attach the context manager to runtime
         self.runtime.target_tape = self
         return self
@@ -221,15 +224,14 @@ class Tape:
         self.runtime.target_tape = None
         # Save the computed forward result both in enable/disable checkpointing mode
         assert self.checkpointer, "Checkpointer is not initialized."
-        self.checkpointer.save_primal("forward_result")
+        self.checkpointer.save_forward_results()
 
         if self.eval_on_exit:
             self.grad()
 
         # Restore the computed forward result both in enable/disable checkpointing mode
         assert self.checkpointer, "Checkpointer is not initialized."
-        self.checkpointer.restore_primal("forward_result")
-        self.checkpointer.clear_primal_checkpoint("forward_result")
+        self.checkpointer.restore_forward_results()
         self.checkpointer.clear()
 
         for calls, mode in zip(self.calls, self.modes):
@@ -256,6 +258,10 @@ class Tape:
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
+        if self.checkpointer:
+            self.checkpointer.record_total_checkpoints_num()
+            self.checkpointer.get_forward_calls(self.calls)
+
         for func, args in reversed(self.calls):
 
             if self.checkpointer and self.enable_checkpointing:
@@ -270,10 +276,7 @@ class Tape:
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
             if self.checkpointer and self.enable_checkpointing:
-                # Clean the consumed primal checkpoint
-                self.checkpointer.clear_primal_checkpoint(self.calls_count)
                 self.calls_count -= 1
-                # print("calls count decrease ", self.calls_count)
         self.gradient_evaluated = True
         if self.grad_checker:
             self.grad_checker.add_calls(self.calls)
@@ -541,8 +544,21 @@ class Checkpointer:
         self.backup_buffers = dict()
         self.free_backup_buffers = []
 
+        self.forward_calls = []
+        self.checkpoints_num_per_level = -1
+
+        self.drop_spacing = 2
+        self.drop_id = 2  # The dropping starts from the second buffer
+        self.save_spacing = 1
+        self.save_spacing_cnt = 1
+        self.current_level_checkpoints_num = 0
+        self.current_start_id = 1
+
+        self.max_checkpointing_level = 3
+        self.max_num_buffers_per_level = 10
+        self.max_num_buffers = self.max_num_buffers_per_level * self.max_checkpointing_level
         # For stat use
-        self.max_num_buffers = 0
+        self.current_max_num_buffers = 0
         self.buffer_created = 0
 
     def register_variables(self, variables: Dict):
@@ -563,40 +579,61 @@ class Checkpointer:
                 raise NotImplementedError(f"Shape {shape} not supported.")
         self.snode_tree = self.root.finalize()
 
-    # FIXME: the ti.ad.no_grad should not used inside the `insert`
-    # @ti.ad.no_grad
     def save(self, save_id):
+
         if not self.prog:
             self.prog = impl.get_runtime().prog
         assert self.prog, "Checkpointer should be called after ti.init()."
-
         assert self.snode_tree, "Please register variables which requires checkpointing."
         snode_tree_id = self.snode_tree.id
-        # print("snode tree id ", snode_tree_id, " ", ti.root_snode_tree.id, " ", ti.root_grad_snode_tree.id)
 
-        # FIXME: can be faster if pre-allocate
+        # Every time starting a drop round, increase the save spacing by 1
+        if self.save_spacing_cnt < self.save_spacing:
+            self.save_spacing_cnt += 1
+            return
+        assert self.save_spacing_cnt <= self.save_spacing, "Save spacing cnt should not execeed save spacing."
+        # Rest the save spacing cnt when a save operation is performed
+        self.save_spacing_cnt = 1
+
         buffer_ptr = None
         if save_id not in self.backup_buffers:
+            # Check whether requires drop
+            if self.current_level_checkpoints_num >= self.max_num_buffers_per_level:
+                if self.verbose:
+                    print(
+                        f"saveid: {save_id}, backup buffers: {self.backup_buffers.keys()}, {self.drop_id}"
+                    )
+                self.clear_checkpoint(self.drop_id)
+                self.drop_id += self.drop_spacing
+                if self.drop_id > save_id:
+                    self.save_spacing *= 2
+                    self.drop_id = self.current_start_id + self.drop_spacing
+                    self.drop_spacing *= 2
+
             if len(self.free_backup_buffers) > 0:
                 # Reuse free buffer ptr
                 buffer_ptr = self.free_backup_buffers.pop()
             else:
+                assert self.get_total_checkpoint_num(
+                ) <= self.max_num_buffers, f"Run out of max number of buffers: {self.max_num_buffers}."
                 buffer_ptr = self.prog.create_snode_tree_root_buffer_backup(
                     cook_dtype(int), snode_tree_id)
                 self.buffer_created += 1
                 if self.verbose:
                     print(f"buffer created {self.buffer_created}")
         else:
+            # Overwritten if the save id already exists.
             buffer_ptr = self.backup_buffers[save_id]
 
         self.prog.save_snode_tree_root_buffer(buffer_ptr, snode_tree_id)
+        self.current_level_checkpoints_num += 1
         self.backup_buffers[save_id] = buffer_ptr
         if self.verbose:
-            print(f"Checkpoint {save_id} saved ")
+            print(f"Checkpoint {save_id} saved.")
 
-        num_buffers = len(self.backup_buffers.keys())
-        if num_buffers > self.max_num_buffers:
-            self.max_num_buffers = num_buffers
+        num_buffers = self.get_total_checkpoint_num()
+        if num_buffers > self.current_max_num_buffers:
+            self.current_max_num_buffers = num_buffers
 
     @no_grad
     def restore(self, save_id):
@@ -605,8 +642,28 @@ class Checkpointer:
         assert self.prog, "Checkpointer should be called after ti.init()."
         assert self.snode_tree, "Please register variables which requires checkpointing."
         snode_tree_id = self.snode_tree.id
+
+        # Recompute routine
+        while not self.find_checkpoint(save_id):
+            last_save_id = self.get_last_checkpoint_id()
+
+            self.reset_checkpointing_for_new_level(last_save_id)
+
+            buffer_ptr = self.backup_buffers[last_save_id]
+            self.prog.restore_snode_tree_root_buffer(buffer_ptr, snode_tree_id)
+
+            for i in range(last_save_id + 1, save_id + 1):
+                self.save(i)
+                if self.verbose:
+                    print(f"Recompute {i}, target {save_id}")
+                # Because the save id starts from 1
+                func, args = self.forward_calls[i - 1]
+                func(*args)
+
         buffer_ptr = self.backup_buffers[save_id]
         self.prog.restore_snode_tree_root_buffer(buffer_ptr, snode_tree_id)
+        self.clear_checkpoint(save_id)
+
         if self.verbose:
             print(f"Checkpoint {save_id} restored ")
 
@@ -616,6 +673,27 @@ class Checkpointer:
     def get_last_checkpoint_id(self):
         return max(self.backup_buffers.keys())
 
+    def get_total_checkpoint_num(self):
+        return len(self.backup_buffers.keys())
+
+    def reset(self, start_id=1):
+        self.reset_checkpointing_for_new_level(start_id)
+
+    def reset_checkpointing_for_new_level(self, start_id):
+        self.drop_spacing = 2
+        self.current_start_id = start_id
+        self.drop_id = self.current_start_id + 1  # The dropping starts from the second buffer
+        self.save_spacing = 1
+        self.save_spacing_cnt = 1
+        self.current_level_checkpoints_num = 0
+
+    def record_total_checkpoints_num(self):
+        self.checkpoints_num_per_level = len(self.backup_buffers.keys())
+        if self.verbose:
+            print(
+                f"Total checkpoints recorded: {self.checkpoints_num_per_level}."
+            )
+
     def clear_checkpoint(self, save_id):
         buffer = self.backup_buffers.pop(save_id, None)
         assert buffer, f"Buffer with save id {save_id} doesn't exist."
@@ -624,19 +702,19 @@ class Checkpointer:
     def clear(self):
         save_ids = self.backup_buffers.keys()
         # print("Clearing checkpointer, remaining save ids: ", save_ids)
-        # print("max buffer created ", self.max_num_buffers)
+        # print("max buffer created ", self.current_max_num_buffers)
         for save_id in save_ids:
             self.clear_checkpoint(save_id)
-        self.checkpoints_spacing = []
+        self.current_level_checkpoints_num = 0
 
 
 class CheckpointerManager:
     def __init__(self, verbose=True):
         self.verbose = verbose
+        self.forward_result_checpointer = Checkpointer(verbose=verbose)
         self.primal_checkpointer = Checkpointer(verbose=verbose)
         self.grad_checkpointer = Checkpointer(
             snode_tree=ti.root_grad_snode_tree, verbose=verbose)
-        # self.grad_buffer_checkpointer = Checkpointer(verbose=verbose)
 
     def register_variables(self, variables: Dict):
         self.primal_checkpointer.register_variables(variables)
@@ -645,43 +723,37 @@ class CheckpointerManager:
             variables_grad[shape] = [f.grad for f in fields]
         self.grad_checkpointer.register_variables(variables_grad)
 
-        # variables_grad_buffer = {}
-        # for shape, fields in variables.items():
-        #     variables_grad_buffer[shape] = [f.dual for f in fields]
-        # self.grad_buffer_checkpointer.register_variables(variables_grad_buffer)
-        # self.initialize_grad_buffer()
-
     def save_primal(self, save_id):
         self.primal_checkpointer.save(save_id)
 
-    def save_grad(self):
-        # For saving grad SNode tree, only one backup is sufficient
-        self.grad_checkpointer.save(0)
+    def save_forward_results(self):
+        self.forward_result_checpointer.save(0)
+
+    def reset(self):
+        self.primal_checkpointer.reset()
+        self.forward_result_checpointer.reset()
 
     def restore_primal(self, save_id):
         self.primal_checkpointer.restore(save_id)
 
-    def restore_grad(self):
-        # For restoring grad SNode tree, only one backup is available
-        self.grad_checkpointer.restore(0)
+    def restore_forward_results(self):
+        self.forward_result_checpointer.restore(0)
 
-    # def initialize_grad_buffer(self):
-    #     self.grad_buffer_checkpointer.save(0)
+    def record_total_checkpoints_num(self):
+        self.primal_checkpointer.record_total_checkpoints_num()
 
-    # def reset_grad_buffer(self):
-    #     self.grad_buffer_checkpointer.restore(0)
-
-    # def swap_grad(self):
-    #     self.grad_buffer_checkpointer.save(1)
-    #     buffer_ptr = self.grad_buffer_checkpointer.backup_buffers[1]
-    #     self.grad_checkpointer.prog.restore_snode_tree_root_buffer(buffer_ptr, self.grad_buffer_checkpointer.snode_tree.id)
-    #     # self.reset_grad_buffer()
+    def get_forward_calls(self, calls):
+        self.primal_checkpointer.forward_calls = calls
 
     def clear_primal_checkpoint(self, save_id):
         self.primal_checkpointer.clear_checkpoint(save_id)
 
+    def clear_forward_results(self):
+        self.forward_result_checpointer.clear()
+
     def clear(self):
         self.primal_checkpointer.clear()
+        self.forward_result_checpointer.clear()
 
 
 _checkpointer = CheckpointerManager(verbose=False)

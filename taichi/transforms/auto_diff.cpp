@@ -1824,10 +1824,10 @@ void auto_diff(IRNode *root,
 
       for (auto ib : IB) {
         PromoteSSA2LocalVar::run(ib);
-        print("after promote SSA");
+        // print("after promote SSA");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);
         ib->accept(&replace);
-        print("after replace with stack");
+        // print("after replace with stack");
         type_check(root, config);
         MakeAdjoint::run(ib);
         // print("after make adjoint");

@@ -4,12 +4,6 @@
 #include "taichi/rhi/metal/metal_api.h"
 
 #ifdef __OBJC__
-// FIXME: (penguinliong) HACK. If not so errors are raised when Taichi
-// targets 10.16 (which is a macOS version never existed, wth) while the SDK is
-// for 12.3. Note that Xcode version is locked against macOS version. Once your
-// macOS is upgraded to a higher version you basically cannot rollback. So
-// honestly the case is pretty common.
-#define _Nullable_result
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>

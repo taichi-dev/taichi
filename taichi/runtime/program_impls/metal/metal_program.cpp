@@ -28,16 +28,8 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config)
 }
 
 FunctionType MetalProgramImpl::compile(Kernel *kernel) {
-  return metal::compiled_kernel_to_metal_executable(
-      get_cache_manager()->load_or_compile(config, kernel),
-      metal_kernel_mgr_.get());
-}
-
-std::size_t MetalProgramImpl::get_snode_num_dynamically_allocated(SNode *snode,
-                                                                  uint64 *) {
-  // TODO: result_buffer is not used here since it's saved in params and already
-  // available in metal_kernel_mgr
-  return metal_kernel_mgr_->get_snode_num_dynamically_allocated(snode);
+  return register_params_to_executable(
+      get_cache_manager()->load_or_compile(config, kernel), gfx_runtime_.get());
 }
 
 void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,

@@ -1,5 +1,5 @@
-#include "spirv_msl.hpp"
 #include "taichi/rhi/metal/metal_device.h"
+#include "spirv_msl.hpp"
 
 namespace taichi::lang {
 namespace metal {
@@ -173,25 +173,30 @@ MetalCommandList::MetalCommandList(const MetalDevice &device)
     : device_(&device) {}
 MetalCommandList::~MetalCommandList() {}
 
-void MetalCommandList::bind_pipeline(Pipeline *p) {
+void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   TI_ASSERT(p != nullptr);
   current_pipeline_ = (MetalPipeline *)p;
 }
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
-                                                  int set_index) {
+                                                  int set_index) noexcept {
   TI_ASSERT(res != nullptr);
   TI_ASSERT(set_index == 0);
   current_shader_resource_set_ = (MetalShaderResourceSet *)res;
   return RhiResult::success;
 }
 
-void MetalCommandList::memory_barrier() {
+RhiResult MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
+  return RhiResult::not_supported;
+}
+
+
+void MetalCommandList::memory_barrier() noexcept {
   // Note that resources created from `MTLDevice` (which is the only available
   // way to allocate resource here) are `MTLHazardTrackingModeTracked` by
   // default. So we don't have to barrier explicitly.
 }
 
-void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept {
   const MetalMemory &src_memory = device_->get_memory(src.alloc_id);
   const MetalMemory &dst_memory = device_->get_memory(dst.alloc_id);
 
@@ -216,7 +221,7 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   };
   pending_commands_.emplace_back(encode_f);
 }
-void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept {
   TI_ASSERT(data == 0);
 
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
@@ -237,7 +242,7 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
   pending_commands_.emplace_back(encode_f);
 }
 
-void MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept {
   TI_ASSERT(current_pipeline_);
   TI_ASSERT(current_shader_resource_set_);
 
@@ -274,6 +279,7 @@ void MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
     [encoder endEncoding];
   };
   pending_commands_.emplace_back(encode_f);
+  return RhiResult::success;
 }
 
 MetalStream::MetalStream(const MetalDevice &device,
@@ -281,8 +287,9 @@ MetalStream::MetalStream(const MetalDevice &device,
     : device_(&device), mtl_command_queue_(mtl_command_queue) {}
 MetalStream::~MetalStream() { [mtl_command_queue_ release]; }
 
-std::unique_ptr<CommandList> MetalStream::new_command_list() {
-  return std::unique_ptr<CommandList>(new MetalCommandList(*device_));
+RhiResult MetalStream::new_command_list(CommandList **out_cmdlist) noexcept {
+  *out_cmdlist = new MetalCommandList(*device_);
+  return RhiResult::success;
 }
 StreamSemaphore
 MetalStream::submit(CommandList *cmdlist,

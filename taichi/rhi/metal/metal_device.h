@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "taichi/common/logging.h"
+#include "taichi/rhi/device.h"
 #include "taichi/rhi/metal/metal_api.h"
 
 #ifdef __OBJC__
@@ -66,7 +66,7 @@ class MetalPipeline : public Pipeline {
                          MTLFunction_id mtl_function,
                          MTLComputePipelineState_id mtl_compute_pipeline_state,
                          MetalWorkgroupSize workgroup_size);
-  ~MetalPipeline() override;
+  ~MetalPipeline() final;
 
   static MetalPipeline *create(const MetalDevice &device,
                                const uint32_t *spv_data,
@@ -111,18 +111,18 @@ struct MetalShaderResource {
 class MetalShaderResourceSet : public ShaderResourceSet {
  public:
   explicit MetalShaderResourceSet(const MetalDevice &device);
-  ~MetalShaderResourceSet() override;
+  ~MetalShaderResourceSet() final;
 
   ShaderResourceSet &rw_buffer(uint32_t binding,
                                DevicePtr ptr,
-                               size_t size) override;
+                               size_t size) final;
   ShaderResourceSet &rw_buffer(uint32_t binding,
-                               DeviceAllocation alloc) override;
+                               DeviceAllocation alloc) final;
 
   ShaderResourceSet &buffer(uint32_t binding,
                             DevicePtr ptr,
-                            size_t size) override;
-  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) override;
+                            size_t size) final;
+  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
 
   inline const std::vector<MetalShaderResource> &resources() const {
     return resources_;
@@ -137,24 +137,23 @@ class MetalCommandList : public CommandList {
  public:
   // `mtl_command_buffer` should be already retained.
   explicit MetalCommandList(const MetalDevice &device);
-  ~MetalCommandList() override;
+  ~MetalCommandList() final;
 
-  void bind_pipeline(Pipeline *p) override;
+  void bind_pipeline(Pipeline *p) noexcept final;
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) noexcept override {
+                                  int set_index = 0) noexcept final;
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final;
+
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final {
     TI_NOT_IMPLEMENTED
   }
-  
-  void buffer_barrier(DevicePtr ptr, size_t size) override {
+  void buffer_barrier(DeviceAllocation alloc) noexcept final {
     TI_NOT_IMPLEMENTED
   }
-  void buffer_barrier(DeviceAllocation alloc) override {
-    TI_NOT_IMPLEMENTED
-  }
-  void memory_barrier() override;
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+  void memory_barrier() noexcept final;
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
  private:
   friend class MetalStream;
@@ -178,13 +177,13 @@ class MetalStream : public Stream {
     return mtl_command_queue_;
   }
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
-      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
   StreamSemaphore submit_synced(
       CommandList *cmdlist,
-      const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
+      const std::vector<StreamSemaphore> &wait_semaphores = {}) final;
 
   void command_sync() override;
 

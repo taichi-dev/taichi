@@ -163,8 +163,9 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
         // Test if the overwritten global ptr is recorded required
         if (Judger.record_required_glb_ptrs_.find(glb_ptr) !=
             Judger.record_required_glb_ptrs_.end()) {
-          std::cout << "overwritten global ptr " << glb_ptr->id << " is found."
-                    << std::endl;
+          // std::cout << "overwritten global ptr " << glb_ptr->id << " is
+          // found."
+          //           << std::endl;
           ib_meta_data.is_ib = false;
         }
       }

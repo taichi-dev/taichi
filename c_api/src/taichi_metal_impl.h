@@ -24,4 +24,4 @@ class MetalRuntime : public GfxRuntime {
 
 }  // namespace capi
 
-#endif // TI_WITH_METAL
+#endif  // TI_WITH_METAL

@@ -55,7 +55,7 @@ bool is_metal_available() {
   return taichi::lang::metal::is_metal_api_available();
 #else
   return false;
-#endif // __APPLE__
+#endif  // __APPLE__
 }
 
 struct ErrorCache {

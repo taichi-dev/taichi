@@ -44,7 +44,7 @@
 #ifdef TI_WITH_METAL
 #include "taichi/runtime/program_impls/metal/metal_program.h"
 #include "taichi/rhi/metal/metal_api.h"
-#endif // TI_WITH_METAL
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE

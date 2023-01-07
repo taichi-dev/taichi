@@ -116,12 +116,9 @@ class MetalShaderResourceSet : public ShaderResourceSet {
   ShaderResourceSet &rw_buffer(uint32_t binding,
                                DevicePtr ptr,
                                size_t size) final;
-  ShaderResourceSet &rw_buffer(uint32_t binding,
-                               DeviceAllocation alloc) final;
+  ShaderResourceSet &rw_buffer(uint32_t binding, DeviceAllocation alloc) final;
 
-  ShaderResourceSet &buffer(uint32_t binding,
-                            DevicePtr ptr,
-                            size_t size) final;
+  ShaderResourceSet &buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
   ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
 
   inline const std::vector<MetalShaderResource> &resources() const {

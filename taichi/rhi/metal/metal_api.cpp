@@ -17,7 +17,7 @@ std::shared_ptr<Device> create_metal_device() {
   return std::shared_ptr<Device>(metal::MetalDevice::create());
 #else
   return nullptr;
-#endif // defined(__APPLE__) && defined(TI_WITH_METAL)
+#endif  // defined(__APPLE__) && defined(TI_WITH_METAL)
 }
 
 }  // namespace metal

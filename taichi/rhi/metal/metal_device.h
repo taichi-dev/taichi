@@ -55,6 +55,8 @@ struct MetalWorkgroupSize {
 };
 class MetalPipeline : public Pipeline {
  public:
+  // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
+  // already retained.
   explicit MetalPipeline(const MetalDevice &device,
                          MTLLibrary_id mtl_library,
                          MTLFunction_id mtl_function,
@@ -126,7 +128,6 @@ class MetalShaderResourceSet : public ShaderResourceSet {
 
 class MetalCommandList : public CommandList {
  public:
-  // `mtl_command_buffer` should be already retained.
   explicit MetalCommandList(const MetalDevice &device);
   ~MetalCommandList() final;
 

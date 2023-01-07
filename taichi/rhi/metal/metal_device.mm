@@ -381,7 +381,7 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
 
   MTLBuffer_id buffer =
       [mtl_device_ newBufferWithLength:params.size
-                               options:resource_options]; // retain
+                               options:resource_options];
 
   std::unique_ptr<MetalMemory> memory = std::make_unique<MetalMemory>(buffer);
 

@@ -5,7 +5,9 @@
 #include "taichi/runtime/metal/api.h"
 
 #ifdef __OBJC__
+#import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
+#import <MetalKit/MetalKit.h>
 #import <CoreGraphics/CoreGraphics.h>
 #define DEFINE_METAL_ID_TYPE(x) typedef id<x> x##_id;
 #else
@@ -14,6 +16,9 @@
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
 DEFINE_METAL_ID_TYPE(MTLBuffer);
+DEFINE_METAL_ID_TYPE(MTLLibrary);
+DEFINE_METAL_ID_TYPE(MTLFunction);
+DEFINE_METAL_ID_TYPE(MTLComputePipelineState);
 DEFINE_METAL_ID_TYPE(MTLCommandQueue);
 DEFINE_METAL_ID_TYPE(MTLCommandBuffer);
 DEFINE_METAL_ID_TYPE(MTLBlitCommandEncoder);
@@ -44,6 +49,84 @@ struct MetalMemory {
   MTLBuffer_id mtl_buffer_;
 };
 
+struct MetalWorkgroupSize {
+  uint32_t x{0};
+  uint32_t y{0};
+  uint32_t z{0};
+};
+class MetalPipeline : public Pipeline {
+ public:
+  explicit MetalPipeline(const MetalDevice &device,
+                         MTLLibrary_id mtl_library,
+                         MTLFunction_id mtl_function,
+                         MTLComputePipelineState_id mtl_compute_pipeline_state,
+                         MetalWorkgroupSize workgroup_size);
+  ~MetalPipeline() override;
+
+  static MetalPipeline* create(const MetalDevice &device,
+                                               const uint32_t *spv_data,
+                                               size_t spv_size);
+  void destroy();
+
+  inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
+    return mtl_compute_pipeline_state_;
+  }
+  inline const MetalWorkgroupSize &workgroup_size() const {
+    return workgroup_size_;
+  }
+
+ private:
+  const MetalDevice *device_;
+  MTLLibrary_id mtl_library_;
+  MTLFunction_id mtl_function_;
+  MTLComputePipelineState_id mtl_compute_pipeline_state_;
+  MetalWorkgroupSize workgroup_size_;
+  bool is_destroyed_{false};
+};
+
+enum class MetalShaderResourceType {
+  buffer,
+};
+struct MetalShaderBufferResource {
+  MTLBuffer_id buffer;
+  size_t offset;
+  size_t size;
+};
+struct MetalShaderImageResource {
+  // TODO: (penguinliong)
+};
+struct MetalShaderResource {
+  MetalShaderResourceType ty;
+  uint32_t binding;
+  union {
+    MetalShaderBufferResource buffer;
+    MetalShaderImageResource image;
+  };
+};
+class MetalShaderResourceSet : public ShaderResourceSet {
+ public:
+  explicit MetalShaderResourceSet(const MetalDevice &device);
+  ~MetalShaderResourceSet() override;
+
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DevicePtr ptr,
+                               size_t size) override;
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DeviceAllocation alloc) override;
+
+  ShaderResourceSet &buffer(uint32_t binding,
+                            DevicePtr ptr,
+                            size_t size) override;
+  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) override;
+
+  inline const std::vector<MetalShaderResource> &resources() const {
+    return resources_;
+  }
+
+ private:
+  const MetalDevice *device_;
+  std::vector<MetalShaderResource> resources_;
+};
 
 class MetalCommandList : public CommandList {
  public:
@@ -51,9 +134,7 @@ class MetalCommandList : public CommandList {
   explicit MetalCommandList(const MetalDevice &device);
   ~MetalCommandList() override;
 
-  void bind_pipeline(Pipeline *p) override {
-    TI_NOT_IMPLEMENTED
-  }
+  void bind_pipeline(Pipeline *p) override;
   RhiResult bind_shader_resources(ShaderResourceSet *res,
                                   int set_index = 0) noexcept override {
     TI_NOT_IMPLEMENTED
@@ -68,22 +149,24 @@ class MetalCommandList : public CommandList {
   void memory_barrier() override;
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override {
-    TI_NOT_IMPLEMENTED
-  }
+  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
 
  private:
   friend class MetalStream;
 
   const MetalDevice *device_;
   std::vector<std::function<void(MTLCommandBuffer_id)>> pending_commands_;
-};
 
+  // Non-null after `bind*` methods.
+  const MetalPipeline *current_pipeline_;
+  const MetalShaderResourceSet *current_shader_resource_set_;
+};
 
 class MetalStream : public Stream {
  public:
   // `mtl_command_queue` should be already retained.
-  explicit MetalStream(const MetalDevice& device, MTLCommandQueue_id mtl_command_queue);
+  explicit MetalStream(const MetalDevice &device,
+                       MTLCommandQueue_id mtl_command_queue);
   ~MetalStream() override;
 
   MTLCommandQueue_id mtl_command_queue() const {
@@ -101,11 +184,10 @@ class MetalStream : public Stream {
   void command_sync() override;
 
  private:
-  const MetalDevice* device_;
+  const MetalDevice *device_;
   MTLCommandQueue_id mtl_command_queue_;
   std::vector<MTLCommandBuffer_id> pending_cmdbufs_;
 };
-
 
 class MetalDevice : public Device {
  public:
@@ -132,14 +214,12 @@ class MetalDevice : public Device {
   void unmap(DevicePtr ptr) override;
   void unmap(DeviceAllocation ptr) override;
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name) override;
+  std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
+                                            std::string name) override;
+  ShaderResourceSet *create_resource_set() override;
 
   Stream *get_compute_stream() override;
   void wait_idle() override;
-
-  ShaderResourceSet *create_resource_set() override;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 

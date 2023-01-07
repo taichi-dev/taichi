@@ -52,7 +52,7 @@ std::unique_ptr<Module> Module::load(Arch arch, std::any mod_params) {
 #endif
   } else if (arch == Arch::metal) {
 #ifdef TI_WITH_METAL
-    return metal::make_aot_module(mod_params);
+    return gfx::make_aot_module(mod_params, arch);
 #endif
   }
   TI_NOT_IMPLEMENTED;

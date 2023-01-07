@@ -285,7 +285,7 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcep
 MetalStream::MetalStream(const MetalDevice &device,
                          MTLCommandQueue_id mtl_command_queue)
     : device_(&device), mtl_command_queue_(mtl_command_queue) {}
-MetalStream::~MetalStream() { 
+MetalStream::~MetalStream() {
   destroy();
  }
 

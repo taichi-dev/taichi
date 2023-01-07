@@ -52,7 +52,7 @@ bool is_arm64_available() {
 
 bool is_metal_available() {
 #if defined(__APPLE__) && defined(TI_WITH_METAL)
-  return taichi::is_metal_api_available();
+  return taichi::lang::metal::is_metal_api_available();
 #else
   return false;
 #endif // __APPLE__

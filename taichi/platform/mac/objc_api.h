@@ -10,10 +10,6 @@
 #include <objc/objc.h>
 #include <objc/runtime.h>
 
-extern "C" {
-//void NSLog(/* NSString */ id format, ...);
-}
-
 namespace taichi {
 namespace mac {
 
@@ -99,8 +95,6 @@ template <typename R>
 R ns_array_object_at_index(TI_NSArray *na, int i) {
   return cast_call<R>(na, "objectAtIndex:", i);
 }
-
-//void ns_log_object(id obj);
 
 struct TI_NSAutoreleasePool;
 

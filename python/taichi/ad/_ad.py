@@ -648,9 +648,10 @@ class Checkpointer:
         # Enter into recompute routine if save id not found
         if not self.find_checkpoint(save_id):
             last_save_id = self.get_last_checkpoint_id()
-            self.print_info(
-                f"[RESTORE] Checkpoint {save_id} not found, recompute start from {last_save_id}."
-            )
+            if self.verbose:
+                self.print_info(
+                    f"[RESTORE] Checkpoint {save_id} not found, recompute start from {last_save_id}."
+                )
             self.reset_checkpointing_for_new_level(last_save_id)
 
             buffer_ptr = self.backup_buffers[last_save_id]
@@ -705,9 +706,11 @@ class Checkpointer:
         self.free_backup_buffers.append(buffer)
 
     def clear(self):
-        self.print_info(
-            f"[CLEAR] Total buffers created: {self.buffer_created}.")
-        self.print_info(f"[CLEAR] Total recompute num: {self.recompute_num}.")
+        if self.verbose:
+            self.print_info(
+                f"[CLEAR] Total buffers created: {self.buffer_created}.")
+            self.print_info(
+                f"[CLEAR] Total recompute num: {self.recompute_num}.")
         save_ids = self.backup_buffers.keys()
         # print("Clearing checkpointer, remaining save ids: ", save_ids)
         # print("max buffer created ", self.current_max_num_buffers)
@@ -719,7 +722,7 @@ class Checkpointer:
 class CheckpointerManager:
     def __init__(self, verbose=True):
         self.verbose = verbose
-        self.forward_result_checpointer = Checkpointer(verbose=verbose)
+        self.forward_result_checpointer = Checkpointer(verbose=False)
         self.primal_checkpointer = Checkpointer(verbose=verbose)
         self.grad_checkpointer = Checkpointer(
             snode_tree=impl.root_grad_snode_tree, verbose=verbose)
@@ -761,7 +764,7 @@ class CheckpointerManager:
         self.forward_result_checpointer.clear()
 
 
-_checkpointer = CheckpointerManager(verbose=True)
+_checkpointer = CheckpointerManager(verbose=False)
 
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

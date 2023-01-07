@@ -2535,10 +2535,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
-    size_t last_size;
     bool success = true;
     {
-      last_size = optimized_spv.size();
       bool result = false;
       TI_ERROR_IF(
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),

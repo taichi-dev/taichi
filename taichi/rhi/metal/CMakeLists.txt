@@ -4,7 +4,7 @@ set(METAL_RHI metal_rhi)
 add_library(${METAL_RHI})
 target_sources(${METAL_RHI}
   PRIVATE
-    device.cpp
+    metal_device.mm
   )
 
 # TODO(#4832) some dependencies here should not be required as they

@@ -81,7 +81,7 @@ nsobj_unique_ptr<MTLLibrary> new_library_with_source(MTLDevice *device,
       device, "newLibraryWithSource:options:error:", source_str.get(), options,
       &error_return);
   if (lib == nullptr) {
-    mac::ns_log_object(error_return);
+    //mac::ns_log_object(error_return);
   }
   return wrap_as_nsobj_unique_ptr(lib);
 }
@@ -102,7 +102,7 @@ new_compute_pipeline_state_with_function(MTLDevice *device,
       device, "newComputePipelineStateWithFunction:error:", function,
       &error_return);
   if (pipeline_state == nullptr) {
-    mac::ns_log_object(error_return);
+    //mac::ns_log_object(error_return);
   }
   return wrap_as_nsobj_unique_ptr(pipeline_state);
 }

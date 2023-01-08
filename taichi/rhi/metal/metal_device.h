@@ -53,7 +53,7 @@ struct MetalWorkgroupSize {
   uint32_t y{0};
   uint32_t z{0};
 };
-class MetalPipeline : public Pipeline {
+class MetalPipeline final : public Pipeline {
  public:
   // `mtl_library`, `mtl_function`, `mtl_compute_pipeline_state` should be
   // already retained.
@@ -104,7 +104,7 @@ struct MetalShaderResource {
     MetalShaderImageResource image;
   };
 };
-class MetalShaderResourceSet : public ShaderResourceSet {
+class MetalShaderResourceSet final : public ShaderResourceSet {
  public:
   explicit MetalShaderResourceSet(const MetalDevice &device);
   ~MetalShaderResourceSet() final;
@@ -126,7 +126,7 @@ class MetalShaderResourceSet : public ShaderResourceSet {
   std::vector<MetalShaderResource> resources_;
 };
 
-class MetalCommandList : public CommandList {
+class MetalCommandList final : public CommandList {
  public:
   explicit MetalCommandList(const MetalDevice &device);
   ~MetalCommandList() final;
@@ -158,7 +158,7 @@ class MetalCommandList : public CommandList {
   const MetalShaderResourceSet *current_shader_resource_set_;
 };
 
-class MetalStream : public Stream {
+class MetalStream final : public Stream {
  public:
   // `mtl_command_queue` should be already retained.
   explicit MetalStream(const MetalDevice &device,
@@ -189,7 +189,7 @@ class MetalStream : public Stream {
   bool is_destroyed_{false};
 };
 
-class MetalDevice : public Device {
+class MetalDevice final : public Device {
  public:
   // `mtl_device` should be already retained.
   explicit MetalDevice(MTLDevice_id mtl_device);

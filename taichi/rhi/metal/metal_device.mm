@@ -386,8 +386,8 @@ DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
-  DeviceCapabilityConfig caps =
-      collect_metal_device_caps(mtl_device);
+  DeviceCapabilityConfig caps = collect_metal_device_caps(mtl_device);
+  set_caps(std::move(caps));
 }
 MetalDevice::~MetalDevice() { destroy(); }
 

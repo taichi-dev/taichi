@@ -19,7 +19,6 @@ bool is_extension_supported(Arch arch, Extension ext) {
        {Extension::sparse, Extension::quant, Extension::quant_basic,
         Extension::data64, Extension::adstack, Extension::bls,
         Extension::assertion, Extension::dynamic_index, Extension::mesh}},
-      // TODO: supporting quant in metal(tests randomly crashed)
       {Arch::metal, {Extension::dynamic_index}},
       {Arch::opengl, {Extension::dynamic_index, Extension::extfunc}},
       {Arch::gles, {}},

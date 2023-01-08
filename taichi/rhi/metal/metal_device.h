@@ -136,12 +136,8 @@ class MetalCommandList final : public CommandList {
                                   int set_index = 0) noexcept final;
   RhiResult bind_raster_resources(RasterResources *res) noexcept final;
 
-  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final {
-    TI_NOT_IMPLEMENTED
-  }
-  void buffer_barrier(DeviceAllocation alloc) noexcept final {
-    TI_NOT_IMPLEMENTED
-  }
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final;
+  void buffer_barrier(DeviceAllocation alloc) noexcept final;
   void memory_barrier() noexcept final;
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;

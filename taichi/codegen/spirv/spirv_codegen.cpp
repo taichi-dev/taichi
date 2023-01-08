@@ -2156,7 +2156,7 @@ class TaskCodegen : public IRVisitor {
 
       // continue
       spirv::Value total_invocs = ir_->cast(
-          ir_->i32_type(),
+          ir_->u32_type(),
           ir_->mul(ir_->get_num_work_groups(0),
                    ir_->uint_immediate_number(
                        ir_->u32_type(),

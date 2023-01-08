@@ -191,6 +191,8 @@ MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
   return RhiResult::not_supported;
 }
 
+void MetalCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {}
+void MetalCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {}
 void MetalCommandList::memory_barrier() noexcept {
   // Note that resources created from `MTLDevice` (which is the only available
   // way to allocate resource here) are `MTLHazardTrackingModeTracked` by

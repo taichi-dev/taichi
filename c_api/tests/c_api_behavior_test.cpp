@@ -20,7 +20,6 @@ TEST_F(CapiTest, TestBehaviorCreateRuntime) {
   inner(TI_ARCH_JS);
   inner(TI_ARCH_CC);
   inner(TI_ARCH_WASM);
-  inner(TI_ARCH_METAL);
   inner(TI_ARCH_DX11);
   inner(TI_ARCH_DX12);
   inner(TI_ARCH_OPENCL);

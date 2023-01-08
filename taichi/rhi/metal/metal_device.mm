@@ -485,11 +485,10 @@ void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   Stream *stream = get_compute_stream();
-  auto [cmdlist, res] = stream->new_command_list_unique();
+  auto [cmd, res] = stream->new_command_list_unique();
   TI_ASSERT(res == RhiResult::success);
-  cmdlist->buffer_copy(dst, src, size);
-  stream->submit(cmdlist.get());
-  stream->command_sync();
+  cmd->buffer_copy(dst, src, size);
+  stream->submit_synced(cmd.get());
 }
 
 } // namespace metal

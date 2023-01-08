@@ -1,7 +1,7 @@
 #ifdef TI_WITH_METAL
-#include "taichi/runtime/gfx/runtime.h"
-#include "taichi/rhi/metal/metal_device.h"
 #include "taichi_metal_impl.h"
+#include "taichi/rhi/metal/metal_device.h"
+#include "taichi/runtime/gfx/runtime.h"
 
 namespace capi {
 

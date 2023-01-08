@@ -185,10 +185,10 @@ RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
   return RhiResult::success;
 }
 
-RhiResult MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
+RhiResult
+MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
   return RhiResult::not_supported;
 }
-
 
 void MetalCommandList::memory_barrier() noexcept {
   // Note that resources created from `MTLDevice` (which is the only available
@@ -196,7 +196,8 @@ void MetalCommandList::memory_barrier() noexcept {
   // default. So we don't have to barrier explicitly.
 }
 
-void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept {
+void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
+                                   size_t size) noexcept {
   const MetalMemory &src_memory = device_->get_memory(src.alloc_id);
   const MetalMemory &dst_memory = device_->get_memory(dst.alloc_id);
 
@@ -221,7 +222,8 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) no
   };
   pending_commands_.emplace_back(encode_f);
 }
-void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept {
+void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
+                                   uint32_t data) noexcept {
   TI_ASSERT(data == 0);
 
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
@@ -242,7 +244,8 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) no
   pending_commands_.emplace_back(encode_f);
 }
 
-RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcept {
+RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
+                                     uint32_t z) noexcept {
   TI_ASSERT(current_pipeline_);
   TI_ASSERT(current_shader_resource_set_);
 
@@ -285,9 +288,7 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) noexcep
 MetalStream::MetalStream(const MetalDevice &device,
                          MTLCommandQueue_id mtl_command_queue)
     : device_(&device), mtl_command_queue_(mtl_command_queue) {}
-MetalStream::~MetalStream() {
-  destroy();
- }
+MetalStream::~MetalStream() { destroy(); }
 
 MetalStream *MetalStream::create(const MetalDevice &device) {
   MTLCommandQueue_id compute_queue = [device.mtl_device() newCommandQueue];
@@ -355,8 +356,8 @@ void MetalDevice::destroy() {
   if (!is_destroyed_) {
     compute_stream_.reset();
     TI_WARN_IF(memory_allocs_.size() != 0,
-              "metal device memory leaked: {} unreleased memory allocations",
-              memory_allocs_.size());
+               "metal device memory leaked: {} unreleased memory allocations",
+               memory_allocs_.size());
     memory_allocs_.clear();
     [mtl_device_ release];
     is_destroyed_ = true;
@@ -379,9 +380,8 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
       (storage_mode << MTLResourceStorageModeShift) |
       (cpu_cache_mode << MTLResourceCPUCacheModeShift);
 
-  MTLBuffer_id buffer =
-      [mtl_device_ newBufferWithLength:params.size
-                               options:resource_options];
+  MTLBuffer_id buffer = [mtl_device_ newBufferWithLength:params.size
+                                                 options:resource_options];
 
   std::unique_ptr<MetalMemory> memory = std::make_unique<MetalMemory>(buffer);
 

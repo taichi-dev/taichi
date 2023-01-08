@@ -194,9 +194,9 @@ MetalCommandList::bind_raster_resources(RasterResources *res) noexcept {
 void MetalCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {}
 void MetalCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {}
 void MetalCommandList::memory_barrier() noexcept {
-  // Note that resources created from `MTLDevice` (which is the only available
-  // way to allocate resource here) are `MTLHazardTrackingModeTracked` by
-  // default. So we don't have to barrier explicitly.
+  // NOTE: (penguinliong) Resources created from `MTLDevice` (which is the only
+  // available way to allocate resource here) are `MTLHazardTrackingModeTracked`
+  // by default. So we don't have to barrier explicitly.
 }
 
 void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
@@ -370,9 +370,11 @@ DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
     caps.set(DeviceCapability::spirv_has_int64, 1);
   }
   if (feature_floating_point_atomics) {
-    caps.set(DeviceCapability::spirv_has_atomic_float, 1);
-    caps.set(DeviceCapability::spirv_has_atomic_float_add, 1);
-    caps.set(DeviceCapability::spirv_has_atomic_float_minmax, 1);
+    // FIXME: (penguinliong) For some reason floating point atomics doesn't
+    // work and breaks the FEM99/FEM128 examples. Should consider add them back
+    // figured out why.
+    // caps.set(DeviceCapability::spirv_has_atomic_float, 1);
+    // caps.set(DeviceCapability::spirv_has_atomic_float_add, 1);
   }
   if (feature_simd_scoped_permute_operations ||
       feature_quad_scoped_permute_operations) {

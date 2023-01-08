@@ -3,7 +3,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/metal/metal_api.h"
 
-#ifdef __OBJC__
+#if defined(__APPLE__) && defined(__OBJC__)
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>

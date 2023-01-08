@@ -443,8 +443,8 @@ Ndarray *Program::create_ndarray(const DataType type,
     Arch arch = this_thread_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
-    } else if (arch != Arch::dx12 && arch != Arch::metal) {
-      // Device api support for dx12 & metal backend are not complete yet
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
       Stream *stream =
           program_impl_->get_compute_device()->get_compute_stream();
       auto [cmdlist, res] = stream->new_command_list_unique();

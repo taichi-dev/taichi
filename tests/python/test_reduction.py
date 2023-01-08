@@ -35,6 +35,7 @@ def _test_reduction_single(dtype, criterion, op):
     N = 1024 * 1024
     if (ti.lang.impl.current_cfg().arch == ti.opengl
             or ti.lang.impl.current_cfg().arch == ti.vulkan
+            or ti.lang.impl.current_cfg().arch == ti.metal
             or ti.lang.impl.current_cfg().arch == ti.gles
             or ti.lang.impl.current_cfg().arch == ti.dx11) and dtype == ti.f32:
         # OpenGL/Vulkan are not capable of such large number in its float32...

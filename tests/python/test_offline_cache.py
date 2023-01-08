@@ -28,7 +28,7 @@ supported_archs_offline_cache = {
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.ll', '.bc', '.spv', '.metal')
+    suffixes = ('.ll', '.bc', '.spv')
     return filename.endswith(suffixes)
 
 

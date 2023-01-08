@@ -1,5 +1,6 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "spirv_msl.hpp"
+#include "taichi/rhi/device.h"
 #include "taichi/rhi/device_capability.h"
 
 namespace taichi::lang {
@@ -483,7 +484,12 @@ Stream *MetalDevice::get_compute_stream() { return compute_stream_.get(); }
 void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
-  TI_NOT_IMPLEMENTED
+  Stream *stream = get_compute_stream();
+  auto [cmdlist, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
+  cmdlist->buffer_copy(dst, src, size);
+  stream->submit(cmdlist.get());
+  stream->command_sync();
 }
 
 } // namespace metal

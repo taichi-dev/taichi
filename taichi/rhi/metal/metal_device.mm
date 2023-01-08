@@ -1,5 +1,6 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "spirv_msl.hpp"
+#include "taichi/rhi/device_capability.h"
 
 namespace taichi::lang {
 namespace metal {
@@ -338,12 +339,55 @@ void MetalStream::command_sync() {
   pending_cmdbufs_.clear();
 }
 
-MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
-  compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
+DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
+  bool family_mac2 = [mtl_device supportsFamily:MTLGPUFamilyMac2];
+  bool family_apple7 = [mtl_device supportsFamily:MTLGPUFamilyApple7];
+  bool family_apple6 =
+      [mtl_device supportsFamily:MTLGPUFamilyApple6] | family_apple7;
+  bool family_apple5 =
+      [mtl_device supportsFamily:MTLGPUFamilyApple5] | family_apple6;
+  bool family_apple4 =
+      [mtl_device supportsFamily:MTLGPUFamilyApple4] | family_apple5;
+  bool family_apple3 =
+      [mtl_device supportsFamily:MTLGPUFamilyApple3] | family_apple4;
+
+  bool feature_64_bit_integer_math = family_apple3;
+  bool feature_floating_point_atomics = family_apple7 | family_mac2;
+  bool feature_quad_scoped_permute_operations = family_apple4 | family_mac2;
+  bool feature_simd_scoped_permute_operations = family_apple6 | family_mac2;
+  bool feature_simd_scoped_reduction_operations = family_apple7 | family_mac2;
 
   DeviceCapabilityConfig caps{};
   caps.set(DeviceCapability::spirv_version, 0x10300);
-  set_caps(std::move(caps));
+  caps.set(DeviceCapability::spirv_has_int8, 1);
+  caps.set(DeviceCapability::spirv_has_int16, 1);
+  caps.set(DeviceCapability::spirv_has_float16, 1);
+  caps.set(DeviceCapability::spirv_has_subgroup_basic, 1);
+
+  if (feature_64_bit_integer_math) {
+    caps.set(DeviceCapability::spirv_has_int64, 1);
+  }
+  if (feature_floating_point_atomics) {
+    caps.set(DeviceCapability::spirv_has_atomic_float, 1);
+    caps.set(DeviceCapability::spirv_has_atomic_float_add, 1);
+    caps.set(DeviceCapability::spirv_has_atomic_float_minmax, 1);
+  }
+  if (feature_simd_scoped_permute_operations ||
+      feature_quad_scoped_permute_operations) {
+    caps.set(DeviceCapability::spirv_has_subgroup_vote, 1);
+    caps.set(DeviceCapability::spirv_has_subgroup_ballot, 1);
+  }
+  if (feature_simd_scoped_reduction_operations) {
+    caps.set(DeviceCapability::spirv_has_subgroup_arithmetic, 1);
+  }
+  return caps;
+}
+
+MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
+  compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
+
+  DeviceCapabilityConfig caps =
+      collect_metal_device_caps(mtl_device);
 }
 MetalDevice::~MetalDevice() { destroy(); }
 

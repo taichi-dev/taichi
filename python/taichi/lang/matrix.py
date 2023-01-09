@@ -1,6 +1,5 @@
 import functools
 import numbers
-import warnings
 from collections.abc import Iterable
 
 import numpy as np

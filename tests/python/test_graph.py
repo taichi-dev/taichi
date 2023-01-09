@@ -23,10 +23,7 @@ def test_ndarray_int():
         for i in range(n):
             pos[i] = 1
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.i32,
-                           ndim=1)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.i32, ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -58,10 +55,7 @@ def test_ndarray_0dim():
     def test(pos: ti.types.ndarray(dtype=ti.i32, ndim=0)):
         pos[None] = 1
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.i32,
-                           ndim=0)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.i32, ndim=0)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -80,10 +74,7 @@ def test_ndarray_float():
         for i in range(n):
             pos[i] = 2.5
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.f32,
-                           ndim=1)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32, ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -102,10 +93,7 @@ def test_arg_mismatched_ndim():
         for i in range(n):
             pos[i] = 2.5
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.f32,
-                           ndim=2)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32, ndim=2)
     g_init = ti.graph.GraphBuilder()
     with pytest.raises(TaichiCompilationError,
                        match="doesn't match kernel's annotated ndim"):
@@ -145,10 +133,7 @@ def test_repeated_arg_name():
         for i in range(n):
             print(v)
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.f32,
-                           ndim=1)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32, ndim=1)
     sym_pos1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'pos', ti.f32)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(test1, sym_pos)
@@ -199,10 +184,7 @@ def test_ndarray_dtype_mismatch_runtime():
         for i in range(n):
             pos[i] = 2.5
 
-    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'pos',
-                           ti.f32,
-                           ndim=1)
+    sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'pos', ti.f32, ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -292,10 +274,7 @@ def test_arg_float(dt):
     k = ti.ndarray(dt, shape=(1, ))
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mat', dt)
-    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                         'b',
-                         dt,
-                         ndim=1)
+    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'b', dt, ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -313,10 +292,7 @@ def test_arg_int(dt):
     k = ti.ndarray(dt, shape=(1, ))
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mat', dt)
-    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                         'b',
-                         dt,
-                         ndim=1)
+    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'b', dt, ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -334,10 +310,7 @@ def test_arg_short(dt):
     k = ti.ndarray(dt, shape=(1, ))
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'mat', dt)
-    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                         'b',
-                         dt,
-                         ndim=1)
+    sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'b', dt, ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -433,10 +406,7 @@ def test_ti_func_with_template_args():
         test_func(x)
         arr[None] = x.color[1]
 
-    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'arr',
-                           ti.i32,
-                           ndim=0)
+    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', ti.i32, ndim=0)
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(test_kernel, sym_arr)
     g = g_builder.compile()
@@ -467,10 +437,7 @@ def test_texture_struct_for():
                            channel_format=ti.f32,
                            shape=res,
                            num_channels=1)
-    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                           'arr',
-                           ti.f32,
-                           ndim=2)
+    sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', ti.f32, ndim=2)
 
     gb = ti.graph.GraphBuilder()
     gb.dispatch(write, sym_tex)

@@ -67,8 +67,8 @@ W_gradient = W_spiky_gradient
 
 
 @ti.kernel
-def initialize(boundary_box: ti.any_arr(ndim=1),
-               spawn_box: ti.any_arr(ndim=1), N: ti.any_arr(ndim=1)):
+def initialize(boundary_box: ti.any_arr(ndim=1), spawn_box: ti.any_arr(ndim=1),
+               N: ti.any_arr(ndim=1)):
     boundary_box[0] = [0.0, 0.0, 0.0]
     boundary_box[1] = [1.0, 1.0, 1.0]
 
@@ -81,10 +81,8 @@ def initialize(boundary_box: ti.any_arr(ndim=1),
 
 
 @ti.kernel
-def initialize_particle(pos: ti.any_arr(ndim=1),
-                        spawn_box: ti.any_arr(ndim=1),
-                        N: ti.any_arr(ndim=1),
-                        gravity: ti.any_arr(ndim=0)):
+def initialize_particle(pos: ti.any_arr(ndim=1), spawn_box: ti.any_arr(ndim=1),
+                        N: ti.any_arr(ndim=1), gravity: ti.any_arr(ndim=0)):
     gravity[None] = ti.Vector([0.0, -9.8, 0.0])
     for i in range(particle_num):
         pos[i] = (
@@ -107,8 +105,7 @@ def update_density(pos: ti.any_arr(ndim=1), den: ti.any_arr(ndim=1),
 @ti.kernel
 def update_force(pos: ti.any_arr(ndim=1), vel: ti.any_arr(ndim=1),
                  den: ti.any_arr(ndim=1), pre: ti.any_arr(ndim=1),
-                 acc: ti.any_arr(ndim=1),
-                 gravity: ti.any_arr(ndim=0)):
+                 acc: ti.any_arr(ndim=1), gravity: ti.any_arr(ndim=0)):
     for i in range(particle_num):
         acc[i] = gravity[None]
         for j in range(particle_num):

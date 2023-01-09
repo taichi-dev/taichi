@@ -121,7 +121,8 @@ def Arg(tag,
             )
         if tag == ArgKind.NDARRAY:
             mat_type = dtype
-            return _ti_core.Arg(tag, name, mat_type.dtype, ndim, mat_type.get_shape())
+            return _ti_core.Arg(tag, name, mat_type.dtype, ndim,
+                                mat_type.get_shape())
         mat_type = dtype
         arg_list = []
         i = 0
@@ -129,8 +130,8 @@ def Arg(tag,
             arg_sublist = []
             for _ in range(mat_type.m):
                 arg_sublist.append(
-                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
-                                 ndim, element_shape))
+                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype, ndim,
+                                 element_shape))
                 i += 1
             arg_list.append(arg_sublist)
         return arg_list
@@ -145,7 +146,7 @@ def Arg(tag,
                             channel_format=channel_format,
                             num_channels=num_channels,
                             shape=shape)
-    if len(element_shape) > 0: 
+    if len(element_shape) > 0:
         warnings.warn(
             "The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.",
             DeprecationWarning)

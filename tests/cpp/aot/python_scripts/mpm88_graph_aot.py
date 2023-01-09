@@ -36,8 +36,7 @@ def compile_mpm88(arch, save_compute_graph):
     @ti.kernel
     def substep_p2g(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1),
                     C: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1),
-                    grid_v: ti.any_arr(ndim=2),
-                    grid_m: ti.any_arr(ndim=2)):
+                    grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
         for p in x:
             dx = 1 / grid_v.shape[0]
             p_vol = (dx * 0.5)**2
@@ -76,8 +75,7 @@ def compile_mpm88(arch, save_compute_graph):
     @ti.kernel
     def substep_g2p(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1),
                     C: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1),
-                    grid_v: ti.any_arr(ndim=2),
-                    pos: ti.any_arr(ndim=1)):
+                    grid_v: ti.any_arr(ndim=2), pos: ti.any_arr(ndim=1)):
         for p in x:
             dx = 1 / grid_v.shape[0]
             Xp = x[p] / dx
@@ -125,10 +123,7 @@ def compile_mpm88(arch, save_compute_graph):
                              'C',
                              ti.math.mat2,
                              ndim=1)
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'J',
-                             ti.f32,
-                             ndim=1)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32, ndim=1)
         sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_v',
                                   ti.math.vec2,

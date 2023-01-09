@@ -3,7 +3,7 @@ ci:
   autoupdate_commit_msg: '[misc] Update pre-commit hooks'
 
 default_language_version:
-    python: python3.10
+        python: python3.8
 
 exclude: ^((tests/python/test_exception)\.py$|external/)
 repos:

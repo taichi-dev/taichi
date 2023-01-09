@@ -13,19 +13,19 @@ namespace taichi::lang {
 namespace irpass {
 namespace {
 
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
+// std::function<void(const std::string &)>
+// make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+//   if (!verbose) {
+//     return [](const std::string &) {};
+//   }
+//   return [ir, kernel_name](const std::string &pass) {
+//     TI_INFO("[{}] {}:", kernel_name, pass);
+//     std::cout << std::flush;
+//     irpass::re_id(ir);
+//     irpass::print(ir);
+//     std::cout << std::flush;
+//   };
+// }
 
 }  // namespace
 
@@ -38,7 +38,7 @@ void compile_to_offloads(IRNode *ir,
                          bool start_from_ast) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(verbose, kernel->get_name(), ir);
+  auto print = irpass::make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
   if (autodiff_mode == AutodiffMode::kReverse) {

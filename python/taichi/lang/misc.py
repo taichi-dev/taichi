@@ -481,6 +481,7 @@ def init(arch=None,
     impl.get_runtime().prog.materialize_runtime()
 
     impl._root_fb = _snode.FieldsBuilder()
+    impl._root_grad_fb = _snode.FieldsBuilder()
 
     if cfg.debug:
         impl.get_runtime()._register_signal_handlers()

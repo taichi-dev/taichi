@@ -298,6 +298,25 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_snode_tree_device_ptr(tree_id);
   }
 
+  Ndarray *create_root_buffer_backup(const DataType &type,
+                                     const int snode_tree_id) {
+    std::size_t size =
+        program_impl_->get_snode_tree_root_buffer_size(snode_tree_id);
+    // std::cout << "Create root buffer size " << size * 1.0 / 1048576 << " MB."
+    //           << std::endl;
+    return create_ndarray(type, {static_cast<int>(size / 4 + 1)});
+  }
+
+  void save_root_buffer(Ndarray *buffer_arr, const int snode_tree_id) {
+    // FIXME: Assert llvm backend
+    program_impl_->save_root_buffer(buffer_arr, snode_tree_id);
+  };
+
+  void restore_root_buffer(Ndarray *buffer_arr, const int snode_tree_id) {
+    // FIXME: Assert llvm backend
+    program_impl_->restore_root_buffer(buffer_arr, snode_tree_id);
+  };
+
   Device *get_compute_device() {
     return program_impl_->get_compute_device();
   }

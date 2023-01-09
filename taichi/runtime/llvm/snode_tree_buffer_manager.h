@@ -27,6 +27,10 @@ class SNodeTreeBufferManager {
 
   void destroy(SNodeTree *snode_tree);
 
+  Ptr get_root_buffer(const int snode_tree_id);
+
+  std::size_t get_root_buffer_size(const int snode_tree_id);
+
  private:
   std::set<std::pair<std::size_t, Ptr>> size_set_;
   std::map<Ptr, std::size_t> ptr_map_;

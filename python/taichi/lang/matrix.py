@@ -977,9 +977,13 @@ class Matrix(TaichiOperations):
                                                          offset=offset)
                 if needs_grad:
                     for e in entries_grad._get_field_members():
-                        impl._create_snode(axis_seq, shape_seq,
-                                           same_level).place(ScalarField(e),
-                                                             offset=offset)
+                        # impl._create_snode(axis_seq, shape_seq,
+                        #                    same_level).place(ScalarField(e),
+                        #                                      offset=offset)
+                        impl._create_grad_snode(axis_seq, shape_seq,
+                                                same_level).place(
+                                                    ScalarField(e),
+                                                    offset=offset)
                 if needs_dual:
                     for e in entries_dual._get_field_members():
                         impl._create_snode(axis_seq, shape_seq,
@@ -989,9 +993,12 @@ class Matrix(TaichiOperations):
                 impl._create_snode(axis_seq, shape_seq,
                                    same_level).place(entries, offset=offset)
                 if needs_grad:
-                    impl._create_snode(axis_seq, shape_seq,
-                                       same_level).place(entries_grad,
-                                                         offset=offset)
+                    # impl._create_snode(axis_seq, shape_seq,
+                    #                    same_level).place(entries_grad,
+                    #                                      offset=offset)
+                    impl._create_grad_snode(axis_seq, shape_seq,
+                                            same_level).place(entries_grad,
+                                                              offset=offset)
                 if needs_dual:
                     impl._create_snode(axis_seq, shape_seq,
                                        same_level).place(entries_dual,

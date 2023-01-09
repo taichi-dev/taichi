@@ -22,7 +22,7 @@ def compile_kernel_aot_test1(arch):
 
     m = ti.aot.Module()
     m.add_kernel(run, template_args={'arr': arr})
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == "__main__":

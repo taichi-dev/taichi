@@ -71,7 +71,7 @@ def compile_dynamic_aot(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    m.save(tmpdir, 'whatever')
+    m.save(tmpdir)
 
 
 if __name__ == "__main__":

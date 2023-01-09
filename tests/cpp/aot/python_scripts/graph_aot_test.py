@@ -50,7 +50,7 @@ def compile_graph_aot(arch):
 
     mod = ti.aot.Module()
     mod.add_graph('run_graph', run_graph)
-    mod.save(tmpdir, '')
+    mod.save(tmpdir)
 
 
 if __name__ == "__main__":

@@ -113,6 +113,8 @@ def setup_vulkan():
                 '--accept-licenses',
                 '--default-answer',
                 '--confirm-command',
+                '--root',
+                prefix,
                 'install',
                 'com.lunarg.vulkan.sdl2',
                 'com.lunarg.vulkan.glm',

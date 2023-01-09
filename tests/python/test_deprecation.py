@@ -93,10 +93,10 @@ def test_deprecate_element_shape_ndarray_arg():
     ):
 
         ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'x',
-                             ti.f32,
-                             ndim=1,
-                             element_shape=(1,))
+                     'x',
+                     ti.f32,
+                     ndim=1,
+                     element_shape=(1, ))
 
 
 @test_utils.test(arch=ti.metal)

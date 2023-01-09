@@ -106,19 +106,20 @@ def setup_vulkan():
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
         url = 'https://sdk.lunarg.com/sdk/download/1.3.236.0/windows/VulkanSDK-1.3.236.0-Installer.exe'
         prefix = get_cache_home() / 'vulkan-1.3.236.0'
-        download_dep(url,
-                     prefix,
-                     args=[
-                         '--accept-licenses',
-                         '--default-answer',
-                         '--confirm-command',
-                         'install',
-                         'com.lunarg.vulkan.sdl2',
-                         'com.lunarg.vulkan.glm',
-                         'com.lunarg.vulkan.volk',
-                         'com.lunarg.vulkan.vma',
-                         'com.lunarg.vulkan.debug',
-                     ])
+        download_dep(
+            url,
+            prefix,
+            args=[
+                '--accept-licenses',
+                '--default-answer',
+                '--confirm-command',
+                'install',
+                'com.lunarg.vulkan.sdl2',
+                'com.lunarg.vulkan.glm',
+                'com.lunarg.vulkan.volk',
+                'com.lunarg.vulkan.vma',
+                # 'com.lunarg.vulkan.debug',
+            ])
         os.environ['VULKAN_SDK'] = str(prefix)
         os.environ['VK_SDK_PATH'] = str(prefix)
         path_prepend('PATH', prefix / "Bin")

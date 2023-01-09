@@ -77,8 +77,8 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
       total_shape[p] /= ext.shape;
       auto multiplier =
           body_header.push_back<ConstStmt>(TypedConstant(total_shape[p]));
-      auto delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul,
-                                                       index, multiplier);
+      auto delta = body_header.push_back<BinaryOpStmt>(BinaryOpType::mul, index,
+                                                       multiplier);
       new_loop_vars[j] = body_header.push_back<BinaryOpStmt>(
           BinaryOpType::add, new_loop_vars[j], delta);
     }

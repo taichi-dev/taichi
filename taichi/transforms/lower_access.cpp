@@ -95,9 +95,8 @@ class LowerAccess : public IRVisitor {
       // For ti.is_active
       TI_ASSERT(!activate);
     }
-    PtrLowererImpl lowerer{ptr->snode, ptr->indices,
-                           snode_op,   ptr->is_bit_vectorized,
-                           &lowered};
+    PtrLowererImpl lowerer{ptr->snode, ptr->indices, snode_op,
+                           ptr->is_bit_vectorized, &lowered};
     lowerer.set_pointer_needs_activation(activate);
     lowerer.set_lower_access(this);
     lowerer.run();
@@ -284,8 +283,8 @@ namespace irpass {
 bool lower_access(IRNode *root,
                   const CompileConfig &config,
                   const LowerAccessPass::Args &args) {
-  bool modified = LowerAccess::run(root, args.kernel_forces_no_activate,
-                                   args.lower_atomic);
+  bool modified =
+      LowerAccess::run(root, args.kernel_forces_no_activate, args.lower_atomic);
   type_check(root, config);
   return modified;
 }

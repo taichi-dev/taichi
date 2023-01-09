@@ -200,9 +200,7 @@ class SNode {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::pointer, tb);
   }
 
-  SNode &pointer(const Axis &axis,
-                 int size,
-                 const std::string &tb) {
+  SNode &pointer(const Axis &axis, int size, const std::string &tb) {
     return SNode::pointer(std::vector<Axis>{axis}, size, tb);
   }
 
@@ -218,9 +216,7 @@ class SNode {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::bitmasked, tb);
   }
 
-  SNode &bitmasked(const Axis &axis,
-                   int size,
-                   const std::string &tb) {
+  SNode &bitmasked(const Axis &axis, int size, const std::string &tb) {
     return SNode::bitmasked(std::vector<Axis>{axis}, size, tb);
   }
 
@@ -230,9 +226,7 @@ class SNode {
     return create_node(axes, sizes, SNodeType::hash, tb);
   }
 
-  SNode &hash(const std::vector<Axis> &axes,
-              int sizes,
-              const std::string &tb) {
+  SNode &hash(const std::vector<Axis> &axes, int sizes, const std::string &tb) {
     return create_node(axes, std::vector<int>{sizes}, SNodeType::hash, tb);
   }
 

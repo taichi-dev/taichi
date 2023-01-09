@@ -180,8 +180,8 @@ void StructCompilerLLVM::generate_refine_coordinates(SNode *snode) {
     }
     auto in = call(&builder, "PhysicalCoordinates_get_val", inp_coords,
                    tlctx_->get_constant(i));
-    in = builder.CreateMul(in,
-                           tlctx_->get_constant(snode->extractors[i].shape));
+    in =
+        builder.CreateMul(in, tlctx_->get_constant(snode->extractors[i].shape));
     auto added = builder.CreateAdd(in, addition);
     call(&builder, "PhysicalCoordinates_set_val", outp_coords,
          tlctx_->get_constant(i), added);

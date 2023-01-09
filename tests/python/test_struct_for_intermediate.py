@@ -21,8 +21,7 @@ def _test_nested():
             assert x[i * n, j * m] == 1, (i, j)
 
 
-@test_utils.test(require=ti.extension.sparse,
-                 demote_dense_struct_fors=False)
+@test_utils.test(require=ti.extension.sparse, demote_dense_struct_fors=False)
 def test_nested():
     _test_nested()
 

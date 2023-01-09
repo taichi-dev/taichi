@@ -61,7 +61,8 @@ SNode &SNode::create_node(std::vector<Axis> axes,
     if (is_first_division) {
       new_node.physical_index_position[new_node.num_active_indices++] = ind;
     } else {
-      TI_WARN_IF(!bit::is_power_of_two(sizes[i]),
+      TI_WARN_IF(
+          !bit::is_power_of_two(sizes[i]),
           "Shape {} is detected on non-first division of axis {}:\n{} For "
           "best performance, we recommend that you set it to a power of two.",
           sizes[i], char('i' + ind), tb);

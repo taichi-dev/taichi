@@ -61,8 +61,7 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       LowererImpl lowerer{leaf_snode_,
                           std::vector<Stmt *>{builder.get_int32(loop_index)},
                           SNodeOpType::undefined,
-                          /*is_bit_vectorized=*/false,
-                          &lowered};
+                          /*is_bit_vectorized=*/false, &lowered};
       lowerer.run();
       // There are three linearized stmts:
       // 0: for root
@@ -109,8 +108,7 @@ TEST(ScalarPointerLowerer, EliminateModDiv) {
   auto root = std::make_unique<SNode>(/*depth=*/0, SNodeType::root);
   SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, ""));
   SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, ""));
-  SNode *dense_3 =
-      &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, ""));
+  SNode *dense_3 = &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, ""));
   SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
   SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
   LowererImpl lowerer_1{leaf_1,

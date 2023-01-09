@@ -336,26 +336,6 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_accessor_arch() {
-  if (this_thread_config().arch == Arch::opengl) {
-    return Arch::opengl;
-  } else if (this_thread_config().arch == Arch::vulkan) {
-    return Arch::vulkan;
-  } else if (this_thread_config().arch == Arch::cuda) {
-    return Arch::cuda;
-  } else if (this_thread_config().arch == Arch::metal) {
-    return Arch::metal;
-  } else if (this_thread_config().arch == Arch::cc) {
-    return Arch::cc;
-  } else if (this_thread_config().arch == Arch::dx11) {
-    return Arch::dx11;
-  } else if (this_thread_config().arch == Arch::dx12) {
-    return Arch::dx12;
-  } else {
-    return get_host_arch();
-  }
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -371,7 +351,6 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
     builder.insert(std::move(ret));
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -399,7 +378,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
                                       snode->dt->get_compute_type()),
         expr->tb);
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)

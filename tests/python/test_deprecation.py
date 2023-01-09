@@ -71,6 +71,34 @@ def test_deprecate_field_dim_ndarray_annotation():
             pass
 
 
+@test_utils.test()
+def test_deprecate_field_dim_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead."
+    ):
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                             'x',
+                             ti.math.vec2,
+                             field_dim=1)
+
+
+@test_utils.test()
+def test_deprecate_element_shape_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.'
+    ):
+
+        ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                             'x',
+                             ti.f32,
+                             ndim=1,
+                             element_shape=(1,))
+
+
 @test_utils.test(arch=ti.metal)
 def test_deprecate_metal_sparse():
     with pytest.warns(

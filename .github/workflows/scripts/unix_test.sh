@@ -87,7 +87,6 @@ EOF
     popd
 fi
 
-
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
 fi

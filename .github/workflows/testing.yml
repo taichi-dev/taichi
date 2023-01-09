@@ -351,6 +351,7 @@ jobs:
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
+          git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 
       - uses: actions/checkout@v3

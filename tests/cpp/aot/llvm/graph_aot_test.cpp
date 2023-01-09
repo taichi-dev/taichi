@@ -57,7 +57,10 @@ TEST(LlvmCGraph, RunGraphCpu) {
   auto arr0 = taichi::lang::Ndarray(
       devalloc_arr_0, taichi::lang::PrimitiveType::i32, {ArrLength});
   auto arr1 = taichi::lang::Ndarray(
-      devalloc_arr_1, taichi::lang::PrimitiveType::i32, {ArrLength}, {1,});
+      devalloc_arr_1, taichi::lang::PrimitiveType::i32, {ArrLength},
+      {
+          1,
+      });
 
   int base0 = 10;
   int base1 = 20;

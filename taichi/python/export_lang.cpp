@@ -313,6 +313,7 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
+      .def("make_texture_op_expr", &ASTBuilder::make_texture_op_expr)
       .def("expand_exprs", &ASTBuilder::expand_exprs)
       .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
       .def("expr_subscript", &ASTBuilder::expr_subscript)
@@ -939,9 +940,6 @@ void export_lang(py::module &m) {
     texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
                   TextureOpType(t));
   texture.export_values();
-  m.def("make_texture_op_expr",
-        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
-                   const ExprGroup &>);
 
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)

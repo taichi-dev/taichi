@@ -169,9 +169,6 @@ def _get_flattened_ptrs(val):
         for item in val._members:
             ptrs.extend(_get_flattened_ptrs(item))
         return ptrs
-    if isinstance(val, Expr) and val.ptr.is_tensor():
-        return impl.get_runtime().compiling_callable.ast_builder(
-        ).expand_exprs([val.ptr])
     return [Expr(val).ptr]
 
 

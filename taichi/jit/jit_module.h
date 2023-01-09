@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <functional>
+#include <tuple>
 
 #include "taichi/inc/constants.h"
 #include "taichi/util/lang_util.h"
@@ -33,31 +34,36 @@ class JITModule {
     return ret;
   }
 
-  static std::vector<void *> get_arg_pointers() {
-    return std::vector<void *>();
+  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers() {
+    return std::make_tuple(std::vector<void *>(), std::vector<int>());
   }
 
   template <typename... Args, typename T>
-  static std::vector<void *> get_arg_pointers(T &t, Args &...args) {
-    auto ret = get_arg_pointers(args...);
-    ret.insert(ret.begin(), &t);
-    return ret;
+  inline std::tuple<std::vector<void *>, std::vector<int> > get_arg_pointers(
+      T &t,
+      Args &...args) {
+    auto [arg_pointers, arg_sizes] = get_arg_pointers(args...);
+    arg_pointers.insert(arg_pointers.begin(), &t);
+    arg_sizes.insert(arg_sizes.begin(), sizeof(t));
+    return std::make_tuple(arg_pointers, arg_sizes);
   }
 
   // Note: **call** is for serial functions
   // Note: args must pass by value
+  // Note: AMDGPU need to pass args by extra_arg currently
   template <typename... Args>
   void call(const std::string &name, Args... args) {
     if (direct_dispatch()) {
       get_function<Args...>(name)(args...);
     } else {
-      auto arg_pointers = JITModule::get_arg_pointers(args...);
-      call(name, arg_pointers);
+      auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
+      call(name, arg_pointers, arg_sizes);
     }
   }
 
   virtual void call(const std::string &name,
-                    const std::vector<void *> &arg_pointers) {
+                    const std::vector<void *> &arg_pointers,
+                    const std::vector<int> &arg_sizes) {
     TI_NOT_IMPLEMENTED
   }
 
@@ -69,20 +75,20 @@ class JITModule {
               std::size_t block_dim,
               std::size_t shared_mem_bytes,
               Args... args) {
-    auto arg_pointers = JITModule::get_arg_pointers(args...);
-    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers);
+    auto [arg_pointers, arg_sizes] = JITModule::get_arg_pointers(args...);
+    launch(name, grid_dim, block_dim, shared_mem_bytes, arg_pointers,
+           arg_sizes);
   }
 
   virtual void launch(const std::string &name,
                       std::size_t grid_dim,
                       std::size_t block_dim,
                       std::size_t shared_mem_bytes,
-                      const std::vector<void *> &arg_pointers) {
+                      const std::vector<void *> &arg_pointers,
+                      const std::vector<int> &arg_sizes) {
     TI_NOT_IMPLEMENTED
   }
 
-  // directly call the function (e.g. on CPU), or via another runtime system
-  // (e.g. cudaLaunch)?
   virtual bool direct_dispatch() const = 0;
 
   virtual ~JITModule() {

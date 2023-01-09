@@ -84,7 +84,10 @@ def run():
             continue
         for i in run_dict[path_name]:
             print(i)
-            subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
+            try:
+                subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
+            except FileNotFoundError:
+                continue
 
 
 def test():

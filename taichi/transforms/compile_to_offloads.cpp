@@ -41,7 +41,7 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
-  if (config.print_preprocessed_ir && start_from_ast) {
+  if (!verbose && config.print_preprocessed_ir && start_from_ast) {
     TI_INFO("[{}] {}:", kernel->get_name(), "Preprocessed IR");
     std::cout << std::flush;
     irpass::re_id(ir);

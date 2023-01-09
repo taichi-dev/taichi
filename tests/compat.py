@@ -45,13 +45,17 @@ def init_dict(run_dict, aot_files):
         run_dict[path_name] = []
     for cpp_test_name, value in test_config["aot_test_cases"].items():
         if value[1] != "--arch=vulkan": continue
-        run_dict[value[0][3][:-3]].append(cpp_tests_path)
-        run_dict[value[0][3][:-3]].append(f"--gtest_filter={cpp_test_name}")
+        test_command = []
+        test_command.append(cpp_tests_path)
+        test_command.append(f"--gtest_filter={cpp_test_name}")
+        run_dict[value[0][3][:-3]].append(test_command)
 
     for cpp_test_name, value in test_config["capi_aot_test_cases"].items():
         if value[1] != "--arch=vulkan": continue
-        run_dict[value[0][3][:-3]].append(cpp_tests_path)
-        run_dict[value[0][3][:-3]].append(f"--gtest_filter={cpp_test_name}")
+        test_command = []
+        test_command.append(cpp_tests_path)
+        test_command.append(f"--gtest_filter={cpp_test_name}")
+        run_dict[value[0][3][:-3]].append(test_command)
 
 
 def generate():
@@ -78,7 +82,7 @@ def run():
         if len(os.listdir('tests/cpp/aot/python_scripts/' + path_name)) == 0:
             continue
         for i in run_dict[path_name]:
-            print(os.listdir(build_dir))
+            print(i)
             subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
 
 

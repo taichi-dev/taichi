@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -42,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -440,8 +443,8 @@ Ndarray *Program::create_ndarray(const DataType type,
     Arch arch = this_thread_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
-    } else if (arch != Arch::dx12 && arch != Arch::metal) {
-      // Device api support for dx12 & metal backend are not complete yet
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
       Stream *stream =
           program_impl_->get_compute_device()->get_compute_stream();
       auto [cmdlist, res] = stream->new_command_list_unique();

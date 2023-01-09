@@ -14,11 +14,9 @@ void Function::set_function_body(const std::function<void()> &func) {
   context =
       std::make_unique<FrontendContext>(program->this_thread_config().arch);
   ir = context->get_root();
-  {
-    // Note: this is not a mutex
-    CurrentCallableGuard _(program, this);
-    func();
-  }
+
+  func();
+
   if (program->this_thread_config().offline_cache) {  // For generating AST-Key
     std::ostringstream oss;
     gen_offline_cache_key(program, ir.get(), &oss);

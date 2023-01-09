@@ -22,7 +22,7 @@ class TextureSampler:
 
     @taichi_scope
     def sample_lod(self, uv, lod):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(uv), lod)
         v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kSampleLod,
                                              self.ptr_expr, args_group)
@@ -42,7 +42,7 @@ class TextureSampler:
 
     @taichi_scope
     def fetch(self, index, lod):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index), lod)
         v = ast_builder.make_texture_op_expr(
             _ti_core.TextureOpType.kFetchTexel, self.ptr_expr, args_group)
@@ -69,7 +69,7 @@ class RWTextureAccessor:
 
     @taichi_scope
     def load(self, index):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index))
         v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kLoad,
                                              self.ptr_expr, args_group)
@@ -89,7 +89,7 @@ class RWTextureAccessor:
 
     @taichi_scope
     def store(self, index, value):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index),
                                      *_get_entries(value))
         impl.expr_init(

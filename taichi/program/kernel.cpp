@@ -56,7 +56,6 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
 }
 
@@ -64,7 +63,6 @@ void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
   TI_ASSERT(supports_lowering(program->this_thread_config().arch));
 
-  CurrentCallableGuard _(program, this);
   const auto &config = program->this_thread_config();
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
@@ -375,13 +373,7 @@ void Kernel::init(Program &program,
     name = primal_name + "_reverse_grad";
   }
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-  }
+  func();
 }
 
 // static

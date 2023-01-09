@@ -573,7 +573,7 @@ class ASTTransformer(Builder):
             if node.returns is not None:
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
-            impl.get_runtime().prog.finalize_rets()
+            impl.get_runtime().compiling_callable.finalize_rets()
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -841,7 +841,7 @@ class ASTTransformer(Builder):
                 attr_len = len(node.attr)
                 if attr_len == 1:
                     node.ptr = Expr(impl.get_runtime(
-                    ).prog.current_ast_builder().expr_subscript(
+                    ).compiling_callable.ast_builder().expr_subscript(
                         node.value.ptr.ptr,
                         make_expr_group(keygroup.index(node.attr)),
                         impl.get_runtime().get_current_src_info()))

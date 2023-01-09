@@ -605,7 +605,7 @@ def _TetMesh():
 class MeshElementFieldProxy:
     def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
                  entry_expr: impl.Expr):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
 
         self.mesh = mesh
         self.element_type = element_type
@@ -653,7 +653,7 @@ class MeshElementFieldProxy:
 
     @property
     def id(self):  # return the global non-reordered index
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         l2g_expr = impl.Expr(
             ast_builder.mesh_index_conversion(self.mesh.mesh_ptr,
                                               self.element_type,

@@ -138,7 +138,7 @@ def make_matrix(arr, dt=None):
         else:
             dt = cook_dtype(dt)
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().make_matrix_expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
             shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
@@ -1471,8 +1471,9 @@ class MatrixType(CompoundType):
                 entries += list(x.ravel())
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             elif isinstance(x, Matrix):
                 entries += x.entries
@@ -1585,8 +1586,9 @@ class VectorType(MatrixType):
                 entries += x.entries
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             else:
                 entries.append(x)

@@ -155,7 +155,7 @@ def save_kernels(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    mod.save(tmpdir, 'whatever')
+    mod.save(tmpdir)
 
 
 if __name__ == '__main__':

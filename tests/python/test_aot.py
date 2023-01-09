@@ -518,7 +518,7 @@ def test_aot_ndarray_template_mixed():
         x = ti.ndarray(dtype=ti.f32, shape=16)
         m = ti.aot.Module()
         m.add_kernel(run, template_args={'arr': x, 'val2': 42})
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             for kernel in res['kernels']:

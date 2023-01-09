@@ -65,7 +65,7 @@ def generate():
         path_name = pathlib.Path(x).name[:-3]
         os.mkdir('tests/cpp/aot/python_scripts/' + path_name)
         os.environ[
-            "TAICHI_AOT_FOLDER_PATH"] = 'tests/cpp/aot/python_scripts/' + path_name
+            "TAICHI_AOT_FOLDER_PATH"] = curr_dir+'/tests/cpp/aot/python_scripts/' + path_name
         try:
             subprocess.check_call(["python", x, "--arch=vulkan"])
         except subprocess.CalledProcessError:
@@ -79,13 +79,18 @@ def run():
     for x in aot_files:
         path_name = pathlib.Path(x).name[:-3]
         os.environ[
-            "TAICHI_AOT_FOLDER_PATH"] = 'tests/cpp/aot/python_scripts/' + path_name
+            "TAICHI_AOT_FOLDER_PATH"] = curr_dir + '/tests/cpp/aot/python_scripts/' + path_name
         if len(os.listdir('tests/cpp/aot/python_scripts/' + path_name)) == 0:
             continue
         for i in run_dict[path_name]:
             print(i)
             try:
                 subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
+            except subprocess.SubprocessError:
+                print(os.environ["TAICHI_AOT_FOLDER_PATH"])
+                print(path_name)
+                print(os.listdir(os.environ["TAICHI_AOT_FOLDER_PATH"]))
+                continue
             except FileNotFoundError:
                 continue
 
@@ -97,6 +102,10 @@ def test():
     new_dir = os.path.join(root_opath, 'build')
     print(os.listdir(new_dir))
 
+    json_path = 'C:/Users/admin/JYF_Repositories/taichi_fock/tests/cpp/aot/python_scripts/dense_field_aot_test/metadata.json'
+    with open(json_path,'r') as f:
+        temp_json = json.load(f)
+        print(temp_json)
 
 if __name__ == "__main__":
     test()

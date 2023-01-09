@@ -12,7 +12,7 @@ export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 
-pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 python3 tests/compat.py --kind=generate
 python3 -m pip uninstall taichi-nightly -y

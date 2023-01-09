@@ -17,6 +17,7 @@ void CG::solve() {
     std::cout << "#iterations:     " << cg.iterations() << std::endl;
     std::cout << "estimated error: " << cg.error() << std::endl;
   }
+  is_success_ = !(cg.info());
 }
 
 std::unique_ptr<CG> make_cg_solver(SparseMatrix &A,

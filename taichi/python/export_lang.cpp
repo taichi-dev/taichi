@@ -1312,7 +1312,8 @@ void export_lang(py::module &m) {
       .def("solve", &CG::solve)
       .def("set_x", &CG::set_x)
       .def("get_x", &CG::get_x)
-      .def("set_b", &CG::set_b);
+      .def("set_b", &CG::set_b)
+      .def("is_success", &CG::is_success);
   m.def("make_cg_solver", &make_cg_solver);
   // Mesh Class
   // Mesh related.

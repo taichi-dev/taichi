@@ -22,6 +22,6 @@ b = np.array([1.0, 2.0], dtype=np.float32)
 x0 = np.array([0.0, 0.0], dtype=np.float32)
 cg = ti.linalg.CG(A, b, x0, max_iter=50, atol=1e-6)
 
-x = cg.solve()
+x, exit_code = cg.solve()
 
-print(x)
+print(x, exit_code)

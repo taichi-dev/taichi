@@ -25,6 +25,10 @@ class CG {
     return x_;
   }
 
+  bool is_success() {
+    return is_success_;
+  }
+
  private:
   SparseMatrix &A_;
   Eigen::VectorXf x_;
@@ -32,6 +36,7 @@ class CG {
   int max_iters_{0};
   float tol_{0.0f};
   bool verbose_{false};
+  bool is_success_{false};
 };
 
 std::unique_ptr<CG> make_cg_solver(SparseMatrix &A,

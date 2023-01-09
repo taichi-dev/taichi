@@ -10,4 +10,4 @@ class CG:
 
     def solve(self):
         self.cg_solver.solve()
-        return self.cg_solver.get_x()
+        return self.cg_solver.get_x(), self.cg_solver.is_success()

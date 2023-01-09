@@ -57,7 +57,7 @@ def compile_graph_aot(arch):
                             channel_format=ti.f32,
                             shape=(128, 128),
                             num_channels=1)
-    _arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', ti.f32, ndim=2)
+    _arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', dtype=ti.f32, ndim=2)
 
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(run0, _rw_tex0)

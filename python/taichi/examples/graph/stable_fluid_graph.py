@@ -240,35 +240,35 @@ def main():
         print('running in graph mode')
         velocities_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                            'velocities_pair_cur',
-                                           ti.math.vec2,
+                                           dtype=ti.math.vec2,
                                            ndim=2)
         velocities_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                            'velocities_pair_nxt',
-                                           ti.math.vec2,
+                                           dtype=ti.math.vec2,
                                            ndim=2)
         dyes_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                      'dyes_pair_cur',
-                                     ti.math.vec3,
+                                     dtype=ti.math.vec3,
                                      ndim=2)
         dyes_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                      'dyes_pair_nxt',
-                                     ti.math.vec3,
+                                     dtype=ti.math.vec3,
                                      ndim=2)
         pressures_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                           'pressures_pair_cur',
-                                          ti.f32,
+                                          dtype=ti.f32,
                                           ndim=2)
         pressures_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                           'pressures_pair_nxt',
-                                          ti.f32,
+                                          dtype=ti.f32,
                                           ndim=2)
         velocity_divs = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                      'velocity_divs',
-                                     ti.f32,
+                                     dtype=ti.f32,
                                      ndim=2)
         mouse_data = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'mouse_data',
-                                  ti.f32,
+                                  dtype=ti.f32,
                                   ndim=1)
 
         g1_builder = ti.graph.GraphBuilder()

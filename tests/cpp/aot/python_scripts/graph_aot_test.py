@@ -25,18 +25,18 @@ def compile_graph_aot(arch):
         for i in arr:
             arr[i] += base + i
 
-    arr0 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr0', ti.i32, ndim=1)
+    arr0 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr0', dtype=ti.i32, ndim=1)
 
     arr1 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                         'arr1',
                         ti.types.vector(1, ti.i32),
                         ndim=1)
 
-    base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
+    base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', dtype=ti.i32)
 
-    base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base2', ti.i32)
+    base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base2', dtype=ti.i32)
 
-    base2 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', ti.i32)
+    base2 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', dtype=ti.i32)
 
     g_builder = ti.graph.GraphBuilder()
 

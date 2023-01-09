@@ -75,10 +75,10 @@ class NdarrayType:
                  element_dim=None,
                  element_shape=None,
                  field_dim=None):
-        # TODO(Haidong) Deprecate element shape in 1.4.0. Use dtype to manage element-level arguments.
+        # TODO(Haidong) Deprecate element shape in 1.5.0. Use dtype to manage element-level arguments.
         if element_dim is not None or element_shape is not None:
             warnings.warn(
-                "The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.",
+                "The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.",
                 DeprecationWarning)
             self.dtype = _make_matrix_dtype_from_element_shape(
                 element_dim, element_shape, dtype)
@@ -87,7 +87,7 @@ class NdarrayType:
 
         if field_dim is not None:
             warnings.warn(
-                "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead.",
+                "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
                 DeprecationWarning)
             if ndim is not None:
                 raise ValueError(

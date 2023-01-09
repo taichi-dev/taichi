@@ -2,16 +2,9 @@ import atexit
 import inspect
 import os
 import tempfile
-import warnings
-
-import sourceinspect
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
-
-
-def check_use_sourceinspect():
-    return int(os.getenv('USE_SOURCEINSPECT', 0)) == 1
 
 
 def _find_source_with_custom_getfile_func(func, obj):
@@ -130,29 +123,18 @@ class _InspectContextManager:
 
 
 def getsourcelines(obj):
-    if check_use_sourceinspect():
-        warnings.warn('Sourceinspect is deprecated since v1.4.0',
-                      DeprecationWarning)
-        return sourceinspect.getsourcelines(obj)
-
     try:
         with _InspectContextManager():
             return inspect.getsourcelines(obj)
     except:
         raise IOError(f"Cannot get the source lines of {obj}. \
-            You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
-                or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
-                    at the beginning of the source file. Please report an issue to help us \
-                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+            This is possibly because of you are running Taichi in an environment \
+                in which Taichi's own inspect module cannot find the source file. \
+                    Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues"
                       )
 
 
 def getsourcefile(obj):
-    if check_use_sourceinspect():
-        warnings.warn('Sourceinspect is deprecated since v1.4.0',
-                      DeprecationWarning)
-        return sourceinspect.getsourcefile(obj)
-
     try:
         with _InspectContextManager():
             ret = inspect.getsourcefile(obj)
@@ -161,10 +143,9 @@ def getsourcefile(obj):
             return ret
     except:
         raise IOError(f"Cannot get the source file of {obj}. \
-            You can try setting `USE_SOURCEINSPECT=1` in the enrionment variables \
-                or insert the lines `os.environ['USE_SOURCEINSPECT'] = 1` \
-                    at the beginning of the source file. Please report an issue to help us \
-                        fix the problem: https://github.com/taichi-dev/taichi/issues if you see this message"
+            This is possibly because of you are running Taichi in an environment \
+                in which Taichi's own inspect module cannot find the source file. \
+                    Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues"
                       )
 
 

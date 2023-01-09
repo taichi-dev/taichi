@@ -53,7 +53,7 @@ TEST(LlvmCGraph, RunGraphCpu) {
   auto run_graph = mod->get_graph("run_graph");
 
   auto arr = taichi::lang::Ndarray(
-      devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength}, {1});
+      devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength});
 
   int base0 = 10;
   int base1 = 20;
@@ -107,7 +107,7 @@ TEST(LlvmCGraph, RunGraphCuda) {
     auto run_graph = mod->get_graph("run_graph");
 
     auto arr = taichi::lang::Ndarray(
-        devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength}, {1});
+        devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength});
 
     int base0 = 10;
     int base1 = 20;

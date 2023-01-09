@@ -280,7 +280,7 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
   DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
-  Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size}, {1});
+  Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
 
   int base0 = 10;
   int base1 = 20;

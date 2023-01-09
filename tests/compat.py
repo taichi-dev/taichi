@@ -6,7 +6,7 @@ import pathlib
 import subprocess
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
-curr_dir = os.paht.dirname(curr_dir)
+curr_dir = os.path.dirname(curr_dir)
 build_dir = os.path.join(curr_dir, 'build')
 cpp_test_filename = 'taichi_cpp_tests'
 capi_test_filename = 'taichi_c_api_tests'

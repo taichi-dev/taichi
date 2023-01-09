@@ -13,14 +13,14 @@ import platform
 from ci_common.dep import download_dep
 from ci_common.misc import (banner, concat_paths, get_cache_home,
                             is_manylinux2014)
-from ci_common.python import setup_python
+from ci_common.python import path_prepend, setup_python
 from ci_common.sccache import setup_sccache
 from ci_common.tinysh import Command, environ, git, sh
 
 
 # -- code --
 @banner('Setup Clang')
-def setup_clang(env_out: dict) -> None:
+def setup_clang() -> None:
     '''
     Setup Clang.
     '''
@@ -37,10 +37,10 @@ def setup_clang(env_out: dict) -> None:
         out = get_cache_home() / 'clang-15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
         download_dep(url, out)
-        env_out['PATH'] = concat_paths(out / 'bin', env_out.get('PATH'))
-        env_out[
+        os.environ['PATH'] = concat_paths(out / 'bin', os.environ.get('PATH'))
+        os.environ[
             'TAICHI_CMAKE_ARGS'] += ' -DCLANG_EXECUTABLE=clang++.exe'  # TODO: Can this be omitted?
-        env_out[
+        os.environ[
             'TAICHI_CMAKE_ARGS'] += ' -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang'
     else:
         # TODO: unify all
@@ -48,7 +48,7 @@ def setup_clang(env_out: dict) -> None:
 
 
 @banner('Setup LLVM')
-def setup_llvm(env_out: dict) -> None:
+def setup_llvm() -> None:
     '''
     Download and install LLVM.
     '''
@@ -57,7 +57,7 @@ def setup_llvm(env_out: dict) -> None:
         if 'AMDGPU_TEST' in os.environ:
             # FIXME: AMDGPU bots are currently maintained separately,
             #        we should unify them with the rest of the bots.
-            env_out['LLVM_DIR'] = '/taichi-llvm-15'
+            os.environ['LLVM_DIR'] = '/taichi-llvm-15'
             return
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
@@ -79,28 +79,28 @@ def setup_llvm(env_out: dict) -> None:
         out = get_cache_home() / 'llvm15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip'
         # Could be unnecessary, commenting out for now.
-        # env_out['TAICHI_CMAKE_ARGS'] += " -DLLVM_AS_EXECUTABLE=llvm-as.exe"
+        # os.environ['TAICHI_CMAKE_ARGS'] += " -DLLVM_AS_EXECUTABLE=llvm-as.exe"
         download_dep(url, out, strip=0)
     else:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
-    env_out['PATH'] = concat_paths(out / 'bin', env_out.get('PATH'))
-    env_out['LLVM_DIR'] = str(out)
+    path_prepend('PATH', out / 'bin')
+    os.environ['LLVM_DIR'] = str(out)
 
 
 @banner('Setup Vulkan 1.3.236.0')
-def setup_vulkan(env: dict):
+def setup_vulkan():
     u = platform.uname()
     if u.system == "Linux":
         url = 'https://sdk.lunarg.com/sdk/download/1.3.236.0/linux/vulkansdk-linux-x86_64-1.3.236.0.tar.gz'
         prefix = get_cache_home() / 'vulkan-1.3.236.0'
         download_dep(url, prefix, strip=1)
         sdk = prefix / 'x86_64'
-        env['VULKAN_SDK'] = str(sdk)
-        env['PATH'] = str(sdk / "bin") + ':' + env["PATH"]
-        env['LD_LIBRARY_PATH'] = str(sdk / "lib") + ':' + env.get(
-            "LD_LIBRARY_PATH", "")
-        env['VK_LAYER_PATH'] = str(sdk / 'etc' / 'vulkan' / 'explicit_layer.d')
+        os.environ['VULKAN_SDK'] = str(sdk)
+        path_prepend('PATH', sdk / "bin")
+        path_prepend('LD_LIBRARY_PATH', sdk / 'lib')
+        os.environ['VK_LAYER_PATH'] = str(sdk / 'etc' / 'vulkan' /
+                                          'explicit_layer.d')
     # elif (u.system, u.machine) == ("Darwin", "arm64"):
     # elif (u.system, u.machine) == ("Darwin", "x86_64"):
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
@@ -119,28 +119,28 @@ def setup_vulkan(env: dict):
                          'com.lunarg.vulkan.vma',
                          'com.lunarg.vulkan.debug',
                      ])
-        env['VULKAN_SDK'] = str(prefix)
-        env['VK_SDK_PATH'] = str(prefix)
-        env['PATH'] = str(prefix / "Bin") + ';' + env["PATH"]
+        os.environ['VULKAN_SDK'] = str(prefix)
+        os.environ['VK_SDK_PATH'] = str(prefix)
+        path_prepend('PATH', prefix / "Bin")
     else:
         return
 
 
 @banner('Build Taichi Wheel')
-def build_wheel(python: Command, pip: Command, env: dict) -> None:
+def build_wheel(python: Command, pip: Command) -> None:
     '''
     Build the Taichi wheel
     '''
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
-    proj = env['PROJECT_NAME']
+    proj = os.environ['PROJECT_NAME']
     proj_tags = []
     extra = []
 
     if proj == 'taichi-nightly':
         proj_tags.extend(['egg_info', '--tag-date'])
         # Include C-API in nightly builds
-        env['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
+        os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 
     if platform.system() == 'Linux':
         if is_manylinux2014():
@@ -151,26 +151,20 @@ def build_wheel(python: Command, pip: Command, env: dict) -> None:
     python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
            './', '--save')
 
-    with environ(env):
+    with environ(os.environ):
         python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
 def main() -> None:
-    env = {
-        'PATH': os.environ['PATH'],
-        'LD_LIBRARY_PATH': os.environ.get('LD_LIBRARY_PATH', ''),
-        'TAICHI_CMAKE_ARGS': os.environ.get('TAICHI_CMAKE_ARGS', ''),
-        'PROJECT_NAME': os.environ.get('PROJECT_NAME', 'taichi'),
-    }
-    setup_clang(env)
-    setup_llvm(env)
-    setup_vulkan(env)
-    sccache = setup_sccache(env)
+    setup_clang()
+    setup_llvm()
+    setup_vulkan()
+    sccache = setup_sccache()
 
     # NOTE: We use conda/venv to build wheels, which may not be the same python
     #       running this script.
-    python, pip = setup_python(env, os.environ['PY'])
-    build_wheel(python, pip, env)
+    python, pip = setup_python(os.environ['PY'])
+    build_wheel(python, pip)
 
     sccache('-s')
 

@@ -67,8 +67,12 @@ def banner(msg: str) -> Callable:
     return decorate
 
 
-def concat_paths(*paths: Any) -> str:
+def path_prepend(var: str, *paths: Any) -> None:
     '''
-    Concatenate paths together.
+    Prepend paths to the environment variable.
     '''
-    return os.pathsep.join(str(p) for p in paths if p)
+    value = os.pathsep.join(str(p) for p in paths if p)
+    orig = os.environ.get(var, '')
+    if orig:
+        value += os.pathsep + orig
+    os.environ[var] = value

@@ -5,6 +5,7 @@ import importlib
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 # -- third party --
 # -- own --
@@ -37,7 +38,8 @@ def ensure_dependencies(fn='requirements.txt'):
             importlib.import_module(dep)
     except ModuleNotFoundError:
         print('Installing dependencies...')
-        if os.system(f'{sys.executable} -m pip install {user} -U pip'):
+        if os.system(
+                f'{sys.executable} -m pip install {user} -U pip setuptools'):
             raise Exception('Unable to upgrade pip!')
         if os.system(f'{sys.executable} -m pip install {user} -U -r {p}'):
             raise Exception('Unable to install dependencies!')
@@ -69,20 +71,33 @@ _Environ = os.environ.__class__
 
 class _EnvironWrapper(_Environ):
     def __setitem__(self, name: str, value: str) -> None:
-        orig = self.get(name, '')
+        orig = self.get(name, None)
         _Environ.__setitem__(self, name, value)
         new = self[name]
-
-        if orig == new:
-            return
 
         from .escapes import escape_codes
 
         G = escape_codes['bold_green']
         R = escape_codes['bold_red']
         N = escape_codes['reset']
-        print(f'{R}:: ENV -{name}={orig}{N}', file=sys.stderr, flush=True)
-        print(f'{G}:: ENV +{name}={new}{N}', file=sys.stderr, flush=True)
+
+        if orig == new:
+            pass
+        elif orig == None:
+            print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
+        elif new.startswith(orig):
+            l = len(orig)
+            print(f'{G}:: ENV{N} {name}={new[:l]}{G}{new[l:]}{N}',
+                  file=sys.stderr,
+                  flush=True)
+        elif new.endswith(orig):
+            l = len(new) - len(orig)
+            print(f'{G}:: ENV{N} {name}={G}{new[:l]}{N}{new[l:]}',
+                  file=sys.stderr,
+                  flush=True)
+        else:
+            print(f'{R}:: ENV- {name}={orig}{N}', file=sys.stderr, flush=True)
+            print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
 
 
 def monkey_patch_environ():

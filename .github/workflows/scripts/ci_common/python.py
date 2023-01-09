@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
+import os
 import platform
 import shutil
 from typing import Optional, Tuple
 
 from .dep import download_dep
-from .misc import banner, concat_paths, get_cache_home
+from .misc import banner, get_cache_home, path_prepend
 from .tinysh import Command, sh
 
 
@@ -41,8 +42,7 @@ def setup_miniforge3(prefix):
 
 
 @banner('Setup Python {version}')
-def setup_python(env_out: dict,
-                 version: Optional[str] = None) -> Tuple[Command, Command]:
+def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     '''
     Find the required Python environment and return the `python` and `pip` commands.
     '''
@@ -69,16 +69,10 @@ def setup_python(env_out: dict,
     env = prefix / 'envs' / version
     if windows:
         exe = env / 'python.exe'
-        env_out['PATH'] = concat_paths(env, env / 'Scripts',
-                                       prefix / 'Library' / 'bin',
-                                       env_out.get('PATH'))
-        import os
-        os.environ['PATH'] = concat_paths(env, env / 'Scripts',
-                                          prefix / 'Library' / 'bin',
-                                          os.environ.get('PATH'))
+        path_prepend('PATH', env, env / 'Scripts', prefix / 'Library' / 'bin')
     else:
         exe = env / 'bin' / 'python'
-        env_out['PATH'] = concat_paths(env / 'bin', env_out.get('PATH'))
+        path_prepend('PATH', env / 'bin')
 
     if not exe.exists():
         conda.create('-y', '-n', version, f'python={version}')

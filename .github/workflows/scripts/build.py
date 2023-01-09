@@ -11,8 +11,8 @@ import platform
 # -- third party --
 # -- own --
 from ci_common.dep import download_dep
-from ci_common.misc import (banner, concat_paths, get_cache_home,
-                            is_manylinux2014)
+from ci_common.misc import (banner, get_cache_home, is_manylinux2014,
+                            path_prepend)
 from ci_common.python import path_prepend, setup_python
 from ci_common.sccache import setup_sccache
 from ci_common.tinysh import Command, environ, git, sh
@@ -37,7 +37,7 @@ def setup_clang() -> None:
         out = get_cache_home() / 'clang-15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
         download_dep(url, out)
-        os.environ['PATH'] = concat_paths(out / 'bin', os.environ.get('PATH'))
+        path_prepend('PATH', out / 'bin')
         os.environ[
             'TAICHI_CMAKE_ARGS'] += ' -DCLANG_EXECUTABLE=clang++.exe'  # TODO: Can this be omitted?
         os.environ[

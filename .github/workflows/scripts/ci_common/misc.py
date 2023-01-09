@@ -5,6 +5,7 @@ import inspect
 import os
 import platform
 import sys
+from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
@@ -76,3 +77,22 @@ def path_prepend(var: str, *paths: Any) -> None:
     if orig:
         value += os.pathsep + orig
     os.environ[var] = value
+
+
+def hook(module, name=None):
+    '''
+    Hook a function
+    '''
+    def inner(hooker):
+        funcname = name or hooker.__name__
+        hookee = getattr(module, funcname)
+
+        @wraps(hookee)
+        def real_hooker(*args, **kwargs):
+            return hooker(hookee, *args, **kwargs)
+
+        real_hooker.orig = hookee
+        setattr(module, funcname, real_hooker)
+        return real_hooker
+
+    return inner

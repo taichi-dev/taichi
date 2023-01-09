@@ -27,7 +27,10 @@ def compile_graph_aot(arch):
 
     arr0 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr0', ti.i32, ndim=1)
 
-    arr1 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr1', ti.types.vector(1, ti.i32), ndim=1)
+    arr1 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                        'arr1',
+                        ti.types.vector(1, ti.i32),
+                        ndim=1)
 
     base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
 

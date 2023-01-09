@@ -6,7 +6,8 @@ import pathlib
 import subprocess
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
-build_dir = os.path.join(curr_dir, '../build')
+curr_dir = os.paht.dirname(curr_dir)
+build_dir = os.path.join(curr_dir, 'build')
 cpp_test_filename = 'taichi_cpp_tests'
 capi_test_filename = 'taichi_c_api_tests'
 cpp_tests_path = os.path.join(build_dir, capi_test_filename)
@@ -85,8 +86,15 @@ def run():
             print(i)
             subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
 
+def test():
+    templist = os.path.dirname(os.path.abspath(__file__))
+    root_opath = os.path.dirname(templist)
+    print(root_opath)
+    new_dir = os.path.join(root_opath,'build')
+    print(os.listdir(new_dir))
 
 if __name__ == "__main__":
+    test()
     parser = argparse.ArgumentParser()
     parser.add_argument("--kind", type=str)
     args = parser.parse_args()

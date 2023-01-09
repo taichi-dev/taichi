@@ -701,6 +701,7 @@ def test_ndarray_init_as_zero():
     v = np.zeros((6, 10), dtype=np.float32)
     assert test_utils.allclose(a.to_numpy(), v)
 
+
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_reset():
     n = 8

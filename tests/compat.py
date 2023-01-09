@@ -15,6 +15,7 @@ c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
 
 run_dict = {}
 
+
 def init_dict(run_dict, aot_files):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_config_path = os.path.join(curr_dir, 'test_config.json')
@@ -54,6 +55,7 @@ def generate():
         except subprocess.CalledProcessError:
             continue
 
+
 def run():
     aot_files = glob.glob('tests/cpp/aot/python_scripts/*.py')
     init_dict(run_dict, aot_files)
@@ -75,6 +77,7 @@ def run():
                 continue
             except FileNotFoundError:
                 continue
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

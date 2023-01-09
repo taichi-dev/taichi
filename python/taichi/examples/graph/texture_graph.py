@@ -46,9 +46,8 @@ def main():
     _t = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 't', ti.f32)
     _pixels_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                'pixels_arr',
-                               ti.f32,
-                               field_dim=2,
-                               element_shape=(4, ))
+                               ti.math.vec4,
+                               ndim=2)
 
     _rw_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
                            'rw_tex',

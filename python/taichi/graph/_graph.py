@@ -1,3 +1,5 @@
+import warnings
+
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
@@ -97,16 +99,29 @@ class Graph:
 def Arg(tag,
         name,
         dtype=None,
-        field_dim=0,
+        ndim=0,
+        field_dim=None,
         element_shape=(),
         channel_format=None,
         shape=(),
         num_channels=None):
+    if field_dim is not None:
+        if ndim != 0:
+            raise TaichiRuntimeError(
+                f'field_dim is deprecated, please do not specify field dim and ndim at the same time.'
+            )
+        warnings.warn(
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
+            DeprecationWarning)
+        ndim = field_dim
     if isinstance(dtype, MatrixType):
         if len(element_shape) > 0:
             raise TaichiRuntimeError(
                 f'Element shape for MatrixType argument "{name}" is not supported.'
             )
+        if tag == ArgKind.NDARRAY:
+            mat_type = dtype
+            return _ti_core.Arg(tag, name, mat_type.dtype, ndim, mat_type.get_shape())
         mat_type = dtype
         arg_list = []
         i = 0
@@ -115,7 +130,7 @@ def Arg(tag,
             for _ in range(mat_type.m):
                 arg_sublist.append(
                     _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
-                                 field_dim, element_shape))
+                                 ndim, element_shape))
                 i += 1
             arg_list.append(arg_sublist)
         return arg_list
@@ -130,7 +145,11 @@ def Arg(tag,
                             channel_format=channel_format,
                             num_channels=num_channels,
                             shape=shape)
-    return _ti_core.Arg(tag, name, dtype, field_dim, element_shape)
+    if len(element_shape) > 0: 
+        warnings.warn(
+            "The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.",
+            DeprecationWarning)
+    return _ti_core.Arg(tag, name, dtype, ndim, element_shape)
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

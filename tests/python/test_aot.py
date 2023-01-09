@@ -584,7 +584,7 @@ def test_vulkan_cgraph_short():
         for i in a:
             a[i] = i + c
 
-    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, field_dim=1)
+    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, ndim=1)
     sym_c = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'c', ti.u8)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_a, sym_c)
@@ -688,7 +688,7 @@ def test_rwtexture_with_ndarray():
     def init_texture_from_ndarray(tex: ti.types.rw_texture(num_dimensions=2,
                                                            fmt=ti.Format.r32f,
                                                            lod=0),
-                                  img: ti.types.ndarray(field_dim=2)):
+                                  img: ti.types.ndarray(ndim=2)):
         for i, j in img:
             tex.store(ti.Vector([i, j]),
                       ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.)

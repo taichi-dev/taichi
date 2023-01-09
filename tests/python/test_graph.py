@@ -26,7 +26,7 @@ def test_ndarray_int():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.i32,
-                           field_dim=1)
+                           ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -45,9 +45,8 @@ def test_ndarray_1dim_scalar():
     debug_arr = ti.ndarray(ti.i32, shape=5)
     sym_debug_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                  'debug_arr',
-                                 ti.i32,
-                                 field_dim=1,
-                                 element_shape=(1, ))
+                                 ti.types.vector(1, ti.f32),
+                                 ndim=1)
 
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(ti_test_debug, sym_debug_arr)
@@ -62,7 +61,7 @@ def test_ndarray_0dim():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.i32,
-                           field_dim=0)
+                           ndim=0)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -84,7 +83,7 @@ def test_ndarray_float():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
-                           field_dim=1)
+                           ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -95,7 +94,7 @@ def test_ndarray_float():
 
 
 @test_utils.test(arch=supported_archs_cgraph)
-def test_arg_mismatched_field_dim():
+def test_arg_mismatched_ndim():
     n = 4
 
     @ti.kernel
@@ -106,7 +105,7 @@ def test_arg_mismatched_field_dim():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
-                           field_dim=2)
+                           ndim=2)
     g_init = ti.graph.GraphBuilder()
     with pytest.raises(TaichiCompilationError,
                        match="doesn't match kernel's annotated ndim"):
@@ -114,7 +113,7 @@ def test_arg_mismatched_field_dim():
 
 
 @test_utils.test(arch=supported_archs_cgraph)
-def test_arg_mismatched_field_dim_ndarray():
+def test_arg_mismatched_ndim_ndarray():
     n = 4
 
     @ti.kernel
@@ -149,7 +148,7 @@ def test_repeated_arg_name():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
-                           field_dim=1)
+                           ndim=1)
     sym_pos1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'pos', ti.f32)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(test1, sym_pos)
@@ -203,7 +202,7 @@ def test_ndarray_dtype_mismatch_runtime():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'pos',
                            ti.f32,
-                           field_dim=1)
+                           ndim=1)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_pos)
     g = g_init.compile()
@@ -221,7 +220,7 @@ def build_graph_vector(N, dtype):
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
                          ti.types.vector(N, dtype))
-    sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype, field_dim=1)
+    sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype, ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(vector_sum, sym_A, sym_res)
     graph = builder.compile()
@@ -236,7 +235,7 @@ def build_graph_matrix(N, dtype):
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'mat',
                          ti.types.matrix(N, 2, dtype))
-    sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype, field_dim=1)
+    sym_res = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'res', dtype, ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(matrix_sum, sym_A, sym_res)
     graph = builder.compile()
@@ -296,8 +295,7 @@ def test_arg_float(dt):
     sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'b',
                          dt,
-                         field_dim=1,
-                         element_shape=())
+                         ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -318,8 +316,7 @@ def test_arg_int(dt):
     sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'b',
                          dt,
-                         field_dim=1,
-                         element_shape=())
+                         ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -340,8 +337,7 @@ def test_arg_short(dt):
     sym_B = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                          'b',
                          dt,
-                         field_dim=1,
-                         element_shape=())
+                         ndim=1)
     builder = ti.graph.GraphBuilder()
     builder.dispatch(foo, sym_A, sym_B)
     graph = builder.compile()
@@ -378,9 +374,8 @@ def test_texture():
     _t = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 't', ti.f32)
     _pixels_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                'pixels_arr',
-                               ti.f32,
-                               field_dim=2,
-                               element_shape=(4, ))
+                               ti.math.vec4,
+                               ndim=2)
 
     _rw_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
                            'rw_tex',
@@ -441,7 +436,7 @@ def test_ti_func_with_template_args():
     sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'arr',
                            ti.i32,
-                           field_dim=0)
+                           ndim=0)
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(test_kernel, sym_arr)
     g = g_builder.compile()
@@ -475,7 +470,7 @@ def test_texture_struct_for():
     sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                            'arr',
                            ti.f32,
-                           field_dim=2)
+                           ndim=2)
 
     gb = ti.graph.GraphBuilder()
     gb.dispatch(write, sym_tex)

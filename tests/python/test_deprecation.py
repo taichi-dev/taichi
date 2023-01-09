@@ -174,20 +174,6 @@ def test_incomplete_info_rwtexture():
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
-def test_deprecated_source_inspect():
-    with pytest.warns(DeprecationWarning,
-                      match="Sourceinspect is deprecated since v1.4.0"):
-        import os
-        os.environ['USE_SOURCEINSPECT'] = '1'
-        from taichi.lang._wrap_inspect import getsourcelines
-
-        @ti.kernel
-        def func():
-            pass
-
-        print(getsourcelines(func))
-
-
 @pytest.mark.parametrize("value", [True, False])
 def test_deprecated_dynamic_index(value):
     with pytest.warns(

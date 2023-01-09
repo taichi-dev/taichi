@@ -265,6 +265,7 @@ class Tape:
 
             if self.checkpointer and self.enable_checkpointing:
                 # Restore the checkpoint before launch the grad kernel
+                # print("calls count ", self.calls_count)
                 self.checkpointer.restore_primal(self.calls_count)
             # TODO: how to preserve the value of the seed?
             self.loss.grad.fill(1.0)
@@ -550,7 +551,7 @@ class Checkpointer:
         self.current_level_checkpoints_num = 0
         self.current_start_id = 1
 
-        self.max_checkpointing_level = 3
+        self.max_checkpointing_level = 4
         self.max_num_buffers_per_level = 10
         self.max_num_buffers = self.max_num_buffers_per_level * self.max_checkpointing_level
         # For stat use
@@ -631,7 +632,9 @@ class Checkpointer:
         self.current_level_checkpoints_num += 1
         self.backup_buffers[save_id] = buffer_ptr
         if self.verbose:
-            self.print_info(f"[SAVE] Checkpoint {save_id} saved.")
+            self.print_info(
+                f"[SAVE] Checkpoint {save_id} saved from snode tree {snode_tree_id}"
+            )
 
         num_buffers = self.get_total_checkpoint_num()
         if num_buffers > self.current_max_num_buffers:
@@ -657,7 +660,11 @@ class Checkpointer:
             buffer_ptr = self.backup_buffers[last_save_id]
             self.prog.restore_snode_tree_root_buffer(buffer_ptr, snode_tree_id)
 
-            for i in range(last_save_id + 1, save_id + 1):
+            for i in range(last_save_id, save_id + 1):
+                # Because the save id starts from 1
+                func, args = self.forward_calls[i - 1]
+                func(*args)
+
                 if i == save_id:
                     # The last checkpoint must be saved
                     self.save(i, enforce=True)
@@ -665,9 +672,6 @@ class Checkpointer:
                     self.save(i)
                 if self.verbose:
                     self.print_info(f"[RECOMPUTE] {i}, target {save_id}")
-                # Because the save id starts from 1
-                func, args = self.forward_calls[i - 1]
-                func(*args)
 
                 # Record total recompute num
                 self.recompute_num += 1
@@ -677,7 +681,9 @@ class Checkpointer:
         self.clear_checkpoint(save_id)
 
         if self.verbose:
-            self.print_info(f"[RESTORE] Checkpoint {save_id} restored ")
+            self.print_info(
+                f"[RESTORE] Checkpoint {save_id} restored to snode tree {snode_tree_id}"
+            )
 
     def find_checkpoint(self, save_id):
         return save_id in self.backup_buffers
@@ -711,7 +717,7 @@ class Checkpointer:
                 f"[CLEAR] Total buffers created: {self.buffer_created}.")
             self.print_info(
                 f"[CLEAR] Total recompute num: {self.recompute_num}.")
-        save_ids = self.backup_buffers.keys()
+        save_ids = list(self.backup_buffers.keys())
         # print("Clearing checkpointer, remaining save ids: ", save_ids)
         # print("max buffer created ", self.current_max_num_buffers)
         for save_id in save_ids:
@@ -722,7 +728,7 @@ class Checkpointer:
 class CheckpointerManager:
     def __init__(self, verbose=True):
         self.verbose = verbose
-        self.forward_result_checpointer = Checkpointer(verbose=False)
+        self.forward_result_checpointer = Checkpointer(verbose=True)
         self.primal_checkpointer = Checkpointer(verbose=verbose)
         self.grad_checkpointer = Checkpointer(
             snode_tree=impl.root_grad_snode_tree, verbose=verbose)
@@ -738,7 +744,7 @@ class CheckpointerManager:
         self.primal_checkpointer.save(save_id)
 
     def save_forward_results(self):
-        self.forward_result_checpointer.save(0)
+        self.forward_result_checpointer.save(0, enforce=True)
 
     def reset(self):
         self.primal_checkpointer.reset()

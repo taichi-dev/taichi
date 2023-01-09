@@ -794,6 +794,10 @@ class ADTransform : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
   }
 
+  Stmt *rsqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::rsqrt, load(inp));
+  }
+
   Stmt *mul(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
   }
@@ -1092,11 +1096,18 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      accumulate(stmt->operand,
+                 mul(adjoint(stmt), div(constant(0.5f), rsqrt(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // do nothing
+    } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      // do nothing
+    } else if (stmt->op_type == UnaryOpType::bit_not) {
       // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
@@ -1287,6 +1298,8 @@ class MakeAdjoint : public ADTransform {
     bool is_ptr_offset = false;
     if (stmt->src->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
+      std::cout << "load src " << stmt->src->as<MatrixPtrStmt>()->origin->type()
+                << std::endl;
       src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
@@ -1326,6 +1339,8 @@ class MakeAdjoint : public ADTransform {
     bool is_ptr_offset = false;
     if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
+      std::cout << "load src "
+                << stmt->dest->as<MatrixPtrStmt>()->origin->type() << std::endl;
       dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();

@@ -314,8 +314,8 @@ class TI_DLL_EXPORT Program {
                                      const int snode_tree_id) {
     std::size_t size =
         program_impl_->get_snode_tree_root_buffer_size(snode_tree_id);
-    std::cout << "Create root buffer size " << size * 1.0 / 1048576 << " MB."
-              << std::endl;
+    // std::cout << "Create root buffer size " << size * 1.0 / 1048576 << " MB."
+    //           << std::endl;
     return create_ndarray(type, {static_cast<int>(size / 4 + 1)});
   }
 

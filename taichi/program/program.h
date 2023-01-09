@@ -216,8 +216,6 @@ class TI_DLL_EXPORT Program {
     return host_arch();
   }
 
-  Arch get_accessor_arch();
-
   float64 get_total_compilation_time() {
     return total_compilation_time_;
   }

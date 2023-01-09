@@ -46,8 +46,6 @@ Kernel::Kernel(Program &program,
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
 
-  arch = program.this_thread_config().arch;
-
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
@@ -63,7 +61,7 @@ void Kernel::compile() {
 
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
-  TI_ASSERT(supports_lowering(arch));
+  TI_ASSERT(supports_lowering(program->this_thread_config().arch));
 
   const auto &config = program->this_thread_config();
   bool verbose = config.print_ir;
@@ -107,8 +105,8 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   compiled_(ctx_builder.get_context());
 
-  program->sync = (program->sync && arch_is_cpu(arch));
-  // Note that Kernel::arch may be different from program.config.arch
+  program->sync =
+      (program->sync && arch_is_cpu(program->this_thread_config().arch));
   if (program->this_thread_config().debug &&
       (arch_is_cpu(program->this_thread_config().arch) ||
        program->this_thread_config().arch == Arch::cuda)) {
@@ -345,11 +343,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
   return res;
 }
 
-void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled_);
-  this->arch = arch;
-}
-
 std::string Kernel::get_name() const {
   return name;
 }
@@ -369,8 +362,6 @@ void Kernel::init(Program &program,
       std::make_unique<FrontendContext>(program.this_thread_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
-
-  this->arch = program.this_thread_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;

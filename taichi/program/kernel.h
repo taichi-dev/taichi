@@ -17,7 +17,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
  public:
   std::string name;
   std::vector<SNode *> no_activate;
-  Arch arch;
 
   bool is_accessor{false};
   bool is_evaluator{false};
@@ -116,8 +115,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::vector<uint64> get_ret_uint_tensor(int i);
 
   std::vector<float64> get_ret_float_tensor(int i);
-
-  void set_arch(Arch arch);
 
   uint64 get_next_task_id() {
     return task_counter_++;

@@ -5,6 +5,7 @@ import os
 import pathlib
 import subprocess
 
+
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 curr_dir = os.path.dirname(curr_dir)
 build_dir = os.path.join(curr_dir, 'build')
@@ -14,7 +15,6 @@ cpp_tests_path = os.path.join(build_dir, capi_test_filename)
 c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
 
 run_dict = {}
-
 
 def init_dict(run_dict, aot_files):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -42,20 +42,6 @@ def init_dict(run_dict, aot_files):
         test_command.append(f"--gtest_filter={cpp_test_name}")
         run_dict[value[0][3][:-3]].append(test_command)
 
-
-def generate():
-    aot_files = glob.glob("tests/cpp/aot/python_scripts/*.py")
-    for x in aot_files:
-        path_name = pathlib.Path(x).name[:-3]
-        os.mkdir('tests/cpp/aot/python_scripts/' + path_name)
-        os.environ[
-            "TAICHI_AOT_FOLDER_PATH"] = curr_dir + '/tests/cpp/aot/python_scripts/' + path_name
-        try:
-            subprocess.check_call(["python", x, "--arch=vulkan"])
-        except subprocess.CalledProcessError:
-            continue
-
-
 def run():
     aot_files = glob.glob('tests/cpp/aot/python_scripts/*.py')
     init_dict(run_dict, aot_files)
@@ -78,13 +64,5 @@ def run():
             except FileNotFoundError:
                 continue
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--kind", type=str)
-    args = parser.parse_args()
-
-    if args.kind == 'generate':
-        generate()
-    elif args.kind == 'run':
-        run()
+    run()

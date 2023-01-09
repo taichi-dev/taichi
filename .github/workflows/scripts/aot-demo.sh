@@ -4,6 +4,7 @@ set -ex
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
+# IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
 export TAICHI_AOT_DEMO_URL=https://github.com/strongoier/taichi-aot-demo
 export TAICHI_AOT_DEMO_BRANCH=rotation2d
 
@@ -27,7 +28,6 @@ function build-and-smoke-test-android-aot-demo {
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
     rm -rf taichi-aot-demo
-    # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
     git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
 
     # Install taichi-python

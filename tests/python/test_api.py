@@ -40,7 +40,6 @@ def _get_expected_matrix_apis():
         'normalized',
         'one',
         'outer_product',
-        'rotation2d',
         'rows',
         'sum',
         'to_list',

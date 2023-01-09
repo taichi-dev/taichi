@@ -490,7 +490,7 @@ void export_ggui(py::module &m) {
 
   py::class_<PyWindow>(m, "PyWindow")
       .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
-                    std::string, Arch, bool>())
+                    std::string, Arch>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("get_window_shape", &PyWindow::get_window_shape)

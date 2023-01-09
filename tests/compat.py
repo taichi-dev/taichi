@@ -86,12 +86,14 @@ def run():
             print(i)
             subprocess.check_call(i, env=os.environ.copy(), cwd=build_dir)
 
+
 def test():
     templist = os.path.dirname(os.path.abspath(__file__))
     root_opath = os.path.dirname(templist)
     print(root_opath)
-    new_dir = os.path.join(root_opath,'build')
+    new_dir = os.path.join(root_opath, 'build')
     print(os.listdir(new_dir))
+
 
 if __name__ == "__main__":
     test()

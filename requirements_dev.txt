@@ -6,7 +6,6 @@ pybind11
 GitPython
 yapf
 distro
-sourceinspect
 isort
 pylint
 requests==2.26

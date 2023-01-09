@@ -110,7 +110,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
         m.add_field("y", y)
 
         m.add_graph('run_graph', run_graph)
-        m.save(dir_name, '')
+        m.save(dir_name)
     else:
         m = ti.aot.Module()
 
@@ -127,7 +127,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
         m.add_field("x", x)
         m.add_field("y", y)
 
-        m.save(dir_name, 'whatever')
+        m.save(dir_name)
 
 
 if __name__ == "__main__":

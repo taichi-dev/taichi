@@ -101,18 +101,10 @@ def run():
 #     print(root_opath)
 #     new_dir = os.path.join(root_opath, 'build')
 #     print(os.listdir(new_dir))
-
-<<<<<<< Updated upstream
-    json_path = 'C:/Users/admin/JYF_Repositories/taichi_fock/tests/cpp/aot/python_scripts/dense_field_aot_test/metadata.json'
-    with open(json_path, 'r') as f:
-        temp_json = json.load(f)
-        print(temp_json)
-=======
 #     json_path = 'C:/Users/admin/JYF_Repositories/taichi_fock/tests/cpp/aot/python_scripts/dense_field_aot_test/metadata.json'
 #     with open(json_path,'r') as f:
 #         temp_json = json.load(f)
 #         print(temp_json)
->>>>>>> Stashed changes
 
 
 if __name__ == "__main__":

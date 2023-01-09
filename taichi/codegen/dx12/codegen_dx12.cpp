@@ -236,8 +236,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 
   CompileResult Result;
   for (int i = 0; i < offloads.size(); i++) {
-    auto offload =
-        irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+    auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
     auto *offload_stmt = offload->as<OffloadedStmt>();
     auto new_data = compile_task(nullptr, offload_stmt);

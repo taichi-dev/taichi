@@ -250,7 +250,7 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
         env:
           PY: '3.8'
-          TI_DEVICE_MEMORY_GB: '1'
+          TI_DEVICE_MEMORY_GB: '0.1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -349,6 +349,11 @@ jobs:
     runs-on: ${{ matrix.runsOn }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: |
+          git config --system core.longpaths true
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0'
@@ -580,3 +585,5 @@ jobs:
           ci-docker-run-gpu --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
+        env:
+          TI_DEVICE_MEMORY_GB: '0.1'

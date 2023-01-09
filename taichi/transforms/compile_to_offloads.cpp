@@ -64,7 +64,7 @@ void compile_to_offloads(IRNode *ir,
   print("Immutable local vars eliminated");
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir, config);
+    irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
@@ -254,7 +254,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (is_extension_supported(config.arch, Extension::quant) &&
-      ir->get_config().quant_opt_atomic_demotion) {
+      config.quant_opt_atomic_demotion) {
     irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
   }
 
@@ -350,7 +350,7 @@ void compile_function(IRNode *ir,
   }
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir, config);
+    irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);

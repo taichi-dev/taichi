@@ -605,14 +605,17 @@ def _TetMesh():
 class MeshElementFieldProxy:
     def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
                  entry_expr: impl.Expr):
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
+
         self.mesh = mesh
         self.element_type = element_type
         self.entry_expr = entry_expr
 
         element_field = self.mesh.fields[self.element_type]
         for key, attr in element_field.field_dict.items():
+
             global_entry_expr = impl.Expr(
-                _ti_core.get_index_conversion(
+                ast_builder.mesh_index_conversion(
                     self.mesh.mesh_ptr, element_type, entry_expr,
                     ConvType.l2r if element_field.attr_dict[key].reorder else
                     ConvType.l2g))  # transform index space
@@ -622,7 +625,7 @@ class MeshElementFieldProxy:
                 setattr(
                     self, key,
                     impl.Expr(
-                        _ti_core.subscript(
+                        ast_builder.expr_subscript(
                             attr.ptr, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
             elif isinstance(attr, StructField):
@@ -633,7 +636,7 @@ class MeshElementFieldProxy:
                 setattr(
                     self, key,
                     impl.Expr(
-                        _ti_core.subscript(
+                        ast_builder.expr_subscript(
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 
@@ -650,10 +653,11 @@ class MeshElementFieldProxy:
 
     @property
     def id(self):  # return the global non-reordered index
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         l2g_expr = impl.Expr(
-            _ti_core.get_index_conversion(self.mesh.mesh_ptr,
-                                          self.element_type, self.entry_expr,
-                                          ConvType.l2g))
+            ast_builder.mesh_index_conversion(self.mesh.mesh_ptr,
+                                              self.element_type,
+                                              self.entry_expr, ConvType.l2g))
         return l2g_expr
 
 

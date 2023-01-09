@@ -45,9 +45,6 @@ Kernel::Kernel(Program &program,
   is_evaluator = false;
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
-  this->ir->as<Block>()->kernel = this;
-
-  arch = program.this_thread_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
@@ -59,7 +56,6 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
 }
 
@@ -70,8 +66,8 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   compiled_(ctx_builder.get_context());
 
-  program->sync = (program->sync && arch_is_cpu(arch));
-  // Note that Kernel::arch may be different from program.config.arch
+  program->sync =
+      (program->sync && arch_is_cpu(program->this_thread_config().arch));
   if (program->this_thread_config().debug &&
       (arch_is_cpu(program->this_thread_config().arch) ||
        program->this_thread_config().arch == Arch::cuda)) {
@@ -308,11 +304,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
   return res;
 }
 
-void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled_);
-  this->arch = arch;
-}
-
 std::string Kernel::get_name() const {
   return name;
 }
@@ -333,8 +324,6 @@ void Kernel::init(Program &program,
   ir = context->get_root();
   ir_is_ast_ = true;
 
-  this->arch = program.this_thread_config().arch;
-
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
@@ -345,14 +334,7 @@ void Kernel::init(Program &program,
     name = primal_name + "_reverse_grad";
   }
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-    ir->as<Block>()->kernel = this;
-  }
+  func();
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {

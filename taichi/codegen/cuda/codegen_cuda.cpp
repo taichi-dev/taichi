@@ -603,7 +603,8 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
 FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  const auto &config = prog->this_thread_config();
+  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
 
   CUDAModuleToFunctionConverter converter{tlctx,
                                           llvm_prog->get_runtime_executor()};
@@ -699,7 +700,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                          {&context});
+                          {&context}, {});
     }
 
     // copy data back to host

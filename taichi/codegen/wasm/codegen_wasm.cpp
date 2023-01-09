@@ -238,7 +238,8 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
   auto linked = compile_kernel_to_module();
-  auto *tlctx = get_llvm_program(prog)->get_llvm_context(kernel->arch);
+  auto *tlctx =
+      get_llvm_program(prog)->get_llvm_context(prog->this_thread_config().arch);
   tlctx->create_jit_module(std::move(linked.module));
   auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
   return [=](RuntimeContext &context) {

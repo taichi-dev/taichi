@@ -251,7 +251,7 @@ def test_matrix_factories():
     @ti.kernel
     def fill():
         b[0] = ti.Matrix.identity(ti.f32, 2)
-        b[1] = ti.Matrix.rotation2d(math.pi / 3)
+        b[1] = ti.math.rotation2d(math.pi / 3)
         c[0] = ti.Matrix.zero(ti.f32, 2, 3)
         c[1] = ti.Matrix.one(ti.f32, 2, 3)
         for i in ti.static(range(3)):

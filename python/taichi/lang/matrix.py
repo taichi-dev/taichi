@@ -836,25 +836,6 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops._identity_matrix(n, dt)
 
-    @staticmethod
-    def rotation2d(alpha):
-        """Returns the matrix representation of the 2D
-        anti-clockwise rotation of angle `alpha`. The angle `alpha`
-        is in radians.
-
-        Example::
-
-            >>> import math
-            >>> ti.Matrix.rotation2d(math.pi/4)
-            [[ 0.70710678 -0.70710678]
-             [ 0.70710678  0.70710678]]
-        """
-        warnings.warn(
-            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
-            DeprecationWarning)
-        from taichi.lang import matrix_ops  # pylint: disable=C0415
-        return matrix_ops._rotation2d_matrix(alpha)
-
     @classmethod
     @python_scope
     def field(cls,

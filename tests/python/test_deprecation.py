@@ -23,16 +23,6 @@ def test_deprecated_aot_save_filename():
 
 
 @test_utils.test()
-def test_deprecated_matrix_rotation2d():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            r'`ti.Matrix.rotation2d\(\)` will be removed in release v1.4.0. Use `ti.math.rotation2d\(\)` instead.'
-    ):
-        a = ti.Matrix.rotation2d(math.pi / 2)
-
-
-@test_utils.test()
 def test_deprecate_element_shape_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,

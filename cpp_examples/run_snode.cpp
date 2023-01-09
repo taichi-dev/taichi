@@ -47,7 +47,7 @@ void run_snode() {
   int n = 10;
   program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->pointer(Axis(0), n, false, "");
+  auto *pointer = &root->pointer(Axis(0), n, "");
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/false);

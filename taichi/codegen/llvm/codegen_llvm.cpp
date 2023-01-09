@@ -2197,21 +2197,6 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
     auto exec_cond = tlctx->get_constant(true);
     auto coord_object = RuntimeObject(kLLVMPhysicalCoordinatesName, this,
                                       builder.get(), new_coordinates);
-    if (!prog->this_thread_config().packed) {
-      for (int i = 0; i < leaf_block->num_active_indices; i++) {
-        auto j = leaf_block->physical_index_position[i];
-        if (!bit::is_power_of_two(
-                leaf_block->extractors[j].num_elements_from_root)) {
-          auto coord = coord_object.get("val", tlctx->get_constant(j));
-          exec_cond = builder->CreateAnd(
-              exec_cond,
-              builder->CreateICmp(
-                  llvm::CmpInst::ICMP_SLT, coord,
-                  tlctx->get_constant(
-                      leaf_block->extractors[j].num_elements_from_root)));
-        }
-      }
-    }
 
     if (leaf_block->type == SNodeType::bitmasked ||
         leaf_block->type == SNodeType::pointer) {

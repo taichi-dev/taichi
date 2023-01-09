@@ -200,7 +200,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir, config.packed);
+    irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir, config);
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);

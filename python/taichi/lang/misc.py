@@ -184,7 +184,7 @@ extension = _ti_core.Extension
 
 The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
-        'extfunc', 'packed', 'dynamic_index'].
+        'extfunc', 'dynamic_index'].
 """
 
 
@@ -346,7 +346,6 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
             *``offline_cache`` (bool): Enables offline cache of the compiled kernels. Default to True. When this is enabled Taichi will cache compiled kernel on your local disk to accelerate future calls.
             *``random_seed`` (int): Sets the seed of the random generator. The default is 0.
     """
@@ -360,17 +359,6 @@ def init(arch=None,
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
-
-    if "packed" in kwargs:
-        if kwargs["packed"] is True:
-            warnings.warn(
-                "Currently packed=True is the default setting and the switch will be removed in v1.4.0.",
-                DeprecationWarning)
-        else:
-            warnings.warn(
-                "The automatic padding mode (packed=False) will no longer exist in v1.4.0. The switch will "
-                "also be removed then. Make sure your code doesn't rely on it.",
-                DeprecationWarning)
 
     if "dynamic_index" in kwargs:
         warnings.warn(

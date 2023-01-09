@@ -362,8 +362,7 @@ struct PyWindow {
            bool vsync,
            bool show_window,
            std::string package_path,
-           Arch ti_arch,
-           bool is_packed_mode) {
+           Arch ti_arch) {
     AppConfig config = {name,
                         res[0].cast<int>(),
                         res[1].cast<int>(),
@@ -372,8 +371,7 @@ struct PyWindow {
                         vsync,
                         show_window,
                         package_path,
-                        ti_arch,
-                        is_packed_mode};
+                        ti_arch};
     // todo: support other ggui backends
     if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
           ti_arch == Arch::cuda)) {

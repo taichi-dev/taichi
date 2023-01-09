@@ -9,7 +9,6 @@ CompileConfig::CompileConfig() {
   simd_width = default_simd_width(arch);
   opt_level = 1;
   external_optimization_level = 3;
-  packed = true;
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;

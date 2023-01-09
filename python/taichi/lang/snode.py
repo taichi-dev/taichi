@@ -35,8 +35,7 @@ class SNode:
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.dense(axes, dimensions,
-                           impl.current_cfg().packed, get_traceback()))
+            self.ptr.dense(axes, dimensions, get_traceback()))
 
     def pointer(self, axes, dimensions):
         """Adds a pointer SNode as a child component of `self`.
@@ -55,8 +54,7 @@ class SNode:
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.pointer(axes, dimensions,
-                             impl.current_cfg().packed, get_traceback()))
+            self.ptr.pointer(axes, dimensions, get_traceback()))
 
     @staticmethod
     def _hash(axes, dimensions):
@@ -65,8 +63,7 @@ class SNode:
         raise RuntimeError('hash not yet supported')
         # if isinstance(dimensions, int):
         #     dimensions = [dimensions] * len(axes)
-        # return SNode(self.ptr.hash(axes, dimensions,
-        #                            impl.current_cfg().packed))
+        # return SNode(self.ptr.hash(axes, dimensions))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -88,7 +85,7 @@ class SNode:
             chunk_size = dimension
         return SNode(
             self.ptr.dynamic(axis[0], dimension, chunk_size,
-                             impl.current_cfg().packed, get_traceback()))
+                             get_traceback()))
 
     def bitmasked(self, axes, dimensions):
         """Adds a bitmasked SNode as a child component of `self`.
@@ -107,8 +104,7 @@ class SNode:
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.bitmasked(axes, dimensions,
-                               impl.current_cfg().packed, get_traceback()))
+            self.ptr.bitmasked(axes, dimensions, get_traceback()))
 
     def quant_array(self, axes, dimensions, max_num_bits):
         """Adds a quant_array SNode as a child component of `self`.
@@ -124,8 +120,7 @@ class SNode:
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
-            self.ptr.quant_array(axes, dimensions, max_num_bits,
-                                 impl.current_cfg().packed, get_traceback()))
+            self.ptr.quant_array(axes, dimensions, max_num_bits, get_traceback()))
 
     def place(self, *args, offset=None):
         """Places a list of Taichi fields under the `self` container.
@@ -146,8 +141,7 @@ class SNode:
             if isinstance(arg, BitpackedFields):
                 bit_struct_type = arg.bit_struct_type_builder.build()
                 bit_struct_snode = self.ptr.bit_struct(
-                    bit_struct_type,
-                    impl.current_cfg().packed, get_traceback())
+                    bit_struct_type, get_traceback())
                 for (field, id_in_bit_struct) in arg.fields:
                     bit_struct_snode.place(field, offset, id_in_bit_struct)
             elif isinstance(arg, Field):

@@ -74,7 +74,8 @@ def test_pointer_is_active_2():
     assert s[None] == 3
 
 
-def _test_pointer2():
+@test_utils.test(require=ti.extension.sparse)
+def test_pointer2():
     x = ti.field(ti.f32)
     s = ti.field(ti.i32)
 
@@ -101,16 +102,6 @@ def _test_pointer2():
     assert s[None] == 5 * n
     print(x[257 + n * n * 7])
     assert s[None] == 5 * n
-
-
-@test_utils.test(require=ti.extension.sparse)
-def test_pointer2():
-    _test_pointer2()
-
-
-@test_utils.test(require=ti.extension.sparse, packed=True)
-def test_pointer2_packed():
-    _test_pointer2()
 
 
 @pytest.mark.skip(reason='https://github.com/taichi-dev/taichi/issues/2520')

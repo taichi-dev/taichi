@@ -2,7 +2,8 @@ import taichi as ti
 from tests import test_utils
 
 
-def _test_basic():
+@test_utils.test(require=ti.extension.sparse)
+def test_basic():
     x = ti.field(ti.i32)
     c = ti.field(ti.i32)
     s = ti.field(ti.i32)
@@ -28,16 +29,6 @@ def _test_basic():
 
     assert c[None] == 3
     assert s[None] == 42
-
-
-@test_utils.test(require=ti.extension.sparse)
-def test_basic():
-    _test_basic()
-
-
-@test_utils.test(require=ti.extension.sparse, packed=True)
-def test_basic_packed():
-    _test_basic()
 
 
 @test_utils.test(require=ti.extension.sparse)
@@ -177,7 +168,8 @@ def test_deactivate():
     assert c[None] == 0
 
 
-def _test_sparsity_changes():
+@test_utils.test(require=ti.extension.sparse)
+def test_sparsity_changes():
     x = ti.field(ti.i32)
     c = ti.field(ti.i32)
     s = ti.field(ti.i32)
@@ -208,16 +200,6 @@ def _test_sparsity_changes():
     run()
     assert c[None] == 4
     assert s[None] == 42
-
-
-@test_utils.test(require=ti.extension.sparse)
-def test_sparsity_changes():
-    _test_sparsity_changes()
-
-
-@test_utils.test(require=ti.extension.sparse, packed=True)
-def test_sparsity_changes_packed():
-    _test_sparsity_changes()
 
 
 @test_utils.test(require=ti.extension.sparse)

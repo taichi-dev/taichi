@@ -422,19 +422,10 @@ STR(
         device const SNodeExtractors &child_extrators,
         int l,
         thread ElementCoords *child) {
-      if (child_extrators.packed) {
-        for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
-          device const auto &ex = child_extrators.extractors[i];
-          const int addition = l % (ex.acc_shape * ex.shape) / ex.acc_shape;
-          child->at[i] = parent.at[i] * ex.shape + addition;
-        }
-      } else {
-        for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
-          device const auto &ex = child_extrators.extractors[i];
-          const int mask = ((1 << ex.num_bits) - 1);
-          const int addition = ((l >> ex.acc_offset) & mask);
-          child->at[i] = ((parent.at[i] << ex.num_bits) | addition);
-        }
+      for (int i = 0; i < kTaichiMaxNumIndices; ++i) {
+        device const auto &ex = child_extrators.extractors[i];
+        const int addition = l % (ex.acc_shape * ex.shape) / ex.acc_shape;
+        child->at[i] = parent.at[i] * ex.shape + addition;
       }
     }
 

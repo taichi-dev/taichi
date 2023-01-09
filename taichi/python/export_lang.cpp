@@ -136,7 +136,6 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("opt_level", &CompileConfig::opt_level)
-      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
@@ -505,23 +504,23 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)

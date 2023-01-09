@@ -124,10 +124,7 @@ def main():
                              'C',
                              ti.math.mat2,
                              ndim=1)
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'J',
-                             ti.f32,
-                             ndim=1)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32, ndim=1)
         sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_v',
                                   ti.math.vec2,

@@ -54,6 +54,7 @@ def produce_injected_args(kernel, symbolic_args=None):
                 element_dim = anno.dtype.ndim
                 ndim = anno.ndim
                 dtype = anno.dtype
+
             if element_shape is None or ndim is None:
                 raise TaichiCompilationError(
                     'Please either specify both `element_shape` and `ndim` '

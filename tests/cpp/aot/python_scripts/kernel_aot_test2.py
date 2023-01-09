@@ -24,10 +24,7 @@ def compile_kernel_aot_test2(arch, save_compute_graph):
 
     m = ti.aot.Module()
     if save_compute_graph:
-        sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                               'arr',
-                               ti.i32,
-                               ndim=1)
+        sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', ti.i32, ndim=1)
         sym_n = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'x', ti.i32)
 
         graph_builder = ti.graph.GraphBuilder()

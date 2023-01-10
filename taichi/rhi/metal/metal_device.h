@@ -2,6 +2,7 @@
 #include <memory>
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/metal/metal_api.h"
+#include "taichi/rhi/impl_support.h"
 
 #if defined(__APPLE__) && defined(__OBJC__)
 #import <Foundation/Foundation.h>
@@ -203,7 +204,9 @@ class MetalDevice final : public Device {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
+
   const MetalMemory &get_memory(DeviceAllocationId alloc_id) const;
+  MetalMemory &get_memory(DeviceAllocationId alloc_id);
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) override;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) override;
@@ -223,7 +226,7 @@ class MetalDevice final : public Device {
 
  private:
   MTLDevice_id mtl_device_;
-  std::map<DeviceAllocationId, std::unique_ptr<MetalMemory>> memory_allocs_;
+  rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   std::unique_ptr<MetalStream> compute_stream_;
 
   bool is_destroyed_{false};

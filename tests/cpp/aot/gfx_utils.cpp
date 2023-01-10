@@ -279,15 +279,18 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
-  Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size}, {1});
+  DeviceAllocation devalloc_arr_0 = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_1 = device_->allocate_memory(alloc_params);
+  Ndarray arr0 = Ndarray(devalloc_arr_0, PrimitiveType::i32, {size});
+  Ndarray arr1 = Ndarray(devalloc_arr_1, PrimitiveType::i32, {size}, {1});
 
   int base0 = 10;
   int base1 = 20;
   int base2 = 30;
 
   std::unordered_map<std::string, taichi::lang::aot::IValue> args;
-  args.insert({"arr", taichi::lang::aot::IValue::create(arr)});
+  args.insert({"arr0", taichi::lang::aot::IValue::create(arr0)});
+  args.insert({"arr1", taichi::lang::aot::IValue::create(arr1)});
   args.insert({"base0", taichi::lang::aot::IValue::create(base0)});
   args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
   args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
@@ -298,13 +301,18 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   gfx_runtime->synchronize();
 
   int dst[size] = {0};
-  load_devalloc(devalloc_arr_, dst, sizeof(dst));
+  load_devalloc(devalloc_arr_0, dst, sizeof(dst));
+  for (int i = 0; i < size; i++) {
+    EXPECT_EQ(dst[i], 3 * i + base0 + base1 + base2);
+  }
+  load_devalloc(devalloc_arr_1, dst, sizeof(dst));
   for (int i = 0; i < size; i++) {
     EXPECT_EQ(dst[i], 3 * i + base0 + base1 + base2);
   }
 
   // Deallocate
-  device_->dealloc_memory(devalloc_arr_);
+  device_->dealloc_memory(devalloc_arr_0);
+  device_->dealloc_memory(devalloc_arr_1);
 }
 
 void run_cgraph2(Arch arch, taichi::lang::Device *device_) {

@@ -111,7 +111,7 @@ class Canvas:
         Args:
             centers: a taichi 2D Vector field, where each element indicate the \
                 3D location of a vertex.
-            radius (float): radius of the circles, relative to the height of the screen.
+            radius (Number): radius of the circles in pixels.
             color: a global color for the triangles as 3 floats representing \
                 RGB values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where \

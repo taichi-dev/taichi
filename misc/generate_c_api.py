@@ -36,6 +36,8 @@ def get_field(x: Field):
 
 def get_api_ref(module: Module, x: EntryBase) -> list:
     out = [f"// {get_title(x)}"]
+    if x.since is not None:
+        out[-1] += f" ({x.since})"
     if module.doc and x.id in module.doc.api_refs:
         out += [
             f"// {resolve_inline_symbols_to_names(module, y)}"

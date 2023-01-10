@@ -23,12 +23,6 @@ int ns_array_count(TI_NSArray *na) {
   return cast_call<int>(na, "count");
 }
 
-void ns_log_object(id obj) {
-  // https://github.com/halide/Halide/blob/bce3abe95cf3aef36c6eb8dafb8c85c197408b6d/src/runtime/objc_support.h#L88-L92
-  auto ns_str = wrap_string_as_ns_string("%@");
-  NSLog(reinterpret_cast<id>(ns_str.get()), obj);
-}
-
 TI_NSAutoreleasePool *create_autorelease_pool() {
   return cast_call<TI_NSAutoreleasePool *>(
       clscall("NSAutoreleasePool", "alloc"), "init");

@@ -832,7 +832,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
 VulkanCommandList::~VulkanCommandList() {
 }
 
-void VulkanCommandList::bind_pipeline(Pipeline *p) {
+void VulkanCommandList::bind_pipeline(Pipeline *p) noexcept {
   auto pipeline = static_cast<VulkanPipeline *>(p);
 
   if (current_pipeline_ == pipeline)
@@ -873,7 +873,7 @@ void VulkanCommandList::bind_pipeline(Pipeline *p) {
 }
 
 RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
-                                                   int set_index) {
+                                                   int set_index) noexcept {
   VulkanResourceSet *set = static_cast<VulkanResourceSet *>(res);
   if (set->get_bindings().size() <= 0) {
     return RhiResult::success;
@@ -927,19 +927,20 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
   return RhiResult::success;
 }
 
-RhiResult VulkanCommandList::bind_raster_resources(RasterResources *_res) {
+RhiResult VulkanCommandList::bind_raster_resources(
+    RasterResources *_res) noexcept {
   VulkanRasterResources *res = static_cast<VulkanRasterResources *>(_res);
 
   if (!current_pipeline_->is_graphics()) {
     return RhiResult::invalid_usage;
   }
 
-  if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
-    return RhiResult::not_supported;
-  }
-
   if (res->index_binding.buffer != nullptr) {
     // We have a valid index buffer
+    if (res->index_type >= VK_INDEX_TYPE_MAX_ENUM) {
+      return RhiResult::not_supported;
+    }
+
     vkapi::IVkBuffer index_buffer = res->index_binding.buffer;
     vkCmdBindIndexBuffer(buffer_->buffer, index_buffer->buffer,
                          res->index_binding.offset, res->index_type);
@@ -956,10 +957,18 @@ RhiResult VulkanCommandList::bind_raster_resources(RasterResources *_res) {
   return RhiResult::success;
 }
 
-void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
-  RHI_ASSERT(ptr.device == ti_device_);
-
+void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
   auto buffer = ti_device_->get_vkbuffer(ptr);
+  size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
+
+  // Clamp to buffer size
+  if (ptr.offset > buffer_size) {
+    return;
+  }
+
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
+    size = VK_WHOLE_SIZE;
+  }
 
   VkBufferMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -990,11 +999,11 @@ void VulkanCommandList::buffer_barrier(DevicePtr ptr, size_t size) {
   buffer_->refs.push_back(buffer);
 }
 
-void VulkanCommandList::buffer_barrier(DeviceAllocation alloc) {
-  buffer_barrier(DevicePtr{alloc, 0}, VK_WHOLE_SIZE);
+void VulkanCommandList::buffer_barrier(DeviceAllocation alloc) noexcept {
+  buffer_barrier(DevicePtr{alloc, 0}, std::numeric_limits<size_t>::max());
 }
 
-void VulkanCommandList::memory_barrier() {
+void VulkanCommandList::memory_barrier() noexcept {
   VkMemoryBarrier barrier{};
   barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
   barrier.pNext = nullptr;
@@ -1018,11 +1027,29 @@ void VulkanCommandList::memory_barrier() {
       /*pImageMemoryBarriers=*/nullptr);
 }
 
-void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+void VulkanCommandList::buffer_copy(DevicePtr dst,
+                                    DevicePtr src,
+                                    size_t size) noexcept {
+  size_t src_size = ti_device_->get_vkbuffer_size(src);
+  size_t dst_size = ti_device_->get_vkbuffer_size(dst);
+
+  // Clamp to minimum available size
+  if (saturate_uadd<size_t>(src.offset, size) > src_size) {
+    size = saturate_usub<size_t>(src_size, src.offset);
+  }
+  if (saturate_uadd<size_t>(dst.offset, size) > dst_size) {
+    size = saturate_usub<size_t>(dst_size, dst.offset);
+  }
+
+  if (size == 0) {
+    return;
+  }
+
   VkBufferCopy copy_region{};
   copy_region.srcOffset = src.offset;
   copy_region.dstOffset = dst.offset;
   copy_region.size = size;
+
   auto src_buffer = ti_device_->get_vkbuffer(src);
   auto dst_buffer = ti_device_->get_vkbuffer(dst);
   vkCmdCopyBuffer(buffer_->buffer, src_buffer->buffer, dst_buffer->buffer,
@@ -1031,15 +1058,39 @@ void VulkanCommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
   buffer_->refs.push_back(dst_buffer);
 }
 
-void VulkanCommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+void VulkanCommandList::buffer_fill(DevicePtr ptr,
+                                    size_t size,
+                                    uint32_t data) noexcept {
+  // Align to 4 bytes
+  ptr.offset = ptr.offset & size_t(-4);
+
   auto buffer = ti_device_->get_vkbuffer(ptr);
-  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset,
-                  (size == kBufferSizeEntireSize) ? VK_WHOLE_SIZE : size, data);
+  size_t buffer_size = ti_device_->get_vkbuffer_size(ptr);
+
+  // Check for overflow
+  if (ptr.offset > buffer_size) {
+    return;
+  }
+
+  if (saturate_uadd<size_t>(ptr.offset, size) > buffer_size) {
+    size = VK_WHOLE_SIZE;
+  }
+
+  vkCmdFillBuffer(buffer_->buffer, buffer->buffer, ptr.offset, size, data);
   buffer_->refs.push_back(buffer);
 }
 
-void VulkanCommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult VulkanCommandList::dispatch(uint32_t x,
+                                      uint32_t y,
+                                      uint32_t z) noexcept {
+  auto &dev_props = ti_device_->get_vk_physical_device_props();
+  if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
+      y > dev_props.limits.maxComputeWorkGroupCount[1] ||
+      z > dev_props.limits.maxComputeWorkGroupCount[2]) {
+    return RhiResult::not_supported;
+  }
   vkCmdDispatch(buffer_->buffer, x, y, z);
+  return RhiResult::success;
 }
 
 vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
@@ -1511,6 +1562,8 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   create_vma_allocator();
   RHI_ASSERT(new_descriptor_pool() == RhiResult::success &&
              "Failed to allocate initial descriptor pool");
+
+  vkGetPhysicalDeviceProperties(physical_device_, &vk_device_properties_);
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -1756,7 +1809,8 @@ void VulkanDevice::memcpy_internal(DevicePtr dst,
                                    uint64_t size) {
   // TODO: always create a queue specifically for transfer
   Stream *stream = get_compute_stream();
-  std::unique_ptr<CommandList> cmd = stream->new_command_list();
+  auto [cmd, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd->buffer_copy(dst, src, size);
   stream->submit_synced(cmd.get());
 }
@@ -1794,11 +1848,16 @@ void VulkanDevice::wait_idle() {
   }
 }
 
-std::unique_ptr<CommandList> VulkanStream::new_command_list() {
+RhiResult VulkanStream::new_command_list(CommandList **out_cmdlist) noexcept {
   vkapi::IVkCommandBuffer buffer =
       vkapi::allocate_command_buffer(command_pool_);
 
-  return std::make_unique<VulkanCommandList>(&device_, this, buffer);
+  if (buffer == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
+  *out_cmdlist = new VulkanCommandList(&device_, this, buffer);
+  return RhiResult::success;
 }
 
 StreamSemaphore VulkanStream::submit(
@@ -1955,6 +2014,12 @@ vkapi::IVkBuffer VulkanDevice::get_vkbuffer(
   const AllocationInternal &alloc_int = get_alloc_internal(alloc);
 
   return alloc_int.buffer;
+}
+
+size_t VulkanDevice::get_vkbuffer_size(const DeviceAllocation &alloc) const {
+  const AllocationInternal &alloc_int = get_alloc_internal(alloc);
+
+  return alloc_int.alloc_info.size;
 }
 
 std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat>
@@ -2729,13 +2794,12 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
     depth_buffer_ = device_->allocate_memory(params);
   }
 
-  std::unique_ptr<CommandList> cmd_list{nullptr};
-
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
-  cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
                              ImageLayout::transfer_src);
   cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
@@ -2773,8 +2837,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
     screenshot_buffer_ = device_->allocate_memory(params);
   }
 
-  std::unique_ptr<CommandList> cmd_list{nullptr};
-
   /*
   if (config_.window_handle) {
     // TODO: check if blit is supported, and use copy_image if not
@@ -2792,7 +2854,8 @@ DeviceAllocation VulkanSurface::get_image_data() {
   copy_params.image_extent.x = w;
   copy_params.image_extent.y = h;
   copy_params.image_aspect_flag = VK_IMAGE_ASPECT_COLOR_BIT;
-  cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(img_alloc, ImageLayout::present_src,
                              ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory

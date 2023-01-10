@@ -274,6 +274,11 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, windows, cuda, OpenGL]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: |
+          git config --system core.longpaths true
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -326,11 +331,22 @@ jobs:
 
       - name: Upload to PyPI
         run: |
+          set -ex
           ls -l dist/
           if [ -z "$RELEASE_VERSION" ]; then
             export PROJECT_NAME="taichi-nightly"
           else
             export PROJECT_NAME="taichi"
+            VER=$(echo $RELEASE_VERSION | sed 's/^v//')
+            if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
+              echo Version number mismatch
+              exit 1
+            fi
+            pip install -f dist taichi==$VER
+            if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
+              echo Taichi init version number mismatch!!
+              exit 1
+            fi
           fi
           python -m pip install requests twine
           python misc/upload_release.py
@@ -342,6 +358,9 @@ jobs:
     if: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
       - uses: actions/setup-python@v4
         with:
           python-version: 3.9
@@ -350,14 +369,8 @@ jobs:
         id: changelog
         run: |
           pip3 install gitpython
-          content=$(python3 misc/make_changelog.py)
-          echo $content
-          # Escape multiline strings:
-          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
-          echo "content=$content" >>  $GITHUB_OUTPUT
+          python3 misc/make_changelog.py > CHANGELOG.md
+          cat CHANGELOG.md
 
       - name: Create tag
         run: |
@@ -369,5 +382,6 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
-          body: ${{ steps.changelog.outputs.content }}
+          body_path: CHANGELOG.md
+          generate_release_notes: true
           tag_name: ${{ github.event.inputs.version }}

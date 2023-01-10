@@ -15,7 +15,7 @@ from taichi.lang.ast.ast_transformer_utils import (Builder, LoopStatus,
                                                    ReturnStatus)
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
-                                   TaichiTypeError)
+                                   TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
 from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
@@ -156,7 +156,7 @@ class ASTTransformer(Builder):
                 raise ValueError(
                     'Matrices with more than one columns cannot be unpacked')
 
-            values = ctx.ast_builder.expand_expr([values.ptr])
+            values = ctx.ast_builder.expand_exprs([values.ptr])
             if len(values) == 1:
                 values = values[0]
 
@@ -302,7 +302,7 @@ class ASTTransformer(Builder):
         if isinstance(_iter, impl.Expr) and _iter.ptr.is_tensor():
             shape = _iter.ptr.get_shape()
             flattened = [
-                Expr(x) for x in ctx.ast_builder.expand_expr([_iter.ptr])
+                Expr(x) for x in ctx.ast_builder.expand_exprs([_iter.ptr])
             ]
             _iter = reshape_list(flattened, shape)
 
@@ -514,7 +514,7 @@ class ASTTransformer(Builder):
                     # Expand Expr with Matrix-type return into list of Exprs
                     arg_list = [
                         Expr(x)
-                        for x in ctx.ast_builder.expand_expr([arg_list.ptr])
+                        for x in ctx.ast_builder.expand_exprs([arg_list.ptr])
                     ]
 
                 for i in arg_list:
@@ -573,7 +573,7 @@ class ASTTransformer(Builder):
             if node.returns is not None:
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
-            impl.get_runtime().prog.finalize_rets()
+            impl.get_runtime().compiling_callable.finalize_rets()
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -730,7 +730,7 @@ class ASTTransformer(Builder):
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Expr) and values.ptr.is_tensor():
-                    values = ctx.ast_builder.expand_expr([values.ptr])
+                    values = ctx.ast_builder.expand_exprs([values.ptr])
                 else:
                     assert isinstance(values, Matrix)
                     values = itertools.chain.from_iterable(values.to_list()) if\
@@ -819,12 +819,15 @@ class ASTTransformer(Builder):
         # we continue to process it as a normal attribute node.
         try:
             build_stmt(ctx, node.value)
-        except TaichiIndexError as e:
-            node.value.ptr = None
-            if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
-                    ctx, node):
-                return node.ptr
+        except Exception as e:
+            e = handle_exception_from_cpp(e)
+            if isinstance(e, TaichiIndexError):
+                node.value.ptr = None
+                if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
+                        ctx, node):
+                    return node.ptr
             raise e
+
         if ASTTransformer.build_attribute_if_is_dynamic_snode_method(
                 ctx, node):
             return node.ptr
@@ -837,11 +840,11 @@ class ASTTransformer(Builder):
                                                       node.attr)
                 attr_len = len(node.attr)
                 if attr_len == 1:
-                    node.ptr = Expr(
-                        _ti_core.subscript(
-                            node.value.ptr.ptr,
-                            make_expr_group(keygroup.index(node.attr)),
-                            impl.get_runtime().get_current_src_info()))
+                    node.ptr = Expr(impl.get_runtime(
+                    ).compiling_callable.ast_builder().expr_subscript(
+                        node.value.ptr.ptr,
+                        make_expr_group(keygroup.index(node.attr)),
+                        impl.get_runtime().get_current_src_info()))
                 else:
                     node.ptr = Expr(
                         _ti_core.subscript_with_multiple_indices(

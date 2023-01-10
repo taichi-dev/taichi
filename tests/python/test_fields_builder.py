@@ -83,7 +83,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()

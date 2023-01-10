@@ -173,6 +173,7 @@ class Runtime {
   virtual void wait() = 0;
 
   class VulkanRuntime *as_vk();
+  class MetalRuntime *as_mtl();
 };
 
 class AotModule {

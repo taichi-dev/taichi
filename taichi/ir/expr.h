@@ -83,8 +83,6 @@ class Expr {
   // std::variant<Expr, std::string> in FrontendPrintStmt.
   Expr &operator=(const Expr &o);
 
-  Expr operator[](const ExprGroup &indices) const;
-
   template <typename T, typename... Args>
   static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));

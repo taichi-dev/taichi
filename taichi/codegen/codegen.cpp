@@ -21,29 +21,27 @@
 
 namespace taichi::lang {
 
-KernelCodeGen::KernelCodeGen(Kernel *kernel, IRNode *ir)
-    : prog(kernel->program), kernel(kernel), ir(ir) {
-  if (ir == nullptr)
-    this->ir = kernel->ir.get();
+KernelCodeGen::KernelCodeGen(Kernel *kernel)
+    : prog(kernel->program), kernel(kernel) {
+  this->ir = kernel->ir.get();
 }
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
-                                                     Kernel *kernel,
-                                                     Stmt *stmt) {
+                                                     Kernel *kernel) {
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
-    return std::make_unique<KernelCodeGenCPU>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCPU>(kernel);
   } else if (arch == Arch::wasm) {
-    return std::make_unique<KernelCodeGenWASM>(kernel, stmt);
+    return std::make_unique<KernelCodeGenWASM>(kernel);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<KernelCodeGenCUDA>(kernel, stmt);
+    return std::make_unique<KernelCodeGenCUDA>(kernel);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (arch == Arch::dx12) {
 #if defined(TI_WITH_DX12)
-    return std::make_unique<KernelCodeGenDX12>(kernel, stmt);
+    return std::make_unique<KernelCodeGenDX12>(kernel);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -86,8 +84,8 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
-  auto &config = prog->this_thread_config();
+  const auto &config = prog->this_thread_config();
+  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (config.offline_cache && this->supports_offline_cache() &&
@@ -100,9 +98,8 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
       return std::move(*res);
     }
   }
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
+
+  irpass::ast_to_ir(config, *kernel, false);
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;
@@ -115,8 +112,7 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
       tlctx->fetch_this_thread_struct_module();
-      auto offload =
-          irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+      auto offload = irpass::analysis::clone(offloads[i].get());
       irpass::re_id(offload.get());
       auto new_data = this->compile_task(nullptr, offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));

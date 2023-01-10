@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -42,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -158,7 +161,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  current_callable = nullptr;
   sync = true;
   finalized_ = false;
 
@@ -191,10 +193,10 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
+FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel, offloaded);
+  auto ret = program_impl_->compile(&kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -336,39 +338,21 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_accessor_arch() {
-  if (this_thread_config().arch == Arch::opengl) {
-    return Arch::opengl;
-  } else if (this_thread_config().arch == Arch::vulkan) {
-    return Arch::vulkan;
-  } else if (this_thread_config().arch == Arch::cuda) {
-    return Arch::cuda;
-  } else if (this_thread_config().arch == Arch::metal) {
-    return Arch::metal;
-  } else if (this_thread_config().arch == Arch::cc) {
-    return Arch::cc;
-  } else if (this_thread_config().arch == Arch::dx11) {
-    return Arch::dx11;
-  } else if (this_thread_config().arch == Arch::dx12) {
-    return Arch::dx12;
-  } else {
-    return get_host_arch();
-  }
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
+    ASTBuilder &builder = kernel->context->builder();
+    auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
+    builder.insert(std::move(ret));
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -380,19 +364,22 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 Kernel &Program::get_snode_writer(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto expr = Expr(snode_to_fields_.at(snode))[indices];
-    this->current_ast_builder()->insert_assignment(
+    ASTBuilder &builder = kernel->context->builder();
+    auto expr =
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
+    builder.insert_assignment(
         expr,
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
                                       snode->dt->get_compute_type()),
         expr->tb);
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -448,8 +435,26 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
-                                 ExternalArrayLayout layout) {
-  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape, layout));
+                                 ExternalArrayLayout layout,
+                                 bool zero_fill) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+  if (zero_fill) {
+    Arch arch = this_thread_config().arch;
+    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+      fill_ndarray_fast_u32(arr.get(), /*data=*/0);
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
+      Stream *stream =
+          program_impl_->get_compute_device()->get_compute_stream();
+      auto [cmdlist, res] = stream->new_command_list_unique();
+      TI_ASSERT(res == RhiResult::success);
+      cmdlist->buffer_fill(arr->ndarray_alloc_.get_ptr(0),
+                           arr->get_element_size() * arr->get_nelement(),
+                           /*data=*/0);
+      stream->submit_synced(cmdlist.get());
+    }
+  }
+  ndarrays_.emplace_back(std::move(arr));
   return ndarrays_.back().get();
 }
 

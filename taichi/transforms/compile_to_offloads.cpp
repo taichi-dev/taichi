@@ -41,6 +41,14 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
+  if (!verbose && config.print_preprocessed_ir && start_from_ast) {
+    TI_INFO("[{}] {}:", kernel->get_name(), "Preprocessed IR");
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  }
+
   if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
@@ -56,7 +64,7 @@ void compile_to_offloads(IRNode *ir,
   print("Immutable local vars eliminated");
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir, config);
+    irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
@@ -246,7 +254,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (is_extension_supported(config.arch, Extension::quant) &&
-      ir->get_config().quant_opt_atomic_demotion) {
+      config.quant_opt_atomic_demotion) {
     irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
   }
 
@@ -342,7 +350,7 @@ void compile_function(IRNode *ir,
   }
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir, config);
+    irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);

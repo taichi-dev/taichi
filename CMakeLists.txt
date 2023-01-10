@@ -16,6 +16,7 @@ if (NOT DEFINED TI_VERSION_MAJOR)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -195,16 +196,6 @@ endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
-
-option(TI_EXPORT_CORE "export taichi core" OFF)
-
-if(ANDROID)
-    set(TI_EXPORT_CORE ON)
-endif()
-
-if (TI_EXPORT_CORE)
-  include(cmake/TaichiExportCore.cmake)
-endif()
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 

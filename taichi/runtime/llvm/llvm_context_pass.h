@@ -9,6 +9,7 @@
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/Support/SourceMgr.h"
 
 #if defined(TI_WITH_AMDGPU)
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
@@ -19,7 +20,7 @@ namespace lang {
 using namespace llvm;
 #if defined(TI_WITH_AMDGPU)
 struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
-  static char ID;
+  static inline char ID{0};
   AMDGPUConvertAllocaInstAddressSpacePass() : FunctionPass(ID) {
   }
   bool runOnFunction(llvm::Function &f) override {
@@ -38,7 +39,7 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
       }
       for (auto &allocainst : alloca_inst_vec) {
         auto alloca_type = allocainst->getAllocatedType();
-        IRBuilder<> builder(allocainst);
+        llvm::IRBuilder<> builder(allocainst);
         auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
         auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
         new_alloca->setAlignment(Align(allocainst->getAlign().value()));
@@ -52,7 +53,7 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
 };
 
 struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
-  static char ID;
+  static inline char ID{0};
   AMDGPUConvertFuncParamAddressSpacePass() : ModulePass(ID) {
   }
   bool runOnModule(llvm::Module &M) override {
@@ -127,8 +128,6 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
   }
 };
 
-char AMDGPUConvertAllocaInstAddressSpacePass::ID = 0;
-char AMDGPUConvertFuncParamAddressSpacePass::ID = 0;
 #endif
 
 }  // namespace lang

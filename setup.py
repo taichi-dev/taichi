@@ -21,14 +21,13 @@ from skbuild.command.egg_info import egg_info
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 classifiers = [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 5 - Production/Stable',
     'Topic :: Software Development :: Compilers',
     'Topic :: Multimedia :: Graphics',
     'Topic :: Games/Entertainment :: Simulation',
     'Intended Audience :: Science/Research',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: Apache Software License',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
@@ -178,8 +177,7 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'rich',
-          'astunparse;python_version<"3.9"'
+          'numpy', 'colorama', 'rich', 'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],

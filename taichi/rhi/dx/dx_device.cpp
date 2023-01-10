@@ -1,12 +1,15 @@
 #ifdef TI_WITH_DX11
 
 #include "taichi/rhi/dx/dx_device.h"
+#include "taichi/rhi/impl_support.h"
 
 #include "spirv_hlsl.hpp"
 #include <d3dcompiler.h>
 
 namespace taichi::lang {
 namespace directx11 {
+
+using namespace rhi_impl;
 
 #ifdef TAICHI_DX11_DEBUG_WINDOW
 IDXGISwapChain *g_swapchain = nullptr;
@@ -89,13 +92,13 @@ Dx11CommandList::~Dx11CommandList() {
   d3d11_deferred_context_->Release();
 }
 
-void Dx11CommandList::bind_pipeline(Pipeline *p) {
+void Dx11CommandList::bind_pipeline(Pipeline *p) noexcept {
   Dx11Pipeline *pipeline = static_cast<Dx11Pipeline *>(p);
   d3d11_deferred_context_->CSSetShader(pipeline->get_program(), nullptr, 0);
 }
 
 RhiResult Dx11CommandList::bind_shader_resources(ShaderResourceSet *res,
-                                                 int set_index) {
+                                                 int set_index) noexcept {
   Dx11ResourceSet *set = static_cast<Dx11ResourceSet *>(res);
   if (set_index > 0) {
     // TODO: Add remapping?
@@ -123,25 +126,48 @@ RhiResult Dx11CommandList::bind_shader_resources(ShaderResourceSet *res,
   return RhiResult::success;
 }
 
-RhiResult Dx11CommandList::bind_raster_resources(RasterResources *res) {
+RhiResult Dx11CommandList::bind_raster_resources(
+    RasterResources *res) noexcept {
   TI_NOT_IMPLEMENTED;
 }
 
-void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) {
-  TI_NOT_IMPLEMENTED;
-}
-
-void Dx11CommandList::buffer_barrier(DeviceAllocation alloc) {
-  TI_NOT_IMPLEMENTED;
-}
-
-void Dx11CommandList::memory_barrier() {
+void Dx11CommandList::buffer_barrier(DevicePtr ptr, size_t size) noexcept {
+  // No-op
   // Not needed for DX11
 }
 
-void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
+void Dx11CommandList::buffer_barrier(DeviceAllocation alloc) noexcept {
+  // No-op
+  // Not needed for DX11
+}
+
+void Dx11CommandList::memory_barrier() noexcept {
+  // No-op
+  // Not needed for DX11
+}
+
+void Dx11CommandList::buffer_copy(DevicePtr dst,
+                                  DevicePtr src,
+                                  size_t size) noexcept {
   ID3D11Buffer *src_buf = device_->alloc_id_to_default_copy(src.alloc_id);
   ID3D11Buffer *dst_buf = device_->alloc_id_to_default_copy(dst.alloc_id);
+
+  D3D11_BUFFER_DESC src_desc;
+  D3D11_BUFFER_DESC dst_desc;
+  src_buf->GetDesc(&src_desc);
+  dst_buf->GetDesc(&dst_desc);
+
+  // Clamp to minimum available size
+  if (saturate_uadd(src.offset, size) > size_t(src_desc.ByteWidth)) {
+    size = saturate_usub(size_t(src_desc.ByteWidth), src.offset);
+  }
+  if (saturate_uadd(dst.offset, size) > size_t(dst_desc.ByteWidth)) {
+    size = saturate_usub(size_t(dst_desc.ByteWidth), dst.offset);
+  }
+
+  if (size == 0) {
+    return;
+  }
 
   D3D11_BOX box{};
   box.left = src.offset;
@@ -155,19 +181,41 @@ void Dx11CommandList::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {
                                                  src_buf, 0, &box);
 }
 
-void Dx11CommandList::buffer_fill(DevicePtr ptr, size_t size, uint32_t data) {
+void Dx11CommandList::buffer_fill(DevicePtr ptr,
+                                  size_t size,
+                                  uint32_t data) noexcept {
   ID3D11UnorderedAccessView *uav =
       device_->alloc_id_to_uav(d3d11_deferred_context_, ptr.alloc_id);
+  D3D11_BUFFER_DESC desc;
+  device_->alloc_id_to_default_copy(ptr.alloc_id)->GetDesc(&desc);
 
-  TI_ASSERT_INFO(ptr.offset == 0, "DX11 only support full resource clear");
+  // Align to 4 bytes
+  ptr.offset = ptr.offset & size_t(-4);
+
+  // Check for overflow
+  if (ptr.offset > desc.ByteWidth) {
+    return;
+  }
+
+  if (saturate_uadd(ptr.offset, size) >= desc.ByteWidth) {
+    size = kBufferSizeEntireSize;
+  }
 
   const UINT values[4] = {data, data, data, data};
+
+  if (size != kBufferSizeEntireSize) {
+    // TODO: Add DX11.1 clear regions support
+    RHI_LOG_ERROR("DX11 Backend does not support subregion clears");
+  }
+
   d3d11_deferred_context_->ClearUnorderedAccessViewUint(uav, values);
 
   // FIXME: what if the default is not a raw buffer?
 }
 
-void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
+RhiResult Dx11CommandList::dispatch(uint32_t x,
+                                    uint32_t y,
+                                    uint32_t z) noexcept {
   // Set SPIRV_Cross_NumWorkgroups's CB slot based on the watermark
   auto cb_slot = cb_slot_watermark_ + 1;
   auto spirv_cross_numworkgroups_cb =
@@ -180,6 +228,8 @@ void Dx11CommandList::dispatch(uint32_t x, uint32_t y, uint32_t z) {
   cb_slot_watermark_ = -1;
 
   d3d11_deferred_context_->Dispatch(x, y, z);
+
+  return RhiResult::success;
 }
 
 void Dx11CommandList::begin_renderpass(int x0,
@@ -879,8 +929,9 @@ Dx11Stream::Dx11Stream(Dx11Device *device_) : device_(device_) {
 Dx11Stream::~Dx11Stream() {
 }
 
-std::unique_ptr<CommandList> Dx11Stream::new_command_list() {
-  return std::make_unique<Dx11CommandList>(device_);
+RhiResult Dx11Stream::new_command_list(CommandList **out_cmdlist) noexcept {
+  *out_cmdlist = new Dx11CommandList(device_);
+  return RhiResult::success;
 }
 
 StreamSemaphore Dx11Stream::submit(

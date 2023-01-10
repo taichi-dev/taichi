@@ -469,14 +469,14 @@ RhiResult MetalDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
 void MetalDevice::unmap(DevicePtr ptr) {}
 void MetalDevice::unmap(DeviceAllocation ptr) {}
 
-RhiResult
-MetalDevice::create_pipeline(Pipeline **out_pipeline,
-                            const PipelineSourceDesc &src,
-                            std::string name,
-                            PipelineCache *cache) noexcept {
+RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
+                                       const PipelineSourceDesc &src,
+                                       std::string name,
+                                       PipelineCache *cache) noexcept {
   TI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   try {
-    *out_pipeline = MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+    *out_pipeline =
+        MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
   } catch (const std::exception &e) {
     return RhiResult::error;
   }

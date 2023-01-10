@@ -57,8 +57,6 @@ class CG {
   bool is_success_{false};
 };
 
-typedef CG<Eigen::VectorXf, float> CGf;
-
 template <typename EigenT, typename DT>
 std::unique_ptr<CG<EigenT, DT>> make_cg_solver(SparseMatrix &A,
                                                int max_iters,

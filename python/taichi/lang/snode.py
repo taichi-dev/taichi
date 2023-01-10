@@ -1,5 +1,4 @@
 import numbers
-import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix

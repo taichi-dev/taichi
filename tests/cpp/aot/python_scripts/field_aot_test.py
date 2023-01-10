@@ -91,8 +91,8 @@ def compile_field_aot(arch, compile_for_cgraph=False):
     if compile_for_cgraph:
         g_builder = ti.graph.GraphBuilder()
 
-        base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', ti.i32)
-        base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', ti.i32)
+        base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', dtype=ti.i32)
+        base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', dtype=ti.i32)
 
         g_builder.dispatch(init_fields, base0)
         g_builder.dispatch(check_init_x, base1)

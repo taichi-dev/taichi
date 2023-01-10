@@ -89,13 +89,13 @@ def mix(x, y, a):
         >>> x = ti.Vector([1, 1, 1])
         >>> y = ti.Vector([2, 2, 2])
         >>> a = ti.Vector([1, 0, 0])
-        >>> ti.mix(x, y, a)
-        [2, 1, ]
+        >>> ti.math.mix(x, y, a)
+        [2.000000, 1.000000, 1.000000]
         >>> x = ti.Matrix([[1, 2], [2, 3]], ti.f32)
         >>> y = ti.Matrix([[3, 5], [4, 5]], ti.f32)
         >>> a = 0.5
-        >>> ti.mix(x, y, a)
-        [[2.0, 3.5], [3.0, 4.0]]
+        >>> ti.math.mix(x, y, a)
+        [[2.000000, 3.500000], [3.000000, 4.000000]]
     """
     return x * (1.0 - a) + y * a
 
@@ -122,12 +122,12 @@ def clamp(x, xmin, xmax):
     Example::
 
         >>> v = ti.Vector([0, 0.5, 1.0, 1.5])
-        >>> ti.clamp(v, 0.5, 1.0)
-        [0.5, 0.5, 1.0, 1.0]
+        >>> ti.math.clamp(v, 0.5, 1.0)
+        [0.500000, 0.500000, 1.000000, 1.000000]
         >>> x = ti.Matrix([[0, 1], [-2, 2]], ti.f32)
         >>> y = ti.Matrix([[1, 2], [1, 2]], ti.f32)
-        >>> ti.clamp(x, 0.5, y)
-        [[0.5, 1.0], [0.5, 2.0]]
+        >>> ti.math.clamp(x, 0.5, y)
+        [[0.500000, 1.000000], [0.500000, 2.000000]]
     """
     return min(xmax, max(xmin, x))
 
@@ -156,8 +156,8 @@ def step(edge, x):
 
         >>> x = ti.Matrix([[0, 1], [2, 3]], ti.f32)
         >>> y = 1
-        >>> ti.step(x, y)
-        [[1.0, 1.0], [0.0, 0.0]]
+        >>> ti.math.step(x, y)
+        [[1.000000, 1.000000], [0.000000, 0.000000]]
     """
     return ti.cast(x >= edge, float)
 
@@ -177,8 +177,8 @@ def fract(x):
     Example::
 
         >>> x = ti.Vector([-1.2, -0.7, 0.3, 1.2])
-        >>> ti.fract(x)
-        [0.8, 0.3, 0.3, 0.2]
+        >>> ti.math.fract(x)
+        [0.800000, 0.300000, 0.300000, 0.200000]
     """
     return x - ti.floor(x)
 
@@ -209,8 +209,8 @@ def smoothstep(edge0, edge1, x):
         >>> edge0 = ti.Vector([0, 1, 2])
         >>> edge1 = 1
         >>> x = ti.Vector([0.5, 1.5, 2.5])
-        >>> ti.smoothstep(edge0, edge1, x)
-        [0.5, 1.0, 0.0]
+        >>> ti.math.smoothstep(edge0, edge1, x)
+        [0.500000, 1.000000, 0.000000]
     """
     t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0)
     return t * t * (3.0 - 2.0 * t)
@@ -231,8 +231,8 @@ def sign(x):
     Example::
 
         >>> x = ti.Vector([-1.0, 0.0, 1.0])
-        >>> ti.sign(x)
-        [0.8, 0.3, 0.3, 0.2]
+        >>> ti.math.sign(x)
+        [-1.000000, 0.000000, 1.000000]
     """
     return ti.cast((x >= 0.0) - (x <= 0.0), float)
 
@@ -253,8 +253,8 @@ def normalize(v):
     Example::
 
         >>> v = ti.Vector([1, 2, 3])
-        >>> ti.normalize(v)
-        [0.333333, 0.666667, 1.000000]
+        >>> ti.math.normalize(v)
+        [0.267261, 0.534522, 0.801784]
     """
     return v / v.norm()
 
@@ -274,8 +274,8 @@ def log2(x):
 
     Example::
 
-        >>> v = ti.Vector([1., 2., 3.])
-        >>> ti.log2(x)
+        >>> x = ti.Vector([1., 2., 3.])
+        >>> ti.math.log2(x)
         [0.000000, 1.000000, 1.584962]
     """
     return ti.log(x) / ti.static(ti.log(2.0))
@@ -304,8 +304,8 @@ def reflect(x, n):
 
         >>> x = ti.Vector([1., 2., 3.])
         >>> n = ti.Vector([0., 1., 0.])
-        >>> reflect(x, n)
-        [1.0, -2.0, 3.0]
+        >>> ti.math.reflect(x, n)
+        [1.000000, -2.000000, 3.000000]
     """
     k = x.dot(n)
     return x - 2.0 * k * n
@@ -324,8 +324,8 @@ def degrees(x):
     Example::
 
         >>> x = ti.Vector([-pi/2, pi/2])
-        >>> degrees(x)
-        [-90., 90.]
+        >>> ti.math.degrees(x)
+        [-90.000000, 90.000000]
     """
     return x * ti.static(180.0 / pi)
 
@@ -343,8 +343,8 @@ def radians(x):
     Example::
 
         >>> x = ti.Vector([-90., 45., 90.])
-        >>> radians(x) / pi
-        [-0.5, 0.25, 0.5]
+        >>> ti.math.radians(x) / pi
+        [-0.500000, 0.250000, 0.500000]
     """
     return x * ti.static(pi / 180.0)
 
@@ -366,7 +366,7 @@ def distance(x, y):
 
         >>> x = ti.Vector([0, 0, 0])
         >>> y = ti.Vector([1, 1, 1])
-        >>> distance(x, y)
+        >>> ti.math.distance(x, y)
         1.732051
     """
     return (x - y).norm()
@@ -389,9 +389,9 @@ def refract(x, n, eta):
     Example::
 
         >>> x = ti.Vector([1., 1., 1.])
-        >>> n = ti.Vector([0, 1., 0])
-        >>> refract(x, y, 2.0)
-        [2., -1., 2]
+        >>> y = ti.Vector([0, 1., 0])
+        >>> ti.math.refract(x, y, 2.0)
+        [2.000000, -1.000000, 2.000000]
     """
     dxn = x.dot(n)
     result = ti.zero(x)
@@ -416,8 +416,8 @@ def dot(x, y):
 
         >>> x = ti.Vector([1., 1., 0.])
         >>> y = ti.Vector([0., 1., 1.])
-        >>> dot(x, y)
-        1.
+        >>> ti.math.dot(x, y)
+        1.000000
     """
     return x.dot(y)
 
@@ -441,8 +441,8 @@ def cross(x, y):
 
         >>> x = ti.Vector([1., 0., 0.])
         >>> y = ti.Vector([0., 1., 0.])
-        >>> cross(x, y)
-        [0., 0., 1.]
+        >>> ti.math.cross(x, y)
+        [0.000000, 0.000000, 1.000000]
     """
     return x.cross(y)
 
@@ -462,8 +462,8 @@ def mod(x, y):
 
         >>> x = ti.Vector([-0.5, 0.5, 1.])
         >>> y = 1.0
-        >>> mod(x, y)
-        [0.5, 0.5, 0.0]
+        >>> ti.math.mod(x, y)
+        [0.500000, 0.500000, 0.000000]
     """
     return x - y * ti.floor(x / y)
 
@@ -482,12 +482,11 @@ def translate(dx, dy, dz):
 
     Example::
 
-        >>> import math
-        >>> ti.Matrix.translate(1, 2, 3)
-        [[ 1 0 0 1]
-         [ 0 1 0 2]
-         [ 0 0 1 3]
-         [ 0 0 0 1]]
+        >>> ti.math.translate(1, 2, 3)
+        [[ 1. 0. 0. 1.]
+         [ 0. 1. 0. 2.]
+         [ 0. 0. 1. 3.]
+         [ 0. 0. 0. 1.]]
     """
     return mat4([[1., 0., 0., dx], [0., 1., 0., dy], [0., 0., 1., dz],
                  [0., 0., 0., 1.]])
@@ -507,12 +506,11 @@ def scale(sx, sy, sz):
 
     Example::
 
-        >>> import math
-        >>> ti.Matrix.scale(1, 2, 3)
-        [[ 1 0 0 0]
-         [ 0 2 0 0]
-         [ 0 0 3 0]
-         [ 0 0 0 1]]
+        >>> ti.math.scale(1, 2, 3)
+        [[ 1. 0. 0. 0.]
+         [ 0. 2. 0. 0.]
+         [ 0. 0. 3. 0.]
+         [ 0. 0. 0. 1.]]
     """
     return mat4([[sx, 0., 0., 0.], [0., sy, 0., 0.], [0., 0., sz, 0.],
                  [0., 0., 0., 1.]])
@@ -586,10 +584,7 @@ def rotation2d(ang):
 
     Example::
 
-        >>> from taichi.math import *
-        >>> @ti.kernel
-        >>> def test():
-        >>>     M = rotation2d(radians(30))
+        >>>ti.math.rotation2d(ti.math.radians(30))
         [[0.866025, -0.500000], [0.500000, 0.866025]]
     """
     ca, sa = ti.cos(ang), ti.sin(ang)
@@ -607,8 +602,8 @@ def rotation3d(ang_x, ang_y, ang_z):
     Returns:
         :class:`~taichi.math.mat4`: rotation matrix
     Example:
-        >>> import math
-        >>> rotation3d(0.52, -0.785, 1.046)
+
+        >>> ti.math.rotation3d(0.52, -0.785, 1.046)
         [[ 0.05048351 -0.61339645 -0.78816002  0.        ]
         [ 0.65833154  0.61388511 -0.4355969   0.        ]
         [ 0.75103329 -0.49688014  0.4348093   0.        ]
@@ -640,7 +635,7 @@ def length(x):
     Example::
 
         >>> x = ti.Vector([1, 1, 1])
-        >>> length(x)
+        >>> ti.math.length(x)
         1.732051
     """
     return x.norm()
@@ -667,12 +662,8 @@ def inverse(mat):  # pylint: disable=R1710
 
     Example::
 
-        >>> @ti.kernel
-        >>> def test():
-        >>>     m = mat3([(1, 1, 0), (0, 1, 1), (0, 0, 1)])
-        >>>     print(inverse(m))
-        >>>
-        >>> test()
+        >>> m = ti.math.mat3([(1, 1, 0), (0, 1, 1), (0, 0, 1)])
+        >>> ti.math.inverse(m)
         [[1.000000, -1.000000, 1.000000],
          [0.000000, 1.000000, -1.000000],
          [0.000000, 0.000000, 1.000000]]
@@ -690,12 +681,8 @@ def isinf(x):
 
     Example:
 
-       >>> @ti.kernel
-       >>> def test():
-       >>>     x = vec4(inf, -inf, nan, 1)
-       >>>     ti.math.isinf(x)
-       >>>
-       >>> test()
+       >>> x = ti.math.vec4(inf, -inf, nan, 1)
+       >>> ti.math.isinf(x)
        [1, 1, 0, 0]
 
     Returns:
@@ -722,12 +709,8 @@ def isnan(x):
 
     Example:
 
-       >>> @ti.kernel
-       >>> def test():
-       >>>     x = vec4(nan, -nan, inf, 1)
-       >>>     ti.math.isnan(x)
-       >>>
-       >>> test()
+       >>> x = ti.math.vec4(nan, -nan, inf, 1)
+       >>> ti.math.isnan(x)
        [1, 1, 0, 0]
 
     Returns:
@@ -752,10 +735,9 @@ def vdir(ang):
 
     Example:
 
-        >>> @ti.kernel
-        >>> def test():
-        >>>     x = pi / 2
-        >>>     print(ti.math.vdir(x))  # [0, 1]
+        >>> x = pi / 2
+        >>> ti.math.vdir(x)
+        [0, 1]
 
     Returns:
         a 2d vector with argument equals `ang`.

@@ -32,6 +32,9 @@ int Callable::insert_texture_arg(const DataType &dt) {
 }
 
 void Callable::finalize_rets() {
+  if (rets.empty()) {
+    return;
+  }
   std::vector<const Type *> types;
   types.reserve(rets.size());
   for (const auto &ret : rets) {
@@ -40,16 +43,4 @@ void Callable::finalize_rets() {
   ret_type =
       TypeFactory::get_instance().get_struct_type(types)->as<StructType>();
 }
-
-Callable::CurrentCallableGuard::CurrentCallableGuard(Program *program,
-                                                     Callable *callable)
-    : program_(program) {
-  old_callable_ = program->current_callable;
-  program->current_callable = callable;
-}
-
-Callable::CurrentCallableGuard::~CurrentCallableGuard() {
-  program_->current_callable = old_callable_;
-}
-
 }  // namespace taichi::lang

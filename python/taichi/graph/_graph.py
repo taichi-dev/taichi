@@ -1,3 +1,5 @@
+import warnings
+
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
 from taichi.lang import kernel_impl
@@ -97,12 +99,46 @@ class Graph:
 def Arg(tag,
         name,
         dtype=None,
-        field_dim=0,
+        ndim=0,
+        field_dim=None,
         element_shape=(),
         channel_format=None,
         shape=(),
         num_channels=None):
-    if isinstance(dtype, MatrixType):
+    if field_dim is not None:
+        if ndim != 0:
+            raise TaichiRuntimeError(
+                'field_dim is deprecated, please do not specify field_dim and ndim at the same time.'
+            )
+        warnings.warn(
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
+            DeprecationWarning)
+        ndim = field_dim
+
+    if tag == ArgKind.SCALAR:
+        # The scalar tag should never work with array-like parameters
+        if ndim > 0 or isinstance(dtype, MatrixType) or len(element_shape) > 0:
+            raise TaichiRuntimeError(
+                f'Illegal Arg parameter (dtype={dtype}, ndim={ndim}, element_shape={element_shape}) for Scalar tag.'
+            )
+        return _ti_core.Arg(tag, name, dtype, ndim, element_shape)
+
+    if tag == ArgKind.NDARRAY:
+        # Ndarray with matrix data type
+        if isinstance(dtype, MatrixType):
+            return _ti_core.Arg(tag, name, dtype.dtype, ndim,
+                                dtype.get_shape())
+        # Ndarray with scalar data type
+        if len(element_shape) > 0:
+            warnings.warn(
+                "The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.",
+                DeprecationWarning)
+        return _ti_core.Arg(tag, name, dtype, ndim, element_shape)
+
+    if tag == ArgKind.MATRIX:
+        if not isinstance(dtype, MatrixType):
+            raise TaichiRuntimeError(
+                f'Tag {tag} must specify matrix data type, but got {dtype}.')
         if len(element_shape) > 0:
             raise TaichiRuntimeError(
                 f'Element shape for MatrixType argument "{name}" is not supported.'
@@ -114,8 +150,8 @@ def Arg(tag,
             arg_sublist = []
             for _ in range(mat_type.m):
                 arg_sublist.append(
-                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype,
-                                 field_dim, element_shape))
+                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype, ndim,
+                                 element_shape))
                 i += 1
             arg_list.append(arg_sublist)
         return arg_list
@@ -130,7 +166,7 @@ def Arg(tag,
                             channel_format=channel_format,
                             num_channels=num_channels,
                             shape=shape)
-    return _ti_core.Arg(tag, name, dtype, field_dim, element_shape)
+    raise TaichiRuntimeError(f'Unknowm tag {tag} for graph Arg {name}.')
 
 
 __all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']

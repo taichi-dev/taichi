@@ -771,8 +771,8 @@ class CapabilityLevelConfigBuilder {
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
-  Self &spirv_has_atomic_i64(bool value = true) {
-    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_I64] =
+  Self &spirv_has_atomic_int64(bool value = true) {
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_INT64] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }

@@ -154,7 +154,8 @@ void Renderer::prepare_for_next_frame() {
 
 void Renderer::draw_frame(Gui *gui) {
   auto stream = app_context_.device().get_graphics_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  assert(res == RhiResult::success && "Failed to allocate command list");
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
                                      background_color_[2], 1};

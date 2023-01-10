@@ -35,7 +35,7 @@ def thread_idx():
 def global_thread_idx():
     arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda:
-        return impl.get_runtime().prog.current_ast_builder(
+        return impl.get_runtime().compiling_callable.ast_builder(
         ).insert_thread_idx_expr()
     if impl.get_runtime().prog.config().arch == _ti_core.vulkan:
         return impl.call_internal("vkGlobalThreadIdx",
@@ -54,7 +54,7 @@ class SharedArray:
 
     @taichi_scope
     def subscript(self, *indices):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.Expr(
             ast_builder.expr_subscript(
                 self.shared_array_proxy, make_expr_group(*indices),

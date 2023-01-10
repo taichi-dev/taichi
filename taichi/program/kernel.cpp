@@ -46,8 +46,6 @@ Kernel::Kernel(Program &program,
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
 
-  arch = program.this_thread_config().arch;
-
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {
@@ -58,48 +56,7 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
-}
-
-void Kernel::lower(bool to_executable) {
-  TI_ASSERT(!lowered_);
-  TI_ASSERT(supports_lowering(arch));
-
-  CurrentCallableGuard _(program, this);
-  auto config = program->this_thread_config();
-  bool verbose = config.print_ir;
-  if ((is_accessor && !config.print_accessor_ir) ||
-      (is_evaluator && !config.print_evaluator_ir))
-    verbose = false;
-
-  if (config.print_preprocessed_ir) {
-    TI_INFO("[{}] {}:", get_name(), "Preprocessed IR");
-    std::cout << std::flush;
-    irpass::re_id(ir.get());
-    irpass::print(ir.get());
-    std::cout << std::flush;
-  }
-
-  if (to_executable) {
-    irpass::compile_to_executable(
-        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
-        /*ad_use_stack=*/true,
-        /*verbose*/ verbose,
-        /*lower_global_access=*/to_executable,
-        /*make_thread_local=*/config.make_thread_local,
-        /*make_block_local=*/
-        is_extension_supported(config.arch, Extension::bls) &&
-            config.make_block_local,
-        /*start_from_ast=*/ir_is_ast_);
-  } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*autodiff_mode=*/autodiff_mode,
-                                /*ad_use_stack=*/true,
-                                /*start_from_ast=*/ir_is_ast_);
-  }
-
-  lowered_ = true;
 }
 
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
@@ -109,8 +66,8 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   compiled_(ctx_builder.get_context());
 
-  program->sync = (program->sync && arch_is_cpu(arch));
-  // Note that Kernel::arch may be different from program.config.arch
+  program->sync =
+      (program->sync && arch_is_cpu(program->this_thread_config().arch));
   if (program->this_thread_config().debug &&
       (arch_is_cpu(program->this_thread_config().arch) ||
        program->this_thread_config().arch == Arch::cuda)) {
@@ -347,11 +304,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
   return res;
 }
 
-void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled_);
-  this->arch = arch;
-}
-
 std::string Kernel::get_name() const {
   return name;
 }
@@ -372,8 +324,6 @@ void Kernel::init(Program &program,
   ir = context->get_root();
   ir_is_ast_ = true;
 
-  this->arch = program.this_thread_config().arch;
-
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
@@ -384,19 +334,7 @@ void Kernel::init(Program &program,
     name = primal_name + "_reverse_grad";
   }
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-  }
-}
-
-// static
-bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
-         (arch == Arch::metal);
+  func();
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {

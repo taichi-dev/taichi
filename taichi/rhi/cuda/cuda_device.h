@@ -46,7 +46,8 @@ class CudaStream : public Stream {
  public:
   ~CudaStream() override{};
 
-  std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final{
+      TI_NOT_IMPLEMENTED};
   StreamSemaphore submit(CommandList *cmdlist,
                          const std::vector<StreamSemaphore> &wait_semaphores =
                              {}) override{TI_NOT_IMPLEMENTED};

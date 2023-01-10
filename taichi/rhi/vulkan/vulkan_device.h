@@ -289,7 +289,7 @@ class VulkanPipelineCache : public PipelineCache {
   ~VulkanPipelineCache() override;
 
   void *data() noexcept final;
-  size_t size() noexcept final;
+  size_t size() const noexcept final;
 
   vkapi::IVkPipelineCache vk_pipeline_cache() {
     return cache_;
@@ -299,7 +299,6 @@ class VulkanPipelineCache : public PipelineCache {
   VulkanDevice *device_{nullptr};
   vkapi::IVkPipelineCache cache_{nullptr};
   std::vector<uint8_t> data_shadow_;
-  size_t size_{0};
 };
 
 // VulkanPipeline maps to a vkapi::IVkPipeline, or a SPIR-V module (a GLSL

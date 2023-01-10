@@ -153,7 +153,8 @@ VulkanPipelineCache ::~VulkanPipelineCache() {
 void *VulkanPipelineCache::data() noexcept {
   try {
     data_shadow_.resize(size());
-    vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size_,
+    size_t size = 0;
+    vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size,
                            data_shadow_.data());
   } catch (std::bad_alloc &) {
     return nullptr;
@@ -162,9 +163,10 @@ void *VulkanPipelineCache::data() noexcept {
   return data_shadow_.data();
 }
 
-size_t VulkanPipelineCache::size() noexcept {
-  vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size_, nullptr);
-  return size_;
+size_t VulkanPipelineCache::size() const noexcept {
+  size_t size = 0;
+  vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size, nullptr);
+  return size;
 }
 
 VulkanPipeline::VulkanPipeline(const Params &params)

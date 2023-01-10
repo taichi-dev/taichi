@@ -351,16 +351,25 @@ void MetalStream::command_sync() {
 }
 
 DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
+  // https://developer.apple.com/documentation/metal/mtlgpufamily/mtlgpufamilyapple8?language=objc
+  // We do this so that it compiles under lower version of macOS
+  constexpr MTLGPUFamily kMTLGPUFamilyApple8 = 1008;
+  constexpr MTLGPUFamily kMTLGPUFamilyApple7 = 1007;
+  constexpr MTLGPUFamily kMTLGPUFamilyApple6 = 1006;
+  constexpr MTLGPUFamily kMTLGPUFamilyApple5 = 1005;
+  constexpr MTLGPUFamily kMTLGPUFamilyApple4 = 1004;
+  constexpr MTLGPUFamily kMTLGPUFamilyApple3 = 1003;
+
   bool family_mac2 = [mtl_device supportsFamily:MTLGPUFamilyMac2];
-  bool family_apple7 = [mtl_device supportsFamily:MTLGPUFamilyApple7];
+  bool family_apple7 = [mtl_device supportsFamily:kMTLGPUFamilyApple7];
   bool family_apple6 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple6] | family_apple7;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple6] | family_apple7;
   bool family_apple5 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple5] | family_apple6;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple5] | family_apple6;
   bool family_apple4 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple4] | family_apple5;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple4] | family_apple5;
   bool family_apple3 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple3] | family_apple4;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple3] | family_apple4;
 
   bool feature_64_bit_integer_math = family_apple3;
   bool feature_floating_point_atomics = family_apple7 | family_mac2;

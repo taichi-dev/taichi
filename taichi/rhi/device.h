@@ -568,7 +568,7 @@ class TI_DLL_EXPORT PipelineCache {
   /**
    * Get the size of the cache (in bytes).
    */
-  virtual size_t size() noexcept {
+  virtual size_t size() const noexcept {
     return 0;
   }
 };

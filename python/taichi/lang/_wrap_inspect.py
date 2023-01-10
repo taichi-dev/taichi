@@ -2,6 +2,7 @@ import atexit
 import inspect
 import os
 import tempfile
+import sys
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
@@ -125,13 +126,7 @@ class _InspectContextManager:
 def getsourcelines(obj):
     try:
         with _InspectContextManager():
-            ret = inspect.getsourcelines(obj)
-            if ret is None:
-                try:  # This is required if we are running Taichi in REPL
-                    ret = inspect.getfile(obj)
-                except:
-                    pass
-            return ret
+            return inspect.getsourcelines(obj)
     except:
         raise IOError(f"Cannot get the source lines of {obj}. This is possibly because of you are running Taichi in an environment in which Taichi's own inspect module cannot find the source file. Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues")
 

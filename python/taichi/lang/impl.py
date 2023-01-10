@@ -330,6 +330,7 @@ class PyTaichi:
         global root_snode_tree
         _root_snode_tree = root.finalize(raise_warning=not is_first_call)
         root_snode_tree.ptr = _root_snode_tree.ptr
+        print("root snode tree id ", root_snode_tree.ptr.id())
         global _root_fb
         _root_fb = FieldsBuilder()
 
@@ -338,6 +339,7 @@ class PyTaichi:
         _root_grad_snode_tree = root_grad.finalize(
             raise_warning=not is_first_call)
         root_grad_snode_tree.ptr = _root_grad_snode_tree.ptr
+        print("root grad snode tree id ", root_grad_snode_tree.ptr.id())
         global _root_grad_fb
         _root_grad_fb = FieldsBuilder()
 

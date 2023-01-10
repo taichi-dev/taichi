@@ -494,7 +494,7 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   try {
     *out_pipeline =
-      MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+        MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
   } catch (const std::exception &e) {
     return RhiResult::error;
   }

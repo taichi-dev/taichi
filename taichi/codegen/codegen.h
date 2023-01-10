@@ -46,7 +46,9 @@ class KernelCodeGen {
 
   virtual ~KernelCodeGen() = default;
 
-  static std::unique_ptr<KernelCodeGen> create(const CompileConfig *compile_config, Kernel *kernel);
+  static std::unique_ptr<KernelCodeGen> create(
+      const CompileConfig *compile_config,
+      Kernel *kernel);
 
   virtual FunctionType compile_to_function() = 0;
   virtual bool supports_offline_cache() const {

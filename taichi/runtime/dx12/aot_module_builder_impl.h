@@ -14,7 +14,8 @@ struct ModuleDataDX12 : public aot::ModuleData {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompileConfig &config, LlvmProgramImpl *prog);
+  explicit AotModuleBuilderImpl(const CompileConfig &config,
+                                LlvmProgramImpl *prog);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;

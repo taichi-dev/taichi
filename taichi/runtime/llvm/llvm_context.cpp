@@ -537,57 +537,6 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   }
 }
 
-void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
-    std::unique_ptr<llvm::Module> &module) {
-  TI_ASSERT(arch_ == Arch::amdgpu);
-  // TODO
-  // MI serial cards need wavefrontsize64 on
-  std::string libdevice_paths[] = {
-      "ocml",
-      "oclc_wavefrontsize64_off",
-      "ockl",
-      "oclc_abi_version_400",
-      "oclc_correctly_rounded_sqrt_off",
-      "oclc_daz_opt_off",
-      "oclc_finite_only_off",
-      "oclc_isa_version_" +
-          AMDGPUContext::get_instance().get_mcpu().substr(3, 4),
-      "oclc_unsafe_math_off",
-      "opencl"};
-
-  // TODO ref TVM or tensorflow
-  for (auto &libdevice : libdevice_paths) {
-    std::string bc_path = "/opt/rocm/amdgcn/bitcode/";
-    auto libdevice_module = module_from_bitcode_file(
-        bc_path + libdevice + ".bc", get_this_thread_context());
-
-    std::vector<std::string> libdevice_function_names;
-    for (auto &f : *libdevice_module) {
-      if (!f.isDeclaration()) {
-        libdevice_function_names.push_back(f.getName().str());
-      }
-    }
-
-    for (auto &f : libdevice_module->functions()) {
-      auto func_ = module->getFunction(f.getName());
-      if (!func_ && starts_with(f.getName().lower(), "__" + libdevice))
-        f.setLinkage(llvm::Function::CommonLinkage);
-    }
-
-    bool failed =
-        llvm::Linker::linkModules(*module, std::move(libdevice_module));
-    if (failed) {
-      TI_ERROR("AMDGPU libdevice linking failure.");
-    }
-
-    for (auto func_name : libdevice_function_names) {
-      auto func = module->getFunction(func_name);
-      if (func)
-        func->setLinkage(llvm::Function::InternalLinkage);
-    }
-  }
-}
-
 void TaichiLLVMContext::add_struct_module(std::unique_ptr<Module> module,
                                           int tree_id) {
   TI_AUTO_PROF;

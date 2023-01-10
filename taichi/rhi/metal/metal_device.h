@@ -34,7 +34,7 @@ class MetalCommandList;
 class MetalStream;
 class MetalDevice;
 
-struct MetalMemory {
+class MetalMemory {
  public:
   // `mtl_buffer` should be already retained.
   explicit MetalMemory(MTLBuffer_id mtl_buffer);

@@ -1,5 +1,6 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "spirv_msl.hpp"
+#include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/device_capability.h"
 
@@ -33,8 +34,10 @@ MetalPipeline::~MetalPipeline() { destroy(); }
 MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                                      const uint32_t *spv_data,
                                      size_t spv_size) {
-  TI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
-  TI_ASSERT(spv_size % sizeof(uint32_t) == 0);
+  // TODO: (penguinliong) Give `RhiResult` instead of assertions when pipeline
+  // refactorization is ready.
+  RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
+  RHI_ASSERT(spv_size % sizeof(uint32_t) == 0);
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
   spirv_cross::CompilerMSL::Options options{};
   options.enable_decoration_binding = true;
@@ -110,7 +113,7 @@ MetalShaderResourceSet::~MetalShaderResourceSet() {}
 
 ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
                                                   DevicePtr ptr, size_t size) {
-  TI_ASSERT(ptr.device == (Device *)device_);
+  RHI_ASSERT(ptr.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
   MetalShaderResource rsc{};
@@ -125,7 +128,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
 }
 ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
                                                   DeviceAllocation alloc) {
-  TI_ASSERT(alloc.device == (Device *)device_);
+  RHI_ASSERT(alloc.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(alloc.alloc_id);
 
   MetalShaderResource rsc{};
@@ -142,7 +145,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
 ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
                                                      DevicePtr ptr,
                                                      size_t size) {
-  TI_ASSERT(ptr.device == (Device *)device_);
+  RHI_ASSERT(ptr.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
   MetalShaderResource rsc{};
@@ -157,7 +160,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
 }
 ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
                                                      DeviceAllocation alloc) {
-  TI_ASSERT(alloc.device == (Device *)device_);
+  RHI_ASSERT(alloc.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(alloc.alloc_id);
 
   MetalShaderResource rsc{};
@@ -176,13 +179,13 @@ MetalCommandList::MetalCommandList(const MetalDevice &device)
 MetalCommandList::~MetalCommandList() {}
 
 void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
-  TI_ASSERT(p != nullptr);
+  RHI_ASSERT(p != nullptr);
   current_pipeline_ = (MetalPipeline *)p;
 }
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
-  TI_ASSERT(res != nullptr);
-  TI_ASSERT(set_index == 0);
+  RHI_ASSERT(res != nullptr);
+  RHI_ASSERT(set_index == 0);
   current_shader_resource_set_ = (MetalShaderResourceSet *)res;
   return RhiResult::success;
 }
@@ -208,7 +211,7 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
   if (size == kBufferSizeEntireSize) {
     size_t src_size = src_memory.size();
     size_t dst_size = dst_memory.size();
-    TI_ASSERT(src_size == dst_size);
+    RHI_ASSERT(src_size == dst_size);
     size = src_size;
   }
 
@@ -228,7 +231,9 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
 }
 void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
                                    uint32_t data) noexcept {
-  TI_ASSERT(data == 0);
+  // (penguinliong) Metal only supports per-byte filling so we better not fill
+  // anything other than zero.
+  RHI_ASSERT(data == 0);
 
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
@@ -250,8 +255,8 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
 
 RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
                                      uint32_t z) noexcept {
-  TI_ASSERT(current_pipeline_);
-  TI_ASSERT(current_shader_resource_set_);
+  RHI_ASSERT(current_pipeline_);
+  RHI_ASSERT(current_shader_resource_set_);
 
   MTLComputePipelineState_id mtl_compute_pipeline_state =
       current_pipeline_->mtl_compute_pipeline_state();
@@ -276,7 +281,7 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
         break;
       }
       default:
-        TI_ASSERT(false);
+        RHI_ASSERT(false);
       }
     }
 
@@ -315,6 +320,11 @@ MetalStream::submit(CommandList *cmdlist,
                     const std::vector<StreamSemaphore> &wait_semaphores) {
   MetalCommandList *cmdlist2 = (MetalCommandList *)cmdlist;
 
+  // TODO: (penguinliong) Command buffers and encoders are created automatically
+  // on autoreleasepool and unfortunately we cannot opt out this thing. So
+  // all the command encoding is deferred to `submit` in the current
+  // implementation. We can look into this and make the encoding immediate in
+  // a future PR.
   @autoreleasepool {
     MTLCommandBuffer_id cmdbuf = [[mtl_command_queue_ commandBuffer] retain];
     for (auto &command : cmdlist2->pending_commands_) {
@@ -443,7 +453,7 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
   return out;
 }
 void MetalDevice::dealloc_memory(DeviceAllocation handle) {
-  TI_ASSERT(handle.device == this);
+  RHI_ASSERT(handle.device == this);
   auto it = memory_allocs_.find(handle.alloc_id);
   memory_allocs_.erase(it);
 }
@@ -456,7 +466,7 @@ RhiResult MetalDevice::map_range(DevicePtr ptr, uint64_t size,
   const MetalMemory &memory = *memory_allocs_.at(ptr.alloc_id);
 
   size_t offset = (size_t)ptr.offset;
-  TI_ASSERT(offset + size <= memory.size());
+  RHI_ASSERT(offset + size <= memory.size());
 
   RhiResult result = map(ptr, mapped_ptr);
   *(const uint8_t **)mapped_ptr += offset;
@@ -471,7 +481,7 @@ void MetalDevice::unmap(DeviceAllocation ptr) {}
 
 std::unique_ptr<Pipeline>
 MetalDevice::create_pipeline(const PipelineSourceDesc &src, std::string name) {
-  TI_ASSERT(src.type == PipelineSourceType::spirv_binary);
+  RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   Pipeline *out =
       MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
   return std::unique_ptr<Pipeline>(out);
@@ -486,7 +496,7 @@ void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   Stream *stream = get_compute_stream();
   auto [cmd, res] = stream->new_command_list_unique();
-  TI_ASSERT(res == RhiResult::success);
+  RHI_ASSERT(res == RhiResult::success);
   cmd->buffer_copy(dst, src, size);
   stream->submit_synced(cmd.get());
 }

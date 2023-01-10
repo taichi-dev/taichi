@@ -157,7 +157,8 @@ GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Arch arch,
     const DeviceCapabilityConfig &caps,
-    const std::vector<CompiledSNodeStructs> &compiled_structs);
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    const CompileConfig &compile_config);
 
 }  // namespace gfx
 }  // namespace taichi::lang

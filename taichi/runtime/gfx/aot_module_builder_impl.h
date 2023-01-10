@@ -17,6 +17,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   explicit AotModuleBuilderImpl(
       const std::vector<CompiledSNodeStructs> &compiled_structs,
       Arch device_api_backend,
+      const CompileConfig &compile_config,
       const DeviceCapabilityConfig &caps);
 
   void dump(const std::string &output_dir,
@@ -50,6 +51,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   TaichiAotData ti_aot_data_;
 
   Arch device_api_backend_;
+  const CompileConfig &config_;
   DeviceCapabilityConfig caps_;
 };
 

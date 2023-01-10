@@ -717,7 +717,8 @@ GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Arch arch,
     const DeviceCapabilityConfig &caps,
-    const std::vector<CompiledSNodeStructs> &compiled_structs) {
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    const CompileConfig &compile_config) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
@@ -727,8 +728,7 @@ GfxRuntime::RegisterParams run_codegen(
   params.compiled_structs = compiled_structs;
   params.arch = arch;
   params.caps = caps;
-  params.enable_spv_opt =
-      kernel->program->this_thread_config().external_optimization_level > 0;
+  params.enable_spv_opt = compile_config.external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
   GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);

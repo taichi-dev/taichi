@@ -15,7 +15,7 @@ from ci_common.misc import (banner, get_cache_home, is_manylinux2014,
                             path_prepend)
 from ci_common.python import path_prepend, setup_python
 from ci_common.sccache import setup_sccache
-from ci_common.tinysh import Command, environ, git, sh
+from ci_common.tinysh import Command, git, sh
 
 
 # -- code --
@@ -45,6 +45,11 @@ def setup_clang() -> None:
     else:
         # TODO: unify all
         pass
+
+
+@banner('Setup MSVC')
+def setup_msvc() -> None:
+    os.environ['TAICHI_USE_MSBUILD'] = '1'
 
 
 @banner('Setup LLVM')
@@ -154,12 +159,16 @@ def build_wheel(python: Command, pip: Command) -> None:
     python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
            './', '--save')
 
-    with environ(os.environ):
-        python('setup.py', *proj_tags, 'bdist_wheel', *extra)
+    python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
 def main() -> None:
-    setup_clang()
+    u = platform.uname()
+    if (u.system, u.machine) == ('Windows', 'AMD64'):
+        setup_msvc()
+    else:
+        setup_clang()
+
     setup_llvm()
     setup_vulkan()
     sccache = setup_sccache()

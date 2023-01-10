@@ -125,13 +125,15 @@ class _InspectContextManager:
 def getsourcelines(obj):
     try:
         with _InspectContextManager():
-            return inspect.getsourcelines(obj)
+            ret = inspect.getsourcelines(obj)
+            if ret is None:
+                try:  # This is required if we are running Taichi in REPL
+                    ret = inspect.getfile(obj)
+                except:
+                    pass
+            return ret
     except:
-        raise IOError(f"Cannot get the source lines of {obj}. \
-            This is possibly because of you are running Taichi in an environment \
-                in which Taichi's own inspect module cannot find the source file. \
-                    Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues"
-                      )
+        raise IOError(f"Cannot get the source lines of {obj}. This is possibly because of you are running Taichi in an environment in which Taichi's own inspect module cannot find the source file. Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues")
 
 
 def getsourcefile(obj):
@@ -142,11 +144,7 @@ def getsourcefile(obj):
                 ret = inspect.getfile(obj)
             return ret
     except:
-        raise IOError(f"Cannot get the source file of {obj}. \
-            This is possibly because of you are running Taichi in an environment \
-                in which Taichi's own inspect module cannot find the source file. \
-                    Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues"
-                      )
+        raise IOError(f"Cannot get the source file of {obj}. This is possibly because of you are running Taichi in an environment in which Taichi's own inspect module cannot find the source file. Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues")
 
 
 __all__ = ['getsourcelines', 'getsourcefile']

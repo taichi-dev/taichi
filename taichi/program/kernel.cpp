@@ -206,7 +206,7 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad(
   intptr_t ptr_grad = arr_grad.get_device_allocation_ptr_as_int();
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  ctx_->set_arg_ndarray(arg_id, ptr, ptr_grad, arr.shape);
+  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape, true, ptr_grad);
 }
 
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,

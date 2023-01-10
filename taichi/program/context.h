@@ -119,29 +119,59 @@ struct RuntimeContext {
     }
   }
 
-  void set_arg_ndarray(int arg_id,
-                       intptr_t devalloc_ptr,
-                       const std::vector<int> &shape) {
-    has_grad[arg_id] = false;
-    args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
-    set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
-    TI_ASSERT(shape.size() <= taichi_max_num_indices);
-    size_t total_size = 1;
-    for (int i = 0; i < shape.size(); i++) {
-      extra_args[arg_id][i] = shape[i];
-      total_size *= shape[i];
-    }
-    set_array_runtime_size(arg_id, total_size);
-  }
+  // void set_arg_ndarray(int arg_id,
+  //                      intptr_t devalloc_ptr,
+  //                      const std::vector<int> &shape) {
+  //   has_grad[arg_id] = false;
+  //   args[arg_id] =
+  //   taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+  //   set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
+  //   TI_ASSERT(shape.size() <= taichi_max_num_indices);
+  //   size_t total_size = 1;
+  //   for (int i = 0; i < shape.size(); i++) {
+  //     extra_args[arg_id][i] = shape[i];
+  //     total_size *= shape[i];
+  //   }
+  //   set_array_runtime_size(arg_id, total_size);
+  // }
+
+  // void set_arg_ndarray(int arg_id,
+  //                      intptr_t devalloc_ptr,
+  //                      intptr_t devalloc_ptr_grad,
+  //                      const std::vector<int> &shape) {
+  //   has_grad[arg_id] = true;
+  //   args[arg_id] =
+  //   taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+  //   grad_args[arg_id] =
+  //       taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
+  //   set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
+  //   TI_ASSERT(shape.size() <= taichi_max_num_indices);
+  //   size_t total_size = 1;
+  //   for (int i = 0; i < shape.size(); i++) {
+  //     extra_args[arg_id][i] = shape[i];
+  //     total_size *= shape[i];
+  //   }
+  //   set_array_runtime_size(arg_id, total_size);
+  // }
 
   void set_arg_ndarray(int arg_id,
                        intptr_t devalloc_ptr,
-                       intptr_t devalloc_ptr_grad,
-                       const std::vector<int> &shape) {
-    has_grad[arg_id] = true;
+                       const std::vector<int> &shape,
+                       bool has_grad = false,
+                       intptr_t devalloc_ptr_grad = 0) {
+    // Set has_grad value
+    this->has_grad[arg_id] = has_grad;
+
+    // Set args[arg_id] value
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
-    grad_args[arg_id] =
-        taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
+
+    // Set grad_args[arg_id] value
+    if (has_grad) {
+      grad_args[arg_id] =
+          taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
+    }
+
+    // Set device allocation type and runtime size
     set_array_device_allocation_type(arg_id, DevAllocType::kNdarray);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
     size_t total_size = 1;

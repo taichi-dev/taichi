@@ -662,7 +662,6 @@ class Kernel:
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    has_external_arrays = True
                     v_primal = v.arr
                     v_grad = v.grad.arr if v.grad else None
                     if v_grad is None:

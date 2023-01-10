@@ -75,19 +75,15 @@ class JITModuleAMDGPU : public JITModule {
               std::size_t grid_dim,
               std::size_t block_dim,
               std::size_t dynamic_shared_mem_bytes,
-              std::vector<void *> &arg_pointers,
-              std::vector<int> &arg_sizes) override {
+              const std::vector<void *> &arg_pointers,
+              const std::vector<int> &arg_sizes) override {
     auto func = lookup_function(name);
-    AMDGPUContext::get_instance().launch(func, name, arg_pointers, grid_dim,
+    AMDGPUContext::get_instance().launch(func, name, arg_pointers, arg_sizes, grid_dim,
                                          block_dim, dynamic_shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {
     return false;
-  }
-
-  Arch module_arch() const override {
-    return Arch::amdgpu;
   }
 };
 

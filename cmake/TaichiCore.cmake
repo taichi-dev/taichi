@@ -242,7 +242,7 @@ if(TI_WITH_LLVM)
         llvm_map_components_to_libnames(llvm_amdgpu_libs AMDGPU)
         add_subdirectory(taichi/rhi/amdgpu)
         add_subdirectory(taichi/codegen/amdgpu)
-        add_subdirectory(taichi/codegen/runtime)
+        add_subdirectory(taichi/runtime/amdgpu)
 
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_runtime)

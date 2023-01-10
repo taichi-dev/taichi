@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -42,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -158,7 +161,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  current_callable = nullptr;
   sync = true;
   finalized_ = false;
 
@@ -336,26 +338,6 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_accessor_arch() {
-  if (this_thread_config().arch == Arch::opengl) {
-    return Arch::opengl;
-  } else if (this_thread_config().arch == Arch::vulkan) {
-    return Arch::vulkan;
-  } else if (this_thread_config().arch == Arch::cuda) {
-    return Arch::cuda;
-  } else if (this_thread_config().arch == Arch::metal) {
-    return Arch::metal;
-  } else if (this_thread_config().arch == Arch::cc) {
-    return Arch::cc;
-  } else if (this_thread_config().arch == Arch::dx11) {
-    return Arch::dx11;
-  } else if (this_thread_config().arch == Arch::dx12) {
-    return Arch::dx12;
-  } else {
-    return get_host_arch();
-  }
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -371,7 +353,6 @@ Kernel &Program::get_snode_reader(SNode *snode) {
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
     builder.insert(std::move(ret));
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -399,7 +380,6 @@ Kernel &Program::get_snode_writer(SNode *snode) {
                                       snode->dt->get_compute_type()),
         expr->tb);
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
@@ -462,8 +442,8 @@ Ndarray *Program::create_ndarray(const DataType type,
     Arch arch = this_thread_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
-    } else if (arch != Arch::dx12 && arch != Arch::metal) {
-      // Device api support for dx12 & metal backend are not complete yet
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
       Stream *stream =
           program_impl_->get_compute_device()->get_compute_stream();
       auto [cmdlist, res] = stream->new_command_list_unique();

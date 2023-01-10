@@ -35,6 +35,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
   }
 }
 
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
+}
+
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
@@ -1033,6 +1036,12 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+TextureOpExpression::TextureOpExpression(TextureOpType op,
+                                         Expr texture_ptr,
+                                         const ExprGroup &args)
+    : op(op), texture_ptr(texture_ptr), args(args) {
+}
+
 void TextureOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT(texture_ptr.is<TexturePtrExpression>());
   auto ptr = texture_ptr.cast<TexturePtrExpression>();
@@ -1315,7 +1324,10 @@ Expr ASTBuilder::insert_patch_idx_expr() {
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
-  this->insert(Stmt::make<FrontendReturnStmt>(group));
+  auto expanded_exprs = this->expand_exprs(group.exprs);
+  ExprGroup expanded_expr_group;
+  expanded_expr_group.exprs = std::move(expanded_exprs);
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
 }
 
 void ASTBuilder::create_print(
@@ -1643,6 +1655,14 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
 void ASTBuilder::pop_scope() {
   stack_.pop_back();
   loop_state_stack_.pop_back();
+}
+
+Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
+                                      const Expr &texture_ptr,
+                                      const ExprGroup &args) {
+  ExprGroup expanded_args;
+  expanded_args.exprs = this->expand_exprs(args.exprs);
+  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args);
 }
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

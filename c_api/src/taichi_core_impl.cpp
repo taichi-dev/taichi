@@ -2,6 +2,7 @@
 #include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
+#include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
@@ -47,6 +48,14 @@ bool is_arm64_available() {
 #else
   return false;
 #endif
+}
+
+bool is_metal_available() {
+#if defined(__APPLE__) && defined(TI_WITH_METAL)
+  return taichi::lang::metal::is_metal_api_available();
+#else
+  return false;
+#endif  // __APPLE__
 }
 
 struct ErrorCache {
@@ -167,6 +176,9 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     if (is_arm64_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_ARM64);
     }
+    if (is_metal_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_METAL);
+    }
   }
 
   size_t n = std::min((size_t)*arch_count, AVAILABLE_ARCHS.size());
@@ -257,6 +269,13 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
       break;
     }
 #endif  // TI_WITH_LLVM
+#ifdef TI_WITH_METAL
+    case TI_ARCH_METAL: {
+      out = (TiRuntime)(static_cast<Runtime *>(
+          new capi::MetalRuntime(taichi::Arch::metal)));
+      break;
+    }
+#endif  // TI_WITH_METAL
     default: {
       TI_CAPI_NOT_SUPPORTED(arch);
       return TI_NULL_HANDLE;

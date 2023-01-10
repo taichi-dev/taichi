@@ -39,7 +39,7 @@ def compile_kernel_aot_test2(arch, save_compute_graph):
         arr = ti.ndarray(ti.i32, shape=(10, ))
         m.add_kernel(ker1, template_args={'arr': arr})
         m.add_kernel(ker2, template_args={'arr': arr})
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == "__main__":

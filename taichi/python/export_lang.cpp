@@ -1307,14 +1307,17 @@ void export_lang(py::module &m) {
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
 
-  py::class_<CG>(m, "CG")
+  py::class_<CGf>(m, "CG")
       .def(py::init<SparseMatrix &, int, float, bool>())
-      .def("solve", &CG::solve)
-      .def("set_x", &CG::set_x)
-      .def("get_x", &CG::get_x)
-      .def("set_b", &CG::set_b)
-      .def("is_success", &CG::is_success);
-  m.def("make_cg_solver", &make_cg_solver);
+      .def("solve", &CGf::solve)
+      .def("set_x", &CGf::set_x)
+      .def("get_x", &CGf::get_x)
+      .def("set_b", &CGf::set_b)
+      .def("is_success", &CGf::is_success);
+  m.def("make_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
+                             bool verbose) {
+    return make_cg_solver<Eigen::VectorXf, float>(A, max_iters, tol, verbose);
+  });
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

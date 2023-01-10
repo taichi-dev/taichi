@@ -114,32 +114,25 @@ def main():
         # Build graph
         sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'x',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, ))
+                             dtype=ti.math.vec2,
+                             ndim=1)
         sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'v',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, ))
+                             dtype=ti.math.vec2,
+                             ndim=1)
         sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'C',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, 2))
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'J',
-                             ti.f32,
-                             field_dim=1)
+                             dtype=ti.math.mat2,
+                             ndim=1)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32, ndim=1)
         sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_v',
-                                  ti.f32,
-                                  field_dim=2,
-                                  element_shape=(2, ))
+                                  dtype=ti.math.vec2,
+                                  ndim=2)
         sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_m',
-                                  ti.f32,
-                                  field_dim=2)
+                                  dtype=ti.f32,
+                                  ndim=2)
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
 

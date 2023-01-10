@@ -40,11 +40,7 @@ ti.root.bitmasked(ti.i, N).place(x, v, inv_m, color)
 count = ti.field(ti.i32, ())
 img = ti.field(ti.f32, (res, res))
 
-sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                       'arr',
-                       ti.f32,
-                       field_dim=3,
-                       element_shape=())
+sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', dtype=ti.f32, ndim=3)
 img_c = 4
 
 

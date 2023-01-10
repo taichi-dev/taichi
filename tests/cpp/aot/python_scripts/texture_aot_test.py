@@ -31,7 +31,7 @@ def compile_graph_aot(arch):
     @ti.kernel
     def run2(tex0: ti.types.texture(num_dimensions=2),
              tex1: ti.types.texture(num_dimensions=2),
-             arr: ti.types.ndarray(field_dim=2)):
+             arr: ti.types.ndarray(ndim=2)):
         for i, j in arr:
             value0 = tex0.fetch(ti.Vector([i, j]), 0)
             value1 = tex1.fetch(ti.Vector([i, j]), 0)
@@ -57,11 +57,7 @@ def compile_graph_aot(arch):
                             channel_format=ti.f32,
                             shape=(128, 128),
                             num_channels=1)
-    _arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                        'arr',
-                        ti.f32,
-                        field_dim=2,
-                        element_shape=())
+    _arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', dtype=ti.f32, ndim=2)
 
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(run0, _rw_tex0)

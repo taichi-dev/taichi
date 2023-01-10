@@ -40,7 +40,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
   // For now, compile = codegen + convert
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
+  FunctionType compile(Kernel *kernel) override;
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 

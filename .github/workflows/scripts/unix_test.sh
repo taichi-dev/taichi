@@ -117,7 +117,13 @@ else
     run-it cpu    $(nproc)
     run-it vulkan 8
     run-it opengl 4
+    run-it gles   4
 
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
+
+    # FIXME: Running gles test separatelyfor now, add gles to TI_WANTED_ARCHS once running "-a vulkan,opengl,gles" is fixed
+    if [[ $TI_WANTED_ARCHS == *opengl* ]]; then
+      python3 tests/run_tests.py -vr2 -t1 -k "torch" -a gles
+    fi
 fi

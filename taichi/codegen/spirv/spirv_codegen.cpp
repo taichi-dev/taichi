@@ -2156,7 +2156,7 @@ class TaskCodegen : public IRVisitor {
 
       // continue
       spirv::Value total_invocs = ir_->cast(
-          ir_->i32_type(),
+          ir_->u32_type(),
           ir_->mul(ir_->get_num_work_groups(0),
                    ir_->uint_immediate_number(
                        ir_->u32_type(),
@@ -2535,10 +2535,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
-    size_t last_size;
     bool success = true;
     {
-      last_size = optimized_spv.size();
       bool result = false;
       TI_ERROR_IF(
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),

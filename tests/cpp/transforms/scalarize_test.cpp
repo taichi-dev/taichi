@@ -16,7 +16,6 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -45,7 +44,7 @@ TEST(Scalarize, ScalarizeGlobalStore) {
 
   block->push_back<GlobalStoreStmt>(dest_stmt, matrix_init_stmt);
 
-  irpass::scalarize(block.get(), test_prog.prog()->this_thread_config());
+  irpass::scalarize(block.get());
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -79,7 +78,6 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -102,7 +100,7 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   // Without this GlobalStoreStmt, nothing survives irpass::die()
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
-  irpass::scalarize(block.get(), test_prog.prog()->this_thread_config());
+  irpass::scalarize(block.get());
   irpass::lower_matrix_ptr(block.get());
   irpass::die(block.get());
 
@@ -138,7 +136,6 @@ TEST(Scalarize, ScalarizeLocalStore) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -163,7 +160,7 @@ TEST(Scalarize, ScalarizeLocalStore) {
   // LocalStoreStmt survives irpass::die()
   block->push_back<LocalStoreStmt>(dest_stmt, matrix_init_stmt);
 
-  irpass::scalarize(block.get(), test_prog.prog()->this_thread_config());
+  irpass::scalarize(block.get());
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 2 /*const*/ + 4 /*alloca*/ + 4 /*store*/);
@@ -193,7 +190,6 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -211,7 +207,7 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   // Without this GlobalStoreStmt, nothing survives irpass::die()
   block->push_back<GlobalStoreStmt>(src_stmt, load_stmt);
 
-  irpass::scalarize(block.get(), test_prog.prog()->this_thread_config());
+  irpass::scalarize(block.get());
   irpass::die(block.get());
 
   EXPECT_EQ(block->size(), 4 /*alloca*/ + 4 /*load*/ + 4 /*store*/);

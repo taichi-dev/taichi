@@ -29,7 +29,7 @@
 // JSON serialization/deserialization.
 // @PENGUINLIONG
 #include <sstream>
-//#include "gft/log.hpp"
+// #include "gft/log.hpp"
 #include "taichi/common/json.h"
 
 namespace liong {

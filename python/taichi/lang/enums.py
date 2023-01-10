@@ -15,7 +15,7 @@ class DeviceCapability:
     spirv_has_int64 = "spirv_has_int64"
     spirv_has_float16 = "spirv_has_float16"
     spirv_has_float64 = "spirv_has_float64"
-    spirv_has_atomic_i64 = "spirv_has_atomic_i64"
+    spirv_has_atomic_int64 = "spirv_has_atomic_int64"
     spirv_has_atomic_float16 = "spirv_has_atomic_float16"
     spirv_has_atomic_float16_add = "spirv_has_atomic_float16_add"
     spirv_has_atomic_float16_minmax = "spirv_has_atomic_float16_minmax"

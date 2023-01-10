@@ -52,7 +52,6 @@ std::unique_ptr<IRNode> IRNode::clone() {
   else {
     TI_NOT_IMPLEMENTED
   }
-  new_irnode->kernel = kernel;
   return new_irnode;
 }
 
@@ -62,10 +61,8 @@ class StatementTypeNameVisitor : public IRVisitor {
   StatementTypeNameVisitor() {
   }
 
-#define PER_STATEMENT(x)         \
-  void visit(x *stmt) override { \
-    type_name = #x;              \
-  }
+#define PER_STATEMENT(x) \
+  void visit(x *stmt) override { type_name = #x; }
 #include "taichi/inc/statements.inc.h"
 
 #undef PER_STATEMENT

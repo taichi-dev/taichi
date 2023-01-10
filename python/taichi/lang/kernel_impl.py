@@ -236,7 +236,7 @@ class Func:
             self,
             is_kernel=False,
             args=args,
-            ast_builder=impl.get_runtime().prog.current_ast_builder(),
+            ast_builder=impl.get_runtime().current_kernel.ast_builder(),
             is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
         if not self.is_real_function:
@@ -261,24 +261,23 @@ class Func:
                 elif isinstance(args[i],
                                 impl.Expr) and args[i].ptr.is_tensor():
                     non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().prog.
-                        current_ast_builder().expand_expr([args[i].ptr])
+                        Expr(x) for x in impl.get_runtime().compiling_callable.
+                        ast_builder().expand_exprs([args[i].ptr])
                     ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        func_call = Expr(
-            _ti_core.make_func_call_expr(
-                self.taichi_functions[key.instance_id], non_template_args))
-        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
-            func_call.ptr)
+        func_call = impl.get_runtime().compiling_callable.ast_builder(
+        ).insert_func_call(self.taichi_functions[key.instance_id],
+                           non_template_args)
         if self.return_type is None:
             return None
+        func_call = Expr(func_call)
         if id(self.return_type) in primitive_types.type_ids:
-            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):
-            return self.return_type.from_real_func_ret(func_call)[0]
+            return self.return_type.from_real_func_ret(func_call, (0, ))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):
@@ -289,8 +288,11 @@ class Func:
         fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
+            old_callable = impl.get_runtime().compiling_callable
+            impl.get_runtime().compiling_callable = fn
             ctx.ast_builder = fn.ast_builder()
             transform_tree(tree, ctx)
+            impl.get_runtime().compiling_callable = old_callable
 
         self.taichi_functions[key.instance_id] = fn
         self.compiled[key.instance_id] = func_body
@@ -488,6 +490,10 @@ class Kernel:
         self.compiled_kernels = {}
         self.has_print = False
 
+    def ast_builder(self):
+        assert self.kernel_cpp is not None
+        return self.kernel_cpp.ast_builder()
+
     def reset(self):
         self.runtime = impl.get_runtime()
 
@@ -580,8 +586,11 @@ class Kernel:
                     "Please check if you have direct/indirect invocation of kernels within kernels. "
                     "Note that some methods provided by the Taichi standard library may invoke kernels, "
                     "and please move their invocations to Python-scope.")
+            self.kernel_cpp = kernel_cxx
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
+            assert self.runtime.compiling_callable is None
+            self.runtime.compiling_callable = kernel_cxx
             try:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
@@ -593,12 +602,10 @@ class Kernel:
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
+                self.runtime.compiling_callable = None
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.autodiff_mode)
-
-        self.kernel_cpp = taichi_kernel
-
         assert key not in self.runtime.compiled_functions
         self.runtime.compiled_functions[key] = self.get_function_body(
             taichi_kernel)

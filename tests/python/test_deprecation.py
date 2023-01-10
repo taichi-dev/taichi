@@ -73,27 +73,23 @@ def test_deprecate_element_shape_ndarray_arg():
                      ndim=1,
                      element_shape=(1, ))
 
+
 # Remove this before v1.5.0
 @test_utils.test(arch=ti.metal)
 def test_deprecate_metal_sparse():
     with pytest.raises(
             ti.TaichiRuntimeError,
-            match=
-            "Pointer SNode on metal backend is deprecated and removed."
-    ):
+            match="Pointer SNode on metal backend is deprecated and removed."):
         a = ti.root.pointer(ti.i, 10)
     with pytest.raises(
             ti.TaichiRuntimeError,
-            match=
-            "Bitmasked SNode on metal backend is deprecated and removed."
+            match="Bitmasked SNode on metal backend is deprecated and removed."
     ):
         b = a.bitmasked(ti.j, 10)
 
     with pytest.raises(
             ti.TaichiRuntimeError,
-            match=
-            "Dynamic SNode on metal backend is deprecated and removed."
-    ):
+            match="Dynamic SNode on metal backend is deprecated and removed."):
         ti.root.dynamic(ti.i, 10)
 
 

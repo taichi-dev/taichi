@@ -76,8 +76,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Pointer SNode on metal backend is deprecated and removed."
-            )
+                "Pointer SNode on metal backend is deprecated and removed.")
         self._check_not_finalized()
         self.empty = False
         return self.root.pointer(indices, dimensions)
@@ -93,8 +92,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Dynamic SNode on metal backend is deprecated and removed."
-            )
+                "Dynamic SNode on metal backend is deprecated and removed.")
         self._check_not_finalized()
         self.empty = False
         return self.root.dynamic(index, dimension, chunk_size)
@@ -104,8 +102,7 @@ class FieldsBuilder:
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Bitmasked SNode on metal backend is deprecated and removed."
-            )
+                "Bitmasked SNode on metal backend is deprecated and removed.")
         self._check_not_finalized()
         self.empty = False
         return self.root.bitmasked(indices, dimensions)

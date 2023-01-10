@@ -2,9 +2,9 @@ import numbers
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import BitpackedFields, Field
 from taichi.lang.util import get_traceback
-from taichi.lang.exception import TaichiRuntimeError
 
 
 class SNode:
@@ -50,8 +50,7 @@ class SNode:
         """
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Pointer SNode on metal backend is deprecated and removed."
-            )
+                "Pointer SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(
@@ -81,8 +80,7 @@ class SNode:
         """
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Dynamic SNode on metal backend is deprecated and removed."
-            )
+                "Dynamic SNode on metal backend is deprecated and removed.")
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -102,8 +100,7 @@ class SNode:
         """
         if impl.current_cfg().arch == _ti_core.metal:
             raise TaichiRuntimeError(
-                "Bitmasked SNode on metal backend is deprecated and removed."
-            )
+                "Bitmasked SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(

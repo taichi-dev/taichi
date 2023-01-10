@@ -1,8 +1,8 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "spirv_msl.hpp"
-#include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/device_capability.h"
+#include "taichi/rhi/impl_support.h"
 
 namespace taichi::lang {
 namespace metal {

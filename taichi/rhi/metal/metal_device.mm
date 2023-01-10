@@ -52,7 +52,9 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     if (mtl_library == nil) {
       if (err != nil) {
         std::array<char, 4096> msgbuf;
-        snprintf(msgbuf.data(), msgbuf.size(), "cannot compile metal library from source: %s (code=%d)", err.localizedDescription.UTF8String, (int)err.code);
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot compile metal library from source: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
         RHI_LOG_ERROR(msgbuf.data());
       }
       return nullptr;
@@ -66,7 +68,8 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     if (mtl_library == nil) {
       // FIXME: (penguinliong) Specify the actual entry name after we compile
       // directly to MSL in codegen.
-      RHI_LOG_ERROR("cannot extract entry point function 'main' from shader library");
+      RHI_LOG_ERROR(
+          "cannot extract entry point function 'main' from shader library");
     }
   }
 
@@ -80,7 +83,9 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     if (mtl_compute_pipeline_state == nil) {
       if (err != nil) {
         std::array<char, 4096> msgbuf;
-        snprintf(msgbuf.data(), msgbuf.size(), "cannot create compute pipeline state: %s (code=%d)", err.localizedDescription.UTF8String, (int)err.code);
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot create compute pipeline state: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
         RHI_LOG_ERROR(msgbuf.data());
       }
       return nullptr;
@@ -433,9 +438,9 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
 
   MTLBuffer_id buffer = [mtl_device_ newBufferWithLength:params.size
                                                  options:resource_options];
-  
+
   MetalMemory &alloc = memory_allocs_.acquire(buffer);
-  
+
   DeviceAllocation out{};
   out.device = this;
   out.alloc_id = reinterpret_cast<uint64_t>(&alloc);

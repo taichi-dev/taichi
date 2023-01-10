@@ -3,8 +3,10 @@ from taichi.lang import impl
 from taichi.lang.expr import make_expr_group
 from taichi.lang.util import taichi_scope
 
+
 def arch_uses_spv(arch):
     return arch == _ti_core.vulkan or arch == _ti_core.metal or arch == _ti_core.opengl or arch == _ti_core.dx11
+
 
 def sync():
     arch = impl.get_runtime().prog.config().arch

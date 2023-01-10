@@ -1,5 +1,6 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/program/program.h"
+#include "taichi/common/filesystem.hpp"
 
 #include <chrono>
 #include <array>
@@ -9,7 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include <filesystem>
 
 #include "fp16.h"
 

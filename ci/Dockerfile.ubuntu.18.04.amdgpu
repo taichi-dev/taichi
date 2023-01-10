@@ -11,6 +11,7 @@ RUN apt-get update && \
                        libtinfo-dev \
                        sudo \
                        clang-10 \
+                       lld-10 \
                        wget \
                        git \
                        unzip \
@@ -44,10 +45,14 @@ RUN apt-get update && \
     printf "root ALL=(ALL:ALL) NOPASSWD: ALL\ndev ALL=(ALL:ALL) NOPASSWD: ALL\n" > /etc/sudoers && \
     true
 
+RUN ln -sf /usr/bin/clang++-10 /usr/bin/clang++ && \
+    ln -sf /usr/bin/clang-10 /usr/bin/clang && \
+    ln -sf /usr/bin/ld.lld-10 /usr/bin/ld.lld
+
 # Install LLVM 15
 WORKDIR /
 # Make sure this URL gets updated each time there is a new prebuilt bin release
-RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.2/taichi-llvm-15.0.0-linux.zip
+RUN wget https://github.com/GaleSeLee/assets/releases/download/v0.0.4/taichi-llvm-15.0.0-linux.zip
 RUN unzip taichi-llvm-15.0.0-linux.zip && \
     rm taichi-llvm-15.0.0-linux.zip
 ENV PATH="/taichi-llvm-15.0.0-linux/bin:$PATH"

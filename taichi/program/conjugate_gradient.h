@@ -21,15 +21,15 @@ class CG {
   }
 
   void solve() {
-    Eigen::ConjugateGradient<Eigen::SparseMatrix<float>,
+    Eigen::ConjugateGradient<Eigen::SparseMatrix<DT>,
                              Eigen::Lower | Eigen::Upper>
         cg;
     cg.setMaxIterations(max_iters_);
     cg.setTolerance(tol_);
-    EigenSparseMatrix<Eigen::SparseMatrix<float>> &A =
-        static_cast<EigenSparseMatrix<Eigen::SparseMatrix<float>> &>(A_);
-    Eigen::SparseMatrix<float> *A_eigen =
-        (Eigen::SparseMatrix<float> *)A.get_matrix();
+    EigenSparseMatrix<Eigen::SparseMatrix<DT>> &A =
+        static_cast<EigenSparseMatrix<Eigen::SparseMatrix<DT>> &>(A_);
+    Eigen::SparseMatrix<DT> *A_eigen =
+        (Eigen::SparseMatrix<DT> *)A.get_matrix();
     cg.compute(*A_eigen);
     x_ = cg.solve(b_);
     if (verbose_) {

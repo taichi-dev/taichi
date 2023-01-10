@@ -26,6 +26,7 @@ class SparseMatrix:
                  sm=None,
                  dtype=f32,
                  storage_format="col_major"):
+        self.dtype = dtype
         if sm is None:
             self.n = n
             self.m = m if m else n

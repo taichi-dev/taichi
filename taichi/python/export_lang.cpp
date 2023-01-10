@@ -1214,7 +1214,8 @@ void export_lang(py::module &m) {
       .def("get_element", &SparseMatrix::get_element<float32>)
       .def("set_element", &SparseMatrix::set_element<float32>)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols);
+      .def("num_cols", &SparseMatrix::num_cols)
+      .def("get_data_type", &SparseMatrix::get_data_type);
 
 #define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
   using STORAGE##TYPE##EigenMatrix =                                         \
@@ -1307,16 +1308,27 @@ void export_lang(py::module &m) {
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
 
-  py::class_<CG<Eigen::VectorXf, float>>(m, "CG")
+  py::class_<CG<Eigen::VectorXf, float>>(m, "CGf")
       .def(py::init<SparseMatrix &, int, float, bool>())
       .def("solve", &CG<Eigen::VectorXf, float>::solve)
       .def("set_x", &CG<Eigen::VectorXf, float>::set_x)
       .def("get_x", &CG<Eigen::VectorXf, float>::get_x)
       .def("set_b", &CG<Eigen::VectorXf, float>::set_b)
       .def("is_success", &CG<Eigen::VectorXf, float>::is_success);
-  m.def("make_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
-                             bool verbose) {
+  py::class_<CG<Eigen::VectorXd, double>>(m, "CGd")
+      .def(py::init<SparseMatrix &, int, double, bool>())
+      .def("solve", &CG<Eigen::VectorXd, double>::solve)
+      .def("set_x", &CG<Eigen::VectorXd, double>::set_x)
+      .def("get_x", &CG<Eigen::VectorXd, double>::get_x)
+      .def("set_b", &CG<Eigen::VectorXd, double>::set_b)
+      .def("is_success", &CG<Eigen::VectorXd, double>::is_success);
+  m.def("make_float_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
+                                   bool verbose) {
     return make_cg_solver<Eigen::VectorXf, float>(A, max_iters, tol, verbose);
+  });
+  m.def("make_double_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
+                                    bool verbose) {
+    return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
   // Mesh Class
   // Mesh related.

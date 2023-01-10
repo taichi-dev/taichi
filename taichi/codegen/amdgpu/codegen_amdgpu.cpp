@@ -473,7 +473,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     }
 
     void *context_pointer;
-    auto arg_size = sizeof(RuntimeContext *);
+    int arg_size = sizeof(RuntimeContext *);
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
                                         sizeof(RuntimeContext));
     AMDGPUDriver::get_instance().memcpy_host_to_device(

@@ -10,7 +10,7 @@ namespace lang {
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
   KernelCodeGenAMDGPU(Kernel *kernel)
-      : KernelCodeGen(kernel) { }
+      : KernelCodeGen(kernel) {}
 
 // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM

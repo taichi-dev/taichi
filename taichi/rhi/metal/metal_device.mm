@@ -469,12 +469,18 @@ RhiResult MetalDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
 void MetalDevice::unmap(DevicePtr ptr) {}
 void MetalDevice::unmap(DeviceAllocation ptr) {}
 
-std::unique_ptr<Pipeline>
-MetalDevice::create_pipeline(const PipelineSourceDesc &src, std::string name) {
+RhiResult
+MetalDevice::create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept {
   TI_ASSERT(src.type == PipelineSourceType::spirv_binary);
-  Pipeline *out =
-      MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
-  return std::unique_ptr<Pipeline>(out);
+  try {
+    *out_pipeline = MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+  } catch (const std::exception &e) {
+    return RhiResult::error;
+  }
+  return RhiResult::success;
 }
 ShaderResourceSet *MetalDevice::create_resource_set() {
   return new MetalShaderResourceSet(*this);

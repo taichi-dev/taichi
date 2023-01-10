@@ -19,23 +19,34 @@ void graph_aot_test(TiArch arch) {
   ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
   ti::ComputeGraph run_graph = aot_mod.get_compute_graph("run_graph");
 
-  ti::NdArray<int32_t> arr_array =
+  ti::NdArray<int32_t> arr_array_0 =
+      runtime.allocate_ndarray<int32_t>({kArrLen}, {}, true);
+  ti::NdArray<int32_t> arr_array_1 =
       runtime.allocate_ndarray<int32_t>({kArrLen}, {1}, true);
 
   run_graph["base0"] = base0_val;
   run_graph["base1"] = base1_val;
   run_graph["base2"] = base2_val;
-  run_graph["arr"] = arr_array;
+  run_graph["arr0"] = arr_array_0;
+  run_graph["arr1"] = arr_array_1;
   run_graph.launch();
   runtime.wait();
 
   // Check Results
-  auto *data = reinterpret_cast<int32_t *>(arr_array.map());
+  auto *data = reinterpret_cast<int32_t *>(arr_array_0.map());
 
   for (int i = 0; i < kArrLen; i++) {
     EXPECT_EQ(data[i], 3 * i + base0_val + base1_val + base2_val);
   }
-  arr_array.unmap();
+
+  data = reinterpret_cast<int32_t *>(arr_array_1.map());
+
+  for (int i = 0; i < kArrLen; i++) {
+    EXPECT_EQ(data[i], 3 * i + base0_val + base1_val + base2_val);
+  }
+
+  arr_array_0.unmap();
+  arr_array_1.unmap();
 }
 
 void texture_aot_test(TiArch arch) {

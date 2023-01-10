@@ -704,21 +704,20 @@ class StructType(CompoundType):
         struct = self.cast(entries)
         return struct
 
-    def from_real_func_ret(self, func_ret, ret_index=0):
+    def from_real_func_ret(self, func_ret, ret_index=()):
         d = {}
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name], ret_index = dtype.from_real_func_ret(
-                    func_ret, ret_index)
+                d[name] = dtype.from_real_func_ret(func_ret,
+                                                   ret_index + (index, ))
             else:
                 d[name] = expr.Expr(
                     _ti_core.make_get_element_expr(func_ret.ptr,
-                                                   (ret_index, )))
-                ret_index += 1
+                                                   ret_index + (index, )))
 
-        return Struct(d), ret_index
+        return Struct(d)
 
     def cast(self, struct):
         # sanity check members

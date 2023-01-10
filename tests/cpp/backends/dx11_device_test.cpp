@@ -118,7 +118,9 @@ TEST(Dx11StreamTest, CommandListTest) {
       std::make_unique<directx11::Dx11Device>();
   std::unique_ptr<Dx11Stream> stream =
       std::make_unique<Dx11Stream>(device.get());
-  stream->new_command_list();
+  CommandList *cmdlist{nullptr};
+  EXPECT_EQ(stream->new_command_list(&cmdlist), RhiResult::success);
+  EXPECT_NE(cmdlist, nullptr);
 }
 
 TEST(Dx11ProgramTest, MaterializeRuntimeTest) {

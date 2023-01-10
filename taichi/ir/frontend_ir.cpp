@@ -35,6 +35,9 @@ FrontendSNodeOpStmt::FrontendSNodeOpStmt(ASTBuilder *builder,
   }
 }
 
+FrontendReturnStmt::FrontendReturnStmt(const ExprGroup &group) : values(group) {
+}
+
 FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
@@ -1033,6 +1036,12 @@ void SNodeOpExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
+TextureOpExpression::TextureOpExpression(TextureOpType op,
+                                         Expr texture_ptr,
+                                         const ExprGroup &args)
+    : op(op), texture_ptr(texture_ptr), args(args) {
+}
+
 void TextureOpExpression::type_check(CompileConfig *config) {
   TI_ASSERT(texture_ptr.is<TexturePtrExpression>());
   auto ptr = texture_ptr.cast<TexturePtrExpression>();
@@ -1150,37 +1159,14 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->back_stmt();
 }
 
-void FuncCallExpression::type_check(CompileConfig *) {
-  for (auto &arg : args.exprs) {
-    TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
-  }
-  ret_type = PrimitiveType::u64;
-  ret_type.set_is_pointer(true);
-}
-
-void FuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> stmt_args;
-  for (auto &arg : args.exprs) {
-    stmt_args.push_back(flatten_rvalue(arg, ctx));
-  }
-  ctx->push_back<FuncCallStmt>(func, stmt_args);
-  stmt = ctx->back_stmt();
-}
-
 void GetElementExpression::type_check(CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
-  auto func_call = src.cast<FuncCallExpression>();
-  TI_ASSERT(func_call);
-  // The return values are flattened now,
-  // so the length of stmt->index is 1.
-  // Will be refactored soon.
-  TI_ASSERT(index[0] < func_call->func->rets.size());
-  ret_type = func_call->func->rets[index[0]].dt;
+
+  ret_type = src->ret_type->as<StructType>()->get_element_type(index);
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<GetElementStmt>(src->get_flattened_stmt(), index);
+  ctx->push_back<GetElementStmt>(flatten_rvalue(src, ctx), index);
   stmt = ctx->back_stmt();
 }
 // Mesh related.
@@ -1338,7 +1324,10 @@ Expr ASTBuilder::insert_patch_idx_expr() {
 }
 
 void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
-  this->insert(Stmt::make<FrontendReturnStmt>(group));
+  auto expanded_exprs = this->expand_exprs(group.exprs);
+  ExprGroup expanded_expr_group;
+  expanded_expr_group.exprs = std::move(expanded_exprs);
+  this->insert(Stmt::make<FrontendReturnStmt>(expanded_expr_group));
 }
 
 void ASTBuilder::create_print(
@@ -1389,6 +1378,20 @@ Expr ASTBuilder::expr_alloca() {
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
   return var;
+}
+
+std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
+                                                 const ExprGroup &args) {
+  if (func->ret_type) {
+    auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+    this->insert(std::make_unique<FrontendFuncCallStmt>(
+        func, args, std::static_pointer_cast<IdExpression>(var.expr)->id));
+    var.expr->ret_type = func->ret_type;
+    return var;
+  } else {
+    this->insert(std::make_unique<FrontendFuncCallStmt>(func, args));
+    return std::nullopt;
+  }
 }
 
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
@@ -1652,6 +1655,14 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
 void ASTBuilder::pop_scope() {
   stack_.pop_back();
   loop_state_stack_.pop_back();
+}
+
+Expr ASTBuilder::make_texture_op_expr(const TextureOpType &op,
+                                      const Expr &texture_ptr,
+                                      const ExprGroup &args) {
+  ExprGroup expanded_args;
+  expanded_args.exprs = this->expand_exprs(args.exprs);
+  return Expr::make<TextureOpExpression>(op, texture_ptr, expanded_args);
 }
 
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {

@@ -26,12 +26,16 @@ if (TI_WITH_LLVM)
   list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
 endif()
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
 endif()
 
 if (TI_WITH_OPENGL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
+endif()
+
+if (TI_WITH_METAL)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
 endif()
 
 if (TI_WITH_VULKAN)

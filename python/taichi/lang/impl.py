@@ -31,14 +31,15 @@ from taichi.types.primitive_types import (all_types, f16, f32, f64, i32, i64,
 
 @taichi_scope
 def expr_init_shared_array(shape, element_type):
-    return get_runtime().prog.current_ast_builder().expr_alloca_shared_array(
-        shape, element_type)
+    return get_runtime().compiling_callable.ast_builder(
+    ).expr_alloca_shared_array(shape, element_type)
 
 
 @taichi_scope
 def expr_init(rhs):
     if rhs is None:
-        return Expr(get_runtime().prog.current_ast_builder().expr_alloca())
+        return Expr(
+            get_runtime().compiling_callable.ast_builder().expr_alloca())
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
@@ -69,7 +70,7 @@ def expr_init(rhs):
         return rhs
     if hasattr(rhs, '_data_oriented'):
         return rhs
-    return Expr(get_runtime().prog.current_ast_builder().expr_var(
+    return Expr(get_runtime().compiling_callable.ast_builder().expr_var(
         Expr(rhs).ptr,
         get_runtime().get_current_src_info()))
 
@@ -131,7 +132,7 @@ def _calc_slice(index, default_stop):
 
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
-    ast_builder = get_runtime().prog.current_ast_builder()
+    ast_builder = get_runtime().compiling_callable.ast_builder()
     # Directly evaluate in Python for non-Taichi types
     if not isinstance(
             value,
@@ -282,6 +283,7 @@ class PyTaichi:
         self.compiled_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
+        self.compiling_callable = None  # pointer to instance of lang::Kernel/Function
         self.current_kernel = None
         self.global_vars = []
         self.grad_vars = []
@@ -842,7 +844,7 @@ def ti_print(*_vars, sep=' ', end='\n'):
 
     _vars = add_separators(_vars)
     entries = ti_format_list_to_content_entries(_vars)
-    get_runtime().prog.current_ast_builder().create_print(entries)
+    get_runtime().compiling_callable.ast_builder().create_print(entries)
 
 
 @taichi_scope
@@ -884,7 +886,7 @@ def ti_format(*args, **kwargs):
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    get_runtime().prog.current_ast_builder().create_assert_stmt(
+    get_runtime().compiling_callable.ast_builder().create_assert_stmt(
         Expr(cond).ptr, msg, extra_args)
 
 
@@ -1064,7 +1066,7 @@ def stop_grad(x):
     Args:
         x (:class:`~taichi.Field`): A field.
     """
-    get_runtime().prog.current_ast_builder().stop_grad(x.snode.ptr)
+    get_runtime().compiling_callable.ast_builder().stop_grad(x.snode.ptr)
 
 
 def current_cfg():

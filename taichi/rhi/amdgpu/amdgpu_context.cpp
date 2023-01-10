@@ -131,6 +131,7 @@ void AMDGPUContext::launch(void *func,
                           dynamic_shared_mem_bytes, nullptr, nullptr,
                           reinterpret_cast<void **>(&config));
   }
+  std::free(pack_args);
   if (debug_) {
     driver_.stream_synchronize(nullptr);
   }

@@ -1294,7 +1294,7 @@ class TaskCodegen : public IRVisitor {
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "localInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
-    } else if (stmt->func_name == "vkGlobalThreadIdx") {
+    } else if (stmt->func_name == "globalInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0));
     } else if (stmt->func_name == "workgroupMemoryBarrier") {
       ir_->make_inst(

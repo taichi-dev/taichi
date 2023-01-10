@@ -33,8 +33,8 @@ MetalPipeline::~MetalPipeline() { destroy(); }
 MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                                      const uint32_t *spv_data,
                                      size_t spv_size) {
-  TI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
-  TI_ASSERT(spv_size % sizeof(uint32_t) == 0);
+  RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
+  RHI_ASSERT(spv_size % sizeof(uint32_t) == 0);
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
   spirv_cross::CompilerMSL::Options options{};
   options.enable_decoration_binding = true;
@@ -50,9 +50,13 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                                                       error:&err];
 
     if (mtl_library == nil) {
-      TI_WARN_IF(err != nil,
-                 "cannot compile metal library from source: {} (code={})",
-                 err.localizedDescription.UTF8String, (uint32_t)err.code);
+      if (err != nil) {
+        std::array<char, 4096> msgbuf;
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot compile metal library from source: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
+        RHI_LOG_ERROR(msgbuf.data());
+      }
       return nullptr;
     }
   }
@@ -64,8 +68,8 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     if (mtl_library == nil) {
       // FIXME: (penguinliong) Specify the actual entry name after we compile
       // directly to MSL in codegen.
-      TI_WARN("cannot extract entry point function '{}' from shader library",
-              "main");
+      RHI_LOG_ERROR(
+          "cannot extract entry point function 'main' from shader library");
     }
   }
 
@@ -77,9 +81,13 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
                                                            error:&err];
 
     if (mtl_compute_pipeline_state == nil) {
-      TI_WARN_IF(err != nil,
-                 "cannot create compute pipeline state: {} (code={})",
-                 err.localizedDescription.UTF8String, (uint32_t)err.code);
+      if (err != nil) {
+        std::array<char, 4096> msgbuf;
+        snprintf(msgbuf.data(), msgbuf.size(),
+                 "cannot create compute pipeline state: %s (code=%d)",
+                 err.localizedDescription.UTF8String, (int)err.code);
+        RHI_LOG_ERROR(msgbuf.data());
+      }
       return nullptr;
     }
   }
@@ -110,7 +118,7 @@ MetalShaderResourceSet::~MetalShaderResourceSet() {}
 
 ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
                                                   DevicePtr ptr, size_t size) {
-  TI_ASSERT(ptr.device == (Device *)device_);
+  RHI_ASSERT(ptr.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
   MetalShaderResource rsc{};
@@ -125,7 +133,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
 }
 ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
                                                   DeviceAllocation alloc) {
-  TI_ASSERT(alloc.device == (Device *)device_);
+  RHI_ASSERT(alloc.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(alloc.alloc_id);
 
   MetalShaderResource rsc{};
@@ -142,7 +150,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
 ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
                                                      DevicePtr ptr,
                                                      size_t size) {
-  TI_ASSERT(ptr.device == (Device *)device_);
+  RHI_ASSERT(ptr.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
   MetalShaderResource rsc{};
@@ -157,7 +165,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
 }
 ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
                                                      DeviceAllocation alloc) {
-  TI_ASSERT(alloc.device == (Device *)device_);
+  RHI_ASSERT(alloc.device == (Device *)device_);
   const MetalMemory &memory = device_->get_memory(alloc.alloc_id);
 
   MetalShaderResource rsc{};
@@ -176,13 +184,13 @@ MetalCommandList::MetalCommandList(const MetalDevice &device)
 MetalCommandList::~MetalCommandList() {}
 
 void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
-  TI_ASSERT(p != nullptr);
+  RHI_ASSERT(p != nullptr);
   current_pipeline_ = (MetalPipeline *)p;
 }
 RhiResult MetalCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                   int set_index) noexcept {
-  TI_ASSERT(res != nullptr);
-  TI_ASSERT(set_index == 0);
+  RHI_ASSERT(res != nullptr);
+  RHI_ASSERT(set_index == 0);
   current_shader_resource_set_ = (MetalShaderResourceSet *)res;
   return RhiResult::success;
 }
@@ -208,7 +216,7 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
   if (size == kBufferSizeEntireSize) {
     size_t src_size = src_memory.size();
     size_t dst_size = dst_memory.size();
-    TI_ASSERT(src_size == dst_size);
+    RHI_ASSERT(src_size == dst_size);
     size = src_size;
   }
 
@@ -228,7 +236,7 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
 }
 void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
                                    uint32_t data) noexcept {
-  TI_ASSERT(data == 0);
+  RHI_ASSERT(data == 0);
 
   const MetalMemory &memory = device_->get_memory(ptr.alloc_id);
 
@@ -250,8 +258,8 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
 
 RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
                                      uint32_t z) noexcept {
-  TI_ASSERT(current_pipeline_);
-  TI_ASSERT(current_shader_resource_set_);
+  RHI_ASSERT(current_pipeline_);
+  RHI_ASSERT(current_shader_resource_set_);
 
   MTLComputePipelineState_id mtl_compute_pipeline_state =
       current_pipeline_->mtl_compute_pipeline_state();
@@ -276,7 +284,7 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
         break;
       }
       default:
-        TI_ASSERT(false);
+        RHI_ASSERT(false);
       }
     }
 
@@ -404,9 +412,6 @@ MetalDevice *MetalDevice::create() {
 void MetalDevice::destroy() {
   if (!is_destroyed_) {
     compute_stream_.reset();
-    TI_WARN_IF(memory_allocs_.size() != 0,
-               "metal device memory leaked: {} unreleased memory allocations",
-               memory_allocs_.size());
     memory_allocs_.clear();
     [mtl_device_ release];
     is_destroyed_ = true;
@@ -414,7 +419,9 @@ void MetalDevice::destroy() {
 }
 
 DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
-  TI_WARN_IF(params.export_sharing, "export sharing is not available in metal");
+  if (params.export_sharing) {
+    RHI_LOG_ERROR("export sharing is not available in metal");
+  }
 
   bool can_map = params.host_read || params.host_write;
 
@@ -432,38 +439,40 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
   MTLBuffer_id buffer = [mtl_device_ newBufferWithLength:params.size
                                                  options:resource_options];
 
-  std::unique_ptr<MetalMemory> memory = std::make_unique<MetalMemory>(buffer);
-
-  DeviceAllocationId alloc_id = (uint64_t)(size_t)memory.get();
-  memory_allocs_[alloc_id] = std::move(memory);
+  MetalMemory &alloc = memory_allocs_.acquire(buffer);
 
   DeviceAllocation out{};
   out.device = this;
-  out.alloc_id = alloc_id;
+  out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
   return out;
 }
+
 void MetalDevice::dealloc_memory(DeviceAllocation handle) {
-  TI_ASSERT(handle.device == this);
-  auto it = memory_allocs_.find(handle.alloc_id);
-  memory_allocs_.erase(it);
+  RHI_ASSERT(handle.device == this);
+  memory_allocs_.release(&get_memory(handle.alloc_id));
 }
+
 const MetalMemory &MetalDevice::get_memory(DeviceAllocationId alloc_id) const {
-  return *memory_allocs_.at(alloc_id);
+  return *reinterpret_cast<MetalMemory *>(alloc_id);
+}
+
+MetalMemory &MetalDevice::get_memory(DeviceAllocationId alloc_id) {
+  return *reinterpret_cast<MetalMemory *>(alloc_id);
 }
 
 RhiResult MetalDevice::map_range(DevicePtr ptr, uint64_t size,
                                  void **mapped_ptr) {
-  const MetalMemory &memory = *memory_allocs_.at(ptr.alloc_id);
+  const MetalMemory &memory = get_memory(ptr.alloc_id);
 
   size_t offset = (size_t)ptr.offset;
-  TI_ASSERT(offset + size <= memory.size());
+  RHI_ASSERT(offset + size <= memory.size());
 
   RhiResult result = map(ptr, mapped_ptr);
   *(const uint8_t **)mapped_ptr += offset;
   return result;
 }
 RhiResult MetalDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
-  const MetalMemory &memory = *memory_allocs_.at(alloc.alloc_id);
+  const MetalMemory &memory = get_memory(alloc.alloc_id);
   return memory.mapped_ptr(mapped_ptr);
 }
 void MetalDevice::unmap(DevicePtr ptr) {}
@@ -471,7 +480,7 @@ void MetalDevice::unmap(DeviceAllocation ptr) {}
 
 std::unique_ptr<Pipeline>
 MetalDevice::create_pipeline(const PipelineSourceDesc &src, std::string name) {
-  TI_ASSERT(src.type == PipelineSourceType::spirv_binary);
+  RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   Pipeline *out =
       MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
   return std::unique_ptr<Pipeline>(out);
@@ -486,7 +495,7 @@ void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {
   Stream *stream = get_compute_stream();
   auto [cmd, res] = stream->new_command_list_unique();
-  TI_ASSERT(res == RhiResult::success);
+  RHI_ASSERT(res == RhiResult::success);
   cmd->buffer_copy(dst, src, size);
   stream->submit_synced(cmd.get());
 }

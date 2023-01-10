@@ -230,8 +230,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->axis);
   }
 
-  void visit(FuncCallExpression *expr) override {
-    emit(ExprOpCode::FuncCallExpression);
+  void visit(FrontendFuncCallStmt *expr) override {
+    emit(StmtOpCode::FrontendFuncCallStmt);
     emit(expr->func);
     emit(expr->args.exprs);
   }
@@ -621,9 +621,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
 #define DEFINE_EMIT_ENUM(EnumType) \
-  void emit(EnumType type) {       \
-    emit_pod(type);                \
-  }
+  void emit(EnumType type) { emit_pod(type); }
 
   DEFINE_EMIT_ENUM(ExprOpCode);
   DEFINE_EMIT_ENUM(StmtOpCode);

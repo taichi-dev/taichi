@@ -390,16 +390,16 @@ class VulkanCommandList : public CommandList {
                     vkapi::IVkCommandBuffer buffer);
   ~VulkanCommandList() override;
 
-  void bind_pipeline(Pipeline *p) override;
+  void bind_pipeline(Pipeline *p) noexcept final;
   RhiResult bind_shader_resources(ShaderResourceSet *res,
-                                  int set_index = 0) final;
-  RhiResult bind_raster_resources(RasterResources *res) final;
-  void buffer_barrier(DevicePtr ptr, size_t size) override;
-  void buffer_barrier(DeviceAllocation alloc) override;
-  void memory_barrier() override;
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+                                  int set_index = 0) noexcept final;
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final;
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final;
+  void buffer_barrier(DeviceAllocation alloc) noexcept final;
+  void memory_barrier() noexcept final;
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
   void begin_renderpass(int x0,
                         int y0,
                         int x1,
@@ -548,7 +548,7 @@ class VulkanStream : public Stream {
                uint32_t queue_family_index);
   ~VulkanStream() override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
@@ -681,6 +681,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   vkapi::IVkBuffer get_vkbuffer(const DeviceAllocation &alloc) const;
 
+  size_t get_vkbuffer_size(const DeviceAllocation &alloc) const;
+
   std::tuple<vkapi::IVkImage, vkapi::IVkImageView, VkFormat> get_vk_image(
       const DeviceAllocation &alloc) const;
 
@@ -713,6 +715,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return vk_caps_;
   }
 
+  const VkPhysicalDeviceProperties &get_vk_physical_device_props() const {
+    return vk_device_properties_;
+  }
+
  private:
   friend VulkanSurface;
 
@@ -720,6 +726,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   [[nodiscard]] RhiResult new_descriptor_pool();
 
   VulkanCapabilities vk_caps_;
+  VkPhysicalDeviceProperties vk_device_properties_;
 
   VkInstance instance_{VK_NULL_HANDLE};
   VkDevice device_{VK_NULL_HANDLE};

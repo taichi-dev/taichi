@@ -25,7 +25,6 @@ set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
 if(ANDROID)
     set(TI_WITH_VULKAN ON)
-    set(TI_EXPORT_CORE ON)
     set(TI_WITH_LLVM OFF)
     set(TI_WITH_METAL OFF)
     set(TI_WITH_CUDA OFF)
@@ -61,6 +60,11 @@ if (APPLE)
     if (TI_WITH_AMDGPU)
         set(TI_WITH_AMDGPU OFF)
         message(WARNING "AMDGPU backend not supported on OS X. Setting TI_WITH_AMDGPU to OFF.")
+    endif()
+else()
+    if (TI_WITH_METAL)
+        set(TI_WITH_METAL OFF)
+        message(WARNING "Metal backend only supported on OS X. Setting TI_WITH_METAL to OFF.")
     endif()
 endif()
 
@@ -300,13 +304,7 @@ if (TI_WITH_METAL)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
 
     add_subdirectory(taichi/rhi/metal)
-    add_subdirectory(taichi/runtime/metal)
     add_subdirectory(taichi/runtime/program_impls/metal)
-    add_subdirectory(taichi/codegen/metal)
-    add_subdirectory(taichi/cache/metal)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_codegen)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_runtime)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
 endif()
 
@@ -335,12 +333,12 @@ add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11 OR TI_WITH_METAL)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_runtime)
 endif()
 
-if (TI_WITH_OPENGL OR TI_WITH_DX11)
+if (TI_WITH_OPENGL OR TI_WITH_DX11 OR TI_WITH_METAL)
   set(SPIRV_CROSS_CLI false)
   add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
 endif()
@@ -438,8 +436,6 @@ target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
 if(TI_WITH_PYTHON)
     message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
-    # Cannot compile Python source code with Android, but TI_EXPORT_CORE should be set and
-    # Android should only use the isolated library ignoring those source code.
     if (NOT ANDROID)
         # NO_EXTRAS is required here to avoid llvm symbol error during build
         file(GLOB TAICHI_PYBIND_SOURCE

@@ -45,9 +45,6 @@ Kernel::Kernel(Program &program,
   is_evaluator = false;
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
-  this->ir->as<Block>()->kernel = this;
-
-  arch = program.this_thread_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
@@ -59,16 +56,14 @@ Kernel::Kernel(Program &program,
 }
 
 void Kernel::compile() {
-  CurrentCallableGuard _(program, this);
   compiled_ = program->compile(*this);
 }
 
 void Kernel::lower(bool to_executable) {
   TI_ASSERT(!lowered_);
-  TI_ASSERT(supports_lowering(arch));
+  TI_ASSERT(supports_lowering(program->this_thread_config().arch));
 
-  CurrentCallableGuard _(program, this);
-  auto config = program->this_thread_config();
+  const auto &config = program->this_thread_config();
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))
@@ -110,8 +105,8 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   compiled_(ctx_builder.get_context());
 
-  program->sync = (program->sync && arch_is_cpu(arch));
-  // Note that Kernel::arch may be different from program.config.arch
+  program->sync =
+      (program->sync && arch_is_cpu(program->this_thread_config().arch));
   if (program->this_thread_config().debug &&
       (arch_is_cpu(program->this_thread_config().arch) ||
        program->this_thread_config().arch == Arch::cuda)) {
@@ -348,11 +343,6 @@ std::vector<float64> Kernel::get_ret_float_tensor(int i) {
   return res;
 }
 
-void Kernel::set_arch(Arch arch) {
-  TI_ASSERT(!compiled_);
-  this->arch = arch;
-}
-
 std::string Kernel::get_name() const {
   return name;
 }
@@ -373,8 +363,6 @@ void Kernel::init(Program &program,
   ir = context->get_root();
   ir_is_ast_ = true;
 
-  this->arch = program.this_thread_config().arch;
-
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
@@ -385,14 +373,7 @@ void Kernel::init(Program &program,
     name = primal_name + "_reverse_grad";
   }
 
-  {
-    // Note: this is NOT a mutex. If we want to call Kernel::Kernel()
-    // concurrently, we need to lock this block of code together with
-    // taichi::lang::context with a mutex.
-    CurrentCallableGuard _(this->program, this);
-    func();
-    ir->as<Block>()->kernel = this;
-  }
+  func();
 }
 
 // static

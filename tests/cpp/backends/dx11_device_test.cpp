@@ -118,7 +118,9 @@ TEST(Dx11StreamTest, CommandListTest) {
       std::make_unique<directx11::Dx11Device>();
   std::unique_ptr<Dx11Stream> stream =
       std::make_unique<Dx11Stream>(device.get());
-  stream->new_command_list();
+  CommandList *cmdlist{nullptr};
+  EXPECT_EQ(stream->new_command_list(&cmdlist), RhiResult::success);
+  EXPECT_NE(cmdlist, nullptr);
 }
 
 TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
@@ -151,7 +153,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   auto block = builder.extract_ir();
   test_prog.prog()->this_thread_config().arch = Arch::dx11;
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  program->compile(ker.get(), nullptr);
+  program->compile(ker.get());
 }
 
 }  // namespace directx11

@@ -5,6 +5,7 @@
 #include <forward_list>
 #include <unordered_set>
 #include <mutex>
+#include <type_traits>
 
 namespace taichi::lang {
 
@@ -39,6 +40,25 @@ void disabled_function([[maybe_unused]] Ts... C) {
 #endif
 
 #define RHI_ASSERT(cond) assert(cond);
+
+template <typename T>
+constexpr auto saturate_uadd(T a, T b) {
+  static_assert(std::is_unsigned<T>::value);
+  const T c = a + b;
+  if (c < a) {
+    return std::numeric_limits<T>::max();
+  }
+  return c;
+}
+
+template <typename T>
+constexpr auto saturate_usub(T x, T y) {
+  static_assert(std::is_unsigned<T>::value);
+  T res = x - y;
+  res &= -(res <= x);
+
+  return res;
+}
 
 // Wrapped return-code & object tuple for simplicity
 // Easier to read then std::pair

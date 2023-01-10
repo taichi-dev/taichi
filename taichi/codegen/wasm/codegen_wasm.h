@@ -12,8 +12,7 @@ namespace taichi::lang {
 
 class KernelCodeGenWASM : public KernelCodeGen {
  public:
-  explicit KernelCodeGenWASM(Kernel *kernel, IRNode *ir = nullptr)
-      : KernelCodeGen(kernel, ir) {
+  explicit KernelCodeGenWASM(Kernel *kernel) : KernelCodeGen(kernel) {
   }
 
   FunctionType compile_to_function() override;

@@ -294,6 +294,18 @@ class IRPrinter : public IRVisitor {
     }
   }
 
+  void visit(FrontendFuncCallStmt *stmt) override {
+    std::string args;
+    for (int i = 0; i < stmt->args.exprs.size(); i++) {
+      if (i) {
+        args += ", ";
+      }
+      args += expr_to_string(stmt->args.exprs[i]);
+    }
+    print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
+          stmt->id, stmt->func->get_name(), args, stmt->ident->name());
+  }
+
   void visit(FuncCallStmt *stmt) override {
     std::vector<std::string> args;
     for (const auto &arg : stmt->args) {
@@ -823,6 +835,11 @@ class IRPrinter : public IRVisitor {
     }
     result += "]";
     print(result);
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    print("{}{} = get_element({}, {})", stmt->type_hint(), stmt->name(),
+          stmt->src->name(), fmt::join(stmt->index, ", "));
   }
 
  private:

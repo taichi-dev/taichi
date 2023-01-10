@@ -269,6 +269,14 @@ Types of backend archs.
 - `enumeration.arch.vulkan`: Vulkan GPU backend.
 - `enumeration.arch.opengl`: OpenGL GPU backend.
 
+`enumeration.capability`
+
+Device capabilities.
+
+`structure.capability_level_info`
+
+An integral device capability level. It currently is not guaranteed that a higher level value is compatible with a lower level value.
+
 `enumeration.data_type`
 
 Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
@@ -370,6 +378,10 @@ Dimensions of an image allocation.
 - `enumeration.image_layout.transfer_src`: Optimal layout as a data copy source.
 - `enumeration.image_layout.present_src`:  Optimal layout as a presentation source.
 
+`enumeration.format`
+
+Texture formats. The availability of texture formats depends on runtime support.
+
 `structure.image_offset`
 
 Offsets of an image in X, Y, Z, and array layers.
@@ -441,6 +453,10 @@ A named argument value to feed compute graphs.
 - `structure.named_argument.name`: Name of the argument.
 - `structure.named_argument.argument`: Argument body.
 
+`function.get_version`
+
+Get the current taichi version. It has the same value as `TI_C_API_VERSION` as defined in `taichi_core.h`.
+
 `function.get_available_archs`
 
 Gets a list of available archs on the current platform. An arch is only available if:
@@ -474,6 +490,10 @@ Creates a Taichi Runtime with the specified `enumeration.arch`.
 `function.destroy_runtime`
 
 Destroys a Taichi Runtime.
+
+`function.set_runtime_capabilities`
+
+Force override the list of available capabilities in the runtime instance.
 
 `function.get_runtime_capabilities`
 
@@ -542,6 +562,11 @@ Waits until all previously invoked device commands are executed. Any invoked com
 
 Loads a pre-compiled AOT module from the file system.
 Returns `definition.null_handle` if the runtime fails to load the AOT module from the specified path.
+
+`function.create_aot_module`
+
+Creates a pre-compiled AOT module from TCM data.
+Returns `definition.null_handle` if the runtime fails to create the AOT module from TCM data.
 
 `function.destroy_aot_module`
 

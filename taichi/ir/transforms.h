@@ -195,6 +195,10 @@ void compile_function(IRNode *ir,
                       AutodiffMode autodiff_mode,
                       bool verbose,
                       bool start_from_ast);
+
+void ast_to_ir(const CompileConfig &config,
+               Kernel &kernel,
+               bool to_executable = true);
 }  // namespace irpass
 
 }  // namespace taichi::lang

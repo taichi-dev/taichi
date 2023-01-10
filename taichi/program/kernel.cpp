@@ -59,45 +59,6 @@ void Kernel::compile() {
   compiled_ = program->compile(*this);
 }
 
-void Kernel::lower(bool to_executable) {
-  TI_ASSERT(!lowered_);
-  TI_ASSERT(supports_lowering(program->this_thread_config().arch));
-
-  const auto &config = program->this_thread_config();
-  bool verbose = config.print_ir;
-  if ((is_accessor && !config.print_accessor_ir) ||
-      (is_evaluator && !config.print_evaluator_ir))
-    verbose = false;
-
-  if (config.print_preprocessed_ir) {
-    TI_INFO("[{}] {}:", get_name(), "Preprocessed IR");
-    std::cout << std::flush;
-    irpass::re_id(ir.get());
-    irpass::print(ir.get());
-    std::cout << std::flush;
-  }
-
-  if (to_executable) {
-    irpass::compile_to_executable(
-        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
-        /*ad_use_stack=*/true,
-        /*verbose*/ verbose,
-        /*lower_global_access=*/to_executable,
-        /*make_thread_local=*/config.make_thread_local,
-        /*make_block_local=*/
-        is_extension_supported(config.arch, Extension::bls) &&
-            config.make_block_local,
-        /*start_from_ast=*/ir_is_ast_);
-  } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*autodiff_mode=*/autodiff_mode,
-                                /*ad_use_stack=*/true,
-                                /*start_from_ast=*/ir_is_ast_);
-  }
-
-  lowered_ = true;
-}
-
 void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
     compile();
@@ -374,12 +335,6 @@ void Kernel::init(Program &program,
   }
 
   func();
-}
-
-// static
-bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
-         (arch == Arch::metal);
 }
 
 void Kernel::offload_to_executable(IRNode *stmt) {

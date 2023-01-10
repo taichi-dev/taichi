@@ -81,6 +81,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
          const std::string &name = "",
          AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
+  bool ir_is_ast() const {
+    return ir_is_ast_;
+  }
+
   bool lowered() const {
     return lowered_;
   }
@@ -91,14 +95,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   void compile();
 
-  /**
-   * Lowers |ir| to CHI IR level
-   *
-   * @param to_executable: If true, lowers |ir| to a point where the CHI
-   * statements can be directly translated by each backend's codegen.
-   */
-  void lower(bool to_executable = true);
-
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
@@ -107,13 +103,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
   T fetch_ret(DataType dt, int i);
 
   float64 get_ret_float(int i);
-
   int64 get_ret_int(int i);
   uint64 get_ret_uint(int i);
-
   std::vector<int64> get_ret_int_tensor(int i);
   std::vector<uint64> get_ret_uint_tensor(int i);
-
   std::vector<float64> get_ret_float_tensor(int i);
 
   uint64 get_next_task_id() {
@@ -125,13 +118,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   }
 
   [[nodiscard]] std::string get_name() const override;
-  /**
-   * Whether the given |arch| is supported in the lower() method.
-   *
-   * @param arch: The arch to check
-   * @return: True if supported.
-   */
-  static bool supports_lowering(Arch arch);
 
   void set_kernel_key_for_cache(const std::string &kernel_key) {
     kernel_key_ = kernel_key;
@@ -140,6 +126,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() {
     return kernel_key_;
   }
+
   void offload_to_executable(IRNode *stmt);
 
  private:

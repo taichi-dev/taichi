@@ -1,6 +1,9 @@
-import argparse
+"""
+Generate AOT modules with Taichi nightly (which is definitely an older version
+from this currently building one in development branch) for
+`run_c_api_compat_test.py` to consume.
+"""
 import glob
-import json
 import os
 import pathlib
 import subprocess
@@ -12,6 +15,7 @@ cpp_test_filename = 'taichi_cpp_tests'
 capi_test_filename = 'taichi_c_api_tests'
 cpp_tests_path = os.path.join(build_dir, capi_test_filename)
 c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
+
 
 def generate():
     aot_files = glob.glob("tests/cpp/aot/python_scripts/*.py")
@@ -25,8 +29,6 @@ def generate():
         except subprocess.CalledProcessError:
             continue
 
+
 if __name__ == "__main__":
     generate()
-
-
-

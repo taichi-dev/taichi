@@ -14,7 +14,7 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
-python3 tests/generate_compat_test_modules.py 
+python3 tests/generate_compat_test_modules.py
 python3 -m pip uninstall taichi-nightly -y
 
 setup_python

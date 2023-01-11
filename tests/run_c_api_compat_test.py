@@ -1,4 +1,7 @@
-import argparse
+"""
+Ensure AOT modules compiled by old versions of Taichi is compatible with the
+latest Taichi Runtime.
+"""
 import glob
 import json
 import os
@@ -16,6 +19,7 @@ c_api_tests_path = os.path.join(build_dir, cpp_test_filename)
 
 run_dict = {}
 
+
 def init_dict(run_dict, aot_files):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     test_config_path = os.path.join(curr_dir, 'test_config.json')
@@ -29,18 +33,21 @@ def init_dict(run_dict, aot_files):
         path_name = pathlib.Path(x).name[:-3]
         run_dict[path_name] = []
     for cpp_test_name, value in test_config["aot_test_cases"].items():
-        if value[1] != "--arch=vulkan": continue
+        if value[1] != "--arch=vulkan":
+            continue
         test_command = []
         test_command.append(cpp_tests_path)
         test_command.append(f"--gtest_filter={cpp_test_name}")
         run_dict[value[0][3][:-3]].append(test_command)
 
     for cpp_test_name, value in test_config["capi_aot_test_cases"].items():
-        if value[1] != "--arch=vulkan": continue
+        if value[1] != "--arch=vulkan":
+            continue
         test_command = []
         test_command.append(cpp_tests_path)
         test_command.append(f"--gtest_filter={cpp_test_name}")
         run_dict[value[0][3][:-3]].append(test_command)
+
 
 def run():
     aot_files = glob.glob('tests/cpp/aot/python_scripts/*.py')
@@ -63,6 +70,7 @@ def run():
                 continue
             except FileNotFoundError:
                 continue
+
 
 if __name__ == "__main__":
     run()

@@ -138,7 +138,8 @@ def _Python_IPython_findsource(obj):
 
             except:
                 pass
-        raise IOError(f"Cannot find source code for Object: {obj}, it's likely \
+        raise IOError(
+            f"Cannot find source code for Object: {obj}, it's likely \
 you are not running Taichi from command line or IPython.")
 
 
@@ -157,7 +158,8 @@ def _custom_findsource(obj):
             try:
                 return _blender_findsource(obj)
             except:
-                raise IOError(f"Cannot find source code for Object: {obj}, this \
+                raise IOError(
+                    f"Cannot find source code for Object: {obj}, this \
 is possibly because you are running Taichi in an environment that Taichi's own \
 inspect module cannot find the source. Please report an issue to help us fix: \
 https://github.com/taichi-dev/taichi/issues")

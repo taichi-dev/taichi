@@ -1,7 +1,21 @@
+# Taichi's custom inspect module.
+# This module is used by Taichi's ast transformer to parse the souce code.
+# Currently this module is aimed for working in the following modes:
+# 1. Usual Python/IPython mode, e.g. python script.py
+#    In this case we mainly rely on the built-in `inspect` module, except we need
+#    to do some hacks when we are in IPython mode and there is a cell magic.
+# 2. Blender's scripting mode, e.g. Users write Taichi code in the scripting window
+#    in Blender and press the run button.
+# 3. The interactive shell mode, e.g. Users directly type their code in the interactive
+#    shell. In this case we use `dill` to get the source.
+#
+# NB: Running Taichi in other modes are likely not supported.
+
 import atexit
 import inspect
 import os
 import tempfile
+import dill
 
 
 _builtin_getfile = inspect.getfile
@@ -121,7 +135,12 @@ def _Python_IPython_findsource(obj):
 
             except:
                 pass
-        raise IOError(f"Cannot find source code for Object: {obj}")
+        raise IOError(f"Cannot find source code for Object: {obj}, it's likely you are not running Taichi from command line or IPython mode.")
+
+
+def _REPL_findsource(obj):
+    """Findsource in the interactive shell mode."""
+    return dill.source.findsource(obj)
 
 
 def _custom_findsource(obj):
@@ -129,9 +148,12 @@ def _custom_findsource(obj):
         return _Python_IPython_findsource(obj)
     except IOError:
         try:
-            return _blender_findsource(obj)
+            return _REPL_findsource(obj)
         except:
-            raise IOError(f"Cannot find source code for Object: {obj} ")
+            try:
+                return _blender_findsource(obj)
+            except:
+                raise IOError(f"Cannot find source code for Object: {obj}, this is possibly because you are running Taichi in an environment that Taichi's own inspect module cannot find the source. Please report an issue to help us fix: https://github.com/taichi-dev/taichi/issues")
 
 
 class _InspectContextManager:
@@ -147,6 +169,7 @@ def getsourcelines(obj):
     with _InspectContextManager():
         return inspect.getsourcelines(obj)
 
+
 def getsourcefile(obj):
     with _InspectContextManager():
         ret = inspect.getsourcefile(obj)
@@ -154,8 +177,5 @@ def getsourcefile(obj):
             ret = inspect.getfile(obj)
         return ret
 
-import sourceinspect
-#getsourcefile = sourceinspect.getsourcefile
-#getsourcelines = sourceinspect.getsourcelines
 
 __all__ = ['getsourcelines', 'getsourcefile']

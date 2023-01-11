@@ -177,7 +177,7 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'colorama', 'rich', 'astunparse;python_version<"3.9"'
+          'numpy', 'colorama', 'dill', 'rich', 'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
       keywords=['graphics', 'simulation'],

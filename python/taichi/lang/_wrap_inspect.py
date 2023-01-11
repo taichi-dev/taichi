@@ -5,7 +5,8 @@
 #    In this case we mainly rely on the built-in `inspect` module, except we need
 #    to do some hacks when we are in IPython mode and there is a cell magic.
 # 2. Blender's scripting mode, e.g. Users write Taichi code in the scripting window
-#    in Blender and press the run button.
+#    in Blender and press the run button. In this case we need to retrieve the source using
+#    Blender's `bpy.data.texts` and write it to a temp file so that the inspect module can parse.
 # 3. The interactive shell mode, e.g. Users directly type their code in the interactive
 #    shell. In this case we use `dill` to get the source.
 #
@@ -15,8 +16,8 @@ import atexit
 import inspect
 import os
 import tempfile
-
 import dill
+
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
@@ -135,9 +136,7 @@ def _Python_IPython_findsource(obj):
 
             except:
                 pass
-        raise IOError(
-            f"Cannot find source code for Object: {obj}, it's likely you are not running Taichi from command line or IPython mode."
-        )
+        raise IOError(f"Cannot find source code for Object: {obj}, it's likely you are not running Taichi from command line or IPython mode.")
 
 
 def _REPL_findsource(obj):
@@ -155,9 +154,7 @@ def _custom_findsource(obj):
             try:
                 return _blender_findsource(obj)
             except:
-                raise IOError(
-                    f"Cannot find source code for Object: {obj}, this is possibly because you are running Taichi in an environment that Taichi's own inspect module cannot find the source. Please report an issue to help us fix: https://github.com/taichi-dev/taichi/issues"
-                )
+                raise IOError(f"Cannot find source code for Object: {obj}, this is possibly because you are running Taichi in an environment that Taichi's own inspect module cannot find the source. Please report an issue to help us fix: https://github.com/taichi-dev/taichi/issues")
 
 
 class _InspectContextManager:

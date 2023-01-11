@@ -363,11 +363,12 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
   if (stmt->op_type == UnaryOpType::cast_value) {
     llvm::CastInst::CastOps cast_op;
     auto from = stmt->operand->ret_type;
-    auto to = stmt->cast_type;
+    auto to = stmt->ret_type;
     TI_ASSERT_INFO(
         from->is<TensorType>() == to->is<TensorType>(),
         "Cannot cast between tensor type and non-tensor type: {} v.s. {}",
         from->to_string(), to->to_string());
+
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
     } else if (is_real(from.get_element_type()) !=
@@ -489,7 +490,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else if (!is_real(from.get_element_type()) &&
                !is_real(to.get_element_type())) {
       llvm_val[stmt] = builder->CreateIntCast(
-          llvm_val[stmt->operand], tlctx->get_data_type(to), is_signed(from));
+          llvm_val[stmt->operand], tlctx->get_data_type(to),
+          is_signed(from.get_element_type()));
     }
   } else if (stmt->op_type == UnaryOpType::cast_bits) {
     TI_ASSERT(data_type_size(stmt->ret_type) ==

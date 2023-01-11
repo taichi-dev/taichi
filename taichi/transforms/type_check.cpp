@@ -196,9 +196,17 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    stmt->ret_type = stmt->operand->ret_type;
+    auto operand_type = stmt->operand->ret_type;
+    stmt->ret_type = operand_type;
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
+      if (operand_type->is<TensorType>() &&
+          stmt->cast_type->is<PrimitiveType>()) {
+        auto ret_tensor_type = operand_type->as<TensorType>();
+        auto tensor_shape = ret_tensor_type->get_shape();
+        stmt->ret_type = TypeFactory::get_instance().create_tensor_type(
+            tensor_shape, stmt->cast_type);
+      }
     }
 
     DataType primitive_dtype = stmt->operand->ret_type.get_element_type();

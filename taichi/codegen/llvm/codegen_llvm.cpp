@@ -2261,7 +2261,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
 
   int list_element_size = std::min(leaf_block->max_num_elements(),
                                    (int64)taichi_listgen_max_element_size);
-  int num_splits = std::max(1, list_element_size / stmt->block_dim + (list_element_size % stmt->block_dim != 0));
+  int num_splits = std::max(1, list_element_size / stmt->block_dim +
+                                   (list_element_size % stmt->block_dim != 0));
 
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 

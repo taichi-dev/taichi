@@ -673,10 +673,10 @@ void export_lang(py::module &m) {
              // TODO(#2193): Also apply to @ti.func?
              self->no_activate.push_back(snode);
            })
-      .def("add_scalar_param", &Kernel::add_scalar_param)
-      .def("add_arr_param", &Kernel::add_arr_param)
-      .def("add_texture_param", &Kernel::add_texture_param)
-      .def("add_ret", &Kernel::add_ret)
+      .def("insert_scalar_param", &Kernel::insert_scalar_param)
+      .def("insert_arr_param", &Kernel::insert_arr_param)
+      .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_ret", &Kernel::insert_ret)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -710,10 +710,10 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
   py::class_<Function>(m, "Function")
-      .def("add_scalar_param", &Function::add_scalar_param)
-      .def("add_arr_param", &Function::add_arr_param)
-      .def("add_texture_param", &Function::add_texture_param)
-      .def("add_ret", &Function::add_ret)
+      .def("insert_scalar_param", &Function::insert_scalar_param)
+      .def("insert_arr_param", &Function::insert_arr_param)
+      .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))

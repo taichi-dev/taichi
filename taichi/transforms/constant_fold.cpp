@@ -59,10 +59,10 @@ class ConstantFold : public BasicStmtVisitor {
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
-    ker->add_ret(id.ret);
-    ker->add_scalar_param(id.lhs);
+    ker->insert_ret(id.ret);
+    ker->insert_scalar_param(id.lhs);
     if (id.is_binary)
-      ker->add_scalar_param(id.rhs);
+      ker->insert_scalar_param(id.rhs);
     ker->is_evaluator = true;
 
     auto *ker_ptr = ker.get();

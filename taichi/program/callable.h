@@ -84,14 +84,14 @@ struct Ret {
   Callable();
   virtual ~Callable();
 
-  int add_scalar_param(const DataType &dt);
+  int insert_scalar_param(const DataType &dt);
 
-  int add_arr_param(const DataType &dt,
+  int insert_arr_param(const DataType &dt,
                      int total_dim,
                      std::vector<int> element_shape);
-  int add_texture_param(const DataType &dt);
+  int insert_texture_param(const DataType &dt);
 
-  int add_ret(const DataType &dt);
+  int insert_ret(const DataType &dt);
 
   void finalize_rets();
 

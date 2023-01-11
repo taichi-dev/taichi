@@ -145,33 +145,33 @@ TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
   EXPECT_EQ(aa, AliasResult::different);
 }
 
-// TEST(AliasAnalysis, ExternalPtr_GradSame) {
-//   IRBuilder builder;
-//   auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-//   auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
-//   auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
-//   const auto indices = std::vector<Stmt *>{arg3, arg3};
-//   auto *eptr1 = builder.create_external_ptr(arg1, indices);
-//   auto *eptr2 = builder.create_external_ptr(arg2, indices);
+TEST(AliasAnalysis, ExternalPtr_GradSame) {
+  IRBuilder builder;
+  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
+  auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  const auto indices = std::vector<Stmt *>{arg3, arg3};
+  auto *eptr1 = builder.create_external_ptr(arg1, indices);
+  auto *eptr2 = builder.create_external_ptr(arg2, indices);
 
-//   const auto aa = alias_analysis(eptr1, eptr2);
-//   EXPECT_EQ(aa, AliasResult::same);
-// }
+  const auto aa = alias_analysis(eptr1, eptr2);
+  EXPECT_EQ(aa, AliasResult::same);
+}
 
-// TEST(AliasAnalysis, ExternalPtr_GradDiff) {
-//   IRBuilder builder;
-//   auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
-//   auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
-//   auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
-//   const auto indices = std::vector<Stmt *>{arg3, arg3};
-//   arg1->is_grad = true;
-//   arg2->is_grad = false;
-//   auto *eptr1 = builder.create_external_ptr(arg1, indices);
-//   auto *eptr2 = builder.create_external_ptr(arg2, indices);
+TEST(AliasAnalysis, ExternalPtr_GradDiff) {
+  IRBuilder builder;
+  auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
+  auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
+  auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
+  const auto indices = std::vector<Stmt *>{arg3, arg3};
+  arg1->is_grad = true;
+  arg2->is_grad = false;
+  auto *eptr1 = builder.create_external_ptr(arg1, indices);
+  auto *eptr2 = builder.create_external_ptr(arg2, indices);
 
-//   const auto aa = alias_analysis(eptr1, eptr2);
-//   EXPECT_EQ(aa, AliasResult::different);
-// }
+  const auto aa = alias_analysis(eptr1, eptr2);
+  EXPECT_EQ(aa, AliasResult::different);
+}
 
 }  // namespace analysis
 }  // namespace irpass

@@ -353,7 +353,7 @@ void MetalStream::command_sync() {
 DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
   // https://developer.apple.com/documentation/metal/mtlgpufamily/mtlgpufamilyapple8?language=objc
   // We do this so that it compiles under lower version of macOS
-  constexpr auto kMTLGPUFamilyApple8 = MTLGPUFamily(1008);
+  [[maybe_unused]] constexpr auto kMTLGPUFamilyApple8 = MTLGPUFamily(1008);
   constexpr auto kMTLGPUFamilyApple7 = MTLGPUFamily(1007);
   constexpr auto kMTLGPUFamilyApple6 = MTLGPUFamily(1006);
   constexpr auto kMTLGPUFamilyApple5 = MTLGPUFamily(1005);

@@ -17,8 +17,8 @@ import atexit
 import inspect
 import os
 import tempfile
-import dill
 
+import dill
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource

@@ -55,8 +55,8 @@ def _blender_get_text_name(filename: str):
 def _blender_findsource(obj):
     try:
         import bpy  # pylint: disable=import-outside-toplevel
-    except ImportError('Not in Blender environment!'):
-        return None
+    except：
+        raise ImportError('Not in Blender environment!')
 
     # Inspect's built-in `getfile` returns the filename like
     # `/Text`, `/Text.001`, `some-path/xxx.blend/test.py`
@@ -136,7 +136,7 @@ def _Python_IPython_findsource(obj):
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
-            except:
+            except ImportError:
                 pass
         raise IOError(
             f"Cannot find source code for Object: {obj}, it's likely \

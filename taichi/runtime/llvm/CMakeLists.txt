@@ -34,7 +34,7 @@ if (TI_WITH_CUDA)
 endif()
 
 if (TI_WITH_AMDGPU)
-    target_link_libraries(llvm_runtime PRIVATE ${llvm_ptx_libs})
+    target_link_libraries(llvm_runtime PRIVATE ${llvm_amdgpu_libs})
     target_link_libraries(llvm_runtime PRIVATE amdgpu_rhi)
 endif()
 

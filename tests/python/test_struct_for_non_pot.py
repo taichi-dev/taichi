@@ -2,7 +2,8 @@ import taichi as ti
 from tests import test_utils
 
 
-def _test_1d():
+@test_utils.test()
+def test_1d():
     x = ti.field(ti.i32)
     sum = ti.field(ti.i32)
 
@@ -23,16 +24,7 @@ def _test_1d():
 
 
 @test_utils.test()
-def test_1d():
-    _test_1d()
-
-
-@test_utils.test(packed=True)
-def test_1d_packed():
-    _test_1d()
-
-
-def _test_2d():
+def test_2d():
     x = ti.field(ti.i32)
     sum = ti.field(ti.i32)
 
@@ -56,13 +48,3 @@ def _test_2d():
 
     for i in range(n):
         assert sum[None] == gt
-
-
-@test_utils.test()
-def test_2d():
-    _test_2d()
-
-
-@test_utils.test(packed=True)
-def test_2d_packed():
-    _test_2d()

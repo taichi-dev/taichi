@@ -8,7 +8,6 @@ import os
 import pathlib
 import subprocess
 
-
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 curr_dir = os.path.dirname(curr_dir)
 build_dir = os.path.join(curr_dir, 'build')

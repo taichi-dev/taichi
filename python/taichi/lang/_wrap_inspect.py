@@ -160,7 +160,7 @@ def _custom_findsource(obj):
             except:
                 raise IOError(
                     f"Cannot find source code for Object: {obj}, this \
-is possibly because you are running Taichi in an environment that Taichi's own \
+is possibly because of you are running Taichi in an environment that Taichi's own \
 inspect module cannot find the source. Please report an issue to help us fix: \
 https://github.com/taichi-dev/taichi/issues")
 

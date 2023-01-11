@@ -122,6 +122,12 @@ def _infer_array_dt(arr):
                             map(_infer_entry_dt, arr))
 
 
+def make_matrix_with_shape(arr, shape, dt):
+    return expr.Expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
+            shape, dt, [expr.Expr(elt).ptr for elt in arr]))
+
+
 def make_matrix(arr, dt=None):
     if len(arr) == 0:
         # the only usage of an empty vector is to serve as field indices
@@ -1469,12 +1475,6 @@ class MatrixType(CompoundType):
                 entries += x
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
-            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
-                entries += [
-                    impl.Expr(e)
-                    for e in impl.get_runtime().compiling_callable.ast_builder(
-                    ).expand_exprs([x.ptr])
-                ]
             elif isinstance(x, Matrix):
                 entries += x.entries
             else:
@@ -1487,8 +1487,11 @@ class MatrixType(CompoundType):
         entries = [[entries[k * self.m + i] for i in range(self.m)]
                    for k in range(self.n)]
 
-        #  type cast
-        return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
+        if in_python_scope():
+            return self._instantiate_in_python_scope(
+                Matrix(entries, dt=self.dtype, ndim=self.ndim))
+
+        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
@@ -1498,13 +1501,16 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
+    def _instantiate_in_python_scope(self, mat):
+        return Matrix([[
+            int(mat(i, j)) if self.dtype in primitive_types.integer_types else
+            float(mat(i, j)) for j in range(self.m)
+        ] for i in range(self.n)],
+                      ndim=self.ndim)
+
     def cast(self, mat):
         if in_python_scope():
-            return Matrix([[
-                int(mat(i, j)) if self.dtype in primitive_types.integer_types
-                else float(mat(i, j)) for j in range(self.m)
-            ] for i in range(self.n)],
-                          ndim=self.ndim)
+            return self._instantiate_in_python_scope(mat)
 
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
             return ops_mod.cast(mat, self.dtype)
@@ -1584,12 +1590,6 @@ class VectorType(MatrixType):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
                 entries += x.entries
-            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
-                entries += [
-                    impl.Expr(e)
-                    for e in impl.get_runtime().compiling_callable.ast_builder(
-                    ).expand_exprs([x.ptr])
-                ]
             else:
                 entries.append(x)
 
@@ -1598,15 +1598,23 @@ class VectorType(MatrixType):
                 f"Incompatible arguments for the custom vector type: ({self.n}), ({len(entries)})"
             )
 
+        if in_python_scope():
+            return self._instantiate_in_python_scope(
+                Vector(entries, dt=self.dtype))
+
         #  type cast
-        return self.cast(Vector(entries, dt=self.dtype))
+        return make_matrix_with_shape(entries, [self.n], self.dtype)
+
+    def _instantiate_in_python_scope(self, vec):
+        return Vector([
+            int(vec(i))
+            if self.dtype in primitive_types.integer_types else float(vec(i))
+            for i in range(self.n)
+        ])
 
     def cast(self, vec):
         if in_python_scope():
-            return Vector([
-                int(vec(i)) if self.dtype in primitive_types.integer_types else
-                float(vec(i)) for i in range(self.n)
-            ])
+            return self._instantiate_in_python_scope(vec)
 
         if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
             return ops_mod.cast(vec, self.dtype)

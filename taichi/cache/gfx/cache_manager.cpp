@@ -107,8 +107,11 @@ namespace gfx {
 CacheManager::CacheManager(Params &&init_params)
     : mode_(init_params.mode),
       runtime_(init_params.runtime),
+      compile_config_(*init_params.compile_config),
       compiled_structs_(*init_params.compiled_structs) {
   TI_ASSERT(init_params.runtime);
+  TI_ASSERT(init_params.compile_config);
+  TI_ASSERT(init_params.compiled_structs);
 
   path_ = offline_cache::get_cache_path_by_arch(init_params.cache_path,
                                                 init_params.arch);
@@ -148,7 +151,8 @@ CacheManager::CacheManager(Params &&init_params)
   }
 
   caching_module_builder_ = std::make_unique<gfx::AotModuleBuilderImpl>(
-      compiled_structs_, init_params.arch, std::move(init_params.caps));
+      compiled_structs_, init_params.arch, compile_config_,
+      std::move(init_params.caps));
 
   offline_cache_metadata_.version[0] = TI_VERSION_MAJOR;
   offline_cache_metadata_.version[1] = TI_VERSION_MINOR;
@@ -161,7 +165,7 @@ CompiledKernelData CacheManager::load_or_compile(CompileConfig *config,
     spirv::lower(kernel);
     return gfx::run_codegen(kernel, runtime_->get_ti_device()->arch(),
                             runtime_->get_ti_device()->get_caps(),
-                            compiled_structs_);
+                            compiled_structs_, *config);
   }
   std::string kernel_key = make_kernel_key(config, kernel);
   if (mode_ > NotCache) {

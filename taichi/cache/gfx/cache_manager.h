@@ -30,6 +30,7 @@ class CacheManager {
     Mode mode{MemCache};
     std::string cache_path;
     GfxRuntime *runtime{nullptr};
+    const CompileConfig *compile_config{nullptr};
     DeviceCapabilityConfig caps{};
     const std::vector<spirv::CompiledSNodeStructs> *compiled_structs;
   };
@@ -53,6 +54,7 @@ class CacheManager {
   Mode mode_{MemCache};
   std::string path_;
   GfxRuntime *runtime_{nullptr};
+  const CompileConfig &compile_config_;
   const std::vector<spirv::CompiledSNodeStructs> &compiled_structs_;
   Metadata offline_cache_metadata_;
   std::unique_ptr<AotModuleBuilder> caching_module_builder_{nullptr};

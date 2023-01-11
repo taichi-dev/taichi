@@ -1,6 +1,5 @@
 import functools
 import numbers
-import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -139,7 +138,7 @@ def make_matrix(arr, dt=None):
         else:
             dt = cook_dtype(dt)
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().make_matrix_expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
             shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
@@ -395,20 +394,8 @@ class Matrix(TaichiOperations):
             args = args[0]
         if len(args) == 1:
             args = args + (0, )
-        # TODO(#1004): See if it's possible to support indexing at runtime
-        for i, a in enumerate(args):
-            if not isinstance(a, (int, np.integer)):
-                raise TaichiSyntaxError(
-                    f'The {i}-th index of a Matrix/Vector must be a compile-time constant '
-                    f'integer, got {type(a)}.\n'
-                    'This is because matrix operations will be **unrolled** at compile-time '
-                    'for performance reason.\n'
-                    'If you want to *iterate through matrix elements*, use a static range:\n'
-                    '  for i in ti.static(range(3)):\n'
-                    '    print(i, "-th component is", vec[i])\n'
-                    'See https://docs.taichi-lang.org/docs/meta#when-to-use-tistatic-with-for-loops for more details.'
-                    'Or turn on ti.init(..., dynamic_index=True) to support indexing with variables!'
-                )
+        for a in args:
+            assert isinstance(a, (int, np.integer))
         assert 0 <= args[0] < self.n, \
             f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
         assert 0 <= args[1] < self.m, \
@@ -416,15 +403,16 @@ class Matrix(TaichiOperations):
         return args[0] * self.m + args[1]
 
     def _get_slice(self, a, b):
-        if not isinstance(a, slice):
-            a = [a]
-        else:
+        if isinstance(a, slice):
             a = range(a.start or 0, a.stop or self.n, a.step or 1)
-        if not isinstance(b, slice):
-            b = [b]
-        else:
+        if isinstance(b, slice):
             b = range(b.start or 0, b.stop or self.m, b.step or 1)
-        return Matrix([[self._get_entry(i, j) for j in b] for i in a])
+        if isinstance(a, range) and isinstance(b, range):
+            return Matrix([[self._get_entry(i, j) for j in b] for i in a])
+        if isinstance(a, range):  # b is not range
+            return Vector([self._get_entry(i, b) for i in a])
+        # a is not range while b is range
+        return Vector([self._get_entry(a, j) for j in b])
 
     @python_scope
     def _set_entry(self, i, j, item):
@@ -846,25 +834,6 @@ class Matrix(TaichiOperations):
         """
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops._identity_matrix(n, dt)
-
-    @staticmethod
-    def rotation2d(alpha):
-        """Returns the matrix representation of the 2D
-        anti-clockwise rotation of angle `alpha`. The angle `alpha`
-        is in radians.
-
-        Example::
-
-            >>> import math
-            >>> ti.Matrix.rotation2d(math.pi/4)
-            [[ 0.70710678 -0.70710678]
-             [ 0.70710678  0.70710678]]
-        """
-        warnings.warn(
-            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
-            DeprecationWarning)
-        from taichi.lang import matrix_ops  # pylint: disable=C0415
-        return matrix_ops._rotation2d_matrix(alpha)
 
     @classmethod
     @python_scope
@@ -1436,8 +1405,11 @@ class MatrixType(CompoundType):
         #                 Remove the None dtype when we are ready to break legacy code.
         if dtype is not None:
             self.dtype = cook_dtype(dtype)
+            self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ),
+                                          self.dtype)
         else:
             self.dtype = None
+            self.tensor_type = None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.
@@ -1499,8 +1471,9 @@ class MatrixType(CompoundType):
                 entries += list(x.ravel())
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             elif isinstance(x, Matrix):
                 entries += x.entries
@@ -1517,11 +1490,13 @@ class MatrixType(CompoundType):
         #  type cast
         return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
-    def from_real_func_ret(self, func_ret, ret_index=0):
+    def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
-            expr.Expr(ti_python_core.make_get_element_expr(func_ret.ptr, i))
-            for i in range(ret_index, ret_index + self.m * self.n)
-        ]), ret_index + self.m * self.n
+            expr.Expr(
+                ti_python_core.make_get_element_expr(func_ret.ptr,
+                                                     ret_index + (i, )))
+            for i in range(self.m * self.n)
+        ])
 
     def cast(self, mat):
         if in_python_scope():
@@ -1611,8 +1586,9 @@ class VectorType(MatrixType):
                 entries += x.entries
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_expr([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             else:
                 entries.append(x)

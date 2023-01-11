@@ -91,7 +91,7 @@ class TaskCodegen : public IRVisitor {
 
   void fill_snode_to_root() {
     for (int root = 0; root < compiled_structs_.size(); ++root) {
-      for (auto [node_id, node] : compiled_structs_[root].snode_descriptors) {
+      for (auto &[node_id, node] : compiled_structs_[root].snode_descriptors) {
         snode_to_root_[node_id] = root;
       }
     }
@@ -107,9 +107,6 @@ class TaskCodegen : public IRVisitor {
     ir_->init_header();
     kernel_function_ = ir_->new_function();  // void main();
     ir_->debug_name(spv::OpName, kernel_function_, "main");
-
-    compile_args_struct();
-    compile_ret_struct();
 
     if (task_ir_->task_type == OffloadedTaskType::serial) {
       generate_serial_kernel(task_ir_);
@@ -219,40 +216,53 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(AllocaStmt *alloca) override {
+    spirv::Value ptr_val;
     if (alloca->ret_type->is<TensorType>()) {
-      // Alloca for shared memory / workgroup memory
-      if (!alloca->is_shared) {
-        TI_ERROR(
-            "Tensor type for dyanmic index is not yet supported on Vulkan.");
-      }
       auto tensor_type = alloca->ret_type->cast<TensorType>();
       auto elem_num = tensor_type->get_num_elements();
       spirv::SType elem_type =
           ir_->get_primitive_type(tensor_type->get_element_type());
-
       spirv::SType arr_type = ir_->get_array_type(elem_type, elem_num);
-      spirv::Value ptr_val = ir_->alloca_workgroup_array(arr_type);
-      shared_array_binds_.push_back(ptr_val);
-      ir_->register_value(alloca->raw_name(), ptr_val);
+      if (alloca->is_shared) {  // for shared memory / workgroup memory
+        ptr_val = ir_->alloca_workgroup_array(arr_type);
+        shared_array_binds_.push_back(ptr_val);
+      } else {  // for function memory
+        ptr_val = ir_->alloca_variable(arr_type);
+      }
     } else {
       // Alloca for a single variable
       spirv::SType src_type = ir_->get_primitive_type(alloca->element_type());
-      spirv::Value ptr_val = ir_->alloca_variable(src_type);
+      ptr_val = ir_->alloca_variable(src_type);
       ir_->store_variable(ptr_val, ir_->get_zero(src_type));
-      ir_->register_value(alloca->raw_name(), ptr_val);
     }
+    ir_->register_value(alloca->raw_name(), ptr_val);
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    spirv::SType data_type =
-        ir_->get_primitive_type(stmt->element_type().ptr_removed());
-    spirv::SType ptr_type =
-        ir_->get_pointer_type(data_type, spv::StorageClassWorkgroup);
-    auto origin_val = ir_->query_value(stmt->origin->raw_name());
-    auto offset_val = ir_->query_value(stmt->offset->raw_name());
-    Value offset_ptr =
-        ir_->make_value(spv::OpAccessChain, ptr_type, origin_val, offset_val);
-    ir_->register_value(stmt->raw_name(), offset_ptr);
+    spirv::Value ptr_val;
+    spirv::Value origin_val = ir_->query_value(stmt->origin->raw_name());
+    spirv::Value offset_val = ir_->query_value(stmt->offset->raw_name());
+    auto dt = stmt->element_type().ptr_removed();
+    if (stmt->offset_used_as_index()) {
+      if (stmt->origin->is<AllocaStmt>()) {
+        spirv::SType ptr_type = ir_->get_pointer_type(
+            ir_->get_primitive_type(dt), origin_val.stype.storage_class);
+        ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
+                                  offset_val);
+      } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
+        spirv::Value dt_bytes = ir_->int_immediate_number(
+            ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
+        spirv::Value offset_bytes = ir_->mul(dt_bytes, offset_val);
+        ptr_val = ir_->add(origin_val, offset_bytes);
+        ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+      } else {
+        TI_NOT_IMPLEMENTED;
+      }
+    } else {  // offset used as bytes
+      ptr_val = ir_->add(origin_val, ir_->cast(origin_val.stype, offset_val));
+      ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+    }
+    ir_->register_value(stmt->raw_name(), ptr_val);
   }
 
   void visit(LocalLoadStmt *stmt) override {
@@ -1284,7 +1294,7 @@ class TaskCodegen : public IRVisitor {
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "localInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
-    } else if (stmt->func_name == "vkGlobalThreadIdx") {
+    } else if (stmt->func_name == "globalInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0));
     } else if (stmt->func_name == "workgroupMemoryBarrier") {
       ir_->make_inst(
@@ -1736,22 +1746,21 @@ class TaskCodegen : public IRVisitor {
     std::vector<spirv::Value> buffers;
     if (caps_->get(DeviceCapability::spirv_version) > 0x10300) {
       buffers = shared_array_binds_;
-      std::unordered_set<BufferInfo, BufferInfoHasher> unique_bufs;
       // One buffer can be bound to different bind points but has to be unique
       // in OpEntryPoint interface declarations.
       // From Spec: before SPIR-V version 1.4, duplication of these interface id
       // is tolerated. Starting with version 1.4, an interface id must not
       // appear more than once.
+      std::unordered_set<spirv::Value, spirv::ValueHasher> entry_point_values;
       for (const auto &bb : task_attribs_.buffer_binds) {
-        if (unique_bufs.count(bb.buffer) == 0) {
-          for (auto &it : buffer_value_map_) {
-            if (it.first.first == bb.buffer) {
-              buffers.push_back(it.second);
-            }
+        for (auto &it : buffer_value_map_) {
+          if (it.first.first == bb.buffer) {
+            entry_point_values.insert(it.second);
           }
-          unique_bufs.insert(bb.buffer);
         }
       }
+      buffers.insert(buffers.end(), entry_point_values.begin(),
+                     entry_point_values.end());
     }
     ir_->commit_kernel_function(kernel_function_, "main", buffers,
                                 group_size);  // kernel entry
@@ -2147,7 +2156,7 @@ class TaskCodegen : public IRVisitor {
 
       // continue
       spirv::Value total_invocs = ir_->cast(
-          ir_->i32_type(),
+          ir_->u32_type(),
           ir_->mul(ir_->get_num_work_groups(0),
                    ir_->uint_immediate_number(
                        ir_->u32_type(),
@@ -2235,12 +2244,16 @@ class TaskCodegen : public IRVisitor {
     }
 
     if (buffer.type == BufferType::Args) {
+      compile_args_struct();
+
       buffer_binding_map_[key] = 0;
       buffer_value_map_[key] = args_buffer_value_;
       return args_buffer_value_;
     }
 
     if (buffer.type == BufferType::Rets) {
+      compile_ret_struct();
+
       buffer_binding_map_[key] = 1;
       buffer_value_map_[key] = ret_buffer_value_;
       return ret_buffer_value_;
@@ -2522,10 +2535,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
 
-    size_t last_size;
     bool success = true;
-    do {
-      last_size = optimized_spv.size();
+    {
       bool result = false;
       TI_ERROR_IF(
           (result = !spirv_opt_->Run(optimized_spv.data(), optimized_spv.size(),
@@ -2533,9 +2544,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
           "SPIRV optimization failed");
       if (result) {
         success = false;
-        break;
       }
-    } while (last_size != optimized_spv.size());
+    }
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());

@@ -40,11 +40,7 @@ ti.root.bitmasked(ti.i, N).place(x, v, inv_m, color)
 count = ti.field(ti.i32, ())
 img = ti.field(ti.f32, (res, res))
 
-sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                       'arr',
-                       ti.f32,
-                       field_dim=3,
-                       element_shape=())
+sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'arr', dtype=ti.f32, ndim=3)
 img_c = 4
 
 
@@ -155,7 +151,7 @@ def save_kernels(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     tmpdir = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    mod.save(tmpdir, 'whatever')
+    mod.save(tmpdir)
 
 
 if __name__ == '__main__':

@@ -464,19 +464,23 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     const int group_x = (attribs.advisory_total_num_threads +
                          attribs.advisory_num_threads_per_group - 1) /
                         attribs.advisory_num_threads_per_group;
-    ResourceBinder *binder = vp->resource_binder();
+    std::unique_ptr<ShaderResourceSet> bindings =
+        device_->create_resource_set_unique();
     for (auto &bind : attribs.buffer_binds) {
+      // We might have to bind a invalid buffer (this is fine as long as
+      // shader don't do anything with it)
       if (bind.buffer.type == BufferType::ExtArr) {
-        binder->rw_buffer(0, bind.binding, any_arrays.at(bind.buffer.root_id));
-      } else if (args_buffer && bind.buffer.type == BufferType::Args) {
-        binder->buffer(0, bind.binding, *args_buffer);
-      } else if (ret_buffer && bind.buffer.type == BufferType::Rets) {
-        binder->rw_buffer(0, bind.binding, *ret_buffer);
+        bindings->rw_buffer(bind.binding, any_arrays.at(bind.buffer.root_id));
+      } else if (bind.buffer.type == BufferType::Args) {
+        bindings->buffer(bind.binding,
+                         args_buffer ? *args_buffer : kDeviceNullAllocation);
+      } else if (bind.buffer.type == BufferType::Rets) {
+        bindings->rw_buffer(bind.binding,
+                            ret_buffer ? *ret_buffer : kDeviceNullAllocation);
       } else {
         DeviceAllocation *alloc = ti_kernel->get_buffer_bind(bind.buffer);
-        if (alloc) {
-          binder->rw_buffer(0, bind.binding, *alloc);
-        }
+        bindings->rw_buffer(bind.binding,
+                            alloc ? *alloc : kDeviceNullAllocation);
       }
     }
 
@@ -484,10 +488,10 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       DeviceAllocation texture = textures.at(bind.arg_id);
       if (bind.is_storage) {
         transition_image(texture, ImageLayout::shader_read_write);
-        binder->rw_image(0, bind.binding, texture, 0);
+        bindings->rw_image(bind.binding, texture, 0);
       } else {
         transition_image(texture, ImageLayout::shader_read);
-        binder->image(0, bind.binding, texture, {});
+        bindings->image(bind.binding, texture, {});
       }
     }
 
@@ -506,8 +510,12 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
 
     current_cmdlist_->bind_pipeline(vp);
-    current_cmdlist_->bind_resources(binder);
-    current_cmdlist_->dispatch(group_x);
+    RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
+    TI_ERROR_IF(status != RhiResult::success,
+                "Resource binding error : RhiResult({})", status);
+    status = current_cmdlist_->dispatch(group_x);
+    TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
+                status);
     current_cmdlist_->memory_barrier();
   }
 
@@ -589,7 +597,9 @@ StreamSemaphore GfxRuntime::flush() {
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
     current_cmdlist_ = nullptr;
   } else {
-    auto cmdlist = device_->get_compute_stream()->new_command_list();
+    auto [cmdlist, res] =
+        device_->get_compute_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());
   }
@@ -605,7 +615,10 @@ void GfxRuntime::ensure_current_cmdlist() {
   if (!current_cmdlist_) {
     ctx_buffers_.clear();
     current_cmdlist_pending_since_ = high_res_clock::now();
-    current_cmdlist_ = device_->get_compute_stream()->new_command_list();
+    auto [cmdlist, res] =
+        device_->get_compute_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
+    current_cmdlist_ = std::move(cmdlist);
   }
 }
 void GfxRuntime::submit_current_cmdlist_if_timeout() {
@@ -635,7 +648,9 @@ void GfxRuntime::init_nonroot_buffers() {
 
   // Need to zero fill the buffers, otherwise there could be NaN.
   Stream *stream = device_->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] =
+      device_->get_compute_stream()->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
 
   cmdlist->buffer_fill(global_tmps_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
@@ -655,7 +670,9 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
            /*host_write=*/false, /*host_read=*/false,
            /*export_sharing=*/false, AllocUsage::Storage});
   Stream *stream = device_->get_compute_stream();
-  auto cmdlist = stream->new_command_list();
+  auto [cmdlist, res] =
+      device_->get_compute_stream()->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());

@@ -208,18 +208,17 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
-    def save(self, filepath, filename=None):
+    def save(self, filepath):
         """
         Args:
           filepath (str): path to a folder to store aot files.
-          filename (str): filename prefix for stored aot files.
         """
-        if filename is not None:
-            warnings.warn(
-                "Specifying filename is no-op and will be removed in release v1.4.0",
-                DeprecationWarning)
         filepath = str(PurePosixPath(Path(filepath)))
         self._aot_builder.dump(filepath, "")
+        with open(f"{filepath}/__content__", "w") as f:
+            f.write('\n'.join(self._content))
+        with open(f"{filepath}/__version__", "w") as f:
+            f.write('.'.join(str(x) for x in taichi.__version__))
 
     def archive(self, filepath: str):
         """
@@ -234,13 +233,10 @@ class Module:
 
         temp_dir = mkdtemp(prefix="tcm_")
         # Save first as usual.
-        self.save(temp_dir, "")
+        self.save(temp_dir)
 
         # Package all artifacts into a zip archive and attach contend data.
         with ZipFile(tcm_path, "w") as z:
-            z.writestr("__content__", '\n'.join(self._content))
-            z.writestr("__version__",
-                       '.'.join(str(x) for x in taichi.__version__))
             for path in glob(f"{temp_dir}/*", recursive=True):
                 z.write(path, Path.relative_to(Path(path), temp_dir))
 

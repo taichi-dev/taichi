@@ -44,14 +44,15 @@ void memcpy_cpu_to_vulkan_via_staging(DevicePtr dst,
   CpuDevice::AllocInfo src_alloc_info = cpu_dev->get_alloc_info(src_alloc);
 
   void *dst_ptr{nullptr};
-  TI_ASSERT(vk_dev->map_range(dst, size, &dst_ptr) == RhiResult::success);
+  TI_ASSERT(vk_dev->map_range(staging, size, &dst_ptr) == RhiResult::success);
   void *src_ptr = (uint8_t *)src_alloc_info.ptr + src.offset;
 
   memcpy(dst_ptr, src_ptr, size);
   vk_dev->unmap(staging);
 
   auto stream = vk_dev->get_compute_stream();
-  auto cmd_list = stream->new_command_list();
+  auto [cmd_list, res] = stream->new_command_list_unique();
+  TI_ASSERT(res == RhiResult::success);
   cmd_list->buffer_copy(dst, staging, size);
   stream->submit_synced(cmd_list.get());
 }

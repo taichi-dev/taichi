@@ -22,7 +22,6 @@ CompileConfig::CompileConfig() {
   debug = false;
   cfg_optimization = true;
   check_out_of_bound = false;
-  lazy_compilation = true;
   serial_schedule = false;
   simplify_before_lower_access = true;
   lower_access = true;
@@ -39,7 +38,7 @@ CompileConfig::CompileConfig() {
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
-  dynamic_index = false;
+  dynamic_index = true;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;

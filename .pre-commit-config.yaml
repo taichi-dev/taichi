@@ -2,6 +2,9 @@ ci:
   autoupdate_schedule: quarterly
   autoupdate_commit_msg: '[misc] Update pre-commit hooks'
 
+default_language_version:
+    python: python3.10
+
 exclude: ^((tests/python/test_exception)\.py$|external/)
 repos:
   - repo: https://github.com/google/yapf
@@ -11,24 +14,24 @@ repos:
         additional_dependencies: [toml]
 
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.4
     hooks:
       - id: isort
 
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v13.0.1
+    rev: v15.0.6
     hooks:
       - id: clang-format
         exclude: .*\.json$
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.4.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v2.13.4
+    rev: v2.15.9
     hooks:
       - id: pylint
         args: ['-rn', '-sn']

@@ -227,9 +227,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
 
-  if (!kernel->lowered()) {
-    kernel->lower(/*to_executable=*/false);
-  }
+  irpass::ast_to_ir(config, *kernel, false);
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   TI_ASSERT(block);
@@ -238,8 +236,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 
   CompileResult Result;
   for (int i = 0; i < offloads.size(); i++) {
-    auto offload =
-        irpass::analysis::clone(offloads[i].get(), offloads[i]->get_kernel());
+    auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
     auto *offload_stmt = offload->as<OffloadedStmt>();
     auto new_data = compile_task(nullptr, offload_stmt);

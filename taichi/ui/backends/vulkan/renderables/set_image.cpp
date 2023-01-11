@@ -127,7 +127,8 @@ void SetImage::update_data(const SetImageInfo &info) {
     prog->enqueue_compute_op_lambda(copy_op, {});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     copy_op(&app_context_->device(), cmd_list.get());
     if (sema) {
       stream->submit(cmd_list.get(), {sema});
@@ -184,7 +185,8 @@ void SetImage::update_data(Texture *tex) {
                                     ImageLayout::transfer_src}});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     copy_op(&app_context_->device(), cmd_list.get());
     stream->submit(cmd_list.get());
   }
@@ -321,9 +323,8 @@ void SetImage::update_index_buffer() {
 
 void SetImage::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->image(0, 0, texture_, {});
-  binder->buffer(0, 1, uniform_buffer_);
+  resource_set_->image(0, texture_, {});
+  resource_set_->buffer(1, uniform_buffer_);
 }
 
 void SetImage::cleanup() {

@@ -7,37 +7,12 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.vulkan, ti.opengl, ti.cuda, ti.cpu])
-def test_deprecated_aot_save_filename():
-    density = ti.field(float, shape=(4, 4))
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module()
-        m.add_field('density', density)
-        with pytest.warns(
-                DeprecationWarning,
-                match=
-                r'Specifying filename is no-op and will be removed in release v1.4.0'
-        ):
-            m.save(tmpdir, 'filename')
-
-
-@test_utils.test()
-def test_deprecated_matrix_rotation2d():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            r'`ti.Matrix.rotation2d\(\)` will be removed in release v1.4.0. Use `ti.math.rotation2d\(\)` instead.'
-    ):
-        a = ti.Matrix.rotation2d(math.pi / 2)
-
-
 @test_utils.test()
 def test_deprecate_element_shape_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.'
     ):
 
         @ti.kernel
@@ -50,7 +25,7 @@ def test_deprecate_element_dim_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.4.0, use matrix dtype instead.'
+            'The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.'
     ):
 
         @ti.kernel
@@ -63,12 +38,40 @@ def test_deprecate_field_dim_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "The field_dim argument for ndarray will be deprecated in v1.4.0, use ndim instead."
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead."
     ):
 
         @ti.kernel
         def func(x: ti.types.ndarray(field_dim=(16, 16))):
             pass
+
+
+@test_utils.test()
+def test_deprecate_field_dim_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead."
+    ):
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                             'x',
+                             ti.math.vec2,
+                             field_dim=1)
+
+
+@test_utils.test()
+def test_deprecate_element_shape_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.'
+    ):
+
+        ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                     'x',
+                     ti.f32,
+                     ndim=1,
+                     element_shape=(1, ))
 
 
 @test_utils.test(arch=ti.metal)
@@ -132,6 +135,7 @@ def test_deprecated_rwtexture_type():
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
+# Note: will be removed in v1.5.0
 @test_utils.test(arch=ti.vulkan)
 def test_incomplete_info_rwtexture():
     n = 128
@@ -174,15 +178,11 @@ def test_incomplete_info_rwtexture():
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
-def test_deprecated_source_inspect():
-    with pytest.warns(DeprecationWarning,
-                      match="Sourceinspect is deprecated since v1.4.0"):
-        import os
-        os.environ['USE_SOURCEINSPECT'] = '1'
-        from taichi.lang._wrap_inspect import getsourcelines
-
-        @ti.kernel
-        def func():
-            pass
-
-        print(getsourcelines(func))
+@pytest.mark.parametrize("value", [True, False])
+def test_deprecated_dynamic_index(value):
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Dynamic index is supported by default and the switch will be removed in v1.5.0."
+    ):
+        ti.init(dynamic_index=value)

@@ -26,6 +26,8 @@ VulkanRuntimeImported::Workaround::Workaround(
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
   vk_device.vk_caps().vk_api_version = api_version;
+  // FIXME: (penguinliong) Workaround missing vulkan caps from import.
+  vk_device.vk_caps().external_memory = true;
 
   taichi::lang::DeviceCapabilityConfig caps{};
 

@@ -244,9 +244,7 @@ def test_stack():
     func()
 
 
-# FIXME: There is no tensor constant (brought by dynamic index) until the whole mat/vec refactor is done, which will potentially break the adstack.
-# Temporially disable the dynamic index, will make workaround to handle tensor constant in other PRs
-@test_utils.test(dynamic_index=False)
+@test_utils.test()
 def test_if_condition_depend_on_for_loop_index():
     scalar = lambda: ti.field(dtype=ti.f32)
     vec = lambda: ti.Vector.field(3, dtype=ti.f32)

@@ -11,54 +11,39 @@ namespace opengl {
 class GLDevice;
 
 void check_opengl_error(const std::string &msg = "OpenGL");
+extern void *kGetOpenglProcAddr;
 
-class GLResourceBinder : public ResourceBinder {
+class GLResourceSet : public ShaderResourceSet {
  public:
-  ~GLResourceBinder() override;
+  GLResourceSet() = default;
+  explicit GLResourceSet(const GLResourceSet &other) = default;
 
-  struct Bindings {
-    // OpenGL has no sets, default set = 0
-    uint32_t binding{0};
-    GLuint buffer{0};
-    GLuint image{0};
+  ~GLResourceSet() override;
+
+  GLResourceSet &rw_buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
+  GLResourceSet &rw_buffer(uint32_t binding, DeviceAllocation alloc) final;
+
+  GLResourceSet &buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
+  GLResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
+
+  GLResourceSet &image(uint32_t binding,
+                       DeviceAllocation alloc,
+                       ImageSamplerConfig sampler_config) final;
+  GLResourceSet &rw_image(uint32_t binding,
+                          DeviceAllocation alloc,
+                          int lod) final;
+
+  struct BufferBinding {
+    GLuint buffer;
+    size_t offset;
+    size_t size;
   };
 
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override;
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DeviceAllocation alloc) override;
-
-  void buffer(uint32_t set,
-              uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override;
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
-
-  void image(uint32_t set,
-             uint32_t binding,
-             DeviceAllocation alloc,
-             ImageSamplerConfig sampler_config) override;
-  void rw_image(uint32_t set,
-                uint32_t binding,
-                DeviceAllocation alloc,
-                int lod) override;
-
-  // Set vertex buffer (not implemented in compute only device)
-  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
-
-  // Set index buffer (not implemented in compute only device)
-  // index_width = 4 -> uint32 index
-  // index_width = 2 -> uint16 index
-  void index_buffer(DevicePtr ptr, size_t index_width) override;
-
-  const std::unordered_map<uint32_t, GLuint> &ssbo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ssbo_binding_map() {
     return ssbo_binding_map_;
   }
 
-  const std::unordered_map<uint32_t, GLuint> &ubo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ubo_binding_map() {
     return ubo_binding_map_;
   }
 
@@ -67,8 +52,8 @@ class GLResourceBinder : public ResourceBinder {
   }
 
  private:
-  std::unordered_map<uint32_t, GLuint> ssbo_binding_map_;
-  std::unordered_map<uint32_t, GLuint> ubo_binding_map_;
+  std::unordered_map<uint32_t, BufferBinding> ssbo_binding_map_;
+  std::unordered_map<uint32_t, BufferBinding> ubo_binding_map_;
   std::unordered_map<uint32_t, GLuint> texture_binding_map_;
 };
 
@@ -77,15 +62,12 @@ class GLPipeline : public Pipeline {
   GLPipeline(const PipelineSourceDesc &desc, const std::string &name);
   ~GLPipeline() override;
 
-  ResourceBinder *resource_binder() override;
-
   GLuint get_program() {
     return program_id_;
   }
 
  private:
   GLuint program_id_;
-  GLResourceBinder binder_;
 };
 
 class GLCommandList : public CommandList {
@@ -94,14 +76,16 @@ class GLCommandList : public CommandList {
   }
   ~GLCommandList() override;
 
-  void bind_pipeline(Pipeline *p) override;
-  void bind_resources(ResourceBinder *binder) override;
-  void buffer_barrier(DevicePtr ptr, size_t size) override;
-  void buffer_barrier(DeviceAllocation alloc) override;
-  void memory_barrier() override;
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+  void bind_pipeline(Pipeline *p) noexcept final;
+  RhiResult bind_shader_resources(ShaderResourceSet *res,
+                                  int set_index = 0) noexcept final;
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final;
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final;
+  void buffer_barrier(DeviceAllocation alloc) noexcept final;
+  void memory_barrier() noexcept final;
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
   // These are not implemented in compute only device
   void begin_renderpass(int x0,
@@ -151,6 +135,8 @@ class GLCommandList : public CommandList {
   struct CmdBindBufferToIndex : public Cmd {
     GLuint buffer{0};
     GLuint index{0};
+    GLuint offset{0};
+    GLuint size{0};
     GLenum target{GL_SHADER_STORAGE_BUFFER};
     void execute() override;
   };
@@ -218,7 +204,7 @@ class GLStream : public Stream {
   }
   ~GLStream() override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
@@ -249,6 +235,14 @@ class GLDevice : public GraphicsDevice {
   std::unique_ptr<Pipeline> create_pipeline(
       const PipelineSourceDesc &src,
       std::string name = "Pipeline") override;
+
+  ShaderResourceSet *create_resource_set() final {
+    return new GLResourceSet;
+  }
+
+  RasterResources *create_raster_resources() final {
+    TI_NOT_IMPLEMENTED;
+  }
 
   // Mapping can fail and will return nullptr
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;

@@ -269,8 +269,7 @@ class FrontendReturnStmt : public Stmt {
  public:
   ExprGroup values;
 
-  explicit FrontendReturnStmt(const ExprGroup &group) : values(group) {
-  }
+  explicit FrontendReturnStmt(const ExprGroup &group);
 
   bool is_container_statement() const override {
     return false;
@@ -589,18 +588,12 @@ class IndexExpression : public Expression {
 
   IndexExpression(const Expr &var,
                   const ExprGroup &indices,
-                  std::string tb = "")
-      : var(var), indices_group({indices}) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   IndexExpression(const Expr &var,
                   const std::vector<ExprGroup> &indices_group,
                   const std::vector<int> &ret_shape,
-                  std::string tb = "")
-      : var(var), indices_group(indices_group), ret_shape(ret_shape) {
-    this->tb = tb;
-  }
+                  std::string tb = "");
 
   void type_check(CompileConfig *config) override;
 
@@ -730,9 +723,7 @@ class TextureOpExpression : public Expression {
 
   explicit TextureOpExpression(TextureOpType op,
                                Expr texture_ptr,
-                               const ExprGroup &args)
-      : op(op), texture_ptr(texture_ptr), args(args) {
-  }
+                               const ExprGroup &args);
 
   void type_check(CompileConfig *config) override;
 
@@ -777,28 +768,36 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 };
 
-class FuncCallExpression : public Expression {
+class FrontendFuncCallStmt : public Stmt {
  public:
+  std::optional<Identifier> ident;
   Function *func;
   ExprGroup args;
 
-  void type_check(CompileConfig *config) override;
+  explicit FrontendFuncCallStmt(
+      Function *func,
+      const ExprGroup &args,
+      const std::optional<Identifier> &id = std::nullopt)
+      : ident(id), func(func), args(args) {
+    TI_ASSERT(id.has_value() == !func->rets.empty());
+  }
 
-  FuncCallExpression(Function *func, const ExprGroup &args);
+  bool is_container_statement() const override {
+    return false;
+  }
 
-  void flatten(FlattenContext *ctx) override;
-
-  TI_DEFINE_ACCEPT_FOR_EXPRESSION
+  TI_DEFINE_ACCEPT
 };
 
 class GetElementExpression : public Expression {
  public:
   Expr src;
-  int index;
+  std::vector<int> index;
 
   void type_check(CompileConfig *config) override;
 
-  GetElementExpression(const Expr &src, int index) : src(src), index(index) {
+  GetElementExpression(const Expr &src, std::vector<int> index)
+      : src(src), index(index) {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -862,9 +861,7 @@ class MeshIndexConversionExpression : public Expression {
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
                                 const Expr idx,
-                                mesh::ConvType conv_type)
-      : mesh(mesh), idx_type(idx_type), idx(idx), conv_type(conv_type) {
-  }
+                                mesh::ConvType conv_type);
 
   void flatten(FlattenContext *ctx) override;
 
@@ -954,7 +951,17 @@ class ASTBuilder {
   Expr expr_alloca();
   Expr expr_alloca_shared_array(const std::vector<int> &shape,
                                 const DataType &element_type);
+  Expr expr_subscript(const Expr &expr,
+                      const ExprGroup &indices,
+                      std::string tb = "");
+
+  Expr mesh_index_conversion(mesh::MeshPtr mesh_ptr,
+                             mesh::MeshElementType idx_type,
+                             const Expr &idx,
+                             mesh::ConvType &conv_type);
+
   void expr_assign(const Expr &lhs, const Expr &rhs, std::string tb);
+  std::optional<Expr> insert_func_call(Function *func, const ExprGroup &args);
   void create_assert_stmt(const Expr &cond,
                           const std::string &msg,
                           const std::vector<Expr> &args);
@@ -973,8 +980,9 @@ class ASTBuilder {
   void insert_expr_stmt(const Expr &val);
   void insert_snode_activate(SNode *snode, const ExprGroup &expr_group);
   void insert_snode_deactivate(SNode *snode, const ExprGroup &expr_group);
-  Expr insert_func_call_expr(Function *func, const ExprGroup &args);
-
+  Expr make_texture_op_expr(const TextureOpType &op,
+                            const Expr &texture_ptr,
+                            const ExprGroup &args);
   /*
    * This function allocates the space for a new item (a struct or a scalar)
    * in the Dynamic SNode, and assigns values to the elements inside it.
@@ -990,7 +998,7 @@ class ASTBuilder {
   Expr snode_length(SNode *snode, const ExprGroup &indices);
   Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
-  std::vector<Expr> expand_expr(const std::vector<Expr> &exprs);
+  std::vector<Expr> expand_exprs(const std::vector<Expr> &exprs);
 
   void create_scope(std::unique_ptr<Block> &list, LoopType tp = NotLoop);
   void pop_scope();

@@ -38,7 +38,7 @@ def compile_dense_field_aot_test(arch):
     m.add_kernel(init)
     m.add_kernel(ret)
     m.add_field("place", place)
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == "__main__":

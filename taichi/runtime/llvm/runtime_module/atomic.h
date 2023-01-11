@@ -36,20 +36,14 @@ DEFINE_ATOMIC_OP_INTRINSIC(xor, i64)
 DEFINE_ATOMIC_OP_INTRINSIC(xor, u32)
 DEFINE_ATOMIC_OP_INTRINSIC(xor, u64)
 
-#define DEFINE_ADD(T)   \
-  T add_##T(T a, T b) { \
-    return a + b;       \
-  }
+#define DEFINE_ADD(T) \
+  T add_##T(T a, T b) { return a + b; }
 
-#define DEFINE_MIN(T)     \
-  T min_##T(T a, T b) {   \
-    return b > a ? a : b; \
-  }
+#define DEFINE_MIN(T) \
+  T min_##T(T a, T b) { return b > a ? a : b; }
 
-#define DEFINE_MAX(T)     \
-  T max_##T(T a, T b) {   \
-    return b < a ? a : b; \
-  }
+#define DEFINE_MAX(T) \
+  T max_##T(T a, T b) { return b < a ? a : b; }
 
 #define DEFINE_ATOMIC_OP_COMP_EXCH(OP, T)                                     \
   T atomic_##OP##_##T(volatile T *dest, T inc) {                              \

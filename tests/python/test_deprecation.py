@@ -80,12 +80,12 @@ def test_deprecate_metal_sparse():
     with pytest.raises(
             ti.TaichiRuntimeError,
             match="Pointer SNode on metal backend is deprecated and removed."):
-        a = ti.root.pointer(ti.i, 10)
+        ti.root.pointer(ti.i, 10)
     with pytest.raises(
             ti.TaichiRuntimeError,
             match="Bitmasked SNode on metal backend is deprecated and removed."
     ):
-        b = a.bitmasked(ti.j, 10)
+        ti.root.bitmasked(ti.j, 10)
 
     with pytest.raises(
             ti.TaichiRuntimeError,

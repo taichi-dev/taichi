@@ -55,7 +55,7 @@ def _blender_get_text_name(filename: str):
 def _blender_findsource(obj):
     try:
         import bpy  # pylint: disable=import-outside-toplevel
-    except：
+    except:
         raise ImportError('Not in Blender environment!')
 
     # Inspect's built-in `getfile` returns the filename like

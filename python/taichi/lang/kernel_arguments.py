@@ -71,7 +71,8 @@ def decl_sparse_matrix(dtype):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(ptr_type)
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
+        ptr_type)
     return SparseMatrixProxy(
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
@@ -79,7 +80,8 @@ def decl_sparse_matrix(dtype):
 def decl_ndarray_arg(dtype, dim, element_shape, layout):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.insert_arr_param(dtype, dim, element_shape)
+    arg_id = impl.get_runtime().compiling_callable.insert_arr_param(
+        dtype, dim, element_shape)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(

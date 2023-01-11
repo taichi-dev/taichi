@@ -2,13 +2,14 @@
 # This module is used by Taichi's ast transformer to parse the souce code.
 # Currently this module is aimed for working in the following modes:
 # 1. Usual Python/IPython mode, e.g. python script.py
-#    In this case we mainly rely on the built-in `inspect` module, except we need
-#    to do some hacks when we are in IPython mode and there is a cell magic.
-# 2. Blender's scripting mode, e.g. Users write Taichi code in the scripting window
-#    in Blender and press the run button. In this case we need to retrieve the source using
-#    Blender's `bpy.data.texts` and write it to a temp file so that the inspect module can parse.
-# 3. The interactive shell mode, e.g. Users directly type their code in the interactive
-#    shell. In this case we use `dill` to get the source.
+#    In this case we mainly rely on the built-in `inspect` module, except
+#    we need some hacks when we are in IPython mode and there is a cell magic.
+# 2. Blender's scripting mode, e.g. Users write Taichi code in the scripting
+#    window in Blender and press the run button. In this case we need to
+#    retrieve the source using Blender's `bpy.data.texts` and write it to a temp
+#    file so that the inspect module can parse.
+# 3. The interactive shell mode, e.g. Users directly type their code in the
+#    interactive shell. In this case we use `dill` to get the source.
 #
 # NB: Running Taichi in other modes are likely not supported.
 
@@ -99,7 +100,7 @@ _blender_findsource._saved_inspect_cache = {}
 
 def _Python_IPython_findsource(obj):
     try:
-        # In Python and IPython the builtin findsource would suffice in most cases
+        # In Python and IPython the builtin inspect would suffice in most cases
         return _builtin_findsource(obj)
     except IOError:
         # Except that the cell has a magic command like %%time or %%timeit
@@ -118,9 +119,10 @@ def _Python_IPython_findsource(obj):
                     # The latest lines of code can be retrived from here
                     lines = ip.history_manager._i00
 
-                    # `lines` is a string that also contains the cell magic command,
-                    # we need to remove the magic command (and spaces/sep around it)
-                    # to obtain a valid Python code snippet before saving it to a file
+                    # `lines` is a string that also contains the cell magic
+                    # command, we need to remove the magic command
+                    # (and spaces/sep around it) to obtain a valid Python code
+                    # snippet before saving it to a file
                     index = lines.find("%time")
                     lines_stripped = lines[index:]
                     lines_stripped = lines_stripped.split(maxsplit=1)[1]
@@ -136,7 +138,8 @@ def _Python_IPython_findsource(obj):
 
             except:
                 pass
-        raise IOError(f"Cannot find source code for Object: {obj}, it's likely you are not running Taichi from command line or IPython mode.")
+        raise IOError(f"Cannot find source code for Object: {obj}, it's likely \
+you are not running Taichi from command line or IPython.")
 
 
 def _REPL_findsource(obj):
@@ -154,7 +157,10 @@ def _custom_findsource(obj):
             try:
                 return _blender_findsource(obj)
             except:
-                raise IOError(f"Cannot find source code for Object: {obj}, this is possibly because you are running Taichi in an environment that Taichi's own inspect module cannot find the source. Please report an issue to help us fix: https://github.com/taichi-dev/taichi/issues")
+                raise IOError(f"Cannot find source code for Object: {obj}, this \
+is possibly because you are running Taichi in an environment that Taichi's own \
+inspect module cannot find the source. Please report an issue to help us fix: \
+https://github.com/taichi-dev/taichi/issues")
 
 
 class _InspectContextManager:

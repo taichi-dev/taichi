@@ -78,8 +78,9 @@ class JITModuleAMDGPU : public JITModule {
               const std::vector<void *> &arg_pointers,
               const std::vector<int> &arg_sizes) override {
     auto func = lookup_function(name);
-    AMDGPUContext::get_instance().launch(func, name, arg_pointers, arg_sizes, grid_dim,
-                                         block_dim, dynamic_shared_mem_bytes);
+    AMDGPUContext::get_instance().launch(func, name, arg_pointers, arg_sizes,
+                                         grid_dim, block_dim,
+                                         dynamic_shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {

@@ -179,9 +179,13 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   return *this;
 }
 
-MetalCommandList::MetalCommandList(const MetalDevice &device)
-    : device_(&device) {}
-MetalCommandList::~MetalCommandList() {}
+MetalCommandList::MetalCommandList(const MetalDevice &device,
+                                   MTLCommandQueue_id cmd_queue)
+    : device_(&device) {
+  cmdbuf_ = [[cmd_queue commandBuffer] retain];
+}
+
+MetalCommandList::~MetalCommandList() { [cmdbuf_ release]; }
 
 void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   RHI_ASSERT(p != nullptr);
@@ -223,17 +227,17 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
   MTLBuffer_id src_mtl_buffer = src_memory.mtl_buffer();
   MTLBuffer_id dst_mtl_buffer = dst_memory.mtl_buffer();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLBlitCommandEncoder_id encoder = [mtl_command_buffer blitCommandEncoder];
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
     [encoder copyFromBuffer:src_mtl_buffer
-               sourceOffset:(NSUInteger)src.offset
+               sourceOffset:NSUInteger(src.offset)
                    toBuffer:dst_mtl_buffer
-          destinationOffset:(NSUInteger)dst.offset
+          destinationOffset:NSUInteger(dst.offset)
                        size:size];
     [encoder endEncoding];
-  };
-  pending_commands_.emplace_back(encode_f);
+  }
 }
+
 void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
                                    uint32_t data) noexcept {
   RHI_ASSERT(data == 0);
@@ -246,14 +250,13 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
 
   MTLBuffer_id mtl_buffer = memory.mtl_buffer();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLBlitCommandEncoder_id encoder = [mtl_command_buffer blitCommandEncoder];
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
     [encoder fillBuffer:mtl_buffer
                   range:NSMakeRange((NSUInteger)ptr.offset, (NSUInteger)size)
                   value:0];
     [encoder endEncoding];
-  };
-  pending_commands_.emplace_back(encode_f);
+  }
 }
 
 RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
@@ -271,9 +274,8 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
   std::vector<MetalShaderResource> shader_resources =
       current_shader_resource_set_->resources();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLComputeCommandEncoder_id encoder =
-        [mtl_command_buffer computeCommandEncoder];
+  @autoreleasepool {
+    MTLComputeCommandEncoder_id encoder = [cmdbuf_ computeCommandEncoder];
 
     for (const MetalShaderResource &resource : shader_resources) {
       switch (resource.ty) {
@@ -293,9 +295,11 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
             threadsPerThreadgroup:MTLSizeMake(local_x, local_y, local_z)];
     [encoder endEncoding];
   };
-  pending_commands_.emplace_back(encode_f);
+
   return RhiResult::success;
 }
+
+MTLCommandBuffer_id MetalCommandList::finalize() { return cmdbuf_; }
 
 MetalStream::MetalStream(const MetalDevice &device,
                          MTLCommandQueue_id mtl_command_queue)
@@ -315,24 +319,18 @@ void MetalStream::destroy() {
 }
 
 RhiResult MetalStream::new_command_list(CommandList **out_cmdlist) noexcept {
-  *out_cmdlist = new MetalCommandList(*device_);
+  *out_cmdlist = new MetalCommandList(*device_, mtl_command_queue_);
   return RhiResult::success;
 }
+
 StreamSemaphore
 MetalStream::submit(CommandList *cmdlist,
                     const std::vector<StreamSemaphore> &wait_semaphores) {
   MetalCommandList *cmdlist2 = (MetalCommandList *)cmdlist;
 
-  @autoreleasepool {
-    MTLCommandBuffer_id cmdbuf = [[mtl_command_queue_ commandBuffer] retain];
-    for (auto &command : cmdlist2->pending_commands_) {
-      command(cmdbuf);
-    }
-    cmdlist2->pending_commands_.clear();
-
-    [cmdbuf commit];
-    pending_cmdbufs_.emplace_back(cmdbuf);
-  }
+  MTLCommandBuffer_id cmdbuf = [cmdlist2->finalize() retain];
+  [cmdbuf commit];
+  pending_cmdbufs_.emplace_back(cmdbuf);
 
   return {};
 }

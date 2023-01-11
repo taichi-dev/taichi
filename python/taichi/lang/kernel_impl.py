@@ -258,12 +258,6 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif isinstance(args[i],
-                                impl.Expr) and args[i].ptr.is_tensor():
-                    non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().compiling_callable.
-                        ast_builder().expand_exprs([args[i].ptr])
-                    ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,

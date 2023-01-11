@@ -90,8 +90,7 @@ class FrontendSNodeOpStmt : public Stmt {
   ExprGroup indices;
   Expr val;
 
-  FrontendSNodeOpStmt(ASTBuilder *builder,
-                      SNodeOpType op_type,
+  FrontendSNodeOpStmt(SNodeOpType op_type,
                       SNode *snode,
                       const ExprGroup &indices,
                       const Expr &val = Expr(nullptr));
@@ -700,13 +699,11 @@ class SNodeOpExpression : public Expression {
   ExprGroup indices;
   std::vector<Expr> values;  // Only for op_type==append
 
-  SNodeOpExpression(ASTBuilder *builder,
-                    SNode *snode,
+  SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices);
 
-  SNodeOpExpression(ASTBuilder *builder,
-                    SNode *snode,
+  SNodeOpExpression(SNode *snode,
                     SNodeOpType op_type,
                     const ExprGroup &indices,
                     const std::vector<Expr> &values);

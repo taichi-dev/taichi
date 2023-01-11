@@ -28,10 +28,6 @@ def setup_llvm(env_out: dict) -> None:
         if 'AMDGPU_TEST' in os.environ:
             # FIXME: AMDGPU bots are currently maintained separately,
             #        we should unify them with the rest of the bots.
-            lnsf = sh.sudo.ln.bake('-sf')
-            lnsf('/usr/bin/clang++-10', '/usr/bin/clang++')
-            lnsf('/usr/bin/clang-10', '/usr/bin/clang')
-            lnsf('/usr/bin/ld.lld-10', '/usr/bin/ld.lld')
             env_out['LLVM_DIR'] = '/taichi-llvm-15'
             return
         elif is_manylinux2014():

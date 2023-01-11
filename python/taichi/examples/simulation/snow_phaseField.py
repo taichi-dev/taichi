@@ -2,8 +2,6 @@
     space discretization: finite difference method, time integration: Runge-Kutta method
     repo's link: https://github.com/mo-hanxuan/Snow-PhaseField
     more details about physical interpretation refer to [Physica D 63(3-4): 410-423]"""
-import os
-
 import numpy as np
 
 import taichi as ti
@@ -57,7 +55,6 @@ class Dendrite:
             np.array([1. / 6., 1. / 3., 1. / 3., 1. / 6.]))
 
         self.showFrameFrequency = int(4 * 1.e-4 / self.dt)
-        self.writeImages = False  # setting to True will write images to results folder
 
     @ti.kernel
     def initialize(self, ):
@@ -195,22 +192,13 @@ class Dendrite:
 
     def getDendritic(self, steps=2048):
         self.initialize()
-        gui_phi = ti.GUI("phase field", res=(self.n, self.n))
+        gui = ti.GUI("phase field", res=(self.n, self.n))
+        while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
+            for _ in range(self.showFrameFrequency):
+                self.advance()
 
-        if self.writeImages:
-            path = "./results/"
-            if not os.path.exists(path):
-                os.makedirs(path)
-
-        for i in range(steps):
-            if i % self.showFrameFrequency == 0:
-                gui_phi.set_image(self.phi)
-                gui_phi.show(path + f"time_{i * self.dt :.4f}s.png" if i %
-                             (self.showFrameFrequency *
-                              8) == 0 and self.writeImages else None)
-            self.advance()
-
-        gui_phi.running = False
+            gui.set_image(self.phi)
+            gui.show()
         return self.phi
 
 

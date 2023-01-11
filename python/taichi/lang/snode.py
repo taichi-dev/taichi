@@ -395,7 +395,7 @@ def append(node, indices, val):
     """
     ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_append(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_append(
             node._snode.ptr, expr.make_expr_group(indices), ptrs),
         tb=impl.get_runtime().get_current_src_info())
     a = impl.expr_init(append_expr)
@@ -413,9 +413,9 @@ def is_active(node, indices):
     Returns:
         bool: the cell `node[indices]` is active or not.
     """
-    return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_is_active(
-            node._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_is_active(node._snode.ptr,
+                                          expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -425,7 +425,7 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_activate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_activate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -439,7 +439,7 @@ def deactivate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -454,7 +454,7 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_length(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_length(
             node._snode.ptr, expr.make_expr_group(indices)))
 
 
@@ -470,9 +470,9 @@ def get_addr(f, indices):
     Returns:
         ti.u64: The memory address of `f[indices]`.
     """
-    return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_get_addr(
-            f._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_get_addr(f._snode.ptr,
+                                         expr.make_expr_group(indices)))
 
 
 __all__ = [

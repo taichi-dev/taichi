@@ -291,7 +291,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.5 \
+            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -311,7 +311,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.5 \
+             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
@@ -351,6 +351,7 @@ jobs:
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
+          git config --system core.longpaths true
           git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
 
       - uses: actions/checkout@v3

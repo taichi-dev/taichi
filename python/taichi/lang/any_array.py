@@ -78,7 +78,7 @@ class AnyArrayAccess:
 
     @taichi_scope
     def subscript(self, i, j):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
 
         indices_second = (i, ) if len(self.arr.element_shape()) == 1 else (i,
                                                                            j)

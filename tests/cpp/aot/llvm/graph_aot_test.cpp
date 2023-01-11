@@ -45,21 +45,29 @@ TEST(LlvmCGraph, RunGraphCpu) {
 
   constexpr int ArrLength = 100;
   constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
-  auto devalloc_arr =
+  auto devalloc_arr_0 =
+      exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+  auto devalloc_arr_1 =
       exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
 
   /* Test with Graph */
   // Prepare & Run "init" Graph
   auto run_graph = mod->get_graph("run_graph");
 
-  auto arr = taichi::lang::Ndarray(
-      devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength}, {1});
+  auto arr0 = taichi::lang::Ndarray(
+      devalloc_arr_0, taichi::lang::PrimitiveType::i32, {ArrLength});
+  auto arr1 = taichi::lang::Ndarray(
+      devalloc_arr_1, taichi::lang::PrimitiveType::i32, {ArrLength},
+      {
+          1,
+      });
 
   int base0 = 10;
   int base1 = 20;
   int base2 = 30;
   std::unordered_map<std::string, taichi::lang::aot::IValue> args;
-  args.insert({"arr", taichi::lang::aot::IValue::create(arr)});
+  args.insert({"arr0", taichi::lang::aot::IValue::create(arr0)});
+  args.insert({"arr1", taichi::lang::aot::IValue::create(arr1)});
   args.insert({"base0", taichi::lang::aot::IValue::create(base0)});
   args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
   args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
@@ -67,10 +75,15 @@ TEST(LlvmCGraph, RunGraphCpu) {
   run_graph->run(args);
   exec.synchronize();
 
-  auto *data = reinterpret_cast<int32_t *>(
-      exec.get_ndarray_alloc_info_ptr(devalloc_arr));
+  auto *data_0 = reinterpret_cast<int32_t *>(
+      exec.get_ndarray_alloc_info_ptr(devalloc_arr_0));
+  auto *data_1 = reinterpret_cast<int32_t *>(
+      exec.get_ndarray_alloc_info_ptr(devalloc_arr_1));
   for (int i = 0; i < ArrLength; i++) {
-    EXPECT_EQ(data[i], 3 * i + base0 + base1 + base2);
+    EXPECT_EQ(data_0[i], 3 * i + base0 + base1 + base2);
+  }
+  for (int i = 0; i < ArrLength; i++) {
+    EXPECT_EQ(data_1[i], 3 * i + base0 + base1 + base2);
   }
 }
 
@@ -99,21 +112,28 @@ TEST(LlvmCGraph, RunGraphCuda) {
 
     constexpr int ArrLength = 100;
     constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
-    auto devalloc_arr =
+    auto devalloc_arr_0 =
+        exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
+
+    auto devalloc_arr_1 =
         exec.allocate_memory_ndarray(kArrBytes_arr, result_buffer);
 
     /* Test with Graph */
     // Prepare & Run "init" Graph
     auto run_graph = mod->get_graph("run_graph");
 
-    auto arr = taichi::lang::Ndarray(
-        devalloc_arr, taichi::lang::PrimitiveType::i32, {ArrLength}, {1});
+    auto arr0 = taichi::lang::Ndarray(
+        devalloc_arr_0, taichi::lang::PrimitiveType::i32, {ArrLength});
+
+    auto arr1 = taichi::lang::Ndarray(
+        devalloc_arr_1, taichi::lang::PrimitiveType::i32, {ArrLength}, {1});
 
     int base0 = 10;
     int base1 = 20;
     int base2 = 30;
     std::unordered_map<std::string, taichi::lang::aot::IValue> args;
-    args.insert({"arr", taichi::lang::aot::IValue::create(arr)});
+    args.insert({"arr0", taichi::lang::aot::IValue::create(arr0)});
+    args.insert({"arr1", taichi::lang::aot::IValue::create(arr1)});
     args.insert({"base0", taichi::lang::aot::IValue::create(base0)});
     args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
     args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
@@ -121,12 +141,23 @@ TEST(LlvmCGraph, RunGraphCuda) {
     run_graph->run(args);
     exec.synchronize();
 
-    auto *data = reinterpret_cast<int32_t *>(
-        exec.get_ndarray_alloc_info_ptr(devalloc_arr));
-
     std::vector<int32_t> cpu_data(ArrLength);
+
+    auto *data_0 = reinterpret_cast<int32_t *>(
+        exec.get_ndarray_alloc_info_ptr(devalloc_arr_0));
+
     CUDADriver::get_instance().memcpy_device_to_host(
-        (void *)cpu_data.data(), (void *)data, ArrLength * sizeof(int32_t));
+        (void *)cpu_data.data(), (void *)data_0, ArrLength * sizeof(int32_t));
+
+    for (int i = 0; i < ArrLength; ++i) {
+      EXPECT_EQ(cpu_data[i], 3 * i + base0 + base1 + base2);
+    }
+
+    auto *data_1 = reinterpret_cast<int32_t *>(
+        exec.get_ndarray_alloc_info_ptr(devalloc_arr_1));
+
+    CUDADriver::get_instance().memcpy_device_to_host(
+        (void *)cpu_data.data(), (void *)data_1, ArrLength * sizeof(int32_t));
 
     for (int i = 0; i < ArrLength; ++i) {
       EXPECT_EQ(cpu_data[i], 3 * i + base0 + base1 + base2);

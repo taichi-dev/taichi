@@ -695,7 +695,7 @@ def test_func_in_python_func():
             return ti.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @ti.kernel
@@ -788,7 +788,7 @@ def test_taichi_other_than_ti():
             return tc.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @tc.kernel

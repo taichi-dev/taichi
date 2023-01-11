@@ -1,6 +1,5 @@
 import functools
 import numbers
-import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -139,7 +138,7 @@ def make_matrix(arr, dt=None):
         else:
             dt = cook_dtype(dt)
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().make_matrix_expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
             shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
@@ -836,25 +835,6 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops._identity_matrix(n, dt)
 
-    @staticmethod
-    def rotation2d(alpha):
-        """Returns the matrix representation of the 2D
-        anti-clockwise rotation of angle `alpha`. The angle `alpha`
-        is in radians.
-
-        Example::
-
-            >>> import math
-            >>> ti.Matrix.rotation2d(math.pi/4)
-            [[ 0.70710678 -0.70710678]
-             [ 0.70710678  0.70710678]]
-        """
-        warnings.warn(
-            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
-            DeprecationWarning)
-        from taichi.lang import matrix_ops  # pylint: disable=C0415
-        return matrix_ops._rotation2d_matrix(alpha)
-
     @classmethod
     @python_scope
     def field(cls,
@@ -1491,8 +1471,9 @@ class MatrixType(CompoundType):
                 entries += list(x.ravel())
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             elif isinstance(x, Matrix):
                 entries += x.entries
@@ -1605,8 +1586,9 @@ class VectorType(MatrixType):
                 entries += x.entries
             elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
                 entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
+                    impl.Expr(e)
+                    for e in impl.get_runtime().compiling_callable.ast_builder(
+                    ).expand_exprs([x.ptr])
                 ]
             else:
                 entries.append(x)

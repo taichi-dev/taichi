@@ -1480,14 +1480,13 @@ class MatrixType(CompoundType):
             else:
                 entries.append(x)
 
-        if len(entries) != self.m * self.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
-            )
-        entries = [[entries[k * self.m + i] for i in range(self.m)]
-                   for k in range(self.n)]
-
         if in_python_scope():
+            if len(entries) != self.m * self.n:
+                raise TaichiSyntaxError(
+                    f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
+                )
+            entries = [[entries[k * self.m + i] for i in range(self.m)]
+                       for k in range(self.n)]
             return self._instantiate_in_python_scope(
                 Matrix(entries, dt=self.dtype, ndim=self.ndim))
 
@@ -1592,11 +1591,6 @@ class VectorType(MatrixType):
                 entries += x.entries
             else:
                 entries.append(x)
-
-        if len(entries) != self.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector type: ({self.n}), ({len(entries)})"
-            )
 
         if in_python_scope():
             return self._instantiate_in_python_scope(

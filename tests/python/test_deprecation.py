@@ -97,7 +97,8 @@ def test_deprecate_metal_sparse():
 # Remove this before v1.5.0
 @pytest.mark.parametrize("value", [True, False])
 def test_removed_packed(value):
-    with pytest.raises(ti.TaichiRuntimeError, match="The 'packed' switch has been removed."):
+    with pytest.raises(ti.TaichiRuntimeError,
+                       match="The 'packed' switch has been removed."):
         ti.init(packed=value)
 
 

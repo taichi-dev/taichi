@@ -1,5 +1,5 @@
 # Taichi's custom inspect module.
-# This module is used by Taichi's ast transformer to parse the souce code.
+# This module is used by Taichi's ast transformer to parse the source code.
 # Currently this module is aimed for working in the following modes:
 # 1. Usual Python/IPython mode, e.g. python script.py
 #    In this case we mainly rely on the built-in `inspect` module, except

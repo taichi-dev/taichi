@@ -414,6 +414,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           if (host_ctx->device_allocation_type[i] ==
               RuntimeContext::DevAllocType::kNdarray) {
             any_arrays[i] = devalloc;
+            ndarrays_in_use_.insert(devalloc.alloc_id);
           } else if (host_ctx->device_allocation_type[i] ==
                      RuntimeContext::DevAllocType::kTexture) {
             textures[i] = devalloc;
@@ -588,6 +589,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  ndarrays_in_use_.clear();
   fflush(stdout);
 }
 

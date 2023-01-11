@@ -2,7 +2,7 @@ import atexit
 import inspect
 import os
 import tempfile
-import sys
+
 
 _builtin_getfile = inspect.getfile
 _builtin_findsource = inspect.findsource
@@ -141,5 +141,8 @@ def getsourcefile(obj):
     except:
         raise IOError(f"Cannot get the source file of {obj}. This is possibly because of you are running Taichi in an environment in which Taichi's own inspect module cannot find the source file. Please report an issue to help us fix this problem: https://github.com/taichi-dev/taichi/issues")
 
+import sourceinspect
+#getsourcefile = sourceinspect.getsourcefile
+#getsourcelines = sourceinspect.getsourcelines
 
 __all__ = ['getsourcelines', 'getsourcefile']

@@ -60,7 +60,7 @@ class MetalProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   bool used_in_kernel(DeviceAllocationId id) override {
-     return gfx_runtime_->used_in_kernel(id);
+    return gfx_runtime_->used_in_kernel(id);
   }
 
   Device *get_compute_device() override {

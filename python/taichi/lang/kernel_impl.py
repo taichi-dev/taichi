@@ -420,17 +420,20 @@ class TaichiCallableTemplateMapper:
                     if len(shape) != anno.dtype.ndim + anno.ndim:
                         raise ValueError(
                             f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
-                            f"but the argument has only {len(shape)} dimensions")
+                            f"but the argument has only {len(shape)} dimensions"
+                        )
                 else:
                     if len(shape) < anno.dtype.ndim:
                         raise ValueError(
                             f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
-                            f"but the argument has only {len(shape)} dimensions")
+                            f"but the argument has only {len(shape)} dimensions"
+                        )
                 element_shape = shape[-anno.dtype.ndim:]
                 if element_shape != anno.dtype.get_shape():
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={anno.dtype.get_shape()}, "
-                        f"but the argument has element shape of {element_shape}")
+                        f"but the argument has element shape of {element_shape}"
+                    )
             return to_taichi_type(
                 arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):

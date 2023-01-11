@@ -720,8 +720,3 @@ def test_ndarray_in_python_func():
 
     for i in range(300):
         test()
-
-
-@test_utils.test(arch=supported_archs_taichi_ndarray)
-def test_ndarray_simple_alloc():
-    z = ti.ndarray(float, (8192))

@@ -171,7 +171,7 @@ TEST(AliasAnalysis, ExternalPtr_DiffPtr) {
 
 //   const auto aa = alias_analysis(eptr1, eptr2);
 //   EXPECT_EQ(aa, AliasResult::different);
-}
+// }
 
 }  // namespace analysis
 }  // namespace irpass

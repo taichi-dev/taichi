@@ -323,6 +323,8 @@ class TI_DLL_EXPORT Program {
       ExternalArrayLayout layout = ExternalArrayLayout::kNull,
       bool zero_fill = false);
 
+  void delete_ndarray(Ndarray *ndarray);
+
   Texture *create_texture(const DataType type,
                           int num_channels,
                           const std::vector<int> &shape);
@@ -393,7 +395,8 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
-  std::vector<std::unique_ptr<Ndarray>> ndarrays_;
+  // TODO: Move ndarrays_ and textures_ to be managed by runtime
+  std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
   std::shared_mutex config_map_mut;
 };

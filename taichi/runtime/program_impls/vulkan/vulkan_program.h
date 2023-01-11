@@ -67,6 +67,9 @@ class VulkanProgramImpl : public ProgramImpl {
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
+  bool used_in_kernel(DeviceAllocationId id) override {
+    return vulkan_runtime_->used_in_kernel(id);
+  }
   DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   Device *get_compute_device() override {

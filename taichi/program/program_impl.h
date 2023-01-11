@@ -105,6 +105,10 @@ class ProgramImpl {
     return kDeviceNullAllocation;
   }
 
+  virtual bool used_in_kernel(DeviceAllocationId) {
+    return false;
+  }
+
   virtual DeviceAllocation allocate_texture(const ImageParams &params) {
     return kDeviceNullAllocation;
   }

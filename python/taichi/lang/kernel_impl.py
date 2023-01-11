@@ -248,7 +248,6 @@ class Func:
 
     def func_call_rvalue(self, key, args):
         # Skip the template args, e.g., |self|
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
         assert self.is_real_function
         non_template_args = []
         for i, kernel_arg in enumerate(self.arguments):

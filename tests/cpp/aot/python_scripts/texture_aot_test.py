@@ -81,8 +81,8 @@ def compile_aot(arch, is_graph):
         _tex0 = ti.Texture(ti.Format.r32f, (128, 128))
         _tex1 = ti.Texture(ti.Format.r32f, (128, 128))
 
-        mod.add_kernel(run0, template_args={'rw_tex': _rw_tex0})
-        mod.add_kernel(run1, template_args={'tex': _tex0, 'rw_tex': _rw_tex1})
+        mod.add_kernel(run0, template_args={})
+        mod.add_kernel(run1, template_args={'tex': _tex0})
         mod.add_kernel(run2,
                        template_args={
                            'tex0': _tex0,

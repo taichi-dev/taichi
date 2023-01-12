@@ -7,7 +7,7 @@ from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
 from taichi.types.texture_type import TY_CH2FORMAT, RWTextureType, TextureType
 
-template_types = (NdarrayType, RWTextureType, TextureType, template)
+template_types = (NdarrayType, TextureType, template)
 
 
 def check_type_match(lhs, rhs):

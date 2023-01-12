@@ -166,25 +166,26 @@ def func():
   print(3)
 ```
 
-## When to use `ti.static` with for loops
+:::note
+Before v1.4.0, indices for accessing Taichi matrices/vectors must be compile-time constants.
+Therefore, if the indices come from a loop, the loop must be unrolled:
 
-There are two reasons to use `ti.static` with for loops:
+```python {7}
+# Here we declare a field containing 3 vectors. Each vector contains 8 elements.
+x = ti.Vector.field(8, ti.f32, shape=3)
 
-- Loop unrolling for improving runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
-- Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
-
-For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
-
-```python {6}
-# Here we declare a field contains 3 vector. Each vector contains 8 elements.
-x = ti.Vector.field(8, ti.f32, shape=(3))
 @ti.kernel
 def reset():
-  for i in x:
-    for j in ti.static(range(x.n)):
-      # The inner loop must be unrolled since j is an index for accessing a vector
-      x[i][j] = 0
+    for i in x:
+        for j in ti.static(range(x.n)):
+            # The inner loop must be unrolled since j is an index for accessing a vector.
+            x[i][j] = 0
 ```
+
+Starting from v1.4.0, indices for accessing Taichi matrices/vectors can be runtime variables.
+Therefore, the loop above is no longer required to be unrolled.
+That said, unrolling it will still help you reduce runtime overhead.
+:::
 
 ## Compile-time recursion of `ti.func`
 

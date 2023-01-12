@@ -93,22 +93,12 @@ def test_deprecate_metal_sparse():
         ti.root.dynamic(ti.i, 10)
 
 
-def test_deprecated_packed_true():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Currently packed=True is the default setting and the switch will be removed in v1.4.0."
-    ):
-        ti.init(packed=True)
-
-
-def test_deprecated_packed_false():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            r"The automatic padding mode \(packed=False\) will no longer exist in v1.4.0. The switch will "
-            "also be removed then. Make sure your code doesn't rely on it."):
-        ti.init(packed=False)
+# Remove this before v1.5.0
+@pytest.mark.parametrize("value", [True, False])
+def test_removed_packed(value):
+    with pytest.raises(ti.TaichiRuntimeError,
+                       match="The 'packed' switch has been removed."):
+        ti.init(packed=value)
 
 
 @test_utils.test(arch=ti.vulkan)

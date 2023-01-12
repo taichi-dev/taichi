@@ -49,7 +49,7 @@ float sum(T &arr) {
 
 When this function is called in the program, maybe in different places and operates on different array-like types `T`, the compiler will generate a version of `sum` for each `T`, as long as `T` implements the `length` method to allow you get the array length, and can be intrated over through indices. In other words, with template programming, you only write the same code once and the compiler automatically generates other versions for you.
 
-Taichi has a counterpart functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]). 
+Taichi has a counterpart functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]).
 
 Let's write a function `sum` (our old friend) to illustrate this. This `sum` function will take in a Taichi field and return the sum of all its entries.
 

@@ -4,13 +4,23 @@ sidebar_position: 1
 
 # Metaprogramming
 
+
+## What is metaprogramming?
+
 > Metaprogramming is a programming technique in which computer programs have the ability to treat other programs as their data. It means that a program can be designed to read, generate, analyze or transform other programs, and even modify itself while running.
 >
 > from Wikipedia: https://en.wikipedia.org/wiki/Metaprogramming.
 
 To put it shortly: A metaprogram is a program that writes (or modifies) programs.
 
-As a scripting language, Python is very well suited for metaprogramming. For example, you can use a decorator to modify the behavior of a function, or use `setattr` to modify the attributes of an object, or use `type` to define classes at runtime.
+That sounds good, but you might wonder, code writes code, who needs that? Why don't I write all the code myself? Let's take a practical example to illustrate its use.
+
+In simulations and graphics, a 4D vector `v` is composed by 4 components `x`, `y`, `z`, `w`. One can use `v.x` to access its first component, `v.y` to access its second component, and so on. It would be very handy if we can use any combination of the letters `x`, `y`, `z, `w` to access the components of `v`, and returns a vector that matches this combination. This is called swizzling (reader with some knowledge of OpenGL shading language or have experienced Blender's scripting mode will feel familiar with this). For example, we want `v.xy` to return a 2D vector `[v.x, v.y]`, `v.zyx` to return a 3D vector `[v.z, v.y, v.x]`, `v.xxxx` to return a 4D vector `[v.x, v.x, v.x, v.x]`, and so on to all other combinations.
+
+But how do we implement this in a 4D vector class? There are 4 possible combinations consists of one letter, 16 combinations of two letters, 64 combinations of three letters, 256 combinations of four letters, the total in 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor,  and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it, and return the expected result! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "v.xxx", and if it cannot, it calls `__setattr__` which writes a method that constructs that query for you, define it on vector class, and finally returns the result! Now, every time you call find_all_by_year_and_gpa() on that student object, the newly defined method gets called instead of going through that whole process every time! Of course you could just process the request inside method_missing?(), but going through that process every time is inefficient. What if we had a loop that calls this method with every iteration?Instead, we can write some function like `generate_vector_swizzle`, which iterates over all combinations
+
+
+The benefits of metaprogramming are: It reduces repetition of the code, and makes the code more readable.
 
 Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are known to the compiler. How can you change the
 

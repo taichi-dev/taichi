@@ -67,7 +67,7 @@ void aot_save(taichi::Arch arch) {
     builder.create_return(builder.create_local_load(sum));
 
     kernel_ret = std::make_unique<Kernel>(program, builder.extract_ir(), "ret");
-    kernel_ret->add_ret(PrimitiveType::i32);
+    kernel_ret->insert_ret(PrimitiveType::i32);
   }
 
   aot_builder->add_field("place", place, true, place->dt, {n}, 1, 1);

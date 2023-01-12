@@ -26,13 +26,13 @@ int Callable::insert_arr_param(const DataType &dt,
 }
 
 int Callable::insert_texture_param(const DataType &dt) {
-  // FIXME: we shouldn't abuse is_array for texture parameter_list
+  // FIXME: we shouldn't abuse is_array for texture parameters
   parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/true);
   return (int)parameter_list.size() - 1;
 }
 
 void Callable::finalize_rets() {
-  if (rets.empty()) {
+if (rets.empty()) {
     return;
   }
   std::vector<const Type *> types;

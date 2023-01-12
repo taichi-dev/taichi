@@ -677,6 +677,7 @@ void export_lang(py::module &m) {
       .def("insert_arr_param", &Kernel::insert_arr_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
+      .def("finalize_rets", &Kernel::finalize_rets)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)

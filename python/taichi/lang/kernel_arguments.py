@@ -114,4 +114,4 @@ def decl_ret(dtype, real_func=False):
             [dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
-    return impl.get_runtime().compiling_callable.insert_ret(dtype)
+    impl.get_runtime().compiling_callable.insert_ret(dtype)

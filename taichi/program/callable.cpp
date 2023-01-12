@@ -32,7 +32,7 @@ int Callable::insert_texture_param(const DataType &dt) {
 }
 
 void Callable::finalize_rets() {
-if (rets.empty()) {
+  if (rets.empty()) {
     return;
   }
   std::vector<const Type *> types;

@@ -113,10 +113,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return task_counter_++;
   }
 
-  void mark_as_from_cache() {
-    from_cache_ = true;
-  }
-
   [[nodiscard]] std::string get_name() const override;
 
   void set_kernel_key_for_cache(const std::string &kernel_key) {
@@ -145,7 +141,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;
-  bool from_cache_{false};
 };
 
 }  // namespace taichi::lang

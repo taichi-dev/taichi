@@ -252,7 +252,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
   if (params_opt.has_value()) {
     TI_DEBUG("Create kernel '{}' from in-memory cache (key='{}')",
              kernel->get_name(), key);
-    kernel->mark_as_from_cache();
     // TODO: Support multiple SNodeTrees in AOT.
     params_opt->num_snode_trees = compiled_structs_.size();
     return params_opt;
@@ -262,7 +261,6 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
     if (auto *aot_kernel = cached_module_->get_kernel(key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
                key);
-      kernel->mark_as_from_cache();
       auto *aot_kernel_impl = static_cast<gfx::KernelImpl *>(aot_kernel);
       auto compiled = aot_kernel_impl->params();
       // TODO: Support multiple SNodeTrees in AOT.

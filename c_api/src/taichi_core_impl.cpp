@@ -728,7 +728,16 @@ void ti_launch_kernel(TiRuntime runtime,
         break;
       }
       case TI_ARGUMENT_TYPE_TEXTURE: {
-        ti_set_last_error(TI_ERROR_NOT_SUPPORTED, "TI_ARGUMENT_TYPE_TEXTURE");
+        TI_CAPI_ARGUMENT_NULL(args[i].value.texture.image);
+        std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
+            std::make_unique<taichi::lang::DeviceAllocation>(
+                devimg2devalloc(runtime2, arg.value.texture.image));
+        int width = arg.value.texture.extent.width;
+        int height = arg.value.texture.extent.height;
+        int depth = arg.value.texture.extent.depth;
+        runtime_context.set_arg_rw_texture(i, (intptr_t)devalloc.get(),
+                                           {width, height, depth});
+        devallocs.emplace_back(std::move(devalloc));
         break;
       }
       default: {

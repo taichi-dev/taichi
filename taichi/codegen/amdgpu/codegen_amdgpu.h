@@ -9,7 +9,8 @@ namespace lang {
 
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
-  KernelCodeGenAMDGPU(Kernel *kernel) : KernelCodeGen(kernel) {
+  KernelCodeGenAMDGPU(const CompileConfig *config, Kernel *kernel)
+      : KernelCodeGen(config, kernel) {
   }
 
 // TODO: Stop defining this macro guards in the headers

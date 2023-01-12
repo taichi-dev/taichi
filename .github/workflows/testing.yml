@@ -3,7 +3,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [master]
+    branches:
+      - master
+      - rc-*
   schedule:
     - cron: '0 18 * * *'  # For testing the offline cache, GMT 18 == GMT+8 02
 

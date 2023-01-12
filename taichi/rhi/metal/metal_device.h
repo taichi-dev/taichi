@@ -213,8 +213,10 @@ class MetalDevice final : public Device {
   void unmap(DevicePtr ptr) override;
   void unmap(DeviceAllocation ptr) override;
 
-  std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
-                                            std::string name) override;
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
   ShaderResourceSet *create_resource_set() override;
 
   Stream *get_compute_stream() override;

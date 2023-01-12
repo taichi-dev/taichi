@@ -351,16 +351,25 @@ void MetalStream::command_sync() {
 }
 
 DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
+  // https://developer.apple.com/documentation/metal/mtlgpufamily/mtlgpufamilyapple8?language=objc
+  // We do this so that it compiles under lower version of macOS
+  [[maybe_unused]] constexpr auto kMTLGPUFamilyApple8 = MTLGPUFamily(1008);
+  constexpr auto kMTLGPUFamilyApple7 = MTLGPUFamily(1007);
+  constexpr auto kMTLGPUFamilyApple6 = MTLGPUFamily(1006);
+  constexpr auto kMTLGPUFamilyApple5 = MTLGPUFamily(1005);
+  constexpr auto kMTLGPUFamilyApple4 = MTLGPUFamily(1004);
+  constexpr auto kMTLGPUFamilyApple3 = MTLGPUFamily(1003);
+
   bool family_mac2 = [mtl_device supportsFamily:MTLGPUFamilyMac2];
-  bool family_apple7 = [mtl_device supportsFamily:MTLGPUFamilyApple7];
+  bool family_apple7 = [mtl_device supportsFamily:kMTLGPUFamilyApple7];
   bool family_apple6 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple6] | family_apple7;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple6] | family_apple7;
   bool family_apple5 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple5] | family_apple6;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple5] | family_apple6;
   bool family_apple4 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple4] | family_apple5;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple4] | family_apple5;
   bool family_apple3 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple3] | family_apple4;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple3] | family_apple4;
 
   bool feature_64_bit_integer_math = family_apple3;
   bool feature_floating_point_atomics = family_apple7 | family_mac2;
@@ -478,12 +487,18 @@ RhiResult MetalDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
 void MetalDevice::unmap(DevicePtr ptr) {}
 void MetalDevice::unmap(DeviceAllocation ptr) {}
 
-std::unique_ptr<Pipeline>
-MetalDevice::create_pipeline(const PipelineSourceDesc &src, std::string name) {
+RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
+                                       const PipelineSourceDesc &src,
+                                       std::string name,
+                                       PipelineCache *cache) noexcept {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
-  Pipeline *out =
-      MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
-  return std::unique_ptr<Pipeline>(out);
+  try {
+    *out_pipeline =
+        MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+  } catch (const std::exception &e) {
+    return RhiResult::error;
+  }
+  return RhiResult::success;
 }
 ShaderResourceSet *MetalDevice::create_resource_set() {
   return new MetalShaderResourceSet(*this);

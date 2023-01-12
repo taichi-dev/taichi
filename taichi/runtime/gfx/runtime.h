@@ -43,6 +43,8 @@ class CompiledTaichiKernel {
     std::vector<DeviceAllocation *> root_buffers;
     DeviceAllocation *global_tmps_buffer{nullptr};
     DeviceAllocation *listgen_buffer{nullptr};
+
+    PipelineCache *backend_cache{nullptr};
   };
 
   explicit CompiledTaichiKernel(const Params &ti_params);
@@ -140,6 +142,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
+
+  std::unique_ptr<PipelineCache> backend_cache_{nullptr};
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;

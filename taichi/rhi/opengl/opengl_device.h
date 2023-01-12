@@ -232,9 +232,10 @@ class GLDevice : public GraphicsDevice {
 
   GLint get_devalloc_size(DeviceAllocation handle);
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override;
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
 
   ShaderResourceSet *create_resource_set() final {
     return new GLResourceSet;

@@ -750,10 +750,17 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   alloc_id_to_buffer_.erase(alloc_id);
 }
 
-std::unique_ptr<Pipeline> Dx11Device::create_pipeline(
-    const PipelineSourceDesc &src,
-    std::string name) {
-  return std::make_unique<Dx11Pipeline>(src, name, this);
+RhiResult Dx11Device::create_pipeline(Pipeline **out_pipeline,
+                                      const PipelineSourceDesc &src,
+                                      std::string name,
+                                      PipelineCache *cache) noexcept {
+  try {
+    *out_pipeline = new Dx11Pipeline(src, name, this);
+  } catch (std::bad_alloc &) {
+    *out_pipeline = nullptr;
+    return RhiResult::out_of_memory;
+  }
+  return RhiResult::success;
 }
 
 RhiResult Dx11Device::map_range(DevicePtr ptr,

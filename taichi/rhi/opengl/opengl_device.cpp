@@ -567,10 +567,17 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   return size;
 }
 
-std::unique_ptr<Pipeline> GLDevice::create_pipeline(
-    const PipelineSourceDesc &src,
-    std::string name) {
-  return std::make_unique<GLPipeline>(src, name);
+RhiResult GLDevice::create_pipeline(Pipeline **out_pipeline,
+                                    const PipelineSourceDesc &src,
+                                    std::string name,
+                                    PipelineCache *cache) noexcept {
+  try {
+    *out_pipeline = new GLPipeline(src, name);
+  } catch (std::bad_alloc &) {
+    *out_pipeline = nullptr;
+    return RhiResult::out_of_memory;
+  }
+  return RhiResult::success;
 }
 
 RhiResult GLDevice::map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) {

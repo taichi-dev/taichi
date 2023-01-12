@@ -49,7 +49,7 @@ float sum(T &arr) {
 
 When this function is called in the program, maybe in different places and operates on different array-like types `T`, the compiler will generate a version of `sum` for each `T`, as long as `T` implements the `length` method to allow you get the array length, and can be intrated over through indices. In other words, with template programming, you only write the same code once and the compiler automatically generates other versions for you.
 
-Taichi has a counterpart functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]).
+Taichi has a similar functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]).
 
 Let's write a function `sum` (our old friend) to illustrate this. This `sum` function will take in a Taichi field and return the sum of all its entries.
 
@@ -60,8 +60,8 @@ def sum(x: ti.template()) -> float:
     for i in ti.grouped(x):
         result += x[i]
 
-f1d = ti.field(float, shape=10)
-f2d = ti.field(float, shape=(10, 10))
+f1d = ti.field(float, shape=100)
+f2d = ti.field(float, shape=(5, 5))
 f3d = ti.field(float, shape=(10, 10, 10))
 g3d = ti.field(int, shape=(10, 10, 10))
 
@@ -71,9 +71,9 @@ sum(f3d)
 sum(g3d)
 ```
 
-As can be seen from the code above, you won't need to bother about the shape of the field, as the code works for fields of any shape. This is very handy for physical simulations as the same function can be used in both 2D and 3D scenatios.
+As can be seen from the code above, the function `sum` works for fields of any shape and any dtype. There's no need to bother about the shape of the field. This is very handy for physical simulations as the same function can be used in both 2D and 3D scenarios.
 
-Note the function `ti.group()` is critial to our dimensionality-independent programming: In general, to loop over a field of dimension `d`, you will need `d` independent indices, one for each axis. Taichi's `ti.grouped` puts the `d` loop indices into a `d`-dimentional index of integer vector type, and the `for` loop is parallelized for all such vector-type indices.
+Note the function `ti.group()` is critial to our dimensionality-independent programming: In general, you will need `d` independent indices to loop over a field of dimension `d`, with one index for each axis. Taichi's `ti.grouped` puts the `d` loop indices into a `d`-dimentional integer vector, and the `for` loop is parallelized for all such multidimensional indices.
 
 We should mention a difference between Taichi and C++ in template metaprogramming: C++ compilers will generate a version of `sum` for each different type `T`; meanwhile Taichi's compiler **recompiles** the kernel each time it finds an argument of a different type is encounted. In the example above, since the fields are of different shapes, or the same shape but of different dtypes, each of the four calls to `sum` will trigger a compilation:
 
@@ -103,10 +103,13 @@ The template parameters are inlined into the generated kernel after compilation.
 
 ## Compile-time evaluations
 
+
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
 computational overhead at runtime:
 
+
 ### Static Scope
+
 `ti.static` is a function which receives one argument. It is a hint for the compiler to evaluate the argument at compile time.
 The scope of the argument of `ti.static` is called static-scope.
 

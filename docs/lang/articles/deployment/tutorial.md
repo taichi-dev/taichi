@@ -97,7 +97,7 @@ For now TiRT is shipped along with `taichi-nightly` Python wheels. Be aware that
 TODO: We'll figure out a proper way to release it once the versioning issue is improved.
 
 ```bash
-# Install python taichi: 
+# Install python taichi:
 pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 # Get the runtime library:
 pip download --no-deps -i https://pypi.taichi.graphics/simple/ taichi-nightly

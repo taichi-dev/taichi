@@ -46,6 +46,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
                                            const std::vector<int64> &shape);
 
     void set_arg_ndarray(int arg_id, const Ndarray &arr);
+    void set_arg_ndarray_with_grad(int arg_id,
+                                   const Ndarray &arr,
+                                   const Ndarray &arr_grad);
 
     void set_arg_texture(int arg_id, const Texture &tex);
     void set_arg_rw_texture(int arg_id, const Texture &tex);

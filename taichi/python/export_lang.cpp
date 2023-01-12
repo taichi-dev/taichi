@@ -705,6 +705,8 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_ndarray_with_grad",
+           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture",
            &Kernel::LaunchContextBuilder::set_arg_rw_texture)
@@ -922,6 +924,9 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
+
+  m.def("make_external_grad_tensor_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 

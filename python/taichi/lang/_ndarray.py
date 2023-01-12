@@ -22,6 +22,7 @@ class Ndarray:
         self.dtype = None
         self.arr = None
         self.layout = Layout.AOS
+        self.grad = None
 
     def get_type(self):
         return NdarrayTypeMetadata(self.element_type, self.shape)
@@ -180,6 +181,14 @@ class Ndarray:
         from taichi._kernels import ndarray_to_ndarray  # pylint: disable=C0415
         ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
+
+    def _set_grad(self, grad):
+        """Sets the gradient ndarray.
+
+        Args:
+            grad (Ndarray): The gradient ndarray.
+        """
+        self.grad = grad
 
     def __deepcopy__(self, memo=None):
         """Copies all elements to a new ndarray.

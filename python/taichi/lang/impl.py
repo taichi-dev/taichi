@@ -752,7 +752,7 @@ def field(dtype,
 
 
 @python_scope
-def ndarray(dtype, shape):
+def ndarray(dtype, shape, needs_grad=False):
     """Defines a Taichi ndarray with scalar elements.
 
     Args:
@@ -771,7 +771,11 @@ def ndarray(dtype, shape):
     if isinstance(shape, numbers.Number):
         shape = (shape, )
     if dtype in all_types:
-        return ScalarNdarray(dtype, shape)
+        x = ScalarNdarray(dtype, shape)
+        if needs_grad:
+            x_grad = ScalarNdarray(dtype, shape)
+            x._set_grad(x_grad)
+        return x
     if isinstance(dtype, MatrixType):
         if dtype.ndim == 1:
             return VectorNdarray(dtype.n, dtype.dtype, shape)

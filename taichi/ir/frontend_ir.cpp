@@ -539,7 +539,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 The scalarization should happen after
   //                 irpass::lower_access()
   auto prim_dt = dt;
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true);
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
+                                     /*is_grad=*/is_grad);
 
   int external_dims = dim - std::abs(element_dim);
   ptr->cast<ArgLoadStmt>()->set_extern_dims(external_dims);

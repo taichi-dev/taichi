@@ -24,18 +24,19 @@ To summarize, the benefits of metaprogramming are: It reduces repetition of the 
 
 ## Metaprogramming in Taichi
 
-Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are immutable. It's not that obvious how one could do metaprogramming in Taichi. Taichi does provide a few metaprogramming features as listed below, we will discuss them in more detail in later sections.
+Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are immutable. It's not that obvious how one could do metaprogramming in Taichi. But Taichi does provide a few metaprogramming features, as listed below.
 
 - Template metaprogramming. This enables the development of dimensionality-independent code, e.g., code which is adaptive for both 2D/3D physical simulations.
 - Compile-time evaluations. This improves runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
 
+We will discuss them in more detail in later sections.
 
 ## Template metaprogramming
 
 Template metaprogramming is a well-known concept to C++ developers. Let's quickly review what it is.
 
-Assume you are going to write a function `sum`, which takes in an array-like object whose entries are all floating numbers, and returns the sum of all the entries. The array-like object acutually passed to `sum` might be a `std::vector`, `std::pair`, or even an user-defined array which you won't know the type. The best practice is not to implement the same function for all possible types. Instead, you use template programming:
+Assume you are going to write a function `sum`, which takes in an array-like object whose entries are all floating numbers, and returns the sum of all the entries. The array-like object might be a `std::vector`, `std::pair`, or even an user-defined array which you won't know the type. The best practice is not to implement the same function for all possible types. Instead, you use template programming:
 
 ```C++
 <template T>
@@ -46,111 +47,59 @@ float sum(T &arr) {
 }
 ```
 
-When this function is called in the program, possibly in different places and operates on different array-like types `T`, the compiler will generate a version of `sum` for each `T`, as long as `T` implements the `length` method to allow you get the array length, and can be intrated over through indices. In other words, with template programming, you only write the code once and the compiler automatically generates its versions for you.
+When this function is called in the program, maybe in different places and operates on different array-like types `T`, the compiler will generate a version of `sum` for each `T`, as long as `T` implements the `length` method to allow you get the array length, and can be intrated over through indices. In other words, with template programming, you only write the same code once and the compiler automatically generates other versions for you.
 
+Taichi has a counterpart functionality for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object that Taichi's JIT compiler accepts into a kernel (see [../kernels/kernel_function#arguments]). 
 
-Taichi has a counterpart for template programming: By using `ti.template()` as an argument type hint, you can pass any Python object into a kernel.
+Let's write a function `sum` (our old friend) to illustrate this. This `sum` function will take in a Taichi field and return the sum of all its entries.
 
 ```python {2}
 @ti.kernel
-def copy_1D(x: ti.template(), y: ti.template()):
-    for i in x:
-        y[i] = x[i]
+def sum(x: ti.template()) -> float:
+    result = 0.0
+    for i in ti.grouped(x):
+        result += x[i]
 
-a = ti.field(ti.f32, 4)
-b = ti.field(ti.f32, 4)
-c = ti.field(ti.f32, 12)
-d = ti.field(ti.f32, 12)
+f1d = ti.field(float, shape=10)
+f2d = ti.field(float, shape=(10, 10))
+f3d = ti.field(float, shape=(10, 10, 10))
+g3d = ti.field(int, shape=(10, 10, 10))
 
-# Pass field a and b as arguments of the kernel `copy_1D`:
-copy_1D(a, b)
+sum(f1d)
+sum(f2d)
+sum(f3d)
+sum(g3d)
+```
 
-# Reuse the kernel for field c and d:
-copy_1D(c, d)
+As can be seen from the code above, you won't need to bother about the shape of the field, as the code works for fields of any shape. This is very handy for physical simulations as the same function can be used in both 2D and 3D scenatios.
+
+Note the function `ti.group()` is critial to our dimensionality-independent programming: In general, to loop over a field of dimension `d`, you will need `d` independent indices, one for each axis. Taichi's `ti.grouped` puts the `d` loop indices into a `d`-dimentional index of integer vector type, and the `for` loop is parallelized for all such vector-type indices.
+
+We should mention a difference between Taichi and C++ in template metaprogramming: C++ compilers will generate a version of `sum` for each different type `T`; meanwhile Taichi's compiler **recompiles** the kernel each time it finds an argument of a different type is encounted. In the example above, since the fields are of different shapes, or the same shape but of different dtypes, each of the four calls to `sum` will trigger a compilation:
+
+```python
+sum(f1d)  # Compilation
+sum(f2d)  # Recompilation
+sum(f3d)  # Recompilation
+sum(g3d)  # Recompilation
 ```
 
 :::note
-If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel.
+If a template parameter is not a Taichi object, it cannot be reassigned inside Taichi kernel. For example:
+
+```python
+x = [1, 2, 3]
+@ti.kernel
+def error_reassign(x: ti.template()):
+    x = ti.math.vec3(1, 2, 3)  # Error!
+```
+
 :::
 
 :::note
 The template parameters are inlined into the generated kernel after compilation.
 :::
 
-## Dimensionality-independent programming using grouped indices
-
-Taichi provides `ti.grouped` syntax which supports grouping loop indices into a `ti.Vector`.
-It enables dimensionality-independent programming, i.e., code are adaptive to scenarios of
-different dimensionalities automatically:
-
-```python {2,7,12,18}
-@ti.kernel
-def copy_1D(x: ti.template(), y: ti.template()):
-    for i in x:
-        y[i] = x[i]
-
-@ti.kernel
-def copy_2d(x: ti.template(), y: ti.template()):
-    for i, j in x:
-        y[i, j] = x[i, j]
-
-@ti.kernel
-def copy_3d(x: ti.template(), y: ti.template()):
-    for i, j, k in x:
-        y[i, j, k] = x[i, j, k]
-
-# Kernels listed above can be unified into one kernel using `ti.grouped`:
-@ti.kernel
-def copy(x: ti.template(), y: ti.template()):
-    for I in ti.grouped(y):
-        # I is a vector with dimensionality same to y
-        # If y is 0D, then I = ti.Vector([]), which is equivalent to `None` used in x[I]
-        # If y is 1D, then I = ti.Vector([i])
-        # If y is 2D, then I = ti.Vector([i, j])
-        # If y is 3D, then I = ti.Vector([i, j, k])
-        # ...
-        x[I] = y[I]
-```
-
-## Field metadata
-
-The two attributes **data type** and **shape** of fields can be accessed by `field.dtype` and  `field.shape`, in both Taichi-scope and Python-scope:
-
-```python {3,7}
-x = ti.field(dtype=ti.f32, shape=(3, 3))
-
-# Print field metadata in Python-scope
-print("Field dimensionality is ", x.shape)
-print("Field data type is ", x.dtype)
-
-# Print field metadata in Taichi-scope
-@ti.kernel
-def print_field_metadata(x: ti.template()):
-    print("Field dimensionality is ", len(x.shape))
-    for i in ti.static(range(len(x.shape))):
-        print("Size along dimension ", i, "is", x.shape[i])
-    ti.static_print("Field data type is ", x.dtype)
-```
-
-:::note
-For sparse fields, the full domain shape will be returned.
-:::
-
-## Matrix & vector metadata
-
-For matrices, `matrix.m` and `matrix.n` returns the number of columns and rows, respectively.
-For vectors, they are treated as matrices with one column in Taichi, where `vector.n` is the number of elements of the vector.
-
-```python {4-5,7-8}
-@ti.kernel
-def foo():
-    matrix = ti.Matrix([[1, 2], [3, 4], [5, 6]])
-    print(matrix.n)  # number of row: 3
-    print(matrix.m)  # number of column: 2
-    vector = ti.Vector([7, 8, 9])
-    print(vector.n)  # number of elements: 3
-    print(vector.m)  # always equals to 1 for a vector
-```
 
 ## Compile-time evaluations
 

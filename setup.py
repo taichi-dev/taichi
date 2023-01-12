@@ -175,7 +175,10 @@ def sign_development_for_apple_m1():
     """
     if sys.platform == "darwin" and platform.machine() == "arm64":
         try:
-            subprocess.check_call(['codesign', '--force', '--deep', '--sign', '-', 'python/taichi/_lib/core/taichi_python.cpython-310-darwin.so'])
+            subprocess.check_call([
+                'codesign', '--force', '--deep', '--sign', '-',
+                'python/taichi/_lib/core/taichi_python.cpython-310-darwin.so'
+            ])
         except:
             print("cannot sign python shared library for macos arm64 build")
 

@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda], packed=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_packed_size():
     x = ti.field(ti.i32)
     ti.root.dense(ti.l, 3).dense(ti.ijk, 129).place(x)

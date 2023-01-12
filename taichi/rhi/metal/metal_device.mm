@@ -182,7 +182,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
 MetalCommandList::MetalCommandList(const MetalDevice &device,
                                    MTLCommandQueue_id cmd_queue)
     : device_(&device) {
-  cmdbuf_ = [[cmd_queue commandBuffer] retain];
+  cmdbuf_ = [cmd_queue commandBuffer];
 }
 
 MetalCommandList::~MetalCommandList() { [cmdbuf_ release]; }

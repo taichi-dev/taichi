@@ -177,9 +177,8 @@ def sign_development_for_apple_m1():
         try:
             for path in glob.glob("python/taichi/_lib/core/*.so"):
                 print(f"signing {path}..")
-                subprocess.check_call([
-                    'codesign', '--force', '--deep', '--sign', '-', path
-                ])
+                subprocess.check_call(
+                    ['codesign', '--force', '--deep', '--sign', '-', path])
         except:
             print("cannot sign python shared library for macos arm64 build")
 

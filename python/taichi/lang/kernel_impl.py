@@ -429,9 +429,10 @@ class TaichiCallableTemplateMapper:
                             f"but the argument has only {len(shape)} dimensions"
                         )
                 element_shape = shape[-anno.dtype.ndim:]
-                if element_shape != anno.dtype.get_shape():
+                anno_element_shape = anno.dtype.get_shape()
+                if None not in anno_element_shape and element_shape != anno_element_shape:
                     raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_shape={anno.dtype.get_shape()}, "
+                        f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
                         f"but the argument has element shape of {element_shape}"
                     )
             return to_taichi_type(

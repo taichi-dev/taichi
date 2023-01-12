@@ -711,10 +711,8 @@ def test_ndarray_reset():
     ti.reset()
 
 
-# FIXME[#7119]: enable this test on CPU backend once caching allocator is used.
 @pytest.mark.run_in_serial
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 exclude=[ti.cpu, ti.metal])
+@test_utils.test(arch=supported_archs_taichi_ndarray, exclude=ti.metal)
 def test_ndarray_in_python_func():
     def test():
         z = ti.ndarray(float, (8192, 8192))

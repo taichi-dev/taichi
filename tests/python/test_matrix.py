@@ -442,7 +442,7 @@ def test_matrix_field_dynamic_index_different_path_length():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test()
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_matrix_field_dynamic_index_not_pure_dense():
     v = ti.Vector.field(2, ti.i32)
     x = v.get_scalar_field(0)

@@ -700,3 +700,22 @@ def test_ndarray_init_as_zero():
     a = ti.ndarray(dtype=ti.f32, shape=(6, 10))
     v = np.zeros((6, 10), dtype=np.float32)
     assert test_utils.allclose(a.to_numpy(), v)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_reset():
+    n = 8
+    c = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
+    del c
+    d = ti.Matrix.ndarray(4, 4, ti.f32, shape=(n))
+    ti.reset()
+
+
+@pytest.mark.run_in_serial
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_in_python_func():
+    def test():
+        z = ti.ndarray(float, (8192, 8192))
+
+    for i in range(300):
+        test()

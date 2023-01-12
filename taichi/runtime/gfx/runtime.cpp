@@ -449,6 +449,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           if (host_ctx->device_allocation_type[i] ==
               RuntimeContext::DevAllocType::kNdarray) {
             any_arrays[i] = devalloc;
+            ndarrays_in_use_.insert(devalloc.alloc_id);
           } else if (host_ctx->device_allocation_type[i] ==
                      RuntimeContext::DevAllocType::kTexture) {
             textures[i] = devalloc;
@@ -623,6 +624,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  ndarrays_in_use_.clear();
   fflush(stdout);
 }
 
@@ -752,7 +754,8 @@ GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Arch arch,
     const DeviceCapabilityConfig &caps,
-    const std::vector<CompiledSNodeStructs> &compiled_structs) {
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    const CompileConfig &compile_config) {
   const auto id = Program::get_kernel_id();
   const auto taichi_kernel_name(fmt::format("{}_k{:04d}_vk", kernel->name, id));
   TI_TRACE("VK codegen for Taichi kernel={}", taichi_kernel_name);
@@ -762,8 +765,7 @@ GfxRuntime::RegisterParams run_codegen(
   params.compiled_structs = compiled_structs;
   params.arch = arch;
   params.caps = caps;
-  params.enable_spv_opt =
-      kernel->program->this_thread_config().external_optimization_level > 0;
+  params.enable_spv_opt = compile_config.external_optimization_level > 0;
   spirv::KernelCodegen codegen(params);
   GfxRuntime::RegisterParams res;
   codegen.run(res.kernel_attribs, res.task_spirv_source_codes);

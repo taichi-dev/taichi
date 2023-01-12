@@ -15,28 +15,27 @@ To put it shortly: A metaprogram is a program that writes (or modifies) programs
 
 That sounds good, but you might wonder, code writes code, who needs that? Why don't I write all the code myself? Let's take a practical example to illustrate its use.
 
-In simulations and graphics, a 4D vector `v` is composed by 4 components `x`, `y`, `z`, `w`. One can use `v.x` to access its first component, `v.y` to access its second component, and so on. It would be very handy if we can use any combination of the letters `x`, `y`, `z, `w` to access the components of `v`, and returns a vector that matches this combination. This is called swizzling (reader with some knowledge of OpenGL shading language or have experienced Blender's scripting mode will feel familiar with this). For example, we want `v.xy` to return a 2D vector `[v.x, v.y]`, `v.zyx` to return a 3D vector `[v.z, v.y, v.x]`, `v.xxxx` to return a 4D vector `[v.x, v.x, v.x, v.x]`, and so on to all other combinations.
+In simulations and graphics, a 4D vector `v` is composed by 4 components `x`, `y`, `z`, `w`. One can use `v.x` to access its first component, `v.y` to access its second component, and so on. It would be very handy if we can use any combination of the letters `x`, `y`, `z, `w` to access the components of `v`, and returns a vector that matches this pattern. This is called swizzling (reader with some knowledge of OpenGL shading language or have experienc in Blender's scripting mode will feel familiar with this). For example, we want `v.xy` to return a 2D vector `[v.x, v.y]`, `v.zyx` to return a 3D vector `[v.z, v.y, v.x]`, `v.xxxx` to return a 4D vector `[v.x, v.x, v.x, v.x]`, and so on for other combinations.
 
-But how do we implement this in a 4D vector class? There are 4 possible combinations consists of one letter, 16 combinations of two letters, 64 combinations of three letters, 256 combinations of four letters, the total in 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor,  and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it, and return the expected result! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "v.xxx", and if it cannot, it calls `__setattr__` which writes a method that constructs that query for you, define it on vector class, and finally returns the result! Now, every time you call find_all_by_year_and_gpa() on that student object, the newly defined method gets called instead of going through that whole process every time! Of course you could just process the request inside method_missing?(), but going through that process every time is inefficient. What if we had a loop that calls this method with every iteration?Instead, we can write some function like `generate_vector_swizzle`, which iterates over all combinations
+But how do we implement this in a 4D vector class? There are 4 possible combinations consist of a single letter, 16 combinations for two letters, 64 combinations for three letters, and 256 combinations for four letters. The total is 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor, and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property of our 4D vector class, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "xxx", and if it cannot, it calls `__setattr__` which writes a property that constructs that query for you, define it on the 4D vector class, and finally returns the result! Now, every time you call `v.xxx` on the instance `v`, the newly defined property gets called instead of going through that whole process every time!
+
+To summarize, the benefits of metaprogramming are: It reduces repetition of the code; It makes the code more readable.
 
 
-The benefits of metaprogramming are: It reduces repetition of the code, and makes the code more readable.
+## Metaprogramming in Taichi
 
-Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are known to the compiler. How can you change the
+Taichi is a static and compile language. After Taichi's JIT finishes the compiling, all the control flow and variable types are immutable. It's not that obvious how one could do metaprogramming in Taichi. Taichi does provide a few metaprogramming features as listed below, we will discuss them in more detail in later sections.
 
-Taichi provides metaprogramming infrastructures. There are many benefits of metaprogramming in Taichi:
-
-- Enabling the development of dimensionality-independent code, e.g., code which is
-  adaptive for both 2D/3D physical simulations.
-- Improving runtime performance by moving computations from runtime to compile time.
+- Template metaprogramming. This enables the development of dimensionality-independent code, e.g., code which is adaptive for both 2D/3D physical simulations.
+- Compile-time evaluations. This improves runtime performance by moving computations from runtime to compile time.
 - Simplifying the development of Taichi standard library.
 
-:::note
-Taichi kernels are **lazily instantiated** and large amounts of computation can be executed at **compile-time**.
-Every kernel in Taichi is a template kernel, even if it has no template arguments.
-:::
 
 ## Template metaprogramming
+
+Template metaprogramming is a well-known concept to C++ developers. Let's quickly review what template programming does in C++.
+
+Assume you want to write a function `sum`, which takes in an array-like object whose entries are all floating points, and returns the sum of all the entries. The array-like object might be a `std::vector`, `std::pair`, or even user-defined objects. There's 
 
 By using `ti.template()` as an argument type hint, a Taichi field or a python object can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 

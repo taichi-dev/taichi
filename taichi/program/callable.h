@@ -33,10 +33,10 @@ class TI_DLL_EXPORT Callable {
     possible regressions.
     */
     explicit Parameter(const DataType &dt = PrimitiveType::unknown,
-                 bool is_array = false,
-                 std::size_t size_unused = 0,
-                 int total_dim = 0,
-                 std::vector<int> element_shape = {}) {
+                       bool is_array = false,
+                       std::size_t size_unused = 0,
+                       int total_dim = 0,
+                       std::vector<int> element_shape = {}) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
@@ -69,7 +69,7 @@ class TI_DLL_EXPORT Callable {
     DataType dt_;
   };
 
-struct Ret {
+  struct Ret {
     DataType dt;
 
     explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
@@ -87,8 +87,8 @@ struct Ret {
   int insert_scalar_param(const DataType &dt);
 
   int insert_arr_param(const DataType &dt,
-                     int total_dim,
-                     std::vector<int> element_shape);
+                       int total_dim,
+                       std::vector<int> element_shape);
   int insert_texture_param(const DataType &dt);
 
   int insert_ret(const DataType &dt);

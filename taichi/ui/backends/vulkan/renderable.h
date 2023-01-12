@@ -42,7 +42,7 @@ struct RenderableConfig {
       taichi::lang::TopologyType::Triangles};
   taichi::lang::PolygonMode polygon_mode{taichi::lang::PolygonMode::Fill};
   VertexAttributes vbo_attrs{VboHelpers::all()};
-  bool point_instancing{false};
+  bool vertex_input_rate_instance{false};
 
   size_t vbo_size() const {
     return VboHelpers::size(vbo_attrs);

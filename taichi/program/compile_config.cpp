@@ -1,6 +1,7 @@
 #include "compile_config.h"
 
 #include <thread>
+#include "taichi/rhi/arch.h"
 #include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
@@ -72,7 +73,7 @@ void CompileConfig::fit() {
     // TODO: allow users to run in debug mode without out-of-bound checks
     check_out_of_bound = true;
   }
-  if (arch == Arch::cc) {
+  if (arch == Arch::cc || arch_uses_spirv(arch)) {
     demote_dense_struct_fors = true;
   }
   offline_cache::disable_offline_cache_if_needed(this);

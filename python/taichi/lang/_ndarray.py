@@ -137,7 +137,7 @@ class Ndarray:
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
         if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
-                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+                f"Mismatch shape: {tuple(self.arr.total_shape())} expected, but {tuple(arr.shape)} provided"
             )
         if not arr.flags.c_contiguous:
             arr = np.ascontiguousarray(arr)

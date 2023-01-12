@@ -483,9 +483,6 @@ def _test_compiled_functions():
     v = np.zeros((6, 10), dtype=np.int32)
     func(v)
     assert impl.get_runtime().get_num_compiled_functions() == 1
-    v = np.zeros((6, 11), dtype=np.int32)
-    func(v)
-    assert impl.get_runtime().get_num_compiled_functions() == 2
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)

@@ -180,9 +180,9 @@ The Taichi reference code is almost identical to its Python counterpart. And a g
 ```python
 @ti.kernel
 def taichi_forward_v0(
-        out: ti.types.ndarray(field_dim=3),
-        w: ti.types.ndarray(field_dim=3),
-        k: ti.types.ndarray(field_dim=3),
+        out: ti.types.ndarray(ndim=3),
+        w: ti.types.ndarray(ndim=3),
+        k: ti.types.ndarray(ndim=3),
         eps: ti.f32):
 
     for b, c, t in out:

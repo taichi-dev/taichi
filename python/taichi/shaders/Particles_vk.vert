@@ -43,13 +43,13 @@ void main() {
   float vsize = ubo.radius / (ubo.tan_half_fov * distance);
 
   pos_camera_space = ubo.scene.view * vec4(in_position, 1.0);
-  
+
   pos_2d = offsets[gl_VertexIndex % 6];
-  
+
   vec4 pos_proj = ubo.scene.projection * pos_camera_space;
   pos_proj = vec4(pos_proj.xyz / pos_proj.w, 1.0);
   pos_proj.xy += pos_2d * vec2(vsize / ubo.window_height * ubo.window_width, vsize);
-  
+
   gl_Position = pos_proj;
   gl_Position.y *= -1.0;
 

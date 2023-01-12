@@ -35,7 +35,7 @@ Taichi is a static and compile language. After Taichi's JIT finishes the compili
 
 Template metaprogramming is a well-known concept to C++ developers. Let's quickly review what template programming does in C++.
 
-Assume you want to write a function `sum`, which takes in an array-like object whose entries are all floating points, and returns the sum of all the entries. The array-like object might be a `std::vector`, `std::pair`, or even user-defined objects. There's 
+Assume you want to write a function `sum`, which takes in an array-like object whose entries are all floating points, and returns the sum of all the entries. The array-like object might be a `std::vector`, `std::pair`, or even user-defined objects. There's
 
 By using `ti.template()` as an argument type hint, a Taichi field or a python object can be passed into a kernel. Template programming also enables the code to be reused for fields with different shapes:
 

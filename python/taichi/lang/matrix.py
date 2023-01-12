@@ -1465,7 +1465,10 @@ class MatrixType(CompoundType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [
+                    args[0] for _ in range(self.m) for _ in range(self.n)
+                ]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1476,21 +1479,11 @@ class MatrixType(CompoundType):
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
-                entries += x.entries
+                entries += [x(i, j) for j in range(x.m) for i in range(x.n)]
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            if len(entries) != self.m * self.n:
-                raise TaichiSyntaxError(
-                    f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
-                )
-            entries = [[entries[k * self.m + i] for i in range(self.m)]
-                       for k in range(self.n)]
-            return self._instantiate_in_python_scope(
-                Matrix(entries, dt=self.dtype, ndim=self.ndim))
-
-        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
+        return self._instantiate(entries)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
@@ -1500,30 +1493,26 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
-    def _instantiate_in_python_scope(self, mat):
+    def _instantiate_in_python_scope(self, entries):
+        entries = [[entries[k * self.m + i] for i in range(self.m)]
+                   for k in range(self.n)]
         return Matrix([[
-            int(mat(i, j)) if self.dtype in primitive_types.integer_types else
-            float(mat(i, j)) for j in range(self.m)
+            int(entries[i][j]) if self.dtype in primitive_types.integer_types
+            else float(entries[i][j]) for j in range(self.m)
         ] for i in range(self.n)],
                       ndim=self.ndim)
 
-    def cast(self, mat):
-        if in_python_scope():
-            return self._instantiate_in_python_scope(mat)
-
-        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, self.dtype)
-
+    def _instantiate(self, mat):
+        entries = mat
         if isinstance(mat, Matrix):
-            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
-            return ops_mod.cast(make_matrix(arr), self.dtype)
+            assert mat.n == self.n
+            assert mat.m == self.m
+            entries = [mat(i, j) for j in range(self.m) for i in range(self.n)]
 
-        return mat.cast(self.dtype)
+        if in_python_scope():
+            return self._instantiate_in_python_scope(entries)
 
-    def filled_with_scalar(self, value):
-        return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)],
-                   ndim=self.ndim))
+        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
 
     def field(self, **kwargs):
         assert kwargs.get("ndim", self.ndim) == self.ndim
@@ -1577,7 +1566,8 @@ class VectorType(MatrixType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [args[0] for _ in range(self.n)]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1592,35 +1582,24 @@ class VectorType(MatrixType):
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            return self._instantiate_in_python_scope(
-                Vector(entries, dt=self.dtype))
-
         #  type cast
-        return make_matrix_with_shape(entries, [self.n], self.dtype)
+        return self._instantiate(entries)
 
-    def _instantiate_in_python_scope(self, vec):
+    def _instantiate_in_python_scope(self, entries):
         return Vector([
-            int(vec(i))
-            if self.dtype in primitive_types.integer_types else float(vec(i))
-            for i in range(self.n)
+            int(entries[i]) if self.dtype in primitive_types.integer_types else
+            float(entries[i]) for i in range(self.n)
         ])
 
-    def cast(self, vec):
-        if in_python_scope():
-            return self._instantiate_in_python_scope(vec)
-
-        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
-            return ops_mod.cast(vec, self.dtype)
-
+    def _instantiate(self, vec):
+        entries = vec
         if isinstance(vec, Matrix):
-            arr = vec.entries
-            return ops_mod.cast(make_matrix(arr), self.dtype)
+            entries = vec.entries
 
-        return vec.cast(self.dtype)
+        if in_python_scope():
+            return self._instantiate_in_python_scope(entries)
 
-    def filled_with_scalar(self, value):
-        return self.cast(Vector([value for _ in range(self.n)]))
+        return make_matrix_with_shape(entries, [self.n], self.dtype)
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)

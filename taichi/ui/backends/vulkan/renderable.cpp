@@ -200,7 +200,7 @@ void Renderable::create_graphics_pipeline() {
   }
 
   std::vector<VertexInputBinding> vertex_inputs = {
-      {/*binding=*/0, config_.vbo_size(), /*instance=*/false}};
+      {/*binding=*/0, config_.vbo_size(), /*instance=*/config_.point_instancing}};
   // TODO: consider using uint8 for colors and normals
   std::vector<VertexInputAttribute> vertex_attribs;
   if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kPos)) {

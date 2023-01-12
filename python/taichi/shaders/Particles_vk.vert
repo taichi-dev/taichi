@@ -1,4 +1,5 @@
 #version 450
+#extension GL_KHR_vulkan_glsl : enable
 
 layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_normal;
@@ -40,7 +41,7 @@ const vec2 offsets[6] = {
 void main() {
   float distance = length(in_position - ubo.scene.camera_pos);
 
-  float vsize = ubo.radius / (ubo.tan_half_fov * distance);
+  float hsize = ubo.radius / (ubo.tan_half_fov * distance);
 
   pos_camera_space = ubo.scene.view * vec4(in_position, 1.0);
 
@@ -48,7 +49,7 @@ void main() {
 
   vec4 pos_proj = ubo.scene.projection * pos_camera_space;
   pos_proj = vec4(pos_proj.xyz / pos_proj.w, 1.0);
-  pos_proj.xy += pos_2d * vec2(vsize / ubo.window_height * ubo.window_width, vsize);
+  pos_proj.xy += pos_2d * vec2(hsize, hsize * ubo.window_width / ubo.window_height);
 
   gl_Position = pos_proj;
   gl_Position.y *= -1.0;

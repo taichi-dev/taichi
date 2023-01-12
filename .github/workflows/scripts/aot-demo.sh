@@ -5,8 +5,8 @@ export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 
 # IF YOU PIN THIS TO A COMMIT/BRANCH, YOU'RE RESPONSIBLE TO REVERT IT BACK TO MASTER ONCE MERGED.
-export TAICHI_AOT_DEMO_URL=https://github.com/taichi-dev/taichi-aot-demo
-export TAICHI_AOT_DEMO_BRANCH=master
+export TAICHI_AOT_DEMO_URL=https://github.com/ailzhang/taichi-aot-demo
+export TAICHI_AOT_DEMO_BRANCH=add_dep
 
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=main

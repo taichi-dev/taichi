@@ -253,7 +253,6 @@ TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API:BOOL=ON" python setu
 
 You can find the built `libtaichi_c_api.so` and its headers in the `_skbuild/` folder.
 
-// TODO: Android / Windows
 
 ### Taichi/C API Reference Manual
 

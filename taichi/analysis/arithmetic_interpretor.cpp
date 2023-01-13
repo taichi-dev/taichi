@@ -146,6 +146,12 @@ class EvalVisitor : public IRVisitor {
       if (op == BinaryOpType::mod) {
         return lhs % rhs;
       }
+      if (op == BinaryOpType::bit_and) {
+        return lhs & rhs;
+      }
+      if (op == BinaryOpType::bit_shr) {
+        return static_cast<std::make_unsigned_t<T>>(lhs) >> rhs;
+      }
     }
     return std::nullopt;
   }

@@ -24,7 +24,6 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config->check_out_of_bound);
   serializer(config->opt_level);
   serializer(config->external_optimization_level);
-  serializer(config->packed);
   serializer(config->move_loop_invariant_outside_if);
   serializer(config->demote_dense_struct_fors);
   serializer(config->advanced_optimization);

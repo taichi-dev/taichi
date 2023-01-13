@@ -42,7 +42,6 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
  protected:
   void SetUp() override {
     const auto arch = host_arch();
-    config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch);
     auto *llvm_prog_ = get_llvm_program(prog_.get());

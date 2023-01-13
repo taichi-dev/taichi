@@ -383,5 +383,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: CHANGELOG.md
-          generate_release_notes: true
           tag_name: ${{ github.event.inputs.version }}

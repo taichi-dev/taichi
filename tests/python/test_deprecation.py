@@ -86,19 +86,10 @@ def test_deprecate_metal_sparse():
             match="Bitmasked SNode on metal backend is deprecated and removed."
     ):
         ti.root.bitmasked(ti.j, 10)
-
     with pytest.raises(
             ti.TaichiRuntimeError,
             match="Dynamic SNode on metal backend is deprecated and removed."):
         ti.root.dynamic(ti.i, 10)
-
-
-# Remove this before v1.5.0
-@pytest.mark.parametrize("value", [True, False])
-def test_removed_packed(value):
-    with pytest.raises(ti.TaichiRuntimeError,
-                       match="The 'packed' switch has been removed."):
-        ti.init(packed=value)
 
 
 @test_utils.test(arch=ti.vulkan)

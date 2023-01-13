@@ -70,8 +70,6 @@ class SetImage final : public Renderable {
 
   void update_index_buffer();
 
-  int get_correct_dimension(int dimension);
-
   void update_ubo(float x_factor, float y_factor, bool transpose);
 };
 

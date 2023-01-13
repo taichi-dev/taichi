@@ -69,13 +69,28 @@ void Particles::init_particles(AppContext *app_context,
       true,
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
-      TopologyType::Points,
+      TopologyType::Triangles,  // We use two triangles to draw out a quad
       PolygonMode::Fill,
       vbo_attrs,
+      true  // point instancing
   };
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();
+}
+
+void Particles::record_this_frame_commands(CommandList *command_list) {
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_shader_resources(resource_set_.get());
+
+  // We draw num_particles * 6, 6 forms a quad
+  // The `first_instance` should then instead set with `draw_first_vertex`,
+  // and the first index always need to be 0
+  command_list->draw_instance(/*num_verticies=*/6,
+                              /*num_instances=*/config_.draw_vertex_count,
+                              /*start_vertex=*/0,
+                              /*start_instance=*/config_.draw_first_vertex);
 }
 
 void Particles::create_bindings() {

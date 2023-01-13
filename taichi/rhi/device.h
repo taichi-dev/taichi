@@ -231,6 +231,8 @@ class TI_DLL_EXPORT Pipeline {
   }
 };
 
+using UPipeline = std::unique_ptr<Pipeline>;
+
 enum class ImageDimension {
 #define PER_IMAGE_DIMENSION(x) x,
 #include "taichi/inc/rhi_constants.inc.h"
@@ -520,6 +522,14 @@ class TI_DLL_EXPORT Stream {
   virtual ~Stream() {
   }
 
+  /**
+   * Allocates a new CommandList object from the stream.
+   * @params[out] out_cmdlist The allocated command list.
+   * @return The status of this operation.
+   * - `success` If allocation succeeded.
+   * - `out_of_memory` If allocation failed due to lack of device or host
+   * memory.
+   */
   virtual RhiResult new_command_list(CommandList **out_cmdlist) noexcept = 0;
 
   inline std::pair<std::unique_ptr<CommandList>, RhiResult>
@@ -542,6 +552,28 @@ class TI_DLL_EXPORT Stream {
     TI_NOT_IMPLEMENTED
   }
 };
+
+class TI_DLL_EXPORT PipelineCache {
+ public:
+  virtual ~PipelineCache() = default;
+
+  /**
+   * Get the pointer to the raw data of the cache.
+   * - Can return `nullptr` if cache is invalid or empty.
+   */
+  virtual void *data() noexcept {
+    return nullptr;
+  }
+
+  /**
+   * Get the size of the cache (in bytes).
+   */
+  virtual size_t size() const noexcept {
+    return 0;
+  }
+};
+
+using UPipelineCache = std::unique_ptr<PipelineCache>;
 
 class TI_DLL_EXPORT Device {
   DeviceCapabilityConfig caps_{};
@@ -570,9 +602,64 @@ class TI_DLL_EXPORT Device {
     return 0;
   }
 
-  virtual std::unique_ptr<Pipeline> create_pipeline(
+  /**
+   * Create a Pipeline Cache, which acclerates backend API's pipeline creation.
+   * @params[out] out_cache The created pipeline cache.
+   * - If operation failed this will be set to `nullptr`
+   * @params[in] initial_size Size of the initial data, can be 0.
+   * @params[in] initial_data The initial data, can be nullptr.
+   * - This data can be used to load back the cache from previous invocations.
+   * - The backend API may ignore this data or deem it incompatible.
+   * @return The status of this operation.
+   * - `success` if the pipeline cache is created successfully.
+   * - `out_of_memory` if operation failed due to lack of device or host memory.
+   * - `error` if operation failed due to other errors.
+   */
+  virtual RhiResult create_pipeline_cache(
+      PipelineCache **out_cache,
+      size_t initial_size = 0,
+      const void *initial_data = nullptr) noexcept {
+    *out_cache = nullptr;
+    return RhiResult::not_supported;
+  }
+
+  inline std::pair<UPipelineCache, RhiResult> create_pipeline_cache_unique(
+      size_t initial_size = 0,
+      const void *initial_data = nullptr) noexcept {
+    PipelineCache *cache{nullptr};
+    RhiResult res =
+        this->create_pipeline_cache(&cache, initial_size, initial_data);
+    return std::make_pair(UPipelineCache(cache), res);
+  }
+
+  /**
+   * Create a Pipeline. A Pipeline is a program that can be dispatched into a
+   * stream through a command list.
+   * @params[out] out_pipeline The created pipeline.
+   * @params[in] src The source description of the pipeline.
+   * @params[in] name The name of such pipeline, for debug purposes.
+   * @params[in] cache The pipeline cache to use, can be nullptr.
+   * @return The status of this operation.
+   * - `success` if the pipeline is created successfully.
+   * - `out_of_memory` if operation failed due to lack of device or host memory.
+   * - `invalid_usage` if the specified source is incompatible or invalid.
+   * - `not_supported` if the pipeline uses features the device can't support.
+   * - `error` if the operation failed due to other reasons.
+   */
+  virtual RhiResult create_pipeline(
+      Pipeline **out_pipeline,
       const PipelineSourceDesc &src,
-      std::string name = "Pipeline") = 0;
+      std::string name = "Pipeline",
+      PipelineCache *cache = nullptr) noexcept = 0;
+
+  inline std::pair<UPipeline, RhiResult> create_pipeline_unique(
+      const PipelineSourceDesc &src,
+      std::string name = "Pipeline",
+      PipelineCache *cache = nullptr) noexcept {
+    Pipeline *pipeline{nullptr};
+    RhiResult res = this->create_pipeline(&pipeline, src, name, cache);
+    return std::make_pair(UPipeline(pipeline), res);
+  }
 
   std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
       const AllocParams &params) {

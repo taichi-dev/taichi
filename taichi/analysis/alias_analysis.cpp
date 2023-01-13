@@ -99,7 +99,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
     if (ptr1->base_ptr != ptr2->base_ptr) {
       auto base1 = ptr1->base_ptr->as<ArgLoadStmt>();
       auto base2 = ptr2->base_ptr->as<ArgLoadStmt>();
-      if (base1->arg_id != base2->arg_id) {
+      if (base1->is_grad != base2->is_grad || base1->arg_id != base2->arg_id) {
         return AliasResult::different;
       }
     }

@@ -139,6 +139,36 @@ RhiReturn<VkBlendFactor> blend_factor_ti_to_vk(BlendFactor factor) {
   return {RhiResult::success, blend_factor_map.at(factor)};
 }
 
+VulkanPipelineCache::VulkanPipelineCache(VulkanDevice *device,
+                                         size_t initial_size,
+                                         const void *initial_data)
+    : device_(device) {
+  cache_ = vkapi::create_pipeline_cache(device_->vk_device(), 0, initial_size,
+                                        initial_data);
+}
+
+VulkanPipelineCache ::~VulkanPipelineCache() {
+}
+
+void *VulkanPipelineCache::data() noexcept {
+  try {
+    data_shadow_.resize(size());
+    size_t size = 0;
+    vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size,
+                           data_shadow_.data());
+  } catch (std::bad_alloc &) {
+    return nullptr;
+  }
+
+  return data_shadow_.data();
+}
+
+size_t VulkanPipelineCache::size() const noexcept {
+  size_t size = 0;
+  vkGetPipelineCacheData(device_->vk_device(), cache_->cache, &size, nullptr);
+  return size;
+}
+
 VulkanPipeline::VulkanPipeline(const Params &params)
     : ti_device_(*params.device),
       device_(params.device->vk_device()),
@@ -178,20 +208,19 @@ VulkanPipeline::~VulkanPipeline() {
   shader_modules_.clear();
 }
 
-RhiReturn<VkShaderModule> VulkanPipeline::create_shader_module(
-    VkDevice device,
-    const SpirvCodeView &code) {
+VkShaderModule VulkanPipeline::create_shader_module(VkDevice device,
+                                                    const SpirvCodeView &code) {
   VkShaderModuleCreateInfo create_info{};
   create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   create_info.codeSize = code.size;
   create_info.pCode = code.data;
 
   VkShaderModule shader_module;
-  BAIL_ON_VK_BAD_RESULT(
-      vkCreateShaderModule(device, &create_info, kNoVkAllocCallbacks,
-                           &shader_module),
-      "failed to create shader module", RhiResult::error, VK_NULL_HANDLE);
-  return {RhiResult::success, shader_module};
+  VkResult res = vkCreateShaderModule(device, &create_info, kNoVkAllocCallbacks,
+                                      &shader_module);
+  RHI_THROW_UNLESS(res == VK_SUCCESS,
+                   std::runtime_error("vkCreateShaderModule failed"));
+  return shader_module;
 }
 
 vkapi::IVkPipeline VulkanPipeline::graphics_pipeline(
@@ -246,15 +275,19 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     SpvReflectShaderModule module;
     SpvReflectResult result =
         spvReflectCreateShaderModule(code_view.size, code_view.data, &module);
-    RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    RHI_THROW_UNLESS(result == SPV_REFLECT_RESULT_SUCCESS,
+                     std::runtime_error("spvReflectCreateShaderModule failed"));
 
     uint32_t set_count = 0;
     result = spvReflectEnumerateDescriptorSets(&module, &set_count, nullptr);
-    RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    RHI_THROW_UNLESS(result == SPV_REFLECT_RESULT_SUCCESS,
+                     std::runtime_error("Failed to enumerate number of sets"));
     std::vector<SpvReflectDescriptorSet *> desc_sets(set_count);
     result = spvReflectEnumerateDescriptorSets(&module, &set_count,
                                                desc_sets.data());
-    RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+    RHI_THROW_UNLESS(
+        result == SPV_REFLECT_RESULT_SUCCESS,
+        std::runtime_error("spvReflectEnumerateDescriptorSets failed"));
 
     for (SpvReflectDescriptorSet *desc_set : desc_sets) {
       uint32_t set_index = desc_set->set;
@@ -306,11 +339,17 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
       uint32_t render_target_count = 0;
       result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
                                                   nullptr);
-      RHI_ASSERT(result == SPV_REFLECT_RESULT_SUCCESS);
+      RHI_THROW_UNLESS(
+          result == SPV_REFLECT_RESULT_SUCCESS,
+          std::runtime_error("Failed to enumerate number of output vars"));
 
       std::vector<SpvReflectInterfaceVariable *> variables(render_target_count);
       result = spvReflectEnumerateOutputVariables(&module, &render_target_count,
                                                   variables.data());
+
+      RHI_THROW_UNLESS(
+          result == SPV_REFLECT_RESULT_SUCCESS,
+          std::runtime_error("spvReflectEnumerateOutputVariables failed"));
 
       render_target_count = 0;
 
@@ -344,8 +383,9 @@ void VulkanPipeline::create_descriptor_set_layout(const Params &params) {
     for (auto &[index, layout_template] : set_templates_) {
       max_set = std::max(index, max_set);
     }
-    RHI_ASSERT(max_set + 1 == set_templates_.size() &&
-               "Sets must be continous & start with 0");
+    RHI_THROW_UNLESS(
+        max_set + 1 == set_templates_.size(),
+        std::invalid_argument("Sets must be continous & start with 0"));
 
     set_layouts_.resize(set_templates_.size(), nullptr);
     for (auto &[index, layout_template] : set_templates_) {
@@ -359,8 +399,7 @@ void VulkanPipeline::create_shader_stages(const Params &params) {
     VkPipelineShaderStageCreateInfo &shader_stage_info =
         shader_stages_.emplace_back();
 
-    auto [result, shader_module] = create_shader_module(device_, code_view);
-    RHI_ASSERT(result == RhiResult::success);
+    VkShaderModule shader_module = create_shader_module(device_, code_view);
 
     shader_stage_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -382,7 +421,7 @@ void VulkanPipeline::create_compute_pipeline(const Params &params) {
                      params.name.data());
   RHI_LOG_DEBUG(msg_buf);
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
-                                             pipeline_layout_);
+                                             pipeline_layout_, params.cache);
 }
 
 void VulkanPipeline::create_graphics_pipeline(
@@ -1591,13 +1630,32 @@ VulkanDevice::~VulkanDevice() {
   vmaDestroyAllocator(allocator_export_);
 }
 
-std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
-    const PipelineSourceDesc &src,
-    std::string name) {
-  RHI_ASSERT(src.type == PipelineSourceType::spirv_binary &&
-             src.stage == PipelineStageType::compute);
-  RHI_ASSERT(src.data != nullptr && src.size != 0 &&
-             "pipeline source cannot be empty");
+RhiResult VulkanDevice::create_pipeline_cache(
+    PipelineCache **out_cache,
+    size_t initial_size,
+    const void *initial_data) noexcept {
+  try {
+    *out_cache = new VulkanPipelineCache(this, initial_size, initial_data);
+  } catch (std::bad_alloc &) {
+    *out_cache = nullptr;
+    return RhiResult::out_of_memory;
+  }
+  return RhiResult::success;
+}
+
+RhiResult VulkanDevice::create_pipeline(Pipeline **out_pipeline,
+                                        const PipelineSourceDesc &src,
+                                        std::string name,
+                                        PipelineCache *cache) noexcept {
+  if (src.type != PipelineSourceType::spirv_binary ||
+      src.stage != PipelineStageType::compute) {
+    return RhiResult::invalid_usage;
+  }
+
+  if (src.data == nullptr || src.size == 0) {
+    RHI_LOG_ERROR("pipeline source cannot be empty");
+    return RhiResult::invalid_usage;
+  }
 
   SpirvCodeView code;
   code.data = (uint32_t *)src.data;
@@ -1608,8 +1666,27 @@ std::unique_ptr<Pipeline> VulkanDevice::create_pipeline(
   params.code = {code};
   params.device = this;
   params.name = name;
+  params.cache =
+      cache ? static_cast<VulkanPipelineCache *>(cache)->vk_pipeline_cache()
+            : nullptr;
 
-  return std::make_unique<VulkanPipeline>(params);
+  try {
+    *out_pipeline = new VulkanPipeline(params);
+  } catch (std::invalid_argument &e) {
+    *out_pipeline = nullptr;
+    RHI_LOG_ERROR(e.what());
+    return RhiResult::invalid_usage;
+  } catch (std::runtime_error &e) {
+    *out_pipeline = nullptr;
+    RHI_LOG_ERROR(e.what());
+    return RhiResult::error;
+  } catch (std::bad_alloc &e) {
+    *out_pipeline = nullptr;
+    RHI_LOG_ERROR(e.what());
+    return RhiResult::out_of_memory;
+  }
+
+  return RhiResult::success;
 }
 
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {

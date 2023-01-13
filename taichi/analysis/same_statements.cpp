@@ -117,6 +117,16 @@ class IRNodeComparator : public IRVisitor {
     //  same as Stmt::common_statement_eliminable(). However, two identical
     //  GlobalPtrStmts cannot have different values, although
     //  GlobalPtrStmt::common_statement_eliminable() is false.
+
+    // ArgLoadStmt can have different type : grad or not grad.
+    if (stmt->is<ArgLoadStmt>()) {
+      // ArgLoadStmt can have different type : grad or not grad.
+      if (stmt->as<ArgLoadStmt>()->is_grad !=
+          other->as<ArgLoadStmt>()->is_grad) {
+        same = false;
+        return;
+      }
+    }
     const bool identical_stmts_can_have_different_value =
         stmt_has_value && !stmt->common_statement_eliminable() &&
         !stmt->is<GlobalPtrStmt>();

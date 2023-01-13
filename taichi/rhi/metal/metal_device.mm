@@ -179,9 +179,13 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   return *this;
 }
 
-MetalCommandList::MetalCommandList(const MetalDevice &device)
-    : device_(&device) {}
-MetalCommandList::~MetalCommandList() {}
+MetalCommandList::MetalCommandList(const MetalDevice &device,
+                                   MTLCommandQueue_id cmd_queue)
+    : device_(&device) {
+  cmdbuf_ = [cmd_queue commandBuffer];
+}
+
+MetalCommandList::~MetalCommandList() { [cmdbuf_ release]; }
 
 void MetalCommandList::bind_pipeline(Pipeline *p) noexcept {
   RHI_ASSERT(p != nullptr);
@@ -223,17 +227,17 @@ void MetalCommandList::buffer_copy(DevicePtr dst, DevicePtr src,
   MTLBuffer_id src_mtl_buffer = src_memory.mtl_buffer();
   MTLBuffer_id dst_mtl_buffer = dst_memory.mtl_buffer();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLBlitCommandEncoder_id encoder = [mtl_command_buffer blitCommandEncoder];
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
     [encoder copyFromBuffer:src_mtl_buffer
-               sourceOffset:(NSUInteger)src.offset
+               sourceOffset:NSUInteger(src.offset)
                    toBuffer:dst_mtl_buffer
-          destinationOffset:(NSUInteger)dst.offset
+          destinationOffset:NSUInteger(dst.offset)
                        size:size];
     [encoder endEncoding];
-  };
-  pending_commands_.emplace_back(encode_f);
+  }
 }
+
 void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
                                    uint32_t data) noexcept {
   RHI_ASSERT(data == 0);
@@ -246,14 +250,13 @@ void MetalCommandList::buffer_fill(DevicePtr ptr, size_t size,
 
   MTLBuffer_id mtl_buffer = memory.mtl_buffer();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLBlitCommandEncoder_id encoder = [mtl_command_buffer blitCommandEncoder];
+  @autoreleasepool {
+    MTLBlitCommandEncoder_id encoder = [cmdbuf_ blitCommandEncoder];
     [encoder fillBuffer:mtl_buffer
                   range:NSMakeRange((NSUInteger)ptr.offset, (NSUInteger)size)
                   value:0];
     [encoder endEncoding];
-  };
-  pending_commands_.emplace_back(encode_f);
+  }
 }
 
 RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
@@ -271,9 +274,8 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
   std::vector<MetalShaderResource> shader_resources =
       current_shader_resource_set_->resources();
 
-  auto encode_f = [=](MTLCommandBuffer_id mtl_command_buffer) {
-    MTLComputeCommandEncoder_id encoder =
-        [mtl_command_buffer computeCommandEncoder];
+  @autoreleasepool {
+    MTLComputeCommandEncoder_id encoder = [cmdbuf_ computeCommandEncoder];
 
     for (const MetalShaderResource &resource : shader_resources) {
       switch (resource.ty) {
@@ -293,9 +295,11 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
             threadsPerThreadgroup:MTLSizeMake(local_x, local_y, local_z)];
     [encoder endEncoding];
   };
-  pending_commands_.emplace_back(encode_f);
+
   return RhiResult::success;
 }
+
+MTLCommandBuffer_id MetalCommandList::finalize() { return cmdbuf_; }
 
 MetalStream::MetalStream(const MetalDevice &device,
                          MTLCommandQueue_id mtl_command_queue)
@@ -315,24 +319,18 @@ void MetalStream::destroy() {
 }
 
 RhiResult MetalStream::new_command_list(CommandList **out_cmdlist) noexcept {
-  *out_cmdlist = new MetalCommandList(*device_);
+  *out_cmdlist = new MetalCommandList(*device_, mtl_command_queue_);
   return RhiResult::success;
 }
+
 StreamSemaphore
 MetalStream::submit(CommandList *cmdlist,
                     const std::vector<StreamSemaphore> &wait_semaphores) {
   MetalCommandList *cmdlist2 = (MetalCommandList *)cmdlist;
 
-  @autoreleasepool {
-    MTLCommandBuffer_id cmdbuf = [[mtl_command_queue_ commandBuffer] retain];
-    for (auto &command : cmdlist2->pending_commands_) {
-      command(cmdbuf);
-    }
-    cmdlist2->pending_commands_.clear();
-
-    [cmdbuf commit];
-    pending_cmdbufs_.emplace_back(cmdbuf);
-  }
+  MTLCommandBuffer_id cmdbuf = [cmdlist2->finalize() retain];
+  [cmdbuf commit];
+  pending_cmdbufs_.emplace_back(cmdbuf);
 
   return {};
 }
@@ -351,16 +349,25 @@ void MetalStream::command_sync() {
 }
 
 DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
+  // https://developer.apple.com/documentation/metal/mtlgpufamily/mtlgpufamilyapple8?language=objc
+  // We do this so that it compiles under lower version of macOS
+  [[maybe_unused]] constexpr auto kMTLGPUFamilyApple8 = MTLGPUFamily(1008);
+  constexpr auto kMTLGPUFamilyApple7 = MTLGPUFamily(1007);
+  constexpr auto kMTLGPUFamilyApple6 = MTLGPUFamily(1006);
+  constexpr auto kMTLGPUFamilyApple5 = MTLGPUFamily(1005);
+  constexpr auto kMTLGPUFamilyApple4 = MTLGPUFamily(1004);
+  constexpr auto kMTLGPUFamilyApple3 = MTLGPUFamily(1003);
+
   bool family_mac2 = [mtl_device supportsFamily:MTLGPUFamilyMac2];
-  bool family_apple7 = [mtl_device supportsFamily:MTLGPUFamilyApple7];
+  bool family_apple7 = [mtl_device supportsFamily:kMTLGPUFamilyApple7];
   bool family_apple6 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple6] | family_apple7;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple6] | family_apple7;
   bool family_apple5 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple5] | family_apple6;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple5] | family_apple6;
   bool family_apple4 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple4] | family_apple5;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple4] | family_apple5;
   bool family_apple3 =
-      [mtl_device supportsFamily:MTLGPUFamilyApple3] | family_apple4;
+      [mtl_device supportsFamily:kMTLGPUFamilyApple3] | family_apple4;
 
   bool feature_64_bit_integer_math = family_apple3;
   bool feature_floating_point_atomics = family_apple7 | family_mac2;
@@ -478,12 +485,18 @@ RhiResult MetalDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
 void MetalDevice::unmap(DevicePtr ptr) {}
 void MetalDevice::unmap(DeviceAllocation ptr) {}
 
-std::unique_ptr<Pipeline>
-MetalDevice::create_pipeline(const PipelineSourceDesc &src, std::string name) {
+RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
+                                       const PipelineSourceDesc &src,
+                                       std::string name,
+                                       PipelineCache *cache) noexcept {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
-  Pipeline *out =
-      MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
-  return std::unique_ptr<Pipeline>(out);
+  try {
+    *out_pipeline =
+        MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+  } catch (const std::exception &e) {
+    return RhiResult::error;
+  }
+  return RhiResult::success;
 }
 ShaderResourceSet *MetalDevice::create_resource_set() {
   return new MetalShaderResourceSet(*this);

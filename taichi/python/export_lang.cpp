@@ -433,6 +433,7 @@ void export_lang(py::module &m) {
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::arg("zero_fill") = false, py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
           [&](Program *program, const DataType &dt, int num_channels,
@@ -704,6 +705,8 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_ndarray_with_grad",
+           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture",
            &Kernel::LaunchContextBuilder::set_arg_rw_texture)
@@ -921,6 +924,9 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
+
+  m.def("make_external_grad_tensor_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 

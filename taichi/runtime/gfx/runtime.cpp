@@ -1,5 +1,6 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/program/program.h"
+#include "taichi/common/filesystem.hpp"
 
 #include <chrono>
 #include <array>
@@ -289,8 +290,8 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
     PipelineSourceDesc source_desc{PipelineSourceType::spirv_binary,
                                    (void *)spirv_bins[i].data(),
                                    spirv_bins[i].size() * sizeof(uint32_t)};
-    auto vp =
-        ti_params.device->create_pipeline(source_desc, task_attribs[i].name);
+    auto [vp, res] = ti_params.device->create_pipeline_unique(
+        source_desc, task_attribs[i].name, ti_params.backend_cache);
     pipelines_.push_back(std::move(vp));
   }
 }
@@ -320,10 +321,43 @@ GfxRuntime::GfxRuntime(const Params &params)
   TI_ASSERT(host_result_buffer_ != nullptr);
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
+
+  // Read pipeline cache from disk if available.
+  std::filesystem::path cache_path(get_repo_dir());
+  cache_path /= "rhi_cache.bin";
+  std::vector<char> cache_data;
+  if (std::filesystem::exists(cache_path)) {
+    TI_TRACE("Loading pipeline cache from {}", cache_path.generic_string());
+    std::ifstream cache_file(cache_path, std::ios::binary);
+    cache_data.assign(std::istreambuf_iterator<char>(cache_file),
+                      std::istreambuf_iterator<char>());
+  } else {
+    TI_TRACE("Pipeline cache not found at {}", cache_path.generic_string());
+  }
+  auto [cache, res] = device_->create_pipeline_cache_unique(cache_data.size(),
+                                                            cache_data.data());
+  if (res == RhiResult::success) {
+    backend_cache_ = std::move(cache);
+  }
 }
 
 GfxRuntime::~GfxRuntime() {
   synchronize();
+
+  // Write pipeline cache back to disk.
+  if (backend_cache_) {
+    uint8_t *cache_data = (uint8_t *)backend_cache_->data();
+    size_t cache_size = backend_cache_->size();
+    if (cache_data) {
+      std::filesystem::path cache_path =
+          std::filesystem::path(get_repo_dir()) / "rhi_cache.bin";
+      std::ofstream cache_file(cache_path, std::ios::binary | std::ios::trunc);
+      std::ostreambuf_iterator<char> output_iterator(cache_file);
+      std::copy(cache_data, cache_data + cache_size, output_iterator);
+    }
+    backend_cache_.reset();
+  }
+
   {
     decltype(ti_kernels_) tmp;
     tmp.swap(ti_kernels_);
@@ -344,6 +378,7 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
   }
   params.global_tmps_buffer = global_tmps_buffer_.get();
   params.listgen_buffer = listgen_buffer_.get();
+  params.backend_cache = backend_cache_.get();
 
   for (int i = 0; i < reg_params.task_spirv_source_codes.size(); ++i) {
     const auto &spirv_src = reg_params.task_spirv_source_codes[i];
@@ -414,6 +449,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           if (host_ctx->device_allocation_type[i] ==
               RuntimeContext::DevAllocType::kNdarray) {
             any_arrays[i] = devalloc;
+            ndarrays_in_use_.insert(devalloc.alloc_id);
           } else if (host_ctx->device_allocation_type[i] ==
                      RuntimeContext::DevAllocType::kTexture) {
             textures[i] = devalloc;
@@ -588,6 +624,7 @@ void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
   ctx_buffers_.clear();
+  ndarrays_in_use_.clear();
   fflush(stdout);
 }
 

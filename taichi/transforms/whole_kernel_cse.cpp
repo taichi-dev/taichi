@@ -98,6 +98,11 @@ class WholeKernelCSE : public BasicStmtVisitor {
       return irpass::analysis::definitely_same_address(this_ptr, prev_ptr) &&
              (this_ptr->activate == prev_ptr->activate || prev_ptr->activate);
     }
+    if (this_stmt->is<ExternalPtrStmt>()) {
+      auto this_ptr = this_stmt->as<ExternalPtrStmt>();
+      auto prev_ptr = prev_stmt->as<ExternalPtrStmt>();
+      return irpass::analysis::definitely_same_address(this_ptr, prev_ptr);
+    }
     if (this_stmt->is<LoopUniqueStmt>()) {
       auto this_loop_unique = this_stmt->as<LoopUniqueStmt>();
       auto prev_loop_unique = prev_stmt->as<LoopUniqueStmt>();

@@ -255,6 +255,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);
+
+        if (context.has_grad[i]) {
+          DeviceAllocation *ptr_grad =
+              static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
+          uint64 host_ptr_grad =
+              (uint64)executor->get_ndarray_alloc_info_ptr(*ptr_grad);
+          context.set_grad_arg(i, host_ptr_grad);
+        }
       }
     }
     for (auto task : task_funcs) {

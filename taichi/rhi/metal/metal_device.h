@@ -129,7 +129,8 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
 
 class MetalCommandList final : public CommandList {
  public:
-  explicit MetalCommandList(const MetalDevice &device);
+  explicit MetalCommandList(const MetalDevice &device,
+                            MTLCommandQueue_id cmd_queue);
   ~MetalCommandList() final;
 
   void bind_pipeline(Pipeline *p) noexcept final;
@@ -144,11 +145,13 @@ class MetalCommandList final : public CommandList {
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
+  MTLCommandBuffer_id finalize();
+
  private:
   friend class MetalStream;
 
   const MetalDevice *device_;
-  std::vector<std::function<void(MTLCommandBuffer_id)>> pending_commands_;
+  MTLCommandBuffer_id cmdbuf_;
 
   // Non-null after `bind*` methods.
   const MetalPipeline *current_pipeline_;
@@ -213,8 +216,10 @@ class MetalDevice final : public Device {
   void unmap(DevicePtr ptr) override;
   void unmap(DeviceAllocation ptr) override;
 
-  std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
-                                            std::string name) override;
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
   ShaderResourceSet *create_resource_set() override;
 
   Stream *get_compute_stream() override;

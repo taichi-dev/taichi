@@ -258,12 +258,6 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif isinstance(args[i],
-                                impl.Expr) and args[i].ptr.is_tensor():
-                    non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().compiling_callable.
-                        ast_builder().expand_exprs([args[i].ptr])
-                    ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
@@ -416,11 +410,30 @@ class TaichiCallableTemplateMapper:
             shape = tuple(shape)
             element_shape = ()
             if isinstance(anno.dtype, MatrixType):
-                if len(shape) < anno.dtype.ndim:
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
-                        f"but the argument has only {len(shape)} dimensions")
+                if anno.ndim is not None:
+                    if len(shape) != anno.dtype.ndim + anno.ndim:
+                        raise ValueError(
+                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
+                            f"but the argument has {len(shape)} dimensions")
+                else:
+                    if len(shape) < anno.dtype.ndim:
+                        raise ValueError(
+                            f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                            f"but the argument has only {len(shape)} dimensions"
+                        )
                 element_shape = shape[-anno.dtype.ndim:]
+                anno_element_shape = anno.dtype.get_shape()
+                if None not in anno_element_shape and element_shape != anno_element_shape:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
+                        f"but the argument has element shape of {element_shape}"
+                    )
+            elif anno.dtype is not None:
+                # User specified scalar dtype
+                if anno.ndim is not None and len(shape) != anno.ndim:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
+                        f"but the argument has {len(shape)} dimensions")
             return to_taichi_type(
                 arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
@@ -649,7 +662,14 @@ class Kernel:
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
+                    v_primal = v.arr
+                    v_grad = v.grad.arr if v.grad else None
+                    if v_grad is None:
+                        launch_ctx.set_arg_ndarray(actual_argument_slot,
+                                                   v_primal)
+                    else:
+                        launch_ctx.set_arg_ndarray_with_grad(
+                            actual_argument_slot, v_primal, v_grad)
                 elif isinstance(needed,
                                 texture_type.TextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):

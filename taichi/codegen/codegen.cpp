@@ -21,27 +21,30 @@
 
 namespace taichi::lang {
 
-KernelCodeGen::KernelCodeGen(Kernel *kernel)
-    : prog(kernel->program), kernel(kernel) {
+KernelCodeGen::KernelCodeGen(const CompileConfig *compile_config,
+                             Kernel *kernel)
+    : prog(kernel->program), kernel(kernel), compile_config_(compile_config) {
   this->ir = kernel->ir.get();
 }
 
-std::unique_ptr<KernelCodeGen> KernelCodeGen::create(Arch arch,
-                                                     Kernel *kernel) {
+std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
+    const CompileConfig *compile_config,
+    Kernel *kernel) {
 #ifdef TI_WITH_LLVM
+  const auto arch = compile_config->arch;
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
-    return std::make_unique<KernelCodeGenCPU>(kernel);
+    return std::make_unique<KernelCodeGenCPU>(compile_config, kernel);
   } else if (arch == Arch::wasm) {
-    return std::make_unique<KernelCodeGenWASM>(kernel);
+    return std::make_unique<KernelCodeGenWASM>(compile_config, kernel);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<KernelCodeGenCUDA>(kernel);
+    return std::make_unique<KernelCodeGenCUDA>(compile_config, kernel);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (arch == Arch::dx12) {
 #if defined(TI_WITH_DX12)
-    return std::make_unique<KernelCodeGenDX12>(kernel);
+    return std::make_unique<KernelCodeGenDX12>(compile_config, kernel);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -58,7 +61,7 @@ std::optional<LLVMCompiledKernel>
 KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key) {
   TI_AUTO_PROF;
-  const auto &config = prog->this_thread_config();
+  const auto &config = *compile_config_;
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
@@ -72,7 +75,6 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
     return std::nullopt;
   }
-  kernel->mark_as_from_cache();
   return {std::move(cache_data.compiled_data)};
 }
 
@@ -83,8 +85,8 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 }
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
+  const auto &config = *compile_config_;
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = prog->this_thread_config();
   auto *tlctx = llvm_prog->get_llvm_context(config.arch);
   std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);

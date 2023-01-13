@@ -85,8 +85,12 @@ void Particles::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_shader_resources(resource_set_.get());
 
   // We draw num_particles * 6, 6 forms a quad
-  command_list->draw_instance(6, config_.draw_vertex_count,
-                              config_.draw_first_vertex);
+  // The `first_instance` should then instead set with `draw_first_vertex`,
+  // and the first index always need to be 0
+  command_list->draw_instance(/*num_verticies=*/6,
+                              /*num_instances=*/config_.draw_vertex_count,
+                              /*start_vertex=*/0,
+                              /*start_instance=*/config_.draw_first_vertex);
 }
 
 void Particles::create_bindings() {

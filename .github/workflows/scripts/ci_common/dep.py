@@ -74,8 +74,8 @@ def download_dep(url, outdir, *, strip=0, force=False, args=[]):
     local_cached = depcache / escaped
 
     near_caches = [
-        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}'
-        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}',
+        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}',
     ]
 
     if not local_cached.exists():

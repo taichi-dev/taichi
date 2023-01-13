@@ -5,9 +5,9 @@
 void aot_save(taichi::Arch arch) {
   using namespace taichi;
   using namespace lang;
-  auto program = Program(arch);
 
-  program.this_thread_config().advanced_optimization = false;
+  default_compile_config.advanced_optimization = false;
+  auto program = Program(arch);
 
   int n = 10;
 

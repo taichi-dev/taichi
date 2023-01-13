@@ -152,7 +152,7 @@ def func():
 
 The main reason to use `ti.static` with for loops is to unroll the loop to improve runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
 
-An unrolling verison is often faster because it reduces branch overhead: 
+An unrolling verison is often faster because it reduces branch overhead:
 
 1. It saves the instructions for incrementing the loop counter and checking the end-of-loop condition.
 2. It provides more instructions for the compiler to schedule across the whole iterations.

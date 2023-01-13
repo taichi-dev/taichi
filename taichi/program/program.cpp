@@ -353,7 +353,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
+    ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -380,8 +380,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
-  ker.insert_scalar_arg(snode->dt);
+    ker.insert_scalar_param(PrimitiveType::i32);
+  ker.insert_scalar_param(snode->dt);
   return ker;
 }
 

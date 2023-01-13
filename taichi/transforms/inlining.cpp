@@ -19,11 +19,11 @@ class Inliner : public BasicStmtVisitor {
   void visit(FuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
-    TI_ASSERT(func->args.size() == stmt->args.size());
+    TI_ASSERT(func->parameter_list.size() == stmt->args.size());
     TI_ASSERT(func->ir->is<Block>());
     TI_ASSERT(func->rets.size() <= 1);
     auto inlined_ir = irpass::analysis::clone(func->ir.get());
-    if (!func->args.empty()) {
+    if (!func->parameter_list.empty()) {
       irpass::replace_statements(
           inlined_ir.get(),
           /*filter=*/[&](Stmt *s) { return s->is<ArgLoadStmt>(); },

@@ -14,7 +14,7 @@ class TI_DLL_EXPORT Callable {
   std::unique_ptr<IRNode> ir{nullptr};
   std::unique_ptr<FrontendContext> context{nullptr};
 
-  struct Arg {
+  struct Parameter {
     bool is_array{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
@@ -32,11 +32,11 @@ class TI_DLL_EXPORT Callable {
     However we kept the interfaces unchanged temporarily, so as to minimize
     possible regressions.
     */
-    explicit Arg(const DataType &dt = PrimitiveType::unknown,
-                 bool is_array = false,
-                 std::size_t size_unused = 0,
-                 int total_dim = 0,
-                 std::vector<int> element_shape = {}) {
+    explicit Parameter(const DataType &dt = PrimitiveType::unknown,
+                       bool is_array = false,
+                       std::size_t size_unused = 0,
+                       int total_dim = 0,
+                       std::vector<int> element_shape = {}) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
@@ -76,7 +76,7 @@ class TI_DLL_EXPORT Callable {
     }
   };
 
-  std::vector<Arg> args;
+  std::vector<Parameter> parameter_list;
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;
@@ -84,12 +84,12 @@ class TI_DLL_EXPORT Callable {
   Callable();
   virtual ~Callable();
 
-  int insert_scalar_arg(const DataType &dt);
+  int insert_scalar_param(const DataType &dt);
 
-  int insert_arr_arg(const DataType &dt,
-                     int total_dim,
-                     std::vector<int> element_shape);
-  int insert_texture_arg(const DataType &dt);
+  int insert_arr_param(const DataType &dt,
+                       int total_dim,
+                       std::vector<int> element_shape);
+  int insert_texture_param(const DataType &dt);
 
   int insert_ret(const DataType &dt);
 

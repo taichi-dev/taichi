@@ -158,7 +158,8 @@ def get_human_readable_name(x: EntryBase):
     elif ty is Definition:
         return f"{x.name.screaming_snake_case}"
 
-    elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union, Callback)):
+    elif isinstance(
+            x, (Handle, Enumeration, BitField, Structure, Union, Callback)):
         return f"{get_type_name(x)}"
 
     elif ty is Function:

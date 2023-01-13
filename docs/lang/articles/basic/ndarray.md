@@ -44,7 +44,9 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
     ```
 
 :::Note
+
 Accessing ndarrray elements from the Python scope comes in handy but inevitably generates and launches multiple tiny Taichi kernels, which is not the best practice performance-wise. You are encouraged to keep compute-heavy work inside one Taichi kernel instead of operating on arrays element-by-element from the Python scope.
+
 :::
 
 - Data copy of ndarrays
@@ -64,6 +66,7 @@ Accessing ndarrray elements from the Python scope comes in handy but inevitably 
     d = copy.copy(b) # d is a shallow copy of b; they share the underlying memory
     c[0, 0][0] = 1.2 # This mutates b as well, so b[0, 0][0] is now 1.2
     ```
+
 - Bidirectional data exchange with NumPy ndarrays
 
     ```python
@@ -109,7 +112,9 @@ proc(rgb)
 It does not matter whether you use the [range-for](https://docs.taichi-lang.org/docs/language_reference#the-range-for-statement) or [struct-for](https://docs.taichi-lang.org/docs/language_reference#the-struct-for-statement) to iterate over the ndarrays.
 
 :::TIPS
+
 In the above code, we use `arr_ty` as a type alias for the 2D ndarray type of vec3 elements. The type alias makes type annotations shorter and easier to read.
+
 :::
 
 ## Using external data containers in `ti.kernel`
@@ -144,7 +149,9 @@ add_one(arr_torch) # arr_torch is updated by taichi kernel
 ```
 
 :::Note
+
 Every element in the external array (`arr_np` and `arr_torch`) is added by `1.0` when the Taichi kernel `add_one` finishes.
+
 :::
 
 If the external data container and Taichi use the same device, argument passing incurs zero overhead. The above PyTorch example allocates the tensor on the CUDA device, which is the same device used by Taichi. Therefore, the kernel function loads and stores data to the original CUDA buffer allocated by PyTorch, without any extra overhead.
@@ -152,11 +159,15 @@ If the external data container and Taichi use the same device, argument passing 
 However, if the devices are different, which is the case in the first example where Numpy uses CPUs and Taichi uses CUDA, Taichi automatically handles memory transfers across devices, saving users from manual operation.
 
 :::TIPS
+
 NumPy's default data precision is 64-bit, which is still inefficient for most desktop GPUs. It is recommended to explicitly specify 32-bit data types.
+
 :::
 
 :::TIPS
+
 Only contiguous NumPy arrays and PyTorch tensors are supported.
+
 :::
 
 ```python

@@ -1,8 +1,8 @@
 import numbers
-import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import BitpackedFields, Field
 from taichi.lang.util import get_traceback
 
@@ -47,9 +47,8 @@ class SNode:
             The added :class:`~taichi.lang.SNode` instance.
         """
         if impl.current_cfg().arch == _ti_core.metal:
-            warnings.warn(
-                "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
-                DeprecationWarning)
+            raise TaichiRuntimeError(
+                "Pointer SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.pointer(axes, dimensions, get_traceback()))
@@ -75,9 +74,8 @@ class SNode:
             The added :class:`~taichi.lang.SNode` instance.
         """
         if impl.current_cfg().arch == _ti_core.metal:
-            raise TaichiCompilationError(
-                "Dynamic SNode on metal backend is deprecated and removed in this release."
-            )
+            raise TaichiRuntimeError(
+                "Dynamic SNode on metal backend is deprecated and removed.")
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -95,9 +93,8 @@ class SNode:
             The added :class:`~taichi.lang.SNode` instance.
         """
         if impl.current_cfg().arch == _ti_core.metal:
-            warnings.warn(
-                "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0.",
-                DeprecationWarning)
+            raise TaichiRuntimeError(
+                "Bitmasked SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.bitmasked(axes, dimensions, get_traceback()))
@@ -386,7 +383,7 @@ def append(node, indices, val):
     """
     ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_append(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_append(
             node._snode.ptr, expr.make_expr_group(indices), ptrs),
         tb=impl.get_runtime().get_current_src_info())
     a = impl.expr_init(append_expr)
@@ -404,9 +401,9 @@ def is_active(node, indices):
     Returns:
         bool: the cell `node[indices]` is active or not.
     """
-    return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_is_active(
-            node._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_is_active(node._snode.ptr,
+                                          expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -416,7 +413,7 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_activate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_activate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -430,7 +427,7 @@ def deactivate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -445,7 +442,7 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_length(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_length(
             node._snode.ptr, expr.make_expr_group(indices)))
 
 
@@ -461,9 +458,9 @@ def get_addr(f, indices):
     Returns:
         ti.u64: The memory address of `f[indices]`.
     """
-    return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().expr_snode_get_addr(
-            f._snode.ptr, expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_get_addr(f._snode.ptr,
+                                         expr.make_expr_group(indices)))
 
 
 __all__ = [

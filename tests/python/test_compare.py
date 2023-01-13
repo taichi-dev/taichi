@@ -108,7 +108,7 @@ def test_no_duplicate_eval_func():
         return ti.atomic_add(b[None], n)
 
     def foo(n):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return ti.atomic_add(impl.subscript(ast_builder, b, None), n)
 
     @ti.kernel

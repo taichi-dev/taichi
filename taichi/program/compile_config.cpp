@@ -1,6 +1,8 @@
 #include "compile_config.h"
 
 #include <thread>
+#include "taichi/rhi/arch.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
 
@@ -63,6 +65,17 @@ CompileConfig::CompileConfig() {
   // C backend options:
   cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+}
+
+void CompileConfig::fit() {
+  if (debug) {
+    // TODO: allow users to run in debug mode without out-of-bound checks
+    check_out_of_bound = true;
+  }
+  if (arch == Arch::cc || arch_uses_spirv(arch)) {
+    demote_dense_struct_fors = true;
+  }
+  offline_cache::disable_offline_cache_if_needed(this);
 }
 
 }  // namespace taichi::lang

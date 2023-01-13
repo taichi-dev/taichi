@@ -7,31 +7,6 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.vulkan, ti.opengl, ti.cuda, ti.cpu])
-def test_deprecated_aot_save_filename():
-    density = ti.field(float, shape=(4, 4))
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        m = ti.aot.Module()
-        m.add_field('density', density)
-        with pytest.warns(
-                DeprecationWarning,
-                match=
-                r'Specifying filename is no-op and will be removed in release v1.4.0'
-        ):
-            m.save(tmpdir, 'filename')
-
-
-@test_utils.test()
-def test_deprecated_matrix_rotation2d():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            r'`ti.Matrix.rotation2d\(\)` will be removed in release v1.4.0. Use `ti.math.rotation2d\(\)` instead.'
-    ):
-        a = ti.Matrix.rotation2d(math.pi / 2)
-
-
 @test_utils.test()
 def test_deprecate_element_shape_ndarray_annotation():
     with pytest.warns(
@@ -71,26 +46,49 @@ def test_deprecate_field_dim_ndarray_annotation():
             pass
 
 
+@test_utils.test()
+def test_deprecate_field_dim_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead."
+    ):
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                             'x',
+                             ti.math.vec2,
+                             field_dim=1)
+
+
+@test_utils.test()
+def test_deprecate_element_shape_ndarray_arg():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.'
+    ):
+
+        ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
+                     'x',
+                     ti.f32,
+                     ndim=1,
+                     element_shape=(1, ))
+
+
+# Remove this before v1.5.0
 @test_utils.test(arch=ti.metal)
 def test_deprecate_metal_sparse():
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Pointer SNode on metal backend is deprecated, and it will be removed in v1.4.0."
-    ):
-        a = ti.root.pointer(ti.i, 10)
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Bitmasked SNode on metal backend is deprecated, and it will be removed in v1.4.0."
-    ):
-        b = a.bitmasked(ti.j, 10)
-
     with pytest.raises(
             ti.TaichiRuntimeError,
-            match=
-            "Dynamic SNode on metal backend is deprecated and removed in this release."
+            match="Pointer SNode on metal backend is deprecated and removed."):
+        ti.root.pointer(ti.i, 10)
+    with pytest.raises(
+            ti.TaichiRuntimeError,
+            match="Bitmasked SNode on metal backend is deprecated and removed."
     ):
+        ti.root.bitmasked(ti.j, 10)
+    with pytest.raises(
+            ti.TaichiRuntimeError,
+            match="Dynamic SNode on metal backend is deprecated and removed."):
         ti.root.dynamic(ti.i, 10)
 
 
@@ -114,6 +112,7 @@ def test_deprecated_rwtexture_type():
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
+# Note: will be removed in v1.5.0
 @test_utils.test(arch=ti.vulkan)
 def test_incomplete_info_rwtexture():
     n = 128
@@ -154,20 +153,6 @@ def test_incomplete_info_rwtexture():
             for i, j in ti.ndrange(n, n):
                 ret = ti.cast(1, ti.f32)
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-
-def test_deprecated_source_inspect():
-    with pytest.warns(DeprecationWarning,
-                      match="Sourceinspect is deprecated since v1.4.0"):
-        import os
-        os.environ['USE_SOURCEINSPECT'] = '1'
-        from taichi.lang._wrap_inspect import getsourcelines
-
-        @ti.kernel
-        def func():
-            pass
-
-        print(getsourcelines(func))
 
 
 @pytest.mark.parametrize("value", [True, False])

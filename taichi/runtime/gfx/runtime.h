@@ -43,6 +43,8 @@ class CompiledTaichiKernel {
     std::vector<DeviceAllocation *> root_buffers;
     DeviceAllocation *global_tmps_buffer{nullptr};
     DeviceAllocation *listgen_buffer{nullptr};
+
+    PipelineCache *backend_cache{nullptr};
   };
 
   explicit CompiledTaichiKernel(const Params &ti_params);
@@ -126,6 +128,10 @@ class TI_DLL_EXPORT GfxRuntime {
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs);
 
+  bool used_in_kernel(DeviceAllocationId id) {
+    return ndarrays_in_use_.count(id) > 0;
+  }
+
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;
 
@@ -136,6 +142,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
+
+  std::unique_ptr<PipelineCache> backend_cache_{nullptr};
 
   std::vector<std::unique_ptr<DeviceAllocationGuard>> root_buffers_;
   std::unique_ptr<DeviceAllocationGuard> global_tmps_buffer_;
@@ -151,13 +159,20 @@ class TI_DLL_EXPORT GfxRuntime {
 
   std::unordered_map<DeviceAllocation *, size_t> root_buffers_size_map_;
   std::unordered_map<DeviceAllocationId, ImageLayout> last_image_layouts_;
+  // [Note] Why do we need to track ndarrays that are in use?
+  // Since we separate cmdlist is async, taichi needs a way to know whether
+  // ndarrays are still used by pending kernels to be executed. So we use
+  // ndarray_in_use_ to track this so that we can free memory allocated for
+  // ndarray whenever it's safe to do so.
+  std::unordered_set<DeviceAllocationId> ndarrays_in_use_;
 };
 
 GfxRuntime::RegisterParams run_codegen(
     Kernel *kernel,
     Arch arch,
     const DeviceCapabilityConfig &caps,
-    const std::vector<CompiledSNodeStructs> &compiled_structs);
+    const std::vector<CompiledSNodeStructs> &compiled_structs,
+    const CompileConfig &compile_config);
 
 }  // namespace gfx
 }  // namespace taichi::lang

@@ -40,6 +40,9 @@ void disabled_function([[maybe_unused]] Ts... C) {
 #endif
 
 #define RHI_ASSERT(cond) assert(cond);
+#define RHI_THROW_UNLESS(cond, exception) \
+  if (!(cond))                            \
+    throw(exception);
 
 template <typename T>
 constexpr auto saturate_uadd(T a, T b) {

@@ -1257,9 +1257,11 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  auto raw_arg = call(builder.get(), "RuntimeContext_get_args", get_context(),
-                      tlctx->get_constant(stmt->arg_id));
-
+  auto raw_arg = stmt->is_grad
+                     ? (call(builder.get(), "RuntimeContext_get_grad_args",
+                             get_context(), tlctx->get_constant(stmt->arg_id)))
+                     : (call(builder.get(), "RuntimeContext_get_args",
+                             get_context(), tlctx->get_constant(stmt->arg_id)));
   llvm::Type *dest_ty = nullptr;
   if (stmt->is_ptr) {
     dest_ty = llvm::PointerType::get(
@@ -2246,7 +2248,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
 
   int list_element_size = std::min(leaf_block->max_num_elements(),
                                    (int64)taichi_listgen_max_element_size);
-  int num_splits = std::max(1, list_element_size / stmt->block_dim);
+  int num_splits = std::max(1, list_element_size / stmt->block_dim +
+                                   (list_element_size % stmt->block_dim != 0));
 
   auto struct_for_func = get_runtime_function("parallel_struct_for");
 

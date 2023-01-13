@@ -51,12 +51,6 @@ def _identity_matrix(n: template(), dtype: template()):
                    for i in static(range(n))], dtype)
 
 
-@pyfunc
-def _rotation2d_matrix(alpha):
-    return Matrix([[ops_mod.cos(alpha), -ops_mod.sin(alpha)],
-                   [ops_mod.sin(alpha), ops_mod.cos(alpha)]])
-
-
 @preconditions(
     arg_at(0, lambda xs: same_shapes(*xs)),
     arg_foreach_check(

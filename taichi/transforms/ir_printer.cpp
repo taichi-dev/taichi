@@ -459,7 +459,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    if (!stmt->is_grad) {
+      print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    } else {
+      print("{}{} = grad_arg[{}]", stmt->type_hint(), stmt->name(),
+            stmt->arg_id);
+    }
   }
 
   void visit(TexturePtrStmt *stmt) override {
@@ -593,8 +598,9 @@ class IRPrinter : public IRVisitor {
       }
       s += ")";
     }
-    s += fmt::format(" element_dim={} layout={}", stmt->element_dim,
-                     (stmt->element_dim <= 0) ? "AOS" : "SOA");
+    s += fmt::format(" element_dim={} layout={} is_grad={}", stmt->element_dim,
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA",
+                     stmt->base_ptr->as<ArgLoadStmt>()->is_grad);
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));

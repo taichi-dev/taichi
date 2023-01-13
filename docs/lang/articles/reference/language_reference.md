@@ -252,12 +252,6 @@ Otherwise, `primary` has a Taichi type. All Taichi types excluding primitive
 types support subscriptions. You can refer to documentation of these types
 for subscription usage.
 
-:::note
-When `primary` has a Taichi matrix type, all expressions in `expression_list`
-are required to be evaluated to Python values. This restriction can be got rid
-of by setting `ti.init(dynamic_index=True)`.
-:::
-
 #### Slicings
 
 ```

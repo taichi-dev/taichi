@@ -58,9 +58,6 @@ Following are some frequently-used configurations in `ti.init()`:
     default_ip: [ti.i32, ti.i64]
         Set the default precision of integers in the Taichi scope.
 
-    dynamic_index: bool
-        Enable/disable the use of variables as indices when accessing vector/matrix elements in the Taichi scope.
-
     kernel_profiler: bool
         Turn on/off kernel performance profiling.
 

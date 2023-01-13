@@ -3,6 +3,10 @@
 
 #include "taichi_core_impl.h"
 
+#ifdef TI_WITH_CUDA
+#include "taichi/platform/cuda/detect_cuda.h"
+#endif
+
 namespace taichi::lang {
 class LlvmRuntimeExecutor;
 class MemoryPool;
@@ -29,7 +33,7 @@ class LlvmRuntime : public Runtime {
                    const taichi::lang::DevicePtr &src,
                    size_t size) override;
 
-  void submit() override;
+  void flush() override;
 
   void wait() override;
 

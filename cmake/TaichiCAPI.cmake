@@ -1,14 +1,32 @@
 cmake_minimum_required(VERSION 3.0)
 
-set(TAICHI_C_API_NAME taichi_c_api)
+# This function creates a static target from OBJECT_TARGET, then link TARGET with the static target
+#
+# For now, we have to keep this hack because:
+# 1. Existence of circular dependencies in Taichi repo (https://github.com/taichi-dev/taichi/issues/6838)
+# 2. Link order restriction from `ld` linker on Linux (https://stackoverflow.com/questions/45135/why-does-the-order-in-which-libraries-are-linked-sometimes-cause-errors-in-gcc), which has zero-tolerance w.r.t circular dependencies.
+function(target_link_static_library TARGET OBJECT_TARGET)
 
+    set(STATIC_TARGET "${OBJECT_TARGET}_static")
+    add_library(${STATIC_TARGET})
+    target_link_libraries(${STATIC_TARGET} PUBLIC ${OBJECT_TARGET})
+if(LINUX)
+    get_target_property(LINK_LIBS ${OBJECT_TARGET} LINK_LIBRARIES)
+    target_link_libraries(${TARGET} PRIVATE "-Wl,--start-group" "${STATIC_TARGET}" "${LINK_LIBS}" "-Wl,--end-group")
+else()
+    target_link_libraries(${TARGET} PRIVATE "${STATIC_TARGET}")
+endif()
+
+endfunction()
+
+set(TAICHI_C_API_NAME taichi_c_api)
 file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
 
 if (TI_WITH_LLVM)
   list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
 endif()
 
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN)
+if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
 endif()
 
@@ -16,8 +34,15 @@ if (TI_WITH_OPENGL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
 endif()
 
+if (TI_WITH_METAL)
+  list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
+endif()
+
 if (TI_WITH_VULKAN)
   list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+  if (APPLE)
+    install(FILES ${MoltenVK_LIBRARY} DESTINATION c_api/lib)
+  endif()
 endif()
 
 if(TI_BUILD_TESTS)
@@ -25,18 +50,48 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+if (${CMAKE_GENERATOR} STREQUAL "Xcode")
+  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+  message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
+elseif (MSVC)
+  target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
+else()
+  target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
+endif()
+target_enable_function_level_linking(${TAICHI_C_API_NAME})
 
-# [TODO] Remove the following two linkages after rewriting AOT Demos with Device APIS
-if(TI_WITH_GGUI)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui_vulkan)
-target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_ui)
+# Strip shared library
+set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
+
+# Avoid exporting third party symbols from libtaichi_c_api.so
+# Note that on Windows, external symbols will be excluded from .dll automatically, by default.
+if(LINUX)
+    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_linux.lds)
+elseif(APPLE)
+    # Unfortunately, ld on MacOS does not support --exclude-libs and we have to manually specify the exported symbols
+    target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
 endif()
 
 set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
     ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
+
+if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
+  # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_C_API_NAME}.dll
+                ${C_API_OUTPUT_DIRECTORY}/${TAICHI_C_API_NAME}.dll)
+elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
+  # XCode is also a multi-config generator
+  add_custom_command(
+        TARGET ${TAICHI_C_API_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy
+                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_C_API_NAME}.dylib
+                ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.dylib)
+endif()
 
 target_include_directories(${TAICHI_C_API_NAME}
     PUBLIC

@@ -41,6 +41,14 @@ void compile_to_offloads(IRNode *ir,
   auto print = make_pass_printer(verbose, kernel->get_name(), ir);
   print("Initial IR");
 
+  if (!verbose && config.print_preprocessed_ir && start_from_ast) {
+    TI_INFO("[{}] {}:", kernel->get_name(), "Preprocessed IR");
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  }
+
   if (autodiff_mode == AutodiffMode::kReverse) {
     irpass::reverse_segments(ir);
     print("Segment reversed (for autodiff)");
@@ -52,7 +60,10 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
-  if (config.real_matrix && config.real_matrix_scalarize) {
+  irpass::eliminate_immutable_local_vars(ir);
+  print("Immutable local vars eliminated");
+
+  if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
@@ -147,7 +158,7 @@ void compile_to_offloads(IRNode *ir,
   //  in full_simplify().
   if (config.opt_level > 0 && config.cfg_optimization) {
     irpass::cfg_optimization(ir, false, /*autodiff_enabled*/ false,
-                             config.real_matrix);
+                             !config.real_matrix_scalarize);
     print("Optimized by CFG");
     irpass::analysis::verify(ir);
   }
@@ -197,7 +208,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (config.demote_dense_struct_fors) {
-    irpass::demote_dense_struct_fors(ir, config.packed);
+    irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir, config);
     print("Dense struct-for demoted");
     irpass::analysis::verify(ir);
@@ -243,7 +254,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (is_extension_supported(config.arch, Extension::quant) &&
-      ir->get_config().quant_opt_atomic_demotion) {
+      config.quant_opt_atomic_demotion) {
     irpass::analysis::gather_uniquely_accessed_bit_structs(ir, amgr.get());
   }
 
@@ -336,6 +347,14 @@ void compile_function(IRNode *ir,
     irpass::frontend_type_check(ir);
     irpass::lower_ast(ir);
     print("Lowered");
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   irpass::lower_access(ir, config, {{}, true});

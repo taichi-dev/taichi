@@ -11,35 +11,10 @@
 namespace taichi::lang {
 namespace cpu {
 
-class CpuResourceBinder : public ResourceBinder {
- public:
-  ~CpuResourceBinder() override {
-  }
-
-  std::unique_ptr<Bindings> materialize() override{TI_NOT_IMPLEMENTED};
-
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override{TI_NOT_IMPLEMENTED};
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
-
-  void buffer(uint32_t set,
-              uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override{TI_NOT_IMPLEMENTED};
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override{
-      TI_NOT_IMPLEMENTED};
-};
-
 class CpuPipeline : public Pipeline {
  public:
   ~CpuPipeline() override {
   }
-
-  ResourceBinder *resource_binder() override{TI_NOT_IMPLEMENTED};
 };
 
 class CpuCommandList : public CommandList {
@@ -47,27 +22,32 @@ class CpuCommandList : public CommandList {
   ~CpuCommandList() override {
   }
 
-  void bind_pipeline(Pipeline *p) override{TI_NOT_IMPLEMENTED};
-  void bind_resources(ResourceBinder *binder) override{TI_NOT_IMPLEMENTED};
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override{
+  void bind_pipeline(Pipeline *p) noexcept override{TI_NOT_IMPLEMENTED};
+  RhiResult bind_shader_resources(ShaderResourceSet *res,
+                                  int set_index = 0) noexcept override{
       TI_NOT_IMPLEMENTED};
-  void buffer_barrier(DevicePtr ptr, size_t size) override{TI_NOT_IMPLEMENTED};
-  void buffer_barrier(DeviceAllocation alloc) override{TI_NOT_IMPLEMENTED};
-  void memory_barrier() override{TI_NOT_IMPLEMENTED};
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override{
+  RhiResult bind_raster_resources(RasterResources *res) noexcept override{
       TI_NOT_IMPLEMENTED};
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override{
+  void buffer_barrier(DevicePtr ptr,
+                      size_t size) noexcept override{TI_NOT_IMPLEMENTED};
+  void buffer_barrier(DeviceAllocation alloc) noexcept override{
       TI_NOT_IMPLEMENTED};
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override{
+  void memory_barrier() noexcept override{TI_NOT_IMPLEMENTED};
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept override{
       TI_NOT_IMPLEMENTED};
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept override{
+      TI_NOT_IMPLEMENTED};
+  RhiResult dispatch(uint32_t x,
+                     uint32_t y = 1,
+                     uint32_t z = 1) noexcept override{TI_NOT_IMPLEMENTED};
 };
 
 class CpuStream : public Stream {
  public:
   ~CpuStream() override{};
 
-  std::unique_ptr<CommandList> new_command_list() override{TI_NOT_IMPLEMENTED};
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept override{
+      TI_NOT_IMPLEMENTED};
   StreamSemaphore submit(CommandList *cmdlist,
                          const std::vector<StreamSemaphore> &wait_semaphores =
                              {}) override{TI_NOT_IMPLEMENTED};
@@ -96,17 +76,22 @@ class CpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
+  ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
+
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final {
+    TI_NOT_IMPLEMENTED;
+  }
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
-  void *map_range(DevicePtr ptr, uint64_t size) override{TI_NOT_IMPLEMENTED};
-  void *map(DeviceAllocation alloc) override;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
 
-  void unmap(DevicePtr ptr) override{TI_NOT_IMPLEMENTED};
-  void unmap(DeviceAllocation alloc) override;
+  void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
+  void unmap(DeviceAllocation alloc) final;
 
   DeviceAllocation import_memory(void *ptr, size_t size);
 

@@ -150,7 +150,8 @@ def test_unpack_mismatch_tuple():
         func()
 
 
-def _test_unpack_from_vector():
+@test_utils.test(arch=get_host_arch_list())
+def test_unpack_from_vector():
     a = ti.field(ti.f32, ())
     b = ti.field(ti.f32, ())
     c = ti.field(ti.f32, ())
@@ -164,18 +165,6 @@ def _test_unpack_from_vector():
     assert a[None] == 2
     assert b[None] == 3
     assert c[None] == 4
-
-
-@test_utils.test(arch=get_host_arch_list())
-def test_unpack_from_vector():
-    _test_unpack_from_vector()
-
-
-@test_utils.test(arch=get_host_arch_list(),
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_unpack_from_vector_matrix_scalarize():
-    _test_unpack_from_vector()
 
 
 @test_utils.test(arch=get_host_arch_list())

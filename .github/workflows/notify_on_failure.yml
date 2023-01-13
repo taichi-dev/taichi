@@ -1,0 +1,42 @@
+name: Notification for master failure
+on:
+  workflow_run:
+    workflows: [Build and Test]
+    types: [completed]
+    branches: [master]
+
+jobs:
+  on-failure:
+    name: Send message to slack
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: Post to slack channel
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.TAICHI_BOT_TOKEN }}
+        with:
+          # channel #build
+          channel-id: 'C02BDNMG8MR'
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": ":bbb: Master is on fire",
+                    "emoji": true
+                  }
+                },
+                {"type": "divider"},
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ toJSON(github.event.workflow_run.html_url) }}
+                  }
+                }
+              ]
+            }

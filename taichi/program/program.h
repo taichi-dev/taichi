@@ -6,6 +6,7 @@
 #include <optional>
 #include <atomic>
 #include <stack>
+#include <shared_mutex>
 
 #define TI_RUNTIME_HOST
 #include "taichi/aot/module_builder.h"
@@ -22,7 +23,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/snode_rw_accessors_bank.h"
 #include "taichi/program/context.h"
-#include "taichi/runtime/runtime.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/threading.h"
@@ -92,7 +92,6 @@ class StructCompiler;
 class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  Callable *current_callable{nullptr};
   // We let every thread has its own config because the constant folding pass
   // wants to change the CompileConfig so that it can compile the evaluator,
   // but we don't want it to change the global config. We will refactor it
@@ -124,11 +123,21 @@ class TI_DLL_EXPORT Program {
   ~Program();
 
   CompileConfig &this_thread_config() {
+    // std::unordered_map is not thread safe even if we do the rehash in
+    // advance, so we need to add a lock to protect it.
+    std::shared_lock<std::shared_mutex> read_lock(config_map_mut);
     auto thread_id = std::this_thread::get_id();
     if (!configs.count(thread_id)) {
+      read_lock.unlock();
+      std::unique_lock<std::shared_mutex> write_lock(config_map_mut);
       configs[thread_id] = configs[main_thread_id_];
+      return configs[thread_id];
     }
     return configs[thread_id];
+  }
+
+  const CompileConfig &config() {
+    return configs[main_thread_id_];
   }
 
   struct KernelProfilerQueryResult {
@@ -174,16 +183,6 @@ class TI_DLL_EXPORT Program {
 
   void visualize_layout(const std::string &fn);
 
-  Kernel &kernel(const std::function<void()> &body,
-                 const std::string &name = "",
-                 AutodiffMode autodiff_mode = AutodiffMode::kNone) {
-    // Expr::set_allow_store(true);
-    auto func = std::make_unique<Kernel>(*this, body, name, autodiff_mode);
-    // Expr::set_allow_store(false);
-    kernels.emplace_back(std::move(func));
-    return *kernels.back();
-  }
-
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  AutodiffMode autodiff_mode = AutodiffMode::kNone) {
@@ -198,12 +197,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  // TODO(Lin): remove the offloaded parameter
-  FunctionType compile(Kernel &kernel, OffloadedStmt *offloaded = nullptr);
-
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
-    return program_impl_->make_aot_kernel(kernel);
-  }
+  FunctionType compile(Kernel &kernel);
 
   void check_runtime_error();
 
@@ -221,8 +215,6 @@ class TI_DLL_EXPORT Program {
   Arch get_host_arch() {
     return host_arch();
   }
-
-  Arch get_accessor_arch();
 
   float64 get_total_compilation_time() {
     return total_compilation_time_;
@@ -325,7 +317,10 @@ class TI_DLL_EXPORT Program {
   Ndarray *create_ndarray(
       const DataType type,
       const std::vector<int> &shape,
-      ExternalArrayLayout layout = ExternalArrayLayout::kNull);
+      ExternalArrayLayout layout = ExternalArrayLayout::kNull,
+      bool zero_fill = false);
+
+  void delete_ndarray(Ndarray *ndarray);
 
   Texture *create_texture(const DataType type,
                           int num_channels,
@@ -333,11 +328,7 @@ class TI_DLL_EXPORT Program {
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);
 
-  void fill_ndarray_fast(Ndarray *ndarray, uint32_t val);
-
-  ASTBuilder *current_ast_builder() {
-    return current_callable ? &current_callable->context->builder() : nullptr;
-  }
+  void fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val);
 
   Identifier get_next_global_id(const std::string &name = "") {
     return Identifier(global_id_counter_++, name);
@@ -397,8 +388,10 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   std::unique_ptr<MemoryPool> memory_pool_{nullptr};
-  std::vector<std::unique_ptr<Ndarray>> ndarrays_;
+  // TODO: Move ndarrays_ and textures_ to be managed by runtime
+  std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
+  std::shared_mutex config_map_mut;
 };
 
 }  // namespace taichi::lang

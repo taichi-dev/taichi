@@ -50,20 +50,22 @@ Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
   UniformBufferObject ubo{color, (int)use_per_vertex_color};
 
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
 
 void Lines::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
 }
 
 void Lines::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
+  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_shader_resources(resource_set_.get());
   command_list->set_line_width(curr_width_ * app_context_->config.height);
 
   if (indexed_) {

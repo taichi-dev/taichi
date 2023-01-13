@@ -47,7 +47,7 @@ def block1_deactivate_all():
 def activate(t: ti.f32):
     for i, j in ti.ndrange(n, n):
         p = ti.Vector([i, j]) / n
-        p = ti.Matrix.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
+        p = ti.math.rotation2d(ti.sin(t)) @ (p - 0.5) + 0.5
 
         if taichi_logo(p) == 0:
             x[i, j] = 1
@@ -72,7 +72,7 @@ def paint():
 
 
 def save_kernels(arch):
-    m = ti.aot.Module(arch)
+    m = ti.aot.Module()
 
     m.add_kernel(fill_img, template_args={})
     m.add_kernel(block1_deactivate_all, template_args={})
@@ -86,7 +86,7 @@ def save_kernels(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == '__main__':

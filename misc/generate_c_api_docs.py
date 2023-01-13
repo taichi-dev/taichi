@@ -15,6 +15,12 @@ def print_module_doc(module: Module):
     for x in module.declr_reg:
         declr = module.declr_reg.resolve(x)
 
+        # Ignore interfaces with no valid publish version.
+        if declr.since is None:
+            continue
+        else:
+            assert x in module.doc.api_full_refs, f"undocumented public api is not allowed: {x}"
+
         if is_first:
             is_first = False
         else:
@@ -22,6 +28,8 @@ def print_module_doc(module: Module):
 
         out += [
             f"### {get_title(declr)}",
+            "",
+            f"> Stable since Taichi version: {declr.since}",
             "",
             "```c",
             f"// {x}",
@@ -82,6 +90,7 @@ if __name__ == "__main__":
         BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
+        BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
     }
 
     for module in Module.load_all(builtin_tys):

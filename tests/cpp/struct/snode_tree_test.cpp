@@ -6,13 +6,12 @@ namespace taichi::lang {
 
 TEST(SNodeTree, GetSNodeToRootMapping) {
   constexpr int kSNodeSize = 16;
-  constexpr bool kPacked = false;
   SNode root{/*depth=*/0, /*t=*/SNodeType::root};
   const std::vector<Axis> axes = {Axis{0}};
   std::vector<int> all_snode_ids;
   for (int i = 0; i < 3; ++i) {
-    auto &ptr_snode = root.pointer(axes, kSNodeSize, kPacked);
-    auto &dense_snode = ptr_snode.dense(axes, kSNodeSize, kPacked);
+    auto &ptr_snode = root.pointer(axes, kSNodeSize, "");
+    auto &dense_snode = ptr_snode.dense(axes, kSNodeSize, "");
     auto &leaf_snode = dense_snode.insert_children(SNodeType::place);
     all_snode_ids.push_back(ptr_snode.id);
     all_snode_ids.push_back(dense_snode.id);

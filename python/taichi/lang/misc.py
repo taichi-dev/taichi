@@ -129,6 +129,11 @@ opengl = _ti_core.opengl
 """
 # ----------------------
 
+gles = _ti_core.gles
+"""The OpenGL ES backend. OpenGL ES 3.1 required.
+"""
+# ----------------------
+
 # Skip annotating this one because it is barely maintained.
 cc = _ti_core.cc
 
@@ -154,9 +159,9 @@ dx12 = _ti_core.dx12
 """
 # ----------------------
 
-gpu = [cuda, metal, vulkan, opengl, dx11, dx12]
+gpu = [cuda, metal, vulkan, opengl, dx11, dx12, gles]
 """A list of GPU backends supported on the current system.
-Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12'.
+Currently contains 'cuda', 'metal', 'opengl', 'vulkan', 'dx11', 'dx12', 'gles'.
 
 When this is used, Taichi automatically picks the matching GPU backend. If no
 GPU is detected, Taichi falls back to the CPU backend.
@@ -179,7 +184,7 @@ extension = _ti_core.Extension
 
 The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
-        'extfunc', 'packed', 'dynamic_index'].
+        'extfunc', 'dynamic_index'].
 """
 
 
@@ -341,7 +346,6 @@ def init(arch=None,
             * ``cpu_max_num_threads`` (int): Sets the number of threads used by the CPU thread pool.
             * ``debug`` (bool): Enables the debug mode, under which Taichi does a few more things like boundary checks.
             * ``print_ir`` (bool): Prints the CHI IR of the Taichi kernels.
-            * ``packed`` (bool): Enables the packed memory layout. See https://docs.taichi-lang.org/docs/layout.
             *``offline_cache`` (bool): Enables offline cache of the compiled kernels. Default to True. When this is enabled Taichi will cache compiled kernel on your local disk to accelerate future calls.
             *``random_seed`` (int): Sets the seed of the random generator. The default is 0.
     """
@@ -355,6 +359,11 @@ def init(arch=None,
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
+
+    if "dynamic_index" in kwargs:
+        warnings.warn(
+            "Dynamic index is supported by default and the switch will be removed in v1.5.0.",
+            DeprecationWarning)
 
     if "default_up" in kwargs:
         raise KeyError(
@@ -443,7 +452,7 @@ def init(arch=None,
     if env_arch is not None:
         _logging.info(f'Following TI_ARCH setting up for arch={env_arch}')
         arch = _ti_core.arch_from_name(env_arch)
-    cfg.arch = adaptive_arch_select(arch, enable_fallback, cfg.use_gles)
+    cfg.arch = adaptive_arch_select(arch, enable_fallback)
     if cfg.arch == cc:
         _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f'[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}')
@@ -472,8 +481,9 @@ def init(arch=None,
 def no_activate(*args):
     """Deactivates a SNode pointer.
     """
+    assert isinstance(get_runtime().compiling_callable, _ti_core.Kernel)
     for v in args:
-        get_runtime().prog.no_activate(v._snode.ptr)
+        get_runtime().compiling_callable.no_activate(v._snode.ptr)
 
 
 def block_local(*args):
@@ -490,8 +500,9 @@ def block_local(*args):
         impl.current_cfg().opt_level = 1
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.block_local, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.block_local,
+                                       v.ptr)
 
 
 def mesh_local(*args):
@@ -524,15 +535,17 @@ def mesh_local(*args):
     """
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.mesh_local, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.mesh_local,
+                                       v.ptr)
 
 
 def cache_read_only(*args):
     for a in args:
         for v in a._get_field_members():
-            get_runtime().prog.current_ast_builder().insert_snode_access_flag(
-                _ti_core.SNodeAccessFlag.read_only, v.ptr)
+            get_runtime().compiling_callable.ast_builder(
+            ).insert_snode_access_flag(_ti_core.SNodeAccessFlag.read_only,
+                                       v.ptr)
 
 
 def assume_in_range(val, base, low, high):
@@ -576,9 +589,9 @@ def loop_unique(val, covers=None):
 def _parallelize(v):
     """Sets the number of threads to use on CPU.
     """
-    get_runtime().prog.current_ast_builder().parallelize(v)
+    get_runtime().compiling_callable.ast_builder().parallelize(v)
     if v == 1:
-        get_runtime().prog.current_ast_builder().strictly_serialize()
+        get_runtime().compiling_callable.ast_builder().strictly_serialize()
 
 
 def _serialize():
@@ -590,7 +603,7 @@ def _serialize():
 def _block_dim(dim):
     """Set the number of threads in a block to `dim`.
     """
-    get_runtime().prog.current_ast_builder().block_dim(dim)
+    get_runtime().compiling_callable.ast_builder().block_dim(dim)
 
 
 def _block_dim_adaptive(block_dim_adaptive):
@@ -605,7 +618,7 @@ def _block_dim_adaptive(block_dim_adaptive):
 def _bit_vectorize():
     """Enable bit vectorization of struct fors on quant_arrays.
     """
-    get_runtime().prog.current_ast_builder().bit_vectorize()
+    get_runtime().compiling_callable.ast_builder().bit_vectorize()
 
 
 def loop_config(*,
@@ -692,7 +705,7 @@ def global_thread_idx():
         >>>
         test()
     """
-    return impl.get_runtime().prog.current_ast_builder(
+    return impl.get_runtime().compiling_callable.ast_builder(
     ).insert_thread_idx_expr()
 
 
@@ -702,18 +715,15 @@ def mesh_patch_idx():
 
     Related to https://github.com/taichi-dev/taichi/issues/3608
     """
-    return impl.get_runtime().prog.current_ast_builder().insert_patch_idx_expr(
-    )
+    return impl.get_runtime().compiling_callable.ast_builder(
+    ).insert_patch_idx_expr()
 
 
-def is_arch_supported(arch, use_gles=False):
+def is_arch_supported(arch):
     """Checks whether an arch is supported on the machine.
 
     Args:
         arch (taichi_python.Arch): Specified arch.
-        use_gles (bool): If True, check is GLES is available otherwise
-          check if GLSL is available. Only effective when `arch` is `ti.opengl`.
-          Default is `False`.
 
     Returns:
         bool: Whether `arch` is supported on the machine.
@@ -722,7 +732,8 @@ def is_arch_supported(arch, use_gles=False):
     arch_table = {
         cuda: _ti_core.with_cuda,
         metal: _ti_core.with_metal,
-        opengl: functools.partial(_ti_core.with_opengl, use_gles),
+        opengl: functools.partial(_ti_core.with_opengl, False),
+        gles: functools.partial(_ti_core.with_opengl, True),
         cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
@@ -742,13 +753,13 @@ def is_arch_supported(arch, use_gles=False):
         return False
 
 
-def adaptive_arch_select(arch, enable_fallback, use_gles):
+def adaptive_arch_select(arch, enable_fallback):
     if arch is None:
         return cpu
     if not isinstance(arch, (list, tuple)):
         arch = [arch]
     for a in arch:
-        if is_arch_supported(a, use_gles):
+        if is_arch_supported(a):
             return a
     if not enable_fallback:
         raise RuntimeError(f'Arch={arch} is not supported')
@@ -767,7 +778,7 @@ def get_compute_stream_device_time_elapsed_us() -> float:
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
+    'cpu', 'cuda', 'gles', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
     'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
     'mesh_patch_idx', 'get_compute_stream_device_time_elapsed_us'

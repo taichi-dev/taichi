@@ -24,7 +24,9 @@ void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
   ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
   ubo.two_sided = info.two_sided;
   ubo.has_attribute = info.mesh_attribute_info.has_attribute;
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -69,7 +71,9 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
   }
 
   {
-    void *mapped = app_context_->device().map(storage_buffer_);
+    void *mapped{nullptr};
+    TI_ASSERT(app_context_->device().map(storage_buffer_, &mapped) ==
+              RhiResult::success);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     app_context_->device().unmap(storage_buffer_);
   }
@@ -114,7 +118,8 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
 
 void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
   command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_resources(pipeline_->resource_binder());
+  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_shader_resources(resource_set_.get());
 
   if (indexed_) {
     command_list->draw_indexed_instance(
@@ -157,10 +162,9 @@ void Mesh::init_mesh(AppContext *app_context,
 
 void Mesh::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
-  binder->rw_buffer(0, 1, storage_buffer_);
-  binder->rw_buffer(0, 2, mesh_storage_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
+  resource_set_->rw_buffer(1, storage_buffer_);
+  resource_set_->rw_buffer(2, mesh_storage_buffer_);
 }
 
 void Mesh::create_mesh_storage_buffers() {

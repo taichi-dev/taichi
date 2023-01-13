@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=ti.metal)
 def test_compare_basics():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -44,7 +44,7 @@ def test_compare_basics():
     assert a[11]
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=ti.metal)
 def test_compare_equality():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -83,7 +83,7 @@ def test_compare_equality():
     assert not a[11]
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal])
 def test_no_duplicate_eval():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)
@@ -108,7 +108,7 @@ def test_no_duplicate_eval_func():
         return ti.atomic_add(b[None], n)
 
     def foo(n):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return ti.atomic_add(impl.subscript(ast_builder, b, None), n)
 
     @ti.kernel
@@ -120,7 +120,7 @@ def test_no_duplicate_eval_func():
     assert b[None] == 2
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, exclude=ti.metal)
 def test_chain_compare():
     a = ti.field(ti.i32)
     ti.root.dynamic(ti.i, 256).place(a)

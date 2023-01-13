@@ -124,7 +124,7 @@ def test_16_min_max():
     assert max_i16(a, b) == max(a, b)
 
 
-@test_utils.test(exclude=[ti.opengl, ti.cc])
+@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc])
 def test_32_min_max():
     @ti.kernel
     def min_u32(a: ti.u32, b: ti.u32) -> ti.u32:

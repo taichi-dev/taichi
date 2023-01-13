@@ -16,7 +16,6 @@ TEST(Scalarize, ScalarizeGlobalStore) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -79,7 +78,6 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -138,7 +136,6 @@ TEST(Scalarize, ScalarizeLocalStore) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 
@@ -193,7 +190,6 @@ TEST(Scalarize, ScalarizeLocalLoad) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto &type_factory = TypeFactory::get_instance();
 

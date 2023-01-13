@@ -1,12 +1,13 @@
 from functools import reduce
 
 import numpy as np
+from taichi._lib import core as _ti_core
+from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.matrix import Ndarray
 from taichi.lang.util import warning
-from taichi.types import annotations, f32, i32
+from taichi.types import annotations, f32
 
 
 class SparseMatrix:
@@ -136,6 +137,14 @@ class SparseMatrix:
             assert self.m == other.shape[
                 0], f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
             return self.matrix.mat_vec_mul(other)
+        if isinstance(other, Ndarray):
+            if self.m != other.shape[0]:
+                raise TaichiRuntimeError(
+                    f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({other.shape})"
+                )
+            res = ScalarNdarray(dtype=other.dtype, arr_shape=(self.n, ))
+            self.matrix.spmv(get_runtime().prog, other.arr, res.arr)
+            return res
         raise TaichiRuntimeError(
             f"Sparse matrix-matrix/vector multiplication does not support {type(other)} for now. Supported types are SparseMatrix, ti.field, and numpy ndarray."
         )
@@ -198,55 +207,6 @@ class SparseMatrix:
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
 
-    def build_coo(self, row_coo, col_coo, value_coo):
-        """Build a CSR format sparse matrix from COO format inputs.
-
-        Args:
-            row_indices (ti.ndarray): the row indices of the matrix entries.
-            col_indices (ti.ndarray): the column indices of the matrix entries.
-            data (ti.ndarray): the entries of the matrix.
-
-        Raises:
-            TaichiRuntimeError: If the inputs are not ``ti.ndarray`` or the datatypes of the ndarray are not correct.
-        """
-        if not isinstance(row_coo, Ndarray) or not isinstance(
-                col_coo, Ndarray) or not isinstance(value_coo, Ndarray):
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports COO format building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray].'
-            )
-        elif value_coo.dtype != f32 or row_coo.dtype != i32 or col_coo.dtype != i32:
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports COO fromat building from float32 data and int32 row/col indices.'
-            )
-        else:
-            get_runtime().prog.make_sparse_matrix_from_ndarray_cusparse(
-                self.matrix, row_coo.arr, col_coo.arr, value_coo.arr)
-
-    def spmv(self, x, y):
-        """Sparse matrix-vector multiplication using cuSparse.
-
-        Args:
-            x (ti.ndarray): the vector to be multiplied.
-            y (ti.ndarray): the result of matrix-vector multiplication.
-
-        Example::
-            >>> x = ti.ndarray(shape=4, dtype=val_dt)
-            >>> y = ti.ndarray(shape=4, dtype=val_dt)
-            >>> A = ti.linalg.SparseMatrix(n=4, m=4, dtype=ti.f32)
-            >>> A.build_from_ndarray_cusparse(row_csr, col_csr, value_csr)
-            >>> A.spmv(x, y)
-        """
-        if not isinstance(x, Ndarray) or not isinstance(y, Ndarray):
-            raise TaichiRuntimeError(
-                'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
-            )
-        if self.m != x.shape[0]:
-            raise TaichiRuntimeError(
-                f"Dimension mismatch between sparse matrix ({self.n}, {self.m}) and vector ({x.shape})"
-            )
-
-        self.matrix.spmv(get_runtime().prog, x.arr, y.arr)
-
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.
@@ -277,14 +237,29 @@ class SparseMatrixBuilder:
         """Get the address of the sparse matrix"""
         return self.ptr.get_addr()
 
+    def _get_ndarray_addr(self):
+        """Get the address of the ndarray"""
+        return self.ptr.get_ndarray_data_ptr()
+
     def print_triplets(self):
         """Print the triplets stored in the builder"""
-        self.ptr.print_triplets()
+        taichi_arch = get_runtime().prog.config().arch
+        if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+            self.ptr.print_triplets_eigen()
+        elif taichi_arch == _ti_core.Arch.cuda:
+            self.ptr.print_triplets_cuda()
 
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
-        sm = self.ptr.build()
-        return SparseMatrix(sm=sm)
+        taichi_arch = get_runtime().prog.config().arch
+        if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+            sm = self.ptr.build()
+            return SparseMatrix(sm=sm)
+        if taichi_arch == _ti_core.Arch.cuda:
+            sm = self.ptr.build_cuda()
+            return SparseMatrix(sm=sm)
+        raise TaichiRuntimeError(
+            'Sparse matrix only supports CPU and CUDA backends.')
 
 
 # TODO: remove this in 1.0 release

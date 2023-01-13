@@ -15,11 +15,7 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#ifdef TI_LLVM_15
 #include "llvm/MC/TargetRegistry.h"
-#else
-#include "llvm/Support/TargetRegistry.h"
-#endif
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
@@ -64,18 +60,21 @@ class JITModuleCUDA : public JITModule {
   }
 
   void call(const std::string &name,
-            const std::vector<void *> &arg_pointers) override {
-    launch(name, 1, 1, 0, arg_pointers);
+            const std::vector<void *> &arg_pointers,
+            const std::vector<int> &arg_sizes) override {
+    launch(name, 1, 1, 0, arg_pointers, arg_sizes);
   }
 
   void launch(const std::string &name,
               std::size_t grid_dim,
               std::size_t block_dim,
               std::size_t dynamic_shared_mem_bytes,
-              const std::vector<void *> &arg_pointers) override {
+              const std::vector<void *> &arg_pointers,
+              const std::vector<int> &arg_sizes) override {
     auto func = lookup_function(name);
-    CUDAContext::get_instance().launch(func, name, arg_pointers, grid_dim,
-                                       block_dim, dynamic_shared_mem_bytes);
+    CUDAContext::get_instance().launch(func, name, arg_pointers, arg_sizes,
+                                       grid_dim, block_dim,
+                                       dynamic_shared_mem_bytes);
   }
 
   bool direct_dispatch() const override {

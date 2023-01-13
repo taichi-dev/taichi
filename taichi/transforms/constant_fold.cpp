@@ -32,7 +32,7 @@ class ConstantFold : public BasicStmtVisitor {
       return it->second.get();
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
-    auto func = [&id, this]() {
+    auto func = [&id](Kernel *kernel) {
       auto lhstmt =
           Stmt::make<ArgLoadStmt>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
       auto rhstmt =
@@ -48,19 +48,21 @@ class ConstantFold : public BasicStmtVisitor {
           oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
         }
       }
+      auto &ast_builder = kernel->context->builder();
       auto ret = Stmt::make<ReturnStmt>(oper.get());
-      program->current_ast_builder()->insert(std::move(lhstmt));
-      if (id.is_binary)
-        program->current_ast_builder()->insert(std::move(rhstmt));
-      program->current_ast_builder()->insert(std::move(oper));
-      program->current_ast_builder()->insert(std::move(ret));
+      ast_builder.insert(std::move(lhstmt));
+      if (id.is_binary) {
+        ast_builder.insert(std::move(rhstmt));
+      }
+      ast_builder.insert(std::move(oper));
+      ast_builder.insert(std::move(ret));
     };
 
     auto ker = std::make_unique<Kernel>(*program, func, kernel_name);
     ker->insert_ret(id.ret);
-    ker->insert_scalar_arg(id.lhs);
+    ker->insert_scalar_param(id.lhs);
     if (id.is_binary)
-      ker->insert_scalar_arg(id.rhs);
+      ker->insert_scalar_param(id.rhs);
     ker->is_evaluator = true;
 
     auto *ker_ptr = ker.get();
@@ -252,15 +254,6 @@ bool constant_fold(IRNode *root,
                    const CompileConfig &config,
                    const ConstantFoldPass::Args &args) {
   TI_AUTO_PROF;
-  // @archibate found that `debug=True` will cause JIT kernels
-  // to evaluate incorrectly (always return 0), so we simply
-  // disable constant_fold when config.debug is turned on.
-  // Discussion:
-  // https://github.com/taichi-dev/taichi/pull/839#issuecomment-626107010
-  if (config.debug) {
-    TI_TRACE("config.debug enabled, ignoring constant fold");
-    return false;
-  }
   if (!config.advanced_optimization)
     return false;
   return ConstantFold::run(root, args.program);

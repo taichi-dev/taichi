@@ -185,7 +185,7 @@ def _test_polar_decomp(dim, dt):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@test_utils.test(default_fp=ti.f32, exclude=ti.opengl)
+@test_utils.test(default_fp=ti.f32, exclude=[ti.opengl, ti.gles])
 def test_polar_decomp_f32(dim):
     _test_polar_decomp(dim, ti.f32)
 
@@ -251,7 +251,7 @@ def test_matrix_factories():
     @ti.kernel
     def fill():
         b[0] = ti.Matrix.identity(ti.f32, 2)
-        b[1] = ti.Matrix.rotation2d(math.pi / 3)
+        b[1] = ti.math.rotation2d(math.pi / 3)
         c[0] = ti.Matrix.zero(ti.f32, 2, 3)
         c[1] = ti.Matrix.one(ti.f32, 2, 3)
         for i in ti.static(range(3)):
@@ -271,43 +271,8 @@ def test_matrix_factories():
     assert c[1].to_numpy() == test_utils.approx(np.ones((2, 3)))
 
 
-# TODO: move codes below to test_matrix.py:
-
-
 @test_utils.test()
 def test_init_matrix_from_vectors():
-    m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m3 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-    m4 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
-
-    @ti.kernel
-    def fill():
-        for i in range(3):
-            a = ti.Vector([1.0, 4.0, 7.0])
-            b = ti.Vector([2.0, 5.0, 8.0])
-            c = ti.Vector([3.0, 6.0, 9.0])
-            m1[i] = ti.Matrix.rows([a, b, c])
-            m2[i] = ti.Matrix.cols([a, b, c])
-            m3[i] = ti.Matrix.rows([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
-                                    [3.0, 6.0, 9.0]])
-            m4[i] = ti.Matrix.cols([[1.0, 4.0, 7.0], [2.0, 5.0, 8.0],
-                                    [3.0, 6.0, 9.0]])
-
-    fill()
-
-    for j in range(3):
-        for i in range(3):
-            assert m1[0][i, j] == int(i + 3 * j + 1)
-            assert m2[0][j, i] == int(i + 3 * j + 1)
-            assert m3[0][i, j] == int(i + 3 * j + 1)
-            assert m4[0][j, i] == int(i + 3 * j + 1)
-
-
-# TODO: Remove this once the APIs are obsolete.
-@pytest.mark.filterwarnings('ignore')
-@test_utils.test(arch=get_host_arch_list())
-def test_init_matrix_from_vectors_deprecated():
     m1 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m2 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))
     m3 = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(3))

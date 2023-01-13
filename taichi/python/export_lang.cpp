@@ -21,7 +21,6 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
-#include "taichi/util/statistics.h"
 #include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
@@ -43,10 +42,6 @@ bool test_threading();
 
 namespace taichi::lang {
 
-Expr expr_index(const Expr &expr, const Expr &index) {
-  return expr[ExprGroup(index)];
-}
-
 std::string libdevice_path();
 
 }  // namespace taichi::lang
@@ -60,6 +55,8 @@ void export_lang(py::module &m) {
                                           PyExc_TypeError);
   py::register_exception<TaichiSyntaxError>(m, "TaichiSyntaxError",
                                             PyExc_SyntaxError);
+  py::register_exception<TaichiIndexError>(m, "TaichiIndexError",
+                                           PyExc_IndexError);
   py::register_exception<TaichiRuntimeError>(m, "TaichiRuntimeError",
                                              PyExc_RuntimeError);
   py::register_exception<TaichiAssertionError>(m, "TaichiAssertionError",
@@ -139,7 +136,6 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("opt_level", &CompileConfig::opt_level)
-      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
@@ -149,8 +145,6 @@ void export_lang(py::module &m) {
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
       .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
-      .def_readwrite("print_benchmark_stat",
-                     &CompileConfig::print_benchmark_stat)
       .def_readwrite("print_struct_llvm_ir",
                      &CompileConfig::print_struct_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir",
@@ -202,7 +196,6 @@ void export_lang(py::module &m) {
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
       .def_readwrite("ndarray_use_cached_allocator",
                      &CompileConfig::ndarray_use_cached_allocator)
-      .def_readwrite("real_matrix", &CompileConfig::real_matrix)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
@@ -213,7 +206,6 @@ void export_lang(py::module &m) {
                      &CompileConfig::quant_opt_atomic_demotion)
       .def_readwrite("allow_nv_shader_extension",
                      &CompileConfig::allow_nv_shader_extension)
-      .def_readwrite("use_gles", &CompileConfig::use_gles)
       .def_readwrite("make_mesh_block_local",
                      &CompileConfig::make_mesh_block_local)
       .def_readwrite("mesh_localize_to_end_mapping",
@@ -240,7 +232,8 @@ void export_lang(py::module &m) {
       .def_readwrite("offline_cache_cleaning_factor",
                      &CompileConfig::offline_cache_cleaning_factor)
       .def_readwrite("num_compile_threads", &CompileConfig::num_compile_threads)
-      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version);
+      .def_readwrite("vk_api_version", &CompileConfig::vk_api_version)
+      .def_readwrite("cuda_stack_limit", &CompileConfig::cuda_stack_limit);
 
   m.def("reset_default_compile_config",
         [&]() { default_compile_config = CompileConfig(); });
@@ -294,10 +287,13 @@ void export_lang(py::module &m) {
       .def("begin_frontend_if_false", &ASTBuilder::begin_frontend_if_false)
       .def("insert_deactivate", &ASTBuilder::insert_snode_deactivate)
       .def("insert_activate", &ASTBuilder::insert_snode_activate)
+      .def("expr_snode_get_addr", &ASTBuilder::snode_get_addr)
+      .def("expr_snode_append", &ASTBuilder::snode_append)
+      .def("expr_snode_is_active", &ASTBuilder::snode_is_active)
+      .def("expr_snode_length", &ASTBuilder::snode_length)
       .def("insert_external_func_call", &ASTBuilder::insert_external_func_call)
       .def("make_matrix_expr", &ASTBuilder::make_matrix_expr)
       .def("expr_alloca", &ASTBuilder::expr_alloca)
-      .def("expr_alloca_local_tensor", &ASTBuilder::expr_alloca_local_tensor)
       .def("expr_alloca_shared_array", &ASTBuilder::expr_alloca_shared_array)
       .def("create_assert_stmt", &ASTBuilder::create_assert_stmt)
       .def("expr_assign", &ASTBuilder::expr_assign)
@@ -316,7 +312,11 @@ void export_lang(py::module &m) {
       .def("insert_expr_stmt", &ASTBuilder::insert_expr_stmt)
       .def("insert_thread_idx_expr", &ASTBuilder::insert_thread_idx_expr)
       .def("insert_patch_idx_expr", &ASTBuilder::insert_patch_idx_expr)
-      .def("expand_expr", &ASTBuilder::expand_expr)
+      .def("make_texture_op_expr", &ASTBuilder::make_texture_op_expr)
+      .def("expand_exprs", &ASTBuilder::expand_exprs)
+      .def("mesh_index_conversion", &ASTBuilder::mesh_index_conversion)
+      .def("expr_subscript", &ASTBuilder::expr_subscript)
+      .def("insert_func_call", &ASTBuilder::insert_func_call)
       .def("sifakis_svd_f32", sifakis_svd_export<float32, int32>)
       .def("sifakis_svd_f64", sifakis_svd_export<float64, int64>)
       .def("expr_var", &ASTBuilder::make_var)
@@ -329,8 +329,7 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::this_thread_config,
-           py::return_value_policy::reference)
+      .def("config", &Program::config)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -382,8 +381,6 @@ void export_lang(py::module &m) {
       .def("get_snode_tree_size", &Program::get_snode_tree_size)
       .def("get_snode_root", &Program::get_snode_root,
            py::return_value_policy::reference)
-      .def("current_ast_builder", &Program::current_ast_builder,
-           py::return_value_policy::reference)
       .def(
           "create_kernel",
           [](Program *program, const std::function<void(Kernel *)> &body,
@@ -397,10 +394,11 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch),
-                         "SparseMatrix Builder only supports CPU for now.");
+             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
+                             !arch_is_cuda(program->this_thread_config().arch),
+                         "SparseMatrix only supports CPU and CUDA for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format);
+                                        storage_format, program);
            })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
@@ -420,40 +418,6 @@ void export_lang(py::module &m) {
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
-      .def("make_sparse_matrix_from_ndarray_cusparse",
-           [](Program *program, CuSparseMatrix &sm, const Ndarray &row_coo,
-              const Ndarray &col_coo, const Ndarray &val_coo) {
-             TI_ERROR_IF(
-                 !arch_is_cuda(program->this_thread_config().arch),
-                 "SparseMatrix based on GPU only supports CUDA for now.");
-             return make_sparse_matrix_from_ndarray_cusparse(
-                 program, sm, row_coo, col_coo, val_coo);
-           })
-      .def("no_activate",
-           [](Program *program, SNode *snode) {
-             // TODO(#2193): Also apply to @ti.func?
-             auto *kernel = dynamic_cast<Kernel *>(program->current_callable);
-             TI_ASSERT(kernel);
-             kernel->no_activate.push_back(snode);
-           })
-      .def("decl_scalar_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_scalar_arg(dt);
-           })
-      .def("decl_arr_arg",
-           [&](Program *program, const DataType &dt, int total_dim,
-               std::vector<int> shape) {
-             return program->current_callable->insert_arr_arg(dt, total_dim,
-                                                              shape);
-           })
-      .def("decl_texture_arg",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_texture_arg(dt);
-           })
-      .def("decl_ret",
-           [&](Program *program, const DataType &dt) {
-             return program->current_callable->insert_ret(dt);
-           })
       .def("make_id_expr",
            [](Program *program, const std::string &name) {
              return Expr::make<IdExpression>(program->get_next_global_id(name));
@@ -461,13 +425,14 @@ void export_lang(py::module &m) {
       .def(
           "create_ndarray",
           [&](Program *program, const DataType &dt,
-              const std::vector<int> &shape,
-              ExternalArrayLayout layout) -> Ndarray * {
-            return program->create_ndarray(dt, shape, layout);
+              const std::vector<int> &shape, ExternalArrayLayout layout,
+              bool zero_fill) -> Ndarray * {
+            return program->create_ndarray(dt, shape, layout, zero_fill);
           },
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
-          py::return_value_policy::reference)
+          py::arg("zero_fill") = false, py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
           [&](Program *program, const DataType &dt, int num_channels,
@@ -482,16 +447,16 @@ void export_lang(py::module &m) {
            })
       .def("fill_float",
            [](Program *program, Ndarray *ndarray, float val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<uint32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<uint32_t &>(val));
            })
       .def("fill_int",
            [](Program *program, Ndarray *ndarray, int32_t val) {
-             program->fill_ndarray_fast(ndarray,
-                                        reinterpret_cast<int32_t &>(val));
+             program->fill_ndarray_fast_u32(ndarray,
+                                            reinterpret_cast<int32_t &>(val));
            })
       .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast(ndarray, val);
+        program->fill_ndarray_fast_u32(ndarray, val);
       });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -509,22 +474,24 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool))(&SNode::dense),
+                               const std::vector<int> &,
+                               const std::string &))(&SNode::dense),
            py::return_value_policy::reference)
-      .def(
-          "pointer",
-          (SNode & (SNode::*)(const std::vector<Axis> &,
-                              const std::vector<int> &, bool))(&SNode::pointer),
-          py::return_value_policy::reference)
+      .def("pointer",
+           (SNode & (SNode::*)(const std::vector<Axis> &,
+                               const std::vector<int> &,
+                               const std::string &))(&SNode::pointer),
+           py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool))(&SNode::hash),
+                               const std::vector<int> &,
+                               const std::string &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
-                               bool))(&SNode::bitmasked),
+                               const std::string &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
       .def("quant_array", &SNode::quant_array,
@@ -701,6 +668,16 @@ void export_lang(py::module &m) {
       });
 
   py::class_<Kernel>(m, "Kernel")
+      .def("no_activate",
+           [](Kernel *self, SNode *snode) {
+             // TODO(#2193): Also apply to @ti.func?
+             self->no_activate.push_back(snode);
+           })
+      .def("insert_scalar_param", &Kernel::insert_scalar_param)
+      .def("insert_arr_param", &Kernel::insert_arr_param)
+      .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_ret", &Kernel::insert_ret)
+      .def("finalize_rets", &Kernel::finalize_rets)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -727,6 +704,8 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_ndarray_with_grad",
+           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture",
            &Kernel::LaunchContextBuilder::set_arg_rw_texture)
@@ -734,9 +713,14 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
   py::class_<Function>(m, "Function")
+      .def("insert_scalar_param", &Function::insert_scalar_param)
+      .def("insert_arr_param", &Function::insert_arr_param)
+      .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))
+      .def("finalize_rets", &Function::finalize_rets)
       .def(
           "ast_builder",
           [](Function *self) -> ASTBuilder * {
@@ -820,11 +804,6 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("expr_snode_get_addr", &snode_get_addr);
-  m.def("expr_snode_append", &snode_append);
-  m.def("expr_snode_is_active", &snode_is_active);
-  m.def("expr_snode_length", &snode_length);
-
   m.def("insert_internal_func_call",
         [&](const std::string &func_name, const ExprGroup &args,
             bool with_runtime_context) {
@@ -832,8 +811,8 @@ void export_lang(py::module &m) {
                                                         with_runtime_context);
         });
 
-  m.def("make_func_call_expr",
-        Expr::make<FuncCallExpression, Function *, const ExprGroup &>);
+  m.def("make_get_element_expr",
+        Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
 
   m.def("value_cast", static_cast<Expr (*)(const Expr &expr, DataType)>(cast));
   m.def("bits_cast",
@@ -866,8 +845,6 @@ void export_lang(py::module &m) {
   m.def("expr_atomic_bit_xor", [&](const Expr &a, const Expr &b) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
-
-  m.def("expr_index", expr_index);
 
   m.def("expr_assume_in_range", assume_range);
 
@@ -947,6 +924,9 @@ void export_lang(py::module &m) {
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
 
+  m.def("make_external_grad_tensor_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
+
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
   m.def("make_const_expr_int",
@@ -965,9 +945,6 @@ void export_lang(py::module &m) {
     texture.value(texture_op_type_name(TextureOpType(t)).c_str(),
                   TextureOpType(t));
   texture.export_values();
-  m.def("make_texture_op_expr",
-        Expr::make<TextureOpExpression, const TextureOpType &, const Expr &,
-                   const ExprGroup &>);
 
   auto &&bin = py::enum_<BinaryOpType>(m, "BinaryOpType", py::arithmetic());
   for (int t = 0; t <= (int)BinaryOpType::undefined; t++)
@@ -999,21 +976,10 @@ void export_lang(py::module &m) {
 
   m.def("data_type_name", data_type_name);
 
-  m.def("subscript",
-        [](const Expr &expr, const ExprGroup &expr_group, std::string tb) {
-          Expr idx_expr = expr[expr_group];
-          idx_expr.set_tb(tb);
-          return idx_expr;
-        });
-
   m.def(
       "subscript_with_multiple_indices",
       Expr::make<IndexExpression, const Expr &, const std::vector<ExprGroup> &,
                  const std::vector<int> &, std::string>);
-
-  m.def("make_stride_expr",
-        Expr::make<StrideExpression, const Expr &, const ExprGroup &,
-                   const std::vector<int> &, int>);
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
@@ -1052,13 +1018,6 @@ void export_lang(py::module &m) {
            mesh::MeshElementType to_type, const Expr &neighbor_idx) {
           return Expr::make<MeshRelationAccessExpression>(
               mesh_ptr.ptr.get(), mesh_idx, to_type, neighbor_idx);
-        });
-
-  m.def("get_index_conversion",
-        [](mesh::MeshPtr mesh_ptr, mesh::MeshElementType idx_type,
-           const Expr &idx, mesh::ConvType &conv_type) {
-          return Expr::make<MeshIndexConversionExpression>(
-              mesh_ptr.ptr.get(), idx_type, idx, conv_type);
         });
 
   py::class_<FunctionKey>(m, "FunctionKey")
@@ -1104,13 +1063,6 @@ void export_lang(py::module &m) {
   m.def("test_threading", test_threading);
   m.def("is_extension_supported", is_extension_supported);
 
-  m.def("print_stat", [] { stat.print(); });
-  m.def("stat", [] {
-    std::string result;
-    stat.print(&result);
-    return result;
-  });
-
   m.def("record_action_entry",
         [](std::string name,
            std::vector<std::pair<std::string,
@@ -1140,7 +1092,7 @@ void export_lang(py::module &m) {
 #if defined(TI_WITH_CUDA)
       return CUDAContext::get_instance().get_compute_capability();
 #else
-    TI_NOT_IMPLEMENTED
+      TI_NOT_IMPLEMENTED
 #endif
     } else {
       TI_ERROR("Key {} not supported in query_int64", key);
@@ -1150,6 +1102,8 @@ void export_lang(py::module &m) {
   // Type system
 
   py::class_<Type>(m, "Type").def("to_string", &Type::to_string);
+
+  m.def("promoted_type", promoted_type);
 
   // Note that it is important to specify py::return_value_policy::reference for
   // the factory methods, otherwise pybind11 will delete the Types owned by
@@ -1169,6 +1123,16 @@ void export_lang(py::module &m) {
           [&](TypeFactory *factory, std::vector<int> shape,
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
+          },
+          py::return_value_policy::reference)
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory, std::vector<DataType> elements) {
+            std::vector<const Type *> types;
+            for (auto &element : elements) {
+              types.push_back(element);
+            }
+            return DataType(factory->get_struct_type(types));
           },
           py::return_value_policy::reference);
 
@@ -1202,8 +1166,11 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def("print_triplets", &SparseMatrixBuilder::print_triplets)
+      .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
+      .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
+      .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
+      .def("build_cuda", &SparseMatrixBuilder::build_cuda)
       .def("get_addr", [](SparseMatrixBuilder *mat) { return uint64(mat); });
 
   py::class_<SparseMatrix>(m, "SparseMatrix")
@@ -1234,6 +1201,7 @@ void export_lang(py::module &m) {
       .def(float##TYPE() * py::self)                                         \
       .def(py::self *py::self)                                               \
       .def("matmul", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::matmul) \
+      .def("spmv", &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::spmv)     \
       .def("transpose",                                                      \
            &EigenSparseMatrix<STORAGE##TYPE##EigenMatrix>::transpose)        \
       .def("get_element",                                                    \
@@ -1261,16 +1229,48 @@ void export_lang(py::module &m) {
       .def(float32() * py::self)
       .def("matmul", &CuSparseMatrix::matmul)
       .def("transpose", &CuSparseMatrix::transpose)
+      .def("get_element", &CuSparseMatrix::get_element)
       .def("to_string", &CuSparseMatrix::to_string);
 
   py::class_<SparseSolver>(m, "SparseSolver")
       .def("compute", &SparseSolver::compute)
       .def("analyze_pattern", &SparseSolver::analyze_pattern)
       .def("factorize", &SparseSolver::factorize)
-      .def("solve", &SparseSolver::solve)
-      .def("solve_cu", &SparseSolver::solve_cu)
-      .def("solve_rf", &SparseSolver::solve_rf)
       .def("info", &SparseSolver::info);
+
+#define REGISTER_EIGEN_SOLVER(dt, type, order, fd)                           \
+  py::class_<EigenSparseSolver##dt##type##order, SparseSolver>(              \
+      m, "EigenSparseSolver" #dt #type #order)                               \
+      .def("compute", &EigenSparseSolver##dt##type##order::compute)          \
+      .def("analyze_pattern",                                                \
+           &EigenSparseSolver##dt##type##order::analyze_pattern)             \
+      .def("factorize", &EigenSparseSolver##dt##type##order::factorize)      \
+      .def("solve",                                                          \
+           &EigenSparseSolver##dt##type##order::solve<Eigen::VectorX##fd>)   \
+      .def("solve_rf",                                                       \
+           &EigenSparseSolver##dt##type##order::solve_rf<Eigen::VectorX##fd, \
+                                                         dt>)                \
+      .def("info", &EigenSparseSolver##dt##type##order::info);
+
+  REGISTER_EIGEN_SOLVER(float32, LLT, AMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LLT, COLAMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LDLT, AMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LDLT, COLAMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LU, AMD, f)
+  REGISTER_EIGEN_SOLVER(float32, LU, COLAMD, f)
+  REGISTER_EIGEN_SOLVER(float64, LLT, AMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LLT, COLAMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LDLT, AMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LDLT, COLAMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LU, AMD, d)
+  REGISTER_EIGEN_SOLVER(float64, LU, COLAMD, d)
+
+  py::class_<CuSparseSolver, SparseSolver>(m, "CuSparseSolver")
+      .def("compute", &CuSparseSolver::compute)
+      .def("analyze_pattern", &CuSparseSolver::analyze_pattern)
+      .def("factorize", &CuSparseSolver::factorize)
+      .def("solve_rf", &CuSparseSolver::solve_rf)
+      .def("info", &CuSparseSolver::info);
 
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);

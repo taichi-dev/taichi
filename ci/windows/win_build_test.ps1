@@ -61,6 +61,7 @@ if (!$llvmVer.CompareTo("10")) {
     $env:LLVM_DIR = "C://taichi_llvm_15"
 }
 
+$env:TAICHI_USE_MSBUILD = 1
 $env:TAICHI_CMAKE_ARGS =' -DCMAKE_CXX_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang++.exe -DCMAKE_C_COMPILER=C:/Program\ Files\ (x86)/Microsoft\ Visual\ Studio/2019/BuildTools/vc/Tools/Llvm/x64/bin/clang.exe'
 if (!$llvmVer.CompareTo("10")) {
     $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=C:\\taichi_clang\\bin\\clang++.exe"
@@ -68,7 +69,6 @@ if (!$llvmVer.CompareTo("10")) {
 } else {
     $env:TAICHI_CMAKE_ARGS += " -DCLANG_EXECUTABLE=C:\\taichi_clang_15\\bin\\clang++.exe"
 	$env:TAICHI_CMAKE_ARGS += " -DLLVM_AS_EXECUTABLE=C:\\taichi_llvm_15\\bin\\llvm-as.exe"
-	$env:TAICHI_CMAKE_ARGS += " -DTI_LLVM_15:BOOL=ON"
     $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_DX12:BOOL=ON"
 }
 

@@ -3,7 +3,7 @@
     The use of this software is governed by the LICENSE file.
 *******************************************************************************/
 
-#include "taichi/runtime/metal/api.h"
+#include "taichi/rhi/metal/metal_api.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/rhi/dx/dx_api.h"
 #include "taichi/common/core.h"
@@ -19,7 +19,7 @@
 #include "taichi/system/dynamic_loader.h"
 #include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
-#include "taichi/util/statistics.h"
+#include "taichi/util/offline_cache.h"
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_driver.h"
 #endif
@@ -179,13 +179,8 @@ void export_misc(py::module &m) {
   m.def("with_cc", []() { return false; });
 #endif
 
-  py::class_<Statistics>(m, "Statistics")
-      .def(py::init<>())
-      .def("clear", &Statistics::clear)
-      .def("get_counters", &Statistics::get_counters);
-  m.def(
-      "get_kernel_stats", []() -> Statistics & { return stat; },
-      py::return_value_policy::reference);
+  m.def("clean_offline_cache_files",
+        lang::offline_cache::clean_offline_cache_files);
 
   py::class_<HackedSignalRegister>(m, "HackedSignalRegister").def(py::init<>());
 }

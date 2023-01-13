@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -17,7 +16,6 @@
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
-#include "taichi/util/statistics.h"
 #include "taichi/math/arithmetic.h"
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -43,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -74,13 +76,12 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
   main_thread_id_ = std::this_thread::get_id();
+  // Rehash in advance to avoid rehashing during compilation
+  configs.rehash(default_compile_config.num_compile_threads + 1);
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;
   auto &config = this_thread_config();
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  if (config.debug)
-    config.check_out_of_bound = true;
-  offline_cache::disable_offline_cache_if_needed(&config);
+  config.fit();
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
@@ -122,7 +123,14 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #endif
   } else if (config.arch == Arch::opengl) {
 #ifdef TI_WITH_OPENGL
-    TI_ASSERT(opengl::initialize_opengl(config.use_gles));
+    TI_ASSERT(opengl::initialize_opengl(false));
+    program_impl_ = std::make_unique<OpenglProgramImpl>(config);
+#else
+    TI_ERROR("This taichi is not compiled with OpenGL");
+#endif
+  } else if (config.arch == Arch::gles) {
+#ifdef TI_WITH_OPENGL
+    TI_ASSERT(opengl::initialize_opengl(true));
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
@@ -150,7 +158,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  current_callable = nullptr;
   sync = true;
   finalized_ = false;
 
@@ -161,8 +168,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
       config.check_out_of_bound = false;
     }
   }
-
-  stat.clear();
 
   Timelines::get_instance().set_enabled(config.timeline);
 
@@ -185,10 +190,10 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel, OffloadedStmt *offloaded) {
+FunctionType Program::compile(Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel, offloaded);
+  auto ret = program_impl_->compile(&kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -236,14 +241,7 @@ void Program::check_runtime_error() {
 }
 
 void Program::synchronize() {
-  // Normal mode shouldn't be affected by `sync` flag.
-  if (arch_uses_llvm(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl ||
-      this_thread_config().arch == Arch::dx12) {
-    program_impl_->synchronize();
-  }
+  program_impl_->synchronize();
 }
 
 StreamSemaphore Program::flush() {
@@ -337,43 +335,25 @@ void Program::visualize_layout(const std::string &fn) {
   trash(system(fmt::format("pdflatex {}", fn).c_str()));
 }
 
-Arch Program::get_accessor_arch() {
-  if (this_thread_config().arch == Arch::opengl) {
-    return Arch::opengl;
-  } else if (this_thread_config().arch == Arch::vulkan) {
-    return Arch::vulkan;
-  } else if (this_thread_config().arch == Arch::cuda) {
-    return Arch::cuda;
-  } else if (this_thread_config().arch == Arch::metal) {
-    return Arch::metal;
-  } else if (this_thread_config().arch == Arch::cc) {
-    return Arch::cc;
-  } else if (this_thread_config().arch == Arch::dx11) {
-    return Arch::dx11;
-  } else if (this_thread_config().arch == Arch::dx12) {
-    return Arch::dx12;
-  } else {
-    return get_host_arch();
-  }
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto ret = Stmt::make<FrontendReturnStmt>(
-        ExprGroup(Expr(snode_to_fields_.at(snode))[indices]));
-    this->current_ast_builder()->insert(std::move(ret));
+    ASTBuilder &builder = kernel->context->builder();
+    auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices)));
+    builder.insert(std::move(ret));
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
+    ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -381,24 +361,27 @@ Kernel &Program::get_snode_reader(SNode *snode) {
 Kernel &Program::get_snode_writer(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_writer_{}", snode->id);
-  auto &ker = kernel([snode, this] {
+  auto &ker = kernel([snode, this](Kernel *kernel) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
-      indices.push_back(Expr::make<ArgLoadExpression>(i, PrimitiveType::i32));
+      auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
+      argload_expr->type_check(&this->this_thread_config());
+      indices.push_back(std::move(argload_expr));
     }
-    auto expr = Expr(snode_to_fields_.at(snode))[indices];
-    this->current_ast_builder()->insert_assignment(
+    ASTBuilder &builder = kernel->context->builder();
+    auto expr =
+        builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
+    builder.insert_assignment(
         expr,
         Expr::make<ArgLoadExpression>(snode->num_active_indices,
                                       snode->dt->get_compute_type()),
         expr->tb);
   });
-  ker.set_arch(get_accessor_arch());
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
-  ker.insert_scalar_arg(snode->dt);
+    ker.insert_scalar_param(PrimitiveType::i32);
+  ker.insert_scalar_param(snode->dt);
   return ker;
 }
 
@@ -413,39 +396,6 @@ void Program::finalize() {
   synchronize();
   TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
-  if (this_thread_config().print_benchmark_stat) {
-    const char *current_test = std::getenv("PYTEST_CURRENT_TEST");
-    const char *output_dir = std::getenv("TI_BENCHMARK_OUTPUT_DIR");
-    if (current_test != nullptr) {
-      if (output_dir == nullptr)
-        output_dir = ".";
-      std::string file_name = current_test;
-      auto slash_pos = file_name.find_last_of('/');
-      if (slash_pos != std::string::npos)
-        file_name = file_name.substr(slash_pos + 1);
-      auto py_pos = file_name.find(".py::");
-      TI_ASSERT(py_pos != std::string::npos);
-      file_name =
-          file_name.substr(0, py_pos) + "__" + file_name.substr(py_pos + 5);
-      auto first_space_pos = file_name.find_first_of(' ');
-      TI_ASSERT(first_space_pos != std::string::npos);
-      file_name = file_name.substr(0, first_space_pos);
-      if (auto lt_pos = file_name.find('<'); lt_pos != std::string::npos) {
-        file_name[lt_pos] = '_';
-      }
-      if (auto gt_pos = file_name.find('>'); gt_pos != std::string::npos) {
-        file_name[gt_pos] = '_';
-      }
-      file_name += ".dat";
-      file_name = std::string(output_dir) + "/" + file_name;
-      TI_INFO("Saving benchmark result to {}", file_name);
-      std::ofstream ofs(file_name);
-      TI_ASSERT(ofs);
-      std::string stat_string;
-      stat.print(&stat_string);
-      ofs << stat_string;
-    }
-  }
 
   synchronize();
   memory_pool_->terminate();
@@ -458,6 +408,8 @@ void Program::finalize() {
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
+  configs.clear();
+  configs[main_thread_id_] = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
@@ -474,20 +426,52 @@ void Program::print_memory_profiler_info() {
 }
 
 std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
-            this_thread_config().arch == Arch::metal ||
-            this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::opengl ||
-            this_thread_config().arch == Arch::dx12);
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
 
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
-                                 ExternalArrayLayout layout) {
-  ndarrays_.emplace_back(std::make_unique<Ndarray>(this, type, shape, layout));
-  return ndarrays_.back().get();
+                                 ExternalArrayLayout layout,
+                                 bool zero_fill) {
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+  if (zero_fill) {
+    Arch arch = this_thread_config().arch;
+    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+      fill_ndarray_fast_u32(arr.get(), /*data=*/0);
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
+      Stream *stream =
+          program_impl_->get_compute_device()->get_compute_stream();
+      auto [cmdlist, res] = stream->new_command_list_unique();
+      TI_ASSERT(res == RhiResult::success);
+      cmdlist->buffer_fill(arr->ndarray_alloc_.get_ptr(0),
+                           arr->get_element_size() * arr->get_nelement(),
+                           /*data=*/0);
+      stream->submit_synced(cmdlist.get());
+    }
+  }
+  auto arr_ptr = arr.get();
+  ndarrays_.insert({arr_ptr, std::move(arr)});
+  return arr_ptr;
+}
+
+void Program::delete_ndarray(Ndarray *ndarray) {
+  // [Note] Ndarray memory deallocation
+  // Ndarray's memory allocation is managed by Taichi and Python can control
+  // this via Taichi indirectly. For example, when an ndarray is GC-ed in
+  // Python, it signals Taichi to free its memory allocation. But Taichi will
+  // make sure **no pending kernels to be executed needs the ndarray** before it
+  // actually frees the memory. When `ti.reset()` is called, all ndarrays
+  // allocated in this program should be gone and no longer valid in Python.
+  // This isn't the best implementation, ndarrays should be managed by taichi
+  // runtime instead of this giant program and it should be freed when:
+  // - Python GC signals taichi that it's no longer useful
+  // - All kernels using it are executed.
+  if (ndarrays_.count(ndarray) &&
+      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
+    ndarrays_.erase(ndarray);
+  }
 }
 
 Texture *Program::create_texture(const DataType type,
@@ -521,12 +505,13 @@ intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   return reinterpret_cast<intptr_t>(data_ptr);
 }
 
-void Program::fill_ndarray_fast(Ndarray *ndarray, uint32_t val) {
+void Program::fill_ndarray_fast_u32(Ndarray *ndarray, uint32_t val) {
   // This is a temporary solution to bypass device api.
   // Should be moved to CommandList once available in CUDA.
   program_impl_->fill_ndarray(
       ndarray->ndarray_alloc_,
-      ndarray->get_nelement() * ndarray->get_element_size(), val);
+      ndarray->get_nelement() * ndarray->get_element_size() / sizeof(uint32_t),
+      val);
 }
 
 Program::~Program() {
@@ -587,7 +572,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>();
+    return std::make_unique<wasm::AotModuleBuilderImpl>(&this_thread_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -596,6 +581,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
       this_thread_config().arch == Arch::metal ||
       this_thread_config().arch == Arch::vulkan ||
       this_thread_config().arch == Arch::opengl ||
+      this_thread_config().arch == Arch::gles ||
       this_thread_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }

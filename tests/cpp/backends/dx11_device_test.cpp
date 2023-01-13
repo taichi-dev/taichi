@@ -50,14 +50,17 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   }
 
   // Map to CPU, write some values, then check those values
-  void *mapped = device->map(device_alloc);
+  void *mapped;
+  EXPECT_TRUE(device->map(device_alloc, &mapped) ==
+              taichi::lang::RhiResult::success);
   int *mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     mapped_int[i] = i;
   }
   device->unmap(device_alloc);
 
-  mapped = device->map(device_alloc);
+  EXPECT_TRUE(device->map(device_alloc, &mapped) ==
+              taichi::lang::RhiResult::success);
   mapped_int = reinterpret_cast<int *>(mapped);
   for (int i = 0; i < 100; i++) {
     EXPECT_EQ(mapped_int[i], i);
@@ -115,7 +118,9 @@ TEST(Dx11StreamTest, CommandListTest) {
       std::make_unique<directx11::Dx11Device>();
   std::unique_ptr<Dx11Stream> stream =
       std::make_unique<Dx11Stream>(device.get());
-  stream->new_command_list();
+  CommandList *cmdlist{nullptr};
+  EXPECT_EQ(stream->new_command_list(&cmdlist), RhiResult::success);
+  EXPECT_NE(cmdlist, nullptr);
 }
 
 TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
@@ -148,7 +153,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   auto block = builder.extract_ir();
   test_prog.prog()->this_thread_config().arch = Arch::dx11;
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  program->compile(ker.get(), nullptr);
+  program->compile(ker.get());
 }
 
 }  // namespace directx11

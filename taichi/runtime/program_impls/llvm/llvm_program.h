@@ -40,7 +40,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
   // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
   // For now, compile = codegen + convert
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
+  FunctionType compile(Kernel *kernel) override;
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
@@ -67,8 +67,6 @@ class LlvmProgramImpl : public ProgramImpl {
  private:
   std::unique_ptr<StructCompiler> compile_snode_tree_types_impl(
       SNodeTree *tree);
-
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) override;
@@ -157,6 +155,10 @@ class LlvmProgramImpl : public ProgramImpl {
 
   void maybe_initialize_cuda_llvm_context() {
     runtime_exec_->maybe_initialize_cuda_llvm_context();
+  }
+
+  void maybe_initialize_amdgpu_llvm_context() {
+    runtime_exec_->maybe_initialize_amdgpu_llvm_context();
   }
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {

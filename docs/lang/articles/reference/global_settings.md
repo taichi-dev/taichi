@@ -58,9 +58,6 @@ Following are some frequently-used configurations in `ti.init()`:
     default_ip: [ti.i32, ti.i64]
         Set the default precision of integers in the Taichi scope.
 
-    dynamic_index: bool
-        Enable/disable the use of variables as indices when accessing vector/matrix elements in the Taichi scope.
-
     kernel_profiler: bool
         Turn on/off kernel performance profiling.
 
@@ -69,9 +66,6 @@ Following are some frequently-used configurations in `ti.init()`:
 
     offline_cache_file_path: str
         Set a directory for holding the offline cached files.
-
-    packed: bool
-        Enable/disable the packed memory layout.
 
     random_seed: int
         Set a custom seed for the random number generator.
@@ -174,7 +168,6 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 - To set a custom seed for the random number generator used by `ti.random()`: `ti.init(random_seed=seed)`. `seed` should be an integer. An example: `ti.init(random_seed=int(time.time()))`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.f64`: `ti.init(default_fp=ti.i64)`.
 - To set the default precision of floating-point numbers of Taichi runtime to `ti.i32`: `ti.init(default_ip=ti.i32)`.
-- To enable the packed mode for memory layout: `ti.init(packed=True)`. See the [Packed mode](../basic/layout.md#packed-mode) for more information.
 - To disable the offline cache of compiled kernels: `ti.init(offline_cache=False)`. See the [Offline cache](../performance_tuning/performance.md#offline-cache) for more information.
 - To enable the use of variables as indices to access vector/matrix elements in the Taichi scope: `ti.init(dynamic_index=True)`.
 - To turn on kernel profiling: `ti.init(kernel_profiler=True)`. See the [Profiler](../performance_tuning/profiler.md#kernelprofiler) for more information.
@@ -182,7 +175,7 @@ If you want to use CUDA and Taichi's GGUI system at the same time on a machine w
 
 ## Logging
 
-- To set the logging level: `ti.init(log_level=ti.TRACE)` or  `ti.set_logging_level(ti.TRACE)` enables the TRACE level. The environment variable `TI_LOG_LEVEL` serves the same purpose.
+- To set the logging level: `ti.init(log_level=ti.TRACE)` or `ti.set_logging_level(ti.TRACE)` enables the TRACE level. The environment variable `TI_LOG_LEVEL` serves the same purpose.
 - To eliminate verbose outputs: `ti.init(verbose=False)`.
 
 ## Develop
@@ -208,8 +201,10 @@ print(ti.cfg.debug)  # False
 
 ## Going high precision
 
-The function `ti.sqrt` (and those that rely on it, such as `ti.norm`) may have a lower precision on the CUDA backend than on the CPU backends. See this [issue](https://github.com/taichi-dev/taichi/issues/6346) for more information. To work around this problem, set the default precision to `ti.f64` and turn off the `fast_math` option:
+The default setting `fast_math=True` may cause unexpected precision problems, which can be hard to debug. For example, the function `ti.sqrt` (and those that rely on it, such as `ti.norm`) may have a lower precision on the CUDA backend than on the CPU backends. See this [issue](https://github.com/taichi-dev/taichi/issues/6346) for more information. To work around this problem, set the default precision to `ti.f64` and turn off the `fast_math` option:
 
 ```python
 ti.init(default_fp=ti.f64, fast_math=False)
 ```
+
+If you encounter other precision loss problems, set `ti.init(fast_math=False)` and see if it works. If not, [report an issue](https://github.com/taichi-dev/taichi/issues) to us.

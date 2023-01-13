@@ -1,12 +1,13 @@
 import numbers
 from types import MethodType
 
-from taichi.lang import impl, ops
+from taichi._lib import core as _ti_core
+from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.matrix import Matrix
+from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
@@ -41,6 +42,7 @@ class Struct(TaichiOperations):
         dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
     """
     _is_taichi_class = True
+    _instance_count = 0
 
     def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
@@ -95,12 +97,15 @@ class Struct(TaichiOperations):
         return self.entries.items()
 
     def _register_members(self):
-        for k in self.keys:
-            setattr(Struct, k,
-                    property(
-                        Struct._make_getter(k),
-                        Struct._make_setter(k),
-                    ))
+        # https://stackoverflow.com/questions/48448074/adding-a-property-to-an-existing-object-instance
+        cls = self.__class__
+        new_cls_name = cls.__name__ + str(cls._instance_count)
+        cls._instance_count += 1
+        properties = {
+            k: property(cls._make_getter(k), cls._make_setter(k))
+            for k in self.keys
+        }
+        self.__class__ = type(new_cls_name, (cls, ), properties)
 
     def _register_methods(self):
         for name, method in self.methods.items():
@@ -222,10 +227,14 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
-        def assign_renamed(x, y):
-            return ops.assign(x, y)
-
-        return self._element_wise_writeback_binary(assign_renamed, val)
+        for k, v in self.items:
+            if isinstance(v, impl.Expr) and v.ptr.is_tensor():
+                from taichi.lang import matrix_ops  # pylint: disable=C0415
+                matrix_ops.fill(v, val)
+            elif isinstance(v, (Struct, Matrix)):
+                v._element_wise_binary(ops.assign, val)
+            else:
+                ops.assign(v, val)
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
@@ -654,33 +663,61 @@ class StructType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
         self.methods = {}
+        elements = []
         for k, dtype in kwargs.items():
             if k == '__struct_methods':
                 self.methods = dtype
-            elif isinstance(dtype, CompoundType):
+            elif isinstance(dtype, StructType):
                 self.members[k] = dtype
+                elements.append(dtype.dtype)
+            elif isinstance(dtype, MatrixType):
+                self.members[k] = dtype
+                elements.append(dtype.tensor_type.ptr)
             else:
-                self.members[k] = cook_dtype(dtype)
+                dtype = cook_dtype(dtype)
+                self.members[k] = dtype
+                elements.append(dtype)
+        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
+            elements)
 
     def __call__(self, *args, **kwargs):
+        """Create an instance of this struct type."""
+        d = {}
+        items = self.members.items()
+        # iterate over the members of this struct
+        for index, pair in enumerate(items):
+            name, dtype = pair  # (member name, member type)
+            if index < len(args):  # set from args
+                data = args[index]
+            else:  # set from kwargs
+                data = kwargs.get(name, 0)
+
+            # If dtype is CompoundType and data is a scalar, it cannot be
+            # casted in the self.cast call later. We need an initialization here.
+            if isinstance(dtype, CompoundType) and not isinstance(
+                    data, (dict, Struct)):
+                data = dtype(data)
+
+            d[name] = data
+
+        entries = Struct(d)
+        struct = self.cast(entries)
+        return struct
+
+    def from_real_func_ret(self, func_ret, ret_index=()):
         d = {}
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                if index < len(args):
-                    d[name] = dtype(args[index])
-                else:
-                    d[name] = kwargs.get(name, dtype(0))
+                d[name] = dtype.from_real_func_ret(func_ret,
+                                                   ret_index + (index, ))
             else:
-                if index < len(args):
-                    d[name] = args[index]
-                else:
-                    d[name] = kwargs.get(name, 0)
+                d[name] = expr.Expr(
+                    _ti_core.make_get_element_expr(func_ret.ptr,
+                                                   ret_index + (index, )))
 
-        entries = Struct(d)
-        struct = self.cast(entries)
-        return struct
+        return Struct(d)
 
     def cast(self, struct):
         # sanity check members
@@ -749,7 +786,7 @@ def dataclass(cls):
             and methods from the class attached.
     """
     # save the annotation fields for the struct
-    fields = cls.__annotations__
+    fields = getattr(cls, '__annotations__', {})
     # get the class methods to be attached to the struct types
     fields['__struct_methods'] = {
         attribute: getattr(cls, attribute)

@@ -1,3 +1,4 @@
+import warnings
 from contextlib import contextmanager
 from glob import glob
 from pathlib import Path, PurePosixPath
@@ -81,16 +82,24 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
-    def __init__(self, arch, caps=None):
+    def __init__(self, arch=None, caps=None):
         """Creates a new AOT module instance
 
         Args:
-          arch: Target backend architecture. This must match the one specified
-            in :func:`~taichi.lang.init`.
+          arch: Target backend architecture. Default to the one initialized in :func:`~taichi.lang.init` if not specified.
           caps (List[str]): Enabled device capabilities.
         """
         if caps is None:
             caps = []
+        curr_arch = impl.current_cfg().arch
+        if arch is None:
+            arch = curr_arch
+        elif arch != curr_arch:
+            # TODO: we'll support this eventually but not yet...
+            warnings.warn(
+                f"AOT compilation to a different arch than the current one is not yet supported, switching to {curr_arch}"
+            )
+            arch = curr_arch
 
         self._arch = arch
         self._kernels = []
@@ -199,14 +208,17 @@ class Module:
         kt = KernelTemplate(kernel_fn, self)
         yield kt
 
-    def save(self, filepath, filename):
+    def save(self, filepath):
         """
         Args:
           filepath (str): path to a folder to store aot files.
-          filename (str): filename prefix for stored aot files.
         """
         filepath = str(PurePosixPath(Path(filepath)))
-        self._aot_builder.dump(filepath, filename)
+        self._aot_builder.dump(filepath, "")
+        with open(f"{filepath}/__content__", "w") as f:
+            f.write('\n'.join(self._content))
+        with open(f"{filepath}/__version__", "w") as f:
+            f.write('.'.join(str(x) for x in taichi.__version__))
 
     def archive(self, filepath: str):
         """
@@ -221,13 +233,10 @@ class Module:
 
         temp_dir = mkdtemp(prefix="tcm_")
         # Save first as usual.
-        self.save(temp_dir, "")
+        self.save(temp_dir)
 
         # Package all artifacts into a zip archive and attach contend data.
         with ZipFile(tcm_path, "w") as z:
-            z.writestr("__content__", '\n'.join(self._content))
-            z.writestr("__version__",
-                       '.'.join(str(x) for x in taichi.__version__))
             for path in glob(f"{temp_dir}/*", recursive=True):
                 z.write(path, Path.relative_to(Path(path), temp_dir))
 

@@ -2,7 +2,9 @@ import numbers
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, matrix
+from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import BitpackedFields, Field
+from taichi.lang.util import get_traceback
 
 
 class SNode:
@@ -32,9 +34,7 @@ class SNode:
         """
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
-        return SNode(
-            self.ptr.dense(axes, dimensions,
-                           impl.current_cfg().packed))
+        return SNode(self.ptr.dense(axes, dimensions, get_traceback()))
 
     def pointer(self, axes, dimensions):
         """Adds a pointer SNode as a child component of `self`.
@@ -46,11 +46,12 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiRuntimeError(
+                "Pointer SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
-        return SNode(
-            self.ptr.pointer(axes, dimensions,
-                             impl.current_cfg().packed))
+        return SNode(self.ptr.pointer(axes, dimensions, get_traceback()))
 
     @staticmethod
     def _hash(axes, dimensions):
@@ -59,8 +60,7 @@ class SNode:
         raise RuntimeError('hash not yet supported')
         # if isinstance(dimensions, int):
         #     dimensions = [dimensions] * len(axes)
-        # return SNode(self.ptr.hash(axes, dimensions,
-        #                            impl.current_cfg().packed))
+        # return SNode(self.ptr.hash(axes, dimensions))
 
     def dynamic(self, axis, dimension, chunk_size=None):
         """Adds a dynamic SNode as a child component of `self`.
@@ -73,12 +73,14 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiRuntimeError(
+                "Dynamic SNode on metal backend is deprecated and removed.")
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
         return SNode(
-            self.ptr.dynamic(axis[0], dimension, chunk_size,
-                             impl.current_cfg().packed))
+            self.ptr.dynamic(axis[0], dimension, chunk_size, get_traceback()))
 
     def bitmasked(self, axes, dimensions):
         """Adds a bitmasked SNode as a child component of `self`.
@@ -90,11 +92,12 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
+        if impl.current_cfg().arch == _ti_core.metal:
+            raise TaichiRuntimeError(
+                "Bitmasked SNode on metal backend is deprecated and removed.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
-        return SNode(
-            self.ptr.bitmasked(axes, dimensions,
-                               impl.current_cfg().packed))
+        return SNode(self.ptr.bitmasked(axes, dimensions, get_traceback()))
 
     def quant_array(self, axes, dimensions, max_num_bits):
         """Adds a quant_array SNode as a child component of `self`.
@@ -111,7 +114,7 @@ class SNode:
             dimensions = [dimensions] * len(axes)
         return SNode(
             self.ptr.quant_array(axes, dimensions, max_num_bits,
-                                 impl.current_cfg().packed))
+                                 get_traceback()))
 
     def place(self, *args, offset=None):
         """Places a list of Taichi fields under the `self` container.
@@ -131,9 +134,8 @@ class SNode:
         for arg in args:
             if isinstance(arg, BitpackedFields):
                 bit_struct_type = arg.bit_struct_type_builder.build()
-                bit_struct_snode = self.ptr.bit_struct(
-                    bit_struct_type,
-                    impl.current_cfg().packed)
+                bit_struct_snode = self.ptr.bit_struct(bit_struct_type,
+                                                       get_traceback())
                 for (field, id_in_bit_struct) in arg.fields:
                     bit_struct_snode.place(field, offset, id_in_bit_struct)
             elif isinstance(arg, Field):
@@ -343,23 +345,32 @@ def rescale_index(a, b, I):
     Returns:
         Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
+
     assert isinstance(
         a, (Field, SNode)), "The first argument must be a field or an SNode"
     assert isinstance(
         b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
-        I = matrix.Vector(I)
+        n = len(I)
     else:
         assert isinstance(
-            I, matrix.Matrix
-        ), "The third argument must be an index (list or ti.Vector)"
-    entries = [I(i) for i in range(I.n)]
-    for n in range(min(I.n, min(len(a.shape), len(b.shape)))):
-        if a.shape[n] > b.shape[n]:
-            entries[n] = I(n) // (a.shape[n] // b.shape[n])
-        if a.shape[n] < b.shape[n]:
-            entries[n] = I(n) * (b.shape[n] // a.shape[n])
-    return matrix.Vector(entries)
+            I, (expr.Expr, matrix.Matrix)
+        ), "The third argument must be an index (list, ti.Vector, or Expr with TensorType)"
+        n = I.n
+
+    from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
+
+    @pyfunc
+    def _rescale_index():
+        result = matrix.Vector([I[i] for i in range(n)])
+        for i in impl.static(range(min(n, min(len(a.shape), len(b.shape))))):
+            if a.shape[i] > b.shape[i]:
+                result[i] = I[i] // (a.shape[i] // b.shape[i])
+            if a.shape[i] < b.shape[i]:
+                result[i] = I[i] * (b.shape[i] // a.shape[i])
+        return result
+
+    return _rescale_index()
 
 
 def append(node, indices, val):
@@ -370,12 +381,12 @@ def append(node, indices, val):
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
         val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
     """
-    if isinstance(val, matrix.Matrix):
-        raise ValueError("ti.append only supports appending a scalar value")
-    a = impl.expr_init(
-        _ti_core.expr_snode_append(node._snode.ptr,
-                                   expr.make_expr_group(indices),
-                                   expr.Expr(val).ptr))
+    ptrs = expr._get_flattened_ptrs(val)
+    append_expr = expr.Expr(
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_append(
+            node._snode.ptr, expr.make_expr_group(indices), ptrs),
+        tb=impl.get_runtime().get_current_src_info())
+    a = impl.expr_init(append_expr)
     return a
 
 
@@ -390,9 +401,9 @@ def is_active(node, indices):
     Returns:
         bool: the cell `node[indices]` is active or not.
     """
-    return expr.Expr(
-        _ti_core.expr_snode_is_active(node._snode.ptr,
-                                      expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_is_active(node._snode.ptr,
+                                          expr.make_expr_group(indices)))
 
 
 def activate(node, indices):
@@ -402,7 +413,7 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_activate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_activate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -416,7 +427,7 @@ def deactivate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to deactivate.
     """
-    impl.get_runtime().prog.current_ast_builder().insert_deactivate(
+    impl.get_runtime().compiling_callable.ast_builder().insert_deactivate(
         node._snode.ptr, expr.make_expr_group(indices))
 
 
@@ -431,8 +442,8 @@ def length(node, indices):
         int: the length of cell `node[indices]`.
     """
     return expr.Expr(
-        _ti_core.expr_snode_length(node._snode.ptr,
-                                   expr.make_expr_group(indices)))
+        impl.get_runtime().compiling_callable.ast_builder().expr_snode_length(
+            node._snode.ptr, expr.make_expr_group(indices)))
 
 
 def get_addr(f, indices):
@@ -447,9 +458,9 @@ def get_addr(f, indices):
     Returns:
         ti.u64: The memory address of `f[indices]`.
     """
-    return expr.Expr(
-        _ti_core.expr_snode_get_addr(f._snode.ptr,
-                                     expr.make_expr_group(indices)))
+    return expr.Expr(impl.get_runtime().compiling_callable.ast_builder().
+                     expr_snode_get_addr(f._snode.ptr,
+                                         expr.make_expr_group(indices)))
 
 
 __all__ = [

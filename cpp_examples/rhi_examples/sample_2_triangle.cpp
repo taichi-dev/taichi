@@ -13,6 +13,12 @@ struct Vertex {
   glm::vec3 color;
 };
 
+const std::vector<Vertex> vertices = {
+    {{0.0, 0.5}, {1.0, 0.0, 0.0}},
+    {{0.5, -0.5}, {0.0, 1.0, 0.0}},
+    {{-0.5, -0.5}, {0.0, 0.0, 1.0}},
+};
+
 class SampleApp : public App {
  public:
   SampleApp() : App(1920, 1080, "Sample 2: Triangle") {
@@ -35,17 +41,19 @@ class SampleApp : public App {
       RasterParams raster_params;  // use default
 
       // Setup vertex input parameters
+      // FIXME: Switch to designated initializers when we enable C++20
       std::vector<VertexInputBinding> vertex_inputs = {
-          {.binding = 0, .stride = sizeof(Vertex), .instance = false}};
+          {/* binding = */ 0, /* stride = */ sizeof(Vertex),
+           /* instance = */ false}};
       std::vector<VertexInputAttribute> vertex_attrs = {
-          {.location = 0,
-           .binding = 0,
-           .format = BufferFormat::rg32f,
-           .offset = offsetof(Vertex, pos)},
-          {.location = 1,
-           .binding = 0,
-           .format = BufferFormat::rgb32f,
-           .offset = offsetof(Vertex, color)}};
+          {/* location = */ 0,
+           /*  binding = */ 0,
+           /*   format = */ BufferFormat::rg32f,
+           /*   offset = */ offsetof(Vertex, pos)},
+          {/* location = */ 1,
+           /*  binding = */ 0,
+           /*   format = */ BufferFormat::rgb32f,
+           /*   offset = */ offsetof(Vertex, color)}};
 
       // Create pipeline
       pipeline = device->create_raster_pipeline(src_desc, raster_params,
@@ -54,15 +62,21 @@ class SampleApp : public App {
 
     // Create the vertex buffer
     {
-      vertex_buffer = device->allocate_memory_unique(
-          Device::AllocParams{.size = 3 * sizeof(Vertex),
-                              .host_write = true,
-                              .usage = AllocUsage::Vertex});
-      Vertex *mapped = (Vertex *)device->map(*vertex_buffer);
-      mapped[0] = {{0.0, 0.5}, {1.0, 0.0, 0.0}};
-      mapped[1] = {{0.5, -0.5}, {0.0, 1.0, 0.0}};
-      mapped[2] = {{-0.5, -0.5}, {0.0, 0.0, 1.0}};
+      vertex_buffer = device->allocate_memory_unique(Device::AllocParams{
+          /* size = */ 3 * sizeof(Vertex),
+          /* host_write = */ true,
+          /* host_read = */ false, /* export_sharing = */ false,
+          /* usage = */ AllocUsage::Vertex});
+      void *mapped{nullptr};
+      TI_ASSERT(device->map(*vertex_buffer, &mapped) == RhiResult::success);
+      memcpy(mapped, vertices.data(), sizeof(Vertex) * vertices.size());
       device->unmap(*vertex_buffer);
+    }
+
+    // Define the raster state
+    {
+      raster_resources = device->create_raster_resources_unique();
+      raster_resources->vertex_buffer(vertex_buffer->get_ptr(0), 0);
     }
 
     TI_INFO("App Init Done");
@@ -70,7 +84,9 @@ class SampleApp : public App {
 
   std::vector<StreamSemaphore> render_loop(
       StreamSemaphore image_available_semaphore) override {
-    auto cmdlist = device->get_graphics_stream()->new_command_list();
+    auto [cmdlist, res] =
+        device->get_graphics_stream()->new_command_list_unique();
+    TI_ASSERT(res == RhiResult::success);
 
     // Set-up our frame buffer attachment
     DeviceAllocation surface_image = surface->get_target_image();
@@ -86,10 +102,9 @@ class SampleApp : public App {
 
     // Bind our triangle pipeline
     cmdlist->bind_pipeline(pipeline.get());
-    // Get the binder and bind our vertex buffer
-    auto resource_binder = pipeline->resource_binder();
-    resource_binder->vertex_buffer(vertex_buffer->get_ptr(0), 0);
-    cmdlist->bind_resources(resource_binder);
+    res = cmdlist->bind_raster_resources(raster_resources.get());
+    TI_ASSERT_INFO(res == RhiResult::success,
+                   "Raster res bind fault: RhiResult({})", res);
     // Render the triangle
     cmdlist->draw(3, 0);
     // End rendering
@@ -102,9 +117,10 @@ class SampleApp : public App {
   }
 
  public:
-  std::unique_ptr<Pipeline> pipeline;
+  std::unique_ptr<Pipeline> pipeline{nullptr};
+  std::unique_ptr<RasterResources> raster_resources{nullptr};
 
-  std::unique_ptr<DeviceAllocationGuard> vertex_buffer;
+  std::unique_ptr<DeviceAllocationGuard> vertex_buffer{nullptr};
 };
 
 int main() {

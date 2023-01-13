@@ -17,6 +17,7 @@
   "dx12"            : "DirectX 12 backend",
   "spirv"           : "SPIR-V common codegen",
   "gfx"             : "Common graphics runtime",
+  "rhi"             : "Unified Device API",
   "wasm"            : "WebAssembly backend",
   "misc"            : "Miscellaneous",
   "std"             : "Standard library",
@@ -48,5 +49,6 @@
   "simt"            : "SIMT programming",
   "release"         : "Release",
   "build"           : "Build system",
-  "rfc"             : "RFC"
+  "rfc"             : "RFC",
+  "amdgpu"          : "AMDGPU backend"
 }

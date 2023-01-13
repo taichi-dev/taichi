@@ -53,11 +53,11 @@ KernelContextAttributes::KernelContextAttributes(
     : args_bytes_(0),
       rets_bytes_(0),
       extra_args_bytes_(RuntimeContext::extra_args_size) {
-  arr_access.resize(kernel.args.size(), irpass::ExternalPtrAccess(0));
-  arg_attribs_vec_.reserve(kernel.args.size());
+  arr_access.resize(kernel.parameter_list.size(), irpass::ExternalPtrAccess(0));
+  arg_attribs_vec_.reserve(kernel.parameter_list.size());
   // TODO: We should be able to limit Kernel args and rets to be primitive types
   // as well but let's leave that as a followup up PR.
-  for (const auto &ka : kernel.args) {
+  for (const auto &ka : kernel.parameter_list) {
     ArgAttributes aa;
     aa.dtype = ka.get_element_type()->as<PrimitiveType>()->type;
     const size_t dt_bytes = ka.get_element_size();

@@ -160,6 +160,27 @@ An unrolling verison is often faster because it reduces branch overhead:
 This performance improvement does not come for free: it also costs longer complie time and generates larger binaries. Especially when the number of iterations is large or the loop body is complex.
 
 
+:::note
+Before v1.4.0, indices for accessing Taichi matrices/vectors must be compile-time constants.
+Therefore, if the indices come from a loop, the loop must be unrolled:
+
+```python {7}
+# Here we declare a field containing 3 vectors. Each vector contains 8 elements.
+x = ti.Vector.field(8, ti.f32, shape=3)
+
+@ti.kernel
+def reset():
+    for i in x:
+        for j in ti.static(range(x.n)):
+            # The inner loop must be unrolled since j is an index for accessing a vector.
+            x[i][j] = 0
+```
+
+Starting from v1.4.0, indices for accessing Taichi matrices/vectors can be runtime variables.
+Therefore, the loop above is no longer required to be unrolled.
+That said, unrolling it will still help you reduce runtime overhead.
+:::
+
 ## Compile-time recursion of `ti.func`
 
 A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines when to cease recursion is evaluated at compile time, hence must be known to the compiler.

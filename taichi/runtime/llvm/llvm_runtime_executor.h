@@ -12,7 +12,6 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/compile_config.h"
 
-#include "taichi/runtime/runtime.h"
 #include "taichi/system/threading.h"
 #include "taichi/system/memory_pool.h"
 
@@ -49,6 +48,8 @@ class LlvmRuntimeExecutor {
   // Ndarray Allocation
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer);
+
+  void deallocate_memory_ndarray(DeviceAllocation handle);
 
   void check_runtime_error(uint64 *result_buffer);
 
@@ -129,6 +130,8 @@ class LlvmRuntimeExecutor {
    */
   void maybe_initialize_cuda_llvm_context();
 
+  void maybe_initialize_amdgpu_llvm_context();
+
   void finalize();
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
@@ -138,7 +141,6 @@ class LlvmRuntimeExecutor {
 
  private:
   CompileConfig *config_;
-  std::unique_ptr<Runtime> runtime_mem_info_{nullptr};
 
   // TODO(zhanlue): compile - runtime split for TaichiLLVMContext
   //
@@ -159,6 +161,8 @@ class LlvmRuntimeExecutor {
   // good buddy
   friend LlvmProgramImpl;
   friend SNodeTreeBufferManager;
+
+  KernelProfilerBase *profiler_ = nullptr;
 };
 
 }  // namespace taichi::lang

@@ -63,6 +63,9 @@ struct PyGui {
   void text(std::string text) {
     gui->text(text);
   }
+  void text_colored(std::string text, py::tuple color) {
+    gui->text(text, tuple_to_vec3(color));
+  }
   bool checkbox(std::string name, bool old_value) {
     return gui->checkbox(name, old_value);
   }
@@ -359,8 +362,7 @@ struct PyWindow {
            bool vsync,
            bool show_window,
            std::string package_path,
-           Arch ti_arch,
-           bool is_packed_mode) {
+           Arch ti_arch) {
     AppConfig config = {name,
                         res[0].cast<int>(),
                         res[1].cast<int>(),
@@ -369,8 +371,7 @@ struct PyWindow {
                         vsync,
                         show_window,
                         package_path,
-                        ti_arch,
-                        is_packed_mode};
+                        ti_arch};
     // todo: support other ggui backends
     if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
           ti_arch == Arch::cuda)) {
@@ -489,7 +490,7 @@ void export_ggui(py::module &m) {
 
   py::class_<PyWindow>(m, "PyWindow")
       .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
-                    std::string, Arch, bool>())
+                    std::string, Arch>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("get_window_shape", &PyWindow::get_window_shape)
@@ -521,6 +522,7 @@ void export_ggui(py::module &m) {
       .def("begin", &PyGui::begin)
       .def("end", &PyGui::end)
       .def("text", &PyGui::text)
+      .def("text_colored", &PyGui::text_colored)
       .def("checkbox", &PyGui::checkbox)
       .def("slider_int", &PyGui::slider_int)
       .def("slider_float", &PyGui::slider_float)

@@ -2,7 +2,7 @@ import math
 
 import taichi as ti
 
-ti.init(arch=ti.gpu)
+ti.init(arch=ti.cuda)
 
 n = 256
 x = ti.field(ti.f32)

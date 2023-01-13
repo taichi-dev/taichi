@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.17)
 
 project(taichi)
 
+include("cmake/utils.cmake")
+
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
     set(TI_VERSION_MAJOR 0)
@@ -14,6 +16,7 @@ if (NOT DEFINED TI_VERSION_MAJOR)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 execute_process(
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -55,13 +58,32 @@ if(CCACHE_PROGRAM)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
 endif()
 
+# This compiles all the libraries with -fPIC, which is critical to link a static
+# library into a shared lib.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
+option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
+
+if(LINUX OR APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+endif()
 
 if (USE_LLD)
     set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=lld")
     set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fuse-ld=lld")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=lld")
+
+    if (WIN32)
+        if (CMAKE_BUILD_TYPE EQUAL "RelWithDebInfo")
+            # -debug for LLD generates PDB files
+            set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-debug")
+            set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,-debug")
+            set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-debug")
+        endif()
+    endif()
 endif()
 
 if (USE_MOLD)
@@ -77,13 +99,43 @@ if (WIN32)
   # MSVC in `Debug` config because MSVC would try to fill uninitialize memory
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
   # every component in LLVM.
-  #
-  # FIXME: (penguinliong) This is fixed in later releases of LLVM so maybe
-  # someday we can distribute `Debug` libraries, if it's ever needed.
-  if (NOT TI_LLVM_15)
-    SET(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-  endif()
   message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+endif()
+
+# Setup CLANG_EXECUTABLE
+if (CLANG_EXECUTABLE)
+  message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+  message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
+else()
+  find_program(CLANG_EXECUTABLE NAMES clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
+  message("Clang executable found at ${CLANG_EXECUTABLE}")
+endif()
+
+if (NOT CLANG_EXECUTABLE)
+  message(FATAL_ERROR "Cannot find any clang executable.")
+endif()
+
+macro(check_clang_version)
+  execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+  string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+  message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
+
+  set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+endmacro()
+
+if (APPLE)
+  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+endif()
+
+# Highest clang version that we've tested
+set(CLANG_HIGHEST_VERSION "15")
+
+check_clang_version()
+
+if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated
@@ -92,6 +144,15 @@ option(TI_WITH_PYTHON "Build with Python language binding" ON)
 if (TI_WITH_PYTHON AND NOT ANDROID)
     include(cmake/PythonNumpyPybind11.cmake)
 endif()
+
+if (TI_WITH_BACKTRACE)
+  add_subdirectory(external/backward_cpp)
+endif()
+
+if (TI_DISTRIBUTED_COMPILE)
+    include(cmake/Distributed.cmake)
+endif()
+
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
 
@@ -121,58 +182,12 @@ if (TI_WITH_CUDA)
     set(CUDA_ARCH "cuda")
 endif()
 
+if (TI_WITH_AMDGPU)
+    set(AMDGPU_ARCH "amdgpu")
+endif()
+
 if (TI_WITH_DX12)
     set(DX12_ARCH "dx12")
-endif()
-
-if (CLANG_EXECUTABLE)
-  message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
-  message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
-else()
-  find_program(CLANG_EXECUTABLE NAMES clang clang-10 clang-11 clang-9 clang-8 clang-7)
-  message("Clang executable found at ${CLANG_EXECUTABLE}")
-endif()
-
-if (NOT CLANG_EXECUTABLE)
-  message(FATAL_ERROR "Cannot find any clang executable.")
-endif()
-
-macro(check_clang_version)
-  execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
-  string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
-  message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
-
-  set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
-endmacro()
-
-if (APPLE)
-  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-  set(CLANG_HIGHEST_VERSION "12")
-else()
-  if (TI_LLVM_15)
-    set(CLANG_HIGHEST_VERSION "15")
-  else()
-    set(CLANG_HIGHEST_VERSION "11")
-  endif()
-endif()
-
-check_clang_version()
-
-if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-  set(OLD_CLANG_EXEC ${CLANG_EXECUTABLE})
-  unset(CLANG_EXECUTABLE)
-  find_program(CLANG_EXECUTABLE NAMES clang-11 clang-10 clang-9 clang-8 clang-7)
-  if (NOT CLANG_EXECUTABLE)
-    message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
-  else()
-    check_clang_version()
-    if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-      message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
-    endif()
-  endif()
-  message(WARNING "Changing Clang executble from `${OLD_CLANG_EXEC}` to `${CLANG_EXECUTABLE}`")
 endif()
 
 if (TI_WITH_LLVM)
@@ -181,16 +196,6 @@ endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
-
-option(TI_EXPORT_CORE "export taichi core" OFF)
-
-if(ANDROID)
-    set(TI_EXPORT_CORE ON)
-endif()
-
-if (TI_EXPORT_CORE)
-  include(cmake/TaichiExportCore.cmake)
-endif()
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
 

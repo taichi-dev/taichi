@@ -7,7 +7,6 @@
 #include "taichi/program/program.h"
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
-#include "taichi/util/statistics.h"
 #include "taichi/ir/transforms.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/analysis/offline_cache_util.h"
@@ -104,12 +103,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
       {
         builder->SetInsertPoint(loop_test_bb);
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         auto cond = builder->CreateICmp(
             llvm::CmpInst::Predicate::ICMP_SLT, loop_index_load,
             llvm_val[stmt->owned_num_local.find(stmt->major_from_type)
@@ -124,12 +119,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
           auto &s = stmt->body->statements[i];
           s->accept(this);
         }
-#ifdef TI_LLVM_15
         auto *loop_index_load =
             builder->CreateLoad(builder->getInt32Ty(), loop_index);
-#else
-        auto *loop_index_load = builder->CreateLoad(loop_index);
-#endif
         builder->CreateStore(
             builder->CreateAdd(loop_index_load, tlctx->get_constant(1)),
             loop_index);
@@ -169,7 +160,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
   }
 
   void visit(OffloadedStmt *stmt) override {
-    stat.add("codegen_offloaded_tasks");
     TI_ASSERT(current_offload == nullptr);
     current_offload = stmt;
     if (stmt->bls_size > 0)
@@ -195,6 +185,8 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       emit_list_gen(stmt);
     } else if (stmt->task_type == Type::gc) {
       emit_gc(stmt);
+    } else if (stmt->task_type == Type::gc_rc) {
+      emit_gc_rc();
     } else {
       TI_NOT_IMPLEMENTED
     }
@@ -263,6 +255,14 @@ FunctionType CPUModuleToFunctionConverter::convert(
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
             i, RuntimeContext::DevAllocType::kNone);
+
+        if (context.has_grad[i]) {
+          DeviceAllocation *ptr_grad =
+              static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
+          uint64 host_ptr_grad =
+              (uint64)executor->get_ndarray_alloc_info_ptr(*ptr_grad);
+          context.set_grad_arg(i, host_ptr_grad);
+        }
       }
     }
     for (auto task : task_funcs) {
@@ -282,7 +282,8 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
 FunctionType KernelCodeGenCPU::compile_to_function() {
   TI_AUTO_PROF;
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  const auto &config = prog->this_thread_config();
+  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
 
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());

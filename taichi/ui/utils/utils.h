@@ -192,28 +192,10 @@ inline std::string button_id_to_name(int id) {
 }
 #endif
 
-inline int next_power_of_2(int n) {
-  int count = 0;
-
-  if (n && !(n & (n - 1)))
-    return n;
-
-  while (n != 0) {
-    n >>= 1;
-    count += 1;
-  }
-
-  return 1 << count;
-}
-
-#define DEFINE_PROPERTY(Type, name)       \
-  Type name;                              \
-  void set_##name(const Type &new_name) { \
-    name = new_name;                      \
-  }                                       \
-  Type get_##name() {                     \
-    return name;                          \
-  }
+#define DEFINE_PROPERTY(Type, name)                          \
+  Type name;                                                 \
+  void set_##name(const Type &new_name) { name = new_name; } \
+  Type get_##name() { return name; }
 
 inline std::vector<char> read_file(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);

@@ -52,15 +52,16 @@ void Circles::update_ubo(glm::vec3 color,
   UniformBufferObject ubo{color, (int)use_per_vertex_color,
                           radius * app_context_->config.height};
 
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
 
 void Circles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
 }
 
 }  // namespace vulkan

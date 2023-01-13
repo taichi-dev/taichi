@@ -79,13 +79,56 @@ static void field_aot_test(TiArch arch) {
   capi::utils::check_runtime_error(runtime);
 }
 
+void texture_aot_kernel_test(TiArch arch) {
+  const uint32_t width = 128;
+  const uint32_t height = 128;
+
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+  std::stringstream aot_mod_ss;
+  aot_mod_ss << folder_dir;
+
+  ti::Runtime runtime(arch);
+
+  ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str());
+
+  ti::Kernel k_run0 = aot_mod.get_kernel("run0");
+  ti::Kernel k_run1 = aot_mod.get_kernel("run1");
+  ti::Kernel k_run2 = aot_mod.get_kernel("run2");
+
+  ti::Texture tex0 =
+      runtime.allocate_texture2d(width, height, TI_FORMAT_R32F, TI_NULL_HANDLE);
+  ti::Texture tex1 =
+      runtime.allocate_texture2d(width, height, TI_FORMAT_R32F, TI_NULL_HANDLE);
+  ti::NdArray<float> arr =
+      runtime.allocate_ndarray<float>({width, height}, {}, true);
+
+  k_run0[0] = tex0;
+  k_run1[0] = tex0;
+  k_run1[1] = tex1;
+  k_run2[0] = tex0;
+  k_run2[1] = tex1;
+  k_run2[2] = arr;
+
+  k_run0.launch();
+  k_run1.launch();
+  k_run2.launch();
+  runtime.wait();
+
+  std::vector<float> arr_data(128 * 128);
+  arr.read(arr_data);
+  for (auto x : arr_data) {
+    EXPECT_GT(x, 0.5);
+  }
+}
+
 TEST_F(CapiTest, AotTestCpuField) {
   TiArch arch = TiArch::TI_ARCH_X64;
   field_aot_test(arch);
 }
 
 TEST_F(CapiTest, AotTestCudaField) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     field_aot_test(arch);
   }
@@ -97,22 +140,29 @@ TEST_F(CapiTest, AotTestCpuKernel) {
 }
 
 TEST_F(CapiTest, AotTestCudaKernel) {
-  if (capi::utils::is_cuda_available()) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestVulkanKernel) {
-  if (capi::utils::is_vulkan_available()) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     kernel_aot_test(arch);
   }
 }
 
 TEST_F(CapiTest, AotTestOpenglKernel) {
-  if (capi::utils::is_opengl_available()) {
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
     kernel_aot_test(arch);
+  }
+}
+
+TEST_F(CapiTest, GraphTestVulkanTextureKernel) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    texture_aot_kernel_test(arch);
   }
 }

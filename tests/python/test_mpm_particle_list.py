@@ -1,5 +1,7 @@
 import random
 
+import pytest
+
 import taichi as ti
 from tests import test_utils
 
@@ -44,20 +46,11 @@ class MPMSolver:
             self.build_pid()
 
 
+@pytest.mark.run_in_serial
 @test_utils.test(require=ti.extension.sparse,
                  exclude=[ti.metal],
                  device_memory_GB=1.0)
 def test_mpm_particle_list_no_leakage():
-    # By default Taichi will allocate 0.5 GB for testing.
-    mpm = MPMSolver(res=(128, 128))
-    mpm.step()
-
-
-@test_utils.test(require=[ti.extension.sparse, ti.extension.packed],
-                 exclude=[ti.metal],
-                 device_memory_GB=1.0,
-                 packed=True)
-def test_mpm_particle_list_no_leakage_packed():
     # By default Taichi will allocate 0.5 GB for testing.
     mpm = MPMSolver(res=(128, 128))
     mpm.step()

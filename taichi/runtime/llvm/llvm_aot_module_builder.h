@@ -8,7 +8,9 @@ namespace taichi::lang {
 
 class LlvmAotModuleBuilder : public AotModuleBuilder {
  public:
-  explicit LlvmAotModuleBuilder(LlvmProgramImpl *prog) : prog_(prog) {
+  explicit LlvmAotModuleBuilder(const CompileConfig *compile_config,
+                                LlvmProgramImpl *prog)
+      : compile_config_(compile_config), prog_(prog) {
   }
 
   void dump(const std::string &output_dir,
@@ -26,15 +28,17 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
                              int row_num,
                              int column_num) override;
 
-  void add_compiled_kernel(const std::string &identifier,
-                           aot::Kernel *kernel) override;
-
   const LlvmOfflineCache &get_cache() {
     return cache_;
   }
 
+  const CompileConfig *get_compile_config() const {
+    return compile_config_;
+  }
+
  private:
   mutable LlvmOfflineCache cache_;
+  const CompileConfig *compile_config_{nullptr};
   LlvmProgramImpl *prog_ = nullptr;
 };
 

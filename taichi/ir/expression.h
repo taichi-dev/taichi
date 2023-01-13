@@ -11,8 +11,10 @@ class ExpressionVisitor;
 
 // always a tree - used as rvalues
 class Expression {
- public:
+ protected:
   Stmt *stmt;
+
+ public:
   std::string tb;
   std::map<std::string, std::string> attributes;
   DataType ret_type;
@@ -52,6 +54,10 @@ class Expression {
   }
 
   virtual ~Expression() {
+  }
+
+  Stmt *get_flattened_stmt() const {
+    return stmt;
   }
 };
 
@@ -157,9 +163,7 @@ class ExpressionVisitor {
   bool invoke_default_visitor_{false};
 };
 
-#define TI_DEFINE_ACCEPT_FOR_EXPRESSION              \
-  void accept(ExpressionVisitor *visitor) override { \
-    visitor->visit(this);                            \
-  }
+#define TI_DEFINE_ACCEPT_FOR_EXPRESSION \
+  void accept(ExpressionVisitor *visitor) override { visitor->visit(this); }
 
 }  // namespace taichi::lang

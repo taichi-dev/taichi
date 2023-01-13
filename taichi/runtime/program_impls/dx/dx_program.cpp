@@ -3,19 +3,19 @@
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 
 #include "taichi/rhi/dx/dx_api.h"
-#include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
 
 namespace taichi::lang {
 namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
+                                   const CompileConfig &compile_config,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(gfx::run_codegen(
-      kernel, Arch::dx11, runtime->get_ti_device()->get_current_caps(),
-      snode_tree_mgr->get_compiled_structs()));
+  auto handle = runtime->register_taichi_kernel(
+      gfx::run_codegen(kernel, Arch::dx11, runtime->get_ti_device()->get_caps(),
+                       snode_tree_mgr->get_compiled_structs(), compile_config));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -26,10 +26,9 @@ FunctionType compile_to_executable(Kernel *kernel,
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
-FunctionType Dx11ProgramImpl::compile(Kernel *kernel,
-                                      OffloadedStmt *offloaded) {
-  spirv::lower(kernel);
-  return directx11::compile_to_executable(kernel, runtime_.get(),
+FunctionType Dx11ProgramImpl::compile(Kernel *kernel) {
+  spirv::lower(*config, kernel);
+  return directx11::compile_to_executable(kernel, runtime_.get(), *config,
                                           snode_tree_mgr_.get());
 }
 
@@ -67,10 +66,10 @@ std::unique_ptr<AotModuleBuilder> Dx11ProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::dx11, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::dx11, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::dx11, caps);
+        aot_compiled_snode_structs_, Arch::dx11, *config, caps);
   }
 }
 
@@ -80,15 +79,6 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
   return get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false});
-}
-
-std::unique_ptr<aot::Kernel> Dx11ProgramImpl::make_aot_kernel(Kernel &kernel) {
-  spirv::lower(&kernel);
-  std::vector<gfx::CompiledSNodeStructs> compiled_structs;
-  gfx::GfxRuntime::RegisterParams kparams = gfx::run_codegen(
-      &kernel, Arch::dx11, get_compute_device()->get_current_caps(),
-      compiled_structs);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(kparams));
 }
 
 }  // namespace taichi::lang

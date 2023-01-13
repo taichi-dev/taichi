@@ -294,6 +294,18 @@ class IRPrinter : public IRVisitor {
     }
   }
 
+  void visit(FrontendFuncCallStmt *stmt) override {
+    std::string args;
+    for (int i = 0; i < stmt->args.exprs.size(); i++) {
+      if (i) {
+        args += ", ";
+      }
+      args += expr_to_string(stmt->args.exprs[i]);
+    }
+    print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
+          stmt->id, stmt->func->get_name(), args, stmt->ident->name());
+  }
+
   void visit(FuncCallStmt *stmt) override {
     std::vector<std::string> args;
     for (const auto &arg : stmt->args) {
@@ -447,7 +459,12 @@ class IRPrinter : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    if (!stmt->is_grad) {
+      print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+    } else {
+      print("{}{} = grad_arg[{}]", stmt->type_hint(), stmt->name(),
+            stmt->arg_id);
+    }
   }
 
   void visit(TexturePtrStmt *stmt) override {
@@ -581,8 +598,9 @@ class IRPrinter : public IRVisitor {
       }
       s += ")";
     }
-    s += fmt::format(" element_dim={} layout={}", stmt->element_dim,
-                     (stmt->element_dim <= 0) ? "AOS" : "SOA");
+    s += fmt::format(" element_dim={} layout={} is_grad={}", stmt->element_dim,
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA",
+                     stmt->base_ptr->as<ArgLoadStmt>()->is_grad);
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));
@@ -630,6 +648,8 @@ class IRPrinter : public IRVisitor {
     } else if (stmt->task_type == OffloadedTaskType::gc) {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
+    } else if (stmt->task_type == OffloadedTaskType::gc_rc) {
+      print("{} = offloaded garbage collect runtime context", stmt->name());
     } else {
       print("{} = offloaded {} ", stmt->name(), details);
       if (stmt->tls_prologue) {
@@ -821,6 +841,11 @@ class IRPrinter : public IRVisitor {
     }
     result += "]";
     print(result);
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    print("{}{} = get_element({}, {})", stmt->type_hint(), stmt->name(),
+          stmt->src->name(), fmt::join(stmt->index, ", "));
   }
 
  private:

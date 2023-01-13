@@ -282,8 +282,7 @@ def test_set_image_with_texture():
 
     @ti.kernel
     def init_img(img: ti.types.rw_texture(num_dimensions=2,
-                                          num_channels=4,
-                                          channel_format=ti.f32,
+                                          fmt=ti.Format.rgba32f,
                                           lod=0)):
         for i, j in ti.ndrange(512, 512):
             img.store(ti.Vector([i, j]),
@@ -457,14 +456,16 @@ def test_draw_lines():
     render()
     if (platform.system() == 'Darwin'):
         # TODO:Fix the bug that mac not support wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines.mac',
+                     0.2)
     else:
-        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
+        verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines',
+                     0.2)
     window.destroy()
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
+@test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)

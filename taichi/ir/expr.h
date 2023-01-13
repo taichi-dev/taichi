@@ -10,6 +10,7 @@ class Expression;
 class Identifier;
 class ExprGroup;
 class SNode;
+class ASTBuilder;
 
 class Expr {
  public:
@@ -82,8 +83,6 @@ class Expr {
   // std::variant<Expr, std::string> in FrontendPrintStmt.
   Expr &operator=(const Expr &o);
 
-  Expr operator[](const ExprGroup &indices) const;
-
   template <typename T, typename... Args>
   static Expr make(Args &&...args) {
     return Expr(std::make_shared<T>(std::forward<Args>(args)...));
@@ -132,14 +131,6 @@ template <typename T>
 Expr expr_rand() {
   return taichi::lang::expr_rand(get_data_type<T>());
 }
-
-Expr snode_append(SNode *snode, const ExprGroup &indices, const Expr &val);
-
-Expr snode_is_active(SNode *snode, const ExprGroup &indices);
-
-Expr snode_length(SNode *snode, const ExprGroup &indices);
-
-Expr snode_get_addr(SNode *snode, const ExprGroup &indices);
 
 Expr assume_range(const Expr &expr, const Expr &base, int low, int high);
 

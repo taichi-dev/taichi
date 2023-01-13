@@ -9,8 +9,9 @@ namespace taichi::lang {
 
 class KernelCodeGenCUDA : public KernelCodeGen {
  public:
-  explicit KernelCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : KernelCodeGen(kernel, ir) {
+  explicit KernelCodeGenCUDA(const CompileConfig *compile_config,
+                             Kernel *kernel)
+      : KernelCodeGen(compile_config, kernel) {
   }
 
 // TODO: Stop defining this macro guards in the headers

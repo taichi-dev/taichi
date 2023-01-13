@@ -3,7 +3,7 @@
 set -x
 
 setup_python() {
-    for conda in miniconda miniconda3 miniforge3; do
+    for conda in .cache/build-cache/miniforge3 miniconda miniconda3 miniforge3; do
         if [[ -d $HOME/$conda ]]; then
             source $HOME/$conda/bin/activate
             conda activate "$PY"
@@ -116,6 +116,7 @@ function ci-docker-run {
         --user dev \
         -e PY \
         -e PROJECT_NAME \
+        -e LLVM_VERSION \
         -e TAICHI_CMAKE_ARGS \
         -e IN_DOCKER=true \
         -e TI_CI=1 \
@@ -150,6 +151,30 @@ function ci-docker-run-gpu {
         -e DISPLAY=:$i \
         -e GPU_BUILD=ON \
         -e GPU_TEST=ON \
+        -v /tmp/.X11-unix:/tmp/.X11-unix \
+        $@
+}
+
+function ci-docker-run-amdgpu {
+    for i in {0..9}; do
+        if xset -display ":$i" -q >/dev/null 2>&1; then
+            break
+        fi
+    done
+
+    if [ $? -ne 0 ]; then
+        echo "No display!"
+        exit 1
+    fi
+
+    ci-docker-run \
+        --device=/dev/kfd \
+        --device=/dev/dri \
+        --device=/dev/vga_arbiter \
+        --group-add=video \
+        -e DISPLAY=:$i \
+        -e GPU_TEST=ON \
+        -e AMDGPU_TEST=ON \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
         $@
 }

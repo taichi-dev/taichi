@@ -18,18 +18,18 @@ N_ITER = 500  # Use 500 to make speed diff more obvious
 
 
 @ti.kernel
-def substep_reset_grid(grid_v: ti.any_arr(field_dim=2),
-                       grid_m: ti.any_arr(field_dim=2)):
+def substep_reset_grid(grid_v: ti.types.ndarray(ndim=2),
+                       grid_m: ti.types.ndarray(ndim=2)):
     for i, j in grid_m:
         grid_v[i, j] = [0, 0]
         grid_m[i, j] = 0
 
 
 @ti.kernel
-def substep_p2g(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
-                C: ti.any_arr(field_dim=1), J: ti.any_arr(field_dim=1),
-                grid_v: ti.any_arr(field_dim=2),
-                grid_m: ti.any_arr(field_dim=2)):
+def substep_p2g(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),
+                C: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1),
+                grid_v: ti.types.ndarray(ndim=2),
+                grid_m: ti.types.ndarray(ndim=2)):
     for p in x:
         Xp = x[p] / dx
         base = int(Xp - 0.5)
@@ -46,8 +46,8 @@ def substep_p2g(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
 
 
 @ti.kernel
-def substep_update_grid_v(grid_v: ti.any_arr(field_dim=2),
-                          grid_m: ti.any_arr(field_dim=2)):
+def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=2),
+                          grid_m: ti.types.ndarray(ndim=2)):
     for i, j in grid_m:
         if grid_m[i, j] > 0:
             grid_v[i, j] /= grid_m[i, j]
@@ -63,9 +63,9 @@ def substep_update_grid_v(grid_v: ti.any_arr(field_dim=2),
 
 
 @ti.kernel
-def substep_g2p(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
-                C: ti.any_arr(field_dim=1), J: ti.any_arr(field_dim=1),
-                grid_v: ti.any_arr(field_dim=2)):
+def substep_g2p(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),
+                C: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1),
+                grid_v: ti.types.ndarray(ndim=2)):
     for p in x:
         Xp = x[p] / dx
         base = int(Xp - 0.5)
@@ -87,8 +87,8 @@ def substep_g2p(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
 
 
 @ti.kernel
-def init_particles(x: ti.any_arr(field_dim=1), v: ti.any_arr(field_dim=1),
-                   J: ti.any_arr(field_dim=1)):
+def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1),
+                   J: ti.types.ndarray(ndim=1)):
     for i in range(n_particles):
         x[i] = [ti.random() * 0.4 + 0.2, ti.random() * 0.4 + 0.2]
         v[i] = [0, -1]
@@ -114,32 +114,25 @@ def main():
         # Build graph
         sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'x',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, ))
+                             dtype=ti.math.vec2,
+                             ndim=1)
         sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'v',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, ))
+                             dtype=ti.math.vec2,
+                             ndim=1)
         sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                              'C',
-                             ti.f32,
-                             field_dim=1,
-                             element_shape=(2, 2))
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'J',
-                             ti.f32,
-                             field_dim=1)
+                             dtype=ti.math.mat2,
+                             ndim=1)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32, ndim=1)
         sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_v',
-                                  ti.f32,
-                                  field_dim=2,
-                                  element_shape=(2, ))
+                                  dtype=ti.math.vec2,
+                                  ndim=2)
         sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                                   'grid_m',
-                                  ti.f32,
-                                  field_dim=2)
+                                  dtype=ti.f32,
+                                  ndim=2)
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
 

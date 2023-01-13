@@ -695,7 +695,7 @@ def test_func_in_python_func():
             return ti.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @ti.kernel
@@ -788,7 +788,7 @@ def test_taichi_other_than_ti():
             return tc.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @tc.kernel
@@ -853,6 +853,25 @@ def test_dict():
 
 
 @test_utils.test()
+def test_single_listcomp():
+    @ti.func
+    def identity(dt, n: ti.template()):
+        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
+                          for i in range(n)])
+
+    @ti.kernel
+    def foo(n: ti.template()) -> ti.i32:
+        a = identity(ti.i32, n)
+        b = [i[0] for i in a]
+        ret = 0
+        for i in ti.static(range(n)):
+            ret += b[i]
+        return ret
+
+    assert foo(5) == 1
+
+
+@test_utils.test()
 def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
@@ -908,7 +927,8 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(x: ti.types.ndarray(element_dim=2), y: ti.types.ndarray()):
+    def run(x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)),
+            y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]

@@ -11,7 +11,7 @@ namespace taichi::lang {
 class Dx11ProgramImpl : public ProgramImpl {
  public:
   Dx11ProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) override;
+  FunctionType compile(Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -61,8 +61,6 @@ class Dx11ProgramImpl : public ProgramImpl {
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
-
-  std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

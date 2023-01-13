@@ -78,8 +78,7 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType VulkanProgramImpl::compile(Kernel *kernel,
-                                        OffloadedStmt *offloaded) {
+FunctionType VulkanProgramImpl::compile(Kernel *kernel) {
   return register_params_to_executable(
       get_cache_manager()->load_or_compile(config, kernel),
       vulkan_runtime_.get());
@@ -185,10 +184,10 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::vulkan, caps);
+        aot_compiled_snode_structs_, Arch::vulkan, *config, caps);
   }
 }
 
@@ -203,13 +202,6 @@ DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
 DeviceAllocation VulkanProgramImpl::allocate_texture(
     const ImageParams &params) {
   return vulkan_runtime_->create_image(params);
-}
-
-std::unique_ptr<aot::Kernel> VulkanProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
-  auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(vulkan_runtime_.get(),
-                                           std::move(params));
 }
 
 void VulkanProgramImpl::enqueue_compute_op_lambda(
@@ -237,7 +229,8 @@ const std::unique_ptr<gfx::CacheManager>
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = vulkan_runtime_.get();
-    params.caps = embedded_device_->device()->get_current_caps();
+    params.compile_config = config;
+    params.caps = embedded_device_->device()->get_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }

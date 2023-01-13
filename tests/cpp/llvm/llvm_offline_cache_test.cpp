@@ -42,7 +42,6 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
  protected:
   void SetUp() override {
     const auto arch = host_arch();
-    config_.packed = false;
     config_.print_kernel_llvm_ir = false;
     prog_ = std::make_unique<Program>(arch);
     auto *llvm_prog_ = get_llvm_program(prog_.get());
@@ -93,6 +92,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
+    llvm_ctx->setOpaquePointers(false);
     LlvmOfflineCache::KernelCacheData kcache;
     kcache.created_at = 1;
     kcache.last_used_at = 1;

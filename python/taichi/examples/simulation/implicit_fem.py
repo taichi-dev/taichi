@@ -11,10 +11,14 @@ parser.add_argument('--exp',
                     default='implicit')
 parser.add_argument('--dim', type=int, default=3)
 parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
+parser.add_argument('-s',
+                    '--use_sparse',
+                    action='store_true',
+                    help='Use sparse matrix and sparse solver')
 parser.add_argument('place_holder', nargs='*')
 args = parser.parse_args()
 
-ti.init(arch=ti.cuda, dynamic_index=True)
+ti.init(arch=ti.cuda)
 
 if args.gui == 'auto':
     if _ti_core.GGUI_AVAILABLE and ti.lang.impl.current_cfg().arch == ti.cuda:
@@ -29,6 +33,8 @@ dt = 2e-4
 
 if args.exp == 'implicit':
     dt = 1e-2
+
+use_sparse = args.use_sparse
 
 n_cube = np.array([5] * 3)
 n_verts = np.product(n_cube)
@@ -159,6 +165,14 @@ F_b = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 F_r0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 F_p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 
+# ndarray version of F_b
+F_b_ndarr = ti.ndarray(dtype=ti.f32, shape=3 * n_verts)
+# stiffness matrix
+A_builder = ti.linalg.SparseMatrixBuilder(3 * n_verts,
+                                          3 * n_verts,
+                                          max_num_triplets=50000)
+solver = ti.linalg.SparseSolver(ti.f32, "LLT")
+
 
 @ti.kernel
 def get_b():
@@ -199,6 +213,60 @@ def cg():
 
 
 @ti.kernel
+def compute_A(A: ti.types.sparse_matrix_builder()):
+    # A = M - dt * dt * K
+    for i in range(n_verts):
+        for j in range(3):
+            A[3 * i + j, 3 * i + j] += F_m[i]
+    for c in F_vertices:
+        verts = F_vertices[c]
+        W_c = F_W[c]
+        B_c = F_B[c]
+        for u in range(4):
+            for d in range(3):
+                dD = ti.Matrix.zero(ti.f32, 3, 3)
+                if u == 3:
+                    for j in range(3):
+                        dD[d, j] = -1
+                else:
+                    dD[d, u] = 1
+                dF = dD @ B_c
+                dP = 2.0 * mu * dF
+                dH = -W_c * dP @ B_c.transpose()
+                for i in range(3):
+                    for j in range(3):
+                        A[3 * verts[u] + d,
+                          3 * verts[i] + j] += -dt**2 * dH[j, i]
+                for i in range(3):
+                    A[3 * verts[u] + d, 3 * verts[3] +
+                      i] += -dt**2 * (-dH[i, 0] - dH[i, 1] - dH[i, 2])
+
+
+@ti.kernel
+def flatten(dest: ti.types.ndarray(), src: ti.template()):
+    for i in range(n_verts):
+        for j in range(3):
+            dest[3 * i + j] = src[i][j]
+
+
+@ti.kernel
+def aggragate(dest: ti.template(), src: ti.types.ndarray()):
+    for i in range(n_verts):
+        for j in range(3):
+            dest[i][j] = src[3 * i + j]
+
+
+def direct():
+    get_force()
+    get_b()
+    flatten(F_b_ndarr, F_b)
+    v = solver.solve(F_b_ndarr)
+    aggragate(F_v, v)
+    F_f.fill(0)
+    add(F_x, F_x, dt, F_v)
+
+
+@ti.kernel
 def advect():
     for p in F_x:
         F_v[p] += dt * (F_f[p] / F_m[p])
@@ -221,6 +289,13 @@ def init():
             F_m[F_vertices[c][i]] += F_W[c] / 4 * density
     for u in F_x:
         F_x[u].y += 1.0
+
+
+def init_A():
+    compute_A(A_builder)
+    A = A_builder.build()
+    solver.analyze_pattern(A)
+    solver.factorize(A)
 
 
 @ti.kernel
@@ -285,7 +360,9 @@ def substep():
             get_force()
             advect()
     else:
-        for i in range(1):
+        if use_sparse:
+            direct()
+        else:
             cg()
     floor_bound()
 
@@ -294,6 +371,9 @@ def main():
     get_vertices()
     init()
     get_indices()
+
+    if use_sparse:
+        init_A()
 
     if args.gui == 'ggui':
         res = (800, 600)

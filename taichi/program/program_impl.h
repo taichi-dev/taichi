@@ -35,7 +35,7 @@ class ProgramImpl {
   /**
    * Codegen to specific backend
    */
-  virtual FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) = 0;
+  virtual FunctionType compile(Kernel *kernel) = 0;
 
   /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
@@ -79,13 +79,6 @@ class ProgramImpl {
       const DeviceCapabilityConfig &caps) = 0;
 
   /**
-   * Compile a taichi::lang::Kernel to taichi::lang::aot::Kernel.
-   */
-  virtual std::unique_ptr<aot::Kernel> make_aot_kernel(Kernel &kernel) {
-    TI_NOT_IMPLEMENTED;
-  }
-
-  /**
    * Dump Offline-cache data to disk
    */
   virtual void dump_cache_data_to_disk() {
@@ -110,6 +103,10 @@ class ProgramImpl {
   virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                                    uint64 *result_buffer) {
     return kDeviceNullAllocation;
+  }
+
+  virtual bool used_in_kernel(DeviceAllocationId) {
+    return false;
   }
 
   virtual DeviceAllocation allocate_texture(const ImageParams &params) {

@@ -33,12 +33,12 @@ def compile_dense_field_aot_test(arch):
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
-    m = ti.aot.Module(arch)
+    m = ti.aot.Module()
     m.add_kernel(simple_return)
     m.add_kernel(init)
     m.add_kernel(ret)
     m.add_field("place", place)
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == "__main__":

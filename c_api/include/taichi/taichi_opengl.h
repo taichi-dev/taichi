@@ -1,14 +1,25 @@
 #pragma once
 
-#ifndef TI_WITH_OPENGL
-#define TI_WITH_OPENGL 1
-#endif  // TI_WITH_OPENGL
-
 #include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif  // __cplusplus
+
+// Structure `TiOpenglRuntimeInteropInfo`
+typedef struct TiOpenglRuntimeInteropInfo {
+  void *get_proc_addr;
+} TiOpenglRuntimeInteropInfo;
+
+// Function `ti_import_opengl_runtime`
+TI_DLL_EXPORT void TI_API_CALL
+ti_import_opengl_runtime(TiRuntime runtime,
+                         TiOpenglRuntimeInteropInfo *interop_info);
+
+// Function `ti_export_opengl_runtime`
+TI_DLL_EXPORT void TI_API_CALL
+ti_export_opengl_runtime(TiRuntime runtime,
+                         TiOpenglRuntimeInteropInfo *interop_info);
 
 // Structure `TiOpenglMemoryInteropInfo`
 typedef struct TiOpenglMemoryInteropInfo {

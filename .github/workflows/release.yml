@@ -50,16 +50,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi","python":"3.7","conda_python":"py37"},{"name":"taichi","python":"3.8","conda_python":"py38"},{"name":"taichi","python":"3.9","conda_python":"py39"},{"name":"taichi","python":"3.10","conda_python":"py310"}]}"'
+            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports py38, py39, and py310(conda), so change matrix.
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"'
+            # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo '::set-output name=matrix::{"include":[{"name":"taichi-nightly","python":"3.7","conda_python":"py37"},{"name":"taichi-nightly","python":"3.8","conda_python":"py38"},{"name":"taichi-nightly","python":"3.9","conda_python":"py39"},{"name":"taichi-nightly","python":"3.10","conda_python":"py310"}]}"'
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
 
-            # M1 only supports py38 and py310(conda), so change matrix.
-            echo '::set-output name=matrix_osx::{"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"'
+            # M1 only supports 3.8 and 3.10(conda), so change matrix.
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -87,9 +87,9 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+            /home/dev/taichi/.github/workflows/scripts/build.py
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -112,7 +112,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
 
   build_and_test_manylinux2014:
     name: Build and Upload (manylinux2014)
@@ -138,11 +138,11 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.0 \
-             /home/dev/taichi/.github/workflows/scripts/unix-build.sh
+             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
+             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=OFF
@@ -165,7 +165,7 @@ jobs:
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: ${{ matrix.conda_python }}
+          PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cuda,cpu"
 
   build_and_test_mac:
@@ -188,16 +188,11 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
 
-      - name: Download Pre-Built LLVM 10.0.0
-        run: python misc/ci_download.py
-        env:
-          CI_PLATFORM: macos
-
       - name: Create Python Wheel
         run: |
-          brew install molten-vk
-          export PATH=$(pwd)/taichi-llvm/bin/:$PATH
-          .github/workflows/scripts/unix-build.sh
+          # Use the molten-vk v1.1.10 downloaded from taichi assets
+          brew uninstall molten-vk -f
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           CXX: clang++
@@ -244,7 +239,7 @@ jobs:
       - name: Build
         run: |
           brew install molten-vk
-          .github/workflows/scripts/unix-build.sh
+          .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
           PY: ${{ matrix.python }}
@@ -271,55 +266,6 @@ jobs:
           PY: ${{ matrix.python }}
           GPU_TEST: ON
 
-  build_and_test_macos_1014:
-    name: Build and Upload (macos 1014)
-    needs: matrix_prep
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, macos10.14]
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-          fetch-depth: '0'
-
-      - name: Prepare Environment
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          prepare-build-cache
-
-      - name: Build
-        run: |
-          # TODO: should embed LLVM as submodule
-          export LLVM_DIR=/Users/buildbot6/taichi-llvm-10.0.0-macos
-          export PATH=$LLVM_DIR/bin:$PATH
-          .github/workflows/scripts/unix-build.sh
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PY: ${{ matrix.python }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-
-      - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: dist
-          path: dist/*.whl
-          retention-days: 20
-
-      - name: Test
-        run: |
-          .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: 'cpu'
-          PY: ${{ matrix.python }}
-
   build_and_test_windows:
     name: Build and Upload (Windows only)
     needs: matrix_prep
@@ -328,12 +274,17 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, windows, cuda, OpenGL]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: |
+          git config --system core.longpaths true
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
           fetch-depth: '0'
 
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -341,13 +292,13 @@ jobs:
         shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer 10 -installVulkan -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_build.ps1 -llvmVer 15 -installVulkan -libsDir "$env:LocalAppData/buildbot"
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
 
       - name: Archive Wheel Artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: dist
           path: dist/*.whl
@@ -364,11 +315,11 @@ jobs:
 
   upload_to_pypi:
     name: Upload release to PyPI
-    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_macos_1014, build_and_test_windows]
+    needs: [build_and_test_linux, build_and_test_manylinux2014, build_and_test_mac, build_and_test_m1, build_and_test_windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -380,11 +331,22 @@ jobs:
 
       - name: Upload to PyPI
         run: |
+          set -ex
           ls -l dist/
           if [ -z "$RELEASE_VERSION" ]; then
             export PROJECT_NAME="taichi-nightly"
           else
             export PROJECT_NAME="taichi"
+            VER=$(echo $RELEASE_VERSION | sed 's/^v//')
+            if [ $(ls dist/taichi-$VER-*.whl | wc -l) != $(ls dist/*.whl | wc -l) ]; then
+              echo Version number mismatch
+              exit 1
+            fi
+            pip install -f dist taichi==$VER
+            if ! python -c 'import taichi' | grep "^.Taichi. version $VER,"; then
+              echo Taichi init version number mismatch!!
+              exit 1
+            fi
           fi
           python -m pip install requests twine
           python misc/upload_release.py
@@ -396,7 +358,10 @@ jobs:
     if: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -404,14 +369,8 @@ jobs:
         id: changelog
         run: |
           pip3 install gitpython
-          content=$(python3 misc/make_changelog.py)
-          echo $content
-          # Escape multiline strings:
-          # https://renehernandez.io/snippets/multiline-strings-as-a-job-output-in-github-actions/
-          content="${content//'%'/'%25'}"
-          content="${content//$'\n'/'%0A'}"
-          content="${content//$'\r'/'%0D'}"
-          echo "::set-output name=content::$content"
+          python3 misc/make_changelog.py > CHANGELOG.md
+          cat CHANGELOG.md
 
       - name: Create tag
         run: |
@@ -423,22 +382,5 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
-          body: ${{ steps.changelog.outputs.content }}
+          body_path: CHANGELOG.md
           tag_name: ${{ github.event.inputs.version }}
-
-      - name: Bump version
-        run: |
-          version_parts=(${RELEASE_VERSION//./ })
-          version_parts[2]=$(expr ${version_parts[2]} + 1)
-          next_version=$(IFS=.; echo "${version_parts[*]}")
-          # Update version.txt
-          git checkout -b "bump/$next_version"
-          echo "$next_version" > version.txt
-          git add version.txt
-          # Commit and push changes
-          git commit -m "Bump version to $next_version"
-          git push origin "bump/$next_version"
-          # Create pull request
-          gh pr create -B master -t "[misc] Bump version to $next_version" -b "Bump version to $next_version"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

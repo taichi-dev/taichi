@@ -24,8 +24,7 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType OpenglProgramImpl::compile(Kernel *kernel,
-                                        OffloadedStmt *offloaded) {
+FunctionType OpenglProgramImpl::compile(Kernel *kernel) {
   return register_params_to_executable(
       get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
 }
@@ -64,10 +63,10 @@ std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::opengl, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::opengl, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::opengl, caps);
+        aot_compiled_snode_structs_, Arch::opengl, *config, caps);
   }
 }
 
@@ -83,12 +82,6 @@ DeviceAllocation OpenglProgramImpl::allocate_texture(
   return runtime_->create_image(params);
 }
 
-std::unique_ptr<aot::Kernel> OpenglProgramImpl::make_aot_kernel(
-    Kernel &kernel) {
-  auto params = get_cache_manager()->load_or_compile(config, &kernel);
-  return std::make_unique<gfx::KernelImpl>(runtime_.get(), std::move(params));
-}
-
 void OpenglProgramImpl::dump_cache_data_to_disk() {
   const auto &mgr = get_cache_manager();
   mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
@@ -96,6 +89,16 @@ void OpenglProgramImpl::dump_cache_data_to_disk() {
                            config->offline_cache_max_size_of_files,
                            config->offline_cache_cleaning_factor);
   mgr->dump_with_merging();
+}
+
+void OpenglProgramImpl::finalize() {
+  runtime_.reset();
+  device_.reset();
+  opengl::reset_opengl();
+}
+
+OpenglProgramImpl::~OpenglProgramImpl() {
+  finalize();
 }
 
 const std::unique_ptr<gfx::CacheManager>
@@ -108,7 +111,8 @@ const std::unique_ptr<gfx::CacheManager>
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = runtime_.get();
-    params.caps = device_->get_current_caps();
+    params.compile_config = config;
+    params.caps = device_->get_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }

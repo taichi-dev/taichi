@@ -14,7 +14,8 @@ struct ModuleDataDX12 : public aot::ModuleData {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(LlvmProgramImpl *prog);
+  explicit AotModuleBuilderImpl(const CompileConfig &config,
+                                LlvmProgramImpl *prog);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -34,9 +35,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             const std::string &key,
                             Kernel *kernel) override;
 
-  void add_compiled_kernel(const std::string &identifier,
-                           aot::Kernel *kernel) override;
-
+  const CompileConfig &config_;
   LlvmProgramImpl *prog;
   ModuleDataDX12 module_data;
 };

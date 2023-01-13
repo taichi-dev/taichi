@@ -104,9 +104,11 @@ class AotDataConverter {
 AotModuleBuilderImpl::AotModuleBuilderImpl(
     const std::vector<CompiledSNodeStructs> &compiled_structs,
     Arch device_api_backend,
+    const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps)
     : compiled_structs_(compiled_structs),
       device_api_backend_(device_api_backend),
+      config_(compile_config),
       caps_(caps) {
   for (const auto &pair : caps.to_inner()) {
     ti_aot_data_.required_caps[to_string(pair.first)] = pair.second;
@@ -124,7 +126,7 @@ std::string AotModuleBuilderImpl::write_spv_file(
   std::ofstream fs(spv_path, std::ios_base::binary | std::ios::trunc);
   fs.write((char *)source_code.data(), source_code.size() * sizeof(uint32_t));
   fs.close();
-  return spv_path;
+  return k.name + ".spv";
 }
 
 void AotModuleBuilderImpl::dump(const std::string &output_dir,
@@ -149,8 +151,10 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
     }
   }
 
-  const std::string json_path = fmt::format("{}/metadata.json", output_dir);
-  converted.dump_json(json_path);
+  std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
+  std::fstream f(output_dir + "/metadata.json",
+                 std::ios::trunc | std::ios::out);
+  f.write(json.data(), json.size());
 
   dump_graph(output_dir);
 }
@@ -197,22 +201,12 @@ AotModuleBuilderImpl::try_get_kernel_register_params(
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(kernel);
-  auto compiled =
-      run_codegen(kernel, this->device_api_backend_, caps_, compiled_structs_);
+  spirv::lower(config_, kernel);
+  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
+                              compiled_structs_, config_);
   compiled.kernel_attribs.name = identifier;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
-}
-
-void AotModuleBuilderImpl::add_compiled_kernel(const std::string &identifier,
-                                               aot::Kernel *kernel) {
-  GfxRuntime::RegisterParams register_params =
-      static_cast<KernelImpl *>(kernel)->params();
-  register_params.kernel_attribs.name = identifier;
-  ti_aot_data_.kernels.push_back(std::move(register_params.kernel_attribs));
-  ti_aot_data_.spirv_codes.push_back(
-      std::move(register_params.task_spirv_source_codes));
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
@@ -249,10 +243,9 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(kernel);
-  auto compiled =
-      run_codegen(kernel, device_api_backend_, caps_, compiled_structs_);
-
+  spirv::lower(config_, kernel);
+  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
+                              compiled_structs_, config_);
   compiled.kernel_attribs.name = identifier + "|" + key;
   ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
   ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);

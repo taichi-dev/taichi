@@ -18,6 +18,7 @@ from rich.console import Console
 from rich.syntax import Syntax
 from taichi._lib import core as _ti_core
 from taichi._lib import utils
+from taichi.lang import impl
 from taichi.tools import cc_compose, diagnose, video
 
 import taichi as ti
@@ -146,7 +147,7 @@ class TaichiMain:
         slide_bar = 14
         top_margin = 6
         left_margin = 7
-        bottom_margin = 23
+        bottom_margin = 32
         row_spacing = 32
         col_spacing = 11
         tile_size = 128
@@ -167,7 +168,9 @@ class TaichiMain:
         dy = tile_size / height
 
         examples = [
-            "sdf_renderer", "cornell_box", "rasterizer", "euler", "fractal",
+            "poisson_disk_sampling", "mass_spring_3d_ggui",
+            "circle_packing_image", "snow_phaseField", "sdf_renderer",
+            "cornell_box", "karman_vortex_street", "euler", "fractal",
             "mpm128", "pbf2d", "mass_spring_game"
         ]
 
@@ -719,64 +722,6 @@ class TaichiMain:
 
         return None
 
-    @register
-    def benchmark(self, arguments: list = sys.argv[2:]):
-        """Run Python tests in benchmark mode"""
-        parser = argparse.ArgumentParser(
-            prog='ti benchmark', description=f"{self.benchmark.__doc__}")
-        parser.add_argument('files', nargs='*', help='Test file(s) to be run')
-        parser.add_argument('-T',
-                            '--tprt',
-                            dest='tprt',
-                            action='store_true',
-                            help='Benchmark performance in terms of run time')
-        parser.add_argument('-v',
-                            '--verbose',
-                            dest='verbose',
-                            action='store_true',
-                            help='Run with verbose outputs')
-        parser.add_argument('-r',
-                            '--rerun',
-                            required=False,
-                            default=None,
-                            dest='rerun',
-                            type=str,
-                            help='Rerun failed tests for given times')
-        parser.add_argument(
-            '-t',
-            '--threads',
-            required=False,
-            default=None,
-            dest='threads',
-            type=str,
-            help='Custom number of threads for parallel testing')
-        args = parser.parse_args(arguments)
-
-        # Short circuit for testing
-        if self.test_mode:
-            return args
-
-        commit_hash = _ti_core.get_commit_hash()
-        with os.popen('git rev-parse HEAD') as f:
-            current_commit_hash = f.read().strip()
-        assert commit_hash == current_commit_hash, f"Built commit {commit_hash:.6} differs from current commit {current_commit_hash:.6}, refuse to benchmark"
-        os.environ['TI_PRINT_BENCHMARK_STAT'] = '1'
-        output_dir = TaichiMain._get_benchmark_output_dir()
-        shutil.rmtree(output_dir, True)
-        os.mkdir(output_dir)
-        os.environ['TI_BENCHMARK_OUTPUT_DIR'] = output_dir
-        if os.environ.get('TI_WANTED_ARCHS') is None and not args.tprt:
-            # since we only do number-of-statements benchmark for SPRT
-            os.environ['TI_WANTED_ARCHS'] = 'x64'
-        if args.tprt:
-            os.system('python benchmarks/run.py')
-            # TODO: benchmark_python(args)
-        else:
-            # TODO: shall we replace this with the new benchmark tools?
-            os.system('python tests/run_tests.py')
-
-        return None
-
     @staticmethod
     @register
     def test(self, arguments: list = sys.argv[2:]):
@@ -883,6 +828,47 @@ class TaichiMain:
         # TODO: support redirect output to lint.log
         import pylint  # pylint: disable=C0415
         pylint.lint.Run(options)
+
+    @staticmethod
+    @register
+    def cache(arguments: list = sys.argv[2:]):
+        """Manage the offline cache files manually"""
+        def clean(cmd_args, parser):
+            parser.add_argument(
+                '-p',
+                '--offline-cache-file-path',
+                dest='offline_cache_file_path',
+                default=impl.default_cfg().offline_cache_file_path)
+            args = parser.parse_args(cmd_args)
+            path = os.path.abspath(args.offline_cache_file_path)
+            count = _ti_core.clean_offline_cache_files(path)
+            print(f'Deleted {count} offline cache files in {path}')
+
+        # TODO(PGZXB): Provide more tools to manage the offline cache files
+        subcmds_map = {
+            'clean': (clean, 'Clean all offline cache files in given path')
+        }
+
+        def print_help():
+            print('usage: ti cache <command> [<args>]')
+            for name, value in subcmds_map.items():
+                _, description = value
+                print(f'\t{name}\t|-> {description}')
+
+        if not arguments:
+            print_help()
+            return
+
+        subcmd = arguments[0]
+        if subcmd not in subcmds_map:
+            print(f"'ti cache {subcmd}' is not a valid command!")
+            print_help()
+            return
+
+        func, description = subcmds_map[subcmd]
+        parser = argparse.ArgumentParser(prog=f'ti cache {subcmd}',
+                                         description=description)
+        func(cmd_args=arguments[1:], parser=parser)
 
 
 def main():

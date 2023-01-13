@@ -76,7 +76,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 
 std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
 void check_fields_registered(IRNode *root);
-std::unique_ptr<IRNode> clone(IRNode *root, Kernel *kernel = nullptr);
+std::unique_ptr<IRNode> clone(IRNode *root);
 int count_statements(IRNode *root);
 
 /**
@@ -95,6 +95,9 @@ bool definitely_same_address(Stmt *var1, Stmt *var2);
 
 std::unordered_set<Stmt *> detect_fors_with_break(IRNode *root);
 std::unordered_set<Stmt *> detect_loops_with_continue(IRNode *root);
+std::unordered_map<Stmt *, std::vector<std::pair<Stmt *, int>>>
+gather_statement_usages(IRNode *root);
+std::unordered_set<Stmt *> gather_immutable_local_vars(IRNode *root);
 std::unordered_set<SNode *> gather_deactivations(IRNode *root);
 std::pair<std::unordered_set<SNode *>, std::unordered_set<SNode *>>
 gather_snode_read_writes(IRNode *root);
@@ -106,10 +109,10 @@ std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
 gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
-std::vector<Stmt *> get_load_pointers(Stmt *load_stmt);
+stmt_refs get_load_pointers(Stmt *load_stmt);
 
-Stmt *get_store_data(Stmt *store_stmt);
-std::vector<Stmt *> get_store_destination(Stmt *store_stmt);
+Stmt *get_store_data(Stmt *store_stmt) noexcept;
+stmt_refs get_store_destination(Stmt *store_stmt) noexcept;
 bool has_store_or_atomic(IRNode *root, const std::vector<Stmt *> &vars);
 std::pair<bool, Stmt *> last_store_or_atomic(IRNode *root, Stmt *var);
 

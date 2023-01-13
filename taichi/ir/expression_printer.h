@@ -95,8 +95,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(ExternalTensorExpression *expr) override {
-    emit(fmt::format("{}d_ext_arr (element_dim={}, dt={})", expr->dim,
-                     expr->element_dim, expr->dt->to_string()));
+    emit(fmt::format("{}d_ext_arr (element_dim={}, dt={}, grad={})", expr->dim,
+                     expr->element_dim, expr->dt->to_string(), expr->is_grad));
   }
 
   void visit(FieldExpression *expr) override {
@@ -143,16 +143,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
       emit(')');
     }
     emit(']');
-  }
-
-  void visit(StrideExpression *expr) override {
-    expr->var->accept(this);
-    emit('[');
-    emit_vector(expr->indices.exprs);
-    emit("] (");
-    emit_vector(expr->shape);
-    emit(", stride = ", expr->stride);
-    emit(')');
   }
 
   void visit(RangeAssumptionExpression *expr) override {
@@ -202,9 +192,9 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit('(', expr->snode->get_node_type_name_hinted(), ", [");
     emit_vector(expr->indices.exprs);
     emit("]");
-    if (expr->value.expr) {
+    if (!expr->values.empty()) {
       emit(' ');
-      expr->value->accept(this);
+      emit_vector(expr->values);
     }
     emit(')');
   }
@@ -217,12 +207,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     emit("external_tensor_shape_along_axis(");
     expr->ptr->accept(this);
     emit(", ", expr->axis, ')');
-  }
-
-  void visit(FuncCallExpression *expr) override {
-    emit("func_call(\"", expr->func->func_key.get_full_name(), "\", ");
-    emit_vector(expr->args.exprs);
-    emit(')');
   }
 
   void visit(MeshPatchIndexExpression *expr) override {
@@ -253,6 +237,14 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   void visit(ReferenceExpression *expr) override {
     emit("ref(");
     expr->var->accept(this);
+    emit(")");
+  }
+
+  void visit(GetElementExpression *expr) override {
+    emit("get_element(");
+    expr->src->accept(this);
+    emit(", ");
+    emit_vector(expr->index);
     emit(")");
   }
 

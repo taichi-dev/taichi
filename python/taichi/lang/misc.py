@@ -9,7 +9,6 @@ from copy import deepcopy as _deepcopy
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import locale_encode
 from taichi.lang import impl
-from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes, get_runtime
 from taichi.profiler.kernel_profiler import get_default_kernel_profiler

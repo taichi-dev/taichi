@@ -66,8 +66,6 @@ void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
 
   compiled_(ctx_builder.get_context());
 
-  program->sync =
-      (program->sync && arch_is_cpu(program->this_thread_config().arch));
   if (program->this_thread_config().debug &&
       (arch_is_cpu(program->this_thread_config().arch) ||
        program->this_thread_config().arch == Arch::cuda)) {

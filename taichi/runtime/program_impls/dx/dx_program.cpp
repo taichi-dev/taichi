@@ -29,8 +29,8 @@ Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
                                       Kernel *kernel) {
   spirv::lower(compile_config, kernel);
-  return directx11::compile_to_executable(kernel, runtime_.get(), compile_config,
-                                          snode_tree_mgr_.get());
+  return directx11::compile_to_executable(
+      kernel, runtime_.get(), compile_config, snode_tree_mgr_.get());
 }
 
 void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,

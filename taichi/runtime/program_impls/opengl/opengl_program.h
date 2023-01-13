@@ -11,7 +11,8 @@ class OpenglProgramImpl : public ProgramImpl {
  public:
   explicit OpenglProgramImpl(CompileConfig &config);
   ~OpenglProgramImpl() override;
-  FunctionType compile(const CompileConfig &compile_config, Kernel *kernel) override;
+  FunctionType compile(const CompileConfig &compile_config,
+                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,

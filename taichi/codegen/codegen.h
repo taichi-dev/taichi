@@ -59,6 +59,7 @@ class KernelCodeGen {
   virtual LLVMCompiledKernel compile_kernel_to_module();
 
   virtual LLVMCompiledTask compile_task(
+      const CompileConfig *config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr){TI_NOT_IMPLEMENTED}
 
@@ -67,6 +68,11 @@ class KernelCodeGen {
   void cache_kernel(const std::string &kernel_key,
                     const LLVMCompiledKernel &data);
 #endif
+ protected:
+  const CompileConfig *get_compile_config() const {
+    return compile_config_;
+  }
+
  private:
   const CompileConfig *compile_config_{nullptr};
 };

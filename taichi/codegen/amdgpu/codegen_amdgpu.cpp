@@ -27,8 +27,10 @@ using namespace llvm;
 class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
-  TaskCodeGenAMDGPU(Kernel *kernel, IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(kernel, ir) {
+  TaskCodeGenAMDGPU(const CompileConfig *config,
+                    Kernel *kernel,
+                    IRNode *ir = nullptr)
+      : TaskCodeGenLLVM(config, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -232,7 +234,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -250,7 +252,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -395,25 +397,17 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   }
 };
 
-#ifdef TI_WITH_LLVM
-// static
-std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenAMDGPU::make_codegen_llvm(
-    Kernel *kernel,
-    IRNode *ir) {
-  return std::make_unique<TaskCodeGenAMDGPU>(kernel, ir);
-}
-#endif  // TI_WITH_LLVM
-
 LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
+    const CompileConfig *config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenAMDGPU gen(kernel, stmt);
+  TaskCodeGenAMDGPU gen(config, kernel, stmt);
   return gen.run_compilation();
 }
 
 FunctionType KernelCodeGenAMDGPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = prog->this_thread_config();
+  const auto &config = *get_compile_config();
   auto *tlctx = llvm_prog->get_llvm_context(config.arch);
 
   AMDGPUModuleToFunctionConverter converter{tlctx,

@@ -17,13 +17,11 @@ class KernelCodeGenCPU : public KernelCodeGen {
 
   // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
-  static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
-                                                            IRNode *ir);
-
   bool supports_offline_cache() const override {
     return true;
   }
   LLVMCompiledTask compile_task(
+      const CompileConfig *config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 

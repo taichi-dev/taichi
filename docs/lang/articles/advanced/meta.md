@@ -17,7 +17,7 @@ That sounds good, but you might wonder, code writes code, who needs that? Why do
 
 In simulations and graphics, a 4D vector `v` is composed by 4 components `x`, `y`, `z`, `w`. One can use `v.x` to access its first component, `v.y` to access its second component, and so on. It would be very handy if we can use any combination of the letters `x`, `y`, `z`, `w` to access the components of `v`, and returns a vector that matches this pattern. This is called swizzling (for reader with some knowledge of OpenGL shading language, or have experienc in Blender's scripting mode, this should be a familiar concept). For example, we want `v.xy` to return a 2D vector `[v.x, v.y]`, `v.zyx` to return a 3D vector `[v.z, v.y, v.x]`, `v.xxxx` to return a 4D vector `[v.x, v.x, v.x, v.x]`, and so on for other patterns.
 
-But how do we implement this in a 4D vector class? There are 4 possible combinations consist of a single letter, 16 combinations for two letters, 64 combinations for three letters, and 256 combinations for four letters. The total is 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor, and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property of our 4D vector class, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "xxx", and if it cannot, it calls `__setattr__` which writes a property that constructs that query for you, define it on the 4D vector class, and finally returns the result! Now, every time you call `v.xxx` on the instance `v`, the newly defined property gets called instead of going through that whole process every time!
+But how do we implement this in a 4D vector class? There are 4 possible combinations consist of a single character, 16 combinations for two characters, 64 combinations for three characters, and 256 combinations for four characters. The total is 4 + 16 + 64 + 256 = 340! You won't want to manually list them out one by one, that would cost a lot of labor, and the code would be be too cubersome! Well, as a scripting language, Python offer great functionality for metaprogramming. It turns out you can use the magic method `__getattr__` to intercept calls to an undefined property, and use `__setattr__` to set it! In other words, that property did not exist before you called it! To be more precise, let's say we are calling the non-existent `v.xxx` property of our 4D vector class, in `__getattr__` we can parsed its name as a string "xxx", it knows that you are trying to get a 3D vector of repeated components `v.x`. Therefore, it then checks to see if it can find a property with the name "xxx", and if it cannot, it calls `__setattr__` which writes a property that constructs that query for you, define it on the 4D vector class, and finally returns the result! Now, every time you call `v.xxx` on the instance `v`, the newly defined property gets called instead of going through that whole process every time!
 
 To summarize, the benefits of metaprogramming are: It reduces repetition of the code; It makes the code more readable.
 
@@ -105,8 +105,7 @@ The template parameters are inlined into the generated kernel after compilation.
 
 
 Using compile-time evaluation allows for some computation to be executed when kernels are instantiated. This helps the compiler to conduct optimization and reduce
-computational overhead at runtime:
-
+computational overhead at runtime. Or in other words, we do more at compile time to save effort for runime.
 
 ### Static Scope
 
@@ -151,27 +150,19 @@ def func():
 
 ## When to use `ti.static` with for loops
 
-There are two reasons to use `ti.static` with for loops:
+The main reason to use `ti.static` with for loops is to unroll the loop to improve runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
 
-- Loop unrolling for improving runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
-- Accessing elements of Taichi matrices/vectors. Indices for accessing Taichi fields can be runtime variables, while indices for Taichi matrices/vectors **must be a compile-time constant**.
+An unrolling verison is often faster because it reduces branch overhead: 
 
-For example, when accessing a vector field `x` with `x[field_index][vector_component_index]`, the `field_index` can be a runtime variable, while the `vector_component_index` must be a compile-time constant:
+1. It saves the instructions for incrementing the loop counter and checking the end-of-loop condition.
+2. It provides more instructions for the compiler to schedule across the whole iterations.
 
-```python {6}
-# Here we declare a field contains 3 vector. Each vector contains 8 elements.
-x = ti.Vector.field(8, ti.f32, shape=(3))
-@ti.kernel
-def reset():
-  for i in x:
-    for j in ti.static(range(x.n)):
-      # The inner loop must be unrolled since j is an index for accessing a vector
-      x[i][j] = 0
-```
+This performance improvement does not come for free: it also costs longer complie time and generates larger binaries. Especially when the number of iterations is large or the loop body is complex.
+
 
 ## Compile-time recursion of `ti.func`
 
-A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines whether to recurse is evaluated at compile time.
+A compile-time recursive function is a function with recursion that can be recursively inlined at compile time. The condition which determines when to cease recursion is evaluated at compile time, hence must be known to the compiler.
 
 You can combine [compile-time branching](#compile-time-branching) and [template](#template-metaprogramming) to write compile-time recursive functions.
 

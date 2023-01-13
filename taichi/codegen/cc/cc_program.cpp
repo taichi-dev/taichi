@@ -15,8 +15,9 @@ CCProgramImpl::CCProgramImpl(CompileConfig &config) : ProgramImpl(config) {
   context_ = std::make_unique<CCContext>();
 }
 
-FunctionType CCProgramImpl::compile(Kernel *kernel) {
-  CCKernelGen codegen(*config, kernel, this);
+FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
+                                    Kernel *kernel) {
+  CCKernelGen codegen(compile_config, kernel, this);
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));

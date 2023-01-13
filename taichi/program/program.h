@@ -197,7 +197,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  FunctionType compile(Kernel &kernel);
+  FunctionType compile(const CompileConfig &compile_config, Kernel &kernel);
 
   void check_runtime_error();
 

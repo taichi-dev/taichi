@@ -24,9 +24,10 @@ OpenglProgramImpl::OpenglProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType OpenglProgramImpl::compile(Kernel *kernel) {
+FunctionType OpenglProgramImpl::compile(const CompileConfig &compile_config,
+                                        Kernel *kernel) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(config, kernel), runtime_.get());
+      get_cache_manager()->load_or_compile(&compile_config, kernel), runtime_.get());
 }
 
 void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,

@@ -55,13 +55,14 @@ Kernel::Kernel(Program &program,
   }
 }
 
-void Kernel::compile() {
-  compiled_ = program->compile(*this);
+void Kernel::compile(const CompileConfig &compile_config) {
+  compiled_ = program->compile(compile_config, *this);
 }
 
-void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
+void Kernel::operator()(const CompileConfig &compile_config,
+                        LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
-    compile();
+    compile(compile_config);
   }
 
   compiled_(ctx_builder.get_context());

@@ -37,7 +37,8 @@ class CacheManager {
 
   explicit CacheManager(Params &&init_params);
 
-  CompiledKernelData load_or_compile(CompileConfig *config, Kernel *kernel);
+  CompiledKernelData load_or_compile(const CompileConfig *config,
+                                     Kernel *kernel);
   void dump_with_merging() const;
   void clean_offline_cache(offline_cache::CleanCachePolicy policy,
                            int max_bytes,
@@ -49,7 +50,8 @@ class CacheManager {
       const std::string &key);
   CompiledKernelData compile_and_cache_kernel(const std::string &key,
                                               Kernel *kernel);
-  std::string make_kernel_key(CompileConfig *config, Kernel *kernel) const;
+  std::string make_kernel_key(const CompileConfig *config,
+                              Kernel *kernel) const;
 
   Mode mode_{MemCache};
   std::string path_;

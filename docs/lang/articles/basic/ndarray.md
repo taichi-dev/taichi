@@ -169,7 +169,7 @@ k = p.contiguous()
 addd_one(k) # Correct
 ```
 
-When a NumPy ndarray or a PyTorch tensor of scalar type is passed as the argument to a Taichi kernel, it can be interpreted as an array of scalar type, or an array of vector type, or an array of matrix type. This is controlled by specifying the `dtype` and `ndim` options in the type hint `ti.types.ndarray()`.
+When a NumPy ndarray or a PyTorch tensor of scalar type is passed as the argument to a Taichi kernel, it can be interpreted as an array of scalar type, or an array of vector type, or an array of matrix type. This is controlled by the `dtype` and `ndim` options in the type hint `ti.types.ndarray()`.
 
 When the array is interpreted as a vector/matrix array, you should set `dtype` to the correct vector/matrix type. For example, you can safely pass a NumPy ndarray in shape `(2, 2, 3, 3)` as an argument into the `add_one` kernel, as shown below:
 

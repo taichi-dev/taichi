@@ -20,7 +20,7 @@ The statement below constructs a Taichi ndarray. `dtype` specifies the data type
 arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
 ```
 
-Similar to `ti.field`, ndarrays are allocated on the arch as specified in ti.init and are initialized to 0 by default.  
+Similar to `ti.field`, ndarrays are allocated on the arch as specified in ti.init and are initialized to 0 by default.
 
 Apart from the constructor, Taichi provides some basic operations to interact with ndarray data from the Python scope.
 
@@ -36,7 +36,7 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
     # Returns a ti.Vector, which is a copy of the element
     print(arr[0, 0]) # [1.0, 1.0, 1.0]
 
-    # Writes to an element 
+    # Writes to an element
     arr[0, 0] = [1.0, 2.0, 3.0] # arr[0, 0] is now [1.0, 2.0, 3.0]
 
     # Writes to a scalar inside vector element
@@ -58,7 +58,7 @@ Accessing ndarrray elements from the Python scope comes in handy but inevitably 
 
     import copy
     # Deep copy
-    c = copy.deepcopy(b)  # c is a new ndarray that has a copy of b's data. 
+    c = copy.deepcopy(b)  # c is a new ndarray that has a copy of b's data.
 
     # Shallow copy
     d = copy.copy(b) # d is a shallow copy of b; they share the underlying memory
@@ -68,7 +68,7 @@ Accessing ndarrray elements from the Python scope comes in handy but inevitably 
 
     ```python
     # to_numpy returns a NumPy array with the same shape as d and a copy of d's value
-    e = d.to_numpy()  
+    e = d.to_numpy()
 
     # from_numpy copies the data in the NumPy array e to the Taichi ndarray d
     e.fill(10.0)  # Fills in the NumPy array with value 10.0
@@ -101,7 +101,7 @@ def proc(rgb_map : arr_ty):
     for I in ti.grouped(rgb_map):
         rgb_map[I] = [0.1, 0.2, 0.3]
     # do something
-    
+
 rgb = ti.ndarray(dtype=ti.types.vector(3, ti.f32), shape=(8,8))
 proc(rgb)
 ```
@@ -160,8 +160,8 @@ Only contiguous NumPy arrays and PyTorch tensors are supported.
 :::
 
 ```python
-# Transposing the tensor returns a view of the tensor, which is not contiguous        
-p = arr_torch.T 
+# Transposing the tensor returns a view of the tensor, which is not contiguous
+p = arr_torch.T
 add_one(p) # Error!
 z = p.clone()
 add_one(z) # Correct

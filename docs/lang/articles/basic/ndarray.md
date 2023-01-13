@@ -43,10 +43,10 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
     arr[0, 0][1] = 2.2  # arr[0, 0] is now [1.0, 2.2, 3.0]
     ```
 
-:::Note
-
 :::note
+
 Accessing ndarrray elements from the Python scope comes in handy but inevitably generates and launches multiple tiny Taichi kernels, which is not the best practice performance-wise. You are encouraged to keep compute-heavy work inside one Taichi kernel instead of operating on arrays element-by-element from the Python scope.
+
 :::
 
 - Data copy of ndarrays
@@ -111,7 +111,7 @@ proc(rgb)
 
 It does not matter whether you use the [range-for](https://docs.taichi-lang.org/docs/language_reference#the-range-for-statement) or [struct-for](https://docs.taichi-lang.org/docs/language_reference#the-struct-for-statement) to iterate over the ndarrays.
 
-:::TIPS
+:::tip
 
 In the above code, we use `arr_ty` as a type alias for the 2D ndarray type of vec3 elements. The type alias makes type annotations shorter and easier to read.
 
@@ -148,7 +148,7 @@ arr_torch = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], device='cuda:0')
 add_one(arr_torch) # arr_torch is updated by taichi kernel
 ```
 
-:::Note
+:::note
 
 Every element in the external array (`arr_np` and `arr_torch`) is added by `1.0` when the Taichi kernel `add_one` finishes.
 
@@ -158,13 +158,13 @@ If the external data container and Taichi use the same device, argument passing 
 
 However, if the devices are different, which is the case in the first example where Numpy uses CPUs and Taichi uses CUDA, Taichi automatically handles memory transfers across devices, saving users from manual operation.
 
-:::TIPS
+:::tip
 
 NumPy's default data precision is 64-bit, which is still inefficient for most desktop GPUs. It is recommended to explicitly specify 32-bit data types.
 
 :::
 
-:::TIPS
+:::tip
 
 Only contiguous NumPy arrays and PyTorch tensors are supported.
 

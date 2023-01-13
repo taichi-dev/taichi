@@ -45,8 +45,8 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
 
 :::Note
 
+:::note
 Accessing ndarrray elements from the Python scope comes in handy but inevitably generates and launches multiple tiny Taichi kernels, which is not the best practice performance-wise. You are encouraged to keep compute-heavy work inside one Taichi kernel instead of operating on arrays element-by-element from the Python scope.
-
 :::
 
 - Data copy of ndarrays

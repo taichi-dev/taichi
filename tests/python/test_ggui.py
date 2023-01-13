@@ -465,7 +465,7 @@ def test_draw_lines():
 
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=supported_archs, exclude=[(ti.vulkan, "Darwin")])
+@test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles():
     N = 10
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)

@@ -33,6 +33,7 @@ layout(location = 0) out vec4 out_color;
 
 layout(location = 0) in vec4 pos_camera_space;
 layout(location = 1) in vec4 selected_color;
+layout(location = 2) in vec2 pos_2d;
 
 float project_z(float view_z) {
   vec4 projected = ubo.scene.projection * vec4(0, 0, view_z, 1);
@@ -65,9 +66,7 @@ vec3 lambertian(vec3 frag_pos, vec3 frag_normal) {
 }
 
 void main() {
-  vec2 coord2D;
-  coord2D = gl_PointCoord * 2.0 - vec2(1);
-  coord2D.y *= -1;
+  vec2 coord2D = pos_2d;
 
   if (length(coord2D) >= 1.0) {
     discard;

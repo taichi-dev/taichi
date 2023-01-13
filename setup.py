@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import platform
 import shutil
+import subprocess
 import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
@@ -166,6 +167,22 @@ def cmake_install_manifest_filter(manifest_files):
     ]
 
 
+def sign_development_for_apple_m1():
+    """
+    Apple enforces codesigning for arm64 targets even for local development
+    builds. See discussion here:
+        https://github.com/supercollider/supercollider/issues/5603
+    """
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        try:
+            for path in glob.glob("python/taichi/_lib/core/*.so"):
+                print(f"signing {path}..")
+                subprocess.check_call(
+                    ['codesign', '--force', '--deep', '--sign', '-', path])
+        except:
+            print("cannot sign python shared library for macos arm64 build")
+
+
 copy_assets()
 setup(name=project_name,
       packages=packages,
@@ -198,3 +215,5 @@ setup(name=project_name,
           'clean': Clean
       },
       has_ext_modules=lambda: True)
+
+sign_development_for_apple_m1()

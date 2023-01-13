@@ -667,6 +667,8 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
 }
 
 void MatrixExpression::type_check(CompileConfig *config) {
+  TI_ASSERT(dt->as<TensorType>()->get_num_elements() == elements.size());
+
   for (auto &arg : elements) {
     TI_ASSERT_TYPE_CHECKED(arg);
     if (arg->ret_type != dt.get_element_type()) {
@@ -1391,7 +1393,15 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
 Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
                                   const DataType &dt,
                                   const std::vector<Expr> &elements) {
-  auto mat = Expr(std::make_shared<MatrixExpression>(elements, shape, dt));
+  /*
+    Since we have both "shape" and "element_type" in MatrixExpression,
+    we should flatten all the elements and disallow recursive TensorType in
+    element Expr
+  */
+  TI_ASSERT(dt->is<PrimitiveType>());
+  auto expanded_elements = this->expand_exprs(elements);
+  auto mat =
+      Expr(std::make_shared<MatrixExpression>(expanded_elements, shape, dt));
   return mat;
 }
 

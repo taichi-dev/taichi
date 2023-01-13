@@ -199,10 +199,6 @@ int main(int argc, const char** argv) {
 
 Yes! We understand that in real applications it's pretty common to hook Taichi in your existing Vulkan pipeline. As a result, you can choose to import an external device for Taichi to use, or export a device that Taichi creates to share with the external application
 
-```
-// TODO: add an example
-```
-
 ### Which backends & hardware are supported?
 
 Currently `ti.vulkan`, `ti.opengl`, `ti.x86` and `ti.cuda` are supported. `ti.metal` is not yet supported.
@@ -258,7 +254,6 @@ You can find the built `libtaichi_c_api.so` and its headers in the `_skbuild/` f
 
 <https://docs.taichi-lang.org/docs/taichi_core#api-reference>
 
-// TODO: we also need documentation for C++ wrapper, in the ideal case...
 
 ### When do I need to recompile my artifacts?
 

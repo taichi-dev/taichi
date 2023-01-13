@@ -46,6 +46,7 @@ ModulePass *createTaichiRuntimeContextLowerPass();
 void initializeTaichiIntrinsicLowerPass(PassRegistry &);
 
 /// Pass to lower taichi intrinsic into DXIL intrinsic.
-ModulePass *createTaichiIntrinsicLowerPass(const taichi::lang::CompileConfig *config);
+ModulePass *createTaichiIntrinsicLowerPass(
+    const taichi::lang::CompileConfig *config);
 
 }  // namespace llvm

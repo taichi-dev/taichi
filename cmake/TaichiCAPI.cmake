@@ -20,36 +20,49 @@ endif()
 endfunction()
 
 set(TAICHI_C_API_NAME taichi_c_api)
-file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
+list(APPEND C_API_SOURCES "c_api/src/taichi_core_impl.cpp")
+list(APPEND C_API_PUBLIC_HEADERS
+  "c_api/include/taichi/taichi_platform.h"
+  "c_api/include/taichi/taichi_core.h"
+  "c_api/include/taichi/taichi.h"
+  )
 
 if (TI_WITH_LLVM)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
+  list(APPEND C_API_SOURCES "c_api/src/taichi_llvm_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_cpu.h")
+
+  if (TI_WITH_CUDA)
+    list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_cuda.h")
+  endif()
 endif()
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_METAL)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_gfx_impl.cpp")
+  list(APPEND C_API_SOURCES "c_api/src/taichi_gfx_impl.cpp")
 endif()
 
 if (TI_WITH_OPENGL)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
+  list(APPEND C_API_SOURCES "c_api/src/taichi_opengl_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_opengl.h")
 endif()
 
 if (TI_WITH_METAL)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
+  list(APPEND C_API_SOURCES "c_api/src/taichi_metal_impl.mm")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
 endif()
 
 if (TI_WITH_VULKAN)
-  list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+  list(APPEND C_API_SOURCES "c_api/src/taichi_vulkan_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_vulkan.h")
   if (APPLE)
     install(FILES ${MoltenVK_LIBRARY} DESTINATION c_api/lib)
   endif()
 endif()
 
 if(TI_BUILD_TESTS)
-  list(APPEND C_API_SOURCE "c_api/src/c_api_test_utils.cpp")
+  list(APPEND C_API_SOURCES "c_api/src/c_api_test_utils.cpp")
 endif()
 
-add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
+add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCES})
 if (${CMAKE_GENERATOR} STREQUAL "Xcode")
   target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
   message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
@@ -72,36 +85,11 @@ elseif(APPLE)
     target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
 endif()
 
-set(C_API_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/build")
-set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
-    ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
-
-if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
-  # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
-  add_custom_command(
-        TARGET ${TAICHI_C_API_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/${TAICHI_C_API_NAME}.dll
-                ${C_API_OUTPUT_DIRECTORY}/${TAICHI_C_API_NAME}.dll)
-elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
-  # XCode is also a multi-config generator
-  add_custom_command(
-        TARGET ${TAICHI_C_API_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy
-                ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_C_API_NAME}.dylib
-                ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.dylib)
-endif()
-
 target_include_directories(${TAICHI_C_API_NAME}
-    PUBLIC
-        # Used when building the library:
-        $<BUILD_INTERFACE:${taichi_c_api_BINARY_DIR}/c_api/include>
-        $<BUILD_INTERFACE:${taichi_c_api_SOURCE_DIR}/c_api/include>
-        # Used when installing the library:
-        $<INSTALL_INTERFACE:/c_api/include>
+    INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/c_api/include>
+        $<INSTALL_INTERFACE:c_api/include>
     PRIVATE
-        # Used only when building the library:
         ${PROJECT_SOURCE_DIR}
         ${PROJECT_SOURCE_DIR}/c_api/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
@@ -112,21 +100,29 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     )
+set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_HEADERS})
 
 # This helper provides us standard locations across Linux/Windows/MacOS
 include(GNUInstallDirs)
 
-install(TARGETS ${TAICHI_C_API_NAME} EXPORT ${TAICHI_C_API_NAME}Targets
-    LIBRARY DESTINATION c_api/lib
-    ARCHIVE DESTINATION c_api/lib
-    RUNTIME DESTINATION c_api/bin
-    INCLUDES DESTINATION c_api/include
+install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets
+    LIBRARY DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION c_api/${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION c_api/${CMAKE_INSTALL_INCLUDEDIR}/taichi
     )
 
+# The C++ wrapper is saved in a dedicated directory.
+install(
+    FILES
+        "c_api/include/taichi/cpp/taichi.hpp"
+    DESTINATION
+        c_api/${CMAKE_INSTALL_INCLUDEDIR}/taichi/cpp
+)
+
 # Install the export set, which contains the meta data of the target
-install(EXPORT ${TAICHI_C_API_NAME}Targets
-    FILE ${TAICHI_C_API_NAME}Targets.cmake
-    NAMESPACE ${TAICHI_C_API_NAME}::
+install(EXPORT TaichiExportTargets
+    FILE TaichiTargets.cmake
     DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
@@ -134,36 +130,27 @@ include(CMakePackageConfigHelpers)
 
 # Generate the config file
 configure_package_config_file(
-      "${PROJECT_SOURCE_DIR}/cmake/${TAICHI_C_API_NAME}Config.cmake.in"
-      "${PROJECT_BINARY_DIR}/${TAICHI_C_API_NAME}Config.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/TaichiConfig.cmake.in"
+        "${PROJECT_BINARY_DIR}/TaichiConfig.cmake"
     INSTALL_DESTINATION
-       c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+        c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
 # Generate the config version file
-set(${TAICHI_C_API_NAME}_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
+set(TAICHI_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 write_basic_package_version_file(
-    "${TAICHI_C_API_NAME}ConfigVersion.cmake"
-    VERSION ${${TAICHI_C_API_NAME}_VERSION}
+    "TaichiConfigVersion.cmake"
+    VERSION ${TAICHI_VERSION}
     COMPATIBILITY SameMajorVersion
     )
 
 # Install the config files
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${TAICHI_C_API_NAME}Config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/${TAICHI_C_API_NAME}ConfigVersion.cmake"
+install(
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfigVersion.cmake"
     DESTINATION
-    c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-    )
-
-# Install public headers for this target
-# TODO: Replace files here with public headers when ready.
-install(DIRECTORY
-      ${PROJECT_SOURCE_DIR}/c_api/include
-    DESTINATION c_api
-    FILES_MATCHING
-    PATTERN *.h
-    PATTERN *.hpp
+        c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
 if(TI_WITH_LLVM)

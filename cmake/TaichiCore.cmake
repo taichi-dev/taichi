@@ -327,10 +327,13 @@ if (TI_WITH_DX11)
 endif()
 
 # SPIR-V codegen is always there, regardless of Vulkan
-set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 
+set(SPIRV_SKIP_EXECUTABLES true)
+set(SKIP_SPIRV_TOOLS_INSTALL ON)
+set(SPIRV_TOOLS_BUILD_STATIC ON)
 add_subdirectory(external/SPIRV-Tools)
+
 add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)

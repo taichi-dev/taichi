@@ -528,7 +528,8 @@
                         },
                         {
                             "name": "message_size",
-                            "type": "uint64_t"
+                            "type": "uint64_t",
+                            "by_mut": true
                         },
                         {
                             "name": "message",

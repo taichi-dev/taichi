@@ -11,6 +11,27 @@
 
 namespace ti {
 
+struct Version {
+  uint32_t version;
+
+  inline uint32_t major() const {
+    return version / 1000000;
+  }
+  inline uint32_t minor() const {
+    return (version / 1000) % 1000;
+  }
+  inline uint32_t patch() const {
+    return version % 1000;
+  }
+
+  operator uint32_t() const {
+    return version;
+  }
+};
+inline Version get_version() {
+  return Version{ti_get_version()};
+}
+
 inline std::vector<TiArch> get_available_archs() {
   uint32_t narch = 0;
   ti_get_available_archs(&narch, nullptr);
@@ -26,6 +47,27 @@ inline bool is_arch_available(TiArch arch) {
     }
   }
   return false;
+}
+
+struct Error {
+  TiError error;
+  std::string message;
+};
+
+inline Error get_last_error() {
+  uint64_t message_size = 0;
+  ti_get_last_error(&message_size, nullptr);
+  std::string message(message_size, '\0');
+  TiError error = ti_get_last_error(&message_size, message.data());
+  return Error{error, message};
+}
+inline void check_last_error() {
+#ifdef TI_WITH_EXCEPTIONS
+  Error error = get_last_error();
+  if (error != TI_ERROR_SUCCESS) {
+    throw std::runtime_error(error.message);
+  }
+#endif // TI_WITH_EXCEPTIONS
 }
 
 // Token type for half-precision floats.
@@ -83,6 +125,44 @@ THandle move_handle(THandle &handle) {
 }
 
 }  // namespace detail
+
+class MemorySlice {
+  TiRuntime runtime_{TI_NULL_HANDLE};
+  TiMemorySlice slice_{TI_NULL_HANDLE};
+
+ public:
+  MemorySlice() = default;
+  MemorySlice(TiRuntime runtime, const TiMemorySlice &slice) : slice_(slice) {
+  }
+  MemorySlice(const MemorySlice&) = default;
+  MemorySlice(MemorySlice &&) = default;
+
+  MemorySlice& operator=(const MemorySlice&) = default;
+  MemorySlice& operator=(MemorySlice&&) = default;
+
+  inline void copy_to(MemorySlice &dst) {
+    if (runtime_ != dst.runtime_) {
+      ti_set_last_error(
+          TI_ERROR_INVALID_ARGUMENT,
+          "cannot copy device memory between different runtime instances");
+      return;
+    }
+    if (slice_.size != dst.slice_.size) {
+      ti_set_last_error(
+          TI_ERROR_INVALID_ARGUMENT,
+          "copy source and destination slice must have the same size");
+      return;
+    }
+    ti_copy_memory_device_to_device(runtime_, &dst.slice_, &slice_);
+  }
+
+  constexpr const TiMemorySlice &slice() const {
+    return slice_;
+  }
+  constexpr operator const TiMemorySlice &() const {
+    return slice_;
+  }
+};
 
 class Memory {
   TiRuntime runtime_{TI_NULL_HANDLE};
@@ -153,7 +233,7 @@ class Memory {
     unmap();
   }
 
-  TiMemorySlice slice(size_t offset, size_t size) const {
+  MemorySlice slice(size_t offset, size_t size) const {
     if (offset + size > size_) {
       ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
       return {};
@@ -162,9 +242,9 @@ class Memory {
     slice.memory = memory_;
     slice.offset = offset;
     slice.size = size;
-    return slice;
+    return MemorySlice{runtime_, slice};
   }
-  TiMemorySlice slice() const {
+  MemorySlice slice() const {
     return slice(0, size_);
   }
 

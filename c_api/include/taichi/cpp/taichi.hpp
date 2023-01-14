@@ -29,7 +29,9 @@ struct Version {
   }
 };
 inline Version get_version() {
-  return Version{ti_get_version()};
+  Version out{};
+  out.version = ti_get_version();
+  return out;
 }
 
 inline std::vector<TiArch> get_available_archs() {
@@ -58,7 +60,7 @@ inline Error get_last_error() {
   uint64_t message_size = 0;
   ti_get_last_error(&message_size, nullptr);
   std::string message(message_size, '\0');
-  TiError error = ti_get_last_error(&message_size, message.data());
+  TiError error = ti_get_last_error(&message_size, (char*)message.data());
   return Error{error, message};
 }
 inline void check_last_error() {
@@ -117,26 +119,31 @@ struct templ2dtype<double> {
   static const TiDataType value = TI_DATA_TYPE_F64;
 };
 
+template <typename T, typename U>
+T exchange(T &storage, U &&value) {
+  T out = std::move(storage);
+  storage = (T)std::move(value);
+  return out;
+}
+
 template <typename THandle>
 THandle move_handle(THandle &handle) {
-  THandle out = std::move(handle);
-  handle = TI_NULL_HANDLE;
-  return out;
+  return exchange<THandle>(handle, TI_NULL_HANDLE);
 }
 
 }  // namespace detail
 
 class MemorySlice {
   TiRuntime runtime_{TI_NULL_HANDLE};
-  TiMemorySlice slice_{TI_NULL_HANDLE};
+  TiMemorySlice slice_{};
 
  public:
   MemorySlice() = default;
-  MemorySlice(TiRuntime runtime, const TiMemorySlice &slice) : slice_(slice) {
+  MemorySlice(TiRuntime runtime, const TiMemorySlice &slice)
+      : runtime_(runtime), slice_(slice) {
   }
   MemorySlice(const MemorySlice&) = default;
   MemorySlice(MemorySlice &&) = default;
-
   MemorySlice& operator=(const MemorySlice&) = default;
   MemorySlice& operator=(MemorySlice&&) = default;
 
@@ -156,10 +163,10 @@ class MemorySlice {
     ti_copy_memory_device_to_device(runtime_, &dst.slice_, &slice_);
   }
 
-  constexpr const TiMemorySlice &slice() const {
+  inline const TiMemorySlice &slice() const {
     return slice_;
   }
-  constexpr operator const TiMemorySlice &() const {
+  inline operator const TiMemorySlice &() const {
     return slice_;
   }
 };
@@ -171,7 +178,7 @@ class Memory {
   bool should_destroy_{false};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return runtime_ != nullptr;
   }
   inline void destroy() {
@@ -188,8 +195,8 @@ class Memory {
   Memory(Memory &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         memory_(detail::move_handle(b.memory_)),
-        size_(std::exchange(b.size_, 0)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        size_(detail::exchange(b.size_, 0)),
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Memory(TiRuntime runtime, TiMemory memory, size_t size, bool should_destroy)
       : runtime_(runtime),
@@ -206,8 +213,8 @@ class Memory {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     memory_ = detail::move_handle(b.memory_);
-    size_ = std::exchange(b.size_, 0);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    size_ = detail::exchange(b.size_, 0);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -248,13 +255,13 @@ class Memory {
     return slice(0, size_);
   }
 
-  constexpr size_t size() const {
+  inline size_t size() const {
     return size_;
   }
-  constexpr TiMemory memory() const {
+  inline TiMemory memory() const {
     return memory_;
   }
-  constexpr operator TiMemory() const {
+  inline operator TiMemory() const {
     return memory_;
   }
 };
@@ -267,7 +274,7 @@ class NdArray {
   size_t scalar_count_{};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return memory_.is_valid();
   }
   inline void destroy() {
@@ -279,9 +286,9 @@ class NdArray {
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
       : memory_(std::move(b.memory_)),
-        ndarray_(std::exchange(b.ndarray_, {})),
-        elem_count_(std::exchange(b.elem_count_, 1)),
-        scalar_count_(std::exchange(b.scalar_count_, 1)) {
+        ndarray_(detail::exchange(b.ndarray_, {})),
+        elem_count_(detail::exchange(b.elem_count_, 1)),
+        scalar_count_(detail::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
       : memory_(std::move(memory)),
@@ -307,9 +314,9 @@ class NdArray {
   NdArray<T> &operator=(NdArray<T> &&b) {
     destroy();
     memory_ = std::move(b.memory_);
-    ndarray_ = std::exchange(b.ndarray_, {});
-    elem_count_ = std::exchange(b.elem_count_, 1);
-    scalar_count_ = std::exchange(b.scalar_count_, 1);
+    ndarray_ = detail::exchange(b.ndarray_, {});
+    elem_count_ = detail::exchange(b.elem_count_, 1);
+    scalar_count_ = detail::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -373,22 +380,22 @@ class NdArray {
     return memory_.slice();
   }
 
-  constexpr TiDataType elem_type() const {
+  inline TiDataType elem_type() const {
     return ndarray_.elem_type;
   }
-  constexpr const TiNdShape &shape() const {
+  inline const TiNdShape &shape() const {
     return ndarray_.shape;
   }
-  constexpr const TiNdShape &elem_shape() const {
+  inline const TiNdShape &elem_shape() const {
     return ndarray_.elem_shape;
   }
-  constexpr const Memory &memory() const {
+  inline const Memory &memory() const {
     return memory_;
   }
-  constexpr const TiNdArray &ndarray() const {
+  inline const TiNdArray &ndarray() const {
     return ndarray_;
   }
-  constexpr operator TiNdArray() const {
+  inline operator TiNdArray() const {
     return ndarray_;
   }
 };
@@ -399,7 +406,7 @@ class Image {
   bool should_destroy_{false};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return image_ != nullptr;
   }
   inline void destroy() {
@@ -416,7 +423,7 @@ class Image {
   Image(Image &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         image_(detail::move_handle(b.image_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Image(TiRuntime runtime, TiImage image, bool should_destroy)
       : runtime_(runtime), image_(image), should_destroy_(should_destroy) {
@@ -430,7 +437,7 @@ class Image {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     image_ = detail::move_handle(b.image_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -445,10 +452,10 @@ class Image {
     return slice;
   }
 
-  constexpr TiImage image() const {
+  inline TiImage image() const {
     return image_;
   }
-  constexpr operator TiImage() const {
+  inline operator TiImage() const {
     return image_;
   }
 };
@@ -458,7 +465,7 @@ class Texture {
   TiTexture texture_{};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return image_.is_valid();
   }
   inline void destroy() {
@@ -489,13 +496,13 @@ class Texture {
     return *this;
   }
 
-  constexpr const Image &image() const {
+  inline const Image &image() const {
     return image_;
   }
-  constexpr TiTexture texture() const {
+  inline TiTexture texture() const {
     return texture_;
   }
-  constexpr operator TiTexture() const {
+  inline operator TiTexture() const {
     return texture_;
   }
 };
@@ -545,7 +552,7 @@ class ComputeGraph {
   std::vector<TiNamedArgument> args_{};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return compute_graph_ != nullptr;
   }
 
@@ -616,10 +623,10 @@ class ComputeGraph {
     launch(arguments.size(), arguments.data());
   }
 
-  constexpr TiComputeGraph compute_graph() const {
+  inline TiComputeGraph compute_graph() const {
     return compute_graph_;
   }
-  constexpr operator TiComputeGraph() const {
+  inline operator TiComputeGraph() const {
     return compute_graph_;
   }
 };
@@ -630,7 +637,7 @@ class Kernel {
   std::vector<TiArgument> args_{};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return kernel_ != nullptr;
   }
 
@@ -697,10 +704,10 @@ class Kernel {
     launch(arguments.size(), arguments.data());
   }
 
-  constexpr TiKernel kernel() const {
+  inline TiKernel kernel() const {
     return kernel_;
   }
-  constexpr operator TiKernel() const {
+  inline operator TiKernel() const {
     return kernel_;
   }
 };
@@ -711,7 +718,7 @@ class AotModule {
   bool should_destroy_{false};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return aot_module_ != nullptr;
   }
   inline void destroy() {
@@ -728,7 +735,7 @@ class AotModule {
   AotModule(AotModule &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         aot_module_(detail::move_handle(b.aot_module_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   AotModule(TiRuntime runtime, TiAotModule aot_module, bool should_destroy)
       : runtime_(runtime),
@@ -743,7 +750,7 @@ class AotModule {
   AotModule &operator=(AotModule &&b) {
     runtime_ = detail::move_handle(b.runtime_);
     aot_module_ = detail::move_handle(b.aot_module_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -757,10 +764,10 @@ class AotModule {
     return ComputeGraph(runtime_, compute_graph_);
   }
 
-  constexpr TiAotModule aot_module() const {
+  inline TiAotModule aot_module() const {
     return aot_module_;
   }
-  constexpr operator TiAotModule() const {
+  inline operator TiAotModule() const {
     return aot_module_;
   }
 };
@@ -944,7 +951,7 @@ class Runtime {
   bool should_destroy_{false};
 
  public:
-  constexpr bool is_valid() const {
+  inline bool is_valid() const {
     return runtime_ != nullptr;
   }
   inline void destroy() {
@@ -959,9 +966,9 @@ class Runtime {
   }
   Runtime(const Runtime &) = delete;
   Runtime(Runtime &&b)
-      : arch_(std::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
+      : arch_(detail::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
         runtime_(detail::move_handle(b.runtime_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Runtime(TiArch arch, uint32_t device_index = 0)
       : arch_(arch),
@@ -977,9 +984,9 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
-    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
+    arch_ = detail::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -1106,13 +1113,13 @@ class Runtime {
     ti_wait(runtime_);
   }
 
-  constexpr TiArch arch() const {
+  inline TiArch arch() const {
     return arch_;
   }
-  constexpr TiRuntime runtime() const {
+  inline TiRuntime runtime() const {
     return runtime_;
   }
-  constexpr operator TiRuntime() const {
+  inline operator TiRuntime() const {
     return runtime_;
   }
 };

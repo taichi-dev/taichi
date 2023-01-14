@@ -1417,6 +1417,14 @@
             ]
         },
         {
+            "name": "taichi/taichi_metal.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+            ]
+        },
+        {
             "name": "taichi/taichi_unity.h",
             "required_modules": [
                 "taichi/taichi_core.h"

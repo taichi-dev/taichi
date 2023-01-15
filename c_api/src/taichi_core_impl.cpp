@@ -164,8 +164,8 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     if (is_vulkan_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_VULKAN);
     }
-    if (is_opengl_available()) {
-      AVAILABLE_ARCHS.emplace_back(TI_ARCH_OPENGL);
+    if (is_metal_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_METAL);
     }
     if (is_cuda_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_CUDA);
@@ -176,8 +176,8 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     if (is_arm64_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_ARM64);
     }
-    if (is_metal_available()) {
-      AVAILABLE_ARCHS.emplace_back(TI_ARCH_METAL);
+    if (is_opengl_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_OPENGL);
     }
   }
 
@@ -200,7 +200,7 @@ TiError ti_get_last_error(uint64_t *message_size, char *message) {
     return out;
   }
   size_t buffer_size = *message_size;
-  *message_size = thread_error_cache.message.size();
+  *message_size = thread_error_cache.message.size() + 1;
 
   if (buffer_size > 0 && message != nullptr) {
     // -1 for the byte of `\0`.

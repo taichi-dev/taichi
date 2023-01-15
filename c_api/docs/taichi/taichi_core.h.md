@@ -10,14 +10,15 @@ Taichi Core exposes all necessary interfaces for offloading the AOT modules to T
 
 Taichi C-API intends to support the following backends:
 
-|Backend     |Offload Target   |Maintenance Tier |
-|------------|-----------------|-----------------|
-|Vulkan      |GPU              |Tier 1           |
-|CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
-|CPU (LLVM)  |CPU              |Tier 1           |
-|OpenGL      |GPU              |Tier 2           |
-|DirectX 11  |GPU (Windows)    |N/A              |
-|Metal       |GPU (macOS, iOS) |N/A              |
+|Backend     |Offload Target   |Maintenance Tier | Stabilized? |
+|------------|-----------------|-----------------|-------------|
+|Vulkan      |GPU              |Tier 1           | Yes         |
+|Metal       |GPU (macOS, iOS) |Tier 2           | No          |
+|CUDA (LLVM) |GPU (NVIDIA)     |Tier 2           | No          |
+|CPU (LLVM)  |CPU              |Tier 2           | No          |
+|OpenGL      |GPU              |Tier 2           | No          |
+|OpenGL ES   |GPU              |Tier 2           | No          |
+|DirectX 11  |GPU (Windows)    |N/A              | No          |
 
 The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
@@ -263,11 +264,21 @@ Errors reported by the Taichi C-API.
 
 Types of backend archs.
 
+- `enumeration.arch.vulkan`: Vulkan GPU backend.
+- `enumeration.arch.metal`: Metal GPU backend.
+- `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
 - `enumeration.arch.x64`: x64 native CPU backend.
 - `enumeration.arch.arm64`: Arm64 native CPU backend.
-- `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
-- `enumeration.arch.vulkan`: Vulkan GPU backend.
 - `enumeration.arch.opengl`: OpenGL GPU backend.
+- `enumeration.arch.gles`: OpenGL ES GPU backend.
+
+`bit_field.source_type`
+
+Types of source artifacts in AOT modules.
+
+- `bit_field.source_type.spirv`: Binary [SPIR-V](https://www.khronos.org/spir/) SPIR-V is consumed natively by `enumeration.arch.vulkan` and is compatible with `enumeration.arch.metal`, `enumeration.arch.opengl` and `enumeration.arch.gles`.
+- `bit_field.source_type.llvm_bitcode_cpu`: Binary [LLVM bitcode](https://llvm.org/docs/BitCodeFormat.html) for serial execution. LLVM bitcode (CPU) is consumed natively by `enumeration.arch.arm64` and `enumeration.arch.x64`.
+- `bit_field.source_type.llvm_bitcode_cuda`: Binary [LLVM bitcode](https://llvm.org/docs/BitCodeFormat.html) for CUDA kernels, which requires address space 4 and 5. LLVM bitcode (CUDA) is consumed natively by `enumeration.arch.cuda`.
 
 `enumeration.capability`
 

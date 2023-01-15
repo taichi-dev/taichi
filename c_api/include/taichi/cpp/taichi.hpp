@@ -60,7 +60,8 @@ inline Error get_last_error() {
   uint64_t message_size = 0;
   ti_get_last_error(&message_size, nullptr);
   std::string message(message_size, '\0');
-  TiError error = ti_get_last_error(&message_size, (char*)message.data());
+  TiError error = ti_get_last_error(&message_size, (char *)message.data());
+  message.resize(message.size() - 1);
   return Error{error, message};
 }
 inline void check_last_error() {
@@ -128,7 +129,9 @@ T exchange(T &storage, U &&value) {
 
 template <typename THandle>
 THandle move_handle(THandle &handle) {
-  return exchange<THandle>(handle, TI_NULL_HANDLE);
+  THandle out = std::move(handle);
+  handle = TI_NULL_HANDLE;
+  return out;
 }
 
 }  // namespace detail
@@ -147,7 +150,7 @@ class MemorySlice {
   MemorySlice& operator=(const MemorySlice&) = default;
   MemorySlice& operator=(MemorySlice&&) = default;
 
-  inline void copy_to(MemorySlice &dst) {
+  inline void copy_to(const MemorySlice &dst) {
     if (runtime_ != dst.runtime_) {
       ti_set_last_error(
           TI_ERROR_INVALID_ARGUMENT,
@@ -286,7 +289,7 @@ class NdArray {
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
       : memory_(std::move(b.memory_)),
-        ndarray_(detail::exchange(b.ndarray_, {})),
+        ndarray_(detail::exchange(b.ndarray_, TiNdArray{})),
         elem_count_(detail::exchange(b.elem_count_, 1)),
         scalar_count_(detail::exchange(b.scalar_count_, 1)) {
   }
@@ -373,10 +376,10 @@ class NdArray {
     write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
-  TiMemorySlice slice(size_t offset, size_t size) const {
+  MemorySlice slice(size_t offset, size_t size) const {
     return memory_.slice(offset, size);
   }
-  TiMemorySlice slice() const {
+  MemorySlice slice() const {
     return memory_.slice();
   }
 
@@ -1010,9 +1013,11 @@ class Runtime {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);
   }
-  Memory allocate_memory(size_t size) {
+  Memory allocate_memory(size_t size, bool host_access = false) {
     TiMemoryAllocateInfo allocate_info{};
     allocate_info.size = size;
+    allocate_info.host_read = host_access;
+    allocate_info.host_write = host_access;
     allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
     return allocate_memory(allocate_info);
   }
@@ -1036,12 +1041,7 @@ class Runtime {
     ndarray.elem_shape.dim_count = elem_shape.size();
     ndarray.elem_type = detail::templ2dtype<T>::value;
 
-    TiMemoryAllocateInfo allocate_info{};
-    allocate_info.size = size;
-    allocate_info.host_read = host_access;
-    allocate_info.host_write = host_access;
-    allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-    Memory memory = allocate_memory(allocate_info);
+    ti::Memory memory = allocate_memory(size, host_access);
     ndarray.memory = memory;
     return NdArray<T>(std::move(memory), ndarray);
   }

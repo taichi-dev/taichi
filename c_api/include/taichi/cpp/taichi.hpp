@@ -70,7 +70,7 @@ inline void check_last_error() {
   if (error != TI_ERROR_SUCCESS) {
     throw std::runtime_error(error.message);
   }
-#endif // TI_WITH_EXCEPTIONS
+#endif  // TI_WITH_EXCEPTIONS
 }
 
 // Token type for half-precision floats.
@@ -145,10 +145,10 @@ class MemorySlice {
   MemorySlice(TiRuntime runtime, const TiMemorySlice &slice)
       : runtime_(runtime), slice_(slice) {
   }
-  MemorySlice(const MemorySlice&) = default;
+  MemorySlice(const MemorySlice &) = default;
   MemorySlice(MemorySlice &&) = default;
-  MemorySlice& operator=(const MemorySlice&) = default;
-  MemorySlice& operator=(MemorySlice&&) = default;
+  MemorySlice &operator=(const MemorySlice &) = default;
+  MemorySlice &operator=(MemorySlice &&) = default;
 
   inline void copy_to(const MemorySlice &dst) {
     if (runtime_ != dst.runtime_) {

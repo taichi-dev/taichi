@@ -158,7 +158,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  sync = true;
   finalized_ = false;
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {

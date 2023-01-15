@@ -4,23 +4,22 @@
 
 namespace taichi::lang {
 
-void TyVar::unify(int pos,
-                  DataType dt,
-                  std::map<Identifier, DataType> &solutions) const {
+void TyVar::unify(int pos, DataType dt, Solutions &solutions) const {
   if (solutions.find(name_) != solutions.end()) {
-    if (solutions[name_] != dt) {
-      throw TyVarMismatch(name_, solutions[name_], dt);
+    if (solutions[name_].first != dt) {
+      throw TyVarMismatch(solutions[name_].second, pos, solutions[name_].first,
+                          dt);
     }
   } else {
-    solutions[name_] = dt;
+    solutions[name_] = std::make_pair(dt, pos);
   }
 }
 
-DataType TyVar::resolve(const std::map<Identifier, DataType> &solutions) const {
+DataType TyVar::resolve(const Solutions &solutions) const {
   if (solutions.find(name_) == solutions.end()) {
     throw TyVarUnsolved(name_);
   } else {
-    return solutions.at(name_);
+    return solutions.at(name_).first;
   }
 }
 
@@ -28,13 +27,11 @@ std::string TyVar::to_string() const {
   return name_.name();
 }
 
-void TyLub::unify(int pos,
-                  DataType dt,
-                  std::map<Identifier, DataType> &solutions) const {
+void TyLub::unify(int pos, DataType dt, Solutions &solutions) const {
   TyMono(resolve(solutions)).unify(pos, dt, solutions);
 }
 
-DataType TyLub::resolve(const std::map<Identifier, DataType> &solutions) const {
+DataType TyLub::resolve(const Solutions &solutions) const {
   return promoted_type(lhs_->resolve(solutions)->get_compute_type(),
                        rhs_->resolve(solutions)->get_compute_type());
 }
@@ -43,14 +40,11 @@ std::string TyLub::to_string() const {
   return lhs_->to_string() + " | " + rhs_->to_string();
 }
 
-void TyCompute::unify(int pos,
-                      DataType dt,
-                      std::map<Identifier, DataType> &solutions) const {
+void TyCompute::unify(int pos, DataType dt, Solutions &solutions) const {
   TyMono(resolve(solutions)).unify(pos, dt, solutions);
 }
 
-DataType TyCompute::resolve(
-    const std::map<Identifier, DataType> &solutions) const {
+DataType TyCompute::resolve(const Solutions &solutions) const {
   return exp_->resolve(solutions)->get_compute_type();
 }
 
@@ -58,16 +52,13 @@ std::string TyCompute::to_string() const {
   return "comp(" + exp_->to_string() + ")";
 }
 
-void TyMono::unify(int pos,
-                   DataType dt,
-                   std::map<Identifier, DataType> &solutions) const {
+void TyMono::unify(int pos, DataType dt, Solutions &solutions) const {
   if (monotype_ != dt) {
     throw TypeMismatch(pos, monotype_, dt);
   }
 }
 
-DataType TyMono::resolve(
-    const std::map<Identifier, DataType> &solutions) const {
+DataType TyMono::resolve(const Solutions &solutions) const {
   return monotype_;
 }
 
@@ -76,8 +67,10 @@ std::string TyMono::to_string() const {
 }
 
 std::string TyVarMismatch::to_string() const {
-  return "expected " + original_.to_string() + ", but got " +
-         conflicting_.to_string();
+  return "argument #" + std::to_string(solved_position_ + 1) + " and #" +
+         std::to_string(current_position_ + 1) +
+         " should be the same type, but they are different: " +
+         original_.to_string() + " and " + conflicting_.to_string();
 }
 
 std::string TypeMismatch::to_string() const {
@@ -105,7 +98,7 @@ DataType Signature::type_check(const std::vector<DataType> &arguments) const {
   if (parameters_.size() != arguments.size()) {
     throw ArgLengthMismatch(parameters_.size(), arguments.size());
   }
-  std::map<Identifier, DataType> solutions;
+  TypeExpression::Solutions solutions;
   for (int i = 0; i < parameters_.size(); i++) {
     parameters_[i]->unify(i, arguments[i], solutions);
   }
@@ -137,7 +130,7 @@ DataType Operation::type_check(const std::vector<DataType> &arg_types) const {
   }
 }
 
-namespace TypeExprBuilder {
+namespace {
 
 int var_counter_ = 0;
 
@@ -151,7 +144,7 @@ PRIM(f32)
 PRIM(f64)
 PRIM(u32)
 PRIM(u64)
-DataType i0 = i32;
+DataType i32_void = i32;
 DataType f32_ptr = TypeFactory::get_instance().get_pointer_type(f32, false);
 
 #undef PRIM
@@ -161,7 +154,8 @@ Trait *Integral = StaticTraits::get(StaticTraitID::integral);
 Trait *Primitive = StaticTraits::get(StaticTraitID::primitive);
 Trait *Scalar = StaticTraits::get(StaticTraitID::scalar);
 
-Constraint operator<(std::shared_ptr<TyVar> tyvar, Trait *trait) {
+[[maybe_unused]] Constraint operator<(std::shared_ptr<TyVar> tyvar,
+                                      Trait *trait) {
   return Constraint(tyvar, trait);
 }
 
@@ -169,7 +163,7 @@ std::shared_ptr<TyMono> operator!(DataType dt) {
   return std::make_shared<TyMono>(dt);
 }
 
-std::shared_ptr<TyLub> operator|(TypeExpr lhs, TypeExpr rhs) {
+[[maybe_unused]] std::shared_ptr<TyLub> operator|(TypeExpr lhs, TypeExpr rhs) {
   return std::make_shared<TyLub>(lhs, rhs);
 }
 
@@ -177,12 +171,28 @@ std::shared_ptr<TyVar> tyvar(std::string name) {
   return std::make_shared<TyVar>(Identifier(var_counter_++, name));
 }
 
-std::shared_ptr<TyCompute> comp(TypeExpr ty) {
+[[maybe_unused]] std::shared_ptr<TyCompute> comp(TypeExpr ty) {
   return std::make_shared<TyCompute>(ty);
 }
-};  // namespace TypeExprBuilder
 
-using namespace TypeExprBuilder;
+std::vector<TypeExpr> type_exprs_from_dts(const std::vector<DataType> &params) {
+  std::vector<TypeExpr> exprs;
+  for (auto dt : params) {
+    exprs.push_back(std::make_shared<TyMono>(dt));
+  }
+  return exprs;
+}
+
+std::vector<Stmt *> get_all_rvalues(const std::vector<Expr> &args,
+                                    Expression::FlattenContext *ctx) {
+  std::vector<Stmt *> stmts;
+  for (auto arg : args) {
+    stmts.push_back(flatten_rvalue(arg, ctx));
+  }
+  return stmts;
+}
+
+};  // namespace
 
 bool DynamicTrait::validate(const DataType dt) const {
   return impl_(dt);
@@ -208,23 +218,6 @@ void StaticTraits::init_traits() {
       "Primitive", [](DataType dt) { return dt->is<PrimitiveType>(); });
   traits_[StaticTraitID::scalar] = std::make_unique<DynamicTrait>(
       "Scalar", [](DataType dt) { return is_real(dt) || is_integral(dt); });
-}
-
-std::vector<TypeExpr> type_exprs_from_dts(const std::vector<DataType> &params) {
-  std::vector<TypeExpr> exprs;
-  for (auto dt : params) {
-    exprs.push_back(std::make_shared<TyMono>(dt));
-  }
-  return exprs;
-}
-
-std::vector<Stmt *> get_all_rvalues(const std::vector<Expr> &args,
-                                    Expression::FlattenContext *ctx) {
-  std::vector<Stmt *> stmts;
-  for (auto arg : args) {
-    stmts.push_back(flatten_rvalue(arg, ctx));
-  }
-  return stmts;
 }
 
 class InternalCallOperation : public Operation {
@@ -282,20 +275,20 @@ void Operations::init_internals() {
 #undef COMPOSITE_EXTRACT
 
 #define INSERT_TRIPLET(dt) \
-  PLAIN_OP(insert_triplet_##dt, i0, true, u64, i32, i32, dt);
+  PLAIN_OP(insert_triplet_##dt, i32_void, true, u64, i32, i32, dt);
   INSERT_TRIPLET(f32);
   INSERT_TRIPLET(f64);
 #undef INSERT_TRIPLET
 
   PLAIN_OP(linear_thread_idx, i32, true);
-  PLAIN_OP(test_stack, i0, true);
-  PLAIN_OP(test_active_mask, i0, true);
-  PLAIN_OP(test_shfl, i0, true);
-  PLAIN_OP(test_list_manager, i0, true);
-  PLAIN_OP(test_node_allocator, i0, true);
-  PLAIN_OP(test_node_allocator_gc_cpu, i0, true);
-  PLAIN_OP(do_nothing, i0, true);
-  PLAIN_OP(refresh_counter, i0, true);
+  PLAIN_OP(test_stack, i32_void, true);
+  PLAIN_OP(test_active_mask, i32_void, true);
+  PLAIN_OP(test_shfl, i32_void, true);
+  PLAIN_OP(test_list_manager, i32_void, true);
+  PLAIN_OP(test_node_allocator, i32_void, true);
+  PLAIN_OP(test_node_allocator_gc_cpu, i32_void, true);
+  PLAIN_OP(do_nothing, i32_void, true);
+  PLAIN_OP(refresh_counter, i32_void, true);
   PLAIN_OP(test_internal_func_args, i32, true, f32, f32, i32);
 
   // CUDA ops:
@@ -311,8 +304,8 @@ void Operations::init_internals() {
 #define CUDA_MATCH_SYNC(name, dt) \
   PLAIN_OP(cuda_match_##name##_sync_##dt, u32, false, u32, dt)
 
-  PLAIN_OP(block_barrier, i0, false);
-  PLAIN_OP(grid_memfence, i0, false);
+  PLAIN_OP(block_barrier, i32_void, false);
+  PLAIN_OP(grid_memfence, i32_void, false);
   CUDA_VOTE_SYNC(all);
   CUDA_VOTE_SYNC(any);
   CUDA_VOTE_SYNC(uni);
@@ -327,7 +320,7 @@ void Operations::init_internals() {
   CUDA_MATCH_SYNC(any, i32);
   CUDA_MATCH_SYNC(all, i32);
   PLAIN_OP(cuda_active_mask, u32, false);
-  PLAIN_OP(warp_barrier, i0, false, u32);
+  PLAIN_OP(warp_barrier, i32_void, false, u32);
 
 #undef CUDA_MATCH_SYNC
 #undef CUDA_SHFL_SYNC
@@ -344,12 +337,12 @@ void Operations::init_internals() {
 
   auto lhs = tyvar("lhs"), rhs = tyvar("rhs");
 
-  PLAIN_OP(workgroupBarrier, i0, false);
-  PLAIN_OP(workgroupMemoryBarrier, i0, false);
+  PLAIN_OP(workgroupBarrier, i32_void, false);
+  PLAIN_OP(workgroupMemoryBarrier, i32_void, false);
   PLAIN_OP(localInvocationId, i32, false);
   PLAIN_OP(vkGlobalThreadIdx, i32, false);
-  PLAIN_OP(subgroupBarrier, i0, false);
-  PLAIN_OP(subgroupMemoryBarrier, i0, false);
+  PLAIN_OP(subgroupBarrier, i32_void, false);
+  PLAIN_OP(subgroupMemoryBarrier, i32_void, false);
   PLAIN_OP(subgroupElect, i32, false);
   POLY_OP(subgroupBroadcast, false, Signature({}, {lhs}, lhs));
   PLAIN_OP(subgroupSize, i32, false);

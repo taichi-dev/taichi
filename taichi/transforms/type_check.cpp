@@ -196,9 +196,17 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
-    stmt->ret_type = stmt->operand->ret_type;
+    auto operand_type = stmt->operand->ret_type;
+    stmt->ret_type = operand_type;
     if (stmt->is_cast()) {
       stmt->ret_type = stmt->cast_type;
+      if (operand_type->is<TensorType>() &&
+          stmt->cast_type->is<PrimitiveType>()) {
+        auto ret_tensor_type = operand_type->as<TensorType>();
+        auto tensor_shape = ret_tensor_type->get_shape();
+        stmt->ret_type = TypeFactory::get_instance().create_tensor_type(
+            tensor_shape, stmt->cast_type);
+      }
     }
 
     DataType primitive_dtype = stmt->operand->ret_type.get_element_type();
@@ -407,15 +415,18 @@ class TypeCheck : public IRVisitor {
   void visit(FuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
-    stmt->ret_type = PrimitiveType::u64;
-    stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type = func->ret_type;
+  }
+
+  void visit(FrontendFuncCallStmt *stmt) override {
+    auto *func = stmt->func;
+    TI_ASSERT(func);
+    stmt->ret_type = func->ret_type;
   }
 
   void visit(GetElementStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<FuncCallStmt>());
-    auto *func = stmt->src->as<FuncCallStmt>()->func;
-    TI_ASSERT(stmt->index < func->rets.size());
-    stmt->ret_type = func->rets[stmt->index].dt;
+    stmt->ret_type =
+        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->index);
   }
 
   void visit(ArgLoadStmt *stmt) override {
@@ -555,13 +566,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
-    /**
-     * We need to convert TensorType to pointer when
-     * real_matrix is enabled because one can store value
-     * in a loop to a tensor defined outside the loop
-     */
-    if (!stmt->ret_type->is<TensorType>() || config_.real_matrix)
-      stmt->ret_type.set_is_pointer(true);
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(InternalFuncStmt *stmt) override {

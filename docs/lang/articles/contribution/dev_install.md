@@ -105,6 +105,7 @@ We provide pre-built, customized LLVM 15 binaries.
 </TabItem>
 <TabItem value="llvm_windows">
     <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15.0.0-msvc2019.zip">LLVM 15.0.0 for Windows MSVC 2019</a>
+    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15.0.3-msvc2022.zip">LLVM 15.0.0 for Windows MSVC 2022</a>
 </TabItem>
 </Tabs>
 

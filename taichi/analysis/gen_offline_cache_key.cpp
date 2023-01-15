@@ -55,6 +55,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
  public:
   ASTSerializer(Program *prog, std::ostream *os)
       : ExpressionVisitor(true), prog_(prog), os_(os) {
+    // TODO(PGZXB): Set allow_undefined_visitor as false. (blocked by
+    // constant-folding)
     this->allow_undefined_visitor = true;
   }
 
@@ -182,14 +184,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     }
   }
 
-  void visit(StrideExpression *expr) override {
-    emit(ExprOpCode::StrideExpression);
-    emit(expr->var);
-    emit(expr->indices.exprs);
-    emit(expr->shape);
-    emit(expr->stride);
-  }
-
   void visit(RangeAssumptionExpression *expr) override {
     emit(ExprOpCode::RangeAssumptionExpression);
     emit(expr->input);
@@ -235,8 +229,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->axis);
   }
 
-  void visit(FuncCallExpression *expr) override {
-    emit(ExprOpCode::FuncCallExpression);
+  void visit(FrontendFuncCallStmt *expr) override {
+    emit(StmtOpCode::FrontendFuncCallStmt);
     emit(expr->func);
     emit(expr->args.exprs);
   }
@@ -269,6 +263,12 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(ReferenceExpression *expr) override {
     emit(ExprOpCode::ReferenceExpression);
     emit(expr->var);
+  }
+
+  void visit(GetElementExpression *expr) override {
+    emit(ExprOpCode::GetElementExpression);
+    emit(expr->src);
+    emit(expr->index);
   }
 
   void visit(Block *block) override {
@@ -620,9 +620,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
 #define DEFINE_EMIT_ENUM(EnumType) \
-  void emit(EnumType type) {       \
-    emit_pod(type);                \
-  }
+  void emit(EnumType type) { emit_pod(type); }
 
   DEFINE_EMIT_ENUM(ExprOpCode);
   DEFINE_EMIT_ENUM(StmtOpCode);

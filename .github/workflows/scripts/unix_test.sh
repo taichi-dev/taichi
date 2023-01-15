@@ -5,18 +5,31 @@ set -ex
 
 export PYTHONUNBUFFERED=1
 
+export TAICHI_AOT_FOLDER_PATH="taichi/tests"
 export TI_SKIP_VERSION_CHECK=ON
 export TI_CI=1
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
+
+pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+[[ "$IN_DOCKER" == "true" ]] && cd taichi
+python3 tests/generate_compat_test_modules.py
+python3 -m pip uninstall taichi-nightly -y
+
 setup_python
 
-[[ "$IN_DOCKER" == "true" ]] && cd taichi
+python3 tests/run_c_api_compat_test.py
 
 if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd
     sudo chmod 666 /dev/dri/*
+fi
+
+if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
+    # No FORTRAN compiler is currently working reliably on M1 Macs
+    # We can't just pip install scipy, using conda instead
+    conda install -y scipy
 fi
 
 python3 -m pip install dist/*.whl
@@ -53,7 +66,7 @@ if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
     pushd taichi-release-tests
-    git checkout v1.1.0
+    git checkout 20221230
     mkdir -p repos/taichi/python/taichi
     EXAMPLES=$(cat <<EOF | python3 | tail -n 1
 import taichi.examples
@@ -67,11 +80,6 @@ EOF
     popd
 
     pushd repos/difftaichi
-    if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
-        # No FORTRAN compiler is currently working reliably on M1 Macs
-        # We can't just pip install scipy, using conda instead
-        conda install -y scipy
-    fi
     pip install -r requirements.txt
     popd
 
@@ -116,7 +124,13 @@ else
     run-it cpu    $(nproc)
     run-it vulkan 8
     run-it opengl 4
+    run-it gles   4
 
     python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
+
+    # FIXME: Running gles test separatelyfor now, add gles to TI_WANTED_ARCHS once running "-a vulkan,opengl,gles" is fixed
+    if [[ $TI_WANTED_ARCHS == *opengl* ]]; then
+      python3 tests/run_tests.py -vr2 -t1 -k "torch" -a gles
+    fi
 fi

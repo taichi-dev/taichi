@@ -16,14 +16,13 @@ using namespace lang;
 namespace fs = std::filesystem;
 
 [[maybe_unused]] static void aot_save(std::string &tmp_path) {
+  default_compile_config.advanced_optimization = false;
   auto program = Program(Arch::dx12);
-
-  program.this_thread_config().advanced_optimization = false;
 
   int n = 10;
 
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->dense(Axis(0), n, false, "");
+  auto *pointer = &root->dense(Axis(0), n, "");
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);

@@ -165,7 +165,14 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   if (kFTZDenorms) {
     for (llvm::Function &fn : *module) {
-      fn.addFnAttr("nvptx-f32ftz", "true");
+      /* nvptx-f32ftz was deprecated.
+       *
+       * https://github.com/llvm/llvm-project/commit/a4451d88ee456304c26d552749aea6a7f5154bde#diff-6fda74ef428299644e9f49a2b0994c0d850a760b89828f655030a114060d075a
+       */
+      fn.addFnAttr("denormal-fp-math-f32", "preserve-sign");
+
+      // Use unsafe fp math for sqrt.approx instead of sqrt.rn
+      fn.addFnAttr("unsafe-fp-math", "true");
     }
   }
 

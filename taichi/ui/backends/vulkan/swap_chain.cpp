@@ -32,6 +32,7 @@ void SwapChain::create_depth_resources() {
   params.x = curr_width_;
   params.y = curr_height_;
   params.export_sharing = false;
+  params.usage = ImageAllocUsage::Attachment | ImageAllocUsage::Sampled;
 
   depth_allocation_ = app_context_->device().create_image(params);
 }
@@ -68,7 +69,8 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     copy_params.image_extent.x = w;
     copy_params.image_extent.y = h;
     copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
-    cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     cmd_list->image_transition(depth_allocation_, ImageLayout::depth_attachment,
                                ImageLayout::transfer_src);
     cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
@@ -84,8 +86,11 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
     DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
     DeviceAllocation field_buffer(arr_dev_ptr);
-    float *src_ptr = (float *)app_context_->device().map(depth_buffer);
-    float *dst_ptr = (float *)arr_dev_ptr.device->map(field_buffer);
+    void *src_ptr{nullptr}, *dst_ptr{nullptr};
+    TI_ASSERT(app_context_->device().map(depth_buffer, &src_ptr) ==
+              RhiResult::success);
+    TI_ASSERT(arr_dev_ptr.device->map(field_buffer, &dst_ptr) ==
+              RhiResult::success);
     memcpy(dst_ptr, src_ptr, copy_size);
     app_context_->device().unmap(depth_buffer);
     arr_dev_ptr.device->unmap(field_buffer);
@@ -122,7 +127,8 @@ std::vector<uint32_t> &SwapChain::dump_image_buffer() {
   image_buffer_data_.clear();
   image_buffer_data_.resize(w * h);
   DeviceAllocation img_buffer = surface_->get_image_data();
-  unsigned char *ptr = (unsigned char *)app_context_->device().map(img_buffer);
+  void *ptr{nullptr};
+  TI_ASSERT(app_context_->device().map(img_buffer, &ptr) == RhiResult::success);
   auto format = surface_->image_format();
   uint32_t *u32ptr = (uint32_t *)ptr;
   if (format == BufferFormat::bgra8 || format == BufferFormat::bgra8srgb) {

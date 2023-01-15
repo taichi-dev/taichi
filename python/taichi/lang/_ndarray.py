@@ -22,6 +22,7 @@ class Ndarray:
         self.dtype = None
         self.arr = None
         self.layout = Layout.AOS
+        self.grad = None
 
     def get_type(self):
         return NdarrayTypeMetadata(self.element_type, self.shape)
@@ -137,7 +138,7 @@ class Ndarray:
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
         if tuple(self.arr.total_shape()) != tuple(arr.shape):
             raise ValueError(
-                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
+                f"Mismatch shape: {tuple(self.arr.total_shape())} expected, but {tuple(arr.shape)} provided"
             )
         if not arr.flags.c_contiguous:
             arr = np.ascontiguousarray(arr)
@@ -180,6 +181,14 @@ class Ndarray:
         from taichi._kernels import ndarray_to_ndarray  # pylint: disable=C0415
         ndarray_to_ndarray(self, other)
         impl.get_runtime().sync()
+
+    def _set_grad(self, grad):
+        """Sets the gradient ndarray.
+
+        Args:
+            grad (Ndarray): The gradient ndarray.
+        """
+        self.grad = grad
 
     def __deepcopy__(self, memo=None):
         """Copies all elements to a new ndarray.
@@ -224,10 +233,17 @@ class ScalarNdarray(Ndarray):
     def __init__(self, dtype, arr_shape):
         super().__init__()
         self.dtype = cook_dtype(dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            self.dtype, arr_shape)
+        self.arr = impl.get_runtime().prog.create_ndarray(self.dtype,
+                                                          arr_shape,
+                                                          layout=Layout.NULL,
+                                                          zero_fill=True)
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
+
+    def __del__(self):
+        if impl is not None and impl.get_runtime(
+        ) is not None and impl.get_runtime().prog is not None:
+            impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property
     def element_shape(self):

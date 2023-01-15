@@ -9,6 +9,7 @@ namespace opengl {
 bool initialize_opengl(bool use_gles = false, bool error_tolerance = false);
 bool is_opengl_api_available(bool use_gles = false);
 bool is_gles();
+void reset_opengl();
 
 std::shared_ptr<Device> make_opengl_device();
 

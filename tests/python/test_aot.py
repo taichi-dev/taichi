@@ -138,10 +138,8 @@ def test_non_dense_snode():
         m.add_field('y', y)
 
 
-@pytest.mark.parametrize('use_gles', [True, False])
-@test_utils.test(arch=[ti.opengl, ti.vulkan])
-def test_mpm88_aot(use_gles):
-    ti.init(ti.lang.impl.current_cfg().arch, use_gles=use_gles)
+@test_utils.test(arch=[ti.opengl, ti.gles, ti.vulkan])
+def test_mpm88_aot():
     n_particles = 8192
     n_grid = 128
     dx = 1 / n_grid
@@ -520,7 +518,7 @@ def test_aot_ndarray_template_mixed():
         x = ti.ndarray(dtype=ti.f32, shape=16)
         m = ti.aot.Module()
         m.add_kernel(run, template_args={'arr': x, 'val2': 42})
-        m.save(tmpdir, '')
+        m.save(tmpdir)
         with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
             res = json.load(json_file)
             for kernel in res['kernels']:
@@ -586,7 +584,7 @@ def test_vulkan_cgraph_short():
         for i in a:
             a[i] = i + c
 
-    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, field_dim=1)
+    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, ndim=1)
     sym_c = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'c', ti.u8)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_a, sym_c)
@@ -680,5 +678,29 @@ def test_read_kernel_with_texture():
 
     m = ti.aot.Module()
     m.add_kernel(read, template_args={"tex": tex, "arr": arr})
+    with tempfile.TemporaryDirectory() as tmpdir:
+        m.save(tmpdir)
+
+
+@test_utils.test(arch=[ti.vulkan])
+def test_rwtexture_with_ndarray():
+    @ti.kernel
+    def init_texture_from_ndarray(tex: ti.types.rw_texture(num_dimensions=2,
+                                                           fmt=ti.Format.r32f,
+                                                           lod=0),
+                                  img: ti.types.ndarray(ndim=2)):
+        for i, j in img:
+            tex.store(ti.Vector([i, j]),
+                      ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.)
+
+    m = ti.aot.Module()
+    tex = ti.Texture(ti.Format.r32f, (128, 128))
+    img = ti.ndarray(ti.f32, (128, 128))
+    m.add_kernel(
+        init_texture_from_ndarray,
+        template_args={
+            "img": img,
+        },
+    )
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)

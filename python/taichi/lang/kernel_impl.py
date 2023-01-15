@@ -1,15 +1,18 @@
 import ast
 import functools
 import inspect
+import operator
 import re
 import sys
 import textwrap
+import warnings
 import weakref
 
 import numpy as np
 import taichi.lang
 from taichi._lib import core as _ti_core
 from taichi.lang import impl, ops, runtime_ops
+from taichi.lang._wrap_inspect import getsourcefile, getsourcelines
 from taichi.lang.ast import (ASTTransformerContext, KernelSimplicityASTChecker,
                              transform_tree)
 from taichi.lang.ast.ast_transformer_utils import ReturnStatus
@@ -20,7 +23,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.shell import _shell_pop_print, oinspect
+from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
@@ -113,8 +116,8 @@ def _get_tree_and_ctx(self,
                       args=None,
                       ast_builder=None,
                       is_real_function=False):
-    file = oinspect.getsourcefile(self.func)
-    src, start_lineno = oinspect.getsourcelines(self.func)
+    file = getsourcefile(self.func)
+    src, start_lineno = getsourcelines(self.func)
     src = [textwrap.fill(line, tabsize=4, width=9999) for line in src]
     tree = ast.parse(textwrap.dedent("\n".join(src)))
 
@@ -233,7 +236,7 @@ class Func:
             self,
             is_kernel=False,
             args=args,
-            ast_builder=impl.get_runtime().prog.current_ast_builder(),
+            ast_builder=impl.get_runtime().current_kernel.ast_builder(),
             is_real_function=self.is_real_function)
         ret = transform_tree(tree, ctx)
         if not self.is_real_function:
@@ -255,27 +258,20 @@ class Func:
                 elif isinstance(anno, primitive_types.RefType):
                     non_template_args.append(
                         _ti_core.make_reference(args[i].ptr))
-                elif impl.current_cfg().real_matrix and isinstance(
-                        args[i], impl.Expr) and args[i].ptr.is_tensor():
-                    non_template_args.extend([
-                        Expr(x) for x in impl.get_runtime().prog.
-                        current_ast_builder().expand_expr([args[i].ptr])
-                    ])
                 else:
                     non_template_args.append(args[i])
         non_template_args = impl.make_expr_group(non_template_args,
                                                  real_func_arg=True)
-        func_call = Expr(
-            _ti_core.make_func_call_expr(
-                self.taichi_functions[key.instance_id], non_template_args))
-        impl.get_runtime().prog.current_ast_builder().insert_expr_stmt(
-            func_call.ptr)
+        func_call = impl.get_runtime().compiling_callable.ast_builder(
+        ).insert_func_call(self.taichi_functions[key.instance_id],
+                           non_template_args)
         if self.return_type is None:
             return None
+        func_call = Expr(func_call)
         if id(self.return_type) in primitive_types.type_ids:
-            return Expr(_ti_core.make_get_element_expr(func_call.ptr, 0))
+            return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):
-            return self.return_type.from_real_func_ret(func_call)[0]
+            return self.return_type.from_real_func_ret(func_call, (0, ))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):
@@ -286,8 +282,11 @@ class Func:
         fn = impl.get_runtime().prog.create_function(key)
 
         def func_body():
+            old_callable = impl.get_runtime().compiling_callable
+            impl.get_runtime().compiling_callable = fn
             ctx.ast_builder = fn.ast_builder()
             transform_tree(tree, ctx)
+            impl.get_runtime().compiling_callable = old_callable
 
         self.taichi_functions[key.instance_id] = fn
         self.compiled[key.instance_id] = func_body
@@ -330,6 +329,8 @@ class Func:
                 if isinstance(annotation, ndarray_type.NdarrayType):
                     pass
                 elif isinstance(annotation, MatrixType):
+                    pass
+                elif isinstance(annotation, StructType):
                     pass
                 elif id(annotation) in primitive_types.type_ids:
                     pass
@@ -409,11 +410,30 @@ class TaichiCallableTemplateMapper:
             shape = tuple(shape)
             element_shape = ()
             if isinstance(anno.dtype, MatrixType):
-                if len(shape) < anno.dtype.ndim:
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
-                        f"but the argument has only {len(shape)} dimensions")
+                if anno.ndim is not None:
+                    if len(shape) != anno.dtype.ndim + anno.ndim:
+                        raise ValueError(
+                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
+                            f"but the argument has {len(shape)} dimensions")
+                else:
+                    if len(shape) < anno.dtype.ndim:
+                        raise ValueError(
+                            f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                            f"but the argument has only {len(shape)} dimensions"
+                        )
                 element_shape = shape[-anno.dtype.ndim:]
+                anno_element_shape = anno.dtype.get_shape()
+                if None not in anno_element_shape and element_shape != anno_element_shape:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
+                        f"but the argument has element shape of {element_shape}"
+                    )
+            elif anno.dtype is not None:
+                # User specified scalar dtype
+                if anno.ndim is not None and len(shape) != anno.ndim:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
+                        f"but the argument has {len(shape)} dimensions")
             return to_taichi_type(
                 arg.dtype), len(shape), element_shape, Layout.AOS
         if isinstance(anno, sparse_matrix_builder):
@@ -482,6 +502,10 @@ class Kernel:
         # Main motivation is that compiled_kernels can be potentially serialized in the AOT scenario.
         self.compiled_kernels = {}
         self.has_print = False
+
+    def ast_builder(self):
+        assert self.kernel_cpp is not None
+        return self.kernel_cpp.ast_builder()
 
     def reset(self):
         self.runtime = impl.get_runtime()
@@ -575,8 +599,11 @@ class Kernel:
                     "Please check if you have direct/indirect invocation of kernels within kernels. "
                     "Note that some methods provided by the Taichi standard library may invoke kernels, "
                     "and please move their invocations to Python-scope.")
+            self.kernel_cpp = kernel_cxx
             self.runtime.inside_kernel = True
             self.runtime.current_kernel = self
+            assert self.runtime.compiling_callable is None
+            self.runtime.compiling_callable = kernel_cxx
             try:
                 ctx.ast_builder = kernel_cxx.ast_builder()
                 transform_tree(tree, ctx)
@@ -588,12 +615,10 @@ class Kernel:
             finally:
                 self.runtime.inside_kernel = False
                 self.runtime.current_kernel = None
+                self.runtime.compiling_callable = None
 
         taichi_kernel = impl.get_runtime().prog.create_kernel(
             taichi_ast_generator, kernel_name, self.autodiff_mode)
-
-        self.kernel_cpp = taichi_kernel
-
         assert key not in self.runtime.compiled_functions
         self.runtime.compiled_functions[key] = self.get_function_body(
             taichi_kernel)
@@ -637,7 +662,14 @@ class Kernel:
                 elif isinstance(needed,
                                 ndarray_type.NdarrayType) and isinstance(
                                     v, taichi.lang._ndarray.Ndarray):
-                    launch_ctx.set_arg_ndarray(actual_argument_slot, v.arr)
+                    v_primal = v.arr
+                    v_grad = v.grad.arr if v.grad else None
+                    if v_grad is None:
+                        launch_ctx.set_arg_ndarray(actual_argument_slot,
+                                                   v_primal)
+                    else:
+                        launch_ctx.set_arg_ndarray_with_grad(
+                            actual_argument_slot, v_primal, v_grad)
                 elif isinstance(needed,
                                 texture_type.TextureType) and isinstance(
                                     v, taichi.lang._texture.Texture):
@@ -653,6 +685,11 @@ class Kernel:
                     # so that it only holds "real" array shapes.
                     is_soa = needed.layout == Layout.SOA
                     array_shape = v.shape
+                    if functools.reduce(operator.mul, array_shape,
+                                        1) > np.iinfo(np.int32).max:
+                        warnings.warn(
+                            "Ndarray index might be out of int32 boundary but int64 indexing is not supported yet."
+                        )
                     if needed.dtype is None or id(
                             needed.dtype) in primitive_types.type_ids:
                         element_dim = 0

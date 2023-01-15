@@ -176,6 +176,10 @@ INSTANTIATE_LU_SOLVE_RF(float64, LU, AMD, Eigen::VectorXd)
 INSTANTIATE_LU_SOLVE_RF(float64, LU, COLAMD, Eigen::VectorXd)
 
 CuSparseSolver::CuSparseSolver() {
+  init_solver();
+}
+
+void CuSparseSolver::init_solver() {
 #if defined(TI_WITH_CUDA)
   if (!CUSPARSEDriver::get_instance().is_loaded()) {
     bool load_success = CUSPARSEDriver::get_instance().load_cusparse();
@@ -191,17 +195,14 @@ CuSparseSolver::CuSparseSolver() {
   }
 #endif
 }
-// Reference:
-// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
-void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+void CuSparseSolver::reorder(const CuSparseMatrix &A) {
 #if defined(TI_WITH_CUDA)
-  // Retrive the info of the sparse matrix
-  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
-  size_t rowsA = A->num_rows();
-  size_t nnzA = A->get_nnz();
-  void *d_csrRowPtrA = A->get_row_ptr();
-  void *d_csrColIndA = A->get_col_ind();
+  size_t rowsA = A.num_rows();
+  size_t colsA = A.num_cols();
+  size_t nnzA = A.get_nnz();
+  void *d_csrRowPtrA = A.get_row_ptr();
+  void *d_csrColIndA = A.get_col_ind();
+  void *d_csrValA = A.get_val_ptr();
   CUSOLVERDriver::get_instance().csSpCreate(&cusolver_handle_);
   CUSPARSEDriver::get_instance().cpCreate(&cusparse_handel_);
   CUSPARSEDriver::get_instance().cpCreateMatDescr(&descr_);
@@ -209,46 +210,162 @@ void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
                                               CUSPARSE_MATRIX_TYPE_GENERAL);
   CUSPARSEDriver::get_instance().cpSetMatIndexBase(descr_,
                                                    CUSPARSE_INDEX_BASE_ZERO);
+  float *h_csrValA = nullptr;
+  h_Q_ = (int *)malloc(sizeof(int) * colsA);
+  h_csrRowPtrB_ = (int *)malloc(sizeof(int) * (rowsA + 1));
+  h_csrColIndB_ = (int *)malloc(sizeof(int) * nnzA);
+  h_csrValB_ = (float *)malloc(sizeof(float) * nnzA);
+  h_csrValA = (float *)malloc(sizeof(float) * nnzA);
+  h_mapBfromA_ = (int *)malloc(sizeof(int) * nnzA);
+  assert(nullptr != h_Q_);
+  assert(nullptr != h_csrRowPtrB_);
+  assert(nullptr != h_csrColIndB_);
+  assert(nullptr != h_csrValB_);
+  assert(nullptr != h_mapBfromA_);
 
-  // step 1: create opaque info structure
+  CUDADriver::get_instance().memcpy_device_to_host(h_csrRowPtrB_, d_csrRowPtrA,
+                                                   sizeof(int) * (rowsA + 1));
+  CUDADriver::get_instance().memcpy_device_to_host(h_csrColIndB_, d_csrColIndA,
+                                                   sizeof(int) * nnzA);
+  CUDADriver::get_instance().memcpy_device_to_host(h_csrValA, d_csrValA,
+                                                   sizeof(float) * nnzA);
+
+  // compoute h_Q_
+  CUSOLVERDriver::get_instance().csSpXcsrsymamdHost(cusolver_handle_, rowsA,
+                                                    nnzA, descr_, h_csrRowPtrB_,
+                                                    h_csrColIndB_, h_Q_);
+  CUDADriver::get_instance().malloc((void **)&d_Q_, sizeof(int) * colsA);
+  CUDADriver::get_instance().memcpy_host_to_device((void *)d_Q_, (void *)h_Q_,
+                                                   sizeof(int) * (colsA));
+  size_t size_perm = 0;
+  CUSOLVERDriver::get_instance().csSpXcsrperm_bufferSizeHost(
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_,
+      h_csrColIndB_, h_Q_, h_Q_, &size_perm);
+  void *buffer_cpu = (void *)malloc(sizeof(char) * size_perm);
+  assert(nullptr != buffer_cpu);
+  for (int j = 0; j < nnzA; j++) {
+    h_mapBfromA_[j] = j;
+  }
+  CUSOLVERDriver::get_instance().csSpXcsrpermHost(
+      cusolver_handle_, rowsA, colsA, nnzA, descr_, h_csrRowPtrB_,
+      h_csrColIndB_, h_Q_, h_Q_, h_mapBfromA_, buffer_cpu);
+  // B = A( mapBfromA )
+  for (int j = 0; j < nnzA; j++) {
+    h_csrValB_[j] = h_csrValA[h_mapBfromA_[j]];
+  }
+  CUDADriver::get_instance().malloc((void **)&d_csrRowPtrB_,
+                                    sizeof(int) * (rowsA + 1));
+  CUDADriver::get_instance().malloc((void **)&d_csrColIndB_,
+                                    sizeof(int) * nnzA);
+  CUDADriver::get_instance().malloc((void **)&d_csrValB_, sizeof(float) * nnzA);
+  CUDADriver::get_instance().memcpy_host_to_device(
+      (void *)d_csrRowPtrB_, (void *)h_csrRowPtrB_, sizeof(int) * (rowsA + 1));
+  CUDADriver::get_instance().memcpy_host_to_device(
+      (void *)d_csrColIndB_, (void *)h_csrColIndB_, sizeof(int) * nnzA);
+  CUDADriver::get_instance().memcpy_host_to_device(
+      (void *)d_csrValB_, (void *)h_csrValB_, sizeof(float) * nnzA);
+  free(h_csrValA);
+  free(buffer_cpu);
+#endif
+}
+
+// Reference:
+// https://github.com/NVIDIA/cuda-samples/blob/master/Samples/4_CUDA_Libraries/cuSolverSp_LowlevelCholesky/cuSolverSp_LowlevelCholesky.cpp
+void CuSparseSolver::analyze_pattern(const SparseMatrix &sm) {
+  switch (solver_type_) {
+    case SolverType::Cholesky:
+      analyze_pattern_cholesky(sm);
+      break;
+    case SolverType::LU:
+      analyze_pattern_lu(sm);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+void CuSparseSolver::analyze_pattern_cholesky(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
+  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
+
+  // step 1: reorder the sparse matrix
+  reorder(A);
+
+  // step 2: create opaque info structure
   CUSOLVERDriver::get_instance().csSpCreateCsrcholInfo(&info_);
 
-  // step 2: analyze chol(A) to know structure of L
+  // step 3: analyze chol(A) to know structure of L
+  size_t rowsA = A.num_rows();
+  size_t nnzA = A.get_nnz();
   CUSOLVERDriver::get_instance().csSpXcsrcholAnalysis(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrA, d_csrColIndA, info_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrRowPtrB_, d_csrColIndB_,
+      info_);
   is_analyzed_ = true;
 #else
   TI_NOT_IMPLEMENTED
 #endif
 }
+void CuSparseSolver::analyze_pattern_lu(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix &sm_no_cv = const_cast<SparseMatrix &>(sm);
+  CuSparseMatrix &A = static_cast<CuSparseMatrix &>(sm_no_cv);
 
+  // step 1: reorder the sparse matrix
+  reorder(A);
+
+  // step 2: create opaque info structure
+  CUSOLVERDriver::get_instance().csSpCreateCsrluInfoHost(&lu_info_);
+
+  // step 3: analyze LU(B) to know structure of Q and R, and upper bound for
+  // nnz(L+U)
+  size_t rowsA = A.num_rows();
+  size_t nnzA = A.get_nnz();
+  CUSOLVERDriver::get_instance().csSpXcsrluAnalysisHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrRowPtrB_, h_csrColIndB_,
+      lu_info_);
+  is_analyzed_ = true;
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
 void CuSparseSolver::factorize(const SparseMatrix &sm) {
+  switch (solver_type_) {
+    case SolverType::Cholesky:
+      factorize_cholesky(sm);
+      break;
+    case SolverType::LU:
+      factorize_lu(sm);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+void CuSparseSolver::factorize_cholesky(const SparseMatrix &sm) {
 #if defined(TI_WITH_CUDA)
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
   size_t nnzA = A->get_nnz();
-  void *d_csrRowPtrA = A->get_row_ptr();
-  void *d_csrColIndA = A->get_col_ind();
-  void *d_csrValA = A->get_val_ptr();
 
   size_t size_internal = 0;
   size_t size_chol = 0;  // size of working space for csrlu
   // step 1: workspace for chol(A)
   CUSOLVERDriver::get_instance().csSpScsrcholBufferInfo(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
-      d_csrColIndA, info_, &size_internal, &size_chol);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB_, d_csrRowPtrB_,
+      d_csrColIndB_, info_, &size_internal, &size_chol);
 
   if (size_chol > 0)
     CUDADriver::get_instance().malloc(&gpu_buffer_, sizeof(char) * size_chol);
 
   // step 2: compute A = L*L^T
   CUSOLVERDriver::get_instance().csSpScsrcholFactor(
-      cusolver_handle_, rowsA, nnzA, descr_, d_csrValA, d_csrRowPtrA,
-      d_csrColIndA, info_, gpu_buffer_);
+      cusolver_handle_, rowsA, nnzA, descr_, d_csrValB_, d_csrRowPtrB_,
+      d_csrColIndB_, info_, gpu_buffer_);
   // step 3: check if the matrix is singular
-  const double tol = 1.e-14;
+  const float tol = 1.e-14;
   int singularity = 0;
   CUSOLVERDriver::get_instance().csSpScsrcholZeroPivot(cusolver_handle_, info_,
                                                        tol, &singularity);
@@ -258,173 +375,118 @@ void CuSparseSolver::factorize(const SparseMatrix &sm) {
   TI_NOT_IMPLEMENTED
 #endif
 }
+void CuSparseSolver::factorize_lu(const SparseMatrix &sm) {
+#if defined(TI_WITH_CUDA)
+  // Retrive the info of the sparse matrix
+  SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t nnzA = A->get_nnz();
+  // step 4: workspace for LU(B)
+  size_t size_lu = 0;
+  size_t buffer_size = 0;
+  CUSOLVERDriver::get_instance().csSpScsrluBufferInfoHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_,
+      h_csrColIndB_, lu_info_, &buffer_size, &size_lu);
 
-void CuSparseSolver::solve_cu(Program *prog,
+  if (cpu_buffer_)
+    free(cpu_buffer_);
+  cpu_buffer_ = (void *)malloc(sizeof(char) * size_lu);
+  assert(nullptr != cpu_buffer_);
+
+  // step 5: compute Ppivot * B = L * U
+  CUSOLVERDriver::get_instance().csSpScsrluFactorHost(
+      cusolver_handle_, rowsA, nnzA, descr_, h_csrValB_, h_csrRowPtrB_,
+      h_csrColIndB_, lu_info_, 1.0f, cpu_buffer_);
+
+  // step 6: check singularity by tol
+  int singularity = 0;
+  const float tol = 1.e-6;
+  CUSOLVERDriver::get_instance().csSpScsrluZeroPivotHost(
+      cusolver_handle_, lu_info_, tol, &singularity);
+  TI_ASSERT(singularity == -1);
+  is_factorized_ = true;
+#else
+  TI_NOT_IMPLEMENTED
+#endif
+}
+void CuSparseSolver::solve_rf(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
                               const Ndarray &x) {
-#ifdef TI_WITH_CUDA
-  cusparseHandle_t cusparseHandle = nullptr;
-  CUSPARSEDriver::get_instance().cpCreate(&cusparseHandle);
-  cusolverSpHandle_t handle = nullptr;
-  CUSOLVERDriver::get_instance().csSpCreate(&handle);
+  switch (solver_type_) {
+    case SolverType::Cholesky:
+      solve_cholesky(prog, sm, b, x);
+      break;
+    case SolverType::LU:
+      solve_lu(prog, sm, b, x);
+      break;
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
 
-  int major_version, minor_version, patch_level;
-  CUSOLVERDriver::get_instance().csGetProperty(MAJOR_VERSION, &major_version);
-  CUSOLVERDriver::get_instance().csGetProperty(MINOR_VERSION, &minor_version);
-  CUSOLVERDriver::get_instance().csGetProperty(PATCH_LEVEL, &patch_level);
-  printf("Cusolver version: %d.%d.%d\n", major_version, minor_version,
-         patch_level);
-
+void CuSparseSolver::solve_cholesky(Program *prog,
+                                    const SparseMatrix &sm,
+                                    const Ndarray &b,
+                                    const Ndarray &x) {
+#if defined(TI_WITH_CUDA)
+  if (is_analyzed_ == false) {
+    analyze_pattern(sm);
+  }
+  if (is_factorized_ == false) {
+    factorize(sm);
+  }
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
-  size_t nrows = A->num_rows();
-  size_t ncols = A->num_cols();
-  size_t nnz = A->get_nnz();
-  void *drow_offsets = A->get_row_ptr();
-  void *dcol_indices = A->get_col_ind();
-  void *dvalues = A->get_val_ptr();
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
+  size_t rowsA = A->num_rows();
+  size_t colsA = A->num_cols();
+  size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
+  size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
 
-  size_t db = prog->get_ndarray_data_ptr_as_int(&b);
-  size_t dx = prog->get_ndarray_data_ptr_as_int(&x);
+  // step 1: d_Qb = Q * b
+  void *d_Qb = nullptr;
+  CUDADriver::get_instance().malloc(&d_Qb, sizeof(float) * rowsA);
+  cusparseDnVecDescr_t vec_b;
+  cusparseSpVecDescr_t vec_Qb;
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vec_b, (int)rowsA, (void *)d_b,
+                                               CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vec_Qb, (int)rowsA, (int)rowsA, d_Q_, d_Qb, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpGather(cusparse_handel_, vec_b, vec_Qb);
 
-  float *h_z = (float *)malloc(sizeof(float) * ncols);
-  float *h_x = (float *)malloc(sizeof(float) * ncols);
-  float *h_b = (float *)malloc(sizeof(float) * nrows);
-  float *h_Qb = (float *)malloc(sizeof(float) * nrows);
+  // step 2: solve B*z = Q*b using cholesky solver
+  void *d_z = nullptr;
+  CUDADriver::get_instance().malloc(&d_z, sizeof(float) * colsA);
+  CUSOLVERDriver::get_instance().csSpScsrcholSolve(
+      cusolver_handle_, rowsA, (void *)d_Qb, (void *)d_z, info_, gpu_buffer_);
 
-  int *h_Q = (int *)malloc(sizeof(int) * ncols);
-  int *hrow_offsets_B = (int *)malloc(sizeof(int) * (nrows + 1));
-  int *hcol_indices_B = (int *)malloc(sizeof(int) * nnz);
-  float *h_val_B = (float *)malloc(sizeof(float) * nnz);
-  int *h_mapBfromA = (int *)malloc(sizeof(int) * nnz);
+  // step 3: Q*x = z
+  cusparseSpVecDescr_t vecX;
+  cusparseDnVecDescr_t vecY;
+  CUSPARSEDriver::get_instance().cpCreateSpVec(
+      &vecX, (int)colsA, (int)colsA, d_Q_, d_z, CUSPARSE_INDEX_32I,
+      CUSPARSE_INDEX_BASE_ZERO, CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpCreateDnVec(&vecY, (int)colsA, (void *)d_x,
+                                               CUDA_R_32F);
+  CUSPARSEDriver::get_instance().cpScatter(cusparse_handel_, vecX, vecY);
 
-  assert(nullptr != h_z);
-  assert(nullptr != h_x);
-  assert(nullptr != h_b);
-  assert(nullptr != h_Qb);
-  assert(nullptr != h_Q);
-  assert(nullptr != hrow_offsets_B);
-  assert(nullptr != hcol_indices_B);
-  assert(nullptr != h_val_B);
-  assert(nullptr != h_mapBfromA);
-
-  int *hrow_offsets = nullptr, *hcol_indices = nullptr;
-  hrow_offsets = (int *)malloc(sizeof(int) * (nrows + 1));
-  hcol_indices = (int *)malloc(sizeof(int) * nnz);
-  assert(nullptr != hrow_offsets);
-  assert(nullptr != hcol_indices);
-  // Attention: drow_offsets is not freed at other palces
-  CUDADriver::get_instance().memcpy_device_to_host(
-      (void *)hrow_offsets, drow_offsets, sizeof(int) * (nrows + 1));
-  CUDADriver::get_instance().memcpy_device_to_host(
-      (void *)hcol_indices, dcol_indices, sizeof(int) * nnz);
-
-  /* configure matrix descriptor*/
-  cusparseMatDescr_t descrA = nullptr;
-  CUSPARSEDriver::get_instance().cpCreateMatDescr(&descrA);
-  CUSPARSEDriver::get_instance().cpSetMatType(descrA,
-                                              CUSPARSE_MATRIX_TYPE_GENERAL);
-  CUSPARSEDriver::get_instance().cpSetMatIndexBase(descrA,
-                                                   CUSPARSE_INDEX_BASE_ZERO);
-  int issym = 0;
-  CUSOLVERDriver::get_instance().csSpXcsrissymHost(
-      handle, nrows, nnz, descrA, (void *)hrow_offsets,
-      (void *)(hrow_offsets + 1), (void *)hcol_indices, &issym);
-  if (!issym) {
-    TI_ERROR("A has no symmetric pattern, please use LU or QR!");
-    return;
-  }
-
-  // step 2:reorder the matrix to minimize zero fill-in
-  CUSOLVERDriver::get_instance().csSpXcsrsymrcmHost(
-      handle, nrows, nnz, descrA, (void *)hrow_offsets, (void *)hcol_indices,
-      (void *)h_Q);  // symrcm method
-
-  // B = A(Q, Q)
-  memcpy(hrow_offsets_B, hrow_offsets, sizeof(int) * (nrows + 1));
-  memcpy(hcol_indices_B, hcol_indices, sizeof(int) * nnz);
-
-  size_t size_perm;
-  CUSOLVERDriver::get_instance().csSpXcsrperm_bufferSizeHost(
-      handle, nrows, ncols, nnz, descrA, (void *)hrow_offsets_B,
-      (void *)hcol_indices_B, (void *)h_Q, (void *)h_Q, &size_perm);
-  void *buffer_cpu = (void *)malloc(sizeof(char) * size_perm);
-  for (int j = 0; j < nnz; j++)
-    h_mapBfromA[j] = j;
-
-  CUSOLVERDriver::get_instance().csSpXcsrpermHost(
-      handle, nrows, ncols, nnz, descrA, (void *)hrow_offsets_B,
-      (void *)hcol_indices_B, (void *)h_Q, (void *)h_Q, (void *)h_mapBfromA,
-      (void *)buffer_cpu);
-
-  float *h_val_A = (float *)malloc(sizeof(float) * nnz);
-  CUDADriver::get_instance().memcpy_device_to_host(
-      (void *)h_val_A, (void *)dvalues, sizeof(int) * nnz);
-  for (int j = 0; j < nnz; j++)
-    h_val_B[j] = h_val_A[h_mapBfromA[j]];
-
-  CUDADriver::get_instance().memcpy_device_to_host((void *)h_b, (void *)db,
-                                                   sizeof(float) * nrows);
-  for (int row = 0; row < nrows; row++) {
-    h_Qb[row] = h_b[h_Q[row]];
-  }
-
-  // step 4: solve B*z = Q*b
-  float tol = 1e-6;
-  int reorder = 1;
-  int singularity = 0; /* -1 if A is invertible under tol. */
-  // use Cholesky decomposition as defualt
-  CUSOLVERDriver::get_instance().csSpScsrlsvcholHost(
-      handle, nrows, nnz, descrA, (void *)h_val_B, (void *)hrow_offsets_B,
-      (void *)hcol_indices_B, (void *)h_Qb, tol, reorder, (void *)h_z,
-      &singularity);
-  if (!singularity) {
-    TI_ERROR("A is a sigular matrix!");
-    return;
-  }
-
-  // step 5: Q*x = z
-  for (int row = 0; row < nrows; row++)
-    h_x[h_Q[row]] = h_z[row];
-
-  CUDADriver::get_instance().memcpy_host_to_device((void *)dx, (void *)h_x,
-                                                   sizeof(float) * ncols);
-
-  CUSOLVERDriver::get_instance().csSpDestory(handle);
-  CUSPARSEDriver::get_instance().cpDestroy(cusparseHandle);
-
-  if (hrow_offsets != nullptr)
-    free(hrow_offsets);
-  if (hcol_indices != nullptr)
-    free(hcol_indices);
-  if (hrow_offsets_B != nullptr)
-    free(hrow_offsets_B);
-  if (hcol_indices_B != nullptr)
-    free(hcol_indices_B);
-  if (h_Q != nullptr)
-    free(h_Q);
-  if (h_mapBfromA != nullptr)
-    free(h_mapBfromA);
-  if (h_z != nullptr)
-    free(h_z);
-  if (h_b != nullptr)
-    free(h_b);
-  if (h_Qb != nullptr)
-    free(h_Qb);
-  if (h_x != nullptr)
-    free(h_x);
-  if (buffer_cpu != nullptr)
-    free(buffer_cpu);
-  if (h_val_A != nullptr)
-    free(h_val_A);
-  if (h_val_B != nullptr)
-    free(h_val_B);
+  if (d_Qb != nullptr)
+    CUDADriver::get_instance().mem_free(d_Qb);
+  if (d_z != nullptr)
+    CUDADriver::get_instance().mem_free(d_z);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vec_Qb);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vec_b);
+  CUSPARSEDriver::get_instance().cpDestroySpVec(vecX);
+  CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);
+#else
+  TI_NOT_IMPLEMENTED
 #endif
 }
 
-void CuSparseSolver::solve_rf(Program *prog,
+void CuSparseSolver::solve_lu(Program *prog,
                               const SparseMatrix &sm,
                               const Ndarray &b,
                               const Ndarray &x) {
@@ -435,20 +497,43 @@ void CuSparseSolver::solve_rf(Program *prog,
   if (is_factorized_ == false) {
     factorize(sm);
   }
+
   // Retrive the info of the sparse matrix
   SparseMatrix *sm_no_cv = const_cast<SparseMatrix *>(&sm);
-  CuSparseMatrix *A = dynamic_cast<CuSparseMatrix *>(sm_no_cv);
+  CuSparseMatrix *A = static_cast<CuSparseMatrix *>(sm_no_cv);
   size_t rowsA = A->num_rows();
+  size_t colsA = A->num_cols();
+
+  // step 7: solve L*U*x = b
   size_t d_b = prog->get_ndarray_data_ptr_as_int(&b);
   size_t d_x = prog->get_ndarray_data_ptr_as_int(&x);
-  CUSOLVERDriver::get_instance().csSpScsrcholSolve(
-      cusolver_handle_, rowsA, (void *)d_b, (void *)d_x, info_, gpu_buffer_);
+  float *h_b = (float *)malloc(sizeof(float) * rowsA);
+  float *h_b_hat = (float *)malloc(sizeof(float) * rowsA);
+  float *h_x = (float *)malloc(sizeof(float) * colsA);
+  float *h_x_hat = (float *)malloc(sizeof(float) * colsA);
+  assert(nullptr != h_b);
+  assert(nullptr != h_b_hat);
+  assert(nullptr != h_x);
+  assert(nullptr != h_x_hat);
+  CUDADriver::get_instance().memcpy_device_to_host((void *)h_b, (void *)d_b,
+                                                   sizeof(float) * rowsA);
+  CUDADriver::get_instance().memcpy_device_to_host((void *)h_x, (void *)d_x,
+                                                   sizeof(float) * colsA);
+  for (int j = 0; j < rowsA; j++) {
+    h_b_hat[j] = h_b[h_Q_[j]];
+  }
+  CUSOLVERDriver::get_instance().csSpScsrluSolveHost(
+      cusolver_handle_, rowsA, h_b_hat, h_x_hat, lu_info_, cpu_buffer_);
+  for (int j = 0; j < colsA; j++) {
+    h_x[h_Q_[j]] = h_x_hat[j];
+  }
+  CUDADriver::get_instance().memcpy_host_to_device((void *)d_x, (void *)h_x,
+                                                   sizeof(float) * colsA);
 
-  // TODO: free allocated memory and handles
-  // CUDADriver::get_instance().mem_free(gpu_buffer_);
-  // CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
-  // CUSPARSEDriver::get_instance().cpDestroy(cusparse_handel_);
-  // CUSPARSEDriver::get_instance().cpDestroyMatDescr(descrA);
+  free(h_b);
+  free(h_b_hat);
+  free(h_x);
+  free(h_x_hat);
 #else
   TI_NOT_IMPLEMENTED
 #endif
@@ -492,10 +577,53 @@ std::unique_ptr<SparseSolver> make_sparse_solver(DataType dt,
     TI_ERROR("Not supported sparse solver type: {}", solver_type);
 }
 
+CuSparseSolver::~CuSparseSolver() {
+#if defined(TI_WITH_CUDA)
+  if (h_Q_ != nullptr)
+    free(h_Q_);
+  if (h_csrRowPtrB_ != nullptr)
+    free(h_csrRowPtrB_);
+  if (h_csrColIndB_ != nullptr)
+    free(h_csrColIndB_);
+  if (h_csrValB_ != nullptr)
+    free(h_csrValB_);
+  if (h_mapBfromA_ != nullptr)
+    free(h_mapBfromA_);
+  if (cpu_buffer_ != nullptr)
+    free(cpu_buffer_);
+  if (info_ != nullptr)
+    CUSOLVERDriver::get_instance().csSpDestroyCsrcholInfo(info_);
+  if (lu_info_ != nullptr)
+    CUSOLVERDriver::get_instance().csSpDestroyCsrluInfoHost(lu_info_);
+  if (cusolver_handle_ != nullptr)
+    CUSOLVERDriver::get_instance().csSpDestory(cusolver_handle_);
+  if (cusparse_handel_ != nullptr)
+    CUSPARSEDriver::get_instance().cpDestroy(cusparse_handel_);
+  if (descr_ != nullptr)
+    CUSPARSEDriver::get_instance().cpDestroyMatDescr(descr_);
+  if (gpu_buffer_ != nullptr)
+    CUDADriver::get_instance().mem_free(gpu_buffer_);
+  if (d_Q_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_Q_);
+  if (d_csrRowPtrB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrRowPtrB_);
+  if (d_csrColIndB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrColIndB_);
+  if (d_csrValB_ != nullptr)
+    CUDADriver::get_instance().mem_free(d_csrValB_);
+#endif
+}
 std::unique_ptr<SparseSolver> make_cusparse_solver(
     DataType dt,
     const std::string &solver_type,
     const std::string &ordering) {
-  return std::make_unique<CuSparseSolver>();
+  if (solver_type == "LLT" || solver_type == "LDLT") {
+    return std::make_unique<CuSparseSolver>(
+        CuSparseSolver::SolverType::Cholesky);
+  } else if (solver_type == "LU") {
+    return std::make_unique<CuSparseSolver>(CuSparseSolver::SolverType::LU);
+  } else {
+    TI_ERROR("Not supported sparse solver type: {}", solver_type);
+  }
 }
 }  // namespace taichi::lang

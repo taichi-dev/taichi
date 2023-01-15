@@ -18,6 +18,14 @@
 namespace taichi::lang {
 namespace offline_cache {
 
+constexpr char kLlvmCacheFilenameLLExt[] = "ll";
+constexpr char kLlvmCacheFilenameBCExt[] = "bc";
+constexpr char kSpirvCacheFilenameExt[] = "spv";
+constexpr char kMetalCacheFilenameExt[] = "metal";
+constexpr char kLlvmCachSubPath[] = "llvm";
+constexpr char kSpirvCacheSubPath[] = "gfx";
+constexpr char kMetalCacheSubPath[] = "metal";
+
 using Version = std::uint16_t[3];  // {MAJOR, MINOR, PATCH}
 
 enum CleanCacheFlags {
@@ -173,13 +181,18 @@ class CacheCleaner {
       std::string lock_path =
           taichi::join_path(path, config.metadata_lock_name);
       if (!lock_with_file(lock_path)) {
-        TI_WARN("Lock {} failed", lock_path);
+        TI_WARN(
+            "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
+            lock_path, path);
         return;
       }
       auto _ = make_cleanup([&lock_path]() {
         TI_DEBUG("Stop cleaning cache");
         if (!unlock_with_file(lock_path)) {
-          TI_WARN("Unlock {} failed", lock_path);
+          TI_WARN(
+              "Unlock {} failed. You can remove this .lock file manually and "
+              "try again.",
+              lock_path);
         }
       });
       TI_DEBUG("Start cleaning cache");
@@ -286,6 +299,9 @@ std::string mangle_name(const std::string &primal_name, const std::string &key);
 bool try_demangle_name(const std::string &mangled_name,
                        std::string &primal_name,
                        std::string &key);
+
+// utils to manage the offline cache files
+std::size_t clean_offline_cache_files(const std::string &path);
 
 }  // namespace offline_cache
 }  // namespace taichi::lang

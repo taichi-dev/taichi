@@ -69,7 +69,7 @@ def compile_bitmasked_aot(arch):
 
     m.add_field("x", x)
 
-    m.save(dir_name, 'whatever')
+    m.save(dir_name)
 
 
 if __name__ == "__main__":

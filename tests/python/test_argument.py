@@ -26,7 +26,7 @@ def test_exceed_max_eight():
         foo2(1, 2, 3, 4, 5, 6, 7, 8, 9)
 
 
-@test_utils.test(exclude=[ti.opengl, ti.cc])
+@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc])
 def test_exceed_max_64():
     N = 64
 

@@ -38,6 +38,12 @@ class AnyArray:
 
     @property
     @taichi_scope
+    def grad(self):
+        """Returns the gradient of this array."""
+        return AnyArray(_ti_core.make_external_grad_tensor_expr(self.ptr))
+
+    @property
+    @taichi_scope
     def shape(self):
         """A list containing sizes for each dimension. Note that element shape will be excluded.
 
@@ -78,6 +84,8 @@ class AnyArrayAccess:
 
     @taichi_scope
     def subscript(self, i, j):
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
+
         indices_second = (i, ) if len(self.arr.element_shape()) == 1 else (i,
                                                                            j)
         if self.arr.layout() == Layout.SOA:
@@ -85,8 +93,9 @@ class AnyArrayAccess:
         else:
             indices = self.indices_first + indices_second
         return Expr(
-            _ti_core.subscript(self.arr.ptr, make_expr_group(*indices),
-                               impl.get_runtime().get_current_src_info()))
+            ast_builder.expr_subscript(
+                self.arr.ptr, make_expr_group(*indices),
+                impl.get_runtime().get_current_src_info()))
 
 
 __all__ = []

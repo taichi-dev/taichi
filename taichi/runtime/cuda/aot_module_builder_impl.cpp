@@ -9,7 +9,7 @@ namespace taichi::lang {
 namespace cuda {
 
 LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
-  auto cgen = KernelCodeGenCUDA(kernel);
+  auto cgen = KernelCodeGenCUDA(get_compile_config(), kernel);
   return cgen.compile_kernel_to_module();
 }
 

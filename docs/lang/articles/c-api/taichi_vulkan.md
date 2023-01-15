@@ -10,6 +10,8 @@ Taichi's Vulkan API gives you further control over the Vulkan version and extens
 
 ### Structure `TiVulkanRuntimeInteropInfo`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.vulkan_runtime_interop_info
 typedef struct TiVulkanRuntimeInteropInfo {
@@ -42,6 +44,8 @@ Necessary detail to share the same Vulkan runtime between Taichi and external pr
 ---
 ### Structure `TiVulkanMemoryInteropInfo`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // structure.vulkan_memory_interop_info
 typedef struct TiVulkanMemoryInteropInfo {
@@ -63,6 +67,8 @@ Necessary detail to share the same piece of Vulkan buffer between Taichi and ext
 
 ---
 ### Structure `TiVulkanImageInteropInfo`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // structure.vulkan_image_interop_info
@@ -92,21 +98,9 @@ Necessary detail to share the same piece of Vulkan image between Taichi and exte
 - `usage`: Vulkan image usage. In most cases, Taichi requires the `VK_IMAGE_USAGE_STORAGE_BIT` and the `VK_IMAGE_USAGE_SAMPLED_BIT`.
 
 ---
-### Structure `TiVulkanEventInteropInfo`
-
-```c
-// structure.vulkan_event_interop_info
-typedef struct TiVulkanEventInteropInfo {
-  VkEvent event;
-} TiVulkanEventInteropInfo;
-```
-
-Necessary detail to share the same Vulkan event synchronization primitive between Taichi and the user application.
-
-- `event`: Vulkan event handle.
-
----
 ### Function `ti_create_vulkan_runtime_ext`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.create_vulkan_runtime
@@ -124,6 +118,8 @@ Creates a Vulkan Taichi runtime with user-controlled capability settings.
 ---
 ### Function `ti_import_vulkan_runtime`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.import_vulkan_runtime
 TI_DLL_EXPORT TiRuntime TI_API_CALL ti_import_vulkan_runtime(
@@ -135,6 +131,8 @@ Imports the Vulkan runtime owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_runtime`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.export_vulkan_runtime
@@ -149,6 +147,8 @@ Exports a Vulkan runtime from external procedures to Taichi.
 ---
 ### Function `ti_import_vulkan_memory`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.import_vulkan_memory
 TI_DLL_EXPORT TiMemory TI_API_CALL ti_import_vulkan_memory(
@@ -161,6 +161,8 @@ Imports the Vulkan buffer owned by Taichi to external procedures.
 
 ---
 ### Function `ti_export_vulkan_memory`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.export_vulkan_memory
@@ -175,6 +177,8 @@ Exports a Vulkan buffer from external procedures to Taichi.
 
 ---
 ### Function `ti_import_vulkan_image`
+
+> Stable since Taichi version: 1.4.0
 
 ```c
 // function.import_vulkan_image
@@ -191,6 +195,8 @@ Imports the Vulkan image owned by Taichi to external procedures.
 ---
 ### Function `ti_export_vulkan_image`
 
+> Stable since Taichi version: 1.4.0
+
 ```c
 // function.export_vulkan_image
 TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
@@ -201,30 +207,3 @@ TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_image(
 ```
 
 Exports a Vulkan image from external procedures to Taichi.
-
----
-### Function `ti_import_vulkan_event`
-
-```c
-// function.import_vulkan_event
-TI_DLL_EXPORT TiEvent TI_API_CALL ti_import_vulkan_event(
-  TiRuntime runtime,
-  const TiVulkanEventInteropInfo* interop_info
-);
-```
-
-Imports the Vulkan event owned by Taichi to external procedures.
-
----
-### Function `ti_export_vulkan_event`
-
-```c
-// function.export_vulkan_event
-TI_DLL_EXPORT void TI_API_CALL ti_export_vulkan_event(
-  TiRuntime runtime,
-  TiEvent event,
-  TiVulkanEventInteropInfo* interop_info
-);
-```
-
-Exports a Vulkan event from external procedures to Taichi.

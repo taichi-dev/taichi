@@ -26,6 +26,8 @@ VulkanRuntimeImported::Workaround::Workaround(
   taichi::lang::vulkan::VulkanLoader::instance().load_instance(params.instance);
   taichi::lang::vulkan::VulkanLoader::instance().load_device(params.device);
   vk_device.vk_caps().vk_api_version = api_version;
+  // FIXME: (penguinliong) Workaround missing vulkan caps from import.
+  vk_device.vk_caps().external_memory = true;
 
   taichi::lang::DeviceCapabilityConfig caps{};
 
@@ -220,10 +222,10 @@ TiMemory ti_import_vulkan_memory(
   taichi::lang::vulkan::VulkanDevice &vk_runtime =
       static_cast<VulkanRuntime *>(runtime2)->get_vk();
 
-  vkapi::IVkBuffer buffer =
-      vkapi::create_buffer(vk_runtime.vk_device(), interop_info->buffer,
-                           interop_info->size, interop_info->usage);
-  taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(buffer);
+  vkapi::IVkBuffer buffer = vkapi::create_buffer(
+      vk_runtime.vk_device(), interop_info->buffer, interop_info->usage);
+  taichi::lang::DeviceAllocation devalloc = vk_runtime.import_vkbuffer(
+      buffer, interop_info->size, interop_info->memory, interop_info->offset);
   out = devalloc2devmem(*runtime2, devalloc);
   TI_CAPI_TRY_CATCH_END();
   return out;
@@ -240,11 +242,11 @@ void ti_export_vulkan_memory(TiRuntime runtime,
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   vkapi::IVkBuffer buffer = runtime2->get_vk().get_vkbuffer(devalloc);
 
-  auto [vk_mem, offset, __] =
+  auto [vk_mem, offset, size] =
       runtime2->get_vk().get_vkmemory_offset_size(devalloc);
 
   interop_info->buffer = buffer.get()->buffer;
-  interop_info->size = buffer.get()->size;
+  interop_info->size = size;
   interop_info->usage = buffer.get()->usage;
   interop_info->memory = vk_mem;
   interop_info->offset = (uint64_t)offset;
@@ -332,44 +334,6 @@ void ti_export_vulkan_image(TiRuntime runtime,
   interop_info->sample_count = VK_SAMPLE_COUNT_1_BIT;
   interop_info->tiling = VK_IMAGE_TILING_OPTIMAL;
   interop_info->usage = image2->usage;
-  TI_CAPI_TRY_CATCH_END();
-}
-
-TiEvent ti_import_vulkan_event(TiRuntime runtime,
-                               const TiVulkanEventInteropInfo *interop_info) {
-  TiEvent out = TI_NULL_HANDLE;
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL_RV(runtime);
-  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
-  TI_CAPI_ARGUMENT_NULL_RV(interop_info->event);
-  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, vulkan);
-
-  Runtime *runtime2 = (Runtime *)runtime;
-
-  vkapi::IVkEvent event = std::make_unique<vkapi::DeviceObjVkEvent>();
-  event->device = runtime2->as_vk()->get_vk().vk_device();
-  event->event = interop_info->event;
-  event->external = true;
-
-  std::unique_ptr<taichi::lang::DeviceEvent> event2(
-      new taichi::lang::vulkan::VulkanDeviceEvent(std::move(event)));
-
-  out = (TiEvent) new Event(*runtime2, std::move(event2));
-  TI_CAPI_TRY_CATCH_END();
-  return out;
-}
-void ti_export_vulkan_event(TiRuntime runtime,
-                            TiEvent event,
-                            TiVulkanEventInteropInfo *interop_info) {
-  TI_CAPI_TRY_CATCH_BEGIN();
-  TI_CAPI_ARGUMENT_NULL(runtime);
-  TI_CAPI_ARGUMENT_NULL(event);
-  TI_CAPI_ARGUMENT_NULL(interop_info);
-  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, vulkan);
-
-  auto event2 =
-      (taichi::lang::vulkan::VulkanDeviceEvent *)(&((Event *)event)->get());
-  interop_info->event = event2->vkapi_ref->event;
   TI_CAPI_TRY_CATCH_END();
 }
 

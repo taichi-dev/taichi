@@ -30,8 +30,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  explicit TaskCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(kernel, ir) {
+  explicit TaskCodeGenCUDA(const CompileConfig *config,
+                           Kernel *kernel,
+                           IRNode *ir = nullptr)
+      : TaskCodeGenLLVM(config, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -106,7 +108,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           auto elem_type = dtype->get_element_type();
           for (int i = 0; i < dtype->get_num_elements(); ++i) {
             llvm::Value *elem_value;
-            if (codegen_vector_type(&prog->this_thread_config())) {
+            if (codegen_vector_type(compile_config)) {
               TI_ASSERT(llvm::dyn_cast<llvm::VectorType>(value_type));
               elem_value = builder->CreateExtractElement(value, i);
             } else {
@@ -364,7 +366,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -382,7 +384,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -394,7 +396,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_rc_parallel_0", get_context());
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -412,7 +414,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_rc_parallel_2", get_context());
       finalize_offloaded_task_function();
-      current_task->grid_dim = prog->this_thread_config().saturating_grid_dim;
+      current_task->grid_dim = compile_config->saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -584,26 +586,19 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   }
 };
 
-#ifdef TI_WITH_LLVM
-// static
-std::unique_ptr<TaskCodeGenLLVM> KernelCodeGenCUDA::make_codegen_llvm(
-    Kernel *kernel,
-    IRNode *ir) {
-  return std::make_unique<TaskCodeGenCUDA>(kernel, ir);
-}
-#endif  // TI_WITH_LLVM
-
 LLVMCompiledTask KernelCodeGenCUDA::compile_task(
+    const CompileConfig *config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenCUDA gen(kernel, stmt);
+  TaskCodeGenCUDA gen(config, kernel, stmt);
   return gen.run_compilation();
 }
 
 FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(kernel->arch);
+  const auto &config = *get_compile_config();
+  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
 
   CUDAModuleToFunctionConverter converter{tlctx,
                                           llvm_prog->get_runtime_executor()};
@@ -627,6 +622,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     CUDAContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
+    std::vector<DeviceAllocation> temporary_devallocs(args.size());
 
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
@@ -655,7 +651,13 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             //   host.
             // See CUDA driver API `cuPointerGetAttribute` for more details.
             transferred = true;
-            CUDADriver::get_instance().malloc(&device_buffers[i], arr_sz);
+
+            auto result_buffer = context.result_buffer;
+            DeviceAllocation devalloc =
+                executor->allocate_memory_ndarray(arr_sz, result_buffer);
+            device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
+            temporary_devallocs[i] = devalloc;
+
             CUDADriver::get_instance().memcpy_host_to_device(
                 (void *)device_buffers[i], arg_buffers[i], arr_sz);
           } else {
@@ -692,7 +694,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                          {&context});
+                          {&context}, {});
     }
 
     // copy data back to host
@@ -703,7 +705,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
           CUDADriver::get_instance().memcpy_device_to_host(
               arg_buffers[i], (void *)device_buffers[i],
               context.array_runtime_sizes[i]);
-          CUDADriver::get_instance().mem_free((void *)device_buffers[i]);
+          executor->deallocate_memory_ndarray(temporary_devallocs[i]);
         }
       }
     }

@@ -162,10 +162,6 @@ def _svd3d(A, dt, iters=None):
         Decomposed 3x3 matrices `U`, 'S' and `V`.
     """
     assert A.n == 3 and A.m == 3
-    if impl.current_cfg().real_matrix:
-        inputs = get_runtime().prog.current_ast_builder().expand_expr([A.ptr])
-    else:
-        inputs = tuple([e.ptr for e in A.entries])
     assert dt in [f32, f64]
     if iters is None:
         if dt == f32:
@@ -173,11 +169,11 @@ def _svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == f32:
-        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f32(
-            *inputs, iters)
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(
+            A.ptr, iters)
     else:
-        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f64(
-            *inputs, iters)
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(
+            A.ptr, iters)
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]

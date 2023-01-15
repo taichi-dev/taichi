@@ -17,7 +17,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
  public:
   std::string name;
   std::vector<SNode *> no_activate;
-  Arch arch;
 
   bool is_accessor{false};
   bool is_evaluator{false};
@@ -47,6 +46,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
                                            const std::vector<int64> &shape);
 
     void set_arg_ndarray(int arg_id, const Ndarray &arr);
+    void set_arg_ndarray_with_grad(int arg_id,
+                                   const Ndarray &arr,
+                                   const Ndarray &arr_grad);
 
     void set_arg_texture(int arg_id, const Texture &tex);
     void set_arg_rw_texture(int arg_id, const Texture &tex);
@@ -82,6 +84,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
          const std::string &name = "",
          AutodiffMode autodiff_mode = AutodiffMode::kNone);
 
+  bool ir_is_ast() const {
+    return ir_is_ast_;
+  }
+
   bool lowered() const {
     return lowered_;
   }
@@ -92,14 +98,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   void compile();
 
-  /**
-   * Lowers |ir| to CHI IR level
-   *
-   * @param to_executable: If true, lowers |ir| to a point where the CHI
-   * statements can be directly translated by each backend's codegen.
-   */
-  void lower(bool to_executable = true);
-
   void operator()(LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
@@ -108,33 +106,17 @@ class TI_DLL_EXPORT Kernel : public Callable {
   T fetch_ret(DataType dt, int i);
 
   float64 get_ret_float(int i);
-
   int64 get_ret_int(int i);
   uint64 get_ret_uint(int i);
-
   std::vector<int64> get_ret_int_tensor(int i);
   std::vector<uint64> get_ret_uint_tensor(int i);
-
   std::vector<float64> get_ret_float_tensor(int i);
-
-  void set_arch(Arch arch);
 
   uint64 get_next_task_id() {
     return task_counter_++;
   }
 
-  void mark_as_from_cache() {
-    from_cache_ = true;
-  }
-
   [[nodiscard]] std::string get_name() const override;
-  /**
-   * Whether the given |arch| is supported in the lower() method.
-   *
-   * @param arch: The arch to check
-   * @return: True if supported.
-   */
-  static bool supports_lowering(Arch arch);
 
   void set_kernel_key_for_cache(const std::string &kernel_key) {
     kernel_key_ = kernel_key;
@@ -143,6 +125,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() {
     return kernel_key_;
   }
+
   void offload_to_executable(IRNode *stmt);
 
  private:
@@ -161,7 +144,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
   std::string kernel_key_;
-  bool from_cache_{false};
 };
 
 }  // namespace taichi::lang

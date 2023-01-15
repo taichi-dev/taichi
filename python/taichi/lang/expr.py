@@ -25,7 +25,6 @@ class Expr(TaichiOperations):
                     'Cannot initialize scalar expression from '
                     f'taichi class: {type(args[0])}')
             elif isinstance(args[0], (list, tuple)):
-                assert impl.current_cfg().real_matrix
                 self.ptr = make_matrix(args[0]).ptr
             else:
                 # assume to be constant
@@ -156,12 +155,9 @@ def make_expr_group(*exprs, real_func_arg=False):
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
         if isinstance(i, Matrix):
-            if real_func_arg:
-                for item in i.entries:
-                    expr_group.push_back(Expr(item).ptr)
-            else:
-                assert i.local_tensor_proxy is not None
-                expr_group.push_back(i.local_tensor_proxy)
+            assert real_func_arg
+            for item in i.entries:
+                expr_group.push_back(Expr(item).ptr)
         else:
             expr_group.push_back(Expr(i).ptr)
     return expr_group
@@ -173,10 +169,6 @@ def _get_flattened_ptrs(val):
         for item in val._members:
             ptrs.extend(_get_flattened_ptrs(item))
         return ptrs
-    if impl.current_cfg().real_matrix and isinstance(
-            val, Expr) and val.ptr.is_tensor():
-        return impl.get_runtime().prog.current_ast_builder().expand_expr(
-            [val.ptr])
     return [Expr(val).ptr]
 
 

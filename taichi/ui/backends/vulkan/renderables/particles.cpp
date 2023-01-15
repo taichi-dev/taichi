@@ -26,7 +26,9 @@ void Particles::update_ubo(glm::vec3 color,
   ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
   ubo.use_per_vertex_color = use_per_vertex_color;
 
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -39,7 +41,9 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     create_bindings();
   }
   {
-    void *mapped = app_context_->device().map(storage_buffer_);
+    void *mapped{nullptr};
+    TI_ASSERT(app_context_->device().map(storage_buffer_, &mapped) ==
+              RhiResult::success);
     memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
     app_context_->device().unmap(storage_buffer_);
   }
@@ -65,20 +69,34 @@ void Particles::init_particles(AppContext *app_context,
       true,
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv",
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv",
-      TopologyType::Points,
+      TopologyType::Triangles,  // We use two triangles to draw out a quad
       PolygonMode::Fill,
       vbo_attrs,
+      true  // point instancing
   };
 
   Renderable::init(config, app_context);
   Renderable::init_render_resources();
 }
 
+void Particles::record_this_frame_commands(CommandList *command_list) {
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_shader_resources(resource_set_.get());
+
+  // We draw num_particles * 6, 6 forms a quad
+  // The `first_instance` should then instead set with `draw_first_vertex`,
+  // and the first index always need to be 0
+  command_list->draw_instance(/*num_verticies=*/6,
+                              /*num_instances=*/config_.draw_vertex_count,
+                              /*start_vertex=*/0,
+                              /*start_instance=*/config_.draw_first_vertex);
+}
+
 void Particles::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->buffer(0, 0, uniform_buffer_);
-  binder->rw_buffer(0, 1, storage_buffer_);
+  resource_set_->buffer(0, uniform_buffer_);
+  resource_set_->rw_buffer(1, storage_buffer_);
 }
 
 }  // namespace vulkan

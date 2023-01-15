@@ -75,6 +75,7 @@ std::string CUDAContext::get_device_name() {
 void CUDAContext::launch(void *func,
                          const std::string &task_name,
                          std::vector<void *> arg_pointers,
+                         std::vector<int> arg_sizes,
                          unsigned grid_dim,
                          unsigned block_dim,
                          std::size_t dynamic_shared_mem_bytes) {

@@ -82,6 +82,23 @@ class LowerAST : public IRVisitor {
     }
   }
 
+  void visit(FrontendFuncCallStmt *stmt) override {
+    Block *block = stmt->parent;
+    std::vector<Stmt *> args;
+    args.reserve(stmt->args.exprs.size());
+    auto fctx = make_flatten_ctx();
+    for (const auto &arg : stmt->args.exprs) {
+      args.push_back(flatten_rvalue(arg, &fctx));
+    }
+    auto lowered = fctx.push_back<FuncCallStmt>(stmt->func, args);
+    stmt->parent->replace_with(stmt, std::move(fctx.stmts));
+    if (const auto &ident = stmt->ident) {
+      TI_ASSERT(block->local_var_to_stmt.find(ident.value()) ==
+                block->local_var_to_stmt.end());
+      block->local_var_to_stmt.insert(std::make_pair(ident.value(), lowered));
+    }
+  }
+
   void visit(FrontendIfStmt *stmt) override {
     auto fctx = make_flatten_ctx();
     auto condition_stmt = flatten_rvalue(stmt->condition, &fctx);
@@ -404,8 +421,6 @@ class LowerAST : public IRVisitor {
       } else {
         fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
       }
-    } else if (dest.is<StrideExpression>()) {
-      fctx.push_back<GlobalStoreStmt>(dest_stmt, expr_stmt);
     } else {
       TI_ASSERT(dest.is<ArgLoadExpression>() &&
                 dest.cast<ArgLoadExpression>()->is_ptr);

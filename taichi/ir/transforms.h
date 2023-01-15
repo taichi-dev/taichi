@@ -29,7 +29,8 @@ namespace irpass {
 
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
-void scalarize(IRNode *root, const CompileConfig &config);
+void eliminate_immutable_local_vars(IRNode *root);
+void scalarize(IRNode *root);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
@@ -130,7 +131,7 @@ bool replace_and_insert_statements(
 bool replace_statements(IRNode *root,
                         std::function<bool(Stmt *)> filter,
                         std::function<Stmt *(Stmt *)> finder);
-void demote_dense_struct_fors(IRNode *root, bool packed);
+void demote_dense_struct_fors(IRNode *root);
 void demote_no_access_mesh_fors(IRNode *root);
 bool demote_atomics(IRNode *root, const CompileConfig &config);
 void reverse_segments(IRNode *root);  // for autograd
@@ -194,6 +195,10 @@ void compile_function(IRNode *ir,
                       AutodiffMode autodiff_mode,
                       bool verbose,
                       bool start_from_ast);
+
+void ast_to_ir(const CompileConfig &config,
+               Kernel &kernel,
+               bool to_executable = true);
 }  // namespace irpass
 
 }  // namespace taichi::lang

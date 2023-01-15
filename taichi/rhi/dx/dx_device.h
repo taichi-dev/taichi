@@ -15,42 +15,27 @@ constexpr bool kD3d11DebugEnabled = false;
 // force software rendering.
 constexpr bool kD3d11ForceRef = false;
 // Enable to spawn a debug window and swapchain
-//#define TAICHI_DX11_DEBUG_WINDOW
+// #define TAICHI_DX11_DEBUG_WINDOW
 
 void check_dx_error(HRESULT hr, const char *msg);
 
-class Dx11ResourceBinder : public ResourceBinder {
+class Dx11ResourceSet : public ShaderResourceSet {
  public:
-  ~Dx11ResourceBinder() override;
-  std::unique_ptr<ResourceBinder::Bindings> materialize() override;
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DevicePtr ptr,
-                 size_t size) override;
-  void rw_buffer(uint32_t set,
-                 uint32_t binding,
-                 DeviceAllocation alloc) override;
-  void buffer(uint32_t set,
-              uint32_t binding,
-              DevicePtr ptr,
-              size_t size) override;
-  void buffer(uint32_t set, uint32_t binding, DeviceAllocation alloc) override;
-  void image(uint32_t set,
-             uint32_t binding,
-             DeviceAllocation alloc,
-             ImageSamplerConfig sampler_config) override;
-  void rw_image(uint32_t set,
-                uint32_t binding,
-                DeviceAllocation alloc,
-                int lod) override;
+  Dx11ResourceSet() = default;
+  ~Dx11ResourceSet() override;
 
-  // Set vertex buffer (not implemented in compute only device)
-  void vertex_buffer(DevicePtr ptr, uint32_t binding = 0) override;
-
-  // Set index buffer (not implemented in compute only device)
-  // index_width = 4 -> uint32 index
-  // index_width = 2 -> uint16 index
-  void index_buffer(DevicePtr ptr, size_t index_width) override;
+  ShaderResourceSet &rw_buffer(uint32_t binding,
+                               DevicePtr ptr,
+                               size_t size) final;
+  ShaderResourceSet &rw_buffer(uint32_t binding, DeviceAllocation alloc) final;
+  ShaderResourceSet &buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
+  ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
+  ShaderResourceSet &image(uint32_t binding,
+                           DeviceAllocation alloc,
+                           ImageSamplerConfig sampler_config) final;
+  ShaderResourceSet &rw_image(uint32_t binding,
+                              DeviceAllocation alloc,
+                              int lod) final;
 
   const std::unordered_map<uint32_t, uint32_t> &uav_binding_to_alloc_id() {
     return uav_binding_to_alloc_id_;
@@ -65,6 +50,20 @@ class Dx11ResourceBinder : public ResourceBinder {
   std::unordered_map<uint32_t, uint32_t> cb_binding_to_alloc_id_;
 };
 
+class Dx11RasterResources : public RasterResources {
+  ~Dx11RasterResources() override = default;
+
+  RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) final {
+    TI_NOT_IMPLEMENTED;
+    return *this;
+  }
+
+  RasterResources &index_buffer(DevicePtr ptr, size_t index_width) final {
+    TI_NOT_IMPLEMENTED;
+    return *this;
+  }
+};
+
 class Dx11Device;
 
 class Dx11Pipeline : public Pipeline {
@@ -73,7 +72,7 @@ class Dx11Pipeline : public Pipeline {
                const std::string &name,
                Dx11Device *device);
   ~Dx11Pipeline() override;
-  ResourceBinder *resource_binder() override;
+
   ID3D11ComputeShader *get_program() {
     return compute_shader_;
   }
@@ -87,7 +86,6 @@ class Dx11Pipeline : public Pipeline {
   Dx11Device *device_{nullptr};
 
   ID3D11ComputeShader *compute_shader_{nullptr};
-  Dx11ResourceBinder binder_;
   std::string name_;
 };
 
@@ -96,7 +94,7 @@ class Dx11Stream : public Stream {
   Dx11Stream(Dx11Device *);
   ~Dx11Stream() override;
 
-  std::unique_ptr<CommandList> new_command_list() override;
+  RhiResult new_command_list(CommandList **out_cmdlist) noexcept final;
   StreamSemaphore submit(
       CommandList *cmdlist,
       const std::vector<StreamSemaphore> &wait_semaphores = {}) override;
@@ -114,16 +112,16 @@ class Dx11CommandList : public CommandList {
   Dx11CommandList(Dx11Device *ti_device);
   ~Dx11CommandList() override;
 
-  void bind_pipeline(Pipeline *p) override;
-  void bind_resources(ResourceBinder *binder) override;
-  void bind_resources(ResourceBinder *binder,
-                      ResourceBinder::Bindings *bindings) override;
-  void buffer_barrier(DevicePtr ptr, size_t size) override;
-  void buffer_barrier(DeviceAllocation alloc) override;
-  void memory_barrier() override;
-  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) override;
-  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) override;
-  void dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) override;
+  void bind_pipeline(Pipeline *p) noexcept final;
+  RhiResult bind_shader_resources(ShaderResourceSet *res,
+                                  int set_index = 0) noexcept final;
+  RhiResult bind_raster_resources(RasterResources *res) noexcept final;
+  void buffer_barrier(DevicePtr ptr, size_t size) noexcept final;
+  void buffer_barrier(DeviceAllocation alloc) noexcept final;
+  void memory_barrier() noexcept final;
+  void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
+  void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
+  RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
   // These are not implemented in compute only device
   void begin_renderpass(int x0,
@@ -177,13 +175,23 @@ class Dx11Device : public GraphicsDevice {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override;
-  void *map_range(DevicePtr ptr, uint64_t size) override;
-  void *map(DeviceAllocation alloc) override;
-  void unmap(DevicePtr ptr) override;
-  void unmap(DeviceAllocation alloc) override;
+
+  ShaderResourceSet *create_resource_set() final {
+    return new Dx11ResourceSet;
+  }
+
+  RasterResources *create_raster_resources() final {
+    return new Dx11RasterResources;
+  }
+
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
+  RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
+  RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
+  void unmap(DevicePtr ptr) final;
+  void unmap(DeviceAllocation alloc) final;
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
   Stream *get_compute_stream() override;
   std::unique_ptr<Pipeline> create_raster_pipeline(

@@ -17,7 +17,6 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
   auto func = []() {};
   auto kernel =
       std::make_unique<Kernel>(*test_prog.prog(), func, "fake_kernel");
-  block->kernel = kernel.get();
 
   auto get_root = block->push_back<GetRootStmt>();
   auto linearized_empty = block->push_back<LinearizeStmt>(std::vector<Stmt *>(),

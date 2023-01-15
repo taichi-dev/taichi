@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import platform
 import shutil
+import subprocess
 import sys
 from distutils.command.clean import clean
 from distutils.dir_util import remove_tree
@@ -21,14 +22,13 @@ from skbuild.command.egg_info import egg_info
 root_dir = os.path.dirname(os.path.abspath(__file__))
 
 classifiers = [
-    'Development Status :: 2 - Pre-Alpha',
+    'Development Status :: 5 - Production/Stable',
     'Topic :: Software Development :: Compilers',
     'Topic :: Multimedia :: Graphics',
     'Topic :: Games/Entertainment :: Simulation',
     'Intended Audience :: Science/Research',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: Apache Software License',
-    'Programming Language :: Python :: 3.6',
     'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
@@ -110,6 +110,7 @@ def get_cmake_args():
     cmake_args = shlex.split(os.getenv('TAICHI_CMAKE_ARGS', '').strip())
 
     use_msbuild = False
+    use_xcode = False
 
     if (os.getenv('DEBUG', '0') in ('1', 'ON')):
         cfg = 'Debug'
@@ -129,6 +130,11 @@ def get_cmake_args():
             build_options.extend(['-G', 'Visual Studio 17 2022'])
         else:
             build_options.extend(['-G', 'Ninja', '--skip-generator-test'])
+    if sys.platform == "darwin":
+        if (os.getenv('TAICHI_USE_XCODE', '0') in ('1', 'ON')):
+            use_xcode = True
+        if use_xcode:
+            build_options.extend(['-G', 'Xcode', '--skip-generator-test'])
     sys.argv[2:2] = build_options
 
     cmake_args += [
@@ -137,7 +143,9 @@ def get_cmake_args():
         f'-DTI_VERSION_PATCH={TI_VERSION_PATCH}',
     ]
 
-    if sys.platform != 'win32':
+    if sys.platform == "darwin" and use_xcode:
+        os.environ['SKBUILD_BUILD_OPTIONS'] = f'-jobs {num_threads}'
+    elif sys.platform != 'win32':
         os.environ['SKBUILD_BUILD_OPTIONS'] = f'-j{num_threads}'
     elif use_msbuild:
         # /M uses multi-threaded build (similar to -j)
@@ -154,9 +162,25 @@ def get_cmake_args():
 def cmake_install_manifest_filter(manifest_files):
     return [
         f for f in manifest_files
-        if f.endswith(('.so', 'pyd', '.bc', '.h',
+        if f.endswith(('.so', 'pyd', '.dll', '.bc', '.h', '.dylib', '.cmake',
                        '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
     ]
+
+
+def sign_development_for_apple_m1():
+    """
+    Apple enforces codesigning for arm64 targets even for local development
+    builds. See discussion here:
+        https://github.com/supercollider/supercollider/issues/5603
+    """
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        try:
+            for path in glob.glob("python/taichi/_lib/core/*.so"):
+                print(f"signing {path}..")
+                subprocess.check_call(
+                    ['codesign', '--force', '--deep', '--sign', '-', path])
+        except:
+            print("cannot sign python shared library for macos arm64 build")
 
 
 copy_assets()
@@ -170,7 +194,7 @@ setup(name=project_name,
       url='https://github.com/taichi-dev/taichi',
       python_requires=">=3.6,<3.11",
       install_requires=[
-          'numpy', 'sourceinspect>=0.0.4', 'colorama', 'rich',
+          'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'
       ],
       data_files=[(os.path.join('_lib', 'runtime'), data_files)],
@@ -191,3 +215,5 @@ setup(name=project_name,
           'clean': Clean
       },
       has_ext_modules=lambda: True)
+
+sign_development_for_apple_m1()

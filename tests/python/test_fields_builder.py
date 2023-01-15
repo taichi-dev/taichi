@@ -83,7 +83,7 @@ def test_fields_builder_dense():
         assert x[i] == i * 3
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_fields_builder_pointer():
     shape = 5
     fb1 = ti.FieldsBuilder()
@@ -196,7 +196,7 @@ def test_field_initialize_zero():
     assert b[0] == 0
 
 
-@test_utils.test(exclude=[ti.opengl, ti.cc])
+@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc])
 def test_field_builder_place_grad():
     @ti.kernel
     def mul(arr: ti.template(), out: ti.template()):

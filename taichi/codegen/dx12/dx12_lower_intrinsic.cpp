@@ -96,14 +96,14 @@ class TaichiIntrinsicLower : public ModulePass {
     return true;
   }
 
-  TaichiIntrinsicLower(taichi::lang::CompileConfig *config = nullptr)
+  TaichiIntrinsicLower(const taichi::lang::CompileConfig *config = nullptr)
       : ModulePass(ID), config(config) {
     initializeTaichiIntrinsicLowerPass(*PassRegistry::getPassRegistry());
   }
 
   static char ID;  // Pass identification.
  private:
-  taichi::lang::CompileConfig *config;
+  const taichi::lang::CompileConfig *config;
 };
 char TaichiIntrinsicLower::ID = 0;
 
@@ -116,6 +116,6 @@ INITIALIZE_PASS(TaichiIntrinsicLower,
                 false)
 
 llvm::ModulePass *llvm::createTaichiIntrinsicLowerPass(
-    taichi::lang::CompileConfig *config) {
+    const taichi::lang::CompileConfig *config) {
   return new TaichiIntrinsicLower(config);
 }

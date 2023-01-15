@@ -432,7 +432,8 @@ def test_ndrange_for():
                     assert x[i, j, k] == 0
 
 
-def _test_grouped_ndrange_for():
+@test_utils.test(print_preprocessed_ir=True)
+def test_grouped_ndrange_for():
     x = ti.field(ti.i32, shape=(6, 6, 6))
     y = ti.field(ti.i32, shape=(6, 6, 6))
 
@@ -455,18 +456,6 @@ def _test_grouped_ndrange_for():
         for j in range(6):
             for k in range(6):
                 assert x[i, j, k] == y[i, j, k]
-
-
-@test_utils.test(print_preprocessed_ir=True)
-def test_grouped_ndrange_for():
-    _test_grouped_ndrange_for()
-
-
-@test_utils.test(print_preprocessed_ir=True,
-                 real_matrix=True,
-                 real_matrix_scalarize=True)
-def test_grouped_ndrange_for_matrix_scalarize():
-    _test_grouped_ndrange_for()
 
 
 @test_utils.test(print_preprocessed_ir=True)
@@ -706,7 +695,7 @@ def test_func_in_python_func():
             return ti.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @ti.kernel
@@ -799,7 +788,7 @@ def test_taichi_other_than_ti():
             return tc.Matrix([[1, 0], [0, 1]])
 
     def fibonacci(x):
-        ast_builder = impl.get_runtime().prog.current_ast_builder()
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         return impl.subscript(ast_builder, bar(x), 1, 0)
 
     @tc.kernel
@@ -863,8 +852,8 @@ def test_dict():
         foo(2)
 
 
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_single_listcomp_matrix_scalarize():
+@test_utils.test()
+def test_single_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -882,7 +871,8 @@ def test_single_listcomp_matrix_scalarize():
     assert foo(5) == 1
 
 
-def _test_listcomp():
+@test_utils.test()
+def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
         return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)]
@@ -899,16 +889,6 @@ def _test_listcomp():
         return ret
 
     assert foo(5) == 1 + 4 + 9 + 16
-
-
-@test_utils.test()
-def test_listcomp():
-    _test_listcomp()
-
-
-@test_utils.test(real_matrix=True, real_matrix_scalarize=True)
-def test_listcomp_matrix_scalarize():
-    _test_listcomp()
 
 
 @test_utils.test()

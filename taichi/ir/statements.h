@@ -15,7 +15,7 @@ class Function;
 /**
  * Allocate a local variable with initial value 0.
  */
-class AllocaStmt : public Stmt {
+class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
     ret_type = type;
@@ -36,6 +36,18 @@ class AllocaStmt : public Stmt {
 
   bool common_statement_eliminable() const override {
     return false;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    // The statement itself provides a data source (const [0]).
+    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
+  }
+
+  Stmt *get_store_data() const override {
+    // For convenience, return store_stmt instead of the const [0] it actually
+    // stores.
+    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
   }
 
   bool is_shared;
@@ -172,13 +184,19 @@ class ArgLoadStmt : public Stmt {
   */
   bool is_ptr;
 
+  bool is_grad;
+
   // field_dims of ndarray
   int field_dims_ = 0;
 
-  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
+  ArgLoadStmt(int arg_id,
+              const DataType &dt,
+              bool is_ptr = false,
+              bool is_grad = false)
       : arg_id(arg_id) {
     this->ret_type = dt;
     this->is_ptr = is_ptr;
+    this->is_grad = is_grad;
     this->field_dims_ = -1;  // -1 means uninitialized
     TI_STMT_REG_FIELDS;
   }
@@ -281,7 +299,9 @@ class TernaryOpStmt : public Stmt {
 /**
  * An atomic operation.
  */
-class AtomicOpStmt : public Stmt {
+class AtomicOpStmt : public Stmt,
+                     public ir_traits::Store,
+                     public ir_traits::Load {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
@@ -298,6 +318,20 @@ class AtomicOpStmt : public Stmt {
     auto stmt = std::make_unique<AtomicOpStmt>(op_type, dest, val);
     stmt->is_reduction = true;
     return stmt;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    return dest;
+  }
+
+  Stmt *get_store_data() const override {
+    return nullptr;
+  }
+
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return dest;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
@@ -471,7 +505,7 @@ class MatrixPtrStmt : public Stmt {
 /**
  * An operation to a SNode (not necessarily a leaf SNode).
  */
-class SNodeOpStmt : public Stmt {
+class SNodeOpStmt : public Stmt, public ir_traits::Store {
  public:
   SNodeOpType op_type;
   SNode *snode;
@@ -486,6 +520,19 @@ class SNodeOpStmt : public Stmt {
   static bool activation_related(SNodeOpType op);
 
   static bool need_activation(SNodeOpType op);
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    if (op_type == SNodeOpType::allocate) {
+      return std::vector<Stmt *>{val, ptr};
+    } else {
+      return nullptr;
+    }
+  }
+
+  Stmt *get_store_data() const override {
+    return nullptr;
+  }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, snode, ptr, val);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -535,7 +582,9 @@ class AssertStmt : public Stmt {
 /**
  * Call an external (C++) function.
  */
-class ExternalFuncCallStmt : public Stmt {
+class ExternalFuncCallStmt : public Stmt,
+                             public ir_traits::Store,
+                             public ir_traits::Load {
  public:
   enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 
@@ -562,6 +611,24 @@ class ExternalFuncCallStmt : public Stmt {
         arg_stmts(arg_stmts),
         output_stmts(output_stmts) {
     TI_STMT_REG_FIELDS;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    if (type == ExternalFuncCallStmt::BITCODE) {
+      return arg_stmts;
+    } else {
+      return output_stmts;
+    }
+  }
+
+  Stmt *get_store_data() const override {
+    return nullptr;
+  }
+
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return arg_stmts;
   }
 
   TI_STMT_DEF_FIELDS(type,
@@ -630,7 +697,7 @@ class LoopUniqueStmt : public Stmt {
  * A load from a global address, including SNodes, external arrays, TLS, BLS,
  * and global temporary variables.
  */
-class GlobalLoadStmt : public Stmt {
+class GlobalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
@@ -646,6 +713,11 @@ class GlobalLoadStmt : public Stmt {
     return false;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return src;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, src);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
@@ -654,7 +726,7 @@ class GlobalLoadStmt : public Stmt {
  * A store to a global address, including SNodes, external arrays, TLS, BLS,
  * and global temporary variables.
  */
-class GlobalStoreStmt : public Stmt {
+class GlobalStoreStmt : public Stmt, public ir_traits::Store {
  public:
   Stmt *dest;
   Stmt *val;
@@ -667,6 +739,15 @@ class GlobalStoreStmt : public Stmt {
     return false;
   }
 
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    return dest;
+  }
+
+  Stmt *get_store_data() const override {
+    return val;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, dest, val);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
@@ -674,7 +755,7 @@ class GlobalStoreStmt : public Stmt {
 /**
  * A load from a local variable, i.e., an "alloca".
  */
-class LocalLoadStmt : public Stmt {
+class LocalLoadStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *src;
 
@@ -690,6 +771,11 @@ class LocalLoadStmt : public Stmt {
     return false;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return src;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, src);
   TI_DEFINE_ACCEPT_AND_CLONE;
 };
@@ -697,7 +783,7 @@ class LocalLoadStmt : public Stmt {
 /**
  * A store to a local variable, i.e., an "alloca".
  */
-class LocalStoreStmt : public Stmt {
+class LocalStoreStmt : public Stmt, public ir_traits::Store {
  public:
   Stmt *dest;
   Stmt *val;
@@ -718,6 +804,15 @@ class LocalStoreStmt : public Stmt {
 
   bool common_statement_eliminable() const override {
     return false;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override {
+    return dest;
+  }
+
+  Stmt *get_store_data() const override {
+    return val;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, dest, val);
@@ -965,7 +1060,7 @@ class FuncCallStmt : public Stmt {
 /**
  * A reference to a variable.
  */
-class ReferenceStmt : public Stmt {
+class ReferenceStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *var;
   bool global_side_effect{false};
@@ -978,6 +1073,11 @@ class ReferenceStmt : public Stmt {
     return global_side_effect;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return var;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, var);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -988,8 +1088,9 @@ class ReferenceStmt : public Stmt {
 class GetElementStmt : public Stmt {
  public:
   Stmt *src;
-  int index;
-  GetElementStmt(Stmt *src, int index) : src(src), index(index) {
+  std::vector<int> index;
+  GetElementStmt(Stmt *src, const std::vector<int> &index)
+      : src(src), index(index) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1617,7 +1718,7 @@ class AdStackAllocaStmt : public Stmt {
 /**
  * Load the top primal value of an AD-stack.
  */
-class AdStackLoadTopStmt : public Stmt {
+class AdStackLoadTopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1635,6 +1736,11 @@ class AdStackLoadTopStmt : public Stmt {
     return false;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return stack;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, stack);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1642,7 +1748,7 @@ class AdStackLoadTopStmt : public Stmt {
 /**
  * Load the top adjoint value of an AD-stack.
  */
-class AdStackLoadTopAdjStmt : public Stmt {
+class AdStackLoadTopAdjStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1660,6 +1766,11 @@ class AdStackLoadTopAdjStmt : public Stmt {
     return false;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return stack;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, stack);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1667,7 +1778,7 @@ class AdStackLoadTopAdjStmt : public Stmt {
 /**
  * Pop the top primal and adjoint values in the AD-stack.
  */
-class AdStackPopStmt : public Stmt {
+class AdStackPopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
@@ -1675,6 +1786,12 @@ class AdStackPopStmt : public Stmt {
     TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
     TI_STMT_REG_FIELDS;
+  }
+
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    // This is to make dead store elimination not eliminate consequent pops.
+    return stack;
   }
 
   // Mark has_global_side_effect == true to prevent being moved out of an if
@@ -1688,7 +1805,7 @@ class AdStackPopStmt : public Stmt {
  * Push a primal value to the AD-stack, and set the corresponding adjoint
  * value to 0.
  */
-class AdStackPushStmt : public Stmt {
+class AdStackPushStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
   Stmt *v;
@@ -1700,6 +1817,12 @@ class AdStackPushStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    // This is to make dead store elimination not eliminate consequent pushes.
+    return stack;
+  }
+
   // Mark has_global_side_effect == true to prevent being moved out of an if
   // clause in the simplify pass for now.
 
@@ -1709,8 +1832,9 @@ class AdStackPushStmt : public Stmt {
 
 /**
  * Accumulate |v| to the top adjoint value of the AD-stack.
+ * This statement loads and stores the adjoint data.
  */
-class AdStackAccAdjointStmt : public Stmt {
+class AdStackAccAdjointStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
   Stmt *v;
@@ -1720,6 +1844,11 @@ class AdStackAccAdjointStmt : public Stmt {
     this->stack = stack;
     this->v = v;
     TI_STMT_REG_FIELDS;
+  }
+
+  // IR Trait: Load
+  stmt_refs get_load_pointers() const override {
+    return stack;
   }
 
   // Mark has_global_side_effect == true to prevent being moved out of an if

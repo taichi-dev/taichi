@@ -6,7 +6,6 @@ pybind11
 GitPython
 yapf
 distro
-sourceinspect
 isort
 pylint
 requests==2.26
@@ -17,3 +16,5 @@ pre-commit
 scikit-build
 numpy
 ninja; platform_system != 'Windows'
+cairocffi
+opencv-python

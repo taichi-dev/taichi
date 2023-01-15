@@ -6,7 +6,7 @@ from taichi.lang import impl
 from taichi.lang.enums import Layout
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField
-from taichi.lang.matrix import Matrix, MatrixField, _MatrixFieldElement
+from taichi.lang.matrix import Matrix, MatrixField
 from taichi.lang.struct import StructField
 from taichi.lang.util import python_scope
 from taichi.types import u16, u32
@@ -83,7 +83,7 @@ class MeshReorderedMatrixFieldProxy(MatrixField):
         self._initialize_host_accessors()
         key = self.g2r_field[key]
         key = self._pad_key(key)
-        return Matrix(self._host_access(key), is_ref=True)
+        return Matrix(self._host_access(key))
 
 
 class MeshElementField:
@@ -605,22 +605,29 @@ def _TetMesh():
 class MeshElementFieldProxy:
     def __init__(self, mesh: MeshInstance, element_type: MeshElementType,
                  entry_expr: impl.Expr):
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
+
         self.mesh = mesh
         self.element_type = element_type
         self.entry_expr = entry_expr
 
         element_field = self.mesh.fields[self.element_type]
         for key, attr in element_field.field_dict.items():
+
             global_entry_expr = impl.Expr(
-                _ti_core.get_index_conversion(
+                ast_builder.mesh_index_conversion(
                     self.mesh.mesh_ptr, element_type, entry_expr,
                     ConvType.l2r if element_field.attr_dict[key].reorder else
                     ConvType.l2g))  # transform index space
             global_entry_expr_group = impl.make_expr_group(
                 *tuple([global_entry_expr]))
             if isinstance(attr, MatrixField):
-                setattr(self, key,
-                        _MatrixFieldElement(attr, global_entry_expr_group))
+                setattr(
+                    self, key,
+                    impl.Expr(
+                        ast_builder.expr_subscript(
+                            attr.ptr, global_entry_expr_group,
+                            impl.get_runtime().get_current_src_info())))
             elif isinstance(attr, StructField):
                 raise RuntimeError(
                     'MeshTaichi has not support StructField yet')
@@ -629,7 +636,7 @@ class MeshElementFieldProxy:
                 setattr(
                     self, key,
                     impl.Expr(
-                        _ti_core.subscript(
+                        ast_builder.expr_subscript(
                             var, global_entry_expr_group,
                             impl.get_runtime().get_current_src_info())))
 
@@ -646,10 +653,11 @@ class MeshElementFieldProxy:
 
     @property
     def id(self):  # return the global non-reordered index
+        ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         l2g_expr = impl.Expr(
-            _ti_core.get_index_conversion(self.mesh.mesh_ptr,
-                                          self.element_type, self.entry_expr,
-                                          ConvType.l2g))
+            ast_builder.mesh_index_conversion(self.mesh.mesh_ptr,
+                                              self.element_type,
+                                              self.entry_expr, ConvType.l2g))
         return l2g_expr
 
 

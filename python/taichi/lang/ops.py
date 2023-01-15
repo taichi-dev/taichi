@@ -21,7 +21,7 @@ def uniform_matrix_inputs(*args):
     results = []
     for arg in args:
         if has_real_matrix and is_matrix_class(arg):
-            results.append(arg._make_matrix())
+            results.append(impl.expr_init(arg))
         else:
             results.append(arg)
 
@@ -1456,7 +1456,7 @@ def atomic_xor(x, y):
 
 @writeback_binary
 def assign(a, b):
-    impl.get_runtime().prog.current_ast_builder().expr_assign(
+    impl.get_runtime().compiling_callable.ast_builder().expr_assign(
         a.ptr, b.ptr, stack_info())
     return a
 

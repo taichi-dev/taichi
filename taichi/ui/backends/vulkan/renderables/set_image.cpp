@@ -13,17 +13,11 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-int SetImage::get_correct_dimension(int dimension) {
-  if (app_context_->config.is_packed_mode) {
-    return dimension;
-  } else {
-    return next_power_of_2(dimension);
-  }
-}
-
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
-  void *mapped = app_context_->device().map(uniform_buffer_);
+  void *mapped{nullptr};
+  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
+            RhiResult::success);
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(uniform_buffer_);
 }
@@ -52,8 +46,8 @@ void SetImage::update_data(const SetImageInfo &info) {
     texture_dtype_ = img.dtype;
   }
 
-  int new_width = get_correct_dimension(img.shape[0]);
-  int new_height = get_correct_dimension(img.shape[1]);
+  int new_width = img.shape[0];
+  int new_height = img.shape[1];
 
   BufferFormat fmt = BufferFormat::rgba8;
   if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
@@ -125,7 +119,8 @@ void SetImage::update_data(const SetImageInfo &info) {
     prog->enqueue_compute_op_lambda(copy_op, {});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     copy_op(&app_context_->device(), cmd_list.get());
     if (sema) {
       stream->submit(cmd_list.get(), {sema});
@@ -182,7 +177,8 @@ void SetImage::update_data(Texture *tex) {
                                     ImageLayout::transfer_src}});
   } else {
     auto stream = app_context_->device().get_graphics_stream();
-    auto cmd_list = stream->new_command_list();
+    auto [cmd_list, res] = stream->new_command_list_unique();
+    assert(res == RhiResult::success && "Failed to allocate command list");
     copy_op(&app_context_->device(), cmd_list.get());
     stream->submit(cmd_list.get());
   }
@@ -273,15 +269,16 @@ void SetImage::update_vertex_buffer() {
   // Our actual VBO might only use the first several attributes in `Vertex`,
   // therefore this slicing & copying for each Vertex.
   {
-    char *mapped_vbo =
-        static_cast<char *>(app_context_->device().map(staging_vertex_buffer_));
+    void *mapped_vbo{nullptr};
+    TI_ASSERT(app_context_->device().map(staging_vertex_buffer_, &mapped_vbo) ==
+              RhiResult::success);
     for (int i = 0; i < vertices.size(); ++i) {
       const char *src = reinterpret_cast<const char *>(&vertices[i]);
       for (auto a : VboHelpers::kOrderedAttrs) {
         const auto a_sz = VboHelpers::size(a);
         if (VboHelpers::has_attr(config_.vbo_attrs, a)) {
           memcpy(mapped_vbo, src, a_sz);
-          mapped_vbo += a_sz;
+          mapped_vbo = (uint8_t *)mapped_vbo + a_sz;
         }
         // Pointer to the full Vertex attributes needs to be advanced
         // unconditionally.
@@ -301,7 +298,9 @@ void SetImage::update_index_buffer() {
       0, 1, 2, 3, 4, 5,
   };
   {
-    int *mapped_ibo = (int *)app_context_->device().map(staging_index_buffer_);
+    void *mapped_ibo{nullptr};
+    TI_ASSERT(app_context_->device().map(staging_index_buffer_, &mapped_ibo) ==
+              RhiResult::success);
     memcpy(mapped_ibo, indices.data(),
            (size_t)config_.indices_count * sizeof(int));
     app_context_->device().unmap(staging_index_buffer_);
@@ -316,9 +315,8 @@ void SetImage::update_index_buffer() {
 
 void SetImage::create_bindings() {
   Renderable::create_bindings();
-  ResourceBinder *binder = pipeline_->resource_binder();
-  binder->image(0, 0, texture_, {});
-  binder->buffer(0, 1, uniform_buffer_);
+  resource_set_->image(0, texture_, {});
+  resource_set_->buffer(1, uniform_buffer_);
 }
 
 void SetImage::cleanup() {

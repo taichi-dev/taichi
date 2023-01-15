@@ -35,7 +35,7 @@ class ProgramImpl {
   /**
    * Codegen to specific backend
    */
-  virtual FunctionType compile(Kernel *kernel, OffloadedStmt *offloaded) = 0;
+  virtual FunctionType compile(Kernel *kernel) = 0;
 
   /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
@@ -103,6 +103,10 @@ class ProgramImpl {
   virtual DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                                    uint64 *result_buffer) {
     return kDeviceNullAllocation;
+  }
+
+  virtual bool used_in_kernel(DeviceAllocationId) {
+    return false;
   }
 
   virtual DeviceAllocation allocate_texture(const ImageParams &params) {

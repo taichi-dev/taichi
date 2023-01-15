@@ -9,15 +9,15 @@ namespace taichi::lang {
 
 class KernelCodeGenCUDA : public KernelCodeGen {
  public:
-  explicit KernelCodeGenCUDA(Kernel *kernel, IRNode *ir = nullptr)
-      : KernelCodeGen(kernel, ir) {
+  explicit KernelCodeGenCUDA(const CompileConfig *compile_config,
+                             Kernel *kernel)
+      : KernelCodeGen(compile_config, kernel) {
   }
 
 // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
-  static std::unique_ptr<TaskCodeGenLLVM> make_codegen_llvm(Kernel *kernel,
-                                                            IRNode *ir);
   LLVMCompiledTask compile_task(
+      const CompileConfig *config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM

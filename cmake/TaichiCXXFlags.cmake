@@ -42,7 +42,7 @@ if (WIN32)
 else()
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
         message("Clang compiler detected. Using std=c++17.")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -Wno-deprecated-declarations")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -Wno-deprecated-declarations -Wno-shorten-64-to-32")
     elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
         message("GNU compiler detected. Using std=c++17.")
         message(WARNING "It is detected that you are using gcc as the compiler. This is an experimental feature. Consider adding -DCMAKE_CXX_COMPILER=clang argument to CMake to switch to clang (or MSVC on Windows).")
@@ -55,13 +55,13 @@ else()
     # [Global] CXX compilation option to enable all warnings.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall ")
 
-# Due to limited CI coverage, -Werror is only turned on with Clang-compiler for now.
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    if (NOT ANDROID) # (penguinliong) Blocking builds on Android.
-        # [Global] CXX compilation option to treat all warnings as errors.
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror ")
+    # Due to limited CI coverage, -Werror is only turned on with Clang-compiler for now.
+    if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        if (NOT ANDROID) # (penguinliong) Blocking builds on Android.
+            # [Global] CXX compilation option to treat all warnings as errors.
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror ")
+        endif()
     endif()
-endif()
 
     # [Global] By default, CXX compiler will throw a warning if it decides to ignore an attribute, for example "[[ maybe unused ]]".
     # However, this behaviour diverges across different compilers (GCC/CLANG), as well as different compiler versions.
@@ -79,15 +79,17 @@ endif()
     # However, some of these "constexpr" are debug flags and will be manually enabled upon debugging.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unneeded-internal-declaration ")
 
-    # CLANG_VERSION_MAJOR is set in check_clang_version
-    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 15)
-      # [Global] FIXME: Newly introduced flag in clang-15
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unqualified-std-cast-call ")
-    endif()
+    # FIXME: Check why Android don't support check_cxx_compiler_flag
+    if (NOT ANDROID)
+        check_cxx_compiler_flag("-Wno-unqualified-std-cast-call" CXX_HAS_Wno_unqualified_std_cast_call)
+        if (${CXX_HAS_Wno_unqualified_std_cast_call})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unqualified-std-cast-call ")
+        endif()
 
-    if (${CLANG_VERSION_MAJOR} VERSION_GREATER_EQUAL 13)
-      # [Global] FIXME: Newly introduced flag in clang-13
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable ")
+        check_cxx_compiler_flag("-Wno-unused-but-set-variable" CXX_HAS_Wno_unused_but_set_variable)
+        if (${CXX_HAS_Wno_unused_but_set_variable})
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-but-set-variable ")
+        endif()
     endif()
 endif ()
 

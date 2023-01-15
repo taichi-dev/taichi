@@ -17,7 +17,6 @@ struct AppConfig {
   bool show_window{true};
   std::string package_path;
   Arch ti_arch;
-  bool is_packed_mode{false};
 };
 
 }  // namespace ui

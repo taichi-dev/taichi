@@ -41,8 +41,7 @@ def restart():
         # GitHub Actions will treat the step as completed when doing os.execl in Windows,
         # since Windows does not have real execve, its behavior is emulated by spawning a new process and
         # terminating the current process. So we do not use os.execl in Windows.
-        run(sys.executable, *sys.argv)
-        os._exit(0)
+        os._exit(run(sys.executable, *sys.argv))
     else:
         os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -71,14 +70,14 @@ def ensure_dependencies(fn='requirements.txt'):
         for dep in deps:
             importlib.import_module(dep)
     except ModuleNotFoundError:
-        print('Installing dependencies...')
+        print('Installing dependencies...', flush=True)
         pipcmd = [
             sys.executable, '-m', 'pip', 'install',
             f'--target={bootstrap_root}', '-U'
         ]
         if run(*pipcmd, 'pip', 'setuptools'):
             raise Exception('Unable to upgrade pip!')
-        if run(*pipcmd, '-r', p, env={'PYTHONPATH': bootstrap_root}):
+        if run(*pipcmd, '-r', p, env={'PYTHONPATH': str(bootstrap_root)}):
             raise Exception('Unable to install dependencies!')
 
         restart()

@@ -27,7 +27,7 @@ Taichi supports the following argument types:
 - `ti.f32`
 - `ti.Ndarray`
 
-Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It can be multidimensional and is laid out continuously in memory. If you have experienced the  multidimensional arrays in C++, You can treat it as a nested array type like `float[6][14]`.
+Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It can be multidimensional and is laid out continuously in memory. If you have experienced the multidimensional arrays in C++, You can treat it as a nested array type like `float[6][14]`.
 
 To give an example, the following `init` kernel accepts an ndarray argument called `x`. We want to inform the compiler that the ndarray stores floating-point data and it only has a single dimension to index, hence `dtype` is `ti.f32`, and `ndim` is set to 1. When executed, every element in `x` will be set to 0.
 

@@ -352,17 +352,13 @@ TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
     ti::Memory dst = runtime.allocate_memory(2048);
 
     {
-      TiMemorySlice src_memory = src.slice(128, 64);
-      TiMemorySlice dst_memory = dst.slice(1024, 64);
-      ti_copy_memory_device_to_device(runtime, &dst_memory, &src_memory);
+      src.slice(128, 64).copy_to(dst.slice(1024, 64));
       ASSERT_TAICHI_SUCCESS();
     }
 
     // Attempt copy memory from the big one to the small one
     {
-      TiMemorySlice src_memory = src.slice(0, 256);
-      TiMemorySlice dst_memory = dst.slice(0, 64);
-      ti_copy_memory_device_to_device(runtime, &dst_memory, &src_memory);
+      src.slice(src.slice(0, 256)).copy_to(dst.slice(0, 64));
       EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_ARGUMENT);
     }
 

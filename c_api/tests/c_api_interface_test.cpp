@@ -11,6 +11,18 @@ TEST_F(CapiTest, DryRunGetVersion) {
 TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
 }
+TEST_F(CapiTest, GetAvailableArchsWithFilter) {
+  std::vector<TiArch> expect_archs = ti::get_available_archs();
+  expect_archs.pop_back();
+
+  std::vector<TiArch> actual_archs = ti::get_available_archs(expect_archs);
+
+  TI_ASSERT(actual_archs.size() == expect_archs.size());
+
+  for (size_t i = 0; i < actual_archs.size(); ++i) {
+    TI_ASSERT(actual_archs.at(i) == expect_archs.at(i));
+  }
+}
 
 TEST_F(CapiTest, DryRunRuntime) {
   {

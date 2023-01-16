@@ -3,6 +3,11 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
+TEST_F(CapiTest, DryRunGetVersion) {
+  ti::Version version = ti::get_version();
+  TI_ASSERT(version.major() == 1);
+}
+
 TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
 }

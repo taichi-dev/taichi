@@ -78,9 +78,10 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType VulkanProgramImpl::compile(Kernel *kernel) {
+FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
+                                        Kernel *kernel) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(config, kernel),
+      get_cache_manager()->load_or_compile(&compile_config, kernel),
       vulkan_runtime_.get());
 }
 

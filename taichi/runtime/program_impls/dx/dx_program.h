@@ -11,7 +11,8 @@ namespace taichi::lang {
 class Dx11ProgramImpl : public ProgramImpl {
  public:
   Dx11ProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel) override;
+  FunctionType compile(const CompileConfig &compile_config,
+                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,

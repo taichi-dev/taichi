@@ -42,6 +42,7 @@ void autograd() {
   using namespace lang;
 
   auto program = Program(Arch::x64);
+  const auto &config = program.this_thread_config();
 
   int n = 10;
   program.materialize_runtime();
@@ -193,10 +194,10 @@ void autograd() {
   ctx_ext.set_arg_external_array_with_shape(2, taichi::uint64(ext_c.data()), n,
                                             {n});
 
-  (*kernel_init)(ctx_init);
-  (*kernel_forward)(ctx_forward);
-  (*kernel_backward)(ctx_backward);
-  (*kernel_ext)(ctx_ext);
+  (*kernel_init)(config, ctx_init);
+  (*kernel_forward)(config, ctx_forward);
+  (*kernel_backward)(config, ctx_backward);
+  (*kernel_ext)(config, ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_a[i] << " ";
   std::cout << std::endl;

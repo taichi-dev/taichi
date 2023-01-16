@@ -152,7 +152,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
 
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  program->compile(ker.get());
+  program->compile(*program->config, ker.get());
 }
 
 }  // namespace directx11

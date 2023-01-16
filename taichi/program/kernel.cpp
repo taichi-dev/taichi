@@ -55,20 +55,20 @@ Kernel::Kernel(Program &program,
   }
 }
 
-void Kernel::compile() {
-  compiled_ = program->compile(*this);
+void Kernel::compile(const CompileConfig &compile_config) {
+  compiled_ = program->compile(compile_config, *this);
 }
 
-void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
+void Kernel::operator()(const CompileConfig &compile_config,
+                        LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
-    compile();
+    compile(compile_config);
   }
 
   compiled_(ctx_builder.get_context());
 
-  if (program->this_thread_config().debug &&
-      (arch_is_cpu(program->this_thread_config().arch) ||
-       program->this_thread_config().arch == Arch::cuda)) {
+  const auto arch = compile_config.arch;
+  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
     program->check_runtime_error();
   }
 }
@@ -346,8 +346,7 @@ void Kernel::init(Program &program,
   func();
 }
 
-void Kernel::offload_to_executable(IRNode *stmt) {
-  auto config = program->this_thread_config();
+void Kernel::offload_to_executable(const CompileConfig &config, IRNode *stmt) {
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))

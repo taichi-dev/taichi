@@ -974,7 +974,7 @@ An available arch has at least one device available, i.e., device index 0 is alw
 ```c
 // function.get_last_error
 TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
-  uint64_t message_size,
+  uint64_t* message_size,
   char* message
 );
 ```

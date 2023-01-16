@@ -43,7 +43,7 @@ You can see here, by default CodeSearch uses the Windows search path wild cards 
 To debug Taichi on Windows, you can use two methods. One is to launch a Taichi program from Visual Studio itself and use it like any other IDE, the other is to insert this statement in your Taichi program:
 `ti._lib.core.wait_for_debugger()`
 When this line of code is executed, the program will pause and now you can attach to this process from Visual Studio.
-To setup launching Taichi program from Visual Studio, go to “Debug->ALL_BUILD Debug Properties”, and click on the left side “Debugging”. This will reveal the debug launch settings. You should set “Command” to the python executable file you installed on your system (either in Conda or in other places). Then set the working directory to “..\..\..” where it points to the root of taichi source directory. Then you can set the argument to the python file you want to launch and its related options. Here is an example: 
+To setup launching Taichi program from Visual Studio, go to “Debug->ALL_BUILD Debug Properties”, and click on the left side “Debugging”. This will reveal the debug launch settings. You should set “Command” to the python executable file you installed on your system (either in Conda or in other places). Then set the working directory to “..\..\..” where it points to the root of taichi source directory. Then you can set the argument to the python file you want to launch and its related options. Here is an example:
 
 ![image6](https://user-images.githubusercontent.com/11663476/212577472-49959479-e0f5-4f7c-87c0-8b16fb53c07b.png)
 
@@ -77,7 +77,7 @@ Where we can see that the `taichi_python` module (the C++ source code of Taichi)
 
 ![image15](https://user-images.githubusercontent.com/11663476/212577640-87a0503c-72d8-4c4c-9306-1e4ee97e3796.png)
 
-Let’s say we want to focus on 
+Let’s say we want to focus on
 
 ![image4](https://user-images.githubusercontent.com/11663476/212577647-116bf750-54df-491b-8719-01e88ef526cd.png)
 

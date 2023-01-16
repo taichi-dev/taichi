@@ -31,6 +31,8 @@ class Particles final : public Renderable {
 
   void update_data(const ParticlesInfo &info, const Scene &scene);
 
+  void record_this_frame_commands(lang::CommandList *command_list) override;
+
  private:
   struct UniformBufferObject {
     Scene::SceneUniformBuffer scene;

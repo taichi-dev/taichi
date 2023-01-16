@@ -101,10 +101,12 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None):
                              unit_divisor=1024,
                              total=total_size,
                              desc=name)
-            with prog, open(local_cached, 'wb') as f:
+            with prog, open(str(local_cached) + '.download', 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     sz = f.write(chunk)
                     prog.update(sz)
+
+        shutil.move(str(local_cached) + '.download', local_cached)
 
     outdir.mkdir(parents=True, exist_ok=True)
 

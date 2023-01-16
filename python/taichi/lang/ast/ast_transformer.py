@@ -729,12 +729,11 @@ class ASTTransformer(Builder):
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
-                if isinstance(values, Expr) and values.ptr.is_tensor():
-                    values = ctx.ast_builder.expand_exprs([values.ptr])
-                else:
-                    assert isinstance(values, Matrix)
+                if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
                         not is_vector(values) else iter(values.to_list())
+                else:
+                    values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
                         ti_ops.cast(exp, ctx.func.return_type.dtype)

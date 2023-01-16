@@ -81,10 +81,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;
   auto &config = this_thread_config();
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  if (config.debug)
-    config.check_out_of_bound = true;
-  offline_cache::disable_offline_cache_if_needed(&config);
+  config.fit();
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
@@ -161,7 +158,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  sync = true;
   finalized_ = false;
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {
@@ -193,10 +189,11 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel) {
+FunctionType Program::compile(const CompileConfig &compile_config,
+                              Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel);
+  auto ret = program_impl_->compile(compile_config, &kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -356,7 +353,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
+    ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -383,8 +380,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
-  ker.insert_scalar_arg(snode->dt);
+    ker.insert_scalar_param(PrimitiveType::i32);
+  ker.insert_scalar_param(snode->dt);
   return ker;
 }
 
@@ -454,8 +451,27 @@ Ndarray *Program::create_ndarray(const DataType type,
       stream->submit_synced(cmdlist.get());
     }
   }
-  ndarrays_.emplace_back(std::move(arr));
-  return ndarrays_.back().get();
+  auto arr_ptr = arr.get();
+  ndarrays_.insert({arr_ptr, std::move(arr)});
+  return arr_ptr;
+}
+
+void Program::delete_ndarray(Ndarray *ndarray) {
+  // [Note] Ndarray memory deallocation
+  // Ndarray's memory allocation is managed by Taichi and Python can control
+  // this via Taichi indirectly. For example, when an ndarray is GC-ed in
+  // Python, it signals Taichi to free its memory allocation. But Taichi will
+  // make sure **no pending kernels to be executed needs the ndarray** before it
+  // actually frees the memory. When `ti.reset()` is called, all ndarrays
+  // allocated in this program should be gone and no longer valid in Python.
+  // This isn't the best implementation, ndarrays should be managed by taichi
+  // runtime instead of this giant program and it should be freed when:
+  // - Python GC signals taichi that it's no longer useful
+  // - All kernels using it are executed.
+  if (ndarrays_.count(ndarray) &&
+      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
+    ndarrays_.erase(ndarray);
+  }
 }
 
 Texture *Program::create_texture(const DataType type,
@@ -556,7 +572,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>();
+    return std::make_unique<wasm::AotModuleBuilderImpl>(&this_thread_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif

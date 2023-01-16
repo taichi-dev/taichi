@@ -3,19 +3,19 @@
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 
 #include "taichi/rhi/dx/dx_api.h"
-#include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/runtime/gfx/aot_module_builder_impl.h"
 
 namespace taichi::lang {
 namespace directx11 {
 
 FunctionType compile_to_executable(Kernel *kernel,
                                    gfx::GfxRuntime *runtime,
+                                   const CompileConfig &compile_config,
                                    gfx::SNodeTreeManager *snode_tree_mgr) {
   auto handle = runtime->register_taichi_kernel(
       gfx::run_codegen(kernel, Arch::dx11, runtime->get_ti_device()->get_caps(),
-                       snode_tree_mgr->get_compiled_structs()));
+                       snode_tree_mgr->get_compiled_structs(), compile_config));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
@@ -26,10 +26,11 @@ FunctionType compile_to_executable(Kernel *kernel,
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
-FunctionType Dx11ProgramImpl::compile(Kernel *kernel) {
-  spirv::lower(kernel);
-  return directx11::compile_to_executable(kernel, runtime_.get(),
-                                          snode_tree_mgr_.get());
+FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
+                                      Kernel *kernel) {
+  spirv::lower(compile_config, kernel);
+  return directx11::compile_to_executable(
+      kernel, runtime_.get(), compile_config, snode_tree_mgr_.get());
 }
 
 void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -66,10 +67,10 @@ std::unique_ptr<AotModuleBuilder> Dx11ProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::dx11, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::dx11, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::dx11, caps);
+        aot_compiled_snode_structs_, Arch::dx11, *config, caps);
   }
 }
 

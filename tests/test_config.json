@@ -165,6 +165,10 @@
     ],
     "CapiTest.GraphTestVulkanTextureGraph": [
         ["cpp", "aot", "python_scripts", "texture_aot_test.py"],
+        "--arch=vulkan --graph"
+    ],
+    "CapiTest.GraphTestVulkanTextureKernel": [
+        ["cpp", "aot", "python_scripts", "texture_aot_test.py"],
         "--arch=vulkan"
     ],
     "CapiTest.GraphTestOpenglGraph": [

@@ -362,8 +362,7 @@ struct PyWindow {
            bool vsync,
            bool show_window,
            std::string package_path,
-           Arch ti_arch,
-           bool is_packed_mode) {
+           Arch ti_arch) {
     AppConfig config = {name,
                         res[0].cast<int>(),
                         res[1].cast<int>(),
@@ -372,8 +371,7 @@ struct PyWindow {
                         vsync,
                         show_window,
                         package_path,
-                        ti_arch,
-                        is_packed_mode};
+                        ti_arch};
     // todo: support other ggui backends
     if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
           ti_arch == Arch::cuda)) {
@@ -492,7 +490,7 @@ void export_ggui(py::module &m) {
 
   py::class_<PyWindow>(m, "PyWindow")
       .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
-                    std::string, Arch, bool>())
+                    std::string, Arch>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("get_window_shape", &PyWindow::get_window_shape)

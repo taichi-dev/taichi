@@ -42,6 +42,7 @@ void autograd() {
   using namespace lang;
 
   auto program = Program(Arch::x64);
+  const auto &config = program.this_thread_config();
 
   int n = 10;
   program.materialize_runtime();
@@ -90,10 +91,10 @@ void autograd() {
     };
 
     auto *snode =
-        &root->dense(Axis(0), n, false, "").insert_children(SNodeType::place);
+        &root->dense(Axis(0), n, "").insert_children(SNodeType::place);
     snode->dt = PrimitiveType::f32;
     snode->grad_info = std::make_unique<GradInfoPrimal>(
-        &root->dense(Axis(0), n, false, "").insert_children(SNodeType::place));
+        &root->dense(Axis(0), n, "").insert_children(SNodeType::place));
     snode->get_adjoint()->dt = PrimitiveType::f32;
     snode->get_adjoint()->grad_info = std::make_unique<GradInfoAdjoint>();
     return snode;
@@ -176,9 +177,9 @@ void autograd() {
     }
 
     kernel_ext = std::make_unique<Kernel>(program, builder.extract_ir(), "ext");
-    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
-    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
-    kernel_ext->insert_arr_arg(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
   }
 
   auto ctx_init = kernel_init->make_launch_context();
@@ -193,10 +194,10 @@ void autograd() {
   ctx_ext.set_arg_external_array_with_shape(2, taichi::uint64(ext_c.data()), n,
                                             {n});
 
-  (*kernel_init)(ctx_init);
-  (*kernel_forward)(ctx_forward);
-  (*kernel_backward)(ctx_backward);
-  (*kernel_ext)(ctx_ext);
+  (*kernel_init)(config, ctx_init);
+  (*kernel_forward)(config, ctx_forward);
+  (*kernel_backward)(config, ctx_backward);
+  (*kernel_ext)(config, ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_a[i] << " ";
   std::cout << std::endl;

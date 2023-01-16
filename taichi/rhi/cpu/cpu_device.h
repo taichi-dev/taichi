@@ -78,9 +78,12 @@ class CpuDevice : public LlvmDevice {
 
   ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override{TI_NOT_IMPLEMENTED};
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final {
+    TI_NOT_IMPLEMENTED;
+  }
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 

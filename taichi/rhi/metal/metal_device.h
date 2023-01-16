@@ -2,6 +2,7 @@
 #include <memory>
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/metal/metal_api.h"
+#include "taichi/rhi/impl_support.h"
 
 #if defined(__APPLE__) && defined(__OBJC__)
 #import <Foundation/Foundation.h>
@@ -128,7 +129,8 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
 
 class MetalCommandList final : public CommandList {
  public:
-  explicit MetalCommandList(const MetalDevice &device);
+  explicit MetalCommandList(const MetalDevice &device,
+                            MTLCommandQueue_id cmd_queue);
   ~MetalCommandList() final;
 
   void bind_pipeline(Pipeline *p) noexcept final;
@@ -143,11 +145,13 @@ class MetalCommandList final : public CommandList {
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
 
+  MTLCommandBuffer_id finalize();
+
  private:
   friend class MetalStream;
 
   const MetalDevice *device_;
-  std::vector<std::function<void(MTLCommandBuffer_id)>> pending_commands_;
+  MTLCommandBuffer_id cmdbuf_;
 
   // Non-null after `bind*` methods.
   const MetalPipeline *current_pipeline_;
@@ -203,15 +207,19 @@ class MetalDevice final : public Device {
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
+
   const MetalMemory &get_memory(DeviceAllocationId alloc_id) const;
+  MetalMemory &get_memory(DeviceAllocationId alloc_id);
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) override;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) override;
   void unmap(DevicePtr ptr) override;
   void unmap(DeviceAllocation ptr) override;
 
-  std::unique_ptr<Pipeline> create_pipeline(const PipelineSourceDesc &src,
-                                            std::string name) override;
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
   ShaderResourceSet *create_resource_set() override;
 
   Stream *get_compute_stream() override;
@@ -221,7 +229,7 @@ class MetalDevice final : public Device {
 
  private:
   MTLDevice_id mtl_device_;
-  std::map<DeviceAllocationId, std::unique_ptr<MetalMemory>> memory_allocs_;
+  rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   std::unique_ptr<MetalStream> compute_stream_;
 
   bool is_destroyed_{false};

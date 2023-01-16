@@ -23,13 +23,7 @@ def setup_clang() -> None:
     '''
     u = platform.uname()
     if u.system == 'Linux':
-        if 'AMDGPU_TEST' in os.environ:
-            # FIXME: AMDGPU bots are currently maintained separately,
-            #        we should unify them with the rest of the bots.
-            lnsf = sh.sudo.ln.bake('-sf')
-            lnsf('/usr/bin/clang++-10', '/usr/bin/clang++')
-            lnsf('/usr/bin/clang-10', '/usr/bin/clang')
-            lnsf('/usr/bin/ld.lld-10', '/usr/bin/ld.lld')
+        pass
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
         out = get_cache_home() / 'clang-15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'

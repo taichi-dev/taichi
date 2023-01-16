@@ -184,13 +184,19 @@ class ArgLoadStmt : public Stmt {
   */
   bool is_ptr;
 
+  bool is_grad;
+
   // field_dims of ndarray
   int field_dims_ = 0;
 
-  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr = false)
+  ArgLoadStmt(int arg_id,
+              const DataType &dt,
+              bool is_ptr = false,
+              bool is_grad = false)
       : arg_id(arg_id) {
     this->ret_type = dt;
     this->is_ptr = is_ptr;
+    this->is_grad = is_grad;
     this->field_dims_ = -1;  // -1 means uninitialized
     TI_STMT_REG_FIELDS;
   }

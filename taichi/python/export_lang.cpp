@@ -136,7 +136,6 @@ void export_lang(py::module &m) {
       .def(py::init<>())
       .def_readwrite("arch", &CompileConfig::arch)
       .def_readwrite("opt_level", &CompileConfig::opt_level)
-      .def_readwrite("packed", &CompileConfig::packed)
       .def_readwrite("print_ir", &CompileConfig::print_ir)
       .def_readwrite("print_preprocessed_ir",
                      &CompileConfig::print_preprocessed_ir)
@@ -433,6 +432,7 @@ void export_lang(py::module &m) {
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::arg("zero_fill") = false, py::return_value_policy::reference)
+      .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
           [&](Program *program, const DataType &dt, int num_channels,
@@ -474,23 +474,23 @@ void export_lang(py::module &m) {
       .def_readonly("id", &SNode::id)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::dense),
            py::return_value_policy::reference)
       .def("pointer",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::pointer),
            py::return_value_policy::reference)
       .def("hash",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::hash),
            py::return_value_policy::reference)
       .def("dynamic", &SNode::dynamic, py::return_value_policy::reference)
       .def("bitmasked",
            (SNode & (SNode::*)(const std::vector<Axis> &,
-                               const std::vector<int> &, bool,
+                               const std::vector<int> &,
                                const std::string &))(&SNode::bitmasked),
            py::return_value_policy::reference)
       .def("bit_struct", &SNode::bit_struct, py::return_value_policy::reference)
@@ -673,9 +673,9 @@ void export_lang(py::module &m) {
              // TODO(#2193): Also apply to @ti.func?
              self->no_activate.push_back(snode);
            })
-      .def("insert_scalar_arg", &Kernel::insert_scalar_arg)
-      .def("insert_arr_arg", &Kernel::insert_arr_arg)
-      .def("insert_texture_arg", &Kernel::insert_texture_arg)
+      .def("insert_scalar_param", &Kernel::insert_scalar_param)
+      .def("insert_arr_param", &Kernel::insert_arr_param)
+      .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("get_ret_int", &Kernel::get_ret_int)
@@ -691,11 +691,11 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__",
-           [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
-             py::gil_scoped_release release;
-             kernel->operator()(launch_ctx);
-           });
+      .def("__call__", [](Kernel *kernel,
+                          Kernel::LaunchContextBuilder &launch_ctx) {
+        py::gil_scoped_release release;
+        kernel->operator()(kernel->program->this_thread_config(), launch_ctx);
+      });
 
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
@@ -704,6 +704,8 @@ void export_lang(py::module &m) {
       .def("set_arg_external_array_with_shape",
            &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+      .def("set_arg_ndarray_with_grad",
+           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture",
            &Kernel::LaunchContextBuilder::set_arg_rw_texture)
@@ -711,9 +713,9 @@ void export_lang(py::module &m) {
            &Kernel::LaunchContextBuilder::set_extra_arg_int);
 
   py::class_<Function>(m, "Function")
-      .def("insert_scalar_arg", &Function::insert_scalar_arg)
-      .def("insert_arr_arg", &Function::insert_arr_arg)
-      .def("insert_texture_arg", &Function::insert_texture_arg)
+      .def("insert_scalar_param", &Function::insert_scalar_param)
+      .def("insert_arr_param", &Function::insert_arr_param)
+      .def("insert_texture_param", &Function::insert_texture_param)
       .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
@@ -921,6 +923,9 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &>);
+
+  m.def("make_external_grad_tensor_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 

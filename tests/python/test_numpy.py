@@ -249,3 +249,44 @@ def test_numpy_view():
     with pytest.raises(ValueError,
                        match='Non contiguous numpy arrays are not supported'):
         fill(a)
+
+
+@test_utils.test()
+def test_numpy_ndarray_dim_check():
+    @ti.kernel
+    def add_one_mat(arr: ti.types.ndarray(dtype=ti.math.mat3, ndim=2)):
+        for i in ti.grouped(arr):
+            arr[i] = arr[i] + 1.0
+
+    @ti.kernel
+    def add_one_scalar(arr: ti.types.ndarray(dtype=ti.f32, ndim=2)):
+        for i in ti.grouped(arr):
+            arr[i] = arr[i] + 1.0
+
+    a = np.zeros(shape=(2, 2, 3, 3), dtype=np.float32)
+    b = np.zeros(shape=(2, 2, 2, 3), dtype=np.float32)
+    c = np.zeros(shape=(2, 2, 3), dtype=np.float32)
+    d = np.zeros(shape=(2, 2), dtype=np.float32)
+    add_one_mat(a)
+    add_one_scalar(d)
+    np.testing.assert_allclose(a, np.ones(shape=(2, 2, 3, 3),
+                                          dtype=np.float32))
+    np.testing.assert_allclose(d, np.ones(shape=(2, 2), dtype=np.float32))
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti.types.ndarray\(\) - required element_shape=\(.*\), but the argument has element shape of \(.*\)'
+    ):
+        add_one_mat(b)
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti.types.ndarray\(\) - required array has ndim=2 element_dim=2, but the argument has 3 dimensions'
+    ):
+        add_one_mat(c)
+    with pytest.raises(
+            ValueError,
+            match=
+            r'Invalid argument into ti.types.ndarray\(\) - required array has ndim=2, but the argument has 4 dimensions'
+    ):
+        add_one_scalar(a)

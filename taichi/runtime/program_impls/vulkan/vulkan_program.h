@@ -31,7 +31,8 @@ class VulkanDeviceCreator;
 class VulkanProgramImpl : public ProgramImpl {
  public:
   explicit VulkanProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel) override;
+  FunctionType compile(const CompileConfig &compile_config,
+                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -67,6 +68,9 @@ class VulkanProgramImpl : public ProgramImpl {
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
+  bool used_in_kernel(DeviceAllocationId id) override {
+    return vulkan_runtime_->used_in_kernel(id);
+  }
   DeviceAllocation allocate_texture(const ImageParams &params) override;
 
   Device *get_compute_device() override {

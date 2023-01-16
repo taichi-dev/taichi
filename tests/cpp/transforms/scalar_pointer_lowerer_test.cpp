@@ -35,8 +35,8 @@ class ScalarPointerLowererTest : public ::testing::Test {
   void SetUp() override {
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};
-    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, false, ""));
-    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, false, ""));
+    ptr_snode_ = &(root_snode_->pointer(axes, kPointerSize, ""));
+    dense_snode_ = &(ptr_snode_->dense(axes, kDenseSize, ""));
     // Must end with a `place` SNode.
     leaf_snode_ = &(dense_snode_->insert_children(SNodeType::place));
     leaf_snode_->dt = PrimitiveType::f32;
@@ -61,9 +61,7 @@ TEST_F(ScalarPointerLowererTest, Basic) {
       LowererImpl lowerer{leaf_snode_,
                           std::vector<Stmt *>{builder.get_int32(loop_index)},
                           SNodeOpType::undefined,
-                          /*is_bit_vectorized=*/false,
-                          &lowered,
-                          /*packed=*/false};
+                          /*is_bit_vectorized=*/false, &lowered};
       lowerer.run();
       // There are three linearized stmts:
       // 0: for root
@@ -104,30 +102,26 @@ TEST_F(ScalarPointerLowererTest, Basic) {
 }
 
 TEST(ScalarPointerLowerer, EliminateModDiv) {
-  const bool kPacked = true;
   IRBuilder builder;
   VecStatement lowered;
   Stmt *index = builder.get_int32(2);
   auto root = std::make_unique<SNode>(/*depth=*/0, SNodeType::root);
-  SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, kPacked, ""));
-  SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, kPacked, ""));
-  SNode *dense_3 =
-      &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, kPacked, ""));
+  SNode *dense_1 = &(root->dense({Axis{2}, Axis{1}}, /*size=*/7, ""));
+  SNode *dense_2 = &(root->dense({Axis{1}}, /*size=*/3, ""));
+  SNode *dense_3 = &(dense_2->dense({Axis{0}, Axis{1}}, /*size=*/{5, 8}, ""));
   SNode *leaf_1 = &(dense_1->insert_children(SNodeType::place));
   SNode *leaf_2 = &(dense_3->insert_children(SNodeType::place));
   LowererImpl lowerer_1{leaf_1,
                         {index, index},
                         SNodeOpType::undefined,
                         /*is_bit_vectorized=*/false,
-                        &lowered,
-                        kPacked};
+                        &lowered};
   lowerer_1.run();
   LowererImpl lowerer_2{leaf_2,
                         {index},
                         SNodeOpType::undefined,
                         /*is_bit_vectorized=*/false,
-                        &lowered,
-                        kPacked};
+                        &lowered};
   lowerer_2.run();
   for (int i = 0; i < lowered.size(); i++) {
     ASSERT_FALSE(

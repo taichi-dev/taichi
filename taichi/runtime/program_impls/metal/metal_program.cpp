@@ -27,9 +27,11 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType MetalProgramImpl::compile(Kernel *kernel) {
+FunctionType MetalProgramImpl::compile(const CompileConfig &compile_config,
+                                       Kernel *kernel) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(config, kernel), gfx_runtime_.get());
+      get_cache_manager()->load_or_compile(&compile_config, kernel),
+      gfx_runtime_.get());
 }
 
 void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -67,10 +69,10 @@ std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (gfx_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, caps);
+        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::vulkan, caps);
+        aot_compiled_snode_structs_, Arch::vulkan, *config, caps);
   }
 }
 
@@ -111,6 +113,7 @@ const std::unique_ptr<gfx::CacheManager>
     params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
     params.cache_path = config->offline_cache_file_path;
     params.runtime = gfx_runtime_.get();
+    params.compile_config = config;
     params.caps = embedded_device_.get()->get_caps();
     params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));

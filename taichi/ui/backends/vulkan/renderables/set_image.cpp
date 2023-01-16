@@ -13,14 +13,6 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-int SetImage::get_correct_dimension(int dimension) {
-  if (app_context_->config.is_packed_mode) {
-    return dimension;
-  } else {
-    return next_power_of_2(dimension);
-  }
-}
-
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
   void *mapped{nullptr};
@@ -54,8 +46,8 @@ void SetImage::update_data(const SetImageInfo &info) {
     texture_dtype_ = img.dtype;
   }
 
-  int new_width = get_correct_dimension(img.shape[0]);
-  int new_height = get_correct_dimension(img.shape[1]);
+  int new_width = img.shape[0];
+  int new_height = img.shape[1];
 
   BufferFormat fmt = BufferFormat::rgba8;
   if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {

@@ -15,7 +15,6 @@ struct CompileConfig {
   int opt_level;
   int external_optimization_level;
   int max_vector_width;
-  bool packed;
   bool print_preprocessed_ir;
   bool print_ir;
   bool print_accessor_ir;
@@ -106,6 +105,8 @@ struct CompileConfig {
   size_t cuda_stack_limit{8192};
 
   CompileConfig();
+
+  void fit();
 };
 
 extern TI_DLL_EXPORT CompileConfig default_compile_config;

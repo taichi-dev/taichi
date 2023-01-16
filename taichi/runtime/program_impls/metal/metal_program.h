@@ -21,7 +21,8 @@ namespace taichi::lang {
 class MetalProgramImpl : public ProgramImpl {
  public:
   explicit MetalProgramImpl(CompileConfig &config);
-  FunctionType compile(Kernel *kernel) override;
+  FunctionType compile(const CompileConfig &compile_config,
+                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -58,6 +59,10 @@ class MetalProgramImpl : public ProgramImpl {
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override;
   DeviceAllocation allocate_texture(const ImageParams &params) override;
+
+  bool used_in_kernel(DeviceAllocationId id) override {
+    return gfx_runtime_->used_in_kernel(id);
+  }
 
   Device *get_compute_device() override {
     if (embedded_device_) {

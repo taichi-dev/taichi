@@ -55,61 +55,20 @@ Kernel::Kernel(Program &program,
   }
 }
 
-void Kernel::compile() {
-  compiled_ = program->compile(*this);
+void Kernel::compile(const CompileConfig &compile_config) {
+  compiled_ = program->compile(compile_config, *this);
 }
 
-void Kernel::lower(bool to_executable) {
-  TI_ASSERT(!lowered_);
-  TI_ASSERT(supports_lowering(program->this_thread_config().arch));
-
-  const auto &config = program->this_thread_config();
-  bool verbose = config.print_ir;
-  if ((is_accessor && !config.print_accessor_ir) ||
-      (is_evaluator && !config.print_evaluator_ir))
-    verbose = false;
-
-  if (config.print_preprocessed_ir) {
-    TI_INFO("[{}] {}:", get_name(), "Preprocessed IR");
-    std::cout << std::flush;
-    irpass::re_id(ir.get());
-    irpass::print(ir.get());
-    std::cout << std::flush;
-  }
-
-  if (to_executable) {
-    irpass::compile_to_executable(
-        ir.get(), config, this, /*autodiff_mode=*/autodiff_mode,
-        /*ad_use_stack=*/true,
-        /*verbose*/ verbose,
-        /*lower_global_access=*/to_executable,
-        /*make_thread_local=*/config.make_thread_local,
-        /*make_block_local=*/
-        is_extension_supported(config.arch, Extension::bls) &&
-            config.make_block_local,
-        /*start_from_ast=*/ir_is_ast_);
-  } else {
-    irpass::compile_to_offloads(ir.get(), config, this, verbose,
-                                /*autodiff_mode=*/autodiff_mode,
-                                /*ad_use_stack=*/true,
-                                /*start_from_ast=*/ir_is_ast_);
-  }
-
-  lowered_ = true;
-}
-
-void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
+void Kernel::operator()(const CompileConfig &compile_config,
+                        LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
-    compile();
+    compile(compile_config);
   }
 
   compiled_(ctx_builder.get_context());
 
-  program->sync =
-      (program->sync && arch_is_cpu(program->this_thread_config().arch));
-  if (program->this_thread_config().debug &&
-      (arch_is_cpu(program->this_thread_config().arch) ||
-       program->this_thread_config().arch == Arch::cuda)) {
+  const auto arch = compile_config.arch;
+  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
     program->check_runtime_error();
   }
 }
@@ -130,7 +89,7 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -139,7 +98,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].get_dtype();
+  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     ctx_->set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -169,7 +128,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -178,7 +137,7 @@ void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->args[arg_id].get_dtype();
+  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     ctx_->set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -215,7 +174,7 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     uint64 size,
     const std::vector<int64> &shape) {
   TI_ASSERT_INFO(
-      kernel_->args[arg_id].is_array,
+      kernel_->parameter_list[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
@@ -237,6 +196,17 @@ void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
   ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
 }
 
+void Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad(
+    int arg_id,
+    const Ndarray &arr,
+    const Ndarray &arr_grad) {
+  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
+  intptr_t ptr_grad = arr_grad.get_device_allocation_ptr_as_int();
+  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
+                 "External array cannot have > {max_num_indices} indices");
+  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape, true, ptr_grad);
+}
+
 void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
                                                    const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
@@ -250,7 +220,7 @@ void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->args[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -376,14 +346,7 @@ void Kernel::init(Program &program,
   func();
 }
 
-// static
-bool Kernel::supports_lowering(Arch arch) {
-  return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
-         (arch == Arch::metal);
-}
-
-void Kernel::offload_to_executable(IRNode *stmt) {
-  auto config = program->this_thread_config();
+void Kernel::offload_to_executable(const CompileConfig &config, IRNode *stmt) {
   bool verbose = config.print_ir;
   if ((is_accessor && !config.print_accessor_ir) ||
       (is_evaluator && !config.print_evaluator_ir))

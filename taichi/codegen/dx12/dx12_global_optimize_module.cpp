@@ -65,7 +65,7 @@ GlobalVariable *createGlobalVariableForResource(Module &M,
 }
 
 std::vector<uint8_t> global_optimize_module(llvm::Module *module,
-                                            CompileConfig &config) {
+                                            const CompileConfig &config) {
   TI_AUTO_PROF
   if (llvm::verifyModule(*module, &llvm::errs())) {
     module->print(llvm::errs(), nullptr);

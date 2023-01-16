@@ -1294,7 +1294,7 @@ class TaskCodegen : public IRVisitor {
       val = ir_->const_i32_zero_;
     } else if (stmt->func_name == "localInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_local_invocation_id(0));
-    } else if (stmt->func_name == "vkGlobalThreadIdx") {
+    } else if (stmt->func_name == "globalInvocationId") {
       val = ir_->cast(ir_->i32_type(), ir_->get_global_invocation_id(0));
     } else if (stmt->func_name == "workgroupMemoryBarrier") {
       ir_->make_inst(
@@ -2575,10 +2575,8 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
 }
 
-void lower(Kernel *kernel) {
+void lower(const CompileConfig &config, Kernel *kernel) {
   if (!kernel->lowered()) {
-    auto &config = kernel->program->this_thread_config();
-    config.demote_dense_struct_fors = true;
     irpass::compile_to_executable(kernel->ir.get(), config, kernel,
                                   kernel->autodiff_mode,
                                   /*ad_use_stack=*/false, config.print_ir,

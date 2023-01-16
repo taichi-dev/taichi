@@ -5,15 +5,15 @@
 void aot_save(taichi::Arch arch) {
   using namespace taichi;
   using namespace lang;
-  auto program = Program(arch);
 
-  program.this_thread_config().advanced_optimization = false;
+  default_compile_config.advanced_optimization = false;
+  auto program = Program(arch);
 
   int n = 10;
 
   // program.materialize_runtime();
   auto *root = new SNode(0, SNodeType::root);
-  auto *pointer = &root->dense(Axis(0), n, false, "");
+  auto *pointer = &root->dense(Axis(0), n, "");
   auto *place = &pointer->insert_children(SNodeType::place);
   place->dt = PrimitiveType::i32;
   program.add_snode_tree(std::unique_ptr<SNode>(root), /*compile_only=*/true);

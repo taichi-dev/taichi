@@ -24,6 +24,8 @@ bool arch_uses_llvm(Arch arch);
 
 bool arch_is_gpu(Arch arch);
 
+bool arch_uses_spirv(Arch arch);
+
 Arch host_arch();
 
 bool arch_use_host_memory(Arch arch);

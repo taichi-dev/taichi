@@ -184,9 +184,10 @@ class Dx11Device : public GraphicsDevice {
     return new Dx11RasterResources;
   }
 
-  std::unique_ptr<Pipeline> create_pipeline(
-      const PipelineSourceDesc &src,
-      std::string name = "Pipeline") override;
+  RhiResult create_pipeline(Pipeline **out_pipeline,
+                            const PipelineSourceDesc &src,
+                            std::string name,
+                            PipelineCache *cache) noexcept final;
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;
   void unmap(DevicePtr ptr) final;

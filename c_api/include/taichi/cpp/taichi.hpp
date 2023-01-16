@@ -1,5 +1,6 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <list>
@@ -17,6 +18,17 @@ inline std::vector<TiArch> get_available_archs() {
   std::vector<TiArch> archs(narch);
   ti_get_available_archs(&narch, archs.data());
   return archs;
+}
+inline std::vector<TiArch> get_available_archs(const std::vector<TiArch> &expect_archs) {
+  std::vector<TiArch> actual_archs = get_available_archs();
+  std::vector<TiArch> out_archs;
+  for (TiArch arch : actual_archs) {
+    auto it = std::find(expect_archs.begin(), expect_archs.end(), arch);
+    if (it != expect_archs.end()) {
+      out_archs.emplace_back(arch);
+    }
+  }
+  return out_archs;
 }
 inline bool is_arch_available(TiArch arch) {
   std::vector<TiArch> archs = get_available_archs();

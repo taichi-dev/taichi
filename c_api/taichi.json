@@ -110,7 +110,16 @@
                     "name": "arch",
                     "type": "enumeration",
                     "since": "v1.4.0",
-                    "inc_cases": "PER_ARCH"
+                    "cases": {
+                        "reserved": 0,
+                        "vulkan": 1,
+                        "metal": 2,
+                        "cuda": 3,
+                        "x64": 4,
+                        "arm64": 5,
+                        "opengl": 6,
+                        "gles": 7
+                    }
                 },
                 {
                     "name": "capability",

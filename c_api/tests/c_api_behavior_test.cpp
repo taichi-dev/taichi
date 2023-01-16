@@ -15,15 +15,6 @@ TEST_F(CapiTest, TestBehaviorCreateRuntime) {
 
   // Attempt to create runtime for unknown arch.
   inner(TI_ARCH_MAX_ENUM);
-
-  // Attempt to create runtime for unsupported archs.
-  inner(TI_ARCH_JS);
-  inner(TI_ARCH_CC);
-  inner(TI_ARCH_WASM);
-  inner(TI_ARCH_DX11);
-  inner(TI_ARCH_DX12);
-  inner(TI_ARCH_OPENCL);
-  inner(TI_ARCH_AMDGPU);
 }
 
 TEST_F(CapiTest, TestBehaviorDestroyRuntime) {

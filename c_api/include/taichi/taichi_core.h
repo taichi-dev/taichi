@@ -9,14 +9,15 @@
 //
 // Taichi C-API intends to support the following backends:
 //
-// |Backend     |Offload Target   |Maintenance Tier |
-// |------------|-----------------|-----------------|
-// |Vulkan      |GPU              |Tier 1           |
-// |CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
-// |CPU (LLVM)  |CPU              |Tier 1           |
-// |OpenGL      |GPU              |Tier 2           |
-// |DirectX 11  |GPU (Windows)    |N/A              |
-// |Metal       |GPU (macOS, iOS) |N/A              |
+// |Backend     |Offload Target   |Maintenance Tier | Stabilized? |
+// |------------|-----------------|-----------------|-------------|
+// |Vulkan      |GPU              |Tier 1           | Yes         |
+// |Metal       |GPU (macOS, iOS) |Tier 2           | No          |
+// |CUDA (LLVM) |GPU (NVIDIA)     |Tier 2           | No          |
+// |CPU (LLVM)  |CPU              |Tier 2           | No          |
+// |OpenGL      |GPU              |Tier 2           | No          |
+// |OpenGL ES   |GPU              |Tier 2           | No          |
+// |DirectX 11  |GPU (Windows)    |N/A              | No          |
 //
 // The backends with tier-1 support are being developed and tested more
 // intensively. And most new features will be available on Vulkan first because
@@ -226,7 +227,7 @@
 #pragma once
 
 #ifndef TI_C_API_VERSION
-#define TI_C_API_VERSION 1004000
+#define TI_C_API_VERSION 1005000
 #endif  // TI_C_API_VERSION
 
 #include <taichi/taichi.h>
@@ -353,25 +354,21 @@ typedef enum TiError {
 //
 // Types of backend archs.
 typedef enum TiArch {
-  // x64 native CPU backend.
-  TI_ARCH_X64 = 0,
-  // Arm64 native CPU backend.
-  TI_ARCH_ARM64 = 1,
-  TI_ARCH_JS = 2,
-  TI_ARCH_CC = 3,
-  TI_ARCH_WASM = 4,
-  // NVIDIA CUDA GPU backend.
-  TI_ARCH_CUDA = 5,
-  TI_ARCH_METAL = 6,
-  // OpenGL GPU backend.
-  TI_ARCH_OPENGL = 7,
-  TI_ARCH_DX11 = 8,
-  TI_ARCH_DX12 = 9,
-  TI_ARCH_OPENCL = 10,
-  TI_ARCH_AMDGPU = 11,
+  TI_ARCH_RESERVED = 0,
   // Vulkan GPU backend.
-  TI_ARCH_VULKAN = 12,
-  TI_ARCH_GLES = 13,
+  TI_ARCH_VULKAN = 1,
+  // Metal GPU backend.
+  TI_ARCH_METAL = 2,
+  // NVIDIA CUDA GPU backend.
+  TI_ARCH_CUDA = 3,
+  // x64 native CPU backend.
+  TI_ARCH_X64 = 4,
+  // Arm64 native CPU backend.
+  TI_ARCH_ARM64 = 5,
+  // OpenGL GPU backend.
+  TI_ARCH_OPENGL = 6,
+  // OpenGL ES GPU backend.
+  TI_ARCH_GLES = 7,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
@@ -825,7 +822,8 @@ TI_DLL_EXPORT uint32_t TI_API_CALL ti_get_version();
 // An available arch has at least one device available, i.e., device index 0 is
 // always available. If an arch is not available on the current platform, a call
 // to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is
-// guaranteed failing.
+// guaranteed failing. Please also note that the order or returned archs is
+// **undefined**.
 TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
                                                       TiArch *archs);
 

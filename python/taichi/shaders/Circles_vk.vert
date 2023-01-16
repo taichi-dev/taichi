@@ -32,7 +32,7 @@ void main() {
   pos_2d = offsets[gl_VertexIndex % 6];
 
   gl_Position = vec4(x, y, 0.0, 1.0);
-  gl_Position.xy += pos_2d * vec2(ubo.radius_w, ubo.radius_h);
+  gl_Position.xy += pos_2d * vec2(ubo.radius_w, ubo.radius_h) * 2.0;
 
   if (ubo.use_per_vertex_color == 0) {
     selected_color = ubo.color;

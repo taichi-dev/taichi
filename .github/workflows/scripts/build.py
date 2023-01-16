@@ -154,7 +154,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     '''
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
-    proj = os.environ['PROJECT_NAME']
+    proj = os.environ.get('PROJECT_NAME', 'taichi')
     proj_tags = []
     extra = []
 

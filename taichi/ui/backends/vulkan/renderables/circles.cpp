@@ -66,7 +66,7 @@ void Circles::update_ubo(glm::vec3 color,
                          float radius) {
   UniformBufferObject ubo{
       color, (int)use_per_vertex_color,
-      radius * app_context_->config.height / app_context_->config.width,
+      radius / app_context_->config.height * app_context_->config.width,
       radius};
 
   void *mapped{nullptr};

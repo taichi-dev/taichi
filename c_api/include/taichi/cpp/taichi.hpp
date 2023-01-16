@@ -19,7 +19,8 @@ inline std::vector<TiArch> get_available_archs() {
   ti_get_available_archs(&narch, archs.data());
   return archs;
 }
-inline std::vector<TiArch> get_available_archs(const std::vector<TiArch> &expect_archs) {
+inline std::vector<TiArch> get_available_archs(
+    const std::vector<TiArch> &expect_archs) {
   std::vector<TiArch> actual_archs = get_available_archs();
   std::vector<TiArch> out_archs;
   for (TiArch arch : actual_archs) {

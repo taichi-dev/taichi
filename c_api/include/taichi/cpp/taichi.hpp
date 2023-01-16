@@ -206,7 +206,7 @@ class NdArray {
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
       : memory_(std::move(b.memory_)),
-        ndarray_(detail::exchange(b.ndarray_, {})),
+        ndarray_(detail::exchange(b.ndarray_, TiNdArray{})),
         elem_count_(detail::exchange(b.elem_count_, 1)),
         scalar_count_(detail::exchange(b.scalar_count_, 1)) {
   }
@@ -234,7 +234,7 @@ class NdArray {
   NdArray<T> &operator=(NdArray<T> &&b) {
     destroy();
     memory_ = std::move(b.memory_);
-    ndarray_ = detail::exchange(b.ndarray_, {});
+    ndarray_ = detail::exchange(b.ndarray_, TiNdArray{});
     elem_count_ = detail::exchange(b.elem_count_, 1);
     scalar_count_ = detail::exchange(b.scalar_count_, 1);
     return *this;

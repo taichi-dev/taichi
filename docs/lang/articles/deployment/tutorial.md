@@ -4,18 +4,18 @@ sidebar_position: 1
 
 # Tutorial: Run Taichi programs in C++ application
 
-Taichi makes it easy to write high-performance programs with efficient parallelism, but in many applications we cannot simply deploy the Python scripts. Taichi offers a runtime library (TiRT) with a C interface so that your Taichi kernels can be launched in any native application. In this tutorial, we'll walkthrough the steps to deploy a Taichi program in a C++ application.
+Taichi makes it easy to write high-performance programs with efficient parallelism, but in many applications we cannot simply deploy the Python scripts. Taichi offers a runtime library (TiRT) with a C interface so that your Taichi kernels can be launched in any native application. In this tutorial, we'll walk through the steps to deploy a Taichi program in a C++ application.
 
 ## Overview
 
 ![AOT E2E](../static/assets/aot_tutorial.png)
 
-In Python, when you call a function decorated with `@ti.kernel`, Taichi immediately compiles the kernel and send it to the device for execution. This is called just-in-time (JIT) compilation. But generally speaking, we don't want to compile the kernels on a mobile phone, or to leak the source code to the users. So Taichi introduced ahead-of-time (AOT) compilation so that you can compile kernels on a development machine, and launch them on user devices via TiRT.
+In Python, when you call a function decorated with `@ti.kernel`, Taichi immediately compiles the kernel and sends it to the device for execution. This is called just-in-time (JIT) compilation. But generally speaking, we don't want to compile the kernels on a mobile phone, or to expose the source code to the users. For this Taichi introduced ahead-of-time (AOT) compilation so that you can compile kernels on a development machine, and launch them on user devices via TiRT.
 
 1. Compile Taichi kernels from Python and save the artifacts.
 2. Load AOT modules with TiRT and launch them in your applications.
 
-Although this tutorial only demonstrates integrating Taichi in a C++ application, thanks to the versatility of the C interface, TiRT can communicate with many programming languages including C/C++, Swift, Rust, C# (via P/Invoke) and Java (via JNI).
+Although this tutorial only demonstrates integrating Taichi in a C++ application, the C interface allows you to integrate TiRT with many other programming languages including C/C++, Swift, Rust, C# (via P/Invoke) and Java (via JNI).
 
 ### 1. Write kernels for AOT compilation
 
@@ -27,13 +27,13 @@ Taichi supports the following argument types:
 - `ti.f32`
 - `ti.Ndarray`
 
-Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It has multiple dimensions to index and the data is laid out continuously in memory. If you have more experience with C++ than Python, You can treat it as a nested array type like `float[6][14]`.
+Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It can be multidimensional and is laid out continuously in memory. If you have experienced the multidimensional arrays in C++, You can treat it as a nested array type like `float[6][14]`.
 
-To give an example, the following `init` kernel accepts an ND-array argument called `x`. We want to inform the compiler that the ND-array stores floating-point data and it only has a single dimension to index, so `dtype` is `ti.f32`, and `field_dim` is set to 1. When executed, every element in `x` will be assigned with a constant 0.
+To give an example, the following `init` kernel accepts an ndarray argument called `x`. We want to inform the compiler that the ndarray stores floating-point data and it only has a single dimension to index, hence `dtype` is `ti.f32`, and `ndim` is set to 1. When executed, every element in `x` will be set to 0.
 
 ```python
 @ti.kernel
-def init(x: ti.types.ndarray(ti.f32, element_shape=tuple(), field_dim=1)):
+def init(x: ti.types.ndarray(dtype=ti.f32, ndim=1)):
     for i in x:
         x[i] = 0
 ```
@@ -42,12 +42,12 @@ After initialization, in kernel `add_base`, we want to add a floating-point numb
 
 ```python
 @ti.kernel
-def add_base(x: ti.types.ndarray(field_dim=1), base: ti.f32):
+def add_base(x: ti.types.ndarray(ndim=1), base: ti.f32):
     for i in range(x.shape[0]):
         x[i] += base
 ```
 
-You can also create an ND-array and launch the kernels in the same script to ensure they do everything you expect.
+You can also create an ndarray and launch the kernels in the same script to ensure they do everything you expect.
 
 ```python
 x = ti.ndarray(ti.f32, shape=(8192))
@@ -62,8 +62,6 @@ for _ in range(N_ITER):
 
 Now let's compile the kernels into an AOT module.
 
-<!-- (penguinliong) I'm gonna leave this part untouched for another PR. -->
-
 A compiled taichi kernel consists of all compiled artifacts when compiling a `ti.kernel` with the types of its parameters. Take kernel `add_base` as an example, argument `base`'s type is `ti.f32`. Its type information is used to compile the kernel and thus encoded in the compiled artifact, while it can be called with any floating point number at runtime.
 
 ```python
@@ -77,7 +75,7 @@ mod.save(target_dir)
 
 Now that we're done with Kernel compilation, let's take a look at the generated artifacts and its layout:
 
-```plaintext
+```text
 // FUTURE WORK: This is just a zip. Replace tcb with readable JSON
 // Structure of compiled artifacts
 .

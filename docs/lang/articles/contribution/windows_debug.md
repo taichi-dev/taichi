@@ -5,26 +5,26 @@ sidebar_position: 9
 # Debugging on Windows
 
 ## Prerequisites:
-Able to build Taichi from source. (i.e. already have LLVM and related environment variables already setup)
-Recommended plugins to install for Visual Studio:
+You should be able to build Taichi from source and already have LLVM and related environment variables configured.
+Recommended Visual Studio plugins:
 1. Github Co-pilot
-2. VS Chromium for Code Search ( https://chromium.github.io/vs-chromium/ ). You might need to go to the release page to find the pre-release version needed for VS2022
+2. [VS Chromium](https://chromium.github.io/vs-chromium/) for Code Search. You might need to go to the release page to find the pre-release version needed for VS2022
 
 ## Step 1. Turn on msbuild option in our build system:
 
-This is a new feature in setup.py (introduced in https://github.com/taichi-dev/taichi/pull/6724 ) that enables building Taichi with MSBuild & MSVC, and it generates a Visual Studio Project file to enable coding and seamless debugging through Visual Studio IDE.
+This is a new feature in setup.py, introduced in [PR #6724](https://github.com/taichi-dev/taichi/pull/6724), which enables building Taichi with MSBuild & MSVC. It generates a Visual Studio Project file to enable coding and seamless debugging through Visual Studio IDE.
 To turn it on, create a new environment variable (Type in windows search: environment variable, or set it temporarily with `$Env:` in PowerShell) called TAICHI_USE_MSBUILD, and set its value to 1 or ON.
 Now after cleaning up the _skbuild folder (in case the previously used generator is Ninja), run `python setup.py develop` and build Taichi from the source.
 
 ## Step 2. Navigate to the generated Visual Studio Project file
-Go to the build folder, in my case it is `_skbuild\win-amd64-3.9\cmake-build`, and double click on `taichi.sln` (Or open this SLN solution file from Visual Studio). This should open Visual Studio IDE with the setup for Taichi.
-After Visual Studio launched, you should see something like this (layout might be different, you can reconfigure the layout to one that you like):
+Go to the build folder, which is `_skbuild\win-amd64-3.9\cmake-build` in the author's case, and double click `taichi.sln`. You can also open this SLN solution file from Visual Studio. This should open Visual Studio IDE with the setup for Taichi.
+The following image shows a possible layout after Visual Studio is launched. The layout is open to reconfiguration.
 
 ![image13](https://user-images.githubusercontent.com/11663476/212577220-92a8a7cb-f6ff-4365-9808-0a7299be87cd.png)
 
-## Step 3. Navigating the source code of Taichi in Visual Studio
+## Step 3. Navigate through the source code of Taichi in Visual Studio
 
-The top right red box is the solution explorer, where you can see each submodule of Taichi grouped up by each “object file”, clicking on one will reveal something like this:
+The top right red box is the solution explorer, where you can see each submodule of Taichi grouped up by each “object file”. Click on one, and you will see expanded details as the following images show:
 
 ![image10](https://user-images.githubusercontent.com/11663476/212577350-33912d21-0105-459b-8490-2aaee5c88ff6.png)
 ![image11](https://user-images.githubusercontent.com/11663476/212577355-fec6837a-00fc-4f7b-8cdc-b369bc4bc015.png)
@@ -38,30 +38,34 @@ Say we are trying to pin down where we are defining all the pointer statements, 
 
 ![image16](https://user-images.githubusercontent.com/11663476/212577411-61c8ffd9-6b63-4eb9-a38b-b1b4f2a640dc.png)
 
-You can see here, by default CodeSearch uses the Windows search path wild cards with . ? and *. Here we matched all the pointer statement definitions by using `class *ptrstmt`. Clicking on each one will bring you over to that line in that file:
+By default, CodeSearch uses the Windows search path wildcards with . ? and *. Here, we match all pointer statement definitions by using `class *ptrstmt`. Clicking on one of the results brings you over to the particular line in that file:
 
 ![image8](https://user-images.githubusercontent.com/11663476/212577439-6cd6e888-fbd9-48c8-9a81-81cca3d9359f.png)
 
-(Currently Visual Studio has a bit of trouble parsing our `ir.h`, so ignore these errors related to classes and types it failed to find. Usually this goes away after a while.)
+:::note
 
-## Step 4. Debugging Taichi
+Currently, Visual Studio has a bit of trouble parsing `ir.h`. You can ignore the errors reporting a failure to find the classes or types. Usually, they go away after a while.
 
-To debug Taichi on Windows, you can use two methods. One is to launch a Taichi program from Visual Studio itself and use it like any other IDE, the other is to insert this statement in your Taichi program:
-`ti._lib.core.wait_for_debugger()`
+## Step 4. Debug Taichi
+
+To debug Taichi on Windows, you can use one of the following two methods. 
+
+- Launch a Taichi program from Visual Studio and use it like any other IDE
+- Insert `ti._lib.core.wait_for_debugger()` in your Taichi program to pause the program. You can then attach to this process from Visual Studio.
 When this line of code is executed, the program will pause and now you can attach to this process from Visual Studio.
-To setup launching Taichi program from Visual Studio, go to “Debug->ALL_BUILD Debug Properties”, and click on the left side “Debugging”. This will reveal the debug launch settings. You should set “Command” to the python executable file you installed on your system (either in Conda or in other places). Then set the working directory to “..\..\..” where it points to the root of taichi source directory. Then you can set the argument to the python file you want to launch and its related options. Here is an example:
+To launch a Taichi program from Visual Studio, go to**Debug > ALL_BUILD Debug Properties** and click **Debugging** on the left side for the debug launch settings. Set “Command” to the python executable file installed on your system (either in Conda or in other places). Then, set the working directory to **..\..\..**, which points to the root of the Taichi source directory. Finally, set the argument to the python file you want to launch and its related options. For example:
 
 ![image6](https://user-images.githubusercontent.com/11663476/212577472-49959479-e0f5-4f7c-87c0-8b16fb53c07b.png)
 
-Hit OK or Apply to save this config, and click on the green Run button (says “local windows debugger”) to launch the program. Here you can see we hit a break point set in one of the optimization passes:
+Hit OK or Apply to save this config, and click on the green Run button (says “local windows debugger”) to launch the program. Here, we hit a break point set in one of the optimization passes:
 
 ![image5](https://user-images.githubusercontent.com/11663476/212577487-139cea4c-01ee-4589-89ff-f3daa2bdb982.png)
 
-If you use the other route and put a `wait_for_debugger()` in your python script, you can attach to the waiting process through “Debug->Attach to Process”. After you have attached, the program will resume automatically.
+If you use the other route and put a `wait_for_debugger()` in your python script, you can attach to the waiting process through **Debug > Attach to Process**. Afterward, the program resumes automatically.
 
 ## Step 5. (CPU) Performance profiling
 
-After clicking the debugging button (green run button), you might have noticed that a new window popped up called “Diagnostic Tools” that looks like this:
+After the debugger (the green Run button) is enabled, a new window titled “Diagnostic Tools” pops up, as the following image shows:
 
 ![image3](https://user-images.githubusercontent.com/11663476/212577500-bb87e5db-e3e8-4ec6-9e61-7580714655b9.png)
 

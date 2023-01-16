@@ -193,7 +193,7 @@ TEST(AMDGPU, ConvertFuncParamAddressSpacePass) {
   }
 }
 
-TEST(AMDGPU, ConvertProgramAndLaunch) {
+TEST(AMDGPU, CompileProgramAndLaunch) {
   std::string program =
       "target datalayout = "
       "\"e-p:64:64-p1:64:64-p2:32:32-p3:32:32-p4:64:64-p5:32:32-p6:32:32-i64:"

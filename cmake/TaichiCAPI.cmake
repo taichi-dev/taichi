@@ -47,7 +47,7 @@ endif()
 
 if (TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
-  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
+  #list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
 endif()
 
 if (TI_WITH_VULKAN)

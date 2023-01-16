@@ -961,9 +961,11 @@ class Runtime {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);
   }
-  Memory allocate_memory(size_t size) {
+  Memory allocate_memory(size_t size, bool host_access = false) {
     TiMemoryAllocateInfo allocate_info{};
     allocate_info.size = size;
+    allocate_info.host_read = host_access;
+    allocate_info.host_write = host_access;
     allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
     return allocate_memory(allocate_info);
   }
@@ -987,12 +989,7 @@ class Runtime {
     ndarray.elem_shape.dim_count = elem_shape.size();
     ndarray.elem_type = detail::templ2dtype<T>::value;
 
-    TiMemoryAllocateInfo allocate_info{};
-    allocate_info.size = size;
-    allocate_info.host_read = host_access;
-    allocate_info.host_write = host_access;
-    allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-    Memory memory = allocate_memory(allocate_info);
+    ti::Memory memory = allocate_memory(size, host_access);
     ndarray.memory = memory;
     return NdArray<T>(std::move(memory), ndarray);
   }

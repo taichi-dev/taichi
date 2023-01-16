@@ -1,17 +1,11 @@
-# -*- coding: utf-8 -*-
-
-# -- stdlib --
 import importlib
 import os
+import platform
+import subprocess
 import sys
 from pathlib import Path
-from typing import Any
-
-# -- third party --
-# -- own --
 
 
-# -- code --
 def is_in_venv() -> bool:
     '''
     Are we in a virtual environment?
@@ -43,7 +37,15 @@ def ensure_dependencies(fn='requirements.txt'):
             raise Exception('Unable to upgrade pip!')
         if os.system(f'{sys.executable} -m pip install {user} -U -r {p}'):
             raise Exception('Unable to install dependencies!')
-        os.execl(sys.executable, sys.executable, *sys.argv)
+
+        if platform.system != 'Windows':
+            # GitHub Actions will treat the step as completed when doing os.execl in Windows,
+            # since Windows does not have real execve, its behavior is emulated by spawning a new process and
+            # terminating the current process. So we do not use os.execl in Windows.
+            proc = subprocess.Popen(sys.argv, executable=sys.executable)
+            proc.wait()
+        else:
+            os.execl(sys.executable, sys.executable, *sys.argv)
 
 
 def chdir_to_root():

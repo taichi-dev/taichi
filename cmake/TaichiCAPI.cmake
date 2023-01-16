@@ -25,6 +25,9 @@ list(APPEND C_API_PUBLIC_HEADERS
   "c_api/include/taichi/taichi_platform.h"
   "c_api/include/taichi/taichi_core.h"
   "c_api/include/taichi/taichi.h"
+  # FIXME: (penguinliong) Remove this in the future when we have a option for
+  # Unity3D integration?
+  "c_api/include/taichi/taichi_unity.h"
   )
 
 if (TI_WITH_LLVM)

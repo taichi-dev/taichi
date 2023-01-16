@@ -69,7 +69,7 @@ After the debugger (the green Run button) is enabled, a new window titled “Dia
 
 ![image3](https://user-images.githubusercontent.com/11663476/212577500-bb87e5db-e3e8-4ec6-9e61-7580714655b9.png)
 
-Here you can see two tabs that are useful to us: CPU Usage and Memory Usage. In each of these, we can find a “record CPU profile” button. Once enabled, the CPU timeline turns green and that means we are collecting performance data in this duration.
+There are two useful tabs on this window: CPU Usage and Memory Usage. In each of them, you can find a “Record CPU Profile” option. Once you enable the option, the CPU timeline turns green and that means performance data is being collected in this duration.
 Now if we hit pause on debugging, we can see the profiling window turns into this:
 
 ![image7](https://user-images.githubusercontent.com/11663476/212577591-d593a3b4-a13b-47f7-ac25-a376f69fcb95.png)
@@ -79,25 +79,27 @@ This is the collected profile of our program. We can select a region on the CPU 
 ![image14](https://user-images.githubusercontent.com/11663476/212577515-ebe3a000-8294-41c9-9355-73f6fe20837a.png)
 
 Here we can see the “Hot Path” of function calls. If we hit the “Open details” button, we can go into the detailed view containing a few views: “Caller/Callee”, “Call Tree”, “Modules”, “Functions”. Each of these presents performance data in a different way.
-In this particular program, we can see that the hot path is within Python, which we can’t do much to help. In this case, if we still want to optimize our part of code, we can go to the “Modules” view:
+In this particular program, the hot path is within Python, and there is not much we can do to help. To optimize this part of code, go to the “Modules” view:  
 
 ![image9](https://user-images.githubusercontent.com/11663476/212577614-9cb2dd9d-18c5-4900-a347-869f10f583e4.png)
 
-Where we can see that the `taichi_python` module (the C++ source code of Taichi) takes 65% of total CPU time, and then it splits its time down into the kernel and driver libraries etc. Here is the view when we expand our library module:
+The `taichi_python` module (the C++ source code of Taichi) takes 65% of the total CPU time and splits its time down into the kernel and driver libraries. 
+
+ Now, expand the library module:
 
 ![image15](https://user-images.githubusercontent.com/11663476/212577640-87a0503c-72d8-4c4c-9306-1e4ee97e3796.png)
 
-Let’s say we want to focus on
+Take this particular entry for example.
 
 ![image4](https://user-images.githubusercontent.com/11663476/212577647-116bf750-54df-491b-8719-01e88ef526cd.png)
 
-We can right click on this line, and click “View in Call Tree”, and then click on “expand hot path”, we get something like this:
+Right click on it and find **View in Call Tree > expand hot path**. The result is shown as below:
 
 ![image1](https://user-images.githubusercontent.com/11663476/212577664-48f91acb-988a-463c-abe4-3f808d3159ad.png)
 
-Hmmmm, perhaps the Python stack is way too long and we don’t really care about it. Let’s scroll down to `taichi::lang::JITSessionCUDA::add_module`, and right click on “Set Root”, and now we get a much cleaner view where we see the function we care about is now the root of the call tree:
+The Python stack is lengthy. We can scroll down to `taichi::lang::JITSessionCUDA::add_module` and right click on “Set Root” to get a much cleaner view. The function we care about is now the root of the call tree:
 
 ![image12](https://user-images.githubusercontent.com/11663476/212577676-772d210b-11e8-4959-b573-28a73bbb47d9.png)
 
-Here we can see which pass takes the most amount of time, we can even see which line of our code corresponds to the most amount of time spent.
-Granted in this case, most of the time is spent on LLVM here. We probably can’t do much for this specific case. However, this method applies everywhere and is extremely powerful and clear what performance problems are and gives us potential paths to fix these problems.
+We can find out which pass and even which line of code are the most time-consuming.
+In this case, LLVM occupies most of the time and leaves limited room for optimization. However, this method applies everywhere and is most helpful to locate performance bottlenecks and facilitate problem-solving.

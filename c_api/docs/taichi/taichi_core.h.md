@@ -10,14 +10,15 @@ Taichi Core exposes all necessary interfaces for offloading the AOT modules to T
 
 Taichi C-API intends to support the following backends:
 
-|Backend     |Offload Target   |Maintenance Tier |
-|------------|-----------------|-----------------|
-|Vulkan      |GPU              |Tier 1           |
-|CUDA (LLVM) |GPU (NVIDIA)     |Tier 1           |
-|CPU (LLVM)  |CPU              |Tier 1           |
-|OpenGL      |GPU              |Tier 2           |
-|DirectX 11  |GPU (Windows)    |N/A              |
-|Metal       |GPU (macOS, iOS) |N/A              |
+|Backend     |Offload Target   |Maintenance Tier | Stabilized? |
+|------------|-----------------|-----------------|-------------|
+|Vulkan      |GPU              |Tier 1           | Yes         |
+|Metal       |GPU (macOS, iOS) |Tier 2           | No          |
+|CUDA (LLVM) |GPU (NVIDIA)     |Tier 2           | No          |
+|CPU (LLVM)  |CPU              |Tier 2           | No          |
+|OpenGL      |GPU              |Tier 2           | No          |
+|OpenGL ES   |GPU              |Tier 2           | No          |
+|DirectX 11  |GPU (Windows)    |N/A              | No          |
 
 The backends with tier-1 support are being developed and tested more intensively. And most new features will be available on Vulkan first because it has the most outstanding cross-platform compatibility among all the tier-1 backends.
 For the backends with tier-2 support, you should expect a delay in the fixes to minor issues.
@@ -263,11 +264,13 @@ Errors reported by the Taichi C-API.
 
 Types of backend archs.
 
+- `enumeration.arch.vulkan`: Vulkan GPU backend.
+- `enumeration.arch.metal`: Metal GPU backend.
+- `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
 - `enumeration.arch.x64`: x64 native CPU backend.
 - `enumeration.arch.arm64`: Arm64 native CPU backend.
-- `enumeration.arch.cuda`: NVIDIA CUDA GPU backend.
-- `enumeration.arch.vulkan`: Vulkan GPU backend.
 - `enumeration.arch.opengl`: OpenGL GPU backend.
+- `enumeration.arch.gles`: OpenGL ES GPU backend.
 
 `enumeration.capability`
 
@@ -465,6 +468,8 @@ Gets a list of available archs on the current platform. An arch is only availabl
 2. The current platform is installed with a capable hardware or an emulation software.
 
 An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to `function.create_runtime` with that arch is guaranteed failing.
+
+**WARNING** Please also note that the order or returned archs is *undefined*.
 
 `function.get_last_error`
 

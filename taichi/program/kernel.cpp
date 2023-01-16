@@ -68,7 +68,6 @@ void Kernel::operator()(const CompileConfig &compile_config,
   compiled_(ctx_builder.get_context());
 
   const auto arch = compile_config.arch;
-  program->sync = (program->sync && arch_is_cpu(arch));
   if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
     program->check_runtime_error();
   }

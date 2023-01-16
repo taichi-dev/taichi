@@ -576,6 +576,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
 void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     std::unique_ptr<llvm::Module> &module) {
   TI_ASSERT(arch_ == Arch::amdgpu);
+#if defined(TI_WITH_AMDGPU)
   auto isa_version = AMDGPUContext::get_instance().get_mcpu().substr(3, 4);
   std::string libdevice_files[] = {"ocml.bc",
                                    "oclc_wavefrontsize64_off.bc",
@@ -621,6 +622,7 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
         func->setLinkage(llvm::Function::InternalLinkage);
     }
   }
+#endif
 }
 
 void TaichiLLVMContext::add_struct_module(std::unique_ptr<Module> module,

@@ -36,7 +36,7 @@ void Circles::init_circles(AppContext *app_context,
       TopologyType::Triangles,
       PolygonMode::Fill,
       vbo_attrs,
-      true // Point instanced quads
+      true  // Point instanced quads
   };
 
   Renderable::init(config, app_context);

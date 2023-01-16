@@ -227,7 +227,7 @@
 #pragma once
 
 #ifndef TI_C_API_VERSION
-#define TI_C_API_VERSION 1005000
+#define TI_C_API_VERSION 1004000
 #endif  // TI_C_API_VERSION
 
 #include <taichi/taichi.h>

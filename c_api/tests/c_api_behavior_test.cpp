@@ -358,7 +358,7 @@ TEST_F(CapiTest, TestBehaviorCopyMemoryDTD) {
 
     // Attempt copy memory from the big one to the small one
     {
-      src.slice(src.slice(0, 256)).copy_to(dst.slice(0, 64));
+      src.slice(0, 256).copy_to(dst.slice(0, 64));
       EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_ARGUMENT);
     }
 

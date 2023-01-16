@@ -28,6 +28,37 @@ inline bool is_arch_available(TiArch arch) {
   return false;
 }
 
+struct Error {
+  TiError error;
+  std::string message;
+};
+
+inline Error get_last_error() {
+  uint64_t message_size = 0;
+  ti_get_last_error(&message_size, nullptr);
+  std::string message(message_size, '\0');
+  TiError error = ti_get_last_error(&message_size, (char *)message.data());
+  message.resize(message.size() - 1);
+  return Error{error, message};
+}
+inline void check_last_error() {
+#ifdef TI_WITH_EXCEPTIONS
+  Error error = get_last_error();
+  if (error != TI_ERROR_SUCCESS) {
+    throw std::runtime_error(error.message);
+  }
+#endif  // TI_WITH_EXCEPTIONS
+}
+inline void set_last_error(TiError error) {
+  ti_set_last_error(error, nullptr);
+}
+inline void set_last_error(TiError error, const std::string &message) {
+  ti_set_last_error(error, message.c_str());
+}
+inline void set_last_error(const Error &error) {
+  set_last_error(error.error, error.message);
+}
+
 // Token type for half-precision floats.
 struct half {
   uint16_t _;

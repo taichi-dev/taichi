@@ -835,7 +835,7 @@ TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
 // semantical error code.
 TI_DLL_EXPORT TiError TI_API_CALL ti_get_last_error(
     // Size of textual error message in `function.get_last_error.message`
-    uint64_t message_size,
+    uint64_t *message_size,
     // Text buffer for the textual error message. Ignored when `message_size` is
     // 0.
     char *message);

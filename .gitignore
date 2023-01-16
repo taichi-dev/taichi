@@ -77,7 +77,6 @@ _build
 *.dat
 *.ptx
 *.ll
-*.bc
 *.yml
 !.github/**/*.yml
 *.dot

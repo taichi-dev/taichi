@@ -11,6 +11,29 @@
 
 namespace ti {
 
+struct Version {
+  uint32_t version;
+
+  inline uint32_t major() const {
+    return version / 1000000;
+  }
+  inline uint32_t minor() const {
+    return (version / 1000) % 1000;
+  }
+  inline uint32_t patch() const {
+    return version % 1000;
+  }
+
+  operator uint32_t() const {
+    return version;
+  }
+};
+inline Version get_version() {
+  Version out{};
+  out.version = ti_get_version();
+  return out;
+}
+
 inline std::vector<TiArch> get_available_archs() {
   uint32_t narch = 0;
   ti_get_available_archs(&narch, nullptr);

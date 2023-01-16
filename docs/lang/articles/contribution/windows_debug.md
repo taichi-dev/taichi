@@ -48,7 +48,7 @@ Currently, Visual Studio has a bit of trouble parsing `ir.h`. You can ignore the
 
 ## Step 4. Debug Taichi
 
-To debug Taichi on Windows, you can use one of the following two methods. 
+To debug Taichi on Windows, you can use one of the following two methods.
 
 - Launch a Taichi program from Visual Studio and use it like any other IDE
 - Insert `ti._lib.core.wait_for_debugger()` in your Taichi program to pause the program. You can then attach to this process from Visual Studio.

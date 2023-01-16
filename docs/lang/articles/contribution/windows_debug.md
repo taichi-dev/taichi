@@ -5,7 +5,11 @@ sidebar_position: 9
 # Debugging on Windows
 
 ## Prerequisites:
+
 You should be able to build Taichi from source and already have LLVM and related environment variables configured.
+
+:::note Here is the ![developer installation guide](https://docs.taichi-lang.org/docs/dev_install).
+
 Recommended Visual Studio plugins:
 1. Github Co-pilot
 2. [VS Chromium](https://chromium.github.io/vs-chromium/) for Code Search. You might need to go to the release page to find the pre-release version needed for VS2022
@@ -33,12 +37,11 @@ Or if you prefer navigating the project using its folder structure, you can find
 
 ![image2](https://user-images.githubusercontent.com/11663476/212577382-4ff8e6de-e04b-4502-9dd9-7ebb75697693.png)
 
-Sometimes, if you are familiar with the source code already and you know what you are trying to find, or if you are trying to figure out where a particular class is defined, using CodeSearch should be a quicker and easier way to find the source code. (Code Search is provided by the plugin VS Chromium, and you can find it through “View->Other Windows->Code Search”. I recommend keeping this window pinned somewhere so you always have access to it, it’s the greatest source navigation tool ever.
-Say we are trying to pin down where we are defining all the pointer statements, just type in CodeSearch:
+If you are already familiar with the source code or try to locate the definition of a particular class, CodeSearch makes it quicker and easier to find the corresponding source code. Code Search is provided by the plugin VS Chromium, and you can find it by following **View > Other Windows > Code Search**.  It is recommended that you keep this window pinned to have easy access to this great source navigation tool.
 
 ![image16](https://user-images.githubusercontent.com/11663476/212577411-61c8ffd9-6b63-4eb9-a38b-b1b4f2a640dc.png)
 
-By default, CodeSearch uses the Windows search path wildcards with . ? and *. Here, we match all pointer statement definitions by using `class *ptrstmt`. Clicking on one of the results brings you over to the particular line in that file:
+By default, CodeSearch uses the Windows search path wildcards with . ? and *. For example, the following image shows how to pin down where all pointer statements are defined, and clicking on one of the results brings you over to the particular line in that file:
 
 ![image8](https://user-images.githubusercontent.com/11663476/212577439-6cd6e888-fbd9-48c8-9a81-81cca3d9359f.png)
 
@@ -70,7 +73,8 @@ After the debugger (the green Run button) is enabled, a new window titled “Dia
 ![image3](https://user-images.githubusercontent.com/11663476/212577500-bb87e5db-e3e8-4ec6-9e61-7580714655b9.png)
 
 There are two useful tabs on this window: CPU Usage and Memory Usage. In each of them, you can find a “Record CPU Profile” option. Once you enable the option, the CPU timeline turns green and that means performance data is being collected in this duration.
-Now if we hit pause on debugging, we can see the profiling window turns into this:
+
+After pausing the debugging, the profiling window shows the following:
 
 ![image7](https://user-images.githubusercontent.com/11663476/212577591-d593a3b4-a13b-47f7-ac25-a376f69fcb95.png)
 
@@ -79,11 +83,11 @@ This is the collected profile of our program. We can select a region on the CPU 
 ![image14](https://user-images.githubusercontent.com/11663476/212577515-ebe3a000-8294-41c9-9355-73f6fe20837a.png)
 
 Here we can see the “Hot Path” of function calls. If we hit the “Open details” button, we can go into the detailed view containing a few views: “Caller/Callee”, “Call Tree”, “Modules”, “Functions”. Each of these presents performance data in a different way.
-In this particular program, the hot path is within Python, and there is not much we can do to help. To optimize this part of code, go to the “Modules” view:
+In this particular program, the hot path is within Python, and there is not much we can do to help. To optimize this part of code, go to the “Modules” view:  
 
 ![image9](https://user-images.githubusercontent.com/11663476/212577614-9cb2dd9d-18c5-4900-a347-869f10f583e4.png)
 
-The `taichi_python` module (the C++ source code of Taichi) takes 65% of the total CPU time and splits its time down into the kernel and driver libraries.
+The `taichi_python` module (the C++ source code of Taichi) takes 65% of the total CPU time and splits its time down into the kernel and driver libraries. 
 
  Now, expand the library module:
 

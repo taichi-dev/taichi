@@ -1044,7 +1044,8 @@ class Runtime {
 
   void copy_memory_device_to_device(const MemorySlice &dst_memory,
                                     const MemorySlice &src_memory) {
-    ti_copy_memory_device_to_device(runtime_, &dst_memory.slice(), &src_memory.slice());
+    ti_copy_memory_device_to_device(runtime_, &dst_memory.slice(),
+                                    &src_memory.slice());
   }
   void copy_image_device_to_device(const TiImageSlice &dst_texture,
                                    const TiImageSlice &src_texture) {

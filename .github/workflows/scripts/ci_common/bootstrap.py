@@ -42,7 +42,9 @@ def ensure_dependencies(fn='requirements.txt'):
             # GitHub Actions will treat the step as completed when doing os.execl in Windows,
             # since Windows does not have real execve, its behavior is emulated by spawning a new process and
             # terminating the current process. So we do not use os.execl in Windows.
-            proc = subprocess.Popen(sys.argv, executable=sys.executable)
+
+            # use subprocess.Popen to execute self
+            proc = subprocess.Popen([sys.executable, *sys.argv])
             proc.wait()
         else:
             os.execl(sys.executable, sys.executable, *sys.argv)

@@ -77,6 +77,9 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     if not exe.exists():
         conda.create('-y', '-n', version, f'python={version}')
 
+    # For CMake
+    os.environ['Python3_ROOT_DIR'] = str(env)
+
     python = sh.bake(str(exe))
     pip = python.bake('-m', 'pip')
 

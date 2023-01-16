@@ -102,6 +102,7 @@ jobs:
 
       - name: Build
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        shell: cmd
         run: |
           python .\.github\workflows\scripts\build.py
         env:

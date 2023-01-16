@@ -49,6 +49,8 @@ By default, CodeSearch uses the Windows search path wildcards with . ? and *. Fo
 
 Currently, Visual Studio has a bit of trouble parsing `ir.h`. You can ignore the errors reporting a failure to find the classes or types. Usually, they go away after a while.
 
+:::
+
 ## Step 4. Debug Taichi
 
 To debug Taichi on Windows, you can use one of the following two methods.

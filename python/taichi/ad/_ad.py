@@ -247,6 +247,10 @@ class Tape:
         if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
+        # if hasattr(func, "func"):
+        #     print("insert func ", func.func)
+        # else:
+        #     print("insert func ", func)
 
         if self.checkpointer and self.enable_checkpointing:
             self.calls_count += 1
@@ -265,17 +269,26 @@ class Tape:
 
             if self.checkpointer and self.enable_checkpointing:
                 # Restore the checkpoint before launch the grad kernel
-                # print("calls count ", self.calls_count)
+                # if hasattr(func, "func"):
+                #     print("Restore before func ", func.func)
+                # else:
+                #     print("Restore before ", func)
                 self.checkpointer.restore_primal(self.calls_count)
             # TODO: how to preserve the value of the seed?
             self.loss.grad.fill(1.0)
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
+
             if hasattr(func, 'grad'):
+                # if hasattr(func, "func"):
+                #     print("Backward func ", func.func)
+                # else:
+                #     print("Backward func ", func)
                 func.grad(*args)
             if self.checkpointer and self.enable_checkpointing:
                 self.calls_count -= 1
+                # print(f"Backward func: {self.calls_count}")
         self.gradient_evaluated = True
         if self.grad_checker:
             self.grad_checker.add_calls(self.calls)
@@ -552,7 +565,7 @@ class Checkpointer:
         self.current_start_id = 1
 
         self.max_checkpointing_level = 4
-        self.max_num_buffers_per_level = 10
+        self.max_num_buffers_per_level = 20
         self.max_num_buffers = self.max_num_buffers_per_level * self.max_checkpointing_level
         # For stat use
         self.current_max_num_buffers = 0
@@ -665,13 +678,17 @@ class Checkpointer:
                 func, args = self.forward_calls[i - 1]
                 func(*args)
 
+                if self.verbose:
+                    has_func = hasattr(func, "func")
+                    self.print_info(
+                        f"[RECOMPUTE] {i}, target {save_id}, func {func.func if has_func else func}"
+                    )
+
                 if i == save_id:
                     # The last checkpoint must be saved
                     self.save(i, enforce=True)
                 else:
                     self.save(i)
-                if self.verbose:
-                    self.print_info(f"[RECOMPUTE] {i}, target {save_id}")
 
                 # Record total recompute num
                 self.recompute_num += 1
@@ -712,11 +729,12 @@ class Checkpointer:
         self.free_backup_buffers.append(buffer)
 
     def clear(self):
-        if self.verbose:
-            self.print_info(
-                f"[CLEAR] Total buffers created: {self.buffer_created}.")
-            self.print_info(
-                f"[CLEAR] Total recompute num: {self.recompute_num}.")
+        # if self.verbose:
+        self.print_info(
+            f"[CLEAR] Total buffers created: {self.buffer_created}.")
+        self.print_info(
+            f"[CLEAR] Total kernels executed in forward {len(self.forward_calls)}, recompute num: {self.recompute_num}."
+        )
         save_ids = list(self.backup_buffers.keys())
         # print("Clearing checkpointer, remaining save ids: ", save_ids)
         # print("max buffer created ", self.current_max_num_buffers)

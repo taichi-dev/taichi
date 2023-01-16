@@ -403,6 +403,41 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
+    // std::cout << "RangeForStmt " << stmt->id << " begin " << stmt->begin->id
+    // << " end " << stmt->end->id << std::endl;
+    // TODO: To refine this, handle the case that the begin or end of the loop
+    // is read from global ptr
+    if (stmt->begin->is<GlobalLoadStmt>()) {
+      // Create a alloc
+      auto alloc = Stmt::make<AllocaStmt>(stmt->begin->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      auto load =
+          stmt->begin->insert_after_me(Stmt::make<LocalLoadStmt>(alloc_ptr));
+      Stmt *glb_load_stmt_backup = stmt->begin;
+      irpass::replace_all_usages_with(stmt->parent, stmt->begin, load);
+      // Create the load first so that the operand of the store won't get
+      // replaced
+      load->insert_before_me(
+          Stmt::make<LocalStoreStmt>(alloc_ptr, glb_load_stmt_backup));
+    }
+    if (stmt->end->is<GlobalLoadStmt>()) {
+      // Create a alloc
+      auto alloc = Stmt::make<AllocaStmt>(stmt->end->ret_type);
+      auto alloc_ptr = alloc.get();
+      TI_ASSERT(alloca_block_);
+      alloca_block_->insert(std::move(alloc), 0);
+      auto load =
+          stmt->end->insert_after_me(Stmt::make<LocalLoadStmt>(alloc_ptr));
+      Stmt *glb_load_stmt_backup = stmt->end;
+      irpass::replace_all_usages_with(stmt->parent, stmt->end, load);
+      // Create the load first so that the operand of the store won't get
+      // replaced
+      load->insert_before_me(
+          Stmt::make<LocalStoreStmt>(alloc_ptr, glb_load_stmt_backup));
+    }
+
     auto old_execute_once = execute_once_;
     execute_once_ = false;  // loop body may be executed many times
     stmt->body->accept(this);
@@ -509,6 +544,17 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
       stmt->true_statements->accept(this);
     if (stmt->false_statements)
       stmt->false_statements->accept(this);
+  }
+
+  // Check whether the targets serves as the begin or end of a for loop
+  void visit(RangeForStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    if (stmt->begin == target_alloca_ || stmt->end == target_alloca_) {
+      is_stack_needed_ = true;
+      return;
+    }
+    stmt->body->accept(this);
   }
 
   static bool run(AllocaStmt *target_alloca) {

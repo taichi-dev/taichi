@@ -155,9 +155,6 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     if (is_vulkan_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_VULKAN);
     }
-    if (is_metal_available()) {
-      AVAILABLE_ARCHS.emplace_back(TI_ARCH_METAL);
-    }
     if (is_cuda_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_CUDA);
     }

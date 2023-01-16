@@ -101,12 +101,9 @@ jobs:
           python-version: 3.7
 
       - name: Build
-        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          . .github\workflows\scripts\common-utils.ps1
-          gci env:*
-          Invoke python .\.github\workflows\scripts\build.py
+          python .\.github\workflows\scripts\build.py
         env:
           PY: "3.7"
           TAICHI_CMAKE_ARGS: >-

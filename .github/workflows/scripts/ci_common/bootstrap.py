@@ -14,13 +14,28 @@ def is_in_venv() -> bool:
                                            and sys.base_prefix != sys.prefix)
 
 
+def get_cache_home() -> Path:
+    '''
+    Get the cache home directory. All intermediate files should be stored here.
+    '''
+    if platform.system() == 'Windows':
+        return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
+    else:
+        return Path.home() / '.cache' / 'build-cache'
+
+
 def ensure_dependencies(fn='requirements.txt'):
     '''
     Automatically install dependencies if they are not installed.
     '''
+
     p = Path(__file__).parent.parent / fn
     if not p.exists():
         raise RuntimeError(f'Cannot find {p}')
+
+    bootstrap_root = get_cache_home() / 'bootstrap'
+    bootstrap_root.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(bootstrap_root))
 
     user = '' if is_in_venv() else '--user'
 
@@ -35,7 +50,9 @@ def ensure_dependencies(fn='requirements.txt'):
         if os.system(
                 f'{sys.executable} -m pip install {user} -U pip setuptools'):
             raise Exception('Unable to upgrade pip!')
-        if os.system(f'{sys.executable} -m pip install {user} -U -r {p}'):
+        if os.system(
+                f'{sys.executable} -m pip install {user} -U -r {p} --target={bootstrap_root}'
+        ):
             raise Exception('Unable to install dependencies!')
 
         if platform.system != 'Windows':

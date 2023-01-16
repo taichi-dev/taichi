@@ -9,6 +9,7 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
+from .bootstrap import get_cache_home  # noqa
 # -- third party --
 # -- own --
 from .escapes import escape_codes
@@ -22,16 +23,6 @@ def is_manylinux2014() -> bool:
     '''
     return platform.system() == 'Linux' and Path(
         '/etc/centos-release').exists()
-
-
-def get_cache_home() -> Path:
-    '''
-    Get the cache home directory. All intermediate files should be stored here.
-    '''
-    if platform.system() == 'Windows':
-        return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
-    else:
-        return Path.home() / '.cache' / 'build-cache'
 
 
 def banner(msg: str) -> Callable:

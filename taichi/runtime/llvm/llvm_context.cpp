@@ -595,7 +595,7 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     std::vector<std::string> libdevice_func_names;
     for (auto &f : *libdevice_module) {
       if (!f.isDeclaration()) {
-        libdevice_function_names.push_back(f.getName().str());
+        libdevice_func_names.push_back(f.getName().str());
       }
     }
 
@@ -603,7 +603,6 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
       auto func_ = module->getFunction(f.getName());
       if (!func_ && starts_with(f.getName().lower(), "__" + libdevice))
         f.setLinkage(llvm::Function::CommonLinkage);
-      `
     }
 
     bool failed =
@@ -612,7 +611,7 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
       TI_ERROR("AMDGPU libdevice linking failure.");
     }
 
-    for (auto func_name : libdevice_function_names) {
+    for (auto func_name : libdevice_func_names) {
       auto func = module->getFunction(func_name);
       if (func)
         func->setLinkage(llvm::Function::InternalLinkage);

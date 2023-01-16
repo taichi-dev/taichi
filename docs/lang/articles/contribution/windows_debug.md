@@ -1,3 +1,9 @@
+---
+sidebar_position: 9
+---
+
+# Debugging on Windows
+
 ## Prerequisites:
 Able to build Taichi from source. (i.e. already have LLVM and related environment variables already setup)
 Recommended plugins to install for Visual Studio:
@@ -10,7 +16,7 @@ This is a new feature in setup.py (introduced in https://github.com/taichi-dev/t
 To turn it on, create a new environment variable (Type in windows search: environment variable, or set it temporarily with `$Env:` in PowerShell) called TAICHI_USE_MSBUILD, and set its value to 1 or ON.
 Now after cleaning up the _skbuild folder (in case the previously used generator is Ninja), run `python setup.py develop` and build Taichi from the source.
 
-## Step 2.  Navigate to the generated Visual Studio Project file
+## Step 2. Navigate to the generated Visual Studio Project file
 Go to the build folder, in my case it is `_skbuild\win-amd64-3.9\cmake-build`, and double click on `taichi.sln` (Or open this SLN solution file from Visual Studio). This should open Visual Studio IDE with the setup for Taichi.
 After Visual Studio launched, you should see something like this (layout might be different, you can reconfigure the layout to one that you like):
 
@@ -27,7 +33,7 @@ Or if you prefer navigating the project using its folder structure, you can find
 
 ![image2](https://user-images.githubusercontent.com/11663476/212577382-4ff8e6de-e04b-4502-9dd9-7ebb75697693.png)
 
-Sometimes, you are quite familiar with the source code already and you know what you are trying to find, or when you are trying to figure out where a particular class is defined, using CodeSearch should be a quicker and easier way to find the source code. (Code Search is provided by the plugin VS Chromium, and you can find it through “View->Other Windows->Code Search”. I recommend keeping this window pinned somewhere so you always have access to it, it’s the greatest source navigation tool ever.
+Sometimes, if you are familiar with the source code already and you know what you are trying to find, or if you are trying to figure out where a particular class is defined, using CodeSearch should be a quicker and easier way to find the source code. (Code Search is provided by the plugin VS Chromium, and you can find it through “View->Other Windows->Code Search”. I recommend keeping this window pinned somewhere so you always have access to it, it’s the greatest source navigation tool ever.
 Say we are trying to pin down where we are defining all the pointer statements, just type in CodeSearch:
 
 ![image16](https://user-images.githubusercontent.com/11663476/212577411-61c8ffd9-6b63-4eb9-a38b-b1b4f2a640dc.png)

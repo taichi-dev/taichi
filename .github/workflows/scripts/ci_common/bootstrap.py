@@ -24,10 +24,28 @@ def get_cache_home() -> Path:
         return Path.home() / '.cache' / 'build-cache'
 
 
+def restart():
+    '''
+    Restart the current process.
+    '''
+    if platform.system != 'Windows':
+        # GitHub Actions will treat the step as completed when doing os.execl in Windows,
+        # since Windows does not have real execve, its behavior is emulated by spawning a new process and
+        # terminating the current process. So we do not use os.execl in Windows.
+        subprocess.Popen([sys.executable, *sys.argv]).wait()
+        os._exit(0)
+    else:
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
+
 def ensure_dependencies(fn='requirements.txt'):
     '''
     Automatically install dependencies if they are not installed.
     '''
+
+    if 'site' in sys.modules:
+        sys.argv.insert(0, '-S')
+        restart()
 
     p = Path(__file__).parent.parent / fn
     if not p.exists():
@@ -51,20 +69,11 @@ def ensure_dependencies(fn='requirements.txt'):
                 f'{sys.executable} -m pip install {user} -U pip setuptools'):
             raise Exception('Unable to upgrade pip!')
         if os.system(
-                f'{sys.executable} -m pip install {user} -U -r {p} --target={bootstrap_root}'
+                f'{sys.executable} -m pip install -U -r {p} --target={bootstrap_root}'
         ):
             raise Exception('Unable to install dependencies!')
 
-        if platform.system != 'Windows':
-            # GitHub Actions will treat the step as completed when doing os.execl in Windows,
-            # since Windows does not have real execve, its behavior is emulated by spawning a new process and
-            # terminating the current process. So we do not use os.execl in Windows.
-
-            # use subprocess.Popen to execute self
-            proc = subprocess.Popen([sys.executable, *sys.argv])
-            proc.wait()
-        else:
-            os.execl(sys.executable, sys.executable, *sys.argv)
+        restart()
 
 
 def chdir_to_root():

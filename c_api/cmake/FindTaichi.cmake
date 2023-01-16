@@ -126,14 +126,14 @@ if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
             PATH_SUFFIXES lib
             # CMake find root is overriden by Android toolchain.
             NO_CMAKE_FIND_ROOT_PATH)
-            
+
         find_library(taichi_runtime_REDIST_LIBRARY
             NAMES taichi_runtime taichi_c_api
             HINTS ${TAICHI_C_API_INSTALL_DIR}
             PATH_SUFFIXES bin lib
             # CMake find root is overriden by Android toolchain.
             NO_CMAKE_FIND_ROOT_PATH)
-            
+
         find_path(taichi_runtime_INCLUDE_DIR
             NAMES taichi/taichi.h
             HINTS ${TAICHI_C_API_INSTALL_DIR}

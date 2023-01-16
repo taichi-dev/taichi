@@ -75,6 +75,13 @@ struct templ2dtype<double> {
   static const TiDataType value = TI_DATA_TYPE_F64;
 };
 
+template <typename T, typename U>
+T exchange(T &storage, U &&value) {
+  T out = std::move(storage);
+  storage = (T)std::move(value);
+  return out;
+}
+
 template <typename THandle>
 THandle move_handle(THandle &handle) {
   THandle out = std::move(handle);
@@ -108,8 +115,8 @@ class Memory {
   Memory(Memory &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         memory_(detail::move_handle(b.memory_)),
-        size_(std::exchange(b.size_, 0)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        size_(detail::exchange(b.size_, 0)),
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Memory(TiRuntime runtime, TiMemory memory, size_t size, bool should_destroy)
       : runtime_(runtime),
@@ -126,8 +133,8 @@ class Memory {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     memory_ = detail::move_handle(b.memory_);
-    size_ = std::exchange(b.size_, 0);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    size_ = detail::exchange(b.size_, 0);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -199,9 +206,9 @@ class NdArray {
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
       : memory_(std::move(b.memory_)),
-        ndarray_(std::exchange(b.ndarray_, {})),
-        elem_count_(std::exchange(b.elem_count_, 1)),
-        scalar_count_(std::exchange(b.scalar_count_, 1)) {
+        ndarray_(detail::exchange(b.ndarray_, {})),
+        elem_count_(detail::exchange(b.elem_count_, 1)),
+        scalar_count_(detail::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
       : memory_(std::move(memory)),
@@ -227,9 +234,9 @@ class NdArray {
   NdArray<T> &operator=(NdArray<T> &&b) {
     destroy();
     memory_ = std::move(b.memory_);
-    ndarray_ = std::exchange(b.ndarray_, {});
-    elem_count_ = std::exchange(b.elem_count_, 1);
-    scalar_count_ = std::exchange(b.scalar_count_, 1);
+    ndarray_ = detail::exchange(b.ndarray_, {});
+    elem_count_ = detail::exchange(b.elem_count_, 1);
+    scalar_count_ = detail::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -336,7 +343,7 @@ class Image {
   Image(Image &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         image_(detail::move_handle(b.image_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Image(TiRuntime runtime, TiImage image, bool should_destroy)
       : runtime_(runtime), image_(image), should_destroy_(should_destroy) {
@@ -350,7 +357,7 @@ class Image {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     image_ = detail::move_handle(b.image_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -648,7 +655,7 @@ class AotModule {
   AotModule(AotModule &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         aot_module_(detail::move_handle(b.aot_module_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   AotModule(TiRuntime runtime, TiAotModule aot_module, bool should_destroy)
       : runtime_(runtime),
@@ -663,7 +670,7 @@ class AotModule {
   AotModule &operator=(AotModule &&b) {
     runtime_ = detail::move_handle(b.runtime_);
     aot_module_ = detail::move_handle(b.aot_module_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -879,9 +886,9 @@ class Runtime {
   }
   Runtime(const Runtime &) = delete;
   Runtime(Runtime &&b)
-      : arch_(std::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
+      : arch_(detail::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
         runtime_(detail::move_handle(b.runtime_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Runtime(TiArch arch, uint32_t device_index = 0)
       : arch_(arch),
@@ -897,9 +904,9 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
-    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
+    arch_ = detail::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 

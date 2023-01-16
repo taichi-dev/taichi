@@ -83,11 +83,11 @@ This is the collected profile of our program. We can select a region on the CPU 
 ![image14](https://user-images.githubusercontent.com/11663476/212577515-ebe3a000-8294-41c9-9355-73f6fe20837a.png)
 
 Here we can see the “Hot Path” of function calls. If we hit the “Open details” button, we can go into the detailed view containing a few views: “Caller/Callee”, “Call Tree”, “Modules”, “Functions”. Each of these presents performance data in a different way.
-In this particular program, the hot path is within Python, and there is not much we can do to help. To optimize this part of code, go to the “Modules” view:  
+In this particular program, the hot path is within Python, and there is not much we can do to help. To optimize this part of code, go to the “Modules” view:
 
 ![image9](https://user-images.githubusercontent.com/11663476/212577614-9cb2dd9d-18c5-4900-a347-869f10f583e4.png)
 
-The `taichi_python` module (the C++ source code of Taichi) takes 65% of the total CPU time and splits its time down into the kernel and driver libraries. 
+The `taichi_python` module (the C++ source code of Taichi) takes 65% of the total CPU time and splits its time down into the kernel and driver libraries.
 
  Now, expand the library module:
 

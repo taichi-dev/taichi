@@ -526,8 +526,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
 
       link_module_with_amdgpu_libdevice(module);
-      patch_dim("block_dim", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx), 0));
-      patch_dim("grid_dim", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx), 0));
+      patch_amdgpu_kernel_dim("block_dim", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx), 0));
+      patch_amdgpu_kernel_dim("grid_dim", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx), 0));
 #endif
     }
   }
@@ -567,7 +567,7 @@ void TaichiLLVMContext::link_module_with_cuda_libdevice(
   }
 }
 
-void TaichiLLVMContext:::link_module_with_amdgpu_libdevice(
+void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     std::unique_ptr<llvm::Module> &module) {
   TI_ASSERT(arch_ == Arch::amdgpu);
   auto isa_version = AMDGPUContext::get_instance().get_mcpu().substr(3,4);

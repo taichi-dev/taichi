@@ -83,7 +83,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, windows, cuda, OpenGL]
+    runs-on: [self-hosted, bug-missing-vulkan-sdk]
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       - name: Workaround checkout Needed single revision issue

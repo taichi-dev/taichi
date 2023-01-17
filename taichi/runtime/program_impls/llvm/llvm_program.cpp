@@ -61,8 +61,8 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
         Arch::dx12, this, std::move(device_module), tree->id());
   } else if (config->arch == Arch::amdgpu) {
     TI_ASSERT(config->arch == Arch::amdgpu);
-    auto device_module = clone_struct_compiler_initial_context(
-        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    auto device_module =
+        runtime_exec_->llvm_context_device_.get()->new_module("struct");
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::amdgpu, this, std::move(device_module), tree->id());
   } else {

@@ -11,10 +11,10 @@
 #include "taichi/rhi/cuda/cuda_context.h"
 #endif
 
-#if defined(TI_WITH_AMDGPU)
 #include "taichi/platform/amdgpu/detect_amdgpu.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 #include "taichi/rhi/amdgpu/amdgpu_device.h"
+#if defined(TI_WITH_AMDGPU)
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #endif
 
@@ -618,7 +618,6 @@ void LlvmRuntimeExecutor::finalize() {
 #endif
   }
 }
-}
 
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                               KernelProfilerBase *profiler,
@@ -661,7 +660,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     AMDGPUDriver::get_instance().malloc(
         (void **)result_buffer_ptr,
         sizeof(uint64) * taichi_result_buffer_entries);
-    const auto total_mem = runtime_mem_info_->get_total_memory();
+    const auto total_mem = AMDGPUContext::get_instance().get_total_memory();
     if (config_->device_memory_fraction == 0) {
       TI_ASSERT(config_->device_memory_GB > 0);
       prealloc_size = std::size_t(config_->device_memory_GB * (1UL << 30));

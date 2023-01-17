@@ -748,7 +748,6 @@ def is_arch_supported(arch):
         cpu: lambda: True,
     }
     with_arch = arch_table.get(arch, lambda: False)
-    print(with_arch())
     try:
         return with_arch()
     except Exception as e:

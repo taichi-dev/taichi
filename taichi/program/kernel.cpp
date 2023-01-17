@@ -329,7 +329,7 @@ void Kernel::init(Program &program,
   is_evaluator = false;
   compiled_ = nullptr;
   context =
-      std::make_unique<FrontendContext>(program.this_thread_config().arch);
+      std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
 

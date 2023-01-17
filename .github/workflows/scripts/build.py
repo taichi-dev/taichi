@@ -99,8 +99,6 @@ def setup_llvm() -> None:
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
         out = get_cache_home() / 'llvm15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2019_clang/taichi-llvm-15.0.0-msvc2019.zip'
-        # Could be unnecessary, commenting out for now.
-        # os.environ['TAICHI_CMAKE_ARGS'] += " -DLLVM_AS_EXECUTABLE=llvm-as.exe"
         download_dep(url, out, strip=0)
     else:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')

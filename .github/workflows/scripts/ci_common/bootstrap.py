@@ -38,7 +38,7 @@ def restart():
     '''
     Restart the current process.
     '''
-    if platform.system != 'Windows':
+    if platform.system() == 'Windows':
         # GitHub Actions will treat the step as completed when doing os.execl in Windows,
         # since Windows does not have real execve, its behavior is emulated by spawning a new process and
         # terminating the current process. So we do not use os.execl in Windows.

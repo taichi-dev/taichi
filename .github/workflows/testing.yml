@@ -340,7 +340,7 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, bug-missing-vulkan-sdk]
+    runs-on: [self-hosted, windows, cuda, OpenGL]
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       - name: Workaround checkout Needed single revision issue
@@ -382,7 +382,7 @@ jobs:
           .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
         env:
           PY: "3.7"
-          TI_WANTED_ARCHS: cpu,cuda,opengl
+          TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl
           TI_SKIP_VERSION_CHECK: ON
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'

@@ -9,7 +9,7 @@ Taichi is a domain-specific language embedded in Python and designed specificall
 
 When writing compute-intensive tasks in Python, you can take advantage of Taichi's high performance computation by following a few extra rules. Generally, Taichi provides two decorators `@ti.func` and `@ti.kernel`, which instruct Taichi to take over the tasks. Its just-in-time (JIT) compiler compiles the decorated functions to machine code, and all subsequent calls to these functions are executed on multi-core CPUs or GPUs. In a typical compute-intensive scenario, such as a numerical simulation, Taichi can accelerate performance by 50x~100x compared with native Python code.
 
-Taichi also has a built-in ahead-of-time (AOT) system for exporting your code into binary/shader files, which can then be called in C/C++ and run without the Python environment. See [Tutorial: Run Taichi programs in C++ application](../deployment/tutorial.md) for more information.
+Taichi also has a built-in ahead-of-time (AOT) system for exporting your code into binary/shader files, which can then be called in C/C++ and run without the Python environment. See [Tutorial: Run Taichi programs in C++ application](../deployment/ndarray_android.md) for more information.
 
 ## Prerequisites
 

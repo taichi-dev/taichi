@@ -366,6 +366,7 @@ jobs:
           PY: "3.7"
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_DX11:BOOL=ON
             -DTI_WITH_DX12:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF

@@ -612,8 +612,7 @@ void LlvmRuntimeExecutor::finalize() {
 #if defined(TI_WITH_CUDA)
       cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
-    }
-    else if (config_->arch == Arch::amdgpu) {
+    } else if (config_->arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
       amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif

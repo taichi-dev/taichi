@@ -116,10 +116,10 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
 #if defined(TI_WITH_AMDGPU)
     int num_workgroups{1};
     AMDGPUDriver::get_instance().device_get_attribute(
-      &num_workgroups, HIP_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
+        &num_workgroups, HIP_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, 0);
     int query_max_block_dim{1024};
     AMDGPUDriver::get_instance().device_get_attribute(
-      &query_max_block_dim, HIP_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
+        &query_max_block_dim, HIP_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X, 0);
     // magic number 32
     // I didn't find the relevant parameter to limit the max block num per CU
     // So ....
@@ -240,7 +240,7 @@ void LlvmRuntimeExecutor::synchronize() {
 #else
     TI_ERROR("No CUDA support");
 #endif
-  } else if (config_ -> arch == Arch::amdgpu) {
+  } else if (config_->arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
 #else
@@ -263,7 +263,7 @@ uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
     TI_NOT_IMPLEMENTED;
 #endif
   } else if (config_->arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)    
+#if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
                                                        sizeof(uint64));
 #else
@@ -421,7 +421,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   TaichiLLVMContext *tlctx = nullptr;
   if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
-   tlctx = llvm_context_device_.get();
+    tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -594,7 +594,7 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch ==Arch::amdgpu) {
+  } else if (config_->arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     return (uint64_t *)amdgpu_device()->get_alloc_info(alloc).ptr;
 #else
@@ -610,14 +610,14 @@ void LlvmRuntimeExecutor::finalize() {
   if (preallocated_device_buffer_ != nullptr) {
     if (config_->arch == Arch::cuda)
 #if defined(TI_WITH_CUDA)
-       cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+      cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
-    } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_->arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-      amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+    amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
-    }
   }
+}
 }
 
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
@@ -675,14 +675,14 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    preallocated_device_buffer_alloc_ =
-        amdgpu_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    preallocated_device_buffer_alloc_ = amdgpu_device()->allocate_memory(
+        preallocated_device_buffer_alloc_params);
     amdgpu::AmdgpuDevice::AllocInfo preallocated_device_buffer_alloc_info =
         amdgpu_device()->get_alloc_info(preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,
-                                      prealloc_size);
+                                        prealloc_size);
     tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED

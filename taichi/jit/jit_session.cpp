@@ -51,7 +51,7 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
     return create_llvm_jit_session_amdgpu(tlctx, config, arch);
 #else
     TI_NOT_IMPLEMENTED
-#endif 
+#endif
   }
 #else
   TI_ERROR("Llvm disabled");

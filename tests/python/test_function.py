@@ -387,9 +387,8 @@ def test_func_ndarray_arg():
 
     assert (arr[0] == [20, 20, 20])
 
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match=r"Expect TensorType element for Ndarray with element_dim"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match=r"Invalid argument into ti.types.ndarray()"):
         test_error(arr)
 
 

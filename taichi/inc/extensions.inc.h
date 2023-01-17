@@ -8,5 +8,3 @@ PER_EXTENSION(adstack)    // For keeping the history of mutable local variables
 PER_EXTENSION(bls)        // Block-local storage
 PER_EXTENSION(assertion)  // Run-time asserts in Taichi kernels
 PER_EXTENSION(extfunc)    // Invoke external functions or backend source
-PER_EXTENSION(
-    dynamic_index)  // Dynamic index support for both global and local tensors

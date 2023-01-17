@@ -46,6 +46,7 @@
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/codegen_utils.h"
+
 #ifdef TI_WITH_AMDGPU
 #include "taichi/runtime/llvm/llvm_context_pass.h"
 #endif
@@ -96,6 +97,16 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
     LLVMInitializeDirectXTargetMC();
     LLVMInitializeDirectXTargetInfo();
     LLVMInitializeDirectXAsmPrinter();
+#endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    LLVMInitializeAMDGPUTarget();
+    LLVMInitializeAMDGPUTargetMC();
+    LLVMInitializeAMDGPUTargetInfo();
+    LLVMInitializeAMDGPUAsmPrinter();
+    LLVMInitializeAMDGPUAsmParser();
+#else
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
 #if defined(TI_WITH_CUDA)
@@ -987,6 +998,8 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
     auto *new_alloca = builder.CreateAlloca(new_type);
     new_alloca->setAlignment(Align(8));
     TI_ASSERT(alloca->hasOneUse());
+    // TODO
+    // For AMDGPU user_back is addrspace cast
     auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
     TI_ASSERT(gep->getPointerOperand() == alloca);
     std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());

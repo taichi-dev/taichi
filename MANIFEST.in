@@ -3,6 +3,7 @@ recursive-include python/taichi/assets *
 recursive-include python/taichi/examples *.py
 include python/taichi/examples/autodiff/diff_sph/fc1_pretrained.pkl
 include python/taichi/examples/autodiff/diff_sph/fc2_pretrained.pkl
+include python/taichi/examples/algorithm/circle-packing/taichi_logo.png
 include python/taichi/_lib/core/*.so
 include python/taichi/_lib/core/*.pyd
 include python/taichi/_lib/runtime/*.bc

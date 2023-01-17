@@ -132,7 +132,7 @@ class NdarrayType:
                     raise TypeError(
                         f"Expect TensorType element for Ndarray with element_shape: {self.dtype.get_shape()}"
                     )
-                if tuple(self.dtype.get_shape()) != tuple(
+                if list(self.dtype.get_shape()) != list(
                         ndarray_type.element_type.shape()):
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={self.dtype.get_shape()}, but {ndarray_type.element_type.shape()} is provided"

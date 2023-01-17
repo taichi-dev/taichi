@@ -4,7 +4,9 @@
 
 #include "glad/gl.h"
 #include "glad/egl.h"
+#ifndef ANDROID
 #include "GLFW/glfw3.h"
+#endif  // ANDROID
 #include "taichi/rhi/opengl/opengl_device.h"
 
 namespace taichi::lang {
@@ -26,9 +28,11 @@ static bool kUseGles = false;
 static std::optional<bool> supported;  // std::nullopt
 void *kGetOpenglProcAddr;
 
+#ifndef ANDROID
 static void glfw_error_callback(int code, const char *description) {
   TI_WARN("GLFW Error {}: {}", code, description);
 }
+#endif  // ANDROID
 
 bool initialize_opengl(bool use_gles, bool error_tolerance) {
   TI_TRACE("initialize_opengl({}, {}) called", use_gles, error_tolerance);
@@ -47,6 +51,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
   int opengl_version = 0;
   void *get_proc_addr = nullptr;
 
+#ifndef ANDROID
   if (glfwInit()) {
     glfwSetErrorCallback(glfw_error_callback);
     // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
@@ -84,6 +89,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       TI_DEBUG("OpenGL context loaded through GLFW");
     }
   }
+#endif  // ANDROID
 
   if (!opengl_version) {
     TI_TRACE("Attempting to load with EGL");
@@ -213,7 +219,9 @@ bool is_gles() {
 void reset_opengl() {
   supported = std::nullopt;
   kUseGles = false;
+#ifndef ANDROID
   glfwTerminate();
+#endif
 }
 
 std::shared_ptr<Device> make_opengl_device() {

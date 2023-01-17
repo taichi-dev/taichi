@@ -722,7 +722,9 @@ class StructType(CompoundType):
                 "Incompatible arguments for custom struct members!")
         entries = {}
         for k, dtype in self.members.items():
-            if isinstance(dtype, CompoundType):
+            if isinstance(dtype, MatrixType):
+                entries[k] = dtype(struct.entries[k])
+            elif isinstance(dtype, CompoundType):
                 entries[k] = dtype.cast(struct.entries[k])
             else:
                 if in_python_scope():
@@ -738,7 +740,9 @@ class StructType(CompoundType):
     def filled_with_scalar(self, value):
         entries = {}
         for k, dtype in self.members.items():
-            if isinstance(dtype, CompoundType):
+            if isinstance(dtype, MatrixType):
+                entries[k] = dtype(value)
+            elif isinstance(dtype, CompoundType):
                 entries[k] = dtype.filled_with_scalar(value)
             else:
                 entries[k] = value

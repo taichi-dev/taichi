@@ -1480,7 +1480,8 @@ class MatrixType(CompoundType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [args[0] for _ in range(m) for _ in range(n)]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1495,17 +1496,7 @@ class MatrixType(CompoundType):
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            if len(entries) != m * n:
-                raise TaichiSyntaxError(
-                    f"Incompatible arguments for the custom vector/matrix type: ({n}, {m}), ({len(entries)})"
-                )
-            entries = [[entries[k * m + i] for i in range(m)]
-                       for k in range(n)]
-            return self._instantiate_in_python_scope(
-                Matrix(entries, dt=prim_dtype, ndim=ndim))
-
-        return make_matrix_with_shape(entries, [n, m], prim_dtype)
+        return self._instantiate(entries)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
         n, m, _, _ = self._get_type_info()
@@ -1517,33 +1508,21 @@ class MatrixType(CompoundType):
             for i in range(m * n)
         ])
 
-    def _instantiate_in_python_scope(self, mat):
+    def _instantiate_in_python_scope(self, entries):
         n, m, ndim, prim_dtype = self._get_type_info()
-
+        entries = [[entries[k * m + i] for i in range(m)] for k in range(n)]
         return Matrix([[
-            int(mat(i, j)) if prim_dtype in primitive_types.integer_types else
-            float(mat(i, j)) for j in range(m)
+            int(entries[i][j]) if prim_dtype in primitive_types.integer_types
+            else float(entries[i][j]) for j in range(m)
         ] for i in range(n)],
                       ndim=ndim)
 
-    def cast(self, mat):
+    def _instantiate(self, entries):
         n, m, _, prim_dtype = self._get_type_info()
         if in_python_scope():
-            return self._instantiate_in_python_scope(mat)
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, prim_dtype)
-
-        if isinstance(mat, Matrix):
-            arr = [[mat(i, j) for j in range(m)] for i in range(n)]
-            return ops_mod.cast(make_matrix(arr), prim_dtype)
-
-        return mat.cast(prim_dtype)
-
-    def filled_with_scalar(self, value):
-        n, m, ndim, _ = self._get_type_info()
-        return self.cast(
-            Matrix([[value for _ in range(m)] for _ in range(n)], ndim=ndim))
+        return make_matrix_with_shape(entries, [n, m], prim_dtype)
 
     def field(self, **kwargs):
         n, m, ndim, prim_dtype = self._get_type_info()
@@ -1607,7 +1586,8 @@ class VectorType(MatrixType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [args[0] for _ in range(n)]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1622,38 +1602,22 @@ class VectorType(MatrixType):
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            return self._instantiate_in_python_scope(
-                Vector(entries, dt=prim_dtype))
-
         #  type cast
-        return make_matrix_with_shape(entries, [n], prim_dtype)
+        return self._instantiate(entries)
 
-    def _instantiate_in_python_scope(self, vec):
+    def _instantiate_in_python_scope(self, entries):
         n, _, _, prim_dtype = self._get_type_info()
         return Vector([
-            int(vec(i))
-            if prim_dtype in primitive_types.integer_types else float(vec(i))
-            for i in range(n)
+            int(entries[i]) if prim_dtype in primitive_types.integer_types else
+            float(entries[i]) for i in range(n)
         ])
 
-    def cast(self, vec):
-        _, _, _, prim_dtype = self._get_type_info()
+    def _instantiate(self, entries):
+        n, _, _, prim_dtype = self._get_type_info()
         if in_python_scope():
-            return self._instantiate_in_python_scope(vec)
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
-            return ops_mod.cast(vec, prim_dtype)
-
-        if isinstance(vec, Matrix):
-            arr = vec.entries
-            return ops_mod.cast(make_matrix(arr), prim_dtype)
-
-        return vec.cast(prim_dtype)
-
-    def filled_with_scalar(self, value):
-        n, _, _, _ = self._get_type_info()
-        return self.cast(Vector([value for _ in range(n)]))
+        return make_matrix_with_shape(entries, [n], prim_dtype)
 
     def field(self, **kwargs):
         n, _, _, prim_dtype = self._get_type_info()

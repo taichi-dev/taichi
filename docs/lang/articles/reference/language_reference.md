@@ -73,7 +73,7 @@ the remaining expressions will be evaluated to Taichi values at runtime.
 A Taichi value has a Taichi type, which is one of the following:
 - A primitive type, as described in [Type system](../type_system/type.md)
 - A compound type, as described in [Type system](../type_system/type.md)
-- An ndarray type, as introduced in [Tutorial: Run Taichi programs in C++ application](../deployment/tutorial.md)
+- An ndarray type, as introduced in [Tutorial: Run Taichi programs in C++ application](../deployment/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
 Matrix](../math/sparse_matrix.md)
 

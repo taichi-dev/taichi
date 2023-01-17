@@ -8,7 +8,7 @@ sidebar_position: 9
 
 You should be able to build Taichi from source and already have LLVM and related environment variables configured.
 
-:::note 
+:::note
 
 Familiarize yourself with the [Developer Installation Guide](https://docs.taichi-lang.org/docs/dev_install).
 

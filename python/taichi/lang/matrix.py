@@ -1479,7 +1479,7 @@ class MatrixType(CompoundType):
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
-                entries += [x(i, j) for j in range(x.m) for i in range(x.n)]
+                entries += x.entries
             else:
                 entries.append(x)
 
@@ -1502,13 +1502,7 @@ class MatrixType(CompoundType):
         ] for i in range(self.n)],
                       ndim=self.ndim)
 
-    def _instantiate(self, mat):
-        entries = mat
-        if isinstance(mat, Matrix):
-            assert mat.n == self.n
-            assert mat.m == self.m
-            entries = [mat(i, j) for j in range(self.m) for i in range(self.n)]
-
+    def _instantiate(self, entries):
         if in_python_scope():
             return self._instantiate_in_python_scope(entries)
 
@@ -1591,11 +1585,7 @@ class VectorType(MatrixType):
             float(entries[i]) for i in range(self.n)
         ])
 
-    def _instantiate(self, vec):
-        entries = vec
-        if isinstance(vec, Matrix):
-            entries = vec.entries
-
+    def _instantiate(self, entries):
         if in_python_scope():
             return self._instantiate_in_python_scope(entries)
 

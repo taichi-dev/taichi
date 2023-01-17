@@ -57,12 +57,14 @@ def setup_msvc() -> None:
             '--includeRecommended',
             '--add',
             'Microsoft.VisualStudio.Workload.VCTools',
-            '--add',
-            'Microsoft.VisualStudio.Component.VC.Llvm.Clang',
-            '--add',
-            'Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang',
-            '--add',
-            'Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset',
+            # NOTE: We are using the custom built Clang++,
+            #       so components below are not necessary anymore.
+            # '--add',
+            # 'Microsoft.VisualStudio.Component.VC.Llvm.Clang',
+            # '--add',
+            # 'Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Llvm.Clang',
+            # '--add',
+            # 'Microsoft.VisualStudio.Component.VC.Llvm.ClangToolset',
         ])
 
 

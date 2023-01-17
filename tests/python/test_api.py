@@ -63,7 +63,7 @@ user_api[ti] = [
     'TaichiAssertionError', 'TaichiCompilationError', 'TaichiNameError',
     'TaichiRuntimeError', 'TaichiRuntimeTypeError', 'TaichiSyntaxError',
     'TaichiTypeError', 'Texture', 'Vector', 'VectorNdarray', 'WARN', 'abs',
-    'acos', 'activate', 'ad', 'algorithms', 'aot', 'append', 'arm64', 'asin',
+    'acos', 'activate', 'ad', 'algorithms', 'amdgpu', 'aot', 'append', 'arm64', 'asin',
     'assume_in_range', 'atan2', 'atomic_add', 'atomic_and', 'atomic_max',
     'atomic_min', 'atomic_or', 'atomic_sub', 'atomic_xor', 'axes', 'bit_cast',
     'bit_shr', 'block_local', 'cache_read_only', 'cast', 'cc', 'ceil', 'cos',

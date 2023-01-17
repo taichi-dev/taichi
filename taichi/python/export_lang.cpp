@@ -371,7 +371,6 @@ void export_lang(py::module &m) {
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
       .def("synchronize", &Program::synchronize)

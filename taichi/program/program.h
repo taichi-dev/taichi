@@ -180,8 +180,6 @@ class TI_DLL_EXPORT Program {
 
   int get_snode_tree_size();
 
-  void visualize_layout(const std::string &fn);
-
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  AutodiffMode autodiff_mode = AutodiffMode::kNone) {

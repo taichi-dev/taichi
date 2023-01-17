@@ -57,18 +57,28 @@ if(POLICY CMP0057)
     cmake_policy(SET CMP0057 NEW)
 endif()
 
+find_package(Python QUIET COMPONENTS Interpreter)
+
 # Find TiRT in the installation directory. The installation directory is
 # traditionally specified by an environment variable
 # `TAICHI_C_API_INSTALL_DIR`.
-if(NOT EXISTS ${TAICHI_C_API_INSTALL_DIR})
+if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}")
+    message("-- Looking for Taichi libraries via environment variable TAICHI_C_API_INSTALL_DIR")
     set(TAICHI_C_API_INSTALL_DIR $ENV{TAICHI_C_API_INSTALL_DIR})
 endif()
-if(EXISTS ${TAICHI_C_API_INSTALL_DIR})
-    get_filename_component(TAICHI_C_API_INSTALL_DIR "${TAICHI_C_API_INSTALL_DIR}" ABSOLUTE)
-    message("-- TAICHI_C_API_INSTALL_DIR=${TAICHI_C_API_INSTALL_DIR}")
+# If the user didn't specity the environment variable, try find the C-API
+# library in Python wheel.
+if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
+    message("-- Looking for Taichi libraries via Python package installation")
+    execute_process(COMMAND ${Python_EXECUTABLE} -c "import sys; import pathlib; print([pathlib.Path(x + '/../../../c_api').resolve() for x in sys.path if pathlib.Path(x + '/../../../c_api').exists()][0], end='')" OUTPUT_VARIABLE TAICHI_C_API_INSTALL_DIR)
 endif()
-
-set(TAICHI_C_API_INSTALL_DIR "${TAICHI_C_API_INSTALL_DIR}" CACHE PATH "Root directory to Taichi installation")
+message("-- TAICHI_C_API_INSTALL_DIR=${TAICHI_C_API_INSTALL_DIR}")
+if(EXISTS "${TAICHI_C_API_INSTALL_DIR}")
+    get_filename_component(TAICHI_C_API_INSTALL_DIR "${TAICHI_C_API_INSTALL_DIR}" ABSOLUTE)
+    set(TAICHI_C_API_INSTALL_DIR "${TAICHI_C_API_INSTALL_DIR}" CACHE PATH "Root directory to Taichi installation")
+else()
+    message(WARNING "-- TAICHI_C_API_INSTALL_DIR doesn't point to a valid Taichi installation; configuration is very likely to fail")
+endif()
 
 # Set up default find components
 if("${taichi_FIND_COMPONENTS}" STREQUAL "")
@@ -132,16 +142,18 @@ if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
     endif()
 
     # Capture Taichi Runtime version from header definition.
-    file(READ "${taichi_runtime_INCLUDE_DIR}/taichi/taichi_core.h" taichi_runtime_VERSION_LITERAL)
-    string(REGEX MATCH "#define TI_C_API_VERSION ([0-9]+)" taichi_runtime_VERSION_LITERAL ${taichi_runtime_VERSION_LITERAL})
-    set(taichi_runtime_VERSION_LITERAL ${CMAKE_MATCH_1})
-    math(EXPR taichi_runtime_VERSION_MAJOR "${taichi_runtime_VERSION_LITERAL} / 1000000")
-    math(EXPR taichi_runtime_VERSION_MINOR "(${taichi_runtime_VERSION_LITERAL} / 1000) % 1000")
-    math(EXPR taichi_runtime_VERSION_PATCH "${taichi_runtime_VERSION_LITERAL} % 1000")
-    set(taichi_runtime_VERSION "${taichi_runtime_VERSION_MAJOR}.${taichi_runtime_VERSION_MINOR}.${taichi_runtime_VERSION_PATCH}")
+    if(EXISTS "${taichi_runtime_INCLUDE_DIR}/taichi/taichi_core.h")
+        file(READ "${taichi_runtime_INCLUDE_DIR}/taichi/taichi_core.h" taichi_runtime_VERSION_LITERAL)
+        string(REGEX MATCH "#define TI_C_API_VERSION ([0-9]+)" taichi_runtime_VERSION_LITERAL ${taichi_runtime_VERSION_LITERAL})
+        set(taichi_runtime_VERSION_LITERAL ${CMAKE_MATCH_1})
+        math(EXPR taichi_runtime_VERSION_MAJOR "${taichi_runtime_VERSION_LITERAL} / 1000000")
+        math(EXPR taichi_runtime_VERSION_MINOR "(${taichi_runtime_VERSION_LITERAL} / 1000) % 1000")
+        math(EXPR taichi_runtime_VERSION_PATCH "${taichi_runtime_VERSION_LITERAL} % 1000")
+        set(taichi_runtime_VERSION "${taichi_runtime_VERSION_MAJOR}.${taichi_runtime_VERSION_MINOR}.${taichi_runtime_VERSION_PATCH}")
+    endif()
 
     # Ensure the version string is valid.
-    if(${taichi_runtime_VERSION} VERSION_GREATER "0")
+    if("${taichi_runtime_VERSION}" VERSION_GREATER "0")
         message("-- Found Taichi Runtime ${taichi_runtime_VERSION}: ${taichi_runtime_LIBRARY}")
 
         add_library(taichi::runtime UNKNOWN IMPORTED)

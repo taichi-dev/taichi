@@ -28,7 +28,7 @@ def setup_clang(as_compiler=True) -> None:
         out = get_cache_home() / 'clang-15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
         download_dep(url, out)
-        clang = out / 'bin' / 'clang++.exe'
+        clang = str(out / 'bin' / 'clang++.exe').replace('\\', '\\\\')
         os.environ['TAICHI_CMAKE_ARGS'] += f' -DCLANG_EXECUTABLE={clang}'
 
         if as_compiler:

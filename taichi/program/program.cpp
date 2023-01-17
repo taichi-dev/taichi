@@ -17,6 +17,11 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
+
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/platform/amdgpu/detect_amdgpu.h"
+#endif
+
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
@@ -437,7 +442,7 @@ Ndarray *Program::create_ndarray(const DataType type,
   auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
   if (zero_fill) {
     Arch arch = this_thread_config().arch;
-    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+    if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
     } else if (arch != Arch::dx12) {
       // Device api support for dx12 backend are not complete yet
@@ -496,7 +501,8 @@ Texture *Program::create_texture(const DataType type,
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
   if (arch_is_cpu(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::cuda) {
+      this_thread_config().arch == Arch::cuda ||
+      this_thread_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);

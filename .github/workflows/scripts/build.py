@@ -17,7 +17,7 @@ from ci_common.tinysh import Command, git, sh
 
 # -- code --
 @banner('Setup Clang')
-def setup_clang() -> None:
+def setup_clang(as_compiler=True) -> None:
     '''
     Setup Clang.
     '''
@@ -29,10 +29,13 @@ def setup_clang() -> None:
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
         download_dep(url, out)
         path_prepend('PATH', out / 'bin')
-        os.environ[
-            'TAICHI_CMAKE_ARGS'] += ' -DCLANG_EXECUTABLE=clang++.exe'  # TODO: Can this be omitted?
-        os.environ[
-            'TAICHI_CMAKE_ARGS'] += ' -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang'
+        os.environ['TAICHI_CMAKE_ARGS'] += (
+            ' -DCLANG_EXECUTABLE=clang++.exe'  # TODO: Can this be omitted?
+        )
+
+        if as_compiler:
+            os.environ['TAICHI_CMAKE_ARGS'] += (' -DCMAKE_CXX_COMPILER=clang++'
+                                                ' -DCMAKE_C_COMPILER=clang')
     else:
         # TODO: unify all
         pass
@@ -178,8 +181,11 @@ def build_wheel(python: Command, pip: Command) -> None:
 def main() -> None:
     u = platform.uname()
     if (u.system, u.machine) == ('Windows', 'AMD64'):
+        # Use MSVC on Windows
+        setup_clang(as_compiler=False)
         setup_msvc()
     else:
+        # Use Clang on all other platforms
         setup_clang()
 
     setup_llvm()

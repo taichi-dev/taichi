@@ -25,6 +25,7 @@ def get_cache_home() -> Path:
 
 
 def run(*args, env=None):
+    args = list(map(str, args))
     if env is None:
         return subprocess.Popen(args).wait()
     else:

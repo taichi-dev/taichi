@@ -118,6 +118,7 @@ class NdarrayType:
         if isinstance(self.dtype, CompoundType):
             # Check element shape and dim for MatrixType
             if self.dtype.ndim > 0:
+                print(ndarray_type.element_type)
                 if not is_tensor_type(ndarray_type.element_type):
                     raise TypeError(
                         f"Expect TensorType element for Ndarray with element_dim: {self.dtype.ndim} > 0"

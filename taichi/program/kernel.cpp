@@ -10,6 +10,10 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/rhi/amdgpu/amdgpu_driver.h"
+#endif
+
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
@@ -68,7 +72,7 @@ void Kernel::operator()(const CompileConfig &compile_config,
   compiled_(ctx_builder.get_context());
 
   const auto arch = compile_config.arch;
-  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
+  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu)) {
     program->check_runtime_error();
   }
 }

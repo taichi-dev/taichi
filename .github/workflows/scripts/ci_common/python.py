@@ -78,6 +78,8 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
         conda.create('-y', '-n', version, f'python={version}')
 
     # For CMake
+    os.environ['Python_ROOT_DIR'] = str(env)
+    os.environ['Python2_ROOT_DIR'] = str(env)  # Align with setup-python@v4
     os.environ['Python3_ROOT_DIR'] = str(env)
 
     python = sh.bake(str(exe))

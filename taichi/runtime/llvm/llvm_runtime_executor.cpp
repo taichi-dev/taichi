@@ -608,14 +608,16 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 void LlvmRuntimeExecutor::finalize() {
   profiler_ = nullptr;
   if (preallocated_device_buffer_ != nullptr) {
-    if (config_->arch == Arch::cuda)
+    if (config_->arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
       cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+    }
+    else if (config_->arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-    amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+      amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
+    }
   }
 }
 

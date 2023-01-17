@@ -77,6 +77,7 @@ set_target_properties(${TAICHI_C_API_NAME} PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
     ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
 
+if ($ENV{TI_CI})
 if (${CMAKE_GENERATOR} MATCHES "^Visual Studio")
   # Visual Studio is a multi-config generator, which appends ${CMAKE_BUILD_TYPE} to the output folder
   add_custom_command(
@@ -91,6 +92,7 @@ elseif (${CMAKE_GENERATOR} STREQUAL "XCode")
         COMMAND ${CMAKE_COMMAND} -E copy
                 ${C_API_OUTPUT_DIRECTORY}/${CMAKE_BUILD_TYPE}/lib${TAICHI_C_API_NAME}.dylib
                 ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.dylib)
+endif()
 endif()
 
 target_include_directories(${TAICHI_C_API_NAME}

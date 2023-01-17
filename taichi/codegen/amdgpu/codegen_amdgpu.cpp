@@ -265,12 +265,32 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->src->cast<GetChStmt>()) {
-      bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
-          get_ch->output_snode, SNodeAccessFlag::read_only);
-      create_global_load(stmt, should_cache_as_read_only);
+    auto ptr = llvm_val[stmt->src];
+    auto ptr_type = stmt->src->ret_type->as<PointerType>();
+    if (ptr_type->is_bit_pointer()) {
+      auto val_type = ptr_type->get_pointee_type();
+      auto get_ch = stmt->src->as<GetChStmt>();
+      auto physical_type =
+          tlctx->get_data_type(get_ch->input_snode->physical_type);
+      auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
+      auto physical_value = builder->CreateLoad(physical_type, byte_ptr);
+      if (auto qit = val_type->cast<QuantIntType>()) {
+        llvm_val[stmt] = extract_quant_int(physical_value, bit_offset, qit);
+      } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+        qit = qfxt->get_digits_type()->as<QuantIntType>();
+        auto digits = extract_quant_int(physical_value, bit_offset, qit);
+        llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
+      } else {
+        TI_ASSERT(val_type->is<QuantFloatType>());
+        TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
+        llvm_val[stmt] = extract_quant_float(
+            physical_value, get_ch->input_snode->dt->as<BitStructType>(),
+            get_ch->output_snode->id_in_bit_struct);
+      }
     } else {
-      create_global_load(stmt, false);
+      // Byte pointer case.
+      llvm_val[stmt] =
+          builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
     }
   }
 

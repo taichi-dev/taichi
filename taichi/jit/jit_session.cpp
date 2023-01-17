@@ -16,6 +16,11 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
     CompileConfig *config,
     Arch arch);
+
+std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
+    TaichiLLVMContext *tlctx,
+    CompileConfig *config,
+    Arch arch);
 #endif
 
 JITSession::JITSession(TaichiLLVMContext *tlctx, CompileConfig *config)
@@ -41,6 +46,12 @@ std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::amdgpu) {
+#ifdef TI_WITH_AMDGPU
+    return create_llvm_jit_session_amdgpu(tlctx, config, arch);
+#else
+    TI_NOT_IMPLEMENTED
+#endif 
   }
 #else
   TI_ERROR("Llvm disabled");

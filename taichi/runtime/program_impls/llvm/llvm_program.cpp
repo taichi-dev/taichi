@@ -15,6 +15,10 @@
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#endif
+
 #if defined(TI_WITH_DX12)
 #include "taichi/runtime/dx12/aot_module_builder_impl.h"
 #include "taichi/codegen/dx12/codegen_dx12.h"
@@ -55,6 +59,12 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
         runtime_exec_->llvm_context_device_.get()->new_module("struct");
     struct_compiler = std::make_unique<StructCompilerLLVM>(
         Arch::dx12, this, std::move(device_module), tree->id());
+  } else if (config->arch == Arch::amdgpu) {
+    TI_ASSERT(config->arch == Arch::amdgpu);
+    auto device_module = clone_struct_compiler_initial_context(
+        has_multiple_snode_trees, runtime_exec_->llvm_context_device_.get());
+    struct_compiler = std::make_unique<StructCompilerLLVM>(
+        Arch::amdgpu, this, std::move(device_module), tree->id());
   } else {
     TI_ASSERT(config->arch == Arch::cuda);
     auto device_module =

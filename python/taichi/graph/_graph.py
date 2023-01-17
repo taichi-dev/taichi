@@ -126,8 +126,8 @@ def Arg(tag,
     if tag == ArgKind.NDARRAY:
         # Ndarray with matrix data type
         if isinstance(dtype, MatrixType):
-            return _ti_core.Arg(tag, name, dtype.dtype, ndim,
-                                dtype.get_shape())
+            _, _, _, prim_dtype = dtype._get_type_info()
+            return _ti_core.Arg(tag, name, prim_dtype, ndim, dtype.get_shape())
         # Ndarray with scalar data type
         if len(element_shape) > 0:
             warnings.warn(

@@ -410,19 +410,20 @@ class TaichiCallableTemplateMapper:
             shape = tuple(shape)
             element_shape = ()
             if isinstance(anno.dtype, MatrixType):
+                _, _, ndim, _ = anno.dtype._get_type_info()
                 if anno.ndim is not None:
-                    if len(shape) != anno.dtype.ndim + anno.ndim:
+                    if len(shape) != ndim + anno.ndim:
                         raise ValueError(
-                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
+                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={ndim}, "
                             f"but the argument has {len(shape)} dimensions")
                 else:
-                    if len(shape) < anno.dtype.ndim:
+                    if len(shape) < ndim:
                         raise ValueError(
-                            f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                            f"Invalid argument into ti.types.ndarray() - required element_dim={ndim}, "
                             f"but the argument has only {len(shape)} dimensions"
                         )
-                element_shape = shape[-anno.dtype.ndim:]
-                anno_element_shape = anno.dtype.get_shape()
+                element_shape = tuple(shape[-ndim:])
+                anno_element_shape = tuple(anno.dtype.get_shape())
                 if None not in anno_element_shape and element_shape != anno_element_shape:
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
@@ -694,7 +695,9 @@ class Kernel:
                             needed.dtype) in primitive_types.type_ids:
                         element_dim = 0
                     else:
-                        element_dim = needed.dtype.ndim
+                        assert isinstance(needed.dtype, MatrixType)
+                        _, _, ndim, _ = needed.dtype._get_type_info()
+                        element_dim = ndim
                         array_shape = v.shape[
                             element_dim:] if is_soa else v.shape[:-element_dim]
                     if isinstance(v, np.ndarray):
@@ -780,24 +783,25 @@ class Kernel:
                             i, needed.to_string(), v)
 
                 elif isinstance(needed, MatrixType):
-                    if needed.dtype in primitive_types.real_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                val = v[a, b] if needed.ndim == 2 else v[a]
+                    n, m, ndim, prim_dtype = needed._get_type_info()
+                    if prim_dtype in primitive_types.real_types:
+                        for a in range(n):
+                            for b in range(m):
+                                val = v[a, b] if ndim == 2 else v[a]
                                 if not isinstance(val, (int, float)):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(), type(val))
+                                        i, prim_dtype.to_string(), type(val))
                                 launch_ctx.set_arg_float(
                                     actual_argument_slot, float(val))
                                 actual_argument_slot += 1
-                    elif needed.dtype in primitive_types.integer_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                val = v[a, b] if needed.ndim == 2 else v[a]
+                    elif prim_dtype in primitive_types.integer_types:
+                        for a in range(n):
+                            for b in range(m):
+                                val = v[a, b] if ndim == 2 else v[a]
                                 if not isinstance(val, int):
                                     raise TaichiRuntimeTypeError.get(
-                                        i, needed.dtype.to_string(), type(val))
-                                if is_signed(needed.dtype):
+                                        i, prim_dtype.to_string(), type(val))
+                                if is_signed(prim_dtype):
                                     launch_ctx.set_arg_int(
                                         actual_argument_slot, int(val))
                                 else:
@@ -806,7 +810,7 @@ class Kernel:
                                 actual_argument_slot += 1
                     else:
                         raise ValueError(
-                            f'Matrix dtype {needed.dtype} is not integer type or real type.'
+                            f'Matrix dtype {prim_dtype} is not integer type or real type.'
                         )
                     continue
                 else:
@@ -848,19 +852,22 @@ class Kernel:
                         ret = t_kernel.get_ret_uint(0)
                 elif id(ret_dt) in primitive_types.real_type_ids:
                     ret = t_kernel.get_ret_float(0)
-                elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt.dtype)):
-                        it = iter(t_kernel.get_ret_int_tensor(0))
-                    else:
-                        it = iter(t_kernel.get_ret_uint_tensor(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
                 else:
-                    it = iter(t_kernel.get_ret_float_tensor(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
+                    assert isinstance(ret_dt, MatrixType)
+                    n, m, ndim, prim_dtype = ret_dt._get_type_info()
+                    if id(prim_dtype) in primitive_types.integer_type_ids:
+                        if is_signed(cook_dtype(prim_dtype)):
+                            it = iter(t_kernel.get_ret_int_tensor(0))
+                        else:
+                            it = iter(t_kernel.get_ret_uint_tensor(0))
+                        ret = Matrix([[next(it) for _ in range(m)]
+                                      for _ in range(n)],
+                                     ndim=ndim)
+                    else:
+                        it = iter(t_kernel.get_ret_float_tensor(0))
+                        ret = Matrix([[next(it) for _ in range(m)]
+                                      for _ in range(n)],
+                                     ndim=ndim)
             if callbacks:
                 for c in callbacks:
                     c()

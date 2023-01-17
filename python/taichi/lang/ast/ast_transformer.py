@@ -656,6 +656,8 @@ class ASTTransformer(Builder):
                     # Matrix arguments are passed by value.
                     if isinstance(ctx.func.arguments[i].annotation,
                                   (MatrixType)):
+                        n, m, ndim, _ = ctx.func.arguments[
+                            i].annotation._get_type_info()
 
                         # "data" is expected to be an Expr here,
                         # so we simply call "impl.expr_init_func(data)" to perform:
@@ -671,24 +673,20 @@ class ASTTransformer(Builder):
                             )
 
                         element_shape = data.ptr.get_ret_type().shape()
-                        if len(element_shape
-                               ) != ctx.func.arguments[i].annotation.ndim:
+                        if len(element_shape) != ndim:
                             raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ndim}, but got {len(element_shape)}."
                             )
 
-                        assert ctx.func.arguments[i].annotation.ndim > 0
-                        if element_shape[0] != ctx.func.arguments[
-                                i].annotation.n:
+                        assert ndim > 0
+                        if element_shape[0] != n:
                             raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {ctx.func.arguments[i].annotation.n}, but got {element_shape[0]}."
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with n {n}, but got {element_shape[0]}."
                             )
 
-                        if ctx.func.arguments[
-                                i].annotation.ndim == 2 and element_shape[
-                                    1] != ctx.func.arguments[i].annotation.m:
+                        if ndim == 2 and element_shape[1] != m:
                             raise TaichiSyntaxError(
-                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {ctx.func.arguments[i].annotation.m}, but got {element_shape[0]}."
+                                f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with m {m}, but got {element_shape[0]}."
                             )
 
                         ctx.create_variable(arg.arg, impl.expr_init_func(data))
@@ -728,6 +726,7 @@ class ASTTransformer(Builder):
                         ti_ops.cast(expr.Expr(node.value.ptr),
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
+                _, _, _, prim_dtype = ctx.func.return_type._get_type_info()
                 values = node.value.ptr
                 if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
@@ -735,10 +734,8 @@ class ASTTransformer(Builder):
                 else:
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
-                    expr.make_expr_group([
-                        ti_ops.cast(exp, ctx.func.return_type.dtype)
-                        for exp in values
-                    ]))
+                    expr.make_expr_group(
+                        [ti_ops.cast(exp, prim_dtype) for exp in values]))
             elif isinstance(ctx.func.return_type, StructType):
                 values = node.value.ptr
                 assert isinstance(values, Struct)

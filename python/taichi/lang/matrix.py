@@ -20,6 +20,8 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
 
+_type_factory = ti_python_core.get_type_factory_instance()
+
 
 def _gen_swizzles(cls):
     swizzle_gen = SwizzleGenerator()
@@ -1404,18 +1406,12 @@ class MatrixField(Field):
 
 class MatrixType(CompoundType):
     def __init__(self, n, m, ndim, dtype):
-        self.n = n
-        self.m = m
-        self.ndim = ndim
-        # FIXME(haidong): dtypes should not be left empty for ndarray.
-        #                 Remove the None dtype when we are ready to break legacy code.
-        if dtype is not None:
-            self.dtype = cook_dtype(dtype)
-            self.tensor_type = TensorType((n, m) if ndim == 2 else (n, ),
-                                          self.dtype)
-        else:
-            self.dtype = None
-            self.tensor_type = None
+        primitive_dtype = cook_dtype(dtype)
+        shape = (n, m) if ndim == 2 else (n, )
+
+        # FIXME(zhanlue): NdarrayMatrix can have dtype = None, which is fairly wierd.
+        self.dtype = _type_factory.get_tensor_type(
+            shape, primitive_dtype) if primitive_dtype else None
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.
@@ -1448,6 +1444,8 @@ class MatrixType(CompoundType):
                 >>> k = mat2x6(m)
 
         """
+        n, m, ndim, prim_dtype = self._get_type_info()
+
         if len(args) == 0:
             raise TaichiSyntaxError(
                 "Custom type instances need to be created with an initial value."
@@ -1457,10 +1455,10 @@ class MatrixType(CompoundType):
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
                 shape = arg.ptr.get_ret_type().shape()
-                assert self.ndim == len(shape)
-                assert self.n == shape[0]
-                if self.ndim > 1:
-                    assert self.m == shape[1]
+                assert ndim == len(shape)
+                assert n == shape[0]
+                if ndim > 1:
+                    assert m == shape[1]
                 return expr.Expr(arg.ptr)
 
             # initialize by a single scalar, e.g. matnxm(1)
@@ -1481,59 +1479,72 @@ class MatrixType(CompoundType):
                 entries.append(x)
 
         if in_python_scope():
-            if len(entries) != self.m * self.n:
+            if len(entries) != m * n:
                 raise TaichiSyntaxError(
-                    f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
+                    f"Incompatible arguments for the custom vector/matrix type: ({n}, {m}), ({len(entries)})"
                 )
-            entries = [[entries[k * self.m + i] for i in range(self.m)]
-                       for k in range(self.n)]
+            entries = [[entries[k * m + i] for i in range(m)]
+                       for k in range(n)]
             return self._instantiate_in_python_scope(
-                Matrix(entries, dt=self.dtype, ndim=self.ndim))
+                Matrix(entries, dt=prim_dtype, ndim=ndim))
 
-        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
+        return make_matrix_with_shape(entries, [n, m], prim_dtype)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
+        n, m, _, _ = self._get_type_info()
+
         return self([
             expr.Expr(
                 ti_python_core.make_get_element_expr(func_ret.ptr,
                                                      ret_index + (i, )))
-            for i in range(self.m * self.n)
+            for i in range(m * n)
         ])
 
     def _instantiate_in_python_scope(self, mat):
+        n, m, ndim, prim_dtype = self._get_type_info()
+
         return Matrix([[
-            int(mat(i, j)) if self.dtype in primitive_types.integer_types else
-            float(mat(i, j)) for j in range(self.m)
-        ] for i in range(self.n)],
-                      ndim=self.ndim)
+            int(mat(i, j)) if prim_dtype in primitive_types.integer_types else
+            float(mat(i, j)) for j in range(m)
+        ] for i in range(n)],
+                      ndim=ndim)
 
     def cast(self, mat):
+        n, m, _, prim_dtype = self._get_type_info()
         if in_python_scope():
             return self._instantiate_in_python_scope(mat)
 
         if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, self.dtype)
+            return ops_mod.cast(mat, prim_dtype)
 
         if isinstance(mat, Matrix):
-            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
-            return ops_mod.cast(make_matrix(arr), self.dtype)
+            arr = [[mat(i, j) for j in range(m)] for i in range(n)]
+            return ops_mod.cast(make_matrix(arr), prim_dtype)
 
-        return mat.cast(self.dtype)
+        return mat.cast(prim_dtype)
 
     def filled_with_scalar(self, value):
+        n, m, ndim, _ = self._get_type_info()
         return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)],
-                   ndim=self.ndim))
+            Matrix([[value for _ in range(m)] for _ in range(n)], ndim=ndim))
 
     def field(self, **kwargs):
-        assert kwargs.get("ndim", self.ndim) == self.ndim
-        kwargs.update({"ndim": self.ndim})
-        return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
+        n, m, ndim, prim_dtype = self._get_type_info()
+
+        assert kwargs.get("ndim", ndim) == ndim
+        kwargs.update({"ndim": ndim})
+        return Matrix.field(n, m, dtype=prim_dtype, **kwargs)
+
+    def _get_type_info(self):
+        shape = self.get_shape()
+        ndim = len(shape)
+        n = shape[0]
+        m = shape[1] if ndim > 1 else 1
+
+        return n, m, ndim, self.dtype.element_type()
 
     def get_shape(self):
-        if self.ndim == 1:
-            return (self.n, )
-        return (self.n, self.m)
+        return self.dtype.shape()
 
 
 class VectorType(MatrixType):
@@ -1562,6 +1573,8 @@ class VectorType(MatrixType):
                 >>> v = vec3(1)
 
         """
+        n, _, _, prim_dtype = self._get_type_info()
+
         if len(args) == 0:
             raise TaichiSyntaxError(
                 "Custom type instances need to be created with an initial value."
@@ -1572,7 +1585,7 @@ class VectorType(MatrixType):
                 arg = args[0]
                 shape = arg.ptr.get_ret_type().shape()
                 assert len(shape) == 1
-                assert self.n == shape[0]
+                assert n == shape[0]
                 return expr.Expr(arg.ptr)
 
             # initialize by a single scalar, e.g. matnxm(1)
@@ -1594,36 +1607,40 @@ class VectorType(MatrixType):
 
         if in_python_scope():
             return self._instantiate_in_python_scope(
-                Vector(entries, dt=self.dtype))
+                Vector(entries, dt=prim_dtype))
 
         #  type cast
-        return make_matrix_with_shape(entries, [self.n], self.dtype)
+        return make_matrix_with_shape(entries, [n], prim_dtype)
 
     def _instantiate_in_python_scope(self, vec):
+        n, _, _, prim_dtype = self._get_type_info()
         return Vector([
             int(vec(i))
-            if self.dtype in primitive_types.integer_types else float(vec(i))
-            for i in range(self.n)
+            if prim_dtype in primitive_types.integer_types else float(vec(i))
+            for i in range(n)
         ])
 
     def cast(self, vec):
+        _, _, _, prim_dtype = self._get_type_info()
         if in_python_scope():
             return self._instantiate_in_python_scope(vec)
 
         if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
-            return ops_mod.cast(vec, self.dtype)
+            return ops_mod.cast(vec, prim_dtype)
 
         if isinstance(vec, Matrix):
             arr = vec.entries
-            return ops_mod.cast(make_matrix(arr), self.dtype)
+            return ops_mod.cast(make_matrix(arr), prim_dtype)
 
-        return vec.cast(self.dtype)
+        return vec.cast(prim_dtype)
 
     def filled_with_scalar(self, value):
-        return self.cast(Vector([value for _ in range(self.n)]))
+        n, _, _, _ = self._get_type_info()
+        return self.cast(Vector([value for _ in range(n)]))
 
     def field(self, **kwargs):
-        return Vector.field(self.n, dtype=self.dtype, **kwargs)
+        n, _, _, prim_dtype = self._get_type_info()
+        return Vector.field(n, dtype=prim_dtype, **kwargs)
 
 
 class MatrixNdarray(Ndarray):

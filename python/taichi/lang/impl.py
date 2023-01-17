@@ -777,10 +777,11 @@ def ndarray(dtype, shape, needs_grad=False):
             x._set_grad(x_grad)
         return x
     if isinstance(dtype, MatrixType):
-        if dtype.ndim == 1:
-            return VectorNdarray(dtype.n, dtype.dtype, shape)
+        n, m, ndim, prim_dtype = dtype._get_type_info()
+        if ndim == 1:
+            return VectorNdarray(n, prim_dtype, shape)
 
-        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
+        return MatrixNdarray(n, m, prim_dtype, shape)
 
     raise TaichiRuntimeError(
         f'{dtype} is not supported as ndarray element type')

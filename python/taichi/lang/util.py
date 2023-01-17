@@ -271,6 +271,9 @@ def to_taichi_type(dt):
 
 
 def cook_dtype(dtype):
+    if dtype is None:
+        return dtype
+
     if isinstance(dtype, _ti_core.DataType):
         return dtype
     if isinstance(dtype, _ti_core.Type):

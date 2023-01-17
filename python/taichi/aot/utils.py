@@ -45,48 +45,59 @@ def produce_injected_args(kernel, symbolic_args=None):
         if isinstance(anno, NdarrayType):
             # TODO(Haidong) we should always use MatrixType and get rid of the element shapes
             if symbolic_args is not None:
-                element_shape = tuple(symbolic_args[i].element_shape)
-                element_dim = len(element_shape)
-                ndim = symbolic_args[i].field_dim
-                dtype = symbolic_args[i].dtype()
-            else:
-                element_shape = anno.dtype.get_shape()
-                element_dim = anno.dtype.ndim
-                ndim = anno.ndim
-                dtype = anno.dtype
+                arg_element_shape = tuple(symbolic_args[i].element_shape)
+                arg_element_dim = len(arg_element_shape)
+                arg_ndarray_dim = symbolic_args[i].field_dim
+                arg_dtype = symbolic_args[i].dtype()
+            elif isinstance(anno.dtype, MatrixType):
+                n, m, elem_ndim, prim_dtype = anno.dtype._get_type_info()
 
-            if element_shape is None or ndim is None:
+                arg_element_shape = [n, m]
+                arg_element_dim = elem_ndim
+                arg_ndarray_dim = anno.ndim
+                arg_dtype = prim_dtype
+            else:
+                arg_element_shape = []
+                arg_element_dim = 0
+                arg_ndarray_dim = anno.ndim
+                arg_dtype = anno.dtype
+
+            # Checking parameters' consistency between
+            # the annotation "anno.xxx" and the actual argument "arg_xxx"
+            if arg_element_shape is None or arg_ndarray_dim is None:
                 raise TaichiCompilationError(
                     'Please either specify both `element_shape` and `ndim` '
                     'in the param annotation, or provide an example '
                     f'ndarray for param={arg.name}')
-            if anno.ndim is not None and ndim != anno.ndim:
+            if anno.ndim is not None and arg_ndarray_dim != anno.ndim:
                 raise TaichiCompilationError(
-                    f'{ndim} from Arg {arg.name} doesn\'t match kernel\'s annotated ndim={anno.ndim}'
+                    f'{arg_ndarray_dim} from Arg {arg.name} doesn\'t match kernel\'s annotated ndim={anno.ndim}'
                 )
             anno_dtype = anno.dtype
             if isinstance(anno_dtype, MatrixType):
-                anno_dtype = anno.dtype.dtype
+                _, _, _, prim_dtype = anno_dtype._get_type_info()
+                anno_dtype = prim_dtype
             if anno_dtype is not None:
-                if not check_type_match(dtype, anno_dtype):
+                if not check_type_match(arg_dtype, anno_dtype):
                     raise TaichiCompilationError(
-                        f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno_dtype.to_string()}'
+                        f' Arg {arg.name}\'s dtype {arg_dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno_dtype.to_string()}'
                     )
 
-            if element_dim is None or element_dim == 0 or element_shape == (
+            if arg_element_dim is None or arg_element_dim == 0 or arg_element_shape == (
                     1, ):
-                injected_args.append(ScalarNdarray(dtype, (2, ) * ndim))
-            elif element_dim == 1:
                 injected_args.append(
-                    VectorNdarray(element_shape[0],
-                                  dtype=dtype,
-                                  shape=(2, ) * ndim))
-            elif element_dim == 2:
+                    ScalarNdarray(dtype, (2, ) * arg_ndarray_dim))
+            elif arg_element_dim == 1:
                 injected_args.append(
-                    MatrixNdarray(element_shape[0],
-                                  element_shape[1],
+                    VectorNdarray(arg_element_shape[0],
                                   dtype=dtype,
-                                  shape=(2, ) * ndim))
+                                  shape=(2, ) * arg_ndarray_dim))
+            elif arg_element_dim == 2:
+                injected_args.append(
+                    MatrixNdarray(arg_element_shape[0],
+                                  arg_element_shape[1],
+                                  dtype=dtype,
+                                  shape=(2, ) * arg_ndarray_dim))
             else:
                 raise RuntimeError('')
         elif isinstance(anno, RWTextureType):
@@ -106,15 +117,17 @@ def produce_injected_args(kernel, symbolic_args=None):
             if not isinstance(symbolic_args[i], list):
                 raise RuntimeError('Expected a symbolic arg with Matrix type.')
 
+            n, m, _, prim_dtype = anno._get_type_info()
+
             symbolic_mat_n = len(symbolic_args[i])
             symbolic_mat_m = len(symbolic_args[i][0])
 
-            if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
+            if symbolic_mat_m != m or symbolic_mat_n != n:
                 raise RuntimeError(
-                    f'Matrix dimension mismatch, expected ({anno.n}, {anno.m}) '
+                    f'Matrix dimension mismatch, expected ({n}, {m}) '
                     f'but dispatched shape ({symbolic_mat_n}, {symbolic_mat_m}).'
                 )
-            injected_args.append(Matrix([0] * anno.n * anno.m, dt=anno.dtype))
+            injected_args.append(Matrix([0] * n * m, dt=prim_dtype))
         else:
             if symbolic_args is not None:
                 dtype = symbolic_args[i].dtype()

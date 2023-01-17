@@ -116,23 +116,24 @@ class NdarrayType:
 
         # Check dtype match
         if isinstance(self.dtype, CompoundType):
+            _, _, ndim, _ = self.dtype._get_type_info()
             # Check element shape and dim for MatrixType
-            if self.dtype.ndim > 0:
+            if ndim > 0:
                 print(ndarray_type.element_type)
                 if not is_tensor_type(ndarray_type.element_type):
                     raise TypeError(
-                        f"Expect TensorType element for Ndarray with element_dim: {self.dtype.ndim} > 0"
+                        f"Expect TensorType element for Ndarray with element_dim: {ndim} > 0"
                     )
-                if self.dtype.ndim != len(ndarray_type.element_type.shape()):
+                if ndim != len(ndarray_type.element_type.shape()):
                     raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_dim={self.dtype.ndim}, but {len(ndarray_type.element_type.shape())} is provided"
+                        f"Invalid argument into ti.types.ndarray() - required element_dim={ndim}, but {len(ndarray_type.element_type.shape())} is provided"
                     )
             if self.dtype.get_shape() is not None:
                 if not is_tensor_type(ndarray_type.element_type):
                     raise TypeError(
                         f"Expect TensorType element for Ndarray with element_shape: {self.dtype.get_shape()}"
                     )
-                if list(self.dtype.get_shape()) != list(
+                if tuple(self.dtype.get_shape()) != tuple(
                         ndarray_type.element_type.shape()):
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={self.dtype.get_shape()}, but {ndarray_type.element_type.shape()} is provided"

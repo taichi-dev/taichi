@@ -59,12 +59,11 @@ def decl_scalar_arg(dtype):
 
 
 def decl_matrix_arg(matrixtype):
+    n, m, _, prim_dtype = matrixtype._get_type_info()
     if isinstance(matrixtype, VectorType):
-        return make_matrix(
-            [decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.n)])
-    return make_matrix(
-        [[decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.m)]
-         for _ in range(matrixtype.n)])
+        return make_matrix([decl_scalar_arg(prim_dtype) for _ in range(n)])
+    return make_matrix([[decl_scalar_arg(prim_dtype) for _ in range(m)]
+                        for _ in range(n)])
 
 
 def decl_sparse_matrix(dtype):
@@ -108,12 +107,12 @@ def decl_ret(dtype, real_func=False):
     if isinstance(dtype, StructType):
         dtype = dtype.dtype
     if isinstance(dtype, MatrixType):
+        n, m, _, prim_dtype = dtype._get_type_info()
         if real_func:
-            for i in range(dtype.n * dtype.m):
-                decl_ret(dtype.dtype)
+            for i in range(n * m):
+                decl_ret(prim_dtype)
             return
-        dtype = _ti_core.get_type_factory_instance().get_tensor_type(
-            [dtype.n, dtype.m], dtype.dtype)
+        dtype = dtype.dtype
     else:
         dtype = cook_dtype(dtype)
     impl.get_runtime().compiling_callable.insert_ret(dtype)

@@ -334,21 +334,20 @@ class Struct(TaichiOperations):
 
         for key, dtype in members.items():
             field_name = name + '.' + key
-            if isinstance(dtype, CompoundType):
-                if isinstance(dtype, StructType):
-                    field_dict[key] = dtype.field(shape=None,
-                                                  name=field_name,
-                                                  offset=offset,
-                                                  needs_grad=needs_grad,
-                                                  needs_dual=needs_dual)
-                else:
-                    field_dict[key] = dtype.field(shape=None,
-                                                  name=field_name,
-                                                  offset=offset,
-                                                  needs_grad=needs_grad,
-                                                  needs_dual=needs_dual,
-                                                  ndim=getattr(
-                                                      dtype, 'ndim', 2))
+            if isinstance(dtype, StructType):
+                field_dict[key] = dtype.field(shape=None,
+                                              name=field_name,
+                                              offset=offset,
+                                              needs_grad=needs_grad,
+                                              needs_dual=needs_dual)
+            elif isinstance(dtype, MatrixType):
+                _, _, ndim, _ = dtype._get_type_info()
+                field_dict[key] = dtype.field(shape=None,
+                                              name=field_name,
+                                              offset=offset,
+                                              needs_grad=needs_grad,
+                                              needs_dual=needs_dual,
+                                              ndim=ndim)
             else:
                 field_dict[key] = impl.field(dtype,
                                              shape=None,
@@ -667,12 +666,9 @@ class StructType(CompoundType):
         for k, dtype in kwargs.items():
             if k == '__struct_methods':
                 self.methods = dtype
-            elif isinstance(dtype, StructType):
+            elif isinstance(dtype, (MatrixType, StructType)):
                 self.members[k] = dtype
                 elements.append(dtype.dtype)
-            elif isinstance(dtype, MatrixType):
-                self.members[k] = dtype
-                elements.append(dtype.tensor_type.ptr)
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype

@@ -86,17 +86,17 @@ def produce_injected_args(kernel, symbolic_args=None):
             if arg_element_dim is None or arg_element_dim == 0 or arg_element_shape == (
                     1, ):
                 injected_args.append(
-                    ScalarNdarray(dtype, (2, ) * arg_ndarray_dim))
+                    ScalarNdarray(arg_dtype, (2, ) * arg_ndarray_dim))
             elif arg_element_dim == 1:
                 injected_args.append(
                     VectorNdarray(arg_element_shape[0],
-                                  dtype=dtype,
+                                  dtype=arg_dtype,
                                   shape=(2, ) * arg_ndarray_dim))
             elif arg_element_dim == 2:
                 injected_args.append(
                     MatrixNdarray(arg_element_shape[0],
                                   arg_element_shape[1],
-                                  dtype=dtype,
+                                  dtype=arg_dtype,
                                   shape=(2, ) * arg_ndarray_dim))
             else:
                 raise RuntimeError('')

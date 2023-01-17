@@ -143,14 +143,14 @@ def Arg(tag,
             raise TaichiRuntimeError(
                 f'Element shape for MatrixType argument "{name}" is not supported.'
             )
-        mat_type = dtype
+        n, m, _, prim_dtype = dtype._get_type_info()
         arg_list = []
         i = 0
-        for _ in range(mat_type.n):
+        for _ in range(n):
             arg_sublist = []
-            for _ in range(mat_type.m):
+            for _ in range(m):
                 arg_sublist.append(
-                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', dtype.dtype, ndim,
+                    _ti_core.Arg(tag, f'{name}_mat_arg_{i}', prim_dtype, ndim,
                                  element_shape))
                 i += 1
             arg_list.append(arg_sublist)

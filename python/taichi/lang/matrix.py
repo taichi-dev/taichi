@@ -1406,12 +1406,13 @@ class MatrixField(Field):
 
 class MatrixType(CompoundType):
     def __init__(self, n, m, ndim, dtype):
+        if dtype is None:
+            dtype = ti_python_core.DataType_unknown
         primitive_dtype = cook_dtype(dtype)
         shape = (n, m) if ndim == 2 else (n, )
 
         # FIXME(zhanlue): NdarrayMatrix can have dtype = None, which is fairly wierd.
-        self.dtype = _type_factory.get_tensor_type(
-            shape, primitive_dtype) if primitive_dtype else None
+        self.dtype = _type_factory.get_tensor_type(shape, primitive_dtype)
 
     def __call__(self, *args):
         """Return a matrix matching the shape and dtype.

@@ -1406,8 +1406,24 @@ class MatrixField(Field):
 
 class MatrixType(CompoundType):
     def __init__(self, n, m, ndim, dtype):
+        # A MatrixType is a collection of multiple attributes, including:
+        # 1. ndim: judge whether it's a vector or a matrix
+        # 2. shape: the size of each dimension
+        # 3. dtype: the data type of each element
+        #
+        # Due to the complicated use cases at Python frontend, many times
+        # we just want to create a MatrixType with selected attributes and don't
+        # care about the others. Such used cases are usual when Ndarray gets involved.
+        #
+        # In that sense, we have to support creating a MatrixType with partial attributes,
+        # and fill the rest with undefined values.
         if dtype is None:
             dtype = ti_python_core.DataType_unknown
+        if n is None:
+            n = 0
+        if m is None:
+            m = 0
+
         primitive_dtype = cook_dtype(dtype)
         shape = (n, m) if ndim == 2 else (n, )
 

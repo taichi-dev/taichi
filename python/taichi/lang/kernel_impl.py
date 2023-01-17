@@ -424,7 +424,7 @@ class TaichiCallableTemplateMapper:
                         )
                 element_shape = tuple(shape[-ndim:])
                 anno_element_shape = tuple(anno.dtype.get_shape())
-                if None not in anno_element_shape and element_shape != anno_element_shape:
+                if 0 not in anno_element_shape and element_shape != anno_element_shape:
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
                         f"but the argument has element shape of {element_shape}"

@@ -189,7 +189,6 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("dynamic_index", &CompileConfig::dynamic_index)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)

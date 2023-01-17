@@ -135,13 +135,3 @@ def test_incomplete_info_rwtexture():
             for i, j in ti.ndrange(n, n):
                 ret = ti.cast(1, ti.f32)
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-
-@pytest.mark.parametrize("value", [True, False])
-def test_deprecated_dynamic_index(value):
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Dynamic index is supported by default and the switch will be removed in v1.5.0."
-    ):
-        ti.init(dynamic_index=value)

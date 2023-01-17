@@ -39,7 +39,6 @@ CompileConfig::CompileConfig() {
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
-  dynamic_index = true;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;

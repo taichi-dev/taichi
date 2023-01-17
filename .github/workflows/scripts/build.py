@@ -28,12 +28,13 @@ def setup_clang(as_compiler=True) -> None:
         out = get_cache_home() / 'clang-15'
         url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
         download_dep(url, out)
-        path_prepend('PATH', out / 'bin')
-        os.environ['TAICHI_CMAKE_ARGS'] += ' -DCLANG_EXECUTABLE=clang++.exe'
+        clang = out / 'bin' / 'clang++.exe'
+        os.environ['TAICHI_CMAKE_ARGS'] += f' -DCLANG_EXECUTABLE={clang}'
 
         if as_compiler:
-            os.environ['TAICHI_CMAKE_ARGS'] += (' -DCMAKE_CXX_COMPILER=clang++'
-                                                ' -DCMAKE_C_COMPILER=clang')
+            os.environ['TAICHI_CMAKE_ARGS'] += (
+                f' -DCMAKE_CXX_COMPILER={clang}'
+                f' -DCMAKE_C_COMPILER={clang}')
     else:
         # TODO: unify all
         pass

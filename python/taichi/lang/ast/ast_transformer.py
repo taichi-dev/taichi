@@ -727,6 +727,7 @@ class ASTTransformer(Builder):
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
                 _, _, _, prim_dtype = ctx.func.return_type._get_type_info()
+
                 values = node.value.ptr
                 if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\

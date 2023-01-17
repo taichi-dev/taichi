@@ -419,6 +419,11 @@ def init(arch=None,
     if default_ip is not None:
         impl.get_runtime().set_default_ip(default_ip)
 
+    # Initialize matrix types since we've already setup default_fp/ip
+    from taichi.math.mathimpl import \
+        initialize_math_types  # pylint: disable=C0415
+    initialize_math_types()
+
     # submodule configurations (spec_cfg):
     env_spec.add('log_level', str)
     env_spec.add('gdb_trigger')

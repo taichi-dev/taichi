@@ -10,55 +10,107 @@ from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
 
 import taichi as ti
 
-cfg = impl.default_cfg
-
-vec2 = ti.types.vector(2, cfg().default_fp)
+# Do not initialize matrix types util ti.init() finished
+# since we need to get default_fp/default_ip from ti.cfg
+vec2 = None
 """2D floating vector type.
 """
 
-vec3 = ti.types.vector(3, cfg().default_fp)
+vec3 = None
 """3D floating vector type.
 """
 
-vec4 = ti.types.vector(4, cfg().default_fp)
+vec4 = None
 """4D floating vector type.
 """
 
-ivec2 = ti.types.vector(2, cfg().default_ip)
+ivec2 = None
 """2D signed int vector type.
 """
 
-ivec3 = ti.types.vector(3, cfg().default_ip)
+ivec3 = None
 """3D signed int vector type.
 """
 
-ivec4 = ti.types.vector(4, cfg().default_ip)
+ivec4 = None
 """3D signed int vector type.
 """
 
-uvec2 = ti.types.vector(2, cfg().default_up)
+uvec2 = None
 """2D unsigned int vector type.
 """
 
-uvec3 = ti.types.vector(3, cfg().default_up)
+uvec3 = None
 """3D unsigned int vector type.
 """
 
-uvec4 = ti.types.vector(4, cfg().default_up)
+uvec4 = None
 """4D unsigned int vector type.
 """
 
-mat2 = ti.types.matrix(2, 2, cfg().default_fp)
+mat2 = None
 """2x2 floating matrix type.
 """
 
-mat3 = ti.types.matrix(3, 3, cfg().default_fp)
+mat3 = None
 """3x3 floating matrix type.
 """
 
-mat4 = ti.types.matrix(4, 4, cfg().default_fp)
+mat4 = None
 """4x4 floating matrix type.
 """
+
+
+def initialize_math_types():
+    cfg = impl.default_cfg
+
+    ti.math.vec2 = ti.types.vector(2, cfg().default_fp)
+    """2D floating vector type.
+    """
+
+    ti.math.vec3 = ti.types.vector(3, cfg().default_fp)
+    """3D floating vector type.
+    """
+
+    ti.math.vec4 = ti.types.vector(4, cfg().default_fp)
+    """4D floating vector type.
+    """
+
+    ti.math.ivec2 = ti.types.vector(2, cfg().default_ip)
+    """2D signed int vector type.
+    """
+
+    ti.math.ivec3 = ti.types.vector(3, cfg().default_ip)
+    """3D signed int vector type.
+    """
+
+    ti.math.ivec4 = ti.types.vector(4, cfg().default_ip)
+    """3D signed int vector type.
+    """
+
+    ti.math.uvec2 = ti.types.vector(2, cfg().default_up)
+    """2D unsigned int vector type.
+    """
+
+    ti.math.uvec3 = ti.types.vector(3, cfg().default_up)
+    """3D unsigned int vector type.
+    """
+
+    ti.math.uvec4 = ti.types.vector(4, cfg().default_up)
+    """4D unsigned int vector type.
+    """
+
+    ti.math.mat2 = ti.types.matrix(2, 2, cfg().default_fp)
+    """2x2 floating matrix type.
+    """
+
+    ti.math.mat3 = ti.types.matrix(3, 3, cfg().default_fp)
+    """3x3 floating matrix type.
+    """
+
+    ti.math.mat4 = ti.types.matrix(4, 4, cfg().default_fp)
+    """4x4 floating matrix type.
+    """
 
 
 @ti.func
@@ -748,10 +800,10 @@ def vdir(ang):
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
-    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
-    "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
-    "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll", "rotation2d",
-    "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
-    "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"
+    "inf", "inverse", "isinf", "isnan", "length", "log", "log2", "max", "min",
+    "mix", "mod", "translate", "scale", "nan", "normalize", "pi", "pow",
+    "radians", "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll",
+    "rotation2d", "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt",
+    "step", "tan", "tanh", "vdir", "ivec2", "ivec3", "ivec4", "mat2", "mat3",
+    "mat4", "uvec2", "uvec3", "uvec4", "vec2", "vec3", "vec4"
 ]

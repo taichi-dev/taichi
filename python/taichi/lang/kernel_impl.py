@@ -855,7 +855,10 @@ class Kernel:
                 else:
                     assert isinstance(ret_dt, MatrixType)
                     n, m, ndim, prim_dtype = ret_dt._get_type_info()
-                    if id(prim_dtype) in primitive_types.integer_type_ids:
+
+                    # prim_dtype are obtained from the underlying C++ DataType,
+                    # which may have different id() from the Python DataType.
+                    if prim_dtype in primitive_types.integer_types:
                         if is_signed(cook_dtype(prim_dtype)):
                             it = iter(t_kernel.get_ret_int_tensor(0))
                         else:

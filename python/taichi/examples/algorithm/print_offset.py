@@ -1,5 +1,3 @@
-from taichi.lang import impl
-
 import taichi as ti
 
 ti.init(arch=ti.cpu, print_ir=True)

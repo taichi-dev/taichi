@@ -93,7 +93,7 @@ void Lines::update_data(const LinesInfo &info) {
   update_ubo(info.color, info.renderable_info.has_per_vertex_color);
 
   curr_width_ = info.width;
-  
+
   vbo_translated_.reset();
   ibo_translated_.reset();
 
@@ -106,7 +106,7 @@ void Lines::update_data(const LinesInfo &info) {
        /*host_read=*/false,
        /*export_sharing=*/false,
        /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
-  
+
   ibo_translated_ = app_context_->device().allocate_memory_unique(
       {/*size=*/uint64_t(sizeof(int) * 6 * draw_count),
        /*host_write=*/false,

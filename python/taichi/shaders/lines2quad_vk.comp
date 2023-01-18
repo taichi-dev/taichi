@@ -98,7 +98,7 @@ void main() {
   ib_out[thread_idx * 6    ] = thread_idx * 4;
   ib_out[thread_idx * 6 + 1] = thread_idx * 4 + 1;
   ib_out[thread_idx * 6 + 2] = thread_idx * 4 + 2;
-  
+
   ib_out[thread_idx * 6 + 3] = thread_idx * 4 + 2;
   ib_out[thread_idx * 6 + 4] = thread_idx * 4 + 1;
   ib_out[thread_idx * 6 + 5] = thread_idx * 4 + 3;

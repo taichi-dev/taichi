@@ -64,7 +64,7 @@ class Lines final : public Renderable {
   float curr_width_;
 
   std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};
-  
+
   std::unique_ptr<taichi::lang::DeviceAllocationGuard> vbo_translated_{nullptr};
   std::unique_ptr<taichi::lang::DeviceAllocationGuard> ibo_translated_{nullptr};
 };

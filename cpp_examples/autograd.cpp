@@ -42,7 +42,7 @@ void autograd() {
   using namespace lang;
 
   auto program = Program(Arch::x64);
-  const auto &config = program.this_thread_config();
+  const auto &config = program.compile_config();
 
   int n = 10;
   program.materialize_runtime();

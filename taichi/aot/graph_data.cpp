@@ -94,7 +94,7 @@ void CompiledGraph::run(
       TI_ASSERT(dispatch.ti_kernel);
       lang::Kernel::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
       auto *ker = dispatch.ti_kernel;
-      ker->operator()(ker->program->this_thread_config(), launch_ctx);
+      ker->operator()(ker->program->compile_config(), launch_ctx);
     }
   }
 }

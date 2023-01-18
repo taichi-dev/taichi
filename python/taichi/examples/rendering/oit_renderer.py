@@ -16,7 +16,6 @@ alpha_min = 0.2
 alpha_width = 0.3
 camera_pos = vec3(0, 0, 5)
 
-Hit = ti.types.struct(pos=vec3, normal=vec3, color=vec4, depth=float)
 Light = ti.types.struct(pos=vec3, dir=vec3)
 
 background_color = vec4(0.2, 0.2, 0.2, 1)
@@ -39,18 +38,16 @@ def gooch_lighting(normal: ti.template()):
 
 
 @ti.func
-def shading(hit: ti.template()):
-    colorRGB = hit.color.rgb * gooch_lighting(hit.normal)
-    alpha = clamp(alpha_min + hit.color.a * alpha_width, 0, 1)
+def shading(color: ti.template(), normal: ti.template()):
+    colorRGB = color.rgb * gooch_lighting(normal)
+    alpha = clamp(alpha_min + color.a * alpha_width, 0, 1)
     return vec4(colorRGB, alpha)
 
 
 @ti.func
 def intersect_sphere(light: ti.template(), sphere: ti.template()):
-    hit_pos1 = vec3(0)
-    hit_pos2 = vec3(0)
-    normal1 = vec3(0)
-    normal2 = vec3(0)
+    color1 = vec4(0)
+    color2 = vec4(0)
     dist1 = inf
     dist2 = inf
     l = sphere.center - light.pos
@@ -74,13 +71,15 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
                 hit_pos1 = light.pos + light.dir * t1
                 dist1 = t1
                 normal1 = normalize(hit_pos1 - sphere.center)
+                color1 = shading(sphere.color, normal1)
             t2 = tp + tt
             if t2 > 0:
                 hit_pos2 = light.pos + light.dir * t2
                 dist2 = t2
                 normal2 = normalize(hit_pos2 - sphere.center)
-    return Hit(pos=hit_pos1, normal=normal1, color=sphere.color, depth=dist1), \
-           Hit(pos=hit_pos2, normal=normal2, color=sphere.color, depth=dist2)
+                color2 = shading(sphere.color, normal2)
+    return ColorWithDepth(color=color1, depth=dist1), \
+           ColorWithDepth(color=color2, depth=dist2)
 
 
 @ti.func
@@ -98,11 +97,9 @@ def get_intersections(u, v):
     for i in range(spheres.length()):
         hit1, hit2 = intersect_sphere(light, spheres[i])
         if hit1.depth < inf:
-            colors_in_pixel[u, v].append(
-                ColorWithDepth(color=shading(hit1), depth=hit1.depth))
+            colors_in_pixel[u, v].append(hit1)
         if hit2.depth < inf:
-            colors_in_pixel[u, v].append(
-                ColorWithDepth(color=shading(hit2), depth=hit2.depth))
+            colors_in_pixel[u, v].append(hit2)
 
 
 @ti.func

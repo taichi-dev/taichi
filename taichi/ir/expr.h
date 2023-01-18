@@ -101,7 +101,7 @@ class Expr {
 
   DataType get_ret_type() const;
 
-  void type_check(CompileConfig *config);
+  void type_check(const CompileConfig *config);
 };
 
 // Value cast

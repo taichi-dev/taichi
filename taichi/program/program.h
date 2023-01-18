@@ -115,8 +115,7 @@ class TI_DLL_EXPORT Program {
 
   ~Program();
 
-  // TODO(PGZXB): Return `const CompileConfig &` (blocked by some tests)
-  CompileConfig &compile_config() {
+  const CompileConfig &compile_config() const {
     return compile_config_;
   }
 

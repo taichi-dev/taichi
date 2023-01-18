@@ -75,7 +75,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
-  auto &config = compile_config();
+  auto &config = compile_config_;
   config = default_compile_config;
   config.arch = desired_arch;
   config.fit();

@@ -41,7 +41,7 @@ class Expression {
     stmt = nullptr;
   }
 
-  virtual void type_check(CompileConfig *config) = 0;
+  virtual void type_check(const CompileConfig *config) = 0;
 
   virtual void accept(ExpressionVisitor *visitor) = 0;
 

@@ -9,7 +9,6 @@
  * };
  *
  * We will assume pos is always first in struct.
- * We will also
  */
 
 layout(binding = 0, std430) buffer InputVB {

@@ -6,29 +6,32 @@
 
 namespace taichi::lang {
 
-class LowerCalledFunctions : public BasicStmtVisitor {
+class CompileCalledFunctions : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit LowerCalledFunctions(const CompileConfig &compile_config)
+  explicit CompileCalledFunctions(const CompileConfig &compile_config)
       : compile_config_(compile_config) {
   }
 
   void visit(FuncCallStmt *stmt) override {
+    using IRType = Function::IRType;
     auto *func = stmt->func;
-    if (!func->lowered()) {
-      func->set_lowered(true);
+    const auto ir_type = func->ir_type();
+    if (ir_type != IRType::OptimizedIR) {
+      TI_ASSERT(ir_type == IRType::AST || ir_type == IRType::InitialIR);
+      func->set_ir_type(IRType::OptimizedIR);
       irpass::compile_function(func->ir.get(), compile_config_, func,
                                /*autodiff_mode=*/AutodiffMode::kNone,
                                /*verbose=*/compile_config_.print_ir,
-                               /*start_from_ast=*/func->ir_start_from_ast());
+                               /*start_from_ast=*/ir_type == IRType::AST);
       func->ir->accept(this);
     }
   }
 
-  static void run(const CompileConfig &compile_config, IRNode *root) {
-    LowerCalledFunctions lcf{compile_config};
-    root->accept(&lcf);
+  static void run(IRNode *ir, const CompileConfig &compile_config) {
+    CompileCalledFunctions lcf{compile_config};
+    ir->accept(&lcf);
   }
 
  private:
@@ -37,9 +40,9 @@ class LowerCalledFunctions : public BasicStmtVisitor {
 
 namespace irpass {
 
-void lower_called_functions(const CompileConfig &compile_config, IRNode *root) {
+void compile_called_functions(IRNode *ir, const CompileConfig &compile_config) {
   TI_AUTO_PROF;
-  LowerCalledFunctions::run(compile_config, root);
+  CompileCalledFunctions::run(ir, compile_config);
 }
 
 }  // namespace irpass

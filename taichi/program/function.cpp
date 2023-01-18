@@ -14,7 +14,7 @@ void Function::set_function_body(const std::function<void()> &func) {
   context =
       std::make_unique<FrontendContext>(program->this_thread_config().arch);
   ir = context->get_root();
-  ir_start_from_ast_ = true;
+  ir_type_ = IRType::AST;
 
   func();
 
@@ -27,7 +27,7 @@ void Function::set_function_body(const std::function<void()> &func) {
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
   ir = std::move(func_body);
-  ir_start_from_ast_ = false;
+  ir_type_ = IRType::InitialIR;
 }
 
 std::string Function::get_name() const {

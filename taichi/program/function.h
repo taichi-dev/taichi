@@ -9,6 +9,8 @@ class Program;
 
 class Function : public Callable {
  public:
+  enum class IRType { None, AST, InitialIR, OptimizedIR };
+
   FunctionKey func_key;
 
   Function(Program *program, const FunctionKey &func_key);
@@ -26,21 +28,16 @@ class Function : public Callable {
     return ast_serialization_data_;
   }
 
-  bool lowered() const {
-    return lowered_;
+  void set_ir_type(IRType type) {
+    ir_type_ = type;
   }
 
-  void set_lowered(bool lowered) {
-    lowered_ = lowered;
-  }
-
-  bool ir_start_from_ast() const {
-    return ir_start_from_ast_;
+  IRType ir_type() const {
+    return ir_type_;
   }
 
  private:
-  bool ir_start_from_ast_{false};
-  bool lowered_{false};
+  IRType ir_type_{IRType::None};
   std::optional<std::string> ast_serialization_data_;  // For generating AST-Key
 };
 

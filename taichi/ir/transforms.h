@@ -200,7 +200,7 @@ void ast_to_ir(const CompileConfig &config,
                Kernel &kernel,
                bool to_executable = true);
 
-void lower_called_functions(const CompileConfig &compile_config, IRNode *ir);
+void compile_called_functions(IRNode *ir, const CompileConfig &compile_config);
 }  // namespace irpass
 
 }  // namespace taichi::lang

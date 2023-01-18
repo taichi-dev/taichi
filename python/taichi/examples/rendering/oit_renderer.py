@@ -82,12 +82,14 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
     return Hit(pos=hit_pos1, normal=normal1, color=sphere.color, depth=dist1), \
            Hit(pos=hit_pos2, normal=normal2, color=sphere.color, depth=dist2)
 
+
 @ti.func
 def get_light(u, v):
     ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
                    (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
     ray_dir = normalize(ray_dir)
     return Light(pos=camera_pos, dir=ray_dir)
+
 
 @ti.func
 def get_intersections(u, v):
@@ -145,6 +147,7 @@ def generate_sphere(n: ti.i32):
                      ti.random() * 3 - 1.5),
                 ti.random() * 0.2 + 0.1,
                 (ti.random(), ti.random(), ti.random(), ti.random())))
+
 
 @ti.kernel
 def render():

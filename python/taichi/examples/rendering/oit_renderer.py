@@ -153,9 +153,15 @@ def render():
         bubble_sort(u, v)
         color_buffer[u, v] = get_color(u, v)
 
+@ti.kernel
+def init():
+    spheres.deactivate()
+    for u, v in color_buffer:
+        colors_in_pixel[u, v].deactivate()
 
 def main():
     gui = ti.GUI('OIT', res, fast_gui=True)
+    init()
     generate_sphere(256)
     render()
     gui.set_image(color_buffer)

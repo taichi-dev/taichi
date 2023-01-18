@@ -146,7 +146,7 @@ void Lines::create_bindings() {
   }
 }
 
-void Lines::record_this_frame_commands(CommandList *command_list) {
+void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
   uint64_t draw_count =
       indexed_ ? config_.indices_count : config_.vertices_count;
 
@@ -159,6 +159,11 @@ void Lines::record_this_frame_commands(CommandList *command_list) {
   command_list->bind_pipeline(quad_expand_pipeline_.get());
   command_list->bind_shader_resources(resource_set_.get());
   command_list->dispatch(int(ceil(draw_count / 2.0f / 256.0f)));
+}
+
+void Lines::record_this_frame_commands(CommandList *command_list) {
+  uint64_t draw_count =
+      indexed_ ? config_.indices_count : config_.vertices_count;
 
   raster_state_->vertex_buffer(vbo_translated_->get_ptr(0), 0);
   raster_state_->index_buffer(ibo_translated_->get_ptr(0), 32);

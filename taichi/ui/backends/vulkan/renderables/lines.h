@@ -33,6 +33,9 @@ class Lines final : public Renderable {
 
   void create_graphics_pipeline() final;
 
+  void record_prepass_this_frame_commands(
+      taichi::lang::CommandList *command_list) override;
+
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 

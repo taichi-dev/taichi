@@ -109,8 +109,6 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
 
   auto &offloads = block->statements;
   std::vector<std::unique_ptr<LLVMCompiledTask>> data(offloads.size());
-  using TaskFunc = int32 (*)(void *);
-  std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
       tlctx->fetch_this_thread_struct_module();

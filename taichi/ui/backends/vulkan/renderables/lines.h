@@ -31,7 +31,7 @@ class Lines final : public Renderable {
 
   void update_data(const LinesInfo &info);
 
-  void create_graphics_pipeline();
+  void create_graphics_pipeline() final;
 
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

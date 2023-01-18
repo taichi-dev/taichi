@@ -234,11 +234,11 @@ void Renderable::create_vertex_buffer() {
 
   Device::AllocParams vb_params{buffer_size, false, false,
                                 app_context_->requires_export_sharing(),
-                                AllocUsage::Vertex};
+                                AllocUsage::Storage | AllocUsage::Vertex};
   vertex_buffer_ = app_context_->device().allocate_memory(vb_params);
 
   Device::AllocParams staging_vb_params{buffer_size, true, false, false,
-                                        AllocUsage::Vertex};
+                                        AllocUsage::Storage |AllocUsage::Vertex};
   staging_vertex_buffer_ =
       app_context_->device().allocate_memory(staging_vb_params);
 }

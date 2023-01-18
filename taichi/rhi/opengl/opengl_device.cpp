@@ -717,7 +717,8 @@ void GLDevice::destroy_image(DeviceAllocation handle) {
   }
 }
 
-DeviceAllocation GLDevice::import_image(GLuint texture, GLImageAllocation &&gl_image) {
+DeviceAllocation GLDevice::import_image(GLuint texture,
+                                        GLImageAllocation &&gl_image) {
   image_allocs_[texture] = std::move(gl_image);
 
   DeviceAllocation out{};

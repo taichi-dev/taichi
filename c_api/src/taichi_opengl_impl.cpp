@@ -55,7 +55,8 @@ void ti_export_opengl_memory(TiRuntime runtime,
   OpenglRuntime *runtime2 = static_cast<OpenglRuntime *>((Runtime *)runtime);
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   interop_info->buffer = devalloc.alloc_id;
-  interop_info->size = (GLsizeiptr)runtime2->get_gl().get_devalloc_size(devalloc);
+  interop_info->size =
+      (GLsizeiptr)runtime2->get_gl().get_devalloc_size(devalloc);
   TI_CAPI_TRY_CATCH_END();
 }
 
@@ -76,8 +77,8 @@ TiImage ti_import_opengl_image(TiRuntime runtime,
   gl_image.height = interop_info->height;
   gl_image.depth = interop_info->depth;
   gl_image.external = true;
-  taichi::lang::DeviceAllocation devalloc =
-    runtime2->get_gl().import_image(interop_info->texture, std::move(gl_image));
+  taichi::lang::DeviceAllocation devalloc = runtime2->get_gl().import_image(
+      interop_info->texture, std::move(gl_image));
   out = devalloc2devimg(*runtime2, devalloc);
   TI_CAPI_TRY_CATCH_END();
   return out;

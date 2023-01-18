@@ -96,7 +96,9 @@ void Lines::update_data(const LinesInfo &info) {
   update_ubo(info.color, info.renderable_info.has_per_vertex_color, info.width);
 }
 
-void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color, float line_width) {
+void Lines::update_ubo(glm::vec3 color,
+                       bool use_per_vertex_color,
+                       float line_width) {
   UniformBufferObject ubo{};
   ubo.color = color;
   ubo.line_width = line_width;

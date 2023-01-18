@@ -414,7 +414,7 @@ jobs:
       run:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
-    runs-on: [self-hosted, ventura]
+    runs-on: [self-hosted, m1]
     steps:
       - uses: actions/checkout@v3
         with:

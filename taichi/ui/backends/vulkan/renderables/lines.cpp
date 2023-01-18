@@ -90,45 +90,27 @@ Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
 void Lines::update_data(const LinesInfo &info) {
   Renderable::update_data(info.renderable_info);
 
+  lines_count_ =
+      (indexed_ ? config_.indices_count : config_.vertices_count) / 2;
+
   update_ubo(info.color, info.renderable_info.has_per_vertex_color);
 
   curr_width_ = info.width;
-
-  vbo_translated_.reset();
-  ibo_translated_.reset();
-
-  uint64_t draw_count =
-      (indexed_ ? config_.indices_count : config_.vertices_count) / 2;
-
-  vbo_translated_ = app_context_->device().allocate_memory_unique(
-      {/*size=*/uint64_t((sizeof(float) * 4) * 4 * draw_count),
-       /*host_write=*/false,
-       /*host_read=*/false,
-       /*export_sharing=*/false,
-       /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
-
-  ibo_translated_ = app_context_->device().allocate_memory_unique(
-      {/*size=*/uint64_t(sizeof(int) * 6 * draw_count),
-       /*host_write=*/false,
-       /*host_read=*/false,
-       /*export_sharing=*/false,
-       /*usage=*/AllocUsage::Storage | AllocUsage::Index});
 }
 
 void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
-  uint64_t draw_count =
-      indexed_ ? config_.indices_count : config_.vertices_count;
-
+  TI_INFO("update_ubo");
   UniformBufferObject ubo{};
   ubo.color = color;
   ubo.line_width = curr_width_;
   ubo.per_vertex_color_offset =
-      use_per_vertex_color ? offsetof(Vertex, color) : 0;
-  ubo.vertex_stride = sizeof(Vertex) / sizeof(float);
+      use_per_vertex_color ? offsetof(Vertex, color) / sizeof(float) : 0;
+  ubo.vertex_stride = config_.vbo_size() / sizeof(float);
   ubo.start_vertex = 0;
   ubo.start_index = 0;
-  ubo.num_vertices = draw_count;
+  ubo.num_vertices = lines_count_ * 2;
   ubo.is_indexed = indexed_ ? 1 : 0;
+  ubo.aspect_ratio = app_context_->config.width / app_context_->config.height;
 
   void *mapped{nullptr};
   TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
@@ -147,8 +129,28 @@ void Lines::create_bindings() {
 }
 
 void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
-  uint64_t draw_count =
-      indexed_ ? config_.indices_count : config_.vertices_count;
+  vbo_translated_.reset();
+  ibo_translated_.reset();
+
+  vbo_translated_ = app_context_->device().allocate_memory_unique(
+      {/*size=*/uint64_t(sizeof(glm::vec4) * 4 * lines_count_),
+       /*host_write=*/false,
+       /*host_read=*/false,
+       /*export_sharing=*/false,
+       /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
+
+  ibo_translated_ = app_context_->device().allocate_memory_unique(
+      {/*size=*/uint64_t(sizeof(int) * 6 * lines_count_),
+       /*host_write=*/false,
+       /*host_read=*/false,
+       /*export_sharing=*/false,
+       /*usage=*/AllocUsage::Storage | AllocUsage::Index});
+
+  TI_INFO("Allocation translated vb & ib: {} {}",
+          uint64_t(sizeof(glm::vec4) * 4 * lines_count_),
+          uint64_t(sizeof(int) * 6 * lines_count_));
+  TI_INFO("vb: {}", (void*)vbo_translated_->alloc_id);
+  TI_INFO("ib: {}", (void*)ibo_translated_->alloc_id);
 
   resource_set_->rw_buffer(0, vertex_buffer_.get_ptr(0));
   resource_set_->rw_buffer(1, index_buffer_.get_ptr(0));
@@ -158,19 +160,25 @@ void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
 
   command_list->bind_pipeline(quad_expand_pipeline_.get());
   command_list->bind_shader_resources(resource_set_.get());
-  command_list->dispatch(int(ceil(draw_count / 2.0f / 256.0f)));
+  command_list->dispatch(int(ceil(lines_count_ / 256.0f)));
+  command_list->buffer_barrier(*vbo_translated_);
+  command_list->buffer_barrier(*ibo_translated_);
+
+  TI_INFO("expanding, #l: {}, #wg: {}", lines_count_, int(ceil(lines_count_ / 256.0f)));
 }
 
 void Lines::record_this_frame_commands(CommandList *command_list) {
-  uint64_t draw_count =
-      indexed_ ? config_.indices_count : config_.vertices_count;
-
   raster_state_->vertex_buffer(vbo_translated_->get_ptr(0), 0);
   raster_state_->index_buffer(ibo_translated_->get_ptr(0), 32);
 
+  TI_INFO("vb: {}", (void*)vbo_translated_->alloc_id);
+  TI_INFO("ib: {}", (void*)ibo_translated_->alloc_id);
+
   command_list->bind_pipeline(pipeline_.get());
   command_list->bind_raster_resources(raster_state_.get());
-  command_list->draw_indexed(draw_count, 0, 0);
+  command_list->draw_indexed(lines_count_ * 6, 0, 0);
+
+  TI_INFO("drawing, #l: {}, #prims: {}", lines_count_, lines_count_ * 6);
 
   /*
   if (indexed_) {

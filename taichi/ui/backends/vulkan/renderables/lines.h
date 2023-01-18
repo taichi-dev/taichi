@@ -49,6 +49,7 @@ class Lines final : public Renderable {
     int start_index;
     int num_vertices;
     int is_indexed;
+    float aspect_ratio;
   };
 
   void init_lines(AppContext *app_context,
@@ -62,6 +63,7 @@ class Lines final : public Renderable {
   void create_bindings() override;
 
   float curr_width_;
+  uint64_t lines_count_{0};
 
   std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};
 

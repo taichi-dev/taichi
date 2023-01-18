@@ -153,13 +153,11 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
+  TI_INFO("Draw frame...");
+
   auto stream = app_context_.device().get_graphics_stream();
   auto [cmd_list, res] = stream->new_command_list_unique();
   assert(res == RhiResult::success && "Failed to allocate command list");
-
-  for (int i = 0; i < next_renderable_; ++i) {
-    renderables_[i]->record_prepass_this_frame_commands(cmd_list.get());
-  }
 
   bool color_clear = true;
   std::vector<float> clear_colors = {background_color_[0], background_color_[1],
@@ -169,6 +167,11 @@ void Renderer::draw_frame(Gui *gui) {
   cmd_list->image_transition(image, ImageLayout::undefined,
                              ImageLayout::color_attachment);
   auto depth_image = swap_chain_.depth_allocation();
+
+  for (int i = 0; i < next_renderable_; ++i) {
+    renderables_[i]->record_prepass_this_frame_commands(cmd_list.get());
+  }
+
   cmd_list->begin_renderpass(
       /*x0=*/0, /*y0=*/0, /*x1=*/swap_chain_.width(),
       /*y1=*/swap_chain_.height(), /*num_color_attachments=*/1, &image,

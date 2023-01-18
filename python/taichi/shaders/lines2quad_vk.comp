@@ -43,6 +43,7 @@ layout(binding = 4) uniform UniformBufferObject {
   int start_index;
   int num_vertices;
   int is_indexed;
+  float aspect_ratio;
 }
 ubo;
 
@@ -54,7 +55,7 @@ void main() {
   uint vert0 = ubo.start_vertex;
   uint vert1 = ubo.start_vertex;
   if (ubo.is_indexed != 0) {
-    int index = int(thread_idx) * 2 + ubo.start_index;
+    int index = thread_idx * 2 + ubo.start_index;
     vert0 += ib_in[index];
     vert1 += ib_in[index + 1];
   } else {
@@ -63,25 +64,26 @@ void main() {
   }
 
   vec2 pos0 = vec2(vb_in[vert0 * ubo.vertex_stride],
-                   vb_in[vert0 * ubo.vertex_stride + 1]);
+                   vb_in[vert0 * ubo.vertex_stride + 1]) * 2.0 - 1.0;
   vec4 color0 = vec4(ubo.color, 1.0);
   vec2 pos1 = vec2(vb_in[vert1 * ubo.vertex_stride],
-                   vb_in[vert1 * ubo.vertex_stride + 1]);
+                   vb_in[vert1 * ubo.vertex_stride + 1]) * 2.0 - 1.0;
   vec4 color1 = vec4(ubo.color, 1.0);
 
   if (ubo.per_vertex_color_offset > 0) {
     color0 = vec4(vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset],
                   vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
                   vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
-                  vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 3]);
+                  1.0);
     color1 = vec4(vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset],
                   vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
                   vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
-                  vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 3]);
+                  1.0);
   }
 
-  vec2 dir = normalize(pos1 - pos0);
-  vec2 tangent = vec2(-dir.y, dir.x) * ubo.line_width * 0.5;
+  vec2 aspect_adjust = vec2(ubo.aspect_ratio, 1.0);
+  vec2 dir = normalize((pos1 - pos0) * aspect_adjust);
+  vec2 tangent = vec2(-dir.y, dir.x) * ubo.line_width / aspect_adjust;
 
   vec2 out_pos00 = pos0 + tangent;
   vec2 out_pos01 = pos0 - tangent;

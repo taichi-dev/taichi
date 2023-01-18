@@ -31,13 +31,21 @@ class Lines final : public Renderable {
 
   void update_data(const LinesInfo &info);
 
+  void create_graphics_pipeline();
+
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
  private:
   struct UniformBufferObject {
     alignas(16) glm::vec3 color;
-    int use_per_vertex_color;
+    float line_width;
+    int per_vertex_color_offset;
+    int vertex_stride;
+    int start_vertex;
+    int start_index;
+    int num_vertices;
+    int is_indexed;
   };
 
   void init_lines(AppContext *app_context,
@@ -51,6 +59,11 @@ class Lines final : public Renderable {
   void create_bindings() override;
 
   float curr_width_;
+
+  std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};
+  
+  std::unique_ptr<taichi::lang::DeviceAllocationGuard> vbo_translated_{nullptr};
+  std::unique_ptr<taichi::lang::DeviceAllocationGuard> ibo_translated_{nullptr};
 };
 
 }  // namespace vulkan

@@ -92,7 +92,7 @@ class Renderable {
 
   virtual void create_bindings();
 
-  void create_graphics_pipeline();
+  virtual void create_graphics_pipeline();
 
   void create_vertex_buffer();
 

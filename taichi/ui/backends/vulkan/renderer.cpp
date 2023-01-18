@@ -153,8 +153,6 @@ void Renderer::prepare_for_next_frame() {
 }
 
 void Renderer::draw_frame(Gui *gui) {
-  TI_INFO("Draw frame...");
-
   auto stream = app_context_.device().get_graphics_stream();
   auto [cmd_list, res] = stream->new_command_list_unique();
   assert(res == RhiResult::success && "Failed to allocate command list");

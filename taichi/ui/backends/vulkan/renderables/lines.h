@@ -56,13 +56,12 @@ class Lines final : public Renderable {
                   int vertices_count,
                   int indices_count);
 
-  void update_ubo(glm::vec3 color, bool use_per_vertex_color);
+  void update_ubo(glm::vec3 color, bool use_per_vertex_color, float line_width);
 
   void cleanup() override;
 
   void create_bindings() override;
 
-  float curr_width_;
   uint64_t lines_count_{0};
 
   std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};

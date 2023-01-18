@@ -93,16 +93,13 @@ void Lines::update_data(const LinesInfo &info) {
   lines_count_ =
       (indexed_ ? config_.indices_count : config_.vertices_count) / 2;
 
-  update_ubo(info.color, info.renderable_info.has_per_vertex_color);
-
-  curr_width_ = info.width;
+  update_ubo(info.color, info.renderable_info.has_per_vertex_color, info.width);
 }
 
-void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
-  TI_INFO("update_ubo");
+void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color, float line_width) {
   UniformBufferObject ubo{};
   ubo.color = color;
-  ubo.line_width = curr_width_;
+  ubo.line_width = line_width;
   ubo.per_vertex_color_offset =
       use_per_vertex_color ? offsetof(Vertex, color) / sizeof(float) : 0;
   ubo.vertex_stride = config_.vbo_size() / sizeof(float);
@@ -146,11 +143,8 @@ void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
        /*export_sharing=*/false,
        /*usage=*/AllocUsage::Storage | AllocUsage::Index});
 
-  TI_INFO("Allocation translated vb & ib: {} {}",
-          uint64_t(sizeof(glm::vec4) * 4 * lines_count_),
-          uint64_t(sizeof(int) * 6 * lines_count_));
-  TI_INFO("vb: {}", (void*)vbo_translated_->alloc_id);
-  TI_INFO("ib: {}", (void*)ibo_translated_->alloc_id);
+  raster_state_->vertex_buffer(vbo_translated_->get_ptr(0), 0);
+  raster_state_->index_buffer(ibo_translated_->get_ptr(0), 32);
 
   resource_set_->rw_buffer(0, vertex_buffer_.get_ptr(0));
   resource_set_->rw_buffer(1, index_buffer_.get_ptr(0));
@@ -163,30 +157,12 @@ void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
   command_list->dispatch(int(ceil(lines_count_ / 256.0f)));
   command_list->buffer_barrier(*vbo_translated_);
   command_list->buffer_barrier(*ibo_translated_);
-
-  TI_INFO("expanding, #l: {}, #wg: {}", lines_count_, int(ceil(lines_count_ / 256.0f)));
 }
 
 void Lines::record_this_frame_commands(CommandList *command_list) {
-  raster_state_->vertex_buffer(vbo_translated_->get_ptr(0), 0);
-  raster_state_->index_buffer(ibo_translated_->get_ptr(0), 32);
-
-  TI_INFO("vb: {}", (void*)vbo_translated_->alloc_id);
-  TI_INFO("ib: {}", (void*)ibo_translated_->alloc_id);
-
   command_list->bind_pipeline(pipeline_.get());
   command_list->bind_raster_resources(raster_state_.get());
   command_list->draw_indexed(lines_count_ * 6, 0, 0);
-
-  TI_INFO("drawing, #l: {}, #prims: {}", lines_count_, lines_count_ * 6);
-
-  /*
-  if (indexed_) {
-    command_list->draw_indexed(config_.indices_count, 0, 0);
-  } else {
-    command_list->draw(config_.vertices_count, 0);
-  }
-  */
 }
 
 void Lines::cleanup() {

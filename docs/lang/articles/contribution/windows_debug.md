@@ -4,7 +4,7 @@ sidebar_position: 9
 
 # Debugging on Windows
 
-## Prerequisites:
+## Prerequisites
 
 You should be able to build Taichi from source and already have LLVM and related environment variables configured.
 
@@ -19,13 +19,16 @@ Recommended Visual Studio plugins:
 1. Github Co-pilot
 2. [VS Chromium](https://chromium.github.io/vs-chromium/) for code search. You might need to go to the release page to find the pre-release version needed for VS2022
 
-## Step 1. Turn on msbuild option in our build system:
+## Step 1. Turn on MSBuild option in build system
 
-This is a new feature in setup.py, introduced in [PR #6724](https://github.com/taichi-dev/taichi/pull/6724), which enables building Taichi with MSBuild & MSVC. It generates a Visual Studio Project file to enable coding and seamless debugging through Visual Studio IDE.
-To turn it on, create a new environment variable (Type in windows search: environment variable, or set it temporarily with `$Env:` in PowerShell) called TAICHI_USE_MSBUILD, and set its value to 1 or ON.
-After cleaning up the _skbuild folder (in case the previously used generator is Ninja), run `python setup.py develop` and build Taichi from the source.
+This is a new feature in setup.py, introduced in [PR #6724](https://github.com/taichi-dev/taichi/pull/6724), which enables building Taichi with MSBuild and MSVC. It generates a Visual Studio project file to enable coding and seamless debugging through Visual Studio IDE.
+
+To activate the feature, create a new environment variable called TAICHI_USE_MSBUILD by typing "environment variable" in Windows Search or setting it temporarily with `$Env:` in PowerShell. Then, set its value to 1 or ON.
+
+After cleaning up the _skbuild folder, if the previously used generator is Ninja, run `python setup.py develop` and build Taichi from the source.
 
 ## Step 2. Navigate to the generated Visual Studio Project file
+
 Go to the build folder, which is `_skbuild\win-amd64-3.9\cmake-build` in the author's case, and double click `taichi.sln`. You can also open this SLN solution file from Visual Studio. This should open Visual Studio IDE with the setup for Taichi.
 The following image shows a possible layout after Visual Studio is launched. The layout is open to reconfiguration.
 

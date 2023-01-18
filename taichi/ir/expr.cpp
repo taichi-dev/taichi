@@ -14,7 +14,7 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
-void Expr::type_check(CompileConfig *config) {
+void Expr::type_check(const CompileConfig *config) {
   expr->type_check(config);
 }
 

@@ -209,7 +209,8 @@ class TaichiMain:
             console.print(content)
             self._exec_python_file(script)
 
-        while gui.running:
+        index = None
+        while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):
             gui.set_image(gallery_image)
             mou_x, mou_y = gui.get_cursor_pos()
             gui.get_event(ti.GUI.PRESS)
@@ -223,7 +224,8 @@ class TaichiMain:
 
             gui.show()
 
-        on_mouse_click_callback(examples[index])
+        if index is not None:
+            on_mouse_click_callback(examples[index])
 
     @register
     def example(self, arguments: list = sys.argv[2:]):

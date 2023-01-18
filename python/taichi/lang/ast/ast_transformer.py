@@ -573,7 +573,7 @@ class ASTTransformer(Builder):
             if node.returns is not None:
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
-            impl.get_runtime().prog.finalize_rets()
+            impl.get_runtime().compiling_callable.finalize_rets()
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -729,12 +729,11 @@ class ASTTransformer(Builder):
                                     ctx.func.return_type).ptr))
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
-                if isinstance(values, Expr) and values.ptr.is_tensor():
-                    values = ctx.ast_builder.expand_exprs([values.ptr])
-                else:
-                    assert isinstance(values, Matrix)
+                if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
                         not is_vector(values) else iter(values.to_list())
+                else:
+                    values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([
                         ti_ops.cast(exp, ctx.func.return_type.dtype)
@@ -841,7 +840,7 @@ class ASTTransformer(Builder):
                 attr_len = len(node.attr)
                 if attr_len == 1:
                     node.ptr = Expr(impl.get_runtime(
-                    ).prog.current_ast_builder().expr_subscript(
+                    ).compiling_callable.ast_builder().expr_subscript(
                         node.value.ptr.ptr,
                         make_expr_group(keygroup.index(node.attr)),
                         impl.get_runtime().get_current_src_info()))

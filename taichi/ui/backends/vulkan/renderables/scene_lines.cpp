@@ -61,7 +61,6 @@ void SceneLines::update_ubo(const SceneLinesInfo &info, const Scene &scene) {
 void SceneLines::create_bindings() {
   Renderable::create_bindings();
   resource_set_->buffer(0, uniform_buffer_);
-  resource_set_->rw_buffer(1, storage_buffer_);
 }
 
 void SceneLines::record_this_frame_commands(CommandList *command_list) {

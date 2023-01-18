@@ -274,6 +274,11 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, windows, cuda, OpenGL]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: |
+          git config --system core.longpaths true
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -378,5 +383,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body_path: CHANGELOG.md
-          generate_release_notes: true
           tag_name: ${{ github.event.inputs.version }}

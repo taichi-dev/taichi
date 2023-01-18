@@ -25,12 +25,10 @@ target_link_libraries(${EXAMPLES_NAME} PRIVATE taichi_core)
 if (TI_WITH_METAL)
   target_link_libraries(${EXAMPLES_NAME} PRIVATE
     metal_program_impl
-    metal_runtime
-    metal_codegen
   )
 endif()
 
-if (TI_WITH_VULKAN OR TI_WITH_OPENGL)
+if (TI_WITH_VULKAN OR TI_WITH_OPENGL OR TI_WITH_METAL)
   target_link_libraries(${EXAMPLES_NAME} PRIVATE gfx_runtime)
 endif()
 
@@ -40,6 +38,10 @@ endif()
 
 if (TI_WITH_OPENGL)
   target_link_libraries(${EXAMPLES_NAME} PRIVATE opengl_rhi)
+endif()
+
+if (TI_WITH_METAL)
+  target_link_libraries(${EXAMPLES_NAME} PRIVATE metal_rhi)
 endif()
 
 # TODO 4832: be specific on the header dependencies here, e.g., ir

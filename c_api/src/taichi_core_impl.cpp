@@ -2,6 +2,7 @@
 #include "taichi_opengl_impl.h"
 #include "taichi_vulkan_impl.h"
 #include "taichi_llvm_impl.h"
+#include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/common/virtual_dir.h"
@@ -47,6 +48,14 @@ bool is_arm64_available() {
 #else
   return false;
 #endif
+}
+
+bool is_metal_available() {
+#if defined(__APPLE__) && defined(TI_WITH_METAL)
+  return taichi::lang::metal::is_metal_api_available();
+#else
+  return false;
+#endif  // __APPLE__
 }
 
 struct ErrorCache {
@@ -155,8 +164,8 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     if (is_vulkan_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_VULKAN);
     }
-    if (is_opengl_available()) {
-      AVAILABLE_ARCHS.emplace_back(TI_ARCH_OPENGL);
+    if (is_metal_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_METAL);
     }
     if (is_cuda_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_CUDA);
@@ -166,6 +175,9 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
     }
     if (is_arm64_available()) {
       AVAILABLE_ARCHS.emplace_back(TI_ARCH_ARM64);
+    }
+    if (is_opengl_available()) {
+      AVAILABLE_ARCHS.emplace_back(TI_ARCH_OPENGL);
     }
   }
 
@@ -178,19 +190,24 @@ void ti_get_available_archs(uint32_t *arch_count, TiArch *archs) {
   }
 }
 
-TiError ti_get_last_error(uint64_t message_size, char *message) {
+TiError ti_get_last_error(uint64_t *message_size, char *message) {
   TiError out = TI_ERROR_INVALID_STATE;
   TI_CAPI_TRY_CATCH_BEGIN();
+  out = thread_error_cache.error;
+
   // Emit message only if the output buffer is property provided.
-  if (message_size > 0 && message != nullptr) {
-    size_t n = thread_error_cache.message.size();
-    if (n >= message_size) {
-      n = message_size - 1;  // -1 for the byte of `\0`.
-    }
+  if (message_size == nullptr) {
+    return out;
+  }
+  size_t buffer_size = *message_size;
+  *message_size = thread_error_cache.message.size() + 1;
+
+  if (buffer_size > 0 && message != nullptr) {
+    // -1 for the byte of `\0`.
+    size_t n = std::min(thread_error_cache.message.size(), buffer_size - 1);
     std::memcpy(message, thread_error_cache.message.data(), n);
     message[n] = '\0';
   }
-  out = thread_error_cache.error;
   TI_CAPI_TRY_CATCH_END();
   return out;
 }
@@ -257,6 +274,13 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
       break;
     }
 #endif  // TI_WITH_LLVM
+#ifdef TI_WITH_METAL
+    case TI_ARCH_METAL: {
+      out = (TiRuntime)(static_cast<Runtime *>(
+          new capi::MetalRuntime(taichi::Arch::metal)));
+      break;
+    }
+#endif  // TI_WITH_METAL
     default: {
       TI_CAPI_NOT_SUPPORTED(arch);
       return TI_NULL_HANDLE;
@@ -380,7 +404,8 @@ void *ti_map_memory(TiRuntime runtime, TiMemory devmem) {
   Runtime *runtime2 = (Runtime *)runtime;
   TI_ASSERT(runtime2->get().map(devmem2devalloc(*runtime2, devmem), &out) ==
                 taichi::lang::RhiResult::success &&
-            "RHI map memory failed");
+            "RHI map memory failed: "
+            "Mapping Memory without VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT set");
   TI_CAPI_TRY_CATCH_END();
   return out;
 }
@@ -709,7 +734,16 @@ void ti_launch_kernel(TiRuntime runtime,
         break;
       }
       case TI_ARGUMENT_TYPE_TEXTURE: {
-        ti_set_last_error(TI_ERROR_NOT_SUPPORTED, "TI_ARGUMENT_TYPE_TEXTURE");
+        TI_CAPI_ARGUMENT_NULL(args[i].value.texture.image);
+        std::unique_ptr<taichi::lang::DeviceAllocation> devalloc =
+            std::make_unique<taichi::lang::DeviceAllocation>(
+                devimg2devalloc(runtime2, arg.value.texture.image));
+        int width = arg.value.texture.extent.width;
+        int height = arg.value.texture.extent.height;
+        int depth = arg.value.texture.extent.depth;
+        runtime_context.set_arg_rw_texture(i, (intptr_t)devalloc.get(),
+                                           {width, height, depth});
+        devallocs.emplace_back(std::move(devalloc));
         break;
       }
       default: {

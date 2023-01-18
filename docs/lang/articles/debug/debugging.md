@@ -76,9 +76,6 @@ To enable printing on Vulkan, please
 **Printing is not supported on the macOS Vulkan backend.**
 :::
 
-:::note
-In Graphical Python Shells like IDLE and Jupyter Notebook, `print` does not work. This is because these backends print to the console rather than the GUI.
-:::
 
 ### Comma-separated strings only
 

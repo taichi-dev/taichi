@@ -3,8 +3,25 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
+TEST_F(CapiTest, DryRunGetVersion) {
+  ti::Version version = ti::get_version();
+  TI_ASSERT(version.major() == 1);
+}
+
 TEST_F(CapiTest, DryRunAvailableArchs) {
   std::vector<TiArch> archs = ti::get_available_archs();
+}
+TEST_F(CapiTest, GetAvailableArchsWithFilter) {
+  std::vector<TiArch> expect_archs = ti::get_available_archs();
+  expect_archs.pop_back();
+
+  std::vector<TiArch> actual_archs = ti::get_available_archs(expect_archs);
+
+  TI_ASSERT(actual_archs.size() == expect_archs.size());
+
+  for (size_t i = 0; i < actual_archs.size(); ++i) {
+    TI_ASSERT(actual_archs.at(i) == expect_archs.at(i));
+  }
 }
 
 TEST_F(CapiTest, DryRunRuntime) {
@@ -136,18 +153,10 @@ TEST_F(CapiTest, FailMapDeviceOnlyMemory) {
     ti::Memory mem = runtime.allocate_memory(100);
     mem.map();
 
-#ifdef __APPLE__
-    // Vulkan Validation aren't supported on MacOS platform
-    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "Assertion failure",
-                        /*reset_error=*/false);
-    EXPECT_TAICHI_ERROR(TI_ERROR_INVALID_STATE, "RHI map memory failed",
-                        /*reset_error=*/true);
-#else
     EXPECT_TAICHI_ERROR(
         TI_ERROR_INVALID_STATE,
         "Mapping Memory without VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT set",
         /*reset_error=*/true);
-#endif
   }
 }
 

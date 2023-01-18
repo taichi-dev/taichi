@@ -73,8 +73,7 @@ the remaining expressions will be evaluated to Taichi values at runtime.
 A Taichi value has a Taichi type, which is one of the following:
 - A primitive type, as described in [Type system](../type_system/type.md)
 - A compound type, as described in [Type system](../type_system/type.md)
-- An ndarray type, as introduced in [Run a Taichi Program using Ndarray on
-Android](../deployment/ndarray_android.md)
+- An ndarray type, as introduced in [Tutorial: Run Taichi programs in C++ application](../deployment/ndarray_android.md)
 - A sparse matrix builder type, as introduced in [Sparse
 Matrix](../math/sparse_matrix.md)
 
@@ -251,12 +250,6 @@ Python values, and the subscription is evaluated at compile time following
 Otherwise, `primary` has a Taichi type. All Taichi types excluding primitive
 types support subscriptions. You can refer to documentation of these types
 for subscription usage.
-
-:::note
-When `primary` has a Taichi matrix type, all expressions in `expression_list`
-are required to be evaluated to Python values. This restriction can be got rid
-of by setting `ti.init(dynamic_index=True)`.
-:::
 
 #### Slicings
 

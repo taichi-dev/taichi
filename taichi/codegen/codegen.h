@@ -42,11 +42,13 @@ class KernelCodeGen {
   IRNode *ir;
 
  public:
-  explicit KernelCodeGen(Kernel *kernel);
+  explicit KernelCodeGen(const CompileConfig *compile_config, Kernel *kernel);
 
   virtual ~KernelCodeGen() = default;
 
-  static std::unique_ptr<KernelCodeGen> create(Arch arch, Kernel *kernel);
+  static std::unique_ptr<KernelCodeGen> create(
+      const CompileConfig *compile_config,
+      Kernel *kernel);
 
   virtual FunctionType compile_to_function() = 0;
   virtual bool supports_offline_cache() const {
@@ -57,6 +59,7 @@ class KernelCodeGen {
   virtual LLVMCompiledKernel compile_kernel_to_module();
 
   virtual LLVMCompiledTask compile_task(
+      const CompileConfig *config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr){TI_NOT_IMPLEMENTED}
 
@@ -65,6 +68,13 @@ class KernelCodeGen {
   void cache_kernel(const std::string &kernel_key,
                     const LLVMCompiledKernel &data);
 #endif
+ protected:
+  const CompileConfig *get_compile_config() const {
+    return compile_config_;
+  }
+
+ private:
+  const CompileConfig *compile_config_{nullptr};
 };
 
 #ifdef TI_WITH_LLVM

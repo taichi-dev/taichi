@@ -1,5 +1,6 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <list>
@@ -11,12 +12,47 @@
 
 namespace ti {
 
+struct Version {
+  uint32_t version;
+
+  inline uint32_t major() const {
+    return version / 1000000;
+  }
+  inline uint32_t minor() const {
+    return (version / 1000) % 1000;
+  }
+  inline uint32_t patch() const {
+    return version % 1000;
+  }
+
+  operator uint32_t() const {
+    return version;
+  }
+};
+inline Version get_version() {
+  Version out{};
+  out.version = ti_get_version();
+  return out;
+}
+
 inline std::vector<TiArch> get_available_archs() {
   uint32_t narch = 0;
   ti_get_available_archs(&narch, nullptr);
   std::vector<TiArch> archs(narch);
   ti_get_available_archs(&narch, archs.data());
   return archs;
+}
+inline std::vector<TiArch> get_available_archs(
+    const std::vector<TiArch> &expect_archs) {
+  std::vector<TiArch> actual_archs = get_available_archs();
+  std::vector<TiArch> out_archs;
+  for (TiArch arch : actual_archs) {
+    auto it = std::find(expect_archs.begin(), expect_archs.end(), arch);
+    if (it != expect_archs.end()) {
+      out_archs.emplace_back(arch);
+    }
+  }
+  return out_archs;
 }
 inline bool is_arch_available(TiArch arch) {
   std::vector<TiArch> archs = get_available_archs();
@@ -26,6 +62,37 @@ inline bool is_arch_available(TiArch arch) {
     }
   }
   return false;
+}
+
+struct Error {
+  TiError error;
+  std::string message;
+};
+
+inline Error get_last_error() {
+  uint64_t message_size = 0;
+  ti_get_last_error(&message_size, nullptr);
+  std::string message(message_size, '\0');
+  TiError error = ti_get_last_error(&message_size, (char *)message.data());
+  message.resize(message.size() - 1);
+  return Error{error, message};
+}
+inline void check_last_error() {
+#ifdef TI_WITH_EXCEPTIONS
+  Error error = get_last_error();
+  if (error != TI_ERROR_SUCCESS) {
+    throw std::runtime_error(error.message);
+  }
+#endif  // TI_WITH_EXCEPTIONS
+}
+inline void set_last_error(TiError error) {
+  ti_set_last_error(error, nullptr);
+}
+inline void set_last_error(TiError error, const std::string &message) {
+  ti_set_last_error(error, message.c_str());
+}
+inline void set_last_error(const Error &error) {
+  set_last_error(error.error, error.message);
 }
 
 // Token type for half-precision floats.
@@ -75,6 +142,13 @@ struct templ2dtype<double> {
   static const TiDataType value = TI_DATA_TYPE_F64;
 };
 
+template <typename T, typename U>
+T exchange(T &storage, U &&value) {
+  T out = std::move(storage);
+  storage = (T)std::move(value);
+  return out;
+}
+
 template <typename THandle>
 THandle move_handle(THandle &handle) {
   THandle out = std::move(handle);
@@ -83,6 +157,44 @@ THandle move_handle(THandle &handle) {
 }
 
 }  // namespace detail
+
+class MemorySlice {
+  TiRuntime runtime_{TI_NULL_HANDLE};
+  TiMemorySlice slice_{};
+
+ public:
+  MemorySlice() = default;
+  MemorySlice(TiRuntime runtime, const TiMemorySlice &slice)
+      : runtime_(runtime), slice_(slice) {
+  }
+  MemorySlice(const MemorySlice &) = default;
+  MemorySlice(MemorySlice &&) = default;
+  MemorySlice &operator=(const MemorySlice &) = default;
+  MemorySlice &operator=(MemorySlice &&) = default;
+
+  inline void copy_to(const MemorySlice &dst) {
+    if (runtime_ != dst.runtime_) {
+      ti_set_last_error(
+          TI_ERROR_INVALID_ARGUMENT,
+          "cannot copy device memory between different runtime instances");
+      return;
+    }
+    if (slice_.size != dst.slice_.size) {
+      ti_set_last_error(
+          TI_ERROR_INVALID_ARGUMENT,
+          "copy source and destination slice must have the same size");
+      return;
+    }
+    ti_copy_memory_device_to_device(runtime_, &dst.slice_, &slice_);
+  }
+
+  inline const TiMemorySlice &slice() const {
+    return slice_;
+  }
+  inline operator const TiMemorySlice &() const {
+    return slice_;
+  }
+};
 
 class Memory {
   TiRuntime runtime_{TI_NULL_HANDLE};
@@ -108,8 +220,8 @@ class Memory {
   Memory(Memory &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         memory_(detail::move_handle(b.memory_)),
-        size_(std::exchange(b.size_, 0)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        size_(detail::exchange(b.size_, 0)),
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Memory(TiRuntime runtime, TiMemory memory, size_t size, bool should_destroy)
       : runtime_(runtime),
@@ -126,8 +238,8 @@ class Memory {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     memory_ = detail::move_handle(b.memory_);
-    size_ = std::exchange(b.size_, 0);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    size_ = detail::exchange(b.size_, 0);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -153,7 +265,7 @@ class Memory {
     unmap();
   }
 
-  TiMemorySlice slice(size_t offset, size_t size) const {
+  MemorySlice slice(size_t offset, size_t size) const {
     if (offset + size > size_) {
       ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
       return {};
@@ -162,9 +274,9 @@ class Memory {
     slice.memory = memory_;
     slice.offset = offset;
     slice.size = size;
-    return slice;
+    return MemorySlice(runtime_, slice);
   }
-  TiMemorySlice slice() const {
+  MemorySlice slice() const {
     return slice(0, size_);
   }
 
@@ -199,9 +311,9 @@ class NdArray {
   NdArray(const NdArray<T> &) = delete;
   NdArray(NdArray<T> &&b)
       : memory_(std::move(b.memory_)),
-        ndarray_(std::exchange(b.ndarray_, {})),
-        elem_count_(std::exchange(b.elem_count_, 1)),
-        scalar_count_(std::exchange(b.scalar_count_, 1)) {
+        ndarray_(detail::exchange(b.ndarray_, TiNdArray{})),
+        elem_count_(detail::exchange(b.elem_count_, 1)),
+        scalar_count_(detail::exchange(b.scalar_count_, 1)) {
   }
   NdArray(Memory &&memory, const TiNdArray &ndarray)
       : memory_(std::move(memory)),
@@ -227,9 +339,9 @@ class NdArray {
   NdArray<T> &operator=(NdArray<T> &&b) {
     destroy();
     memory_ = std::move(b.memory_);
-    ndarray_ = std::exchange(b.ndarray_, {});
-    elem_count_ = std::exchange(b.elem_count_, 1);
-    scalar_count_ = std::exchange(b.scalar_count_, 1);
+    ndarray_ = detail::exchange(b.ndarray_, TiNdArray{});
+    elem_count_ = detail::exchange(b.elem_count_, 1);
+    scalar_count_ = detail::exchange(b.scalar_count_, 1);
     return *this;
   }
 
@@ -286,10 +398,10 @@ class NdArray {
     write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
-  TiMemorySlice slice(size_t offset, size_t size) const {
+  MemorySlice slice(size_t offset, size_t size) const {
     return memory_.slice(offset, size);
   }
-  TiMemorySlice slice() const {
+  MemorySlice slice() const {
     return memory_.slice();
   }
 
@@ -336,7 +448,7 @@ class Image {
   Image(Image &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         image_(detail::move_handle(b.image_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Image(TiRuntime runtime, TiImage image, bool should_destroy)
       : runtime_(runtime), image_(image), should_destroy_(should_destroy) {
@@ -350,7 +462,7 @@ class Image {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     image_ = detail::move_handle(b.image_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -648,7 +760,7 @@ class AotModule {
   AotModule(AotModule &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         aot_module_(detail::move_handle(b.aot_module_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   AotModule(TiRuntime runtime, TiAotModule aot_module, bool should_destroy)
       : runtime_(runtime),
@@ -663,7 +775,7 @@ class AotModule {
   AotModule &operator=(AotModule &&b) {
     runtime_ = detail::move_handle(b.runtime_);
     aot_module_ = detail::move_handle(b.aot_module_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -879,9 +991,9 @@ class Runtime {
   }
   Runtime(const Runtime &) = delete;
   Runtime(Runtime &&b)
-      : arch_(std::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
+      : arch_(detail::exchange(b.arch_, TI_ARCH_MAX_ENUM)),
         runtime_(detail::move_handle(b.runtime_)),
-        should_destroy_(std::exchange(b.should_destroy_, false)) {
+        should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
   Runtime(TiArch arch, uint32_t device_index = 0)
       : arch_(arch),
@@ -897,9 +1009,9 @@ class Runtime {
 
   Runtime &operator=(const Runtime &) = delete;
   Runtime &operator=(Runtime &&b) {
-    arch_ = std::exchange(b.arch_, TI_ARCH_MAX_ENUM);
+    arch_ = detail::exchange(b.arch_, TI_ARCH_MAX_ENUM);
     runtime_ = detail::move_handle(b.runtime_);
-    should_destroy_ = std::exchange(b.should_destroy_, false);
+    should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
@@ -923,9 +1035,11 @@ class Runtime {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);
   }
-  Memory allocate_memory(size_t size) {
+  Memory allocate_memory(size_t size, bool host_access = false) {
     TiMemoryAllocateInfo allocate_info{};
     allocate_info.size = size;
+    allocate_info.host_read = host_access;
+    allocate_info.host_write = host_access;
     allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
     return allocate_memory(allocate_info);
   }
@@ -949,12 +1063,7 @@ class Runtime {
     ndarray.elem_shape.dim_count = elem_shape.size();
     ndarray.elem_type = detail::templ2dtype<T>::value;
 
-    TiMemoryAllocateInfo allocate_info{};
-    allocate_info.size = size;
-    allocate_info.host_read = host_access;
-    allocate_info.host_write = host_access;
-    allocate_info.usage = TI_MEMORY_USAGE_STORAGE_BIT;
-    Memory memory = allocate_memory(allocate_info);
+    ti::Memory memory = allocate_memory(size, host_access);
     ndarray.memory = memory;
     return NdArray<T>(std::move(memory), ndarray);
   }
@@ -1007,9 +1116,10 @@ class Runtime {
     return create_aot_module(tcm.data(), tcm.size());
   }
 
-  void copy_memory_device_to_device(const TiMemorySlice &dst_memory,
-                                    const TiMemorySlice &src_memory) {
-    ti_copy_memory_device_to_device(runtime_, &dst_memory, &src_memory);
+  void copy_memory_device_to_device(const MemorySlice &dst_memory,
+                                    const MemorySlice &src_memory) {
+    ti_copy_memory_device_to_device(runtime_, &dst_memory.slice(),
+                                    &src_memory.slice());
   }
   void copy_image_device_to_device(const TiImageSlice &dst_texture,
                                    const TiImageSlice &src_texture) {

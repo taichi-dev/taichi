@@ -2,369 +2,274 @@
 sidebar_position: 1
 ---
 
-# Run a Taichi Program Using Ndarray on Android
+# Tutorial: Run Taichi programs in C++ applications
 
-Taichi's JIT (Just In Time) module compiles a Taichi kernel to the compute shaders according to the specified backend (`arch` in `ti.init()`) and executes these shaders in Taichi's JIT runtime. Taichi's AOT (Ahead of Time) module, however, builds and saves the necessary compute shaders so that you can load and execute these shaders in your own runtime without a Python environment.
+Taichi makes it easy to write high-performance programs with efficient parallelism, but in many applications we cannot simply deploy the Python scripts. Taichi offers a runtime library (TiRT) with a C interface so that your Taichi kernels can be launched in any native application. In this tutorial, we'll walk through the steps to deploy a Taichi program in a C++ application.
 
-Taking a simulation of celestial bodies' orbits as an example, this tutorial walks you through the process of running a Taichi program using Ndarray on Android.
+## Overview
 
-> [Taichi's AOT (Ahead Of Time) module](https://github.com/taichi-dev/taichi/issues/3642) is currently a proof of concept under development and subject to change in the future.
+![AOT E2E](../static/assets/aot_tutorial.png)
 
-## A definition of Ndarray
+In Python, when you call a function decorated with `@ti.kernel`, Taichi immediately compiles the kernel and sends it to the device for execution. This is called just-in-time (JIT) compilation. But generally speaking, we don't want to compile the kernels on a mobile phone, or to expose the source code to the users. For this Taichi introduced ahead-of-time (AOT) compilation so that you can compile kernels on a development machine, and launch them on user devices via TiRT.
 
-Taichi provides a data container called Ndarray.  An Ndarray is a multidimensional container of elements of the same type and size; an element in an Ndarray is virtually a scalar or a tensor.
+1. Compile Taichi kernels from Python and save the artifacts.
+2. Load AOT modules with TiRT and launch them in your applications.
 
-### Ndarray shape
+Although this tutorial only demonstrates integrating Taichi in a C++ application, the C interface allows you to integrate TiRT with many other programming languages including C/C++, Swift, Rust, C# (via P/Invoke) and Java (via JNI).
 
-Ndarray shape defines the Ndarray's layout; element shape defines the element's layout. For example:
+### 1. Write kernels for AOT compilation
 
-- An Ndarray with an Ndarray shape of [2, 1024] and an element shape of [] is an array of 2 x 1,024 = 2,048 scalars.
-- An Ndarray with an Ndarray shape of [128, 128] and an element shape of [2, 4] is an array of  128 x 128 = 16,384 2 x 4 matrices.
+A Taichi kernel describes two aspects of a computer program: The computation itself, and the data it operates on. Because we don't know what kind of data will be fed into the kernel before execution, we have to clearly annotate the argument types for the AOT compiler.
 
-### Ndarray dimension
+Taichi supports the following argument types:
 
-The dimension here refers to the number of dimensions of an Ndarray. For example:
+- `ti.i32`
+- `ti.f32`
+- `ti.Ndarray`
 
-- The dimension of an Ndarray with a shape of [1, 2, 3] is three.
-- The dimension of an Ndarray with a shape of [500] is one.
+Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It can be multidimensional and is laid out continuously in memory. If you have experienced the multidimensional arrays in C++, You can treat it as a nested array type like `float[6][14]`.
 
-### Benefit of Ndarray
-
-Each Ndarray has a fixed dimension but gives you the flexibility of changing its shape in accordance with its dimension.
-
-Unlike a field's shape, which requires you to rewrite and recompile your Taichi program once it is changed, an Ndarray's shape can be *dynamically* changed without the need to recompile.
-
-Taking the simulation of celestial bodies' orbits as an example, suppose you wish to double the number of your celestial bodies to 2,000:
-
-- With Taichi field, you have to compile twice;
-- With Ndarray, all you need to do is to update your runtime program.
-
-## Run a Taichi program using Ndarray on Android
-
-The following section walks you through the process of running a Taichi program using Ndarray on Android.
-
-1. [Generate necessary compute shaders](#generate-necessary-compute-shaders)
-2. [Parse the generated JSON file](#parse-the-generated-json-file)
-3. [Prepare SSBO and shape information](#prepare-ssbo-and-shape-information)
-4. [Prepare rendering shaders](#prepare-rendering-shaders)
-5. [Execute all shaders](#execute-all-shaders)
-
-:::note
-
-From Step 2, you are required to come up with your own runtime program. We provide an [example Java runtime program for Android](https://github.com/taichi-dev/taichi-aot-demo/blob/master/nbody_ndarray/java_runtime/NbodyNdarray.java) for your reference, but you may need to adapt these codes for your platform and programming language.
-
-:::
-
-### Generate necessary compute shaders
-
-The following Python script defines a Taichi AOT module for generating and saving the necessary compute shaders (GLES shaders in this case) based on the chosen backend (OpenGL).
-
-> Taichi kernels and compute shaders are *not* one-to-one mapping. Each Taichi kernel can generate multiple compute shaders, the number *usually* comparable to that of the loops in the kernel.
-
-
+To give an example, the following `init` kernel accepts an ndarray argument called `x`. We want to inform the compiler that the ndarray stores floating-point data and it only has a single dimension to index, hence `dtype` is `ti.f32`, and `ndim` is set to 1. When executed, every element in `x` will be set to 0.
 
 ```python
-import taichi as ti
-
-ti.init(arch=ti.gles, allow_nv_shader_extension=False)
-
-# Define constants for computation
-G = 1
-PI = 3.141592653
-N = 1000
-m = 5
-galaxy_size = 0.4
-planet_radius = 1
-init_vel = 120
-h = 1e-5
-substepping = 10
-
-# Define Taichi kernels
 @ti.kernel
-def initialize(pos: ti.types.ndarray(element_dim=1), vel: ti.types.ndarray(element_dim=1)):
-    center=ti.Vector([0.5, 0.5])
-    for i in pos:
-        theta = ti.random() * 2 * PI
-        r = (ti.sqrt(ti.random()) * 0.7 + 0.3) * galaxy_size
-        offset = r * ti.Vector([ti.cos(theta), ti.sin(theta)])
-        pos[i] = center+offset
-        vel[i] = [-offset.y, offset.x]
-        vel[i] *= init_vel
+def init(x: ti.types.ndarray(dtype=ti.f32, ndim=1)):
+    for i in x:
+        x[i] = 0
+```
 
+After initialization, in kernel `add_base`, we want to add a floating-point number `base` to those in `x` in each frame.
+
+```python
 @ti.kernel
-def compute_force(pos: ti.types.ndarray(element_dim=1), vel: ti.types.ndarray(element_dim=1), force: ti.types.ndarray(element_dim=1)):
-    for i in pos:
-        force[i] = ti.Vector([0.0, 0.0])
-    for i in pos:
-        p = pos[i]
-        for j in pos:
-            if i != j:
-                diff = p-pos[j]
-                r = diff.norm(1e-5)
-                f = -G * m * m * (1.0/r)**3 * diff
-                force[i] += f
-    dt = h/substepping
-    for i in pos:
-        vel[i].atomic_add(dt*force[i]/m)
-        pos[i].atomic_add(dt*vel[i])
-
-# Define Ndarrays
-pos = ti.Vector.ndarray(2, ti.f32, N)
-vel = ti.Vector.ndarray(2, ti.f32, N)
-force = ti.Vector.ndarray(2, ti.f32, N)
-
-# Run the AOT module builder
-def aot():
-    m = ti.aot.Module(ti.opengl)
-    m.add_kernel(initialize, (pos, vel))
-    m.add_kernel(compute_force, (pos, vel, force))
-
-    dir_name = 'nbody_aot'
-    m.save(dir_name, '')
-aot()
+def add_base(x: ti.types.ndarray(ndim=1), base: ti.f32):
+    for i in range(x.shape[0]):
+        x[i] += base
 ```
 
-**In line 3, you initialize Taichi:**
-
-1. Set `arch=ti.gles` to generate GLES compute shaders for Android.
-2. Set `allow_nv_shader_extension` to `False` to prevent the generated GLES compute shaders from using Nvidia GL extensions on Android.
-
-> This setting is because Android supports GLES APIs but GLES does not support `NV_SHADER_EXTENSION`.
-
-**In line 50-58, you define and build the Taichi AOT module:**
-
-1. Create a Taichi AOT module, specifying its backend as OpenGL:
+You can also create an ndarray and launch the kernels in the same script to ensure they do everything you expect.
 
 ```python
-     m = ti.aot.Module(ti.opengl)
+x = ti.ndarray(ti.f32, shape=(8192))
+init(x)
+
+N_ITER = 50
+for _ in range(N_ITER):
+    add_base(x, 0.1)
 ```
 
-2. Add the required kernels `initialize` and `compute_force`, each with its own Ndarrays, to the module:
+### 2. Compile and save the artifacts
+
+Now let's compile the kernels into an AOT module.
+
+A compiled taichi kernel consists of all compiled artifacts when compiling a `ti.kernel` with the types of its parameters. Take kernel `add_base` as an example, argument `base`'s type is `ti.f32`. Its type information is used to compile the kernel and thus encoded in the compiled artifact, while it can be called with any floating point number at runtime.
 
 ```python
-m.add_kernel(initialize, (pos, vel))
-
-m.add_kernel(compute_force, (pos, vel, force))
+mod = ti.aot.Module(ti.vulkan)
+mod.add_kernel(init, template_args={'x': x})
+mod.add_kernel(add_base, template_args={'x': x})
+mod.save(target_dir)
 ```
 
-3. Specify a folder under your current working directory for holding the files that the module generates:
+`ti.types.ndarray` is a bit more complicated since it requires both `dtype` and `ndim` as its type information. To compile Taichi kernels with `ti.types.ndarray` arguments, you'll have to supply that information either directly in the type annotation, or provide an example input via `template_args`.
 
-```python
-dir_name = 'nbody_aot'
+Now that we're done with Kernel compilation, let's take a look at the generated artifacts and its layout:
 
-m.save(dir_name, '')
+```text
+// FUTURE WORK: This is just a zip. Replace tcb with readable JSON
+// Structure of compiled artifacts
+.
+├── demo
+│   ├── add_base_c78_0_k0001_vk_0_t00.spv
+│   ├── init_c76_0_k0000_vk_0_t00.spv
+│   ├── metadata.json
+│   └── metadata.tcb
+└── demo.py
 ```
 
-*The necessary compute shaders together with a JSON file appear under the specified directory.*
+### 3. Get Taichi Runtime Library (TiRT)
 
-### Parse the generated JSON file
 
-:::note
+![TiRT](../static/assets/runtime.png)
 
-From this section, you are required to come up with your own runtime program. We provide an [example Java runtime program for Android](https://github.com/taichi-dev/taichi-aot-demo/blob/master/nbody_ndarray/java_runtime/NbodyNdarray.java) for your reference, but you may need to adapt these codes for your platform and programming language.
+Alright, you are now done with Python and well prepared to build your application! The compiled artifacts we just saved and TiRT are all you need.
 
-:::
+For now TiRT is shipped along with `taichi-nightly` Python wheels. Be aware that there's no strong version compatibility enforced yet, so it's highly recommended to use the python taichi and TiRT built from exactly the same commit.
 
-After generating the necessary GLES compute shaders, you need to write your runtime program to parse the following JSON file to some data structures. The JSON file contains all the necessary information for executing the compute shaders. Organized by Taichi kernel, it provides a clearer image of the compute shaders and Ndarrays in each kernel. Let's take a closer look at the structure.
+TODO: We'll figure out a proper way to release it once the versioning issue is improved.
 
-> Here, the JSON object for the `compute_force` kernel is omitted for brevity. For a complete JSON file, see [metadata.json](https://github.com/taichi-dev/taichi-aot-demo/blob/master/nbody_ndarray/res/metadata.json).
+```bash
+# Install python taichi:
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+# Get the runtime library:
+pip download --no-deps -i https://pypi.taichi.graphics/simple/ taichi-nightly
+# For example
+unzip taichi_nightly-1.3.0.post20221102-cp38-cp38-manylinux_2_27_x86_64.whl
+export TAICHI_C_API_INSTALL_DIR=$PWD/taichi_nightly-1.3.0.post20221102.data/data/c_api/
+```
 
-- **Organized by Taichi kernel**
+Currently, only TiRT for Linux systems is included in the nightly distributions. If you need one for Android / Windows, please see the FAQ below to build it from source.
 
-  - `initialize` (line 4)
-  - `compute_force` (line 51)
+Integrate `TiRT` to your CMakeLists.txt:
 
-- **Kernel-specific compute shaders**
+```cmake
+# Find built taichi C-API library in `TAICHI_C_API_INSTALL_DIR`.
+find_library(taichi_c_api taichi_c_api HINTS ${TAICHI_C_API_INSTALL_DIR}/lib NO_CMAKE_FIND_ROOT_PATH)
+if (NOT EXISTS ${taichi_c_api})
+    message(FATAL_ERROR "Couldn't find C-API library in ${TAICHI_C_API_INSTALL_DIR}")
+endif()
 
-  Taking `initialize` as an example, the kernel has generated one compute shader named `initialize_c54_00` (line 7) and the other named `initialize_c54_01` (line 13).
+# Make sure your target is properly linked!
+set(TAICHI_TUTORIAL_DEMO_NAME "0_tutorial_kernel")
+message("-- Building ${TAICHI_TUTORIAL_DEMO_NAME}")
+add_executable(${TAICHI_TUTORIAL_DEMO_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp)
+target_include_directories(${TAICHI_TUTORIAL_DEMO_NAME} PUBLIC ${TAICHI_C_API_INSTALL_DIR}/include)
+target_link_libraries(${TAICHI_TUTORIAL_DEMO_NAME} ${taichi_c_api})
+```
 
-- **Kernel-specific** `args_buff`
+### 4. Run taichi kernels in your application
 
-  The `initialize` kernel is assigned an `args_buffer` of `128` Bytes (line 21). Note that the size of `args_buffer` is dependent on the number of Ndarrays (`pos` and `vel`) that the kernel takes, (see `arg_count` in line 19). The `initialize` kernel, or each kernel more precisely, has a dedicated `args_buffer` for storing scalar arguments specified in `scalar_args` (line 27) and Ndarray shape information in accordance with what `array_args` (line 28-45) specifies.
+TiRT provides a fundamental C interface to help achieve optimal portability, however we also kindly provide a header-only C++ wrapper to save you from writing verbose C code. For simplicity purpose, we'll stick with the C++ wrapper in this tutorial.
 
-  Ndarrays' shape information is organized by their argument index in the `array_args` JSON array: `0` (line 29) corresponds to the `pos` Ndarray, and `1` (line 37) corresponds to the `vel` Ndarray. The argument index is determined by the sequence by which you pass in the Ndarrays when calling `add_kernel()`. See line 53 in the Python script.
+Calling Taichi in C++ as easy as what you'd imagine:
 
-  The `pos` Ndarray's shape information in `args_buffer` has an offset of  `64` Bytes in `args_buffer` (line 64). According to line 35 and line 43, the `pos` Ndarray's shape information occupies 96 - 64 = 32 Bytes in `args_buffer`.
+- Create a Taichi runtime with target arch
+- Load the compiled artifacts from disk through TiRT's `load_aot_module` interface.
+- Load kernels from the module to `k_init_` and `k_add_base_`
+- Prepare the inputs: ndarray `x_` and float `base`
+- Launch the kernels!
 
-  :::tip ATTENTION
-  The JSON file only specifies the dimension of the corresponding Ndarray (line 30, 38), allowing you to dynamically update an Ndarray's shape in your runtime program.
-  :::
+A complete C++ application with embedded Taichi is shown below:
 
-- **Kernel-specific binding index**
+```cpp
+#include <taichi/cpp/taichi.hpp>
 
-  `used.arr_arg_to_bind_idx` (line 46) maps the SSBO of each Ndarray in the kernel to a "more global" binding index for the compute shaders. For example, `"1": 5` (line 48) binds the `vel` Ndarray to the binding index `5`.
+struct App0_tutorial {
+  static const uint32_t NPARTICLE = 8192 * 2;
+  static const uint32_t N_ITER = 50;
 
-```json
-{
-  "aot_data": {
-    "kernels": {
-      "initialize": {
-        "tasks": [
-          {
-            "name": "initialize_c54_00",
-            "src": "nbody_aot/initialize_c54_00.glsl",
-            "workgroup_size": 1,
-            "num_groups": 1
-          },
-          {
-            "name": "initialize_c54_01",
-            "src": "nbody_aot/initialize_c54_01.glsl",
-            "workgroup_size": 128,
-            "num_groups": 256
-          }
-        ],
-        "arg_count": 2,
-        "ret_count": 0,
-        "args_buf_size": 128,
-        "ret_buf_size": 0,
-        "ext_arr_access": {
-          "0": 2,
-          "1": 3
-        },
-        "scalar_args": {},
-        "arr_args": {
-          "0": {
-            "field_dim": 1,
-            "is_scalar": false,
-            "element_shape": [
-              2
-            ],
-            "shape_offset_in_bytes_in_args_buf": 64
-          },
-          "1": {
-            "field_dim": 1,
-            "is_scalar": false,
-            "element_shape": [
-              2
-            ],
-            "shape_offset_in_bytes_in_args_buf": 96
-          }
-        },
-        "used.arr_arg_to_bind_idx": {
-          "0": 4,
-          "1": 5
-        }
-      },
-      "compute_force": {...}
-    },
-    "kernel_tmpls": {},
-    "fields": [],
-    "root_buffer_size": 0
+  ti::Runtime runtime_;
+  ti::AotModule module_;
+  ti::Kernel k_init_;
+  ti::Kernel k_add_base_;
+  ti::NdArray<float> x_;
+
+  App0_tutorial() {
+    runtime_ = ti::Runtime(TI_ARCH_VULKAN);
+    module_ = runtime_.load_aot_module("0_tutorial_kernel/assets/tutorial");
+    k_init_ = module_.get_kernel("init");
+    k_add_base_ = module_.get_kernel("add_base");
+    x_ = runtime_.allocate_ndarray<float>({NPARTICLE}, {}, true);
+    std::cout << "Initialized!" << std::endl;
   }
+
+  bool run() {
+    float base = 0.2;
+
+    k_init_.push_arg(x_);
+    k_init_.launch();
+    k_add_base_.push_arg(x_);
+    k_add_base_.push_arg(base);
+    for (int i = 0; i < N_ITER; i++) {
+      k_add_base_.launch();
+    }
+    runtime_.wait();
+    return true;
+  }
+};
+
+int main(int argc, const char** argv) {
+  App0_tutorial app;
+  app.run();
+  return 0;
 }
 ```
-The following provides a detailed description of the keys in the generated JSON file:
 
-`aot_data`: The overarching JSON object.
- - `kernels`: All Taichi kernels.
-	- `$(kernel_name)`: Name of a specific Taichi kernel.
-		- `tasks`: A JSON array of the generated compute shaders.
-			- `name`: Name of a specific compute shader.
-			- `src`: Relative path to the shader file.
-			- `workgroup_size`: N/A
-			- `num_groups`: N/A
-		- `arg_count`: Number of the arguments that the Taichi kernel takes.
-		- `ret_count`: Number of the values that the Taichi kernel returns.
-		- `args_buf_size`: The size of `args_buf` in Bytes.
-		- `ret_buf_size`: The size of `ret_buf` in Bytes.
-		- `scalar_args`: Scalar arguments that the kernel takes.
-		- `arr_args`: Shape information of the Ndarrays in the kernel.
-			- `$(arg_index)`: Argument index of an Ndarray
-				- `field_dim`: The dimension of the Ndarray.
-				- `is_scalar`: Whether the elements in the Ndarray are scalar.
-				- `element_shape`: An `int` array indicating the shape of each element in the Ndarray.
-				- `shape_offset_in_bytes_in_args_buf`: The offset of the Ndarray's shape information in `args_buf`.
-		- `used.arr_arg_to_bind_idx`: A map specifying the SSBO to bind for a given Ndarray. For example, `"1": 5` (line 48) binds the `vel` Ndarray to the binding index `5`.
+## FAQ
 
-*Well, we hope you were not overwhelmed with that much information coming in all at once. In the following section, we will revisit the JSON file, as well as provide tables and graphs that help illustrate some of the concepts and notions listed above.*
+### Map your Taichi data types from Python to C++
 
-### Prepare SSBO and shape information
+| Python | C++ |
+| --- | --- |
+| scalar | C++ scalar type |
+| ti.vector / ti.matrix | std::vector |
+| ti.ndarray | ti::Ndarray |
+| ti.Texture | ti::Texture |
+| ti.field   | WIP         |
 
-Before executing the GLES compute shaders in your runtime program, you need to get all your resources ready, including:
+### Does Taichi support device import/export?
 
-- Bind SSBO for the corresponding buffer
-- Bind SSBO for each Ndarray
-- Fill `args_buffer` with Ndarray shape information
+Yes! We understand that in real applications it's pretty common to hook Taichi in your existing Vulkan pipeline. As a result, you can choose to import an external device for Taichi to use, or export a device that Taichi creates to share with the external application
 
-#### Bind SSBO for the corresponding buffer
+### Which backends & hardware are supported?
 
-The following table lists the buffers commonly used in a Taichi program together with their binding indexes:
+Currently `ti.vulkan`, `ti.opengl`, `ti.x86` and `ti.cuda` are supported. `ti.metal` is not yet supported.
 
-| **Buffer**    | **Global/kernel-spedific** | **Storing**                                                  | **Binding index** |
-| ------------- | -------------------------- | ------------------------------------------------------------ | ----------------- |
-| `root_buffer` | Global                     | All fields with fixed offsets and of fixed sizes.            | `0`               |
-| `gtmp_buffer` | Global                     | Global temporary data                                        | `1`               |
-| `args_buffer` | Kernel-specific            | Arguments passed to the Taichi kernel <ul><li>Scalar arguments</li> <li>Each Ndarray's shape information:  <ul><li>Shape of the Ndarray</li> <li>Element shape</li></ul></li></ul> | `2`               |
+### How can I debug a C++ application with embedded Taichi?
 
-1. You *only* need to bind an SSBO for `root_buffer` if your Taichi script uses at least one field. Skip this step if your script does not involve field.
-2. Bind a small SSBO, say an SSBO of 1,024 Bytes, to `1`, the binding index of `gtmp_buffer`.
-3. Bind an SSBO of 64 x 5 = 320 Bytes to `2`, the binding index of `args_buffer`.
+1. Check ti_get_last_error() whenever you call a Taichi C API.
+2. Enable backward-cpp in your application to locate the source of crashes. E.g. <https://github.com/taichi-dev/taichi-aot-demo/pull/69>
+3. Get values of ndarrays back on host using ndarray.read(), e.g. <https://github.com/taichi-dev/taichi-aot-demo/pull/57/files#diff-d94bf1ff63835d9cf87e700ca3c37d1e9a3c09e5994944db2adcddf132a71d0cR32>
+4. Enable printing in shaders, e.g. <https://github.com/taichi-dev/taichi-aot-demo/pull/55>
 
-#### Bind SSBO for each Ndarray
+### Does Taichi support generating shaders for different deployment targets?
 
-Before running a specific kernel in your runtime program (the `initialize` kernel for example), you must bind SSBO of a proper size for each Ndarray in the kernel in accordance to the value of `used.arr_arg_to_bind_idx`.
+Yea, it's a common feature request that people want to generate shaders for their Android application on a Linux desktop. If you know exactly what your target device is capable of, you can specify in the ti.aot.Module(arch=, caps=[]). Some example caps are spirv_has_atomic_float, spirv_has_physical_storage_buffer etc.
 
-The following is a summary of line 29-49 of the above JSON file:
+Supporting compiling to an arch different from the one in ti.init() is a planned feature but not yet supported.
 
-| Ndarray | Taichi kernel | Dimension | Element shape | Argument index | Binding index |
-| ------- | ------------- | --------- | ------------- | -------------- | ------------- |
-| `pos`   | `initialize`  | `1`       | `[2]`         | `0`            | `4`           |
-| `vel`   | `initialize`  | `1`       | `[2]`         | `1`            | `5`           |
+### Are Taichi compiled artifacts versioned?
 
-If you give each Ndarray a shape [500], and an element shape [2] (meaning that each element is a 2-D vector):
+(Pre-release version, until JSON is resolved)
 
-- Each Ndarray has 500 x 2 = 1,000 numbers
-- Because the number type is float (as specified in the above Python script), the size of each Ndarray's SSBO is 1,000 x 4 = 4,000 Bytes.
+We highly recommend using python taichi and C++ taichi runtime built from exactly the same commit.
 
-Therefore you need to:
+### Can I hook Taichi into a render pipeline?
 
-- Bind an SSBO of 4,000 Bytes to the binding index `4` for the `pos` Ndarray.
-- Bind an SSBO of 4,000 Bytes to the binding index `5` for the `vel` Ndarray.
+Yes! If you already have a rendering pipeline, you can interop with Taichi via <https://docs.taichi-lang.org/docs/taichi_vulkan>.
 
-#### Fill `args_buffer` with Ndarray shape information
+If you don't have one already, please check out our demos at <https://github.com/taichi-dev/taichi-aot-demo>
 
-When explaining the JSON file, we mention that each kernel has a dedicated `args_buffer` for storing scalar arguments specified in `scalar_args` and Ndarray shape information in accordance with what `array_args` specifies. `array_args` does not specify the Ndarray shape, therefore the final step in your preparation is to fill `args_buffer` with  each Ndarray's shape information in your runtime program.
+### I just want to use raw shaders generated by Taichi. Where can I find them?
 
-The typical size of an `args_buffer` is 64 + 64 x 4  Bytes. The first 64 Bytes are reserved for scalar arguments; the remaining buffer is then 64 x 4 Bytes. Each Ndarray is allocated 8 x 4 Bytes for storing its shape information (each has *at most* 8 numbers to indicate its shape information), therefore the remaining buffer can store up to 8 Ndarrays' shape information.
+Yea you can find it in the target folder of aot save. But please be aware that launching Taichi shaders requires some special setup which relates to implementation details in Taichi and may subject to change without notice.
 
-- If your Ndarray shape is [100, 200] and element dimension [3, 2], then you fill 100, 200, 3, and 2 in the corresponding location.
-- In this case, both `pos` and `vel` have an Ndarray shape of [500] and an element dimension of [2]. Therefore, you fill 500 and 2 in the corresponding locations.
+But if you have super strict size limitation for the whole application where the provided runtime is too large to fit, you may consider writing a minimal taichi runtime in C which consumes those raw shaders.
 
-### Prepare rendering shaders
+### Can I build the libtaichi_c_api.so from source?
 
-To perform the rendering (drawing celestial bodies in this case), you are required to write a vertex shader and a fragment shader.
+Usually, for simplicity and stability, we recommend using the official nightly taichi wheels and the c_api shipped inside the wheel. But if you want a runtime library with special build configuration:
 
-### Execute all shaders
+```
+TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_C_API:BOOL=ON" python setup.py develop
 
-When executing shaders in your runtime program, ensure that you bind SSBOs before executing a Taichi kernel and unbind them when you are done.
+# Other commonly used CMake options
+- TI_WITH_OPENGL
+- TI_WITH_CPU
+- TI_WITH_CUDA
+```
 
- Our [example Android Java runtime](https://github.com/taichi-dev/taichi-aot-demo/blob/master/nbody_ndarray/java_runtime/NbodyNdarray.java) does the following:
-
-1. Run the GLES compute shaders in `initialize` once.
-2. For each frame:
-   1. Run the GLES compute shaders in `compute_force` 10 times.
-   2. Run the vertex and fragment shaders once to do the rendering.
+You can find the built `libtaichi_c_api.so` and its headers in the `_skbuild/` folder.
 
 
+### Taichi/C API Reference Manual
 
-## OpenGL-specific Terms & Definitions
+<https://docs.taichi-lang.org/docs/taichi_core#api-reference>
 
-### OpenGL ES (GLES)
 
-OpenGL ES (GLES) is the OpenGL APIs for Embedded Systems. According to [its specifications](https://www.khronos.org/api/opengles), a desktop OpenGL driver supports all GLES APIs.
+### When do I need to recompile my artifacts?
 
-### OpenGL Shading Language (GLSL)
+You should recompile the artifacts when the following happens:
 
-The OpenGL Shading Language (GLSL) is the primary shading language for OpenGL. GLSL is a C-style language supported directly by OpenGL without extensions.
+- Kernels and their launching logic in Python are updated
+- You need a newer version for either Python Taichi or runtime library.
+- Your target device has a different set of capabilites
+- If you update some Python constants (instead of kernel arguments), they're likely encoded as a constant in Taichi compiled artifacts so you'll need a recompilation.
 
-### Shader
+Note given the nature of how Ndarrays are handled in the Taichi compilation, shaders generated can be used for ndarrays with different shapes as long as their ranks match. Which really comes to handy if you need one set of shaders for everything, e.g. different screen sizes on Android phones.
 
-A shader is a user-defined program designed for computing or rendering at a certain stage of a graphics processor.
+### How can I set values for ndarrays in C++?
 
-### SSBO (Shader Storage Buffer Object)
+In the C++ wrapper we provide these convenient read/write() methods on NdArray class. <https://github.com/taichi-dev/taichi/blob/master/c_api/include/taichi/cpp/taichi.hpp#L192-L215>
 
-Each Taichi kernel can generate multiple compute shaders, which use SSBO (Shader Storage Buffer Object) as buffer for accessing data.
-
-There are two types of SSBOs: One type corresponds to the buffers maintained by Taichi and includes `root_buffer`, `gtmp_buffer`, and `args_buffer`; the other type corresponds to the Ndarrays maintained by developers and used for sharing data.
-
-> You are required to bind the generated shaders to the corresponding SSBOs in your runtime program. The binding index of an Ndarray's SSBO starts off with `4`.
+In C API you can allocate your memory as host accessible and then use map/unmap. <https://docs.taichi-lang.org/docs/taichi_core>

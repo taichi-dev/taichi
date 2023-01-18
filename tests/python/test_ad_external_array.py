@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.metal])
 def test_to_numpy():
     a = ti.field(dtype=float, shape=(), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -20,7 +20,7 @@ def test_to_numpy():
         0]
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.metal])
 def test_from_numpy():
     a = ti.field(dtype=float, shape=(), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)

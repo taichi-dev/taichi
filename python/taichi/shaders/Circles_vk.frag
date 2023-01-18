@@ -8,16 +8,19 @@ layout(binding = 0) uniform UBO {
 ubo;
 
 layout(location = 1) in vec3 selected_color;
+layout(location = 2) in vec2 pos_2d;
 
 layout(location = 0) out vec4 out_color;
 
 void main() {
-  vec2 coord2D;
-  coord2D = gl_PointCoord * 2.0 - vec2(1);
+  float dist_sq = dot(pos_2d, pos_2d);
+  float alpha = 1.0 - step(1.0, dist_sq);
 
-  if (length(coord2D) >= 1.0) {
+  /*
+  if (length(pos_2d) >= 1.0) {
     discard;
   }
+  */
 
-  out_color = vec4(selected_color, 1.0);
+  out_color = vec4(selected_color, alpha);
 }

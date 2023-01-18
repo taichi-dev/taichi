@@ -176,8 +176,9 @@ You can also compute the power, logarithm, and exponential of a complex number:
 
 @ti.kernel
 def test():
-    x = tm.vec2(1, 1)
-    y = tm.cpow(x, 2)
-    z = tm.clog(x)
-    w = tm.cexp(x)
+    x = tm.vec2(1, 1)  # complex number 1 + 1j
+    y = tm.cpow(x, 2)  # complex number (1 + 1j)**2 = 2j
+    z = tm.clog(x)     # complex number (0.346574 + 0.785398j)
+    w = tm.cexp(x)     # complex number (1.468694 + 2.287355j)
+
 ```

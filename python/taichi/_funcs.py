@@ -169,10 +169,10 @@ def _svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == f32:
-        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f32(
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(
             A.ptr, iters)
     else:
-        rets = get_runtime().prog.current_ast_builder().sifakis_svd_f64(
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(
             A.ptr, iters)
     assert len(rets) == 21
     U_entries = rets[:9]

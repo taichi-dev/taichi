@@ -1,6 +1,5 @@
 import functools
 import numbers
-import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -123,6 +122,12 @@ def _infer_array_dt(arr):
                             map(_infer_entry_dt, arr))
 
 
+def make_matrix_with_shape(arr, shape, dt):
+    return expr.Expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
+            shape, dt, [expr.Expr(elt).ptr for elt in arr]))
+
+
 def make_matrix(arr, dt=None):
     if len(arr) == 0:
         # the only usage of an empty vector is to serve as field indices
@@ -139,7 +144,7 @@ def make_matrix(arr, dt=None):
         else:
             dt = cook_dtype(dt)
     return expr.Expr(
-        impl.get_runtime().prog.current_ast_builder().make_matrix_expr(
+        impl.get_runtime().compiling_callable.ast_builder().make_matrix_expr(
             shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
@@ -836,25 +841,6 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops  # pylint: disable=C0415
         return matrix_ops._identity_matrix(n, dt)
 
-    @staticmethod
-    def rotation2d(alpha):
-        """Returns the matrix representation of the 2D
-        anti-clockwise rotation of angle `alpha`. The angle `alpha`
-        is in radians.
-
-        Example::
-
-            >>> import math
-            >>> ti.Matrix.rotation2d(math.pi/4)
-            [[ 0.70710678 -0.70710678]
-             [ 0.70710678  0.70710678]]
-        """
-        warnings.warn(
-            "`ti.Matrix.rotation2d()` will be removed in release v1.4.0. Use `ti.math.rotation2d()` instead.",
-            DeprecationWarning)
-        from taichi.lang import matrix_ops  # pylint: disable=C0415
-        return matrix_ops._rotation2d_matrix(alpha)
-
     @classmethod
     @python_scope
     def field(cls,
@@ -1479,7 +1465,10 @@ class MatrixType(CompoundType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [
+                    args[0] for _ in range(self.m) for _ in range(self.n)
+                ]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1489,25 +1478,12 @@ class MatrixType(CompoundType):
                 entries += x
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
-            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
-                entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
-                ]
             elif isinstance(x, Matrix):
                 entries += x.entries
             else:
                 entries.append(x)
 
-        if len(entries) != self.m * self.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
-            )
-        entries = [[entries[k * self.m + i] for i in range(self.m)]
-                   for k in range(self.n)]
-
-        #  type cast
-        return self.cast(Matrix(entries, dt=self.dtype, ndim=self.ndim))
+        return self._instantiate(entries)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
@@ -1517,27 +1493,20 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
-    def cast(self, mat):
+    def _instantiate_in_python_scope(self, entries):
+        entries = [[entries[k * self.m + i] for i in range(self.m)]
+                   for k in range(self.n)]
+        return Matrix([[
+            int(entries[i][j]) if self.dtype in primitive_types.integer_types
+            else float(entries[i][j]) for j in range(self.m)
+        ] for i in range(self.n)],
+                      ndim=self.ndim)
+
+    def _instantiate(self, entries):
         if in_python_scope():
-            return Matrix([[
-                int(mat(i, j)) if self.dtype in primitive_types.integer_types
-                else float(mat(i, j)) for j in range(self.m)
-            ] for i in range(self.n)],
-                          ndim=self.ndim)
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, self.dtype)
-
-        if isinstance(mat, Matrix):
-            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
-            return ops_mod.cast(make_matrix(arr), self.dtype)
-
-        return mat.cast(self.dtype)
-
-    def filled_with_scalar(self, value):
-        return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)],
-                   ndim=self.ndim))
+        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
 
     def field(self, **kwargs):
         assert kwargs.get("ndim", self.ndim) == self.ndim
@@ -1591,7 +1560,8 @@ class VectorType(MatrixType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [args[0] for _ in range(self.n)]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1603,40 +1573,23 @@ class VectorType(MatrixType):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
                 entries += x.entries
-            elif isinstance(x, impl.Expr) and x.ptr.is_tensor():
-                entries += [
-                    impl.Expr(e) for e in impl.get_runtime().prog.
-                    current_ast_builder().expand_exprs([x.ptr])
-                ]
             else:
                 entries.append(x)
 
-        if len(entries) != self.n:
-            raise TaichiSyntaxError(
-                f"Incompatible arguments for the custom vector type: ({self.n}), ({len(entries)})"
-            )
-
         #  type cast
-        return self.cast(Vector(entries, dt=self.dtype))
+        return self._instantiate(entries)
 
-    def cast(self, vec):
+    def _instantiate_in_python_scope(self, entries):
+        return Vector([
+            int(entries[i]) if self.dtype in primitive_types.integer_types else
+            float(entries[i]) for i in range(self.n)
+        ])
+
+    def _instantiate(self, entries):
         if in_python_scope():
-            return Vector([
-                int(vec(i)) if self.dtype in primitive_types.integer_types else
-                float(vec(i)) for i in range(self.n)
-            ])
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
-            return ops_mod.cast(vec, self.dtype)
-
-        if isinstance(vec, Matrix):
-            arr = vec.entries
-            return ops_mod.cast(make_matrix(arr), self.dtype)
-
-        return vec.cast(self.dtype)
-
-    def filled_with_scalar(self, value):
-        return self.cast(Vector([value for _ in range(self.n)]))
+        return make_matrix_with_shape(entries, [self.n], self.dtype)
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)

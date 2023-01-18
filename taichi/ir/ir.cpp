@@ -350,7 +350,7 @@ void Block::replace_with(Stmt *old_statement,
     *iter = std::move(new_statements[0]);
     (*iter)->parent = this;
   } else {
-    statements.erase(iter);
+    iter = statements.erase(iter);
     insert_at(std::move(new_statements), iter);
   }
 }

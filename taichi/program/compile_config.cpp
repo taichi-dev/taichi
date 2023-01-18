@@ -1,6 +1,8 @@
 #include "compile_config.h"
 
 #include <thread>
+#include "taichi/rhi/arch.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
 
@@ -9,7 +11,6 @@ CompileConfig::CompileConfig() {
   simd_width = default_simd_width(arch);
   opt_level = 1;
   external_optimization_level = 3;
-  packed = true;
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;
@@ -38,7 +39,6 @@ CompileConfig::CompileConfig() {
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
-  dynamic_index = true;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;
@@ -64,6 +64,17 @@ CompileConfig::CompileConfig() {
   // C backend options:
   cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
   cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
+}
+
+void CompileConfig::fit() {
+  if (debug) {
+    // TODO: allow users to run in debug mode without out-of-bound checks
+    check_out_of_bound = true;
+  }
+  if (arch == Arch::cc || arch_uses_spirv(arch)) {
+    demote_dense_struct_fors = true;
+  }
+  offline_cache::disable_offline_cache_if_needed(this);
 }
 
 }  // namespace taichi::lang

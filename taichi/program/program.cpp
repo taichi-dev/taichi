@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/metal/api.h"
 #include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
@@ -42,6 +41,10 @@
 #include "taichi/runtime/program_impls/dx12/dx12_program.h"
 #include "taichi/rhi/dx12/dx12_api.h"
 #endif
+#ifdef TI_WITH_METAL
+#include "taichi/runtime/program_impls/metal/metal_program.h"
+#include "taichi/rhi/metal/metal_api.h"
+#endif  // TI_WITH_METAL
 
 #if defined(_M_X64) || defined(__x86_64)
 // For _MM_SET_FLUSH_ZERO_MODE
@@ -78,10 +81,7 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   configs[main_thread_id_] = default_compile_config;
   configs[main_thread_id_].arch = desired_arch;
   auto &config = this_thread_config();
-  // TODO: allow users to run in debug mode without out-of-bound checks
-  if (config.debug)
-    config.check_out_of_bound = true;
-  offline_cache::disable_offline_cache_if_needed(&config);
+  config.fit();
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
   if (arch_uses_llvm(config.arch)) {
@@ -158,8 +158,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  current_callable = nullptr;
-  sync = true;
   finalized_ = false;
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {
@@ -191,10 +189,11 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel) {
+FunctionType Program::compile(const CompileConfig &compile_config,
+                              Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel);
+  auto ret = program_impl_->compile(compile_config, &kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -253,89 +252,6 @@ int Program::get_snode_tree_size() {
   return snode_trees_.size();
 }
 
-std::string capitalize_first(std::string s) {
-  s[0] = std::toupper(s[0]);
-  return s;
-}
-
-std::string latex_short_digit(int v) {
-  std::string units = "KMGT";
-  int unit_id = -1;
-  while (v >= 1024 && unit_id + 1 < (int)units.size()) {
-    TI_ASSERT(v % 1024 == 0);
-    v /= 1024;
-    unit_id++;
-  }
-  if (unit_id != -1)
-    return fmt::format("{}\\mathrm{{{}}}", v, units[unit_id]);
-  else
-    return std::to_string(v);
-}
-
-void Program::visualize_layout(const std::string &fn) {
-  {
-    std::ofstream ofs(fn);
-    TI_ASSERT(ofs);
-    auto emit = [&](std::string str) { ofs << str; };
-
-    auto header = R"(
-\documentclass[tikz, border=16pt]{standalone}
-\usepackage{latexsym}
-\usepackage{tikz-qtree,tikz-qtree-compat,ulem}
-\begin{document}
-\begin{tikzpicture}[level distance=40pt]
-\tikzset{level 1/.style={sibling distance=-5pt}}
-  \tikzset{edge from parent/.style={draw,->,
-    edge from parent path={(\tikzparentnode.south) -- +(0,-4pt) -| (\tikzchildnode)}}}
-  \tikzset{every tree node/.style={align=center, font=\small}}
-\Tree)";
-    emit(header);
-
-    std::function<void(SNode * snode)> visit = [&](SNode *snode) {
-      emit("[.{");
-      if (snode->type == SNodeType::place) {
-        emit(snode->name);
-      } else {
-        emit("\\textbf{" + capitalize_first(snode_type_name(snode->type)) +
-             "}");
-      }
-
-      std::string indices;
-      for (int i = 0; i < taichi_max_num_indices; i++) {
-        if (snode->extractors[i].active) {
-          int nb = snode->extractors[i].num_bits;
-          indices += fmt::format(
-              R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
-              latex_short_digit(1 << nb));
-        }
-      }
-      if (!indices.empty())
-        emit("\\\\" + indices);
-      if (snode->type == SNodeType::place) {
-        emit("\\\\" + data_type_name(snode->dt));
-      }
-      emit("} ");
-
-      for (int i = 0; i < (int)snode->ch.size(); i++) {
-        visit(snode->ch[i].get());
-      }
-      emit("]");
-    };
-
-    for (auto &a : snode_trees_) {
-      visit(a->root());
-    }
-
-    auto tail = R"(
-\end{tikzpicture}
-\end{document}
-)";
-    emit(tail);
-  }
-  trash(system(fmt::format("pdflatex {}", fn).c_str()));
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -354,7 +270,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
+    ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
   return ker;
 }
@@ -381,8 +297,8 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
-    ker.insert_scalar_arg(PrimitiveType::i32);
-  ker.insert_scalar_arg(snode->dt);
+    ker.insert_scalar_param(PrimitiveType::i32);
+  ker.insert_scalar_param(snode->dt);
   return ker;
 }
 
@@ -440,8 +356,8 @@ Ndarray *Program::create_ndarray(const DataType type,
     Arch arch = this_thread_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
-    } else if (arch != Arch::dx12 && arch != Arch::metal) {
-      // Device api support for dx12 & metal backend are not complete yet
+    } else if (arch != Arch::dx12) {
+      // Device api support for dx12 backend are not complete yet
       Stream *stream =
           program_impl_->get_compute_device()->get_compute_stream();
       auto [cmdlist, res] = stream->new_command_list_unique();
@@ -452,8 +368,27 @@ Ndarray *Program::create_ndarray(const DataType type,
       stream->submit_synced(cmdlist.get());
     }
   }
-  ndarrays_.emplace_back(std::move(arr));
-  return ndarrays_.back().get();
+  auto arr_ptr = arr.get();
+  ndarrays_.insert({arr_ptr, std::move(arr)});
+  return arr_ptr;
+}
+
+void Program::delete_ndarray(Ndarray *ndarray) {
+  // [Note] Ndarray memory deallocation
+  // Ndarray's memory allocation is managed by Taichi and Python can control
+  // this via Taichi indirectly. For example, when an ndarray is GC-ed in
+  // Python, it signals Taichi to free its memory allocation. But Taichi will
+  // make sure **no pending kernels to be executed needs the ndarray** before it
+  // actually frees the memory. When `ti.reset()` is called, all ndarrays
+  // allocated in this program should be gone and no longer valid in Python.
+  // This isn't the best implementation, ndarrays should be managed by taichi
+  // runtime instead of this giant program and it should be freed when:
+  // - Python GC signals taichi that it's no longer useful
+  // - All kernels using it are executed.
+  if (ndarrays_.count(ndarray) &&
+      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
+    ndarrays_.erase(ndarray);
+  }
 }
 
 Texture *Program::create_texture(const DataType type,
@@ -554,7 +489,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>();
+    return std::make_unique<wasm::AotModuleBuilderImpl>(&this_thread_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif

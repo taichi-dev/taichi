@@ -149,8 +149,8 @@ f = ti.field(dtype=ti.i32, shape=(N + 1, N + 1))
 5. Now we turn the dynamic programming issue to the traversal of a field `f`, where `a` and `b` are the two sequences to compare:
 
 ```python
-f[i, j] = max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
-              max(f[i - 1, j], f[i, j - 1]))
+f[i, j] = ti.max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
+              ti.max(f[i - 1, j], f[i, j - 1]))
 ```
 
 6. Define a kernel function `compute_lcs()`, which takes in two sequences and works out the length of their LCS.
@@ -163,8 +163,8 @@ def compute_lcs(a: ti.types.ndarray(), b: ti.types.ndarray()) -> ti.i32:
     ti.loop_config(serialize=True) # Disable auto-parallelism in Taichi
     for i in range(1, len_a + 1):
         for j in range(1, len_b + 1):
-            f[i, j] = max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
-                          max(f[i - 1, j], f[i, j - 1]))
+            f[i, j] = ti.max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
+                          ti.max(f[i - 1, j], f[i, j - 1]))
 
     return f[len_a, len_b]
 ```
@@ -201,8 +201,8 @@ def compute_lcs(a: ti.types.ndarray(), b: ti.types.ndarray()) -> ti.i32:
     ti.loop_config(serialize=True) # Disable auto-parallelism in Taichi
     for i in range(1, len_a + 1):
         for j in range(1, len_b + 1):
-               f[i, j] = max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
-                          max(f[i - 1, j], f[i, j - 1]))
+               f[i, j] = ti.max(f[i - 1, j - 1] + (a[i - 1] == b[j - 1]),
+                          ti.max(f[i - 1, j], f[i, j - 1]))
 
     return f[len_a, len_b]
 

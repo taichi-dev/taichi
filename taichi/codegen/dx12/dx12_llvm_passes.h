@@ -24,7 +24,7 @@ llvm::GlobalVariable *createGlobalVariableForResource(llvm::Module &M,
                                                       llvm::Type *Ty);
 
 std::vector<uint8_t> global_optimize_module(llvm::Module *module,
-                                            CompileConfig &config);
+                                            const CompileConfig &config);
 
 extern const char *NumWorkGroupsCBName;
 
@@ -46,6 +46,7 @@ ModulePass *createTaichiRuntimeContextLowerPass();
 void initializeTaichiIntrinsicLowerPass(PassRegistry &);
 
 /// Pass to lower taichi intrinsic into DXIL intrinsic.
-ModulePass *createTaichiIntrinsicLowerPass(taichi::lang::CompileConfig *config);
+ModulePass *createTaichiIntrinsicLowerPass(
+    const taichi::lang::CompileConfig *config);
 
 }  // namespace llvm

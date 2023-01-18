@@ -7,9 +7,8 @@ cmake_minimum_required(VERSION 3.0)
 # 2. Link order restriction from `ld` linker on Linux (https://stackoverflow.com/questions/45135/why-does-the-order-in-which-libraries-are-linked-sometimes-cause-errors-in-gcc), which has zero-tolerance w.r.t circular dependencies.
 function(target_link_static_library TARGET OBJECT_TARGET)
     set(STATIC_TARGET "${OBJECT_TARGET}_static")
-
     add_library(${STATIC_TARGET})
-    target_link_libraries(${STATIC_TARGET} PUBLIC ${OBJECT_TARGET})
+    target_link_libraries(${STATIC_TARGET} PRIVATE ${OBJECT_TARGET})
 if(LINUX)
     get_target_property(LINK_LIBS ${OBJECT_TARGET} LINK_LIBRARIES)
     target_link_libraries(${TARGET} PRIVATE "-Wl,--start-group" "${STATIC_TARGET}" "${LINK_LIBS}" "-Wl,--end-group")
@@ -17,7 +16,6 @@ else()
     target_link_libraries(${TARGET} PRIVATE "${STATIC_TARGET}")
 endif()
 endfunction()
-
 
 set(TAICHI_C_API_NAME taichi_c_api)
 list(APPEND C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
@@ -66,11 +64,6 @@ if(TI_BUILD_TESTS)
 endif()
 
 add_library(${TAICHI_C_API_NAME} SHARED ${C_API_SOURCE})
-target_enable_function_level_linking(${TAICHI_C_API_NAME})
-
-# Strip shared library
-set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
-
 if (${CMAKE_GENERATOR} STREQUAL "Xcode")
   target_link_libraries(${TAICHI_C_API_NAME} PRIVATE taichi_core)
   message(WARNING "Static wrapping does not work on Xcode, using object linking instead.")
@@ -79,6 +72,11 @@ elseif (MSVC)
 else()
   target_link_static_library(${TAICHI_C_API_NAME} taichi_core)
 endif()
+target_enable_function_level_linking(${TAICHI_C_API_NAME})
+
+# Strip shared library
+set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
+
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
@@ -198,31 +196,17 @@ if(TI_WITH_STATIC_C_API)
     # https://stackoverflow.com/questions/14259405/pre-link-static-libraries-for-ios-project
     #
     # Here, we perform this `pre-link` on the compiled object files.
-    add_library(taichi_c_api_static OBJECT ${C_API_SOURCE})
+    add_executable(taichi_static_c_api ${C_API_SOURCE})
+    set_target_properties(taichi_static_c_api PROPERTIES ENABLE_EXPORTS ON)
 
     get_target_property(TAICHI_C_API_INCLUDE_DIRS ${TAICHI_C_API_NAME} INCLUDE_DIRECTORIES)
-    target_include_directories(taichi_c_api_static PRIVATE "${TAICHI_C_API_INCLUDE_DIRS}")
+    target_include_directories(taichi_static_c_api PRIVATE "${TAICHI_C_API_INCLUDE_DIRS}")
+
+    target_link_libraries(taichi_static_c_api PRIVATE taichi_core_static)
 
     set(STATIC_LIB_LINK_OPTIONS "-Wl,-r")
     set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-x)
     set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-S)
-    set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-non_global_symbols_no_strip_list,/tmp/empty.lds)
     set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
-
-    set(TAICHI_CORE_STATIC_LINK_LIBS $<TARGET_FILE:taichi_core_static>)
-    set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:taichi_common>)
-    set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:gfx_runtime>)
-    set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:vulkan_rhi>)
-    #set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:vulkan_program_impl>)
-    set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:interop_rhi>)
-    set(TAICHI_CORE_STATIC_LINK_LIBS "${TAICHI_CORE_STATIC_LINK_LIBS}" $<TARGET_FILE:taichi_util>)
-
-    add_custom_target(taichi_c_api_custom_target ALL)
-    add_custom_command(
-        TARGET taichi_c_api_custom_target
-        COMMAND ${CLANG_EXECUTABLE}
-        ARGS "${STATIC_LIB_LINK_OPTIONS}" $<TARGET_OBJECTS:taichi_c_api_static> ${TAICHI_CORE_STATIC_LINK_LIBS} -o ${C_API_OUTPUT_DIRECTORY}/lib${TAICHI_C_API_NAME}.a
-        COMMAND_EXPAND_LISTS
-        VERBATIM)
-    add_dependencies(taichi_c_api_custom_target taichi_c_api taichi_core_static)
+    target_link_options(taichi_static_c_api PRIVATE "${STATIC_LIB_LINK_OPTIONS}")
 endif()

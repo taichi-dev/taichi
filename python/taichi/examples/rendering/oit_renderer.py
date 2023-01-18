@@ -127,7 +127,7 @@ def get_color(u, v):
         blend(color, colors_in_pixel[u, v, i].color)
     blend(color, background_color)
     gamma_corrected = ti.pow(color.rgb * color.a, 1 / 2.2)
-    return gamma_corrected
+    color_buffer[u, v] = gamma_corrected
 
 
 stratify_res = 5
@@ -151,7 +151,7 @@ def render():
     for u, v in color_buffer:
         get_intersections(u, v)
         bubble_sort(u, v)
-        color_buffer[u, v] = get_color(u, v)
+        get_color(u, v)
 
 @ti.kernel
 def init():

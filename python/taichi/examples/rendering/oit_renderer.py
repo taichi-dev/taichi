@@ -16,7 +16,7 @@ alpha_min = 0.2
 alpha_width = 0.3
 camera_pos = vec3(0, 0, 5)
 
-Light = ti.types.struct(pos=vec3, dir=vec3)
+Line = ti.types.struct(pos=vec3, dir=vec3)
 
 background_color = vec4(0.2, 0.2, 0.2, 1)
 
@@ -45,15 +45,15 @@ def shading(color: ti.template(), normal: ti.template()):
 
 
 @ti.func
-def intersect_sphere(light: ti.template(), sphere: ti.template()):
+def intersect_sphere(line: ti.template(), sphere: ti.template()):
     color1 = vec4(0)
     color2 = vec4(0)
     dist1 = inf
     dist2 = inf
-    l = sphere.center - light.pos
+    l = sphere.center - line.pos
     l2 = l.dot(l)
     r2 = sphere.radius * sphere.radius
-    tp = l.dot(light.dir)
+    tp = l.dot(line.dir)
     out_of_sphere = (l2 > r2)
     may_have_intersection = True
     if -eps < l2 - r2 < eps:
@@ -68,13 +68,13 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
             tt = ti.sqrt(r2 - d2)
             t1 = tp - tt
             if t1 > 0:
-                hit_pos1 = light.pos + light.dir * t1
+                hit_pos1 = line.pos + line.dir * t1
                 dist1 = t1
                 normal1 = normalize(hit_pos1 - sphere.center)
                 color1 = shading(sphere.color, normal1)
             t2 = tp + tt
             if t2 > 0:
-                hit_pos2 = light.pos + light.dir * t2
+                hit_pos2 = line.pos + line.dir * t2
                 dist2 = t2
                 normal2 = normalize(hit_pos2 - sphere.center)
                 color2 = shading(sphere.color, normal2)
@@ -83,19 +83,19 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
 
 
 @ti.func
-def get_light(u, v):
+def get_line_of_vision(u, v):
     ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
                    (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
     ray_dir = normalize(ray_dir)
-    return Light(pos=camera_pos, dir=ray_dir)
+    return Line(pos=camera_pos, dir=ray_dir)
 
 
 @ti.func
 def get_intersections(u, v):
-    light = get_light(u, v)
+    line = get_line_of_vision(u, v)
     colors_in_pixel[u, v].deactivate()
     for i in range(spheres.length()):
-        hit1, hit2 = intersect_sphere(light, spheres[i])
+        hit1, hit2 = intersect_sphere(line, spheres[i])
         if hit1.depth < inf:
             colors_in_pixel[u, v].append(hit1)
         if hit2.depth < inf:

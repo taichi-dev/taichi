@@ -526,6 +526,27 @@ def test_aot_ndarray_template_mixed():
                     args_count = len(kernel['ctx_attribs']['arg_attribs_vec_'])
                     assert args_count == 2, res  # `arr` and `val1`
 
+@test_utils.test(arch=[ti.opengl, ti.vulkan])
+def test_aot_ndarray_without_template_args():
+    @ti.kernel
+    def kernel1(arr: ti.types.ndarray(dtype=ti.f32, ndim=2)):
+        for I in ti.grouped(arr):
+            arr[I] = 0.
+
+    @ti.kernel
+    def kernel2(arr: ti.types.ndarray(dtype=ti.math.vec2, ndim=2)):
+        for I in ti.grouped(arr):
+            arr[I] = 0.
+
+    @ti.kernel
+    def kernel3(arr: ti.types.ndarray(dtype=ti.math.mat2, ndim=2)):
+        for I in ti.grouped(arr):
+            arr[I] = 0.
+    
+    m = ti.aot.Module()
+    m.add_kernel(kernel1)
+    m.add_kernel(kernel2)
+    m.add_kernel(kernel3)
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_archive():

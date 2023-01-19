@@ -96,13 +96,16 @@ SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
   init_scene_lines(app_context, 4, 6);
 }
 
-void SceneLines::update_ubo(const SceneLinesInfo &info, const Scene &scene, float line_width) {
+void SceneLines::update_ubo(const SceneLinesInfo &info,
+                            const Scene &scene,
+                            float line_width) {
   UniformBufferObject ubo{};
   ubo.scene = scene.current_ubo_;
   ubo.color = info.color;
   ubo.line_width = line_width;
-  ubo.per_vertex_color_offset =
-      info.renderable_info.has_per_vertex_color ? offsetof(Vertex, color) / sizeof(float) : 0;
+  ubo.per_vertex_color_offset = info.renderable_info.has_per_vertex_color
+                                    ? offsetof(Vertex, color) / sizeof(float)
+                                    : 0;
   ubo.vertex_stride = config_.vbo_size() / sizeof(float);
   ubo.start_vertex = config_.draw_first_vertex;
   ubo.start_index = config_.draw_first_index;

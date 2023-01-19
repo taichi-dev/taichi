@@ -57,7 +57,9 @@ class SceneLines final : public Renderable {
 
   void create_graphics_pipeline() final;
 
-  void update_ubo(const SceneLinesInfo &info, const Scene &scene, float line_width);
+  void update_ubo(const SceneLinesInfo &info,
+                  const Scene &scene,
+                  float line_width);
 
   void cleanup() override;
 

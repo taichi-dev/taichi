@@ -454,8 +454,7 @@ def test_draw_lines():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines',
-                    0.2)
+    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines', 0.2)
     window.destroy()
 
 
@@ -633,8 +632,7 @@ def test_draw_part_of_lines():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(),
-                    'test_draw_part_of_lines')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_part_of_lines')
     window.destroy()
 
 

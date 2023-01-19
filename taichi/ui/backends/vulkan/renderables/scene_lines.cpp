@@ -111,7 +111,8 @@ void SceneLines::update_ubo(const SceneLinesInfo &info,
   ubo.start_index = config_.draw_first_index;
   ubo.num_vertices = lines_count_ * 2;
   ubo.is_indexed = indexed_ ? 1 : 0;
-  ubo.aspect_ratio = app_context_->config.width / app_context_->config.height;
+  ubo.aspect_ratio =
+      float(app_context_->config.width) / float(app_context_->config.height);
 
   void *mapped{nullptr};
   TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==

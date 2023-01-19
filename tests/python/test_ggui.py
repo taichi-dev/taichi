@@ -108,12 +108,7 @@ def test_geometry_2d():
         window.get_image_buffer_as_numpy()
 
     render()
-    if (platform.system() == 'Darwin'):
-        # FIXME: Use lower tolerance when macOS ggui supports wide lines
-        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d',
-                     1.0)
-    else:
-        verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
+    verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_2d')
     window.destroy()
 
 
@@ -454,7 +449,7 @@ def test_draw_lines():
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines', 0.2)
+    verify_image(window.get_image_buffer_as_numpy(), 'test_draw_lines')
     window.destroy()
 
 

@@ -63,10 +63,10 @@ void main() {
   }
 
   vec2 pos0 = vec2(vb_in[vert0 * ubo.vertex_stride],
-                   vb_in[vert0 * ubo.vertex_stride + 1]) * 2.0 - 1.0;
+                   vb_in[vert0 * ubo.vertex_stride + 1]);
   vec4 color0 = vec4(ubo.color, 1.0);
   vec2 pos1 = vec2(vb_in[vert1 * ubo.vertex_stride],
-                   vb_in[vert1 * ubo.vertex_stride + 1]) * 2.0 - 1.0;
+                   vb_in[vert1 * ubo.vertex_stride + 1]);
   vec4 color1 = vec4(ubo.color, 1.0);
 
   if (ubo.per_vertex_color_offset > 0) {
@@ -82,7 +82,7 @@ void main() {
 
   vec2 aspect_adjust = vec2(ubo.aspect_ratio, 1.0);
   vec2 dir = normalize((pos1 - pos0) * aspect_adjust);
-  vec2 tangent = vec2(-dir.y, dir.x) * ubo.line_width / aspect_adjust;
+  vec2 tangent = vec2(-dir.y, dir.x) * (ubo.line_width * 0.5) / aspect_adjust;
 
   vec2 out_pos00 = pos0 + tangent;
   vec2 out_pos01 = pos0 - tangent;

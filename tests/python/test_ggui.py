@@ -9,7 +9,7 @@ from tests import test_utils
 from tests.test_utils import verify_image
 
 # FIXME: render(); get_image_buffer_as_numpy() loop does not actually redraw
-RENDER_REPEAT = 1
+RENDER_REPEAT = 5
 # FIXME: enable ggui tests on ti.cpu backend. It's blocked by macos10.15
 supported_archs = [ti.vulkan, ti.cuda]
 

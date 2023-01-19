@@ -615,7 +615,6 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     if (failed) {
       TI_ERROR("AMDGPU libdevice linking failure.");
     }
-
   }
 #endif
 }

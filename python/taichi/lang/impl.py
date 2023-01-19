@@ -130,6 +130,23 @@ def _calc_slice(index, default_stop):
     return [_ for _ in range(start, stop, step)]
 
 
+def validate_subscript_index(index):
+    if isinstance(index, Expr):
+        return
+
+    if isinstance(index, Iterable):
+        for ind in index:
+            validate_subscript_index(ind)
+
+    if isinstance(index, slice):
+        validate_subscript_index(index.start)
+        validate_subscript_index(index.stop)
+
+    if isinstance(index, numbers.Number) and index == -1:
+        raise TaichiSyntaxError(
+            "Negative indices are not supported in Taichi kernels.")
+
+
 @taichi_scope
 def subscript(ast_builder, value, *_indices, skip_reordered=False):
     ast_builder = get_runtime().compiling_callable.ast_builder()
@@ -155,6 +172,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             ind = [_index]
         flattened_indices += ind
     indices = tuple(flattened_indices)
+    validate_subscript_index(indices)
 
     if len(indices) == 1 and indices[0] is None:
         indices = ()

@@ -214,7 +214,7 @@ The core data structure of this runtime is [`LLVMRuntime`](https://github.com/ta
 
 * All the root SNodes info (`roots` and `root_mem_sizes`).
 * SNode memory allocators.
-* Random states (`rand_states`) used by `ti.random` .
+* Random states (`rand_states`) used by `ti.random`.
 * Print and error message buffers.
 * ...
 

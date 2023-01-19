@@ -86,11 +86,10 @@ def _gen_swizzles(cls):
         sw_patterns = _generate_swizzle_patterns(key_group, required_length=4)
         # len=1 accessors are handled specially above
         sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
-        for pat in sw_patterns:
+        for prop_key in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
                 checker = cls._keygroup_to_checker[key_group]
-                prop_key = pattern
 
                 def prop_getter(instance):
                     checker(instance, pattern)
@@ -103,16 +102,16 @@ def _gen_swizzles(cls):
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
                         raise TaichiRuntimeError(
-                            f'value len does not match the swizzle pattern={prop_key}'
+                            f'value len does not match the swizzle pattern={pattern}'
                         )
                     checker(instance, pattern)
                     for ch, val in zip(pattern, value):
                         instance[key_group.index(ch)] = val
 
                 prop = property(prop_getter, prop_setter)
-                return prop_key, prop
+                return prop
 
-            prop_key, prop = gen_property(pat, key_group)
+            prop = gen_property(prop_key, key_group)
             setattr(cls, prop_key, prop)
             cls._swizzle_to_keygroup[prop_key] = key_group
     return cls

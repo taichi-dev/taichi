@@ -16,7 +16,9 @@ def compile_graph_aot(arch):
             arr[i] += base + i
 
     @ti.kernel
-    def run1(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.types.vector(1, ti.i32))):
+    def run1(base: int, arr: ti.types.ndarray(ndim=1,
+                                              dtype=ti.types.vector(1,
+                                                                    ti.i32))):
         for i in arr:
             arr[i] += base + i
 

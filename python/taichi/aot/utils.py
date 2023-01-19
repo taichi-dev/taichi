@@ -13,7 +13,9 @@ template_types = (NdarrayType, TextureType, template)
 
 def check_type_match(lhs, rhs):
     if isinstance(lhs, MatrixType) and isinstance(rhs, MatrixType):
-        return lhs.n == rhs.n and lhs.m == rhs.m and (lhs.dtype == rhs.dtype or lhs.dtype is None or rhs.dtype is None)
+        return lhs.n == rhs.n and lhs.m == rhs.m and (lhs.dtype == rhs.dtype
+                                                      or lhs.dtype is None
+                                                      or rhs.dtype is None)
     if isinstance(lhs, MatrixType) or isinstance(rhs, MatrixType):
         return False
 

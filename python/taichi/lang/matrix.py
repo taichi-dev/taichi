@@ -13,16 +13,22 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
+from itertools import product
 
 
 def _gen_swizzles(cls):
-    swizzle_gen = SwizzleGenerator()
+
+    def generate_swizzle_patterns(key_group, required_length=4):
+        result = []
+        for k in range(1, required_length + 1):
+            result.extend(product(key_group, repeat=k))
+        return result
+
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
     cls._swizzle_to_keygroup = {}
@@ -66,7 +72,7 @@ def _gen_swizzles(cls):
             cls._swizzle_to_keygroup[attr] = key_group
 
     for key_group in KEYGROUP_SET:
-        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        sw_patterns = generate_swizzle_patterns(key_group, required_length=4)
         # len=1 accessors are handled specially above
         sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         for pat in sw_patterns:

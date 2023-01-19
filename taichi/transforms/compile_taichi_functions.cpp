@@ -6,11 +6,11 @@
 
 namespace taichi::lang {
 
-class CompileCalledFunctions : public BasicStmtVisitor {
+class CompileTaichiFunctions : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit CompileCalledFunctions(const CompileConfig &compile_config)
+  explicit CompileTaichiFunctions(const CompileConfig &compile_config)
       : compile_config_(compile_config) {
   }
 
@@ -30,8 +30,8 @@ class CompileCalledFunctions : public BasicStmtVisitor {
   }
 
   static void run(IRNode *ir, const CompileConfig &compile_config) {
-    CompileCalledFunctions lcf{compile_config};
-    ir->accept(&lcf);
+    CompileTaichiFunctions ctf{compile_config};
+    ir->accept(&ctf);
   }
 
  private:
@@ -42,7 +42,7 @@ namespace irpass {
 
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config) {
   TI_AUTO_PROF;
-  CompileCalledFunctions::run(ir, compile_config);
+  CompileTaichiFunctions::run(ir, compile_config);
 }
 
 }  // namespace irpass

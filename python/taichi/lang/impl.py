@@ -142,7 +142,7 @@ def validate_subscript_index(index):
         validate_subscript_index(index.start)
         validate_subscript_index(index.stop)
 
-    if isinstance(index, numbers.Number) and index == -1:
+    if isinstance(index, numbers.Number) and index < 0:
         raise TaichiSyntaxError(
             "Negative indices are not supported in Taichi kernels.")
 

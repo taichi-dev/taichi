@@ -26,7 +26,7 @@ def _generate_swizzle_patterns(key_group: str, required_length=4):
 
     Example:
 
-        For `key_group=xyzw` and `requires_length=4`, this function will return a
+        For `key_group=xyzw` and `required_length=4`, this function will return a
         list consists of all possible strings (no repeats) in characters
         `x`, `y`, `z`, `w` and of length<=4:
         [`x`, `y`, `z`, `w`, `xx`, `xy`, `yx`, ..., `xxxx`, `xxxy`, `xyzw`, ...]

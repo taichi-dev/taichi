@@ -17,7 +17,6 @@
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/program/extension.h"
 #include "taichi/analysis/offline_cache_util.h"
 
 namespace taichi::lang {

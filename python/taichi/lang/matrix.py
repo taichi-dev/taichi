@@ -21,13 +21,25 @@ from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
 
 
-def _gen_swizzles(cls):
-    def generate_swizzle_patterns(key_group, required_length=4):
-        result = []
-        for k in range(1, required_length + 1):
-            result.extend(product(key_group, repeat=k))
-        return result
+def _generate_swizzle_patterns(key_group: str, required_length=4):
+    """Generate vector swizzle patterns from a given set of characters.
 
+    Example:
+
+        For `key_group=xyzw` and `requires_length=4`, this function will return a
+        list consists of all possible strings (no repeats) in characters
+        `x`, `y`, `z`, `w` and of length<=4:
+        [`x`, `y`, `z`, `w`, `xx`, `xy`, `yx`, ..., `xxxx`, `xxxy`, `xyzw`, ...]
+        The length of the list will be 4 + 4x4 + 4x4x4 + 4x4x4x4 = 340.
+    """
+    result = []
+    for k in range(1, required_length + 1):
+        result.extend(product(key_group, repeat=k))
+    result = [''.join(pat) for pat in result]
+    return result
+
+
+def _gen_swizzles(cls):
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
     cls._swizzle_to_keygroup = {}
@@ -71,14 +83,14 @@ def _gen_swizzles(cls):
             cls._swizzle_to_keygroup[attr] = key_group
 
     for key_group in KEYGROUP_SET:
-        sw_patterns = generate_swizzle_patterns(key_group, required_length=4)
+        sw_patterns = _generate_swizzle_patterns(key_group, required_length=4)
         # len=1 accessors are handled specially above
         sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
         for pat in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
                 checker = cls._keygroup_to_checker[key_group]
-                prop_key = ''.join(pattern)
+                prop_key = pattern
 
                 def prop_getter(instance):
                     checker(instance, pattern)

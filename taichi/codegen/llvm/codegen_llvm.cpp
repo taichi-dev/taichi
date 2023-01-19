@@ -2641,7 +2641,7 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
     }
   } else if (config.arch == Arch::amdgpu) {
     for (const auto &task : offloaded_tasks) {
-      llvm::Function *func = mod->getFunction(task.name);
+      llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
       func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
     }

@@ -130,17 +130,21 @@ def _calc_slice(index, default_stop):
     return [_ for _ in range(start, stop, step)]
 
 
-def validate_subscript_index(index):
+def validate_subscript_index(value, index):
+    if isinstance(value, Field):
+        # field supports negative indices
+        return
+
     if isinstance(index, Expr):
         return
 
     if isinstance(index, Iterable):
         for ind in index:
-            validate_subscript_index(ind)
+            validate_subscript_index(value, ind)
 
     if isinstance(index, slice):
-        validate_subscript_index(index.start)
-        validate_subscript_index(index.stop)
+        validate_subscript_index(value, index.start)
+        validate_subscript_index(value, index.stop)
 
     if isinstance(index, numbers.Number) and index < 0:
         raise TaichiSyntaxError(
@@ -172,7 +176,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
             ind = [_index]
         flattened_indices += ind
     indices = tuple(flattened_indices)
-    validate_subscript_index(indices)
+    validate_subscript_index(value, indices)
 
     if len(indices) == 1 and indices[0] is None:
         indices = ()

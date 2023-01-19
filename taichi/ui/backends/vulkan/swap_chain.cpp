@@ -58,6 +58,8 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
   auto *stream = device.get_graphics_stream();
   std::unique_ptr<CommandList> cmd_list{nullptr};
 
+  device.wait_idle();
+
   if (memcpy_cap == Device::MemcpyCapability::Direct) {
     Device::AllocParams params{copy_size, /*host_wrtie*/ false,
                                /*host_read*/ false, /*export_sharing*/ true,
@@ -121,6 +123,10 @@ taichi::lang::Surface &SwapChain::surface() {
 }
 
 std::vector<uint32_t> &SwapChain::dump_image_buffer() {
+  app_context_->device().wait_idle();
+
+  TI_INFO("Dumping image buffer...");
+
   auto [w, h] = surface_->get_size();
   curr_width_ = w;
   curr_height_ = h;

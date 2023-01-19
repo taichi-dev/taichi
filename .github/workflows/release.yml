@@ -221,7 +221,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix_osx) }}
-    runs-on: [self-hosted, m1]
+    runs-on: [self-hosted, m1, release]
     defaults:
       run:
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'

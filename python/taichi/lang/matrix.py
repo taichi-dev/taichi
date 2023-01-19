@@ -1,6 +1,7 @@
 import functools
 import numbers
 from collections.abc import Iterable
+from itertools import product
 
 import numpy as np
 from taichi._lib import core as ti_python_core
@@ -18,11 +19,9 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
-from itertools import product
 
 
 def _gen_swizzles(cls):
-
     def generate_swizzle_patterns(key_group, required_length=4):
         result = []
         for k in range(1, required_length + 1):

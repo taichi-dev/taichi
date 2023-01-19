@@ -442,11 +442,6 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     LLVMCompiledKernel data) const {
   auto &mod = data.module;
   auto &tasks = data.tasks;
-  for (const auto &task : tasks) {
-    llvm::Function *func = mod->getFunction(task.name);
-    TI_ASSERT(func);
-    func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
-  }
   auto jit = tlctx_->jit.get();
   auto amdgpu_module =
       jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);

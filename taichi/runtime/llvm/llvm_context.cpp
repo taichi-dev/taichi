@@ -616,11 +616,6 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
       TI_ERROR("AMDGPU libdevice linking failure.");
     }
 
-    for (auto func_name : libdevice_func_names) {
-      auto func = module->getFunction(func_name);
-      if (func)
-        func->setLinkage(llvm::Function::InternalLinkage);
-    }
   }
 #endif
 }

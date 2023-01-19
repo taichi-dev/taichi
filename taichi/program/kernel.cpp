@@ -5,8 +5,6 @@
 #include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 

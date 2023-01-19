@@ -86,24 +86,6 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 }
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
-  auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
-                                  Kernel *kernel) {
-    bool verbose = config.print_ir;
-    if ((kernel->is_accessor && !config.print_accessor_ir) ||
-        (kernel->is_evaluator && !config.print_evaluator_ir)) {
-      verbose = false;
-    }
-    irpass::offload_to_executable(
-        ir, config, kernel, verbose,
-        /*determine_ad_stack_size=*/kernel->autodiff_mode ==
-            AutodiffMode::kReverse,
-        /*lower_global_access=*/true,
-        /*make_thread_local=*/config.make_thread_local,
-        /*make_block_local=*/
-        is_extension_supported(config.arch, Extension::bls) &&
-            config.make_block_local);
-  };
-
   const auto &config = *compile_config_;
   auto *llvm_prog = get_llvm_program(prog);
   auto *tlctx = llvm_prog->get_llvm_context(config.arch);
@@ -135,9 +117,8 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
       tlctx->fetch_this_thread_struct_module();
       auto offload = irpass::analysis::clone(offloads[i].get());
       irpass::re_id(offload.get());
-      auto stmt = offload->as<OffloadedStmt>();
-      offload_to_executable(stmt, config, kernel);
-      auto new_data = this->compile_task(&config, nullptr, stmt);
+      auto new_data =
+          this->compile_task(&config, nullptr, offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
     if (kernel->is_evaluator) {

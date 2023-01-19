@@ -40,7 +40,7 @@ class CompileCalledFunctions : public BasicStmtVisitor {
 
 namespace irpass {
 
-void compile_called_functions(IRNode *ir, const CompileConfig &compile_config) {
+void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config) {
   TI_AUTO_PROF;
   CompileCalledFunctions::run(ir, compile_config);
 }

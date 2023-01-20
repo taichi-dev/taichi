@@ -126,7 +126,8 @@ class StructCompiler {
     TI_TRACE("* type={} (is_place={})", sn_desc.snode->node_type_name,
              is_place);
     TI_TRACE("* cell_stride={}", sn_desc.cell_stride);
-    TI_TRACE("* num_cells_per_container={}", sn_desc.snode->num_cells_per_container);
+    TI_TRACE("* num_cells_per_container={}",
+             sn_desc.snode->num_cells_per_container);
     TI_TRACE("* container_stride={}", sn_desc.container_stride);
     TI_TRACE("* total_num_cells_from_root={}",
              sn_desc.total_num_cells_from_root);

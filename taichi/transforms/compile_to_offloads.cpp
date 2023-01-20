@@ -60,6 +60,8 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
+  irpass::compile_taichi_functions(ir, config);
+
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 

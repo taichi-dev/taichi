@@ -46,9 +46,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Pointer SNode on metal backend is deprecated and removed.")
+                "Pointer SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.pointer(axes, dimensions, get_traceback()))
@@ -73,9 +74,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Dynamic SNode on metal backend is deprecated and removed.")
+                "Dynamic SNode is not supported on this backend.")
         assert len(axis) == 1
         if chunk_size is None:
             chunk_size = dimension
@@ -92,9 +94,10 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Bitmasked SNode on metal backend is deprecated and removed.")
+                "Bitmasked SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.bitmasked(axes, dimensions, get_traceback()))

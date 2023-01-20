@@ -745,6 +745,8 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
   std::forward_list<VkDescriptorImageInfo> image_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
 
+  set_->ref_binding_objs.clear();
+
   for (auto &pair : bindings_) {
     uint32_t binding = pair.first;
     VkDescriptorType type = pair.second.type;

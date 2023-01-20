@@ -189,7 +189,7 @@ extension = _ti_core.Extension
 
 The list of currently available extensions is ['sparse', 'quant', \
     'mesh', 'quant_basic', 'data64', 'adstack', 'bls', 'assertion', \
-        'extfunc', 'dynamic_index'].
+        'extfunc'].
 """
 
 
@@ -364,11 +364,6 @@ def init(arch=None,
     # Check if installed version meets the requirements.
     if require_version is not None:
         check_require_version(require_version)
-
-    if "dynamic_index" in kwargs:
-        warnings.warn(
-            "Dynamic index is supported by default and the switch will be removed in v1.5.0.",
-            DeprecationWarning)
 
     if "default_up" in kwargs:
         raise KeyError(

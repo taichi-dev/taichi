@@ -11,7 +11,7 @@ import requests
 
 # -- own --
 from .misc import get_cache_home
-from .tinysh import bash, sh, tar
+from .tinysh import bash, sh, start, tar
 
 
 # -- code --
@@ -55,7 +55,7 @@ def escape_url(url):
     return url.replace('/', '_').replace(':', '_')
 
 
-def download_dep(url, outdir, *, strip=0, force=False, args=[]):
+def download_dep(url, outdir, *, strip=0, force=False, args=None):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -73,22 +73,24 @@ def download_dep(url, outdir, *, strip=0, force=False, args=[]):
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
-    near_caches = [
+    urls = [
         f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}',
         f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}',
+        url,
     ]
 
-    if not local_cached.exists():
-        for u in near_caches:
-            try:
-                resp = requests.head(u, timeout=1)
-                if resp.ok:
-                    print('Using near cache: ', u)
-                    url = u
-                    break
-            except Exception:
-                pass
+    size = -1
+    for u in urls:
+        try:
+            resp = requests.head(u, timeout=1)
+            if resp.ok:
+                url = u
+                size = int(resp.headers['Content-Length'])
+                break
+        except Exception:
+            pass
 
+    if not local_cached.exists() or local_cached.stat().st_size != size:
         import tqdm
 
         with requests.get(url, stream=True) as r:
@@ -114,8 +116,12 @@ def download_dep(url, outdir, *, strip=0, force=False, args=[]):
         tar('-xzf', local_cached, '-C', outdir, f'--strip-components={strip}')
     elif name.endswith('.sh'):
         bash(local_cached, *args)
-    elif name.endswith('.exe') or '.' not in name:
+    elif '.' not in name and args is not None:
         local_cached.chmod(0o755)
         sh.bake(local_cached)(*args)
+    elif name.endswith('.exe') and args is not None:
+        local_cached.chmod(0o755)
+        sh.bake(local_cached)(*args)
+        # start(local_cached, *args)
     else:
         raise RuntimeError(f'Unknown file type: {name}')

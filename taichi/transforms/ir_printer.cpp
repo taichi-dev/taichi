@@ -550,11 +550,6 @@ class IRPrinter : public IRVisitor {
           stmt->input->name(), stmt->offset);
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    print("{}{} = bit_extract({}) bit_range=[{}, {})", stmt->type_hint(),
-          stmt->name(), stmt->input->name(), stmt->bit_begin, stmt->bit_end);
-  }
-
   void visit(GetRootStmt *stmt) override {
     if (stmt->root() == nullptr)
       print("{}{} = get root nullptr", stmt->type_hint(), stmt->name());

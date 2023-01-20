@@ -74,24 +74,6 @@ def test_deprecate_element_shape_ndarray_arg():
                      element_shape=(1, ))
 
 
-# Remove this before v1.5.0
-@test_utils.test(arch=ti.metal)
-def test_deprecate_metal_sparse():
-    with pytest.raises(
-            ti.TaichiRuntimeError,
-            match="Pointer SNode on metal backend is deprecated and removed."):
-        ti.root.pointer(ti.i, 10)
-    with pytest.raises(
-            ti.TaichiRuntimeError,
-            match="Bitmasked SNode on metal backend is deprecated and removed."
-    ):
-        ti.root.bitmasked(ti.j, 10)
-    with pytest.raises(
-            ti.TaichiRuntimeError,
-            match="Dynamic SNode on metal backend is deprecated and removed."):
-        ti.root.dynamic(ti.i, 10)
-
-
 @test_utils.test(arch=ti.vulkan)
 def test_deprecated_rwtexture_type():
     n = 128
@@ -153,13 +135,3 @@ def test_incomplete_info_rwtexture():
             for i, j in ti.ndrange(n, n):
                 ret = ti.cast(1, ti.f32)
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-
-@pytest.mark.parametrize("value", [True, False])
-def test_deprecated_dynamic_index(value):
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Dynamic index is supported by default and the switch will be removed in v1.5.0."
-    ):
-        ti.init(dynamic_index=value)

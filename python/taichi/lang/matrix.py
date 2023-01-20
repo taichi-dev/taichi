@@ -1,6 +1,7 @@
 import functools
 import numbers
 from collections.abc import Iterable
+from itertools import product
 
 import numpy as np
 from taichi._lib import core as ti_python_core
@@ -13,7 +14,6 @@ from taichi.lang.enums import Layout
 from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
                                    TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
-from taichi.lang.swizzle_generator import SwizzleGenerator
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type, warning)
@@ -21,8 +21,25 @@ from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
 
 
+def _generate_swizzle_patterns(key_group: str, required_length=4):
+    """Generate vector swizzle patterns from a given set of characters.
+
+    Example:
+
+        For `key_group=xyzw` and `required_length=4`, this function will return a
+        list consists of all possible strings (no repeats) in characters
+        `x`, `y`, `z`, `w` and of length<=4:
+        [`x`, `y`, `z`, `w`, `xx`, `xy`, `yx`, ..., `xxxx`, `xxxy`, `xyzw`, ...]
+        The length of the list will be 4 + 4x4 + 4x4x4 + 4x4x4x4 = 340.
+    """
+    result = []
+    for k in range(1, required_length + 1):
+        result.extend(product(key_group, repeat=k))
+    result = [''.join(pat) for pat in result]
+    return result
+
+
 def _gen_swizzles(cls):
-    swizzle_gen = SwizzleGenerator()
     # https://www.khronos.org/opengl/wiki/Data_Type_(GLSL)#Swizzling
     KEYGROUP_SET = ['xyzw', 'rgba', 'stpq']
     cls._swizzle_to_keygroup = {}
@@ -66,14 +83,13 @@ def _gen_swizzles(cls):
             cls._swizzle_to_keygroup[attr] = key_group
 
     for key_group in KEYGROUP_SET:
-        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
+        sw_patterns = _generate_swizzle_patterns(key_group, required_length=4)
         # len=1 accessors are handled specially above
         sw_patterns = filter(lambda p: len(p) > 1, sw_patterns)
-        for pat in sw_patterns:
+        for prop_key in sw_patterns:
             # Create a function for value capturing
             def gen_property(pattern, key_group):
                 checker = cls._keygroup_to_checker[key_group]
-                prop_key = ''.join(pattern)
 
                 def prop_getter(instance):
                     checker(instance, pattern)
@@ -86,16 +102,16 @@ def _gen_swizzles(cls):
                 def prop_setter(instance, value):
                     if len(pattern) != len(value):
                         raise TaichiRuntimeError(
-                            f'value len does not match the swizzle pattern={prop_key}'
+                            f'value len does not match the swizzle pattern={pattern}'
                         )
                     checker(instance, pattern)
                     for ch, val in zip(pattern, value):
                         instance[key_group.index(ch)] = val
 
                 prop = property(prop_getter, prop_setter)
-                return prop_key, prop
+                return prop
 
-            prop_key, prop = gen_property(pat, key_group)
+            prop = gen_property(prop_key, key_group)
             setattr(cls, prop_key, prop)
             cls._swizzle_to_keygroup[prop_key] = key_group
     return cls
@@ -1465,7 +1481,10 @@ class MatrixType(CompoundType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [
+                    args[0] for _ in range(self.m) for _ in range(self.n)
+                ]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1480,17 +1499,7 @@ class MatrixType(CompoundType):
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            if len(entries) != self.m * self.n:
-                raise TaichiSyntaxError(
-                    f"Incompatible arguments for the custom vector/matrix type: ({self.n}, {self.m}), ({len(entries)})"
-                )
-            entries = [[entries[k * self.m + i] for i in range(self.m)]
-                       for k in range(self.n)]
-            return self._instantiate_in_python_scope(
-                Matrix(entries, dt=self.dtype, ndim=self.ndim))
-
-        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
+        return self._instantiate(entries)
 
     def from_real_func_ret(self, func_ret, ret_index=()):
         return self([
@@ -1500,30 +1509,20 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
-    def _instantiate_in_python_scope(self, mat):
+    def _instantiate_in_python_scope(self, entries):
+        entries = [[entries[k * self.m + i] for i in range(self.m)]
+                   for k in range(self.n)]
         return Matrix([[
-            int(mat(i, j)) if self.dtype in primitive_types.integer_types else
-            float(mat(i, j)) for j in range(self.m)
+            int(entries[i][j]) if self.dtype in primitive_types.integer_types
+            else float(entries[i][j]) for j in range(self.m)
         ] for i in range(self.n)],
                       ndim=self.ndim)
 
-    def cast(self, mat):
+    def _instantiate(self, entries):
         if in_python_scope():
-            return self._instantiate_in_python_scope(mat)
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(mat, impl.Expr) and mat.ptr.is_tensor():
-            return ops_mod.cast(mat, self.dtype)
-
-        if isinstance(mat, Matrix):
-            arr = [[mat(i, j) for j in range(self.m)] for i in range(self.n)]
-            return ops_mod.cast(make_matrix(arr), self.dtype)
-
-        return mat.cast(self.dtype)
-
-    def filled_with_scalar(self, value):
-        return self.cast(
-            Matrix([[value for _ in range(self.m)] for _ in range(self.n)],
-                   ndim=self.ndim))
+        return make_matrix_with_shape(entries, [self.n, self.m], self.dtype)
 
     def field(self, **kwargs):
         assert kwargs.get("ndim", self.ndim) == self.ndim
@@ -1534,6 +1533,10 @@ class MatrixType(CompoundType):
         if self.ndim == 1:
             return (self.n, )
         return (self.n, self.m)
+
+    def to_string(self):
+        dtype_str = self.dtype.to_string() if self.dtype is not None else ''
+        return f'MatrixType[{self.n},{self.m}, {dtype_str}]'
 
 
 class VectorType(MatrixType):
@@ -1577,7 +1580,8 @@ class VectorType(MatrixType):
 
             # initialize by a single scalar, e.g. matnxm(1)
             if isinstance(args[0], (numbers.Number, expr.Expr)):
-                return self.filled_with_scalar(args[0])
+                entries = [args[0] for _ in range(self.n)]
+                return self._instantiate(entries)
             args = args[0]
         # collect all input entries to a 1d list and then reshape
         # this is mostly for glsl style like vec4(v.xyz, 1.)
@@ -1592,35 +1596,20 @@ class VectorType(MatrixType):
             else:
                 entries.append(x)
 
-        if in_python_scope():
-            return self._instantiate_in_python_scope(
-                Vector(entries, dt=self.dtype))
-
         #  type cast
-        return make_matrix_with_shape(entries, [self.n], self.dtype)
+        return self._instantiate(entries)
 
-    def _instantiate_in_python_scope(self, vec):
+    def _instantiate_in_python_scope(self, entries):
         return Vector([
-            int(vec(i))
-            if self.dtype in primitive_types.integer_types else float(vec(i))
-            for i in range(self.n)
+            int(entries[i]) if self.dtype in primitive_types.integer_types else
+            float(entries[i]) for i in range(self.n)
         ])
 
-    def cast(self, vec):
+    def _instantiate(self, entries):
         if in_python_scope():
-            return self._instantiate_in_python_scope(vec)
+            return self._instantiate_in_python_scope(entries)
 
-        if isinstance(vec, impl.Expr) and vec.ptr.is_tensor():
-            return ops_mod.cast(vec, self.dtype)
-
-        if isinstance(vec, Matrix):
-            arr = vec.entries
-            return ops_mod.cast(make_matrix(arr), self.dtype)
-
-        return vec.cast(self.dtype)
-
-    def filled_with_scalar(self, value):
-        return self.cast(Vector([value for _ in range(self.n)]))
+        return make_matrix_with_shape(entries, [self.n], self.dtype)
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)

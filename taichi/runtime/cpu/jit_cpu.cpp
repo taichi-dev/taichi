@@ -13,7 +13,12 @@
 #include "llvm/ExecutionEngine/Orc/ExecutionUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/IRTransformLayer.h"
+// From https://github.com/JuliaLang/julia/pull/43664
+#if defined(__APPLE__) && defined(__aarch64__)
+#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#else
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
+#endif
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/RuntimeDyld.h"
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
@@ -50,6 +55,11 @@ namespace taichi::lang {
 #ifdef TI_WITH_LLVM
 using namespace llvm;
 using namespace llvm::orc;
+#if defined(__APPLE__) && defined(__aarch64__)
+typedef orc::ObjectLinkingLayer ObjLayerT;
+#else
+typedef orc::RTDyldObjectLinkingLayer ObjLayerT;
+#endif
 #endif
 
 std::pair<JITTargetMachineBuilder, llvm::DataLayout> get_host_target_info() {
@@ -87,7 +97,7 @@ class JITModuleCPU : public JITModule {
 class JITSessionCPU : public JITSession {
  private:
   ExecutionSession es_;
-  RTDyldObjectLinkingLayer object_layer_;
+  ObjLayerT object_layer_;
   IRCompileLayer compile_layer_;
   DataLayout dl_;
   MangleAndInterner mangle_;
@@ -104,12 +114,16 @@ class JITSessionCPU : public JITSession {
                 DataLayout DL)
       : JITSession(tlctx, config),
         es_(std::move(EPC)),
+#if defined(__APPLE__) && defined(__aarch64__)
+        object_layer_(es_),
+#else
         object_layer_(es_,
                       [&]() {
                         auto smgr = std::make_unique<SectionMemoryManager>();
                         memory_manager_ = smgr.get();
                         return smgr;
                       }),
+#endif
         compile_layer_(es_,
                        object_layer_,
                        std::make_unique<ConcurrentIRCompiler>(JTMB)),

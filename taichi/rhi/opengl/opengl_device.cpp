@@ -336,7 +336,7 @@ RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
     auto cmd = std::make_unique<CmdBindTextureToIndex>();
     cmd->texture = texture;
     cmd->index = binding;
-    cmd->target = device_->get_image_gl_dims(texture);
+    cmd->target = device_->get_gl_image(texture).target;
     recorded_commands_.push_back(std::move(cmd));
   }
 
@@ -692,18 +692,39 @@ DeviceAllocation GLDevice::create_image(const ImageParams &params) {
   alloc.device = this;
   alloc.alloc_id = tex;
 
-  image_to_dims_[tex] = gl_texture_dims;
-  image_to_int_format_[tex] = format;
+  GLImageAllocation gl_image{};
+  gl_image.target = gl_texture_dims;
+  gl_image.levels = 1;
+  gl_image.format = format;
+  gl_image.width = params.x;
+  gl_image.height = params.y;
+  gl_image.depth = params.z;
+  gl_image.external = false;
 
+  image_allocs_[tex] = std::move(gl_image);
   return alloc;
 }
 
 void GLDevice::destroy_image(DeviceAllocation handle) {
   GLuint texture = GLuint(handle.alloc_id);
-  glDeleteTextures(1, &texture);
-  check_opengl_error("glDeleteTextures");
-  image_to_dims_.erase(handle.alloc_id);
-  image_to_int_format_.erase(handle.alloc_id);
+  auto it = image_allocs_.find(texture);
+  if (it != image_allocs_.end()) {
+    if (!it->second.external) {
+      glDeleteTextures(1, &texture);
+      check_opengl_error("glDeleteTextures");
+    }
+    image_allocs_.erase(it);
+  }
+}
+
+DeviceAllocation GLDevice::import_image(GLuint texture,
+                                        GLImageAllocation &&gl_image) {
+  image_allocs_[texture] = std::move(gl_image);
+
+  DeviceAllocation out{};
+  out.device = this;
+  out.alloc_id = (DeviceAllocationId)texture;
+  return out;
 }
 
 void GLDevice::image_transition(DeviceAllocation img,
@@ -835,8 +856,9 @@ void GLCommandList::CmdImageTransition::execute() {
 }
 
 void GLCommandList::CmdBufferToImage::execute() {
-  GLuint image_dims = device->get_image_gl_dims(image);
-  GLuint image_internal_format = device->get_image_gl_internal_format(image);
+  const GLImageAllocation &gl_image = device->get_gl_image(image);
+  GLuint image_dims = gl_image.target;
+  GLuint image_internal_format = gl_image.format;
   GLuint image_format = gl_internal_format_to_format.at(image_internal_format);
   GLuint gl_type = gl_internal_format_to_type.at(image_internal_format);
 
@@ -869,8 +891,9 @@ void GLCommandList::CmdBufferToImage::execute() {
 }
 
 void GLCommandList::CmdImageToBuffer::execute() {
-  auto image_dims = device->get_image_gl_dims(image);
-  auto image_format = device->get_image_gl_internal_format(image);
+  const GLImageAllocation &gl_image = device->get_gl_image(image);
+  auto image_dims = gl_image.target;
+  auto image_format = gl_image.format;
   auto gl_type = gl_internal_format_to_type.at(image_format);
   auto unsized_format = gl_internal_format_to_format.at(image_format);
 

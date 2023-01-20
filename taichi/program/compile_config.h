@@ -34,7 +34,6 @@ struct CompileConfig {
   bool timeline{false};
   bool verbose;
   bool fast_math;
-  bool dynamic_index;
   bool flatten_if;
   bool make_thread_local;
   bool make_block_local;

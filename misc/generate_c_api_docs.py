@@ -91,6 +91,9 @@ if __name__ == "__main__":
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
         BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
+        BuiltInType("GLenum", "GLenum"),
+        BuiltInType("GLsizei", "GLsizei"),
+        BuiltInType("GLsizeiptr", "GLsizeiptr"),
     }
 
     for module in Module.load_all(builtin_tys):

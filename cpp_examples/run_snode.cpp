@@ -40,7 +40,7 @@ void run_snode() {
   using namespace taichi;
   using namespace lang;
   auto program = Program(Arch::x64);
-  const auto &config = program.this_thread_config();
+  const auto &config = program.compile_config();
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;
   prog_.config = config_print_ir;*/  // print_ir = True

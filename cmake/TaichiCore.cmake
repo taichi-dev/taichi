@@ -23,17 +23,6 @@ set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
-if(ANDROID)
-    set(TI_WITH_VULKAN ON)
-    set(TI_WITH_LLVM OFF)
-    set(TI_WITH_METAL OFF)
-    set(TI_WITH_CUDA OFF)
-    set(TI_WITH_OPENGL OFF)
-    set(TI_WITH_CC OFF)
-    set(TI_WITH_DX11 OFF)
-    set(TI_WITH_DX12 OFF)
-endif()
-
 if (TI_WITH_AMDGPU AND TI_WITH_CUDA)
     message(WARNING "Compiling CUDA and AMDGPU backends simultaneously")
 endif()
@@ -510,5 +499,11 @@ endif()
 
 if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
+endif()
+
+if (TI_WITH_AMDGPU)
+    file(GLOB AMDGPU_BC_FILES ${CMAKE_SOURCE_DIR}/external/amdgpu_libdevice/*.bc)
+    install(FILES ${AMDGPU_BC_FILES}
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

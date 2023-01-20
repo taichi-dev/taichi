@@ -178,7 +178,7 @@ class GLCommandList : public CommandList {
 
   struct CmdBufferToImage : public Cmd {
     BufferImageCopyParams params;
-    GLuint image{0};
+    DeviceAllocationId image{0};
     GLuint buffer{0};
     size_t offset{0};
     GLDevice *device{nullptr};
@@ -187,7 +187,7 @@ class GLCommandList : public CommandList {
 
   struct CmdImageToBuffer : public Cmd {
     BufferImageCopyParams params;
-    GLuint image{0};
+    DeviceAllocationId image{0};
     GLuint buffer{0};
     size_t offset{0};
     GLDevice *device{nullptr};
@@ -216,6 +216,16 @@ class GLStream : public Stream {
 
  private:
   GLDevice *device_{nullptr};
+};
+
+struct GLImageAllocation {
+  GLenum target;
+  GLsizei levels;
+  GLenum format;
+  GLsizei width;
+  GLsizei height;
+  GLsizei depth;
+  bool external;
 };
 
 class GLDevice : public GraphicsDevice {
@@ -273,6 +283,8 @@ class GLDevice : public GraphicsDevice {
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
 
+  DeviceAllocation import_image(GLuint texture, GLImageAllocation &&gl_image);
+
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) override;
@@ -285,19 +297,14 @@ class GLDevice : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
-  GLuint get_image_gl_dims(GLuint image) const {
-    return image_to_dims_.at(image);
-  }
-
-  GLuint get_image_gl_internal_format(GLuint image) const {
-    return image_to_int_format_.at(image);
+  GLImageAllocation get_gl_image(GLuint image) const {
+    return image_allocs_.at(image);
   }
 
  private:
   GLStream stream_;
   std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
-  std::unordered_map<GLuint, GLuint> image_to_dims_;
-  std::unordered_map<GLuint, GLuint> image_to_int_format_;
+  std::unordered_map<GLuint, GLImageAllocation> image_allocs_;
 };
 
 class GLSurface : public Surface {

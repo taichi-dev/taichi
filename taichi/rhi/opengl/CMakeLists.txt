@@ -20,5 +20,7 @@ target_include_directories(${OPENGL_RHI}
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Cross
   )
 
+if(NOT ANDROID)
 target_link_libraries(opengl_rhi PRIVATE glfw)
+endif()
 target_link_libraries(opengl_rhi PRIVATE spirv-cross-glsl spirv-cross-core)

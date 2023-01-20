@@ -1,3 +1,4 @@
+import warnings
 from functools import reduce
 
 import numpy as np
@@ -6,7 +7,6 @@ from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.lang.util import warning
 from taichi.types import annotations, f32
 
 
@@ -265,8 +265,9 @@ class SparseMatrixBuilder:
 # TODO: remove this in 1.0 release
 class sparse_matrix_builder(annotations.sparse_matrix_builder):
     def __init__(self):
-        warning(
-            'ti.linalg.sparse_matrix_builder is deprecated. Please use ti.types.sparse_matrix_builder instead.',
+        warnings.warn(
+            'ti.linalg.sparse_matrix_builder is deprecated, and it will be removed in Taichi v1.6.0. '
+            'Please use ti.types.sparse_matrix_builder instead.',
             DeprecationWarning)
 
 

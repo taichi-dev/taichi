@@ -336,7 +336,8 @@ class NGP_fw:
         self.rgb_weights.from_numpy(
             model['model.rgb_net.params'].astype(np_type))
 
-        self.density_bitfield.from_numpy(model['model.density_bitfield'].view("uint32"))
+        self.density_bitfield.from_numpy(
+            model['model.density_bitfield'].view("uint32"))
 
         self.pose.from_numpy(model['poses'][20].astype(np_type))
         if self.res[0] != 800 or self.res[1] != 800:

@@ -74,7 +74,7 @@ class MakeBlockLocalTest : public ::testing::Test {
 
   int get_block_size(int axis) const {
     axis = bls_snode_->physical_index_position[axis];
-    return (1 << bls_snode_->extractors[axis].num_bits);
+    return bls_snode_->extractors[axis].shape;
   }
 
   std::unique_ptr<SNode> root_snode_{nullptr};

@@ -19,6 +19,7 @@ find_package(ZLIB REQUIRED)
 find_library(LIBZSTD_LIBRARY zstd REQUIRED)
 
 target_link_libraries(${C_STATIC_API_TESTS_NAME} PRIVATE "-framework Cocoa" "-framework IOKit" "-framework CoreFoundation")
+target_link_libraries(${C_STATIC_API_TESTS_NAME} PRIVATE "-framework Metal")
 target_link_libraries(${C_STATIC_API_TESTS_NAME} PRIVATE "${LIBZSTD_LIBRARY}")
 target_link_libraries(${C_STATIC_API_TESTS_NAME} PRIVATE ZLIB::ZLIB)
 target_link_options(${C_STATIC_API_TESTS_NAME} PRIVATE -Wl,-dead_strip)

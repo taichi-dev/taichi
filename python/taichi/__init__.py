@@ -61,8 +61,6 @@ __customized_deprecations__ = {
 
 
 def __getattr__(attr):
-    # There's no easy way to hook accessing attribute with function calls in python3.6.
-    # So let's skip it for now.
     import warnings  # pylint: disable=C0415,W0621
     if attr == 'cfg':
         return None if lang.impl.get_runtime(

@@ -524,15 +524,15 @@ GLDevice::GLDevice() : stream_(this) {
     caps.set(DeviceCapability::spirv_has_int16, true);
     caps.set(DeviceCapability::spirv_has_float16, true);
   }
-  
+
   if (GLAD_GL_AMD_gpu_shader_int16) {
     caps.set(DeviceCapability::spirv_has_int16, true);
   }
-  
+
   if (GLAD_GL_AMD_gpu_shader_half_float) {
     caps.set(DeviceCapability::spirv_has_float16, true);
   }
-  
+
   caps.set(DeviceCapability::spirv_version, 0x10300);
   set_caps(std::move(caps));
 }
@@ -827,8 +827,7 @@ void GLCommandList::CmdBindResources::execute() {
       check_opengl_error("glBindBufferBase");
     } else {
       glBindBufferRange(bind.target, bind.index, bind.buffer,
-                        GLintptr(bind.offset),
-                        GLsizeiptr(bind.size));
+                        GLintptr(bind.offset), GLsizeiptr(bind.size));
       check_opengl_error("glBindBufferRange");
     }
   }

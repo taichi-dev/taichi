@@ -39,22 +39,27 @@ class GLResourceSet : public ShaderResourceSet {
     size_t size;
   };
 
-  const std::unordered_map<uint32_t, BufferBinding> &ssbo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ssbo_binding_map() const {
     return ssbo_binding_map_;
   }
 
-  const std::unordered_map<uint32_t, BufferBinding> &ubo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ubo_binding_map() const {
     return ubo_binding_map_;
   }
 
-  const std::unordered_map<uint32_t, GLuint> &texture_binding_map() {
+  const std::unordered_map<uint32_t, GLuint> &texture_binding_map() const {
     return texture_binding_map_;
+  }
+
+  const std::unordered_map<uint32_t, GLuint> &rw_image_binding_map() const {
+    return rw_image_binding_map_;
   }
 
  private:
   std::unordered_map<uint32_t, BufferBinding> ssbo_binding_map_;
   std::unordered_map<uint32_t, BufferBinding> ubo_binding_map_;
   std::unordered_map<uint32_t, GLuint> texture_binding_map_;
+  std::unordered_map<uint32_t, GLuint> rw_image_binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -132,19 +137,25 @@ class GLCommandList : public CommandList {
     void execute() override;
   };
 
-  struct CmdBindBufferToIndex : public Cmd {
-    GLuint buffer{0};
-    GLuint index{0};
-    GLuint offset{0};
-    GLuint size{0};
-    GLenum target{GL_SHADER_STORAGE_BUFFER};
-    void execute() override;
-  };
+  struct CmdBindResources : public Cmd {
+    struct BufferBinding {
+      GLuint buffer{0};
+      GLuint index{0};
+      GLuint offset{0};
+      GLuint size{0};
+      GLenum target{GL_SHADER_STORAGE_BUFFER};
+    };
 
-  struct CmdBindTextureToIndex : public Cmd {
-    GLuint texture{0};
-    GLuint index{0};
-    GLenum target{GL_TEXTURE_2D};
+    struct TextureBinding {
+      GLuint texture{0};
+      GLuint index{0};
+      GLenum target{GL_TEXTURE_2D};
+      GLenum format{GL_RGBA32F};
+      bool is_storage{false};
+    };
+
+    std::vector<BufferBinding> buffers;
+    std::vector<TextureBinding> textures;
     void execute() override;
   };
 

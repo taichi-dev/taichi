@@ -8,6 +8,22 @@ from tests import test_utils
 
 
 @test_utils.test()
+def test_deprecate_a_atomic_b():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"a\.atomic_add\(b\) is deprecated, and it will be removed in Taichi v1.6.0."
+    ):
+
+        @ti.kernel
+        def func():
+            a = 1
+            a.atomic_add(2)
+
+        func()
+
+
+@test_utils.test()
 def test_deprecate_element_shape_ndarray_annotation():
     with pytest.warns(
             DeprecationWarning,

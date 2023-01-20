@@ -628,12 +628,6 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   if (device_supported_features.wideLines) {
     device_features.wideLines = true;
     ti_device_->vk_caps().wide_line = true;
-  } else if (params_.is_for_ui) {
-    if (!device_features.wideLines) {
-      RHI_LOG_ERROR(
-          "Taichi GGUI wide lines feature unavailable due to lack of device "
-          "support");
-    }
   }
 
   if (ti_device_->vk_caps().vk_api_version >= VK_API_VERSION_1_1) {

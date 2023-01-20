@@ -86,8 +86,6 @@ static void get_offline_cache_key_of_snode_impl(
     serializer(extractor.num_elements_from_root);
     serializer(extractor.shape);
     serializer(extractor.acc_shape);
-    serializer(extractor.num_bits);
-    serializer(extractor.acc_offset);
     serializer(extractor.active);
   }
   serializer(snode->index_offsets);
@@ -97,8 +95,6 @@ static void get_offline_cache_key_of_snode_impl(
   serializer(snode->depth);
   serializer(snode->name);
   serializer(snode->num_cells_per_container);
-  serializer(snode->total_num_bits);
-  serializer(snode->total_bit_start);
   serializer(snode->chunk_size);
   serializer(snode->cell_size_bytes);
   serializer(snode->offset_bytes_in_parent_cell);

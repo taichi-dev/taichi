@@ -7,12 +7,11 @@ from tests import test_utils
 
 
 def _get_matrix_swizzle_apis():
-    swizzle_gen = ti.lang.swizzle_generator.SwizzleGenerator()
+    swizzle_gen = ti.lang.matrix._generate_swizzle_patterns
     KEMAP_SET = ['xyzw', 'rgba', 'stpq']
     res = []
     for key_group in KEMAP_SET:
-        sw_patterns = swizzle_gen.generate(key_group, required_length=4)
-        sw_patterns = map(lambda p: ''.join(p), sw_patterns)
+        sw_patterns = swizzle_gen(key_group, required_length=4)
         res += sw_patterns
     return sorted(res)
 
@@ -81,10 +80,10 @@ user_api[ti] = [
     'randn', 'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
     'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
-    'static_assert', 'static_print', 'stop_grad', 'svd', 'swizzle_generator',
-    'sym_eig', 'sync', 'tan', 'tanh', 'template', 'tools', 'types', 'u16',
-    'u32', 'u64', 'u8', 'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan',
-    'wasm', 'x64', 'x86_64', 'zero'
+    'static_assert', 'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync',
+    'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
+    'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64',
+    'x86_64', 'zero'
 ]
 user_api[ti.ad] = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

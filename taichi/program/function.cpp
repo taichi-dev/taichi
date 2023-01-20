@@ -13,6 +13,7 @@ Function::Function(Program *program, const FunctionKey &func_key)
 void Function::set_function_body(const std::function<void()> &func) {
   context = std::make_unique<FrontendContext>(program->compile_config().arch);
   ir = context->get_root();
+  ir_type_ = IRType::AST;
 
   func();
 
@@ -21,18 +22,11 @@ void Function::set_function_body(const std::function<void()> &func) {
     gen_offline_cache_key(program, ir.get(), &oss);
     ast_serialization_data_ = oss.str();
   }
-  irpass::compile_function(ir.get(), program->compile_config(), this,
-                           /*autodiff_mode=*/AutodiffMode::kNone,
-                           /*verbose=*/program->compile_config().print_ir,
-                           /*start_from_ast=*/true);
 }
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
   ir = std::move(func_body);
-  irpass::compile_function(ir.get(), program->compile_config(), this,
-                           /*autodiff_mode=*/AutodiffMode::kNone,
-                           /*verbose=*/program->compile_config().print_ir,
-                           /*start_from_ast=*/false);
+  ir_type_ = IRType::InitialIR;
 }
 
 std::string Function::get_name() const {

@@ -72,12 +72,6 @@ class CCTransformer : public IRVisitor {
             stmt->tb);
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    emit("{} = (({} >> {}) & ((1 << {}) - 1));",
-         define_var("Ti_i32", stmt->raw_name()), stmt->input->raw_name(),
-         stmt->bit_begin, stmt->bit_end - stmt->bit_begin);
-  }
-
   std::string define_var(std::string const &type, std::string const &name) {
     if (C90_COMPAT) {
       emit_header("{} {};", type, name);

@@ -151,6 +151,8 @@ class TaichiLLVMContext {
 
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 
+  void link_module_with_amdgpu_libdevice(std::unique_ptr<llvm::Module> &module);
+
   static int num_instructions(llvm::Function *func);
 
   void insert_nvvm_annotation(llvm::Function *func, std::string key, int val);

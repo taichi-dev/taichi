@@ -95,18 +95,6 @@ class EvalVisitor : public IRVisitor {
     }
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    auto val_opt = context_.maybe_get(stmt->input);
-    if (!val_opt) {
-      failed_ = true;
-      return;
-    }
-    const uint64_t mask = (1ULL << (stmt->bit_end - stmt->bit_begin)) - 1;
-    auto val = val_opt.value().val_int();
-    val = (val >> stmt->bit_begin) & mask;
-    insert_to_ctx(stmt, stmt->ret_type, val);
-  }
-
   void visit(LinearizeStmt *stmt) override {
     int64_t val = 0;
     for (int i = 0; i < (int)stmt->inputs.size(); ++i) {

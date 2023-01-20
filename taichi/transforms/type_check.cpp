@@ -520,10 +520,6 @@ class TypeCheck : public IRVisitor {
     stmt->all_blocks_accept(this);
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    stmt->ret_type = stmt->input->ret_type;
-  }
-
   void visit(LinearizeStmt *stmt) override {
     stmt->ret_type = PrimitiveType::i32;
   }

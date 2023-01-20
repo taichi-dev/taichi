@@ -420,11 +420,17 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
     uint64 *result_buffer) {
   TaichiLLVMContext *tlctx = nullptr;
   if (config_->arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
+#if defined(TI_WITH_CUDA)
     tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (config_->arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    tlctx = llvm_context_device_.get();
+#else
+    TI_NOT_IMPLEMENTED
+#endif 
   } else {
     tlctx = llvm_context_host_.get();
   }

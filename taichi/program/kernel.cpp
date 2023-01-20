@@ -10,10 +10,6 @@
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 
-#if defined(TI_WITH_AMDGPU)
-#include "taichi/rhi/amdgpu/amdgpu_driver.h"
-#endif
-
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif

@@ -18,10 +18,6 @@
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
 
-#if defined(TI_WITH_AMDGPU)
-#include "taichi/platform/amdgpu/detect_amdgpu.h"
-#endif
-
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"

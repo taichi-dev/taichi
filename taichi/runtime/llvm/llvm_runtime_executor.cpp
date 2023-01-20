@@ -430,7 +430,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
     tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
-#endif 
+#endif
   } else {
     tlctx = llvm_context_host_.get();
   }

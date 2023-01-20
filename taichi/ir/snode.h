@@ -48,12 +48,6 @@ struct AxisExtractor {
    */
   int acc_shape{1};
   /**
-   * Number of bits needed to store the coordinate at this index.
-   *
-   * ceil(log2(shape))
-   */
-  int num_bits{0};
-  /**
    * Whether this index (axis) is activated.
    */
   bool active{false};
@@ -138,8 +132,6 @@ class SNode {
   std::string get_node_type_name() const;
 
   std::string get_node_type_name_hinted() const;
-
-  int get_num_bits(int physical_index) const;
 
   SNode &insert_children(SNodeType t);
 

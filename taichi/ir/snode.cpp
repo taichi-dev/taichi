@@ -224,16 +224,6 @@ std::string SNode::get_node_type_name_hinted() const {
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
 }
 
-int SNode::get_num_bits(int physical_index) const {
-  int result = 0;
-  const SNode *snode = this;
-  while (snode) {
-    result += snode->extractors[physical_index].num_bits;
-    snode = snode->parent;
-  }
-  return result;
-}
-
 void SNode::print() {
   for (int i = 0; i < depth; i++) {
     fmt::print("  ");

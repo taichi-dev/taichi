@@ -1698,13 +1698,6 @@ void TaskCodeGenLLVM::visit(GetRootStmt *stmt) {
             0));
 }
 
-void TaskCodeGenLLVM::visit(BitExtractStmt *stmt) {
-  int mask = (1u << (stmt->bit_end - stmt->bit_begin)) - 1;
-  llvm_val[stmt] = builder->CreateAnd(
-      builder->CreateLShr(llvm_val[stmt->input], stmt->bit_begin),
-      tlctx->get_constant(mask));
-}
-
 void TaskCodeGenLLVM::visit(LinearizeStmt *stmt) {
   llvm::Value *val = tlctx->get_constant(0);
   for (int i = 0; i < (int)stmt->inputs.size(); i++) {

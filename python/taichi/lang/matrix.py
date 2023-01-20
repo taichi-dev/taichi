@@ -1534,6 +1534,10 @@ class MatrixType(CompoundType):
             return (self.n, )
         return (self.n, self.m)
 
+    def to_string(self):
+        dtype_str = self.dtype.to_string() if self.dtype is not None else ''
+        return f'MatrixType[{self.n},{self.m}, {dtype_str}]'
+
 
 class VectorType(MatrixType):
     def __init__(self, n, dtype):

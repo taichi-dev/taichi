@@ -208,25 +208,6 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    auto input = stmt->input->cast<ConstStmt>();
-    if (!input)
-      return;
-    std::unique_ptr<Stmt> result_stmt;
-    if (is_signed(input->val.dt)) {
-      auto result = (input->val.val_int() >> stmt->bit_begin) &
-                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
-    } else {
-      auto result = (input->val.val_uint() >> stmt->bit_begin) &
-                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
-    }
-    stmt->replace_usages_with(result_stmt.get());
-    modifier.insert_before(stmt, std::move(result_stmt));
-    modifier.erase(stmt);
-  }
-
   static bool run(IRNode *node,
                   Program *program,
                   const CompileConfig &compile_config) {

@@ -471,16 +471,6 @@ class TaskCodegen : public IRVisitor {
     ir_->register_value(stmt->raw_name(), val);
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    spirv::Value input_val = ir_->query_value(stmt->input->raw_name());
-    auto stype = input_val.stype;
-    spirv::Value tmp0 = ir_->int_immediate_number(stype, stmt->bit_begin);
-    spirv::Value tmp1 =
-        ir_->int_immediate_number(stype, stmt->bit_end - stmt->bit_begin);
-    spirv::Value val = ir_->bit_field_extract(input_val, tmp0, tmp1);
-    ir_->register_value(stmt->raw_name(), val);
-  }
-
   void visit(LoopIndexStmt *stmt) override {
     const auto stmt_name = stmt->raw_name();
     if (stmt->loop->is<OffloadedStmt>()) {

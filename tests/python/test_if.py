@@ -1,3 +1,5 @@
+import pytest
+
 import taichi as ti
 from tests import test_utils
 
@@ -15,4 +17,6 @@ def test_ifexpr():
             cond = (I < 3) & (g_v[I] < 0) | (I > n_grids - 3) & (g_v[I] > 0)
             g_v[I] = 0 if cond else g_v[I]
 
-    func()
+    with pytest.raises(ti.TaichiSyntaxError,
+                       match='Please use "ti.select" instead.'):
+        func()

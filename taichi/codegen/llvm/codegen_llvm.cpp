@@ -8,8 +8,10 @@
 #include "llvm/Linker/Linker.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/transforms.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/program/extension.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/util/file_sequence_writer.h"
@@ -2618,9 +2620,26 @@ void TaskCodeGenLLVM::emit_to_module() {
 
 LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
+  auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
+                                  Kernel *kernel) {
+    bool verbose = config.print_ir;
+    if ((kernel->is_accessor && !config.print_accessor_ir) ||
+        (kernel->is_evaluator && !config.print_evaluator_ir)) {
+      verbose = false;
+    }
+    irpass::offload_to_executable(
+        ir, config, kernel, verbose,
+        /*determine_ad_stack_size=*/kernel->autodiff_mode ==
+            AutodiffMode::kReverse,
+        /*lower_global_access=*/true,
+        /*make_thread_local=*/config.make_thread_local,
+        /*make_block_local=*/
+        is_extension_supported(config.arch, Extension::bls) &&
+            config.make_block_local);
+  };
 
   const auto &config = *compile_config;
-  kernel->offload_to_executable(config, ir);
+  offload_to_executable(ir, config, kernel);
 
   emit_to_module();
   eliminate_unused_functions();

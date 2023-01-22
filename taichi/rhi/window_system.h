@@ -1,8 +1,8 @@
 #pragma once
 
-#ifndef ANDROID
+#ifdef TI_WITH_GLFW
 #include "GLFW/glfw3.h"
-#endif  // ANDROID
+#endif  // TI_WITH_GLFW
 
 namespace taichi::lang::window_system {
 

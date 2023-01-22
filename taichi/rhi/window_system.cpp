@@ -7,7 +7,7 @@
 
 namespace taichi::lang::window_system {
 
-#ifndef ANDROID
+#ifdef TI_WITH_GLFW
 struct GLFWState {
   std::mutex mutex;
   int glfw_ref_count = 0;
@@ -55,7 +55,7 @@ void glfw_context_release() {
   return;
 }
 
-#endif  // ANDROID
+#endif  // TI_WITH_GLFW
 
 
 }

@@ -92,7 +92,7 @@ Window::~Window() {
   gui_.reset();
   renderer_.reset();
   if (config_.show_window) {
-    taichi::lang::window_system::glfwContextRelease();
+    taichi::lang::window_system::glfw_context_release();
   }
 }
 

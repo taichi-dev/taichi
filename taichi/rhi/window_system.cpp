@@ -21,7 +21,7 @@ static void glfw_error_callback(int code, const char *description) {
   RHI_LOG_ERROR(buf.data());
 }
 
-bool glfwContextAcquire() {
+bool glfw_context_acquire() {
   std::lock_guard lg(glfw_state.mutex);
   if (glfw_state.glfw_ref_count == 0) {
     auto res = glfwInit();
@@ -35,7 +35,7 @@ bool glfwContextAcquire() {
   return true;
 }
 
-void glfwContextRelease() {
+void glfw_context_release() {
   std::lock_guard lg(glfw_state.mutex);
   glfw_state.glfw_ref_count--;
   if (glfw_state.glfw_ref_count == 0) {
@@ -47,11 +47,11 @@ void glfwContextRelease() {
 
 #else
 
-bool glfwContextAcquire() {
+bool glfw_context_acquire() {
   return false;
 }
 
-void glfwContextRelease() {
+void glfw_context_release() {
   return;
 }
 

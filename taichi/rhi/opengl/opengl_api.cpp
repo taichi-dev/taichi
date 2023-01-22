@@ -45,7 +45,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
   void *get_proc_addr = nullptr;
 
 #ifndef ANDROID
-  if (window_system::glfwContextAcquire()) {
+  if (window_system::glfw_context_acquire()) {
     // Compute Shader requires OpenGL 4.3+ (or OpenGL ES 3.1+)
     if (use_gles) {
       glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -212,7 +212,7 @@ void reset_opengl() {
   supported = std::nullopt;
   kUseGles = false;
 #ifndef ANDROID
-  window_system::glfwContextRelease();
+  window_system::glfw_context_release();
 #endif
 }
 

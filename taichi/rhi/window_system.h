@@ -9,4 +9,4 @@ namespace taichi::lang::window_system {
 bool glfwContextAcquire();
 void glfwContextRelease();
 
-}
+}  // namespace taichi::lang::window_system

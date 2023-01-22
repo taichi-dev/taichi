@@ -44,7 +44,7 @@
 
 namespace taichi::ui {
 
-#if !defined(ANDROID)
+#ifdef TI_WITH_GLFW
 inline GLFWwindow *create_glfw_window_(const std::string &name,
                                        int screenWidth,
                                        int screenHeight,

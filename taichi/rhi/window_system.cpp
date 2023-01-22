@@ -28,7 +28,7 @@ bool glfw_context_acquire() {
     if (res != GLFW_TRUE) {
       return false;
     }
-    
+
     glfwSetErrorCallback(glfw_error_callback);
   }
   glfw_state.glfw_ref_count++;
@@ -57,5 +57,4 @@ void glfw_context_release() {
 
 #endif  // TI_WITH_GLFW
 
-
-}
+}  // namespace taichi::lang::window_system

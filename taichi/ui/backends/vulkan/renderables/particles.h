@@ -43,17 +43,6 @@ class Particles final : public Renderable {
     float window_height;
     float tan_half_fov;
   };
-
-  void init_particles(AppContext *app_context,
-                      int vertices_count,
-                      VertexAttributes vbo_attrs);
-
-  void update_ubo(glm::vec3 color,
-                  bool use_per_vertex_color,
-                  float radius,
-                  const Scene &scene);
-
-  void create_bindings() override;
 };
 
 }  // namespace vulkan

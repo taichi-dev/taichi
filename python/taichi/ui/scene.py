@@ -6,7 +6,10 @@ from taichi.lang.ops import atomic_add
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
-from .staging_buffer import copy_all_to_vbo, get_vbo_field
+from .staging_buffer import copy_all_to_vbo
+from .staging_buffer import get_vbo_field
+from .staging_buffer import get_indices_field
+from .staging_buffer import get_transforms_field
 from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
@@ -221,7 +224,8 @@ class Scene:
         copy_all_to_vbo(vbo, vertices, normals, 0,
                         per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_info = get_field_info(indices)
+        indices_ndarray = get_indices_field(indices) if indices else None
+        indices_info = get_field_info(indices_ndarray)
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
                         two_sided, index_count, index_offset, vertex_count,
@@ -311,8 +315,11 @@ class Scene:
         copy_all_to_vbo(vbo, vertices, normals, 0,
                         per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_info = get_field_info(indices)
-        transform_info = get_field_info(transforms)
+        indices_ndarray = get_indices_field(indices) if indices else None
+        indices_info = get_field_info(indices_ndarray)
+        transforms_ndarray = get_transforms_field(
+            transforms) if transforms else None
+        transform_info = get_field_info(transforms_ndarray)
         self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
                                  color, two_sided, transform_info,
                                  instance_count, instance_offset, index_count,

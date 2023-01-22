@@ -32,30 +32,7 @@ def get_field_info(field):
         info.shape = field.shape + field.element_shape
         return info
     # SNode
-    if default_cfg().arch == _ti_core.cuda:
-        info.field_source = _ti_core.FieldSource.TaichiCuda
-    elif default_cfg().arch == _ti_core.x64:
-        info.field_source = _ti_core.FieldSource.TaichiX64
-    elif default_cfg().arch == _ti_core.arm64:
-        info.field_source = _ti_core.FieldSource.TaichiX64
-    elif default_cfg().arch == _ti_core.vulkan:
-        info.field_source = _ti_core.FieldSource.TaichiVulkan
-    else:
-        raise Exception("unsupported taichi backend")
-    info.shape = [n for n in field.shape]
-
-    info.dtype = field.dtype
-    info.snode = field.snode.ptr
-
-    if hasattr(field, 'n'):
-        info.field_type = _ti_core.FieldType.Matrix
-        info.matrix_rows = field.n
-        info.matrix_cols = field.m
-    else:
-        info.field_type = _ti_core.FieldType.Scalar
-        info.matrix_rows = 1
-        info.matrix_cols = 1
-    return info
+    raise Exception("unsupported data source")
 
 
 def euler_to_vec(yaw, pitch):

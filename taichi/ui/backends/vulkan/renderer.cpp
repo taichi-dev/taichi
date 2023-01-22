@@ -140,9 +140,6 @@ Renderer::~Renderer() {
 
 void Renderer::cleanup() {
   render_complete_semaphore_ = nullptr;
-  for (auto &renderable : renderables_) {
-    renderable->cleanup();
-  }
   renderables_.clear();
   swap_chain_.cleanup();
   app_context_.cleanup();

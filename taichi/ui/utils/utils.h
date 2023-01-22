@@ -51,7 +51,7 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
                                        int window_pos_x,
                                        int window_pos_y,
                                        bool vsync) {
-  if (!taichi::lang::window_system::glfwContextAcquire()) {
+  if (!taichi::lang::window_system::glfw_context_acquire()) {
     printf("cannot initialize GLFW\n");
     exit(EXIT_FAILURE);
   }
@@ -64,7 +64,7 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
                             nullptr);
 
   if (!window) {
-    taichi::lang::window_system::glfwContextRelease();
+    taichi::lang::window_system::glfw_context_release();
     exit(EXIT_FAILURE);
   }
 

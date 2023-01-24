@@ -159,6 +159,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   endif()
 
   message("Building with GLFW")
+  add_compile_definitions(TI_WITH_GLFW)
   add_subdirectory(external/glfw)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE glfw)
   target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glfw/include)

@@ -127,6 +127,10 @@ intptr_t Ndarray::get_device_allocation_ptr_as_int() const {
   return reinterpret_cast<intptr_t>(&ndarray_alloc_);
 }
 
+DeviceAllocation Ndarray::get_device_allocation() const {
+  return ndarray_alloc_;
+}
+
 std::vector<int> Ndarray::get_element_shape() const {
   return data_type_shape(dtype);
 }

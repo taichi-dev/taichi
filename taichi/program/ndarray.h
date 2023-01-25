@@ -55,6 +55,7 @@ class TI_DLL_EXPORT Ndarray {
   DataType get_element_data_type() const;
   intptr_t get_data_ptr_as_int() const;
   intptr_t get_device_allocation_ptr_as_int() const;
+  DeviceAllocation get_device_allocation() const;
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
   TypedConstant read(const std::vector<int> &I) const;

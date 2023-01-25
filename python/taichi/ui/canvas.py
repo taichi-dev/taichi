@@ -2,9 +2,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang._texture import Texture
 
-from .staging_buffer import copy_all_to_vbo
-from .staging_buffer import get_vbo_field
-from .staging_buffer import to_rgba8
+from .staging_buffer import copy_all_to_vbo, get_vbo_field, to_rgba8
 from .utils import get_field_info
 
 

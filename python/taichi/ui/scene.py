@@ -6,8 +6,7 @@ from taichi.lang.ops import atomic_add
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
-from .staging_buffer import copy_all_to_vbo
-from .staging_buffer import get_vbo_field
+from .staging_buffer import copy_all_to_vbo, get_vbo_field
 from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}

@@ -36,9 +36,8 @@ def get_depth_ndarray(window):
 
 
 @kernel
-def copy_all_to_vbo(vbo: ti.template(), vertex: template(),
-                    normal: template(), texcoords: template(),
-                    color: template()):
+def copy_all_to_vbo(vbo: ti.template(), vertex: template(), normal: template(),
+                    texcoords: template(), color: template()):
     for i in vertex:
         if ti.static(vertex.n == 3):
             vbo[i][0:3] = vertex[i]

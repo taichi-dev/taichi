@@ -539,7 +539,12 @@ void export_lang(py::module &m) {
       });
 
   py::class_<DeviceAllocation>(m, "DeviceAllocation")
-      .def(py::init<uint64_t, uint64_t>(),
+      .def(py::init([](uint64_t device, uint64_t alloc_id) -> DeviceAllocation {
+             DeviceAllocation alloc;
+             alloc.device = (Device *)device;
+             alloc.alloc_id = (DeviceAllocationId)alloc_id;
+             return alloc;
+           }),
            py::arg("device"), py::arg("alloc_id"))
       .def_readonly("device", &DeviceAllocation::device)
       .def_readonly("alloc_id", &DeviceAllocation::alloc_id);

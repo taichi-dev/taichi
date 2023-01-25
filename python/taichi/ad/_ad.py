@@ -485,7 +485,123 @@ class FwdMode:
             self.param.dual.fill(0)
 
 
+class TapeNdarray:
+    def __init__(self,
+                 loss=None,
+                 clear_gradients=True,
+                 validation=False,
+                 grad_check=None):
+        """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
+        context manager would catching all of the callings of functions that
+        decorated by :func:`~taichi.lang.kernel_impl.kernel` or
+        :func:`~taichi.ad.grad_replaced` under `with` statement, and calculate
+        all the partial gradients of a given loss variable by calling all of the
+        gradient function of the callings caught in reverse order while `with`
+        statement ended.
+
+        See also :func:`~taichi.lang.kernel_impl.kernel` and
+        :func:`~taichi.ad.grad_replaced` for gradient functions.
+
+        Args:
+            loss(:class:`~taichi.lang.expr.Expr`): The loss field, which shape should be ().
+            clear_gradients(Bool): Before `with` body start, clear all gradients or not.
+            validation(Bool): Check whether the code inside the context manager is autodiff valid, e.g., agree with the global data access rule.
+            grad_check(List[Field]): List of fields that need to check gradients.
+
+        Example::
+
+            >>> @ti.kernel
+            >>> def sum(a: ti.float32):
+            >>>     for I in ti.grouped(x):
+            >>>         y[None] += x[I] ** a
+            >>>
+            >>> with ti.ad.Tape(loss = y):
+            >>>     sum(2)
+        """
+        self.calls = []
+        self.modes = []
+        self.entered = False
+        self.gradient_evaluated = False
+        self.clear_gradients = clear_gradients
+        self.validation = validation
+        self.runtime = impl.get_runtime()
+        if not self.runtime.prog.config().debug and self.validation:
+            warnings.warn(
+                "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
+                Warning)
+        self.eval_on_exit = loss is not None
+        self.loss = loss
+        self.grad_checker = None
+        if grad_check:
+            assert isinstance(
+                grad_check, list
+            ), "grad_check should be a list of fields that need to check gradients."
+            self.grad_checker = GradChecker(loss, grad_check)
+
+    def __enter__(self):
+        assert not self.entered, "Tape can be entered only once."
+        self.entered = True
+
+        # impl.get_runtime().materialize()
+        if len(self.loss.shape) != 0:
+            raise RuntimeError(
+                'The loss of `Tape` must be a 0-D ndarray, i.e. scalar')
+        if self.loss.grad is None:
+            raise RuntimeError(
+                'Gradients of loss are not allocated, please use ti.ndarray(..., needs_grad=True)'
+                ' for all ndarrays that are required by autodiff.')
+        # if self.clear_gradients:
+        #     clear_all_gradients()
+        # if self.validation:
+        #     clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
+
+        @kernel
+        def clear_loss(loss: ndarray()):
+            loss[None] = 0.0
+            loss.grad[None] = 1.0
+
+        clear_loss(self.loss)
+
+        # Attach the context manager to runtime
+        self.runtime.target_tape = self
+        return self
+
+    def __exit__(self, _type, value, tb):
+        self.runtime.target_tape = None
+        if self.eval_on_exit:
+            self.grad()
+        for calls, mode in zip(self.calls, self.modes):
+            calls[0].autodiff_mode = mode
+
+    def insert(self, func, args):
+        # Kernels with mode `AutodiffMode.NONE` and `AutodiffMode.VALIDATION` are all forward kernels.
+        # The difference is there are `assert` for global data access rule check in VALIDATION kernels.
+        assert func.autodiff_mode in (
+            AutodiffMode.NONE, AutodiffMode.VALIDATION
+        ), "Inserted funcs should be forward kernels."
+        self.modes.append(func.autodiff_mode)
+        if self.validation:
+            func.autodiff_mode = AutodiffMode.VALIDATION
+        self.calls.append((func, args))
+
+    def grad(self):
+        assert self.entered, "Before evaluating gradients tape must be entered."
+        assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
+
+        for func, args in reversed(self.calls):
+            # we need to check whether "func" has "grad" attribute
+            # since we insert write_int and write_float kernels to self.calls
+            # e.g. x[None] = 0.0, this func has no grad attribute
+            if hasattr(func, 'grad'):
+                self.loss.grad.fill(1.0)
+                func.grad(*args)
+
+        self.gradient_evaluated = True
+        if self.grad_checker:
+            self.grad_checker.add_calls(self.calls)
+            self.grad_checker.check_grad()
+
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
-    'no_grad'
+    'no_grad', 'TapeNdarray'
 ]

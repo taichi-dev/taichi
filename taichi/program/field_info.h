@@ -17,8 +17,9 @@ enum class FieldSource : int {
   TaichiCuda = 0,
   TaichiX64 = 1,
   TaichiVulkan = 2,
-  TaichiOpenGL = 3
-  // support np array / torch tensor in the future?
+  TaichiOpenGL = 3,
+  TaichiNDarray = 4,
+  HostMappedPtr = 5,
 };
 
 enum class FieldType : int { Scalar = 0, Matrix = 1 };
@@ -29,6 +30,7 @@ struct FieldInfo {
   DEFINE_PROPERTY(int, matrix_rows);
   DEFINE_PROPERTY(int, matrix_cols);
   DEFINE_PROPERTY(std::vector<int>, shape);
+  DEFINE_PROPERTY(uint64_t, num_elements);
   DEFINE_PROPERTY(FieldSource, field_source);
   DEFINE_PROPERTY(taichi::lang::DataType, dtype);
 

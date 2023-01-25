@@ -539,6 +539,8 @@ void export_lang(py::module &m) {
       });
 
   py::class_<DeviceAllocation>(m, "DeviceAllocation")
+      .def(py::init<uint64_t, uint64_t>(),
+           py::arg("device"), py::arg("alloc_id"))
       .def_readonly("device", &DeviceAllocation::device)
       .def_readonly("alloc_id", &DeviceAllocation::alloc_id);
 

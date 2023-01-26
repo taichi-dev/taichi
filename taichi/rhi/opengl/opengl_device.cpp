@@ -847,7 +847,8 @@ void GLCommandList::CmdBindResources::execute() {
 }
 
 void GLCommandList::CmdBufferBarrier::execute() {
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT |
+                  GL_UNIFORM_BARRIER_BIT);
   check_opengl_error("glMemoryBarrier");
 }
 

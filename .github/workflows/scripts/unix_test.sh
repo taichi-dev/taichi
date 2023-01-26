@@ -87,6 +87,7 @@ EOF
     popd
 fi
 
+echo "Runnint cpp tests on platform: $PLATFORM"
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     python3 tests/run_tests.py --cpp
     if [[ $PLATFORM == *"m1"* ]] || [[ $PLATFORM == *"macos"* ]]; then

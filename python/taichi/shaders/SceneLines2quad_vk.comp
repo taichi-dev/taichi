@@ -1,0 +1,124 @@
+#version 450
+
+/*
+ * struct Vertex {
+ *   vec3 pos;
+ *   vec3 normal;
+ *   vec2 tex_coord;
+ *   vec4 color;
+ * };
+ *
+ * We will assume pos is always first in struct.
+ */
+
+layout(binding = 0, std430) buffer InputVB {
+  float vb_in[];
+};
+
+layout(binding = 1, std430) buffer InputIB {
+  int ib_in[];
+};
+
+struct VertexOut {
+  vec4 out_pos;
+  vec4 out_color;
+};
+
+layout(binding = 2, std430) buffer OutputVB {
+  VertexOut vb_out[];
+};
+
+layout(binding = 3, std430) buffer OutputIB {
+  int ib_out[];
+};
+
+struct SceneUBO {
+  vec3 camera_pos;
+  mat4 view;
+  mat4 projection;
+  vec3 ambient_light;
+  int point_light_count;
+};
+
+layout(binding = 4) uniform UniformBufferObject {
+  SceneUBO scene;
+  vec3 color;
+  float line_width;
+  int per_vertex_color_offset;
+  int vertex_stride;
+  int start_vertex;
+  int start_index;
+  int num_vertices;
+  int is_indexed;
+  float aspect_ratio;
+}
+ubo;
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+void main() {
+  int thread_idx = int(gl_GlobalInvocationID.x);
+  if (thread_idx * 2 >= ubo.num_vertices) return;
+
+  uint vert0 = ubo.start_vertex;
+  uint vert1 = ubo.start_vertex;
+  if (ubo.is_indexed != 0) {
+    int index = thread_idx * 2 + ubo.start_index;
+    vert0 += ib_in[index];
+    vert1 += ib_in[index + 1];
+  } else {
+    vert0 += thread_idx * 2;
+    vert1 += thread_idx * 2 + 1;
+  }
+
+  vec4 pos0 = vec4(vb_in[vert0 * ubo.vertex_stride    ],
+                   vb_in[vert0 * ubo.vertex_stride + 1],
+                   vb_in[vert0 * ubo.vertex_stride + 2],
+                   1.0);
+  pos0 = ubo.scene.projection * ubo.scene.view * pos0;
+  vec4 color0 = vec4(ubo.color, 1.0);
+  vec4 pos1 = vec4(vb_in[vert1 * ubo.vertex_stride    ],
+                   vb_in[vert1 * ubo.vertex_stride + 1],
+                   vb_in[vert1 * ubo.vertex_stride + 2],
+                   1.0);
+  pos1 = ubo.scene.projection * ubo.scene.view * pos1;
+  vec4 color1 = vec4(ubo.color, 1.0);
+
+  if (ubo.per_vertex_color_offset > 0) {
+    color0 = vec4(vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset],
+                  vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
+                  vb_in[vert0 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
+                  1.0);
+    color1 = vec4(vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset],
+                  vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 1],
+                  vb_in[vert1 * ubo.vertex_stride + ubo.per_vertex_color_offset + 2],
+                  1.0);
+  }
+
+  vec2 aspect_adjust = vec2(ubo.aspect_ratio, 1.0);
+  vec2 dir = normalize((pos1.xy / pos1.w - pos0.xy / pos0.w) * aspect_adjust);
+  vec2 tangent = vec2(-dir.y, dir.x) * ubo.line_width / aspect_adjust;
+
+  vec4 out_pos00 = pos0;
+  vec4 out_pos01 = pos0;
+  out_pos00.xy += vec2(tangent * pos0.w);
+  out_pos01.xy -= vec2(tangent * pos0.w);
+
+  vec4 out_pos10 = pos1;
+  vec4 out_pos11 = pos1;
+  out_pos10.xy += vec2(tangent * pos1.w);
+  out_pos11.xy -= vec2(tangent * pos1.w);
+
+  vb_out[thread_idx * 4    ] = VertexOut(out_pos00, color0);
+  vb_out[thread_idx * 4 + 1] = VertexOut(out_pos01, color0);
+
+  vb_out[thread_idx * 4 + 2] = VertexOut(out_pos10, color1);
+  vb_out[thread_idx * 4 + 3] = VertexOut(out_pos11, color1);
+
+  ib_out[thread_idx * 6    ] = thread_idx * 4;
+  ib_out[thread_idx * 6 + 1] = thread_idx * 4 + 1;
+  ib_out[thread_idx * 6 + 2] = thread_idx * 4 + 2;
+
+  ib_out[thread_idx * 6 + 3] = thread_idx * 4 + 2;
+  ib_out[thread_idx * 6 + 4] = thread_idx * 4 + 1;
+  ib_out[thread_idx * 6 + 5] = thread_idx * 4 + 3;
+}

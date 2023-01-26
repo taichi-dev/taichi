@@ -1,7 +1,8 @@
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._texture import Texture
 from taichi.lang.exception import TaichiCompilationError
-from taichi.lang.matrix import Matrix, MatrixNdarray, MatrixType, VectorNdarray
+from taichi.lang.matrix import (Matrix, MatrixNdarray, MatrixType,
+                                VectorNdarray, VectorType)
 from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
@@ -11,9 +12,14 @@ template_types = (NdarrayType, TextureType, template)
 
 
 def check_type_match(lhs, rhs):
-    if cook_dtype(lhs) == cook_dtype(rhs):
-        return True
-    return False
+    if isinstance(lhs, MatrixType) and isinstance(rhs, MatrixType):
+        return lhs.n == rhs.n and lhs.m == rhs.m and (lhs.dtype == rhs.dtype
+                                                      or lhs.dtype is None
+                                                      or rhs.dtype is None)
+    if isinstance(lhs, MatrixType) or isinstance(rhs, MatrixType):
+        return False
+
+    return cook_dtype(lhs) == cook_dtype(rhs)
 
 
 def produce_injected_args_from_template(kernel, template_args):
@@ -43,52 +49,49 @@ def produce_injected_args(kernel, symbolic_args=None):
     for i, arg in enumerate(kernel.arguments):
         anno = arg.annotation
         if isinstance(anno, NdarrayType):
-            # TODO(Haidong) we should always use MatrixType and get rid of the element shapes
             if symbolic_args is not None:
-                element_shape = tuple(symbolic_args[i].element_shape)
-                element_dim = len(element_shape)
+                # TODO: reconstruct dtype to be TensorType from taichi_core instead of the Python ones
+                element_dim = len(symbolic_args[i].element_shape)
+                if element_dim == 0 or symbolic_args[i].element_shape == (1, ):
+                    dtype = symbolic_args[i].dtype()
+                elif element_dim == 1:
+                    dtype = VectorType(symbolic_args[i].element_shape[0],
+                                       symbolic_args[i].dtype())
+                elif element_dim == 2:
+                    dtype = MatrixType(symbolic_args[i].element_shape[0],
+                                       symbolic_args[i].element_shape[1], 2,
+                                       symbolic_args[i].dtype())
+                else:
+                    raise TaichiCompilationError('Not supported')
                 ndim = symbolic_args[i].field_dim
-                dtype = symbolic_args[i].dtype()
             else:
-                element_shape = anno.dtype.get_shape()
-                element_dim = anno.dtype.ndim
                 ndim = anno.ndim
                 dtype = anno.dtype
 
-            if element_shape is None or ndim is None:
-                raise TaichiCompilationError(
-                    'Please either specify both `element_shape` and `ndim` '
-                    'in the param annotation, or provide an example '
-                    f'ndarray for param={arg.name}')
             if anno.ndim is not None and ndim != anno.ndim:
                 raise TaichiCompilationError(
                     f'{ndim} from Arg {arg.name} doesn\'t match kernel\'s annotated ndim={anno.ndim}'
                 )
-            anno_dtype = anno.dtype
-            if isinstance(anno_dtype, MatrixType):
-                anno_dtype = anno.dtype.dtype
-            if anno_dtype is not None:
-                if not check_type_match(dtype, anno_dtype):
-                    raise TaichiCompilationError(
-                        f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno_dtype.to_string()}'
-                    )
 
-            if element_dim is None or element_dim == 0 or element_shape == (
-                    1, ):
-                injected_args.append(ScalarNdarray(dtype, (2, ) * ndim))
-            elif element_dim == 1:
+            if anno.dtype is not None and not check_type_match(
+                    dtype, anno.dtype):
+                raise TaichiCompilationError(
+                    f' Arg {arg.name}\'s dtype {dtype.to_string()} doesn\'t match kernel\'s annotated dtype={anno.dtype.to_string()}'
+                )
+
+            if isinstance(dtype, VectorType):
                 injected_args.append(
-                    VectorNdarray(element_shape[0],
-                                  dtype=dtype,
+                    VectorNdarray(dtype.n,
+                                  dtype=dtype.dtype,
                                   shape=(2, ) * ndim))
-            elif element_dim == 2:
+            elif isinstance(dtype, MatrixType):
                 injected_args.append(
-                    MatrixNdarray(element_shape[0],
-                                  element_shape[1],
-                                  dtype=dtype,
+                    MatrixNdarray(dtype.n,
+                                  dtype.m,
+                                  dtype=dtype.dtype,
                                   shape=(2, ) * ndim))
             else:
-                raise RuntimeError('')
+                injected_args.append(ScalarNdarray(dtype, (2, ) * ndim))
         elif isinstance(anno, RWTextureType):
             texture_shape = (2, ) * anno.num_dimensions
             fmt = anno.fmt

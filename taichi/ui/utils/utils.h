@@ -33,9 +33,7 @@
 #endif
 
 #include "taichi/rhi/vulkan/vulkan_common.h"
-#if !defined(ANDROID)
-#include <GLFW/glfw3.h>
-#endif
+#include "taichi/rhi/window_system.h"
 
 #include <stdarg.h>
 
@@ -46,28 +44,18 @@
 
 namespace taichi::ui {
 
-#if !defined(ANDROID)
-inline void initGLFW() {
-  if (!glfwInit()) {
-    printf("cannot initialize GLFW\n");
-    exit(EXIT_FAILURE);
-  }
-}
-
-static void glfw_error_callback(int code, const char *description) {
-  printf("GLFW Error %d: %s\n", code, description);
-}
-
+#ifdef TI_WITH_GLFW
 inline GLFWwindow *create_glfw_window_(const std::string &name,
                                        int screenWidth,
                                        int screenHeight,
                                        int window_pos_x,
                                        int window_pos_y,
                                        bool vsync) {
-  initGLFW();
+  if (!taichi::lang::window_system::glfw_context_acquire()) {
+    printf("cannot initialize GLFW\n");
+    exit(EXIT_FAILURE);
+  }
   GLFWwindow *window;
-
-  glfwSetErrorCallback(glfw_error_callback);
 
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -76,7 +64,7 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
                             nullptr);
 
   if (!window) {
-    glfwTerminate();
+    taichi::lang::window_system::glfw_context_release();
     exit(EXIT_FAILURE);
   }
 

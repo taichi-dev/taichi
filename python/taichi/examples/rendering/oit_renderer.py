@@ -16,15 +16,15 @@ alpha_min = 0.2
 alpha_width = 0.3
 camera_pos = vec3(0, 0, 5)
 
-Hit = ti.types.struct(pos=vec3, normal=vec3, color=vec4, depth=float)
-Sphere = ti.types.struct(center=vec3, radius=float, color=vec4)
-ColorWithDepth = ti.types.struct(color=vec4, depth=float)
-Light = ti.types.struct(pos=vec3, dir=vec3)
+Line = ti.types.struct(pos=vec3, dir=vec3)
 
 background_color = vec4(0.2, 0.2, 0.2, 1)
 
+Sphere = ti.types.struct(center=vec3, radius=float, color=vec4)
 spheres = Sphere.field()
 ti.root.dynamic(ti.j, 1024, chunk_size=64).place(spheres)
+
+ColorWithDepth = ti.types.struct(color=vec4, depth=float)
 colors_in_pixel = ColorWithDepth.field()
 ti.root.dense(ti.ij, res).dynamic(ti.k, 2048,
                                   chunk_size=64).place(colors_in_pixel)
@@ -38,24 +38,22 @@ def gooch_lighting(normal: ti.template()):
 
 
 @ti.func
-def shading(hit: ti.template()):
-    colorRGB = hit.color.rgb * gooch_lighting(hit.normal)
-    alpha = clamp(alpha_min + hit.color.a * alpha_width, 0, 1)
+def shading(color: ti.template(), normal: ti.template()):
+    colorRGB = color.rgb * gooch_lighting(normal)
+    alpha = clamp(alpha_min + color.a * alpha_width, 0, 1)
     return vec4(colorRGB, alpha)
 
 
 @ti.func
-def intersect_sphere(light: ti.template(), sphere: ti.template()):
-    hit_pos1 = vec3(0)
-    hit_pos2 = vec3(0)
-    normal1 = vec3(0)
-    normal2 = vec3(0)
+def intersect_sphere(line: ti.template(), sphere: ti.template()):
+    color1 = vec4(0)
+    color2 = vec4(0)
     dist1 = inf
     dist2 = inf
-    l = sphere.center - light.pos
+    l = sphere.center - line.pos
     l2 = l.dot(l)
     r2 = sphere.radius * sphere.radius
-    tp = l.dot(light.dir)
+    tp = l.dot(line.dir)
     out_of_sphere = (l2 > r2)
     may_have_intersection = True
     if -eps < l2 - r2 < eps:
@@ -70,29 +68,38 @@ def intersect_sphere(light: ti.template(), sphere: ti.template()):
             tt = ti.sqrt(r2 - d2)
             t1 = tp - tt
             if t1 > 0:
-                hit_pos1 = light.pos + light.dir * t1
+                hit_pos1 = line.pos + line.dir * t1
                 dist1 = t1
                 normal1 = normalize(hit_pos1 - sphere.center)
+                color1 = shading(sphere.color, normal1)
             t2 = tp + tt
             if t2 > 0:
-                hit_pos2 = light.pos + light.dir * t2
+                hit_pos2 = line.pos + line.dir * t2
                 dist2 = t2
                 normal2 = normalize(hit_pos2 - sphere.center)
-    return Hit(pos=hit_pos1, normal=normal1, color=sphere.color, depth=dist1), \
-           Hit(pos=hit_pos2, normal=normal2, color=sphere.color, depth=dist2)
+                color2 = shading(sphere.color, normal2)
+    return ColorWithDepth(color=color1, depth=dist1), \
+           ColorWithDepth(color=color2, depth=dist2)
 
 
 @ti.func
-def get_intersections(u, v, light: ti.template()):
+def get_line_of_vision(u, v):
+    ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
+                   (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
+    ray_dir = normalize(ray_dir)
+    return Line(pos=camera_pos, dir=ray_dir)
+
+
+@ti.func
+def get_intersections(u, v):
+    line = get_line_of_vision(u, v)
     colors_in_pixel[u, v].deactivate()
     for i in range(spheres.length()):
-        hit1, hit2 = intersect_sphere(light, spheres[i])
+        hit1, hit2 = intersect_sphere(line, spheres[i])
         if hit1.depth < inf:
-            colors_in_pixel[u, v].append(
-                ColorWithDepth(color=shading(hit1), depth=hit1.depth))
+            colors_in_pixel[u, v].append(hit1)
         if hit2.depth < inf:
-            colors_in_pixel[u, v].append(
-                ColorWithDepth(color=shading(hit2), depth=hit2.depth))
+            colors_in_pixel[u, v].append(hit2)
 
 
 @ti.func
@@ -115,12 +122,12 @@ def blend(color: ti.template(), base_color: ti.template()):
 
 @ti.func
 def get_color(u, v):
-    bubble_sort(u, v)
     color = vec4(0)
     for i in range(colors_in_pixel[u, v].length()):
         blend(color, colors_in_pixel[u, v, i].color)
     blend(color, background_color)
-    return color
+    gamma_corrected = ti.pow(color.rgb * color.a, 1 / 2.2)
+    color_buffer[u, v] = gamma_corrected
 
 
 stratify_res = 5
@@ -128,8 +135,8 @@ inv_stratify = 1.0 / stratify_res
 
 
 @ti.kernel
-def render():
-    for i in range(256):
+def generate_sphere(n: ti.i32):
+    for i in range(n):
         spheres.append(
             Sphere(
                 vec3(ti.random() * 3 - 1.5,
@@ -138,17 +145,26 @@ def render():
                 ti.random() * 0.2 + 0.1,
                 (ti.random(), ti.random(), ti.random(), ti.random())))
 
+
+@ti.kernel
+def render():
     for u, v in color_buffer:
-        ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
-                       (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
-        ray_dir = normalize(ray_dir)
-        get_intersections(u, v, Light(pos=camera_pos, dir=ray_dir))
-        color = get_color(u, v)
-        color_buffer[u, v] = ti.pow(color.rgb * color.a, 1 / 2.2)
+        get_intersections(u, v)
+        bubble_sort(u, v)
+        get_color(u, v)
+
+
+@ti.kernel
+def init():
+    spheres.deactivate()
+    for u, v in color_buffer:
+        colors_in_pixel[u, v].deactivate()
 
 
 def main():
     gui = ti.GUI('OIT', res, fast_gui=True)
+    init()
+    generate_sphere(256)
     render()
     gui.set_image(color_buffer)
     while gui.running:

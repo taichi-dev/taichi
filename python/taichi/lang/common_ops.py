@@ -19,7 +19,7 @@ class TaichiOperations:
     def __getattr__(self, item):
         if item in TaichiOperations.__deprecated_atomic_ops__:
             warnings.warn(
-                f"a.{item}(b) is deprecated. Please use ti.{item}(a, b) instead.",
+                f"a.{item}(b) is deprecated, and it will be removed in Taichi v1.6.0. Please use ti.{item}(a, b) instead.",
                 DeprecationWarning)
             return getattr(self,
                            TaichiOperations.__deprecated_atomic_ops__[item])

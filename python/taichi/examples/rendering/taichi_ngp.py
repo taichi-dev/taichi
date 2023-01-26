@@ -205,8 +205,8 @@ class NGP_fw:
         self.pose = ti.Matrix.field(n=3, m=4, dtype=data_type, shape=())
 
         # density_bitfield is used for point sampling
-        self.density_bitfield = ti.field(ti.uint8,
-                                         shape=(cascades * grid_size**3 // 8))
+        self.density_bitfield = ti.field(ti.uint32,
+                                         shape=(cascades * grid_size**3 // 32))
 
         # count the number of rays that still alive
         self.counter = ti.field(ti.i32, shape=())
@@ -336,7 +336,8 @@ class NGP_fw:
         self.rgb_weights.from_numpy(
             model['model.rgb_net.params'].astype(np_type))
 
-        self.density_bitfield.from_numpy(model['model.density_bitfield'])
+        self.density_bitfield.from_numpy(
+            model['model.density_bitfield'].view("uint32"))
 
         self.pose.from_numpy(model['poses'][20].astype(np_type))
         if self.res[0] != 800 or self.res[1] != 800:
@@ -475,8 +476,8 @@ class NGP_fw:
 
                 idx = __morton3D(ti.cast(nxyz, ti.u32))
                 # occ = density_grid_taichi[idx] > 5.912066756501768
-                occ = ti.u32(self.density_bitfield[ti.int32(
-                    idx // 8)]) & (1 << ti.u32(idx % 8))
+                occ = self.density_bitfield[ti.int32(idx // 32)] & \
+                      (1 << ti.u32(idx % 32))
 
                 if occ:
                     sn = start_idx + s

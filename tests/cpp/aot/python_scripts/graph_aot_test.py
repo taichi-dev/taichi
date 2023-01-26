@@ -16,12 +16,9 @@ def compile_graph_aot(arch):
             arr[i] += base + i
 
     @ti.kernel
-    def run1(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
-        for i in arr:
-            arr[i] += base + i
-
-    @ti.kernel
-    def run2(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.i32)):
+    def run1(base: int, arr: ti.types.ndarray(ndim=1,
+                                              dtype=ti.types.vector(1,
+                                                                    ti.i32))):
         for i in arr:
             arr[i] += base + i
 
@@ -41,12 +38,12 @@ def compile_graph_aot(arch):
     g_builder = ti.graph.GraphBuilder()
 
     g_builder.dispatch(run0, base0, arr0)
-    g_builder.dispatch(run1, base1, arr0)
-    g_builder.dispatch(run2, base2, arr0)
+    g_builder.dispatch(run0, base1, arr0)
+    g_builder.dispatch(run0, base2, arr0)
 
-    g_builder.dispatch(run0, base0, arr1)
+    g_builder.dispatch(run1, base0, arr1)
     g_builder.dispatch(run1, base1, arr1)
-    g_builder.dispatch(run2, base2, arr1)
+    g_builder.dispatch(run1, base2, arr1)
 
     run_graph = g_builder.compile()
 

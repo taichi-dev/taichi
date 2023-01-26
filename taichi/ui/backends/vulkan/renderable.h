@@ -56,6 +56,10 @@ class Renderable {
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);
 
+  virtual void record_prepass_this_frame_commands(
+      taichi::lang::CommandList *command_list) {
+  }
+
   virtual ~Renderable() = default;
 
   taichi::lang::Pipeline &pipeline();
@@ -92,7 +96,7 @@ class Renderable {
 
   virtual void create_bindings();
 
-  void create_graphics_pipeline();
+  virtual void create_graphics_pipeline();
 
   void create_vertex_buffer();
 

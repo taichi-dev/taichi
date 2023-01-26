@@ -1197,30 +1197,6 @@ class LinearizeStmt : public Stmt {
 };
 
 /**
- * Extract an interval of bits from an integral value.
- * Equivalent to (|input| >> |bit_begin|) &
- *   ((1 << (|bit_end| - |bit_begin|)) - 1).
- */
-class BitExtractStmt : public Stmt {
- public:
-  Stmt *input;
-  int bit_begin, bit_end;
-  bool simplified;
-  BitExtractStmt(Stmt *input, int bit_begin, int bit_end)
-      : input(input), bit_begin(bit_begin), bit_end(bit_end) {
-    simplified = false;
-    TI_STMT_REG_FIELDS;
-  }
-
-  bool has_global_side_effect() const override {
-    return false;
-  }
-
-  TI_STMT_DEF_FIELDS(ret_type, input, bit_begin, bit_end, simplified);
-  TI_DEFINE_ACCEPT_AND_CLONE
-};
-
-/**
  * The SNode root.
  */
 class GetRootStmt : public Stmt {
@@ -1439,9 +1415,6 @@ class LoopIndexStmt : public Stmt {
   bool has_global_side_effect() const override {
     return false;
   }
-
-  // Return the number of bits of the loop, or -1 if unknown.
-  int max_num_bits() const;
 
   TI_STMT_DEF_FIELDS(ret_type, loop, index);
   TI_DEFINE_ACCEPT_AND_CLONE

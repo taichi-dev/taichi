@@ -18,6 +18,10 @@ DeviceAllocationGuard::~DeviceAllocationGuard() {
   device->dealloc_memory(*this);
 }
 
+DeviceImageGuard::~DeviceImageGuard() {
+  dynamic_cast<GraphicsDevice *>(device)->destroy_image(*this);
+}
+
 DevicePtr DeviceAllocation::get_ptr(uint64_t offset) const {
   return DevicePtr{{device, alloc_id}, offset};
 }

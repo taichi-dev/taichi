@@ -552,10 +552,16 @@ void VulkanPipeline::create_graphics_pipeline(
   color_blending.blendConstants[3] = 0.0f;
 
   if (raster_params.blending.size()) {
-    RHI_ASSERT(raster_params.blending.size() ==
-                   graphics_pipeline_template_->blend_attachments.size() &&
-               "RasterParams::blending (size={}) must either be zero sized "
-               "or match the number of fragment shader outputs (size={}).");
+    if (raster_params.blending.size() != color_blending.attachmentCount) {
+      std::array<char, 256> buf;
+      snprintf(buf.data(), buf.size(),
+               "RasterParams::blending (size=%u) must either be zero sized "
+               "or match the number of fragment shader outputs (size=%u).",
+               uint32_t(raster_params.blending.size()),
+               uint32_t(color_blending.attachmentCount));
+      RHI_LOG_ERROR(buf.data());
+      RHI_ASSERT(false);
+    }
 
     for (int i = 0; i < raster_params.blending.size(); i++) {
       auto &state = graphics_pipeline_template_->blend_attachments[i];
@@ -744,6 +750,8 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
   std::forward_list<VkDescriptorBufferInfo> buffer_infos;
   std::forward_list<VkDescriptorImageInfo> image_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
+
+  set_->ref_binding_objs.clear();
 
   for (auto &pair : bindings_) {
     uint32_t binding = pair.first;
@@ -1692,6 +1700,8 @@ RhiResult VulkanDevice::create_pipeline(Pipeline **out_pipeline,
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   AllocationInternal &alloc = allocations_.acquire();
 
+  RHI_ASSERT(params.size > 0);
+
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info.pNext = nullptr;
@@ -1768,7 +1778,13 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer) &&
+      ((alloc_info.usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) ||
+       (alloc_info.usage &
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR) ||
+       (alloc_info.usage &
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR) ||
+       (alloc_info.usage & VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR))) {
     buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
   }
 

@@ -404,36 +404,6 @@ ClearListStmt::ClearListStmt(SNode *snode) : snode(snode) {
   TI_STMT_REG_FIELDS;
 }
 
-int LoopIndexStmt::max_num_bits() const {
-  if (auto range_for = loop->cast<RangeForStmt>()) {
-    // Return the max number of bits only if both begin and end are
-    // non-negative consts.
-    if (!range_for->begin->is<ConstStmt>() || !range_for->end->is<ConstStmt>())
-      return -1;
-    auto begin = range_for->begin->as<ConstStmt>();
-    if (begin->val.val_int() < 0)
-      return -1;
-    auto end = range_for->end->as<ConstStmt>();
-    return (int)bit::ceil_log2int(end->val.val_int());
-  } else if (auto struct_for = loop->cast<StructForStmt>()) {
-    return struct_for->snode->get_num_bits(index);
-  } else if (auto offload = loop->cast<OffloadedStmt>()) {
-    if (offload->task_type == OffloadedStmt::TaskType::range_for) {
-      if (!offload->const_begin || !offload->const_end)
-        return -1;
-      if (offload->begin_value < 0)
-        return -1;
-      return bit::ceil_log2int(offload->end_value);
-    } else if (offload->task_type == OffloadedStmt::TaskType::struct_for) {
-      return offload->snode->get_num_bits(index);
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
-}
-
 BitStructType *BitStructStoreStmt::get_bit_struct() const {
   return ptr->as<SNodeLookupStmt>()->snode->dt->as<BitStructType>();
 }

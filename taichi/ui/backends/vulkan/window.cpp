@@ -3,6 +3,7 @@
 
 #include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
+#include "taichi/rhi/window_system.h"
 
 using taichi::lang::Program;
 
@@ -91,7 +92,7 @@ Window::~Window() {
   gui_.reset();
   renderer_.reset();
   if (config_.show_window) {
-    glfwTerminate();
+    taichi::lang::window_system::glfw_context_release();
   }
 }
 

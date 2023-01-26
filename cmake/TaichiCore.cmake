@@ -159,6 +159,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   endif()
 
   message("Building with GLFW")
+  add_compile_definitions(TI_WITH_GLFW)
   add_subdirectory(external/glfw)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE glfw)
   target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glfw/include)
@@ -498,5 +499,11 @@ endif()
 
 if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
+endif()
+
+if (TI_WITH_AMDGPU)
+    file(GLOB AMDGPU_BC_FILES ${CMAKE_SOURCE_DIR}/external/amdgpu_libdevice/*.bc)
+    install(FILES ${AMDGPU_BC_FILES}
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

@@ -43,7 +43,7 @@ TEST(FrontendTypeInference, BinaryOp) {
   auto const_f32 = value<float32>(5.0);
   const_f32->type_check(nullptr);
   auto truediv_f64 = expr_truediv(const_i32, const_f32);
-  truediv_f64->type_check(&prog->this_thread_config());
+  truediv_f64->type_check(&prog->compile_config());
   EXPECT_EQ(truediv_f64->ret_type, PrimitiveType::f64);
 }
 
@@ -62,7 +62,7 @@ TEST(FrontendTypeInference, UnaryOp) {
   bit_not_i16->type_check(&dummy_config);
   EXPECT_EQ(bit_not_i16->ret_type, PrimitiveType::i16);
   auto log_f64 = expr_log(const_i16);
-  log_f64->type_check(&prog->this_thread_config());
+  log_f64->type_check(&prog->compile_config());
   EXPECT_EQ(log_f64->ret_type, PrimitiveType::f64);
 }
 

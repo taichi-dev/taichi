@@ -5,7 +5,6 @@ import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import try_get_wheel_tag
 from taichi.lang._ndarray import Ndarray
-from taichi.lang.impl import default_cfg
 from taichi.lang.matrix import Vector
 from taichi.lang.util import to_taichi_type
 

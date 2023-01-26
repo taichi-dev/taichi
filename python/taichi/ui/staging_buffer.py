@@ -36,19 +36,24 @@ def get_depth_ndarray(window):
 
 
 @kernel
-def copy_to_vbo(vbo: template(), src: template(), offset: template(),
-                num_components: template()):
-    for i in src:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = src[i][c]
-
-
-@kernel
-def fill_vbo(vbo: template(), value: f32, offset: template(),
-             num_components: template()):
-    for i in vbo:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = value
+def copy_all_to_vbo(vbo: ti.template(), vertex: template(), normal: template(),
+                    texcoords: template(), color: template()):
+    for i in vertex:
+        if ti.static(vertex.n == 3):
+            vbo[i][0:3] = vertex[i]
+        else:
+            vbo[i][0:2] = vertex[i]
+            vbo[i][3] = 0.0
+        if ti.static(normal != 0):
+            vbo[i][3:6] = normal[i]
+        if ti.static(texcoords != 0):
+            vbo[i][6:8] = texcoords[i]
+        if ti.static(color != 0):
+            if ti.static(color.n == 3):
+                vbo[i][8:11] = color[i]
+                vbo[i][11] = 1.0
+            else:
+                vbo[i][8:12] = color[i]
 
 
 def validate_input_field(f, name):

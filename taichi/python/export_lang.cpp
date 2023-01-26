@@ -538,8 +538,20 @@ void export_lang(py::module &m) {
         program->destroy_snode_tree(snode_tree);
       });
 
+  py::class_<DeviceAllocation>(m, "DeviceAllocation")
+      .def(py::init([](uint64_t device, uint64_t alloc_id) -> DeviceAllocation {
+             DeviceAllocation alloc;
+             alloc.device = (Device *)device;
+             alloc.alloc_id = (DeviceAllocationId)alloc_id;
+             return alloc;
+           }),
+           py::arg("device"), py::arg("alloc_id"))
+      .def_readonly("device", &DeviceAllocation::device)
+      .def_readonly("alloc_id", &DeviceAllocation::alloc_id);
+
   py::class_<Ndarray>(m, "Ndarray")
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
+      .def("device_allocation", &Ndarray::get_device_allocation)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int", &Ndarray::read_int)

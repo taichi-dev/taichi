@@ -1,10 +1,13 @@
 import platform
 from math import acos, asin, cos, sin
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import try_get_wheel_tag
+from taichi.lang._ndarray import Ndarray
 from taichi.lang.impl import default_cfg
 from taichi.lang.matrix import Vector
+from taichi.lang.util import to_taichi_type
 
 
 def get_field_info(field):
@@ -13,6 +16,22 @@ def get_field_info(field):
         info.valid = False
         return info
     info.valid = True
+    # NDArray & numpy.ndarray
+    if isinstance(field, np.ndarray):
+        info.field_source = _ti_core.FieldSource.HostMappedPtr
+        info.dev_alloc = _ti_core.DeviceAllocation(0, field.ctypes.data)
+        info.dtype = to_taichi_type(field.dtype)
+        info.num_elements = np.prod(field.shape)
+        info.shape = field.shape
+        return info
+    if isinstance(field, Ndarray):
+        info.field_source = _ti_core.FieldSource.TaichiNDarray
+        info.dev_alloc = field.arr.get_device_allocation()
+        info.dtype = field.dtype
+        info.num_elements = np.prod(field.shape) * np.prod(field.element_shape)
+        info.shape = field.shape + field.element_shape
+        return info
+    # SNode
     if default_cfg().arch == _ti_core.cuda:
         info.field_source = _ti_core.FieldSource.TaichiCuda
     elif default_cfg().arch == _ti_core.x64:

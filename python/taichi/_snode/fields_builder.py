@@ -98,11 +98,11 @@ class FieldsBuilder:
 
         if dimension >= 2**31:
             raise TaichiRuntimeError(
-                "The maximum dimension of a dynamic SNode cannot exceed the maximum value of a 32-bit signed integer: Got {dimension} > 2**31-1"
+                f"The maximum dimension of a dynamic SNode cannot exceed the maximum value of a 32-bit signed integer: Got {dimension} > 2**31-1"
             )
         if chunk_size >= 2**31:
             raise TaichiRuntimeError(
-                "Chunk size cannot exceed the maximum value of a 32-bit signed integer: Got {chunk_size} > 2**31-1"
+                f"Chunk size cannot exceed the maximum value of a 32-bit signed integer: Got {chunk_size} > 2**31-1"
             )
 
         self._check_not_finalized()

@@ -150,7 +150,6 @@ jobs:
             -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=ON
-            -DTI_WITH_STATIC_C_API=ON
             -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.

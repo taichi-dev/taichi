@@ -16,7 +16,7 @@ Each SNode type comes with an `XMeta` struct derived from [`StructMeta`](https:/
 * `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the current number of active cells, but the maximum.
 * `void X_activate(Ptr meta, Ptr node, int i)`: Activates cell `i`.
 * `i32 X_is_active(Ptr meta, Ptr node, int i)`: Checks whether cell `i` is active.
-* `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. This can be `nullptr` for sparse SNodes.
+* `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. The result can be `nullptr` for sparse SNodes.
 
 Here, `Ptr` is an alias for `uint8_t*`, and `i32` for `int32_t`. As the name suggests, `meta` points to the corresponding meta struct, while `node` points to the SNode instance.
 

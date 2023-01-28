@@ -1044,10 +1044,10 @@ class MakeAdjoint : public ADTransform {
     if (stmt->src->is<ExternalPtrStmt>()) {
       ExternalPtrStmt *src = stmt->src->as<ExternalPtrStmt>();
       ArgLoadStmt *arg = src->base_ptr->as<ArgLoadStmt>();
-      // how to judge if it has a grad?
-      // if (!arg->is_grad) {
-      //   return;
-      // }
+      // use is_grad to judge if it has a grad
+      if (arg->is_grad) {
+        return;
+      }
       auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
                                          arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, src->indices);
@@ -1087,9 +1087,9 @@ class MakeAdjoint : public ADTransform {
     if (stmt->dest->is<ExternalPtrStmt>()) {
       ExternalPtrStmt *dest = stmt->dest->as<ExternalPtrStmt>();
       ArgLoadStmt *arg = dest->base_ptr->as<ArgLoadStmt>();
-      // if (!arg->is_grad) {
-      //   return;
-      // }
+      if (arg->is_grad) {
+        return;
+      }
       auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
                                          arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);
@@ -1138,9 +1138,9 @@ class MakeAdjoint : public ADTransform {
     if (stmt->dest->is<ExternalPtrStmt>()) {
       ExternalPtrStmt *dest = stmt->dest->as<ExternalPtrStmt>();
       ArgLoadStmt *arg = dest->base_ptr->as<ArgLoadStmt>();
-      // if (!arg->is_grad) {
-      //   return;
-      // }
+      if (arg->is_grad) {
+        return;
+      }
       auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
                                          arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);

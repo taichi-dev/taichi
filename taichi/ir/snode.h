@@ -48,36 +48,9 @@ struct AxisExtractor {
    */
   int acc_shape{1};
   /**
-   * Number of bits needed to store the coordinate at this index.
-   *
-   * ceil(log2(shape))
-   */
-  int num_bits{0};
-  /**
-   * Accumulated offset from the last activated index to the first one.
-   *
-   * This is the starting bit of this index in a linearized 1D coordinate. For
-   * example, assuming an SNode of (ti.ijk, shape=(4, 8, 16)). ti.i takes 2
-   * bits, ti.j 3 bits and ti.k 4 bits. Then for a linearized coordinate:
-   * ti.k uses bits [0, 4), acc_offset=0
-   * ti.j uses bits [4, 7), acc_offset=4
-   * ti.i uses bits [7, 9), acc_offset=7
-   */
-  int acc_offset{0};
-  /**
    * Whether this index (axis) is activated.
    */
   bool active{false};
-
-  /**
-   * Activates the current index.
-   *
-   * @param num_bits Number of bits needed to store the POT shape.
-   */
-  void activate(int num_bits) {
-    active = true;
-    this->num_bits = num_bits;
-  }
 };
 
 /**
@@ -122,8 +95,6 @@ class SNode {
   // See https://docs.taichi-lang.org/docs/internal for terms
   // like cell and container.
   int64 num_cells_per_container{1};
-  int total_num_bits{0};
-  int total_bit_start{0};
   int chunk_size{0};
   std::size_t cell_size_bytes{0};
   std::size_t offset_bytes_in_parent_cell{0};
@@ -161,8 +132,6 @@ class SNode {
   std::string get_node_type_name() const;
 
   std::string get_node_type_name_hinted() const;
-
-  int get_num_bits(int physical_index) const;
 
   SNode &insert_children(SNodeType t);
 

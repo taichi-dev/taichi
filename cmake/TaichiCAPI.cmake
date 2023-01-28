@@ -209,4 +209,21 @@ if(TI_WITH_STATIC_C_API)
     set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-S)
     set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
     target_link_options(taichi_static_c_api PRIVATE "${STATIC_LIB_LINK_OPTIONS}")
+
+    set_target_properties(taichi_static_c_api PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY}
+        ARCHIVE_OUTPUT_DIRECTORY ${C_API_OUTPUT_DIRECTORY})
+
+    install(TARGETS taichi_static_c_api EXPORT TaichiStaticExportTargets
+        LIBRARY DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION c_api/${CMAKE_INSTALL_BINDIR}
+        PUBLIC_HEADER DESTINATION c_api/${CMAKE_INSTALL_INCLUDEDIR}/taichi
+        )
+
+    install(EXPORT TaichiStaticExportTargets
+        FILE TaichiStaticTargets.cmake
+        DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+        )
+
 endif()

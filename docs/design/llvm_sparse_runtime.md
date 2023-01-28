@@ -24,7 +24,7 @@ For sparse SNodes, they also implement an additional API:
 
 * `void X_deactivate(Ptr meta, Ptr node, int i)`: Deactivates cell `i`.
 
-However, this additional API is likely subject to change, so that all SNodes can share the same set of APIs in the future.
+However, this additional API is subject to change to make all SNodes share the same set of APIs in the future.
 
 ## `dense` SNode
 

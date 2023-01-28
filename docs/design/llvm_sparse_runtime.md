@@ -254,7 +254,7 @@ Ptr allocate() {
 3. Otherwise, re-use the index from `free_list`.
 4. Either way, index `l` points to a memory slot in `data_list`. Returns that slot.
 
-This finishes our analysis of the `allocate` procedure. For the recycle procedure, the code [`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) should be straightforward to understand.
+So far, we have analyzed the `allocate` procedure. For the recycle procedure, the code [`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) is self-explanatory.
 
 Before jumping into the garbage collection (GC) system, we will also take look at the lower-level `ListManager`.
 

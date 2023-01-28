@@ -151,8 +151,8 @@ class Window:
             filename (str): output filename.
         """
         warnings.warn(
-            "`Window.write_image()` is renamed to `Window.save_image()`",
-            DeprecationWarning)
+            "`Window.write_image()` is deprecated, and it will be removed in Taichi v1.6.0. "
+            "Please use `Window.save_image()` instead.", DeprecationWarning)
         return self.save_image(filename)
 
     def save_image(self, filename):

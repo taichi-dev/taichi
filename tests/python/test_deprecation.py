@@ -2,6 +2,7 @@ import math
 import tempfile
 
 import pytest
+from taichi._lib import core as _ti_core
 
 import taichi as ti
 from tests import test_utils
@@ -195,6 +196,29 @@ def test_incomplete_info_rwtexture():
             for i, j in ti.ndrange(n, n):
                 ret = ti.cast(1, ti.f32)
                 tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=ti.cpu)
+def test_deprecate_ti_ui_window():
+    window = ti.ui.Window("Diff SPH", (256, 256), show_window=False)
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"`Window\.write_image\(\)` is deprecated, and it will be removed in Taichi v1\.6\.0\. "
+    ):
+        window.write_image("deprecate.png")
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=ti.cpu)
+def test_deprecate_ti_ui_make_camera():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"`ti\.ui\.make_camera\(\)` is deprecated, and will be removed in Taichi v1\.6\.0\. "
+    ):
+        ti.ui.make_camera()
 
 
 @test_utils.test()

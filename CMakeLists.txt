@@ -200,6 +200,7 @@ configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/vers
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+option(TI_WITH_C_API_NULL_IMPL "build taichi runtime c-api linking library" OFF)
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)

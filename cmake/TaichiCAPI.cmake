@@ -187,3 +187,14 @@ install(DIRECTORY
       ${INSTALL_LIB_DIR}/runtime
       DESTINATION c_api)
 endif()
+
+if (TI_WITH_C_API_NULL_IMPL)
+  # Null-impl library to link against if you don't wanna spend too much time on
+  # compiling Taichi just to make sure your code is building in an external
+  # project.
+  set(TAICHI_C_API_NULL_IMPL_NAME taichi_c_api_null_impl)
+  add_library(${TAICHI_C_API_NULL_IMPL_NAME} SHARED
+    "${PROJECT_SOURCE_DIR}/c_api/link/c_api_null_impl.cpp")
+  target_include_directories(${TAICHI_C_API_NULL_IMPL_NAME} PRIVATE
+    "${PROJECT_SOURCE_DIR}/c_api/include")
+endif()

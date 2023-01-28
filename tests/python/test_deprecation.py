@@ -82,12 +82,56 @@ def test_deprecate_element_shape_ndarray_arg():
             match=
             'The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.'
     ):
-
         ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
                      'x',
                      ti.f32,
                      ndim=1,
                      element_shape=(1, ))
+
+
+@test_utils.test()
+def test_deprecate_builtin_min_max():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'Calling builtin function "max" in Taichi scope is deprecated, '
+            'and it will be removed in Taichi v1.6.0.'):
+
+        @ti.kernel
+        def func():
+            max(1, 2)
+
+        func()
+
+
+@test_utils.test()
+def test_deprecate_is_is_not():
+    with pytest.warns(DeprecationWarning,
+                      match='Operator "is" in Taichi scope is deprecated, '
+                      'and it will be removed in Taichi v1.6.0.'):
+
+        @ti.kernel
+        def func():
+            ti.static(1 is 2)
+
+        func()
+
+
+@test_utils.test()
+def test_deprecate_ndrange():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'Ndrange for loop with number of the loop variables not equal to '
+            'the dimension of the ndrange is deprecated, '
+            'and it will be removed in Taichi 1.6.0. '):
+
+        @ti.kernel
+        def func():
+            for i in ti.ndrange(4, 4):
+                pass
+
+        func()
 
 
 @test_utils.test(arch=ti.vulkan)

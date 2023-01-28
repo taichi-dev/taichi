@@ -439,7 +439,8 @@ class ASTTransformer(Builder):
             if func is min or func is max:
                 name = "min" if func is min else "max"
                 warnings.warn_explicit(
-                    f'Calling builtin function "{name}" in Taichi scope is deprecated. '
+                    f'Calling builtin function "{name}" in Taichi scope is deprecated, '
+                    f'and it will be removed in Taichi v1.6.0.'
                     f'Please use "ti.{name}" instead.',
                     DeprecationWarning,
                     ctx.file,
@@ -989,7 +990,9 @@ class ASTTransformer(Builder):
             if isinstance(node_op, (ast.Is, ast.IsNot)):
                 name = "is" if isinstance(node_op, ast.Is) else "is not"
                 warnings.warn_explicit(
-                    f'Operator "{name}" in Taichi scope is deprecated. Please avoid using it.',
+                    f'Operator "{name}" in Taichi scope is deprecated, '
+                    f'and it will be removed in Taichi v1.6.0. '
+                    f'Please avoid using it.',
                     DeprecationWarning,
                     ctx.file,
                     node.lineno + ctx.lineno_offset,
@@ -1131,7 +1134,8 @@ class ASTTransformer(Builder):
             if len(targets) != len(ndrange_var.dimensions):
                 warnings.warn_explicit(
                     'Ndrange for loop with number of the loop variables not equal to '
-                    'the dimension of the ndrange is deprecated. '
+                    'the dimension of the ndrange is deprecated, '
+                    'and it will be removed in Taichi 1.6.0. '
                     'Please check if the number of arguments of ti.ndrange() is equal to '
                     'the number of the loop variables.',
                     DeprecationWarning,

@@ -396,7 +396,7 @@ void gc_parallel_1(RuntimeContext *context, int snode_id) {
 }
 ```
 
-It is important to understand that this stage must be run on a single thread. This is to avoid any kind of data race on `recycled_list`. During GC, `recycled_list` must be cleared, with all its contents being transferred into `free_list`. If this was done in the third stage (which is run in parallel), it would be quite difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created in order to store the number of elements of `recycled_list` into `recycle_list_size_backup` in advance (1), then clears the list (2). Fortunately, the computation task here is light and it doesn't take too much time even running in serial.
+It is important to understand that this stage must run on a single thread to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created to store the number of elements of `recycled_list` into `recycle_list_size_backup` in advance (1) and then clear the list (2). Fortunately, the computation task here is light and does not take too much time even running in serial.
 
 3. [`gc_parallel_2`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1642-L1681): Replenishes `free_list` with the indices in `recycled_list`, then zero-fills all the recycled memory locations.
 

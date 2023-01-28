@@ -579,7 +579,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   auto *const runtime_jit = tlctx->runtime_jit_module;
 
   // Starting random state for the program calculated using the random seed.
-  // The seed is multiplied by 2^20 so that two programs with different seeds
+  // The seed is multiplied by 1048391 so that two programs with different seeds
   // will not have overlapping random states in any thread.
   int starting_rand_state = config_->random_seed * 1048391;
 

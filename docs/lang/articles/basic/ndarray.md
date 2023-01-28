@@ -86,7 +86,7 @@ def foo(A : ti.types.ndarray(dtype=ti.f32, ndim=2)):
     # Do something
 ```
 
-It is important to note that the dtype and ndim arguments are optional when instantiating an ndarray. If left unspecified, the data type and number of dimensions will be inferred from the passed-in array at runtime. However, if specified, Taichi will validate that the specified data type and dimensions match those of the passed-in array. If a mismatch is detected, an error will be thrown.
+It is important to note that the `dtype` and `ndim` arguments are optional when an ndarray is instantiated. If left unspecified, the data type and the number of dimensions are inferred from the passed-in array at runtime. However, if the arguments are specified, Taichi validates that the specified data type and dimensions match those of the passed-in array. If a mismatch is detected, an error is thrown.
 
 In certain scenarios, it may be necessary to process arrays with vector or matrix elements, such as an RGB pixel map (vec3). Taichi provides support for these types of arrays through the use of vector and matrix data types. An example of this would be creating an ndarray for a pixel map with vec3 elements, as demonstrated in the following code snippet:
 

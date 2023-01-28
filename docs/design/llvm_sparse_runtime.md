@@ -10,7 +10,7 @@ Taichi's LLVM sparse runtime lives under the [`taichi/runtime/llvm`](https://git
 
 There are four types of SNodes in Taichi: `dense`, `bitmasked`, `pointer` and `dynamic`. `dynamic` or `pointer` SNodes are spatially sparse in nature: Cells in them are not necessarily stored contiguously. Therefore, when this doc talks about sparse SNodes hereafter, it refers to `dynamic` and `pointer` SNodes.
 
-For each SNode type of the four listed above, it comes with a `XMeta` struct derived from [`StructMeta`](https://github.com/taichi-dev/taichi/blob/2cdc58078ecd2aef2cde608f07325108c5b3d5a5/taichi/runtime/llvm/runtime.cpp#L365-L383). `StructMeta` has the following properties:
+Each SNode type comes with an `XMeta` struct derived from [`StructMeta`](https://github.com/taichi-dev/taichi/blob/2cdc58078ecd2aef2cde608f07325108c5b3d5a5/taichi/runtime/llvm/runtime.cpp#L365-L383). `StructMeta` has the following properties:
 
 * `snode_id`: SNode ID.
 * `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the current number of active cells, but the maximum.

@@ -1415,10 +1415,15 @@ class ASTTransformer(Builder):
             has_tensor_type = True
 
         if has_tensor_type:
-            raise TaichiSyntaxError(
-                'Using conditional expression for element-wise select operation on '
-                'Taichi vectors/matrices is deprecated and removed starting from Taichi v1.5.0 '
-                'Please use "ti.select" instead.')
+            if isinstance(node.test.ptr,
+                          expr.Expr) and node.test.ptr.is_tensor():
+                raise TaichiSyntaxError(
+                    'Using conditional expression for element-wise select operation on '
+                    'Taichi vectors/matrices is deprecated and removed starting from Taichi v1.5.0 '
+                    'Please use "ti.select" instead.')
+            node.ptr = ti_ops.select(node.test.ptr, node.body.ptr,
+                                     node.orelse.ptr)
+            return node.ptr
 
         is_static_if = (ASTTransformer.get_decorator(ctx,
                                                      node.test) == "static")

@@ -196,6 +196,9 @@ if(TI_WITH_STATIC_C_API)
     # https://stackoverflow.com/questions/14259405/pre-link-static-libraries-for-ios-project
     #
     # Here, we perform this `pre-link` on the compiled object files.
+
+    # *** This taichi_static_c_api is NOT an executable ***
+    # We faked an executable target because cmake does not have intrinsic support for pre-linked library targets
     add_executable(taichi_static_c_api ${C_API_SOURCE})
     set_target_properties(taichi_static_c_api PROPERTIES ENABLE_EXPORTS ON)
 

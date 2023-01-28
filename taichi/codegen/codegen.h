@@ -42,12 +42,12 @@ class KernelCodeGen {
   IRNode *ir;
 
  public:
-  explicit KernelCodeGen(const CompileConfig *compile_config, Kernel *kernel);
+  explicit KernelCodeGen(const CompileConfig &compile_config, Kernel *kernel);
 
   virtual ~KernelCodeGen() = default;
 
   static std::unique_ptr<KernelCodeGen> create(
-      const CompileConfig *compile_config,
+      const CompileConfig &compile_config,
       Kernel *kernel);
 
   virtual FunctionType compile_to_function() = 0;
@@ -59,7 +59,7 @@ class KernelCodeGen {
   virtual LLVMCompiledKernel compile_kernel_to_module();
 
   virtual LLVMCompiledTask compile_task(
-      const CompileConfig *config,
+      const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr){TI_NOT_IMPLEMENTED}
 
@@ -69,12 +69,12 @@ class KernelCodeGen {
                     const LLVMCompiledKernel &data);
 #endif
  protected:
-  const CompileConfig *get_compile_config() const {
+  const CompileConfig &get_compile_config() const {
     return compile_config_;
   }
 
  private:
-  const CompileConfig *compile_config_{nullptr};
+  const CompileConfig &compile_config_;
 };
 
 #ifdef TI_WITH_LLVM

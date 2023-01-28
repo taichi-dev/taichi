@@ -21,7 +21,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenLLVMDX12(const CompileConfig *config, Kernel *kernel, IRNode *ir)
+  TaskCodeGenLLVMDX12(const CompileConfig &config, Kernel *kernel, IRNode *ir)
       : TaskCodeGenLLVM(config, kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
@@ -149,7 +149,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
       create_bls_buffer(stmt);
     using Type = OffloadedStmt::TaskType;
     auto offloaded_task_name = init_offloaded_task_function(stmt);
-    if (compile_config->kernel_profiler && arch_is_cpu(compile_config->arch)) {
+    if (compile_config.kernel_profiler && arch_is_cpu(compile_config.arch)) {
       call(
           builder.get(), "LLVMRuntime_profiler_start",
           {get_runtime(), builder->CreateGlobalStringPtr(offloaded_task_name)});
@@ -171,7 +171,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    if (compile_config->kernel_profiler && arch_is_cpu(compile_config->arch)) {
+    if (compile_config.kernel_profiler && arch_is_cpu(compile_config.arch)) {
       llvm::IRBuilderBase::InsertPointGuard guard(*builder);
       builder->SetInsertPoint(final_block);
       call(builder.get(), "LLVMRuntime_profiler_stop", {get_runtime()});
@@ -199,7 +199,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 
 static std::vector<uint8_t> generate_dxil_from_llvm(
     LLVMCompiledTask &compiled_data,
-    const CompileConfig *config,
+    const CompileConfig &config,
     taichi::lang::Kernel *kernel) {
   // generate dxil from llvm ir.
   auto offloaded_local = compiled_data.tasks;
@@ -208,19 +208,19 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
     llvm::Function *func = module->getFunction(task.name);
     TI_ASSERT(func);
     directx12::mark_function_as_cs_entry(func);
-    directx12::set_num_threads(func, config->default_gpu_block_dim, 1, 1);
+    directx12::set_num_threads(func, config.default_gpu_block_dim, 1, 1);
     // FIXME: save task.block_dim like
     // tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
   }
-  auto dx_container = directx12::global_optimize_module(module, *config);
+  auto dx_container = directx12::global_optimize_module(module, config);
   // validate and sign dx container.
   return directx12::validate_and_sign(dx_container);
 }
 
 KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
-  auto &config = *get_compile_config();
-  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  const auto &config = get_compile_config();
+  std::string kernel_key = get_hashed_offline_cache_key(config, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
 
   irpass::ast_to_ir(config, *kernel, false);
@@ -235,10 +235,10 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
     auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
     auto *offload_stmt = offload->as<OffloadedStmt>();
-    auto new_data = compile_task(&config, nullptr, offload_stmt);
+    auto new_data = compile_task(config, nullptr, offload_stmt);
 
     Result.task_dxil_source_codes.emplace_back(
-        generate_dxil_from_llvm(new_data, &config, kernel));
+        generate_dxil_from_llvm(new_data, config, kernel));
     aot::CompiledOffloadedTask task;
     // FIXME: build all fields for task.
     task.name = fmt::format("{}_{}_{}", kernel->get_name(),
@@ -252,7 +252,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 }
 
 LLVMCompiledTask KernelCodeGenDX12::compile_task(
-    const CompileConfig *config,
+    const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenLLVMDX12 gen(config, kernel, stmt);

@@ -100,7 +100,7 @@ void TaskCodeGenLLVM::store_masked(llvm::Value *ptr,
     return;
   }
   uint64 full_mask = (~(uint64)0) >> (64 - ty->getIntegerBitWidth());
-  if ((!atomic || compile_config->quant_opt_atomic_demotion) &&
+  if ((!atomic || compile_config.quant_opt_atomic_demotion) &&
       ((mask & full_mask) == full_mask)) {
     builder->CreateStore(value, ptr);
     return;
@@ -154,7 +154,7 @@ void TaskCodeGenLLVM::visit(BitStructStoreStmt *stmt) {
     }
   }
   bool store_all_components = false;
-  if (compile_config->quant_opt_atomic_demotion &&
+  if (compile_config.quant_opt_atomic_demotion &&
       stmt->ch_ids.size() == num_non_exponent_children) {
     stmt->is_atomic = false;
     store_all_components = true;

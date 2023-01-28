@@ -218,7 +218,7 @@ The core data structure of this runtime is [`LLVMRuntime`](https://github.com/ta
 * Print and error message buffers.
 * ...
 
-The SNode memory allocator is the bedrock of sparse SNodes. The following sections explain how it is implemented. 
+The SNode memory allocator is the bedrock of sparse SNodes. The following sections explain how it is implemented.
 
 ## `NodeManager`: a recycling memory allocator
 

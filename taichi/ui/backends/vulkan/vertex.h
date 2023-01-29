@@ -60,8 +60,6 @@ class TI_DLL_EXPORT VboHelpers {
            VertexAttributes::kUv | VertexAttributes::kColor;
   }
 
-  static size_t size(VertexAttributes va);
-
   static bool has_attr(VertexAttributes src, VertexAttributes attr) {
     using UT = std::underlying_type_t<VertexAttributes>;
     return UT(src) & UT(attr);

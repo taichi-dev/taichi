@@ -44,6 +44,13 @@
 
 namespace taichi::ui {
 
+#define RHI_VERIFY(rhi_call)                                    \
+  {                                                             \
+    taichi::lang::RhiResult r = rhi_call;                       \
+    TI_ASSERT_INFO(r == taichi::lang::RhiResult::success,       \
+                   "`{}` failed, error {}", #rhi_call, int(r)); \
+  }
+
 #ifdef TI_WITH_GLFW
 inline GLFWwindow *create_glfw_window_(const std::string &name,
                                        int screenWidth,
@@ -179,11 +186,6 @@ inline std::string button_id_to_name(int id) {
   }
 }
 #endif
-
-#define DEFINE_PROPERTY(Type, name)                          \
-  Type name;                                                 \
-  void set_##name(const Type &new_name) { name = new_name; } \
-  Type get_##name() { return name; }
 
 inline std::vector<char> read_file(const std::string &filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);

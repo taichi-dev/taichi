@@ -16,8 +16,29 @@ void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
   lines_count_ =
       (indexed_ ? config_.indices_count : config_.vertices_count) / 2;
 
-  // FIXME: Why is the width in pixel units?
-  update_ubo(info, scene, info.width / float(app_context_->config.height));
+  // Update UBO
+  {
+    UniformBufferObject ubo{};
+    ubo.scene = scene.current_ubo_;
+    ubo.color = info.color;
+    // FIXME: Why is the width in pixel units?
+    ubo.line_width = info.width / float(app_context_->config.height);
+    ubo.per_vertex_color_offset = info.renderable_info.has_per_vertex_color
+                                      ? offsetof(Vertex, color) / sizeof(float)
+                                      : 0;
+    ubo.vertex_stride = sizeof(Vertex) / sizeof(float);
+    ubo.start_vertex = config_.draw_first_vertex;
+    ubo.start_index = config_.draw_first_index;
+    ubo.num_vertices = lines_count_ * 2;
+    ubo.is_indexed = indexed_ ? 1 : 0;
+    ubo.aspect_ratio =
+        float(app_context_->config.width) / float(app_context_->config.height);
+
+    void *mapped{nullptr};
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(), &mapped));
+    memcpy(mapped, &ubo, sizeof(ubo));
+    app_context_->device().unmap(*uniform_buffer_);
+  }
 }
 
 void SceneLines::create_graphics_pipeline() {
@@ -68,66 +89,17 @@ void SceneLines::create_graphics_pipeline() {
   }
 }
 
-void SceneLines::init_scene_lines(AppContext *app_context,
-                                  int vertices_count,
-                                  int indices_count) {
-  RenderableConfig config = {
-      vertices_count,
-      indices_count,
-      vertices_count,
-      indices_count,
-      vertices_count,
-      0,
-      indices_count,
-      0,
-      sizeof(UniformBufferObject),
-      0,
-      true,
-      app_context->config.package_path + "/shaders/SceneLines_vk_vert.spv",
-      app_context->config.package_path + "/shaders/SceneLines_vk_frag.spv",
-      TopologyType::Triangles,
-  };
+SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
+  RenderableConfig config;
+  config.ubo_size = sizeof(UniformBufferObject);
+  config.blending = true;
+  config.fragment_shader_path =
+      app_context->config.package_path + "/shaders/SceneLines_vk_frag.spv";
+  config.vertex_shader_path =
+      app_context->config.package_path + "/shaders/SceneLines_vk_vert.spv";
+  config.vbo_attrs = vbo_attrs;
 
   Renderable::init(config, app_context);
-  Renderable::init_render_resources();
-}
-
-SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_scene_lines(app_context, 4, 6);
-}
-
-void SceneLines::update_ubo(const SceneLinesInfo &info,
-                            const Scene &scene,
-                            float line_width) {
-  UniformBufferObject ubo{};
-  ubo.scene = scene.current_ubo_;
-  ubo.color = info.color;
-  ubo.line_width = line_width;
-  ubo.per_vertex_color_offset = info.renderable_info.has_per_vertex_color
-                                    ? offsetof(Vertex, color) / sizeof(float)
-                                    : 0;
-  ubo.vertex_stride = config_.vbo_size() / sizeof(float);
-  ubo.start_vertex = config_.draw_first_vertex;
-  ubo.start_index = config_.draw_first_index;
-  ubo.num_vertices = lines_count_ * 2;
-  ubo.is_indexed = indexed_ ? 1 : 0;
-  ubo.aspect_ratio =
-      float(app_context_->config.width) / float(app_context_->config.height);
-
-  void *mapped{nullptr};
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
-            RhiResult::success);
-  memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(uniform_buffer_);
-}
-
-void SceneLines::create_bindings() {
-  if (!resource_set_) {
-    resource_set_ = app_context_->device().create_resource_set_unique();
-  }
-  if (!raster_state_) {
-    raster_state_ = app_context_->device().create_raster_resources_unique();
-  }
 }
 
 void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
@@ -153,14 +125,16 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
        /*export_sharing=*/false,
        /*usage=*/AllocUsage::Storage | AllocUsage::Index});
 
-  raster_state_->vertex_buffer(vbo_translated_->get_ptr(0), 0);
-  raster_state_->index_buffer(ibo_translated_->get_ptr(0), 32);
-
-  resource_set_->rw_buffer(0, vertex_buffer_.get_ptr(0));
-  resource_set_->rw_buffer(1, index_buffer_.get_ptr(0));
+  resource_set_->rw_buffer(0, vertex_buffer_->get_ptr(0));
+  if (index_buffer_) {
+    resource_set_->rw_buffer(1, index_buffer_->get_ptr(0));
+  } else {
+    // Just bind a dummy buffer
+    resource_set_->rw_buffer(1, vertex_buffer_->get_ptr(0));
+  }
   resource_set_->rw_buffer(2, vbo_translated_->get_ptr(0));
   resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
-  resource_set_->buffer(4, uniform_buffer_.get_ptr(0));
+  resource_set_->buffer(4, uniform_buffer_->get_ptr(0));
 
   command_list->bind_pipeline(quad_expand_pipeline_.get());
   command_list->bind_shader_resources(resource_set_.get());
@@ -170,13 +144,13 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
 }
 
 void SceneLines::record_this_frame_commands(CommandList *command_list) {
-  command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_raster_resources(raster_state_.get());
-  command_list->draw_indexed(lines_count_ * 6, 0, 0);
-}
+  auto raster_state = app_context_->device().create_raster_resources_unique();
+  raster_state->vertex_buffer(vbo_translated_->get_ptr(0), 0);
+  raster_state->index_buffer(ibo_translated_->get_ptr(0), 32);
 
-void SceneLines::cleanup() {
-  Renderable::cleanup();
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_raster_resources(raster_state.get());
+  command_list->draw_indexed(lines_count_ * 6, 0, 0);
 }
 
 }  // namespace vulkan

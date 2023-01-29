@@ -9,7 +9,6 @@ target_sources(taichi_ui_vulkan
     renderable.cpp
     renderer.cpp
     swap_chain.cpp
-    vertex.cpp
     renderables/circles.cpp
     renderables/lines.cpp
     renderables/mesh.cpp

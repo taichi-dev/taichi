@@ -2024,7 +2024,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
 }
 
 void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
-                                                bool spmd) {
+                                                std::string spmd) {
   using namespace llvm;
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
@@ -2126,13 +2126,20 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
 
     llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
 
-    if (spmd) {
+    if (spmd == "nvgpu") {
       thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
       block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                           {}, {});
+                                          {}, {});
       builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
-                           loop_index);
+                          loop_index);
+    } else if (spmd == "amdgpu") {
+      thread_idx = 
+        builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
+      auto workgroup_dim_ = call("__ockl_get_local_size", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
+      block_dim = builder->CreateTrunc(workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
+      builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
+                          loop_index);
     } else {
       builder->CreateStore(lower_bound, loop_index);
     }
@@ -2218,7 +2225,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
       // body tail: increment loop_index and jump to loop_test
       builder->SetInsertPoint(body_tail_bb);
 
-      if (spmd) {
+      if (spmd == "nvgpu" || spmd == "amdgpu") {
         create_increment(loop_index, block_dim);
       } else {
         create_increment(loop_index, tlctx->get_constant(1));

@@ -332,7 +332,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
+  void create_offload_struct_for(OffloadedStmt *stmt, std::string spmd);
 
   void visit(LoopIndexStmt *stmt) override;
 

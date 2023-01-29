@@ -45,23 +45,9 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
     SNodeTree *tree) {
   auto *const root = tree->root();
   std::unique_ptr<StructCompiler> struct_compiler{nullptr};
-  if (arch_is_cpu(config->arch)) {
-    auto host_module =
-        runtime_exec_->llvm_context_host_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        host_arch(), this, std::move(host_module), tree->id());
-  } else if (config->arch == Arch::dx12) {
-    auto device_module =
-        runtime_exec_->llvm_context_device_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        Arch::dx12, this, std::move(device_module), tree->id());
-  } else {
-    TI_ASSERT(config->arch == Arch::cuda);
-    auto device_module =
-        runtime_exec_->llvm_context_device_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        Arch::cuda, this, std::move(device_module), tree->id());
-  }
+  auto module = runtime_exec_->llvm_context_.get()->new_module("struct");
+  struct_compiler = std::make_unique<StructCompilerLLVM>(
+      config->arch, this, std::move(module), tree->id());
   struct_compiler->run(*root);
   ++num_snode_trees_processed_;
   return struct_compiler;

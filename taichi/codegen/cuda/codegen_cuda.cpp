@@ -474,7 +474,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        create_offload_struct_for(stmt, "nvgpu");
+        create_offload_struct_for(stmt, OffloadSPMDType::nvgpu);
       } else if (stmt->task_type == Type::mesh_for) {
         create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {

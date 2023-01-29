@@ -2130,9 +2130,9 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
       thread_idx =
           builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
       block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                          {}, {});
+                                           {}, {});
       builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
-                          loop_index);
+                           loop_index);
     } else if (spmd == "amdgpu") {
 #ifdef TI_WITH_AMDGPU
       thread_idx = 

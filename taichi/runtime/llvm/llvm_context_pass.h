@@ -51,8 +51,9 @@ struct AddStructForFuncPass : public ModulePass {
           continue;
         auto alloca_type = now_alloca->getAllocatedType();
         // Allocated type should be array [1 x i8]
-      if (alloca_type->isArrayTy() && alloca_type->getArrayNumElements() == 1 &&
-          alloca_type->getArrayElementType() == char_type) {
+        if (alloca_type->isArrayTy() &&
+            alloca_type->getArrayNumElements() == 1 &&
+            alloca_type->getArrayElementType() == char_type) {
           alloca = now_alloca;
           num_found_alloca++;
         }
@@ -114,7 +115,8 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
   static inline char ID{0};
   std::string func_name_;
   int tls_size_;
-  AMDGPUAddStructForFuncPass(std::string func_name, int tls_size) : ModulePass(ID) {
+  AMDGPUAddStructForFuncPass(std::string func_name, int tls_size)
+      : ModulePass(ID) {
     func_name_ = func_name;
     tls_size_ = tls_size;
   }
@@ -140,8 +142,9 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
           continue;
         auto alloca_type = now_alloca->getAllocatedType();
         // Allocated type should be array [1 x i8]
-      if (alloca_type->isArrayTy() && alloca_type->getArrayNumElements() == 1 &&
-          alloca_type->getArrayElementType() == char_type) {
+        if (alloca_type->isArrayTy() &&
+            alloca_type->getArrayNumElements() == 1 &&
+            alloca_type->getArrayElementType() == char_type) {
           alloca = now_alloca;
           num_found_alloca++;
         }
@@ -164,7 +167,7 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
     builder.SetInsertPoint(gep);
     auto *new_gep = builder.CreateInBoundsGEP(new_type, new_cast, indices);
     gep->replaceAllUsesWith(new_gep);
-    gep->eraseFromParent(); 
+    gep->eraseFromParent();
     cast->eraseFromParent();
     alloca->eraseFromParent();
     return false;

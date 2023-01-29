@@ -30,7 +30,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  explicit TaskCodeGenCUDA(const CompileConfig *config,
+  explicit TaskCodeGenCUDA(const CompileConfig &config,
                            Kernel *kernel,
                            IRNode *ir = nullptr)
       : TaskCodeGenLLVM(config, kernel, ir) {
@@ -366,7 +366,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -384,7 +384,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -396,7 +396,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_rc_parallel_0", get_context());
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -414,7 +414,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_rc_parallel_2", get_context());
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -587,7 +587,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 };
 
 LLVMCompiledTask KernelCodeGenCUDA::compile_task(
-    const CompileConfig *config,
+    const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(config, kernel, stmt);
@@ -597,7 +597,7 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
 FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = *get_compile_config();
+  const auto &config = get_compile_config();
   auto *tlctx = llvm_prog->get_llvm_context(config.arch);
 
   CUDAModuleToFunctionConverter converter{tlctx,

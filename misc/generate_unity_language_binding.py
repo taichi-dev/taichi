@@ -155,8 +155,13 @@ def get_declr(x: EntryBase):
         return '\n'.join(out)
 
     elif ty is Callback:
-        print(f"ignored callback type '{get_type_name(x)}'")
-        return ""
+        out = [
+            "[StructLayout(LayoutKind.Sequential)]",
+            "public struct " + get_type_name(x) + " {",
+            "  public IntPtr Inner;",
+            "}",
+        ]
+        return '\n'.join(out)
 
     elif ty is Function:
 

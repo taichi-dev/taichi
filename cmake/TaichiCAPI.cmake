@@ -191,7 +191,7 @@ if(TI_WITH_STATIC_C_API)
     # Traditional C++ static library is simply an archive of various .o files, resulting in a huge
     # file mixed with thousands of resolved or unresolved symbols.
     #
-    # The key to a minimal static-library is to ask the static library to through a rellocation process,
+    # The key to a minimal static-library is to ask the static library to go through a relocation process,
     # which is only supported by the `ld` linker on Apple platform. The corresponding process is called `pre-link`:
     # https://stackoverflow.com/questions/14259405/pre-link-static-libraries-for-ios-project
     #

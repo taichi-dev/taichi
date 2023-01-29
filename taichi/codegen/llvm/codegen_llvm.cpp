@@ -2636,7 +2636,7 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
     for (const auto &task : offloaded_tasks) {
       llvm::Function *func = module->getFunction(task.name);
       TI_ASSERT(func);
-      func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+      tlctx->mark_function_as_amdgpu_kernel(func);
     }
   }
 

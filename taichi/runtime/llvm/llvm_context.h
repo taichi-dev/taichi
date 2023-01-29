@@ -125,6 +125,8 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+  void mark_function_as_amdgpu_kernel(llvm::Function *func);
+
   void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();
   llvm::Function *get_runtime_function(const std::string &name);

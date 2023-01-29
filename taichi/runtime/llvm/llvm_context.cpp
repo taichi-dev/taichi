@@ -809,6 +809,10 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func,
   }
 }
 
+void TaichiLLVMContext::mark_function_as_amdgpu_kernel(llvm::Function *func) {
+  func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+}
+
 void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {

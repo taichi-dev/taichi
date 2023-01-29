@@ -1035,7 +1035,8 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
   llvm::legacy::PassManager module_pass_manager;
   if (config_->arch == Arch::amdgpu) {
 #ifdef TI_WITH_AMDGPU
-    module_pass_manager.add(new AMDGPUAddStructForFuncPass(func_name, tls_size));
+    module_pass_manager.add(
+        new AMDGPUAddStructForFuncPass(func_name, tls_size));
     module_pass_manager.run(*module);
 #else
     TI_NOT_IMPLEMENTED

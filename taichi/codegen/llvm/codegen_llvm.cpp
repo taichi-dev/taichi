@@ -2134,12 +2134,16 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
       builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                           loop_index);
     } else if (spmd == "amdgpu") {
+#ifdef TI_WITH_AMDGPU
       thread_idx = 
         builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
       auto workgroup_dim_ = call("__ockl_get_local_size", llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
       block_dim = builder->CreateTrunc(workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
       builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                           loop_index);
+#else
+      TI_NOT_IMPLEMENTED
+#endif
     } else {
       builder->CreateStore(lower_bound, loop_index);
     }

@@ -67,8 +67,9 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   if (arch_is_cpu(config.arch)) {
     config.max_block_dim = 1024;
     device_ = std::make_shared<cpu::CpuDevice>();
-  } else if (config.arch == Arch::cuda) {
+  }
 #if defined(TI_WITH_CUDA)
+  else if (config.arch == Arch::cuda) {
     int num_SMs{1};
     CUDADriver::get_instance().device_get_attribute(
         &num_SMs, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, nullptr);
@@ -159,7 +160,7 @@ void LlvmRuntimeExecutor::synchronize() {
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().stream_synchronize(nullptr);
 #else
-      TI_ERROR("No CUDA support");
+    TI_ERROR("No CUDA support");
 #endif
   }
   fflush(stdout);
@@ -175,7 +176,7 @@ uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
     CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
                                                      sizeof(uint64));
 #else
-      TI_NOT_IMPLEMENTED;
+    TI_NOT_IMPLEMENTED;
 #endif
   } else {
     ret = result_buffer[i];
@@ -338,7 +339,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     std::memset(root_buffer, 0, rounded_size);
@@ -350,7 +351,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
 #if defined(TI_WITH_CUDA)
     alloc = cuda_device()->import_memory(root_buffer, rounded_size);
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     alloc = cpu_device()->import_memory(root_buffer, rounded_size);
@@ -438,7 +439,7 @@ void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
 #if defined(TI_WITH_CUDA)
     CUDADriver::get_instance().memsetd32((void *)ptr, data, size);
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     std::fill((uint32_t *)ptr, (uint32_t *)ptr + size, data);
@@ -451,7 +452,7 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 #if defined(TI_WITH_CUDA)
     return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
@@ -499,7 +500,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
                                       prealloc_size);
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     *result_buffer_ptr = (uint64 *)memory_pool->allocate(
@@ -521,7 +522,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     // state so that we do not need expensive per-state locks.
     num_rand_states = config_->saturating_grid_dim * config_->max_block_dim;
 #else
-      TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     num_rand_states = config_->cpu_max_num_threads;

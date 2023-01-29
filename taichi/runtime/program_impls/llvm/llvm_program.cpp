@@ -47,7 +47,8 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
   std::unique_ptr<StructCompiler> struct_compiler{nullptr};
   auto module = runtime_exec_->llvm_context_.get()->new_module("struct");
   struct_compiler = std::make_unique<StructCompilerLLVM>(
-      config->arch, this, std::move(module), tree->id());
+      arch_is_cpu(config->arch) ? host_arch() : config->arch, this,
+      std::move(module), tree->id());
   struct_compiler->run(*root);
   ++num_snode_trees_processed_;
   return struct_compiler;

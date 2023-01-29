@@ -119,13 +119,13 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     // FIXME: set value based on DX12.
     config.max_block_dim = 1024;
     device_ = std::make_shared<cpu::CpuDevice>();
-    llvm_context_ = std::make_unique<TaichiLLVMContext>(config_, Arch::x64);
   }
 #endif
   else {
     TI_NOT_IMPLEMENTED
   }
-  llvm_context_ = std::make_unique<TaichiLLVMContext>(config_, config.arch);
+  llvm_context_ = std::make_unique<TaichiLLVMContext>(
+      config_, arch_is_cpu(config.arch) ? host_arch() : config.arch);
   llvm_context_->init_runtime_jit_module();
 }
 

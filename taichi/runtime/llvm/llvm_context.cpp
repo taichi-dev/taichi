@@ -95,6 +95,11 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
     llvm::InitializeNativeTargetAsmParser();
 #endif
   } else if (arch == Arch::dx12) {
+    // FIXME: Must initialize these before initializing Arch::dx12
+    // because it uses the jit of CPU right now.
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
 #if defined(TI_WITH_DX12)
     LLVMInitializeDirectXTarget();
     LLVMInitializeDirectXTargetMC();

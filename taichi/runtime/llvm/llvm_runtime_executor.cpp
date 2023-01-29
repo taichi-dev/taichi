@@ -119,6 +119,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     // FIXME: set value based on DX12.
     config.max_block_dim = 1024;
     device_ = std::make_shared<cpu::CpuDevice>();
+    llvm_context_ = std::make_unique<TaichiLLVMContext>(config_, Arch::x64);
   }
 #endif
   else {

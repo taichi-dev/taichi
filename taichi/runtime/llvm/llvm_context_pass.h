@@ -20,39 +20,6 @@
 namespace taichi {
 namespace lang {
 using namespace llvm;
-#if defined(TI_WITH_AMDGPU)
-struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
-  static inline char ID{0};
-  AMDGPUConvertAllocaInstAddressSpacePass() : FunctionPass(ID) {
-  }
-  bool runOnFunction(llvm::Function &f) override {
-    f.addFnAttr("target-cpu",
-                "gfx" + AMDGPUContext::get_instance().get_mcpu().substr(3, 4));
-    f.addFnAttr("target-features", "");
-    for (auto &bb : f) {
-      std::vector<AllocaInst *> alloca_inst_vec;
-      for (Instruction &inst : bb) {
-        AllocaInst *now_alloca = dyn_cast<AllocaInst>(&inst);
-        if (!now_alloca ||
-            now_alloca->getType()->getAddressSpace() != (unsigned)0) {
-          continue;
-        }
-        alloca_inst_vec.push_back(now_alloca);
-      }
-      for (auto &allocainst : alloca_inst_vec) {
-        auto alloca_type = allocainst->getAllocatedType();
-        llvm::IRBuilder<> builder(allocainst);
-        auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
-        auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
-        new_alloca->setAlignment(Align(allocainst->getAlign().value()));
-        auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
-        allocainst->replaceAllUsesWith(addrspacecast);
-        allocainst->eraseFromParent();
-      }
-    }
-    return false;
-  }
-};
 
 struct AddStructForFuncPass : public ModulePass {
   static inline char ID{0};
@@ -105,6 +72,40 @@ struct AddStructForFuncPass : public ModulePass {
     gep->replaceAllUsesWith(new_gep);
     gep->eraseFromParent();
     alloca->eraseFromParent();
+    return false;
+  }
+};
+
+#if defined(TI_WITH_AMDGPU)
+struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
+  static inline char ID{0};
+  AMDGPUConvertAllocaInstAddressSpacePass() : FunctionPass(ID) {
+  }
+  bool runOnFunction(llvm::Function &f) override {
+    f.addFnAttr("target-cpu",
+                "gfx" + AMDGPUContext::get_instance().get_mcpu().substr(3, 4));
+    f.addFnAttr("target-features", "");
+    for (auto &bb : f) {
+      std::vector<AllocaInst *> alloca_inst_vec;
+      for (Instruction &inst : bb) {
+        AllocaInst *now_alloca = dyn_cast<AllocaInst>(&inst);
+        if (!now_alloca ||
+            now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+          continue;
+        }
+        alloca_inst_vec.push_back(now_alloca);
+      }
+      for (auto &allocainst : alloca_inst_vec) {
+        auto alloca_type = allocainst->getAllocatedType();
+        llvm::IRBuilder<> builder(allocainst);
+        auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+        auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+        new_alloca->setAlignment(Align(allocainst->getAlign().value()));
+        auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
+        allocainst->replaceAllUsesWith(addrspacecast);
+        allocainst->eraseFromParent();
+      }
+    }
     return false;
   }
 };

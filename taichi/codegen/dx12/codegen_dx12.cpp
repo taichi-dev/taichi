@@ -163,7 +163,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     } else if (stmt->task_type == Type::struct_for) {
       stmt->block_dim = std::min(stmt->snode->parent->max_num_elements(),
                                  (int64)stmt->block_dim);
-      create_offload_struct_for(stmt, OffloadSPMDType::dx12);
+      create_offload_struct_for(stmt);
     } else if (stmt->task_type == Type::listgen) {
       emit_list_gen(stmt);
     } else if (stmt->task_type == Type::gc) {
@@ -190,6 +190,13 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     } else {
       TI_NOT_IMPLEMENTED
     }
+  }
+
+private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx = tlctx->get_constant(0);
+    auto block_dim = tlctx->get_constant(1);
+    return std::make_tuple(thread_idx, block_dim);
   }
 };
 

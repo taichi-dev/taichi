@@ -474,7 +474,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        create_offload_struct_for(stmt, OffloadSPMDType::nvgpu);
+        create_offload_struct_for(stmt);
       } else if (stmt->task_type == Type::mesh_for) {
         create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
@@ -583,6 +583,15 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       llvm_val[stmt] = builder->CreateFPTrunc(
           llvm_val[stmt], llvm::Type::getHalfTy(*llvm_context));
     }
+  }
+
+private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx =
+          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+    auto block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
+                                        {}, {});
+    return std::make_tuple(thread_idx, block_dim);
   }
 };
 

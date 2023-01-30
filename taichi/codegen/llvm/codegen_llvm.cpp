@@ -2128,12 +2128,6 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt) {
     auto [thread_idx, block_dim] = this->get_spmd_info();
     builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                           loop_index);
-#else
-      TI_NOT_IMPLEMENTED
-#endif
-    } else {
-      builder->CreateStore(lower_bound, loop_index);
-    }
 
     auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
     auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);

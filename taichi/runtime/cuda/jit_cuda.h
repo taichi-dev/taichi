@@ -87,7 +87,7 @@ class JITSessionCUDA : public JITSession {
   llvm::DataLayout data_layout;
 
   JITSessionCUDA(TaichiLLVMContext *tlctx,
-                 CompileConfig *config,
+                 const CompileConfig &config,
                  llvm::DataLayout data_layout)
       : JITSession(tlctx, config), data_layout(data_layout) {
   }
@@ -106,7 +106,7 @@ class JITSessionCUDA : public JITSession {
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch);
 
 }  // namespace taichi::lang

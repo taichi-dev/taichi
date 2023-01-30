@@ -8,7 +8,7 @@ namespace taichi::lang {
 JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                        int max_reg) {
   auto ptx = compile_module_to_ptx(M);
-  if (this->config_->print_kernel_nvptx) {
+  if (this->config_.print_kernel_nvptx) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
     writer.write(ptx);
@@ -82,7 +82,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
   using namespace llvm;
 
-  if (this->config_->print_kernel_llvm_ir) {
+  if (this->config_.print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_cuda_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (CUDA)");
     writer.write(module.get());
@@ -103,7 +103,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-  if (this->config_->fast_math) {
+  if (this->config_.fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     // See NVPTXISelLowering.cpp
     // Setting UnsafeFPMath true will result in approximations such as
@@ -223,7 +223,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
     module_pass_manager.run(*module);
   }
 
-  if (this->config_->print_kernel_llvm_ir_optimized) {
+  if (this->config_.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_cuda_llvm_ir_optimized_{:04d}.ll",
         "optimized LLVM IR (CUDA)");
@@ -239,7 +239,7 @@ std::string JITSessionCUDA::compile_module_to_ptx(
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch) {
   TI_ASSERT(arch == Arch::cuda);
   // https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html#data-layout
@@ -251,7 +251,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
 #else
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch) {
   TI_NOT_IMPLEMENTED
 }

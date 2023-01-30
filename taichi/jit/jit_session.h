@@ -17,12 +17,12 @@ struct CompileConfig;
 class JITSession {
  protected:
   TaichiLLVMContext *tlctx_;
-  CompileConfig *config_;
+  const CompileConfig &config_;
 
   std::vector<std::unique_ptr<JITModule>> modules;
 
  public:
-  JITSession(TaichiLLVMContext *tlctx, CompileConfig *config);
+  JITSession(TaichiLLVMContext *tlctx, const CompileConfig &config);
 
   virtual JITModule *add_module(std::unique_ptr<llvm::Module> M,
                                 int max_reg = 0) = 0;
@@ -36,7 +36,7 @@ class JITSession {
   virtual llvm::DataLayout get_data_layout() = 0;
 
   static std::unique_ptr<JITSession> create(TaichiLLVMContext *tlctx,
-                                            CompileConfig *config,
+                                            const CompileConfig &config,
                                             Arch arch);
 
   virtual void global_optimize_module(llvm::Module *module) {

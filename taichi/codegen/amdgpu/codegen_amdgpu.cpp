@@ -424,7 +424,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
   auto &tasks = data.tasks;
   auto jit = tlctx_->jit.get();
   auto amdgpu_module =
-      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+      jit->add_module(std::move(mod), executor_->get_config().gpu_max_reg);
 
   return [amdgpu_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {

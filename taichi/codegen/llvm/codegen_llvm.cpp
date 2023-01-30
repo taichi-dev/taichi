@@ -2123,8 +2123,6 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt) {
       call("block_barrier");  // "__syncthreads()"
     }
 
-    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
-
     auto [thread_idx, block_dim] = this->get_spmd_info();
     builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
                           loop_index);

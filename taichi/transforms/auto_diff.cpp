@@ -852,7 +852,7 @@ class MakeAdjoint : public ADTransform {
       accumulate(
           stmt->operand,
           mul(adjoint(stmt),
-              mul(constant(-0.5f), pow(div(constant(1.0f), rsqrt(stmt->operand)), constant(3)))));
+              mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3)))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
@@ -1242,7 +1242,7 @@ class MakeDual : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
       accumulate(
           stmt,
-          mul(mul(constant(-0.5f), pow(div(constant(1.0f), rsqrt(stmt->operand)), constant(3))), dual(stmt->operand))); 
+          mul(mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3))), dual(stmt->operand))); 
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));

@@ -553,7 +553,7 @@ class ADTransform : public IRVisitor {
   Stmt *rsqrt(Stmt *inp) {
     return insert<UnaryOpStmt>(UnaryOpType::rsqrt, load(inp));
   }
-  
+
   Stmt *mul(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
   }
@@ -1240,9 +1240,9 @@ class MakeDual : public ADTransform {
       accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
                            dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      accumulate(
-          stmt,
-          mul(mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3))), dual(stmt->operand))); 
+      accumulate(stmt, mul(mul(constant(-0.5f),
+                               pow(rsqrt(stmt->operand), constant(3))),
+                           dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));

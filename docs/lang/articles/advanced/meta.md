@@ -9,7 +9,7 @@ sidebar_position: 1
 
 > Metaprogramming is a programming technique in which computer programs have the ability to treat other programs as their data. It means that a program can be designed to read, generate, analyze or transform other programs, and even modify itself while running.
 >
-> from Wikipedia: https://en.wikipedia.org/wiki/Metaprogramming.
+> Cited from Wikipedia: <https://en.wikipedia.org/wiki/Metaprogramming>.
 
 To put it shortly: A metaprogram is a program that writes (or modifies) programs.
 

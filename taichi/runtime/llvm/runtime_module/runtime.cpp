@@ -784,6 +784,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
   // Kill this CUDA thread.
   asm("exit;");
 #elif ARCH_amdgpu
+  asm("S_ENDPGM");
   // TODO: properly kill this CPU thread here, considering the containing
   // ThreadPool structure.
 

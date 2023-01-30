@@ -672,4 +672,23 @@ void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
   ctx->runtime = get_llvm_runtime();
 }
 
+template <typename T>
+T LlvmRuntimeExecutor::fetch_result(char *result_buffer, int offset) {
+  // TODO: We are likely doing more synchronization than necessary. Simplify the
+  // sync logic when we fetch the result.
+  synchronize();
+  T ret;
+  if (config_.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memcpy_device_to_host(
+        &ret, result_buffer + offset, sizeof(T));
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else {
+    ret = *(T *)(result_buffer + offset);
+  }
+  return ret;
+}
+
 }  // namespace taichi::lang

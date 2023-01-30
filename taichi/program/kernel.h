@@ -106,6 +106,9 @@ class TI_DLL_EXPORT Kernel : public Callable {
   template <typename T>
   T fetch_ret(DataType dt, int i);
 
+  template <typename T>
+  T fetch_ret(std::vector<int> index);
+
   float64 get_ret_float(int i);
   int64 get_ret_int(int i);
   uint64 get_ret_uint(int i);

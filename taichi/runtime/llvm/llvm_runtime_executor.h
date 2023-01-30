@@ -81,6 +81,9 @@ class LlvmRuntimeExecutor {
         fetch_result_uint64(i, result_buffer));
   }
 
+  template <typename T>
+  T fetch_result(char *result_buffer, int offset);
+
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
   void fill_ndarray(const DeviceAllocation &alloc,

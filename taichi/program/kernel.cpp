@@ -342,5 +342,9 @@ void Kernel::init(Program &program,
 
   func();
 }
+template <typename T>
+T Kernel::fetch_ret(std::vector<int> index) {
+  return nullptr;
+}
 
 }  // namespace taichi::lang

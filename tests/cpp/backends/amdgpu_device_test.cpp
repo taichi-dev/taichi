@@ -236,8 +236,8 @@ TEST(AMDGPU, CompileProgramAndLaunch) {
   LLVMInitializeAMDGPUTargetInfo();
   LLVMInitializeAMDGPUAsmPrinter();
   LLVMInitializeAMDGPUAsmParser();
-  auto amdgpu_session =
-      new JITSessionAMDGPU(nullptr, new CompileConfig(), llvm::DataLayout(""));
+  auto amdgpu_session = new JITSessionAMDGPU(nullptr, default_compile_config,
+                                             llvm::DataLayout(""));
   auto amdgpu_module = amdgpu_session->add_module(std::move(llvm_module), 0);
   std::vector<void *> arg_pointers;
   std::vector<int> arg_sizes;

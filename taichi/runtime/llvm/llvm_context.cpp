@@ -69,7 +69,7 @@ namespace taichi::lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
+TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     : config_(config), arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
@@ -158,7 +158,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
     // otherwise [element_type * num_elements].
-    if (codegen_vector_type(*config_)) {
+    if (codegen_vector_type(config_)) {
       return llvm::VectorType::get(element_type, num_elements,
                                    /*scalable=*/false);
     }

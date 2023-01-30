@@ -615,7 +615,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
 #ifdef TI_WITH_CUDA
   auto jit = tlctx_->jit.get();
   auto cuda_module =
-      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+      jit->add_module(std::move(mod), executor_->get_config().gpu_max_reg);
 
   return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {
@@ -688,7 +688,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
     CUDADriver::get_instance().context_set_limit(
-        CU_LIMIT_STACK_SIZE, executor->get_config()->cuda_stack_limit);
+        CU_LIMIT_STACK_SIZE, executor->get_config().cuda_stack_limit);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

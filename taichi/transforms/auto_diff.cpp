@@ -550,6 +550,10 @@ class ADTransform : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
   }
 
+  Stmt *rsqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::rsqrt, load(inp));
+  }
+  
   Stmt *mul(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
   }
@@ -844,6 +848,11 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      accumulate(
+          stmt->operand,
+          mul(adjoint(stmt),
+              pow(div(constant(-0.125f), rsqrt(stmt->operand)), constant(3))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
@@ -1230,6 +1239,10 @@ class MakeDual : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
                            dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      accumulate(
+          stmt,
+          mul(pow(div(constant(-0.125f), rsqrt(stmt->operand)), constant(3)), dual(stmt->operand))); 
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt, dual(stmt->operand));

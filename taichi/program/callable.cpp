@@ -40,6 +40,7 @@ void Callable::finalize_rets() {
   for (int i = 0; i < rets.size(); i++) {
     members.push_back({rets[i].dt, fmt::format("ret_{}", i)});
   }
+  program->get_program_impl()->fill_struct_layout(members);
   ret_type =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
 }

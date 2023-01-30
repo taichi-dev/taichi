@@ -248,6 +248,8 @@ class LlvmProgramImpl : public ProgramImpl {
     return cache_reader_;
   }
 
+  void fill_struct_layout(std::vector<StructMember> &members) override;
+
   // TODO(zhanlue): Rearrange llvm::Context's ownership
   //
   // In LLVM backend, most of the compiled information are stored in

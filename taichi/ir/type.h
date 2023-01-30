@@ -142,6 +142,8 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   }
 
   static DataType get(PrimitiveTypeID type);
+
+  size_t type_size();
 };
 
 class PointerType : public Type {
@@ -197,6 +199,10 @@ class TensorType : public Type {
 
   std::string to_string() const override;
 
+  size_t get_element_offset(int ind) const {
+    return element_->cast<PrimitiveType>()->type_size() * ind;
+  }
+
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
@@ -220,6 +226,7 @@ class StructType : public Type {
   std::string to_string() const override;
 
   Type *get_element_type(const std::vector<int> &indices) const;
+  size_t get_element_offset(const std::vector<int> &indices) const;
   const std::vector<StructMember> &elements() const {
     return elements_;
   }

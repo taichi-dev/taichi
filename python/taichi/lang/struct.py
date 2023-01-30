@@ -677,8 +677,7 @@ class StructType(CompoundType):
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
                 elements.append([dtype, k])
-        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
-            elements)
+        self.dtype = impl.get_runtime().prog.get_struct_type(elements)
 
     def __call__(self, *args, **kwargs):
         """Create an instance of this struct type."""

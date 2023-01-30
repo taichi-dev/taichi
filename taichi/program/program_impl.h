@@ -159,6 +159,9 @@ class ProgramImpl {
     return result_buffer[i];
   }
 
+  virtual void fill_struct_layout(std::vector<StructMember> &members) {
+  }
+
  private:
 };
 

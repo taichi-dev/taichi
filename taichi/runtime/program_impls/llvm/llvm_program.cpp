@@ -67,6 +67,10 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
   return struct_compiler;
 }
 
+void LlvmProgramImpl::fill_struct_layout(std::vector<StructMember> &members) {
+  get_llvm_context(config->arch)->fill_struct_layout(members);
+}
+
 void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   auto struct_compiler = compile_snode_tree_types_impl(tree);
   int snode_tree_id = tree->id();

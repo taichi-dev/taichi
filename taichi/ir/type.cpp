@@ -84,6 +84,26 @@ std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
 }
 
+size_t PrimitiveType::type_size() {
+  if (type == PrimitiveTypeID::i8 || type == PrimitiveTypeID::u8 ||
+      type == PrimitiveTypeID::u1) {
+    return 1;
+  }
+  if (type == PrimitiveTypeID::i16 || type == PrimitiveTypeID::u16 ||
+      type == PrimitiveTypeID::f16) {
+    return 2;
+  }
+  if (type == PrimitiveTypeID::i32 || type == PrimitiveTypeID::u32 ||
+      type == PrimitiveTypeID::f32) {
+    return 4;
+  }
+  if (type == PrimitiveTypeID::i64 || type == PrimitiveTypeID::u64 ||
+      type == PrimitiveTypeID::f64) {
+    return 8;
+  }
+  TI_NOT_IMPLEMENTED;
+}
+
 std::string PointerType::to_string() const {
   if (is_bit_pointer_) {
     // "^" for bit-level pointers
@@ -109,8 +129,9 @@ std::string StructType::to_string() const {
     if (i) {
       s += ", ";
     }
-    s += fmt::format("{}({}): {}", i, elements_[i].name,
-                     elements_[i].type->to_string());
+    s += fmt::format("{}: (name: {}, type: {}, offset: {})", i,
+                     elements_[i].name, elements_[i].type->to_string(),
+                     elements_[i].offset);
   }
   s += ")";
   return s;
@@ -127,6 +148,22 @@ Type *StructType::get_element_type(const std::vector<int> &indices) const {
     }
   }
   return (Type *)type_now;
+}
+
+size_t StructType::get_element_offset(const std::vector<int> &indices) const {
+  const Type *type_now = this;
+  size_t offset = 0;
+  for (auto ind : indices) {
+    if (auto tensor_type = type_now->cast<TensorType>()) {
+      TI_ASSERT(ind < tensor_type->get_num_elements())
+      offset += tensor_type->get_element_offset(ind);
+      type_now = tensor_type->get_element_type();
+    } else {
+      offset += type_now->as<StructType>()->elements_[ind].offset;
+      type_now = type_now->as<StructType>()->elements_[ind].type;
+    }
+  }
+  return offset;
 }
 
 bool Type::is_primitive(PrimitiveTypeID type) const {

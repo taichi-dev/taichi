@@ -234,6 +234,11 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     res.module = std::move(this->module);
     return res;
   }
+
+private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    TI_NOT_IMPLEMENTED;
+  }
 };
 
 FunctionType KernelCodeGenWASM::compile_to_function() {

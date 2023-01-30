@@ -1620,11 +1620,7 @@ void auto_diff(IRNode *root,
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
         type_check(root, config);
-        std::cout << "Before MakeAdjoint" << std::endl;
-        irpass::print(ib);
         MakeAdjoint::run(ib);
-        std::cout << "After MakeAdjoint" << std::endl;
-        irpass::print(ib);
         type_check(root, config);
         BackupSSA::run(ib);
         irpass::analysis::verify(root);

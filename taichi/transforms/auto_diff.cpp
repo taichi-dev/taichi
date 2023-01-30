@@ -330,6 +330,7 @@ class IdentifyIndependentBlocks : public BasicStmtVisitor {
     } else {
       root->accept(&pass);
     }
+
     // Sort the IBs by their depth from shallow to deep
     std::sort(pass.independent_blocks_.begin(), pass.independent_blocks_.end(),
               [](const std::pair<int, Block *> &a,
@@ -407,6 +408,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     // << " end " << stmt->end->id << std::endl;
     // TODO: To refine this, handle the case that the begin or end of the loop
     // is read from global ptr
+
     if (stmt->begin->is<GlobalLoadStmt>()) {
       // Create a alloc
       auto alloc = Stmt::make<AllocaStmt>(stmt->begin->ret_type);
@@ -1261,7 +1263,17 @@ class MakeAdjoint : public ADTransform {
     auto new_for = for_stmt->clone();
     auto new_for_ptr = new_for->as<RangeForStmt>();
     new_for_ptr->reversed = !new_for_ptr->reversed;
-    insert_grad_stmt(std::move(new_for));
+    auto new_for_stmt = insert_grad_stmt(std::move(new_for));
+
+    if (new_for_ptr->begin->is<AdStackLoadTopStmt>()) {
+      new_for_ptr->begin =
+          new_for_stmt->insert_before_me(new_for_ptr->begin->clone());
+    }
+    if (new_for_ptr->end->is<AdStackLoadTopStmt>()) {
+      new_for_ptr->end =
+          new_for_stmt->insert_before_me(new_for_ptr->end->clone());
+    }
+
     const int len = new_for_ptr->body->size();
 
     for (int i = 0; i < len; i++) {
@@ -1887,6 +1899,7 @@ void auto_diff(IRNode *root,
       ReverseOuterLoops::run(root, IB);
 
       for (auto ib : IB) {
+        // print("before promote SSA");
         PromoteSSA2LocalVar::run(ib);
         // print("after promote SSA");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size, ib);

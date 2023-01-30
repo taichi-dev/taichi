@@ -170,8 +170,9 @@ sifakis_svd_export(ASTBuilder *ast_builder, const Expr &mat, int num_iters) {
   ast_builder->insert_assignment(Ss33, Stmp1 + Ss33);
   ast_builder->insert_assignment(Stmp1, Sa33 * Sa33);
   ast_builder->insert_assignment(Ss33, Stmp1 + Ss33);
-  ast_builder->strictly_serialize();
-  ast_builder->insert_for(Expr(0), Expr(num_iters), [&](Expr sweep) {
+  //   ast_builder->strictly_serialize();
+  //   ast_builder->insert_for(Expr(0), Expr(num_iters), [&](Expr sweep) {
+  for (int i = 0; i < num_iters; i++) {
     ast_builder->insert_assignment(Ssh, Ss21 * Sone_half);
     ast_builder->insert_assignment(Stmp5, Ss11 - Ss22);
     ast_builder->insert_assignment(Stmp2, Ssh * Ssh);
@@ -403,7 +404,8 @@ sifakis_svd_export(ASTBuilder *ast_builder, const Expr &mat, int num_iters) {
     ast_builder->insert_assignment(Sqvs, Sqvs - Stmp2);
     ast_builder->insert_assignment(Sqvvz, Sqvvz + Stmp1);
     ast_builder->insert_assignment(Sqvvx, Sqvvx - Stmp3);
-  });
+    //   });
+  }
   ast_builder->insert_assignment(Stmp2, Sqvs * Sqvs);
   ast_builder->insert_assignment(Stmp1, Sqvvx * Sqvvx);
   ast_builder->insert_assignment(Stmp2, Stmp1 + Stmp2);

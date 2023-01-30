@@ -286,6 +286,10 @@ class Tape:
                 # else:
                 #     print("Backward func ", func)
                 func.grad(*args)
+                # if hasattr(func, "func"):
+                #     print("Backward func executed ", func.func)
+                # else:
+                #     print("Backward func executed ", func)
             if self.checkpointer and self.enable_checkpointing:
                 self.calls_count -= 1
                 # print(f"Backward func: {self.calls_count}")
@@ -698,9 +702,16 @@ class Checkpointer:
         self.clear_checkpoint(save_id)
 
         if self.verbose:
-            self.print_info(
-                f"[RESTORE] Checkpoint {save_id} restored to snode tree {snode_tree_id}"
-            )
+            if save_id > 0:
+                func, args = self.forward_calls[save_id - 1]
+                has_func = hasattr(func, "func")
+                self.print_info(
+                    f"[RESTORE] Checkpoint {save_id} restored to snode tree {snode_tree_id} for backward func of {func.func if has_func else func}."
+                )
+            else:
+                self.print_info(
+                    f"[RESTORE] Checkpoint {save_id} restored to snode tree {snode_tree_id} for forward pass results."
+                )
 
     def find_checkpoint(self, save_id):
         return save_id in self.backup_buffers
@@ -788,7 +799,7 @@ class CheckpointerManager:
         self.forward_result_checpointer.clear()
 
 
-_checkpointer = CheckpointerManager(verbose=False)
+_checkpointer = CheckpointerManager(verbose=True)
 
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

@@ -31,7 +31,7 @@ repos:
       - id: end-of-file-fixer
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v2.16.0b1
+    rev: v2.15.9
     hooks:
       - id: pylint
         args: ['-rn', '-sn']

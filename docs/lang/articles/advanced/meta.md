@@ -11,7 +11,7 @@ sidebar_position: 1
 >
 > Cited from Wikipedia: <https://en.wikipedia.org/wiki/Metaprogramming>.
 
-To put it shortly: A metaprogram is a program that writes (or modifies) programs.
+In short, a metaprogram is a program that writes or modifies programs.
 
 That sounds good, but you might wonder, code writes code, who needs that? Why don't I write all the code myself? Let's take a practical example to illustrate its use.
 

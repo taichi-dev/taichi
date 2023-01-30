@@ -1509,6 +1509,17 @@
                     "is_dispatchable": false
                 },
                 {
+                    "name": "async_task",
+                    "vendor": "unity",
+                    "type": "callback",
+                    "parameters": [
+                        {
+                            "name": "user_data",
+                            "type": "void*"
+                        }
+                    ]
+                },
+                {
                     "name": "import_native_runtime",
                     "vendor": "unity",
                     "type": "function",
@@ -1516,6 +1527,20 @@
                         {
                             "name": "@return",
                             "type": "handle.runtime"
+                        }
+                    ]
+                },
+                {
+                    "name": "enqueue_task_async",
+                    "vendor": "unity",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "user_data",
+                            "type": "void*"
+                        },
+                        {
+                            "type": "callback.async_task"
                         }
                     ]
                 },

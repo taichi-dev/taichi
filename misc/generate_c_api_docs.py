@@ -43,7 +43,9 @@ def print_module_doc(module: Module):
         else:
             print(f"WARNING: `{x}` is not documented")
             out += [""]
-    out += [""]
+
+    if out[-1]:
+        out += [""]
 
     return '\n'.join(out)
 

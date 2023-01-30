@@ -109,7 +109,7 @@ class JITSessionCPU : public JITSession {
  public:
   JITSessionCPU(TaichiLLVMContext *tlctx,
                 std::unique_ptr<ExecutorProcessControl> EPC,
-                CompileConfig *config,
+                const CompileConfig &config,
                 JITTargetMachineBuilder JTMB,
                 DataLayout DL)
       : JITSession(tlctx, config),
@@ -224,7 +224,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   TI_ERROR_UNLESS(target, err_str);
 
   TargetOptions options;
-  if (this->config_->fast_math) {
+  if (this->config_.fast_math) {
     options.AllowFPOpFusion = FPOpFusion::Fast;
     options.UnsafeFPMath = 1;
     options.NoInfsFPMath = 1;
@@ -294,7 +294,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     module_pass_manager.run(*module);
   }
 
-  if (this->config_->print_kernel_llvm_ir_optimized) {
+  if (this->config_.print_kernel_llvm_ir_optimized) {
     if (false) {
       TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
       TaichiLLVMContext::print_huge_functions(module);
@@ -308,7 +308,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch) {
   TI_ASSERT(arch_is_cpu(arch));
   auto target_info = get_host_target_info();

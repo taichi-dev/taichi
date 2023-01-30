@@ -57,11 +57,14 @@ def _test_cpp_aot(test_filename, build_dir, test_info):
                       f"--gtest_filter={cpp_test_name}", extra_env)
 
 
-def _test_cpp(test_keys=None):
+def _test_cpp(test_keys=None, use_static_c_api_test=False):
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(curr_dir, '../build')
     cpp_test_filename = 'taichi_cpp_tests'
     capi_test_filename = 'taichi_c_api_tests'
+    if use_static_c_api_test:
+        capi_test_filename = 'taichi_static_c_api_tests'
+
     if platform.system() == "Windows":
         cpp_test_filename += ".exe"
         capi_test_filename += ".exe"
@@ -224,6 +227,11 @@ def test():
                         default=False,
                         action='store_true',
                         help='Only run the C++ tests')
+    parser.add_argument('--use_static_c_api',
+                        dest='static_c_api',
+                        default=False,
+                        action='store_true',
+                        help='Test with taichi_static_c_api_test instead')
     parser.add_argument('-s',
                         '--show',
                         dest='show_output',
@@ -382,7 +390,7 @@ def test():
         os.environ['TI_OFFLINE_CACHE'] = '0'
 
     if args.cpp:
-        _test_cpp(args.keys)
+        _test_cpp(args.keys, args.static_c_api)
         return
 
     for _ in range(run_count):

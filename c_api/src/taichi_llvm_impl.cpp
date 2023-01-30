@@ -54,36 +54,36 @@ taichi::lang::Device &LlvmRuntime::get() {
 
 TiMemory LlvmRuntime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
-  taichi::lang::CompileConfig *config = executor_->get_config();
+  const taichi::lang::CompileConfig &config = executor_->get_config();
   taichi::lang::TaichiLLVMContext *tlctx =
-      executor_->get_llvm_context(config->arch);
+      executor_->get_llvm_context(config.arch);
   taichi::lang::LLVMRuntime *llvm_runtime = executor_->get_llvm_runtime();
   taichi::lang::LlvmDevice *llvm_device = executor_->llvm_device();
 
   taichi::lang::DeviceAllocation devalloc =
       llvm_device->allocate_memory_runtime(
-          {params, config->ndarray_use_cached_allocator,
+          {params, config.ndarray_use_cached_allocator,
            tlctx->runtime_jit_module, llvm_runtime, result_buffer});
   return devalloc2devmem(*this, devalloc);
 }
 
 void LlvmRuntime::free_memory(TiMemory devmem) {
-  taichi::lang::CompileConfig *config = executor_->get_config();
+  const taichi::lang::CompileConfig &config = executor_->get_config();
   // For memory allocated through Device::allocate_memory_runtime(),
   // the corresponding Device::free_memory() interface has not been
   // implemented yet...
-  if (taichi::arch_is_cpu(config->arch)) {
-    TI_CAPI_NOT_SUPPORTED_IF(taichi::arch_is_cpu(config->arch));
+  if (taichi::arch_is_cpu(config.arch)) {
+    TI_CAPI_NOT_SUPPORTED_IF(taichi::arch_is_cpu(config.arch));
   }
 
   Runtime::free_memory(devmem);
 }
 
 TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
-  auto *config = executor_->get_config();
+  const auto &config = executor_->get_config();
   std::unique_ptr<taichi::lang::aot::Module> aot_module{nullptr};
 
-  if (taichi::arch_is_cpu(config->arch)) {
+  if (taichi::arch_is_cpu(config.arch)) {
     taichi::lang::cpu::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
     aot_params.module_path = module_path;
@@ -91,7 +91,7 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
 
   } else {
 #ifdef TI_WITH_CUDA
-    TI_ASSERT(config->arch == taichi::Arch::cuda);
+    TI_ASSERT(config.arch == taichi::Arch::cuda);
     taichi::lang::cuda::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
     aot_params.module_path = module_path;

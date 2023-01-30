@@ -303,18 +303,18 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
                                    snode->get_snode_tree_id()));
 }
 
-TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig *compile_config,
+TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
                                  Kernel *kernel,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
     : LLVMModuleBuilder(module == nullptr
                             ? get_llvm_program(kernel->program)
-                                  ->get_llvm_context(compile_config->arch)
+                                  ->get_llvm_context(compile_config.arch)
                                   ->new_module("kernel")
                             : std::move(module),
                         get_llvm_program(kernel->program)
-                            ->get_llvm_context(compile_config->arch)),
+                            ->get_llvm_context(compile_config.arch)),
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
@@ -560,7 +560,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
-    } else if (compile_config->debug && is_integral(stmt->ret_type)) {
+    } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
           call("debug_add_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
@@ -575,7 +575,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
-    } else if (compile_config->debug && is_integral(stmt->ret_type)) {
+    } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
           call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
@@ -590,7 +590,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
-    } else if (compile_config->debug && is_integral(stmt->ret_type)) {
+    } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
           call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
@@ -625,7 +625,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         builder->CreateXor(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_shl) {
 #if defined(__clang__) || defined(__GNUC__)
-    if (compile_config->debug && is_integral(stmt->ret_type)) {
+    if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
           call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0),
                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
@@ -888,8 +888,8 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
 llvm::Value *TaskCodeGenLLVM::create_print(std::string tag,
                                            DataType dt,
                                            llvm::Value *value) {
-  if (!arch_is_cpu(compile_config->arch)) {
-    TI_WARN("print not supported on arch {}", arch_name(compile_config->arch));
+  if (!arch_is_cpu(compile_config.arch)) {
+    TI_WARN("print not supported on arch {}", arch_name(compile_config.arch));
     return nullptr;
   }
   std::vector<llvm::Value *> args;
@@ -1990,7 +1990,7 @@ void TaskCodeGenLLVM::finalize_offloaded_task_function() {
   builder->SetInsertPoint(entry_block);
   builder->CreateBr(func_body_bb);
 
-  if (compile_config->print_kernel_llvm_ir) {
+  if (compile_config.print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_generic_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (generic)");
     writer.write(module.get());
@@ -2539,7 +2539,7 @@ FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
 }
 
 void TaskCodeGenLLVM::initialize_context() {
-  tlctx = get_llvm_program(prog)->get_llvm_context(compile_config->arch);
+  tlctx = get_llvm_program(prog)->get_llvm_context(compile_config.arch);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }
@@ -2626,13 +2626,12 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
             config.make_block_local);
   };
 
-  const auto &config = *compile_config;
-  offload_to_executable(ir, config, kernel);
+  offload_to_executable(ir, compile_config, kernel);
 
   emit_to_module();
   eliminate_unused_functions();
 
-  if (config.arch == Arch::cuda) {
+  if (compile_config.arch == Arch::cuda) {
     // CUDA specific metadata
     for (const auto &task : offloaded_tasks) {
       llvm::Function *func = module->getFunction(task.name);

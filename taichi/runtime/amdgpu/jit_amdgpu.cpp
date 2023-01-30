@@ -27,7 +27,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   }
   using namespace llvm;
 
-  if (this->config_->print_kernel_llvm_ir) {
+  if (this->config_.print_kernel_llvm_ir) {
     static FileSequenceWriter writer("taichi_kernel_amdgpu_llvm_ir_{:04d}.ll",
                                      "unoptimized LLVM IR (AMDGPU)");
     writer.write(llvm_module.get());
@@ -93,7 +93,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
 
   std::string hsaco_str = load_hsaco(hsaco_path);
 
-  if (this->config_->print_kernel_llvm_ir_optimized) {
+  if (this->config_.print_kernel_llvm_ir_optimized) {
     static FileSequenceWriter writer(
         "taichi_kernel_amdgpu_llvm_ir_optimized_{:04d}.ll",
         "unoptimized LLVM IR (AMDGPU)");
@@ -104,7 +104,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
 
 std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch) {
   TI_ASSERT(arch == Arch::amdgpu);
   auto data_layout = llvm::DataLayout(
@@ -117,7 +117,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
 #else
 std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch) {
   TI_NOT_IMPLEMENTED
 }

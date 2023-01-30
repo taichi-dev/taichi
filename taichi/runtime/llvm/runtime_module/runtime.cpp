@@ -1833,6 +1833,8 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
   helper.push_back(std::forward<Args>(args)...);
   cuda_vprintf((Ptr)format, helper.ptr());
 #elif ARCH_amdgpu
+// TODO
+// add printf for amdgpu backend
 #else
   runtime->host_printf(format, args...);
 #endif

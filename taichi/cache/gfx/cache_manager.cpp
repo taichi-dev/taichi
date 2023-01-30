@@ -159,13 +159,13 @@ CacheManager::CacheManager(Params &&init_params)
   offline_cache_metadata_.version[2] = TI_VERSION_PATCH;
 }
 
-CompiledKernelData CacheManager::load_or_compile(const CompileConfig *config,
+CompiledKernelData CacheManager::load_or_compile(const CompileConfig &config,
                                                  Kernel *kernel) {
   if (kernel->is_evaluator) {
-    spirv::lower(*config, kernel);
+    spirv::lower(config, kernel);
     return gfx::run_codegen(kernel, runtime_->get_ti_device()->arch(),
                             runtime_->get_ti_device()->get_caps(),
-                            compiled_structs_, *config);
+                            compiled_structs_, config);
   }
   std::string kernel_key = make_kernel_key(config, kernel);
   if (mode_ > NotCache) {
@@ -293,7 +293,7 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(
   return *params_opt;
 }
 
-std::string CacheManager::make_kernel_key(const CompileConfig *config,
+std::string CacheManager::make_kernel_key(const CompileConfig &config,
                                           Kernel *kernel) const {
   if (mode_ < MemAndDiskCache) {
     return kernel->get_name();

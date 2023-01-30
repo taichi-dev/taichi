@@ -14,7 +14,7 @@ namespace wasm {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompileConfig *compile_config);
+  explicit AotModuleBuilderImpl(const CompileConfig &compile_config);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -34,7 +34,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
 
  private:
   void eliminate_unused_functions() const;
-  const CompileConfig *compile_config_{nullptr};
+  const CompileConfig &compile_config_;
   std::unique_ptr<llvm::Module> module_{nullptr};
   std::vector<std::string> name_list_;
 };

@@ -93,7 +93,7 @@ class JITSessionAMDGPU : public JITSession {
   llvm::DataLayout data_layout;
 
   JITSessionAMDGPU(TaichiLLVMContext *tlctx,
-                   CompileConfig *config,
+                   const CompileConfig &config,
                    llvm::DataLayout data_layout)
       : JITSession(tlctx, config), data_layout(data_layout) {
     random_num_ = get_random_num();
@@ -145,7 +145,7 @@ class JITSessionAMDGPU : public JITSession {
 
 std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch);
 
 }  // namespace lang

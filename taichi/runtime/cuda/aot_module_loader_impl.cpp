@@ -18,7 +18,7 @@ class AotModuleImpl : public LlvmAotModule {
   FunctionType convert_module_to_function(
       const std::string &name,
       LlvmOfflineCache::KernelCacheData &&loaded) override {
-    Arch arch = executor_->get_config()->arch;
+    Arch arch = executor_->get_config().arch;
     TI_ASSERT(arch == Arch::cuda);
     auto *tlctx = executor_->get_llvm_context(arch);
 

@@ -68,7 +68,7 @@ namespace taichi::lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
+TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     : config_(config), arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();

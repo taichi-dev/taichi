@@ -6,7 +6,7 @@ namespace taichi::lang {
 LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
   TI_ASSERT(cache_reader_ != nullptr);
-  auto *tlctx = executor_->get_llvm_context(executor_->get_config()->arch);
+  auto *tlctx = executor_->get_llvm_context(executor_->get_config().arch);
   LlvmOfflineCache::KernelCacheData loaded;
   auto ok = cache_reader_->get_kernel_cache(loaded, name,
                                             *tlctx->get_this_thread_context());

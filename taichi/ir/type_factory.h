@@ -22,7 +22,7 @@ class TypeFactory {
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-  Type *get_struct_type(const std::vector<const Type *> &elements);
+  Type *get_struct_type(const std::vector<StructMember> &elements);
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
@@ -61,9 +61,9 @@ class TypeFactory {
       tensor_types_;
   std::mutex tensor_mut_;
 
-  std::unordered_map<std::vector<const Type *>,
+  std::unordered_map<std::vector<StructMember>,
                      std::unique_ptr<Type>,
-                     hashing::Hasher<std::vector<const Type *>>>
+                     hashing::Hasher<std::vector<StructMember>>>
       struct_types_;
   std::mutex struct_mut_;
 

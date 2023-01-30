@@ -38,15 +38,15 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   return tensor_types_[key].get();
 }
 
-Type *TypeFactory::get_struct_type(const std::vector<const Type *> &elements) {
+Type *TypeFactory::get_struct_type(const std::vector<StructMember> &elements) {
   std::lock_guard<std::mutex> _(struct_mut_);
 
   if (struct_types_.find(elements) == struct_types_.end()) {
-    for (const auto &element : elements) {
-      TI_ASSERT_INFO(
-          element->is<PrimitiveType>() || element->is<TensorType>() ||
-              element->is<StructType>() || element->is<PointerType>(),
-          "Unsupported struct element type: " + element->to_string());
+    for (const auto &[type, name, __] : elements) {
+      TI_ASSERT_INFO(type->is<PrimitiveType>() || type->is<TensorType>() ||
+                         type->is<StructType>() || type->is<PointerType>(),
+                     "Unsupported struct element type for element " + name +
+                         ": " + type->to_string());
     }
     struct_types_[elements] = std::make_unique<StructType>(elements);
   }

@@ -2755,9 +2755,9 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     current_element++;
   } else if (auto struct_type = current_type->cast<StructType>()) {
     int i = 0;
-    for (const auto &element_type : struct_type->elements()) {
+    for (const auto &element : struct_type->elements()) {
       current_index.push_back(tlctx->get_constant(i++));
-      create_return(buffer, buffer_type, elements, element_type,
+      create_return(buffer, buffer_type, elements, element.type,
                     current_element, current_index);
       current_index.pop_back();
     }

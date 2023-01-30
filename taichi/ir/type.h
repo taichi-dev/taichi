@@ -2,6 +2,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
+#include "taichi/util/hash.h"
 
 namespace taichi::lang {
 
@@ -201,28 +202,37 @@ class TensorType : public Type {
   Type *element_{nullptr};
 };
 
+struct StructMember {
+  const Type *type;
+  std::string name;
+  size_t offset{0};
+  bool operator==(const StructMember &other) const {
+    return type == other.type && name == other.name && offset == other.offset;
+  }
+};
+
 class StructType : public Type {
  public:
-  explicit StructType(std::vector<const Type *> elements)
-      : elements_(std::move(elements)) {
+  explicit StructType(const std::vector<StructMember> &elements)
+      : elements_(elements) {
   }
 
   std::string to_string() const override;
 
   Type *get_element_type(const std::vector<int> &indices) const;
-  const std::vector<const Type *> &elements() const {
+  const std::vector<StructMember> &elements() const {
     return elements_;
   }
 
   int get_num_elements() const {
     int num = 0;
-    for (const auto &element : elements_) {
-      if (auto struct_type = element->cast<StructType>()) {
+    for (const auto &[type, _, __] : elements_) {
+      if (auto struct_type = type->cast<StructType>()) {
         num += struct_type->get_num_elements();
-      } else if (auto tensor_type = element->cast<TensorType>()) {
+      } else if (auto tensor_type = type->cast<TensorType>()) {
         num += tensor_type->get_num_elements();
       } else {
-        TI_ASSERT(element->is<PrimitiveType>());
+        TI_ASSERT(type->is<PrimitiveType>());
         num += 1;
       }
     }
@@ -234,7 +244,7 @@ class StructType : public Type {
   }
 
  private:
-  std::vector<const Type *> elements_;
+  std::vector<StructMember> elements_;
 };
 
 class QuantIntType : public Type {
@@ -527,3 +537,18 @@ class TypedConstant {
 };
 
 }  // namespace taichi::lang
+
+namespace taichi::hashing {
+
+template <>
+struct Hasher<lang::StructMember> {
+ public:
+  size_t operator()(lang::StructMember const &member) const {
+    size_t ret = hash_value(member.type);
+    hash_combine(ret, member.name);
+    hash_combine(ret, member.offset);
+    return ret;
+  }
+};
+
+}  // namespace taichi::hashing

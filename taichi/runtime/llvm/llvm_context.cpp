@@ -162,7 +162,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     std::vector<llvm::Type *> types;
     auto struct_type = dt->cast<StructType>();
     for (const auto &element : struct_type->elements()) {
-      types.push_back(get_data_type(element));
+      types.push_back(get_data_type(element.type));
     }
     return llvm::StructType::get(*ctx, types);
   } else {

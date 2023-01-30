@@ -1138,12 +1138,13 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def(
           "get_struct_type",
-          [&](TypeFactory *factory, std::vector<DataType> elements) {
-            std::vector<const Type *> types;
-            for (auto &element : elements) {
-              types.push_back(element);
+          [&](TypeFactory *factory,
+              std::vector<std::pair<DataType, std::string>> elements) {
+            std::vector<StructMember> members;
+            for (auto &[type, name] : elements) {
+              members.push_back({type, name});
             }
-            return DataType(factory->get_struct_type(types));
+            return DataType(factory->get_struct_type(members));
           },
           py::return_value_policy::reference);
 

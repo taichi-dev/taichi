@@ -148,7 +148,7 @@ def func():
   print(3)
 ```
 
-## When to use `ti.static` with for loops
+### When to use `ti.static` with for loops
 
 The main reason to use `ti.static` with for loops is to unroll the loop to improve runtime performance (see [Compile-time evaluations](#compile-time-evaluations)).
 

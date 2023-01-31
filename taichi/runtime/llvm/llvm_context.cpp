@@ -100,12 +100,14 @@ TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
+    /*
 #if defined(TI_WITH_DX12)
     LLVMInitializeDirectXTarget();
     LLVMInitializeDirectXTargetMC();
     LLVMInitializeDirectXTargetInfo();
     LLVMInitializeDirectXAsmPrinter();
 #endif
+    */
   } else {
 #if defined(TI_WITH_CUDA)
     LLVMInitializeNVPTXTarget();

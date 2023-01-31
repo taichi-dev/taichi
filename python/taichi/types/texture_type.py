@@ -1,5 +1,3 @@
-import warnings
-
 from taichi.lang.enums import Format
 from taichi.lang.exception import TaichiCompilationError
 from taichi.types.primitive_types import f16, f32, i8, i16, i32, u8, u16, u32
@@ -63,29 +61,16 @@ class RWTextureType:
 
     Args:
         num_dimensions (int): Number of dimensions. For examples for a 2D texture this should be `2`.
-        num_channels (int): Number of channels in the texture.
-        channel_format (DataType): Data type of texture
         lod (float): Specifies the explicit level-of-detail.
         fmt (ti.Format): Color format of texture
     """
     def __init__(self,
                  num_dimensions,
-                 num_channels=None,
-                 channel_format=None,
                  lod=0,
                  fmt=None):
         self.num_dimensions = num_dimensions
         if fmt is None:
-            warnings.warn(
-                "Specifying num_channels and channel_format is deprecated and will be removed in v1.5.0, please specify fmt instead.",
-                DeprecationWarning)
-            if num_channels is None or channel_format is None:
-                raise TaichiCompilationError(
-                    "Incomplete type info for rw_texture, please specify its fmt (ti.Format)"
-                )
-            self.num_channels = num_channels
-            self.channel_format = channel_format
-            self.fmt = TY_CH2FORMAT[(self.channel_format, self.num_channels)]
+            raise TaichiCompilationError("fmt is required for rw_texture type")
         else:
             self.channel_format, self.num_channels = FORMAT2TY_CH[fmt]
             self.fmt = fmt

@@ -100,6 +100,7 @@ TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
+    // The dx target is used elsewhere, so we need to initialize it too.
 #if defined(TI_WITH_DX12)
     LLVMInitializeDirectXTarget();
     LLVMInitializeDirectXTargetMC();

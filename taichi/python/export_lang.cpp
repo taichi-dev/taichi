@@ -466,7 +466,7 @@ void export_lang(py::module &m) {
             for (auto &[type, name] : elements) {
               members.push_back({type, name});
             }
-            program->get_program_impl()->fill_struct_layout(members);
+            program->fill_struct_layout(members);
             return DataType(
                 TypeFactory::get_instance().get_struct_type(members));
           },

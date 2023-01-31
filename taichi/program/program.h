@@ -296,6 +296,10 @@ class TI_DLL_EXPORT Program {
       ExternalArrayLayout layout = ExternalArrayLayout::kNull,
       bool zero_fill = false);
 
+  void fill_struct_layout(std::vector<StructMember> &members) {
+    program_impl_->fill_struct_layout(members);
+  }
+
   void delete_ndarray(Ndarray *ndarray);
 
   Texture *create_texture(const DataType type,

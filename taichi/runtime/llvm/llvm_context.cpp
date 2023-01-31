@@ -1089,7 +1089,9 @@ void TaichiLLVMContext::fill_struct_layout(std::vector<StructMember> &members) {
     types.push_back(get_data_type(member.type));
   }
   auto *struct_type = llvm::StructType::get(*get_this_thread_context(), types);
-  auto layout = get_data_layout().getStructLayout(struct_type);
+  auto layout =
+      get_this_thread_runtime_module()->getDataLayout().getStructLayout(
+          struct_type);
   for (int i = 0; i < members.size(); i++) {
     members[i].offset = layout->getElementOffset(i);
   }

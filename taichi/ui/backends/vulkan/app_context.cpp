@@ -146,9 +146,8 @@ Pipeline *AppContext::get_raster_pipeline(
     bool blend,
     bool vbo_instanced) {
   const std::string key = fmt::format(
-      "{}${}${}${}${}${}${}", int(polygon_mode), int(blend),
-                                frag_path, vert_path, int(prim_topology),
-                                int(depth), int(vbo_instanced));
+      "{}${}${}${}${}${}${}", int(polygon_mode), int(blend), frag_path,
+      vert_path, int(prim_topology), int(depth), int(vbo_instanced));
   const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();

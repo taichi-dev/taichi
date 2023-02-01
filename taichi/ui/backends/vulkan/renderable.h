@@ -86,7 +86,7 @@ class Renderable {
   int max_vertices_count{0};
   int max_indices_count{0};
 
-  Pipeline *pipeline_{nullptr}; // Factory owns pipelines
+  Pipeline *pipeline_{nullptr};  // Factory owns pipelines
   std::unique_ptr<ShaderResourceSet> resource_set_{nullptr};
 
   DeviceAllocationUnique vertex_buffer_{nullptr};

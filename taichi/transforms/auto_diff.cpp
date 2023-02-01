@@ -719,7 +719,6 @@ class MakeAdjoint : public ADTransform {
   }
 
   static void run(Block *block) {
-    std::cout << "MakeAdjoint::run" << std::endl;
     auto p = MakeAdjoint(block);
     block->accept(&p);
   }
@@ -734,8 +733,6 @@ class MakeAdjoint : public ADTransform {
     }
     std::reverse(statements.begin(), statements.end());  // reverse-mode AD...
     for (auto stmt : statements) {
-      std::cout << "MakeAdjoint::visit(Block) stmt: " << stmt->name()
-                << std::endl;
       current_block = block;
       stmt->accept(this);
     }

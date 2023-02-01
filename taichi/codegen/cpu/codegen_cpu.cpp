@@ -213,7 +213,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
 }  // namespace
 
-#ifdef TI_WITH_LLVM
+// #ifdef TI_WITH_LLVM
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<LlvmLaunchArgInfo> &args,
@@ -269,7 +269,7 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
   TaskCodeGenCPU gen(config, kernel, stmt);
   return gen.run_compilation();
 }
-#endif  // TI_WITH_LLVM
+// #endif  // TI_WITH_LLVM
 
 FunctionType KernelCodeGenCPU::compile_to_function() {
   TI_AUTO_PROF;

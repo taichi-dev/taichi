@@ -145,11 +145,11 @@ Pipeline *AppContext::get_raster_pipeline(
     taichi::lang::PolygonMode polygon_mode,
     bool blend,
     bool vbo_instanced) {
-  std::string key = fmt::format(
+  const std::string key = fmt::format(
       "{}${}${}${}${}${}${}", int(polygon_mode), int(blend),
                                 frag_path, vert_path, int(prim_topology),
                                 int(depth), int(vbo_instanced));
-  auto &iter = pipelines_.find(key);
+  const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();
   } else {
@@ -203,7 +203,7 @@ Pipeline *AppContext::get_raster_pipeline(
 taichi::lang::Pipeline *AppContext::get_compute_pipeline(
     const std::string &shader_path) {
   const std::string &key = shader_path;
-  auto &iter = pipelines_.find(key);
+  const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();
   } else {

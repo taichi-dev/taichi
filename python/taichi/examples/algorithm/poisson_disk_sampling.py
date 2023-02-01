@@ -167,6 +167,15 @@ def main():
         render()
         canvas.set_image(img)
         gui.show()
+    gui.destroy()
+    gui.destroy()
+    gui.destroy()
+    gui.destroy()
+    gui.destroy()
+    gui.destroy()
+    ti.reset()
+    gui.destroy()
+    ti.reset()
 
 
 if __name__ == "__main__":

@@ -125,56 +125,56 @@ class HostDeviceContextBlitter {
 
   bool device_to_host(
       CommandList *cmdlist,
-      const std::unordered_map<int, DeviceAllocation> &ext_array_shadows,
-      const std::unordered_map<int, size_t> &ext_arr_size,
-      const std::vector<StreamSemaphore> &wait_semaphore) {
+      const std::unordered_map<int, DeviceAllocation> &ext_arrays,
+      const std::unordered_map<int, size_t> &ext_arr_size) {
     if (ctx_attribs_->empty()) {
       return false;
     }
 
     bool require_sync = ctx_attribs_->rets().size() > 0;
-    if (!require_sync) {
-      for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
-        const auto &arg = ctx_attribs_->args()[i];
-        if (arg.is_array) {
-          if (host_ctx_->device_allocation_type[i] ==
-                  RuntimeContext::DevAllocType::kNone &&
-              ext_arr_size.at(i)) {
-            require_sync = true;
-          }
-        }
-      }
-    }
-
-    if (require_sync) {
-      device_->get_compute_stream()->submit_synced(cmdlist);
-    } else {
-      return false;
-    }
+    std::vector<DevicePtr> readback_dev_ptrs;
+    std::vector<void *> readback_host_ptrs;
+    std::vector<size_t> readback_sizes;
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      if (arg.is_array) {
-        if (host_ctx_->device_allocation_type[i] ==
-                RuntimeContext::DevAllocType::kNone &&
-            ext_arr_size.at(i)) {
+      if (arg.is_array &&
+          host_ctx_->device_allocation_type[i] ==
+              RuntimeContext::DevAllocType::kNone &&
+          ext_arr_size.at(i)) {
+        uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
+        if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
           // Only need to blit ext arrs (host array)
-          uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
-          if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
-            DeviceAllocation buffer = ext_array_shadows.at(i);
-            void *device_arr_ptr{nullptr};
-            TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
-                      RhiResult::success);
-            void *host_ptr = host_ctx_->get_arg<void *>(i);
-            std::memcpy(host_ptr, device_arr_ptr, ext_arr_size.at(i));
-            device_->unmap(buffer);
-          }
+          readback_dev_ptrs.push_back(ext_arrays.at(i).get_ptr(0));
+          readback_host_ptrs.push_back(host_ctx_->get_arg<void *>(i));
+          readback_sizes.push_back(ext_arr_size.at(i));
+          require_sync = true;
         }
       }
     }
+    
+    if (require_sync) {
+      if (readback_sizes.size()) {
+        StreamSemaphore command_complete_sema =
+            device_->get_compute_stream()->submit(cmdlist);
 
-    if (!ctx_attribs_->has_rets())
-      return require_sync;
+        device_->wait_idle();
+        
+        // In this case `readback_data` syncs
+        TI_ASSERT(device_->readback_data(
+                      readback_dev_ptrs.data(), readback_host_ptrs.data(),
+                      readback_sizes.data(), int(readback_sizes.size()),
+                      {command_complete_sema}) == RhiResult::success);
+      } else {
+        device_->get_compute_stream()->submit_synced(cmdlist);
+      }
+
+      if (!ctx_attribs_->has_rets()) {
+        return true;
+      }
+    } else {
+      return false;
+    }    
 
     void *device_base{nullptr};
     TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==
@@ -421,7 +421,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // `any_arrays` contain both external arrays and NDArrays
   std::vector<std::unique_ptr<DeviceAllocationGuard>> allocated_buffers;
   std::unordered_map<int, DeviceAllocation> any_arrays;
-  std::unordered_map<int, DeviceAllocation> any_array_shadows;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
   // and transferred by the host
@@ -472,15 +471,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
                AllocUsage::Storage});
           any_arrays[i] = *allocated.get();
           allocated_buffers.push_back(std::move(allocated));
-
-          bool host_read = access & uint32_t(irpass::ExternalPtrAccess::WRITE);
-          if (host_read) {
-            auto allocated = device_->allocate_memory_unique(
-                {alloc_size, false, true, /*export_sharing=*/false,
-                 AllocUsage::None});
-            any_array_shadows[i] = *allocated.get();
-            allocated_buffers.push_back(std::move(allocated));
-          }
         }
       }
       i++;
@@ -555,11 +545,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     current_cmdlist_->memory_barrier();
   }
 
-  for (auto &[id, shadow] : any_array_shadows) {
-    current_cmdlist_->buffer_copy(
-        shadow.get_ptr(0), any_arrays.at(id).get_ptr(0), ext_array_size.at(id));
-  }
-
   // Keep context buffers used in this dispatch
   if (ti_kernel->get_args_buffer_size()) {
     ctx_buffers_.push_back(std::move(args_buffer));
@@ -569,11 +554,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   }
 
   // If we need to host sync, sync and remove in-flight references
-  std::vector<StreamSemaphore> wait_semaphore;
-
   if (ctx_blitter) {
-    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_array_shadows,
-                                    ext_array_size, wait_semaphore)) {
+    if (ctx_blitter->device_to_host(current_cmdlist_.get(), any_arrays,
+                                    ext_array_size)) {
       current_cmdlist_ = nullptr;
       ctx_buffers_.clear();
     }

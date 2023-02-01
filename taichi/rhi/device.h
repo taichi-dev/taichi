@@ -516,6 +516,7 @@ enum class AllocUsage : int {
   Uniform = 2,
   Vertex = 4,
   Index = 8,
+  Upload = 16,
 };
 
 MAKE_ENUM_FLAGS(AllocUsage)
@@ -677,6 +678,18 @@ class TI_DLL_EXPORT Device {
     return std::make_unique<DeviceAllocationGuard>(
         this->allocate_memory(params));
   }
+
+  virtual RhiResult upload_data(DevicePtr *device_ptr,
+                                const void **data,
+                                size_t *size,
+                                int num_alloc = 1) noexcept;
+
+  virtual RhiResult readback_data(
+      DevicePtr *device_ptr,
+      void** data,
+      size_t *size,
+      int num_alloc = 1,
+      const std::vector<StreamSemaphore> &wait_sema = {}) noexcept;
 
   virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
     TI_NOT_IMPLEMENTED

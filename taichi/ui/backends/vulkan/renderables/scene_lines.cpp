@@ -42,62 +42,29 @@ void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
 }
 
 void SceneLines::create_graphics_pipeline() {
-  if (!pipeline_.get()) {
-    auto vert_code = read_file(config_.vertex_shader_path);
-    auto frag_code = read_file(config_.fragment_shader_path);
-
-    std::vector<PipelineSourceDesc> source(2);
-    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
-                 frag_code.size(), PipelineStageType::fragment};
-    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
-                 vert_code.size(), PipelineStageType::vertex};
-
-    RasterParams raster_params;
-    raster_params.prim_topology = TopologyType::Triangles;
-    raster_params.polygon_mode = config_.polygon_mode;
-    raster_params.depth_test = true;
-    raster_params.depth_write = true;
-
-    if (config_.blending) {
-      raster_params.blending.push_back(BlendingParams());
-    }
-
-    std::vector<VertexInputBinding> vertex_inputs = {{/*binding=*/0,
-                                                      sizeof(glm::vec4) * 2,
-                                                      /*instance=*/false}};
-    // TODO: consider using uint8 for colors and normals
-    std::vector<VertexInputAttribute> vertex_attribs;
-    vertex_attribs.push_back({/*location=*/0, /*binding=*/0,
-                              /*format=*/BufferFormat::rgba32f,
-                              /*offset=*/0});
-    vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
-                              /*format=*/BufferFormat::rgba32f,
-                              /*offset=*/sizeof(glm::vec4)});
-
-    pipeline_ = app_context_->device().create_raster_pipeline(
-        source, raster_params, vertex_inputs, vertex_attribs);
+  if (!pipeline_) {
+    pipeline_ = app_context_->get_raster_pipeline(
+        config_.fragment_shader_path, config_.vertex_shader_path,
+        TopologyType::Triangles, /*depth=*/true, config_.polygon_mode,
+        config_.blending);
   }
 
-  if (!quad_expand_pipeline_.get()) {
-    auto comp_code = read_file(app_context_->config.package_path +
-                               "/shaders/SceneLines2quad_vk_comp.spv");
-    auto [pipeline, res] = app_context_->device().create_pipeline_unique(
-        {PipelineSourceType::spirv_binary, comp_code.data(), comp_code.size(),
-         PipelineStageType::compute});
-    TI_ASSERT(res == RhiResult::success);
-    quad_expand_pipeline_ = std::move(pipeline);
+  if (!quad_expand_pipeline_) {
+    const std::string file = app_context_->config.package_path +
+                             "/shaders/SceneLines2quad_vk_comp.spv";
+    quad_expand_pipeline_ = app_context_->get_compute_pipeline(file);
   }
 }
 
 SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UniformBufferObject);
+  config.depth = true;
   config.blending = true;
   config.fragment_shader_path =
       app_context->config.package_path + "/shaders/SceneLines_vk_frag.spv";
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/SceneLines_vk_vert.spv";
-  config.vbo_attrs = vbo_attrs;
 
   Renderable::init(config, app_context);
 }
@@ -136,7 +103,7 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
   resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
   resource_set_->buffer(4, uniform_buffer_->get_ptr(0));
 
-  command_list->bind_pipeline(quad_expand_pipeline_.get());
+  command_list->bind_pipeline(quad_expand_pipeline_);
   command_list->bind_shader_resources(resource_set_.get());
   command_list->dispatch(int(ceil(lines_count_ / 256.0f)));
   command_list->buffer_barrier(*vbo_translated_);
@@ -148,7 +115,7 @@ void SceneLines::record_this_frame_commands(CommandList *command_list) {
   raster_state->vertex_buffer(vbo_translated_->get_ptr(0), 0);
   raster_state->index_buffer(ibo_translated_->get_ptr(0), 32);
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->draw_indexed(lines_count_ * 6, 0, 0);
 }

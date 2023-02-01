@@ -37,12 +37,25 @@ class TI_DLL_EXPORT AppContext {
 
   AppConfig config;
 
+  taichi::lang::Pipeline *get_raster_pipeline(
+      const std::string &frag_path,
+      const std::string &vert_path,
+      taichi::lang::TopologyType prim_topology,
+      bool depth = false,
+      taichi::lang::PolygonMode polygon_mode = taichi::lang::PolygonMode::Fill,
+      bool blend = true,
+      bool vbo_instanced = false);
+
+  taichi::lang::Pipeline *get_compute_pipeline(const std::string &shader_path);
+
  private:
   std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator>
       embedded_vulkan_device_{nullptr};
 
   // not owned
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
+
+  std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
 
   TaichiWindow *taichi_window_{nullptr};
 

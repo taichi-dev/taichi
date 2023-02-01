@@ -97,7 +97,6 @@ void Renderable::copy_helper(Program *prog,
 }
 
 void Renderable::update_data(const RenderableInfo &info) {
-  TI_ASSERT(info.vbo_attrs == config_.vbo_attrs);
   // We might not have a current program if GGUI is used in external apps to
   // load AOT modules
   Program *prog = app_context_->prog();
@@ -108,7 +107,6 @@ void Renderable::update_data(const RenderableInfo &info) {
   // Check if we need to update Graphics Pipeline
   if (!pipeline_ || info.display_mode != config_.polygon_mode) {
     config_.polygon_mode = info.display_mode;
-    pipeline_.reset();
     create_graphics_pipeline();
   }
 
@@ -183,63 +181,18 @@ void Renderable::update_data(const RenderableInfo &info) {
 }
 
 Pipeline &Renderable::pipeline() {
-  return *(pipeline_.get());
+  return *pipeline_;
 }
 
 const Pipeline &Renderable::pipeline() const {
-  return *(pipeline_.get());
+  return *pipeline_;
 }
 
 void Renderable::create_graphics_pipeline() {
-  if (!pipeline_) {
-    auto vert_code = read_file(config_.vertex_shader_path);
-    auto frag_code = read_file(config_.fragment_shader_path);
-
-    std::vector<PipelineSourceDesc> source(2);
-    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
-                 frag_code.size(), PipelineStageType::fragment};
-    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
-                 vert_code.size(), PipelineStageType::vertex};
-
-    RasterParams raster_params;
-    raster_params.prim_topology = config_.topology_type;
-    raster_params.polygon_mode = config_.polygon_mode;
-    raster_params.depth_test = true;
-    raster_params.depth_write = true;
-
-    if (config_.blending) {
-      raster_params.blending.push_back(BlendingParams());
-    }
-
-    std::vector<VertexInputBinding> vertex_inputs = {
-        {/*binding=*/0, sizeof(Vertex),
-         /*instance=*/config_.vertex_input_rate_instance}};
-    // TODO: consider using uint8 for colors and normals
-    std::vector<VertexInputAttribute> vertex_attribs;
-    if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kPos)) {
-      vertex_attribs.push_back({/*location=*/0, /*binding=*/0,
-                                /*format=*/BufferFormat::rgb32f,
-                                /*offset=*/offsetof(Vertex, pos)});
-    }
-    if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kNormal)) {
-      vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
-                                /*format=*/BufferFormat::rgb32f,
-                                /*offset=*/offsetof(Vertex, normal)});
-    }
-    if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kUv)) {
-      vertex_attribs.push_back({/*location=*/2, /*binding=*/0,
-                                /*format=*/BufferFormat::rg32f,
-                                /*offset=*/offsetof(Vertex, tex_coord)});
-    }
-    if (VboHelpers::has_attr(config_.vbo_attrs, VertexAttributes::kColor)) {
-      vertex_attribs.push_back({/*location=*/3, /*binding=*/0,
-                                /*format=*/BufferFormat::rgba32f,
-                                /*offset=*/offsetof(Vertex, color)});
-    }
-
-    pipeline_ = app_context_->device().create_raster_pipeline(
-        source, raster_params, vertex_inputs, vertex_attribs);
-  }
+  pipeline_ = app_context_->get_raster_pipeline(
+      config_.fragment_shader_path, config_.vertex_shader_path,
+      config_.topology_type, config_.depth, config_.polygon_mode,
+      config_.blending, config_.vertex_input_rate_instance);
 }
 
 void Renderable::record_this_frame_commands(CommandList *command_list) {
@@ -258,7 +211,7 @@ void Renderable::record_this_frame_commands(CommandList *command_list) {
     raster_state->index_buffer(index_buffer_->get_ptr(0), 32);
   }
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
 

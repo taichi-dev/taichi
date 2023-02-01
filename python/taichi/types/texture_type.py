@@ -64,10 +64,7 @@ class RWTextureType:
         lod (float): Specifies the explicit level-of-detail.
         fmt (ti.Format): Color format of texture
     """
-    def __init__(self,
-                 num_dimensions,
-                 lod=0,
-                 fmt=None):
+    def __init__(self, num_dimensions, lod=0, fmt=None):
         self.num_dimensions = num_dimensions
         if fmt is None:
             raise TaichiCompilationError("fmt is required for rw_texture type")

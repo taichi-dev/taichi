@@ -193,7 +193,7 @@ Pipeline *AppContext::get_raster_pipeline(
 
     auto pipeline = device().create_raster_pipeline(
         source, raster_params, vertex_inputs, vertex_attribs);
-    
+
     Pipeline *pp = pipeline.get();
     pipelines_[key] = std::move(pipeline);
     return pp;

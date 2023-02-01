@@ -1045,8 +1045,8 @@ class MakeAdjoint : public ADTransform {
       if (arg->is_grad) {
         return;
       }
-      auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
-                                         arg->is_ptr, true);
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, src->indices);
       insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
     } else {
@@ -1087,13 +1087,13 @@ class MakeAdjoint : public ADTransform {
       if (arg->is_grad) {
         return;
       }
-      auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
-                                         arg->is_ptr, true);
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adj_ptr));
       // Clear the gradient after accumulation finished.
-      auto zero = insert<ConstStmt>(
-          TypedConstant(dest->ret_type.ptr_removed(), 0));
+      auto zero =
+          insert<ConstStmt>(TypedConstant(dest->ret_type.ptr_removed(), 0));
       insert<GlobalStoreStmt>(adj_ptr, zero);
 
       stmt->parent->erase(stmt);
@@ -1138,8 +1138,8 @@ class MakeAdjoint : public ADTransform {
       if (arg->is_grad) {
         return;
       }
-      auto adj_arg = insert<ArgLoadStmt>(arg->arg_id, arg->ret_type,
-                                         arg->is_ptr, true);
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
       auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);
       accumulate(stmt->val, insert<GlobalLoadStmt>(adj_ptr));
       stmt->parent->erase(stmt);

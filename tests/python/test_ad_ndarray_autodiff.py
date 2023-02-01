@@ -10,6 +10,7 @@ def test_ad_ndarray_autodiff():
     @ti.kernel
     def write(x: ti.types.ndarray()):
         x[None] = 3.0
+
     write(x)
 
     @ti.kernel
@@ -22,4 +23,5 @@ def test_ad_ndarray_autodiff():
     @ti.kernel
     def test(x: ti.types.ndarray()):
         assert x.grad[None] == -ti.sin(x[None])
+
     test(x)

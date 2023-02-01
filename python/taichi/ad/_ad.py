@@ -601,6 +601,7 @@ class TapeNdarray:
             self.grad_checker.add_calls(self.calls)
             self.grad_checker.check_grad()
 
+
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
     'no_grad', 'TapeNdarray'

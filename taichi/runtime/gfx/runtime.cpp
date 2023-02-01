@@ -152,14 +152,14 @@ class HostDeviceContextBlitter {
         }
       }
     }
-    
+
     if (require_sync) {
       if (readback_sizes.size()) {
         StreamSemaphore command_complete_sema =
             device_->get_compute_stream()->submit(cmdlist);
 
         device_->wait_idle();
-        
+
         // In this case `readback_data` syncs
         TI_ASSERT(device_->readback_data(
                       readback_dev_ptrs.data(), readback_host_ptrs.data(),
@@ -174,7 +174,7 @@ class HostDeviceContextBlitter {
       }
     } else {
       return false;
-    }    
+    }
 
     void *device_base{nullptr};
     TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==

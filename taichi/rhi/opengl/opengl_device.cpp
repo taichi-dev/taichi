@@ -174,14 +174,6 @@ std::string get_opengl_error_string(GLenum err) {
 #undef PER_GL_ERR
 }
 
-void check_opengl_error(const std::string &msg) {
-  auto err = glGetError();
-  if (err != GL_NO_ERROR) {
-    auto estr = get_opengl_error_string(err);
-    TI_ERROR("{}: {}", msg, estr);
-  }
-}
-
 GLResourceSet::~GLResourceSet() {
 }
 
@@ -283,7 +275,7 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     log[logLength] = 0;
     TI_ERROR("[glsl] error while compiling shader:\n{}", log.data());
   }
-  check_opengl_error();
+  check_opengl_error("shader compile");
 
   program_id_ = glCreateProgram();
   check_opengl_error("glCreateProgram");
@@ -596,6 +588,57 @@ GLint GLDevice::get_devalloc_size(DeviceAllocation handle) {
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   check_opengl_error("glBindBuffer");
   return size;
+}
+
+RhiResult GLDevice::upload_data(DevicePtr *device_ptr,
+                                const void **data,
+                                size_t *size,
+                                int num_alloc) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, device_ptr[i].alloc_id);
+    check_opengl_error("glBindBuffer");
+    glBufferSubData(GL_ARRAY_BUFFER, device_ptr[i].offset, GLsizeiptr(size[i]),
+                    data[i]);
+    check_opengl_error("glBufferSubData");
+  }
+
+  return RhiResult::success;
+}
+
+RhiResult GLDevice::readback_data(
+    DevicePtr *device_ptr,
+    void **data,
+    size_t *size,
+    int num_alloc,
+    const std::vector<StreamSemaphore> &wait_sema) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, device_ptr[i].alloc_id);
+    check_opengl_error("glBindBuffer");
+    void *ptr = glMapBufferRange(GL_ARRAY_BUFFER, device_ptr[i].offset,
+                                 GLsizeiptr(size[i]), GL_MAP_READ_BIT);
+    check_opengl_error("glMapBufferRange");
+    memcpy(data[i], ptr, size[i]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    check_opengl_error("glUnmapBuffer");
+  }
+
+  return RhiResult::success;
 }
 
 RhiResult GLDevice::create_pipeline(Pipeline **out_pipeline,

@@ -148,7 +148,7 @@ RhiResult Device::upload_data(DevicePtr *device_ptr,
   if (!device_ptr || !data || !size) {
     return RhiResult::invalid_usage;
   }
-  
+
   std::vector<DeviceAllocationUnique> stagings;
   for (int i = 0; i < num_alloc; i++) {
     if (device_ptr[i].device != this || !data[i]) {
@@ -184,7 +184,7 @@ RhiResult Device::upload_data(DevicePtr *device_ptr,
 
 RhiResult Device::readback_data(
     DevicePtr *device_ptr,
-    void** data,
+    void **data,
     size_t *size,
     int num_alloc,
     const std::vector<StreamSemaphore> &wait_sema) noexcept {

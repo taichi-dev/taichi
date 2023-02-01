@@ -686,7 +686,7 @@ class TI_DLL_EXPORT Device {
 
   virtual RhiResult readback_data(
       DevicePtr *device_ptr,
-      void** data,
+      void **data,
       size_t *size,
       int num_alloc = 1,
       const std::vector<StreamSemaphore> &wait_sema = {}) noexcept;

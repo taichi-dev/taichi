@@ -226,7 +226,7 @@ void Gui::cleanup_render_resources() {
   render_pass_ = VK_NULL_HANDLE;
 }
 
-void Gui::cleanup() {
+Gui::~Gui() {
   if (app_context_->config.show_window) {
 #ifdef ANDROID
     ImGui_ImplAndroid_Shutdown();
@@ -238,9 +238,6 @@ void Gui::cleanup() {
   ImGui::DestroyContext();
 }
 
-Gui::~Gui() {
-  cleanup();
-}
 bool Gui::is_empty() {
   return is_empty_;
 }

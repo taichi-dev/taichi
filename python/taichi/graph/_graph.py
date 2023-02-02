@@ -2,7 +2,7 @@ import warnings
 
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
-from taichi.lang import kernel_impl
+from taichi.lang import impl, kernel_impl
 from taichi.lang._ndarray import Ndarray
 from taichi.lang._texture import Texture
 from taichi.lang.exception import TaichiRuntimeError
@@ -93,7 +93,8 @@ class Graph:
                 raise TaichiRuntimeError(
                     f'Only python int, float, ti.Matrix and ti.Ndarray are supported as runtime arguments but got {type(v)}'
                 )
-        self._compiled_graph.run(flattened)
+        self._compiled_graph.jit_run(impl.get_runtime().prog.config(),
+                                     flattened)
 
 
 def Arg(tag,

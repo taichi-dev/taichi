@@ -1625,7 +1625,7 @@ VulkanDevice::~VulkanDevice() {
   // the most proper fix but is less intrusive compared to other
   // approaches.
   vkDeviceWaitIdle(device_);
-  
+
   allocations_.clear();
   image_allocations_.clear();
 

@@ -72,10 +72,12 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
     auto [cmd_list, res] = stream->new_command_list_unique();
     assert(res == RhiResult::success && "Failed to allocate command list");
-    cmd_list->image_transition(*depth_allocation_, ImageLayout::depth_attachment,
+    cmd_list->image_transition(*depth_allocation_,
+                               ImageLayout::depth_attachment,
                                ImageLayout::transfer_src);
-    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), *depth_allocation_,
-                              ImageLayout::transfer_src, copy_params);
+    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(),
+                              *depth_allocation_, ImageLayout::transfer_src,
+                              copy_params);
     cmd_list->image_transition(*depth_allocation_, ImageLayout::transfer_src,
                                ImageLayout::depth_attachment);
     stream->submit_synced(cmd_list.get());
@@ -85,7 +87,8 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     device.dealloc_memory(depth_staging_buffer);
 
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-    DeviceAllocation depth_buffer = surface_->get_depth_data(*depth_allocation_);
+    DeviceAllocation depth_buffer =
+        surface_->get_depth_data(*depth_allocation_);
     DeviceAllocation field_buffer(arr_dev_ptr);
     void *src_ptr{nullptr}, *dst_ptr{nullptr};
     TI_ASSERT(app_context_->device().map(depth_buffer, &src_ptr) ==

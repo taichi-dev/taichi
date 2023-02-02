@@ -181,8 +181,8 @@ jobs:
     strategy:
       matrix:
         tags:
-          - [self-hosted, cuda, vulkan, cn, driver470]
-          - [self-hosted, cuda, vulkan, cn, driver510]
+          - [self-hosted, Linux, debug]
+          - [self-hosted, Linux, debug]
 
     runs-on: ${{ matrix.tags }}
     steps:

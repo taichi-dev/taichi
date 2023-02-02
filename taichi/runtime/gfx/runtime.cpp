@@ -419,7 +419,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       host_result_buffer_, args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
-  std::vector<std::unique_ptr<DeviceAllocationGuard>> allocated_buffers;
   std::unordered_map<int, DeviceAllocation> any_arrays;
   // `ext_array_size` only holds the size of external arrays (host arrays)
   // As buffer size information is only needed when it needs to be allocated
@@ -470,7 +469,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
               {alloc_size, host_write, false, /*export_sharing=*/false,
                AllocUsage::Storage});
           any_arrays[i] = *allocated.get();
-          allocated_buffers.push_back(std::move(allocated));
+          ctx_buffers_.push_back(std::move(allocated));
         }
       }
       i++;
@@ -616,6 +615,7 @@ StreamSemaphore GfxRuntime::flush() {
   if (current_cmdlist_) {
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
     current_cmdlist_ = nullptr;
+    ctx_buffers_.clear();
   } else {
     auto [cmdlist, res] =
         device_->get_compute_stream()->new_command_list_unique();

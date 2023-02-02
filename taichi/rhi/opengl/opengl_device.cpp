@@ -538,10 +538,6 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
     target_hint = GL_SHADER_STORAGE_BUFFER;
   } else if (params.usage && AllocUsage::Uniform) {
     target_hint = GL_UNIFORM_BUFFER;
-  } else if (params.host_write && params.host_read) {
-    target_hint = GL_SHADER_STORAGE_BUFFER;
-  } else if (params.host_read && params.host_write) {
-    target_hint = GL_COPY_READ_BUFFER;
   }
   GLuint buffer;
   glGenBuffers(1, &buffer);

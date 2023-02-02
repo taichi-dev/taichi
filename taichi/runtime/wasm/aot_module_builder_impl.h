@@ -14,7 +14,8 @@ namespace wasm {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompileConfig &compile_config, TaichiLLVMContext &tlctx);
+  explicit AotModuleBuilderImpl(const CompileConfig &compile_config,
+                                TaichiLLVMContext &tlctx);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;

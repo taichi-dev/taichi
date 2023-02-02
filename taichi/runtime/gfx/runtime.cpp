@@ -494,6 +494,14 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Record commands
   const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
 
+  // // Profiler
+  // if (device_->profiler_) {
+  //   // for (int i = 0; i < task_attribs.size(); ++i) {
+  //   //   const auto &attribs = task_attribs[i];
+  //   //   device_->profiler_->record_dispatch(attribs.name);
+  //   // }
+  // }
+
   for (int i = 0; i < task_attribs.size(); ++i) {
     const auto &attribs = task_attribs[i];
     auto vp = ti_kernel->get_pipeline(i);
@@ -549,10 +557,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
-    if (device_->profiler_) {
-      device_->profiler_->start(attribs.name);
-    }
-    status = current_cmdlist_->dispatch(group_x);
+    status = current_cmdlist_->dispatch(attribs.name, group_x);
+    // status = current_cmdlist_->dispatch(group_x);
     TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
                 status);
     current_cmdlist_->memory_barrier();
@@ -628,6 +634,7 @@ void GfxRuntime::synchronize() {
   device_->wait_idle();
   ctx_buffers_.clear();
   ndarrays_in_use_.clear();
+  device_->profiler_->update();
   fflush(stdout);
 }
 
@@ -661,6 +668,7 @@ void GfxRuntime::ensure_current_cmdlist() {
     current_cmdlist_ = std::move(cmdlist);
   }
 }
+
 void GfxRuntime::submit_current_cmdlist_if_timeout() {
   // If we have accumulated some work but does not require sync
   // and if the accumulated cmdlist has been pending for some time
@@ -696,9 +704,9 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  if (device_->profiler_) {
-    device_->profiler_->start(std::string("init_non_root_buffers"));
-  }
+  // if (device_->profiler_) {
+  //   device_->profiler_->start(std::string("init_non_root_buffers"));
+  // }
   stream->submit_synced(cmdlist.get());
 }
 
@@ -717,9 +725,9 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   TI_ASSERT(res == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  if (device_->profiler_) {
-    device_->profiler_->start(std::string("add_root_buffer"));
-  }
+  // if (device_->profiler_) {
+  //   device_->profiler_->start(std::string("add_root_buffer"));
+  // }
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
   // cache the root buffer size

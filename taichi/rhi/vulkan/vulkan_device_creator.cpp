@@ -265,7 +265,7 @@ VulkanDeviceCreator::VulkanDeviceCreator(
     params.graphics_queue = graphics_queue_;
     params.graphics_queue_family_index =
         queue_family_indices_.graphics_family.value();
-    params.profiler = params_.profiler;
+    params.profiler = dynamic_cast<VulkanProfiler*>(params_.profiler);
     ti_device_->init_vulkan_structs(params);
   }
 }

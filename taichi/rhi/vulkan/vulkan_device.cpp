@@ -856,9 +856,10 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
       device_(ti_device->vk_device()),
 // #if !defined(__APPLE__)
 #if 1
-      query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+      // query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+      // query_poo
 #else
-      query_pool_(),
+      // query_pool_(),
 #endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
@@ -872,9 +873,11 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
 // #if !defined(__APPLE__)
 #if 1
-  vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
-  vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                      query_pool_->query_pool, 0);
+  // vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
+  // vkCmdResetQueryPool(buffer_->buffer, query_pool_->query_pool, 0,
+  //                           128);
+  // vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                      // query_pool_->query_pool, 0);
 #endif
 }
 
@@ -1142,12 +1145,29 @@ RhiResult VulkanCommandList::dispatch(uint32_t x,
   return RhiResult::success;
 }
 
-vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
-  return buffer_;
+RhiResult VulkanCommandList::dispatch(std::string kernel_name,
+                                      uint32_t x,
+                                      uint32_t y,
+                                      uint32_t z) noexcept {
+  auto &dev_props = ti_device_->get_vk_physical_device_props();
+  if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
+      y > dev_props.limits.maxComputeWorkGroupCount[1] ||
+      z > dev_props.limits.maxComputeWorkGroupCount[2]) {
+    return RhiResult::not_supported;
+  }
+  auto pool = vkapi::create_query_pool(ti_device_->vk_device());
+  vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 0);
+  vkCmdDispatch(buffer_->buffer, x, y, z);
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 1);
+  auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(ti_device_->profiler_);
+  vulkan_profiler->record_dispatch(kernel_name, pool);
+  
+  return RhiResult::success;
 }
 
-vkapi::IVkQueryPool VulkanCommandList::vk_query_pool() {
-  return query_pool_;
+vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
+  return buffer_;
 }
 
 void VulkanCommandList::begin_renderpass(int x0,
@@ -1579,9 +1599,10 @@ vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
 // #if !defined(__APPLE__)
 #if 1
-    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                        query_pool_->query_pool, 1);
+    // vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+    //                     query_pool_->query_pool, 1);
 #endif
+    // timestamp_id_ = 0;
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1962,7 +1983,7 @@ StreamSemaphore VulkanStream::submit(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
-  vkapi::IVkQueryPool query_pool = cmdlist->vk_query_pool();
+  // vkapi::IVkQueryPool query_pool = cmdlist->vk_query_pool();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -2010,7 +2031,8 @@ StreamSemaphore VulkanStream::submit(
     });
   */
 
-  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer, query_pool});
+  // submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer, query_pool});
+  submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(
       vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
@@ -2033,33 +2055,47 @@ void VulkanStream::command_sync() {
 
   VkPhysicalDeviceProperties props{};
   vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
-  // device_.profiler_->stop(duration_ms);
 
+  printf("Command buffer %zu\n", submitted_cmdbuffers_.size());
+  for (int i = 0; i < submitted_cmdbuffers_.size(); ++i) {
+
+  }
+  auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
+  vulkan_profiler->update();
+  #if 0
   double kernel_time = 0.0;
   for (const auto &cmdbuf : submitted_cmdbuffers_) {
-    if (cmdbuf.query_pool == nullptr) {
-      continue;
-    }
+    // if (cmdbuf.query_pool == nullptr) {
+    //   continue;
+    // }
 
     double duration_us = 0.0;
 
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-// #if !defined(__APPLE__)
-#if 1
-    uint64_t t[2];
-    vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
-                          2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
-                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
-#endif
-
-    device_time_elapsed_us_ += duration_us;
-    if (device_.profiler_) {
-      device_.profiler_->stop(duration_us / 1000.0);
+    // printf("timestamp counter %d\n", timestamp_id_);
+    // device_->profiler_->get_
+    auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
+    printf("#dispatches %zu\n", vulkan_profiler->batch_size());
+    int len = vulkan_profiler->batch_size();
+    for (int i = 0; i < len; ++i) {
+      vulkan_profiler->record_time(0.0);
     }
+
+    // uint64_t t[2];
+    // vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
+    //                       2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+    //                       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    // duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
+
+    // device_time_elapsed_us_ += duration_us;
+    // if (device_.profiler_) {
+    //   auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
+    //   vulkan_profiler->record_time(duration_us / 1000.0);
+    // }
 
     kernel_time += duration_us / 1000.0;
   }
+  #endif
 
   submitted_cmdbuffers_.clear();
 }

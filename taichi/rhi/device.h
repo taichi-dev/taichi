@@ -403,6 +403,13 @@ class TI_DLL_EXPORT CommandList {
                              uint32_t y = 1,
                              uint32_t z = 1) noexcept = 0;
 
+  virtual RhiResult dispatch(std::string kernel_name,
+                             uint32_t x,
+                             uint32_t y = 1,
+                             uint32_t z = 1) noexcept {
+    return RhiResult::not_supported;
+  }
+
   struct ComputeSize {
     uint32_t x{0};
     uint32_t y{0};

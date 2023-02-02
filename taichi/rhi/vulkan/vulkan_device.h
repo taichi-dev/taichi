@@ -3,8 +3,8 @@
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/vulkan/vulkan_api.h"
 #include "taichi/rhi/vulkan/vulkan_utils.h"
+#include "taichi/rhi/vulkan/vulkan_profiler.h"
 #include "taichi/common/ref_counted_pool.h"
-#include "taichi/program/kernel_profiler.h"
 
 #include "vk_mem_alloc.h"
 
@@ -421,6 +421,7 @@ class VulkanCommandList : public CommandList {
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
+  RhiResult dispatch(std::string kernel_name, uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
   void begin_renderpass(int x0,
                         int y0,
                         int x1,
@@ -476,14 +477,13 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer finalize();
 
   vkapi::IVkCommandBuffer vk_command_buffer();
-  vkapi::IVkQueryPool vk_query_pool();
 
  private:
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
   VkDevice device_;
-  vkapi::IVkQueryPool query_pool_;
+  std::list<vkapi::IVkQueryPool> query_pools_;
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
@@ -493,6 +493,9 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
   uint32_t viewport_width_{0}, viewport_height_{0};
+
+  // Profiler
+  VulkanProfiler *profiler_;
 };
 
 class VulkanSurface : public Surface {
@@ -585,7 +588,7 @@ class VulkanStream : public Stream {
   struct TrackedCmdbuf {
     vkapi::IVkFence fence;
     vkapi::IVkCommandBuffer buf;
-    vkapi::IVkQueryPool query_pool;
+    // vkapi::IVkQueryPool query_pool;
   };
 
   VulkanDevice &device_;
@@ -619,7 +622,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     uint32_t compute_queue_family_index{0};
     VkQueue graphics_queue{VK_NULL_HANDLE};
     uint32_t graphics_queue_family_index{0};
-    KernelProfilerBase *profiler;
+    VulkanProfiler *profiler;
   };
 
   VulkanDevice();

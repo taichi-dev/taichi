@@ -396,15 +396,15 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
     }
   }
 
-private:
+ private:
   std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
     auto thread_idx =
-          builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
-    auto workgroup_dim_ = call(
-            "__ockl_get_local_size",
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
-    auto block_dim = builder->CreateTrunc(workgroup_dim_,
-                                      llvm::Type::getInt32Ty(*llvm_context));
+        builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
+    auto workgroup_dim_ =
+        call("__ockl_get_local_size",
+             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
+    auto block_dim = builder->CreateTrunc(
+        workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
     return std::make_tuple(thread_idx, block_dim);
   }
 };

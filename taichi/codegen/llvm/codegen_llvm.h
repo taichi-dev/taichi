@@ -412,7 +412,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                      std::vector<llvm::Value *> &current_index);
 
   virtual std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() = 0;
-
 };
 
 }  // namespace taichi::lang

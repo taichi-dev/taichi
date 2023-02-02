@@ -69,10 +69,15 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     env = prefix / 'envs' / version
     if windows:
         exe = env / 'python.exe'
-        path_prepend('PATH', env, env / 'Scripts', prefix / 'Library' / 'bin')
+        paths = [
+            env, env / 'Library' / 'mingw-w64' / 'bin',
+            env / 'Library' / 'usr' / 'bin', env / 'Library' / 'bin',
+            env / 'Scripts', env / 'bin', prefix / 'condabin'
+        ]
+        path_prepend('PATH', *paths)
     else:
         exe = env / 'bin' / 'python'
-        path_prepend('PATH', env / 'bin')
+        path_prepend('PATH', env / 'bin', prefix / 'condabin')
 
     if not exe.exists():
         conda.create('-y', '-n', version, f'python={version}')

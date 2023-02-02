@@ -20,7 +20,7 @@ class AotModuleImpl : public LlvmAotModule {
       LlvmOfflineCache::KernelCacheData &&loaded) override {
     Arch arch = executor_->get_config().arch;
     TI_ASSERT(arch == Arch::x64 || arch == Arch::arm64);
-    auto *tlctx = executor_->get_llvm_context(arch);
+    auto *tlctx = executor_->get_llvm_context();
 
     CPUModuleToFunctionConverter converter{tlctx, executor_};
     return converter.convert(name, loaded.args,

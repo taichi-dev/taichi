@@ -135,14 +135,6 @@ void Renderer::scene(Scene *scene) {
 }
 
 Renderer::~Renderer() {
-  cleanup();
-}
-
-void Renderer::cleanup() {
-  render_complete_semaphore_ = nullptr;
-  renderables_.clear();
-  swap_chain_.cleanup();
-  app_context_.cleanup();
 }
 
 void Renderer::prepare_for_next_frame() {

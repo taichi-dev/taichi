@@ -2,6 +2,7 @@ import os
 import platform
 import re
 import sys
+import warnings
 
 from colorama import Fore, Style
 
@@ -202,7 +203,9 @@ def try_get_loaded_libc_version():
 
 def try_get_pip_version():
     try:
-        import pip  # pylint: disable=import-outside-toplevel
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            import pip  # pylint: disable=import-outside-toplevel
         return tuple([int(v) for v in pip.__version__.split('.')])
     except ImportError:
         return None
@@ -244,6 +247,3 @@ def warn_restricted_version():
                 )
         except Exception:
             pass
-
-
-warn_restricted_version()

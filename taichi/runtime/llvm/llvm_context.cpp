@@ -70,7 +70,7 @@ namespace taichi::lang {
 
 using namespace llvm;
 
-TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
+TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     : config_(config), arch_(arch) {
   TI_TRACE("Creating Taichi llvm context for arch: {}", arch_name(arch));
   main_thread_id_ = std::this_thread::get_id();
@@ -96,6 +96,12 @@ TaichiLLVMContext::TaichiLLVMContext(CompileConfig *config, Arch arch)
     llvm::InitializeNativeTargetAsmParser();
 #endif
   } else if (arch == Arch::dx12) {
+    // FIXME: Must initialize these before initializing Arch::dx12
+    // because it uses the jit of CPU right now.
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+    // The dx target is used elsewhere, so we need to initialize it too.
 #if defined(TI_WITH_DX12)
     LLVMInitializeDirectXTarget();
     LLVMInitializeDirectXTargetMC();

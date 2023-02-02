@@ -51,19 +51,7 @@ class SceneLines final : public Renderable {
     float aspect_ratio;
   };
 
-  void init_scene_lines(AppContext *app_context,
-                        int vertices_count,
-                        int indices_count);
-
   void create_graphics_pipeline() final;
-
-  void update_ubo(const SceneLinesInfo &info,
-                  const Scene &scene,
-                  float line_width);
-
-  void cleanup() override;
-
-  void create_bindings() override;
 
   uint64_t lines_count_{0};
 

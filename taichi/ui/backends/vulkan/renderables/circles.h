@@ -39,14 +39,6 @@ class Circles final : public Renderable {
     float radius_w;
     float radius_h;
   };
-
-  void init_circles(AppContext *app_context,
-                    int vertices_count,
-                    VertexAttributes vbo_attrs);
-
-  void update_ubo(glm::vec3 color, bool use_per_vertex_color, float radius);
-
-  void create_bindings() override;
 };
 
 }  // namespace vulkan

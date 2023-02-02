@@ -16,10 +16,9 @@ using namespace taichi::lang::vulkan;
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
   void *mapped{nullptr};
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
-            RhiResult::success);
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(uniform_buffer_);
+  app_context_->device().unmap(*uniform_buffer_);
 }
 
 void SetImage::update_data(const SetImageInfo &info) {
@@ -30,102 +29,71 @@ void SetImage::update_data(const SetImageInfo &info) {
 
   const FieldInfo &img = info.img;
 
-  // Support configuring the internal image based on the data type of the field
-  // info.  We assume that the internal image is 4 channels and allow the user
-  // to configure either a classic RGBA8 (u8) or RGBA32F (f32). The latter is
-  // useful for target that support this texture type as it allows to re-use the
-  // result of a kernel directly without normalizing the value from [0; 1] to
-  // [0; 255]
-  //
-  // @TODO: Make the number of channel configurable?
-  TI_ASSERT(img.dtype == taichi::lang::PrimitiveType::f32 ||
-            img.dtype == taichi::lang::PrimitiveType::u32);
-  if (img.dtype == taichi::lang::PrimitiveType::u32) {
-    texture_dtype_ = taichi::lang::PrimitiveType::u8;
-  } else {
-    texture_dtype_ = img.dtype;
-  }
+  // Image is a width x height field of u32 which contains encoded RGBA8
+  TI_ASSERT_INFO(
+      img.shape.size() == 2 && img.dtype == taichi::lang::PrimitiveType::u32,
+      "set_image buffer input must be 2D field of u32");
 
   int new_width = img.shape[0];
   int new_height = img.shape[1];
 
-  BufferFormat fmt = BufferFormat::rgba8;
-  if (texture_dtype_ == taichi::lang::PrimitiveType::f32) {
-    fmt = BufferFormat::rgba32f;
-  }
+  resize_texture(new_width, new_height, BufferFormat::rgba8);
 
-  if (new_width != width || new_height != height || fmt != format_) {
-    destroy_texture();
-    free_buffers();
-    init_set_image(app_context_, new_width, new_height, fmt);
-  }
+  update_ubo(1.0f, 1.0f, true);
 
-  update_ubo(img.shape[0] / (float)new_width, img.shape[1] / (float)new_height,
-             true);
+  const uint64_t img_size_bytes = width_ * height_ * sizeof(uint32_t);
 
-  int pixels = width * height;
-
-  uint64_t img_size = pixels * data_type_size(texture_dtype_) * 4;
-
-  // If there is no current program, VBO information should be provided directly
-  // instead of accessing through the current SNode
+  // If data source is not a host mapped pointer, it is a DeviceAllocation
+  // from the same backend as GGUI
   DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
-  if (prog) {
-    img_dev_ptr = get_device_ptr(prog, img.snode);
-    if (img_dev_ptr.device != &app_context_->device()) {
-      sema = prog->flush();
-    }
-  }
-  bool use_enqueued_op =
-      prog && (img_dev_ptr.device == &app_context_->device());
+  bool uses_host = img.field_source == FieldSource::HostMappedPtr;
+  if (uses_host) {
+    DeviceAllocation staging = app_context_->device().allocate_memory(
+        {img_size_bytes, true, false, false, AllocUsage::None});
 
-  Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
-      gpu_staging_buffer_.get_ptr(), img_dev_ptr, img_size);
-  if (memcpy_cap == Device::MemcpyCapability::Direct) {
-    // If it's the same device, we do not use the staging buffer and directly
-    // copy from the src ptr to the image in the `copy_op`
-    if (!use_enqueued_op) {
-      Device::memcpy_direct(gpu_staging_buffer_.get_ptr(), img_dev_ptr,
-                            img_size);
-    }
-  } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-    Device::memcpy_via_staging(gpu_staging_buffer_.get_ptr(),
-                               cpu_staging_buffer_.get_ptr(), img_dev_ptr,
-                               img_size);
-  } else {
-    TI_NOT_IMPLEMENTED;
+    // Map the staing buffer and perform memcpy
+    void *dst_ptr{nullptr};
+    RHI_VERIFY(app_context_->device().map(staging.get_ptr(), &dst_ptr));
+    void *src_ptr = reinterpret_cast<uint8_t *>(img.dev_alloc.alloc_id);
+    memcpy(dst_ptr, src_ptr, img_size_bytes);
+    app_context_->device().unmap(staging);
+
+    img_dev_ptr = staging.get_ptr(0);
   }
 
-  BufferImageCopyParams copy_params;
-  // these are flipped because taichi is y-major and vulkan is x-major
-  copy_params.image_extent.x = height;
-  copy_params.image_extent.y = width;
-
-  DevicePtr src_ptr =
-      use_enqueued_op ? img_dev_ptr : gpu_staging_buffer_.get_ptr(0);
-
-  auto copy_op = [texture = this->texture_, src_ptr, copy_params](
-                     Device *device, CommandList *cmdlist) {
-    cmdlist->image_transition(texture, ImageLayout::undefined,
+  auto copy_op = [&, img_dev_ptr, uses_host](Device *device,
+                                             CommandList *cmdlist) {
+    BufferImageCopyParams copy_params;
+    // these are flipped because taichi is y-major and vulkan is x-major
+    copy_params.image_extent.x = height_;
+    copy_params.image_extent.y = width_;
+    cmdlist->image_transition(*texture_, ImageLayout::undefined,
                               ImageLayout::transfer_dst);
-    cmdlist->buffer_barrier(src_ptr);
-    cmdlist->buffer_to_image(texture, src_ptr, ImageLayout::transfer_dst,
+    cmdlist->buffer_barrier(img_dev_ptr);
+    cmdlist->buffer_to_image(*texture_, img_dev_ptr, ImageLayout::transfer_dst,
                              copy_params);
-    cmdlist->image_transition(texture, ImageLayout::transfer_dst,
+    cmdlist->image_transition(*texture_, ImageLayout::transfer_dst,
                               ImageLayout::shader_read);
+    if (uses_host) {
+      device->dealloc_memory(img_dev_ptr);
+    }
   };
 
-  if (use_enqueued_op) {
+  if (prog && prog->get_graphics_device() == &app_context_->device()) {
+    // If it's the same device, we do not use the staging buffer and directly
+    // copy from the src ptr to the image
     prog->enqueue_compute_op_lambda(copy_op, {});
   } else {
+    // Create a single time command
     auto stream = app_context_->device().get_graphics_stream();
-    auto [cmd_list, res] = stream->new_command_list_unique();
-    assert(res == RhiResult::success && "Failed to allocate command list");
-    copy_op(&app_context_->device(), cmd_list.get());
+    auto [cmdlist, res] = stream->new_command_list_unique();
+    TI_ASSERT_INFO(res == RhiResult::success,
+                   "Failed to allocate command list");
+    copy_op(&app_context_->device(), cmdlist.get());
     if (sema) {
-      stream->submit(cmd_list.get(), {sema});
+      stream->submit(cmdlist.get(), {sema});
     } else {
-      stream->submit(cmd_list.get());
+      stream->submit(cmdlist.get());
     }
   }
 }
@@ -134,7 +102,7 @@ void SetImage::update_data(Texture *tex) {
   Program *prog = app_context_->prog();
 
   auto shape = tex->get_size();
-  auto fmt = tex->get_buffer_format();
+  auto new_format = tex->get_buffer_format();
 
   TI_ASSERT_INFO(shape[2] == 1,
                  "Must be a 2D image! Received image shape: {}x{}x{}", shape[0],
@@ -143,11 +111,9 @@ void SetImage::update_data(Texture *tex) {
   // Reminder: y/x is flipped in Taichi. I would like to use the correct
   // orientation, but we have existing code already using the previous
   // convention
-  if (shape[1] != width || shape[0] != height || fmt != format_) {
-    destroy_texture();
-    free_buffers();
-    init_set_image(app_context_, shape[1], shape[0], fmt);
-  }
+  const int new_width = shape[1];
+  const int new_height = shape[0];
+  resize_texture(new_width, new_height, new_format);
 
   update_ubo(1.0f, 1.0f, false);
 
@@ -157,13 +123,12 @@ void SetImage::update_data(Texture *tex) {
   copy_params.depth = shape[2];
 
   DeviceAllocation src_alloc = tex->get_device_allocation();
-  auto copy_op = [texture = this->texture_, src_alloc, copy_params](
-                     Device *device, CommandList *cmdlist) {
-    cmdlist->image_transition(texture, ImageLayout::undefined,
+  auto copy_op = [&, src_alloc](Device *device, CommandList *cmdlist) {
+    cmdlist->image_transition(*this->texture_, ImageLayout::undefined,
                               ImageLayout::transfer_dst);
-    cmdlist->copy_image(texture, src_alloc, ImageLayout::transfer_dst,
+    cmdlist->copy_image(*this->texture_, src_alloc, ImageLayout::transfer_dst,
                         ImageLayout::transfer_src, copy_params);
-    cmdlist->image_transition(texture, ImageLayout::transfer_dst,
+    cmdlist->image_transition(*this->texture_, ImageLayout::transfer_dst,
                               ImageLayout::shader_read);
   };
 
@@ -171,92 +136,33 @@ void SetImage::update_data(Texture *tex) {
   // gurantee to have a program.
   // FIXME: However, if we don't have a Program, where does the layout come
   // from?
-  if (prog) {
+  if (prog && prog->get_graphics_device() == &app_context_->device()) {
     prog->enqueue_compute_op_lambda(
         copy_op, {ComputeOpImageRef{src_alloc, ImageLayout::transfer_src,
                                     ImageLayout::transfer_src}});
   } else {
-    auto stream = app_context_->device().get_graphics_stream();
-    auto [cmd_list, res] = stream->new_command_list_unique();
-    assert(res == RhiResult::success && "Failed to allocate command list");
-    copy_op(&app_context_->device(), cmd_list.get());
-    stream->submit(cmd_list.get());
+    TI_ERROR("`update_data` received Texture from a different device");
   }
 }
 
 SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_set_image(app_context, 1, 1, BufferFormat::rgba8);
-}
-
-void SetImage::init_set_image(AppContext *app_context,
-                              int img_width,
-                              int img_height,
-                              taichi::lang::BufferFormat format) {
-  RenderableConfig config = {
-      6,
-      6,
-      6,
-      6,
-      6,
-      0,
-      6,
-      0,
-      sizeof(UniformBufferObject),
-      0,
-      false,
-      app_context->config.package_path + "/shaders/SetImage_vk_vert.spv",
-      app_context->config.package_path + "/shaders/SetImage_vk_frag.spv",
-      TopologyType::Triangles,
-  };
+  RenderableConfig config;
+  config.draw_vertex_count = 6;
+  config.ubo_size = sizeof(UniformBufferObject);
+  config.fragment_shader_path =
+      app_context->config.package_path + "/shaders/SetImage_vk_frag.spv";
+  config.vertex_shader_path =
+      app_context->config.package_path + "/shaders/SetImage_vk_vert.spv";
 
   Renderable::init(config, app_context);
+  create_graphics_pipeline();
 
-  this->width = img_width;
-  this->height = img_height;
-  format_ = format;
+  // Create UBO
+  uniform_buffer_ = app_context_->device().allocate_memory_unique(
+      {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Uniform});
 
-  create_texture();
-
-  Renderable::init_render_resources();
-
-  update_vertex_buffer();
-  update_index_buffer();
-}
-
-void SetImage::create_texture() {
-  size_t image_size = width * height * data_type_size(texture_dtype_) * 4;
-
-  ImageParams params;
-  params.dimension = ImageDimension::d2D;
-  params.format = format_;
-  params.initial_layout = ImageLayout::shader_read;
-  // these are flipped because taichi is y-major and vulkan is x-major
-  params.x = height;
-  params.y = width;
-  params.z = 1;
-  params.export_sharing = true;
-
-  texture_ = app_context_->device().create_image(params);
-
-  Device::AllocParams cpu_staging_buffer_params{image_size, true, false, false,
-                                                AllocUsage::Uniform};
-  cpu_staging_buffer_ =
-      app_context_->device().allocate_memory(cpu_staging_buffer_params);
-
-  Device::AllocParams gpu_staging_buffer_params{
-      image_size, false, false, app_context_->requires_export_sharing(),
-      AllocUsage::Uniform};
-  gpu_staging_buffer_ =
-      app_context_->device().allocate_memory(gpu_staging_buffer_params);
-}
-
-void SetImage::destroy_texture() {
-  app_context_->device().destroy_image(texture_);
-  app_context_->device().dealloc_memory(cpu_staging_buffer_);
-  app_context_->device().dealloc_memory(gpu_staging_buffer_);
-}
-
-void SetImage::update_vertex_buffer() {
+  // Create & upload vertex buffer (constant)
   const std::vector<Vertex> vertices = {
       {{-1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, {0.f, 1.f}, {1.f, 1.f, 1.f}},
       {{-1.f, 1.f, 0.f}, {0.f, 0.f, 1.f}, {0.f, 0.f}, {1.f, 1.f, 1.f}},
@@ -266,62 +172,54 @@ void SetImage::update_vertex_buffer() {
       {{1.f, 1.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f}, {1.f, 1.f, 1.f}},
       {{1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 1.f}, {1.f, 1.f, 1.f}},
   };
-  // Our actual VBO might only use the first several attributes in `Vertex`,
-  // therefore this slicing & copying for each Vertex.
-  {
-    void *mapped_vbo{nullptr};
-    TI_ASSERT(app_context_->device().map(staging_vertex_buffer_, &mapped_vbo) ==
-              RhiResult::success);
-    for (int i = 0; i < vertices.size(); ++i) {
-      const char *src = reinterpret_cast<const char *>(&vertices[i]);
-      for (auto a : VboHelpers::kOrderedAttrs) {
-        const auto a_sz = VboHelpers::size(a);
-        if (VboHelpers::has_attr(config_.vbo_attrs, a)) {
-          memcpy(mapped_vbo, src, a_sz);
-          mapped_vbo = (uint8_t *)mapped_vbo + a_sz;
-        }
-        // Pointer to the full Vertex attributes needs to be advanced
-        // unconditionally.
-        src += a_sz;
-      }
-    }
-    app_context_->device().unmap(staging_vertex_buffer_);
+  vertex_buffer_ = app_context_->device().allocate_memory_unique(
+      {sizeof(Vertex) * vertices.size(), /*host_write=*/true,
+       /*host_read=*/false, /*export_sharing=*/false, AllocUsage::Vertex});
+  void *mapped_vbo{nullptr};
+  RHI_VERIFY(
+      app_context_->device().map(vertex_buffer_->get_ptr(0), &mapped_vbo));
+  memcpy(mapped_vbo, vertices.data(), sizeof(Vertex) * vertices.size());
+  app_context_->device().unmap(*vertex_buffer_);
+}
+
+void SetImage::record_this_frame_commands(CommandList *command_list) {
+  resource_set_->image(0, *texture_, {});
+  resource_set_->buffer(1, uniform_buffer_->get_ptr());
+
+  auto raster_state = app_context_->device().create_raster_resources_unique();
+  raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);
+
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_raster_resources(raster_state.get());
+  command_list->bind_shader_resources(resource_set_.get());
+  command_list->draw(6);
+}
+
+void SetImage::resize_texture(int width,
+                              int height,
+                              taichi::lang::BufferFormat format) {
+  if (width_ == width && height_ == height && format_ == format &&
+      texture_ != nullptr) {
+    return;
   }
 
-  app_context_->device().memcpy_internal(
-      vertex_buffer_.get_ptr(0), staging_vertex_buffer_.get_ptr(0),
-      config_.vertices_count * config_.vbo_size());
-}
+  texture_.reset();
 
-void SetImage::update_index_buffer() {
-  const std::vector<uint32_t> indices = {
-      0, 1, 2, 3, 4, 5,
-  };
-  {
-    void *mapped_ibo{nullptr};
-    TI_ASSERT(app_context_->device().map(staging_index_buffer_, &mapped_ibo) ==
-              RhiResult::success);
-    memcpy(mapped_ibo, indices.data(),
-           (size_t)config_.indices_count * sizeof(int));
-    app_context_->device().unmap(staging_index_buffer_);
-  }
+  width_ = width;
+  height_ = height;
+  format_ = format;
 
-  app_context_->device().memcpy_internal(index_buffer_.get_ptr(0),
-                                         staging_index_buffer_.get_ptr(0),
-                                         config_.indices_count * sizeof(int));
+  ImageParams params;
+  params.dimension = ImageDimension::d2D;
+  params.format = format_;
+  params.initial_layout = ImageLayout::undefined;
+  // these are flipped because taichi is y-major and vulkan is x-major
+  params.x = height_;
+  params.y = width_;
+  params.z = 1;
+  params.export_sharing = false;
 
-  indexed_ = true;
-}
-
-void SetImage::create_bindings() {
-  Renderable::create_bindings();
-  resource_set_->image(0, texture_, {});
-  resource_set_->buffer(1, uniform_buffer_);
-}
-
-void SetImage::cleanup() {
-  destroy_texture();
-  Renderable::cleanup();
+  texture_ = app_context_->device().create_image_unique(params);
 }
 
 }  // namespace vulkan

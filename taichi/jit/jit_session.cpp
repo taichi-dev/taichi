@@ -9,12 +9,12 @@ namespace taichi::lang {
 #ifdef TI_WITH_LLVM
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch);
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     TaichiLLVMContext *tlctx,
-    CompileConfig *config,
+    const CompileConfig &config,
     Arch arch);
 
 std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
@@ -23,12 +23,12 @@ std::unique_ptr<JITSession> create_llvm_jit_session_amdgpu(
     Arch arch);
 #endif
 
-JITSession::JITSession(TaichiLLVMContext *tlctx, CompileConfig *config)
+JITSession::JITSession(TaichiLLVMContext *tlctx, const CompileConfig &config)
     : tlctx_(tlctx), config_(config) {
 }
 
 std::unique_ptr<JITSession> JITSession::create(TaichiLLVMContext *tlctx,
-                                               CompileConfig *config,
+                                               const CompileConfig &config,
                                                Arch arch) {
 #ifdef TI_WITH_LLVM
   if (arch_is_cpu(arch)) {

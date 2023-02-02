@@ -7,9 +7,7 @@
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/util/offline_cache.h"
 
-#if !defined(ANDROID)
-#include "GLFW/glfw3.h"
-#endif
+#include "taichi/rhi/window_system.h"
 
 using namespace taichi::lang::vulkan;
 
@@ -81,12 +79,8 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
 FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
                                         Kernel *kernel) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(&compile_config, kernel),
+      get_cache_manager()->load_or_compile(compile_config, kernel),
       vulkan_runtime_.get());
-}
-
-static void glfw_error_callback(int code, const char *description) {
-  TI_WARN("GLFW Error {}: {}", code, description);
 }
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -101,9 +95,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
 #ifndef ANDROID
   GLFWwindow *glfw_window = nullptr;
 
-  if (glfwInit()) {
-    glfwSetErrorCallback(glfw_error_callback);
-
+  if (window_system::glfw_context_acquire()) {
     // glfw init success
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

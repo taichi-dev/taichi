@@ -67,8 +67,7 @@ SNode &SNode::create_node(std::vector<Axis> axes,
           "best performance, we recommend that you set it to a power of two.",
           sizes[i], char('i' + ind), tb);
     }
-    new_node.extractors[ind].activate(
-        bit::log2int(bit::least_pot_bound(sizes[i])));
+    new_node.extractors[ind].active = true;
     new_node.extractors[ind].num_elements_from_root *= sizes[i];
     new_node.extractors[ind].shape = sizes[i];
   }
@@ -87,30 +86,16 @@ SNode &SNode::create_node(std::vector<Axis> axes,
         "supported yet. Struct fors might not work either.");
   }
   new_node.num_cells_per_container = acc_shape;
-  // infer extractors (only for POT)
-  int acc_offsets = 0;
-  for (int i = taichi_max_num_indices - 1; i >= 0; i--) {
-    new_node.extractors[i].acc_offset = acc_offsets;
-    acc_offsets += new_node.extractors[i].num_bits;
-  }
-  new_node.total_num_bits = acc_offsets;
-
-  constexpr int kMaxTotalNumBits = 64;
-  TI_ERROR_IF(
-      new_node.total_num_bits >= kMaxTotalNumBits,
-      "SNode={}: total_num_bits={} exceeded limit={}. This implies that "
-      "your requested shape is too large.",
-      new_node.id, new_node.total_num_bits, kMaxTotalNumBits);
 
   if (new_node.type == SNodeType::dynamic) {
     int active_extractor_counder = 0;
     for (int i = 0; i < taichi_max_num_indices; i++) {
-      if (new_node.extractors[i].num_bits != 0) {
+      if (new_node.extractors[i].active) {
         active_extractor_counder += 1;
         SNode *p = new_node.parent;
         while (p) {
           TI_ASSERT_INFO(
-              p->extractors[i].num_bits == 0,
+              !p->extractors[i].active,
               "Dynamic SNode must have a standalone dimensionality.");
           p = p->parent;
         }
@@ -213,8 +198,6 @@ SNode::SNode(int depth,
       snode_rw_accessors_bank_(snode_rw_accessors_bank) {
   id = counter++;
   node_type_name = get_node_type_name();
-  total_num_bits = 0;
-  total_bit_start = 0;
   num_active_indices = 0;
   std::memset(physical_index_position, -1, sizeof(physical_index_position));
   parent = nullptr;
@@ -239,16 +222,6 @@ std::string SNode::get_node_type_name_hinted() const {
   if (is_bit_level)
     suffix += "<bit>";
   return fmt::format("S{}{}{}", id, snode_type_name(type), suffix);
-}
-
-int SNode::get_num_bits(int physical_index) const {
-  int result = 0;
-  const SNode *snode = this;
-  while (snode) {
-    result += snode->extractors[physical_index].num_bits;
-    snode = snode->parent;
-  }
-  return result;
 }
 
 void SNode::print() {

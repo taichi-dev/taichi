@@ -36,14 +36,6 @@ class Triangles final : public Renderable {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
   };
-
-  void init_triangles(AppContext *app_context,
-                      int vertices_count,
-                      int indices_count);
-
-  void update_ubo(glm::vec3 color, bool use_per_vertex_color);
-
-  void create_bindings() override;
 };
 
 }  // namespace vulkan

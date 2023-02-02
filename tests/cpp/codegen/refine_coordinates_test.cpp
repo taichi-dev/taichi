@@ -103,16 +103,6 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
   std::unordered_set<int> used_snode_tree_ids;
 };
 
-struct BitsRange {
-  int begin{0};
-  int end{0};
-
-  int extract(int v) const {
-    const unsigned mask = (1U << (end - begin)) - 1;
-    return (v >> begin) & mask;
-  }
-};
-
 constexpr int kPointerSize = 5;
 constexpr int kDenseSize = 8;
 
@@ -133,7 +123,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     auto &leaf_snode = dense_snode_->insert_children(SNodeType::place);
     leaf_snode.dt = PrimitiveType::f32;
 
-    auto sc = std::make_unique<StructCompilerLLVM>(arch_, &config_, tlctx_,
+    auto sc = std::make_unique<StructCompilerLLVM>(arch_, config_, tlctx_,
                                                    tlctx_->new_module("struct"),
                                                    /*snode_tree_id=*/0);
     sc->run(*root_snode_);
@@ -158,21 +148,13 @@ TEST_F(RefineCoordinatesTest, Basic) {
   auto *refine_dense_fn =
       InvokeRefineCoordinatesBuilder::build(dense_snode_, tlctx_);
 
-  const BitsRange dense_bit_range{/*begin=*/0,
-                                  /*end=*/dense_snode_->extractors[0].num_bits};
-  const BitsRange ptr_bit_range{
-      /*begin=*/dense_bit_range.end,
-      /*end=*/dense_bit_range.end + ptr_snode_->extractors[0].num_bits};
   constexpr int kRootPhyCoord = 0;
   for (int i = 0; i < kPointerSize; ++i) {
     const int ptr_phy_coord = refine_ptr_fn(kRootPhyCoord, i);
     for (int j = 0; j < kDenseSize; ++j) {
       const int loop_index = refine_dense_fn(ptr_phy_coord, j);
-      // TODO: This is basically doing a lower_scalar_ptr() manually.
-      // We should modularize that function, and use it to generate IRs that
-      // does the bit extraction procedure.
-      const int dense_portion = dense_bit_range.extract(loop_index);
-      const int ptr_portion = ptr_bit_range.extract(loop_index);
+      const int dense_portion = loop_index % dense_snode_->extractors[0].shape;
+      const int ptr_portion = loop_index / dense_snode_->extractors[0].shape;
       EXPECT_EQ(dense_portion, j);
       EXPECT_EQ(ptr_portion, i);
     }

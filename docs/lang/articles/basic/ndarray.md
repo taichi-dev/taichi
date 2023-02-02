@@ -14,7 +14,7 @@ In a nutshell, fields are mainly used for maximizing performance with complex da
 
 ## Python scope usages
 
-The statement below constructs a Taichi ndarray. `dtype` specifies the data type, which can be either a scalar data type like `ti.f32/ti.i32` or a vector/matrix data type like `ti.math.vec2/mat2`. `shape` denotes the array size with respect to the data type. Like fields, ndarray can only be constructed in the Python scope rather than in the Taichi scope. That is to say, an ndarray cannot be constructed inside Taichi kernels or functions.
+The statement below instantiates an instance of a Taichi ndarray. `dtype` refers to the data type, which can either be a scalar data type like `ti.f32/ti.i32` or a vector/matrix data type like `ti.math.vec2/mat2`. `shape` denotes the array size with respect to the data type. Like fields, ndarray can only be constructed in the Python scope rather than in the Taichi scope. That is to say, an ndarray cannot be constructed inside Taichi kernels or functions.
 
 ```python
 arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
@@ -44,9 +44,7 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
     ```
 
 :::note
-
-Accessing ndarrray elements from the Python scope comes in handy but inevitably generates and launches multiple tiny Taichi kernels, which is not the best practice performance-wise. You are encouraged to keep compute-heavy work inside one Taichi kernel instead of operating on arrays element-by-element from the Python scope.
-
+Accessing elements of an ndarray from the Python scope can be convenient, but it can also result in the creation and launch of multiple small Taichi kernels. This is not the most efficient approach from a performance standpoint. It is recommended that computationally intensive tasks be performed within a single Taichi kernel rather than operating on array elements individually from the Python scope.
 :::
 
 - Data copy of ndarrays
@@ -88,9 +86,9 @@ def foo(A : ti.types.ndarray(dtype=ti.f32, ndim=2)):
     # Do something
 ```
 
-We should note that both of the `dtype` and `ndim` arguments are optional. If unspecified, the element data type and the number of array dimensions are instantialized from the actually passed-in array at runtime. If either or both of the arguments are specified, Taichi checks the type and the dimensions and throws an error if a mismatch is found.
+It is important to note that the `dtype` and `ndim` arguments are optional when an ndarray is instantiated. If left unspecified, the data type and the number of dimensions are inferred from the passed-in array at runtime. However, if the arguments are specified, Taichi validates that the specified data type and dimensions match those of the passed-in array. If a mismatch is detected, an error is thrown.
 
-Sometimes, we need to process arrays with vector or matrix elements, such as an RGB pixel map (vec3). We can use vector/matrix types in such scenarios. Take the pixel map for example. The following code snippet defines an ndarray with vec3 elements:
+In certain scenarios, it may be necessary to process arrays with vector or matrix elements, such as an RGB pixel map (vec3). Taichi provides support for these types of arrays through the use of vector and matrix data types. An example of this would be creating an ndarray for a pixel map with vec3 elements, as demonstrated in the following code snippet:
 
 ```python
 import taichi as ti
@@ -154,9 +152,9 @@ Every element in the external array (`arr_np` and `arr_torch`) is added by `1.0`
 
 :::
 
-If the external data container and Taichi use the same device, argument passing incurs zero overhead. The above PyTorch example allocates the tensor on the CUDA device, which is the same device used by Taichi. Therefore, the kernel function loads and stores data to the original CUDA buffer allocated by PyTorch, without any extra overhead.
+When the external data container and Taichi are utilizing the same device, passing arguments incurs no additional overhead. This can be seen in the PyTorch example above, where the tensor is allocated on the CUDA device, which is also the device utilized by Taichi. As a result, the kernel function can access and manipulate the data in the original CUDA buffer allocated by PyTorch without incurring any extra costs.
 
-However, if the devices are different, which is the case in the first example where Numpy uses CPUs and Taichi uses CUDA, Taichi automatically handles memory transfers across devices, saving users from manual operation.
+On the other hand, if the devices being used are different, as is the case in the first example where Numpy utilizes CPUs and Taichi utilizes CUDA, Taichi automatically manages the transfer of data between devices, eliminating the need for manual intervention on the part of the user.
 
 :::tip
 
@@ -193,7 +191,7 @@ def add_one(arr : ti.types.ndarray(dtype=ti.math.mat3, ndim=2)):
 
 ## Kernel compilation with ndarray template
 
-In the examples above, `dtype` and `ndim` are specified explicitly in the kernel type hints, but Taichi also allows you to skip such details and just annotate the argument as `ti.types.ndarray()`. When one `ti.kernel` definition works with different (dtype, ndim) inputs, you do not need to duplicate the definition each time.
+In the examples above, `dtype` and `ndim` were specified explicitly in the kernel type hints, but Taichi also allows you to skip such details and just annotate the argument as `ti.types.ndarray()`. When one `ti.kernel` definition works with different (dtype, ndim) inputs, you do not need to duplicate the definition each time.
 
 For example:
 

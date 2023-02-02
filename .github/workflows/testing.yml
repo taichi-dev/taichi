@@ -135,7 +135,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
         env:
-          CI_PLATFORM: macos
+          PLATFORM: 'macos'
 
       - name: Build & Install
         if: needs.check_files.outputs.run_job == 'true'
@@ -433,6 +433,7 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
             -DTI_WITH_C_API=ON
+            -DTI_WITH_STATIC_C_API=ON
 
       - name: Check C-API Export Symbols
         run: |

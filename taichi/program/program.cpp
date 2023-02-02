@@ -486,7 +486,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>(&compile_config());
+    return std::make_unique<wasm::AotModuleBuilderImpl>(compile_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif

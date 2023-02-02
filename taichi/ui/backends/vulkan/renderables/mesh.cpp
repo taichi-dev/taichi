@@ -10,25 +10,16 @@ namespace vulkan {
 using namespace taichi::lang;
 
 Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_mesh(app_context, /*vertices_count=*/3, /*indices_count*/ 3, vbo_attrs);
-}
-void Mesh::cleanup() {
-  Renderable::cleanup();
-  destroy_mesh_storage_buffers();
-}
+  RenderableConfig config;
+  config.ubo_size = sizeof(UniformBufferObject);
+  config.blending = true;
+  config.fragment_shader_path =
+      app_context->config.package_path + "/shaders/Mesh_vk_frag.spv";
+  config.vertex_shader_path =
+      app_context->config.package_path + "/shaders/Mesh_vk_vert.spv";
+  config.vbo_attrs = vbo_attrs;
 
-void Mesh::update_ubo(const MeshInfo &info, const Scene &scene) {
-  UniformBufferObject ubo;
-  ubo.scene = scene.current_ubo_;
-  ubo.color = info.color;
-  ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
-  ubo.two_sided = info.two_sided;
-  ubo.has_attribute = info.mesh_attribute_info.has_attribute;
-  void *mapped{nullptr};
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
-            RhiResult::success);
-  memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(uniform_buffer_);
+  Renderable::init(config, app_context);
 }
 
 void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
@@ -37,88 +28,74 @@ void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
 
   Renderable::update_data(info.renderable_info);
 
-  size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
+  // Update SSBO
+  {
+    size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
 
-  bool is_resize = false;
+    if (config_.ssbo_size != correct_ssbo_size) {
+      resize_storage_buffers(correct_ssbo_size);
+    }
 
-  if (config_.ssbo_size != correct_ssbo_size) {
-    resize_storage_buffers(correct_ssbo_size);
-    is_resize = true;
+    void *mapped{nullptr};
+    RHI_VERIFY(
+        app_context_->device().map(storage_buffer_->get_ptr(0), &mapped));
+    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
+    app_context_->device().unmap(*storage_buffer_);
   }
 
+  // Update instance transform buffer
+  size_t correct_mesh_ssbo_size = 0;
   if (info.mesh_attribute_info.has_attribute) {
     auto &attr_field = info.mesh_attribute_info.mesh_attribute;
-    if (attr_field.dtype != PrimitiveType::f32 &&
-        attr_field.dtype != PrimitiveType::u32 &&
-        attr_field.dtype != PrimitiveType::i32) {
-      TI_ERROR(
-          "Data Type transforms of Matrix Field must be ti.f32 or ti.u32 or "
-          "ti.i32");
+    if (attr_field.dtype != PrimitiveType::f32) {
+      TI_ERROR("Data Type transforms of Matrix Field must be ti.f32");
     }
 
-    size_t correct_mesh_ssbo_size =
-        attr_field.shape[0] * attr_field.matrix_rows * attr_field.matrix_cols *
-        data_type_size(attr_field.dtype);
-
-    if (correct_mesh_ssbo_size != mesh_ssbo_size_) {
-      resize_mesh_storage_buffers(correct_mesh_ssbo_size);
-      is_resize = true;
-    }
+    correct_mesh_ssbo_size = attr_field.num_elements * sizeof(float);
   }
-
-  if (is_resize) {
-    create_bindings();
-  }
-
-  {
-    void *mapped{nullptr};
-    TI_ASSERT(app_context_->device().map(storage_buffer_, &mapped) ==
-              RhiResult::success);
-    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
-    app_context_->device().unmap(storage_buffer_);
-  }
+  resize_mesh_storage_buffers(correct_mesh_ssbo_size);
 
   if (info.mesh_attribute_info.has_attribute) {
-    Program *prog = app_context_->prog();
-    if (prog) {
-      prog->flush();
-    }
+    auto &mesh_attribute = info.mesh_attribute_info.mesh_attribute;
 
-    // If there is no current program, VBO information should be provided
-    // directly instead of accessing through the current SNode
-    DevicePtr attr_dev_ptr =
-        info.mesh_attribute_info.mesh_attribute.dev_alloc.get_ptr();
-    if (prog) {
-      attr_dev_ptr =
-          get_device_ptr(prog, info.mesh_attribute_info.mesh_attribute.snode);
-    }
-    // TODO : At present, we donnot support copying from cuda device memory to a
-    // host-visible vulkan device memory directly on Windows platform, which is
-    // not a ideal way for handling storage buffer. So here we set the
-    // `mesh_ssbo` vulkan buffer as device-local memory using staging buffer
-    // filling data. However, that is not what is used to do for a storage
-    // buffer (usually set as host-visible memory), we should f`ix this on
-    // Windows in future.
-    Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
-        mesh_storage_buffer_.get_ptr(), attr_dev_ptr, mesh_ssbo_size_);
-    if (memcpy_cap == Device::MemcpyCapability::Direct) {
-      Device::memcpy_direct(mesh_storage_buffer_.get_ptr(), attr_dev_ptr,
-                            mesh_ssbo_size_);
-    } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-      Device::memcpy_via_staging(mesh_storage_buffer_.get_ptr(),
-                                 staging_vertex_buffer_.get_ptr(), attr_dev_ptr,
-                                 mesh_ssbo_size_);
-    } else {
-      TI_NOT_IMPLEMENTED;
-    }
+    // If data source is not a host mapped pointer, it is a DeviceAllocation
+    // from the same backend as GGUI
+    DevicePtr attr_dev_ptr = mesh_attribute.dev_alloc.get_ptr();
+
+    copy_helper(app_context_->prog(), mesh_storage_buffer_->get_ptr(),
+                attr_dev_ptr, mesh_staging_storage_buffer_->get_ptr(),
+                mesh_ssbo_size_);
   }
 
-  update_ubo(info, scene);
+  // Update UBO
+  {
+    UniformBufferObject ubo;
+    ubo.scene = scene.current_ubo_;
+    ubo.color = info.color;
+    ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
+    ubo.two_sided = info.two_sided;
+    ubo.has_attribute = info.mesh_attribute_info.has_attribute;
+    void *mapped{nullptr};
+    RHI_VERIFY(
+        app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+    memcpy(mapped, &ubo, sizeof(ubo));
+    app_context_->device().unmap(*uniform_buffer_);
+  }
 }
 
 void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
+  auto raster_state = app_context_->device().create_raster_resources_unique();
+  raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);
+  if (index_buffer_) {
+    raster_state->index_buffer(index_buffer_->get_ptr(), 32);
+  }
+
+  resource_set_->buffer(0, uniform_buffer_->get_ptr(0));
+  resource_set_->rw_buffer(1, storage_buffer_->get_ptr(0));
+  resource_set_->rw_buffer(2, mesh_storage_buffer_->get_ptr(0));
+
   command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_raster_resources(raster_state_.get());
+  command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
 
   if (indexed_) {
@@ -131,62 +108,17 @@ void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
   }
 }
 
-void Mesh::init_mesh(AppContext *app_context,
-                     int vertices_count,
-                     int indices_count,
-                     VertexAttributes vbo_attrs) {
-  RenderableConfig config = {
-      vertices_count,
-      indices_count,
-      vertices_count,
-      indices_count,
-      vertices_count,
-      0,
-      indices_count,
-      0,
-      sizeof(UniformBufferObject),
-      1,
-      true,
-      app_context->config.package_path + "/shaders/Mesh_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Mesh_vk_frag.spv",
-      TopologyType::Triangles,
-      PolygonMode::Fill,
-      vbo_attrs,
-  };
-
-  Renderable::init(config, app_context);
-  Renderable::init_render_resources();
-
-  create_mesh_storage_buffers();
-}
-
-void Mesh::create_bindings() {
-  Renderable::create_bindings();
-  resource_set_->buffer(0, uniform_buffer_);
-  resource_set_->rw_buffer(1, storage_buffer_);
-  resource_set_->rw_buffer(2, mesh_storage_buffer_);
-}
-
-void Mesh::create_mesh_storage_buffers() {
-  if (mesh_ssbo_size_ == 0) {
-    mesh_ssbo_size_ = 4 * 4 * sizeof(float);
-  }
-  Device::AllocParams sb_params{mesh_ssbo_size_, false, false,
-                                app_context_->requires_export_sharing(),
-                                AllocUsage::Storage};
-  mesh_storage_buffer_ = app_context_->device().allocate_memory(sb_params);
-}
-
-void Mesh::destroy_mesh_storage_buffers() {
-  app_context_->device().dealloc_memory(mesh_storage_buffer_);
-}
-
 void Mesh::resize_mesh_storage_buffers(size_t ssbo_size) {
-  if (mesh_ssbo_size_ != 0) {
-    destroy_mesh_storage_buffers();
+  if (mesh_storage_buffer_ != nullptr && ssbo_size == mesh_ssbo_size_) {
+    return;
   }
+
   mesh_ssbo_size_ = ssbo_size;
-  create_mesh_storage_buffers();
+  size_t alloc_size = std::max(4 * 4 * sizeof(float), ssbo_size);
+
+  create_buffer_with_staging(app_context_->device(), alloc_size,
+                             AllocUsage::Storage, mesh_storage_buffer_,
+                             mesh_staging_storage_buffer_);
 }
 
 }  // namespace vulkan

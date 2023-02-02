@@ -29,8 +29,6 @@ class Mesh final : public Renderable {
  public:
   Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void cleanup() override;
-
   void update_data(const MeshInfo &info, const Scene &scene);
 
   void record_this_frame_commands(
@@ -45,24 +43,12 @@ class Mesh final : public Renderable {
     float has_attribute;
   };
 
-  int num_instances_;
-  int start_instance_;
+  int num_instances_{0};
+  int start_instance_{0};
 
   size_t mesh_ssbo_size_{0};
-  taichi::lang::DeviceAllocation mesh_storage_buffer_;
-
-  void init_mesh(AppContext *app_context,
-                 int vertices_count,
-                 int indices_count,
-                 VertexAttributes vbo_attrs);
-
-  void update_ubo(const MeshInfo &info, const Scene &scene);
-
-  void create_bindings() override;
-
-  void create_mesh_storage_buffers();
-
-  void destroy_mesh_storage_buffers();
+  DeviceAllocationUnique mesh_storage_buffer_{nullptr};
+  DeviceAllocationUnique mesh_staging_storage_buffer_{nullptr};
 
   void resize_mesh_storage_buffers(size_t ssbo_size);
 };

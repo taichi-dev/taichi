@@ -4,33 +4,35 @@ Last update: 2022-04-21
 
 ---
 
-Taichi's LLVM sparse runtime lives under the [`taichi/runtime/llvm`](https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm) directory. It includes one header file for every single SNode type, and a [runtime.cpp](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp) source file.
+Taichi's LLVM sparse runtime lives under the [`taichi/runtime/llvm`](https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm/runtime_module) directory. It includes one header file for every single SNode type, and a common [runtime.cpp](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/runtime.cpp) source file for all SNode types.
 
 # SNode
 
-For a single SNode type `X` (where `X` can be `dense`, `bitmasked`, `pointer` or `dynamic`), it comes with a `XMeta` struct derived from [`StructMeta`](https://github.com/taichi-dev/taichi/blob/2cdc58078ecd2aef2cde608f07325108c5b3d5a5/taichi/runtime/llvm/runtime.cpp#L365-L383). `StructMeta` has the following properties:
+There are four types of SNodes in Taichi: `dense`, `bitmasked`, `pointer` and `dynamic`. `dynamic` or `pointer` SNodes are spatially sparse in nature: Cells in them are not necessarily stored contiguously. Therefore, when this doc talks about sparse SNodes hereafter, it refers to `dynamic` and `pointer` SNodes.
+
+Each SNode type comes with an `XMeta` struct derived from [`StructMeta`](https://github.com/taichi-dev/taichi/blob/2cdc58078ecd2aef2cde608f07325108c5b3d5a5/taichi/runtime/llvm/runtime.cpp#L365-L383). `StructMeta` has the following properties:
 
 * `snode_id`: SNode ID.
 * `i32 X_get_num_elements(Ptr meta, Ptr node)`: Returns the capacity this SNode can hold. Note that it is *not* the current number of active cells, but the maximum.
 * `void X_activate(Ptr meta, Ptr node, int i)`: Activates cell `i`.
-* `i32 X_is_active(Ptr meta, Ptr node, int i)`: Returns if cell `i` is active.
-* `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. This can be `nullptr` for sparse SNodes.
+* `i32 X_is_active(Ptr meta, Ptr node, int i)`: Checks whether cell `i` is active.
+* `Ptr X_lookup_element(Ptr meta, Ptr node, int i)`: Returns the pointer to cell `i`. The result can be `nullptr` for sparse SNodes.
 
 Here, `Ptr` is an alias for `uint8_t*`, and `i32` for `int32_t`. As the name suggests, `meta` points to the corresponding meta struct, while `node` points to the SNode instance.
 
-For sparse SNodes, they also implement this additional API:
+For sparse SNodes, they also implement an additional API:
 
 * `void X_deactivate(Ptr meta, Ptr node, int i)`: Deactivates cell `i`.
 
-However, this is likely subject to change, so that all SNodes can share the same set of APIs.
+However, this additional API is subject to change to make all SNodes share the same set of APIs in the future.
 
 ## `dense` SNode
 
-`dense` is the simplest form of SNode. It is just an array of cells living in a chunk of contiguous memory, or `std::array<Cell, N>` for those with a C++ background. Its header file is in [`node_dense.h`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/node_dense.h).
+`dense` is the simplest form of SNode. It is just an array of cells living in a chunk of contiguous memory, or `std::array<Cell, N>` for users with a C++ background. Its header file is in [`node_dense.h`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/node_dense.h).
 
 
 * `Dense_get_num_elements`: This is just `max_num_elements` stored in `DenseMeta`.
-* `Dense_activate`: No-op, because cells are always activated in `dense`.
+* `Dense_activate`: No-op, because in a `dense` SNode cells are always activated.
 * `Dense_is_active`: Always returns `1`.
 * `Dense_lookup_element`: Returns the address of the `i`-th cell. That is, `node + element_size * i`.
 
@@ -48,9 +50,9 @@ Layout of a `dense` SNode:
 
 ## `pointer` SNode
 
-`pointer` is usually the go-to sparse SNode you should consider. It allocates memory only when a cell is actually activated, and recycles to a memory pool once it is deactivated. This saves the memory resource in large-scale grid computation. You can mentally view it as an `std::array<Cell*, N>`.
+`pointer` is usually the go-to sparse SNode. It allocates memory only when a cell is activated, and recycles the memory to a memory pool once the cell is deactivated. In this way, it saves the memory resource in large-scale grid computation. You can regard it as an `std::array<Cell*, N>`.
 
-Upon initialization, Taichi preallocates a chunk of memory space, namely `ambient_elements`, which is shared across all the inactive sparse SNodes (`dynamic` and `pointer`). Therefore dereferencing an inactive sparse SNode will generate the default value stored in `ambient_elements` (usually zero).
+Upon initialization, Taichi preallocates a chunk of memory space named `ambient_elements`, which is shared across all inactive sparse SNodes. Therefore, dereferencing an inactive sparse SNode generates the default value (usually zero) stored in `ambient_elements`.
 
 Layout of a `pointer` SNode:
 
@@ -106,10 +108,10 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
 }
 ```
 
-1. Retrieves both the lock and the pointer for the `i`-th cell. Note that the pointer width is assumed to be 8-byte wide. Locks are simply 64-bit integers. According to the layout, there are `max_num_elements` number of locks, followed by `max_num_elements` number of pointers to cells.
+1. Retrieves both the lock and the pointer for the `i`-th cell. Note that the pointer size is assumed to be 8-byte wide. Locks are simply 64-bit integers. According to the layout, there are `max_num_elements` number of locks, followed by `max_num_elements` number of pointers to cells.
 2. Checks whether the content of `data_ptr` is `nullptr` without any locking. This is the classical [double-checked locking](https://en.wikipedia.org/wiki/Double-checked_locking) pattern.
 3. If 2 is true, pick one thread within a CUDA warp to acquire the lock. This is a small optimization to prevent lock contention. On pre-Volta devices without [independent thread scheduling](https://docs.nvidia.com/cuda/volta-tuning-guide/index.html#sm-independent-thread-scheduling), this also prevents deadlocking.
-4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/locked_task.h).
+4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/locked_task.h).
 5. Retrieves the memory allocator (`node_allocators`) for this particular SNode, allocates a new cell, and stores the address of the allocated cell into `data_ptr`. Because the cell size of each SNode is different, the runtime has a dedicated allocator for each SNode, which knows how much space to allocate per cell.
 
 The deactivation and the checking-for-active procedures are quite similar. We omit them for brevity.
@@ -198,7 +200,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 ```
 
 1. Uses the current length `n` as the index (`i`) to store `data`.
-2. `chunk_strat` tracks the starting index of a given chunk, and always starts at `0` . `p_chunk_ptr` is initialized to the pointer to the first chunk.
+2. `chunk_start` tracks the starting index of a given chunk, and always starts at `0`. `p_chunk_ptr` is initialized to the pointer to the first chunk.
 3. Inside the `while` loop, checks if the given chunk slot is empty first, and allocates a new chunk if so.
 4. Compares if the determined index `i` falls within the current chunk.
    1. If so, stores `data` into the corresponding slot in this chunk. Note that the first `sizeof(Ptr)` bytes are skipped: they are reserved to store the address of the next chunk.
@@ -206,17 +208,17 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 
 # Runtime
 
-Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime.cpp. Note that this file is *NOT* linked into Taichi's core C++ library. Instead, it is compiled into a LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between backends using LLVM, such as CPU and CUDA. In addition, the sparse runtime can be implemented in a language with enough abstraction (i.e., C++ instead of raw LLVM IR).
+Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/runtime.cpp. Note that this file is *NOT* linked into Taichi's core C++ library. Instead, it is compiled into an LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between backends using LLVM, such as CPU and CUDA. In addition, the sparse runtime can be implemented in any language with enough abstraction (e.g., C++) instead of raw LLVM IR.
 
 The core data structure of this runtime is [`LLVMRuntime`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L543), which holds a handful of data:
 
-* All the root SNodes info (`roots` and `root_mem_sizes`)
-* SNode memory allocators
-* Random states for supporting `ti.random` (`rand_states`)
-* Print and error message buffers
+* All the root SNodes info (`roots` and `root_mem_sizes`).
+* SNode memory allocators.
+* Random states (`rand_states`) used by `ti.random`.
+* Print and error message buffers.
 * ...
 
-We will explain how the SNode memory allocator is implemented, which is the bedrock of the sparse SNodes.
+The SNode memory allocator is the bedrock of sparse SNodes. The following sections explain how it is implemented.
 
 ## `NodeManager`: a recycling memory allocator
 
@@ -247,12 +249,12 @@ Ptr allocate() {
 }
 ```
 
-1. Reads the (possible) index of the next free item.
+1. Reads the (possible) index of the next free cell.
 2. If running out of the indices in the free list, allocate a new chunk from `data_list`.
 3. Otherwise, re-use the index from `free_list`.
 4. Either way, index `l` points to a memory slot in `data_list`. Returns that slot.
 
-[`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) is quite straightforward.
+So far, we have analyzed the `allocate` procedure. For the recycle procedure, the code [`recycle()`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L672-L675) is self-explanatory.
 
 Before jumping into the garbage collection (GC) system, we will also take look at the lower-level `ListManager`.
 
@@ -394,7 +396,7 @@ void gc_parallel_1(RuntimeContext *context, int snode_id) {
 }
 ```
 
-It is important to understand that this stage must be run on a single thread. This is to avoid any kind of data race on `recycled_list`. During GC, `recycled_list` must be cleared, with all its contents being transferred into `free_list`. If this was done in the third stage (which is run in parallel), it is quite difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created in order to store the number of elements of `recycled_list` into `recycle_list_size_backup` in advance (1), then clears the list (2). Fortunately, computation here is light and it doesn't take too much time even running in serial.
+It is important to understand that this stage must run on a single thread to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created to store the number of elements of `recycled_list` into `recycle_list_size_backup` in advance (1) and then clear the list (2). Fortunately, the computation task here is light and does not take too much time even running in serial.
 
 3. [`gc_parallel_2`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1642-L1681): Replenishes `free_list` with the indices in `recycled_list`, then zero-fills all the recycled memory locations.
 

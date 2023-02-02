@@ -41,7 +41,7 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
 FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
                                       Kernel *kernel) {
-  auto codegen = KernelCodeGen::create(&compile_config, kernel);
+  auto codegen = KernelCodeGen::create(compile_config, kernel);
   return codegen->compile_to_function();
 }
 
@@ -49,29 +49,10 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
     SNodeTree *tree) {
   auto *const root = tree->root();
   std::unique_ptr<StructCompiler> struct_compiler{nullptr};
-  if (arch_is_cpu(config->arch)) {
-    auto host_module =
-        runtime_exec_->llvm_context_host_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        host_arch(), this, std::move(host_module), tree->id());
-  } else if (config->arch == Arch::dx12) {
-    auto device_module =
-        runtime_exec_->llvm_context_device_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        Arch::dx12, this, std::move(device_module), tree->id());
-  } else if (config->arch == Arch::amdgpu) {
-    TI_ASSERT(config->arch == Arch::amdgpu);
-    auto device_module =
-        runtime_exec_->llvm_context_device_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        Arch::amdgpu, this, std::move(device_module), tree->id());
-  } else {
-    TI_ASSERT(config->arch == Arch::cuda);
-    auto device_module =
-        runtime_exec_->llvm_context_device_.get()->new_module("struct");
-    struct_compiler = std::make_unique<StructCompilerLLVM>(
-        Arch::cuda, this, std::move(device_module), tree->id());
-  }
+  auto module = runtime_exec_->llvm_context_.get()->new_module("struct");
+  struct_compiler = std::make_unique<StructCompilerLLVM>(
+      arch_is_cpu(config->arch) ? host_arch() : config->arch, this,
+      std::move(module), tree->id());
   struct_compiler->run(*root);
   ++num_snode_trees_processed_;
   return struct_compiler;
@@ -100,12 +81,12 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>(config, this);
+    return std::make_unique<cpu::AotModuleBuilderImpl>(*config, this);
   }
 
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>(config, this);
+    return std::make_unique<cuda::AotModuleBuilderImpl>(*config, this);
   }
 #endif
 

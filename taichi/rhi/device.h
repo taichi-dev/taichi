@@ -78,6 +78,17 @@ struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
   ~DeviceAllocationGuard();
 };
 
+using DeviceAllocationUnique = std::unique_ptr<DeviceAllocationGuard>;
+
+struct TI_DLL_EXPORT DeviceImageGuard : public DeviceAllocation {
+  explicit DeviceImageGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
+  }
+  DeviceImageGuard(const DeviceAllocationGuard &) = delete;
+  ~DeviceImageGuard();
+};
+
+using DeviceImageUnique = std::unique_ptr<DeviceImageGuard>;
+
 struct TI_DLL_EXPORT DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
@@ -894,6 +905,9 @@ class TI_DLL_EXPORT GraphicsDevice : public Device {
   // `GfxRuntime::create_image`. `GfxRuntime` is available in `ProgramImpl`
   // of GPU backends.
   virtual DeviceAllocation create_image(const ImageParams &params) = 0;
+  inline DeviceImageUnique create_image_unique(const ImageParams &params) {
+    return std::make_unique<DeviceImageGuard>(this->create_image(params));
+  }
   virtual void destroy_image(DeviceAllocation handle) = 0;
 
   virtual void image_transition(DeviceAllocation img,

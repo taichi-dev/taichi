@@ -2,6 +2,7 @@ import sys
 
 from taichi._funcs import *
 from taichi._lib import core as _ti_core
+from taichi._lib.utils import warn_restricted_version
 from taichi._logging import *
 from taichi._snode import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
@@ -59,33 +60,26 @@ __customized_deprecations__ = {
      'lang.mesh._TetMesh')
 }
 
-if sys.version_info.minor < 7:
-    for name, alter in __deprecated_names__.items():
-        exec(f'{name} = {alter}')
-    for _origin, (_msg, _replace) in __customized_deprecations__.items():
-        exec(f'{_origin} = {_replace}')
-else:
 
-    def __getattr__(attr):
-        # There's no easy way to hook accessing attribute with function calls in python3.6.
-        # So let's skip it for now.
-        import warnings  # pylint: disable=C0415,W0621
-        if attr == 'cfg':
-            return None if lang.impl.get_runtime(
-            ).prog is None else lang.impl.current_cfg()
-        if attr in __deprecated_names__:
-            warnings.warn(
-                f'ti.{attr} is deprecated. Please use ti.{__deprecated_names__[attr]} instead.',
-                DeprecationWarning)
-            exec(f'{attr} = {__deprecated_names__[attr]}')
-            return locals()[attr]
-        if attr in __customized_deprecations__:
-            msg, fun = __customized_deprecations__[attr]
-            warnings.warn(f'ti.{attr} is deprecated. {msg}',
-                          DeprecationWarning)
-            exec(f'{attr} = {fun}')
-            return locals()[attr]
-        raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
+def __getattr__(attr):
+    import warnings  # pylint: disable=C0415,W0621
+    if attr == 'cfg':
+        return None if lang.impl.get_runtime(
+        ).prog is None else lang.impl.current_cfg()
+    if attr in __deprecated_names__:
+        warnings.warn(
+            f'ti.{attr} is deprecated, and it will be removed in Taichi v1.6.0. Please use ti.{__deprecated_names__[attr]} instead.',
+            DeprecationWarning)
+        exec(f'{attr} = {__deprecated_names__[attr]}')
+        return locals()[attr]
+    if attr in __customized_deprecations__:
+        msg, fun = __customized_deprecations__[attr]
+        warnings.warn(
+            f'ti.{attr} is deprecated, and it will be removed in Taichi v1.6.0. {msg}',
+            DeprecationWarning)
+        exec(f'{attr} = {fun}')
+        return locals()[attr]
+    raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
 
 
 __version__ = (_ti_core.get_version_major(), _ti_core.get_version_minor(),
@@ -93,3 +87,6 @@ __version__ = (_ti_core.get_version_major(), _ti_core.get_version_minor(),
 
 del sys
 del _ti_core
+
+warn_restricted_version()
+del warn_restricted_version

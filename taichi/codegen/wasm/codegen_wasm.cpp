@@ -23,7 +23,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenWASM(const CompileConfig *config,
+  TaskCodeGenWASM(const CompileConfig &config,
                   Kernel *kernel,
                   IRNode *ir,
                   std::unique_ptr<llvm::Module> &&M = nullptr)
@@ -202,7 +202,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     builder->SetInsertPoint(entry_block);
     builder->CreateBr(func_body_bb);
 
-    if (compile_config->print_kernel_llvm_ir) {
+    if (compile_config.print_kernel_llvm_ir) {
       static FileSequenceWriter writer(
           "taichi_kernel_generic_llvm_ir_{:04d}.ll",
           "unoptimized LLVM IR (generic)");
@@ -213,7 +213,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
   LLVMCompiledTask run_compilation() override {
     // lower kernel
-    irpass::ast_to_ir(*compile_config, *kernel);
+    irpass::ast_to_ir(compile_config, *kernel);
 
     // emit_to_module
     auto offloaded_task_name = init_taichi_kernel_function();
@@ -240,7 +240,7 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
   auto linked = compile_kernel_to_module();
   auto *tlctx =
-      get_llvm_program(prog)->get_llvm_context(get_compile_config()->arch);
+      get_llvm_program(prog)->get_llvm_context(get_compile_config().arch);
   tlctx->create_jit_module(std::move(linked.module));
   auto kernel_symbol = tlctx->lookup_function_pointer(linked.tasks[0].name);
   return [=](RuntimeContext &context) {
@@ -251,10 +251,9 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
 }
 
 LLVMCompiledTask KernelCodeGenWASM::compile_task(
-    const CompileConfig *config,
+    const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  kernel->offload_to_executable(*config, ir);
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
   auto gen =
@@ -279,11 +278,11 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
 }
 
 LLVMCompiledKernel KernelCodeGenWASM::compile_kernel_to_module() {
-  const auto &config = *get_compile_config();
+  const auto &config = get_compile_config();
   auto *tlctx = get_llvm_program(prog)->get_llvm_context(config.arch);
-  irpass::ast_to_ir(config, *kernel, false);
+  irpass::ast_to_ir(config, *kernel, true);
 
-  auto res = compile_task(&config);
+  auto res = compile_task(config);
   std::vector<std::unique_ptr<LLVMCompiledTask>> data;
   data.push_back(std::make_unique<LLVMCompiledTask>(std::move(res)));
   return tlctx->link_compiled_tasks(std::move(data));

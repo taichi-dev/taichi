@@ -25,7 +25,6 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
  public:
   Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window);
   ~Gui() override;
-  void cleanup();
 
   void init_render_resources(VkRenderPass render_pass);
   void cleanup_render_resources();

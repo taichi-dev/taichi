@@ -91,9 +91,6 @@ void Window::present_frame() {
 Window::~Window() {
   gui_.reset();
   renderer_.reset();
-  if (config_.show_window) {
-    taichi::lang::window_system::glfw_context_release();
-  }
 }
 
 std::pair<uint32_t, uint32_t> Window::get_window_shape() {

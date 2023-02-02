@@ -192,7 +192,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
     }
   }
 
-private:
+ private:
   std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
     auto thread_idx = tlctx->get_constant(0);
     auto block_dim = tlctx->get_constant(1);

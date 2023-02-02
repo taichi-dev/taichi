@@ -235,7 +235,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     return res;
   }
 
-private:
+ private:
   std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
     TI_NOT_IMPLEMENTED;
   }

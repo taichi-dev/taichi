@@ -585,12 +585,12 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
   }
 
-private:
+ private:
   std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
     auto thread_idx =
-          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-    auto block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                        {}, {});
+        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
+    auto block_dim =
+        builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x, {}, {});
     return std::make_tuple(thread_idx, block_dim);
   }
 };

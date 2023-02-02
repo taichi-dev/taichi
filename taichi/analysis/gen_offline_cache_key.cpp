@@ -53,8 +53,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   using IRVisitor::visit;
 
  public:
-  ASTSerializer(Program *prog, std::ostream *os)
-      : ExpressionVisitor(true), prog_(prog), os_(os) {
+  explicit ASTSerializer(std::ostream *os) : ExpressionVisitor(true), os_(os) {
     // TODO(PGZXB): Set allow_undefined_visitor as false. (blocked by
     // constant-folding)
     this->allow_undefined_visitor = true;
@@ -414,8 +413,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(stmt->outputs);
   }
 
-  static void run(Program *prog, IRNode *ast, std::ostream *os) {
-    ASTSerializer serializer(prog, os);
+  static void run(IRNode *ast, std::ostream *os) {
+    ASTSerializer serializer(os);
     ast->accept(&serializer);
     serializer.emit_dependencies();
   }
@@ -434,7 +433,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     // Serialize snode_trees(Temporary: using offline-cache-key of SNode)
     // Note: The result of serializing snode_tree_roots_ is not parsable now
     emit(static_cast<std::size_t>(snode_tree_roots_.size()));
-    for (auto *snode : snode_tree_roots_) {
+    for (const auto *snode : snode_tree_roots_) {
       auto key = get_hashed_offline_cache_key_of_snode(snode);
       emit_bytes(key.c_str(), key.size());
     }
@@ -517,12 +516,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     }
   }
 
-  void emit(SNode *snode) {
-    TI_ASSERT(prog_);
+  void emit(const SNode *snode) {
     if (snode) {
       emit(static_cast<std::size_t>(snode->get_snode_tree_id()));
       emit(static_cast<std::size_t>(snode->id));
-      auto *root = prog_->get_snode_root(snode->get_snode_tree_id());
+      const auto *root = snode->get_root();
       snode_tree_roots_.insert(root);
     } else {
       emit(std::numeric_limits<std::size_t>::max());
@@ -621,7 +619,9 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
 #define DEFINE_EMIT_ENUM(EnumType) \
-  void emit(EnumType type) { emit_pod(type); }
+  void emit(EnumType type) {       \
+    emit_pod(type);                \
+  }
 
   DEFINE_EMIT_ENUM(ExprOpCode);
   DEFINE_EMIT_ENUM(StmtOpCode);
@@ -643,17 +643,16 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
 #undef DEFINE_EMIT_ENUM
 
-  Program *prog_{nullptr};
   std::ostream *os_{nullptr};
-  std::unordered_set<SNode *> snode_tree_roots_;
+  std::unordered_set<const SNode *> snode_tree_roots_;
   std::unordered_map<Function *, std::size_t> real_funcs_;
   std::vector<char> string_pool_;
 };
 
 }  // namespace
 
-void gen_offline_cache_key(Program *prog, IRNode *ast, std::ostream *os) {
-  ASTSerializer::run(prog, ast, os);
+void gen_offline_cache_key(IRNode *ast, std::ostream *os) {
+  ASTSerializer::run(ast, os);
 }
 
 }  // namespace taichi::lang

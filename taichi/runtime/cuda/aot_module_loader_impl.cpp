@@ -20,7 +20,7 @@ class AotModuleImpl : public LlvmAotModule {
       LlvmOfflineCache::KernelCacheData &&loaded) override {
     Arch arch = executor_->get_config().arch;
     TI_ASSERT(arch == Arch::cuda);
-    auto *tlctx = executor_->get_llvm_context(arch);
+    auto *tlctx = executor_->get_llvm_context();
 
     CUDAModuleToFunctionConverter converter{tlctx, executor_};
     return converter.convert(name, loaded.args,

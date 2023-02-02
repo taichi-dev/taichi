@@ -138,6 +138,7 @@ def test_frac(tifunc):
 
 @pytest.mark.parametrize('tifunc,npfunc', [
     (lambda x: ti.sqrt(x), lambda x: np.sqrt(x)),
+    (lambda x: ti.rsqrt(x), lambda x: 1 / np.sqrt(x)),
     (lambda x: ti.exp(x), lambda x: np.exp(x)),
     (lambda x: ti.log(x), lambda x: np.log(x)),
 ])

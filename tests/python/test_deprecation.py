@@ -135,69 +135,6 @@ def test_deprecate_ndrange():
         func()
 
 
-@test_utils.test(arch=ti.vulkan)
-def test_deprecated_rwtexture_type():
-    n = 128
-
-    with pytest.warns(
-            DeprecationWarning,
-            match=
-            r"Specifying num_channels and channel_format is deprecated and will be removed in v1.5.0, please specify fmt instead"
-    ):
-
-        @ti.kernel
-        def ker(tex: ti.types.rw_texture(num_dimensions=2,
-                                         num_channels=1,
-                                         channel_format=ti.f32,
-                                         lod=0)):
-            for i, j in ti.ndrange(n, n):
-                ret = ti.cast(1, ti.f32)
-                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-
-# Note: will be removed in v1.5.0
-@test_utils.test(arch=ti.vulkan)
-def test_incomplete_info_rwtexture():
-    n = 128
-
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match=r"Incomplete type info for rw_texture, please specify its fmt"
-    ):
-
-        @ti.kernel
-        def ker(tex: ti.types.rw_texture(num_dimensions=2,
-                                         channel_format=ti.f32,
-                                         lod=0)):
-            for i, j in ti.ndrange(n, n):
-                ret = ti.cast(1, ti.f32)
-                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match=r"Incomplete type info for rw_texture, please specify its fmt"
-    ):
-
-        @ti.kernel
-        def ker(tex: ti.types.rw_texture(num_dimensions=2,
-                                         num_channels=2,
-                                         lod=0)):
-            for i, j in ti.ndrange(n, n):
-                ret = ti.cast(1, ti.f32)
-                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-    with pytest.raises(
-            ti.TaichiCompilationError,
-            match=r"Incomplete type info for rw_texture, please specify its fmt"
-    ):
-
-        @ti.kernel
-        def ker(tex: ti.types.rw_texture(num_dimensions=2, lod=0)):
-            for i, j in ti.ndrange(n, n):
-                ret = ti.cast(1, ti.f32)
-                tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
-
-
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=ti.cpu)
 def test_deprecate_ti_ui_window():

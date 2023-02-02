@@ -44,7 +44,6 @@ class TI_DLL_EXPORT Renderer {
  public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
   ~Renderer();
-  void cleanup();
 
   void prepare_for_next_frame();
 
@@ -80,13 +79,13 @@ class TI_DLL_EXPORT Renderer {
  private:
   glm::vec3 background_color_ = glm::vec3(0.f, 0.f, 0.f);
 
+  AppContext app_context_;
+  SwapChain swap_chain_;
+
   std::vector<std::unique_ptr<Renderable>> renderables_;
   int next_renderable_;
 
   taichi::lang::StreamSemaphore render_complete_semaphore_{nullptr};
-
-  SwapChain swap_chain_;
-  AppContext app_context_;
 
   template <typename T>
   T *get_renderable_of_type(VertexAttributes vbo_attrs);

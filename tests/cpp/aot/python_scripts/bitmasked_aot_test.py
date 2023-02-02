@@ -76,8 +76,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--arch", type=str)
     args = parser.parse_args()
-    if args.arch == "cpu":
-        compile_bitmasked_aot(arch=ti.cpu)
+    if args.arch == "x64":
+        compile_bitmasked_aot(arch=ti.x64)
     elif args.arch == "cuda":
         compile_bitmasked_aot(arch=ti.cuda)
     else:

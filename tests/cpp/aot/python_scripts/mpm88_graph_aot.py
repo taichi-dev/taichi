@@ -219,8 +219,8 @@ def compile_mpm88(arch, save_compute_graph):
 
 if __name__ == "__main__":
     compile_for_cgraph = args.cgraph
-    if args.arch == "cpu":
-        compile_mpm88(arch=ti.cpu, save_compute_graph=compile_for_cgraph)
+    if args.arch == "x64":
+        compile_mpm88(arch=ti.x64, save_compute_graph=compile_for_cgraph)
     elif args.arch == "cuda":
         compile_mpm88(arch=ti.cuda, save_compute_graph=compile_for_cgraph)
     elif args.arch == "vulkan":

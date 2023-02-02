@@ -11,15 +11,19 @@ export TI_CI=1
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
-
-pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
-python3 tests/generate_compat_test_modules.py
-python3 -m pip uninstall taichi-nightly -y
 
 setup_python
 
-python3 tests/run_c_api_compat_test.py
+# - [Taichi Runtime Compatibility Test] ----------------------------------------
+
+# Install Taichi nightly and generate shader with nightly builds.
+pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+pip3 install -r requirements_test.txt
+python3 tests/generate_compat_test_modules.py
+python3 -m pip uninstall taichi-nightly -y
+
+# ------------------------------------------------------------------------------
 
 if [ ! -z "$AMDGPU_TEST" ]; then
     sudo chmod 666 /dev/kfd
@@ -58,6 +62,9 @@ else
     fi
 fi
 
+# Run AOT tests with the generated modules.
+python3 tests/run_c_api_compat_test.py
+
 ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
@@ -88,6 +95,9 @@ EOF
 fi
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
+    echo "Running AOT compatibility test:" "${PLATFORM}"
+    python3 tests/run_c_api_compat_test.py
+
     echo "Running cpp tests on platform:" "${PLATFORM}"
     python3 tests/run_tests.py --cpp
     if [[ $PLATFORM == *"m1"* ]]; then

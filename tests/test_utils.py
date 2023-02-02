@@ -5,6 +5,7 @@ import json
 import os
 import pathlib
 import platform
+import re
 from errno import EEXIST
 from tempfile import NamedTemporaryFile, mkstemp
 
@@ -15,6 +16,46 @@ from taichi.lang import cc, cpu, cuda, dx11, gles, gpu, metal, opengl, vulkan
 from taichi.lang.misc import is_arch_supported
 
 import taichi as ti
+
+
+def expected_archs():
+    """
+    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `python tests/run_tests.py`)
+    and gets all expected archs on the machine.
+    If `TI_WANTED_ARCHS` is set and does not start with `^`, archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `python tests/run_tests.py`),
+    all supported archs except archs specified in it will be returned.
+    If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
+    Returns:
+        List[taichi_python.Arch]: All expected archs on the machine.
+    """
+    archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
+    # TODO: now expected_archs is not called per test so we cannot test it
+    archs = set(filter(is_arch_supported, archs))
+
+    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
+    want_exclude = wanted_archs.startswith('^')
+    if want_exclude:
+        wanted_archs = wanted_archs[1:]
+    wanted_archs = wanted_archs.split(',')
+    # Note, ''.split(',') gives you [''], which is not an empty array.
+    expanded_wanted_archs = set([])
+    for arch in wanted_archs:
+        if arch == '':
+            continue
+        if arch == 'cpu':
+            expanded_wanted_archs.add(cpu)
+        elif arch == 'gpu':
+            expanded_wanted_archs.update(gpu)
+        else:
+            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
+    if len(expanded_wanted_archs) == 0:
+        return list(archs)
+    if want_exclude:
+        expected = archs - expanded_wanted_archs
+    else:
+        expected = expanded_wanted_archs
+    return list(expected)
 
 
 def print_section(message, symbol="-"):
@@ -57,6 +98,38 @@ def parse_test_configs():
 
 
 __aot_test_cases, __capi_aot_test_cases = parse_test_configs()
+
+
+# FIXME: (penguinliong) The test extraction discovery is kind of a mess.
+def parse_test_configs2():
+    archs = expected_archs()
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    test_config_path = os.path.join(curr_dir, "test_config.json")
+    with open(test_config_path, "r") as f:
+        test_config = json.loads(f.read())
+
+    assert ("capi_aot_test_cases" in test_config.keys())
+    capi_aot_test_cases = {}
+    for cpp_test_name, value in test_config["capi_aot_test_cases"].items():
+        test_paths = value[0]
+        test_args = value[1]
+        skip_this = False
+        for test_arg in test_args.split(' '):
+            m = re.match(r'--arch=(\w+)', test_arg)
+            arch = m and _ti_core.arch_from_name(m[1])
+            if m and arch not in archs:
+                print(
+                    f"WARNING: ignored cpp test '{cpp_test_name}' because '{arch}' is not supported"
+                )
+                skip_this = True
+                break
+        if skip_this:
+            continue
+        capi_aot_test_cases[cpp_test_name] = [
+            os.path.join(*test_paths), test_args
+        ]
+
+    return capi_aot_test_cases
 
 
 def print_aot_test_guide():
@@ -196,46 +269,6 @@ else:
     _test_features = {
         # "dynamic_index": [TestParam(True, [])]
     }
-
-
-def expected_archs():
-    """
-    Reads the environment variable `TI_WANTED_ARCHS` (usually set by option `-a` in `python tests/run_tests.py`)
-    and gets all expected archs on the machine.
-    If `TI_WANTED_ARCHS` is set and does not start with `^`, archs specified in it will be returned.
-    If `TI_WANTED_ARCHS` starts with `^` (usually when option `-n` is specified in `python tests/run_tests.py`),
-    all supported archs except archs specified in it will be returned.
-    If `TI_WANTED_ARCHS` is not set, all supported archs will be returned.
-    Returns:
-        List[taichi_python.Arch]: All expected archs on the machine.
-    """
-    archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
-    # TODO: now expected_archs is not called per test so we cannot test it
-    archs = set(filter(is_arch_supported, archs))
-
-    wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
-    want_exclude = wanted_archs.startswith('^')
-    if want_exclude:
-        wanted_archs = wanted_archs[1:]
-    wanted_archs = wanted_archs.split(',')
-    # Note, ''.split(',') gives you [''], which is not an empty array.
-    expanded_wanted_archs = set([])
-    for arch in wanted_archs:
-        if arch == '':
-            continue
-        if arch == 'cpu':
-            expanded_wanted_archs.add(cpu)
-        elif arch == 'gpu':
-            expanded_wanted_archs.update(gpu)
-        else:
-            expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
-    if len(expanded_wanted_archs) == 0:
-        return list(archs)
-    if want_exclude:
-        expected = archs - expanded_wanted_archs
-    else:
-        expected = expanded_wanted_archs
-    return list(expected)
 
 
 def test(arch=None, exclude=None, require=None, **options):

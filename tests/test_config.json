@@ -2,7 +2,7 @@
 "aot_test_cases" : {
     "LlvmAotTest.CpuKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "LlvmAotTest.CudaKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
@@ -14,7 +14,7 @@
     ],
     "LlvmAotTest.CpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "LlvmAotTest.CudaField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
@@ -22,7 +22,7 @@
     ],
     "LlvmAotTest.CpuDynamic": [
         ["cpp", "aot", "python_scripts", "dynamic_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "LlvmAotTest.CudaDynamic": [
         ["cpp", "aot", "python_scripts", "dynamic_aot_test.py"],
@@ -30,7 +30,7 @@
     ],
     "LlvmAotTest.CpuBitmasked": [
         ["cpp", "aot", "python_scripts", "bitmasked_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "LlvmAotTest.CudaBitmasked": [
         ["cpp", "aot", "python_scripts", "bitmasked_aot_test.py"],
@@ -38,7 +38,7 @@
     ],
     "LlvmCGraph.RunGraphCpu": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "LlvmCGraph.RunGraphCuda": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
@@ -46,7 +46,7 @@
     ],
     "LlvmCGraph.CpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
-        "--arch=cpu --cgraph"
+        "--arch=x64 --cgraph"
     ],
     "LlvmCGraph.CudaField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
@@ -54,7 +54,7 @@
     ],
     "LlvmCGraph.Mpm88Cpu": [
         ["cpp", "aot", "python_scripts", "mpm88_graph_aot.py"],
-        "--arch=cpu --cgraph"
+        "--arch=x64 --cgraph"
     ],
     "LlvmCGraph.Mpm88Cuda": [
         ["cpp", "aot", "python_scripts", "mpm88_graph_aot.py"],
@@ -141,11 +141,11 @@
     ],
     "CapiTest.TaichiSparseTestCuda": [
         ["cpp", "aot", "python_scripts", "taichi_sparse_test.py"],
-        ""
+        "--arch=cuda"
     ],
     "CapiTest.AotTestCpuField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "CapiTest.AotTestCudaField": [
         ["cpp", "aot", "python_scripts", "field_aot_test.py"],
@@ -153,7 +153,7 @@
     ],
     "CapiTest.GraphTestCpuGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "CapiTest.GraphTestCudaGraph": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
@@ -177,7 +177,7 @@
     ],
     "CapiTest.AotTestCpuKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
-        "--arch=cpu"
+        "--arch=x64"
     ],
     "CapiTest.AotTestCudaKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],

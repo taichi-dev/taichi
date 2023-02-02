@@ -30,8 +30,8 @@ if __name__ == "__main__":
     parser.add_argument("--arch", type=str)
     args = parser.parse_args()
 
-    if args.arch == "cpu":
-        compile_kernel_aot_test1(arch=ti.cpu)
+    if args.arch == "x64":
+        compile_kernel_aot_test1(arch=ti.x64)
     elif args.arch == "cuda":
         compile_kernel_aot_test1(arch=ti.cuda)
     elif args.arch == "vulkan":

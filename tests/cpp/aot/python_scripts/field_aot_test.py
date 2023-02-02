@@ -137,8 +137,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     compile_for_cgraph = args.cgraph
-    if args.arch == "cpu":
-        compile_field_aot(arch=ti.cpu, compile_for_cgraph=compile_for_cgraph)
+    if args.arch == "x64":
+        compile_field_aot(arch=ti.x64, compile_for_cgraph=compile_for_cgraph)
     elif args.arch == "cuda":
         compile_field_aot(arch=ti.cuda, compile_for_cgraph=compile_for_cgraph)
     else:

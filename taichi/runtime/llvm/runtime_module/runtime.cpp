@@ -108,7 +108,7 @@ using Ptr = uint8 *;
 
 using RuntimeContextArgType = long long;
 
-#if ARCH_cuda
+#if ARCH_cuda || ARCH_amdgpu
 extern "C" {
 
 void __assertfail(const char *message,
@@ -783,7 +783,8 @@ void taichi_assert_format(LLVMRuntime *runtime,
 #if ARCH_cuda
   // Kill this CUDA thread.
   asm("exit;");
-#else
+#elif ARCH_amdgpu
+  asm("S_ENDPGM");
   // TODO: properly kill this CPU thread here, considering the containing
   // ThreadPool structure.
 
@@ -1253,7 +1254,7 @@ void element_listgen_root(LLVMRuntime *runtime,
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
-#if ARCH_cuda
+#if ARCH_cuda || ARCH_amdgpu
   // All blocks share the only root container, which has only one child
   // container.
   // Each thread processes a subset of the child container for more parallelism.
@@ -1303,7 +1304,7 @@ void element_listgen_nonroot(LLVMRuntime *runtime,
   auto parent_lookup_element = parent->lookup_element;
   auto child_get_num_elements = child->get_num_elements;
   auto child_from_parent_element = child->from_parent_element;
-#if ARCH_cuda
+#if ARCH_cuda || ARCH_amdgpu
   // Each block processes a slice of a parent container
   int i_start = block_idx();
   int i_step = grid_dim();
@@ -1391,7 +1392,7 @@ void parallel_struct_for(RuntimeContext *context,
                          int num_threads) {
   auto list = (context->runtime)->element_lists[snode_id];
   auto list_tail = list->size();
-#if ARCH_cuda
+#if ARCH_cuda || ARCH_amdgpu
   int i = block_idx();
   // Note: CUDA requires compile-time constant local array sizes.
   // We use "1" here and modify it during codegen to tls_buffer_size.
@@ -1599,7 +1600,7 @@ void gpu_parallel_mesh_for(RuntimeContext *context,
 }
 
 i32 linear_thread_idx(RuntimeContext *context) {
-#if ARCH_cuda
+#if ARCH_cuda || ARCH_amdgpu
   return block_idx() * block_dim() + thread_idx();
 #else
   return context->cpu_thread_id;
@@ -1831,6 +1832,8 @@ void taichi_printf(LLVMRuntime *runtime, const char *format, Args &&...args) {
   printf_helper helper;
   helper.push_back(std::forward<Args>(args)...);
   cuda_vprintf((Ptr)format, helper.ptr());
+#elif ARCH_amdgpu
+// TODO: add printf for amdgpu backend
 #else
   runtime->host_printf(format, args...);
 #endif

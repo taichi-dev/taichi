@@ -537,8 +537,8 @@ class VulkanSurface : public Surface {
   std::vector<DeviceAllocation> swapchain_images_;
 
   // DeviceAllocation screenshot_image_{kDeviceNullAllocation};
-  DeviceAllocation depth_buffer_{kDeviceNullAllocation};
-  DeviceAllocation screenshot_buffer_{kDeviceNullAllocation};
+  DeviceAllocationUnique depth_buffer_{nullptr};
+  DeviceAllocationUnique screenshot_buffer_{nullptr};
 };
 
 struct DescPool {

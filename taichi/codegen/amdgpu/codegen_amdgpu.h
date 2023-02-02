@@ -9,14 +9,14 @@ namespace lang {
 
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
-  KernelCodeGenAMDGPU(const CompileConfig *config, Kernel *kernel)
+  KernelCodeGenAMDGPU(const CompileConfig &config, Kernel *kernel)
       : KernelCodeGen(config, kernel) {
   }
 
 // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
   LLVMCompiledTask compile_task(
-      const CompileConfig *config,
+      const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM

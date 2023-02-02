@@ -6,7 +6,7 @@ namespace taichi::ui {
   TI_ERROR_IF(!config_.show_window, \
               "show_window must be True to use this method")
 
-WindowBase ::WindowBase(AppConfig config) : config_(config) {
+WindowBase::WindowBase(AppConfig config) : config_(config) {
   if (config_.show_window) {
     glfw_window_ = create_glfw_window_(config_.name, config_.width,
                                        config_.height, config_.window_pos_x,
@@ -159,6 +159,7 @@ void WindowBase::set_current_event(const Event &event) {
 WindowBase::~WindowBase() {
   if (config_.show_window) {
     glfwDestroyWindow(glfw_window_);
+    taichi::lang::window_system::glfw_context_release();
   }
 }
 

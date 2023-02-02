@@ -11,7 +11,7 @@ class LlvmProgramImpl;
 class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
  public:
   StructCompilerLLVM(Arch arch,
-                     const CompileConfig *config,
+                     const CompileConfig &config,
                      TaichiLLVMContext *tlctx,
                      std::unique_ptr<llvm::Module> &&module,
                      int snode_tree_id);
@@ -46,7 +46,7 @@ class StructCompilerLLVM : public StructCompiler, public LLVMModuleBuilder {
 
  private:
   Arch arch_;
-  const CompileConfig *const config_;
+  const CompileConfig &config_;
   TaichiLLVMContext *const tlctx_;
   llvm::LLVMContext *const llvm_ctx_;
   int snode_tree_id_;

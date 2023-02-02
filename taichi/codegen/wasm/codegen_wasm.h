@@ -12,7 +12,7 @@ namespace taichi::lang {
 
 class KernelCodeGenWASM : public KernelCodeGen {
  public:
-  explicit KernelCodeGenWASM(const CompileConfig *compile_config,
+  explicit KernelCodeGenWASM(const CompileConfig &compile_config,
                              Kernel *kernel)
       : KernelCodeGen(compile_config, kernel) {
   }
@@ -21,7 +21,7 @@ class KernelCodeGenWASM : public KernelCodeGen {
 
 #ifdef TI_WITH_LLVM
   LLVMCompiledTask compile_task(
-      const CompileConfig *config,
+      const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;  // AOT Module Gen
 

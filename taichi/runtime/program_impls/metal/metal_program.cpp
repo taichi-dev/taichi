@@ -30,7 +30,7 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config)
 FunctionType MetalProgramImpl::compile(const CompileConfig &compile_config,
                                        Kernel *kernel) {
   return register_params_to_executable(
-      get_cache_manager()->load_or_compile(&compile_config, kernel),
+      get_cache_manager()->load_or_compile(compile_config, kernel),
       gfx_runtime_.get());
 }
 

@@ -10,7 +10,7 @@
 namespace taichi::lang {
 
 StructCompilerLLVM::StructCompilerLLVM(Arch arch,
-                                       const CompileConfig *config,
+                                       const CompileConfig &config,
                                        TaichiLLVMContext *tlctx,
                                        std::unique_ptr<llvm::Module> &&module,
                                        int snode_tree_id)
@@ -27,7 +27,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        std::unique_ptr<llvm::Module> &&module,
                                        int snode_tree_id)
     : StructCompilerLLVM(arch,
-                         prog->config,
+                         *prog->config,
                          prog->get_llvm_context(arch),
                          std::move(module),
                          snode_tree_id) {
@@ -257,7 +257,7 @@ void StructCompilerLLVM::run(SNode &root) {
 
   generate_child_accessors(root);
 
-  if (config_->print_struct_llvm_ir) {
+  if (config_.print_struct_llvm_ir) {
     static FileSequenceWriter writer("taichi_struct_llvm_ir_{:04d}.ll",
                                      "struct LLVM IR");
     writer.write(module.get());

@@ -123,7 +123,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     auto &leaf_snode = dense_snode_->insert_children(SNodeType::place);
     leaf_snode.dt = PrimitiveType::f32;
 
-    auto sc = std::make_unique<StructCompilerLLVM>(arch_, &config_, tlctx_,
+    auto sc = std::make_unique<StructCompilerLLVM>(arch_, config_, tlctx_,
                                                    tlctx_->new_module("struct"),
                                                    /*snode_tree_id=*/0);
     sc->run(*root_snode_);

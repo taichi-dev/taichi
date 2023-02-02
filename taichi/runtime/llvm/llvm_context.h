@@ -34,7 +34,7 @@ class TaichiLLVMContext {
     explicit ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
-  CompileConfig *config_;
+  const CompileConfig &config_;
 
  public:
   std::unique_ptr<JITSession> jit{nullptr};
@@ -43,7 +43,7 @@ class TaichiLLVMContext {
 
   std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
 
-  TaichiLLVMContext(CompileConfig *config, Arch arch);
+  TaichiLLVMContext(const CompileConfig &config, Arch arch);
 
   virtual ~TaichiLLVMContext();
 

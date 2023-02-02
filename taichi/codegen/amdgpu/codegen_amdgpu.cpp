@@ -407,8 +407,7 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
 
 FunctionType KernelCodeGenAMDGPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = get_compile_config();
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
 
   AMDGPUModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};

@@ -274,8 +274,7 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
 FunctionType KernelCodeGenCPU::compile_to_function() {
   TI_AUTO_PROF;
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = get_compile_config();
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
 
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());

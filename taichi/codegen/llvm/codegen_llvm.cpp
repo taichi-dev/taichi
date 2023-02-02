@@ -308,13 +308,11 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(module == nullptr
-                            ? get_llvm_program(kernel->program)
-                                  ->get_llvm_context(compile_config.arch)
-                                  ->new_module("kernel")
-                            : std::move(module),
-                        get_llvm_program(kernel->program)
-                            ->get_llvm_context(compile_config.arch)),
+    : LLVMModuleBuilder(module == nullptr ? get_llvm_program(kernel->program)
+                                                ->get_llvm_context()
+                                                ->new_module("kernel")
+                                          : std::move(module),
+                        get_llvm_program(kernel->program)->get_llvm_context()),
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
@@ -2551,7 +2549,7 @@ FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
 }
 
 void TaskCodeGenLLVM::initialize_context() {
-  tlctx = get_llvm_program(prog)->get_llvm_context(compile_config.arch);
+  tlctx = get_llvm_program(prog)->get_llvm_context();
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }

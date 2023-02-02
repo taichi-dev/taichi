@@ -37,7 +37,8 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
 FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
                                       Kernel *kernel) {
-  auto codegen = KernelCodeGen::create(compile_config, kernel);
+  auto codegen = KernelCodeGen::create(compile_config, kernel,
+                                       *runtime_exec_->get_llvm_context());
   return codegen->compile_to_function();
 }
 
@@ -77,18 +78,21 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>(*config, this);
+    return std::make_unique<cpu::AotModuleBuilderImpl>(
+        *config, this, *runtime_exec_->get_llvm_context());
   }
 
 #if defined(TI_WITH_CUDA)
   if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>(*config, this);
+    return std::make_unique<cuda::AotModuleBuilderImpl>(
+        *config, this, *runtime_exec_->get_llvm_context());
   }
 #endif
 
 #if defined(TI_WITH_DX12)
   if (config->arch == Arch::dx12) {
-    return std::make_unique<directx12::AotModuleBuilderImpl>(*config, this);
+    return std::make_unique<directx12::AotModuleBuilderImpl>(
+        *config, this, *runtime_exec_->get_llvm_context());
   }
 #endif
 

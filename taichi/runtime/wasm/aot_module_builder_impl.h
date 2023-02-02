@@ -14,7 +14,7 @@ namespace wasm {
 
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompileConfig &compile_config);
+  explicit AotModuleBuilderImpl(const CompileConfig &compile_config, TaichiLLVMContext &tlctx);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -37,6 +37,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompileConfig &compile_config_;
   std::unique_ptr<llvm::Module> module_{nullptr};
   std::vector<std::string> name_list_;
+  TaichiLLVMContext &tlctx_;
 };
 
 }  // namespace wasm

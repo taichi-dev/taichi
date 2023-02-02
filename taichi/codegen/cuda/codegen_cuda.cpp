@@ -596,12 +596,9 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
 
 FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
-  auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context();
-
-  CUDAModuleToFunctionConverter converter{tlctx,
-                                          llvm_prog->get_runtime_executor()};
-
+  CUDAModuleToFunctionConverter converter{
+      &get_taichi_llvm_context(),
+      get_llvm_program(prog)->get_runtime_executor()};
   return converter.convert(this->kernel, compile_kernel_to_module());
 }
 

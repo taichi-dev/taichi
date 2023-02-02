@@ -406,11 +406,9 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
 }
 
 FunctionType KernelCodeGenAMDGPU::compile_to_function() {
-  auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context();
-
-  AMDGPUModuleToFunctionConverter converter{tlctx,
-                                            llvm_prog->get_runtime_executor()};
+  AMDGPUModuleToFunctionConverter converter{
+      &get_taichi_llvm_context(),
+      get_llvm_program(prog)->get_runtime_executor()};
 
   return converter.convert(this->kernel, compile_kernel_to_module());
 }

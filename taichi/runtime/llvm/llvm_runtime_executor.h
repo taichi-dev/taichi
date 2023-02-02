@@ -59,7 +59,7 @@ class LlvmRuntimeExecutor {
     return config_;
   }
 
-  TaichiLLVMContext *get_llvm_context(Arch arch);
+  TaichiLLVMContext *get_llvm_context();
 
   LLVMRuntime *get_llvm_runtime();
 
@@ -101,14 +101,7 @@ class LlvmRuntimeExecutor {
                   Args &&...args) {
     TI_ASSERT(arch_uses_llvm(config_.arch));
 
-    TaichiLLVMContext *tlctx = nullptr;
-    if (llvm_context_device_) {
-      tlctx = llvm_context_device_.get();
-    } else {
-      tlctx = llvm_context_host_.get();
-    }
-
-    auto runtime = tlctx->runtime_jit_module;
+    auto runtime = llvm_context_->runtime_jit_module;
     runtime->call<void *>("runtime_" + key, llvm_runtime_,
                           std::forward<Args>(args)...);
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
@@ -120,17 +113,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   cuda::CudaDevice *cuda_device();
   cpu::CpuDevice *cpu_device();
-
-  void initialize_host();
-
-  /**
-   * Initializes Program#llvm_context_device, if this has not been done.
-   *
-   * Not thread safe.
-   */
-  void maybe_initialize_cuda_llvm_context();
-
-  void maybe_initialize_amdgpu_llvm_context();
 
   void finalize();
 
@@ -146,8 +128,7 @@ class LlvmRuntimeExecutor {
   //
   // TaichiLLVMContext is a thread-safe class with llvm::Module for compilation
   // and JITSession/JITModule for runtime loading & execution
-  std::unique_ptr<TaichiLLVMContext> llvm_context_host_{nullptr};
-  std::unique_ptr<TaichiLLVMContext> llvm_context_device_{nullptr};
+  std::unique_ptr<TaichiLLVMContext> llvm_context_{nullptr};
   void *llvm_runtime_{nullptr};
 
   std::unique_ptr<ThreadPool> thread_pool_{nullptr};

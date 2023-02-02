@@ -109,8 +109,9 @@ std::string StructType::to_string() const {
     if (i) {
       s += ", ";
     }
-    s += fmt::format("{}({}): {}", i, elements_[i].name,
-                     elements_[i].type->to_string());
+    s += fmt::format("{}: (name: {}, type: {}, offset: {})", i,
+                     elements_[i].name, elements_[i].type->to_string(),
+                     elements_[i].offset);
   }
   s += ")";
   return s;

@@ -8,6 +8,8 @@ namespace vulkan {
 class TI_DLL_EXPORT SwapChain {
  public:
   void init(class AppContext *app_context);
+  ~SwapChain();
+
   uint32_t width();
   uint32_t height();
 
@@ -22,14 +24,11 @@ class TI_DLL_EXPORT SwapChain {
 
   void write_image(const std::string &filename);
 
-  void cleanup();
-
  private:
   void create_depth_resources();
 
-  taichi::lang::DeviceAllocation depth_allocation_;
-
-  std::unique_ptr<taichi::lang::Surface> surface_;
+  std::unique_ptr<taichi::lang::Surface> surface_{nullptr};
+  taichi::lang::DeviceImageUnique depth_allocation_{nullptr};
 
   std::vector<uint32_t> image_buffer_data_;
 

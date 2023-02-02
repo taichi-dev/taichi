@@ -195,7 +195,7 @@ void LlvmRuntimeExecutor::synchronize() {
 #else
     TI_ERROR("No CUDA support");
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
 #else
@@ -217,7 +217,7 @@ uint64 LlvmRuntimeExecutor::fetch_result_uint64(int i, uint64 *result_buffer) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
                                                        sizeof(uint64));
@@ -387,7 +387,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
@@ -405,7 +405,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     alloc = amdgpu_device()->import_memory(root_buffer, rounded_size);
 #else
@@ -464,7 +464,7 @@ cuda::CudaDevice *LlvmRuntimeExecutor::cuda_device() {
 }
 
 amdgpu::AmdgpuDevice *LlvmRuntimeExecutor::amdgpu_device() {
-  if (config_->arch != Arch::amdgpu) {
+  if (config_.arch != Arch::amdgpu) {
     TI_ERROR("arch is not amdgpu");
   }
   return static_cast<amdgpu::AmdgpuDevice *>(device_.get());
@@ -506,7 +506,7 @@ void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().memset((void *)ptr, data, size);
 #else
@@ -525,7 +525,7 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     return (uint64_t *)amdgpu_device()->get_alloc_info(alloc).ptr;
 #else
@@ -539,11 +539,11 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 void LlvmRuntimeExecutor::finalize() {
   profiler_ = nullptr;
   if (preallocated_device_buffer_ != nullptr) {
-    if (config_->arch == Arch::cuda) {
+    if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
       cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
-    } else if (config_->arch == Arch::amdgpu) {
+    } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
       amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
 #endif
@@ -585,17 +585,17 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 #else
     TI_NOT_IMPLEMENTED
 #endif
-  } else if (config_->arch == Arch::amdgpu) {
+  } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().malloc(
         (void **)result_buffer_ptr,
         sizeof(uint64) * taichi_result_buffer_entries);
     const auto total_mem = AMDGPUContext::get_instance().get_total_memory();
-    if (config_->device_memory_fraction == 0) {
-      TI_ASSERT(config_->device_memory_GB > 0);
-      prealloc_size = std::size_t(config_->device_memory_GB * (1UL << 30));
+    if (config_.device_memory_fraction == 0) {
+      TI_ASSERT(config_.device_memory_GB > 0);
+      prealloc_size = std::size_t(config_.device_memory_GB * (1UL << 30));
     } else {
-      prealloc_size = std::size_t(config_->device_memory_fraction * total_mem);
+      prealloc_size = std::size_t(config_.device_memory_fraction * total_mem);
     }
     TI_ASSERT(prealloc_size <= total_mem);
 
@@ -630,7 +630,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   // Number of random states. One per CPU/CUDA thread.
   int num_rand_states = 0;
 
-  if (config_->arch == Arch::cuda || config_->arch == Arch::amdgpu) {
+  if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
     // It is important to make sure that every CUDA thread has its own random
     // state so that we do not need expensive per-state locks.

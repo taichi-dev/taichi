@@ -10,6 +10,8 @@
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"
 
+#include "taichi/program/kernel_profiler.h"
+
 namespace taichi::lang {
 
 enum class RhiResult {
@@ -778,6 +780,8 @@ class TI_DLL_EXPORT Device {
   inline void set_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
   }
+
+  KernelProfilerBase *profiler_;
 };
 
 class TI_DLL_EXPORT Surface {

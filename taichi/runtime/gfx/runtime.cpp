@@ -549,6 +549,9 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
+    if (device_->profiler_) {
+      device_->profiler_->start(attribs.name);
+    }
     status = current_cmdlist_->dispatch(group_x);
     TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
                 status);
@@ -693,7 +696,9 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-
+  if (device_->profiler_) {
+    device_->profiler_->start(std::string("init_non_root_buffers"));
+  }
   stream->submit_synced(cmdlist.get());
 }
 
@@ -712,6 +717,9 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   TI_ASSERT(res == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
+  if (device_->profiler_) {
+    device_->profiler_->start(std::string("add_root_buffer"));
+  }
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
   // cache the root buffer size

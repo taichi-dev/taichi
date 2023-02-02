@@ -854,7 +854,8 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
-#if !defined(__APPLE__)
+// #if !defined(__APPLE__)
+#if 1
       query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
 #else
       query_pool_(),
@@ -869,7 +870,8 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   vkBeginCommandBuffer(buffer->buffer, &info);
 
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-#if !defined(__APPLE__)
+// #if !defined(__APPLE__)
+#if 1
   vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       query_pool_->query_pool, 0);
@@ -1575,7 +1577,8 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-#if !defined(__APPLE__)
+// #if !defined(__APPLE__)
+#if 1
     vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                         query_pool_->query_pool, 1);
 #endif
@@ -1605,6 +1608,7 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   compute_queue_family_index_ = params.compute_queue_family_index;
   graphics_queue_ = params.graphics_queue;
   graphics_queue_family_index_ = params.graphics_queue_family_index;
+  profiler_ = params.profiler;
 
   create_vma_allocator();
   RHI_ASSERT(new_descriptor_pool() == RhiResult::success &&
@@ -2029,7 +2033,9 @@ void VulkanStream::command_sync() {
 
   VkPhysicalDeviceProperties props{};
   vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
+  // device_.profiler_->stop(duration_ms);
 
+  double kernel_time = 0.0;
   for (const auto &cmdbuf : submitted_cmdbuffers_) {
     if (cmdbuf.query_pool == nullptr) {
       continue;
@@ -2038,7 +2044,8 @@ void VulkanStream::command_sync() {
     double duration_us = 0.0;
 
 // Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-#if !defined(__APPLE__)
+// #if !defined(__APPLE__)
+#if 1
     uint64_t t[2];
     vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
                           2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
@@ -2047,6 +2054,11 @@ void VulkanStream::command_sync() {
 #endif
 
     device_time_elapsed_us_ += duration_us;
+    if (device_.profiler_) {
+      device_.profiler_->stop(duration_us / 1000.0);
+    }
+
+    kernel_time += duration_us / 1000.0;
   }
 
   submitted_cmdbuffers_.clear();

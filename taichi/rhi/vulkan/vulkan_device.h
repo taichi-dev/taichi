@@ -4,6 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_api.h"
 #include "taichi/rhi/vulkan/vulkan_utils.h"
 #include "taichi/common/ref_counted_pool.h"
+#include "taichi/program/kernel_profiler.h"
 
 #include "vk_mem_alloc.h"
 
@@ -618,6 +619,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     uint32_t compute_queue_family_index{0};
     VkQueue graphics_queue{VK_NULL_HANDLE};
     uint32_t graphics_queue_family_index{0};
+    KernelProfilerBase *profiler;
   };
 
   VulkanDevice();

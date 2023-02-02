@@ -78,6 +78,8 @@ class KernelProfilerBase {
 
   virtual void stop(){TI_NOT_IMPLEMENTED};
 
+  virtual void stop(double duration_ms){TI_NOT_IMPLEMENTED};
+
   virtual void stop(TaskHandle){TI_NOT_IMPLEMENTED};
 
   static void profiler_stop(KernelProfilerBase *profiler);

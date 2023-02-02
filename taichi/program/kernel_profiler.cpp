@@ -5,6 +5,8 @@
 #include "taichi/rhi/cuda/cuda_profiler.h"
 #include "taichi/system/timeline.h"
 
+#include <queue>
+
 namespace taichi::lang {
 
 void KernelProfileStatisticalResult::insert_record(double t) {
@@ -114,6 +116,49 @@ class DefaultProfiler : public KernelProfilerBase {
   std::string event_name_;
 };
 
+// The kernel profiler that accepts records from an external timer
+class KernelProfilerUsingExternalTimer : public KernelProfilerBase {
+ public:
+  void start(const std::string &kernel_name) override {
+    kernel_names.push(kernel_name);
+  }
+
+  void clear() override {
+  }
+
+  void sync() override {
+  }
+
+  void update() override {
+  }
+
+  void stop(double duration_ms) override {
+    // Trace record
+    KernelProfileTracedRecord record;
+    if (kernel_names.size() > 0) {
+      record.name = kernel_names.front();
+      kernel_names.pop();
+    }
+    record.kernel_elapsed_time_in_ms = duration_ms;
+    traced_records_.push_back(record);
+    // Count record
+    auto it =
+        std::find_if(statistical_results_.begin(), statistical_results_.end(),
+                     [&](KernelProfileStatisticalResult &r) {
+                       return r.name == record.name;
+                     });
+    if (it == statistical_results_.end()) {
+      statistical_results_.emplace_back(record.name);
+      it = std::prev(statistical_results_.end());
+    }
+    it->insert_record(duration_ms);
+    total_time_ms_ += duration_ms;
+  }
+
+ private:
+  std::queue<std::string> kernel_names;
+};
+
 }  // namespace
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
@@ -125,6 +170,8 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
+  } else if (arch == Arch::vulkan) {
+    return std::make_unique<KernelProfilerUsingExternalTimer>();
   } else {
     return std::make_unique<DefaultProfiler>();
   }

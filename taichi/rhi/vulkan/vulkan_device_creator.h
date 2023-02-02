@@ -7,6 +7,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 
 #include <taichi/rhi/device.h>
+#include <taichi/program/kernel_profiler.h>
 
 #include <memory>
 #include <optional>
@@ -56,6 +57,7 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
     // custom surface creator
     std::function<VkSurfaceKHR(VkInstance)> surface_creator;
     bool enable_validation_layer{false};
+    KernelProfilerBase *profiler;
   };
 
   explicit VulkanDeviceCreator(const Params &params);

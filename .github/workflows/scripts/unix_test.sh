@@ -17,11 +17,15 @@ setup_python
 
 # - [Taichi Runtime Compatibility Test] ----------------------------------------
 
-# Install Taichi nightly and generate shader with nightly builds.
-pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
-pip3 install -r requirements_test.txt
-python3 tests/generate_compat_test_modules.py
-python3 -m pip uninstall taichi-nightly -y
+if [[ $PLATFORM == *"m1"* ]]; then
+    echo "ignored compatibility test on apple m1"
+else
+    # Install Taichi nightly and generate shader with nightly builds.
+    pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+    pip3 install -r requirements_test.txt
+    python3 tests/generate_compat_test_modules.py
+    python3 -m pip uninstall taichi-nightly -y
+fi
 
 # ------------------------------------------------------------------------------
 
@@ -62,8 +66,16 @@ else
     fi
 fi
 
-# Run AOT tests with the generated modules.
-python3 tests/run_c_api_compat_test.py
+# - [Taichi Runtime Compatibility Test] ----------------------------------------
+
+if [[ $PLATFORM == *"m1"* ]]; then
+    echo "ignored compatibility test on apple m1"
+else
+    # Run AOT tests with the generated modules.
+    python3 tests/run_c_api_compat_test.py
+fi
+
+# ------------------------------------------------------------------------------
 
 ti diagnose
 ti changelog

@@ -620,8 +620,8 @@ void export_lang(py::module &m) {
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
       .def("jit_run", [](aot::CompiledGraph *self,
-                     const CompileConfig &compile_config,
-                     const py::dict &pyargs) {
+                         const CompileConfig &compile_config,
+                         const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : pyargs) {
           std::string arg_name = py::cast<std::string>(it.first);

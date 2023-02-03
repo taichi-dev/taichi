@@ -38,19 +38,21 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   return tensor_types_[key].get();
 }
 
-Type *TypeFactory::get_struct_type(const std::vector<StructMember> &elements) {
+Type *TypeFactory::get_struct_type(const std::vector<StructMember> &elements,
+                                   const std::string &layout) {
   std::lock_guard<std::mutex> _(struct_mut_);
+  auto key = std::make_pair(elements, layout);
 
-  if (struct_types_.find(elements) == struct_types_.end()) {
+  if (struct_types_.find(key) == struct_types_.end()) {
     for (const auto &[type, name, __] : elements) {
       TI_ASSERT_INFO(type->is<PrimitiveType>() || type->is<TensorType>() ||
                          type->is<StructType>() || type->is<PointerType>(),
                      "Unsupported struct element type for element " + name +
                          ": " + type->to_string());
     }
-    struct_types_[elements] = std::make_unique<StructType>(elements);
+    struct_types_[key] = std::make_unique<StructType>(elements, layout);
   }
-  return struct_types_[elements].get();
+  return struct_types_[key].get();
 }
 
 Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {

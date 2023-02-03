@@ -122,11 +122,7 @@ const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
   return *(embedded_vulkan_device_->device());
 }
 
-void AppContext::cleanup() {
-  pipelines_.clear();
-  if (embedded_vulkan_device_) {
-    embedded_vulkan_device_.reset();
-  }
+AppContext::~AppContext() {
 }
 
 bool AppContext::requires_export_sharing() const {

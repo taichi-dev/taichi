@@ -46,9 +46,8 @@
 #include "llvm_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/codegen_utils.h"
-#ifdef TI_WITH_AMDGPU
+
 #include "taichi/runtime/llvm/llvm_context_pass.h"
-#endif
 
 #ifdef _WIN32
 // Travis CI seems doesn't support <filesystem>...
@@ -95,11 +94,27 @@ TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     llvm::InitializeNativeTargetAsmParser();
 #endif
   } else if (arch == Arch::dx12) {
+    // FIXME: Must initialize these before initializing Arch::dx12
+    // because it uses the jit of CPU right now.
+    llvm::InitializeNativeTarget();
+    llvm::InitializeNativeTargetAsmPrinter();
+    llvm::InitializeNativeTargetAsmParser();
+    // The dx target is used elsewhere, so we need to initialize it too.
 #if defined(TI_WITH_DX12)
     LLVMInitializeDirectXTarget();
     LLVMInitializeDirectXTargetMC();
     LLVMInitializeDirectXTargetInfo();
     LLVMInitializeDirectXAsmPrinter();
+#endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    LLVMInitializeAMDGPUTarget();
+    LLVMInitializeAMDGPUTargetMC();
+    LLVMInitializeAMDGPUTargetInfo();
+    LLVMInitializeAMDGPUAsmPrinter();
+    LLVMInitializeAMDGPUAsmParser();
+#else
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
 #if defined(TI_WITH_CUDA)
@@ -798,6 +813,10 @@ void TaichiLLVMContext::mark_function_as_cuda_kernel(llvm::Function *func,
   }
 }
 
+void TaichiLLVMContext::mark_function_as_amdgpu_kernel(llvm::Function *func) {
+  func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+}
+
 void TaichiLLVMContext::eliminate_unused_functions(
     llvm::Module *module,
     std::function<bool(const std::string &)> export_indicator) {
@@ -1033,52 +1052,21 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
   if (module->getFunction(func_name)) {
     return;
   }
-  auto struct_for_func = module->getFunction("parallel_struct_for");
-  auto &llvm_context = module->getContext();
-  auto value_map = llvm::ValueToValueMapTy();
-  auto patched_struct_for_func =
-      llvm::CloneFunction(struct_for_func, value_map);
-  patched_struct_for_func->setName(func_name);
-
-  int num_found_alloca = 0;
-  llvm::AllocaInst *alloca = nullptr;
-
-  auto char_type = llvm::Type::getInt8Ty(llvm_context);
-
-  // Find the "1" in "char tls_buffer[1]" and replace it with
-  // "tls_buffer_size"
-  for (auto &bb : *patched_struct_for_func) {
-    for (llvm::Instruction &inst : bb) {
-      auto now_alloca = llvm::dyn_cast<AllocaInst>(&inst);
-      if (!now_alloca || now_alloca->getAlign().value() != 8)
-        continue;
-      auto alloca_type = now_alloca->getAllocatedType();
-      // Allocated type should be array [1 x i8]
-      if (alloca_type->isArrayTy() && alloca_type->getArrayNumElements() == 1 &&
-          alloca_type->getArrayElementType() == char_type) {
-        alloca = now_alloca;
-        num_found_alloca++;
-      }
-    }
-  }
-  // There should be **exactly** one replacement.
-  TI_ASSERT(num_found_alloca == 1 && alloca);
-  auto new_type = llvm::ArrayType::get(char_type, tls_size);
-  {
-    llvm::IRBuilder<> builder(alloca);
-    auto *new_alloca = builder.CreateAlloca(new_type);
-    new_alloca->setAlignment(Align(8));
-    TI_ASSERT(alloca->hasOneUse());
-    auto *gep = llvm::cast<llvm::GetElementPtrInst>(alloca->user_back());
-    TI_ASSERT(gep->getPointerOperand() == alloca);
-    std::vector<Value *> indices(gep->idx_begin(), gep->idx_end());
-    builder.SetInsertPoint(gep);
-    auto *new_gep = builder.CreateInBoundsGEP(new_type, new_alloca, indices);
-    gep->replaceAllUsesWith(new_gep);
-    gep->eraseFromParent();
-    alloca->eraseFromParent();
+  llvm::legacy::PassManager module_pass_manager;
+  if (config_.arch == Arch::amdgpu) {
+#ifdef TI_WITH_AMDGPU
+    module_pass_manager.add(
+        new AMDGPUAddStructForFuncPass(func_name, tls_size));
+    module_pass_manager.run(*module);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    module_pass_manager.add(new AddStructForFuncPass(func_name, tls_size));
+    module_pass_manager.run(*module);
   }
 }
+
 std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
   return "parallel_struct_for_" + std::to_string(tls_size);
 }

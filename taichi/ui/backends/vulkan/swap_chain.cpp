@@ -34,12 +34,11 @@ void SwapChain::create_depth_resources() {
   params.export_sharing = false;
   params.usage = ImageAllocUsage::Attachment | ImageAllocUsage::Sampled;
 
-  depth_allocation_ = app_context_->device().create_image(params);
+  depth_allocation_ = app_context_->device().create_image_unique(params);
 }
 
 void SwapChain::resize(uint32_t width, uint32_t height) {
   surface().resize(width, height);
-  app_context_->device().destroy_image(depth_allocation_);
   auto [w, h] = surface_->get_size();
   curr_width_ = w;
   curr_height_ = h;
@@ -52,7 +51,7 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
   size_t copy_size = w * h * 4;
 
   Device::MemcpyCapability memcpy_cap = Device::check_memcpy_capability(
-      arr_dev_ptr, depth_allocation_.get_ptr(), copy_size);
+      arr_dev_ptr, depth_allocation_->get_ptr(), copy_size);
 
   auto &device = app_context_->device();
   auto *stream = device.get_graphics_stream();
@@ -73,11 +72,13 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     copy_params.image_aspect_flag = VK_IMAGE_ASPECT_DEPTH_BIT;
     auto [cmd_list, res] = stream->new_command_list_unique();
     assert(res == RhiResult::success && "Failed to allocate command list");
-    cmd_list->image_transition(depth_allocation_, ImageLayout::depth_attachment,
+    cmd_list->image_transition(*depth_allocation_,
+                               ImageLayout::depth_attachment,
                                ImageLayout::transfer_src);
-    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(), depth_allocation_,
-                              ImageLayout::transfer_src, copy_params);
-    cmd_list->image_transition(depth_allocation_, ImageLayout::transfer_src,
+    cmd_list->image_to_buffer(depth_staging_buffer.get_ptr(),
+                              *depth_allocation_, ImageLayout::transfer_src,
+                              copy_params);
+    cmd_list->image_transition(*depth_allocation_, ImageLayout::transfer_src,
                                ImageLayout::depth_attachment);
     stream->submit_synced(cmd_list.get());
     Device::memcpy_direct(arr_dev_ptr, depth_staging_buffer.get_ptr(),
@@ -86,7 +87,8 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
     device.dealloc_memory(depth_staging_buffer);
 
   } else if (memcpy_cap == Device::MemcpyCapability::RequiresStagingBuffer) {
-    DeviceAllocation depth_buffer = surface_->get_depth_data(depth_allocation_);
+    DeviceAllocation depth_buffer =
+        surface_->get_depth_data(*depth_allocation_);
     DeviceAllocation field_buffer(arr_dev_ptr);
     void *src_ptr{nullptr}, *dst_ptr{nullptr};
     TI_ASSERT(app_context_->device().map(depth_buffer, &src_ptr) ==
@@ -103,13 +105,11 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
   return true;
 }
 
-void SwapChain::cleanup() {
-  app_context_->device().destroy_image(depth_allocation_);
-  surface_.reset();
+SwapChain::~SwapChain() {
 }
 
 DeviceAllocation SwapChain::depth_allocation() {
-  return depth_allocation_;
+  return *depth_allocation_;
 }
 
 uint32_t SwapChain::width() {

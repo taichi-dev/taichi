@@ -799,7 +799,7 @@ class CheckpointerManager:
         self.forward_result_checpointer.clear()
 
 
-_checkpointer = CheckpointerManager(verbose=True)
+_checkpointer = CheckpointerManager(verbose=False)
 
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

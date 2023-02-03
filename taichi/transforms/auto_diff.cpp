@@ -1384,6 +1384,36 @@ class MakeAdjoint : public ADTransform {
       adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
                                       stmt->src->as<MatrixPtrStmt>()->offset);
     }
+
+    // if (src->snode->has_adjoint_checkbit()) {
+    //   // Check whether the adjoint has been fetched
+    //   TI_ASSERT(src->snode->get_adjoint_checkbit() != nullptr);
+    //   auto snode_checkbit = src->snode->get_adjoint_checkbit();
+    //   auto checkbit_ptr = insert<GlobalPtrStmt>(snode_checkbit,
+    //   src->indices); auto global_load = insert<GlobalLoadStmt>(checkbit_ptr);
+    //   auto dtype = checkbit_ptr->ret_type;
+    //   auto zero_bit = insert<ConstStmt>(TypedConstant(dtype, 0));
+    //   auto check_equal = insert<BinaryOpStmt>(BinaryOpType::cmp_eq,
+    //   global_load, zero_bit);
+
+    //   // If the checkbit equals to one (doesn't equal to zero), the adjoint
+    //   should be clear before accumulat auto new_if =
+    //   Stmt::make_typed<IfStmt>(check_equal);
+    //   new_if->set_false_statements(std::make_unique<Block>());
+    //   auto true_body = new_if->false_statements.get();
+    //   // clear the fetched adjoint
+    //   auto zero_val = Stmt::make<ConstStmt>(
+    //       TypedConstant(adj_ptr->ret_type.ptr_removed(), 0));
+    //   auto glb_store = Stmt::make<GlobalStoreStmt>(adj_ptr, zero_val.get());
+    //   VecStatement statements;
+    //   statements.push_back(std::move(zero_val));
+    //   statements.push_back(std::move(glb_store));
+    //   // Reset the checkbit mark to zero
+    //   statements.push_back(Stmt::make<GlobalStoreStmt>(checkbit_ptr,
+    //   zero_bit)); true_body->set_statements(std::move(statements));
+    //   insert_grad_stmt(std::move(new_if));
+    // }
+
     insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
@@ -1454,6 +1484,16 @@ class MakeAdjoint : public ADTransform {
       adjoint_ptr = insert<MatrixPtrStmt>(
           adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
     }
+
+    // if (dest->snode->has_adjoint_checkbit()) {
+    //   // Mark the gradient checkbit as fetched
+    //   TI_ASSERT(dest->snode->get_adjoint_checkbit() != nullptr);
+    //   auto snode_checkbit = dest->snode->get_adjoint_checkbit();
+    //   auto global_ptr = insert<GlobalPtrStmt>(snode_checkbit, dest->indices);
+    //   auto one = insert<ConstStmt>(TypedConstant(global_ptr->ret_type, 1));
+    //   insert<GlobalStoreStmt>(global_ptr, one);
+    // }
+
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
     // TODO: preserve the global load and atomic add

@@ -21,7 +21,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto &dxil_codes = module_data.dxil_codes[identifier];
   auto &compiled_kernel = module_data.kernels[identifier];
 
-  KernelCodeGenDX12 cgen(&config_, kernel);
+  KernelCodeGenDX12 cgen(config_, kernel);
   auto compiled_data = cgen.compile();
   for (auto &dxil : compiled_data.task_dxil_source_codes) {
     dxil_codes.emplace_back(dxil);
@@ -71,7 +71,7 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
   auto &dxil_codes = module_data.dxil_codes[tmpl_identifier];
   auto &compiled_kernel = module_data.kernels[tmpl_identifier];
 
-  KernelCodeGenDX12 cgen(&config_, kernel);
+  KernelCodeGenDX12 cgen(config_, kernel);
   auto compiled_data = cgen.compile();
   for (auto &dxil : compiled_data.task_dxil_source_codes) {
     dxil_codes.emplace_back(dxil);

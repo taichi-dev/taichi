@@ -30,20 +30,15 @@ class Circles final : public Renderable {
   Circles(AppContext *app_context, VertexAttributes vbo_attrs);
   void update_data(const CirclesInfo &info);
 
+  void record_this_frame_commands(lang::CommandList *command_list) override;
+
  private:
   struct UniformBufferObject {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
-    float radius;
+    float radius_w;
+    float radius_h;
   };
-
-  void init_circles(AppContext *app_context,
-                    int vertices_count,
-                    VertexAttributes vbo_attrs);
-
-  void update_ubo(glm::vec3 color, bool use_per_vertex_color, float radius);
-
-  void create_bindings() override;
 };
 
 }  // namespace vulkan

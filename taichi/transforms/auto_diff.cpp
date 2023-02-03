@@ -290,8 +290,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     if (execute_once_)
       return;
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
-          stmt->is<TernaryOpStmt>() || stmt->is<BitExtractStmt>() ||
-          stmt->is<GlobalLoadStmt>() || stmt->is<AllocaStmt>())) {
+          stmt->is<TernaryOpStmt>() || stmt->is<GlobalLoadStmt>() ||
+          stmt->is<AllocaStmt>())) {
       // TODO: this list may be incomplete
       return;
     }
@@ -550,6 +550,10 @@ class ADTransform : public IRVisitor {
     return insert<UnaryOpStmt>(UnaryOpType::sqrt, load(inp));
   }
 
+  Stmt *rsqrt(Stmt *inp) {
+    return insert<UnaryOpStmt>(UnaryOpType::rsqrt, load(inp));
+  }
+
   Stmt *mul(Stmt *op1, Stmt *op2) {
     return insert<BinaryOpStmt>(BinaryOpType::mul, load(op1), load(op2));
   }
@@ -677,10 +681,6 @@ class ADTransform : public IRVisitor {
   }
 
   void visit(LinearizeStmt *stmt) override {
-    // do nothing
-  }
-
-  void visit(BitExtractStmt *stmt) override {
     // do nothing
   }
 
@@ -848,6 +848,11 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->operand,
                  mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      accumulate(
+          stmt->operand,
+          mul(adjoint(stmt),
+              mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3)))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
@@ -1233,6 +1238,10 @@ class MakeDual : public ADTransform {
       accumulate(stmt, div(dual(stmt->operand), stmt->operand));
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt, mul(div(constant(0.5f), sqrt(stmt->operand)),
+                           dual(stmt->operand)));
+    } else if (stmt->op_type == UnaryOpType::rsqrt) {
+      accumulate(stmt, mul(mul(constant(-0.5f),
+                               pow(rsqrt(stmt->operand), constant(3))),
                            dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {

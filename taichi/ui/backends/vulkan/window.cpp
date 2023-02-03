@@ -3,6 +3,7 @@
 
 #include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
+#include "taichi/rhi/window_system.h"
 
 using taichi::lang::Program;
 
@@ -90,9 +91,6 @@ void Window::present_frame() {
 Window::~Window() {
   gui_.reset();
   renderer_.reset();
-  if (config_.show_window) {
-    glfwTerminate();
-  }
 }
 
 std::pair<uint32_t, uint32_t> Window::get_window_shape() {

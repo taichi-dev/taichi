@@ -1,16 +1,16 @@
 import re
 from os import system
 
-from taichi_json import (Alias, BitField, BuiltInType, Definition, EntryBase,
-                         Enumeration, Field, Function, Handle, Module,
-                         Structure, Union)
+from taichi_json import (Alias, BitField, BuiltInType, Callback, Definition,
+                         EntryBase, Enumeration, Field, Function, Handle,
+                         Module, Structure, Union)
 
 
 def get_type_name(x: EntryBase):
     ty = type(x)
     if ty in [BuiltInType]:
         return x.type_name
-    elif ty in [Alias, Handle, Enumeration, Structure, Union]:
+    elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
         return x.name.upper_camel_case
     elif ty in [BitField]:
         return x.name.extend('flags').upper_camel_case
@@ -110,6 +110,21 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             out += [f"  {get_field(variant)};"]
         out += ["} " + get_type_name(x) + ";"]
 
+    elif ty is Callback:
+        return_value_type = "void" if x.return_value_type == None else get_type_name(
+            x.return_value_type)
+        out += [
+            f"typedef {return_value_type} (TI_API_CALL *{get_type_name(x)})("
+        ]
+        if x.params:
+            for i, param in enumerate(x.params):
+                if i != 0:
+                    out[-1] += ","
+                if with_docs:
+                    out += get_api_field_ref(module, x, param.name)
+                out += [f"  {get_field(param)}"]
+        out += [");"]
+
     elif ty is Function:
         return_value_type = "void" if x.return_value_type == None else get_type_name(
             x.return_value_type)
@@ -143,7 +158,8 @@ def get_human_readable_name(x: EntryBase):
     elif ty is Definition:
         return f"{x.name.screaming_snake_case}"
 
-    elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union)):
+    elif isinstance(
+            x, (Handle, Enumeration, BitField, Structure, Union, Callback)):
         return f"{get_type_name(x)}"
 
     elif ty is Function:
@@ -162,7 +178,7 @@ def get_title(x: EntryBase):
         extra += " (Device Command)"
 
     if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField,
-                      Structure, Union, Function)):
+                      Structure, Union, Callback, Function)):
         return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
     else:
         raise RuntimeError(f"'{x.id}' doesn't need title")
@@ -237,7 +253,7 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
             if str(field.name) == field_name:
                 out = str(field.name)
                 break
-    elif isinstance(x, Function):
+    elif isinstance(x, (Callback, Function)):
         for field in x.params:
             if str(field.name) == field_name:
                 out = str(field.name)
@@ -331,6 +347,9 @@ if __name__ == "__main__":
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
         BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
+        BuiltInType("GLenum", "GLenum"),
+        BuiltInType("GLsizei", "GLsizei"),
+        BuiltInType("GLsizeiptr", "GLsizeiptr"),
     }
 
     for module in Module.load_all(builtin_tys):

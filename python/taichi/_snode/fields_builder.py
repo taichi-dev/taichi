@@ -74,9 +74,10 @@ class FieldsBuilder:
     def pointer(self, indices: Union[Sequence[_Axis], _Axis],
                 dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Pointer SNode on metal backend is deprecated and removed.")
+                "Pointer SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False
         return self.root.pointer(indices, dimensions)
@@ -90,9 +91,20 @@ class FieldsBuilder:
                 dimension: Union[Sequence[int], int],
                 chunk_size: Optional[int] = None):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Dynamic SNode on metal backend is deprecated and removed.")
+                "Dynamic SNode is not supported on this backend.")
+
+        if dimension >= 2**31:
+            raise TaichiRuntimeError(
+                f"The maximum dimension of a dynamic SNode cannot exceed the maximum value of a 32-bit signed integer: Got {dimension} > 2**31-1"
+            )
+        if chunk_size is not None and chunk_size >= 2**31:
+            raise TaichiRuntimeError(
+                f"Chunk size cannot exceed the maximum value of a 32-bit signed integer: Got {chunk_size} > 2**31-1"
+            )
+
         self._check_not_finalized()
         self.empty = False
         return self.root.dynamic(index, dimension, chunk_size)
@@ -100,9 +112,10 @@ class FieldsBuilder:
     def bitmasked(self, indices: Union[Sequence[_Axis], _Axis],
                   dimensions: Union[Sequence[int], int]):
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
-        if impl.current_cfg().arch == _ti_core.metal:
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch,
+                                               _ti_core.Extension.sparse):
             raise TaichiRuntimeError(
-                "Bitmasked SNode on metal backend is deprecated and removed.")
+                "Bitmasked SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False
         return self.root.bitmasked(indices, dimensions)

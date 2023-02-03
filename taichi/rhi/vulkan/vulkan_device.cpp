@@ -552,10 +552,16 @@ void VulkanPipeline::create_graphics_pipeline(
   color_blending.blendConstants[3] = 0.0f;
 
   if (raster_params.blending.size()) {
-    RHI_ASSERT(raster_params.blending.size() ==
-                   graphics_pipeline_template_->blend_attachments.size() &&
-               "RasterParams::blending (size={}) must either be zero sized "
-               "or match the number of fragment shader outputs (size={}).");
+    if (raster_params.blending.size() != color_blending.attachmentCount) {
+      std::array<char, 256> buf;
+      snprintf(buf.data(), buf.size(),
+               "RasterParams::blending (size=%u) must either be zero sized "
+               "or match the number of fragment shader outputs (size=%u).",
+               uint32_t(raster_params.blending.size()),
+               uint32_t(color_blending.attachmentCount));
+      RHI_LOG_ERROR(buf.data());
+      RHI_ASSERT(false);
+    }
 
     for (int i = 0; i < raster_params.blending.size(); i++) {
       auto &state = graphics_pipeline_template_->blend_attachments[i];
@@ -744,6 +750,8 @@ RhiReturn<vkapi::IVkDescriptorSet> VulkanResourceSet::finalize() {
   std::forward_list<VkDescriptorBufferInfo> buffer_infos;
   std::forward_list<VkDescriptorImageInfo> image_infos;
   std::vector<VkWriteDescriptorSet> desc_writes;
+
+  set_->ref_binding_objs.clear();
 
   for (auto &pair : bindings_) {
     uint32_t binding = pair.first;
@@ -1616,15 +1624,18 @@ VulkanDevice::~VulkanDevice() {
   // be properly deallocated before VulkanDevice destruction. This isn't
   // the most proper fix but is less intrusive compared to other
   // approaches.
+  vkDeviceWaitIdle(device_);
+
   allocations_.clear();
   image_allocations_.clear();
 
-  vkDeviceWaitIdle(device_);
-
-  desc_pool_ = nullptr;
+  compute_streams_.reset();
+  graphics_streams_.reset();
 
   framebuffer_pools_.clear();
   renderpass_pools_.clear();
+  desc_set_layouts_.clear();
+  desc_pool_ = nullptr;
 
   vmaDestroyAllocator(allocator_);
   vmaDestroyAllocator(allocator_export_);
@@ -1691,6 +1702,8 @@ RhiResult VulkanDevice::create_pipeline(Pipeline **out_pipeline,
 
 DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   AllocationInternal &alloc = allocations_.acquire();
+
+  RHI_ASSERT(params.size > 0);
 
   VkBufferCreateInfo buffer_info{};
   buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1768,7 +1781,13 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
 
-  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+  if (get_caps().get(DeviceCapability::spirv_has_physical_storage_buffer) &&
+      ((alloc_info.usage & VK_BUFFER_USAGE_STORAGE_BUFFER_BIT) ||
+       (alloc_info.usage &
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR) ||
+       (alloc_info.usage &
+        VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR) ||
+       (alloc_info.usage & VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR))) {
     buffer_info.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
   }
 
@@ -2793,12 +2812,6 @@ VulkanSurface::~VulkanSurface() {
     }
     swapchain_images_.clear();
   }
-  if (depth_buffer_ != kDeviceNullAllocation) {
-    device_->dealloc_memory(depth_buffer_);
-  }
-  if (screenshot_buffer_ != kDeviceNullAllocation) {
-    device_->dealloc_memory(screenshot_buffer_);
-  }
 }
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
@@ -2864,11 +2877,11 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   auto [w, h] = get_size();
   size_t size_bytes = size_t(w * h) * sizeof(float);
 
-  if (depth_buffer_ == kDeviceNullAllocation) {
+  if (!depth_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    depth_buffer_ = device_->allocate_memory(params);
+    depth_buffer_ = device_->allocate_memory_unique(params);
   }
 
   BufferImageCopyParams copy_params;
@@ -2879,13 +2892,13 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
                              ImageLayout::transfer_src);
-  cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
+  cmd_list->image_to_buffer(depth_buffer_->get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
                              ImageLayout::depth_attachment);
   stream->submit_synced(cmd_list.get());
 
-  return depth_buffer_;
+  return *depth_buffer_;
 }
 
 DeviceAllocation VulkanSurface::get_image_data() {
@@ -2907,11 +2920,11 @@ DeviceAllocation VulkanSurface::get_image_data() {
   }
   */
 
-  if (screenshot_buffer_ == kDeviceNullAllocation) {
+  if (!screenshot_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    screenshot_buffer_ = device_->allocate_memory(params);
+    screenshot_buffer_ = device_->allocate_memory_unique(params);
   }
 
   /*
@@ -2936,7 +2949,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   cmd_list->image_transition(img_alloc, ImageLayout::present_src,
                              ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory
-  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
+  cmd_list->image_to_buffer(screenshot_buffer_->get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
@@ -2948,7 +2961,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   */
   stream->submit_synced(cmd_list.get());
 
-  return screenshot_buffer_;
+  return *screenshot_buffer_;
 }
 
 VulkanStream::VulkanStream(VulkanDevice &device,

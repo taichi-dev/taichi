@@ -31,6 +31,9 @@ class SceneLines final : public Renderable {
 
   void update_data(const SceneLinesInfo &info, const Scene &scene);
 
+  void record_prepass_this_frame_commands(
+      taichi::lang::CommandList *command_list) override;
+
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
@@ -38,20 +41,24 @@ class SceneLines final : public Renderable {
   struct UniformBufferObject {
     Scene::SceneUniformBuffer scene;
     alignas(16) glm::vec3 color;
-    int use_per_vertex_color;
+    float line_width;
+    int per_vertex_color_offset;
+    int vertex_stride;
+    int start_vertex;
+    int start_index;
+    int num_vertices;
+    int is_indexed;
+    float aspect_ratio;
   };
 
-  void init_scene_lines(AppContext *app_context,
-                        int vertices_count,
-                        int indices_count);
+  void create_graphics_pipeline() final;
 
-  void update_ubo(const SceneLinesInfo &info, const Scene &scene);
+  uint64_t lines_count_{0};
 
-  void cleanup() override;
+  std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};
 
-  void create_bindings() override;
-
-  float curr_width_;
+  std::unique_ptr<taichi::lang::DeviceAllocationGuard> vbo_translated_{nullptr};
+  std::unique_ptr<taichi::lang::DeviceAllocationGuard> ibo_translated_{nullptr};
 };
 
 }  // namespace vulkan

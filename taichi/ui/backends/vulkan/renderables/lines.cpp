@@ -11,72 +11,136 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void Lines::update_data(const LinesInfo &info) {
-  Renderable::update_data(info.renderable_info);
+void Lines::create_graphics_pipeline() {
+  if (!pipeline_.get()) {
+    auto vert_code = read_file(config_.vertex_shader_path);
+    auto frag_code = read_file(config_.fragment_shader_path);
 
-  update_ubo(info.color, info.renderable_info.has_per_vertex_color);
+    std::vector<PipelineSourceDesc> source(2);
+    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+                 frag_code.size(), PipelineStageType::fragment};
+    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+                 vert_code.size(), PipelineStageType::vertex};
 
-  curr_width_ = info.width;
-}
+    RasterParams raster_params;
+    raster_params.prim_topology = TopologyType::Triangles;
+    raster_params.polygon_mode = config_.polygon_mode;
+    raster_params.depth_test = true;
+    raster_params.depth_write = true;
 
-void Lines::init_lines(AppContext *app_context,
-                       int vertices_count,
-                       int indices_count) {
-  RenderableConfig config = {
-      vertices_count,
-      indices_count,
-      vertices_count,
-      indices_count,
-      vertices_count,
-      0,
-      indices_count,
-      0,
-      sizeof(UniformBufferObject),
-      0,
-      true,
-      app_context->config.package_path + "/shaders/Lines_vk_vert.spv",
-      app_context->config.package_path + "/shaders/Lines_vk_frag.spv",
-      TopologyType::Lines,
-  };
+    if (config_.blending) {
+      raster_params.blending.push_back(BlendingParams());
+    }
 
-  Renderable::init(config, app_context);
-  Renderable::init_render_resources();
-}
+    std::vector<VertexInputBinding> vertex_inputs = {{/*binding=*/0,
+                                                      sizeof(float) * 4,
+                                                      /*instance=*/false}};
+    // TODO: consider using uint8 for colors and normals
+    std::vector<VertexInputAttribute> vertex_attribs;
+    vertex_attribs.push_back({/*location=*/0, /*binding=*/0,
+                              /*format=*/BufferFormat::rg32f,
+                              /*offset=*/0});
+    vertex_attribs.push_back({/*location=*/1, /*binding=*/0,
+                              /*format=*/BufferFormat::r32u,
+                              /*offset=*/sizeof(float) * 2});
 
-Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
-  init_lines(app_context, 4, 6);
-}
+    pipeline_ = app_context_->device().create_raster_pipeline(
+        source, raster_params, vertex_inputs, vertex_attribs);
+  }
 
-void Lines::update_ubo(glm::vec3 color, bool use_per_vertex_color) {
-  UniformBufferObject ubo{color, (int)use_per_vertex_color};
-
-  void *mapped{nullptr};
-  TI_ASSERT(app_context_->device().map(uniform_buffer_, &mapped) ==
-            RhiResult::success);
-  memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(uniform_buffer_);
-}
-
-void Lines::create_bindings() {
-  Renderable::create_bindings();
-  resource_set_->buffer(0, uniform_buffer_);
-}
-
-void Lines::record_this_frame_commands(CommandList *command_list) {
-  command_list->bind_pipeline(pipeline_.get());
-  command_list->bind_raster_resources(raster_state_.get());
-  command_list->bind_shader_resources(resource_set_.get());
-  command_list->set_line_width(curr_width_ * app_context_->config.height);
-
-  if (indexed_) {
-    command_list->draw_indexed(config_.indices_count, 0, 0);
-  } else {
-    command_list->draw(config_.vertices_count, 0);
+  if (!quad_expand_pipeline_.get()) {
+    auto comp_code = read_file(app_context_->config.package_path +
+                               "/shaders/lines2quad_vk_comp.spv");
+    auto [pipeline, res] = app_context_->device().create_pipeline_unique(
+        {PipelineSourceType::spirv_binary, comp_code.data(), comp_code.size(),
+         PipelineStageType::compute});
+    TI_ASSERT(res == RhiResult::success);
+    quad_expand_pipeline_ = std::move(pipeline);
   }
 }
 
-void Lines::cleanup() {
-  Renderable::cleanup();
+Lines::Lines(AppContext *app_context, VertexAttributes vbo_attrs) {
+  RenderableConfig config;
+  config.ubo_size = sizeof(UniformBufferObject);
+  config.blending = true;
+  config.fragment_shader_path =
+      app_context->config.package_path + "/shaders/Lines_vk_frag.spv";
+  config.vertex_shader_path =
+      app_context->config.package_path + "/shaders/Lines_vk_vert.spv";
+
+  Renderable::init(config, app_context);
+}
+
+void Lines::update_data(const LinesInfo &info) {
+  Renderable::update_data(info.renderable_info);
+
+  lines_count_ =
+      (indexed_ ? config_.draw_index_count * 2 : config_.draw_vertex_count) / 2;
+
+  UniformBufferObject ubo{};
+  ubo.color = info.color;
+  ubo.line_width = info.width;
+  ubo.per_vertex_color_offset = info.renderable_info.has_per_vertex_color
+                                    ? offsetof(Vertex, color) / sizeof(float)
+                                    : 0;
+  ubo.vertex_stride = sizeof(Vertex) / sizeof(float);
+  ubo.start_vertex = config_.draw_first_vertex;
+  ubo.start_index = config_.draw_first_index;
+  ubo.num_vertices = lines_count_ * 2;
+  ubo.is_indexed = indexed_ ? 1 : 0;
+  ubo.aspect_ratio =
+      float(app_context_->config.width) / float(app_context_->config.height);
+
+  void *mapped{nullptr};
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+  memcpy(mapped, &ubo, sizeof(ubo));
+  app_context_->device().unmap(*uniform_buffer_);
+}
+
+void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
+  vbo_translated_.reset();
+  ibo_translated_.reset();
+
+  vbo_translated_ = app_context_->device().allocate_memory_unique(
+      {/*size=*/uint64_t(sizeof(glm::vec4) * 4 * lines_count_),
+       /*host_write=*/false,
+       /*host_read=*/false,
+       /*export_sharing=*/false,
+       /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
+
+  ibo_translated_ = app_context_->device().allocate_memory_unique(
+      {/*size=*/uint64_t(sizeof(int) * 6 * lines_count_),
+       /*host_write=*/false,
+       /*host_read=*/false,
+       /*export_sharing=*/false,
+       /*usage=*/AllocUsage::Storage | AllocUsage::Index});
+
+  resource_set_->rw_buffer(0, vertex_buffer_->get_ptr(0));
+  if (index_buffer_) {
+    resource_set_->rw_buffer(1, index_buffer_->get_ptr(0));
+  } else {
+    // Just bind a dummy buffer
+    resource_set_->rw_buffer(1, vertex_buffer_->get_ptr(0));
+  }
+  resource_set_->rw_buffer(2, vbo_translated_->get_ptr(0));
+  resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
+  resource_set_->buffer(4, uniform_buffer_->get_ptr(0));
+
+  command_list->bind_pipeline(quad_expand_pipeline_.get());
+  command_list->bind_shader_resources(resource_set_.get());
+  command_list->dispatch(int(ceil(lines_count_ / 256.0f)));
+  command_list->buffer_barrier(*vbo_translated_);
+  command_list->buffer_barrier(*ibo_translated_);
+}
+
+void Lines::record_this_frame_commands(CommandList *command_list) {
+  auto raster_state = app_context_->device().create_raster_resources_unique();
+  raster_state->vertex_buffer(vbo_translated_->get_ptr(0), 0);
+  raster_state->index_buffer(ibo_translated_->get_ptr(0), 32);
+
+  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_raster_resources(raster_state.get());
+  command_list->draw_indexed(lines_count_ * 6, 0, 0);
 }
 
 }  // namespace vulkan

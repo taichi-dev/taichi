@@ -189,7 +189,6 @@ void export_lang(py::module &m) {
       .def_readwrite("advanced_optimization",
                      &CompileConfig::advanced_optimization)
       .def_readwrite("ad_stack_size", &CompileConfig::ad_stack_size)
-      .def_readwrite("dynamic_index", &CompileConfig::dynamic_index)
       .def_readwrite("flatten_if", &CompileConfig::flatten_if)
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
@@ -329,7 +328,8 @@ void export_lang(py::module &m) {
 
   py::class_<Program>(m, "Program")
       .def(py::init<>())
-      .def("config", &Program::config)
+      .def("config", &Program::compile_config,
+           py::return_value_policy::reference)
       .def("sync_kernel_profiler",
            [](Program *program) { program->profiler->sync(); })
       .def("update_kernel_profiler",
@@ -372,7 +372,6 @@ void export_lang(py::module &m) {
       .def("print_memory_profiler_info", &Program::print_memory_profiler_info)
       .def("finalize", &Program::finalize)
       .def("get_total_compilation_time", &Program::get_total_compilation_time)
-      .def("visualize_layout", &Program::visualize_layout)
       .def("get_snode_num_dynamically_allocated",
            &Program::get_snode_num_dynamically_allocated)
       .def("synchronize", &Program::synchronize)
@@ -394,8 +393,8 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix_builder",
            [](Program *program, int n, int m, uint64 max_num_entries,
               DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
+             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
+                             !arch_is_cuda(program->compile_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return SparseMatrixBuilder(n, m, max_num_entries, dtype,
                                         storage_format, program);
@@ -403,18 +402,18 @@ void export_lang(py::module &m) {
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
+             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
+                             !arch_is_cuda(program->compile_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
-             if (arch_is_cpu(program->this_thread_config().arch))
+             if (arch_is_cpu(program->compile_config().arch))
                return make_sparse_matrix(n, m, dtype, storage_format);
              else
                return make_cu_sparse_matrix(n, m, dtype);
            })
       .def("make_sparse_matrix_from_ndarray",
            [](Program *program, SparseMatrix &sm, const Ndarray &ndarray) {
-             TI_ERROR_IF(!arch_is_cpu(program->this_thread_config().arch) &&
-                             !arch_is_cuda(program->this_thread_config().arch),
+             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
+                             !arch_is_cuda(program->compile_config().arch),
                          "SparseMatrix only supports CPU and CUDA for now.");
              return make_sparse_matrix_from_ndarray(program, sm, ndarray);
            })
@@ -539,8 +538,20 @@ void export_lang(py::module &m) {
         program->destroy_snode_tree(snode_tree);
       });
 
+  py::class_<DeviceAllocation>(m, "DeviceAllocation")
+      .def(py::init([](uint64_t device, uint64_t alloc_id) -> DeviceAllocation {
+             DeviceAllocation alloc;
+             alloc.device = (Device *)device;
+             alloc.alloc_id = (DeviceAllocationId)alloc_id;
+             return alloc;
+           }),
+           py::arg("device"), py::arg("alloc_id"))
+      .def_readonly("device", &DeviceAllocation::device)
+      .def_readonly("alloc_id", &DeviceAllocation::alloc_id);
+
   py::class_<Ndarray>(m, "Ndarray")
       .def("device_allocation_ptr", &Ndarray::get_device_allocation_ptr_as_int)
+      .def("device_allocation", &Ndarray::get_device_allocation)
       .def("element_size", &Ndarray::get_element_size)
       .def("nelement", &Ndarray::get_nelement)
       .def("read_int", &Ndarray::read_int)
@@ -694,7 +705,7 @@ void export_lang(py::module &m) {
       .def("__call__",
            [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
              py::gil_scoped_release release;
-             kernel->operator()(launch_ctx);
+             kernel->operator()(kernel->program->compile_config(), launch_ctx);
            });
 
   py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")

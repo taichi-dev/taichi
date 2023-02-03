@@ -372,12 +372,6 @@ struct PyWindow {
                         show_window,
                         package_path,
                         ti_arch};
-    // todo: support other ggui backends
-    if (!(taichi::arch_is_cpu(ti_arch) || ti_arch == Arch::vulkan ||
-          ti_arch == Arch::cuda)) {
-      throw std::runtime_error(
-          "GGUI is only supported on cpu, vulkan and cuda backends");
-    }
     if (!lang::vulkan::is_vulkan_api_available()) {
       throw std::runtime_error("Vulkan must be available for GGUI");
     }
@@ -560,18 +554,15 @@ void export_ggui(py::module &m) {
 
   py::class_<FieldInfo>(m, "FieldInfo")
       .def(py::init<>())
-      .def_property("field_type", &FieldInfo::get_field_type,
-                    &FieldInfo::set_field_type)
-      .def_property("matrix_rows", &FieldInfo::get_matrix_rows,
-                    &FieldInfo::set_matrix_rows)
-      .def_property("matrix_cols", &FieldInfo::get_field_type,
-                    &FieldInfo::set_matrix_cols)
-      .def_property("dtype", &FieldInfo::get_dtype, &FieldInfo::set_dtype)
+      .def_property("valid", &FieldInfo::get_valid, &FieldInfo::set_valid)
+      .def_property("num_elements", &FieldInfo::get_num_elements,
+                    &FieldInfo::set_num_elements)
+      .def_property("shape", &FieldInfo::get_shape, &FieldInfo::set_shape)
       .def_property("field_source", &FieldInfo::get_field_source,
                     &FieldInfo::set_field_source)
-      .def_property("snode", &FieldInfo::get_snode, &FieldInfo::set_snode)
-      .def_property("shape", &FieldInfo::get_shape, &FieldInfo::set_shape)
-      .def_property("valid", &FieldInfo::get_valid, &FieldInfo::set_valid);
+      .def_property("dtype", &FieldInfo::get_dtype, &FieldInfo::set_dtype)
+      .def_property("dev_alloc", &FieldInfo::get_dev_alloc,
+                    &FieldInfo::set_dev_alloc);
 
   py::enum_<EventType>(m, "EventType")
       .value("Any", EventType::Any)
@@ -580,14 +571,8 @@ void export_ggui(py::module &m) {
       .export_values();
 
   py::enum_<FieldSource>(m, "FieldSource")
-      .value("TaichiCuda", FieldSource::TaichiCuda)
-      .value("TaichiX64", FieldSource::TaichiX64)
-      .value("TaichiVulkan", FieldSource::TaichiVulkan)
-      .export_values();
-
-  py::enum_<FieldType>(m, "FieldType")
-      .value("Scalar", FieldType::Scalar)
-      .value("Matrix", FieldType::Matrix)
+      .value("TaichiNDarray", FieldSource::TaichiNDarray)
+      .value("HostMappedPtr", FieldSource::HostMappedPtr)
       .export_values();
 
   py::enum_<ProjectionMode>(m, "ProjectionMode")

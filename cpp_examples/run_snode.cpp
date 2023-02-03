@@ -40,6 +40,7 @@ void run_snode() {
   using namespace taichi;
   using namespace lang;
   auto program = Program(Arch::x64);
+  const auto &config = program.compile_config();
   /*CompileConfig config_print_ir;
   config_print_ir.print_ir = true;
   prog_.config = config_print_ir;*/  // print_ir = True
@@ -132,10 +133,10 @@ void run_snode() {
   ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_arr.data()),
                                             n, {n});
 
-  (*kernel_init)(ctx_init);
-  (*kernel_ret)(ctx_ret);
+  (*kernel_init)(config, ctx_init);
+  (*kernel_ret)(config, ctx_ret);
   std::cout << program.fetch_result<int>(0) << std::endl;
-  (*kernel_ext)(ctx_ext);
+  (*kernel_ext)(config, ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_arr[i] << " ";
   std::cout << std::endl;

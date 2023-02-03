@@ -39,22 +39,27 @@ class GLResourceSet : public ShaderResourceSet {
     size_t size;
   };
 
-  const std::unordered_map<uint32_t, BufferBinding> &ssbo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ssbo_binding_map() const {
     return ssbo_binding_map_;
   }
 
-  const std::unordered_map<uint32_t, BufferBinding> &ubo_binding_map() {
+  const std::unordered_map<uint32_t, BufferBinding> &ubo_binding_map() const {
     return ubo_binding_map_;
   }
 
-  const std::unordered_map<uint32_t, GLuint> &texture_binding_map() {
+  const std::unordered_map<uint32_t, GLuint> &texture_binding_map() const {
     return texture_binding_map_;
+  }
+
+  const std::unordered_map<uint32_t, GLuint> &rw_image_binding_map() const {
+    return rw_image_binding_map_;
   }
 
  private:
   std::unordered_map<uint32_t, BufferBinding> ssbo_binding_map_;
   std::unordered_map<uint32_t, BufferBinding> ubo_binding_map_;
   std::unordered_map<uint32_t, GLuint> texture_binding_map_;
+  std::unordered_map<uint32_t, GLuint> rw_image_binding_map_;
 };
 
 class GLPipeline : public Pipeline {
@@ -132,19 +137,25 @@ class GLCommandList : public CommandList {
     void execute() override;
   };
 
-  struct CmdBindBufferToIndex : public Cmd {
-    GLuint buffer{0};
-    GLuint index{0};
-    GLuint offset{0};
-    GLuint size{0};
-    GLenum target{GL_SHADER_STORAGE_BUFFER};
-    void execute() override;
-  };
+  struct CmdBindResources : public Cmd {
+    struct BufferBinding {
+      GLuint buffer{0};
+      GLuint index{0};
+      GLuint offset{0};
+      GLuint size{0};
+      GLenum target{GL_SHADER_STORAGE_BUFFER};
+    };
 
-  struct CmdBindTextureToIndex : public Cmd {
-    GLuint texture{0};
-    GLuint index{0};
-    GLenum target{GL_TEXTURE_2D};
+    struct TextureBinding {
+      GLuint texture{0};
+      GLuint index{0};
+      GLenum target{GL_TEXTURE_2D};
+      GLenum format{GL_RGBA32F};
+      bool is_storage{false};
+    };
+
+    std::vector<BufferBinding> buffers;
+    std::vector<TextureBinding> textures;
     void execute() override;
   };
 
@@ -178,7 +189,7 @@ class GLCommandList : public CommandList {
 
   struct CmdBufferToImage : public Cmd {
     BufferImageCopyParams params;
-    GLuint image{0};
+    DeviceAllocationId image{0};
     GLuint buffer{0};
     size_t offset{0};
     GLDevice *device{nullptr};
@@ -187,7 +198,7 @@ class GLCommandList : public CommandList {
 
   struct CmdImageToBuffer : public Cmd {
     BufferImageCopyParams params;
-    GLuint image{0};
+    DeviceAllocationId image{0};
     GLuint buffer{0};
     size_t offset{0};
     GLDevice *device{nullptr};
@@ -216,6 +227,16 @@ class GLStream : public Stream {
 
  private:
   GLDevice *device_{nullptr};
+};
+
+struct GLImageAllocation {
+  GLenum target;
+  GLsizei levels;
+  GLenum format;
+  GLsizei width;
+  GLsizei height;
+  GLsizei depth;
+  bool external;
 };
 
 class GLDevice : public GraphicsDevice {
@@ -273,6 +294,8 @@ class GLDevice : public GraphicsDevice {
   DeviceAllocation create_image(const ImageParams &params) override;
   void destroy_image(DeviceAllocation handle) override;
 
+  DeviceAllocation import_image(GLuint texture, GLImageAllocation &&gl_image);
+
   void image_transition(DeviceAllocation img,
                         ImageLayout old_layout,
                         ImageLayout new_layout) override;
@@ -285,19 +308,14 @@ class GLDevice : public GraphicsDevice {
                        ImageLayout img_layout,
                        const BufferImageCopyParams &params) override;
 
-  GLuint get_image_gl_dims(GLuint image) const {
-    return image_to_dims_.at(image);
-  }
-
-  GLuint get_image_gl_internal_format(GLuint image) const {
-    return image_to_int_format_.at(image);
+  GLImageAllocation get_gl_image(GLuint image) const {
+    return image_allocs_.at(image);
   }
 
  private:
   GLStream stream_;
   std::unordered_map<GLuint, GLbitfield> buffer_to_access_;
-  std::unordered_map<GLuint, GLuint> image_to_dims_;
-  std::unordered_map<GLuint, GLuint> image_to_int_format_;
+  std::unordered_map<GLuint, GLImageAllocation> image_allocs_;
 };
 
 class GLSurface : public Surface {

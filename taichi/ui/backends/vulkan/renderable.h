@@ -24,9 +24,14 @@ namespace taichi {
 namespace ui {
 namespace vulkan {
 
+using taichi::lang::DeviceAllocation;
+using taichi::lang::DeviceAllocationUnique;
+using taichi::lang::DevicePtr;
+using taichi::lang::Pipeline;
+using taichi::lang::RasterResources;
+using taichi::lang::ShaderResourceSet;
+
 struct RenderableConfig {
-  int max_vertices_count{0};
-  int max_indices_count{0};
   int vertices_count{0};
   int indices_count{0};
   int draw_vertex_count{0};
@@ -43,10 +48,6 @@ struct RenderableConfig {
   taichi::lang::PolygonMode polygon_mode{taichi::lang::PolygonMode::Fill};
   VertexAttributes vbo_attrs{VboHelpers::all()};
   bool vertex_input_rate_instance{false};
-
-  size_t vbo_size() const {
-    return VboHelpers::size(vbo_attrs);
-  }
 };
 
 class Renderable {
@@ -56,55 +57,54 @@ class Renderable {
   virtual void record_this_frame_commands(
       taichi::lang::CommandList *command_list);
 
+  virtual void record_prepass_this_frame_commands(
+      taichi::lang::CommandList *command_list) {
+  }
+
   virtual ~Renderable() = default;
 
   taichi::lang::Pipeline &pipeline();
   const taichi::lang::Pipeline &pipeline() const;
 
-  virtual void cleanup();
+  static void create_buffer_with_staging(taichi::lang::Device &device,
+                                         size_t size,
+                                         taichi::lang::AllocUsage usage,
+                                         DeviceAllocationUnique &buffer,
+                                         DeviceAllocationUnique &staging);
+
+  static void copy_helper(taichi::lang::Program *prog,
+                          DevicePtr dst,
+                          DevicePtr src,
+                          DevicePtr staging,
+                          size_t size);
 
  protected:
   RenderableConfig config_;
   AppContext *app_context_;
 
-  std::unique_ptr<taichi::lang::Pipeline> pipeline_{nullptr};
-  std::unique_ptr<taichi::lang::ShaderResourceSet> resource_set_{nullptr};
-  std::unique_ptr<taichi::lang::RasterResources> raster_state_{nullptr};
+  int max_vertices_count{0};
+  int max_indices_count{0};
 
-  taichi::lang::DeviceAllocation vertex_buffer_;
-  taichi::lang::DeviceAllocation index_buffer_;
+  std::unique_ptr<Pipeline> pipeline_{nullptr};
+  std::unique_ptr<ShaderResourceSet> resource_set_{nullptr};
 
-  // these staging buffers are used to copy data into the actual buffers when
-  // `ti.cfg.arch==ti.cpu`
-  taichi::lang::DeviceAllocation staging_vertex_buffer_;
-  taichi::lang::DeviceAllocation staging_index_buffer_;
+  DeviceAllocationUnique vertex_buffer_{nullptr};
+  DeviceAllocationUnique index_buffer_{nullptr};
 
-  taichi::lang::DeviceAllocation uniform_buffer_;
-  taichi::lang::DeviceAllocation storage_buffer_;
+  // these staging buffers are used to copy data into the actual buffers
+  DeviceAllocationUnique staging_vertex_buffer_{nullptr};
+  DeviceAllocationUnique staging_index_buffer_{nullptr};
+
+  DeviceAllocationUnique uniform_buffer_{nullptr};
+  DeviceAllocationUnique storage_buffer_{nullptr};
 
   bool indexed_{false};
 
  protected:
   void init(const RenderableConfig &config_, AppContext *app_context);
-  void free_buffers();
   void init_buffers();
-  void init_render_resources();
 
-  virtual void create_bindings();
-
-  void create_graphics_pipeline();
-
-  void create_vertex_buffer();
-
-  void create_index_buffer();
-
-  void create_uniform_buffers();
-
-  void create_storage_buffers();
-
-  void destroy_uniform_buffers();
-
-  void destroy_storage_buffers();
+  virtual void create_graphics_pipeline();
 
   void resize_storage_buffers(int new_ssbo_size);
 };

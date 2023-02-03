@@ -26,6 +26,10 @@ namespace cuda {
 class CudaDevice;
 }  // namespace cuda
 
+namespace amdgpu {
+class AmdgpuDevice;
+}  // namespace amdgpu
+
 namespace cpu {
 class CpuDevice;
 }  // namespace cpu
@@ -40,7 +44,8 @@ class LlvmProgramImpl : public ProgramImpl {
 
   // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
   // For now, compile = codegen + convert
-  FunctionType compile(Kernel *kernel) override;
+  FunctionType compile(const CompileConfig &compile_config,
+                       Kernel *kernel) override;
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
@@ -149,18 +154,6 @@ class LlvmProgramImpl : public ProgramImpl {
                                                   result_buffer);
   }
 
-  void initialize_host() {
-    runtime_exec_->initialize_host();
-  }
-
-  void maybe_initialize_cuda_llvm_context() {
-    runtime_exec_->maybe_initialize_cuda_llvm_context();
-  }
-
-  void maybe_initialize_amdgpu_llvm_context() {
-    runtime_exec_->maybe_initialize_amdgpu_llvm_context();
-  }
-
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
     return runtime_exec_->fetch_result_uint64(i, result_buffer);
   }
@@ -183,8 +176,8 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->print_memory_profiler_info(snode_trees_, result_buffer);
   }
 
-  TaichiLLVMContext *get_llvm_context(Arch arch) {
-    return runtime_exec_->get_llvm_context(arch);
+  TaichiLLVMContext *get_llvm_context() {
+    return runtime_exec_->get_llvm_context();
   }
 
   void synchronize() override {

@@ -34,7 +34,7 @@ class TaichiLLVMContext {
     explicit ThreadLocalData(std::unique_ptr<llvm::orc::ThreadSafeContext> ctx);
     ~ThreadLocalData();
   };
-  CompileConfig *config_;
+  const CompileConfig &config_;
 
  public:
   std::unique_ptr<JITSession> jit{nullptr};
@@ -43,7 +43,7 @@ class TaichiLLVMContext {
 
   std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
 
-  TaichiLLVMContext(CompileConfig *config, Arch arch);
+  TaichiLLVMContext(const CompileConfig &config, Arch arch);
 
   virtual ~TaichiLLVMContext();
 
@@ -125,6 +125,8 @@ class TaichiLLVMContext {
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
 
+  void mark_function_as_amdgpu_kernel(llvm::Function *func);
+
   void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();
   llvm::Function *get_runtime_function(const std::string &name);
@@ -150,6 +152,8 @@ class TaichiLLVMContext {
       llvm::LLVMContext *target_context);
 
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
+
+  void link_module_with_amdgpu_libdevice(std::unique_ptr<llvm::Module> &module);
 
   static int num_instructions(llvm::Function *func);
 

@@ -27,7 +27,7 @@ using namespace llvm;
 class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
-  TaskCodeGenAMDGPU(const CompileConfig *config,
+  TaskCodeGenAMDGPU(const CompileConfig &config,
                     Kernel *kernel,
                     IRNode *ir = nullptr)
       : TaskCodeGenLLVM(config, kernel, ir) {
@@ -234,7 +234,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "gather_list");
       call("gc_parallel_0", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -252,7 +252,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       init_offloaded_task_function(stmt, "zero_fill");
       call("gc_parallel_2", get_context(), snode_id);
       finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config->saturating_grid_dim;
+      current_task->grid_dim = compile_config.saturating_grid_dim;
       current_task->block_dim = 64;
       offloaded_tasks.push_back(*current_task);
       current_task = nullptr;
@@ -265,12 +265,32 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->src->cast<GetChStmt>()) {
-      bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
-          get_ch->output_snode, SNodeAccessFlag::read_only);
-      create_global_load(stmt, should_cache_as_read_only);
+    auto ptr = llvm_val[stmt->src];
+    auto ptr_type = stmt->src->ret_type->as<PointerType>();
+    if (ptr_type->is_bit_pointer()) {
+      auto val_type = ptr_type->get_pointee_type();
+      auto get_ch = stmt->src->as<GetChStmt>();
+      auto physical_type =
+          tlctx->get_data_type(get_ch->input_snode->physical_type);
+      auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
+      auto physical_value = builder->CreateLoad(physical_type, byte_ptr);
+      if (auto qit = val_type->cast<QuantIntType>()) {
+        llvm_val[stmt] = extract_quant_int(physical_value, bit_offset, qit);
+      } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+        qit = qfxt->get_digits_type()->as<QuantIntType>();
+        auto digits = extract_quant_int(physical_value, bit_offset, qit);
+        llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
+      } else {
+        TI_ASSERT(val_type->is<QuantFloatType>());
+        TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
+        llvm_val[stmt] = extract_quant_float(
+            physical_value, get_ch->input_snode->dt->as<BitStructType>(),
+            get_ch->output_snode->id_in_bit_struct);
+      }
     } else {
-      create_global_load(stmt, false);
+      // Byte pointer case.
+      llvm_val[stmt] =
+          builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
     }
   }
 
@@ -294,7 +314,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        create_offload_struct_for(stmt, true);
+        create_offload_struct_for(stmt);
       } else if (stmt->task_type == Type::mesh_for) {
         create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
@@ -395,10 +415,22 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       }
     }
   }
+
+ private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx =
+        builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
+    auto workgroup_dim_ =
+        call("__ockl_get_local_size",
+             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
+    auto block_dim = builder->CreateTrunc(
+        workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
+    return std::make_tuple(thread_idx, block_dim);
+  }
 };
 
 LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
-    const CompileConfig *config,
+    const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
   TaskCodeGenAMDGPU gen(config, kernel, stmt);
@@ -407,8 +439,7 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
 
 FunctionType KernelCodeGenAMDGPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = *get_compile_config();
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
 
   AMDGPUModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};
@@ -424,7 +455,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
   auto &tasks = data.tasks;
   auto jit = tlctx_->jit.get();
   auto amdgpu_module =
-      jit->add_module(std::move(mod), executor_->get_config()->gpu_max_reg);
+      jit->add_module(std::move(mod), executor_->get_config().gpu_max_reg);
 
   return [amdgpu_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](RuntimeContext &context) {

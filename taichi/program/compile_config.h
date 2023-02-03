@@ -34,7 +34,6 @@ struct CompileConfig {
   bool timeline{false};
   bool verbose;
   bool fast_math;
-  bool dynamic_index;
   bool flatten_if;
   bool make_thread_local;
   bool make_block_local;
@@ -65,7 +64,7 @@ struct CompileConfig {
   bool print_kernel_llvm_ir_optimized;
   bool print_kernel_nvptx;
 
-  // CUDA backend options:
+  // CUDA/AMDGPU backend options:
   float64 device_memory_GB;
   float64 device_memory_fraction;
 

@@ -39,7 +39,6 @@ CompileConfig::CompileConfig() {
   gpu_max_reg = 0;  // 0 means using the default value from the CUDA driver.
   verbose = true;
   fast_math = true;
-  dynamic_index = true;
   flatten_if = false;
   make_thread_local = true;
   make_block_local = true;
@@ -58,7 +57,7 @@ CompileConfig::CompileConfig() {
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
 
-  // CUDA backend options:
+  // CUDA/AMDGPU backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 

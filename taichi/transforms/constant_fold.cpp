@@ -18,8 +18,13 @@ class ConstantFold : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
   Program *program;
+  CompileConfig compile_config;
 
-  explicit ConstantFold(Program *program) : program(program) {
+  explicit ConstantFold(Program *program, const CompileConfig &compile_config)
+      : program(program), compile_config(compile_config) {
+    this->compile_config.advanced_optimization = false;
+    this->compile_config.constant_folding = false;
+    this->compile_config.external_optimization_level = 0;
   }
 
   Kernel *get_jit_evaluator_kernel(JITEvaluatorId const &id) {
@@ -99,7 +104,7 @@ class ConstantFold : public BasicStmtVisitor {
                       ret.dt,
                       lhs.dt,
                       rhs.dt,
-                      program->this_thread_config().debug ? stmt->tb : "",
+                      compile_config.debug ? stmt->tb : "",
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
@@ -107,7 +112,7 @@ class ConstantFold : public BasicStmtVisitor {
     launch_ctx.set_arg_raw(1, rhs.val_u64);
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
-      (*ker)(launch_ctx);
+      (*ker)(compile_config, launch_ctx);
       ret.val_i64 = program->fetch_result<int64_t>(0);
     }
     return true;
@@ -130,7 +135,7 @@ class ConstantFold : public BasicStmtVisitor {
     launch_ctx.set_arg_raw(0, operand.val_u64);
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
-      (*ker)(launch_ctx);
+      (*ker)(compile_config, launch_ctx);
       ret.val_i64 = program->fetch_result<int64_t>(0);
     }
     return true;
@@ -203,33 +208,11 @@ class ConstantFold : public BasicStmtVisitor {
     }
   }
 
-  void visit(BitExtractStmt *stmt) override {
-    auto input = stmt->input->cast<ConstStmt>();
-    if (!input)
-      return;
-    std::unique_ptr<Stmt> result_stmt;
-    if (is_signed(input->val.dt)) {
-      auto result = (input->val.val_int() >> stmt->bit_begin) &
-                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
-    } else {
-      auto result = (input->val.val_uint() >> stmt->bit_begin) &
-                    ((1LL << (stmt->bit_end - stmt->bit_begin)) - 1);
-      result_stmt = Stmt::make<ConstStmt>(TypedConstant(input->val.dt, result));
-    }
-    stmt->replace_usages_with(result_stmt.get());
-    modifier.insert_before(stmt, std::move(result_stmt));
-    modifier.erase(stmt);
-  }
-
-  static bool run(IRNode *node, Program *program) {
-    ConstantFold folder(program);
+  static bool run(IRNode *node,
+                  Program *program,
+                  const CompileConfig &compile_config) {
+    ConstantFold folder(program, compile_config);
     bool modified = false;
-
-    auto program_compile_config_org = program->this_thread_config();
-    program->this_thread_config().advanced_optimization = false;
-    program->this_thread_config().constant_folding = false;
-    program->this_thread_config().external_optimization_level = 0;
 
     while (true) {
       node->accept(&folder);
@@ -240,8 +223,6 @@ class ConstantFold : public BasicStmtVisitor {
       }
     }
 
-    program->this_thread_config() = program_compile_config_org;
-
     return modified;
   }
 };
@@ -251,12 +232,12 @@ const PassID ConstantFoldPass::id = "ConstantFoldPass";
 namespace irpass {
 
 bool constant_fold(IRNode *root,
-                   const CompileConfig &config,
+                   const CompileConfig &compile_config,
                    const ConstantFoldPass::Args &args) {
   TI_AUTO_PROF;
-  if (!config.advanced_optimization)
+  if (!compile_config.advanced_optimization)
     return false;
-  return ConstantFold::run(root, args.program);
+  return ConstantFold::run(root, args.program, compile_config);
 }
 
 }  // namespace irpass

@@ -6,7 +6,6 @@ cmake_minimum_required(VERSION 3.0)
 # 1. Existence of circular dependencies in Taichi repo (https://github.com/taichi-dev/taichi/issues/6838)
 # 2. Link order restriction from `ld` linker on Linux (https://stackoverflow.com/questions/45135/why-does-the-order-in-which-libraries-are-linked-sometimes-cause-errors-in-gcc), which has zero-tolerance w.r.t circular dependencies.
 function(target_link_static_library TARGET OBJECT_TARGET)
-
     set(STATIC_TARGET "${OBJECT_TARGET}_static")
     add_library(${STATIC_TARGET})
     target_link_libraries(${STATIC_TARGET} PUBLIC ${OBJECT_TARGET})
@@ -16,14 +15,26 @@ if(LINUX)
 else()
     target_link_libraries(${TARGET} PRIVATE "${STATIC_TARGET}")
 endif()
-
 endfunction()
 
 set(TAICHI_C_API_NAME taichi_c_api)
-file(GLOB_RECURSE C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
+list(APPEND C_API_SOURCE "c_api/src/taichi_core_impl.cpp")
+list(APPEND C_API_PUBLIC_HEADERS
+  "c_api/include/taichi/taichi_platform.h"
+  "c_api/include/taichi/taichi_core.h"
+  "c_api/include/taichi/taichi.h"
+  # FIXME: (penguinliong) Remove this in the future when we have a option for
+  # Unity3D integration?
+  "c_api/include/taichi/taichi_unity.h"
+  )
 
 if (TI_WITH_LLVM)
   list(APPEND C_API_SOURCE "c_api/src/taichi_llvm_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_cpu.h")
+
+  if (TI_WITH_CUDA)
+    list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_cuda.h")
+  endif()
 endif()
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_METAL)
@@ -32,14 +43,17 @@ endif()
 
 if (TI_WITH_OPENGL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_opengl_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_opengl.h")
 endif()
 
 if (TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
+  #list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
 endif()
 
 if (TI_WITH_VULKAN)
   list(APPEND C_API_SOURCE "c_api/src/taichi_vulkan_impl.cpp")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_vulkan.h")
   if (APPLE)
     install(FILES ${MoltenVK_LIBRARY} DESTINATION c_api/lib)
   endif()
@@ -62,6 +76,7 @@ target_enable_function_level_linking(${TAICHI_C_API_NAME})
 
 # Strip shared library
 set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
+
 
 # Avoid exporting third party symbols from libtaichi_c_api.so
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
@@ -112,21 +127,29 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
     )
+set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_HEADERS})
 
 # This helper provides us standard locations across Linux/Windows/MacOS
 include(GNUInstallDirs)
 
-install(TARGETS ${TAICHI_C_API_NAME} EXPORT ${TAICHI_C_API_NAME}Targets
-    LIBRARY DESTINATION c_api/lib
-    ARCHIVE DESTINATION c_api/lib
-    RUNTIME DESTINATION c_api/bin
-    INCLUDES DESTINATION c_api/include
+install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets
+    LIBRARY DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION c_api/${CMAKE_INSTALL_BINDIR}
+    PUBLIC_HEADER DESTINATION c_api/${CMAKE_INSTALL_INCLUDEDIR}/taichi
     )
 
+# The C++ wrapper is saved in a dedicated directory.
+install(
+    FILES
+        "c_api/include/taichi/cpp/taichi.hpp"
+    DESTINATION
+        c_api/${CMAKE_INSTALL_INCLUDEDIR}/taichi/cpp
+)
+
 # Install the export set, which contains the meta data of the target
-install(EXPORT ${TAICHI_C_API_NAME}Targets
-    FILE ${TAICHI_C_API_NAME}Targets.cmake
-    NAMESPACE ${TAICHI_C_API_NAME}::
+install(EXPORT TaichiExportTargets
+    FILE TaichiTargets.cmake
     DESTINATION c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
@@ -134,36 +157,27 @@ include(CMakePackageConfigHelpers)
 
 # Generate the config file
 configure_package_config_file(
-      "${PROJECT_SOURCE_DIR}/cmake/${TAICHI_C_API_NAME}Config.cmake.in"
-      "${PROJECT_BINARY_DIR}/${TAICHI_C_API_NAME}Config.cmake"
+        "${PROJECT_SOURCE_DIR}/cmake/TaichiConfig.cmake.in"
+        "${PROJECT_BINARY_DIR}/TaichiConfig.cmake"
     INSTALL_DESTINATION
-       c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+        c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
 # Generate the config version file
-set(${TAICHI_C_API_NAME}_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
+set(TAICHI_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
 write_basic_package_version_file(
-    "${TAICHI_C_API_NAME}ConfigVersion.cmake"
-    VERSION ${${TAICHI_C_API_NAME}_VERSION}
+    "TaichiConfigVersion.cmake"
+    VERSION ${TAICHI_VERSION}
     COMPATIBILITY SameMajorVersion
     )
 
 # Install the config files
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${TAICHI_C_API_NAME}Config.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/${TAICHI_C_API_NAME}ConfigVersion.cmake"
+install(
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfigVersion.cmake"
     DESTINATION
-    c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-    )
-
-# Install public headers for this target
-# TODO: Replace files here with public headers when ready.
-install(DIRECTORY
-      ${PROJECT_SOURCE_DIR}/c_api/include
-    DESTINATION c_api
-    FILES_MATCHING
-    PATTERN *.h
-    PATTERN *.hpp
+        c_api/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
     )
 
 if(TI_WITH_LLVM)
@@ -171,4 +185,31 @@ if(TI_WITH_LLVM)
 install(DIRECTORY
       ${INSTALL_LIB_DIR}/runtime
       DESTINATION c_api)
+endif()
+
+if(TI_WITH_STATIC_C_API)
+    # Traditional C++ static library is simply an archive of various .o files, resulting in a huge
+    # file mixed with thousands of resolved or unresolved symbols.
+    #
+    # The key to a minimal static-library is to ask the static library to go through a relocation process,
+    # which is only supported by the `ld` linker on Apple platform. The corresponding process is called `pre-link`:
+    # https://stackoverflow.com/questions/14259405/pre-link-static-libraries-for-ios-project
+    #
+    # Here, we perform this `pre-link` on the compiled object files.
+
+    # *** This taichi_static_c_api is NOT an executable ***
+    # We faked an executable target because cmake does not have intrinsic support for pre-linked library targets
+    add_executable(taichi_static_c_api ${C_API_SOURCE})
+    set_target_properties(taichi_static_c_api PROPERTIES ENABLE_EXPORTS ON)
+
+    get_target_property(TAICHI_C_API_INCLUDE_DIRS ${TAICHI_C_API_NAME} INCLUDE_DIRECTORIES)
+    target_include_directories(taichi_static_c_api PRIVATE "${TAICHI_C_API_INCLUDE_DIRS}")
+
+    target_link_libraries(taichi_static_c_api PRIVATE taichi_core_static)
+
+    set(STATIC_LIB_LINK_OPTIONS "-Wl,-r")
+    set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-x)
+    set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-S)
+    set(STATIC_LIB_LINK_OPTIONS "${STATIC_LIB_LINK_OPTIONS}" -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
+    target_link_options(taichi_static_c_api PRIVATE "${STATIC_LIB_LINK_OPTIONS}")
 endif()

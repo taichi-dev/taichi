@@ -1,5 +1,6 @@
 import warnings
 
+from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import (CompoundType, TensorType, matrix,
                                          vector)
@@ -55,6 +56,16 @@ def _make_matrix_dtype_from_element_shape(element_dim, element_shape,
     return mat_dtype
 
 
+# FIXME(zhanlue): Use TensorType exported from pybind and then remove python-scope TensorType
+def is_tensor_type(dtype):
+    if isinstance(dtype, TensorType):
+        return True
+    if isinstance(dtype, _ti_core.DataType):
+        return _ti_core.is_tensor(dtype)
+
+    return False
+
+
 class NdarrayType:
     """Type annotation for arbitrary arrays, including external arrays (numpy ndarrays and torch tensors) and Taichi ndarrays.
 
@@ -107,7 +118,7 @@ class NdarrayType:
         if isinstance(self.dtype, CompoundType):
             # Check element shape and dim for MatrixType
             if self.dtype.ndim > 0:
-                if not isinstance(ndarray_type.element_type, TensorType):
+                if not is_tensor_type(ndarray_type.element_type):
                     raise TypeError(
                         f"Expect TensorType element for Ndarray with element_dim: {self.dtype.ndim} > 0"
                     )
@@ -116,12 +127,12 @@ class NdarrayType:
                         f"Invalid argument into ti.types.ndarray() - required element_dim={self.dtype.ndim}, but {len(ndarray_type.element_type.shape())} is provided"
                     )
             if self.dtype.get_shape() is not None:
-                if not isinstance(ndarray_type.element_type, TensorType):
+                if not is_tensor_type(ndarray_type.element_type):
                     raise TypeError(
                         f"Expect TensorType element for Ndarray with element_shape: {self.dtype.get_shape()}"
                     )
-
-                if self.dtype.get_shape() != ndarray_type.element_type.shape():
+                if list(self.dtype.get_shape()) != list(
+                        ndarray_type.element_type.shape()):
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required element_shape={self.dtype.get_shape()}, but {ndarray_type.element_type.shape()} is provided"
                     )

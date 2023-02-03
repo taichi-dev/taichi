@@ -59,7 +59,7 @@ Logger::Logger() {
   console_ = spdlog::android_logger_mt("android", "taichi");
   console_->flush_on(spdlog::level::trace);
 #else
-  console_ = spdlog::stdout_color_mt("console");
+  console_ = spdlog::stderr_color_mt("stderr");
   console_->flush_on(spdlog::level::trace);
 #endif
   TI_LOG_SET_PATTERN("%^[%L %D %X.%e %t] %v%$");

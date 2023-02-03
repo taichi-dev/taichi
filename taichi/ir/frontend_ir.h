@@ -291,7 +291,7 @@ class ArgLoadExpression : public Expression {
       : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -332,7 +332,7 @@ class TexturePtrExpression : public Expression {
         lod(lod) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -346,7 +346,7 @@ class RandExpression : public Expression {
   explicit RandExpression(DataType dt) : dt(dt) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -368,7 +368,7 @@ class UnaryOpExpression : public Expression {
       : type(type), operand(operand), cast_type(cast_type) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   bool is_cast() const;
 
@@ -386,7 +386,7 @@ class BinaryOpExpression : public Expression {
       : type(type), lhs(lhs), rhs(rhs) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -408,7 +408,7 @@ class TernaryOpExpression : public Expression {
     this->op3.set(op3);
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -424,7 +424,7 @@ class InternalFuncCallExpression : public Expression {
       : op(op), args(args_) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -467,7 +467,7 @@ class ExternalTensorExpression : public Expression {
     }
   }
 
-  ExternalTensorExpression(Expr *expr, bool is_grad = true) {
+  explicit ExternalTensorExpression(Expr *expr, bool is_grad = true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
     init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, is_grad);
   }
@@ -476,18 +476,18 @@ class ExternalTensorExpression : public Expression {
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
 
-  CompileConfig *get_compile_config() {
+  const CompileConfig *get_compile_config() {
     TI_ASSERT(config_ != nullptr);
     return config_;
   }
 
-  void type_check(CompileConfig *config) override {
+  void type_check(const CompileConfig *config) override {
     ret_type = dt;
     config_ = config;
   }
 
  private:
-  CompileConfig *config_ = nullptr;
+  const CompileConfig *config_ = nullptr;
 
   void init(const DataType &dt,
             int dim,
@@ -519,7 +519,7 @@ class FieldExpression : public Expression {
   FieldExpression(DataType dt, const Identifier &ident) : ident(ident), dt(dt) {
   }
 
-  void type_check(CompileConfig *config) override {
+  void type_check(const CompileConfig *config) override {
   }
 
   void set_snode(SNode *snode) {
@@ -554,7 +554,7 @@ class MatrixFieldExpression : public Expression {
     }
   }
 
-  void type_check(CompileConfig *config) override {
+  void type_check(const CompileConfig *config) override {
   }
 
   TI_DEFINE_ACCEPT_FOR_EXPRESSION
@@ -576,7 +576,7 @@ class MatrixExpression : public Expression {
     this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -603,7 +603,7 @@ class IndexExpression : public Expression {
                   const std::vector<int> &ret_shape,
                   std::string tb = "");
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -637,7 +637,7 @@ class RangeAssumptionExpression : public Expression {
       : input(input), base(base), low(low), high(high) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -653,7 +653,7 @@ class LoopUniqueExpression : public Expression {
       : input(input), covers(covers) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -667,7 +667,7 @@ class IdExpression : public Expression {
   explicit IdExpression(const Identifier &id) : id(id) {
   }
 
-  void type_check(CompileConfig *config) override {
+  void type_check(const CompileConfig *config) override {
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -693,7 +693,7 @@ class AtomicOpExpression : public Expression {
       : op_type(op_type), dest(dest), val(val) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -716,7 +716,7 @@ class SNodeOpExpression : public Expression {
                     const ExprGroup &indices,
                     const std::vector<Expr> &values);
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -733,7 +733,7 @@ class TextureOpExpression : public Expression {
                                Expr texture_ptr,
                                const ExprGroup &args);
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -753,7 +753,7 @@ class ConstExpression : public Expression {
     ret_type = dt;
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -769,7 +769,7 @@ class ExternalTensorShapeAlongAxisExpression : public Expression {
       : ptr(ptr), axis(axis) {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -802,7 +802,7 @@ class GetElementExpression : public Expression {
   Expr src;
   std::vector<int> index;
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   GetElementExpression(const Expr &src, std::vector<int> index)
       : src(src), index(index) {
@@ -820,7 +820,7 @@ class MeshPatchIndexExpression : public Expression {
   MeshPatchIndexExpression() {
   }
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   void flatten(FlattenContext *ctx) override;
 
@@ -834,7 +834,7 @@ class MeshRelationAccessExpression : public Expression {
   mesh::MeshElementType to_type;
   Expr neighbor_idx;
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   MeshRelationAccessExpression(mesh::Mesh *mesh,
                                const Expr mesh_idx,
@@ -864,7 +864,7 @@ class MeshIndexConversionExpression : public Expression {
   Expr idx;
   mesh::ConvType conv_type;
 
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   MeshIndexConversionExpression(mesh::Mesh *mesh,
                                 mesh::MeshElementType idx_type,
@@ -879,7 +879,7 @@ class MeshIndexConversionExpression : public Expression {
 class ReferenceExpression : public Expression {
  public:
   Expr var;
-  void type_check(CompileConfig *config) override;
+  void type_check(const CompileConfig *config) override;
 
   explicit ReferenceExpression(const Expr &expr) : var(expr) {
   }
@@ -1024,7 +1024,7 @@ class ASTBuilder {
   }
 
   void block_dim(int v) {
-    if (arch_ == Arch::cuda || arch_ == Arch::vulkan) {
+    if (arch_ == Arch::cuda || arch_ == Arch::vulkan || arch_ == Arch::amdgpu) {
       TI_ASSERT((v % 32 == 0) || bit::is_power_of_two(v));
     } else {
       TI_ASSERT(bit::is_power_of_two(v));

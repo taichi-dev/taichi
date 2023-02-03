@@ -33,7 +33,7 @@ class FunctionCreationGuard {
 
 class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
-  const CompileConfig *compile_config{nullptr};
+  const CompileConfig &compile_config;
   Kernel *kernel;
   IRNode *ir;
   Program *prog;
@@ -70,13 +70,13 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  explicit TaskCodeGenLLVM(const CompileConfig *config,
+  explicit TaskCodeGenLLVM(const CompileConfig &config,
                            Kernel *kernel,
                            IRNode *ir = nullptr,
                            std::unique_ptr<llvm::Module> &&module = nullptr);
 
-  Arch current_arch() {
-    return compile_config->arch;
+  Arch current_arch() const {
+    return compile_config.arch;
   }
 
   void initialize_context();
@@ -294,8 +294,6 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   void visit(GetRootStmt *stmt) override;
 
-  void visit(BitExtractStmt *stmt) override;
-
   void visit(LinearizeStmt *stmt) override;
 
   void visit(IntegerOffsetStmt *stmt) override;
@@ -334,7 +332,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
     TI_NOT_IMPLEMENTED;
   }
 
-  void create_offload_struct_for(OffloadedStmt *stmt, bool spmd = false);
+  void create_offload_struct_for(OffloadedStmt *stmt);
 
   void visit(LoopIndexStmt *stmt) override;
 
@@ -412,6 +410,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
                      const Type *current_type,
                      int &current_element,
                      std::vector<llvm::Value *> &current_index);
+
+  virtual std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() = 0;
 };
 
 }  // namespace taichi::lang

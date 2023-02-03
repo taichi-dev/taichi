@@ -43,7 +43,9 @@ def print_module_doc(module: Module):
         else:
             print(f"WARNING: `{x}` is not documented")
             out += [""]
-    out += [""]
+
+    if out[-1]:
+        out += [""]
 
     return '\n'.join(out)
 
@@ -91,6 +93,9 @@ if __name__ == "__main__":
         BuiltInType("char", "char"),
         BuiltInType("GLuint", "GLuint"),
         BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
+        BuiltInType("GLenum", "GLenum"),
+        BuiltInType("GLsizei", "GLsizei"),
+        BuiltInType("GLsizeiptr", "GLsizeiptr"),
     }
 
     for module in Module.load_all(builtin_tys):

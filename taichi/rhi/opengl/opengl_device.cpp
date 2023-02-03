@@ -218,7 +218,8 @@ GLResourceSet &GLResourceSet::image(uint32_t binding,
 GLResourceSet &GLResourceSet::rw_image(uint32_t binding,
                                        DeviceAllocation alloc,
                                        int lod) {
-  TI_NOT_IMPLEMENTED;
+  rw_image_binding_map_[binding] = alloc.alloc_id;
+  return *this;
 }
 
 GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
@@ -244,6 +245,16 @@ GLPipeline::GLPipeline(const PipelineSourceDesc &desc,
     }
     options.vulkan_semantics = false;
     glsl.set_common_options(options);
+    if (GLAD_GL_NV_gpu_shader5) {
+      glsl.require_extension("GL_NV_gpu_shader5");
+      glsl.add_header_line(
+          "uint16_t float16BitsToUint16(float16_t v) { return "
+          "uint16_t(packFloat2x16(f16vec2(v, 0))); }");
+      glsl.add_header_line(
+          "float16_t uint16BitsToFloat16(uint16_t v) { return "
+          "unpackFloat2x16(uint(v)).x; }");
+    }
+    glsl.add_header_line("");
     std::string source = glsl.compile();
     TI_TRACE("GLSL source: \n{}", source);
 
@@ -315,31 +326,37 @@ void GLCommandList::bind_pipeline(Pipeline *p) noexcept {
 RhiResult GLCommandList::bind_shader_resources(ShaderResourceSet *res,
                                                int set_index) noexcept {
   GLResourceSet *set = static_cast<GLResourceSet *>(res);
+  auto cmd = std::make_unique<CmdBindResources>();
   for (auto &[binding, buffer] : set->ssbo_binding_map()) {
-    auto cmd = std::make_unique<CmdBindBufferToIndex>();
-    cmd->buffer = buffer.buffer;
-    cmd->offset = buffer.offset;
-    cmd->size = buffer.size;
-    cmd->index = binding;
-    recorded_commands_.push_back(std::move(cmd));
+    auto &bind = cmd->buffers.emplace_back();
+    bind.buffer = buffer.buffer;
+    bind.offset = buffer.offset;
+    bind.size = buffer.size;
+    bind.index = binding;
   }
   for (auto &[binding, buffer] : set->ubo_binding_map()) {
-    auto cmd = std::make_unique<CmdBindBufferToIndex>();
-    cmd->buffer = buffer.buffer;
-    cmd->offset = buffer.offset;
-    cmd->size = buffer.size;
-    cmd->index = binding;
-    cmd->target = GL_UNIFORM_BUFFER;
-    recorded_commands_.push_back(std::move(cmd));
+    auto &bind = cmd->buffers.emplace_back();
+    bind.buffer = buffer.buffer;
+    bind.offset = buffer.offset;
+    bind.size = buffer.size;
+    bind.index = binding;
+    bind.target = GL_UNIFORM_BUFFER;
   }
   for (auto &[binding, texture] : set->texture_binding_map()) {
-    auto cmd = std::make_unique<CmdBindTextureToIndex>();
-    cmd->texture = texture;
-    cmd->index = binding;
-    cmd->target = device_->get_image_gl_dims(texture);
-    recorded_commands_.push_back(std::move(cmd));
+    auto &bind = cmd->textures.emplace_back();
+    bind.texture = texture;
+    bind.index = binding;
+    bind.target = device_->get_gl_image(texture).target;
+  }
+  for (auto &[binding, texture] : set->rw_image_binding_map()) {
+    auto &bind = cmd->textures.emplace_back();
+    bind.texture = texture;
+    bind.index = binding;
+    bind.format = device_->get_gl_image(texture).format;
+    bind.is_storage = true;
   }
 
+  recorded_commands_.push_back(std::move(cmd));
   return RhiResult::success;
 }
 
@@ -502,6 +519,20 @@ GLDevice::GLDevice() : stream_(this) {
     caps.set(DeviceCapability::spirv_has_int64, true);
     caps.set(DeviceCapability::spirv_has_float64, true);
   }
+
+  if (GLAD_GL_NV_gpu_shader5) {
+    caps.set(DeviceCapability::spirv_has_int16, true);
+    caps.set(DeviceCapability::spirv_has_float16, true);
+  }
+
+  if (GLAD_GL_AMD_gpu_shader_int16) {
+    caps.set(DeviceCapability::spirv_has_int16, true);
+  }
+
+  if (GLAD_GL_AMD_gpu_shader_half_float) {
+    caps.set(DeviceCapability::spirv_has_float16, true);
+  }
+
   caps.set(DeviceCapability::spirv_version, 0x10300);
   set_caps(std::move(caps));
 }
@@ -671,6 +702,8 @@ DeviceAllocation GLDevice::create_image(const ImageParams &params) {
     gl_texture_dims = GL_TEXTURE_1D;
   } else if (params.dimension == ImageDimension::d2D) {
     gl_texture_dims = GL_TEXTURE_2D;
+  } else if (params.dimension == ImageDimension::d3D) {
+    gl_texture_dims = GL_TEXTURE_3D;
   }
 
   auto format = format_to_gl_internal_format.at(params.format);
@@ -692,18 +725,39 @@ DeviceAllocation GLDevice::create_image(const ImageParams &params) {
   alloc.device = this;
   alloc.alloc_id = tex;
 
-  image_to_dims_[tex] = gl_texture_dims;
-  image_to_int_format_[tex] = format;
+  GLImageAllocation gl_image{};
+  gl_image.target = gl_texture_dims;
+  gl_image.levels = 1;
+  gl_image.format = format;
+  gl_image.width = params.x;
+  gl_image.height = params.y;
+  gl_image.depth = params.z;
+  gl_image.external = false;
 
+  image_allocs_[tex] = std::move(gl_image);
   return alloc;
 }
 
 void GLDevice::destroy_image(DeviceAllocation handle) {
   GLuint texture = GLuint(handle.alloc_id);
-  glDeleteTextures(1, &texture);
-  check_opengl_error("glDeleteTextures");
-  image_to_dims_.erase(handle.alloc_id);
-  image_to_int_format_.erase(handle.alloc_id);
+  auto it = image_allocs_.find(texture);
+  if (it != image_allocs_.end()) {
+    if (!it->second.external) {
+      glDeleteTextures(1, &texture);
+      check_opengl_error("glDeleteTextures");
+    }
+    image_allocs_.erase(it);
+  }
+}
+
+DeviceAllocation GLDevice::import_image(GLuint texture,
+                                        GLImageAllocation &&gl_image) {
+  image_allocs_[texture] = std::move(gl_image);
+
+  DeviceAllocation out{};
+  out.device = this;
+  out.alloc_id = (DeviceAllocationId)texture;
+  return out;
 }
 
 void GLDevice::image_transition(DeviceAllocation img,
@@ -766,26 +820,35 @@ void GLCommandList::CmdBindPipeline::execute() {
   check_opengl_error("glUseProgram");
 }
 
-void GLCommandList::CmdBindBufferToIndex::execute() {
-  if (size == -1) {
-    glBindBufferBase(target, index, buffer);
-    check_opengl_error("glBindBufferBase");
-  } else {
-    glBindBufferRange(target, index, buffer, GLintptr(offset),
-                      GLsizeiptr(size));
-    check_opengl_error("glBindBufferRange");
+void GLCommandList::CmdBindResources::execute() {
+  for (auto &bind : buffers) {
+    if (bind.size == -1) {
+      glBindBufferBase(bind.target, bind.index, bind.buffer);
+      check_opengl_error("glBindBufferBase");
+    } else {
+      glBindBufferRange(bind.target, bind.index, bind.buffer,
+                        GLintptr(bind.offset), GLsizeiptr(bind.size));
+      check_opengl_error("glBindBufferRange");
+    }
+  }
+  for (auto &bind : textures) {
+    if (bind.is_storage) {
+      glBindImageTexture(bind.index, bind.texture, /*level=*/0,
+                         /*layered=*/GL_FALSE, /*layer=*/0, GL_READ_WRITE,
+                         bind.format);
+      check_opengl_error("glBindImageTexture");
+    } else {
+      glActiveTexture(GL_TEXTURE0 + bind.index);
+      check_opengl_error("glActiveTexture");
+      glBindTexture(bind.target, bind.texture);
+      check_opengl_error("glBindTexture");
+    }
   }
 }
 
-void GLCommandList::CmdBindTextureToIndex::execute() {
-  glActiveTexture(GL_TEXTURE0 + index);
-  check_opengl_error("glActiveTexture");
-  glBindTexture(GL_TEXTURE_2D, texture);
-  check_opengl_error("glBindTexture");
-}
-
 void GLCommandList::CmdBufferBarrier::execute() {
-  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+  glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT |
+                  GL_UNIFORM_BARRIER_BIT);
   check_opengl_error("glMemoryBarrier");
 }
 
@@ -835,8 +898,9 @@ void GLCommandList::CmdImageTransition::execute() {
 }
 
 void GLCommandList::CmdBufferToImage::execute() {
-  GLuint image_dims = device->get_image_gl_dims(image);
-  GLuint image_internal_format = device->get_image_gl_internal_format(image);
+  const GLImageAllocation &gl_image = device->get_gl_image(image);
+  GLuint image_dims = gl_image.target;
+  GLuint image_internal_format = gl_image.format;
   GLuint image_format = gl_internal_format_to_format.at(image_internal_format);
   GLuint gl_type = gl_internal_format_to_type.at(image_internal_format);
 
@@ -869,8 +933,9 @@ void GLCommandList::CmdBufferToImage::execute() {
 }
 
 void GLCommandList::CmdImageToBuffer::execute() {
-  auto image_dims = device->get_image_gl_dims(image);
-  auto image_format = device->get_image_gl_internal_format(image);
+  const GLImageAllocation &gl_image = device->get_gl_image(image);
+  auto image_dims = gl_image.target;
+  auto image_format = gl_image.format;
   auto gl_type = gl_internal_format_to_type.at(image_format);
   auto unsized_format = gl_internal_format_to_format.at(image_format);
 

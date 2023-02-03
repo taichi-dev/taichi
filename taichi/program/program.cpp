@@ -17,6 +17,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
+
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
@@ -75,12 +76,9 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
                        : "ri"(fpcr | (1 << 24)));  // Bit 24 is FZ
   __asm__ __volatile__("");
 #endif  // defined(__arm64__) || defined(__aarch64__)
-  main_thread_id_ = std::this_thread::get_id();
-  // Rehash in advance to avoid rehashing during compilation
-  configs.rehash(default_compile_config.num_compile_threads + 1);
-  configs[main_thread_id_] = default_compile_config;
-  configs[main_thread_id_].arch = desired_arch;
-  auto &config = this_thread_config();
+  auto &config = compile_config_;
+  config = default_compile_config;
+  config.arch = desired_arch;
   config.fit();
 
   profiler = make_profiler(config.arch, config.kernel_profiler);
@@ -158,7 +156,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   SNode::counter = 0;
 
   result_buffer = nullptr;
-  sync = true;
   finalized_ = false;
 
   if (!is_extension_supported(config.arch, Extension::assertion)) {
@@ -190,10 +187,11 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(Kernel &kernel) {
+FunctionType Program::compile(const CompileConfig &compile_config,
+                              Kernel &kernel) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(&kernel);
+  auto ret = program_impl_->compile(compile_config, &kernel);
   TI_ASSERT(ret);
   total_compilation_time_ += Time::get_time() - start_t;
   return ret;
@@ -205,10 +203,10 @@ void Program::materialize_runtime() {
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
-  TI_ASSERT(arch_uses_llvm(this_thread_config().arch) ||
-            this_thread_config().arch == Arch::vulkan ||
-            this_thread_config().arch == Arch::dx11 ||
-            this_thread_config().arch == Arch::dx12);
+  TI_ASSERT(arch_uses_llvm(compile_config().arch) ||
+            compile_config().arch == Arch::vulkan ||
+            compile_config().arch == Arch::dx11 ||
+            compile_config().arch == Arch::dx12);
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -252,89 +250,6 @@ int Program::get_snode_tree_size() {
   return snode_trees_.size();
 }
 
-std::string capitalize_first(std::string s) {
-  s[0] = std::toupper(s[0]);
-  return s;
-}
-
-std::string latex_short_digit(int v) {
-  std::string units = "KMGT";
-  int unit_id = -1;
-  while (v >= 1024 && unit_id + 1 < (int)units.size()) {
-    TI_ASSERT(v % 1024 == 0);
-    v /= 1024;
-    unit_id++;
-  }
-  if (unit_id != -1)
-    return fmt::format("{}\\mathrm{{{}}}", v, units[unit_id]);
-  else
-    return std::to_string(v);
-}
-
-void Program::visualize_layout(const std::string &fn) {
-  {
-    std::ofstream ofs(fn);
-    TI_ASSERT(ofs);
-    auto emit = [&](std::string str) { ofs << str; };
-
-    auto header = R"(
-\documentclass[tikz, border=16pt]{standalone}
-\usepackage{latexsym}
-\usepackage{tikz-qtree,tikz-qtree-compat,ulem}
-\begin{document}
-\begin{tikzpicture}[level distance=40pt]
-\tikzset{level 1/.style={sibling distance=-5pt}}
-  \tikzset{edge from parent/.style={draw,->,
-    edge from parent path={(\tikzparentnode.south) -- +(0,-4pt) -| (\tikzchildnode)}}}
-  \tikzset{every tree node/.style={align=center, font=\small}}
-\Tree)";
-    emit(header);
-
-    std::function<void(SNode * snode)> visit = [&](SNode *snode) {
-      emit("[.{");
-      if (snode->type == SNodeType::place) {
-        emit(snode->name);
-      } else {
-        emit("\\textbf{" + capitalize_first(snode_type_name(snode->type)) +
-             "}");
-      }
-
-      std::string indices;
-      for (int i = 0; i < taichi_max_num_indices; i++) {
-        if (snode->extractors[i].active) {
-          int nb = snode->extractors[i].num_bits;
-          indices += fmt::format(
-              R"($\mathbf{{{}}}^{{\mathbf{{{}b}}:{}}}_{{\mathbf{{{}b}}:{}}}$)",
-              std::string(1, 'I' + i), 0, latex_short_digit(1 << 0), nb,
-              latex_short_digit(1 << nb));
-        }
-      }
-      if (!indices.empty())
-        emit("\\\\" + indices);
-      if (snode->type == SNodeType::place) {
-        emit("\\\\" + data_type_name(snode->dt));
-      }
-      emit("} ");
-
-      for (int i = 0; i < (int)snode->ch.size(); i++) {
-        visit(snode->ch[i].get());
-      }
-      emit("]");
-    };
-
-    for (auto &a : snode_trees_) {
-      visit(a->root());
-    }
-
-    auto tail = R"(
-\end{tikzpicture}
-\end{document}
-)";
-    emit(tail);
-  }
-  trash(system(fmt::format("pdflatex {}", fn).c_str()));
-}
-
 Kernel &Program::get_snode_reader(SNode *snode) {
   TI_ASSERT(snode->type == SNodeType::place);
   auto kernel_name = fmt::format("snode_reader_{}", snode->id);
@@ -342,7 +257,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
-      argload_expr->type_check(&this->this_thread_config());
+      argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
     ASTBuilder &builder = kernel->context->builder();
@@ -365,7 +280,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ExprGroup indices;
     for (int i = 0; i < snode->num_active_indices; i++) {
       auto argload_expr = Expr::make<ArgLoadExpression>(i, PrimitiveType::i32);
-      argload_expr->type_check(&this->this_thread_config());
+      argload_expr->type_check(&this->compile_config());
       indices.push_back(std::move(argload_expr));
     }
     ASTBuilder &builder = kernel->context->builder();
@@ -394,12 +309,11 @@ void Program::finalize() {
     return;
   }
   synchronize();
-  TI_ASSERT(std::this_thread::get_id() == main_thread_id_);
   TI_TRACE("Program finalizing...");
 
   synchronize();
   memory_pool_->terminate();
-  if (arch_uses_llvm(this_thread_config().arch)) {
+  if (arch_uses_llvm(compile_config().arch)) {
     program_impl_->finalize();
   }
 
@@ -408,8 +322,7 @@ void Program::finalize() {
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
-  configs.clear();
-  configs[main_thread_id_] = default_compile_config;
+  compile_config_ = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 }
 
@@ -436,8 +349,8 @@ Ndarray *Program::create_ndarray(const DataType type,
                                  bool zero_fill) {
   auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
   if (zero_fill) {
-    Arch arch = this_thread_config().arch;
-    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+    Arch arch = compile_config().arch;
+    if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
     } else if (arch != Arch::dx12) {
       // Device api support for dx12 backend are not complete yet
@@ -495,8 +408,9 @@ Texture *Program::create_texture(const DataType type,
 
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
-  if (arch_is_cpu(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::cuda) {
+  if (arch_is_cpu(compile_config().arch) ||
+      compile_config().arch == Arch::cuda ||
+      compile_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
@@ -572,17 +486,17 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>(&this_thread_config());
+    return std::make_unique<wasm::AotModuleBuilderImpl>(compile_config());
 #else
     TI_NOT_IMPLEMENTED
 #endif
   }
-  if (arch_uses_llvm(this_thread_config().arch) ||
-      this_thread_config().arch == Arch::metal ||
-      this_thread_config().arch == Arch::vulkan ||
-      this_thread_config().arch == Arch::opengl ||
-      this_thread_config().arch == Arch::gles ||
-      this_thread_config().arch == Arch::dx12) {
+  if (arch_uses_llvm(compile_config().arch) ||
+      compile_config().arch == Arch::metal ||
+      compile_config().arch == Arch::vulkan ||
+      compile_config().arch == Arch::opengl ||
+      compile_config().arch == Arch::gles ||
+      compile_config().arch == Arch::dx12) {
     return program_impl_->make_aot_module_builder(cfg);
   }
   return nullptr;

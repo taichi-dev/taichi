@@ -10,9 +10,11 @@ include("cmake/utils.cmake")
 
 if (NOT DEFINED TI_VERSION_MAJOR)
     message(WARNING "It seems that you are running cmake manually, which may cause issues. Please use setup.py to build taichi from source, see https://docs.taichi-lang.org/docs/dev_install for more details.")
-    set(TI_VERSION_MAJOR 0)
-    set(TI_VERSION_MINOR 0)
-    set(TI_VERSION_PATCH 0)
+    file(READ "${CMAKE_CURRENT_LIST_DIR}/version.txt" TI_VERSION_LITERAL)
+    string(REGEX MATCH "v([0-9]+)\\.([0-9]+)\\.([0-9]+)" TI_VERSION_LITERAL ${TI_VERSION_LITERAL})
+    set(TI_VERSION_MAJOR ${CMAKE_MATCH_1})
+    set(TI_VERSION_MINOR ${CMAKE_MATCH_2})
+    set(TI_VERSION_PATCH ${CMAKE_MATCH_3})
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -198,6 +200,14 @@ configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/vers
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
 option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)
+
+if(TI_WITH_STATIC_C_API)
+    set(TI_WITH_C_API ${TI_WITH_STATIC_C_API})
+    if(NOT APPLE)
+        message(FATAL_ERROR "TI_WITH_STATIC_C_API requires Apple compilation sdk, thus only supported on MacOS")
+    endif()
+endif()
 
 if (TI_WITH_C_API)
   include(cmake/TaichiCAPI.cmake)

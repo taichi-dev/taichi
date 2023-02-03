@@ -436,7 +436,7 @@ particle_field[0].pos = vec3(0) # particle_field is a 1D struct field, pos is a 
 particle_field.mass[0] = 1.0  # Sets the mass of the first particle in the field to 1.0
 ```
 
-Considering that `paticle_field.mass` is a field consisting of all the `mass` members of the structs in `paticle_field`, you can also call `fill()` to set the members to a specific value all at once:
+Considering that `particle_field.mass` is a field consisting of all the `mass` members of the structs in `particle_field`, you can also call `fill()` to set the members to a specific value all at once:
 
 ```python
 particle_field.mass.fill(1.0)  # Sets all mass of the particles in the struct field to 1.0

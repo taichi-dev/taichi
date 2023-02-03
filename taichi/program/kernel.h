@@ -96,9 +96,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
     lowered_ = lowered;
   }
 
-  void compile();
+  void compile(const CompileConfig &compile_config);
 
-  void operator()(LaunchContextBuilder &ctx_builder);
+  void operator()(const CompileConfig &compile_config,
+                  LaunchContextBuilder &ctx_builder);
 
   LaunchContextBuilder make_launch_context();
 
@@ -125,8 +126,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   const std::string &get_cached_kernel_key() {
     return kernel_key_;
   }
-
-  void offload_to_executable(IRNode *stmt);
 
  private:
   void init(Program &program,

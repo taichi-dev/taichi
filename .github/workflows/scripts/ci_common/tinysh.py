@@ -2,6 +2,8 @@
 
 import os
 import platform
+import shutil
+import subprocess
 import sys
 from contextlib import contextmanager
 from typing import Any, Mapping, Sequence
@@ -78,7 +80,9 @@ class Command:
         env = os.environ.copy()
         env.update(overlay)
 
-        code = os.spawnvpe(os.P_WAIT, args[0], args, env)
+        exe = shutil.which(args[0])
+        proc = subprocess.Popen(args, executable=exe, env=env)
+        code = proc.wait()
         if code:
             cmd = ' '.join([quote(v) for v in args])
             raise CommandFailed(cmd, code)
@@ -146,3 +150,4 @@ git = sh.git
 sccache = sh.sccache
 tar = sh.tar
 bash = sh.bash
+start = sh.start.bake('/wait')

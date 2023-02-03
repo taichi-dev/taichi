@@ -92,13 +92,6 @@ class StructCompiler;
 class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
-  // We let every thread has its own config because the constant folding pass
-  // wants to change the CompileConfig so that it can compile the evaluator,
-  // but we don't want it to change the global config. We will refactor it
-  // later when we make Taichi thread-safe.
-  std::unordered_map<std::thread::id, CompileConfig> configs;
-  std::thread::id main_thread_id_;
-  bool sync{false};  // device/host synchronized?
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
 
@@ -109,7 +102,6 @@ class TI_DLL_EXPORT Program {
   std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
       jit_evaluator_cache;
   std::mutex jit_evaluator_cache_mut;
-  std::atomic<uint32_t> jit_evaluator_id{0};
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
@@ -122,22 +114,8 @@ class TI_DLL_EXPORT Program {
 
   ~Program();
 
-  CompileConfig &this_thread_config() {
-    // std::unordered_map is not thread safe even if we do the rehash in
-    // advance, so we need to add a lock to protect it.
-    std::shared_lock<std::shared_mutex> read_lock(config_map_mut);
-    auto thread_id = std::this_thread::get_id();
-    if (!configs.count(thread_id)) {
-      read_lock.unlock();
-      std::unique_lock<std::shared_mutex> write_lock(config_map_mut);
-      configs[thread_id] = configs[main_thread_id_];
-      return configs[thread_id];
-    }
-    return configs[thread_id];
-  }
-
-  const CompileConfig &config() {
-    return configs[main_thread_id_];
+  const CompileConfig &compile_config() const {
+    return compile_config_;
   }
 
   struct KernelProfilerQueryResult {
@@ -181,8 +159,6 @@ class TI_DLL_EXPORT Program {
 
   int get_snode_tree_size();
 
-  void visualize_layout(const std::string &fn);
-
   Kernel &kernel(const std::function<void(Kernel *)> &body,
                  const std::string &name = "",
                  AutodiffMode autodiff_mode = AutodiffMode::kNone) {
@@ -197,7 +173,7 @@ class TI_DLL_EXPORT Program {
 
   // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
   // offloading them to each backend. We should probably separate the logic?
-  FunctionType compile(Kernel &kernel);
+  FunctionType compile(const CompileConfig &compile_config, Kernel &kernel);
 
   void check_runtime_error();
 
@@ -356,7 +332,7 @@ class TI_DLL_EXPORT Program {
    * Please limit its use to LLVM backend only
    */
   ProgramImpl *get_program_impl() {
-    TI_ASSERT(arch_uses_llvm(this_thread_config().arch));
+    TI_ASSERT(arch_uses_llvm(compile_config().arch));
     return program_impl_.get();
   }
 
@@ -368,6 +344,8 @@ class TI_DLL_EXPORT Program {
   // could store ProgramImpl rather than Program.
 
  private:
+  CompileConfig compile_config_;
+
   uint64 ndarray_writer_counter_{0};
   uint64 ndarray_reader_counter_{0};
   int global_id_counter_{0};
@@ -391,7 +369,6 @@ class TI_DLL_EXPORT Program {
   // TODO: Move ndarrays_ and textures_ to be managed by runtime
   std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
-  std::shared_mutex config_map_mut;
 };
 
 }  // namespace taichi::lang

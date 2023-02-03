@@ -1,4 +1,5 @@
 #include "taichi/aot/graph_data.h"
+#include "taichi/program/program.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
 #include "taichi/program/kernel.h"
@@ -92,7 +93,8 @@ void CompiledGraph::run(
       // JIT & Run
       TI_ASSERT(dispatch.ti_kernel);
       lang::Kernel::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
-      dispatch.ti_kernel->operator()(launch_ctx);
+      auto *ker = dispatch.ti_kernel;
+      ker->operator()(ker->program->compile_config(), launch_ctx);
     }
   }
 }

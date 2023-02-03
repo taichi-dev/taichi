@@ -9,7 +9,7 @@ namespace cuda {
 
 class AotModuleBuilderImpl : public LlvmAotModuleBuilder {
  public:
-  explicit AotModuleBuilderImpl(const CompileConfig *compile_config,
+  explicit AotModuleBuilderImpl(const CompileConfig &compile_config,
                                 LlvmProgramImpl *prog)
       : LlvmAotModuleBuilder(compile_config, prog) {
   }

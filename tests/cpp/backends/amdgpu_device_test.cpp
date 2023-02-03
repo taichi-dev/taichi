@@ -193,7 +193,7 @@ TEST(AMDGPU, ConvertFuncParamAddressSpacePass) {
   }
 }
 
-TEST(AMDGPU, ConvertProgramAndLaunch) {
+TEST(AMDGPU, CompileProgramAndLaunch) {
   std::string program =
       "target datalayout = "
       "\"e-p:64:64-p1:64:64-p2:32:32-p3:32:32-p4:64:64-p5:32:32-p6:32:32-i64:"
@@ -236,8 +236,8 @@ TEST(AMDGPU, ConvertProgramAndLaunch) {
   LLVMInitializeAMDGPUTargetInfo();
   LLVMInitializeAMDGPUAsmPrinter();
   LLVMInitializeAMDGPUAsmParser();
-  auto amdgpu_session =
-      new JITSessionAMDGPU(nullptr, new CompileConfig(), llvm::DataLayout(""));
+  auto amdgpu_session = new JITSessionAMDGPU(nullptr, default_compile_config,
+                                             llvm::DataLayout(""));
   auto amdgpu_module = amdgpu_session->add_module(std::move(llvm_module), 0);
   std::vector<void *> arg_pointers;
   std::vector<int> arg_sizes;

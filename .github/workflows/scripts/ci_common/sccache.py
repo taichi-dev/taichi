@@ -13,7 +13,7 @@ from .tinysh import Command, sh
 
 # -- code --
 @banner("Setup sccache")
-def setup_sccache(env_out: dict) -> Command:
+def setup_sccache() -> Command:
     """
     Download and install sccache, setup compiler wrappers, and return the `sccache` command.
     """
@@ -58,15 +58,16 @@ def setup_sccache(env_out: dict) -> Command:
 
         exe.chmod(0o755)
 
-    env_out["SCCACHE_LOG"] = "error"
-    env_out[
-        "TAICHI_CMAKE_ARGS"] += f" -DCMAKE_C_COMPILER_LAUNCHER={exe} -DCMAKE_CXX_COMPILER_LAUNCHER={exe}"
+    os.environ["SCCACHE_LOG"] = "error"
+    os.environ["TAICHI_CMAKE_ARGS"] += (
+        f" -DCMAKE_C_COMPILER_LAUNCHER={exe}"
+        f" -DCMAKE_CXX_COMPILER_LAUNCHER={exe}")
 
     # <LocalCache>
     cache = root / "cache"
     cache.mkdir(parents=True, exist_ok=True)
-    env_out["SCCACHE_DIR"] = str(cache)
-    env_out["SCCACHE_CACHE_SIZE"] = "40G"
+    os.environ["SCCACHE_DIR"] = str(cache)
+    os.environ["SCCACHE_CACHE_SIZE"] = "40G"
     # </LocalCache>
 
     return sh.bake(str(exe))

@@ -14,6 +14,9 @@
 #if defined(TI_WITH_DX12)
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
@@ -21,17 +24,17 @@
 
 namespace taichi::lang {
 
-KernelCodeGen::KernelCodeGen(const CompileConfig *compile_config,
+KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
                              Kernel *kernel)
     : prog(kernel->program), kernel(kernel), compile_config_(compile_config) {
   this->ir = kernel->ir.get();
 }
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
-    const CompileConfig *compile_config,
+    const CompileConfig &compile_config,
     Kernel *kernel) {
 #ifdef TI_WITH_LLVM
-  const auto arch = compile_config->arch;
+  const auto arch = compile_config.arch;
   if (arch_is_cpu(arch) && arch != Arch::wasm) {
     return std::make_unique<KernelCodeGenCPU>(compile_config, kernel);
   } else if (arch == Arch::wasm) {
@@ -48,6 +51,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -61,7 +70,6 @@ std::optional<LLVMCompiledKernel>
 KernelCodeGen::maybe_read_compilation_from_cache(
     const std::string &kernel_key) {
   TI_AUTO_PROF;
-  const auto &config = *compile_config_;
   auto *llvm_prog = get_llvm_program(prog);
   const auto &reader = llvm_prog->get_cache_reader();
   if (!reader) {
@@ -69,7 +77,7 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
@@ -85,12 +93,12 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 }
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
-  const auto &config = *compile_config_;
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
-  std::string kernel_key = get_hashed_offline_cache_key(&config, kernel);
+  auto *tlctx = llvm_prog->get_llvm_context();
+  std::string kernel_key =
+      get_hashed_offline_cache_key(compile_config_, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
-  if (config.offline_cache && this->supports_offline_cache() &&
+  if (compile_config_.offline_cache && this->supports_offline_cache() &&
       !kernel->is_evaluator) {
     auto res = maybe_read_compilation_from_cache(kernel_key);
     if (res) {
@@ -101,7 +109,7 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
     }
   }
 
-  irpass::ast_to_ir(config, *kernel, false);
+  irpass::ast_to_ir(compile_config_, *kernel, false);
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;
@@ -109,15 +117,13 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
 
   auto &offloads = block->statements;
   std::vector<std::unique_ptr<LLVMCompiledTask>> data(offloads.size());
-  using TaskFunc = int32 (*)(void *);
-  std::vector<TaskFunc> task_funcs(offloads.size());
   for (int i = 0; i < offloads.size(); i++) {
     auto compile_func = [&, i] {
       tlctx->fetch_this_thread_struct_module();
       auto offload = irpass::analysis::clone(offloads[i].get());
       irpass::re_id(offload.get());
-      auto new_data =
-          this->compile_task(&config, nullptr, offload->as<OffloadedStmt>());
+      auto new_data = this->compile_task(compile_config_, nullptr,
+                                         offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
     if (kernel->is_evaluator) {

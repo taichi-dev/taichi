@@ -27,6 +27,22 @@ void ti_export_opengl_runtime(TiRuntime runtime,
   TI_CAPI_TRY_CATCH_END();
 }
 
+TiMemory ti_import_opengl_memory(TiRuntime runtime,
+                                 TiOpenglMemoryInteropInfo *interop_info) {
+  TiMemory out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+
+  OpenglRuntime *runtime2 = static_cast<OpenglRuntime *>((Runtime *)runtime);
+  taichi::lang::DeviceAllocation devalloc{};
+  devalloc.device = &runtime2->get_gl();
+  devalloc.alloc_id = (taichi::lang::DeviceAllocationId)interop_info->buffer;
+  out = devalloc2devmem(*runtime2, devalloc);
+  TI_CAPI_TRY_CATCH_END();
+  return out;
+}
+
 void ti_export_opengl_memory(TiRuntime runtime,
                              TiMemory memory,
                              TiOpenglMemoryInteropInfo *interop_info) {
@@ -39,7 +55,56 @@ void ti_export_opengl_memory(TiRuntime runtime,
   OpenglRuntime *runtime2 = static_cast<OpenglRuntime *>((Runtime *)runtime);
   taichi::lang::DeviceAllocation devalloc = devmem2devalloc(*runtime2, memory);
   interop_info->buffer = devalloc.alloc_id;
-  interop_info->size = runtime2->get_gl().get_devalloc_size(devalloc);
+  interop_info->size =
+      (GLsizeiptr)runtime2->get_gl().get_devalloc_size(devalloc);
+  TI_CAPI_TRY_CATCH_END();
+}
+
+TiImage ti_import_opengl_image(TiRuntime runtime,
+                               TiOpenglImageInteropInfo *interop_info) {
+  TiImage out = TI_NULL_HANDLE;
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL_RV(runtime);
+  TI_CAPI_ARGUMENT_NULL_RV(interop_info);
+  TI_CAPI_INVALID_INTEROP_ARCH_RV(((Runtime *)runtime)->arch, opengl);
+
+  OpenglRuntime *runtime2 = static_cast<OpenglRuntime *>((Runtime *)runtime);
+  taichi::lang::opengl::GLImageAllocation gl_image{};
+  gl_image.target = interop_info->target;
+  gl_image.levels = interop_info->levels;
+  gl_image.format = interop_info->format;
+  gl_image.width = interop_info->width;
+  gl_image.height = interop_info->height;
+  gl_image.depth = interop_info->depth;
+  gl_image.external = true;
+  taichi::lang::DeviceAllocation devalloc = runtime2->get_gl().import_image(
+      interop_info->texture, std::move(gl_image));
+  out = devalloc2devimg(*runtime2, devalloc);
+  TI_CAPI_TRY_CATCH_END();
+  return out;
+}
+
+void ti_export_opengl_image(TiRuntime runtime,
+                            TiImage image,
+                            TiOpenglImageInteropInfo *interop_info) {
+  TI_CAPI_TRY_CATCH_BEGIN();
+  TI_CAPI_ARGUMENT_NULL(runtime);
+  TI_CAPI_ARGUMENT_NULL(image);
+  TI_CAPI_ARGUMENT_NULL(interop_info);
+  TI_CAPI_INVALID_INTEROP_ARCH(((Runtime *)runtime)->arch, opengl);
+
+  OpenglRuntime *runtime2 = static_cast<OpenglRuntime *>((Runtime *)runtime);
+  taichi::lang::DeviceAllocation devalloc = devimg2devalloc(*runtime2, image);
+  GLuint texture = (GLuint)devalloc.alloc_id;
+  const taichi::lang::opengl::GLImageAllocation &gl_image =
+      runtime2->get_gl().get_gl_image(texture);
+  interop_info->texture = texture;
+  interop_info->target = gl_image.target;
+  interop_info->levels = gl_image.levels;
+  interop_info->format = gl_image.format;
+  interop_info->width = gl_image.width;
+  interop_info->height = gl_image.height;
+  interop_info->depth = gl_image.depth;
   TI_CAPI_TRY_CATCH_END();
 }
 

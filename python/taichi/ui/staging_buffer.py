@@ -3,7 +3,6 @@ from taichi.lang import ops
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
 from taichi.lang.kernel_impl import kernel
-from taichi.lang.matrix import Vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32, u8, u32
 
@@ -11,20 +10,8 @@ import taichi as ti
 
 vbo_field_cache = {}
 depth_ndarray_cache = {}
-
-
-def get_vbo_field(vertices):
-    if vertices not in vbo_field_cache:
-        N = vertices.shape[0]
-        pos = 3
-        normal = 3
-        tex_coord = 2
-        color = 4
-        vertex_stride = pos + normal + tex_coord + color
-        vbo = Vector.field(vertex_stride, f32, shape=(N, ))
-        vbo_field_cache[vertices] = vbo
-        return vbo
-    return vbo_field_cache[vertices]
+indices_ndarray_cache = {}
+transforms_ndarray_cache = {}
 
 
 def get_depth_ndarray(window):
@@ -35,68 +22,57 @@ def get_depth_ndarray(window):
     return depth_ndarray_cache[window]
 
 
-@kernel
-def copy_to_vbo(vbo: template(), src: template(), offset: template(),
-                num_components: template()):
-    for i in src:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = src[i][c]
+def get_vbo_field(vertices):
+    if vertices not in vbo_field_cache:
+        N = vertices.shape[0]
+        pos = 3
+        normal = 3
+        tex_coord = 2
+        color = 4
+        vertex_stride = pos + normal + tex_coord + color
+        vbo = np.ndarray((N, vertex_stride), dtype=np.float32)
+        vbo_field_cache[vertices] = vbo
+        return vbo
+    return vbo_field_cache[vertices]
+
+
+def get_indices_field(indices):
+    indices_arr = indices.to_numpy()
+    indices_ndarray_cache[indices] = indices_arr
+    return indices_arr
+
+
+def get_transforms_field(transforms):
+    transforms_arr = transforms.to_numpy()
+    transforms_ndarray_cache[transforms] = transforms_arr
+    return transforms_arr
 
 
 @kernel
-def fill_vbo(vbo: template(), value: f32, offset: template(),
-             num_components: template()):
-    for i in vbo:
-        for c in ti.static(range(num_components)):
-            vbo[i][offset + c] = value
-
-
-def validate_input_field(f, name):
-    if f.dtype != f32:
-        raise Exception(f"{name} needs to have dtype f32")
-    if hasattr(f, 'n'):
-        if f.m != 1:
-            raise Exception(
-                f'{name} needs to be a Vector field (matrix with 1 column)')
-    else:
-        raise Exception(f'{name} needs to be a Vector field')
-    if len(f.shape) != 1:
-        raise Exception(f"the shape of {name} needs to be 1-dimensional")
-
-
-def copy_vertices_to_vbo(vbo, vertices):
-    validate_input_field(vertices, "vertices")
-    if not 2 <= vertices.n <= 3:
-        raise Exception('vertices can only be 2D or 3D vector fields')
-    copy_to_vbo(vbo, vertices, 0, vertices.n)
-
-
-def copy_normals_to_vbo(vbo, normals):
-    validate_input_field(normals, "normals")
-    if normals.n != 3:
-        raise Exception('normals can only be 3D vector fields')
-    copy_to_vbo(vbo, normals, 3, normals.n)
-
-
-def copy_texcoords_to_vbo(vbo, texcoords):
-    validate_input_field(texcoords, "texcoords")
-    if texcoords.n != 2:
-        raise Exception('texcoords can only be 3D vector fields')
-    copy_to_vbo(vbo, texcoords, 6, texcoords.n)
-
-
-def copy_colors_to_vbo(vbo, colors):
-    validate_input_field(colors, "colors")
-    if colors.n != 3 and colors.n != 4:
-        raise Exception('colors can only be 3D/4D vector fields')
-    copy_to_vbo(vbo, colors, 8, colors.n)
-    if colors.n == 3:
-        fill_vbo(vbo, 1.0, 11, 1)
+def copy_all_to_vbo(vbo: ti.types.ndarray(element_dim=1), vertex: template(),
+                    normal: template(), texcoords: template(),
+                    color: template()):
+    for i in vertex:
+        if ti.static(vertex.n == 3):
+            vbo[i][0:3] = vertex[i]
+        else:
+            vbo[i][0:2] = vertex[i]
+            vbo[i][3] = 0.0
+        if ti.static(normal != 0):
+            vbo[i][3:6] = normal[i]
+        if ti.static(texcoords != 0):
+            vbo[i][6:8] = texcoords[i]
+        if ti.static(color != 0):
+            if ti.static(color.n == 3):
+                vbo[i][8:11] = color[i]
+                vbo[i][11] = 1.0
+            else:
+                vbo[i][8:12] = color[i]
 
 
 @ti.kernel
 def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
-                          dst: ti.template(), w: ti.i32, h: ti.i32):
+                          dst: ti.types.ndarray(), w: ti.i32, h: ti.i32):
     for (i, j) in ti.ndrange(w, h):
         c = src.fetch(ti.Vector([i, j]), 0)
         c = ops.max(0.0, ops.min(1.0, c))
@@ -106,7 +82,7 @@ def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
 
 
 @ti.kernel
-def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
+def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
                             num_components: ti.template(),
                             gray_scale: ti.template()):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
@@ -134,7 +110,8 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.template(),
 
 
 @ti.kernel
-def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
+def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(),
+                               dst: ti.types.ndarray(),
                                num_components: ti.template(),
                                gray_scale: ti.template()):
     for I in ti.grouped(src):
@@ -157,7 +134,7 @@ def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
 
 
 @ti.kernel
-def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
+def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
                            num_components: ti.template(),
                            gray_scale: ti.template()):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
@@ -177,7 +154,7 @@ def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.template(),
 
 
 @ti.kernel
-def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.template(),
+def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.types.ndarray(),
                               num_components: ti.template(),
                               gray_scale: ti.template()):
     for I in ti.grouped(src):
@@ -225,7 +202,7 @@ def to_rgba8(image):
     staging_key = image.shape[0:2] if is_numpy else image
 
     if staging_key not in image_field_cache:
-        staging_img = ti.field(u32, image.shape[0:2])
+        staging_img = np.ndarray(image.shape[0:2], dtype=np.uint32)
         image_field_cache[staging_key] = staging_img
     else:
         staging_img = image_field_cache[staging_key]

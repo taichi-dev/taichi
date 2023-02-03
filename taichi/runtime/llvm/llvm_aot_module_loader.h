@@ -26,7 +26,7 @@ class LlvmAotModule : public aot::Module {
   }
 
   Arch arch() const override {
-    return executor_->get_config()->arch;
+    return executor_->get_config().arch;
   }
 
   uint64_t version() const override {

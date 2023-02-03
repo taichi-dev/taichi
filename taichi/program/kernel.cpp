@@ -5,8 +5,6 @@
 #include "taichi/common/logging.h"
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
-#include "taichi/ir/transforms.h"
-#include "taichi/program/extension.h"
 #include "taichi/program/program.h"
 #include "taichi/util/action_recorder.h"
 
@@ -55,22 +53,21 @@ Kernel::Kernel(Program &program,
   }
 }
 
-void Kernel::compile() {
-  compiled_ = program->compile(*this);
+void Kernel::compile(const CompileConfig &compile_config) {
+  compiled_ = program->compile(compile_config, *this);
 }
 
-void Kernel::operator()(LaunchContextBuilder &ctx_builder) {
+void Kernel::operator()(const CompileConfig &compile_config,
+                        LaunchContextBuilder &ctx_builder) {
   if (!compiled_) {
-    compile();
+    compile(compile_config);
   }
 
   compiled_(ctx_builder.get_context());
 
-  program->sync =
-      (program->sync && arch_is_cpu(program->this_thread_config().arch));
-  if (program->this_thread_config().debug &&
-      (arch_is_cpu(program->this_thread_config().arch) ||
-       program->this_thread_config().arch == Arch::cuda)) {
+  const auto arch = compile_config.arch;
+  if (compile_config.debug &&
+      (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu)) {
     program->check_runtime_error();
   }
 }
@@ -330,8 +327,7 @@ void Kernel::init(Program &program,
   is_accessor = false;
   is_evaluator = false;
   compiled_ = nullptr;
-  context =
-      std::make_unique<FrontendContext>(program.this_thread_config().arch);
+  context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
 
@@ -348,19 +344,4 @@ void Kernel::init(Program &program,
   func();
 }
 
-void Kernel::offload_to_executable(IRNode *stmt) {
-  auto config = program->this_thread_config();
-  bool verbose = config.print_ir;
-  if ((is_accessor && !config.print_accessor_ir) ||
-      (is_evaluator && !config.print_evaluator_ir))
-    verbose = false;
-  irpass::offload_to_executable(
-      stmt, config, this, verbose,
-      /*determine_ad_stack_size=*/autodiff_mode == AutodiffMode::kReverse,
-      /*lower_global_access=*/true,
-      /*make_thread_local=*/config.make_thread_local,
-      /*make_block_local=*/
-      is_extension_supported(config.arch, Extension::bls) &&
-          config.make_block_local);
-}
 }  // namespace taichi::lang

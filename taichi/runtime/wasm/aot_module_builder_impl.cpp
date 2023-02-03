@@ -9,7 +9,7 @@
 namespace taichi::lang {
 namespace wasm {
 
-AotModuleBuilderImpl::AotModuleBuilderImpl(const CompileConfig *compile_config)
+AotModuleBuilderImpl::AotModuleBuilderImpl(const CompileConfig &compile_config)
     : compile_config_(compile_config), module_(nullptr) {
   TI_AUTO_PROF
 }

@@ -23,17 +23,6 @@ set(CMAKE_POLICY_DEFAULT_CMP0063 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib)
 
-if(ANDROID)
-    set(TI_WITH_VULKAN ON)
-    set(TI_WITH_LLVM OFF)
-    set(TI_WITH_METAL OFF)
-    set(TI_WITH_CUDA OFF)
-    set(TI_WITH_OPENGL OFF)
-    set(TI_WITH_CC OFF)
-    set(TI_WITH_DX11 OFF)
-    set(TI_WITH_DX12 OFF)
-endif()
-
 if (TI_WITH_AMDGPU AND TI_WITH_CUDA)
     message(WARNING "Compiling CUDA and AMDGPU backends simultaneously")
 endif()
@@ -104,7 +93,8 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/system/*"
     "taichi/transforms/*"
     "taichi/aot/*.cpp" "taichi/aot/*.h"
-    "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
+    "taichi/platform/cuda/*" "taichi/platform/amdgpu/*"
+    "taichi/platform/mac/*" "taichi/platform/windows/*"
     "taichi/codegen/*.cpp" "taichi/codegen/*.h"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
@@ -127,7 +117,7 @@ endif()
 
 if (TI_WITH_AMDGPU)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_AMDGPU")
-# file(GLOB TAICHI_AMDGPU_RUNTIME_SOURCE "taichi/runtime/amdgpu/runtime.cpp")
+  file(GLOB TAICHI_AMDGPU_RUNTIME_SOURCE "taichi/runtime/amdgpu/runtime.cpp")
   list(APPEND TAIHI_CORE_SOURCE ${TAICHI_AMDGPU_RUNTIME_SOURCE})
 endif()
 
@@ -170,6 +160,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   endif()
 
   message("Building with GLFW")
+  add_compile_definitions(TI_WITH_GLFW)
   add_subdirectory(external/glfw)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE glfw)
   target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glfw/include)
@@ -509,5 +500,11 @@ endif()
 
 if (NOT APPLE)
     install(FILES ${CMAKE_SOURCE_DIR}/external/cuda_libdevice/slim_libdevice.10.bc
+            DESTINATION ${INSTALL_LIB_DIR}/runtime)
+endif()
+
+if (TI_WITH_AMDGPU)
+    file(GLOB AMDGPU_BC_FILES ${CMAKE_SOURCE_DIR}/external/amdgpu_libdevice/*.bc)
+    install(FILES ${AMDGPU_BC_FILES}
             DESTINATION ${INSTALL_LIB_DIR}/runtime)
 endif()

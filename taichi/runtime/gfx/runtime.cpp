@@ -633,7 +633,6 @@ Device *GfxRuntime::get_ti_device() const {
 void GfxRuntime::ensure_current_cmdlist() {
   // Create new command list if current one is nullptr
   if (!current_cmdlist_) {
-    ctx_buffers_.clear();
     current_cmdlist_pending_since_ = high_res_clock::now();
     auto [cmdlist, res] =
         device_->get_compute_stream()->new_command_list_unique();

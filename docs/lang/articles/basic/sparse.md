@@ -244,7 +244,7 @@ pixel.place(x)
 #### 1. Activity checking
 You can use `ti.is_active(snode, [i, j, ...])` to explicitly query if `snode[i, j, ...]` is active or not.
 
-```python{3}
+```python {3}
 @ti.kernel
 def activity_checking(snode: ti.template(), i: ti.i32, j: ti.i32):
     print(ti.is_active(snode, [i, j]))
@@ -261,7 +261,7 @@ for i in range(12):
 ```
 #### 2. Activation
 You can use `ti.activate(snode, [i, j, ...])` to explicitly activate a cell of `snode[i, j, ...]`.
-```python{3,4,5}
+```python {3,4,5}
 @ti.kernel
 def activate_snodes()
     ti.activate(block1, [1, 0])

@@ -52,7 +52,7 @@ class Sphere:
 
 Functions associated with structs follow the same scope rules as other functions. In other words, they can be placed in either the Taichi scope or the Python scope. Each instance of the `Sphere` struct type now have the above functions attached to them. The functions can be called in the following way:
 
-```python{3,10}
+```python {3,10}
 a_python_struct = Sphere(center=vec3(0.0), radius=1.0)
 # calls a python scope function from python
 a_python_struct.is_zero_sized() # False

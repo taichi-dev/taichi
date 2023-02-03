@@ -619,7 +619,7 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self,
+      .def("jit_run", [](aot::CompiledGraph *self,
                      const CompileConfig &compile_config,
                      const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;

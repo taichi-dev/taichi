@@ -1145,27 +1145,6 @@ RhiResult VulkanCommandList::dispatch(uint32_t x,
   return RhiResult::success;
 }
 
-// RhiResult VulkanCommandList::dispatch(std::string kernel_name,
-//                                       uint32_t x,
-//                                       uint32_t y,
-//                                       uint32_t z) noexcept {
-//   auto &dev_props = ti_device_->get_vk_physical_device_props();
-//   if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
-//       y > dev_props.limits.maxComputeWorkGroupCount[1] ||
-//       z > dev_props.limits.maxComputeWorkGroupCount[2]) {
-//     return RhiResult::not_supported;
-//   }
-//   auto pool = vkapi::create_query_pool(ti_device_->vk_device());
-//   vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
-//   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 0);
-//   vkCmdDispatch(buffer_->buffer, x, y, z);
-//   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 1);
-//   auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(ti_device_->profiler_);
-//   vulkan_profiler->record_dispatch(kernel_name, pool);
-  
-//   return RhiResult::success;
-// }
-
 vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
   return buffer_;
 }
@@ -1636,11 +1615,6 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
              "Failed to allocate initial descriptor pool");
 
   vkGetPhysicalDeviceProperties(physical_device_, &vk_device_properties_);
-  if (profiler_) {
-    auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(profiler_);
-    vulkan_profiler->set_vk_device(device_);
-    vulkan_profiler->set_vk_timestamp_period(vk_device_properties_.limits.timestampPeriod);
-  }
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -1957,8 +1931,6 @@ VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
   vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       pool->query_pool, 0);
-  // auto vulkan_profiler = dynamic_cast<VulkanProfiler *>(ti_device_->profiler_);
-  // vulkan_profiler->record_dispatch(kernel_name, pool);
   auto sampler=std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
   return sampler;
 }
@@ -2122,46 +2094,7 @@ void VulkanStream::command_sync() {
   VkPhysicalDeviceProperties props{};
   vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
 
-  // if (device_.profiler_) {
-    device_.profiler_sync();
-  // }
-  // for (const auto &cmdbuf : submitted_cmdbuffers_) {
-  //   cmdbuf->profiler_sync();
-  // }
-  #if 0
-  double kernel_time = 0.0;
-  for (const auto &cmdbuf : submitted_cmdbuffers_) {
-    // if (cmdbuf.query_pool == nullptr) {
-    //   continue;
-    // }
-
-    double duration_us = 0.0;
-
-// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-    // printf("timestamp counter %d\n", timestamp_id_);
-    // device_->profiler_->get_
-    auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
-    printf("#dispatches %zu\n", vulkan_profiler->batch_size());
-    int len = vulkan_profiler->batch_size();
-    for (int i = 0; i < len; ++i) {
-      vulkan_profiler->record_time(0.0);
-    }
-
-    // uint64_t t[2];
-    // vkGetQueryPoolResults(device_.vk_device(), cmdbuf.query_pool->query_pool, 0,
-    //                       2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
-    //                       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    // duration_us = (t[1] - t[0]) * props.limits.timestampPeriod / 1000.0;
-
-    // device_time_elapsed_us_ += duration_us;
-    // if (device_.profiler_) {
-    //   auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
-    //   vulkan_profiler->record_time(duration_us / 1000.0);
-    // }
-
-    kernel_time += duration_us / 1000.0;
-  }
-  #endif
+  device_.profiler_sync();
 
   submitted_cmdbuffers_.clear();
 }

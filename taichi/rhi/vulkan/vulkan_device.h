@@ -3,7 +3,6 @@
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/vulkan/vulkan_api.h"
 #include "taichi/rhi/vulkan/vulkan_utils.h"
-#include "taichi/rhi/vulkan/vulkan_profiler.h"
 #include "taichi/common/ref_counted_pool.h"
 
 #include "vk_mem_alloc.h"
@@ -411,8 +410,6 @@ class VulkanProfilerSamplingHandler : public KernelProfilerSamplingHandlerBase {
        : kernel_name_(kernel_name), query_pool_(query_pool) {
    }
   ~VulkanProfilerSamplingHandler() {}
-  // void set_kernel_name(const std::string &kernel_name) override;
-  // void set_query_pool() {
   std::string kernel_name_;
   vkapi::IVkQueryPool query_pool_;
 };
@@ -635,7 +632,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     uint32_t compute_queue_family_index{0};
     VkQueue graphics_queue{VK_NULL_HANDLE};
     uint32_t graphics_queue_family_index{0};
-    VulkanProfiler *profiler;
+    KernelProfilerBase *profiler;
   };
 
   VulkanDevice();
@@ -859,7 +856,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                          void **mapped_ptr);
 
   // Profiler
-  // VulkanProfiler *profiler_;
   std::vector<std::unique_ptr<KernelProfilerSamplingHandlerBase>> samplers_;
 };
 

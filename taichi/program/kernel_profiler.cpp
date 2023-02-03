@@ -3,7 +3,6 @@
 #include "taichi/system/timer.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_profiler.h"
-#include "taichi/rhi/vulkan/vulkan_profiler.h"
 #include "taichi/system/timeline.h"
 
 #include <queue>
@@ -190,8 +189,6 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
 #else
     TI_NOT_IMPLEMENTED;
 #endif
-  } else if (arch == Arch::vulkan) {
-    return std::make_unique<VulkanProfiler>();
   } else {
     return std::make_unique<DefaultProfiler>();
   }

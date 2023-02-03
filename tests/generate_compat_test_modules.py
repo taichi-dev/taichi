@@ -9,6 +9,10 @@ import subprocess
 from test_utils import parse_test_configs2
 
 if __name__ == "__main__":
+    if os.environ['PLATFORM'] and "m1" in os.environ['PLATFORM']:
+        print("WARNING: compatibility test is ignored on m1")
+        exit(0)
+
     os.chdir("tests")
 
     BASE_DIR = "tmp/aot-compat-test/"

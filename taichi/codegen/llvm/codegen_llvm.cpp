@@ -308,13 +308,11 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(module == nullptr
-                            ? get_llvm_program(kernel->program)
-                                  ->get_llvm_context(compile_config.arch)
-                                  ->new_module("kernel")
-                            : std::move(module),
-                        get_llvm_program(kernel->program)
-                            ->get_llvm_context(compile_config.arch)),
+    : LLVMModuleBuilder(module == nullptr ? get_llvm_program(kernel->program)
+                                                ->get_llvm_context()
+                                                ->new_module("kernel")
+                                          : std::move(module),
+                        get_llvm_program(kernel->program)->get_llvm_context()),
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
@@ -2023,8 +2021,7 @@ std::tuple<llvm::Value *, llvm::Value *> TaskCodeGenLLVM::get_range_for_bounds(
   return std::tuple(begin, end);
 }
 
-void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
-                                                bool spmd) {
+void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt) {
   using namespace llvm;
   // TODO: instead of constructing tons of LLVM IR, writing the logic in
   // runtime.cpp may be a cleaner solution. See
@@ -2124,18 +2121,9 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
       call("block_barrier");  // "__syncthreads()"
     }
 
-    llvm::Value *thread_idx = nullptr, *block_dim = nullptr;
-
-    if (spmd) {
-      thread_idx =
-          builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_tid_x, {}, {});
-      block_dim = builder->CreateIntrinsic(Intrinsic::nvvm_read_ptx_sreg_ntid_x,
-                                           {}, {});
-      builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
-                           loop_index);
-    } else {
-      builder->CreateStore(lower_bound, loop_index);
-    }
+    auto [thread_idx, block_dim] = this->get_spmd_info();
+    builder->CreateStore(builder->CreateAdd(thread_idx, lower_bound),
+                         loop_index);
 
     auto loop_test_bb = BasicBlock::Create(*llvm_context, "loop_test", func);
     auto loop_body_bb = BasicBlock::Create(*llvm_context, "loop_body", func);
@@ -2218,11 +2206,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt,
       // body tail: increment loop_index and jump to loop_test
       builder->SetInsertPoint(body_tail_bb);
 
-      if (spmd) {
-        create_increment(loop_index, block_dim);
-      } else {
-        create_increment(loop_index, tlctx->get_constant(1));
-      }
+      create_increment(loop_index, block_dim);
       builder->CreateBr(loop_test_bb);
 
       builder->SetInsertPoint(func_exit);
@@ -2551,7 +2535,7 @@ FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
 }
 
 void TaskCodeGenLLVM::initialize_context() {
-  tlctx = get_llvm_program(prog)->get_llvm_context(compile_config.arch);
+  tlctx = get_llvm_program(prog)->get_llvm_context();
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }

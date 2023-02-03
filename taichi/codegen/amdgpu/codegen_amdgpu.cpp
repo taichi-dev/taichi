@@ -314,7 +314,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        create_offload_struct_for(stmt, true);
+        create_offload_struct_for(stmt);
       } else if (stmt->task_type == Type::mesh_for) {
         create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
@@ -415,6 +415,18 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       }
     }
   }
+
+ private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx =
+        builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
+    auto workgroup_dim_ =
+        call("__ockl_get_local_size",
+             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
+    auto block_dim = builder->CreateTrunc(
+        workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
+    return std::make_tuple(thread_idx, block_dim);
+  }
 };
 
 LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
@@ -427,8 +439,7 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
 
 FunctionType KernelCodeGenAMDGPU::compile_to_function() {
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = get_compile_config();
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
 
   AMDGPUModuleToFunctionConverter converter{tlctx,
                                             llvm_prog->get_runtime_executor()};

@@ -684,7 +684,8 @@ class TI_DLL_EXPORT Device {
    * - This is a synchronous operation, function returns when upload is complete
    * - The host data pointers must be valid and large enough for the size of the
    * copy, otherwise this function might segfault
-   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid values
+   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid
+   * values
    * @params[in] device_ptr The array to destination device pointers.
    * @params[in] data The array to source host pointers.
    * @params[in] sizes The array to sizes of data/copy.
@@ -702,15 +703,18 @@ class TI_DLL_EXPORT Device {
 
   /**
    * Read data from device allocations back to host immediately.
-   * - This is a synchronous operation, function returns when readback is complete
+   * - This is a synchronous operation, function returns when readback is
+   * complete
    * - The host data pointers must be valid and large enough for the size of the
    * copy, otherwise this function might segfault
-   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid values
+   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid
+   * values
    * @params[in] device_ptr The array to source device pointers.
    * @params[in] data The array to destination host pointers.
    * @params[in] sizes The array to sizes of data/copy.
    * @params[in] count The number of readbacks to perform.
-   * @params[in] wait_sema The semaphores to wait for before the copy is initiated.
+   * @params[in] wait_sema The semaphores to wait for before the copy is
+   * initiated.
    * @return The status of this operation
    * - `success` if the upload is successful.
    * - `out_of_memory` if operation failed due to lack of device or host memory.

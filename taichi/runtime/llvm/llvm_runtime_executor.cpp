@@ -612,7 +612,6 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,
                                         prealloc_size);
-    tlctx = llvm_context_device_.get();
 #else
     TI_NOT_IMPLEMENTED
 #endif

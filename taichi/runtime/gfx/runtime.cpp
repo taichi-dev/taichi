@@ -590,6 +590,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Have to force flush out the command list when profiler is enabled.
   if (device_->profiler_) {
     flush();
+    device_->profiler_sync();
   } else {
     submit_current_cmdlist_if_timeout();
   }

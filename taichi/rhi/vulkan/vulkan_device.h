@@ -594,8 +594,6 @@ class VulkanStream : public Stream {
 
   void command_sync() override;
 
-  double device_time_elapsed_us() const override;
-
  private:
   struct TrackedCmdbuf {
     vkapi::IVkFence fence;
@@ -609,7 +607,6 @@ class VulkanStream : public Stream {
   // Command pools are per-thread
   vkapi::IVkCommandPool command_pool_;
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
-  double device_time_elapsed_us_;
 };
 
 struct VulkanCapabilities {

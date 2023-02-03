@@ -347,12 +347,6 @@ void export_lang(py::module &m) {
       .def(
           "get_kernel_profiler_device_name",
           [](Program *program) { return program->profiler->get_device_name(); })
-      .def("get_compute_stream_device_time_elapsed_us",
-           [](Program *program) {
-             return program->get_compute_device()
-                 ->get_compute_stream()
-                 ->device_time_elapsed_us();
-           })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);

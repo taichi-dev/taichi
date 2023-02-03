@@ -1901,33 +1901,40 @@ Stream *VulkanDevice::get_compute_stream() {
 }
 
 std::unique_ptr<KernelProfilerSamplingHandlerBase>
-
 VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
-  auto pool = vkapi::create_query_pool(ti_device_->vk_device());
-  vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
-  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                      pool->query_pool, 0);
-  auto sampler =
-      std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
-  return sampler;
+  if (ti_device_->profiler_) {
+    auto pool = vkapi::create_query_pool(ti_device_->vk_device());
+    vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
+    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                        pool->query_pool, 0);
+    auto sampler =
+        std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
+    return sampler;
+  } else {
+    return nullptr;
+  }
 }
 
 void VulkanCommandList::end_profiler_scope(
     std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
-  auto vulkan_handler =
-      dynamic_cast<VulkanProfilerSamplingHandler *>(handler.get());
-  auto pool = vulkan_handler->query_pool_;
-  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                      pool->query_pool, 1);
-  ti_device_->profiler_add_sampling_handler(std::move(handler));
+  if (ti_device_->profiler_) {
+    auto vulkan_handler =
+        dynamic_cast<VulkanProfilerSamplingHandler *>(handler.get());
+    auto pool = vulkan_handler->query_pool_;
+    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                        pool->query_pool, 1);
+    ti_device_->profiler_add_sampling_handler(std::move(handler));
+  }
 }
 
 void VulkanDevice::profiler_sync() {
-  auto records = profiler_get_sampled_time();
-  for (const auto &rec : records) {
-    profiler_->insert_record(rec.first, rec.second);
+  if (profiler_) {
+    auto records = profiler_get_sampled_time();
+    for (const auto &rec : records) {
+      profiler_->insert_record(rec.first, rec.second);
+    }
+    samplers_.clear();
   }
-  samplers_.clear();
 }
 
 Stream *VulkanDevice::get_graphics_stream() {
@@ -2065,10 +2072,6 @@ void VulkanStream::command_sync() {
   device_.profiler_sync();
 
   submitted_cmdbuffers_.clear();
-}
-
-double VulkanStream::device_time_elapsed_us() const {
-  return device_time_elapsed_us_;
 }
 
 std::unique_ptr<Pipeline> VulkanDevice::create_raster_pipeline(

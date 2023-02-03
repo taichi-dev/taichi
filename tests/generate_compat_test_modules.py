@@ -9,7 +9,7 @@ import subprocess
 from test_utils import parse_test_configs2
 
 if __name__ == "__main__":
-    if os.environ['PLATFORM'] and "m1" in os.environ['PLATFORM']:
+    if 'PLATFORM' in os.environ and "m1" in os.environ['PLATFORM']:
         print("WARNING: compatibility test is ignored on m1")
         exit(0)
 

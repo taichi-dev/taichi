@@ -494,7 +494,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Record commands
   const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
 
-
   for (int i = 0; i < task_attribs.size(); ++i) {
     const auto &attribs = task_attribs[i];
     auto vp = ti_kernel->get_pipeline(i);
@@ -550,8 +549,13 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
-    status = current_cmdlist_->dispatch(attribs.name, group_x);
-    // status = current_cmdlist_->dispatch(group_x);
+
+    auto handler = current_cmdlist_->begin_profiler_scope(attribs.name);
+
+    status = current_cmdlist_->dispatch(group_x);
+
+    current_cmdlist_->end_profiler_scope(std::move(handler));
+
     TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
                 status);
     current_cmdlist_->memory_barrier();
@@ -637,7 +641,6 @@ void GfxRuntime::synchronize() {
   device_->wait_idle();
   ctx_buffers_.clear();
   ndarrays_in_use_.clear();
-  device_->profiler_->update();
   fflush(stdout);
 }
 
@@ -653,6 +656,11 @@ StreamSemaphore GfxRuntime::flush() {
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());
   }
+// #if defined(__APPLE__)
+//   if (device_->profiler_) {
+//     device_->profiler_sync();
+//   }
+// #endif
   return sema;
 }
 

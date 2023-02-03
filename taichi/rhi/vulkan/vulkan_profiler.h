@@ -1,7 +1,7 @@
 #pragma once
 
 #include "taichi/system/timeline.h"
-#include "taichi/program/kernel_profiler.h"
+    #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/vulkan/vulkan_api.h"
 
 #include <deque>

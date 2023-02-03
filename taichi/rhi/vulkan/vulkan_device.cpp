@@ -1145,26 +1145,26 @@ RhiResult VulkanCommandList::dispatch(uint32_t x,
   return RhiResult::success;
 }
 
-RhiResult VulkanCommandList::dispatch(std::string kernel_name,
-                                      uint32_t x,
-                                      uint32_t y,
-                                      uint32_t z) noexcept {
-  auto &dev_props = ti_device_->get_vk_physical_device_props();
-  if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
-      y > dev_props.limits.maxComputeWorkGroupCount[1] ||
-      z > dev_props.limits.maxComputeWorkGroupCount[2]) {
-    return RhiResult::not_supported;
-  }
-  auto pool = vkapi::create_query_pool(ti_device_->vk_device());
-  vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
-  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 0);
-  vkCmdDispatch(buffer_->buffer, x, y, z);
-  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 1);
-  auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(ti_device_->profiler_);
-  vulkan_profiler->record_dispatch(kernel_name, pool);
+// RhiResult VulkanCommandList::dispatch(std::string kernel_name,
+//                                       uint32_t x,
+//                                       uint32_t y,
+//                                       uint32_t z) noexcept {
+//   auto &dev_props = ti_device_->get_vk_physical_device_props();
+//   if (x > dev_props.limits.maxComputeWorkGroupCount[0] ||
+//       y > dev_props.limits.maxComputeWorkGroupCount[1] ||
+//       z > dev_props.limits.maxComputeWorkGroupCount[2]) {
+//     return RhiResult::not_supported;
+//   }
+//   auto pool = vkapi::create_query_pool(ti_device_->vk_device());
+//   vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
+//   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 0);
+//   vkCmdDispatch(buffer_->buffer, x, y, z);
+//   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, pool->query_pool, 1);
+//   auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(ti_device_->profiler_);
+//   vulkan_profiler->record_dispatch(kernel_name, pool);
   
-  return RhiResult::success;
-}
+//   return RhiResult::success;
+// }
 
 vkapi::IVkCommandBuffer VulkanCommandList::vk_command_buffer() {
   return buffer_;
@@ -1950,6 +1950,46 @@ Stream *VulkanDevice::get_compute_stream() {
   return iter->second.get();
 }
 
+std::unique_ptr<KernelProfilerSamplingHandlerBase>
+
+VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
+  auto pool = vkapi::create_query_pool(ti_device_->vk_device());
+  vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                      pool->query_pool, 0);
+  // auto vulkan_profiler = dynamic_cast<VulkanProfiler *>(ti_device_->profiler_);
+  // vulkan_profiler->record_dispatch(kernel_name, pool);
+  auto sampler=std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
+  return sampler;
+}
+
+void VulkanCommandList::end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+  auto vulkan_handler = dynamic_cast<VulkanProfilerSamplingHandler*>(handler.get());
+  auto pool = vulkan_handler->query_pool_;
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                       pool->query_pool, 1);
+  ti_device_->profiler_add_sampling_handler(std::move(handler));
+}
+
+void VulkanDevice::profiler_sync() {
+  // for (int i = 0; i < ti_device_->samplers_.size(); ++i) {
+  //   auto handler = samplers_[i].get();
+  //   auto vulkan_handler =
+  //       dynamic_cast<VulkanProfilerSamplingHandler *>(handler);
+
+  //   // uint64_t t[2];
+  //   // vkGetQueryPoolResults(ti_device_->vk_device(),
+  //   // vulkan_handler->query_pool_, 0, 2,
+  //   //                       sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+  //   //                       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+  // }
+  auto records = profiler_get_sampled_time();
+  for (const auto &rec : records) {
+    profiler_->insert_record(rec.first, rec.second);  
+  }
+  samplers_.clear();
+}
+
 Stream *VulkanDevice::get_graphics_stream() {
   auto tid = std::this_thread::get_id();
   auto &stream_map = graphics_streams_->map;
@@ -1969,6 +2009,27 @@ void VulkanDevice::wait_idle() {
   for (auto &[tid, stream] : graphics_streams_->map) {
     stream->command_sync();
   }
+}
+
+std::vector<std::pair<std::string, double>> VulkanDevice::profiler_get_sampled_time() {
+  std::vector<std::pair<std::string, double>> sampled_time;
+  for (int i = 0; i < samplers_.size(); ++i) {
+    auto handler = samplers_[i].get();
+    auto vulkan_handler =
+        dynamic_cast<VulkanProfilerSamplingHandler *>(handler);
+    auto kernel_name = vulkan_handler->kernel_name_;
+    auto query_pool = vulkan_handler->query_pool_->query_pool;
+
+    double duration_ms = 0.0;
+
+    uint64_t t[2];
+    vkGetQueryPoolResults(vk_device(), query_pool,
+                          0, 2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    duration_ms = (t[1] - t[0]) * vk_device_properties_.limits.timestampPeriod / 1000000.0;
+    sampled_time.push_back(std::make_pair(kernel_name, duration_ms));
+  }
+  return sampled_time;
 }
 
 RhiResult VulkanStream::new_command_list(CommandList **out_cmdlist) noexcept {
@@ -2061,11 +2122,12 @@ void VulkanStream::command_sync() {
   VkPhysicalDeviceProperties props{};
   vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
 
-  for (int i = 0; i < submitted_cmdbuffers_.size(); ++i) {
-
-  }
-  auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(device_.profiler_);
-  vulkan_profiler->update();
+  // if (device_.profiler_) {
+    device_.profiler_sync();
+  // }
+  // for (const auto &cmdbuf : submitted_cmdbuffers_) {
+  //   cmdbuf->profiler_sync();
+  // }
   #if 0
   double kernel_time = 0.0;
   for (const auto &cmdbuf : submitted_cmdbuffers_) {

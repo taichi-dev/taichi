@@ -403,13 +403,6 @@ class TI_DLL_EXPORT CommandList {
                              uint32_t y = 1,
                              uint32_t z = 1) noexcept = 0;
 
-  virtual RhiResult dispatch(std::string kernel_name,
-                             uint32_t x,
-                             uint32_t y = 1,
-                             uint32_t z = 1) noexcept {
-    return RhiResult::not_supported;
-  }
-
   struct ComputeSize {
     uint32_t x{0};
     uint32_t y{0};
@@ -437,6 +430,14 @@ class TI_DLL_EXPORT CommandList {
                              ComputeSize block_size) noexcept {
     return RhiResult::not_supported;
   }
+
+  // Profiler support
+  virtual std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(const std::string& kernel_name) {
+    return nullptr;
+  }
+
+  virtual void end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {}
+
 
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
@@ -788,6 +789,8 @@ class TI_DLL_EXPORT Device {
     caps_ = std::move(caps);
   }
 
+  // Profiler support
+  virtual void profiler_sync() {};
   KernelProfilerBase *profiler_;
 };
 

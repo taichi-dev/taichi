@@ -43,6 +43,14 @@ struct KernelProfileStatisticalResult {
   bool operator<(const KernelProfileStatisticalResult &o) const;
 };
 
+class KernelProfilerSamplingHandlerBase {
+ public:
+  KernelProfilerSamplingHandlerBase() {
+  }
+  virtual ~KernelProfilerSamplingHandlerBase() {
+  }
+};
+
 class KernelProfilerBase {
  protected:
   std::vector<KernelProfileTracedRecord> traced_records_;
@@ -97,6 +105,8 @@ class KernelProfilerBase {
   }
 
   double get_total_time() const;
+
+  void insert_record(const std::string &kernel_name, double duration_ms);
 
   virtual std::string get_device_name() {
     std::string str(" ");

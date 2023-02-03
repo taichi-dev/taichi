@@ -404,6 +404,19 @@ class VulkanPipeline : public Pipeline {
   vkapi::IVkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
+class VulkanProfilerSamplingHandler : public KernelProfilerSamplingHandlerBase {
+  public:
+   VulkanProfilerSamplingHandler(std::string kernel_name,
+                                 vkapi::IVkQueryPool query_pool)
+       : kernel_name_(kernel_name), query_pool_(query_pool) {
+   }
+  ~VulkanProfilerSamplingHandler() {}
+  // void set_kernel_name(const std::string &kernel_name) override;
+  // void set_query_pool() {
+  std::string kernel_name_;
+  vkapi::IVkQueryPool query_pool_;
+};
+
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
@@ -421,7 +434,6 @@ class VulkanCommandList : public CommandList {
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
-  RhiResult dispatch(std::string kernel_name, uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
   void begin_renderpass(int x0,
                         int y0,
                         int x1,
@@ -478,6 +490,10 @@ class VulkanCommandList : public CommandList {
 
   vkapi::IVkCommandBuffer vk_command_buffer();
 
+  // Profiler support
+  std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(const std::string& kernel_name) override;
+  void end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) override;
+
  private:
   bool finalized_{false};
   VulkanDevice *ti_device_;
@@ -493,9 +509,6 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkRenderPass current_renderpass_{VK_NULL_HANDLE};
   vkapi::IVkFramebuffer current_framebuffer_{VK_NULL_HANDLE};
   uint32_t viewport_width_{0}, viewport_height_{0};
-
-  // Profiler
-  VulkanProfiler *profiler_;
 };
 
 class VulkanSurface : public Surface {
@@ -750,6 +763,14 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return vk_device_properties_;
   }
 
+  // For profilers
+  void profiler_add_sampling_handler(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+    samplers_.push_back(std::move(handler));
+  }
+
+  std::vector<std::pair<std::string, double>> profiler_get_sampled_time();
+  void profiler_sync() override;
+
  private:
   friend VulkanSurface;
 
@@ -836,6 +857,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                          size_t offset,
                          size_t size,
                          void **mapped_ptr);
+
+  // Profiler
+  // VulkanProfiler *profiler_;
+  std::vector<std::unique_ptr<KernelProfilerSamplingHandlerBase>> samplers_;
 };
 
 }  // namespace vulkan

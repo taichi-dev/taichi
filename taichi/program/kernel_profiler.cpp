@@ -68,6 +68,25 @@ double KernelProfilerBase::get_total_time() const {
   return total_time_ms_ / 1000.0;
 }
 
+void KernelProfilerBase::insert_record(const std::string &kernel_name,
+                                       double duration_ms) {
+  // Trace record
+  KernelProfileTracedRecord record;
+  record.name = kernel_name;
+  record.kernel_elapsed_time_in_ms = duration_ms;
+  traced_records_.push_back(record);
+  // Count record
+  auto it = std::find_if(
+      statistical_results_.begin(), statistical_results_.end(),
+      [&](KernelProfileStatisticalResult &r) { return r.name == record.name; });
+  if (it == statistical_results_.end()) {
+    statistical_results_.emplace_back(record.name);
+    it = std::prev(statistical_results_.end());
+  }
+  it->insert_record(duration_ms);
+  total_time_ms_ += duration_ms;
+}
+
 namespace {
 // A simple profiler that uses Time::get_time()
 class DefaultProfiler : public KernelProfilerBase {

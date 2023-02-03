@@ -494,13 +494,6 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   // Record commands
   const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
 
-  // // Profiler
-  // if (device_->profiler_) {
-  //   // for (int i = 0; i < task_attribs.size(); ++i) {
-  //   //   const auto &attribs = task_attribs[i];
-  //   //   device_->profiler_->record_dispatch(attribs.name);
-  //   // }
-  // }
 
   for (int i = 0; i < task_attribs.size(); ++i) {
     const auto &attribs = task_attribs[i];
@@ -588,7 +581,17 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
   }
 
+#if defined(__APPLE__)
+  // On Apple M1 it limits the max number of query pools to 32.
+  // Have to force flush out the command list when profiler is enabled.
+  if (device_->profiler_) {
+    flush();
+  } else {
+    submit_current_cmdlist_if_timeout();
+  }
+#else
   submit_current_cmdlist_if_timeout();
+#endif
 }
 
 void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {

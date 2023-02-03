@@ -1636,6 +1636,11 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
              "Failed to allocate initial descriptor pool");
 
   vkGetPhysicalDeviceProperties(physical_device_, &vk_device_properties_);
+  if (profiler_) {
+    auto vulkan_profiler = dynamic_cast<VulkanProfiler*>(profiler_);
+    vulkan_profiler->set_vk_device(device_);
+    vulkan_profiler->set_vk_timestamp_period(vk_device_properties_.limits.timestampPeriod);
+  }
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -2056,7 +2061,6 @@ void VulkanStream::command_sync() {
   VkPhysicalDeviceProperties props{};
   vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
 
-  printf("Command buffer %zu\n", submitted_cmdbuffers_.size());
   for (int i = 0; i < submitted_cmdbuffers_.size(); ++i) {
 
   }

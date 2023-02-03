@@ -58,7 +58,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 #endif
   } else if (arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel);
+    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel, tlctx);
 #else
     TI_NOT_IMPLEMENTED
 #endif

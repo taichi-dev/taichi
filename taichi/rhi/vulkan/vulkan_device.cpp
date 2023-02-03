@@ -1604,15 +1604,18 @@ VulkanDevice::~VulkanDevice() {
   // be properly deallocated before VulkanDevice destruction. This isn't
   // the most proper fix but is less intrusive compared to other
   // approaches.
+  vkDeviceWaitIdle(device_);
+
   allocations_.clear();
   image_allocations_.clear();
 
-  vkDeviceWaitIdle(device_);
-
-  desc_pool_ = nullptr;
+  compute_streams_.reset();
+  graphics_streams_.reset();
 
   framebuffer_pools_.clear();
   renderpass_pools_.clear();
+  desc_set_layouts_.clear();
+  desc_pool_ = nullptr;
 
   vmaDestroyAllocator(allocator_);
   vmaDestroyAllocator(allocator_export_);
@@ -2827,12 +2830,6 @@ VulkanSurface::~VulkanSurface() {
     }
     swapchain_images_.clear();
   }
-  if (depth_buffer_ != kDeviceNullAllocation) {
-    device_->dealloc_memory(depth_buffer_);
-  }
-  if (screenshot_buffer_ != kDeviceNullAllocation) {
-    device_->dealloc_memory(screenshot_buffer_);
-  }
 }
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
@@ -2898,11 +2895,11 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   auto [w, h] = get_size();
   size_t size_bytes = size_t(w * h) * sizeof(float);
 
-  if (depth_buffer_ == kDeviceNullAllocation) {
+  if (!depth_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    depth_buffer_ = device_->allocate_memory(params);
+    depth_buffer_ = device_->allocate_memory_unique(params);
   }
 
   BufferImageCopyParams copy_params;
@@ -2913,13 +2910,13 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
   assert(res == RhiResult::success && "Failed to allocate command list");
   cmd_list->image_transition(depth_alloc, ImageLayout::depth_attachment,
                              ImageLayout::transfer_src);
-  cmd_list->image_to_buffer(depth_buffer_.get_ptr(), depth_alloc,
+  cmd_list->image_to_buffer(depth_buffer_->get_ptr(), depth_alloc,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(depth_alloc, ImageLayout::transfer_src,
                              ImageLayout::depth_attachment);
   stream->submit_synced(cmd_list.get());
 
-  return depth_buffer_;
+  return *depth_buffer_;
 }
 
 DeviceAllocation VulkanSurface::get_image_data() {
@@ -2941,11 +2938,11 @@ DeviceAllocation VulkanSurface::get_image_data() {
   }
   */
 
-  if (screenshot_buffer_ == kDeviceNullAllocation) {
+  if (!screenshot_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    screenshot_buffer_ = device_->allocate_memory(params);
+    screenshot_buffer_ = device_->allocate_memory_unique(params);
   }
 
   /*
@@ -2970,7 +2967,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   cmd_list->image_transition(img_alloc, ImageLayout::present_src,
                              ImageLayout::transfer_src);
   // TODO: directly map the image to cpu memory
-  cmd_list->image_to_buffer(screenshot_buffer_.get_ptr(), img_alloc,
+  cmd_list->image_to_buffer(screenshot_buffer_->get_ptr(), img_alloc,
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
@@ -2982,7 +2979,7 @@ DeviceAllocation VulkanSurface::get_image_data() {
   */
   stream->submit_synced(cmd_list.get());
 
-  return screenshot_buffer_;
+  return *screenshot_buffer_;
 }
 
 VulkanStream::VulkanStream(VulkanDevice &device,

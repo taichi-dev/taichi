@@ -28,7 +28,7 @@ StructCompilerLLVM::StructCompilerLLVM(Arch arch,
                                        int snode_tree_id)
     : StructCompilerLLVM(arch,
                          *prog->config,
-                         prog->get_llvm_context(arch),
+                         prog->get_llvm_context(),
                          std::move(module),
                          snode_tree_id) {
 }

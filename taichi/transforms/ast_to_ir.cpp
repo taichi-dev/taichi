@@ -7,7 +7,7 @@ namespace irpass {
 
 static bool supports_lowering(Arch arch) {
   return arch_is_cpu(arch) || (arch == Arch::cuda) || (arch == Arch::dx12) ||
-         (arch == Arch::metal);
+         (arch == Arch::metal) || (arch == Arch::amdgpu);
 }
 
 void ast_to_ir(const CompileConfig &config,

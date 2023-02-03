@@ -10,6 +10,11 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
+
+#if defined(TI_WITH_AMDGPU)
+#include "llvm/IR/IntrinsicsAMDGPU.h"
+#endif
+
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"

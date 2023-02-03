@@ -26,7 +26,7 @@ namespace vulkan {
 class TI_DLL_EXPORT AppContext {
  public:
   void init(lang::Program *prog, TaichiWindow *window, const AppConfig &config);
-  void cleanup();
+  ~AppContext();
 
   TaichiWindow *taichi_window() const;
   lang::Program *prog() const;

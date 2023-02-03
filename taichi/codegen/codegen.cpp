@@ -14,6 +14,9 @@
 #if defined(TI_WITH_DX12)
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#endif
 #include "taichi/system/timer.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
@@ -48,6 +51,12 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 #else
     TI_NOT_IMPLEMENTED
 #endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -68,7 +77,7 @@ KernelCodeGen::maybe_read_compilation_from_cache(
   }
 
   LlvmOfflineCache::KernelCacheData cache_data;
-  auto *tlctx = llvm_prog->get_llvm_context(compile_config_.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
   auto &llvm_ctx = *tlctx->get_this_thread_context();
 
   if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
@@ -85,7 +94,7 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context(compile_config_.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
   std::string kernel_key =
       get_hashed_offline_cache_key(compile_config_, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);

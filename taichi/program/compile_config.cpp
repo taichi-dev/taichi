@@ -57,7 +57,7 @@ CompileConfig::CompileConfig() {
   print_kernel_nvptx = false;
   print_kernel_llvm_ir_optimized = false;
 
-  // CUDA backend options:
+  // CUDA/AMDGPU backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
 

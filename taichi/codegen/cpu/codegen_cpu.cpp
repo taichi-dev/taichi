@@ -209,6 +209,13 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
+
+ private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx = tlctx->get_constant(0);
+    auto block_dim = tlctx->get_constant(1);
+    return std::make_tuple(thread_idx, block_dim);
+  }
 };
 
 }  // namespace
@@ -274,8 +281,7 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
 FunctionType KernelCodeGenCPU::compile_to_function() {
   TI_AUTO_PROF;
   auto *llvm_prog = get_llvm_program(prog);
-  const auto &config = get_compile_config();
-  auto *tlctx = llvm_prog->get_llvm_context(config.arch);
+  auto *tlctx = llvm_prog->get_llvm_context();
 
   CPUModuleToFunctionConverter converter(
       tlctx, get_llvm_program(prog)->get_runtime_executor());

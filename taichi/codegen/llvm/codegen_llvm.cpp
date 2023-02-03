@@ -2634,6 +2634,12 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
       TI_ASSERT(func);
       tlctx->mark_function_as_cuda_kernel(func, task.block_dim);
     }
+  } else if (compile_config.arch == Arch::amdgpu) {
+    for (const auto &task : offloaded_tasks) {
+      llvm::Function *func = module->getFunction(task.name);
+      TI_ASSERT(func);
+      tlctx->mark_function_as_amdgpu_kernel(func);
+    }
   }
 
   return {std::move(offloaded_tasks), std::move(module),

@@ -15,6 +15,10 @@
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 
+#if defined(TI_WITH_AMDGPU)
+#include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#endif
+
 #if defined(TI_WITH_DX12)
 #include "taichi/runtime/dx12/aot_module_builder_impl.h"
 #include "taichi/codegen/dx12/codegen_dx12.h"
@@ -52,10 +56,6 @@ std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
   struct_compiler->run(*root);
   ++num_snode_trees_processed_;
   return struct_compiler;
-}
-
-void LlvmProgramImpl::fill_struct_layout(std::vector<StructMember> &members) {
-  get_llvm_context()->fill_struct_layout(members);
 }
 
 void LlvmProgramImpl::compile_snode_tree_types(SNodeTree *tree) {

@@ -454,23 +454,9 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast_u32(ndarray,
                                             reinterpret_cast<int32_t &>(val));
            })
-      .def("fill_uint",
-           [](Program *program, Ndarray *ndarray, uint32_t val) {
-             program->fill_ndarray_fast_u32(ndarray, val);
-           })
-      .def(
-          "get_struct_type",
-          [&](Program *program,
-              std::vector<std::pair<DataType, std::string>> elements) {
-            std::vector<StructMember> members;
-            for (auto &[type, name] : elements) {
-              members.push_back({type, name});
-            }
-            program->fill_struct_layout(members);
-            return DataType(
-                TypeFactory::get_instance().get_struct_type(members));
-          },
-          py::return_value_policy::reference);
+      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
+        program->fill_ndarray_fast_u32(ndarray, val);
+      });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -1148,6 +1134,17 @@ void export_lang(py::module &m) {
           [&](TypeFactory *factory, std::vector<int> shape,
               const DataType &element_type) {
             return factory->create_tensor_type(shape, element_type);
+          },
+          py::return_value_policy::reference)
+      .def(
+          "get_struct_type",
+          [&](TypeFactory *factory,
+              std::vector<std::pair<DataType, std::string>> elements) {
+            std::vector<StructMember> members;
+            for (auto &[type, name] : elements) {
+              members.push_back({type, name});
+            }
+            return DataType(factory->get_struct_type(members));
           },
           py::return_value_policy::reference);
 

@@ -40,8 +40,9 @@ void Callable::finalize_rets() {
   for (int i = 0; i < rets.size(); i++) {
     members.push_back({rets[i].dt, fmt::format("ret_{}", i)});
   }
-  program->fill_struct_layout(members);
-  ret_type =
+  auto *type =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
+  std::string layout = program->get_kernel_return_data_layout();
+  ret_type = program->get_struct_type_with_data_layout(type, layout);
 }
 }  // namespace taichi::lang

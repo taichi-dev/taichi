@@ -125,7 +125,9 @@ def test_print_list():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan],
+                 exclude=[vk_on_mac, ti.amdgpu],
+                 debug=True)
 def test_python_scope_print_field():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -136,7 +138,9 @@ def test_python_scope_print_field():
     print(z)
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan],
+                 exclude=[vk_on_mac, ti.amdgpu],
+                 debug=True)
 def test_print_string_format():
     @ti.kernel
     def func(k: ti.f32):
@@ -152,7 +156,9 @@ def test_print_string_format():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan],
+                 exclude=[vk_on_mac, ti.amdgpu],
+                 debug=True)
 def test_print_fstring():
     def foo1(x):
         return x + 1

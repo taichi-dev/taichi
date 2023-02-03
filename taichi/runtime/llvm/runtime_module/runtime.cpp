@@ -762,8 +762,10 @@ void taichi_assert_format(LLVMRuntime *runtime,
                           uint64 *arguments) {
 #ifdef ARCH_amdgpu
   // TODO: find out why error with mark_force_no_inline
-  //  llvm::SDValue llvm::SelectionDAG::getNode(unsigned int, const llvm::SDLoc &, llvm::EVT, llvm::SDValue, const llvm::SDNodeFlags): 
-  //  Assertion `VT.getSizeInBits() == Operand.getValueSizeInBits() && "Cannot BITCAST between types of different sizes!"' failed.
+  //  llvm::SDValue llvm::SelectionDAG::getNode(unsigned int, const llvm::SDLoc
+  //  &, llvm::EVT, llvm::SDValue, const llvm::SDNodeFlags): Assertion
+  //  `VT.getSizeInBits() == Operand.getValueSizeInBits() && "Cannot BITCAST
+  //  between types of different sizes!"' failed.
 #else
   mark_force_no_inline();
 #endif

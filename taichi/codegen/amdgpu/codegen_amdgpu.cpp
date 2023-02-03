@@ -84,7 +84,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
-    } // TODO simplify the impl of sgn
+    }  // TODO simplify the impl of sgn
     else if (op == UnaryOpType::sgn) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto ashr = builder->CreateAShr(input, 31);
@@ -192,7 +192,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         func->getBasicBlockList().push_back(bb_merge);
         builder->SetInsertPoint(bb_merge);
         llvm_val[stmt] =
-            builder->CreateLoad(llvm::Type::getDoubleTy(*llvm_context), cast); 
+            builder->CreateLoad(llvm::Type::getDoubleTy(*llvm_context), cast);
       }
     }
     UNARY_STD(cos)

@@ -243,6 +243,7 @@ def test_stack():
 
     func()
 
+
 #FIXME: amdgpu backend(assign gale)
 @test_utils.test(exclude=ti.amdgpu)
 def test_if_condition_depend_on_for_loop_index():

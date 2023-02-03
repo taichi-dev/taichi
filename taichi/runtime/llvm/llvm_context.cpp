@@ -620,7 +620,7 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     }
 
     for (auto &f : libdevice_module->functions()) {
-      auto func_name = libdevice.substr(0, libdevice.length()-3);
+      auto func_name = libdevice.substr(0, libdevice.length() - 3);
       if (starts_with(f.getName().lower(), "__" + func_name))
         f.setLinkage(llvm::Function::CommonLinkage);
     }

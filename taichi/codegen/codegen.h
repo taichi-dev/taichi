@@ -8,6 +8,7 @@
 #include "llvm/IR/Module.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
 #include "taichi/runtime/llvm/launch_arg_info.h"
+#include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #endif
 namespace taichi::lang {

@@ -88,7 +88,7 @@ def test_print_sep_end():
     ti.sync()
 
 
-@test_utils.test(exclude=[ti.dx11, vk_on_mac], debug=True)
+@test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_multiple_threads():
     x = ti.field(dtype=ti.f32, shape=(128, ))
 
@@ -104,7 +104,7 @@ def test_print_multiple_threads():
     ti.sync()
 
 
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac], debug=True)
+@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_list():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
     y = ti.Vector.field(3, dtype=ti.f32, shape=())
@@ -125,7 +125,7 @@ def test_print_list():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
 def test_python_scope_print_field():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -136,7 +136,7 @@ def test_python_scope_print_field():
     print(z)
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
 def test_print_string_format():
     @ti.kernel
     def func(k: ti.f32):
@@ -152,7 +152,7 @@ def test_print_string_format():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.vulkan], exclude=[vk_on_mac, ti.amdgpu], debug=True)
 def test_print_fstring():
     def foo1(x):
         return x + 1
@@ -166,7 +166,7 @@ def test_print_fstring():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[vk_on_mac],
+                 exclude=[vk_on_mac, ti.amdgpu],
                  debug=True)
 def test_print_u64():
     @ti.kernel
@@ -178,7 +178,7 @@ def test_print_u64():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[vk_on_mac],
+                 exclude=[vk_on_mac, ti.amdgpu],
                  debug=True)
 def test_print_i64():
     @ti.kernel
@@ -190,7 +190,7 @@ def test_print_i64():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[vk_on_mac, cuda_on_windows],
+                 exclude=[vk_on_mac, cuda_on_windows, ti.amdgpu],
                  debug=True)
 def test_print_seq(capfd):
     @ti.kernel

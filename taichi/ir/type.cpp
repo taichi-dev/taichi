@@ -104,16 +104,15 @@ std::string TensorType::to_string() const {
 }
 
 std::string StructType::to_string() const {
-  std::string s = "struct(";
+  std::string s = fmt::format("struct[{}]{{", layout_);
   for (int i = 0; i < elements_.size(); i++) {
     if (i) {
       s += ", ";
     }
-    s += fmt::format("{}: (name: {}, type: {}, offset: {})", i,
-                     elements_[i].name, elements_[i].type->to_string(),
-                     elements_[i].offset);
+    s += fmt::format("{}({}, at {}B): {}", i, elements_[i].name,
+                     elements_[i].offset, elements_[i].type->to_string());
   }
-  s += ")";
+  s += "}";
   return s;
 }
 

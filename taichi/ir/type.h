@@ -215,7 +215,7 @@ class StructType : public Type {
  public:
   explicit StructType(const std::vector<StructMember> &elements,
                       const std::string &layout = "none")
-      : elements_(elements), layout(layout) {
+      : elements_(elements), layout_(layout) {
   }
 
   std::string to_string() const override;
@@ -246,7 +246,7 @@ class StructType : public Type {
 
  private:
   std::vector<StructMember> elements_;
-  std::string layout;
+  std::string layout_;
 };
 
 class QuantIntType : public Type {

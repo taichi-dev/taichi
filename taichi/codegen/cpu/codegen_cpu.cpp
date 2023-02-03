@@ -209,6 +209,13 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
       TI_NOT_IMPLEMENTED
     }
   }
+
+ private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx = tlctx->get_constant(0);
+    auto block_dim = tlctx->get_constant(1);
+    return std::make_tuple(thread_idx, block_dim);
+  }
 };
 
 }  // namespace

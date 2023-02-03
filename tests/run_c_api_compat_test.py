@@ -3,8 +3,8 @@ Ensure AOT modules compiled by old versions of Taichi is compatible with the
 latest Taichi Runtime.
 """
 import os
-import subprocess
 import platform
+import subprocess
 
 from test_utils import parse_test_configs2
 

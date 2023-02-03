@@ -4,8 +4,8 @@ from this currently building one in development branch) for
 `run_c_api_compat_test.py` to consume.
 """
 import os
-import subprocess
 import platform
+import subprocess
 
 from test_utils import parse_test_configs2
 

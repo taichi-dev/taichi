@@ -484,7 +484,7 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   if (arch == Arch::wasm) {
     // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(get_program_impl());
+    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
     TI_ASSERT(llvm_prog != nullptr);
     return std::make_unique<wasm::AotModuleBuilderImpl>(
         compile_config(), *llvm_prog->get_llvm_context());

@@ -84,7 +84,8 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
-    } else if (op == UnaryOpType::sgn) {
+    } // TODO simplify the impl of sgn
+    else if (op == UnaryOpType::sgn) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto ashr = builder->CreateAShr(input, 31);
         auto sub = builder->CreateSub(0, input);
@@ -141,6 +142,57 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->SetInsertPoint(bb_merge);
         llvm_val[stmt] =
             builder->CreateLoad(llvm::Type::getFloatTy(*llvm_context), cast);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        auto func = builder->GetInsertBlock()->getParent();
+        auto bb_oeq_then = BasicBlock::Create(*llvm_context, "oeq_then", func);
+        auto bb_oeq_else = BasicBlock::Create(*llvm_context, "oeq_else");
+        auto bb_merge = BasicBlock::Create(*llvm_context, "merge");
+        auto bb_olt_then = BasicBlock::Create(*llvm_context, "olt_then", func);
+        auto bb_olt_else = BasicBlock::Create(*llvm_context, "olt_else");
+
+        auto alloc = builder->CreateAlloca(
+            llvm::Type::getDoubleTy(*llvm_context), (unsigned)5);
+        auto newty = llvm::PointerType::get(
+            llvm::Type::getDoubleTy(*llvm_context), (unsigned)0);
+        auto cast = builder->CreateAddrSpaceCast(alloc, newty);
+        auto fcmp_oeq = builder->CreateFCmpOEQ(
+            input,
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0));
+        builder->CreateCondBr(fcmp_oeq, bb_oeq_then, bb_oeq_else);
+        builder->SetInsertPoint(bb_oeq_then);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_oeq_then = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_oeq_else);
+        builder->SetInsertPoint(bb_oeq_else);
+        auto fcmp_olt = builder->CreateFCmpOLT(
+            input,
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0));
+        builder->CreateCondBr(fcmp_olt, bb_olt_then, bb_olt_else);
+        bb_oeq_else = builder->GetInsertBlock();
+
+        builder->SetInsertPoint(bb_olt_then);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), -1),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_olt_then = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_olt_else);
+        builder->SetInsertPoint(bb_olt_else);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 1),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_olt_else = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_merge);
+        builder->SetInsertPoint(bb_merge);
+        llvm_val[stmt] =
+            builder->CreateLoad(llvm::Type::getDoubleTy(*llvm_context), cast); 
       }
     }
     UNARY_STD(cos)
@@ -390,7 +442,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__ocml_pow_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = call("__ocml_pow_f32", {lhs, rhs});
-      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__ocml_pow_f64", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto sitofp_lhs_ =
@@ -408,7 +460,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__ocml_atan2_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = call("__ocml_atan2_f32", {lhs, rhs});
-      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__ocml_atan2_f64", {lhs, rhs});
       } else {
         TI_NOT_IMPLEMENTED

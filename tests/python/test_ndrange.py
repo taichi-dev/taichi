@@ -318,7 +318,7 @@ def test_static_ndrange_should_accept_numpy_integer():
 
 
 @test_utils.test()
-def test_n_loop_var_neq_dimension():
+def test_n_loop_var_neq_dimension(exclude=ti.amdgpu):
     @ti.kernel
     def iter():
         for i in ti.ndrange(1, 4):

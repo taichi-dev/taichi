@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal])
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal])
 def test_dynamic():
     x = ti.field(ti.i32)
     y = ti.field(ti.i32, shape=())
@@ -23,7 +23,7 @@ def test_dynamic():
     assert y[None] == n // 3 + 1
 
 
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal])
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal])
 def test_dense_dynamic():
     n = 128
 

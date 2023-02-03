@@ -221,10 +221,14 @@ class StructType : public Type {
  public:
   explicit StructType(const std::vector<StructMember> &elements,
                       const std::string &layout = "none")
-      : elements_(elements), layout(layout) {
+      : elements_(elements), layout_(layout) {
   }
 
   std::string to_string() const override;
+
+  const std::string &get_layout() const {
+    return layout_;
+  }
 
   Type *get_element_type(const std::vector<int> &indices) const;
   size_t get_element_offset(const std::vector<int> &indices) const;
@@ -253,7 +257,7 @@ class StructType : public Type {
 
  private:
   std::vector<StructMember> elements_;
-  std::string layout;
+  std::string layout_;
 };
 
 class QuantIntType : public Type {

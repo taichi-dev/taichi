@@ -66,7 +66,8 @@ void Kernel::operator()(const CompileConfig &compile_config,
   compiled_(ctx_builder.get_context());
 
   const auto arch = compile_config.arch;
-  if (compile_config.debug && (arch_is_cpu(arch) || arch == Arch::cuda)) {
+  if (compile_config.debug &&
+      (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu)) {
     program->check_runtime_error();
   }
 }

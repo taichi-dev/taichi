@@ -103,7 +103,8 @@ class TaichiLLVMContext {
 
   std::size_t get_struct_element_offset(llvm::StructType *type, int idx);
 
-  void fill_struct_layout(std::vector<StructMember> &members);
+  const StructType *get_struct_type_with_data_layout(const StructType *old_ty,
+                                                     const std::string &layout);
 
   template <typename T>
   llvm::Value *get_constant(T t);
@@ -112,6 +113,8 @@ class TaichiLLVMContext {
   llvm::Value *get_constant(DataType dt, T t);
 
   llvm::DataLayout get_data_layout();
+
+  std::string get_data_layout_string();
 
   std::string type_name(llvm::Type *type);
 
@@ -126,6 +129,8 @@ class TaichiLLVMContext {
       std::function<bool(const std::string &)> export_indicator);
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
+
+  void mark_function_as_amdgpu_kernel(llvm::Function *func);
 
   void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();

@@ -90,7 +90,8 @@ class KernelProfilerBase {
 
   virtual void stop(TaskHandle){TI_NOT_IMPLEMENTED};
 
-  // virtual void record_dispatch(const std::string& kernel_name) {TI_NOT_IMPLEMENTED};
+  // virtual void record_dispatch(const std::string& kernel_name)
+  // {TI_NOT_IMPLEMENTED};
 
   static void profiler_stop(KernelProfilerBase *profiler);
 

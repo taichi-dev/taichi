@@ -856,10 +856,10 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
       device_(ti_device->vk_device()),
 // #if !defined(__APPLE__)
 #if 1
-      // query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
-      // query_poo
+// query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
+// query_poo
 #else
-      // query_pool_(),
+// query_pool_(),
 #endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
@@ -877,7 +877,7 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   // vkCmdResetQueryPool(buffer_->buffer, query_pool_->query_pool, 0,
   //                           128);
   // vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                      // query_pool_->query_pool, 0);
+  // query_pool_->query_pool, 0);
 #endif
 }
 
@@ -1931,15 +1931,18 @@ VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
   vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                       pool->query_pool, 0);
-  auto sampler=std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
+  auto sampler =
+      std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
   return sampler;
 }
 
-void VulkanCommandList::end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
-  auto vulkan_handler = dynamic_cast<VulkanProfilerSamplingHandler*>(handler.get());
+void VulkanCommandList::end_profiler_scope(
+    std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+  auto vulkan_handler =
+      dynamic_cast<VulkanProfilerSamplingHandler *>(handler.get());
   auto pool = vulkan_handler->query_pool_;
   vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                       pool->query_pool, 1);
+                      pool->query_pool, 1);
   ti_device_->profiler_add_sampling_handler(std::move(handler));
 }
 
@@ -1953,11 +1956,12 @@ void VulkanDevice::profiler_sync() {
   //   // vkGetQueryPoolResults(ti_device_->vk_device(),
   //   // vulkan_handler->query_pool_, 0, 2,
   //   //                       sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
-  //   //                       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+  //   //                       VK_QUERY_RESULT_64_BIT |
+  //   VK_QUERY_RESULT_WAIT_BIT);
   // }
   auto records = profiler_get_sampled_time();
   for (const auto &rec : records) {
-    profiler_->insert_record(rec.first, rec.second);  
+    profiler_->insert_record(rec.first, rec.second);
   }
   samplers_.clear();
 }
@@ -1983,7 +1987,8 @@ void VulkanDevice::wait_idle() {
   }
 }
 
-std::vector<std::pair<std::string, double>> VulkanDevice::profiler_get_sampled_time() {
+std::vector<std::pair<std::string, double>>
+VulkanDevice::profiler_get_sampled_time() {
   std::vector<std::pair<std::string, double>> sampled_time;
   for (int i = 0; i < samplers_.size(); ++i) {
     auto handler = samplers_[i].get();
@@ -1995,10 +2000,11 @@ std::vector<std::pair<std::string, double>> VulkanDevice::profiler_get_sampled_t
     double duration_ms = 0.0;
 
     uint64_t t[2];
-    vkGetQueryPoolResults(vk_device(), query_pool,
-                          0, 2, sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
+    vkGetQueryPoolResults(vk_device(), query_pool, 0, 2, sizeof(uint64_t) * 2,
+                          &t, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    duration_ms = (t[1] - t[0]) * vk_device_properties_.limits.timestampPeriod / 1000000.0;
+    duration_ms = (t[1] - t[0]) * vk_device_properties_.limits.timestampPeriod /
+                  1000000.0;
     sampled_time.push_back(std::make_pair(kernel_name, duration_ms));
   }
   return sampled_time;

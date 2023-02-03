@@ -656,11 +656,11 @@ StreamSemaphore GfxRuntime::flush() {
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());
   }
-// #if defined(__APPLE__)
-//   if (device_->profiler_) {
-//     device_->profiler_sync();
-//   }
-// #endif
+  // #if defined(__APPLE__)
+  //   if (device_->profiler_) {
+  //     device_->profiler_sync();
+  //   }
+  // #endif
   return sema;
 }
 

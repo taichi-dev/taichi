@@ -432,12 +432,14 @@ class TI_DLL_EXPORT CommandList {
   }
 
   // Profiler support
-  virtual std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(const std::string& kernel_name) {
+  virtual std::unique_ptr<KernelProfilerSamplingHandlerBase>
+  begin_profiler_scope(const std::string &kernel_name) {
     return nullptr;
   }
 
-  virtual void end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {}
-
+  virtual void end_profiler_scope(
+      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+  }
 
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
@@ -790,7 +792,7 @@ class TI_DLL_EXPORT Device {
   }
 
   // Profiler support
-  virtual void profiler_sync() {};
+  virtual void profiler_sync(){};
   KernelProfilerBase *profiler_;
 };
 

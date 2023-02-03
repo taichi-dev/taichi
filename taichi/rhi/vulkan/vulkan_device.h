@@ -404,12 +404,13 @@ class VulkanPipeline : public Pipeline {
 };
 
 class VulkanProfilerSamplingHandler : public KernelProfilerSamplingHandlerBase {
-  public:
-   VulkanProfilerSamplingHandler(std::string kernel_name,
-                                 vkapi::IVkQueryPool query_pool)
-       : kernel_name_(kernel_name), query_pool_(query_pool) {
-   }
-  ~VulkanProfilerSamplingHandler() {}
+ public:
+  VulkanProfilerSamplingHandler(std::string kernel_name,
+                                vkapi::IVkQueryPool query_pool)
+      : kernel_name_(kernel_name), query_pool_(query_pool) {
+  }
+  ~VulkanProfilerSamplingHandler() {
+  }
   std::string kernel_name_;
   vkapi::IVkQueryPool query_pool_;
 };
@@ -488,8 +489,10 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer vk_command_buffer();
 
   // Profiler support
-  std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(const std::string& kernel_name) override;
-  void end_profiler_scope(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) override;
+  std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(
+      const std::string &kernel_name) override;
+  void end_profiler_scope(
+      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) override;
 
  private:
   bool finalized_{false};
@@ -761,7 +764,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
   }
 
   // For profilers
-  void profiler_add_sampling_handler(std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+  void profiler_add_sampling_handler(
+      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
     samplers_.push_back(std::move(handler));
   }
 

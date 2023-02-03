@@ -130,26 +130,26 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     return alloca_stmt;
   }
 
-  std::optional<int> find_cache_place_if_cacheable(Stmt *operand,
+  std::optional<int> find_cache_depth_if_cacheable(Stmt *operand,
                                                    Block *current_scope) {
     if (!is_offload_unique(operand)) {
       return std::nullopt;
     }
-    std::optional<int> place;
+    std::optional<int> depth;
     for (int n = loop_blocks.size() - 1; n > 0; n--) {
       if (is_operand_loop_invariant(operand, current_scope, n)) {
-        place = n;
+        depth = n;
       } else {
         break;
       }
     }
-    return place;
+    return depth;
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto place = find_cache_place_if_cacheable(stmt->src, stmt->parent)) {
+    if (auto depth = find_cache_depth_if_cacheable(stmt->src, stmt->parent)) {
       auto alloca_stmt =
-          cache_global_to_local(stmt->src, CacheStatus::Read, place.value());
+          cache_global_to_local(stmt->src, CacheStatus::Read, depth.value());
       auto local_load = std::make_unique<LocalLoadStmt>(alloca_stmt);
       stmt->replace_usages_with(local_load.get());
       modifier.insert_before(stmt, std::move(local_load));
@@ -158,9 +158,9 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
   }
 
   void visit(GlobalStoreStmt *stmt) override {
-    if (auto place = find_cache_place_if_cacheable(stmt->dest, stmt->parent)) {
+    if (auto depth = find_cache_depth_if_cacheable(stmt->dest, stmt->parent)) {
       auto alloca_stmt =
-          cache_global_to_local(stmt->dest, CacheStatus::Write, place.value());
+          cache_global_to_local(stmt->dest, CacheStatus::Write, depth.value());
       auto local_store =
           std::make_unique<LocalStoreStmt>(alloca_stmt, stmt->val);
       stmt->replace_usages_with(local_store.get());

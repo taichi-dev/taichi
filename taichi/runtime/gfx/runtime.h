@@ -165,12 +165,6 @@ class TI_DLL_EXPORT GfxRuntime {
   // ndarray_in_use_ to track this so that we can free memory allocated for
   // ndarray whenever it's safe to do so.
   std::unordered_set<DeviceAllocationId> ndarrays_in_use_;
-
-#if defined(__APPLE__)
-  // For profiler query pool limit
-  int num_kernels_on_the_fly = 0;
-  int max_kernels_on_the_fly = 32;
-#endif
 };
 
 GfxRuntime::RegisterParams run_codegen(

@@ -499,7 +499,6 @@ class VulkanCommandList : public CommandList {
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
   VkDevice device_;
-  std::list<vkapi::IVkQueryPool> query_pools_;
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
@@ -601,7 +600,6 @@ class VulkanStream : public Stream {
   struct TrackedCmdbuf {
     vkapi::IVkFence fence;
     vkapi::IVkCommandBuffer buf;
-    // vkapi::IVkQueryPool query_pool;
   };
 
   VulkanDevice &device_;

@@ -854,13 +854,6 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
     : ti_device_(ti_device),
       stream_(stream),
       device_(ti_device->vk_device()),
-// #if !defined(__APPLE__)
-#if 1
-// query_pool_(vkapi::create_query_pool(ti_device->vk_device())),
-// query_poo
-#else
-// query_pool_(),
-#endif
       buffer_(buffer) {
   VkCommandBufferBeginInfo info{};
   info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -869,16 +862,6 @@ VulkanCommandList::VulkanCommandList(VulkanDevice *ti_device,
   info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
   vkBeginCommandBuffer(buffer->buffer, &info);
-
-// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-// #if !defined(__APPLE__)
-#if 1
-  // vkCmdResetQueryPool(buffer->buffer, query_pool_->query_pool, 0, 2);
-  // vkCmdResetQueryPool(buffer_->buffer, query_pool_->query_pool, 0,
-  //                           128);
-  // vkCmdWriteTimestamp(buffer->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-  // query_pool_->query_pool, 0);
-#endif
 }
 
 VulkanCommandList::~VulkanCommandList() {
@@ -1575,13 +1558,6 @@ vkapi::IVkRenderPass VulkanCommandList::current_renderpass() {
 
 vkapi::IVkCommandBuffer VulkanCommandList::finalize() {
   if (!finalized_) {
-// Workaround for MacOS: https://github.com/taichi-dev/taichi/issues/5888
-// #if !defined(__APPLE__)
-#if 1
-    // vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-    //                     query_pool_->query_pool, 1);
-#endif
-    // timestamp_id_ = 0;
     vkEndCommandBuffer(buffer_->buffer);
     finalized_ = true;
   }
@@ -1947,18 +1923,6 @@ void VulkanCommandList::end_profiler_scope(
 }
 
 void VulkanDevice::profiler_sync() {
-  // for (int i = 0; i < ti_device_->samplers_.size(); ++i) {
-  //   auto handler = samplers_[i].get();
-  //   auto vulkan_handler =
-  //       dynamic_cast<VulkanProfilerSamplingHandler *>(handler);
-
-  //   // uint64_t t[2];
-  //   // vkGetQueryPoolResults(ti_device_->vk_device(),
-  //   // vulkan_handler->query_pool_, 0, 2,
-  //   //                       sizeof(uint64_t) * 2, &t, sizeof(uint64_t),
-  //   //                       VK_QUERY_RESULT_64_BIT |
-  //   VK_QUERY_RESULT_WAIT_BIT);
-  // }
   auto records = profiler_get_sampled_time();
   for (const auto &rec : records) {
     profiler_->insert_record(rec.first, rec.second);
@@ -2027,7 +1991,6 @@ StreamSemaphore VulkanStream::submit(
     const std::vector<StreamSemaphore> &wait_semaphores) {
   VulkanCommandList *cmdlist = static_cast<VulkanCommandList *>(cmdlist_);
   vkapi::IVkCommandBuffer buffer = cmdlist->finalize();
-  // vkapi::IVkQueryPool query_pool = cmdlist->vk_query_pool();
 
   /*
   if (in_flight_cmdlists_.find(buffer) != in_flight_cmdlists_.end()) {
@@ -2075,7 +2038,6 @@ StreamSemaphore VulkanStream::submit(
     });
   */
 
-  // submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer, query_pool});
   submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(

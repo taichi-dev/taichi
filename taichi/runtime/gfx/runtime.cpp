@@ -656,11 +656,6 @@ StreamSemaphore GfxRuntime::flush() {
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());
   }
-  // #if defined(__APPLE__)
-  //   if (device_->profiler_) {
-  //     device_->profiler_sync();
-  //   }
-  // #endif
   return sema;
 }
 
@@ -715,9 +710,6 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  // if (device_->profiler_) {
-  //   device_->profiler_->start(std::string("init_non_root_buffers"));
-  // }
   stream->submit_synced(cmdlist.get());
 }
 
@@ -736,9 +728,6 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   TI_ASSERT(res == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-  // if (device_->profiler_) {
-  //   device_->profiler_->start(std::string("add_root_buffer"));
-  // }
   stream->submit_synced(cmdlist.get());
   root_buffers_.push_back(std::move(new_buffer));
   // cache the root buffer size

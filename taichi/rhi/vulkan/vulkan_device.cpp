@@ -935,7 +935,7 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
 
   if (current_pipeline_->pipeline_layout()->ref_desc_layouts.empty() ||
       current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
-        set_layout) {
+          set_layout) {
     // WARN: we have a layout mismatch
     RHI_LOG_ERROR("Layout mismatch");
 

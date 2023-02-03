@@ -4,13 +4,14 @@ latest Taichi Runtime.
 """
 import os
 import subprocess
+import platform
 
 from test_utils import parse_test_configs2
 
 import taichi as ti
 
 if __name__ == "__main__":
-    if 'PLATFORM' in os.environ and "m1" in os.environ['PLATFORM']:
+    if 'arm64' in platform.platform():
         print("WARNING: compatibility test is ignored on m1")
         exit(0)
 

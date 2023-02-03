@@ -27,7 +27,10 @@ namespace taichi::lang {
 KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
                              Kernel *kernel,
                              TaichiLLVMContext &tlctx)
-    : kernel(kernel), compile_config_(compile_config), tlctx_(tlctx) {
+    : prog(kernel->program),
+      kernel(kernel),
+      compile_config_(compile_config),
+      tlctx_(tlctx) {
   this->ir = kernel->ir.get();
 }
 

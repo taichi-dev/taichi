@@ -27,6 +27,7 @@ class TI_DLL_EXPORT MemoryPool {
 
   MemRequestQueue *queue;
   void *cuda_stream{nullptr};
+  void *amdgpu_stream{nullptr};
 
   // In the future we wish to move the MemoryPool inside each Device
   // so that the memory allocated from each Device can be used as-is.
@@ -50,6 +51,7 @@ class TI_DLL_EXPORT MemoryPool {
 
  private:
   static constexpr bool use_cuda_stream = false;
+  static constexpr bool use_amdgpu_stream = false;
   Arch arch_;
   Device *device_;
 };

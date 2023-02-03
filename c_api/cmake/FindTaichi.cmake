@@ -81,7 +81,7 @@ else()
 endif()
 
 # Set up default find components
-if("${taichi_FIND_COMPONENTS}" STREQUAL "")
+if(TRUE)
     # (penguinliong) Currently we only have Taichi Runtime. We might make the
     # codegen a library in the future?
     set(taichi_FIND_COMPONENTS "runtime")
@@ -112,12 +112,11 @@ if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
         # Already found in config mode.
         get_target_property(taichi_runtime_CONFIG taichi_c_api IMPORTED_CONFIGURATIONS)
         if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
-            get_target_property(taichi_runtime_LIBRARY taichi_c_api IMPORTED_IMPLIB_${taichi_runtime_CONFIG})
-            get_target_property(taichi_runtime_REDIST_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
+            get_target_property(taichi_runtime_LIBRARY taichi_c_api IMPORTED_IMPLIB)
         else()
-            get_target_property(taichi_runtime_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
-            get_target_property(taichi_runtime_REDIST_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
-            endif()
+            get_target_property(taichi_runtime_LIBRARY taichi_c_api LOCATION)
+        endif()
+        get_target_property(taichi_runtime_REDIST_LIBRARY taichi_c_api LOCATION)
         get_target_property(taichi_runtime_INCLUDE_DIR taichi_c_api INTERFACE_INCLUDE_DIRECTORIES)
     else()
         find_library(taichi_runtime_LIBRARY
@@ -162,6 +161,7 @@ if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
             INTERFACE_INCLUDE_DIRECTORIES "${taichi_runtime_INCLUDE_DIR}")
 
         list(APPEND COMPONENT_VARS
+            taichi_runtime_REDIST_LIBRARY
             taichi_runtime_LIBRARY
             taichi_runtime_INCLUDE_DIR)
         list(APPEND taichi_LIBRARIES "${taichi_runtime_LIBRARY}")

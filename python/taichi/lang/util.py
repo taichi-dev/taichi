@@ -1,6 +1,7 @@
 import functools
 import os
 import traceback
+import warnings
 
 import numpy as np
 from colorama import Fore, Style
@@ -318,16 +319,15 @@ def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
 
     Args:
         msg (str): message to print.
-        warning_type (Warning): type of warning.
+        warning_type (Type[Warning]): type of warning.
         stacklevel (int): warning stack level from the caller.
         print_stack (bool): whether to print the stack
     """
     if not is_logging_effective('warn'):
         return
-    msg = f'{warning_type.__name__}: {msg}'
     if print_stack:
         msg += f'\n{get_traceback(stacklevel)}'
-    print(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL)
+    warnings.warn(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL, warning_type)
 
 
 def get_traceback(stacklevel=1):

@@ -12,7 +12,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  std::stack<Block *> loop_blocks;
+  std::vector<Block *> loop_blocks;
 
   const CompileConfig &config;
 
@@ -20,13 +20,18 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     allow_undefined_visitor = true;
   }
 
-  bool is_operand_loop_invariant_impl(Stmt *operand, Block *current_scope) {
+  bool is_operand_loop_invariant_impl(Stmt *operand,
+                                      Block *current_scope,
+                                      Block *loop_block = nullptr) {
+    if (!loop_block) {
+      loop_block = loop_blocks.back();
+    }
     if (operand->parent == current_scope) {
       // This statement has an operand that is in the current scope,
       // so it can not be moved out of the scope.
       return false;
     }
-    if (current_scope != loop_blocks.top()) {
+    if (current_scope != loop_block) {
       // If we enable moving code from a nested if block, we need to check
       // visibility. Example:
       // for i in range(10):
@@ -43,7 +48,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
         // If the one of the current_scope of the operand is the top loop
         // scope Then it will not be visible if we move it outside the top
         // loop scope
-        if (operand_parent == loop_blocks.top()->parent_stmt) {
+        if (operand_parent == loop_block->parent_stmt) {
           return false;
         }
       }
@@ -51,15 +56,21 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     return true;
   }
 
-  bool is_operand_loop_invariant(Stmt *operand, Block *current_scope) {
-    if (loop_blocks.size() <= 1)
+  bool is_operand_loop_invariant(Stmt *operand,
+                                 Block *current_scope,
+                                 int depth = -1) {
+    if (depth == -1) {
+      depth = loop_blocks.size() - 1;
+    }
+    if (depth <= 0)
       return false;
-    return is_operand_loop_invariant_impl(operand, current_scope);
+    return is_operand_loop_invariant_impl(operand, current_scope,
+                                          loop_blocks[depth]);
   }
 
   bool is_loop_invariant(Stmt *stmt, Block *current_scope) {
     if (loop_blocks.size() <= 1 || (!config.move_loop_invariant_outside_if &&
-                                    current_scope != loop_blocks.top()))
+                                    current_scope != loop_blocks.back()))
       return false;
 
     bool is_invariant = true;
@@ -73,21 +84,24 @@ class LoopInvariantDetector : public BasicStmtVisitor {
     return is_invariant;
   }
 
-  Stmt *current_loop_stmt() {
-    return loop_blocks.top()->parent_stmt;
+  Stmt *get_loop_stmt(int depth) {
+    return loop_blocks[depth]->parent_stmt;
   }
 
+  Stmt *current_loop_stmt() {
+    return get_loop_stmt(loop_blocks.size() - 1);
+  }
   void visit(Block *stmt_list) override {
     for (auto &stmt : stmt_list->statements)
       stmt->accept(this);
   }
 
   virtual void visit_loop(Block *body) {
-    loop_blocks.push(body);
+    loop_blocks.push_back(body);
 
     body->accept(this);
 
-    loop_blocks.pop();
+    loop_blocks.pop_back();
   }
 
   void visit(RangeForStmt *stmt) override {

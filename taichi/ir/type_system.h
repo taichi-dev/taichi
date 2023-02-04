@@ -43,6 +43,7 @@ class TypeExpression {
   // TypeExpression, to get a result DataType.
   virtual DataType resolve(Solutions const &solutions) const = 0;
   virtual std::string to_string() const = 0;
+  virtual bool contains_tyvar(const TyVar &tyvar) const = 0;
 };
 
 // A pointer to a TypeExpression.
@@ -58,6 +59,7 @@ class TyVar : public TypeExpression {
   void unify(int pos, DataType dt, Solutions &solutions) const override;
   DataType resolve(Solutions const &solutions) const override;
   std::string to_string() const override;
+  bool contains_tyvar(const TyVar &tyvar) const override;
 };
 
 // The "common type" of two types according to the C++ type system. This uses
@@ -78,6 +80,7 @@ class TyLub : public TypeExpression {
   void unify(int pos, DataType dt, Solutions &solutions) const override;
   DataType resolve(Solutions const &solutions) const override;
   std::string to_string() const override;
+  bool contains_tyvar(const TyVar &tyvar) const override;
 };
 
 // The "compute type" of a certain type. This uses Type::get_compute_type()
@@ -98,6 +101,7 @@ class TyCompute : public TypeExpression {
   void unify(int pos, DataType dt, Solutions &solutions) const override;
   DataType resolve(Solutions const &solutions) const override;
   std::string to_string() const override;
+  bool contains_tyvar(const TyVar &tyvar) const override;
 };
 
 // A "mono-type", i.e. DataType embedded into a type expression.
@@ -110,6 +114,7 @@ class TyMono : public TypeExpression {
   void unify(int pos, DataType dt, Solutions &solutions) const override;
   DataType resolve(Solutions const &solutions) const override;
   std::string to_string() const override;
+  bool contains_tyvar(const TyVar &tyvar) const override;
 };
 
 // Type error: a type variable is solved to two different DataTypes.
@@ -177,14 +182,27 @@ class DynamicTrait : public Trait {
   std::string to_string() const override;
 };
 
+// A constraint on a type variable. This states that the DataType that the
+// variable is resolved to must satisfy a certain trait.
+class Constraint {
+ public:
+  const std::shared_ptr<TyVar> tyvar;
+  Trait *const trait;
+  explicit Constraint(std::shared_ptr<TyVar> tyvar, Trait *trait)
+      : tyvar(tyvar), trait(trait) {
+  }
+};
+
 // Type error: the type of argument does not satisfy the trait required. E.g.
 // passing in a f32 while the trait requires an integer type.
 class TraitMismatch : public TypeSystemError {
+  const int occurrence_;
   const DataType dt_;
-  Trait *const trait_;
+  const Constraint constraint_;
 
  public:
-  explicit TraitMismatch(DataType dt, Trait *trait) : dt_(dt), trait_(trait) {
+  explicit TraitMismatch(int occurrence, DataType dt, Constraint constraint)
+      : occurrence_(occurrence), dt_(dt), constraint_(constraint) {
   }
   std::string to_string() const override;
 };
@@ -198,17 +216,6 @@ class ArgLengthMismatch : public TypeSystemError {
   explicit ArgLengthMismatch(int param, int arg) : param_(param), arg_(arg) {
   }
   std::string to_string() const override;
-};
-
-// A constraint on a type variable. This states that the DataType that the
-// variable is resolved to must satisfy a certain trait.
-class Constraint {
- public:
-  const std::shared_ptr<TyVar> tyvar;
-  Trait *const trait;
-  explicit Constraint(std::shared_ptr<TyVar> tyvar, Trait *trait)
-      : tyvar(tyvar), trait(trait) {
-  }
 };
 
 // A type signature for an operation. This consists of 3 parts:

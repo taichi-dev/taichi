@@ -27,6 +27,10 @@ std::string TyVar::to_string() const {
   return name_.name();
 }
 
+bool TyVar::contains_tyvar(const TyVar &tyvar) const {
+  return name_ == tyvar.name_;
+}
+
 void TyLub::unify(int pos, DataType dt, Solutions &solutions) const {
   TyMono(resolve(solutions)).unify(pos, dt, solutions);
 }
@@ -38,6 +42,10 @@ DataType TyLub::resolve(const Solutions &solutions) const {
 
 std::string TyLub::to_string() const {
   return lhs_->to_string() + " | " + rhs_->to_string();
+}
+
+bool TyLub::contains_tyvar(const TyVar &tyvar) const {
+  return lhs_->contains_tyvar(tyvar) || rhs_->contains_tyvar(tyvar);
 }
 
 void TyCompute::unify(int pos, DataType dt, Solutions &solutions) const {
@@ -52,6 +60,10 @@ std::string TyCompute::to_string() const {
   return "comp(" + exp_->to_string() + ")";
 }
 
+bool TyCompute::contains_tyvar(const TyVar &tyvar) const {
+  return exp_->contains_tyvar(tyvar);
+}
+
 void TyMono::unify(int pos, DataType dt, Solutions &solutions) const {
   if (monotype_ != dt) {
     throw TypeMismatch(pos, monotype_, dt);
@@ -64,6 +76,10 @@ DataType TyMono::resolve(const Solutions &solutions) const {
 
 std::string TyMono::to_string() const {
   return monotype_.to_string();
+}
+
+bool TyMono::contains_tyvar(const TyVar &tyvar) const {
+  return false;
 }
 
 std::string TyVarMismatch::to_string() const {
@@ -84,8 +100,10 @@ std::string TyVarUnsolved::to_string() const {
 }
 
 std::string TraitMismatch::to_string() const {
-  return "the argument type " + dt_.to_string() + " is not " +
-         trait_->to_string();
+  return "the type variable " + constraint_.tyvar->to_string() +
+         " mentioned in argument #" + std::to_string(occurrence_ + 1) +
+         " is inferred to be " + dt_.to_string() + ", which is not a " +
+         constraint_.trait->to_string();
 }
 
 std::string ArgLengthMismatch::to_string() const {
@@ -105,7 +123,14 @@ DataType Signature::type_check(const std::vector<DataType> &arguments) const {
   for (auto &c : constraints_) {
     auto dt = c.tyvar->resolve(solutions);
     if (!c.trait->validate(dt)) {
-      throw TraitMismatch(dt, c.trait);
+      int occurrence = -1;
+      for (int i = 0; i < parameters_.size(); i++) {
+        if (parameters_[i]->contains_tyvar(*c.tyvar)) {
+          occurrence = i;
+          break;
+        }
+      }
+      throw TraitMismatch(occurrence, dt, c);
     }
   }
   return ret_type_->resolve(solutions);

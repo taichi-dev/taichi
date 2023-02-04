@@ -1397,6 +1397,16 @@ void export_lang(py::module &m) {
       ::Sleep(100);
 #endif
   });
+
+  auto operationClass = py::class_<Operation>(m, "Operation");
+  auto internalOpClass = py::class_<InternalOp>(m, "InternalOp");
+
+#define PER_INTERNAL_OP(x)                                           \
+  internalOpClass.def_property_readonly_static(                      \
+      #x, [](py::object) { return Operations::get(InternalOp::x); }, \
+      py::return_value_policy::reference);
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 }
 
 }  // namespace taichi

@@ -335,7 +335,7 @@ void Operations::init_internals() {
   // subgroupInclusiveMin, subgroupInclusiveMax, subgroupInclusiveAnd,
   // subgroupInclusiveOr, subgroupInclusiveXor
 
-  auto lhs = tyvar("lhs"), rhs = tyvar("rhs");
+  auto ValueT = tyvar("ValueT");
 
   PLAIN_OP(workgroupBarrier, i32_void, false);
   PLAIN_OP(workgroupMemoryBarrier, i32_void, false);
@@ -344,23 +344,23 @@ void Operations::init_internals() {
   PLAIN_OP(subgroupBarrier, i32_void, false);
   PLAIN_OP(subgroupMemoryBarrier, i32_void, false);
   PLAIN_OP(subgroupElect, i32, false);
-  POLY_OP(subgroupBroadcast, false, Signature({}, {lhs}, lhs));
+  POLY_OP(subgroupBroadcast, false, Signature({}, {ValueT, !u32}, ValueT));
   PLAIN_OP(subgroupSize, i32, false);
   PLAIN_OP(subgroupInvocationId, i32, false);
-  POLY_OP(subgroupAdd, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupMul, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupMin, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupMax, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupAnd, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupOr, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupXor, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveAdd, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveMul, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveMin, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveMax, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveAnd, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveOr, false, Signature({}, {lhs}, lhs));
-  POLY_OP(subgroupInclusiveXor, false, Signature({}, {lhs}, lhs));
+  POLY_OP(subgroupAdd, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupMul, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupMin, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupMax, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupAnd, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupOr, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupXor, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveAdd, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveMul, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveMin, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveMax, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveAnd, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveOr, false, Signature({}, {ValueT}, ValueT));
+  POLY_OP(subgroupInclusiveXor, false, Signature({}, {ValueT}, ValueT));
 
 #undef POLY_OP
 #undef PLAIN_OP

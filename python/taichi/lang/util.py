@@ -327,7 +327,8 @@ def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
         return
     if print_stack:
         msg += f'\n{get_traceback(stacklevel)}'
-    warnings.warn(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL, warning_type)
+    warnings.warn(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL,
+                  warning_type)
 
 
 def get_traceback(stacklevel=1):

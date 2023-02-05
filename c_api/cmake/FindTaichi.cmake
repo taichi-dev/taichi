@@ -141,8 +141,8 @@ if(("Runtime" IN_LIST Taichi_FIND_COMPONENTS) AND (NOT TARGET Taichi::Runtime))
     endif()
 
     # Capture Taichi Runtime version from header definition.
-    if(EXISTS "${Taichi_Runtime_INCLUDE_DIR}/taichi/Taichi_core.h")
-        file(READ "${Taichi_Runtime_INCLUDE_DIR}/taichi/Taichi_core.h" Taichi_Runtime_VERSION_LITERAL)
+    if(EXISTS "${Taichi_Runtime_INCLUDE_DIR}/taichi/taichi_core.h")
+        file(READ "${Taichi_Runtime_INCLUDE_DIR}/taichi/taichi_core.h" Taichi_Runtime_VERSION_LITERAL)
         string(REGEX MATCH "#define TI_C_API_VERSION ([0-9]+)" Taichi_Runtime_VERSION_LITERAL ${Taichi_Runtime_VERSION_LITERAL})
         set(Taichi_Runtime_VERSION_LITERAL ${CMAKE_MATCH_1})
         math(EXPR Taichi_Runtime_VERSION_MAJOR "${Taichi_Runtime_VERSION_LITERAL} / 1000000")

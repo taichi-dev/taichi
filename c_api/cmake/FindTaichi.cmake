@@ -84,7 +84,7 @@ endif()
 if(TRUE)
     # (penguinliong) Currently we only have Taichi Runtime. We might make the
     # codegen a library in the future?
-    set(Taichi_FIND_COMPONENTS "runtime")
+    set(Taichi_FIND_COMPONENTS "Runtime")
 endif()
 
 message("-- Looking for Taichi components: ${Taichi_FIND_COMPONENTS}")
@@ -166,7 +166,7 @@ if(("Runtime" IN_LIST Taichi_FIND_COMPONENTS) AND (NOT TARGET Taichi::Runtime))
             Taichi_Runtime_INCLUDE_DIR)
         list(APPEND Taichi_LIBRARIES "${Taichi_Runtime_LIBRARY}")
         if(EXISTS ${Taichi_Runtime_REDIST_LIBRARY})
-            list(APPEND Taichi_REDIST_LIBRARIES ${Taichi_Runtime_REDIST_LIBRARY})
+            list(APPEND Taichi_REDIST_LIBRARIES "${Taichi_Runtime_REDIST_LIBRARY}")
         endif()
         list(APPEND Taichi_INCLUDE_DIRS "${Taichi_Runtime_INCLUDE_DIR}")
     endif()
@@ -174,11 +174,18 @@ endif()
 
 # - [taichi] -------------------------------------------------------------------
 
-set(Taichi_VERSION Taichi_Runtime_VERSION)
-set(Taichi_FOUND TRUE)
-
 # Handle `QUIET` and `REQUIRED` args in the recommended way in `find_package`.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Taichi DEFAULT_MSG ${COMPONENT_VARS})
+set(Taichi_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
+set(Taichi_INCLUDE_DIRS ${Taichi_INCLUDE_DIRS} PARENT_SCOPE)
+set(Taichi_LIBRARIES ${Taichi_LIBRARIES} PARENT_SCOPE)
+set(Taichi_REDIST_LIBRARIES ${Taichi_REDIST_LIBRARIES} PARENT_SCOPE)
+
+set(Taichi_Runtime_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
+set(Taichi_Runtime_INCLUDE_DIR ${Taichi_Runtime_INCLUDE_DIR} PARENT_SCOPE)
+set(Taichi_Runtime_LIBRARY ${Taichi_Runtime_LIBRARY} PARENT_SCOPE)
+set(Taichi_Runtime_REDIST_LIBRARY ${Taichi_Runtime_REDIST_LIBRARY} PARENT_SCOPE)
+
 
 cmake_policy(POP)

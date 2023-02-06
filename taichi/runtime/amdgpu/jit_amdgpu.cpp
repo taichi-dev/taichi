@@ -22,9 +22,10 @@ JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
 
 std::string JITSessionAMDGPU::compile_module_to_hsaco(
     std::unique_ptr<llvm::Module> &llvm_module) {
-
-  llvm::legacy::FunctionPassManager function_pass_manager_addrcast(llvm_module.get());
-  function_pass_manager_addrcast.add(new AMDGPUConvertFunctionBodyAllocsAddressSpacePass());
+  llvm::legacy::FunctionPassManager function_pass_manager_addrcast(
+      llvm_module.get());
+  function_pass_manager_addrcast.add(
+      new AMDGPUConvertFunctionBodyAllocsAddressSpacePass());
   for (auto func = llvm_module->begin(); func != llvm_module->end(); ++func)
     if (func->getName() == "function_body")
       function_pass_manager_addrcast.run(*func);

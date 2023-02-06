@@ -174,14 +174,13 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
   }
 };
 
-
 struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public FunctionPass {
   static inline char ID{0};
   AMDGPUConvertFunctionBodyAllocsAddressSpacePass() : FunctionPass(ID) {
   }
   bool runOnFunction(llvm::Function &f) override {
     for (auto &bb : f) {
-      if (bb.getName() != "allocs") 
+      if (bb.getName() != "allocs")
         continue;
 
       std::vector<AllocaInst *> alloca_inst_vec;

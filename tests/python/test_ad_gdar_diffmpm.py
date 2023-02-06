@@ -4,9 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.assertion,
-                 debug=True,
-                 exclude=[ti.cc])
+@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
 def test_gdar_mpm():
     real = ti.f32
 

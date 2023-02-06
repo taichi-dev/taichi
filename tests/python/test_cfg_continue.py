@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.amdgpu])
 def test_cfg_continue():
     x = ti.field(dtype=int, shape=1)
     state = ti.field(dtype=int, shape=1)

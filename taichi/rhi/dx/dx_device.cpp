@@ -750,6 +750,68 @@ void Dx11Device::dealloc_memory(DeviceAllocation handle) {
   alloc_id_to_buffer_.erase(alloc_id);
 }
 
+RhiResult Dx11Device::upload_data(DevicePtr *device_ptr,
+                                  const void **data,
+                                  size_t *size,
+                                  int num_alloc) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    D3D11_BOX box{};
+    box.left = device_ptr[i].offset;
+    box.right = size[i];
+    box.top = 0;
+    box.bottom = 1;  // 1 past the end!
+    box.front = 0;
+    box.back = 1;
+
+    context_->UpdateSubresource(
+        alloc_id_to_buffer_[device_ptr[i].alloc_id].get_default_copy(device_),
+        0, &box, data[i], size[i], 0);
+  }
+
+  return RhiResult::success;
+}
+
+RhiResult Dx11Device::readback_data(
+    DevicePtr *device_ptr,
+    void **data,
+    size_t *size,
+    int num_alloc,
+    const std::vector<StreamSemaphore> &wait_sema) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    ID3D11Buffer *buffer =
+        alloc_id_to_buffer_[device_ptr[i].alloc_id].get_staging(context_,
+                                                                device_);
+    if (buffer == nullptr) {
+      return RhiResult::error;
+    }
+
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    if (!SUCCEEDED(context_->Map(buffer, 0, D3D11_MAP_READ, 0, &mapped))) {
+      return RhiResult::error;
+    }
+    memcpy(data[i], mapped.pData, size[i]);
+    context_->Unmap(buffer, 0);
+  }
+
+  return RhiResult::success;
+}
+
 RhiResult Dx11Device::create_pipeline(Pipeline **out_pipeline,
                                       const PipelineSourceDesc &src,
                                       std::string name,

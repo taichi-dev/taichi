@@ -76,6 +76,18 @@ class CpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  RhiResult upload_data(DevicePtr *device_ptr,
+                        const void **data,
+                        size_t *size,
+                        int num_alloc = 1) noexcept override;
+
+  RhiResult readback_data(
+      DevicePtr *device_ptr,
+      void **data,
+      size_t *size,
+      int num_alloc = 1,
+      const std::vector<StreamSemaphore> &wait_sema = {}) noexcept override;
+
   ShaderResourceSet *create_resource_set() override{TI_NOT_IMPLEMENTED};
 
   RhiResult create_pipeline(Pipeline **out_pipeline,

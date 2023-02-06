@@ -66,7 +66,7 @@ def test_not_out_of_bound():
     func()
 
 
-@test_utils.test(require=ti.extension.assertion,
+@test_utils.test(require=[ti.extension.sparse, ti.extension.assertion],
                  debug=True,
                  gdb_trigger=False,
                  exclude=ti.metal)
@@ -83,7 +83,7 @@ def test_out_of_bound_dynamic():
         func()
 
 
-@test_utils.test(require=ti.extension.assertion,
+@test_utils.test(require=[ti.extension.sparse, ti.extension.assertion],
                  debug=True,
                  gdb_trigger=False,
                  exclude=ti.metal)

@@ -345,7 +345,7 @@ void Kernel::init(Program &program,
 }
 
 TypedConstant Kernel::fetch_ret(const std::vector<int> &index) {
-  Type *dt = ret_type->get_element_type(index);
+  const Type *dt = ret_type->get_element_type(index);
   int offset = ret_type->get_element_offset(index);
   return program->fetch_result(offset, dt);
 }

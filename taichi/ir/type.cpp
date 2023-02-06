@@ -136,7 +136,8 @@ std::string StructType::to_string() const {
   return s;
 }
 
-Type *StructType::get_element_type(const std::vector<int> &indices) const {
+const Type *StructType::get_element_type(
+    const std::vector<int> &indices) const {
   const Type *type_now = this;
   for (auto ind : indices) {
     if (auto tensor_type = type_now->cast<TensorType>()) {
@@ -146,7 +147,7 @@ Type *StructType::get_element_type(const std::vector<int> &indices) const {
       type_now = type_now->as<StructType>()->elements_[ind].type;
     }
   }
-  return (Type *)type_now;
+  return type_now;
 }
 
 size_t StructType::get_element_offset(const std::vector<int> &indices) const {

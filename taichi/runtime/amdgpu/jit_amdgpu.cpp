@@ -1,5 +1,6 @@
 #include "taichi/runtime/amdgpu/jit_amdgpu.h"
 #include "taichi/runtime/llvm/llvm_context.h"
+#include "taichi/runtime/llvm/llvm_context_pass.h"
 
 namespace taichi {
 namespace lang {
@@ -21,6 +22,13 @@ JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
 
 std::string JITSessionAMDGPU::compile_module_to_hsaco(
     std::unique_ptr<llvm::Module> &llvm_module) {
+
+  llvm::legacy::FunctionPassManager function_pass_manager_addrcast(llvm_module.get());
+  function_pass_manager_addrcast.add(new AMDGPUConvertFunctionBodyAllocsAddressSpacePass());
+  for (auto func = llvm_module->begin(); func != llvm_module->end(); ++func)
+    if (func->getName() == "function_body")
+      function_pass_manager_addrcast.run(*func);
+
   if (llvm::verifyModule(*llvm_module, &llvm::errs())) {
     llvm_module->print(llvm::errs(), nullptr);
     TI_WARN("Module broken");

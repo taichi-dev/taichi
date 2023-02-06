@@ -174,6 +174,40 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
   }
 };
 
+
+struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public FunctionPass {
+  static inline char ID{0};
+  AMDGPUConvertFunctionBodyAllocsAddressSpacePass() : FunctionPass(ID) {
+  }
+  bool runOnFunction(llvm::Function &f) override {
+    for (auto &bb : f) {
+      if (bb.getName() != "allocs") 
+        continue;
+
+      std::vector<AllocaInst *> alloca_inst_vec;
+      for (Instruction &inst : bb) {
+        AllocaInst *now_alloca = dyn_cast<AllocaInst>(&inst);
+        if (!now_alloca ||
+            now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+          continue;
+        }
+        alloca_inst_vec.push_back(now_alloca);
+      }
+      for (auto &allocainst : alloca_inst_vec) {
+        auto alloca_type = allocainst->getAllocatedType();
+        llvm::IRBuilder<> builder(allocainst);
+        auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+        auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+        new_alloca->setAlignment(Align(allocainst->getAlign().value()));
+        auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
+        allocainst->replaceAllUsesWith(addrspacecast);
+        allocainst->eraseFromParent();
+      }
+    }
+    return false;
+  }
+};
+
 struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
   static inline char ID{0};
   AMDGPUConvertFuncParamAddressSpacePass() : ModulePass(ID) {

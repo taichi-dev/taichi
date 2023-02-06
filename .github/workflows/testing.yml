@@ -469,6 +469,56 @@ jobs:
           path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
+  build_and_test_docs:
+    name: Build and Test (Docs)
+    needs: check_files
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+    runs-on: [self-hosted, cuda, vulkan, cn]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build & Install
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/build.py
+
+        env:
+          PY: '3.8'
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=ON
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_BACKTRACE:BOOL=ON
+            -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_C_API=ON
+
+      - name: Test
+        id: test
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: '3.8'
+          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
+          TI_DEVICE_MEMORY_GB: '1'
+          TI_RUN_RELEASE_TESTS: '1'
+
   build_android_demos:
     name: Build Android Demos
     # Skip this job when testing the offline cache

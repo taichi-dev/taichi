@@ -473,7 +473,7 @@ jobs:
     name: Build and Test (Docs)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
-    runs-on: [self-hosted, cuda, vulkan, cn]
+    runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     steps:
       - uses: actions/checkout@v3
         with:

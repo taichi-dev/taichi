@@ -512,7 +512,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-test \
              registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+             /home/dev/taichi/.github/workflows/scripts/unix-test-docs.sh
         env:
           PY: '3.8'
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'

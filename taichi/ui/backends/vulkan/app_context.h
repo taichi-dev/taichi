@@ -46,6 +46,16 @@ class TI_DLL_EXPORT AppContext {
       bool blend = true,
       bool vbo_instanced = false);
 
+  taichi::lang::Pipeline *get_customized_raster_pipeline(
+      const std::string &frag_path,
+      const std::string &vert_path,
+      taichi::lang::TopologyType prim_topology,
+      bool depth,
+      taichi::lang::PolygonMode polygon_mode,
+      bool blend,
+      const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
+      const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs);
+
   taichi::lang::Pipeline *get_compute_pipeline(const std::string &shader_path);
 
  private:

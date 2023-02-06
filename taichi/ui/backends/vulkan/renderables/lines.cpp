@@ -13,10 +13,21 @@ using namespace taichi::lang::vulkan;
 
 void Lines::create_graphics_pipeline() {
   if (!pipeline_) {
-    pipeline_ = app_context_->get_raster_pipeline(
+    const std::vector<VertexInputBinding> vertex_inputs{{/*binding=*/0,
+                                                         sizeof(float) * 4,
+                                                         /*instance=*/false}};
+    const std::vector<VertexInputAttribute> vertex_attribs{
+        {/*location=*/0, /*binding=*/0,
+         /*format=*/BufferFormat::rg32f,
+         /*offset=*/0},
+        {/*location=*/1, /*binding=*/0,
+         /*format=*/BufferFormat::r32u,
+         /*offset=*/sizeof(float) * 2}};
+
+    pipeline_ = app_context_->get_customized_raster_pipeline(
         config_.fragment_shader_path, config_.vertex_shader_path,
         TopologyType::Triangles, /*depth=*/false, config_.polygon_mode,
-        config_.blending);
+        config_.blending, vertex_inputs, vertex_attribs);
   }
 
   if (!quad_expand_pipeline_) {

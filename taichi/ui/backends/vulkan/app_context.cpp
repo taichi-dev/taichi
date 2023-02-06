@@ -195,6 +195,50 @@ Pipeline *AppContext::get_raster_pipeline(
   }
 }
 
+taichi::lang::Pipeline *AppContext::get_customized_raster_pipeline(
+    const std::string &frag_path,
+    const std::string &vert_path,
+    taichi::lang::TopologyType prim_topology,
+    bool depth,
+    taichi::lang::PolygonMode polygon_mode,
+    bool blend,
+    const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
+    const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs) {
+  const std::string key = fmt::format(
+      "{}${}${}${}${}${}$C", int(polygon_mode), int(blend), frag_path,
+      vert_path, int(prim_topology), int(depth));
+  const auto &iter = pipelines_.find(key);
+  if (iter != pipelines_.end()) {
+    return iter->second.get();
+  } else {
+    auto vert_code = read_file(vert_path);
+    auto frag_code = read_file(frag_path);
+
+    std::vector<PipelineSourceDesc> source(2);
+    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+                 frag_code.size(), PipelineStageType::fragment};
+    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+                 vert_code.size(), PipelineStageType::vertex};
+
+    RasterParams raster_params;
+    raster_params.prim_topology = prim_topology;
+    raster_params.polygon_mode = polygon_mode;
+    raster_params.depth_test = depth;
+    raster_params.depth_write = depth;
+
+    if (blend) {
+      raster_params.blending.push_back(BlendingParams());
+    }
+
+    auto pipeline = device().create_raster_pipeline(
+        source, raster_params, vertex_inputs, vertex_attribs);
+
+    Pipeline *pp = pipeline.get();
+    pipelines_[key] = std::move(pipeline);
+    return pp;
+  }
+}
+
 taichi::lang::Pipeline *AppContext::get_compute_pipeline(
     const std::string &shader_path) {
   const std::string &key = shader_path;

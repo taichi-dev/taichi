@@ -369,6 +369,8 @@ typedef enum TiArch {
   TI_ARCH_OPENGL = 6,
   // OpenGL ES GPU backend.
   TI_ARCH_GLES = 7,
+  // AMDGPU backend
+  TI_ARCH_AMDGPU = 8,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 

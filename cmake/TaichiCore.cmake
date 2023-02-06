@@ -93,7 +93,8 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/system/*"
     "taichi/transforms/*"
     "taichi/aot/*.cpp" "taichi/aot/*.h"
-    "taichi/platform/cuda/*" "taichi/platform/mac/*" "taichi/platform/windows/*"
+    "taichi/platform/cuda/*" "taichi/platform/amdgpu/*"
+    "taichi/platform/mac/*" "taichi/platform/windows/*"
     "taichi/codegen/*.cpp" "taichi/codegen/*.h"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
     "taichi/rhi/*.h" "taichi/rhi/*.cpp"
@@ -116,7 +117,7 @@ endif()
 
 if (TI_WITH_AMDGPU)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_AMDGPU")
-# file(GLOB TAICHI_AMDGPU_RUNTIME_SOURCE "taichi/runtime/amdgpu/runtime.cpp")
+  file(GLOB TAICHI_AMDGPU_RUNTIME_SOURCE "taichi/runtime/amdgpu/runtime.cpp")
   list(APPEND TAIHI_CORE_SOURCE ${TAICHI_AMDGPU_RUNTIME_SOURCE})
 endif()
 

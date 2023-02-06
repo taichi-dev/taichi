@@ -84,7 +84,8 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
-    } else if (op == UnaryOpType::sgn) {
+    }  // TODO simplify the impl of sgn
+    else if (op == UnaryOpType::sgn) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto ashr = builder->CreateAShr(input, 31);
         auto sub = builder->CreateSub(0, input);
@@ -141,6 +142,57 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         builder->SetInsertPoint(bb_merge);
         llvm_val[stmt] =
             builder->CreateLoad(llvm::Type::getFloatTy(*llvm_context), cast);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        auto func = builder->GetInsertBlock()->getParent();
+        auto bb_oeq_then = BasicBlock::Create(*llvm_context, "oeq_then", func);
+        auto bb_oeq_else = BasicBlock::Create(*llvm_context, "oeq_else");
+        auto bb_merge = BasicBlock::Create(*llvm_context, "merge");
+        auto bb_olt_then = BasicBlock::Create(*llvm_context, "olt_then", func);
+        auto bb_olt_else = BasicBlock::Create(*llvm_context, "olt_else");
+
+        auto alloc = builder->CreateAlloca(
+            llvm::Type::getDoubleTy(*llvm_context), (unsigned)5);
+        auto newty = llvm::PointerType::get(
+            llvm::Type::getDoubleTy(*llvm_context), (unsigned)0);
+        auto cast = builder->CreateAddrSpaceCast(alloc, newty);
+        auto fcmp_oeq = builder->CreateFCmpOEQ(
+            input,
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0));
+        builder->CreateCondBr(fcmp_oeq, bb_oeq_then, bb_oeq_else);
+        builder->SetInsertPoint(bb_oeq_then);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_oeq_then = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_oeq_else);
+        builder->SetInsertPoint(bb_oeq_else);
+        auto fcmp_olt = builder->CreateFCmpOLT(
+            input,
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 0));
+        builder->CreateCondBr(fcmp_olt, bb_olt_then, bb_olt_else);
+        bb_oeq_else = builder->GetInsertBlock();
+
+        builder->SetInsertPoint(bb_olt_then);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), -1),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_olt_then = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_olt_else);
+        builder->SetInsertPoint(bb_olt_else);
+        builder->CreateStore(
+            llvm::ConstantFP::get(llvm::Type::getDoubleTy(*llvm_context), 1),
+            cast);
+        builder->CreateBr(bb_merge);
+        bb_olt_else = builder->GetInsertBlock();
+
+        func->getBasicBlockList().push_back(bb_merge);
+        builder->SetInsertPoint(bb_merge);
+        llvm_val[stmt] =
+            builder->CreateLoad(llvm::Type::getDoubleTy(*llvm_context), cast);
       }
     }
     UNARY_STD(cos)
@@ -265,12 +317,32 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    if (auto get_ch = stmt->src->cast<GetChStmt>()) {
-      bool should_cache_as_read_only = current_offload->mem_access_opt.has_flag(
-          get_ch->output_snode, SNodeAccessFlag::read_only);
-      create_global_load(stmt, should_cache_as_read_only);
+    auto ptr = llvm_val[stmt->src];
+    auto ptr_type = stmt->src->ret_type->as<PointerType>();
+    if (ptr_type->is_bit_pointer()) {
+      auto val_type = ptr_type->get_pointee_type();
+      auto get_ch = stmt->src->as<GetChStmt>();
+      auto physical_type =
+          tlctx->get_data_type(get_ch->input_snode->physical_type);
+      auto [byte_ptr, bit_offset] = load_bit_ptr(ptr);
+      auto physical_value = builder->CreateLoad(physical_type, byte_ptr);
+      if (auto qit = val_type->cast<QuantIntType>()) {
+        llvm_val[stmt] = extract_quant_int(physical_value, bit_offset, qit);
+      } else if (auto qfxt = val_type->cast<QuantFixedType>()) {
+        qit = qfxt->get_digits_type()->as<QuantIntType>();
+        auto digits = extract_quant_int(physical_value, bit_offset, qit);
+        llvm_val[stmt] = reconstruct_quant_fixed(digits, qfxt);
+      } else {
+        TI_ASSERT(val_type->is<QuantFloatType>());
+        TI_ASSERT(get_ch->input_snode->dt->is<BitStructType>());
+        llvm_val[stmt] = extract_quant_float(
+            physical_value, get_ch->input_snode->dt->as<BitStructType>(),
+            get_ch->output_snode->id_in_bit_struct);
+      }
     } else {
-      create_global_load(stmt, false);
+      // Byte pointer case.
+      llvm_val[stmt] =
+          builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), ptr);
     }
   }
 
@@ -294,7 +366,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       } else if (stmt->task_type == Type::range_for) {
         create_offload_range_for(stmt);
       } else if (stmt->task_type == Type::struct_for) {
-        create_offload_struct_for(stmt, true);
+        create_offload_struct_for(stmt);
       } else if (stmt->task_type == Type::mesh_for) {
         create_offload_mesh_for(stmt);
       } else if (stmt->task_type == Type::listgen) {
@@ -370,7 +442,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__ocml_pow_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = call("__ocml_pow_f32", {lhs, rhs});
-      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__ocml_pow_f64", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
         auto sitofp_lhs_ =
@@ -388,12 +460,24 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__ocml_atan2_f16", {lhs, rhs});
       } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         llvm_val[stmt] = call("__ocml_atan2_f32", {lhs, rhs});
-      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+      } else if (ret_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__ocml_atan2_f64", {lhs, rhs});
       } else {
         TI_NOT_IMPLEMENTED
       }
     }
+  }
+
+ private:
+  std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() override {
+    auto thread_idx =
+        builder->CreateIntrinsic(Intrinsic::amdgcn_workitem_id_x, {}, {});
+    auto workgroup_dim_ =
+        call("__ockl_get_local_size",
+             llvm::ConstantInt::get(llvm::Type::getInt32Ty(*llvm_context), 0));
+    auto block_dim = builder->CreateTrunc(
+        workgroup_dim_, llvm::Type::getInt32Ty(*llvm_context));
+    return std::make_tuple(thread_idx, block_dim);
   }
 };
 

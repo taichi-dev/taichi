@@ -230,7 +230,7 @@ class StructType : public Type {
     return layout_;
   }
 
-  Type *get_element_type(const std::vector<int> &indices) const;
+  const Type *get_element_type(const std::vector<int> &indices) const;
   size_t get_element_offset(const std::vector<int> &indices) const;
   const std::vector<StructMember> &elements() const {
     return elements_;

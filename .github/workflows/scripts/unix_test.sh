@@ -123,7 +123,7 @@ if [ -z "$GPU_TEST" ]; then
     fi
 elif [ ! -z "$AMDGPU_TEST" ]; then
     run-it cpu    $(nproc)
-    # run-it amdgpu 4
+    run-it amdgpu 8
 else
     run-it cuda   8
     run-it cpu    $(nproc)

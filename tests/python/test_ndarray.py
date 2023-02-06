@@ -19,7 +19,7 @@ ndarray_shapes = [(), 8, (6, 12)]
 vector_dims = [3]
 matrix_dims = [(1, 2), (2, 3)]
 supported_archs_taichi_ndarray = [
-    ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal
+    ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.amdgpu
 ]
 
 

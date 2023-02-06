@@ -204,9 +204,9 @@ taichi::lang::Pipeline *AppContext::get_customized_raster_pipeline(
     bool blend,
     const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
     const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs) {
-  const std::string key = fmt::format(
-      "{}${}${}${}${}${}$C", int(polygon_mode), int(blend), frag_path,
-      vert_path, int(prim_topology), int(depth));
+  const std::string key =
+      fmt::format("{}${}${}${}${}${}$C", int(polygon_mode), int(blend),
+                  frag_path, vert_path, int(prim_topology), int(depth));
   const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();

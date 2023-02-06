@@ -86,7 +86,13 @@ class LlvmRuntimeExecutor {
   }
 
   template <typename T>
-  T fetch_result(char *result_buffer, int offset);
+  T fetch_result(char *result_buffer, int offset) {
+    T ret;
+    fetch_result_impl(&ret, result_buffer, offset, sizeof(T));
+    return ret;
+  }
+
+  void fetch_result_impl(void *dest, char *result_buffer, int offset, int size);
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 

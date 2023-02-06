@@ -343,9 +343,23 @@ void Kernel::init(Program &program,
 
   func();
 }
-template <typename T>
-T Kernel::fetch_ret(std::vector<int> index) {
-  return nullptr;
+
+TypedConstant Kernel::fetch_ret(const std::vector<int> &index) {
+  Type *dt = ret_type->get_element_type(index);
+  int offset = ret_type->get_element_offset(index);
+  return program->fetch_result(offset, dt);
+}
+
+float64 Kernel::get_struct_ret_float(const std::vector<int> &index) {
+  return fetch_ret(index).val_float();
+}
+
+int64 Kernel::get_struct_ret_int(const std::vector<int> &index) {
+  return fetch_ret(index).val_int();
+}
+
+uint64 Kernel::get_struct_ret_uint(const std::vector<int> &index) {
+  return fetch_ret(index).val_uint();
 }
 
 }  // namespace taichi::lang

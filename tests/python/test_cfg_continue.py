@@ -14,8 +14,7 @@ def test_cfg_continue():
                 x[p] = 1
                 continue
 
-            if state[p] != 0:
-                print('test')
+            x[p] = 100
 
     foo()
     assert x[0] == 1

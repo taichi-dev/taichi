@@ -330,4 +330,11 @@ int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
 }
 
+const SNode *SNode::get_root() const {
+  if (!parent) {  // root->parent == nullptr
+    return this;
+  }
+  return parent->get_root();
+}
+
 }  // namespace taichi::lang

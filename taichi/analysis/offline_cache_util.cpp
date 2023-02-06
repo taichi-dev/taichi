@@ -68,7 +68,7 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
 }
 
 static void get_offline_cache_key_of_snode_impl(
-    SNode *snode,
+    const SNode *snode,
     BinaryOutputSerializer &serializer,
     std::unordered_set<int> &visited) {
   if (auto iter = visited.find(snode->id); iter != visited.end()) {
@@ -122,7 +122,7 @@ static void get_offline_cache_key_of_snode_impl(
   serializer(snode->get_snode_tree_id());
 }
 
-std::string get_hashed_offline_cache_key_of_snode(SNode *snode) {
+std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
   TI_ASSERT(snode);
 
   BinaryOutputSerializer serializer;
@@ -145,7 +145,7 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   std::string kernel_ast_string;
   if (kernel) {
     std::ostringstream oss;
-    gen_offline_cache_key(kernel->program, kernel->ir.get(), &oss);
+    gen_offline_cache_key(kernel->ir.get(), &oss);
     kernel_ast_string = oss.str();
   }
 

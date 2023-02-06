@@ -327,6 +327,8 @@ class SNode {
 
   int get_snode_tree_id() const;
 
+  const SNode *get_root() const;
+
   static void reset_counter() {
     counter = 0;
   }

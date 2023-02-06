@@ -68,7 +68,6 @@ def hook(module, name=None):
 @hook(ti.GUI)
 def show(orig, self, *args, **kwargs):
     if not self.running:
-        self.running = False
         self.close()
         return
 
@@ -80,7 +79,6 @@ def show(orig, self, *args, **kwargs):
 @hook(ti.ui.Window)
 def show(orig, self, *args, **kwargs):
     if not self.running:
-        self.running = False
         self.close()
         return
 

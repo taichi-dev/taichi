@@ -231,7 +231,8 @@ function run-android-app {
     /android-sdk/platform-tools/adb logcat -c
     /android-sdk/platform-tools/adb shell am start $ACTIVITY
     sleep $WAIT_TIME
-    /android-sdk/platform-tools/adb logcat -d -v time 'CRASH:E *:F' | tee logcat.log
+    /android-sdk/platform-tools/adb logcat -d -v time 'CRASH:E *:F' | grep -v -- '----- beginning of ' | tee logcat.log
+
     /android-sdk/platform-tools/adb shell am force-stop $(echo $ACTIVITY | sed 's#/.*$##g')
     /android-sdk/platform-tools/adb disconnect
     release-android-bot

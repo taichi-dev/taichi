@@ -114,7 +114,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         $<BUILD_INTERFACE:${taichi_c_api_BINARY_DIR}/c_api/include>
         $<BUILD_INTERFACE:${taichi_c_api_SOURCE_DIR}/c_api/include>
         # Used when installing the library:
-        $<INSTALL_INTERFACE:/c_api/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/c_api/include>
     PRIVATE
         # Used only when building the library:
         ${PROJECT_SOURCE_DIR}

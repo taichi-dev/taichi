@@ -719,6 +719,30 @@ class StructType(CompoundType):
 
         return Struct(d)
 
+    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                d[name] = dtype.from_kernel_struct_ret(t_kernel,
+                                                       ret_index + (index, ))
+            else:
+                if id(dtype) in primitive_types.integer_type_ids:
+                    if is_signed(cook_dtype(ret_dt)):
+                        d[name] = t_kernel.get_struct_ret_int(ret_index +
+                                                              (index, ))
+                    else:
+                        d[name] = t_kernel.get_struct_ret_uint(ret_index +
+                                                               (index, ))
+                elif id(dtype) in primitive_types.real_type_ids:
+                    d[name] = t_kernel.get_struct_ret_float(ret_index +
+                                                            (index, ))
+                else:
+                    raise TaichiRuntimeError("Invalid return type")
+
+        return Struct(d)
+
     def cast(self, struct):
         # sanity check members
         if self.members.keys() != struct.entries.keys():

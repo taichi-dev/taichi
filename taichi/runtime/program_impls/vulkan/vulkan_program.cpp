@@ -120,9 +120,8 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
     int32_t minor = std::atoll(config->vk_api_version.c_str() + idot1 + 1);
     int32_t patch = std::atoll(config->vk_api_version.c_str() + idot2 + 1);
     evd_params.api_version = VK_MAKE_API_VERSION(0, major, minor, patch);
+    evd_params.profiler = profiler;
   }
-
-  evd_params.profiler = profiler;
 
   if (config->debug) {
     TI_WARN("Enabling vulkan validation layer in debug mode");

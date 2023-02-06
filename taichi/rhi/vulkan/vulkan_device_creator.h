@@ -57,7 +57,7 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
     // custom surface creator
     std::function<VkSurfaceKHR(VkInstance)> surface_creator;
     bool enable_validation_layer{false};
-    KernelProfilerBase *profiler;
+    KernelProfilerBase *profiler{nullptr};
   };
 
   explicit VulkanDeviceCreator(const Params &params);

@@ -1308,6 +1308,7 @@ void export_lang(py::module &m) {
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
 
+  // Conjugate Gradient solver
   py::class_<CG<Eigen::VectorXf, float>>(m, "CGf")
       .def(py::init<SparseMatrix &, int, float, bool>())
       .def("solve", &CG<Eigen::VectorXf, float>::solve)
@@ -1330,6 +1331,7 @@ void export_lang(py::module &m) {
                                     bool verbose) {
     return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
+  m.def("make_cucg_solver", make_cucg_solver);
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

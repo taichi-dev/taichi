@@ -52,7 +52,7 @@ class CG {
   EigenT x_;
   EigenT b_;
   int max_iters_{0};
-  float tol_{0.0f};
+  DT tol_{0.0f};
   bool verbose_{false};
   bool is_success_{false};
 };
@@ -65,4 +65,26 @@ std::unique_ptr<CG<EigenT, DT>> make_cg_solver(SparseMatrix &A,
   return std::make_unique<CG<EigenT, DT>>(A, max_iters, tol, verbose);
 }
 
+class CUCG{
+public:
+  CUCG(SparseMatrix &A, int max_iters, float tol, bool verbose)
+      : A_(A), max_iters_(max_iters), tol_(tol), verbose_(verbose) {}
+
+
+
+private:
+
+  void init_solver();
+
+  SparseMatrix &A_;
+  int max_iters_{0};
+  float tol_{0.0f};
+  bool verbose_{false};
+  bool is_success_{false};
+};
+
+std::unique_ptr<CUCG> make_cucg_solver(SparseMatrix &A,
+                                       int max_iters,
+                                       float tol,
+                                       bool verbose);
 }  // namespace taichi::lang

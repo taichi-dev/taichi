@@ -1253,6 +1253,10 @@ class TaskCodegen : public IRVisitor {
         "subgroupInclusiveMax", "subgroupInclusiveAnd", "subgroupInclusiveOr",
         "subgroupInclusiveXor"};
 
+    const std::unordered_set<std::string> shuffle_ops{
+        "subgroupShuffleDown", "subgroupShuffleUp", "subgroupShuffle"
+    };
+
     if (stmt->func_name == "workgroupBarrier") {
       ir_->make_inst(
           spv::OpControlBarrier,
@@ -1365,6 +1369,26 @@ class TaskCodegen : public IRVisitor {
           spv_op, stype,
           ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup),
           group_op, arg);
+    } else if (shuffle_ops.find(stmt->func_name) != shuffle_ops.end()) {
+      auto arg0 = ir_->query_value(stmt->args[0]->raw_name());
+      auto arg1 = ir_->query_value(stmt->args[1]->raw_name());
+      auto stype = ir_->get_primitive_type(stmt->args[0]->ret_type);
+      spv::Op spv_op;
+
+      if (ends_with(stmt->func_name, "Down")) {
+        spv_op = spv::OpGroupNonUniformShuffleDown;
+      } else if (ends_with(stmt->func_name, "Up")) {
+        spv_op = spv::OpGroupNonUniformShuffleUp;
+      } else if (ends_with(stmt->func_name, "Shuffle")) {
+        spv_op = spv::OpGroupNonUniformShuffle;
+      } else {
+        TI_ERROR("Unsupported operation: {}", stmt->func_name);
+      }
+
+      val = ir_->make_value(
+          spv_op, stype,
+          ir_->int_immediate_number(ir_->i32_type(), spv::ScopeSubgroup), arg0,
+          arg1);
     }
     ir_->register_value(stmt->raw_name(), val);
   }

@@ -9,6 +9,8 @@ export TI_CI=1
 export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
+[[ "$IN_DOCKER" == "true" ]] && cd taichi
+
 setup_python
 python3 -m pip install dist/*.whl
 

@@ -52,7 +52,8 @@ class TI_DLL_EXPORT AppContext {
   // options.
   // - This function will cache the pipeline for future use.
   // - This function will use the default GGUI vertex input format
-  taichi::lang::Pipeline *get_raster_pipeline(const RasterPipelineConfig &config);
+  taichi::lang::Pipeline *get_raster_pipeline(
+      const RasterPipelineConfig &config);
 
   // Get a raster pipeline with the given fragment shader and vertex shader &
   // options.

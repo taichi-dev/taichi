@@ -2,6 +2,7 @@ import taichi as ti
 
 ti.init(arch=ti.vulkan)
 
+
 def test_geometry_2d():
     window = ti.ui.Window('test', (640, 480))
     canvas = window.get_canvas()
@@ -95,7 +96,9 @@ def test_geometry_2d():
         window.show()
 
     render()
-    ti.tools.imwrite(window.get_image_buffer_as_numpy(), 'test_geometry_2d.png')
+    ti.tools.imwrite(window.get_image_buffer_as_numpy(),
+                     'test_geometry_2d.png')
     window.destroy()
+
 
 test_geometry_2d()

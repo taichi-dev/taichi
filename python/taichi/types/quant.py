@@ -21,7 +21,8 @@ def int(bits, signed=True, compute=None):  # pylint: disable=W0622
         DataType: The specified type.
     """
     if compute is None:
-        compute = impl.get_runtime().default_ip
+        compute = impl.get_runtime(
+        ).default_ip if signed else impl.get_runtime().default_up
     if isinstance(compute, _ti_python_core.DataType):
         compute = compute.get_ptr()
     return _type_factory.get_quant_int_type(bits, signed, compute)

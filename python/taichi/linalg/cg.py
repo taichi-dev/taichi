@@ -1,9 +1,9 @@
 import numpy as np
 from taichi._lib import core as _ti_core
-from taichi.lang.exception import TaichiRuntimeError
-from taichi.types import f32, f64
-from taichi.lang.impl import get_runtime
 from taichi.lang._ndarray import Ndarray, ScalarNdarray
+from taichi.lang.exception import TaichiRuntimeError
+from taichi.lang.impl import get_runtime
+from taichi.types import f32, f64
 
 
 class CG:
@@ -13,7 +13,8 @@ class CG:
         self.matrix = A
         self.b = b
         if self.ti_arch == _ti_core.Arch.cuda:
-            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol, True)
+            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter,
+                                                       atol, True)
         elif self.ti_arch == _ti_core.Arch.x64 or self.ti_arch == _ti_core.Arch.arm64:
             if self.dtype == f32:
                 self.cg_solver = _ti_core.make_float_cg_solver(
@@ -33,6 +34,7 @@ class CG:
                 self.cg_solver.set_x(x0)
         else:
             raise TaichiRuntimeError(f'Unsupported CG arch: {self.ti_arch}')
+
     def solve(self):
         if self.ti_arch == _ti_core.Arch.cuda:
             if isinstance(self.b, Ndarray):
@@ -40,7 +42,8 @@ class CG:
                 self.cg_solver.solve(get_runtime().prog, x.arr, self.b.arr)
                 return x, True
             else:
-                raise TaichiRuntimeError(f'Unsupported CG RHS type: {type(self.b)}')
+                raise TaichiRuntimeError(
+                    f'Unsupported CG RHS type: {type(self.b)}')
         else:
             self.cg_solver.solve()
             return self.cg_solver.get_x(), self.cg_solver.is_success()

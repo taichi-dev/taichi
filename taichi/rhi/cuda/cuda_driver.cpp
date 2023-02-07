@@ -147,8 +147,8 @@ bool CUBLASDriver::load_cublas() {
     return false;
   }
 #define PER_CUBLAS_FUNCTION(name, symbol_name, ...) \
-  name.set(loader_->load_function(#symbol_name));     \
-  name.set_lock(&lock_);                              \
+  name.set(loader_->load_function(#symbol_name));   \
+  name.set_lock(&lock_);                            \
   name.set_names(#name, #symbol_name);
 #include "taichi/rhi/cuda/cublas_functions.inc.h"
 #undef PER_CUBLAS_FUNCTION

@@ -310,7 +310,6 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
  private:
-  
   cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};
   void *csr_col_ind_{nullptr};

@@ -25,12 +25,12 @@ class CG {
 
   void set_x_ndarray(Program *prog, Ndarray &x) {
     size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
-    x_ = Eigen::Map<EigenT>((DT*)dX, A_.num_cols());
+    x_ = Eigen::Map<EigenT>((DT *)dX, A_.num_cols());
   }
 
   void set_b_ndarray(Program *prog, Ndarray &b) {
     size_t db = prog->get_ndarray_data_ptr_as_int(&b);
-    b_ = Eigen::Map<EigenT>((DT*)db, A_.num_rows());
+    b_ = Eigen::Map<EigenT>((DT *)db, A_.num_rows());
   }
 
   void solve() {
@@ -78,17 +78,16 @@ std::unique_ptr<CG<EigenT, DT>> make_cg_solver(SparseMatrix &A,
   return std::make_unique<CG<EigenT, DT>>(A, max_iters, tol, verbose);
 }
 
-class CUCG{
-public:
+class CUCG {
+ public:
   CUCG(SparseMatrix &A, int max_iters, float tol, bool verbose)
       : A_(A), max_iters_(max_iters), tol_(tol), verbose_(verbose) {
-        init_solver();
-      }
+    init_solver();
+  }
 
   void solve(Program *prog, const Ndarray &x, const Ndarray &b);
 
-private:
-
+ private:
   void init_solver();
   cublasHandle_t handle;
   SparseMatrix &A_;

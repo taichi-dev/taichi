@@ -1336,8 +1336,7 @@ void export_lang(py::module &m) {
     return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
 
-  py::class_<CUCG>(m, "CUCG")
-      .def("solve", &CUCG::solve);
+  py::class_<CUCG>(m, "CUCG").def("solve", &CUCG::solve);
   m.def("make_cucg_solver", make_cucg_solver);
 
   // Mesh Class

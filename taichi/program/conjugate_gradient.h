@@ -23,6 +23,16 @@ class CG {
     b_ = b;
   }
 
+  void set_x_ndarray(Program *prog, Ndarray &x) {
+    size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+    x_ = Eigen::Map<EigenT>((DT*)dX, A_.num_cols());
+  }
+
+  void set_b_ndarray(Program *prog, Ndarray &b) {
+    size_t db = prog->get_ndarray_data_ptr_as_int(&b);
+    b_ = Eigen::Map<EigenT>((DT*)db, A_.num_rows());
+  }
+
   void solve() {
     Eigen::ConjugateGradient<Eigen::SparseMatrix<DT>,
                              Eigen::Lower | Eigen::Upper>

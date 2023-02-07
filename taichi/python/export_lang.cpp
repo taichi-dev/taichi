@@ -1314,13 +1314,17 @@ void export_lang(py::module &m) {
       .def("solve", &CG<Eigen::VectorXf, float>::solve)
       .def("set_x", &CG<Eigen::VectorXf, float>::set_x)
       .def("get_x", &CG<Eigen::VectorXf, float>::get_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXf, float>::set_x_ndarray)
       .def("set_b", &CG<Eigen::VectorXf, float>::set_b)
+      .def("set_b_ndarray", &CG<Eigen::VectorXf, float>::set_b_ndarray)
       .def("is_success", &CG<Eigen::VectorXf, float>::is_success);
   py::class_<CG<Eigen::VectorXd, double>>(m, "CGd")
       .def(py::init<SparseMatrix &, int, double, bool>())
       .def("solve", &CG<Eigen::VectorXd, double>::solve)
       .def("set_x", &CG<Eigen::VectorXd, double>::set_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXd, double>::set_x_ndarray)
       .def("get_x", &CG<Eigen::VectorXd, double>::get_x)
+      .def("set_b_ndarray", &CG<Eigen::VectorXd, double>::set_b_ndarray)
       .def("set_b", &CG<Eigen::VectorXd, double>::set_b)
       .def("is_success", &CG<Eigen::VectorXd, double>::is_success);
   m.def("make_float_cg_solver", [](SparseMatrix &A, int max_iters, float tol,

@@ -152,9 +152,9 @@ Every element in the external array (`arr_np` and `arr_torch`) is added by `1.0`
 
 :::
 
-When the external data container and Taichi are utilizing the same device, passing arguments incurs no additional overhead. This can be seen in the PyTorch example above, where the tensor is allocated on the CUDA device, which is also the device utilized by Taichi. As a result, the kernel function can access and manipulate the data in the original CUDA buffer allocated by PyTorch without incurring any extra costs.
+When the external data container and Taichi are both using the same device, passing arguments has no extra cost. This can be demonstrated in the PyTorch example, where the tensor is created on the CUDA device, which is the same device used by Taichi. This allows the kernel function to directly access and modify the CUDA buffer created by PyTorch without incurring any additional expenses.
 
-On the other hand, if the devices being used are different, as is the case in the first example where Numpy utilizes CPUs and Taichi utilizes CUDA, Taichi automatically manages the transfer of data between devices, eliminating the need for manual intervention on the part of the user.
+In contrast, when different devices are used, such as when Numpy uses CPUs and Taichi uses CUDA as seen in the first example, Taichi handles the transfer of data between devices automatically, without requiring any manual intervention from the user.
 
 :::tip
 
@@ -178,7 +178,7 @@ k = p.contiguous()
 addd_one(k) # Correct
 ```
 
-When a NumPy ndarray or a PyTorch tensor of scalar type is passed as the argument to a Taichi kernel, it can be interpreted as an array of scalar type, or an array of vector type, or an array of matrix type. This is controlled by the `dtype` and `ndim` options in the type hint `ti.types.ndarray()`.
+When passing a NumPy ndarray or a PyTorch tensor of scalar type as an argument to a Taichi kernel, its interpretation can be set as an array of scalar type, vector type, or matrix type through the dtype and ndim options in the ti.types.ndarray() type hint.
 
 When the array is interpreted as a vector/matrix array, you should set `dtype` to the correct vector/matrix type. For example, you can safely pass a NumPy ndarray in shape `(2, 2, 3, 3)` as an argument into the `add_one` kernel, as shown below:
 
@@ -191,7 +191,7 @@ def add_one(arr : ti.types.ndarray(dtype=ti.math.mat3, ndim=2)):
 
 ## Kernel compilation with ndarray template
 
-In the examples above, `dtype` and `ndim` were specified explicitly in the kernel type hints, but Taichi also allows you to skip such details and just annotate the argument as `ti.types.ndarray()`. When one `ti.kernel` definition works with different (dtype, ndim) inputs, you do not need to duplicate the definition each time.
+In the previous examples, the dtype and ndim options were explicitly defined in the kernel type hints. However, Taichi also offers the option to simply annotate the argument as ti.types.ndarray() without specifying these details. When a single ti.kernel definition needs to handle different (dtype, ndim) inputs, it is not necessary to duplicate the definition multiple times.
 
 For example:
 
@@ -202,10 +202,11 @@ def test(arr: ti.types.ndarray()):
         arr[I] += 2
 ```
 
-Consider `ti.types.ndarray()` as a template type on parameters `dtype` and `ndim`. Equipped with a just-in-time (JIT) compiler, Taichi goes through the following two steps when a kernel with templated ndarray parameters is invoked:
+When a kernel with ti.types.ndarray() template type parameters dtype and ndim is invoked, Taichi follows these two steps using its just-in-time (JIT) compiler:
 
-1. First, Taichi checks whether a kernel with the same `dtype` and `ndim` inputs has been compiled. If yes, it loads and launches the compiled kernel directly with the input arguments.
-2. If your templated kernel needs to be compiled - either because it has never been compiled before or because it is invoked with an input of different `(dtype, ndim)`, kernel compilation is automatically triggered and executed. Note that the compiled kernel is also cached for future use.
+1. Taichi checks if a kernel with the same dtype and ndim inputs has already been compiled. If it has, it loads and launches the compiled kernel directly with the input arguments.
+
+2. If the templated kernel needs to be compiled because it is being run for the first time or with different (dtype, ndim) inputs, Taichi triggers and executes the compilation process. The compiled kernel is then cached for future use.
 
 The code snippet below provides more examples to demonstrate the behavior:
 

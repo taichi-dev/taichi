@@ -39,7 +39,6 @@ class TaichiLLVMContext {
  public:
   std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
-  JITModule *runtime_jit_module{nullptr};
 
   std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
 
@@ -50,15 +49,6 @@ class TaichiLLVMContext {
   llvm::LLVMContext *get_this_thread_context();
 
   llvm::orc::ThreadSafeContext *get_this_thread_thread_safe_context();
-
-  /**
-   * Initializes TaichiLLVMContext#runtime_jit_module.
-   *
-   * Unfortunately, this cannot be placed inside the constructor. When adding an
-   * llvm::Module, the JITSessionCPU implementation eventually calls back to
-   * this object, so it must be fully constructed by then.
-   */
-  void init_runtime_jit_module();
 
   /**
    * Updates the LLVM module of the JIT compiled SNode structs.
@@ -75,8 +65,6 @@ class TaichiLLVMContext {
   std::unique_ptr<llvm::Module> clone_runtime_module();
 
   std::unique_ptr<llvm::Module> module_from_file(const std::string &file);
-
-  JITModule *create_jit_module(std::unique_ptr<llvm::Module> module);
 
   llvm::Type *get_data_type(DataType dt);
 
@@ -149,8 +137,6 @@ class TaichiLLVMContext {
       llvm::Module *module);
 
   ThreadLocalData *get_this_thread_data();
-
-  void update_runtime_jit_module(std::unique_ptr<llvm::Module> module);
 
   std::unordered_map<std::thread::id, std::unique_ptr<ThreadLocalData>>
       per_thread_data_;

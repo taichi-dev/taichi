@@ -62,7 +62,7 @@ TiMemory LlvmRuntime::allocate_memory(
   taichi::lang::DeviceAllocation devalloc =
       llvm_device->allocate_memory_runtime(
           {params, config.ndarray_use_cached_allocator,
-           tlctx->runtime_jit_module, llvm_runtime, result_buffer});
+           executor_->get_runtime_jit_module(), llvm_runtime, result_buffer});
   return devalloc2devmem(*this, devalloc);
 }
 

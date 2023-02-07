@@ -330,10 +330,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
-void TaichiLLVMContext::init_runtime_jit_module() {
-  update_runtime_jit_module(clone_runtime_module());
-}
-
 // Note: runtime_module = init_module < struct_module
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
@@ -769,11 +765,6 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-JITModule *TaichiLLVMContext::create_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  return jit->add_module(std::move(module));
-}
-
 void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
                                                std::string key,
                                                int val) {
@@ -899,40 +890,6 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   os.flush();
   TI_INFO("Slimmed libdevice written to {}", output_fn);
 };
-
-void TaichiLLVMContext::update_runtime_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  if (arch_ == Arch::cuda) {
-    for (auto &f : *module) {
-      bool is_kernel = false;
-      const std::string func_name = f.getName().str();
-      if (starts_with(func_name, "runtime_")) {
-        mark_function_as_cuda_kernel(&f);
-        is_kernel = true;
-      }
-
-      if (!is_kernel && !f.isDeclaration())
-        // set declaration-only functions as internal linking to avoid
-        // duplicated symbols and to remove external symbol dependencies such as
-        // std::sin
-        f.setLinkage(llvm::Function::PrivateLinkage);
-    }
-  }
-
-  if (arch_ == Arch::amdgpu) {
-#ifdef TI_WITH_AMDGPU
-    llvm::legacy::PassManager module_pass_manager;
-    module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
-    module_pass_manager.run(*module);
-#endif
-  }
-
-  eliminate_unused_functions(module.get(), [](std::string func_name) {
-    return starts_with(func_name, "runtime_") ||
-           starts_with(func_name, "LLVMRuntime_");
-  });
-  runtime_jit_module = create_jit_module(std::move(module));
-}
 
 void TaichiLLVMContext::delete_snode_tree(int id) {
   TI_ASSERT(linking_context_data->struct_modules.erase(id));

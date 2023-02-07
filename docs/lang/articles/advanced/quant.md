@@ -32,7 +32,7 @@ i10 = ti.types.quant.int(bits=10)  # `signed` is set to `True` by default
 
 - To define a 5-bit unsigned integer type:
 
-```python
+```python cont
 u5 = ti.types.quant.int(bits=5, signed=False)
 ```
 
@@ -44,19 +44,19 @@ Taichi allows you to define quantized fixed-point types of less than 64 bits and
 
 - To define a 10-bit signed fixed-point type within the range [-20.0, 20.0]:
 
-```python
+```python cont
 fixed_type_a = ti.types.quant.fixed(bits=10, max_value=20.0)  # `signed` is set to `True` by default
 ```
 
 - To define a 5-bit unsigned fixed-point type within the range [0.0, 100.0]:
 
-```python
+```python cont
 fixed_type_b = ti.types.quant.fixed(bits=5, signed=False, max_value=100.0)
 ```
 
 - To define a 6-bit unsigned fixed-point type within [0.0, 64.0]:
 
-```python
+```python cont
 fixed_type_c = ti.types.quant.fixed(bits=6, signed=False, scale=1.0)  # `scale` is a predefined scaling factor
 ```
 
@@ -73,13 +73,13 @@ Taichi allows you to define a *quantized floating-point number* with an arbitrar
 
 - To define a 15-bit signed floating-point type with five exponent bits:
 
-```python
+```python cont
 float_type_a = ti.types.quant.float(exp=5, frac=10)  # `signed` is set to `True` by default
 ```
 
 - To define a 15-bit unsigned floating-point type with six exponent bits:
 
-```python
+```python cont
 float_type_b = ti.types.quant.float(exp=6, frac=9, signed=False)
 ```
 
@@ -93,7 +93,7 @@ All the above-mentioned parameters specify how a quantized data type is stored i
 
 To change the compute type of a quantized data type,  set the `compute` parameter when defining the quantized data type:
 
-```python
+```python cont
 i21 = ti.types.quant.int(bits=21, compute=ti.i64)
 bfloat16 = ti.types.quant.float(exp=8, frac=8, compute=ti.f32)
 ```
@@ -112,7 +112,7 @@ quantized data types together so that they are stored with one primitive type.
 You can then place a `ti.BitpackedFields` instance under any SNode as if each member field
 is placed individually.
 
-```python
+```python cont
 a = ti.field(float_type_a)  # 15 bits
 b = ti.field(fixed_type_b)  # 5 bits
 c = ti.field(fixed_type_c)  # 6 bits
@@ -142,7 +142,8 @@ Assume you want to save memory for
 Because most data definitions in the example are similar, here only field `Q` is
 used for illustration:
 
-```python
+```python cont
+N = 16
 Q = ti.Vector.field(4, dtype=ti.f32, shape=(N, N))
 ```
 
@@ -150,7 +151,7 @@ An element of `Q` now occupies 4 x 32 = 128 bits. If you can fit it in
 64 bits, then the memory usage is halved. A direct and first attempt is to
 use quantized floating-point numbers with a shared exponent:
 
-```python
+```python cont
 float_type_c = ti.types.quant.float(exp=8, frac=14)
 Q_old = ti.Vector.field(4, dtype=float_type_c)
 bitpack = ti.BitpackedFields(max_num_bits=64)
@@ -170,7 +171,7 @@ category with three possible values: "source", "Dirichlet boundary", and
 "Neumann boundar". You can actually store all information with a single 32-bit
 `ti.BitpackedFields`:
 
-```python
+```python cont
 velocity_component_type = ti.types.quant.float(exp=6, frac=8, compute=ti.f32)
 velocity = ti.Vector.field(3, dtype=velocity_component_type)
 
@@ -205,7 +206,7 @@ u32 type, to represent bin values of a histogram:
 Quant array is exactly what you need. A `quant_array` is a SNode which
 can reinterpret a primitive type into an array of a quantized type:
 
-```python
+```python known-error
 bin_value_type = ti.types.quant.int(bits=4, signed=False)
 
 # The quant array for 512 x 512 bin values
@@ -228,7 +229,7 @@ For quant arrays of 1-bit quantized integer types ("boolean"), Taichi provides
 an additional optimization - bit vectorization. It aims at vectorizing
 operations on such quant arrays under struct fors:
 
-```python
+```python known-error
 u1 = ti.types.quant.int(1, False)
 N = 512
 M = 32

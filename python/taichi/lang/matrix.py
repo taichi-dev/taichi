@@ -1517,7 +1517,7 @@ class MatrixType(CompoundType):
             else:
                 get_ret_func = t_kernel.get_struct_ret_uint
         elif id(self.dtype) in primitive_types.real_type_ids:
-            get_ret_func = t_kernel.get_struct_ret_floatx
+            get_ret_func = t_kernel.get_struct_ret_float
         else:
             raise TaichiRuntimeError("Invalid return type")
         return self(

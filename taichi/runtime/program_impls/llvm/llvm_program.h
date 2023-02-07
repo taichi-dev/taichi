@@ -193,8 +193,9 @@ class LlvmProgramImpl : public ProgramImpl {
       return TypedConstant(
           runtime_exec_->fetch_result<uint64>(result_buffer, offset));
     } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-      uint16 h = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
-      return TypedConstant(bit::half_to_float(h));
+      // first fetch the data as u16, and then convert it to f32
+      uint16 half = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
+      return TypedConstant(bit::half_to_float(half));
     } else {
       TI_NOT_IMPLEMENTED
     }

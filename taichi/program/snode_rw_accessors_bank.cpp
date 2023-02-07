@@ -81,7 +81,16 @@ int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
 }
 
 uint64 SNodeRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
-  return (uint64)read_int(I);
+  prog_->synchronize();
+  auto launch_ctx = reader_->make_launch_context();
+  set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
+  (*reader_)(prog_->compile_config(), launch_ctx);
+  prog_->synchronize();
+  if (arch_uses_llvm(prog_->compile_config().arch)) {
+    return reader_->get_struct_ret_uint({0});
+  }
+  auto ret = reader_->get_ret_uint(0);
+  return ret;
 }
 
 }  // namespace taichi::lang

@@ -362,7 +362,7 @@ def test_sparse_not_supported():
         a.bitmasked(ti.j, 10)
 
 
-@test_utils.test()
+@test_utils.test(require=ti.extension.data64)
 def test_write_u64():
     x = ti.field(ti.u64, shape=())
     x[None] = 2**64 - 1

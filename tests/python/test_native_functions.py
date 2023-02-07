@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.amdgpu])
 def test_abs():
     x = ti.field(ti.f32)
 

@@ -76,6 +76,50 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   }
 }
 
+RhiResult CudaDevice::upload_data(DevicePtr *device_ptr,
+                                  const void **data,
+                                  size_t *size,
+                                  int num_alloc) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    AllocInfo &info = allocations_[device_ptr[i].alloc_id];
+    CUDADriver::get_instance().memcpy_host_to_device(
+        (uint8_t *)info.ptr + device_ptr[i].offset, (void *)data[i], size[i]);
+  }
+
+  return RhiResult::success;
+}
+
+RhiResult CudaDevice::readback_data(
+    DevicePtr *device_ptr,
+    void **data,
+    size_t *size,
+    int num_alloc,
+    const std::vector<StreamSemaphore> &wait_sema) noexcept {
+  if (!device_ptr || !data || !size) {
+    return RhiResult::invalid_usage;
+  }
+
+  for (int i = 0; i < num_alloc; i++) {
+    if (device_ptr[i].device != this || !data[i]) {
+      return RhiResult::invalid_usage;
+    }
+
+    AllocInfo &info = allocations_[device_ptr[i].alloc_id];
+    CUDADriver::get_instance().memcpy_device_to_host(
+        data[i], (uint8_t *)info.ptr + device_ptr[i].offset, size[i]);
+  }
+
+  return RhiResult::success;
+}
+
 RhiResult CudaDevice::map(DeviceAllocation alloc, void **mapped_ptr) {
   AllocInfo &info = allocations_[alloc.alloc_id];
   size_t size = info.size;

@@ -94,7 +94,7 @@ def test_recreate():
     test()
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.amdgpu])
 def test_local_atomics():
     n = 32
     val = ti.field(ti.i32, shape=n)

@@ -101,7 +101,7 @@ foo()
 
 It can be useful to print Python objects and their properties like data types or SNodes in the Taichi scope. Similar to `ti.static`, which makes the compiler evaluate an argument at compile time (see the [Metaprogramming](../advanced/meta.md) for more information), `ti.static_print` prints compile-time constants in the Taichi scope:
 
-```python{6,8,10,13}
+```python {6,8,10,13}
 x = ti.field(ti.f32, (2, 3))
 y = 1
 
@@ -173,7 +173,7 @@ The array index out of bounds error occurs frequently. However, Taichi disables 
 
 Taichi detects array index out of bound errors in debug mode. You can activate this mode by setting `debug=True` in the `ti.init()` call:
 
-```python{2}
+```python {2}
 import taichi as ti
 ti.init(arch=ti.cpu, debug=True)
 f = ti.field(dtype=ti.i32, shape=(32, 32))
@@ -380,7 +380,7 @@ Output:
 
 This means that a precision loss occurs when Taichi converts a `float32` result to `int32`. The solution is to initialize `ret` as a floating-point value:
 
-```python{3}
+```python {3}
 @ti.kernel
 def not_buggy():
     ret = 0.0  # 0 is a floating point number, so `ret` is typed as float32

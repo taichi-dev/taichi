@@ -933,8 +933,9 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
 
   vkapi::IVkDescriptorSetLayout set_layout = set->get_layout();
 
-  if (current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
-      set_layout) {
+  if (current_pipeline_->pipeline_layout()->ref_desc_layouts.empty() ||
+      current_pipeline_->pipeline_layout()->ref_desc_layouts[set_index] !=
+          set_layout) {
     // WARN: we have a layout mismatch
     RHI_LOG_ERROR("Layout mismatch");
 
@@ -1753,6 +1754,7 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
 
   VmaAllocationCreateInfo alloc_info{};
   if (export_sharing) {
+    alloc_info.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
     buffer_info.pNext = &external_mem_buffer_create_info;
   }
 #ifdef __APPLE__
@@ -1776,7 +1778,11 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc_info.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
   } else if (params.host_write) {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (int(params.usage & AllocUsage::Upload)) {
+      alloc_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+    } else {
+      alloc_info.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    }
   } else {
     alloc_info.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
   }
@@ -2271,6 +2277,7 @@ DeviceAllocation VulkanDevice::create_image(const ImageParams &params) {
 
   VmaAllocationCreateInfo alloc_info{};
   if (params.export_sharing) {
+    alloc_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
   }
   alloc_info.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 

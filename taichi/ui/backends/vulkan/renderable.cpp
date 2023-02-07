@@ -190,9 +190,9 @@ const Pipeline &Renderable::pipeline() const {
 
 void Renderable::create_graphics_pipeline() {
   pipeline_ = app_context_->get_raster_pipeline(
-      config_.fragment_shader_path, config_.vertex_shader_path,
-      config_.topology_type, config_.depth, config_.polygon_mode,
-      config_.blending, config_.vertex_input_rate_instance);
+      {config_.fragment_shader_path, config_.vertex_shader_path,
+       config_.topology_type, config_.depth, config_.polygon_mode,
+       config_.blending, config_.vertex_input_rate_instance});
 }
 
 void Renderable::record_this_frame_commands(CommandList *command_list) {

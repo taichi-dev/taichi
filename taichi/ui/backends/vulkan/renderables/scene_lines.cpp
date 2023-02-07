@@ -55,9 +55,10 @@ void SceneLines::create_graphics_pipeline() {
          /*offset=*/sizeof(glm::vec4)}};
 
     pipeline_ = app_context_->get_customized_raster_pipeline(
-        config_.fragment_shader_path, config_.vertex_shader_path,
-        TopologyType::Triangles, /*depth=*/true, config_.polygon_mode,
-        config_.blending, vertex_inputs, vertex_attribs);
+        {config_.fragment_shader_path, config_.vertex_shader_path,
+         TopologyType::Triangles, /*depth=*/true, config_.polygon_mode,
+         config_.blending},
+        vertex_inputs, vertex_attribs);
   }
 
   if (!quad_expand_pipeline_) {

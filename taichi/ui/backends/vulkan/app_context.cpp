@@ -133,23 +133,17 @@ bool AppContext::requires_export_sharing() const {
   return config.ti_arch == Arch::cuda;
 }
 
-Pipeline *AppContext::get_raster_pipeline(
-    const std::string &frag_path,
-    const std::string &vert_path,
-    TopologyType prim_topology,
-    bool depth,
-    taichi::lang::PolygonMode polygon_mode,
-    bool blend,
-    bool vbo_instanced) {
+Pipeline *AppContext::get_raster_pipeline(const RasterPipelineConfig &config) {
   const std::string key = fmt::format(
-      "{}${}${}${}${}${}${}", int(polygon_mode), int(blend), frag_path,
-      vert_path, int(prim_topology), int(depth), int(vbo_instanced));
+      "{}${}${}${}${}${}${}", int(config.polygon_mode), int(config.blend),
+      config.frag_path, config.vert_path, int(config.prim_topology),
+      int(config.depth), int(config.vbo_instanced));
   const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();
   } else {
-    auto vert_code = read_file(vert_path);
-    auto frag_code = read_file(frag_path);
+    auto vert_code = read_file(config.vert_path);
+    auto frag_code = read_file(config.frag_path);
 
     std::vector<PipelineSourceDesc> source(2);
     source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
@@ -158,18 +152,18 @@ Pipeline *AppContext::get_raster_pipeline(
                  vert_code.size(), PipelineStageType::vertex};
 
     RasterParams raster_params;
-    raster_params.prim_topology = prim_topology;
-    raster_params.polygon_mode = polygon_mode;
-    raster_params.depth_test = depth;
-    raster_params.depth_write = depth;
+    raster_params.prim_topology = config.prim_topology;
+    raster_params.polygon_mode = config.polygon_mode;
+    raster_params.depth_test = config.depth;
+    raster_params.depth_write = config.depth;
 
-    if (blend) {
+    if (config.blend) {
       raster_params.blending.push_back(BlendingParams());
     }
 
     const std::vector<VertexInputBinding> vertex_inputs = {
         {/*binding=*/0, sizeof(Vertex),
-         /*instance=*/vbo_instanced}};
+         /*instance=*/config.vbo_instanced}};
     // TODO: consider using uint8 for colors and normals
     const std::vector<VertexInputAttribute> vertex_attribs = {
         {/*location=*/0, /*binding=*/0,
@@ -196,23 +190,19 @@ Pipeline *AppContext::get_raster_pipeline(
 }
 
 taichi::lang::Pipeline *AppContext::get_customized_raster_pipeline(
-    const std::string &frag_path,
-    const std::string &vert_path,
-    taichi::lang::TopologyType prim_topology,
-    bool depth,
-    taichi::lang::PolygonMode polygon_mode,
-    bool blend,
+    const RasterPipelineConfig &config,
     const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
     const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs) {
-  const std::string key = fmt::format(
-      "{}${}${}${}${}${}$C", int(polygon_mode), int(blend), frag_path,
-      vert_path, int(prim_topology), int(depth));
+  const std::string key =
+      fmt::format("{}${}${}${}${}${}$C", int(config.polygon_mode),
+                  int(config.blend), config.frag_path, config.vert_path,
+                  int(config.prim_topology), int(config.depth));
   const auto &iter = pipelines_.find(key);
   if (iter != pipelines_.end()) {
     return iter->second.get();
   } else {
-    auto vert_code = read_file(vert_path);
-    auto frag_code = read_file(frag_path);
+    auto vert_code = read_file(config.vert_path);
+    auto frag_code = read_file(config.frag_path);
 
     std::vector<PipelineSourceDesc> source(2);
     source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
@@ -221,12 +211,12 @@ taichi::lang::Pipeline *AppContext::get_customized_raster_pipeline(
                  vert_code.size(), PipelineStageType::vertex};
 
     RasterParams raster_params;
-    raster_params.prim_topology = prim_topology;
-    raster_params.polygon_mode = polygon_mode;
-    raster_params.depth_test = depth;
-    raster_params.depth_write = depth;
+    raster_params.prim_topology = config.prim_topology;
+    raster_params.polygon_mode = config.polygon_mode;
+    raster_params.depth_test = config.depth;
+    raster_params.depth_write = config.depth;
 
-    if (blend) {
+    if (config.blend) {
       raster_params.blending.push_back(BlendingParams());
     }
 

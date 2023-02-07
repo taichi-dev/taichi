@@ -95,11 +95,6 @@ inline void set_last_error(const Error &error) {
   set_last_error(error.error, error.message);
 }
 
-// Token type for half-precision floats.
-struct half {
-  uint16_t _;
-};
-
 namespace detail {
 
 // Template type to data type enum.
@@ -128,10 +123,6 @@ struct templ2dtype<uint16_t> {
 template <>
 struct templ2dtype<uint32_t> {
   static const TiDataType value = TI_DATA_TYPE_U32;
-};
-template <>
-struct templ2dtype<half> {
-  static const TiDataType value = TI_DATA_TYPE_F16;
 };
 template <>
 struct templ2dtype<float> {
@@ -1047,6 +1038,15 @@ class Runtime {
   NdArray<T> allocate_ndarray(const std::vector<uint32_t> &shape = {},
                               const std::vector<uint32_t> &elem_shape = {},
                               bool host_access = false) {
+    auto dtype = detail::templ2dtype<T>::value;
+    return allocate_ndarray<T>(dtype, shape, elem_shape, host_access);
+  }
+
+  template <typename T>
+  NdArray<T> allocate_ndarray(TiDataType dtype,
+                              const std::vector<uint32_t> &shape = {},
+                              const std::vector<uint32_t> &elem_shape = {},
+                              bool host_access = false) {
     size_t size = sizeof(T);
     TiNdArray ndarray{};
     for (size_t i = 0; i < shape.size(); ++i) {
@@ -1061,7 +1061,7 @@ class Runtime {
       ndarray.elem_shape.dims[i] = x;
     }
     ndarray.elem_shape.dim_count = elem_shape.size();
-    ndarray.elem_type = detail::templ2dtype<T>::value;
+    ndarray.elem_type = dtype;
 
     ti::Memory memory = allocate_memory(size, host_access);
     ndarray.memory = memory;

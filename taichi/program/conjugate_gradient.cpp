@@ -16,20 +16,6 @@ void CUCG::init_solver(){
 #endif
 }
 
-void print_array(float *arr, int n){
-  for(int i = 0; i < n; i++){
-    fmt::print("{} ", arr[i]);
-  }
-  fmt::print("\n");
-}
-
-void print_cuda_arr(float *arr, int n){
-  float *h_arr = new float[n];
-  CUDADriver::get_instance().memcpy_device_to_host((void*)h_arr, (void*)arr, sizeof(float) * n);
-  print_array(h_arr, n);
-  delete[] h_arr;
-}
-
 void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b){
   CuSparseMatrix &A = static_cast<CuSparseMatrix &>(A_);  
   size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
@@ -46,14 +32,8 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b){
   // r = b
   CUDADriver::get_instance().memcpy_device_to_device((void*)d_r, (void*)db, sizeof(float) * m);
   
-  fmt::print("b: \n");
-  print_cuda_arr(d_r, m);
-
   // Ax = A @ x
   A.spmv(dX, size_t(d_Ax));
-
-  fmt::print("Ax: \n");
-  print_cuda_arr(d_Ax, m);
 
   // r = r - Ax = b - Ax
   float alpham1 = -1.0f;
@@ -91,8 +71,8 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b){
     r0 = r1;
     // r1 = r @ r
     CUBLASDriver::get_instance().cubSdot(handle, m, d_r, 1, d_r, 1, &r1);
-
-    fmt::print("iter: {}, r1: {}\n", k, r1);
+    if (verbose_)
+      fmt::print("iter: {}, r1: {}\n", k, r1);
     k++;
   }
 }

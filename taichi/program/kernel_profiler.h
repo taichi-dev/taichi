@@ -43,14 +43,6 @@ struct KernelProfileStatisticalResult {
   bool operator<(const KernelProfileStatisticalResult &o) const;
 };
 
-class KernelProfilerSamplingHandlerBase {
- public:
-  KernelProfilerSamplingHandlerBase() {
-  }
-  virtual ~KernelProfilerSamplingHandlerBase() {
-  }
-};
-
 class KernelProfilerBase {
  protected:
   std::vector<KernelProfileTracedRecord> traced_records_;

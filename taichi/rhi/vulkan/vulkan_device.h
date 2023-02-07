@@ -403,18 +403,6 @@ class VulkanPipeline : public Pipeline {
   vkapi::IVkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};
 };
 
-class VulkanProfilerSamplingHandler : public KernelProfilerSamplingHandlerBase {
- public:
-  VulkanProfilerSamplingHandler(std::string kernel_name,
-                                vkapi::IVkQueryPool query_pool)
-      : kernel_name_(kernel_name), query_pool_(query_pool) {
-  }
-  ~VulkanProfilerSamplingHandler() {
-  }
-  std::string kernel_name_;
-  vkapi::IVkQueryPool query_pool_;
-};
-
 class VulkanCommandList : public CommandList {
  public:
   VulkanCommandList(VulkanDevice *ti_device,
@@ -489,10 +477,8 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer vk_command_buffer();
 
   // Profiler support
-  std::unique_ptr<KernelProfilerSamplingHandlerBase> begin_profiler_scope(
-      const std::string &kernel_name) override;
-  void end_profiler_scope(
-      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) override;
+  void begin_profiler_scope(const std::string &kernel_name) override;
+  void end_profiler_scope() override;
 
  private:
   bool finalized_{false};
@@ -630,7 +616,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     uint32_t compute_queue_family_index{0};
     VkQueue graphics_queue{VK_NULL_HANDLE};
     uint32_t graphics_queue_family_index{0};
-    KernelProfilerBase *profiler;
   };
 
   VulkanDevice();
@@ -758,14 +743,19 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return vk_device_properties_;
   }
 
-  // For profilers
-  void profiler_add_sampling_handler(
-      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
-    samplers_.push_back(std::move(handler));
+  // Profiler support
+  void profiler_add_sampler(const std::string &kernel_name,
+                            vkapi::IVkQueryPool query_pool) {
+    samplers_.push_back(std::make_pair(kernel_name, query_pool));
   }
 
-  std::vector<std::pair<std::string, double>> profiler_get_sampled_time();
+  vkapi::IVkQueryPool profiler_get_last_query_pool() {
+    return samplers_.back().second;
+  }
+
   void profiler_sync() override;
+  std::vector<std::pair<std::string, double>> profiler_flush_sampled_time()
+      override;
 
  private:
   friend VulkanSurface;
@@ -854,8 +844,9 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                          size_t size,
                          void **mapped_ptr);
 
-  // Profiler
-  std::vector<std::unique_ptr<KernelProfilerSamplingHandlerBase>> samplers_;
+  // Profiler support
+  std::vector<std::pair<std::string, vkapi::IVkQueryPool>> samplers_;
+  std::vector<std::pair<std::string, double>> sampled_records_;
 };
 
 }  // namespace vulkan

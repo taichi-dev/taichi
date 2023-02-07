@@ -1584,7 +1584,6 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
   compute_queue_family_index_ = params.compute_queue_family_index;
   graphics_queue_ = params.graphics_queue;
   graphics_queue_family_index_ = params.graphics_queue_family_index;
-  profiler_ = params.profiler;
 
   create_vma_allocator();
   RHI_ASSERT(new_descriptor_pool() == RhiResult::success &&
@@ -1903,41 +1902,43 @@ Stream *VulkanDevice::get_compute_stream() {
   return iter->second.get();
 }
 
-std::unique_ptr<KernelProfilerSamplingHandlerBase>
-VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
-  if (ti_device_->profiler_) {
-    auto pool = vkapi::create_query_pool(ti_device_->vk_device());
-    vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
-    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                        pool->query_pool, 0);
-    auto sampler =
-        std::make_unique<VulkanProfilerSamplingHandler>(kernel_name, pool);
-    return sampler;
-  } else {
-    return nullptr;
-  }
+void VulkanCommandList::begin_profiler_scope(const std::string &kernel_name) {
+  auto pool = vkapi::create_query_pool(ti_device_->vk_device());
+  vkCmdResetQueryPool(buffer_->buffer, pool->query_pool, 0, 2);
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                      pool->query_pool, 0);
+  ti_device_->profiler_add_sampler(kernel_name, pool);
 }
 
-void VulkanCommandList::end_profiler_scope(
-    std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
-  if (ti_device_->profiler_) {
-    auto vulkan_handler =
-        dynamic_cast<VulkanProfilerSamplingHandler *>(handler.get());
-    auto pool = vulkan_handler->query_pool_;
-    vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                        pool->query_pool, 1);
-    ti_device_->profiler_add_sampling_handler(std::move(handler));
-  }
+void VulkanCommandList::end_profiler_scope() {
+  auto pool = ti_device_->profiler_get_last_query_pool();
+  vkCmdWriteTimestamp(buffer_->buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                      pool->query_pool, 1);
 }
 
 void VulkanDevice::profiler_sync() {
-  if (profiler_) {
-    auto records = profiler_get_sampled_time();
-    for (const auto &rec : records) {
-      profiler_->insert_record(rec.first, rec.second);
-    }
-    samplers_.clear();
+  for (auto &sampler : samplers_) {
+    auto kernel_name = sampler.first;
+    auto query_pool = sampler.second->query_pool;
+
+    double duration_ms = 0.0;
+
+    uint64_t t[2];
+    vkGetQueryPoolResults(vk_device(), query_pool, 0, 2, sizeof(uint64_t) * 2,
+                          &t, sizeof(uint64_t),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    duration_ms = (t[1] - t[0]) * vk_device_properties_.limits.timestampPeriod /
+                  1000000.0;
+    sampled_records_.push_back(std::make_pair(kernel_name, duration_ms));
   }
+  samplers_.clear();
+}
+
+std::vector<std::pair<std::string, double>>
+VulkanDevice::profiler_flush_sampled_time() {
+  auto records_ = sampled_records_;
+  sampled_records_.clear();
+  return records_;
 }
 
 Stream *VulkanDevice::get_graphics_stream() {
@@ -1959,29 +1960,6 @@ void VulkanDevice::wait_idle() {
   for (auto &[tid, stream] : graphics_streams_->map) {
     stream->command_sync();
   }
-}
-
-std::vector<std::pair<std::string, double>>
-VulkanDevice::profiler_get_sampled_time() {
-  std::vector<std::pair<std::string, double>> sampled_time;
-  for (int i = 0; i < samplers_.size(); ++i) {
-    auto handler = samplers_[i].get();
-    auto vulkan_handler =
-        dynamic_cast<VulkanProfilerSamplingHandler *>(handler);
-    auto kernel_name = vulkan_handler->kernel_name_;
-    auto query_pool = vulkan_handler->query_pool_->query_pool;
-
-    double duration_ms = 0.0;
-
-    uint64_t t[2];
-    vkGetQueryPoolResults(vk_device(), query_pool, 0, 2, sizeof(uint64_t) * 2,
-                          &t, sizeof(uint64_t),
-                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    duration_ms = (t[1] - t[0]) * vk_device_properties_.limits.timestampPeriod /
-                  1000000.0;
-    sampled_time.push_back(std::make_pair(kernel_name, duration_ms));
-  }
-  return sampled_time;
 }
 
 RhiResult VulkanStream::new_command_list(CommandList **out_cmdlist) noexcept {

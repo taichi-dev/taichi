@@ -10,8 +10,6 @@
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"
 
-#include "taichi/program/kernel_profiler.h"
-
 namespace taichi::lang {
 
 enum class RhiResult {
@@ -432,13 +430,10 @@ class TI_DLL_EXPORT CommandList {
   }
 
   // Profiler support
-  virtual std::unique_ptr<KernelProfilerSamplingHandlerBase>
-  begin_profiler_scope(const std::string &kernel_name) {
-    return nullptr;
+  virtual void begin_profiler_scope(const std::string &kernel_name) {
   }
 
-  virtual void end_profiler_scope(
-      std::unique_ptr<KernelProfilerSamplingHandlerBase> handler) {
+  virtual void end_profiler_scope() {
   }
 
   // These are not implemented in compute only device
@@ -788,8 +783,12 @@ class TI_DLL_EXPORT Device {
   }
 
   // Profiler support
-  virtual void profiler_sync(){};
-  KernelProfilerBase *profiler_;
+  virtual void profiler_sync() {
+  }
+  virtual std::vector<std::pair<std::string, double>>
+  profiler_flush_sampled_time() {
+    return std::vector<std::pair<std::string, double>>();
+  }
 };
 
 class TI_DLL_EXPORT Surface {

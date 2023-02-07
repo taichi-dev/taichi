@@ -317,7 +317,9 @@ Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
-    : device_(params.device), host_result_buffer_(params.host_result_buffer) {
+    : device_(params.device),
+      host_result_buffer_(params.host_result_buffer),
+      profiler_(params.profiler) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
@@ -550,11 +552,15 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
 
-    auto handler = current_cmdlist_->begin_profiler_scope(attribs.name);
+    if (profiler_) {
+      current_cmdlist_->begin_profiler_scope(attribs.name);
+    }
 
     status = current_cmdlist_->dispatch(group_x);
 
-    current_cmdlist_->end_profiler_scope(std::move(handler));
+    if (profiler_) {
+      current_cmdlist_->end_profiler_scope();
+    }
 
     TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
                 status);
@@ -588,7 +594,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 #if defined(__APPLE__)
   // On Apple M1 it limits the max number of query pools to 32.
   // Have to force flush out the command list when profiler is enabled.
-  if (device_->profiler_) {
+  if (profiler_) {
     flush();
     device_->profiler_sync();
   } else {
@@ -640,6 +646,14 @@ void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
 void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
+  // Profiler support
+  if (profiler_) {
+    device_->profiler_sync();
+    auto sampled_records = device_->profiler_flush_sampled_time();
+    for (auto &record : sampled_records) {
+      profiler_->insert_record(record.first, record.second);
+    }
+  }
   ctx_buffers_.clear();
   ndarrays_in_use_.clear();
   fflush(stdout);

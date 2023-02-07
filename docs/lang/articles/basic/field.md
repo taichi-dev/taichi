@@ -109,6 +109,7 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 - To access the element in a 0D field, use the index `None` even though the field has only one element:
 
   ```python
+  f_0d = ti.field(ti.f32, shape=())
   f_0d[None] = 10.0
   ```
 
@@ -124,9 +125,15 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 
 - To access an element in a 1D field, use index `i` to get the `i`-th element of our defined field.
 
-  ```python
-  for i in range(9):
-      f_1d[i] = i
+  ```python {6}
+  f_1d = ti.field(ti.f32, shape=(9,))
+
+  @ti.kernel
+  def loop_over_1d():
+    for i in range(9):
+        f_1d[i] = i
+
+  loop_over_1d()
   ```
 
   The layout of `f_1d`:
@@ -139,9 +146,15 @@ When accessing a 0D field `x`, use `x[None] = 0`, *not* `x = 0`.
 
 - To access an element in a 2D field, use index `(i, j)`, which is an integer pair to get the `i-th, j-th` element of our defined field.
 
-  ```python
-  for i, j in f_2d:
-      f_2d[i, j] = i
+  ```python {6}
+  f_2d = ti.field(ti.f32, shape=(16, 16))
+
+  @ti.kernel
+  def loop_over_2d():
+    for i, j in f_2d:
+        f_2d[i, j] = i
+
+  loop_over_2d()
   ```
 
   The layout of `f_2d`:
@@ -186,11 +199,12 @@ while gui.running:
 
 Taichi fields do not support slicing. Neither of the following usages are correct:
 
-```python
+```python skip-ci:NegativeExample
 for x in f_2d[0]:  # Error! You tried to access its first row，but it is not supported
+    ...
 ```
 
-```python
+```python skip-ci:NegativeExample
 f_2d[0][3:] = [4, 5, 6]  # Error! You tried to access a slice of the first row, but it is not supported
 ```
 
@@ -215,7 +229,7 @@ def test():
 
 Metadata provides the basic information of a scalar field. You can retrieve the data type and shape of a scalar field via its `shape` and `dtype` properties:
 
-```python
+```python skip-ci:Trivial
 f_1d.shape  # (9,)
 f_3d.dtype  # f32
 ```
@@ -256,8 +270,8 @@ The following code snippet declares a `300x300x300` vector field `volumetric_fie
 ```python
 box_size = (300, 300, 300)  # A 300x300x300 grid in a 3D space
 
-# Declares a 300x300x300 vector field, whose vector dimension is n=3
-volumetric_field = ti.Vector.field(n=3, dtype=ti.f32, shape=box_size)
+# Declares a 300x300x300 vector field, whose vector dimension is n=4
+volumetric_field = ti.Vector.field(n=4, dtype=ti.f32, shape=box_size)
 ```
 
 ### Accessing elements in a vector field
@@ -275,8 +289,7 @@ Accessing a vector field is similar to accessing a multi-dimensional array: You 
 :::note
 
 Alternatively, you can use swizzling with the indices `xyzw` or `rgba` to access the components of a vector, provided that the dimension of the vector is no more than four:
-
-  ```python
+  ```python cont
 volumetric_field[i, j, k].x = 1  # Equivalent to volumetric_field[i, j, k][0] = 1
 volumetric_field[i, j, k].y = 2  # Equivalent to volumetric_field[i, j, k][1] = 2
 volumetric_field[i, j, k].z = 3  # Equivalent to volumetric_field[i, j, k][2] = 3
@@ -398,6 +411,7 @@ The following code snippet declares a 1D field of particle information (position
 
 ```python
 # Declares a 1D struct field using the ti.Struct.field() method
+n = 10
 particle_field = ti.Struct.field({
     "pos": ti.math.vec3,
     "vel": ti.math.vec3,
@@ -411,6 +425,7 @@ Besides *directly* using `ti.Struct.field()`, you can first declare a compound t
 ```python
 # vec3 is a built-in vector type suppied in the `taichi.math` module
 vec3 = ti.math.vec3
+n = 10
 # Declares a struct comprising three vectors and one floating-point number
 particle = ti.types.struct(
   pos=vec3, vel=vec3, acc=vec3, mass=float,
@@ -425,19 +440,19 @@ You can access a member of an element in a struct field in either of the followi
 
 + The index-first approach locates a certain element with its index before specifying the name of the target member:
 
-```python
+```python cont
 # Sets the position of the first particle in the field to [0.0, 0.0, 0.0]
 particle_field[0].pos = vec3(0) # particle_field is a 1D struct field, pos is a 3D vector
 ```
 
 - The name-first approach first creates a sub-field, which gathers all the `mass` members in the struct field, and then uses the index operator `[]` to access a specific member:
 
-```python
+```python cont
 particle_field.mass[0] = 1.0  # Sets the mass of the first particle in the field to 1.0
 ```
 
 Considering that `particle_field.mass` is a field consisting of all the `mass` members of the structs in `particle_field`, you can also call `fill()` to set the members to a specific value all at once:
 
-```python
+```python cont
 particle_field.mass.fill(1.0)  # Sets all mass of the particles in the struct field to 1.0
 ```

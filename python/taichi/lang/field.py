@@ -384,47 +384,30 @@ class ScalarField(Field):
 class SNodeHostAccessor:
     def __init__(self, snode):
         if _ti_core.is_real(snode.data_type()):
-
-            def getter(*key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                return snode.read_float(key)
-
-            def setter(value, *key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                snode.write_float(key, value)
-                # we only capture write kernels in tape scope with no grad_repaced
-                if impl.get_runtime().target_tape and impl.get_runtime(
-                ).target_tape.grad_checker and not impl.get_runtime(
-                ).grad_replaced:
-                    for x in impl.get_runtime(
-                    ).target_tape.grad_checker.to_check:
-                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
-                    impl.get_runtime().target_tape.insert(
-                        snode.write_float, (key, value))
+            write_func = snode.write_float
+            read_func = snode.read_float
         else:
             if _ti_core.is_signed(snode.data_type()):
-
-                def getter(*key):
-                    assert len(key) == _ti_core.get_max_num_indices()
-                    return snode.read_int(key)
+                write_func = snode.write_int
+                read_func = snode.read_int
             else:
+                write_func = snode.write_uint
+                read_func = snode.read_uint
 
-                def getter(*key):
-                    assert len(key) == _ti_core.get_max_num_indices()
-                    return snode.read_uint(key)
+        def getter(*key):
+            assert len(key) == _ti_core.get_max_num_indices()
+            return read_func(key)
 
-            def setter(value, *key):
-                assert len(key) == _ti_core.get_max_num_indices()
-                snode.write_int(key, value)
-                # same as above
-                if impl.get_runtime().target_tape and impl.get_runtime(
-                ).target_tape.grad_checker and not impl.get_runtime(
-                ).grad_replaced:
-                    for x in impl.get_runtime(
-                    ).target_tape.grad_checker.to_check:
-                        assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
-                    impl.get_runtime().target_tape.insert(
-                        snode.write_int, (key, value))
+        def setter(value, *key):
+            assert len(key) == _ti_core.get_max_num_indices()
+            write_func(key, value)
+            # same as above
+            if impl.get_runtime().target_tape and impl.get_runtime(
+            ).target_tape.grad_checker and not impl.get_runtime(
+            ).grad_replaced:
+                for x in impl.get_runtime().target_tape.grad_checker.to_check:
+                    assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
+                impl.get_runtime().target_tape.insert(write_func, (key, value))
 
         self.getter = getter
         self.setter = setter

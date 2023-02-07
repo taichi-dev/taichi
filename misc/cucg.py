@@ -27,12 +27,11 @@ fill_K(K)
 A = K.build(dtype=ti_type)
 print(A)
 
-cg = ti.linalg.CG(A, b, x0, max_iter=50, atol=1e-6)
-
 np_b = np.asarray([1.0, 2.0], dtype=np_type)
 b.from_numpy(np_b)
 print("b =", b.to_numpy())
 
-cg.solve_cu(x, b)
+cg = ti.linalg.CG(A, b, x0, max_iter=50, atol=1e-6)
+x, status_code = cg.solve()
 
 print_x(x)

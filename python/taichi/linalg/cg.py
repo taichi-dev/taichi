@@ -9,7 +9,7 @@ class CG:
         self.dtype = A.dtype
         self.ti_arch = get_runtime().prog.config().arch
         if self.ti_arch == _ti_core.Arch.cuda:
-            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol)
+            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol, True)
         else:
             if self.dtype == f32:
                 self.cg_solver = _ti_core.make_float_cg_solver(
@@ -19,12 +19,15 @@ class CG:
                     A.matrix, max_iter, atol, True)
             else:
                 raise TaichiRuntimeError(f'Unsupported CG dtype: {self.dtype}')
-        self.cg_solver.set_b(b)
-        self.cg_solver.set_x(x0)
+            self.cg_solver.set_b(b)
+            self.cg_solver.set_x(x0)
 
     def solve(self):
         self.cg_solver.solve()
         return self.cg_solver.get_x(), self.cg_solver.is_success()
+
+    def solve_cu(self, x, b):
+        self.cg_solver.solve(get_runtime().prog, x.arr, b.arr)
 
 
 class CG_Cuda:

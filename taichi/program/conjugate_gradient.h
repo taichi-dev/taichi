@@ -1,5 +1,8 @@
 #include "sparse_matrix.h"
 
+#include "taichi/program/ndarray.h"
+#include "taichi/program/program.h"
+
 #include "Eigen/IterativeLinearSolvers"
 
 namespace taichi::lang {
@@ -68,14 +71,16 @@ std::unique_ptr<CG<EigenT, DT>> make_cg_solver(SparseMatrix &A,
 class CUCG{
 public:
   CUCG(SparseMatrix &A, int max_iters, float tol, bool verbose)
-      : A_(A), max_iters_(max_iters), tol_(tol), verbose_(verbose) {}
+      : A_(A), max_iters_(max_iters), tol_(tol), verbose_(verbose) {
+        init_solver();
+      }
 
-
+  void solve(Program *prog, const Ndarray &x, const Ndarray &b);
 
 private:
 
   void init_solver();
-
+  cublasHandle_t handle;
   SparseMatrix &A_;
   int max_iters_{0};
   float tol_{0.0f};

@@ -1255,7 +1255,7 @@ void export_lang(py::module &m) {
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
       .def(py::init<const CuSparseMatrix &>())
-      .def("spmv", &CuSparseMatrix::spmv)
+      .def("spmv", &CuSparseMatrix::nd_spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * float32())
@@ -1331,7 +1331,11 @@ void export_lang(py::module &m) {
                                     bool verbose) {
     return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
+
+  py::class_<CUCG>(m, "CUCG")
+      .def("solve", &CUCG::solve);
   m.def("make_cucg_solver", make_cucg_solver);
+
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

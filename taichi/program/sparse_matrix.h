@@ -284,7 +284,9 @@ class CuSparseMatrix : public SparseMatrix {
                           void *coo_values_ptr,
                           int nnz) override;
 
-  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+  void nd_spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+
+  void spmv(size_t x, size_t y);
 
   const void *get_matrix() const override {
     return &matrix_;
@@ -308,6 +310,7 @@ class CuSparseMatrix : public SparseMatrix {
   }
 
  private:
+  
   cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};
   void *csr_col_ind_{nullptr};

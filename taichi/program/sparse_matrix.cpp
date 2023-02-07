@@ -733,11 +733,8 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #endif
 }
 
-void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
+void CuSparseMatrix::spmv(size_t dX, size_t dY){
 #if defined(TI_WITH_CUDA)
-  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
-  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
-
   cusparseDnVecDescr_t vecX, vecY;
   CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, cols_, (void *)dX,
                                                CUDA_R_32F);
@@ -763,6 +760,15 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   CUDADriver::get_instance().mem_free(dBuffer);
+#endif
+}
+
+
+void CuSparseMatrix::nd_spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
+#if defined(TI_WITH_CUDA)
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  spmv(dX, dY);
 #endif
 }
 

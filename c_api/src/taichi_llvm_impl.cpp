@@ -55,7 +55,6 @@ taichi::lang::Device &LlvmRuntime::get() {
 TiMemory LlvmRuntime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
   const taichi::lang::CompileConfig &config = executor_->get_config();
-  taichi::lang::TaichiLLVMContext *tlctx = executor_->get_llvm_context();
   taichi::lang::LLVMRuntime *llvm_runtime = executor_->get_llvm_runtime();
   taichi::lang::LlvmDevice *llvm_device = executor_->llvm_device();
 

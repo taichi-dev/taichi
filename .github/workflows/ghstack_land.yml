@@ -1,0 +1,29 @@
+name: Land ghstack PRs
+on:
+  repository_dispatch:
+    types: [land-command]
+
+jobs:
+  ghstack_land:
+    name: ghstack Land
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    - run: |
+        cd .github/workflows/scripts
+        git config --global user.email "taichi-gardener@taichi.graphics"
+        git config --global user.name "Taichi Gardener"
+        cat <<EOF > ~/.ghstackrc
+        [ghstack]
+        github_url = github.com
+        github_oauth = $GITHUB_TOKEN
+        github_username = taichi-gardener
+        remote_name = origin
+        EOF
+        pip install ghstack
+        ghstack land "${{ github.event.client_payload.pull_request.html_url }}"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

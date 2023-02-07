@@ -69,6 +69,7 @@ class ConstantFold : public BasicStmtVisitor {
     if (id.is_binary)
       ker->insert_scalar_param(id.rhs);
     ker->is_evaluator = true;
+    ker->finalize_rets();
 
     auto *ker_ptr = ker.get();
     TI_TRACE("Saving JIT evaluator cache entry id={}",

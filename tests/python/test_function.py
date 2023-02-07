@@ -22,10 +22,6 @@ def test_function_without_return():
     assert x[None] == 42
 
 
-ti.init()
-test_function_without_return()
-
-
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_function_with_return():
     x = ti.field(ti.i32, shape=())

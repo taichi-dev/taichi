@@ -120,7 +120,7 @@ sidebar_position: 2
   `glfwCreateWindow` (see
   [\#958](https://github.com/taichi-dev/taichi/issues/958)):
 
-  ```{9-11}
+  ```plaintext {9-11}
   [Taichi] mode=release
   [E 05/12/20 18.25:00.129] Received signal 11 (Segmentation Fault)
   ***********************************

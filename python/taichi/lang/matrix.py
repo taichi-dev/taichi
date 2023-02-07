@@ -19,6 +19,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types.utils import is_signed
 
 
 def _generate_swizzle_patterns(key_group: str, required_length=4):

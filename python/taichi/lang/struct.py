@@ -12,6 +12,7 @@ from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
+from taichi.types.utils import is_signed
 
 
 class Struct(TaichiOperations):

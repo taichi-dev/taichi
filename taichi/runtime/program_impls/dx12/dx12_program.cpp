@@ -13,7 +13,8 @@ Dx12ProgramImpl::Dx12ProgramImpl(CompileConfig &config)
 
 std::unique_ptr<AotModuleBuilder> Dx12ProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
-  return std::make_unique<directx12::AotModuleBuilderImpl>(*config, this);
+  return std::make_unique<directx12::AotModuleBuilderImpl>(*config, this,
+                                                           *get_llvm_context());
 }
 
 }  // namespace lang

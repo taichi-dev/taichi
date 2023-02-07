@@ -71,6 +71,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using LLVMModuleBuilder::call;
 
   explicit TaskCodeGenLLVM(const CompileConfig &config,
+                           TaichiLLVMContext &tlctx,
                            Kernel *kernel,
                            IRNode *ir = nullptr,
                            std::unique_ptr<llvm::Module> &&module = nullptr);

@@ -304,15 +304,14 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
 }
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
+                                 TaichiLLVMContext &tlctx,
                                  Kernel *kernel,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
-    : LLVMModuleBuilder(module == nullptr ? get_llvm_program(kernel->program)
-                                                ->get_llvm_context()
-                                                ->new_module("kernel")
-                                          : std::move(module),
-                        get_llvm_program(kernel->program)->get_llvm_context()),
+    : LLVMModuleBuilder(
+          module == nullptr ? tlctx.new_module("kernel") : std::move(module),
+          &tlctx),
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
@@ -2535,7 +2534,7 @@ FunctionCreationGuard TaskCodeGenLLVM::get_function_creation_guard(
 }
 
 void TaskCodeGenLLVM::initialize_context() {
-  tlctx = get_llvm_program(prog)->get_llvm_context();
+  TI_ASSERT(tlctx != nullptr);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
 }

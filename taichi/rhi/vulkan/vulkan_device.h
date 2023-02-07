@@ -753,6 +753,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return samplers_.back().second;
   }
 
+  size_t profiler_get_sampler_count() override {
+    return samplers_.size();
+  }
+
   void profiler_sync() override;
   std::vector<std::pair<std::string, double>> profiler_flush_sampled_time()
       override;

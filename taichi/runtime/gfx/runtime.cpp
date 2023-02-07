@@ -398,6 +398,22 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
 void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
 
+#if defined(__APPLE__)
+  if (profiler_) {
+    const int apple_max_query_pool_count = 32;
+    int task_count = ti_kernel->ti_kernel_attribs().tasks_attribs.size();
+    if (task_count > apple_max_query_pool_count) {
+      TI_WARN("Cannot concurrently profile more than 32 tasks in a single Taichi kernel. Profiling aborted.");
+      profiler_ = nullptr;
+    }
+    else if (device_->profiler_get_sampler_count() + task_count > 
+        apple_max_query_pool_count) {
+      flush();
+      device_->profiler_sync();
+    }
+  }
+#endif
+
   std::unique_ptr<DeviceAllocationGuard> args_buffer{nullptr},
       ret_buffer{nullptr};
 
@@ -591,18 +607,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     }
   }
 
-#if defined(__APPLE__)
-  // On Apple M1 it limits the max number of query pools to 32.
-  // Have to force flush out the command list when profiler is enabled.
-  if (profiler_) {
-    flush();
-    device_->profiler_sync();
-  } else {
-    submit_current_cmdlist_if_timeout();
-  }
-#else
   submit_current_cmdlist_if_timeout();
-#endif
 }
 
 void GfxRuntime::buffer_copy(DevicePtr dst, DevicePtr src, size_t size) {

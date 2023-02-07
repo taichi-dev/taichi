@@ -785,6 +785,11 @@ class TI_DLL_EXPORT Device {
   // Profiler support
   virtual void profiler_sync() {
   }
+
+  virtual size_t profiler_get_sampler_count() {
+    return 0;
+  }
+
   virtual std::vector<std::pair<std::string, double>>
   profiler_flush_sampled_time() {
     return std::vector<std::pair<std::string, double>>();

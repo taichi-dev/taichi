@@ -14,7 +14,7 @@ Imported Targets
 
 This module provides the following imported targets, if found:
 
-``taichi::runtime``
+``Taichi::Runtime``
   The Taichi Runtime library.
 
 Result Variables
@@ -22,15 +22,15 @@ Result Variables
 
 This will define the following variables:
 
-``taichi_FOUND``
+``Taichi_FOUND``
   True if a Taichi installation is found.
-``taichi_VERSION``
+``Taichi_VERSION``
   Version of installed Taichi. Components might have lower version numbers.
-``taichi_INCLUDE_DIRS``
+``Taichi_INCLUDE_DIRS``
   Paths to Include directories needed to use Taichi.
-``taichi_LIBRARIES``
+``Taichi_LIBRARIES``
   Paths to Taichi linking libraries (``.libs``).
-``taichi_REDIST_LIBRARIES``
+``Taichi_REDIST_LIBRARIES``
   Paths to Taichi redistributed runtime libraries (``.so`` and ``.dll``). You
   might want to copy them next to your executables.
 
@@ -39,14 +39,14 @@ Cache Variables
 
 The following cache variables may also be set:
 
-``taichi_runtime_VERSION``
+``Taichi_Runtime_VERSION``
   Taichi runtime library version.
-``taichi_runtime_INCLUDE_DIR``
+``Taichi_Runtime_INCLUDE_DIR``
   The directory containing ``taichi/taichi.h``.
-``taichi_runtime_LIBRARY``
-  Path to linking library of ``taichi_runtime``.
-``taichi_runtime_REDIST_LIBRARY``
-  Path to redistributed runtime library of ``taichi_runtime``.
+``Taichi_Runtime_LIBRARY``
+  Path to linking library of ``Taichi_Runtime``.
+``Taichi_Runtime_REDIST_LIBRARY``
+  Path to redistributed runtime library of ``Taichi_Runtime``.
 
 #]=======================================================================]
 
@@ -81,60 +81,59 @@ else()
 endif()
 
 # Set up default find components
-if("${taichi_FIND_COMPONENTS}" STREQUAL "")
+if(TRUE)
     # (penguinliong) Currently we only have Taichi Runtime. We might make the
     # codegen a library in the future?
-    set(taichi_FIND_COMPONENTS "runtime")
+    set(Taichi_FIND_COMPONENTS "Runtime")
 endif()
 
-message("-- Looking for Taichi components: ${taichi_FIND_COMPONENTS}")
+message("-- Looking for Taichi components: ${Taichi_FIND_COMPONENTS}")
 
 # (penguinliong) Note that the config files only exposes libraries and their
 # public headers. We still need to encapsulate the libraries into semantical
 # CMake targets in this list. So please DO NOT find Taichi in config mode
 # directly.
-find_package(taichi CONFIG QUIET HINTS "${TAICHI_C_API_INSTALL_DIR}")
+find_package(Taichi CONFIG QUIET HINTS "${TAICHI_C_API_INSTALL_DIR}")
 
-if(taichi_FOUND)
-    message("-- Found Taichi ${taichi_VERSION} in config mode: ${taichi_DIR}")
+if(Taichi_FOUND)
+    message("-- Found Taichi ${Taichi_VERSION} in config mode: ${Taichi_DIR}")
 else()
     message("-- Could NOT find Taichi in config mode; fallback to heuristic search")
 endif()
 
-# - [taichi::runtime] ----------------------------------------------------------
+# - [Taichi::Runtime] ----------------------------------------------------------
 
-if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
-    if(taichi_FOUND)
+if(("Runtime" IN_LIST Taichi_FIND_COMPONENTS) AND (NOT TARGET Taichi::Runtime))
+    if(Taichi_FOUND)
         if(NOT TARGET taichi_c_api)
             message(FATAL_ERROR "taichi is marked found but target taichi_c_api doesn't exists")
         endif()
 
         # Already found in config mode.
-        get_target_property(taichi_runtime_CONFIG taichi_c_api IMPORTED_CONFIGURATIONS)
+        get_target_property(Taichi_Runtime_CONFIG taichi_c_api IMPORTED_CONFIGURATIONS)
         if(${CMAKE_SYSTEM_NAME} STREQUAL Windows)
-            get_target_property(taichi_runtime_LIBRARY taichi_c_api IMPORTED_IMPLIB_${taichi_runtime_CONFIG})
-            get_target_property(taichi_runtime_REDIST_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
+            get_target_property(Taichi_Runtime_LIBRARY taichi_c_api IMPORTED_IMPLIB)
         else()
-            get_target_property(taichi_runtime_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
-            get_target_property(taichi_runtime_REDIST_LIBRARY taichi_c_api IMPORTED_LOCATION_${taichi_runtime_CONFIG})
-            endif()
-        get_target_property(taichi_runtime_INCLUDE_DIR taichi_c_api INTERFACE_INCLUDE_DIRECTORIES)
+            get_target_property(Taichi_Runtime_LIBRARY taichi_c_api LOCATION)
+        endif()
+        get_target_property(Taichi_Runtime_REDIST_LIBRARY taichi_c_api LOCATION)
+        get_target_property(Taichi_Runtime_INCLUDE_DIR taichi_c_api INTERFACE_INCLUDE_DIRECTORIES)
     else()
-        find_library(taichi_runtime_LIBRARY
+        find_library(Taichi_Runtime_LIBRARY
             NAMES taichi_runtime taichi_c_api
             HINTS ${TAICHI_C_API_INSTALL_DIR}
             PATH_SUFFIXES lib
             # CMake find root is overriden by Android toolchain.
             NO_CMAKE_FIND_ROOT_PATH)
 
-        find_library(taichi_runtime_REDIST_LIBRARY
+        find_library(Taichi_Runtime_REDIST_LIBRARY
             NAMES taichi_runtime taichi_c_api
             HINTS ${TAICHI_C_API_INSTALL_DIR}
             PATH_SUFFIXES bin lib
             # CMake find root is overriden by Android toolchain.
             NO_CMAKE_FIND_ROOT_PATH)
 
-        find_path(taichi_runtime_INCLUDE_DIR
+        find_path(Taichi_Runtime_INCLUDE_DIR
             NAMES taichi/taichi.h
             HINTS ${TAICHI_C_API_INSTALL_DIR}
             PATH_SUFFIXES include
@@ -142,43 +141,51 @@ if(("runtime" IN_LIST taichi_FIND_COMPONENTS) AND (NOT TARGET taichi::runtime))
     endif()
 
     # Capture Taichi Runtime version from header definition.
-    if(EXISTS "${taichi_runtime_INCLUDE_DIR}/taichi/taichi_core.h")
-        file(READ "${taichi_runtime_INCLUDE_DIR}/taichi/taichi_core.h" taichi_runtime_VERSION_LITERAL)
-        string(REGEX MATCH "#define TI_C_API_VERSION ([0-9]+)" taichi_runtime_VERSION_LITERAL ${taichi_runtime_VERSION_LITERAL})
-        set(taichi_runtime_VERSION_LITERAL ${CMAKE_MATCH_1})
-        math(EXPR taichi_runtime_VERSION_MAJOR "${taichi_runtime_VERSION_LITERAL} / 1000000")
-        math(EXPR taichi_runtime_VERSION_MINOR "(${taichi_runtime_VERSION_LITERAL} / 1000) % 1000")
-        math(EXPR taichi_runtime_VERSION_PATCH "${taichi_runtime_VERSION_LITERAL} % 1000")
-        set(taichi_runtime_VERSION "${taichi_runtime_VERSION_MAJOR}.${taichi_runtime_VERSION_MINOR}.${taichi_runtime_VERSION_PATCH}")
+    if(EXISTS "${Taichi_Runtime_INCLUDE_DIR}/taichi/taichi_core.h")
+        file(READ "${Taichi_Runtime_INCLUDE_DIR}/taichi/taichi_core.h" Taichi_Runtime_VERSION_LITERAL)
+        string(REGEX MATCH "#define TI_C_API_VERSION ([0-9]+)" Taichi_Runtime_VERSION_LITERAL ${Taichi_Runtime_VERSION_LITERAL})
+        set(Taichi_Runtime_VERSION_LITERAL ${CMAKE_MATCH_1})
+        math(EXPR Taichi_Runtime_VERSION_MAJOR "${Taichi_Runtime_VERSION_LITERAL} / 1000000")
+        math(EXPR Taichi_Runtime_VERSION_MINOR "(${Taichi_Runtime_VERSION_LITERAL} / 1000) % 1000")
+        math(EXPR Taichi_Runtime_VERSION_PATCH "${Taichi_Runtime_VERSION_LITERAL} % 1000")
+        set(Taichi_Runtime_VERSION "${Taichi_Runtime_VERSION_MAJOR}.${Taichi_Runtime_VERSION_MINOR}.${Taichi_Runtime_VERSION_PATCH}")
     endif()
 
     # Ensure the version string is valid.
-    if("${taichi_runtime_VERSION}" VERSION_GREATER "0")
-        message("-- Found Taichi Runtime ${taichi_runtime_VERSION}: ${taichi_runtime_LIBRARY}")
+    if("${Taichi_Runtime_VERSION}" VERSION_GREATER "0")
+        message("-- Found Taichi Runtime ${Taichi_Runtime_VERSION}: ${Taichi_Runtime_LIBRARY}")
 
-        add_library(taichi::runtime UNKNOWN IMPORTED)
-        set_target_properties(taichi::runtime PROPERTIES
-            IMPORTED_LOCATION "${taichi_runtime_LIBRARY}"
-            INTERFACE_INCLUDE_DIRECTORIES "${taichi_runtime_INCLUDE_DIR}")
+        add_library(Taichi::Runtime UNKNOWN IMPORTED)
+        set_target_properties(Taichi::Runtime PROPERTIES
+            IMPORTED_LOCATION "${Taichi_Runtime_LIBRARY}"
+            INTERFACE_INCLUDE_DIRECTORIES "${Taichi_Runtime_INCLUDE_DIR}")
 
         list(APPEND COMPONENT_VARS
-            taichi_runtime_LIBRARY
-            taichi_runtime_INCLUDE_DIR)
-        list(APPEND taichi_LIBRARIES "${taichi_runtime_LIBRARY}")
-        if(EXISTS ${taichi_runtime_REDIST_LIBRARY})
-            list(APPEND taichi_REDIST_LIBRARIES ${taichi_runtime_REDIST_LIBRARY})
+            Taichi_Runtime_REDIST_LIBRARY
+            Taichi_Runtime_LIBRARY
+            Taichi_Runtime_INCLUDE_DIR)
+        list(APPEND Taichi_LIBRARIES "${Taichi_Runtime_LIBRARY}")
+        if(EXISTS ${Taichi_Runtime_REDIST_LIBRARY})
+            list(APPEND Taichi_REDIST_LIBRARIES "${Taichi_Runtime_REDIST_LIBRARY}")
         endif()
-        list(APPEND taichi_INCLUDE_DIRS "${taichi_runtime_INCLUDE_DIR}")
+        list(APPEND Taichi_INCLUDE_DIRS "${Taichi_Runtime_INCLUDE_DIR}")
     endif()
 endif()
 
 # - [taichi] -------------------------------------------------------------------
 
-set(taichi_VERSION taichi_runtime_VERSION)
-set(taichi_FOUND TRUE)
-
 # Handle `QUIET` and `REQUIRED` args in the recommended way in `find_package`.
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(taichi DEFAULT_MSG ${COMPONENT_VARS})
+find_package_handle_standard_args(Taichi DEFAULT_MSG ${COMPONENT_VARS})
+set(Taichi_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
+set(Taichi_INCLUDE_DIRS ${Taichi_INCLUDE_DIRS} PARENT_SCOPE)
+set(Taichi_LIBRARIES ${Taichi_LIBRARIES} PARENT_SCOPE)
+set(Taichi_REDIST_LIBRARIES ${Taichi_REDIST_LIBRARIES} PARENT_SCOPE)
+
+set(Taichi_Runtime_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
+set(Taichi_Runtime_INCLUDE_DIR ${Taichi_Runtime_INCLUDE_DIR} PARENT_SCOPE)
+set(Taichi_Runtime_LIBRARY ${Taichi_Runtime_LIBRARY} PARENT_SCOPE)
+set(Taichi_Runtime_REDIST_LIBRARY ${Taichi_Runtime_REDIST_LIBRARY} PARENT_SCOPE)
+
 
 cmake_policy(POP)

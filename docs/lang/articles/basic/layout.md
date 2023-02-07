@@ -104,7 +104,7 @@ By nesting multiple statements, we can construct a field with higher dimensions.
 
 In order to traverse the nested statements, you can use a `for` loop:
 
-```python {1}
+```python {1} known-error
 for i, j in A:
     A[i, j] += 1
 ```
@@ -121,7 +121,9 @@ Trivially, elements in the same row are close in memory for row-major fields. Th
 
 The default Taichi field layout is row-major. With the `ti.root` statements, fields can be defined as follows:
 
-```python
+```python {3-4}
+x = ti.field(ti.f32)
+y = ti.field(ti.f32)
 ti.root.dense(ti.i, M).dense(ti.j, N).place(x)   # row-major
 ti.root.dense(ti.j, N).dense(ti.i, M).place(y)   # column-major
 ```

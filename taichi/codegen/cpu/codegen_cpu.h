@@ -11,8 +11,10 @@ namespace taichi::lang {
 
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
-  explicit KernelCodeGenCPU(const CompileConfig &compile_config, Kernel *kernel)
-      : KernelCodeGen(compile_config, kernel) {
+  explicit KernelCodeGenCPU(const CompileConfig &compile_config,
+                            Kernel *kernel,
+                            TaichiLLVMContext &tlctx)
+      : KernelCodeGen(compile_config, kernel, tlctx) {
   }
 
   // TODO: Stop defining this macro guards in the headers

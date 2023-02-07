@@ -41,9 +41,8 @@ class CG:
                 x = ScalarNdarray(self.b.dtype, [self.matrix.m])
                 self.cg_solver.solve(get_runtime().prog, x.arr, self.b.arr)
                 return x, True
-            else:
-                raise TaichiRuntimeError(
-                    f'Unsupported CG RHS type: {type(self.b)}')
+            raise TaichiRuntimeError(
+                f'Unsupported CG RHS type: {type(self.b)}')
         else:
             self.cg_solver.solve()
             return self.cg_solver.get_x(), self.cg_solver.is_success()

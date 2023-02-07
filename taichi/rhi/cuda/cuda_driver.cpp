@@ -132,4 +132,27 @@ bool CUSOLVERDriver::load_cusolver() {
 #undef PER_CUSOLVER_FUNCTION
   return cusolver_loaded_;
 }
+
+CUBLASDriver::CUBLASDriver() {
+}
+
+CUBLASDriver &CUBLASDriver::get_instance() {
+  static CUBLASDriver *instance = new CUBLASDriver();
+  return *instance;
+}
+
+bool CUBLASDriver::load_cublas() {
+  cublas_loaded_ = load_lib("libcublas.so", "cublas64_11.dll");
+  if (!cublas_loaded_) {
+    return false;
+  }
+#define PER_CUBLAS_FUNCTION(name, symbol_name, ...) \
+  name.set(loader_->load_function(#symbol_name));     \
+  name.set_lock(&lock_);                              \
+  name.set_names(#name, #symbol_name);
+#include "taichi/rhi/cuda/cublas_functions.inc.h"
+#undef PER_CUBLAS_FUNCTION
+  return cublas_loaded_;
+}
+
 }  // namespace taichi::lang

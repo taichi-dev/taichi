@@ -1255,7 +1255,7 @@ void export_lang(py::module &m) {
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
       .def(py::init<const CuSparseMatrix &>())
-      .def("spmv", &CuSparseMatrix::spmv)
+      .def("spmv", &CuSparseMatrix::nd_spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * float32())
@@ -1308,18 +1308,23 @@ void export_lang(py::module &m) {
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
 
+  // Conjugate Gradient solver
   py::class_<CG<Eigen::VectorXf, float>>(m, "CGf")
       .def(py::init<SparseMatrix &, int, float, bool>())
       .def("solve", &CG<Eigen::VectorXf, float>::solve)
       .def("set_x", &CG<Eigen::VectorXf, float>::set_x)
       .def("get_x", &CG<Eigen::VectorXf, float>::get_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXf, float>::set_x_ndarray)
       .def("set_b", &CG<Eigen::VectorXf, float>::set_b)
+      .def("set_b_ndarray", &CG<Eigen::VectorXf, float>::set_b_ndarray)
       .def("is_success", &CG<Eigen::VectorXf, float>::is_success);
   py::class_<CG<Eigen::VectorXd, double>>(m, "CGd")
       .def(py::init<SparseMatrix &, int, double, bool>())
       .def("solve", &CG<Eigen::VectorXd, double>::solve)
       .def("set_x", &CG<Eigen::VectorXd, double>::set_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXd, double>::set_x_ndarray)
       .def("get_x", &CG<Eigen::VectorXd, double>::get_x)
+      .def("set_b_ndarray", &CG<Eigen::VectorXd, double>::set_b_ndarray)
       .def("set_b", &CG<Eigen::VectorXd, double>::set_b)
       .def("is_success", &CG<Eigen::VectorXd, double>::is_success);
   m.def("make_float_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
@@ -1330,6 +1335,11 @@ void export_lang(py::module &m) {
                                     bool verbose) {
     return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
   });
+
+  py::class_<CUCG>(m, "CUCG")
+      .def("solve", &CUCG::solve);
+  m.def("make_cucg_solver", make_cucg_solver);
+
   // Mesh Class
   // Mesh related.
   py::enum_<mesh::MeshTopology>(m, "MeshTopology", py::arithmetic())

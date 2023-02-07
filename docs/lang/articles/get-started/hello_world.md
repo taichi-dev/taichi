@@ -101,7 +101,7 @@ The argument `arch` specifies the *backend* that executes the compiled code. A b
 
 You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings](../reference/global_settings.md) for more information about `ti.init()`.
 
-```python{4}
+```python {4}
 import taichi as ti
 import taichi.math as tm
 

@@ -24,18 +24,30 @@ if (WIN32)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} -flto=thin")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -flto=thin")
+    elseif (MSVC)
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS} /GL /Gy")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} /GL /Gy")
+        set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
     endif()
 endif()
 
 if (WIN32)
     link_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/lib)
     if (MSVC)
+        # C++17, and C++ conformance
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /Zc:inline /std:c++17")
+        # Linker & object related flags
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
+        # Debugging (generate PBD files)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi /Zf")
+        # Performance and optimizations
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")
         # C4244: conversion from 'type1' to 'type2', possible loss of data
         # C4267: conversion from 'size_t' to 'type', possible loss of data
         # C4624: destructor was implicitly defined as deleted because a base class destructor is inaccessible or deleted
         # These warnings are not emitted on Clang (mostly within LLVM source code)
-        set(CMAKE_CXX_FLAGS
-            "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /std:c++17 /bigobj /wd4244 /wd4267 /wd4624 /nologo /MP /Zi /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4244 /wd4267 /wd4624 /nologo /D \"_CRT_SECURE_NO_WARNINGS\" /D \"_ENABLE_EXTENDED_ALIGNED_STORAGE\"")
     else()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsized-deallocation -target x86_64-pc-windows-msvc")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -gcodeview")

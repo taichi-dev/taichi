@@ -12,3 +12,4 @@ cffi
 scipy
 setproctitle
 nbmake
+marko

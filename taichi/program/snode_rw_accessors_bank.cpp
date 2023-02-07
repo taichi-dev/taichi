@@ -50,6 +50,9 @@ float64 SNodeRwAccessorsBank::Accessors::read_float(const std::vector<int> &I) {
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   (*reader_)(prog_->compile_config(), launch_ctx);
   prog_->synchronize();
+  if (arch_uses_llvm(prog_->compile_config().arch)) {
+    return reader_->get_struct_ret_float({0});
+  }
   auto ret = reader_->get_ret_float(0);
   return ret;
 }
@@ -70,6 +73,9 @@ int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   (*reader_)(prog_->compile_config(), launch_ctx);
   prog_->synchronize();
+  if (arch_uses_llvm(prog_->compile_config().arch)) {
+    return reader_->get_struct_ret_int({0});
+  }
   auto ret = reader_->get_ret_int(0);
   return ret;
 }

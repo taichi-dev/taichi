@@ -727,36 +727,7 @@ void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
 
 void LlvmRuntimeExecutor::init_runtime_jit_module(
     std::unique_ptr<llvm::Module> module) {
-  if (config_.arch == Arch::cuda) {
-    for (auto &f : *module) {
-      bool is_kernel = false;
-      const std::string func_name = f.getName().str();
-      if (starts_with(func_name, "runtime_")) {
-        llvm_context_->mark_function_as_cuda_kernel(&f);
-        is_kernel = true;
-      }
-
-      if (!is_kernel && !f.isDeclaration())
-        // set declaration-only functions as internal linking to avoid
-        // duplicated symbols and to remove external symbol dependencies such
-        // as std::sin
-        f.setLinkage(llvm::Function::PrivateLinkage);
-    }
-  }
-
-  if (config_.arch == Arch::amdgpu) {
-#ifdef TI_WITH_AMDGPU
-    llvm::legacy::PassManager module_pass_manager;
-    module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
-    module_pass_manager.run(*module);
-#endif
-  }
-
-  llvm_context_->eliminate_unused_functions(
-      module.get(), [](std::string func_name) {
-        return starts_with(func_name, "runtime_") ||
-               starts_with(func_name, "LLVMRuntime_");
-      });
+  llvm_context_->init_runtime_module(module.get());
   runtime_jit_module_ = create_jit_module(std::move(module));
 }
 

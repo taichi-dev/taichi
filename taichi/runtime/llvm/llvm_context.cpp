@@ -891,6 +891,38 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   TI_INFO("Slimmed libdevice written to {}", output_fn);
 };
 
+void TaichiLLVMContext::init_runtime_module(llvm::Module *runtime_module) {
+  if (config_.arch == Arch::cuda) {
+    for (auto &f : *runtime_module) {
+      bool is_kernel = false;
+      const std::string func_name = f.getName().str();
+      if (starts_with(func_name, "runtime_")) {
+        mark_function_as_cuda_kernel(&f);
+        is_kernel = true;
+      }
+
+      if (!is_kernel && !f.isDeclaration())
+        // set declaration-only functions as internal linking to avoid
+        // duplicated symbols and to remove external symbol dependencies such
+        // as std::sin
+        f.setLinkage(llvm::Function::PrivateLinkage);
+    }
+  }
+
+  if (config_.arch == Arch::amdgpu) {
+#ifdef TI_WITH_AMDGPU
+    llvm::legacy::PassManager module_pass_manager;
+    module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
+    module_pass_manager.run(*runtime_module);
+#endif
+  }
+
+  eliminate_unused_functions(runtime_module, [](std::string func_name) {
+    return starts_with(func_name, "runtime_") ||
+           starts_with(func_name, "LLVMRuntime_");
+  });
+}
+
 void TaichiLLVMContext::delete_snode_tree(int id) {
   TI_ASSERT(linking_context_data->struct_modules.erase(id));
   for (auto &[thread_id, data] : per_thread_data_) {

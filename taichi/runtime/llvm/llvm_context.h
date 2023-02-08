@@ -57,6 +57,8 @@ class TaichiLLVMContext {
    */
   void add_struct_module(std::unique_ptr<llvm::Module> module, int tree_id);
 
+  void init_runtime_module(llvm::Module *runtime_module);
+
   /**
    * Clones the LLVM module compiled from llvm/runtime.cpp
    *

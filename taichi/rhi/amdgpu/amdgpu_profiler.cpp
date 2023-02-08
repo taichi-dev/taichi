@@ -11,7 +11,7 @@ std::string KernelProfilerAMDGPU::get_device_name() {
 
 bool KernelProfilerAMDGPU::reinit_with_metrics(
     const std::vector<std::string> metrics) {
-        TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED
 }
 
 KernelProfilerBase::TaskHandle KernelProfilerAMDGPU::start_with_handle(
@@ -37,7 +37,7 @@ bool KernelProfilerAMDGPU::statistics_on_traced_records() {
 }
 
 void KernelProfilerAMDGPU::sync() {
-    amdgpuDriver::get_instance().stream_synchronize(nullptr);
+    AMDGPUDriver::get_instance().stream_synchronize(nullptr);
 }
 void KernelProfilerAMDGPU::update() {
     TI_NOT_IMPLEMENTED

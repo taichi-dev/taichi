@@ -271,7 +271,7 @@ bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
 // default profiling toolkit : cuEvent
 // for now put it together with KernelProfilerCUDA
 #if defined(TI_WITH_CUDA)
-KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
+KernelProfilerBase::TaskHandle EventToolkitCUDA::start_with_handle(
     const std::string &kernel_name) {
   EventRecord record;
   record.name = kernel_name;
@@ -313,13 +313,13 @@ KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
   return record.stop_event;
 }
 
-void EventToolkit::update_record(
+void EventToolkitCUDA::update_record(
     uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   uint32_t events_num = event_records_.size();
   uint32_t records_num = traced_records.size();
   TI_ERROR_IF(records_size_after_sync + events_num != records_num,
-              "KernelProfilerCUDA::EventToolkit: event_records_.size({}) != "
+              "KernelProfilerCUDA::EventToolkitCUDA: event_records_.size({}) != "
               "traced_records_.size({})",
               records_size_after_sync + events_num, records_num);
 
@@ -334,7 +334,7 @@ void EventToolkit::update_record(
   }
 }
 
-void EventToolkit::update_timeline(
+void EventToolkitCUDA::update_timeline(
     std::vector<KernelProfileTracedRecord> &traced_records) {
   if (Timelines::get_instance().get_enabled()) {
     auto &timeline = Timeline::get_this_thread_instance();
@@ -354,16 +354,16 @@ void EventToolkit::update_timeline(
 }
 
 #else
-KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
+KernelProfilerBase::TaskHandle EventToolkitCUDA::start_with_handle(
     const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkit::update_record(
+void EventToolkitCUDA::update_record(
     uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkit::update_timeline(
+void EventToolkitCUDA::update_timeline(
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }

@@ -730,8 +730,8 @@ void LlvmRuntimeExecutor::fetch_result_impl(void *dest,
 #endif
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-    AMDGPUDriver::get_instance().memcpy_device_to_host(dest, result_buffer + offset,
-                                                       size);
+    AMDGPUDriver::get_instance().memcpy_device_to_host(
+        dest, result_buffer + offset, size);
 #else
     TI_NOT_IMPLEMENTED;
 #endif

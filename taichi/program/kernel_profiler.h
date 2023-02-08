@@ -117,7 +117,7 @@ class EventToolkitBase {
     TI_NOT_IMPLEMENTED;
   };
 
- private:
+ protected:
   struct EventRecord {
     std::string name;
     float kernel_elapsed_time_in_ms{0.0};
@@ -140,6 +140,9 @@ class EventToolkitBase {
   void *get_base_event() const {
     return base_event_;
   }
+  virtual ~EventToolkitBase() {
+
+  };
 };
 
 std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable);

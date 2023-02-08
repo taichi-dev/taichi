@@ -13,7 +13,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   metric_list_.clear();
   if (enable) {  // default profiling toolkit: event
     tool_ = ProfilingToolkit::event;
-    event_toolkit_ = std::make_unique<EventToolkit>();
+    event_toolkit_ = std::make_unique<EventToolkitCUDA>();
   }
 }
 

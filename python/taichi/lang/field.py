@@ -387,11 +387,15 @@ class SNodeHostAccessor:
             write_func = snode.write_float
             read_func = snode.read_float
         else:
+            def write_func(key, value):
+                if value >= 0:
+                    snode.write_uint(key, value)
+                else:
+                    snode.write_int(key, value)
+
             if _ti_core.is_signed(snode.data_type()):
-                write_func = snode.write_int
                 read_func = snode.read_int
             else:
-                write_func = snode.write_uint
                 read_func = snode.read_uint
 
         def getter(*key):

@@ -382,7 +382,7 @@ def append(node, indices, val):
     Args:
         node (:class:`~taichi.SNode`): Input SNode.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to visit.
-        val (:mod:`~taichi.types.primitive_types`): the scalar data to be appended, only i32 value is support for now.
+        val (Union[:mod:`~taichi.types.primitive_types`, :mod:`~taichi.types.compound_types`]): the data to be appended.
     """
     ptrs = expr._get_flattened_ptrs(val)
     append_expr = expr.Expr(

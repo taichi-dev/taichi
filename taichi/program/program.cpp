@@ -17,6 +17,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
+
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
@@ -349,7 +350,7 @@ Ndarray *Program::create_ndarray(const DataType type,
   auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
   if (zero_fill) {
     Arch arch = compile_config().arch;
-    if (arch_is_cpu(arch) || arch == Arch::cuda) {
+    if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
       fill_ndarray_fast_u32(arr.get(), /*data=*/0);
     } else if (arch != Arch::dx12) {
       // Device api support for dx12 backend are not complete yet
@@ -408,7 +409,8 @@ Texture *Program::create_texture(const DataType type,
 intptr_t Program::get_ndarray_data_ptr_as_int(const Ndarray *ndarray) {
   uint64_t *data_ptr{nullptr};
   if (arch_is_cpu(compile_config().arch) ||
-      compile_config().arch == Arch::cuda) {
+      compile_config().arch == Arch::cuda ||
+      compile_config().arch == Arch::amdgpu) {
     // For the LLVM backends, device allocation is a physical pointer.
     data_ptr =
         program_impl_->get_ndarray_alloc_info_ptr(ndarray->ndarray_alloc_);
@@ -482,9 +484,12 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
   if (arch == Arch::wasm) {
-    // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
+    // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>(compile_config());
+    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
+    TI_ASSERT(llvm_prog != nullptr);
+    return std::make_unique<wasm::AotModuleBuilderImpl>(
+        compile_config(), *llvm_prog->get_llvm_context());
 #else
     TI_NOT_IMPLEMENTED
 #endif

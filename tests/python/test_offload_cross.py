@@ -111,7 +111,7 @@ def test_offload_with_cross_block_globals():
     assert ret[None] == 46
 
 
-@test_utils.test()
+@test_utils.test(exclude=ti.amdgpu)
 def test_offload_with_cross_nested_for():
     @ti.kernel
     def run(a: ti.i32):
@@ -123,7 +123,7 @@ def test_offload_with_cross_nested_for():
     run(2)
 
 
-@test_utils.test()
+@test_utils.test(exclude=ti.amdgpu)
 def test_offload_with_cross_if_inside_for():
     @ti.kernel
     def run(a: ti.i32):

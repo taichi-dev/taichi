@@ -538,7 +538,7 @@ class StructField(Field):
         assert isinstance(other, Field)
         assert set(self.keys) == set(other.keys)
         for k in self.keys:
-            self.field_dict[k].copy_from(other[k])
+            self.field_dict[k].copy_from(other.get_member_field(k))
 
     @python_scope
     def fill(self, val):

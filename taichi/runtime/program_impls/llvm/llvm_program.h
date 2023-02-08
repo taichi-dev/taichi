@@ -26,6 +26,10 @@ namespace cuda {
 class CudaDevice;
 }  // namespace cuda
 
+namespace amdgpu {
+class AmdgpuDevice;
+}  // namespace amdgpu
+
 namespace cpu {
 class CpuDevice;
 }  // namespace cpu
@@ -172,7 +176,7 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_->print_memory_profiler_info(snode_trees_, result_buffer);
   }
 
-  TaichiLLVMContext *get_llvm_context(Arch arch) {
+  TaichiLLVMContext *get_llvm_context() {
     return runtime_exec_->get_llvm_context();
   }
 

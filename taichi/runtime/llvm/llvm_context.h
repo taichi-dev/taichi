@@ -78,20 +78,6 @@ class TaichiLLVMContext {
 
   JITModule *create_jit_module(std::unique_ptr<llvm::Module> module);
 
-  virtual void *lookup_function_pointer(const std::string &name) {
-    return jit->lookup(name);
-  }
-
-  // Unfortunately, this can't be virtual since it's a template function
-  template <typename T>
-  std::function<T> lookup_function(const std::string &name) {
-    using FuncT = typename std::function<T>;
-    auto ret =
-        FuncT((function_pointer_type<FuncT>)lookup_function_pointer(name));
-    TI_ASSERT(ret != nullptr);
-    return ret;
-  }
-
   llvm::Type *get_data_type(DataType dt);
 
   template <typename T>
@@ -124,6 +110,8 @@ class TaichiLLVMContext {
       std::function<bool(const std::string &)> export_indicator);
 
   void mark_function_as_cuda_kernel(llvm::Function *func, int block_dim = 0);
+
+  void mark_function_as_amdgpu_kernel(llvm::Function *func);
 
   void fetch_this_thread_struct_module();
   llvm::Module *get_this_thread_runtime_module();

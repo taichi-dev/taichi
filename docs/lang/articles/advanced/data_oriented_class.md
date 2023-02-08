@@ -67,7 +67,7 @@ print(a.temp)  # will print [1 1 1 1 1 1 1 1]
 ```
 
 Another memory recycling example:
-```python
+```python known-error
 import taichi as ti
 
 ti.init()

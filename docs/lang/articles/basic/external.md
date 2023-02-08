@@ -39,7 +39,7 @@ The field should also have the same dtype as the array; otherwise, an implicit t
 
 Conversely, to export the data in `x` to a NumPy array, call `to_numpy()`:
 
-```python
+```python cont
 arr = x.to_numpy()
 #array([[0, 1, 2],
 #       [3, 4, 5],
@@ -50,15 +50,16 @@ arr = x.to_numpy()
 
 Data transfer between a PyTorch tensor and a Taichi field is similar to the NumPy case above: Call `from_torch()` for data import and `to_torch()` for data export. But note that `to_torch()` requires one more argument `device`, which specifies the PyTorch device:
 
-```python
+```python cont
 tensor = x.to_torch(device="cuda:0")
 print(tensor.device) # device(type='cuda', index=0)
 ```
 For Paddle, you need to specify the device by calling `paddle.CPUPlace()` or `paddle.CUDAPlace(n)`, where `n` is an optional ID set to 0 by default.
 
-```python
+```python skip-ci:NotTestingPaddle
 device = paddle.CPUPlace()
 tensor = x.to_paddle(device=device)
+```
 
 ## External array shapes
 
@@ -170,7 +171,7 @@ def test(a: ti.types.ndarray()):
         for j in range(a.shape[1]):
             a[i, j] = i + j
 
-test()
+test(a)
 print(a)
 ```
 
@@ -179,13 +180,13 @@ print(a)
 
 Assume that `a` and `b` are both 2D arrays of the same shape and dtype. For each cell `(i, j)` in `a`, we want to calculate the difference between its value and the average of its four neighboring cells while storing the result in the corresponding cell in `b`. In this case, cells on the boundary, which are cells with fewer than four neighbors, are ruled out for simplicity. This operation is usually denoted as the *Discrete Laplace Operator*:
 
-```
+```python skip-ci:Trivial
 b[i, j] = a[i, j] - (a[i-1, j] + a[i, j-1] + a[i+1, j] + a[i, j+1]) / 4
 ```
 
 Such an operation is typically very slow, even with NumPy's vectorization as shown below:
 
-```python
+```python skip-ci:NumpyOnly
 b[1:-1, 1:-1] += (               a[ :-2, 1:-1] +
                   a[1:-1, :-2]                 + a[1:-1, 2:] +
                                  a[2:  , 1:-1])
@@ -223,7 +224,7 @@ def copy_vector(x: ti.template(), y: ti.types.ndarray()):
 
 In addition, external arrays in a Taichi kernel are indexed using their **physical memory layout**. For PyTorch users, this means that a PyTorch tensor [needs to be made contiguous](https://pytorch.org/docs/stable/generated/torch.Tensor.contiguous.html) before being passed into a Taichi kernel:
 
-```python
+```python known-error:CopyNotDefined
 x = ti.field(dtype=int, shape=(3, 3))
 y = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
 y = y.T # Transposing the tensor returns a view of the tensor which is not contiguous
@@ -233,7 +234,7 @@ def copy_scalar(x: ti.template(), y: ti.types.ndarray()):
     for i, j in x:
         y[i, j] = x[i, j]
 
-copy(x, y) # error!
+# copy(x, y) # error!
 copy(x, y.clone()) # correct
 copy(x, y.contiguous()) # correct
 ```
@@ -257,7 +258,8 @@ def invalid_sum(arr: ti.types.ndarray()):
 If you want to use a NumPy function, which lacks a counterpart in Taichi, you can call the function in the Python scope as usual and pass the processed array to Taichi kernels via `ti.types.ndarray()`. For example:
 
 ```python
-indices = np.argsort(arr)  # arr is a Numpy.ndarray
+arr = np.random.random(233)
+indices = np.argsort(arr)  # arr is a NumPy ndarray
 
 @ti.kernel
 def valid_example(arr: ti.types.ndarray(), indices: ti.types.ndarray()):

@@ -27,7 +27,9 @@ void CompiledGraph::jit_run(
     RuntimeContext ctx = ctx_;
     TI_ASSERT(dispatch.ti_kernel);
     init_runtime_context(dispatch.symbolic_args, args, ctx);
-    // Compile & Run (JIT)
+    // Compile & Run (JIT): The compilation result will be cached, so don't
+    // worry that the kernels dispatched by this cgraph will be compiled
+    // repeatedly.
     lang::Kernel::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
     (*dispatch.ti_kernel)(compile_config, launch_ctx);
   }

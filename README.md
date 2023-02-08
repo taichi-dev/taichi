@@ -7,7 +7,7 @@
 [![downloads](https://pepy.tech/badge/taichi)](https://pepy.tech/project/taichi)
 [![CI](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/testing.yml)
 [![Nightly Release](https://github.com/taichi-dev/taichi/actions/workflows/release.yml/badge.svg)](https://github.com/taichi-dev/taichi/actions/workflows/release.yml)
-<a href="https://join.slack.com/t/taichicommunity/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg"><img src="https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=red"></a>
+<a href="https://discord.gg/f25GRdXRfg"><img alt="discord invitation link" src="https://dcbadge.vercel.app/api/server/f25GRdXRfg?style=flat"></a>
 
 ```shell
 pip install taichi  # Install Taichi Lang
@@ -159,7 +159,7 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 ### Join our discussions
 
-- [Slack Channel](https://join.slack.com/t/taichicommunity/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg)
+- [Discord](https://discord.gg/f25GRdXRfg)
 - [GitHub Discussions](https://github.com/taichi-dev/taichi/discussions)
 - [太极编程语言中文论坛](https://forum.taichi.graphics/)
 
@@ -170,7 +170,7 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 ### Contact us
 
-- [Slack](https://taichicommunity.slack.com/join/shared_invite/zt-14ic8j6no-Fd~wKNpfskXLfqDr58Tddg#/shared-invite/email)
+- [Discord](https://discord.gg/f25GRdXRfg)
 - WeChat: Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
 
 ## Reference

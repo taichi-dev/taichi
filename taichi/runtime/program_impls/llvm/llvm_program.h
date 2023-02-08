@@ -9,6 +9,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/parallel_executor.h"
+#include "taichi/util/bit.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -192,9 +193,9 @@ class LlvmProgramImpl : public ProgramImpl {
       return TypedConstant(
           runtime_exec_->fetch_result<uint64>(result_buffer, offset));
     } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-      // use f32 to interact with python
-      return TypedConstant(
-          runtime_exec_->fetch_result<float32>(result_buffer, offset));
+      // first fetch the data as u16, and then convert it to f32
+      uint16 half = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
+      return TypedConstant(bit::half_to_float(half));
     } else {
       TI_NOT_IMPLEMENTED
     }

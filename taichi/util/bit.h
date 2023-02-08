@@ -25,6 +25,28 @@ TI_FORCE_INLINE constexpr bool is_power_of_two(uint64 x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
+TI_FORCE_INLINE uint32 as_uint(const float32 x) {
+  return *(uint32 *)&x;
+}
+
+TI_FORCE_INLINE float32 as_float(const uint32 x) {
+  return *(float32 *)&x;
+}
+
+TI_FORCE_INLINE float32 half_to_float(const uint16 x) {
+  // Reference: https://stackoverflow.com/a/60047308
+  const uint32 e = (x & 0x7C00) >> 10;  // exponent
+  const uint32 m = (x & 0x03FF) << 13;  // mantissa
+  const uint32 v =
+      as_uint((float32)m) >>
+      23;  // evil log2 bit hack to count leading zeros in denormalized format
+  return as_float(
+      (x & 0x8000) << 16 | (e != 0) * ((e + 112) << 23 | m) |
+      ((e == 0) & (m != 0)) *
+          ((v - 37) << 23 | ((m << (150 - v)) &
+                             0x007FE000)));  // sign : normalized : denormalized
+}
+
 template <int length>
 struct Bits {
   static_assert(is_power_of_two(length), "length must be a power of two");

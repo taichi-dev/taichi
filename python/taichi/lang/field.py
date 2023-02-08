@@ -387,6 +387,7 @@ class SNodeHostAccessor:
             write_func = snode.write_float
             read_func = snode.read_float
         else:
+
             def write_func(key, value):
                 if value >= 0:
                     snode.write_uint(key, value)

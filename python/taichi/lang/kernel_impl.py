@@ -843,7 +843,8 @@ class Kernel:
 
             if has_ret:
                 taichi_arch = impl.current_cfg().arch
-                if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 or taichi_arch == _ti_core.Arch.cuda:
+                if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 \
+                        or taichi_arch == _ti_core.Arch.cuda or taichi_arch == _ti_core.Arch.amdgpu:
                     ret = self.construct_kernel_ret(
                         t_kernel, ret_dt, () if isinstance(ret_dt, tuple) else
                         (0, ))

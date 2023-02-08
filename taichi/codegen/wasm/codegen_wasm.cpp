@@ -245,8 +245,8 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
   TI_AUTO_PROF
   auto linked = compile_kernel_to_module();
   auto &tlctx = get_taichi_llvm_context();
-  tlctx.create_jit_module(std::move(linked.module));
-  auto kernel_symbol = tlctx.lookup_function_pointer(linked.tasks[0].name);
+  auto *jit_module = tlctx.create_jit_module(std::move(linked.module));
+  auto kernel_symbol = jit_module->lookup_function(linked.tasks[0].name);
   return [kernel_symbol](RuntimeContext &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;

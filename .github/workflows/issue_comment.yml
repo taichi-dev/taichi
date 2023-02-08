@@ -7,15 +7,25 @@ jobs:
   check_comments:
     runs-on: ubuntu-latest
     steps:
-      - name: Slash Command Dispatch
-        uses: peter-evans/slash-command-dispatch@v2
-        with:
-          token: ${{ secrets.GARDENER_PAT }}
-          reaction-token: ${{ secrets.GARDENER_PAT }}
-          repository: taichi-dev/ci_workflows
-          issue-type: pull-request
-          permission: triage
-          commands: |
-            benchmark
-            rebase
-            rerun
+    - name: Slash Command Dispatch - Triage
+      uses: peter-evans/slash-command-dispatch@v3
+      with:
+        token: ${{ secrets.GARDENER_PAT }}
+        reaction-token: ${{ secrets.GARDENER_PAT }}
+        repository: taichi-dev/ci_workflows
+        issue-type: pull-request
+        permission: triage
+        commands: |
+          benchmark
+          rebase
+          rerun
+
+    - name: Slash Command Dispatch - Repo - Write
+      uses: peter-evans/slash-command-dispatch@v3
+      with:
+        token: ${{ secrets.GARDENER_PAT }}
+        reaction-token: ${{ secrets.GARDENER_PAT }}
+        issue-type: pull-request
+        permission: write
+        commands: |
+          land

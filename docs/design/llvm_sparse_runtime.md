@@ -49,7 +49,7 @@ Layout of a `dense` SNode:
 
 ## `pointer` SNode
 
-The pointer SNode is a popular choice for sparse computation. It dynamically allocates memory only for activated cells and recycles the memory back into a memory pool once the cell is deactivated, conserving memory resources in large-scale grid computation. The pointer SNode can be thought of as an std::array<Cell*, N>.
+The pointer SNode is a popular choice for sparse computation. It dynamically allocates memory only for activated cells and recycles it back into a memory pool once the cell is deactivated, conserving memory resources in large-scale grid computation. The pointer SNode can be thought of as an `std::array<Cell*, N>`.
 
 Upon initialization, Taichi preallocates a chunk of memory space named `ambient_elements`, which is shared across all inactive sparse SNodes. Therefore, dereferencing an inactive sparse SNode generates the default value (usually zero) stored in `ambient_elements`.
 

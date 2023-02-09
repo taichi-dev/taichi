@@ -155,7 +155,10 @@
                         "i32": 0,
                         "f32": 1,
                         "ndarray": 2,
-                        "texture": 3
+                        "texture": 3,
+                        "f16": 4,
+                        "i16": 5,
+                        "u16": 6
                     }
                 },
                 {
@@ -457,6 +460,14 @@
                         {
                             "name": "f32",
                             "type": "float"
+                        },
+                        {
+                            "name": "i16",
+                            "type": "int16_t"
+                        },
+                        {
+                            "name": "u16",
+                            "type": "uint16_t"
                         },
                         {
                             "name": "ndarray",

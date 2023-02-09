@@ -1598,18 +1598,17 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
     info.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV;
     info.pNext = nullptr;
-    
+
     VkPhysicalDeviceProperties2KHR properties2{};
     properties2.pNext = &info;
     properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
     
     vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
-    
+
     saturation_num_threads_ = (info.shaderWarpsPerSM * info.shaderSMCount * 32);
   } else if (vk_caps().has_amd_shader_core_properties) {
     VkPhysicalDeviceShaderCorePropertiesAMD info{};
-    info.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD;
+    info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD;
     info.pNext = nullptr;
 
     VkPhysicalDeviceProperties2KHR properties2{};

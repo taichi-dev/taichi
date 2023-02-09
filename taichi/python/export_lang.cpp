@@ -518,6 +518,7 @@ void export_lang(py::module &m) {
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
       .def("write_int", &SNode::write_int)
+      .def("write_uint", &SNode::write_uint)
       .def("write_float", &SNode::write_float)
       .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",

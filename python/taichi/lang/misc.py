@@ -772,15 +772,11 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
-def get_compute_stream_device_time_elapsed_us() -> float:
-    return impl.get_runtime().prog.get_compute_stream_device_time_elapsed_us()
-
-
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
     'cpu', 'cuda', 'amdgpu', 'gles', 'gpu', 'metal', 'opengl', 'vulkan',
     'extension', 'loop_config', 'global_thread_idx', 'assume_in_range',
     'block_local', 'cache_read_only', 'init', 'mesh_local', 'no_activate',
-    'reset', 'mesh_patch_idx', 'get_compute_stream_device_time_elapsed_us'
+    'reset', 'mesh_patch_idx'
 ]

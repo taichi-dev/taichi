@@ -28,9 +28,10 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
   TaskCodeGenAMDGPU(const CompileConfig &config,
+                    TaichiLLVMContext &tlctx,
                     Kernel *kernel,
                     IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(config, kernel, ir) {
+      : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -485,7 +486,7 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenAMDGPU gen(config, kernel, stmt);
+  TaskCodeGenAMDGPU gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
 }
 

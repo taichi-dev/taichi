@@ -46,6 +46,7 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
     prog_ = std::make_unique<Program>(arch);
     auto *llvm_prog_ = get_llvm_program(prog_.get());
     tlctx_ = llvm_prog_->get_llvm_context();
+    executor_ = llvm_prog_->get_runtime_executor();
   }
 
   static std::unique_ptr<llvm::Module> make_module(
@@ -76,6 +77,7 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
   // easiest approach in Taichi to use LLVM infra (e.g. JIT session).
   std::unique_ptr<Program> prog_{nullptr};
   TaichiLLVMContext *tlctx_{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 };
 
 TEST_P(LlvmOfflineCacheTest, ReadWrite) {
@@ -131,7 +133,7 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     ASSERT_NE(kcache.compiled_data.module, nullptr);
     kcache.compiled_data.module->dump();
     auto jit_module =
-        tlctx_->create_jit_module(std::move(kcache.compiled_data.module));
+        executor_->create_jit_module(std::move(kcache.compiled_data.module));
     using FuncType = int (*)(int, int);
     FuncType my_add = (FuncType)jit_module->lookup_function(kTaskName);
     const auto res = my_add(40, 2);

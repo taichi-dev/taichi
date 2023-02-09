@@ -28,7 +28,9 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
   // ret    : Value of the first child physical coordinates
   using FuncType = int (*)(int, int);
 
-  static FuncType build(const SNode *snode, TaichiLLVMContext *tlctx) {
+  static FuncType build(const SNode *snode,
+                        TaichiLLVMContext *tlctx,
+                        LlvmRuntimeExecutor *executor) {
     InvokeRefineCoordinatesBuilder mb{tlctx};
     mb.run_jit(snode);
     LLVMCompiledTask data;
@@ -38,7 +40,7 @@ class InvokeRefineCoordinatesBuilder : public LLVMModuleBuilder {
     std::vector<std::unique_ptr<LLVMCompiledTask>> data_list;
     data_list.push_back(std::make_unique<LLVMCompiledTask>(std::move(data)));
     auto linked_data = tlctx->link_compiled_tasks(std::move(data_list));
-    auto *jit = tlctx->create_jit_module(std::move(linked_data.module));
+    auto *jit = executor->create_jit_module(std::move(linked_data.module));
     auto *fn = jit->lookup_function(kFuncName);
     return reinterpret_cast<FuncType>(fn);
   }
@@ -114,6 +116,7 @@ class RefineCoordinatesTest : public ::testing::Test {
     prog_ = std::make_unique<Program>(arch_);
     auto *llvm_prog_ = get_llvm_program(prog_.get());
     tlctx_ = llvm_prog_->get_llvm_context();
+    executor_ = llvm_prog_->get_runtime_executor();
 
     root_snode_ = std::make_unique<SNode>(/*depth=*/0, /*t=*/SNodeType::root);
     const std::vector<Axis> axes = {Axis{0}};
@@ -136,6 +139,7 @@ class RefineCoordinatesTest : public ::testing::Test {
   // ¯\_(ツ)_/¯
   std::unique_ptr<Program> prog_{nullptr};
   TaichiLLVMContext *tlctx_{nullptr};
+  LlvmRuntimeExecutor *executor_{nullptr};
 
   std::unique_ptr<SNode> root_snode_{nullptr};
   SNode *ptr_snode_{nullptr};
@@ -144,9 +148,9 @@ class RefineCoordinatesTest : public ::testing::Test {
 
 TEST_F(RefineCoordinatesTest, Basic) {
   auto *refine_ptr_fn =
-      InvokeRefineCoordinatesBuilder::build(ptr_snode_, tlctx_);
+      InvokeRefineCoordinatesBuilder::build(ptr_snode_, tlctx_, executor_);
   auto *refine_dense_fn =
-      InvokeRefineCoordinatesBuilder::build(dense_snode_, tlctx_);
+      InvokeRefineCoordinatesBuilder::build(dense_snode_, tlctx_, executor_);
 
   constexpr int kRootPhyCoord = 0;
   for (int i = 0; i < kPointerSize; ++i) {

@@ -7,6 +7,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 
 #include <taichi/rhi/device.h>
+#include <taichi/program/kernel_profiler.h>
 
 #include <memory>
 #include <optional>

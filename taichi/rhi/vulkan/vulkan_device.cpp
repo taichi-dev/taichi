@@ -1601,7 +1601,7 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
     
     VkPhysicalDeviceProperties2KHR properties2{};
     properties2.pNext = &info;
-    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
     
     vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
     
@@ -1614,7 +1614,7 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
 
     VkPhysicalDeviceProperties2KHR properties2{};
     properties2.pNext = &info;
-    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
 
     vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
 

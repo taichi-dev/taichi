@@ -153,6 +153,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = *result_buffer_ptr;
   params.device = embedded_device_->device();
+  params.profiler = profiler;
   vulkan_runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
   snode_tree_mgr_ =
       std::make_unique<gfx::SNodeTreeManager>(vulkan_runtime_.get());

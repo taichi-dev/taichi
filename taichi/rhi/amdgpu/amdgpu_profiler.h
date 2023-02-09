@@ -13,6 +13,9 @@ namespace taichi::lang {
 
     class KernelProfilerAMDGPU : public KernelProfilerBase {
         public:
+            KernelProfilerAMDGPU() {
+                event_toolkit_ = std::make_unique<EventToolkitAMDGPU>();
+            }
             std::string get_device_name() override;
 
             bool reinit_with_metrics(const std::vector<std::string> metrics) override;

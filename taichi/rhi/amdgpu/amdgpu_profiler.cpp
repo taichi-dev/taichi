@@ -36,7 +36,7 @@ void KernelProfilerAMDGPU::trace(KernelProfilerBase::TaskHandle &task_handle,
                                uint32_t dynamic_smem_size) {
   int register_per_thread = 0;
   int static_shared_mem_per_block = 0;
-  int max_active_blocks_per_multiprocessor = 0;
+  // int max_active_blocks_per_multiprocessor = 0;
   task_handle = event_toolkit_->start_with_handle(kernel_name);
   KernelProfileTracedRecord record;
 
@@ -46,17 +46,18 @@ void KernelProfilerAMDGPU::trace(KernelProfilerBase::TaskHandle &task_handle,
   AMDGPUDriver::get_instance().kernel_get_attribute(
       &static_shared_mem_per_block,
       HIPfunction_attribute::HIP_FUNC_ATTRIBUTE_SHARED_SIZE_BYTES, kernel);
-  AMDGPUDriver::get_instance().kernel_get_occupancy(
-      &max_active_blocks_per_multiprocessor, kernel, block_size,
-      dynamic_smem_size);
+  // kernel_get_occupancy doesn't work well
+  // AMDGPUDriver::get_instance().kernel_get_occupancy(
+  //     &max_active_blocks_per_multiprocessor, kernel, block_size,
+  //     dynamic_smem_size);
 
   record.name = kernel_name;
   record.register_per_thread = register_per_thread;
   record.shared_mem_per_block = static_shared_mem_per_block + dynamic_smem_size;
   record.grid_size = grid_size;
   record.block_size = block_size;
-  record.active_blocks_per_multiprocessor =
-      max_active_blocks_per_multiprocessor;
+  // record.active_blocks_per_multiprocessor =
+  //    max_active_blocks_per_multiprocessor;
 
   traced_records_.push_back(record);
 }

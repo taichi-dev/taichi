@@ -24,10 +24,11 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
   using IRVisitor::visit;
 
   TaskCodeGenWASM(const CompileConfig &config,
+                  TaichiLLVMContext &tlctx,
                   Kernel *kernel,
                   IRNode *ir,
                   std::unique_ptr<llvm::Module> &&M = nullptr)
-      : TaskCodeGenLLVM(config, kernel, ir, std::move(M)) {
+      : TaskCodeGenLLVM(config, tlctx, kernel, ir, std::move(M)) {
     TI_AUTO_PROF
   }
 
@@ -260,8 +261,8 @@ LLVMCompiledTask KernelCodeGenWASM::compile_task(
     OffloadedStmt *stmt) {
   bool init_flag = module == nullptr;
   std::vector<OffloadedTask> name_list;
-  auto gen =
-      std::make_unique<TaskCodeGenWASM>(config, kernel, ir, std::move(module));
+  auto gen = std::make_unique<TaskCodeGenWASM>(
+      config, get_taichi_llvm_context(), kernel, ir, std::move(module));
 
   name_list.emplace_back(nullptr);
   name_list[0].name = gen->init_taichi_kernel_function();

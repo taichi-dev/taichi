@@ -1053,6 +1053,7 @@ void export_lang(py::module &m) {
 #endif
 
   m.def("host_arch", host_arch);
+  m.def("arch_uses_llvm", arch_uses_llvm);
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
   m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });

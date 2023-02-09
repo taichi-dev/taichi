@@ -842,9 +842,7 @@ class Kernel:
                 runtime_ops.sync()
 
             if has_ret:
-                taichi_arch = impl.current_cfg().arch
-                if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 \
-                        or taichi_arch == _ti_core.Arch.cuda or taichi_arch == _ti_core.Arch.amdgpu:
+                if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
                     ret = self.construct_kernel_ret(
                         t_kernel, ret_dt, () if isinstance(ret_dt, tuple) else
                         (0, ))

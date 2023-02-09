@@ -1602,7 +1602,7 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
     VkPhysicalDeviceProperties2KHR properties2{};
     properties2.pNext = &info;
     properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-    
+
     vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
 
     saturation_num_threads_ = (info.shaderWarpsPerSM * info.shaderSMCount * 32);

@@ -475,14 +475,16 @@ class VulkanCommandList : public CommandList {
   vkapi::IVkCommandBuffer finalize();
 
   vkapi::IVkCommandBuffer vk_command_buffer();
-  vkapi::IVkQueryPool vk_query_pool();
+
+  // Profiler support
+  void begin_profiler_scope(const std::string &kernel_name) override;
+  void end_profiler_scope() override;
 
  private:
   bool finalized_{false};
   VulkanDevice *ti_device_;
   VulkanStream *stream_;
   VkDevice device_;
-  vkapi::IVkQueryPool query_pool_;
   vkapi::IVkCommandBuffer buffer_;
   VulkanPipeline *current_pipeline_{nullptr};
 
@@ -578,13 +580,10 @@ class VulkanStream : public Stream {
 
   void command_sync() override;
 
-  double device_time_elapsed_us() const override;
-
  private:
   struct TrackedCmdbuf {
     vkapi::IVkFence fence;
     vkapi::IVkCommandBuffer buf;
-    vkapi::IVkQueryPool query_pool;
   };
 
   VulkanDevice &device_;
@@ -594,7 +593,6 @@ class VulkanStream : public Stream {
   // Command pools are per-thread
   vkapi::IVkCommandPool command_pool_;
   std::vector<TrackedCmdbuf> submitted_cmdbuffers_;
-  double device_time_elapsed_us_;
 };
 
 struct VulkanCapabilities {
@@ -745,6 +743,24 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
     return vk_device_properties_;
   }
 
+  // Profiler support
+  void profiler_add_sampler(const std::string &kernel_name,
+                            vkapi::IVkQueryPool query_pool) {
+    samplers_.push_back(std::make_pair(kernel_name, query_pool));
+  }
+
+  vkapi::IVkQueryPool profiler_get_last_query_pool() {
+    return samplers_.back().second;
+  }
+
+  size_t profiler_get_sampler_count() override {
+    return samplers_.size();
+  }
+
+  void profiler_sync() override;
+  std::vector<std::pair<std::string, double>> profiler_flush_sampled_time()
+      override;
+
  private:
   friend VulkanSurface;
 
@@ -831,6 +847,10 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                          size_t offset,
                          size_t size,
                          void **mapped_ptr);
+
+  // Profiler support
+  std::vector<std::pair<std::string, vkapi::IVkQueryPool>> samplers_;
+  std::vector<std::pair<std::string, double>> sampled_records_;
 };
 
 }  // namespace vulkan

@@ -158,11 +158,20 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   }
   llvm_context_ = std::make_unique<TaichiLLVMContext>(
       config_, arch_is_cpu(config.arch) ? host_arch() : config.arch);
-  llvm_context_->init_runtime_jit_module();
+  init_runtime_jit_module(llvm_context_->clone_runtime_module());
 }
 
 TaichiLLVMContext *LlvmRuntimeExecutor::get_llvm_context() {
   return llvm_context_.get();
+}
+
+JITModule *LlvmRuntimeExecutor::create_jit_module(
+    std::unique_ptr<llvm::Module> module) {
+  return get_llvm_context()->jit->add_module(std::move(module));
+}
+
+JITModule *LlvmRuntimeExecutor::get_runtime_jit_module() {
+  return runtime_jit_module_;
 }
 
 void LlvmRuntimeExecutor::print_list_manager_info(void *list_manager,
@@ -247,7 +256,7 @@ std::size_t LlvmRuntimeExecutor::get_snode_num_dynamically_allocated(
 
 void LlvmRuntimeExecutor::check_runtime_error(uint64 *result_buffer) {
   synchronize();
-  auto *runtime_jit_module = llvm_context_->runtime_jit_module;
+  auto *runtime_jit_module = get_runtime_jit_module();
   runtime_jit_module->call<void *>("runtime_retrieve_and_reset_error_code",
                                    llvm_runtime_);
   auto error_code =
@@ -367,7 +376,7 @@ DevicePtr LlvmRuntimeExecutor::get_snode_tree_device_ptr(int tree_id) {
 void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
     const LlvmOfflineCache::FieldCacheData &field_cache_data,
     uint64 *result_buffer) {
-  auto *const runtime_jit = llvm_context_->runtime_jit_module;
+  auto *const runtime_jit = get_runtime_jit_module();
   // By the time this creator is called, "this" is already destroyed.
   // Therefore it is necessary to capture members by values.
   size_t root_size = field_cache_data.root_size;
@@ -487,7 +496,7 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
        config_.ndarray_use_cached_allocator,
-       llvm_context_->runtime_jit_module,
+       get_runtime_jit_module(),
        get_llvm_runtime(),
        result_buffer});
 }
@@ -619,7 +628,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     *result_buffer_ptr = (uint64 *)memory_pool->allocate(
         sizeof(uint64) * taichi_result_buffer_entries, 8);
   }
-  auto *const runtime_jit = llvm_context_->runtime_jit_module;
+  auto *const runtime_jit = get_runtime_jit_module();
 
   // Starting random state for the program calculated using the random seed.
   // The seed is multiplied by 1048391 so that two programs with different seeds
@@ -714,6 +723,12 @@ LLVMRuntime *LlvmRuntimeExecutor::get_llvm_runtime() {
 
 void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
   ctx->runtime = get_llvm_runtime();
+}
+
+void LlvmRuntimeExecutor::init_runtime_jit_module(
+    std::unique_ptr<llvm::Module> module) {
+  llvm_context_->init_runtime_module(module.get());
+  runtime_jit_module_ = create_jit_module(std::move(module));
 }
 
 void LlvmRuntimeExecutor::fetch_result_impl(void *dest,

@@ -38,8 +38,9 @@ Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
   return tensor_types_[key].get();
 }
 
-Type *TypeFactory::get_struct_type(const std::vector<StructMember> &elements,
-                                   const std::string &layout) {
+const Type *TypeFactory::get_struct_type(
+    const std::vector<StructMember> &elements,
+    const std::string &layout) {
   std::lock_guard<std::mutex> _(struct_mut_);
   auto key = std::make_pair(elements, layout);
 

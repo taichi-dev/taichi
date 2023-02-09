@@ -159,6 +159,20 @@ class ProgramImpl {
     return result_buffer[i];
   }
 
+  virtual std::string get_kernel_return_data_layout() {
+    return "";
+  };
+
+  virtual std::string get_kernel_argument_data_layout() {
+    return "";
+  };
+
+  virtual const StructType *get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) {
+    return old_ty;
+  }
+
  private:
 };
 

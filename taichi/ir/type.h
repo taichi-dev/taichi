@@ -197,6 +197,8 @@ class TensorType : public Type {
 
   std::string to_string() const override;
 
+  size_t get_element_offset(int ind) const;
+
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
@@ -220,7 +222,12 @@ class StructType : public Type {
 
   std::string to_string() const override;
 
-  Type *get_element_type(const std::vector<int> &indices) const;
+  const std::string &get_layout() const {
+    return layout_;
+  }
+
+  const Type *get_element_type(const std::vector<int> &indices) const;
+  size_t get_element_offset(const std::vector<int> &indices) const;
   const std::vector<StructMember> &elements() const {
     return elements_;
   }

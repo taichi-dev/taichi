@@ -103,6 +103,10 @@ std::string TensorType::to_string() const {
   return s;
 }
 
+size_t TensorType::get_element_offset(int ind) const {
+  return data_type_size(element_) * ind;
+}
+
 std::string StructType::to_string() const {
   std::string s = fmt::format("struct[{}]{{", layout_);
   for (int i = 0; i < elements_.size(); i++) {
@@ -116,7 +120,8 @@ std::string StructType::to_string() const {
   return s;
 }
 
-Type *StructType::get_element_type(const std::vector<int> &indices) const {
+const Type *StructType::get_element_type(
+    const std::vector<int> &indices) const {
   const Type *type_now = this;
   for (auto ind : indices) {
     if (auto tensor_type = type_now->cast<TensorType>()) {
@@ -126,7 +131,23 @@ Type *StructType::get_element_type(const std::vector<int> &indices) const {
       type_now = type_now->as<StructType>()->elements_[ind].type;
     }
   }
-  return (Type *)type_now;
+  return type_now;
+}
+
+size_t StructType::get_element_offset(const std::vector<int> &indices) const {
+  const Type *type_now = this;
+  size_t offset = 0;
+  for (auto ind : indices) {
+    if (auto tensor_type = type_now->cast<TensorType>()) {
+      TI_ASSERT(ind < tensor_type->get_num_elements())
+      offset += tensor_type->get_element_offset(ind);
+      type_now = tensor_type->get_element_type();
+    } else {
+      offset += type_now->as<StructType>()->elements_[ind].offset;
+      type_now = type_now->as<StructType>()->elements_[ind].type;
+    }
+  }
+  return offset;
 }
 
 bool Type::is_primitive(PrimitiveTypeID type) const {

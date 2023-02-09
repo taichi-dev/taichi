@@ -22,8 +22,8 @@ class TypeFactory {
 
   Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-  Type *get_struct_type(const std::vector<StructMember> &elements,
-                        const std::string &layout = "none");
+  const Type *get_struct_type(const std::vector<StructMember> &elements,
+                              const std::string &layout = "none");
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 

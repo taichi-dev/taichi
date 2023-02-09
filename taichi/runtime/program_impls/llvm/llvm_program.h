@@ -240,6 +240,19 @@ class LlvmProgramImpl : public ProgramImpl {
     return cache_reader_;
   }
 
+  std::string get_kernel_return_data_layout() override {
+    return get_llvm_context()->get_data_layout_string();
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    return get_llvm_context()->get_data_layout_string();
+  };
+  const StructType *get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    return get_llvm_context()->get_struct_type_with_data_layout(old_ty, layout);
+  }
+
   // TODO(zhanlue): Rearrange llvm::Context's ownership
   //
   // In LLVM backend, most of the compiled information are stored in

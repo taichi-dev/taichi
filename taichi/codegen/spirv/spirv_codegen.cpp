@@ -1254,8 +1254,7 @@ class TaskCodegen : public IRVisitor {
         "subgroupInclusiveXor"};
 
     const std::unordered_set<std::string> shuffle_ops{
-        "subgroupShuffleDown", "subgroupShuffleUp", "subgroupShuffle"
-    };
+        "subgroupShuffleDown", "subgroupShuffleUp", "subgroupShuffle"};
 
     if (stmt->func_name == "workgroupBarrier") {
       ir_->make_inst(

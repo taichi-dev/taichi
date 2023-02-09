@@ -55,7 +55,7 @@ class SceneLines final : public Renderable {
 
   uint64_t lines_count_{0};
 
-  std::unique_ptr<taichi::lang::Pipeline> quad_expand_pipeline_{nullptr};
+  taichi::lang::Pipeline *quad_expand_pipeline_{nullptr};
 
   std::unique_ptr<taichi::lang::DeviceAllocationGuard> vbo_translated_{nullptr};
   std::unique_ptr<taichi::lang::DeviceAllocationGuard> ibo_translated_{nullptr};

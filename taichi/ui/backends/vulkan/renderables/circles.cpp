@@ -32,7 +32,6 @@ Circles::Circles(AppContext *app_context, VertexAttributes vbo_attrs) {
   config.fragment_shader_path =
       app_context->config.package_path + "/shaders/Circles_vk_frag.spv";
   config.vertex_input_rate_instance = true;
-  config.vbo_attrs = vbo_attrs;
 
   Renderable::init(config, app_context);
 }
@@ -42,7 +41,7 @@ void Circles::record_this_frame_commands(CommandList *command_list) {
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);
   resource_set_->buffer(0, uniform_buffer_->get_ptr());
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
 

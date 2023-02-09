@@ -238,13 +238,13 @@ class StructType : public Type {
 
   int get_num_elements() const {
     int num = 0;
-    for (const auto &[type, _, __] : elements_) {
-      if (auto struct_type = type->cast<StructType>()) {
+    for (const auto &element : elements_) {
+      if (auto struct_type = element.type->cast<StructType>()) {
         num += struct_type->get_num_elements();
-      } else if (auto tensor_type = type->cast<TensorType>()) {
+      } else if (auto tensor_type = element.type->cast<TensorType>()) {
         num += tensor_type->get_num_elements();
       } else {
-        TI_ASSERT(type->is<PrimitiveType>());
+        TI_ASSERT(element.type->is<PrimitiveType>());
         num += 1;
       }
     }

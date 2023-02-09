@@ -104,14 +104,15 @@ std::string TensorType::to_string() const {
 }
 
 std::string StructType::to_string() const {
-  std::string s = "struct(";
+  std::string s = fmt::format("struct[{}]{{", layout_);
   for (int i = 0; i < elements_.size(); i++) {
     if (i) {
       s += ", ";
     }
-    s += std::to_string(i) + ": " + elements_[i]->to_string();
+    s += fmt::format("{}({}, at {}B): {}", i, elements_[i].name,
+                     elements_[i].offset, elements_[i].type->to_string());
   }
-  s += ")";
+  s += "}";
   return s;
 }
 
@@ -122,7 +123,7 @@ Type *StructType::get_element_type(const std::vector<int> &indices) const {
       TI_ASSERT(ind < tensor_type->get_num_elements())
       type_now = tensor_type->get_element_type();
     } else {
-      type_now = type_now->as<StructType>()->elements_[ind];
+      type_now = type_now->as<StructType>()->elements_[ind].type;
     }
   }
   return (Type *)type_now;

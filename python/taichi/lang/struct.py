@@ -669,14 +669,14 @@ class StructType(CompoundType):
                 self.methods = dtype
             elif isinstance(dtype, StructType):
                 self.members[k] = dtype
-                elements.append(dtype.dtype)
+                elements.append([dtype.dtype, k])
             elif isinstance(dtype, MatrixType):
                 self.members[k] = dtype
-                elements.append(dtype.tensor_type.ptr)
+                elements.append([dtype.tensor_type.ptr, k])
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
-                elements.append(dtype)
+                elements.append([dtype, k])
         self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
             elements)
 

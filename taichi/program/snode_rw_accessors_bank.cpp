@@ -64,6 +64,16 @@ void SNodeRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
   (*writer_)(prog_->compile_config(), launch_ctx);
 }
 
+// for int32 and int64
+void SNodeRwAccessorsBank::Accessors::write_uint(const std::vector<int> &I,
+                                                 uint64 val) {
+  auto launch_ctx = writer_->make_launch_context();
+  set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
+  launch_ctx.set_arg_uint(snode_->num_active_indices, val);
+  prog_->synchronize();
+  (*writer_)(prog_->compile_config(), launch_ctx);
+}
+
 int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();

@@ -1591,6 +1591,42 @@ void VulkanDevice::init_vulkan_structs(Params &params) {
              "Failed to allocate initial descriptor pool");
 
   vkGetPhysicalDeviceProperties(physical_device_, &vk_device_properties_);
+
+  saturation_num_threads_ = 65536;
+  if (vk_caps().has_nv_sm_bultins) {
+    VkPhysicalDeviceShaderSMBuiltinsPropertiesNV info{};
+    info.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV;
+    info.pNext = nullptr;
+    
+    VkPhysicalDeviceProperties2KHR properties2{};
+    properties2.pNext = &info;
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+    
+    vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
+    
+    saturation_num_threads_ = (info.shaderWarpsPerSM * info.shaderSMCount * 32);
+  } else if (vk_caps().has_amd_shader_core_properties) {
+    VkPhysicalDeviceShaderCorePropertiesAMD info{};
+    info.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_AMD;
+    info.pNext = nullptr;
+
+    VkPhysicalDeviceProperties2KHR properties2{};
+    properties2.pNext = &info;
+    properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+
+    vkGetPhysicalDeviceProperties2(physical_device_, &properties2);
+
+    // 2x the concurrent hardware threads
+    saturation_num_threads_ =
+        info.shaderEngineCount * info.shaderArraysPerEngineCount *
+        info.computeUnitsPerShaderArray * info.simdPerComputeUnit *
+        info.wavefrontsPerSimd * info.wavefrontSize;
+  }
+
+  // Add some extra to ensure proper saturation
+  saturation_num_threads_ += saturation_num_threads_ >> 1;
 }
 
 VulkanDevice::~VulkanDevice() {
@@ -1957,6 +1993,10 @@ Stream *VulkanDevice::get_graphics_stream() {
     return stream_map.at(tid).get();
   }
   return iter->second.get();
+}
+
+size_t VulkanDevice::get_saturation_num_threads() {
+  return saturation_num_threads_;
 }
 
 void VulkanDevice::wait_idle() {

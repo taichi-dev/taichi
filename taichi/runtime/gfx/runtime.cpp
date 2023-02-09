@@ -501,11 +501,14 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
 
   // Record commands
   const auto &task_attribs = ti_kernel->ti_kernel_attribs().tasks_attribs;
-
+  const int saturation_num_threads = int(device_->get_saturation_num_threads());
+  
   for (int i = 0; i < task_attribs.size(); ++i) {
     const auto &attribs = task_attribs[i];
     auto vp = ti_kernel->get_pipeline(i);
-    const int group_x = (attribs.advisory_total_num_threads +
+    const int group_x = ((attribs.hint_num_groups_estimated
+                              ? saturation_num_threads
+                              : attribs.advisory_total_num_threads) +
                          attribs.advisory_num_threads_per_group - 1) /
                         attribs.advisory_num_threads_per_group;
     std::unique_ptr<ShaderResourceSet> bindings =

@@ -741,6 +741,11 @@ class TI_DLL_EXPORT Device {
   // Wait for all tasks to complete (task from all streams)
   virtual void wait_idle() = 0;
 
+  // Return the recommended number of threads for max GPU saturation
+  virtual size_t get_saturation_num_threads() {
+    return 65536;
+  }
+
   /**
    * Create a new shader resource set
    * @return The new shader resource set pointer

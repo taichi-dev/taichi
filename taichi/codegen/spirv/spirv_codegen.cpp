@@ -1870,6 +1870,7 @@ class TaskCodegen : public IRVisitor {
       }
       total_elems = ir_->sub(end_expr_value, begin_expr_value);
       task_attribs_.advisory_total_num_threads = kMaxNumThreadsGridStrideLoop;
+      task_attribs_.hint_num_groups_estimated = true;
     }
     task_attribs_.advisory_num_threads_per_group = stmt->block_dim;
     ir_->debug_name(spv::OpName, begin_expr_value, "begin_expr_value");
@@ -1893,15 +1894,7 @@ class TaskCodegen : public IRVisitor {
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
                      task_attribs_.advisory_num_threads_per_group, true)));
-    /*
-    const int group_x = (task_attribs_.advisory_total_num_threads +
-                         task_attribs_.advisory_num_threads_per_group - 1) /
-                        task_attribs_.advisory_num_threads_per_group;
-    spirv::Value total_invocs = ir_->uint_immediate_number(
-        ir_->i32_type(), group_x * task_attribs_.advisory_num_threads_per_group,
-        false);
-        */
-
+    
     ir_->debug_name(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)
@@ -1953,6 +1946,7 @@ class TaskCodegen : public IRVisitor {
     task_attribs_.task_type = OffloadedTaskType::struct_for;
     task_attribs_.advisory_total_num_threads = 65536;
     task_attribs_.advisory_num_threads_per_group = 128;
+    task_attribs_.hint_num_groups_estimated = true;
 
     // The computation for a single work is wrapped inside a function, so that
     // we can do grid-strided loop.

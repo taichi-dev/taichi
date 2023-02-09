@@ -80,6 +80,7 @@ class TI_DLL_EXPORT GfxRuntime {
   struct Params {
     uint64_t *host_result_buffer{nullptr};
     Device *device{nullptr};
+    KernelProfilerBase *profiler{nullptr};
   };
 
   explicit GfxRuntime(const Params &params);
@@ -142,6 +143,7 @@ class TI_DLL_EXPORT GfxRuntime {
 
   Device *device_{nullptr};
   uint64_t *const host_result_buffer_;
+  KernelProfilerBase *profiler_;
 
   std::unique_ptr<PipelineCache> backend_cache_{nullptr};
 

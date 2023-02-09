@@ -317,7 +317,9 @@ Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
-    : device_(params.device), host_result_buffer_(params.host_result_buffer) {
+    : device_(params.device),
+      host_result_buffer_(params.host_result_buffer),
+      profiler_(params.profiler) {
   TI_ASSERT(host_result_buffer_ != nullptr);
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
@@ -395,6 +397,23 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
 
 void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
   auto *ti_kernel = ti_kernels_[handle.id_].get();
+
+#if defined(__APPLE__)
+  if (profiler_) {
+    const int apple_max_query_pool_count = 32;
+    int task_count = ti_kernel->ti_kernel_attribs().tasks_attribs.size();
+    if (task_count > apple_max_query_pool_count) {
+      TI_WARN(
+          "Cannot concurrently profile more than 32 tasks in a single Taichi "
+          "kernel. Profiling aborted.");
+      profiler_ = nullptr;
+    } else if (device_->profiler_get_sampler_count() + task_count >
+               apple_max_query_pool_count) {
+      flush();
+      device_->profiler_sync();
+    }
+  }
+#endif
 
   std::unique_ptr<DeviceAllocationGuard> args_buffer{nullptr},
       ret_buffer{nullptr};
@@ -538,7 +557,17 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     RhiResult status = current_cmdlist_->bind_shader_resources(bindings.get());
     TI_ERROR_IF(status != RhiResult::success,
                 "Resource binding error : RhiResult({})", status);
+
+    if (profiler_) {
+      current_cmdlist_->begin_profiler_scope(attribs.name);
+    }
+
     status = current_cmdlist_->dispatch(group_x);
+
+    if (profiler_) {
+      current_cmdlist_->end_profiler_scope();
+    }
+
     TI_ERROR_IF(status != RhiResult::success, "Dispatch error : RhiResult({})",
                 status);
     current_cmdlist_->memory_barrier();
@@ -605,6 +634,14 @@ void GfxRuntime::transition_image(DeviceAllocation image, ImageLayout layout) {
 void GfxRuntime::synchronize() {
   flush();
   device_->wait_idle();
+  // Profiler support
+  if (profiler_) {
+    device_->profiler_sync();
+    auto sampled_records = device_->profiler_flush_sampled_time();
+    for (auto &record : sampled_records) {
+      profiler_->insert_record(record.first, record.second);
+    }
+  }
   ctx_buffers_.clear();
   ndarrays_in_use_.clear();
   fflush(stdout);
@@ -640,6 +677,7 @@ void GfxRuntime::ensure_current_cmdlist() {
     current_cmdlist_ = std::move(cmdlist);
   }
 }
+
 void GfxRuntime::submit_current_cmdlist_if_timeout() {
   // If we have accumulated some work but does not require sync
   // and if the accumulated cmdlist has been pending for some time
@@ -675,7 +713,6 @@ void GfxRuntime::init_nonroot_buffers() {
                        /*data=*/0);
   cmdlist->buffer_fill(listgen_buffer_->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
-
   stream->submit_synced(cmdlist.get());
 }
 

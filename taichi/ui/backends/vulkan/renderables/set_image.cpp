@@ -189,7 +189,7 @@ void SetImage::record_this_frame_commands(CommandList *command_list) {
   auto raster_state = app_context_->device().create_raster_resources_unique();
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(), 0);
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
   command_list->draw(6);

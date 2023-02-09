@@ -731,4 +731,28 @@ void LlvmRuntimeExecutor::init_runtime_jit_module(
   runtime_jit_module_ = create_jit_module(std::move(module));
 }
 
+void LlvmRuntimeExecutor::fetch_result_impl(void *dest,
+                                            char *result_buffer,
+                                            int offset,
+                                            int size) {
+  synchronize();
+  if (config_.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDADriver::get_instance().memcpy_device_to_host(
+        dest, result_buffer + offset, size);
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else if (config_.arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    AMDGPUDriver::get_instance().memcpy_device_to_host(
+        dest, result_buffer + offset, size);
+#else
+    TI_NOT_IMPLEMENTED;
+#endif
+  } else {
+    memcpy(dest, result_buffer + offset, size);
+  }
+}
+
 }  // namespace taichi::lang

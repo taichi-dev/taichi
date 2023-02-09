@@ -64,11 +64,13 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 // default profiling toolkit
 class EventToolkitCUDA : public EventToolkitBase {
  public:
-  void update_record(uint32_t records_size_after_sync,
-                     std::vector<KernelProfileTracedRecord> &traced_records) override;
+  void update_record(
+      uint32_t records_size_after_sync,
+      std::vector<KernelProfileTracedRecord> &traced_records) override;
   KernelProfilerBase::TaskHandle start_with_handle(
       const std::string &kernel_name) override;
-  void update_timeline(std::vector<KernelProfileTracedRecord> &traced_records) override;
+  void update_timeline(
+      std::vector<KernelProfileTracedRecord> &traced_records) override;
 };
 
 }  // namespace taichi::lang

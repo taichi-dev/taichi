@@ -131,7 +131,7 @@ void AMDGPUContext::launch(void *func,
     bool valid =
         offline_cache::try_demangle_name(task_name, primal_task_name, key);
     profiler_amdgpu->trace(task_handle, valid ? primal_task_name : task_name,
-                         func, grid_dim, block_dim, 0);
+                           func, grid_dim, block_dim, 0);
   }
   auto pack_size = get_args_byte(arg_sizes);
   char *packed_arg = (char *)std::malloc(pack_size);

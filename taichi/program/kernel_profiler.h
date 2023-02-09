@@ -105,15 +105,17 @@ class KernelProfilerBase {
 
 class EventToolkitBase {
  public:
-  virtual void update_record(uint32_t records_size_after_sync,
-                     std::vector<KernelProfileTracedRecord> &traced_records) {
-                      TI_NOT_IMPLEMENTED;
-                     };
+  virtual void update_record(
+      uint32_t records_size_after_sync,
+      std::vector<KernelProfileTracedRecord> &traced_records) {
+    TI_NOT_IMPLEMENTED;
+  };
   virtual KernelProfilerBase::TaskHandle start_with_handle(
       const std::string &kernel_name) {
-        TI_NOT_IMPLEMENTED;
-      };
-  virtual void update_timeline(std::vector<KernelProfileTracedRecord> &traced_records) {
+    TI_NOT_IMPLEMENTED;
+  };
+  virtual void update_timeline(
+      std::vector<KernelProfileTracedRecord> &traced_records) {
     TI_NOT_IMPLEMENTED;
   };
 
@@ -140,7 +142,7 @@ class EventToolkitBase {
   void *get_base_event() const {
     return base_event_;
   }
-  virtual ~EventToolkitBase() {
+  virtual ~EventToolkitBase(){
 
   };
 };

@@ -785,7 +785,7 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   VkQueue graphics_queue_{VK_NULL_HANDLE};
   uint32_t graphics_queue_family_index_{0};
-  
+
   size_t saturation_num_threads_{0};
 
   struct ThreadLocalStreams;

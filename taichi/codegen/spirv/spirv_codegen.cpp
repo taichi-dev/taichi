@@ -1894,7 +1894,7 @@ class TaskCodegen : public IRVisitor {
                  ir_->uint_immediate_number(
                      ir_->u32_type(),
                      task_attribs_.advisory_num_threads_per_group, true)));
-    
+
     ir_->debug_name(spv::OpName, total_invocs, total_invocs_name);
 
     // Must get init label after making value(to make sure they are correct)

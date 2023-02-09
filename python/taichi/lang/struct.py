@@ -5,13 +5,14 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiRuntimeTypeError, TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
                               python_scope, taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
+from taichi.types.utils import is_signed
 
 
 class Struct(TaichiOperations):
@@ -716,6 +717,32 @@ class StructType(CompoundType):
                 d[name] = expr.Expr(
                     _ti_core.make_get_element_expr(func_ret.ptr,
                                                    ret_index + (index, )))
+
+        return Struct(d)
+
+    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                d[name] = dtype.from_kernel_struct_ret(t_kernel,
+                                                       ret_index + (index, ))
+            else:
+                if id(dtype) in primitive_types.integer_type_ids:
+                    if is_signed(cook_dtype(ret_dt)):
+                        d[name] = t_kernel.get_struct_ret_int(ret_index +
+                                                              (index, ))
+                    else:
+                        d[name] = t_kernel.get_struct_ret_uint(ret_index +
+                                                               (index, ))
+                elif id(dtype) in primitive_types.real_type_ids:
+                    d[name] = t_kernel.get_struct_ret_float(ret_index +
+                                                            (index, ))
+                else:
+                    raise TaichiRuntimeTypeError(
+                        f"Invalid return type on index={ret_index + (index, )}"
+                    )
 
         return Struct(d)
 

@@ -324,6 +324,7 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
   physical_coordinate_ty = get_runtime_type(kLLVMPhysicalCoordinatesName);
 
   kernel_name = kernel->name + "_kernel";
+  current_callable = kernel;
 }
 
 void TaskCodeGenLLVM::visit(DecorationStmt *stmt) {
@@ -1274,18 +1275,10 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
   if (std::any_of(types.begin(), types.end(),
                   [](const DataType &t) { return t.is_pointer(); })) {
     TI_NOT_IMPLEMENTED
-  } else if (current_real_func) {
-    TI_ASSERT(stmt->values.size() ==
-              current_real_func->ret_type->get_num_elements());
-    create_return(stmt->values);
   } else {
-    TI_ASSERT(stmt->values.size() <= taichi_max_num_ret_value);
-    int idx{0};
-    for (auto &value : stmt->values) {
-      call("RuntimeContext_store_result", get_context(),
-           bitcast_to_u64(llvm_val[value], value->ret_type),
-           tlctx->get_constant<int32>(idx++));
-    }
+    TI_ASSERT(stmt->values.size() ==
+              current_callable->ret_type->get_num_elements());
+    create_return(stmt->values);
   }
   builder->CreateBr(final_block);
   returned = true;
@@ -2689,11 +2682,11 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     auto guard = get_function_creation_guard(
         {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
         stmt->func->get_name());
-    Function *old_real_func = current_real_func;
-    current_real_func = stmt->func;
+    Callable *old_callable = current_callable;
+    current_callable = stmt->func;
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
-    current_real_func = old_real_func;
+    current_callable = old_callable;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
   auto *new_ctx = call("allocate_runtime_context", get_runtime());
@@ -2765,7 +2758,7 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
 
 void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
   auto buffer = call("RuntimeContext_get_result_buffer", get_context());
-  auto ret_type = current_real_func->ret_type;
+  auto ret_type = current_callable->ret_type;
   auto buffer_type = tlctx->get_data_type(ret_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));

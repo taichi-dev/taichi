@@ -61,7 +61,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   bool returned{false};
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> struct_for_tls_sizes;
-  Function *current_real_func{nullptr};
+  Callable *current_callable{nullptr};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 

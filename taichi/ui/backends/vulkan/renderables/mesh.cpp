@@ -13,11 +13,11 @@ Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UniformBufferObject);
   config.blending = true;
+  config.depth = true;
   config.fragment_shader_path =
       app_context->config.package_path + "/shaders/Mesh_vk_frag.spv";
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/Mesh_vk_vert.spv";
-  config.vbo_attrs = vbo_attrs;
 
   Renderable::init(config, app_context);
 }
@@ -94,7 +94,7 @@ void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
   resource_set_->rw_buffer(1, storage_buffer_->get_ptr(0));
   resource_set_->rw_buffer(2, mesh_storage_buffer_->get_ptr(0));
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
 

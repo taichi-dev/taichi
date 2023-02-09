@@ -37,12 +37,45 @@ class TI_DLL_EXPORT AppContext {
 
   AppConfig config;
 
+  struct RasterPipelineConfig {
+    std::string frag_path;
+    std::string vert_path;
+    taichi::lang::TopologyType prim_topology{
+        taichi::lang::TopologyType::Triangles};
+    bool depth{false};
+    taichi::lang::PolygonMode polygon_mode{taichi::lang::PolygonMode::Fill};
+    bool blend{true};
+    bool vbo_instanced{false};
+  };
+
+  // Get a raster pipeline with the given fragment shader and vertex shader &
+  // options.
+  // - This function will cache the pipeline for future use.
+  // - This function will use the default GGUI vertex input format
+  taichi::lang::Pipeline *get_raster_pipeline(
+      const RasterPipelineConfig &config);
+
+  // Get a raster pipeline with the given fragment shader and vertex shader &
+  // options.
+  // - This function will cache the pipeline for future use
+  // - This function will use the provided vertex input format
+  taichi::lang::Pipeline *get_customized_raster_pipeline(
+      const RasterPipelineConfig &config,
+      const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
+      const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs);
+
+  // Get a compute pipeline with the given compute shader
+  // - This function will cache the pipeline for future use
+  taichi::lang::Pipeline *get_compute_pipeline(const std::string &shader_path);
+
  private:
   std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator>
       embedded_vulkan_device_{nullptr};
 
   // not owned
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
+
+  std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
 
   TaichiWindow *taichi_window_{nullptr};
 

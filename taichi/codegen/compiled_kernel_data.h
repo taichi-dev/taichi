@@ -40,6 +40,18 @@ class CompiledKernelDataFile {
     return src_code_;
   }
 
+  const Arch &arch() const {
+    return arch_;
+  }
+
+  const std::string &metadata() const {
+    return metadata_;
+  }
+
+  const std::string &src_code() const {
+    return src_code_;
+  }
+
  private:
   bool update_hash();
 
@@ -58,6 +70,7 @@ class CompiledKernelData {
     kCorruptedFile,
     kParseMetadataFailed,
     kParseSrcCodeFailed,
+    kArchNotMatched,
     kSerMetadataFailed,
     kSerSrcCodeFailed,
     kIOStreamError,
@@ -87,8 +100,7 @@ class CompiledKernelData {
     return Err::kNoError;
   }
 
-  static std::unique_ptr<CompiledKernelData> load(std::istream &is,
-                                                  Err *p_err = nullptr);
+  static std::unique_ptr<CompiledKernelData> load(std::istream &is, Err *p_err);
 
  protected:
   virtual Err load_impl(const CompiledKernelDataFile &file) = 0;

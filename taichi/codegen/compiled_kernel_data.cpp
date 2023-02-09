@@ -62,6 +62,7 @@ CompiledKernelDataFile::Err CompiledKernelDataFile::load(std::istream &is) {
     arch_ = static_cast<Arch>(arch);
     metadata_.resize(metadata_size);
     src_code_.resize(src_code_size);
+    hash_.resize(kHashSize);
     io_success = is.read((char *)metadata_.data(), metadata_size) &&
                  is.read((char *)src_code_.data(), src_code_size) &&
                  is.read((char *)hash_.data(), kHashSize);
@@ -91,31 +92,41 @@ bool CompiledKernelDataFile::update_hash() {
   return true;
 }
 
-#if !defined(TI_WITH_LLVM)
+// FIXME: Uncomment after impl LLVMCompiledKernelData
+// #if !defined(TI_WITH_LLVM)
 CompiledKernelData::Creator *const CompiledKernelData::llvm_creator = nullptr;
-#endif
+// #endif
 
-#if !defined(TI_WITH_VULKAN) && !defined(TI_WITH_OPENGL) && \
-    !defined(TI_WITH_DX11) && !defined(TI_WITH_METAL)
+// FIXME: Uncomment after impl SpirvCompiledKernelData
+// #if !defined(TI_WITH_VULKAN) && !defined(TI_WITH_OPENGL) && \
+//     !defined(TI_WITH_DX11) && !defined(TI_WITH_METAL)
 CompiledKernelData::Creator *const CompiledKernelData::spriv_creator = nullptr;
-#endif
+// #endif
 
 CompiledKernelData::Err CompiledKernelData::load(std::istream &is) {
-  Err err = Err::kNoError;
-  CompiledKernelDataFile file;
-  if (err = translate_err(file.load(is)); err != Err::kNoError) {
-    return err;
+  try {
+    Err err = Err::kNoError;
+    CompiledKernelDataFile file;
+    if (err = translate_err(file.load(is)); err != Err::kNoError) {
+      return err;
+    }
+    return load_impl(file);
+  } catch (std::bad_alloc &) {
+    return Err::kOutOfMemeory;
   }
-  return load_impl(file);
 }
 
 CompiledKernelData::Err CompiledKernelData::dump(std::ostream &os) const {
-  Err err = Err::kNoError;
-  CompiledKernelDataFile file;
-  if (err = translate_err(file.dump(os)); err != Err::kNoError) {
-    return err;
+  try {
+    Err err = Err::kNoError;
+    CompiledKernelDataFile file;
+    if (err = dump_impl(file); err != Err::kNoError) {
+      return err;
+    }
+    return translate_err(file.dump(os));
+  } catch (std::bad_alloc &) {
+    return Err::kOutOfMemeory;
   }
-  return dump_impl(file);
 }
 
 // static functions
@@ -124,19 +135,20 @@ std::unique_ptr<CompiledKernelData> CompiledKernelData::load(std::istream &is,
   Err err = Err::kNoError;
   CompiledKernelDataFile file;
   std::unique_ptr<CompiledKernelData> result{nullptr};
-  err = translate_err(file.load(is));
-  if (err == Err::kNoError) {
-    result = create(file.arch(), err);
-  }
-  if (err == Err::kNoError) {
-    TI_ASSERT(result);
-    err = result->load_impl(file);
-  }
-  if (err != Err::kNoError) {
-    if (p_err) {
-      *p_err = err;
+  try {
+    err = translate_err(file.load(is));
+    if (err == Err::kNoError) {
+      result = create(file.arch(), err);
     }
-    return nullptr;
+    if (err == Err::kNoError) {
+      TI_ASSERT(result);
+      err = result->load_impl(file);
+    }
+  } catch (std::bad_alloc &) {
+    err = Err::kOutOfMemeory;
+  }
+  if (p_err) {
+    *p_err = err;
   }
   return result;
 }

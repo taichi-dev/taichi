@@ -711,6 +711,7 @@ void ti_launch_kernel(TiRuntime runtime,
         runtime_context.set_arg(i, arg.value.i32);
         break;
       }
+      case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
         runtime_context.set_arg(i, arg.value.f32);
         break;
@@ -786,6 +787,7 @@ void ti_launch_compute_graph(TiRuntime runtime,
                                          arg.argument.value.i32)));
         break;
       }
+      case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
         arg_map.emplace(std::make_pair(
             arg.name,

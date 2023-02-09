@@ -461,7 +461,15 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   // Texture wrapped around a `handle.image`.
   TI_ARGUMENT_TYPE_TEXTURE = 3,
+  // 16-bit IEEE 754 half-precision floating-point number.
+  TI_ARGUMENT_TYPE_F16 = 4,
+  // 16-bit one's complement signed integer.
+  TI_ARGUMENT_TYPE_I16 = 5,
+  // 16-bit one's complement unsigned integer.
+  TI_ARGUMENT_TYPE_U16 = 6,
+
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
+
 } TiArgumentType;
 
 // BitField `TiMemoryUsageFlags` (1.4.0)
@@ -780,6 +788,11 @@ typedef union TiArgumentValue {
   int32_t i32;
   // Value of a 32-bit IEEE 754 single-precision floating-poing number.
   float f32;
+  // Value of a 16-bit one's complement signed integer.
+  int16_t i16;
+  // Value of a 16-bit one's complement unsigned integer.
+  uint16_t u16;
+
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.

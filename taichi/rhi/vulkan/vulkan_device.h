@@ -7,12 +7,6 @@
 
 #include "vk_mem_alloc.h"
 
-#ifdef ANDROID
-#include <android/native_window_jni.h>
-#else
-#include <GLFW/glfw3.h>
-#endif
-
 #include <memory>
 #include <optional>
 #include <list>
@@ -524,11 +518,6 @@ class VulkanSurface : public Surface {
   VkSurfaceKHR surface_{VK_NULL_HANDLE};
   VkSwapchainKHR swapchain_{VK_NULL_HANDLE};
   vkapi::IVkSemaphore image_available_{nullptr};
-#ifdef ANDROID
-  ANativeWindow *window_{nullptr};
-#else
-  GLFWwindow *window_{nullptr};
-#endif
   BufferFormat image_format_{BufferFormat::unknown};
 
   uint32_t image_index_{0};

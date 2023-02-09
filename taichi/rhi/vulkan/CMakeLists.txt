@@ -24,7 +24,6 @@ target_include_directories(${VULKAN_RHI}
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/volk
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
-    ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
 
 # By specifying SYSTEM, we suppressed the warnings from third-party headers.

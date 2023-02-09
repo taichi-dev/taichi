@@ -5,6 +5,8 @@
 #ifdef ANDROID
 #define VK_KHR_android_surface 1
 #include "vulkan/vulkan_android.h"
+#else
+#include "GLFW/glfw3.h"
 #endif  // ANDROID
 
 VulkanRuntime::VulkanRuntime() : GfxRuntime(taichi::Arch::vulkan) {

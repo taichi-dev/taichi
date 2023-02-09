@@ -15,11 +15,12 @@ bool KernelProfilerAMDGPU::reinit_with_metrics(
     TI_NOT_IMPLEMENTED
 }
 
-bool set_profiler_toolkit(std::string toolkit_name) override {
+bool set_profiler_toolkit(std::string toolkit_name) {
   if (toolkit_name.compare("default") == 0) {
     return true;
   }
   TI_WARN("Only default(event) profiler is allowed on AMDGPU");
+  return false;
 }
 
 KernelProfilerBase::TaskHandle KernelProfilerAMDGPU::start_with_handle(
@@ -97,6 +98,7 @@ bool KernelProfilerAMDGPU::statistics_on_traced_records() {
 void KernelProfilerAMDGPU::sync() {
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
 }
+
 void KernelProfilerAMDGPU::update() {
   event_toolkit_->update_record(records_size_after_sync_, traced_records_);
   event_toolkit_->update_timeline(traced_records_);

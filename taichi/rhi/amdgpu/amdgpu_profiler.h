@@ -36,6 +36,7 @@ namespace taichi::lang {
 
         private:
             std::unique_ptr<EventToolkitAMDGPU> event_toolkit_{nullptr};
+            uint32_t records_size_after_sync_{0};
     };
 
     class EventToolkitAMDGPU : public EventToolkitBase {

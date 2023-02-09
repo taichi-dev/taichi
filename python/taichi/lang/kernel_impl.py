@@ -889,7 +889,7 @@ class Kernel:
             return t_kernel.get_struct_ret_uint(index)
         if id(ret_type) in primitive_types.real_type_ids:
             return t_kernel.get_struct_ret_float(index)
-        raise TaichiRuntimeError("Invalid return type!")
+        raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)

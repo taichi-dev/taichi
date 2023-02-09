@@ -11,8 +11,8 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiRuntimeError, TaichiRuntimeTypeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
@@ -1519,7 +1519,8 @@ class MatrixType(CompoundType):
         elif id(self.dtype) in primitive_types.real_type_ids:
             get_ret_func = t_kernel.get_struct_ret_float
         else:
-            raise TaichiRuntimeError("Invalid return type")
+            raise TaichiRuntimeTypeError(
+                f"Invalid return type on index={ret_index}")
         return self(
             [get_ret_func(ret_index + (i, )) for i in range(self.m * self.n)])
 

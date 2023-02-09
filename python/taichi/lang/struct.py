@@ -5,7 +5,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiSyntaxError
+from taichi.lang.exception import TaichiRuntimeTypeError, TaichiSyntaxError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
@@ -740,7 +740,9 @@ class StructType(CompoundType):
                     d[name] = t_kernel.get_struct_ret_float(ret_index +
                                                             (index, ))
                 else:
-                    raise TaichiRuntimeError("Invalid return type")
+                    raise TaichiRuntimeTypeError(
+                        f"Invalid return type on index={ret_index + (index, )}"
+                    )
 
         return Struct(d)
 

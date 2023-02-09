@@ -229,7 +229,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
     const std::vector<LlvmLaunchArgInfo> &args,
     LLVMCompiledKernel data) const {
   TI_AUTO_PROF;
-  auto jit_module = tlctx_->create_jit_module(std::move(data.module));
+  auto jit_module = executor_->create_jit_module(std::move(data.module));
   using TaskFunc = int32 (*)(void *);
   std::vector<TaskFunc> task_funcs;
   task_funcs.reserve(data.tasks.size());

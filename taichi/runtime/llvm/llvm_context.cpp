@@ -330,10 +330,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
 }
 
-void TaichiLLVMContext::init_runtime_jit_module() {
-  update_runtime_jit_module(clone_runtime_module());
-}
-
 // Note: runtime_module = init_module < struct_module
 
 std::unique_ptr<llvm::Module> TaichiLLVMContext::clone_runtime_module() {
@@ -769,11 +765,6 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-JITModule *TaichiLLVMContext::create_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  return jit->add_module(std::move(module));
-}
-
 void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
                                                std::string key,
                                                int val) {
@@ -900,10 +891,9 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   TI_INFO("Slimmed libdevice written to {}", output_fn);
 };
 
-void TaichiLLVMContext::update_runtime_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  if (arch_ == Arch::cuda) {
-    for (auto &f : *module) {
+void TaichiLLVMContext::init_runtime_module(llvm::Module *runtime_module) {
+  if (config_.arch == Arch::cuda) {
+    for (auto &f : *runtime_module) {
       bool is_kernel = false;
       const std::string func_name = f.getName().str();
       if (starts_with(func_name, "runtime_")) {
@@ -913,25 +903,24 @@ void TaichiLLVMContext::update_runtime_jit_module(
 
       if (!is_kernel && !f.isDeclaration())
         // set declaration-only functions as internal linking to avoid
-        // duplicated symbols and to remove external symbol dependencies such as
-        // std::sin
+        // duplicated symbols and to remove external symbol dependencies such
+        // as std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
     }
   }
 
-  if (arch_ == Arch::amdgpu) {
+  if (config_.arch == Arch::amdgpu) {
 #ifdef TI_WITH_AMDGPU
     llvm::legacy::PassManager module_pass_manager;
     module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
-    module_pass_manager.run(*module);
+    module_pass_manager.run(*runtime_module);
 #endif
   }
 
-  eliminate_unused_functions(module.get(), [](std::string func_name) {
+  eliminate_unused_functions(runtime_module, [](std::string func_name) {
     return starts_with(func_name, "runtime_") ||
            starts_with(func_name, "LLVMRuntime_");
   });
-  runtime_jit_module = create_jit_module(std::move(module));
 }
 
 void TaichiLLVMContext::delete_snode_tree(int id) {

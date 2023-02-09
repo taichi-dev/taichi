@@ -8,7 +8,9 @@
 #include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
+#include "taichi/rhi/amdgpu/amdgpu_profiler.h"
 #include "taichi/analysis/offline_cache_util.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi {
 namespace lang {
@@ -120,6 +122,17 @@ void AMDGPUContext::launch(void *func,
                            unsigned grid_dim,
                            unsigned block_dim,
                            std::size_t dynamic_shared_mem_bytes) {
+  KernelProfilerBase::TaskHandle task_handle;
+  // Kernel launch
+  if (profiler_) {
+    KernelProfilerAMDGPU *profiler_amdgpu =
+        dynamic_cast<KernelProfilerAMDGPU *>(profiler_);
+    std::string primal_task_name, key;
+    bool valid =
+        offline_cache::try_demangle_name(task_name, primal_task_name, key);
+    profiler_amdgpu->trace(task_handle, valid ? primal_task_name : task_name,
+                         func, grid_dim, block_dim, 0);
+  }
   auto pack_size = get_args_byte(arg_sizes);
   char *packed_arg = (char *)std::malloc(pack_size);
   pack_args(arg_pointers, arg_sizes, packed_arg);
@@ -132,6 +145,10 @@ void AMDGPUContext::launch(void *func,
                           reinterpret_cast<void **>(&config));
   }
   std::free(packed_arg);
+
+  if (profiler_)
+    profiler_->stop(task_handle);
+
   if (debug_) {
     driver_.stream_synchronize(nullptr);
   }

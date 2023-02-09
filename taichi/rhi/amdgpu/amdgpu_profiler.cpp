@@ -15,7 +15,7 @@ bool KernelProfilerAMDGPU::reinit_with_metrics(
     TI_NOT_IMPLEMENTED
 }
 
-bool set_profiler_toolkit(std::string toolkit_name) {
+bool KernelProfilerAMDGPU::set_profiler_toolkit(std::string toolkit_name) {
   if (toolkit_name.compare("default") == 0) {
     return true;
   }

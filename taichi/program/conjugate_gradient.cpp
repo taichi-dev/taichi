@@ -78,6 +78,10 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b) {
       fmt::print("iter: {}, r1: {}\n", k, r1);
     k++;
   }
+
+  CUDADriver::get_instance().mem_free(d_Ax);
+  CUDADriver::get_instance().mem_free(d_r);
+  CUDADriver::get_instance().mem_free(d_p);
 #endif
 }
 

@@ -142,7 +142,12 @@ CUBLASDriver &CUBLASDriver::get_instance() {
 }
 
 bool CUBLASDriver::load_cublas() {
-  cublas_loaded_ = load_lib("libcublas.so", "cublas64_11.dll");
+  /* To be compatible with torch environment, please libcublas.so.11 other than
+   * libcublas.so. When using libcublas.so, the system cublas will be loaded and
+   * it would confict with torch's cublas. When using libcublas.so.11, the
+   * torch's cublas will be loaded.
+   */
+  cublas_loaded_ = load_lib("libcublas.so.11", "cublas64_11.dll");
   if (!cublas_loaded_) {
     return false;
   }

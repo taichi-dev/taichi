@@ -603,6 +603,8 @@ struct VulkanCapabilities {
   bool surface{false};
   bool present{false};
   bool dynamic_rendering{false};
+  bool has_nv_sm_bultins{false};
+  bool has_amd_shader_core_properties{false};
 };
 
 class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
@@ -656,6 +658,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   Stream *get_compute_stream() override;
   Stream *get_graphics_stream() override;
+
+  size_t get_saturation_num_threads() override;
 
   void wait_idle() override;
 
@@ -781,6 +785,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
 
   VkQueue graphics_queue_{VK_NULL_HANDLE};
   uint32_t graphics_queue_family_index_{0};
+
+  size_t saturation_num_threads_{0};
 
   struct ThreadLocalStreams;
   std::unique_ptr<ThreadLocalStreams> compute_streams_{nullptr};

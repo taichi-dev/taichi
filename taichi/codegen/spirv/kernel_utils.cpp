@@ -28,11 +28,12 @@ std::string TaskAttributes::buffers_name(BufferInfo b) {
 }
 
 std::string TaskAttributes::debug_string() const {
-  std::string result;
-  result += fmt::format(
+  std::string result = fmt::format(
       "<TaskAttributes name={} advisory_total_num_threads={} "
+      "hint_num_groups_estimated={} "
       "task_type={} buffers=[ ",
-      name, advisory_total_num_threads, offloaded_task_type_name(task_type));
+      name, advisory_total_num_threads, hint_num_groups_estimated,
+      offloaded_task_type_name(task_type));
   for (auto b : buffer_binds) {
     result += buffers_name(b.buffer) + " ";
   }

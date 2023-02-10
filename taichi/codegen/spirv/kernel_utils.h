@@ -83,6 +83,9 @@ struct TaskAttributes {
   // runtime config. This works because grid strided loop is supported.
   int advisory_total_num_threads{0};
   int advisory_num_threads_per_group{0};
+  // If this is true, then the runtime should pick a large enough number that
+  // can saturate the GPU
+  bool hint_num_groups_estimated{false};
 
   OffloadedTaskType task_type;
 
@@ -115,6 +118,7 @@ struct TaskAttributes {
   TI_IO_DEF(name,
             advisory_total_num_threads,
             advisory_num_threads_per_group,
+            hint_num_groups_estimated,
             task_type,
             buffer_binds,
             texture_binds,

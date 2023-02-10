@@ -596,6 +596,12 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       caps.set(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME) {
+      ti_device_->vk_caps().has_nv_sm_bultins = true;
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_AMD_SHADER_CORE_PROPERTIES_EXTENSION_NAME) {
+      ti_device_->vk_caps().has_amd_shader_core_properties = true;
+      enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
                          name) != params_.additional_device_extensions.end()) {

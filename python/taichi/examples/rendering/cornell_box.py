@@ -66,8 +66,8 @@ def signed_distance(obj: SDFObject, pos: vec3) -> float:
 @ti.func
 def nearest_object(p: vec3):
     index, min_dis = 0, 1e32
-    for i in range(8):
-        dis = abs(signed_distance(objects[i], p))
+    for i in ti.static(range(8)):
+        dis = signed_distance(objects[i], p)
         if dis < min_dis:
             min_dis, index = dis, i
     return index, min_dis
@@ -103,7 +103,7 @@ def raycast(ray: Ray):
         s = w * d
         t += s
         hit = err < 0.001
-        if t > 10.0 or hit:
+        if t > 5.0 or hit:
             break
     return objects[index], position, hit
 
@@ -140,8 +140,8 @@ def raytrace(ray: Ray) -> Ray:
 @ti.kernel
 def build_scene():
     for i in objects:
-        rotation = objects[i].transform.rotation
-        objects[i].transform.matrix = rotate(radians(rotation))
+        rotation = radians(objects[i].transform.rotation)
+        objects[i].transform.matrix = rotate(rotation)
 
 
 @ti.kernel

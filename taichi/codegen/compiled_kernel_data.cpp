@@ -28,7 +28,7 @@ CompiledKernelDataFile::Err CompiledKernelDataFile::dump(std::ostream &os) {
     std::uint64_t src_code_size = src_code_.size();
     bool io_success =
         os.write(head_, std::size(head_)) &&
-        os.write((const char *)&arch_, sizeof(arch_)) &&
+        os.write((const char *)&arch, sizeof(arch)) &&
         os.write((const char *)&metadata_size, sizeof(metadata_size)) &&
         os.write((const char *)&src_code_size, sizeof(src_code_size)) &&
         os.write((const char *)metadata_.data(), metadata_size) &&

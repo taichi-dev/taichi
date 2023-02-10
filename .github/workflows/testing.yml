@@ -553,7 +553,6 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
-          chown -R 1000:1000 .
           ci-docker-run --name taichi-build-android \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/android-build.sh
@@ -569,7 +568,6 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-android \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
@@ -632,7 +630,6 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
@@ -694,7 +691,6 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
           ci-docker-run --name taichi-prepare-unity-build-env \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
@@ -711,7 +707,6 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
           ci-docker-run --name taichi-run-unity-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo

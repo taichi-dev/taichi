@@ -28,16 +28,16 @@ class CompiledKernelDataFile {
     std::copy(kHeadStr, kHeadStr + kHeadSize, head_);
   }
 
-  Arch &arch() {
-    return arch_;
+  void set_arch(Arch arch) {
+    arch_ = arch;
   }
 
-  std::string &metadata() {
-    return metadata_;
+  void set_metadata(std::string metadata) {
+    metadata_ = std::move(metadata);
   }
 
-  std::string &src_code() {
-    return src_code_;
+  void set_src_code(std::string src) {
+    src_code_ = std::move(src);
   }
 
   const Arch &arch() const {

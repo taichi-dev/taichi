@@ -44,10 +44,10 @@ class FakeCompiledKernelData : public CompiledKernelData {
   }
 
   Err dump_impl(CompiledKernelDataFile &file) const override {
-    file.arch() = kFakeArch;
-    file.metadata() =
-        liong::json::print(liong::json::serialize(compiled_data_.metadata));
-    file.src_code() = compiled_data_.so_bin;
+    file.set_arch(kFakeArch);
+    file.set_metadata(
+        liong::json::print(liong::json::serialize(compiled_data_.metadata)));
+    file.set_src_code(compiled_data_.so_bin);
     return CompiledKernelData::Err::kNoError;
   }
 
@@ -105,9 +105,9 @@ TEST(CompiledKernelDataTest, Error) {
   std::string metadata_j = "{ \"func_names\" : [ \"f_1\", \"f_2\", \"f_3\" ] }";
 
   CompiledKernelDataFile file;
-  file.arch() = kFakeArch;
-  file.metadata() = metadata_j;
-  file.src_code() = so_bin;
+  file.set_arch(kFakeArch);
+  file.set_metadata(metadata_j);
+  file.set_src_code(so_bin);
 
   {  // Correct
     std::ostringstream oss;
@@ -148,8 +148,9 @@ TEST(CompiledKernelDataTest, Error) {
   }
 
   {  // Parse Metadata Failed
+    auto bad_metadata_j = "{ \"func_names\" : [ \"f_1\", \"f_2\", \"f_3\" ] ]";
     auto file_copy = file;
-    file_copy.metadata() = "{ \"func_names\" : [ \"f_1\", \"f_2\", \"f_3\" ] ]";
+    file_copy.set_metadata(bad_metadata_j);
     std::ostringstream oss;
     EXPECT_EQ(file_copy.dump(oss), FErr::kNoError);
     auto ser_data = oss.str();
@@ -160,7 +161,7 @@ TEST(CompiledKernelDataTest, Error) {
 
   {  // Arch Not Matched
     auto file_copy = file;
-    file_copy.arch() = Arch::x64;
+    file_copy.set_arch(Arch::x64);
     std::ostringstream oss;
     EXPECT_EQ(file_copy.dump(oss), FErr::kNoError);
     auto ser_data = oss.str();

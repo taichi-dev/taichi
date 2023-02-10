@@ -230,7 +230,9 @@
 #define TI_C_API_VERSION 1005000
 #endif  // TI_C_API_VERSION
 
-#include <taichi/taichi.h>
+#ifndef TAICHI_H
+#include "taichi.h"
+#endif  // TAICHI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -369,8 +371,6 @@ typedef enum TiArch {
   TI_ARCH_OPENGL = 6,
   // OpenGL ES GPU backend.
   TI_ARCH_GLES = 7,
-  // AMDGPU backend
-  TI_ARCH_AMDGPU = 8,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
@@ -824,8 +824,9 @@ TI_DLL_EXPORT uint32_t TI_API_CALL ti_get_version();
 // An available arch has at least one device available, i.e., device index 0 is
 // always available. If an arch is not available on the current platform, a call
 // to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is
-// guaranteed failing. Please also note that the order or returned archs is
-// **undefined**.
+// guaranteed failing.
+//
+// **WARNING** Please also note that the order or returned archs is *undefined*.
 TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
                                                       TiArch *archs);
 

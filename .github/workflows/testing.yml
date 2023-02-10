@@ -626,6 +626,22 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=OFF
 
+      - name: Build For Android
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          git clean -fxd
+          ci-docker-run --name taichi-build-android \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh
+        env:
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_LLVM:BOOL=OFF
+            -DTI_WITH_C_API=ON
+
       - name: Build & Run C-API Headless Demos (Android)
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
@@ -686,6 +702,22 @@ jobs:
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=OFF
+
+      - name: Build For Android
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          git clean -fxd
+          ci-docker-run --name taichi-build-android \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh
+        env:
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_LLVM:BOOL=OFF
+            -DTI_WITH_C_API=ON
 
       - name: Prepare Unity Build Environment
         if: ${{ needs.check_files.outputs.run_job != 'false' }}

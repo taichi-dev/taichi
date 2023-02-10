@@ -630,7 +630,6 @@ jobs:
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-capi-headless-demo \
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo

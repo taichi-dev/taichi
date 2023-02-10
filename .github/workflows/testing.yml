@@ -497,8 +497,8 @@ jobs:
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
-  build_android_demos:
-    name: Build Android Demos
+  aot_build_and_test_android_apps:
+    name: AOT Build and Test Android Headless Demos
     # Skip this job when testing the offline cache
     if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files
@@ -574,6 +574,122 @@ jobs:
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
+        env:
+          TI_DEVICE_MEMORY_GB: '0.1'
+
+  aot_build_and_test_android_headless_demos:
+    name: AOT Build and Test Android Headless Demos
+    # Skip this job when testing the offline cache
+    if: ${{ github.event.schedule != '0 18 * * *' }}
+    needs: check_files
+    runs-on: [self-hosted, Linux, cn]
+    timeout-minutes: 60
+    permissions:
+      packages: read
+      contents: read
+    env:
+      REDIS_HOST: 172.16.5.8
+      PY: '3.9'
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout taichi
+        with:
+          fetch-depth: '0'
+          submodules: "recursive"
+
+      - name: Prepare Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: >-
+          . .github/workflows/scripts/common-utils.sh;
+          prepare-build-cache;
+
+          TAICHI_WHEEL_DIR=$(mktemp -d);
+          echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
+          chmod 0777 $TAICHI_WHEEL_DIR;
+
+          echo CI_DOCKER_RUN_EXTRA_ARGS="
+          -e REDIS_HOST
+          -v $(pwd):/home/dev/taichi
+          -v $TAICHI_WHEEL_DIR:/taichi-wheel
+          " >> $GITHUB_ENV;
+
+      - name: Build Host Taichi
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          ci-docker-run --name taichi-build-host \
+            -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/build.py
+        env:
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_C_API=OFF
+
+      - name: Build & Run C-API Headless Demos (Android)
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
+        env:
+          TI_DEVICE_MEMORY_GB: '0.1'
+
+  aot_build_and_test_android_unity_examples:
+    name: AOT Build and Test Android Unity Examples
+    # Skip this job when testing the offline cache
+    if: ${{ github.event.schedule != '0 18 * * *' }}
+    needs: check_files
+    runs-on: [self-hosted, Linux, cn]
+    timeout-minutes: 60
+    permissions:
+      packages: read
+      contents: read
+    env:
+      REDIS_HOST: 172.16.5.8
+      PY: '3.9'
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout taichi
+        with:
+          fetch-depth: '0'
+          submodules: "recursive"
+
+      - name: Prepare Environment
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: >-
+          . .github/workflows/scripts/common-utils.sh;
+          prepare-build-cache;
+
+          TAICHI_WHEEL_DIR=$(mktemp -d);
+          echo TAICHI_WHEEL_DIR=$TAICHI_WHEEL_DIR >> $GITHUB_ENV;
+          chmod 0777 $TAICHI_WHEEL_DIR;
+
+          echo CI_DOCKER_RUN_EXTRA_ARGS="
+          -e REDIS_HOST
+          -v $(pwd):/home/dev/taichi
+          -v $TAICHI_WHEEL_DIR:/taichi-wheel
+          " >> $GITHUB_ENV;
+
+      - name: Build Host Taichi
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          ci-docker-run --name taichi-build-host \
+            -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/build.py
+        env:
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_C_API=OFF
+
       - name: Prepare Unity Build Environment
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
@@ -600,18 +716,7 @@ jobs:
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
-      - name: Build & Run C-API Headless Demos (Android)
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        run: |
-          . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
-        env:
-          TI_DEVICE_MEMORY_GB: '0.1'
-
-  aot_compat_build_and_test_gpu_linux:
+  aot_build_and_test_gpu_linux:
     name: AOT Build and Test (GPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
@@ -663,18 +768,6 @@ jobs:
             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
-      - name: Compatibility Test
-        id: test
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-             /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
-        env:
-          PY: '3.8'
-
       - name: Build & Run C-API Headless Demos (Desktop)
         run: |
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
@@ -686,6 +779,18 @@ jobs:
         env:
           PY: '3.8'
           TI_DEVICE_MEMORY_GB: '0.1'
+
+      - name: Compatibility Test
+        id: test
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
+        env:
+          PY: '3.8'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

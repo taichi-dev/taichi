@@ -109,17 +109,6 @@ TEST(CompiledKernelDataTest, Error) {
   file.metadata() = metadata_j;
   file.src_code() = so_bin;
 
-  auto p = [](auto &s) {
-    for (auto e : s) {
-      if (std::isprint(e)) {
-        std::cerr << e;
-      } else {
-        std::cerr << "\\" << (int)e;
-      }
-    }
-    std::cerr << std::endl;
-  };
-
   {  // Correct
     std::ostringstream oss;
     EXPECT_EQ(file.dump(oss), FErr::kNoError);
@@ -147,25 +136,23 @@ TEST(CompiledKernelDataTest, Error) {
     std::ostringstream oss;
     EXPECT_EQ(file.dump(oss), FErr::kNoError);
     auto ser_data = oss.str();
-    auto pos = ser_data.find_last_of(so_bin);
-    std::cerr << pos << " %%%\n";
+    auto pos =
+        ser_data.size() - (CompiledKernelDataFile::kHashSize + so_bin.size());
     ser_data[pos] = 'B';      // 'I' -> 'B'
     ser_data[pos + 1] = '*';  // ' ' -> '*'
     ser_data[pos + 2] = 'A';  // 'a' -> 'A'
     ser_data[pos + 3] = 'D';  // 'm' -> 'D'
-    p(ser_data);
     auto fckd = std::make_unique<FakeCompiledKernelData>();
     std::istringstream iss(ser_data);
     EXPECT_EQ(fckd->load(iss), Err::kCorruptedFile);
   }
 
   {  // Parse Metadata Failed
+    auto file_copy = file;
+    file_copy.metadata() = "{ \"func_names\" : [ \"f_1\", \"f_2\", \"f_3\" ] ]";
     std::ostringstream oss;
-    EXPECT_EQ(file.dump(oss), FErr::kNoError);
+    EXPECT_EQ(file_copy.dump(oss), FErr::kNoError);
     auto ser_data = oss.str();
-    auto pos = ser_data.find_last_of(metadata_j);
-    ser_data[pos] = '(';  // '{' -> '('
-    p(ser_data);
     auto fckd = std::make_unique<FakeCompiledKernelData>();
     std::istringstream iss(ser_data);
     EXPECT_EQ(fckd->load(iss), Err::kParseMetadataFailed);
@@ -182,7 +169,7 @@ TEST(CompiledKernelDataTest, Error) {
     EXPECT_EQ(fckd->load(iss), Err::kArchNotMatched);
   }
 
-  {  // IO Stream Error
+  {  // IO Stream Error (is.read(&arch, sizeof(arch)) failed)
     auto fckd = std::make_unique<FakeCompiledKernelData>();
     std::string bad_ser_data = "";
     std::istringstream iss(bad_ser_data);

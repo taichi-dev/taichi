@@ -707,13 +707,24 @@ void ti_launch_kernel(TiRuntime runtime,
   for (uint32_t i = 0; i < arg_count; ++i) {
     const auto &arg = args[i];
     switch (arg.type) {
+      case TI_ARGUMENT_TYPE_I16: {
+        int16_t arg_val;
+        std::memcpy(&arg_val, &arg.value.scalar.x16, sizeof(arg_val));
+        runtime_context.set_arg(i, arg_val);
+        break;
+      }
+      case TI_ARGUMENT_TYPE_U16: {
+        uint16_t arg_val = arg.value.scalar.x16;
+        runtime_context.set_arg(i, arg_val);
+        break;
+      }
       case TI_ARGUMENT_TYPE_I32: {
-        runtime_context.set_arg(i, arg.value.scalar.i32);
+        runtime_context.set_arg(i, arg.value.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
-        runtime_context.set_arg(i, arg.value.scalar.f32);
+        runtime_context.set_arg(i, arg.value.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
@@ -781,17 +792,30 @@ void ti_launch_compute_graph(TiRuntime runtime,
 
     const auto &arg = args[i];
     switch (arg.argument.type) {
+      case TI_ARGUMENT_TYPE_I16: {
+        int16_t arg_val;
+        std::memcpy(&arg_val, &arg.argument.value.scalar.x16, sizeof(arg_val));
+        arg_map.emplace(std::make_pair(
+            arg.name, taichi::lang::aot::IValue::create<int16_t>(arg_val)));
+        break;
+      }
+      case TI_ARGUMENT_TYPE_U16: {
+        uint16_t arg_val = arg.argument.value.scalar.x16;
+        arg_map.emplace(std::make_pair(
+            arg.name, taichi::lang::aot::IValue::create<uint16_t>(arg_val)));
+        break;
+      }
       case TI_ARGUMENT_TYPE_I32: {
         arg_map.emplace(
             std::make_pair(arg.name, taichi::lang::aot::IValue::create<int32_t>(
-                                         arg.argument.value.scalar.i32)));
+                                         arg.argument.value.i32)));
         break;
       }
       case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
-        arg_map.emplace(
-            std::make_pair(arg.name, taichi::lang::aot::IValue::create<float>(
-                                         arg.argument.value.scalar.f32)));
+        arg_map.emplace(std::make_pair(
+            arg.name,
+            taichi::lang::aot::IValue::create<float>(arg.argument.value.f32)));
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {

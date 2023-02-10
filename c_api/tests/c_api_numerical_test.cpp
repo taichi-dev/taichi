@@ -72,8 +72,7 @@ TEST_F(CapiTest, Float16Fill) {
   float fill_fp16_val = -5.0;
 
   k_fill_scalar_array_with_fp16[0] = scalar_array;
-  k_fill_scalar_array_with_fp16[1] = fill_fp16_val;
-  k_fill_scalar_array_with_fp16[1].set_f16();
+  k_fill_scalar_array_with_fp16[1].set_f16(fill_fp16_val);
   k_fill_scalar_array_with_fp16.launch();
   runtime.wait();
 
@@ -92,8 +91,7 @@ TEST_F(CapiTest, Float16Fill) {
   float fill_fp16_val2 = float(8.0);
 
   k_fill_matrix_array_with_fp16[0] = matrix_array;
-  k_fill_matrix_array_with_fp16[1] = fill_fp16_val2;
-  k_fill_matrix_array_with_fp16[1].set_f16();
+  k_fill_matrix_array_with_fp16[1].set_f16(fill_fp16_val2);
   k_fill_matrix_array_with_fp16.launch();
   runtime.wait();
 

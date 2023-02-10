@@ -215,16 +215,6 @@ jobs:
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_BACKTRACE:BOOL=ON
             -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_C_API=ON
-
-      - name: Check C-API Export Symbols
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-
-          ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
       - name: Test
         id: test
@@ -240,18 +230,6 @@ jobs:
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
-
-      - name: Build & Run C-API Headless Demos (Desktop)
-        run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
-          . .github/workflows/scripts/common-utils.sh
-          chown -R 1000:1000 .
-          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
-        env:
-          PY: '3.8'
-          TI_DEVICE_MEMORY_GB: '0.1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -632,3 +610,95 @@ jobs:
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
         env:
           TI_DEVICE_MEMORY_GB: '0.1'
+
+  aot_compat_build_and_test_gpu_linux:
+    name: AOT Build and Test (GPU)
+    needs: check_files
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+    strategy:
+      matrix:
+        tags:
+          - [self-hosted, cuda, vulkan, cn, driver470]
+          - [self-hosted, cuda, vulkan, cn, driver510]
+
+    runs-on: ${{ matrix.tags }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build & Install
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-build \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/build.py
+
+        env:
+          PY: '3.8'
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_BACKTRACE:BOOL=ON
+            -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_C_API=ON
+
+      - name: Check C-API Export Symbols
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
+
+      - name: Compatibility Test
+        id: test
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
+        env:
+          PY: '3.8'
+
+      - name: Build & Run C-API Headless Demos (Desktop)
+        run: |
+          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
+          . .github/workflows/scripts/common-utils.sh
+          chown -R 1000:1000 .
+          ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
+        env:
+          PY: '3.8'
+          TI_DEVICE_MEMORY_GB: '0.1'
+
+      - name: Save wheel if test failed
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: broken-wheel
+          path: dist/*
+          retention-days: 7
+
+      - name: Save Bad Captures
+        if: failure() && steps.test.conclusion == 'failure'
+        uses: actions/upload-artifact@v3
+        with:
+          name: bad-captures
+          path: taichi-release-tests/bad-compare/*
+          retention-days: 7

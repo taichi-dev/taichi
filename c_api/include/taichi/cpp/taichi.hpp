@@ -536,7 +536,7 @@ class ArgumentEntry {
   ArgumentEntry(TiArgument *arg) : arg_(arg) {
   }
 
-  void as_f16() {
+  void set_f16() {
     auto orig_type = arg_->type;
     assert(orig_type == TI_ARGUMENT_TYPE_F32 &&
            "ArgumentEntry::as_float16() can only be called on F32 typed "
@@ -550,22 +550,22 @@ class ArgumentEntry {
   }
   inline ArgumentEntry &operator=(int32_t i32) {
     arg_->type = TI_ARGUMENT_TYPE_I32;
-    arg_->value.i32 = i32;
+    arg_->value.scalar.i32 = i32;
     return *this;
   }
   inline ArgumentEntry &operator=(float f32) {
     arg_->type = TI_ARGUMENT_TYPE_F32;
-    arg_->value.f32 = f32;
+    arg_->value.scalar.f32 = f32;
     return *this;
   }
   inline ArgumentEntry &operator=(uint16_t u16) {
-    arg_->type = TI_ARGUMENT_TYPE_F32;
-    arg_->value.u16 = u16;
+    arg_->type = TI_ARGUMENT_TYPE_U16;
+    arg_->value.scalar.u16 = u16;
     return *this;
   }
   inline ArgumentEntry &operator=(int16_t i16) {
     arg_->type = TI_ARGUMENT_TYPE_I16;
-    arg_->value.i16 = i16;
+    arg_->value.scalar.i16 = i16;
     return *this;
   }
   inline ArgumentEntry &operator=(const TiNdArray &ndarray) {

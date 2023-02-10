@@ -780,10 +780,7 @@ typedef struct TiTexture {
   TiFormat format;
 } TiTexture;
 
-// Union `TiArgumentValue` (1.4.0)
-//
-// A scalar or structured argument value.
-typedef union TiArgumentValue {
+typedef union TiScalarValue {
   // Value of a 32-bit one's complement signed integer.
   int32_t i32;
   // Value of a 32-bit IEEE 754 single-precision floating-poing number.
@@ -792,7 +789,14 @@ typedef union TiArgumentValue {
   int16_t i16;
   // Value of a 16-bit one's complement unsigned integer.
   uint16_t u16;
+} TiScalar;
 
+// Union `TiArgumentValue` (1.4.0)
+//
+// A scalar or structured argument value.
+typedef union TiArgumentValue {
+  // An scalar to be bound
+  TiScalarValue scalar;
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.

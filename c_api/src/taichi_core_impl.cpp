@@ -708,12 +708,12 @@ void ti_launch_kernel(TiRuntime runtime,
     const auto &arg = args[i];
     switch (arg.type) {
       case TI_ARGUMENT_TYPE_I32: {
-        runtime_context.set_arg(i, arg.value.i32);
+        runtime_context.set_arg(i, arg.value.scalar.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
-        runtime_context.set_arg(i, arg.value.f32);
+        runtime_context.set_arg(i, arg.value.scalar.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
@@ -784,14 +784,14 @@ void ti_launch_compute_graph(TiRuntime runtime,
       case TI_ARGUMENT_TYPE_I32: {
         arg_map.emplace(
             std::make_pair(arg.name, taichi::lang::aot::IValue::create<int32_t>(
-                                         arg.argument.value.i32)));
+                                         arg.argument.value.scalar.i32)));
         break;
       }
       case TI_ARGUMENT_TYPE_F16:
       case TI_ARGUMENT_TYPE_F32: {
-        arg_map.emplace(std::make_pair(
-            arg.name,
-            taichi::lang::aot::IValue::create<float>(arg.argument.value.f32)));
+        arg_map.emplace(
+            std::make_pair(arg.name, taichi::lang::aot::IValue::create<float>(
+                                         arg.argument.value.scalar.f32)));
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {

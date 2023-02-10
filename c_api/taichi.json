@@ -449,8 +449,8 @@
                     ]
                 },
                 {
-                    "name": "argument_value",
-                    "type": "union",
+                    "name": "scalar_value",
+                    "type": "unoin",
                     "since": "v1.4.0",
                     "variants": [
                         {
@@ -468,6 +468,17 @@
                         {
                             "name": "u16",
                             "type": "uint16_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "argument_value",
+                    "type": "union",
+                    "since": "v1.4.0",
+                    "variants": [
+                        {
+                            "name": "scalar",
+                            "type": "union.scalar_value"
                         },
                         {
                             "name": "ndarray",

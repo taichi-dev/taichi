@@ -100,9 +100,8 @@ std::string TyVarUnsolved::to_string() const {
 }
 
 std::string TraitMismatch::to_string() const {
-  return "the type variable " + constraint_.tyvar->to_string() +
-         " mentioned in argument #" + std::to_string(occurrence_ + 1) +
-         " is inferred to be " + dt_.to_string() + ", which is not a " +
+  return "the inferred type of argument #" + std::to_string(occurrence_ + 1) +
+         " is " + dt_.to_string() + ", which is not a " +
          constraint_.trait->to_string();
 }
 

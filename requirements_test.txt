@@ -13,3 +13,4 @@ scipy
 setproctitle
 nbmake
 marko
+ipython>=8.10.0 # not directly required, pinned by Snyk to avoid a vulnerability

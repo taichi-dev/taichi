@@ -429,6 +429,13 @@ class TI_DLL_EXPORT CommandList {
     return RhiResult::not_supported;
   }
 
+  // Profiler support
+  virtual void begin_profiler_scope(const std::string &kernel_name) {
+  }
+
+  virtual void end_profiler_scope() {
+  }
+
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
                                 int y0,
@@ -516,6 +523,7 @@ enum class AllocUsage : int {
   Uniform = 2,
   Vertex = 4,
   Index = 8,
+  Upload = 16,
 };
 
 MAKE_ENUM_FLAGS(AllocUsage)
@@ -558,10 +566,6 @@ class TI_DLL_EXPORT Stream {
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
-
-  virtual double device_time_elapsed_us() const {
-    TI_NOT_IMPLEMENTED
-  }
 };
 
 class TI_DLL_EXPORT PipelineCache {
@@ -678,6 +682,55 @@ class TI_DLL_EXPORT Device {
         this->allocate_memory(params));
   }
 
+  /**
+   * Upload data to device allocations immediately.
+   * - This is a synchronous operation, function returns when upload is complete
+   * - The host data pointers must be valid and large enough for the size of the
+   * copy, otherwise this function might segfault
+   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid
+   * values
+   * @params[in] device_ptr The array to destination device pointers.
+   * @params[in] data The array to source host pointers.
+   * @params[in] sizes The array to sizes of data/copy.
+   * @params[in] count The number of uploads to perform.
+   * @return The status of this operation
+   * - `success` if the upload is successful.
+   * - `out_of_memory` if operation failed due to lack of device or host memory.
+   * - `invalid_usage` if the specified source is incompatible or invalid.
+   * - `error` if the operation failed due to other reasons.
+   */
+  virtual RhiResult upload_data(DevicePtr *device_ptr,
+                                const void **data,
+                                size_t *size,
+                                int num_alloc = 1) noexcept;
+
+  /**
+   * Read data from device allocations back to host immediately.
+   * - This is a synchronous operation, function returns when readback is
+   * complete
+   * - The host data pointers must be valid and large enough for the size of the
+   * copy, otherwise this function might segfault
+   * - `device_ptr`, `data`, and `sizes` must contain `count` number of valid
+   * values
+   * @params[in] device_ptr The array to source device pointers.
+   * @params[in] data The array to destination host pointers.
+   * @params[in] sizes The array to sizes of data/copy.
+   * @params[in] count The number of readbacks to perform.
+   * @params[in] wait_sema The semaphores to wait for before the copy is
+   * initiated.
+   * @return The status of this operation
+   * - `success` if the upload is successful.
+   * - `out_of_memory` if operation failed due to lack of device or host memory.
+   * - `invalid_usage` if the specified source is incompatible or invalid.
+   * - `error` if the operation failed due to other reasons.
+   */
+  virtual RhiResult readback_data(
+      DevicePtr *device_ptr,
+      void **data,
+      size_t *size,
+      int num_alloc = 1,
+      const std::vector<StreamSemaphore> &wait_sema = {}) noexcept;
+
   virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
     TI_NOT_IMPLEMENTED
   }
@@ -777,6 +830,19 @@ class TI_DLL_EXPORT Device {
   }
   inline void set_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
+  }
+
+  // Profiler support
+  virtual void profiler_sync() {
+  }
+
+  virtual size_t profiler_get_sampler_count() {
+    return 0;
+  }
+
+  virtual std::vector<std::pair<std::string, double>>
+  profiler_flush_sampled_time() {
+    return std::vector<std::pair<std::string, double>>();
   }
 };
 

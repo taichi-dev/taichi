@@ -46,6 +46,7 @@ namespace fs = std::filesystem;
     kernel_simple_ret =
         std::make_unique<Kernel>(program, builder.extract_ir(), "simple_ret");
     kernel_simple_ret->insert_ret(PrimitiveType::f32);
+    kernel_simple_ret->finalize_rets();
   }
 
   {
@@ -94,6 +95,7 @@ namespace fs = std::filesystem;
 
     kernel_ret = std::make_unique<Kernel>(program, builder.extract_ir(), "ret");
     kernel_ret->insert_ret(PrimitiveType::i32);
+    kernel_ret->finalize_rets();
   }
 
   aot_builder->add("simple_ret", kernel_simple_ret.get());

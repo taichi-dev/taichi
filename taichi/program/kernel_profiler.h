@@ -94,6 +94,8 @@ class KernelProfilerBase {
 
   double get_total_time() const;
 
+  void insert_record(const std::string &kernel_name, double duration_ms);
+
   virtual std::string get_device_name() {
     std::string str(" ");
     return str;

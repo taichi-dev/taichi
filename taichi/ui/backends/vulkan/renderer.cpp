@@ -19,27 +19,14 @@ void Renderer::init(Program *prog,
 }
 
 template <typename T>
-std::unique_ptr<Renderable> get_new_renderable(AppContext *app_context,
-                                               VertexAttributes vbo_attrs) {
-  return std::unique_ptr<Renderable>{new T(app_context, vbo_attrs)};
-}
-
-template <typename T>
 T *Renderer::get_renderable_of_type(VertexAttributes vbo_attrs) {
-  if (next_renderable_ >= renderables_.size()) {
-    renderables_.push_back(get_new_renderable<T>(&app_context_, vbo_attrs));
-  } else if (dynamic_cast<T *>(renderables_[next_renderable_].get()) ==
-             nullptr) {
-    renderables_.insert(renderables_.begin() + next_renderable_,
-                        get_new_renderable<T>(&app_context_, vbo_attrs));
-  }
+  std::unique_ptr<T> r = std::make_unique<T>(&app_context_, vbo_attrs);
+  T *ret = r.get();
+  renderables_.push_back(std::move(r));
 
-  if (T *t = dynamic_cast<T *>(renderables_[next_renderable_].get())) {
-    return t;
-  } else {
-    TI_ERROR("Failed to Get Renderable.");
-  }
+  return ret;
 }
+
 void Renderer::set_background_color(const glm::vec3 &color) {
   background_color_ = color;
 }
@@ -47,53 +34,53 @@ void Renderer::set_background_color(const glm::vec3 &color) {
 void Renderer::set_image(const SetImageInfo &info) {
   SetImage *s = get_renderable_of_type<SetImage>(VboHelpers::all());
   s->update_data(info);
-  next_renderable_ += 1;
+  render_queue_.push_back(s);
 }
 
 void Renderer::set_image(Texture *tex) {
   SetImage *s = get_renderable_of_type<SetImage>(VboHelpers::all());
   s->update_data(tex);
-  next_renderable_ += 1;
+  render_queue_.push_back(s);
 }
 
 void Renderer::triangles(const TrianglesInfo &info) {
   Triangles *triangles =
       get_renderable_of_type<Triangles>(info.renderable_info.vbo_attrs);
   triangles->update_data(info);
-  next_renderable_ += 1;
+  render_queue_.push_back(triangles);
 }
 
 void Renderer::lines(const LinesInfo &info) {
   Lines *lines = get_renderable_of_type<Lines>(info.renderable_info.vbo_attrs);
   lines->update_data(info);
-  next_renderable_ += 1;
+  render_queue_.push_back(lines);
 }
 
 void Renderer::circles(const CirclesInfo &info) {
   Circles *circles =
       get_renderable_of_type<Circles>(info.renderable_info.vbo_attrs);
   circles->update_data(info);
-  next_renderable_ += 1;
+  render_queue_.push_back(circles);
 }
 
 void Renderer::scene_lines(const SceneLinesInfo &info, Scene *scene) {
   SceneLines *scene_lines =
       get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
   scene_lines->update_data(info, *scene);
-  next_renderable_ += 1;
+  render_queue_.push_back(scene_lines);
 }
 
 void Renderer::mesh(const MeshInfo &info, Scene *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info, *scene);
-  next_renderable_ += 1;
+  render_queue_.push_back(mesh);
 }
 
 void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info, *scene);
-  next_renderable_ += 1;
+  render_queue_.push_back(particles);
 }
 
 void Renderer::scene(Scene *scene) {
@@ -138,7 +125,6 @@ Renderer::~Renderer() {
 }
 
 void Renderer::prepare_for_next_frame() {
-  next_renderable_ = 0;
 }
 
 void Renderer::draw_frame(Gui *gui) {
@@ -155,8 +141,8 @@ void Renderer::draw_frame(Gui *gui) {
                              ImageLayout::color_attachment);
   auto depth_image = swap_chain_.depth_allocation();
 
-  for (int i = 0; i < next_renderable_; ++i) {
-    renderables_[i]->record_prepass_this_frame_commands(cmd_list.get());
+  for (auto renderable : render_queue_) {
+    renderable->record_prepass_this_frame_commands(cmd_list.get());
   }
 
   cmd_list->begin_renderpass(
@@ -165,8 +151,8 @@ void Renderer::draw_frame(Gui *gui) {
       &color_clear, &clear_colors, &depth_image,
       /*depth_clear=*/true);
 
-  for (int i = 0; i < next_renderable_; ++i) {
-    renderables_[i]->record_this_frame_commands(cmd_list.get());
+  for (auto renderable : render_queue_) {
+    renderable->record_this_frame_commands(cmd_list.get());
   }
 
   VkRenderPass pass = static_cast<VulkanCommandList *>(cmd_list.get())
@@ -197,6 +183,9 @@ void Renderer::draw_frame(Gui *gui) {
   }
 
   render_complete_semaphore_ = stream->submit(cmd_list.get(), wait_semaphores);
+
+  render_queue_.clear();
+  renderables_.clear();
 }
 
 const AppContext &Renderer::app_context() const {

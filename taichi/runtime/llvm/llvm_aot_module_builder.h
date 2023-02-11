@@ -9,8 +9,9 @@ namespace taichi::lang {
 class LlvmAotModuleBuilder : public AotModuleBuilder {
  public:
   explicit LlvmAotModuleBuilder(const CompileConfig &compile_config,
-                                LlvmProgramImpl *prog)
-      : compile_config_(compile_config), prog_(prog) {
+                                LlvmProgramImpl *prog,
+                                TaichiLLVMContext &tlctx)
+      : compile_config_(compile_config), prog_(prog), tlctx_(tlctx) {
   }
 
   void dump(const std::string &output_dir,
@@ -36,10 +37,15 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
     return compile_config_;
   }
 
+  TaichiLLVMContext &get_taichi_llvm_context() {
+    return tlctx_;
+  }
+
  private:
   mutable LlvmOfflineCache cache_;
   const CompileConfig &compile_config_;
   LlvmProgramImpl *prog_ = nullptr;
+  TaichiLLVMContext &tlctx_;
 };
 
 }  // namespace taichi::lang

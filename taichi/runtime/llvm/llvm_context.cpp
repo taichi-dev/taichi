@@ -177,7 +177,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     std::vector<llvm::Type *> types;
     auto struct_type = dt->cast<StructType>();
     for (const auto &element : struct_type->elements()) {
-      types.push_back(get_data_type(element));
+      types.push_back(get_data_type(element.type));
     }
     return llvm::StructType::get(*ctx, types);
   } else {
@@ -328,10 +328,6 @@ static void remove_useless_cuda_libdevice_functions(llvm::Module *module) {
     module->getFunction("__nv_" + fn)->eraseFromParent();
   }
   module->getFunction("__internal_lgamma_pos")->eraseFromParent();
-}
-
-void TaichiLLVMContext::init_runtime_jit_module() {
-  update_runtime_jit_module(clone_runtime_module());
 }
 
 // Note: runtime_module = init_module < struct_module
@@ -620,8 +616,8 @@ void TaichiLLVMContext::link_module_with_amdgpu_libdevice(
     }
 
     for (auto &f : libdevice_module->functions()) {
-      auto func_ = module->getFunction(f.getName());
-      if (!func_ && starts_with(f.getName().lower(), "__" + libdevice))
+      auto func_name = libdevice.substr(0, libdevice.length() - 3);
+      if (starts_with(f.getName().lower(), "__" + func_name))
         f.setLinkage(llvm::Function::CommonLinkage);
     }
 
@@ -769,11 +765,6 @@ llvm::DataLayout TaichiLLVMContext::get_data_layout() {
   return jit->get_data_layout();
 }
 
-JITModule *TaichiLLVMContext::create_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  return jit->add_module(std::move(module));
-}
-
 void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
                                                std::string key,
                                                int val) {
@@ -900,10 +891,9 @@ auto make_slim_libdevice = [](const std::vector<std::string> &args) {
   TI_INFO("Slimmed libdevice written to {}", output_fn);
 };
 
-void TaichiLLVMContext::update_runtime_jit_module(
-    std::unique_ptr<llvm::Module> module) {
-  if (arch_ == Arch::cuda) {
-    for (auto &f : *module) {
+void TaichiLLVMContext::init_runtime_module(llvm::Module *runtime_module) {
+  if (config_.arch == Arch::cuda) {
+    for (auto &f : *runtime_module) {
       bool is_kernel = false;
       const std::string func_name = f.getName().str();
       if (starts_with(func_name, "runtime_")) {
@@ -913,25 +903,24 @@ void TaichiLLVMContext::update_runtime_jit_module(
 
       if (!is_kernel && !f.isDeclaration())
         // set declaration-only functions as internal linking to avoid
-        // duplicated symbols and to remove external symbol dependencies such as
-        // std::sin
+        // duplicated symbols and to remove external symbol dependencies such
+        // as std::sin
         f.setLinkage(llvm::Function::PrivateLinkage);
     }
   }
 
-  if (arch_ == Arch::amdgpu) {
+  if (config_.arch == Arch::amdgpu) {
 #ifdef TI_WITH_AMDGPU
     llvm::legacy::PassManager module_pass_manager;
     module_pass_manager.add(new AMDGPUConvertFuncParamAddressSpacePass());
-    module_pass_manager.run(*module);
+    module_pass_manager.run(*runtime_module);
 #endif
   }
 
-  eliminate_unused_functions(module.get(), [](std::string func_name) {
+  eliminate_unused_functions(runtime_module, [](std::string func_name) {
     return starts_with(func_name, "runtime_") ||
            starts_with(func_name, "LLVMRuntime_");
   });
-  runtime_jit_module = create_jit_module(std::move(module));
 }
 
 void TaichiLLVMContext::delete_snode_tree(int id) {
@@ -1069,6 +1058,34 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
 
 std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
   return "parallel_struct_for_" + std::to_string(tls_size);
+}
+
+std::string TaichiLLVMContext::get_data_layout_string() {
+  return get_data_layout().getStringRepresentation();
+}
+
+const StructType *TaichiLLVMContext::get_struct_type_with_data_layout(
+    const StructType *old_ty,
+    const std::string &layout) {
+  if (old_ty->get_layout() == layout) {
+    return old_ty;
+  }
+  std::vector<StructMember> elements = old_ty->elements();
+  for (auto &element : elements) {
+    if (auto struct_type = element.type->cast<StructType>()) {
+      element.type = get_struct_type_with_data_layout(struct_type, layout);
+    }
+  }
+  auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
+  auto data_layout = llvm::DataLayout::parse(layout);
+  TI_ASSERT(data_layout);
+  auto struct_layout = data_layout->getStructLayout(llvm_struct_type);
+  for (int i = 0; i < elements.size(); i++) {
+    elements[i].offset = struct_layout->getElementOffset(i);
+  }
+  return TypeFactory::get_instance()
+      .get_struct_type(elements, layout)
+      ->cast<StructType>();
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

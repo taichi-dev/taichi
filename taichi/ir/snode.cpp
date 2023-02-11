@@ -175,6 +175,10 @@ void SNode::write_int(const std::vector<int> &i, int64 val) {
   snode_rw_accessors_bank_->get(this).write_int(i, val);
 }
 
+void SNode::write_uint(const std::vector<int> &i, uint64 val) {
+  snode_rw_accessors_bank_->get(this).write_uint(i, val);
+}
+
 void SNode::write_float(const std::vector<int> &i, float64 val) {
   snode_rw_accessors_bank_->get(this).write_float(i, val);
 }
@@ -328,6 +332,13 @@ void SNode::set_snode_tree_id(int id) {
 
 int SNode::get_snode_tree_id() const {
   return snode_tree_id_;
+}
+
+const SNode *SNode::get_root() const {
+  if (!parent) {  // root->parent == nullptr
+    return this;
+  }
+  return parent->get_root();
 }
 
 }  // namespace taichi::lang

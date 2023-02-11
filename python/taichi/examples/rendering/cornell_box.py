@@ -91,10 +91,11 @@ def raycast(ray: Ray):
         index, distance = nearest_object(position)
 
         ld, d = d, distance
-        if w > 1.0 and ld + d < s:
+        if ld + d < s:
             s -= w * s
             t += s
-            w = 1.0
+            w *= 0.5
+            w += 0.5
             continue
         err = d / t
         if err < cerr:

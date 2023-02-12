@@ -146,7 +146,7 @@ print(a.count())  # 0
 
 b = DataOrientedClass()
 b.add(2)
-print(b.count())  # 1
+print(b.count())  # 20
 
 c = BaseClass()
 # c.add(3)

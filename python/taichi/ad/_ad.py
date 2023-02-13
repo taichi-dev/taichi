@@ -226,6 +226,7 @@ class Tape:
         assert self.checkpointer, "Checkpointer is not initialized."
         self.checkpointer.save_forward_results()
 
+        print(f"exiting the Tape... Total calls {self.calls_count}")
         if self.eval_on_exit:
             self.grad()
 
@@ -247,16 +248,17 @@ class Tape:
         if self.validation:
             func.autodiff_mode = AutodiffMode.VALIDATION
         self.calls.append((func, args))
-        # if hasattr(func, "func"):
-        #     print("insert func ", func.func)
-        # else:
-        #     print("insert func ", func)
+        if hasattr(func, "func"):
+            print("insert func ", func.func)
+        else:
+            print("insert func ", func)
 
         if self.checkpointer and self.enable_checkpointing:
             self.calls_count += 1
             # Save a checkpoint before the kernel launch
             self.checkpointer.save_primal(self.calls_count)
-            # print("calls count increase ", self.calls_count)
+            print("calls count increase ", self.calls_count)
+        print("insert finished ", self.calls_count)
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
@@ -598,7 +600,7 @@ class Checkpointer:
         self.snode_tree = self.root.finalize()
 
     def save(self, save_id, enforce=False):
-
+        print(f"save id {save_id}")
         if not self.prog:
             self.prog = impl.get_runtime().prog
         assert self.prog, "Checkpointer should be called after ti.init()."
@@ -740,12 +742,12 @@ class Checkpointer:
         self.free_backup_buffers.append(buffer)
 
     def clear(self):
-        # if self.verbose:
-        self.print_info(
-            f"[CLEAR] Total buffers created: {self.buffer_created}.")
-        self.print_info(
-            f"[CLEAR] Total kernels executed in forward {len(self.forward_calls)}, recompute num: {self.recompute_num}."
-        )
+        if self.verbose:
+            self.print_info(
+                f"[CLEAR] Total buffers created: {self.buffer_created}.")
+            self.print_info(
+                f"[CLEAR] Total kernels executed in forward {len(self.forward_calls)}, recompute num: {self.recompute_num}."
+            )
         save_ids = list(self.backup_buffers.keys())
         # print("Clearing checkpointer, remaining save ids: ", save_ids)
         # print("max buffer created ", self.current_max_num_buffers)
@@ -799,7 +801,7 @@ class CheckpointerManager:
         self.forward_result_checpointer.clear()
 
 
-_checkpointer = CheckpointerManager(verbose=False)
+_checkpointer = CheckpointerManager(verbose=True)
 
 __all__ = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',

@@ -96,6 +96,10 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   GLFWwindow *glfw_window = nullptr;
 
   if (window_system::glfw_context_acquire()) {
+#ifdef __APPLE__
+    glfwInitVulkanLoader(vkGetInstanceProcAddr);
+#endif
+
     // glfw init success
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

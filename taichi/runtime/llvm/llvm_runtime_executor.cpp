@@ -207,6 +207,7 @@ void LlvmRuntimeExecutor::synchronize() {
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
+    AMDGPUContext::get_instance().free_kernel_arg_pointer();
 #else
     TI_ERROR("No AMDGPU support");
 #endif

@@ -421,8 +421,7 @@ static std::tuple<Expr, Expr, Expr> unify_ternaryop_operands(const Expr &e1,
     return std::tuple(e1, e2, e3);
   }
 
-  return std::tuple(to_broadcast_tensor(e1, target_dtype),
-                    to_broadcast_tensor(e2, target_dtype),
+  return std::tuple(e1, to_broadcast_tensor(e2, target_dtype),
                     to_broadcast_tensor(e3, target_dtype));
 }
 
@@ -450,11 +449,11 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
 
-  if (op1_type->is<TensorType>() && op2_type->is<TensorType>() &&
-      op3_type->is<TensorType>()) {
+  if (op2_type->is<TensorType>() && op3_type->is<TensorType>()) {
     // valid
     is_tensor = true;
-    if (op1_type->cast<TensorType>()->get_shape() !=
+    if (op1_type->is<TensorType>() &&
+        op1_type->cast<TensorType>()->get_shape() !=
         op2_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
@@ -462,7 +461,10 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
         op3_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
+
+    if (op1_type->is<TensorType>()) {
     op1_type = op1_type->cast<TensorType>()->get_element_type();
+    }
     op2_type = op2_type->cast<TensorType>()->get_element_type();
     op3_type = op3_type->cast<TensorType>()->get_element_type();
 

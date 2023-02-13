@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Type System
 
-Taichi is a statically typed programming language: The type of a variable in the Taichi scope is determined at compile time; once a variable is declared, you cannot assign to it a value of a different type.
+Taichi is a statically typed programming language, meaning that the type of a variable in the Taichi scope is determined at compile time. This means that once a variable has been declared, it cannot be assigned a value of a different type.
 
 Let's see a quick example:
 
@@ -21,19 +21,20 @@ def test():
 - Line 4: `x` is reassigned a floating-point number 3.14 but takes the value 3. This is because 3.14 is automatically cast to integer 3 to match the type of `x`.
 - Line 5:  The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
-Taichi's `ti.types` module defines all the supported data types, and they are classified into two categories: primitive types and compound types.
+The `ti.types` module in Taichi defines all of the supported data types. These data types are categorized into two groups: primitive and compound.
 
-- Primitive types refer to various commonly-used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
-- Compound types refer to various array-like or struct-like data types, including `ti.types.matrix`, `ti.types.ndarray`, and `ti.types.struct`. Compound types comprise multiple members of primitive types or of other compound types.
+- Primitive types encompass commonly utilized numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
+- Compound types, on the other hand, encompass array-like or struct-like data types, including `ti.types.matrix`, `ti.types.ndarray`, and `ti.types.struct`. These types are composed of multiple members, which can be primitive or other compound types.
 
 ## Primitive types
 
-Primitive types refer to scalars, which are the smallest building blocks of compound types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly used types:
+The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. The two most commonly used primitive types are:
 
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
 
-Not all backends support Taichi's primitive types. See the following table for how a primitive type is supported by various backends. Note that some backends may require extensions to support a specific primitive type.
+The support of Taichi's primitive types by various backends may vary. Consult the following table for detailed information, and note that some backends may require extensions for complete support of a specific primitive type.
+
 
 | Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
@@ -61,15 +62,13 @@ ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 
 :::note
 
-The numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope suffers a precision loss because it is cast to a 32-bit floating-point number, which has a precision of about seven decimal digits.
-
-If you are working on a high-precision application scenario, such as numeric simulation for engineering, set `default_fp` as `ti.f64`.
+The numeric literals in Taichi's scope have default integer or floating-point types. For example, if the default floating-point type is `ti.f32`, a numeric literal 3.14159265358979 will be cast to a 32-bit floating-point number with a precision of approximately seven decimal digits. To ensure high precision in applications such as engineering simulations, it is recommended to set `default_fp` to `ti.f64`.
 
 :::
 
 ### Set default primitive type alias
 
-Taichi supports using `int` as the alias for the default integer type and `float` as the alias for the default floating-point type. For example, after changing the default primitive types to `i64` and `f64`, you can use `int` as the alias for `i64` and `float` as the alias for `f64`.
+In Taichi, the keywords `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to i64 and `default_fp` to f64 would allow you to use int as an alias for `i64` and `float` as an alias for `f64` in your code.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
@@ -89,7 +88,7 @@ def func(a: ti.f64) -> ti.i64:
 
 ### Explicit type casting
 
-As mentioned at the beginning of this document, the type of a variable in the Taichi scope is *statically typed* upon initialization. Taichi's compiler performs type checking at compile time, meaning that you *cannot* change a variable's type once it is initialized. However, from time to time, you may run into situations where you need to switch to a different data type because the original is not feasible for an assignment or calculation. In such situations, you need explicit type casting:
+As mentioned at the beginning of this document, the type of a variable in the Taichi scope is determined at compile time, meaning that it is *statically typed*. The Taichi compiler performs type checking at compile time and therefore, once a variable is declared, you *cannot* assign to it a value of a different type. However, in certain situations, you may need to switch to a different data type due to the unavailability of the original type for an assignment or calculation. In these cases, you must perform an explicit type casting.
 
 - You can use `ti.cast()` to convert a value to the target type:
 
@@ -101,7 +100,8 @@ As mentioned at the beginning of this document, the type of a variable in the Ta
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-- As of v1.1.0, Taichi allows you to use primitive types such as `ti.f32` and `ti.i64` to convert a scalar variable to a different scalar type:
+ Taichi v1.1.0 introduces the capability to convert scalar variables to different scalar types using primitive types, such as `ti.f32` and `ti.i64`.
+
 
   ```python {6,7}
   @ti.kernel

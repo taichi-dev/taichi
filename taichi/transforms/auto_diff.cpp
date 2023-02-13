@@ -635,6 +635,10 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
+  void visit(ExternalPtrStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(WhileControlStmt *stmt) override {
     TI_NOT_IMPLEMENTED
   }
@@ -1035,104 +1039,136 @@ class MakeAdjoint : public ADTransform {
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
     if (stmt->src->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Importing data from external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
-
-    GlobalPtrStmt *src = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->src->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      ExternalPtrStmt *src = stmt->src->as<ExternalPtrStmt>();
+      ArgLoadStmt *arg = src->base_ptr->as<ArgLoadStmt>();
+      // use is_grad to judge if it has a grad
+      if (arg->is_grad) {
+        return;
+      }
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
+      auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, src->indices);
+      insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
     } else {
-      src = stmt->src->as<GlobalPtrStmt>();
-    }
+      GlobalPtrStmt *src = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->src->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        src = stmt->src->as<GlobalPtrStmt>();
+      }
 
-    auto snode = src->snode;
-    if (!snode->has_adjoint()) {
-      // No adjoint SNode. Do nothing
-      return;
+      auto snode = src->snode;
+      if (!snode->has_adjoint()) {
+        // No adjoint SNode. Do nothing
+        return;
+      }
+      if (gradients_stopped(stmt, snode)) {
+        // gradients stopped, do nothing.
+        return;
+      }
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
+      if (is_ptr_offset) {
+        adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
+                                        stmt->src->as<MatrixPtrStmt>()->offset);
+      }
+      insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
     }
-    if (gradients_stopped(stmt, snode)) {
-      // gradients stopped, do nothing.
-      return;
-    }
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
-    if (is_ptr_offset) {
-      adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
-                                      stmt->src->as<MatrixPtrStmt>()->offset);
-    }
-    insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Exporting data to external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
+      ExternalPtrStmt *dest = stmt->dest->as<ExternalPtrStmt>();
+      ArgLoadStmt *arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->is_grad) {
+        return;
+      }
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
+      auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adj_ptr));
+      // Clear the gradient after accumulation finished.
+      auto zero =
+          insert<ConstStmt>(TypedConstant(dest->ret_type.ptr_removed(), 0));
+      insert<GlobalStoreStmt>(adj_ptr, zero);
 
-    GlobalPtrStmt *dest = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->dest->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      stmt->parent->erase(stmt);
     } else {
-      dest = stmt->dest->as<GlobalPtrStmt>();
-    }
+      GlobalPtrStmt *dest = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        dest = stmt->dest->as<GlobalPtrStmt>();
+      }
 
-    auto snode = dest->snode;
-    if (!snode->has_adjoint()) {
-      // no gradient (likely integer types)
-      return;
-    }
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
-    if (is_ptr_offset) {
-      adjoint_ptr = insert<MatrixPtrStmt>(
-          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
-    }
-    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+      auto snode = dest->snode;
+      if (!snode->has_adjoint()) {
+        // no gradient (likely integer types)
+        return;
+      }
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      if (is_ptr_offset) {
+        adjoint_ptr = insert<MatrixPtrStmt>(
+            adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+      }
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
-    // Clear the gradient after accumulation finished.
-    auto zero = insert<ConstStmt>(
-        TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
-    insert<GlobalStoreStmt>(adjoint_ptr, zero);
+      // Clear the gradient after accumulation finished.
+      auto zero = insert<ConstStmt>(
+          TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
+      insert<GlobalStoreStmt>(adjoint_ptr, zero);
 
-    stmt->parent->erase(stmt);
+      stmt->parent->erase(stmt);
+    }
   }
 
   void visit(AtomicOpStmt *stmt) override {
     // erase and replace with global load adjoint
-    GlobalPtrStmt *dest = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->dest->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    if (stmt->dest->is<ExternalPtrStmt>()) {
+      ExternalPtrStmt *dest = stmt->dest->as<ExternalPtrStmt>();
+      ArgLoadStmt *arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->is_grad) {
+        return;
+      }
+      auto adj_arg =
+          insert<ArgLoadStmt>(arg->arg_id, arg->ret_type, arg->is_ptr, true);
+      auto adj_ptr = insert<ExternalPtrStmt>(adj_arg, dest->indices);
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adj_ptr));
+      stmt->parent->erase(stmt);
     } else {
-      dest = stmt->dest->as<GlobalPtrStmt>();
-    }
+      GlobalPtrStmt *dest = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        dest = stmt->dest->as<GlobalPtrStmt>();
+      }
 
-    auto snode = dest->snode;
-    if (!snode->has_adjoint()) {
-      // no gradient (likely integer types)
-      return;
-    }
+      auto snode = dest->snode;
+      if (!snode->has_adjoint()) {
+        // no gradient (likely integer types)
+        return;
+      }
 
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
-    if (is_ptr_offset) {
-      adjoint_ptr = insert<MatrixPtrStmt>(
-          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      if (is_ptr_offset) {
+        adjoint_ptr = insert<MatrixPtrStmt>(
+            adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+      }
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+      stmt->parent->erase(stmt);
     }
-    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-    stmt->parent->erase(stmt);
   }
 };
 

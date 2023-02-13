@@ -86,7 +86,7 @@ user_api[ti] = [
 ]
 user_api[ti.ad] = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
-    'no_grad'
+    'no_grad', 'TapeNdarray'
 ]
 user_api[ti.algorithms] = ['PrefixSumExecutor', 'parallel_sort']
 user_api[ti.Field] = [

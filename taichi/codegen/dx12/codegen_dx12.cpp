@@ -21,8 +21,11 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenLLVMDX12(const CompileConfig &config, Kernel *kernel, IRNode *ir)
-      : TaskCodeGenLLVM(config, kernel, ir, nullptr) {
+  TaskCodeGenLLVMDX12(const CompileConfig &config,
+                      TaichiLLVMContext &tlctx,
+                      Kernel *kernel,
+                      IRNode *ir)
+      : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -262,7 +265,7 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenLLVMDX12 gen(config, kernel, stmt);
+  TaskCodeGenLLVMDX12 gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM

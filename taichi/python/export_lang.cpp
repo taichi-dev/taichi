@@ -347,12 +347,6 @@ void export_lang(py::module &m) {
       .def(
           "get_kernel_profiler_device_name",
           [](Program *program) { return program->profiler->get_device_name(); })
-      .def("get_compute_stream_device_time_elapsed_us",
-           [](Program *program) {
-             return program->get_compute_device()
-                 ->get_compute_stream()
-                 ->device_time_elapsed_us();
-           })
       .def("reinit_kernel_profiler_with_metrics",
            [](Program *program, const std::vector<std::string> metrics) {
              return program->profiler->reinit_with_metrics(metrics);
@@ -518,6 +512,7 @@ void export_lang(py::module &m) {
       .def("is_place", &SNode::is_place)
       .def("get_expr", &SNode::get_expr)
       .def("write_int", &SNode::write_int)
+      .def("write_uint", &SNode::write_uint)
       .def("write_float", &SNode::write_float)
       .def("get_shape_along_axis", &SNode::shape_along_axis)
       .def("get_physical_index_position",
@@ -697,6 +692,9 @@ void export_lang(py::module &m) {
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
       .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
+      .def("get_struct_ret_int", &Kernel::get_struct_ret_int)
+      .def("get_struct_ret_uint", &Kernel::get_struct_ret_uint)
+      .def("get_struct_ret_float", &Kernel::get_struct_ret_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -1052,6 +1050,7 @@ void export_lang(py::module &m) {
 #endif
 
   m.def("host_arch", host_arch);
+  m.def("arch_uses_llvm", arch_uses_llvm);
 
   m.def("set_lib_dir", [&](const std::string &dir) { compiled_lib_dir = dir; });
   m.def("set_tmp_dir", [&](const std::string &dir) { runtime_tmp_dir = dir; });
@@ -1140,12 +1139,13 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def(
           "get_struct_type",
-          [&](TypeFactory *factory, std::vector<DataType> elements) {
-            std::vector<const Type *> types;
-            for (auto &element : elements) {
-              types.push_back(element);
+          [&](TypeFactory *factory,
+              std::vector<std::pair<DataType, std::string>> elements) {
+            std::vector<StructMember> members;
+            for (auto &[type, name] : elements) {
+              members.push_back({type, name});
             }
-            return DataType(factory->get_struct_type(types));
+            return DataType(factory->get_struct_type(members));
           },
           py::return_value_policy::reference);
 

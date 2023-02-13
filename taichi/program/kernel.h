@@ -113,6 +113,12 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::vector<uint64> get_ret_uint_tensor(int i);
   std::vector<float64> get_ret_float_tensor(int i);
 
+  TypedConstant fetch_ret(const std::vector<int> &index);
+
+  float64 get_struct_ret_float(const std::vector<int> &index);
+  int64 get_struct_ret_int(const std::vector<int> &index);
+  uint64 get_struct_ret_uint(const std::vector<int> &index);
+
   uint64 get_next_task_id() {
     return task_counter_++;
   }

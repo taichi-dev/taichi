@@ -54,10 +54,12 @@ def paint(t: float):
 
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 
-for i in range(1000000):
+i = 0
+while gui.running:
     paint(i * 0.03)
     gui.set_image(pixels)
     gui.show()
+    i += 1
 ```
 
 Save the code above to your local machine and run this program.
@@ -203,10 +205,12 @@ Lines 18~23 render the result on your screen using Taichi's built-in [GUI System
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 # Sets the window title and the resolution
 
-for i in range(1000000):
+i = 0
+while gui.running:
     paint(i * 0.03)
     gui.set_image(pixels)
     gui.show()
+    i += 1
 ```
 
 The program iterates over `pixels` 1,000,000 times, and the fractal pattern stored in `pixels` is updated accordingly. Call `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.

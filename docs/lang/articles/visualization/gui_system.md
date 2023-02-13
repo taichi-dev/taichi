@@ -170,7 +170,7 @@ gui.get_event(ti.GUI.PRESS)
 gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 ```
 
-`gui.get_event()`: retrieves and removes the next event from the queue and saves it to gui.event. For example:
+`gui.get_event()`: retrieves and removes the next event from the queue and saves it to `gui.event`. For example:
 
 ```python
 if gui.get_event():
@@ -186,7 +186,7 @@ while not gui.get_event(ti.GUI.ESCAPE):
     gui.show()
 ```
 
-`ggui.is_pressed(): identifies currently pressed keys. As demonstrated in the following code snippet, it must be used in conjunction with gui.get_event(), as it will not be updated otherwise. For example:
+`ggui.is_pressed(): identifies currently pressed keys. As demonstrated in the following code snippet, it must be used in conjunction with `gui.get_event()`, as it will not be updated otherwise. For example:
 
 ```python
 while True:

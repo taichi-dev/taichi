@@ -33,7 +33,7 @@ while gui.running:
 
 ## Coordinate system
 
-Each window in the system is constructed based on a coordinate system, with the origin positioned at the lower-left corner. The positive x-axis extends towards the right, while the positive y-axis extends upwards
+Each window in the system is constructed based on a coordinate system, with the origin positioned at the lower-left corner. The positive x-axis extends towards the right, while the positive y-axis extends upwards.
 
 ## Display a field or ndarray
 

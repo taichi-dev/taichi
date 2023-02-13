@@ -58,31 +58,30 @@ Ensure that the shape of the input matches the resolution of the GUI window.
 
 In each iteration of the invocation of the `gui.set_image()` method, the GUI framework performs a conversion of the image data into a format suitable for display and transfers the converted data to the window's frame buffer. This results in a substantial increase in processing overhead when the window size is substantial, which hinders the ability to attain high frame rates (FPS).
 
-n instances where the sole purpose of calling the set_image() method is to display an image, and no additional drawing operations are required, it is possible to enable the fast_gui mode for improved performance. This mode enables Taichi GUI to directly write the image data to the frame buffer, thereby eliminating the need for additional data copying and significantly enhancing the frame rate (FPS).
+In instances where the sole purpose of calling the `set_image()` method is to display an image, and no additional drawing operations are required, it is possible to enable the `fast_gui` mode for improved performance. This mode enables Taichi GUI to directly write the image data to the frame buffer, thereby eliminating the need for additional data copying and significantly enhancing the frame rate (FPS).
 
 ```python
 gui = ti.GUI(res, title, fast_gui=True)
 ```
 
-In order to ensure that the fast_gui mode operates effectively, it is crucial to verify that the data passed to the gui.set_image() method is in a format that is suitable for display. Specifically, if the data is represented as a Taichi field, it should be of one of the following formats:
+In order to ensure that the `fast_gui` mode operates effectively, it is crucial to verify that the data passed to the `gui.set_image()` method is in a format that is suitable for display. Specifically, if the data is represented as a Taichi field, it should be of one of the following formats:
 
 - a vector field `ti.field(3, dtype, shape)` compatible with RGB format.
 - a vector field `ti.field(4, dtype, shape)`  compatible with RGBA format.
 
-It is important to note that the dtype attribute of the Taichi field must be set to ti.f32, ti.f64, or ti.u8.
+It is important to note that the `dtype` attribute of the Taichi field must be set to `ti.f32`, `ti.f64`, or `ti.u8`.
 
 
 ## Draw on a window
 
 In addition to image display, Taichi's GUI system also supports the rendering of simple geometric shapes such as lines, triangles, rectangles, circles, and texts.
 
-The pos parameter in each of the drawing methods accommodates Taichi fields or NumPy arrays, but not Python lists of primitive data types. The elements within the arrays are represented as pairs of floating-point numbers, with values ranging from 0.0 to 1.0, denoting the relative positions of the geometries. For instance:
+The `pos` parameter in each of the drawing methods accommodates Taichi fields or NumPy arrays, but not Python lists of primitive data types. The elements within the arrays are represented as pairs of floating-point numbers, with values ranging from 0.0 to 1.0, denoting the relative positions of the geometries. For instance:
 
 - `(0.0, 0.0)`: the lower-left corner of the window.
 - `(1.0, 1.0)`: the upper-right corner of the window.
 
-The following code snippet demonstrates the rendering of 50 circles with a radius of 5, each with a color randomly assigned based on the values in indices, an integer array with the same size as pos:
-
+The following code snippet demonstrates the rendering of 50 circles with a radius of 5, each with a color randomly assigned based on the values in indices, an integer array with the same size as `pos`:
 
 ```python
 import numpy as np
@@ -100,7 +99,7 @@ while gui.running:
 
 ![gui-circles](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-circles.png)
 
-The following code snippet demonstrates the rendering of five blue line segments, each with a width of 2, with X and Y denoting the starting and ending points respectively:
+The following code snippet demonstrates the rendering of five blue line segments, each with a width of 2, with `X` and `Y` denoting the starting and ending points respectively:
 
 ```python
 import numpy as np
@@ -114,7 +113,7 @@ while gui.running:
 
 ![gui-lines](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/gui-lines.png)
 
-The following code snippet demonstrates the rendering of two orange triangles, with X, Y, and Z denoting the three vertices of each triangle:
+The following code snippet demonstrates the rendering of two orange triangles, with `X`, `Y`, and `Z` denoting the three vertices of each triangle:
 
 ```python
 import numpy as np
@@ -218,7 +217,7 @@ while True:
 
 #### Retrieve cursor position
 
-The gui.get_cursor_pos() method returns the current position of the cursor in the GUI window as a pair of normalized `x` and `y` float values in the range `[0.0, 1.0]`. This information can be used to build interactive applications that respond to cursor movement and user input.
+The `gui.get_cursor_pos()` method returns the current position of the cursor in the GUI window as a pair of normalized `x` and `y` float values in the range `[0.0, 1.0]`. This information can be used to build interactive applications that respond to cursor movement and user input.
 
 ```python
 mouse_x, mouse_y = gui.get_cursor_pos()
@@ -226,7 +225,7 @@ mouse_x, mouse_y = gui.get_cursor_pos()
 
 ## GUI Widgets
 
-The Taichi GUI system also features a suite of widgets, such as slider(), label(), and button(), that enable you to create a customized control interface. The following code provides a simple example:
+The Taichi GUI system also features a suite of widgets, such as `slider()`, `label()`, and `button()`, that enable you to create a customized control interface. The following code provides a simple example:
 
 ```python
 import taichi as ti

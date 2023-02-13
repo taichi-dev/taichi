@@ -429,6 +429,13 @@ class TI_DLL_EXPORT CommandList {
     return RhiResult::not_supported;
   }
 
+  // Profiler support
+  virtual void begin_profiler_scope(const std::string &kernel_name) {
+  }
+
+  virtual void end_profiler_scope() {
+  }
+
   // These are not implemented in compute only device
   virtual void begin_renderpass(int x0,
                                 int y0,
@@ -559,10 +566,6 @@ class TI_DLL_EXPORT Stream {
       const std::vector<StreamSemaphore> &wait_semaphores = {}) = 0;
 
   virtual void command_sync() = 0;
-
-  virtual double device_time_elapsed_us() const {
-    TI_NOT_IMPLEMENTED
-  }
 };
 
 class TI_DLL_EXPORT PipelineCache {
@@ -827,6 +830,19 @@ class TI_DLL_EXPORT Device {
   }
   inline void set_caps(DeviceCapabilityConfig &&caps) {
     caps_ = std::move(caps);
+  }
+
+  // Profiler support
+  virtual void profiler_sync() {
+  }
+
+  virtual size_t profiler_get_sampler_count() {
+    return 0;
+  }
+
+  virtual std::vector<std::pair<std::string, double>>
+  profiler_flush_sampled_time() {
+    return std::vector<std::pair<std::string, double>>();
   }
 };
 

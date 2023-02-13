@@ -159,6 +159,26 @@ class ProgramImpl {
     return result_buffer[i];
   }
 
+  virtual TypedConstant fetch_result(char *result_buffer,
+                                     int offset,
+                                     const Type *dt) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  virtual std::string get_kernel_return_data_layout() {
+    return "";
+  };
+
+  virtual std::string get_kernel_argument_data_layout() {
+    return "";
+  };
+
+  virtual const StructType *get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) {
+    return old_ty;
+  }
+
  private:
 };
 

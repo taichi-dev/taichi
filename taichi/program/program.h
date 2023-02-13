@@ -183,6 +183,10 @@ class TI_DLL_EXPORT Program {
 
   uint64 fetch_result_uint64(int i);
 
+  TypedConstant fetch_result(int offset, const Type *dt) {
+    return program_impl_->fetch_result((char *)result_buffer, offset, dt);
+  }
+
   template <typename T>
   T fetch_result(int i) {
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(i));
@@ -295,6 +299,20 @@ class TI_DLL_EXPORT Program {
       const std::vector<int> &shape,
       ExternalArrayLayout layout = ExternalArrayLayout::kNull,
       bool zero_fill = false);
+
+  std::string get_kernel_return_data_layout() {
+    return program_impl_->get_kernel_return_data_layout();
+  };
+
+  std::string get_kernel_argument_data_layout() {
+    return program_impl_->get_kernel_argument_data_layout();
+  };
+
+  const StructType *get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) {
+    return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
+  }
 
   void delete_ndarray(Ndarray *ndarray);
 

@@ -65,6 +65,10 @@ class LlvmRuntimeExecutor {
 
   TaichiLLVMContext *get_llvm_context();
 
+  JITModule *create_jit_module(std::unique_ptr<llvm::Module> module);
+
+  JITModule *get_runtime_jit_module();
+
   LLVMRuntime *get_llvm_runtime();
 
   void prepare_runtime_context(RuntimeContext *ctx);
@@ -84,6 +88,15 @@ class LlvmRuntimeExecutor {
     return taichi_union_cast_with_different_sizes<T>(
         fetch_result_uint64(i, result_buffer));
   }
+
+  template <typename T>
+  T fetch_result(char *result_buffer, int offset) {
+    T ret;
+    fetch_result_impl(&ret, result_buffer, offset, sizeof(T));
+    return ret;
+  }
+
+  void fetch_result_impl(void *dest, char *result_buffer, int offset, int size);
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
@@ -105,7 +118,7 @@ class LlvmRuntimeExecutor {
                   Args &&...args) {
     TI_ASSERT(arch_uses_llvm(config_.arch));
 
-    auto runtime = llvm_context_->runtime_jit_module;
+    auto runtime = get_runtime_jit_module();
     runtime->call<void *>("runtime_" + key, llvm_runtime_,
                           std::forward<Args>(args)...);
     return taichi_union_cast_with_different_sizes<T>(fetch_result_uint64(
@@ -126,6 +139,8 @@ class LlvmRuntimeExecutor {
   std::size_t get_snode_num_dynamically_allocated(SNode *snode,
                                                   uint64 *result_buffer);
 
+  void init_runtime_jit_module(std::unique_ptr<llvm::Module> module);
+
  private:
   CompileConfig &config_;
 
@@ -134,6 +149,7 @@ class LlvmRuntimeExecutor {
   // TaichiLLVMContext is a thread-safe class with llvm::Module for compilation
   // and JITSession/JITModule for runtime loading & execution
   std::unique_ptr<TaichiLLVMContext> llvm_context_{nullptr};
+  JITModule *runtime_jit_module_{nullptr};
   void *llvm_runtime_{nullptr};
 
   std::unique_ptr<ThreadPool> thread_pool_{nullptr};

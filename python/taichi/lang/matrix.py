@@ -11,14 +11,15 @@ from taichi.lang import runtime_ops
 from taichi.lang._ndarray import Ndarray, NdarrayHostAccess
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiRuntimeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (TaichiRuntimeError, TaichiRuntimeTypeError,
+                                   TaichiSyntaxError, TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
                               taichi_scope, to_numpy_type, to_paddle_type,
                               to_pytorch_type, warning)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types.utils import is_signed
 
 
 def _generate_swizzle_patterns(key_group: str, required_length=4):
@@ -1508,6 +1509,20 @@ class MatrixType(CompoundType):
                                                      ret_index + (i, )))
             for i in range(self.m * self.n)
         ])
+
+    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
+        if id(self.dtype) in primitive_types.integer_type_ids:
+            if is_signed(cook_dtype(self.dtype)):
+                get_ret_func = t_kernel.get_struct_ret_int
+            else:
+                get_ret_func = t_kernel.get_struct_ret_uint
+        elif id(self.dtype) in primitive_types.real_type_ids:
+            get_ret_func = t_kernel.get_struct_ret_float
+        else:
+            raise TaichiRuntimeTypeError(
+                f"Invalid return type on index={ret_index}")
+        return self(
+            [get_ret_func(ret_index + (i, )) for i in range(self.m * self.n)])
 
     def _instantiate_in_python_scope(self, entries):
         entries = [[entries[k * self.m + i] for i in range(self.m)]

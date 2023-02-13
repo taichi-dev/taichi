@@ -89,7 +89,6 @@ class App {
 
     {
       SurfaceConfig config;
-      config.window_handle = glfw_window;
       config.native_surface_handle = device_creator->get_surface();
 
       surface = device->create_surface(config);

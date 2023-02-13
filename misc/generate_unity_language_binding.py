@@ -316,7 +316,9 @@ def generate_module_header(module):
 if __name__ == "__main__":
     builtin_tys = {
         BuiltInType("void", "void"),
+        BuiltInType("int16_t", "int16_t"),
         BuiltInType("int32_t", "int"),
+        BuiltInType("uint16_t", "uint16_t"),
         BuiltInType("uint32_t", "uint"),
         BuiltInType("int64_t", "long"),
         BuiltInType("uint64_t", "ulong"),

@@ -450,7 +450,18 @@
                 },
                 {
                     "name": "scalar_value",
-                    "type": "unoin",
+                    "type": "union",
+                    "since": "v1.4.0",
+                    "variants": [
+                        {
+                            "name": "x16",
+                            "type": "uint16_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "argument_value",
+                    "type": "union",
                     "since": "v1.4.0",
                     "variants": [
                         {
@@ -461,21 +472,6 @@
                             "name": "f32",
                             "type": "float"
                         },
-                        {
-                            "name": "i16",
-                            "type": "int16_t"
-                        },
-                        {
-                            "name": "u16",
-                            "type": "uint16_t"
-                        }
-                    ]
-                },
-                {
-                    "name": "argument_value",
-                    "type": "union",
-                    "since": "v1.4.0",
-                    "variants": [
                         {
                             "name": "scalar",
                             "type": "union.scalar_value"

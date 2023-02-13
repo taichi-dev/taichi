@@ -500,7 +500,7 @@ class Scalarize : public BasicStmtVisitor {
       TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
       TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
 
-      Stmt* cond_val = stmt->op1;
+      Stmt *cond_val = stmt->op1;
 
       auto op2_matrix_init_stmt = stmt->op2->cast<MatrixInitStmt>();
       std::vector<Stmt *> op2_vals = op2_matrix_init_stmt->values;

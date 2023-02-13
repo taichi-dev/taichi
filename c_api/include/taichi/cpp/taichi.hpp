@@ -677,7 +677,7 @@ class Texture {
     slice().copy_to(dst.slice());
   }
 
-  constexpr ImageSlice slice() const {
+  ImageSlice slice() const {
     return image_.slice();
   }
 

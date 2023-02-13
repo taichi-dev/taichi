@@ -525,20 +525,18 @@ void ti_copy_memory_device_to_device(TiRuntime runtime,
 }
 
 void ti_copy_image_device_to_device(TiRuntime runtime,
-                                      const TiImageSlice *dst_image,
-                                      const TiImageSlice *src_image) {
+                                    const TiImageSlice *dst_image,
+                                    const TiImageSlice *src_image) {
   TI_CAPI_TRY_CATCH_BEGIN();
   TI_CAPI_ARGUMENT_NULL(runtime);
   TI_CAPI_ARGUMENT_NULL(dst_image);
   TI_CAPI_ARGUMENT_NULL(dst_image->image);
   TI_CAPI_ARGUMENT_NULL(src_image);
   TI_CAPI_ARGUMENT_NULL(src_image->image);
-  TI_CAPI_INVALID_ARGUMENT(src_image->extent.width !=
-                           dst_image->extent.width);
+  TI_CAPI_INVALID_ARGUMENT(src_image->extent.width != dst_image->extent.width);
   TI_CAPI_INVALID_ARGUMENT(src_image->extent.height !=
                            dst_image->extent.height);
-  TI_CAPI_INVALID_ARGUMENT(src_image->extent.depth !=
-                           dst_image->extent.depth);
+  TI_CAPI_INVALID_ARGUMENT(src_image->extent.depth != dst_image->extent.depth);
   TI_CAPI_INVALID_ARGUMENT(src_image->extent.array_layer_count !=
                            dst_image->extent.array_layer_count);
 

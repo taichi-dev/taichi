@@ -16,14 +16,15 @@ namespace ti {
 struct Version {
   uint32_t version;
 
-  explicit Version(uint32_t version) : version(version) {}
+  explicit Version(uint32_t version) : version(version) {
+  }
   Version(uint32_t major, uint32_t minor, uint32_t patch)
       : version((major * 1000 + minor) * 1000 + patch) {
   }
-  Version(const Version&) = default;
+  Version(const Version &) = default;
   Version(Version &&) = default;
-  Version &operator=(const Version&) = default;
-  Version &operator=(Version&&) = default;
+  Version &operator=(const Version &) = default;
+  Version &operator=(Version &&) = default;
 
   inline uint32_t major() const {
     return version / 1000000;
@@ -210,7 +211,7 @@ class MemorySlice {
   inline const TiMemorySlice &slice() const {
     return slice_;
   }
-  inline operator const TiMemorySlice &() const { // NOLINT
+  inline operator const TiMemorySlice &() const {  // NOLINT
     return slice_;
   }
 };
@@ -313,7 +314,7 @@ class Memory {
   constexpr TiMemory memory() const {
     return memory_;
   }
-  constexpr operator TiMemory() const { // NOLINT
+  constexpr operator TiMemory() const {  // NOLINT
     return memory_;
   }
 };
@@ -453,7 +454,7 @@ class NdArray {
   constexpr const TiNdArray &ndarray() const {
     return ndarray_;
   }
-  constexpr operator TiNdArray() const { // NOLINT
+  constexpr operator TiNdArray() const {  // NOLINT
     return ndarray_;
   }
 };
@@ -507,7 +508,7 @@ class ImageSlice {
   inline const TiImageSlice &slice() const {
     return slice_;
   }
-  inline operator TiImageSlice() const { // NOLINT
+  inline operator TiImageSlice() const {  // NOLINT
     return slice_;
   }
 };
@@ -582,7 +583,7 @@ class Image {
                  format_, false);
   }
 
-  inline void copy_to(const Image& dst) const {
+  inline void copy_to(const Image &dst) const {
     slice().copy_to(dst.slice());
   }
 
@@ -672,7 +673,7 @@ class Texture {
     return Texture(image_.borrow(), texture_);
   }
 
-  inline void copy_to(const Texture& dst) const {
+  inline void copy_to(const Texture &dst) const {
     slice().copy_to(dst.slice());
   }
 
@@ -811,7 +812,7 @@ class ComputeGraph {
     return compute_graph_;
   }
   constexpr operator TiComputeGraph() const {  // NOLINT
-  
+
     return compute_graph_;
   }
 };
@@ -968,7 +969,8 @@ class CapabilityLevelConfig {
 
   CapabilityLevelConfig() {
   }
-  explicit CapabilityLevelConfig(std::vector<TiCapabilityLevelInfo> &&capabilities)
+  explicit CapabilityLevelConfig(
+      std::vector<TiCapabilityLevelInfo> &&capabilities)
       : cap_level_infos(std::move(capabilities)) {
   }
 
@@ -1030,11 +1032,13 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_int16(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT16] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT64] =
+        value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float16(bool value = true) {
@@ -1238,7 +1242,8 @@ class Runtime {
 
   Image allocate_image(const TiImageAllocateInfo &allocate_info) {
     TiImage image = ti_allocate_image(runtime_, &allocate_info);
-    return Image(runtime_, image, allocate_info.dimension, allocate_info.extent, allocate_info.mip_level_count, allocate_info.format, true);
+    return Image(runtime_, image, allocate_info.dimension, allocate_info.extent,
+                 allocate_info.mip_level_count, allocate_info.format, true);
   }
   Texture allocate_texture2d(uint32_t width,
                              uint32_t height,
@@ -1291,7 +1296,8 @@ class Runtime {
   }
   void copy_image_device_to_device(const ImageSlice &dst_image,
                                    const ImageSlice &src_image) {
-    ti_copy_image_device_to_device(runtime_, &dst_image.slice(), &src_image.slice());
+    ti_copy_image_device_to_device(runtime_, &dst_image.slice(),
+                                   &src_image.slice());
   }
   void transition_image(TiImage image, TiImageLayout layout) {
     ti_transition_image(runtime_, image, layout);

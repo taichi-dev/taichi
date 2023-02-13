@@ -56,7 +56,7 @@ Ensure that the shape of the input matches the resolution of the GUI window.
 
 ### Zero-copying frame buffer
 
-In each iteration of the invocation of the gui.set_image() method, the GUI framework performs a conversion of the image data into a format suitable for display and transfers the converted data to the window's frame buffer. This results in a substantial increase in processing overhead when the window size is substantial, which hinders the ability to attain high frame rates (FPS).
+In each iteration of the invocation of the `gui.set_image()` method, the GUI framework performs a conversion of the image data into a format suitable for display and transfers the converted data to the window's frame buffer. This results in a substantial increase in processing overhead when the window size is substantial, which hinders the ability to attain high frame rates (FPS).
 
 n instances where the sole purpose of calling the set_image() method is to display an image, and no additional drawing operations are required, it is possible to enable the fast_gui mode for improved performance. This mode enables Taichi GUI to directly write the image data to the frame buffer, thereby eliminating the need for additional data copying and significantly enhancing the frame rate (FPS).
 

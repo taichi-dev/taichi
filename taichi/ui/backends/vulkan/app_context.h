@@ -78,10 +78,10 @@ class TI_DLL_EXPORT AppContext {
 
   VkSurfaceKHR native_surface_{VK_NULL_HANDLE};
 
+  std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
+
   // not owned
   taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
-
-  std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
 
   TaichiWindow *taichi_window_{nullptr};
 

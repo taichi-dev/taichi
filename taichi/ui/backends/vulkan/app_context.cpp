@@ -104,11 +104,15 @@ void AppContext::init(Program *prog,
     evd_params.surface_creator = make_vk_surface;
     embedded_vulkan_device_ =
         std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
-    native_surface_ = embedded_vulkan_device_->get_surface();
+    if (config.show_window) {
+      native_surface_ = embedded_vulkan_device_->get_surface();
+    }
   } else {
     vulkan_device_ = static_cast<taichi::lang::vulkan::VulkanDevice *>(
         prog->get_graphics_device());
-    native_surface_ = make_vk_surface(vulkan_device_->vk_instance());
+    if (config.show_window) {
+      native_surface_ = make_vk_surface(vulkan_device_->vk_instance());
+    }
   }
 }
 
@@ -127,7 +131,7 @@ const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
 }
 
 AppContext::~AppContext() {
-  if (!embedded_vulkan_device_) {
+  if (!embedded_vulkan_device_ && native_surface_ != VK_NULL_HANDLE) {
     // If `embedded_vulkan_device_` then surface is provided by device creator
     // Otherwise we need to manage it
     vkDestroySurfaceKHR(vulkan_device_->vk_instance(), native_surface_,

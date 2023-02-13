@@ -1,6 +1,7 @@
 #ifdef TI_WITH_VULKAN
 // NOTE: This must be included before `GLFW/glfw3.h` is included
 #include "taichi/rhi/vulkan/vulkan_common.h"
+#include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
 #include "window_system.h"
@@ -33,7 +34,9 @@ bool glfw_context_acquire() {
     // This must be done before glfwInit() on macOS
     // Ref: https://github.com/taichi-dev/taichi/pull/4813
     // Here the `vkGetInstanceProcAddr` comes from Volk
-    glfwInitVulkanLoader(vkGetInstanceProcAddr);
+    if (vulkan::is_vulkan_api_available()) {
+      glfwInitVulkanLoader(vkGetInstanceProcAddr);
+    }
 #endif
 
     auto res = glfwInit();

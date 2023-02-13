@@ -395,7 +395,7 @@ void gc_parallel_1(RuntimeContext *context, int snode_id) {
 }
 ```
 
-It is important to understand that this stage must run on a single thread in order to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created to store the number of elements of `recycled_list` into `recycle_list_size_backup`. The following steps have been implemented to handle the storage and clearing of the elements in the recycled_list:
+It is important to understand that this stage must run on a single thread in order to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created, when the following steps are implemented to handle the storage and clearing of the elements in the `recycled_list`:
 
 1. Backup the number of elements in the recycled_list into recycle_list_size_backup.
 2. Clear the recycled_list.

@@ -139,7 +139,7 @@ ti.GUI.PRESS    # key down or mouse button down
 ti.GUI.MOTION   # mouse motion or mouse wheel
 ```
 
-*Event key* refers to the key that you press from your keyboard or mouse. It can be one of:
+*Event key*: refers to the key that you press from your keyboard or mouse. It can be one of:
 
 ```python
 # for ti.GUI.PRESS and ti.GUI.RELEASE event:
@@ -157,7 +157,7 @@ ti.GUI.MOVE    # Mouse Moved
 ti.GUI.WHEEL   # Mouse Wheel Scrolling
 ```
 
-An *event filter* refers to a combined list of *key*, *type*, and (*type*, *key*) tuple. For example:
+*Event filter*: refers to a combined list of *key*, *type*, and (*type*, *key*) tuple. For example:
 
 ```python
 # if ESC pressed or released:

@@ -3,7 +3,7 @@
 Last update: 2022-04-21
 
 ---
-The Taichi LLVM sparse runtime can be found in the taichi/runtime/llvm directory of the Taichi repository on GitHub. It consists of one header file for each SNode type and a single common source file, runtime.cpp, that applies to all SNode types. The URL for the Taichi repository on GitHub is: https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm/runtime_module
+The Taichi LLVM sparse runtime can be found in the taichi/runtime/llvm directory of the Taichi repository on GitHub. It consists of one header file for each SNode type and a single common source file, **runtime.cpp**, which applies to all SNode types. The URL for the Taichi repository on GitHub is: <https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm/runtime_module>
 
 # SNode
 

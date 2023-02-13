@@ -72,25 +72,25 @@ void AppContext::init(Program *prog,
   this->config = config;
 
   auto make_vk_surface = [&](VkInstance instance) -> VkSurfaceKHR {
-      VkSurfaceKHR surface = VK_NULL_HANDLE;
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
 #ifdef ANDROID
-      VkAndroidSurfaceCreateInfoKHR createInfo{
-          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-          .pNext = nullptr,
-          .flags = 0,
-          .window = window};
+    VkAndroidSurfaceCreateInfoKHR createInfo{
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window};
 
-      vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
+    vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
 #else
-      VkResult result = VK_SUCCESS;
-      if ((result = glfwCreateWindowSurface(instance, window, nullptr,
-                                            &surface)) != VK_SUCCESS) {
-        TI_WARN("Failed to create window: error {}", result);
-        return nullptr;
-      }
+    VkResult result = VK_SUCCESS;
+    if ((result = glfwCreateWindowSurface(instance, window, nullptr,
+                                          &surface)) != VK_SUCCESS) {
+      TI_WARN("Failed to create window: error {}", result);
+      return nullptr;
+    }
 #endif
-      return surface;
-    };
+    return surface;
+  };
 
   // Create a Vulkan device if the original configuration is not for Vulkan or
   // there is no active current program (usage from external library for AOT

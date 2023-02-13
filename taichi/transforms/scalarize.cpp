@@ -443,8 +443,7 @@ class Scalarize : public BasicStmtVisitor {
     auto cond_dtype = stmt->op1->ret_type;
     auto op2_dtype = stmt->op2->ret_type;
     auto op3_dtype = stmt->op3->ret_type;
-    if (cond_dtype->is<TensorType>() || op2_dtype->is<TensorType>() ||
-        op3_dtype->is<TensorType>()) {
+    if (cond_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // TernaryOpExpression::type_check().
       TI_ASSERT(cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
@@ -477,6 +476,46 @@ class Scalarize : public BasicStmtVisitor {
       for (size_t i = 0; i < num_elements; i++) {
         auto ternary_stmt = std::make_unique<TernaryOpStmt>(
             stmt->op_type, cond_vals[i], op2_vals[i], op3_vals[i]);
+        matrix_init_values.push_back(ternary_stmt.get());
+        ternary_stmt->ret_type = primitive_type;
+
+        delayed_modifier_.insert_before(stmt, std::move(ternary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      delayed_modifier_.erase(stmt);
+    } else if (cond_dtype->is<PrimitiveType>() &&
+               (op2_dtype->is<TensorType>() || op3_dtype->is<TensorType>())) {
+      TI_ASSERT(cond_dtype->is<PrimitiveType>() &&
+                op2_dtype->is<TensorType>() && op3_dtype->is<TensorType>());
+      TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+      // Scalarization for LoadStmt should have already replaced all operands
+      // to MatrixInitStmt.
+      TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
+
+      Stmt* cond_val = stmt->op1;
+
+      auto op2_matrix_init_stmt = stmt->op2->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op2_vals = op2_matrix_init_stmt->values;
+
+      auto op3_matrix_init_stmt = stmt->op3->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op3_vals = op3_matrix_init_stmt->values;
+
+      TI_ASSERT(op2_vals.size() == op3_vals.size());
+
+      size_t num_elements = op2_vals.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        auto ternary_stmt = std::make_unique<TernaryOpStmt>(
+            stmt->op_type, cond_val, op2_vals[i], op3_vals[i]);
         matrix_init_values.push_back(ternary_stmt.get());
         ternary_stmt->ret_type = primitive_type;
 

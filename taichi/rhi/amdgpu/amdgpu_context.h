@@ -43,7 +43,8 @@ class AMDGPUContext {
     for (auto &i : kernel_arg_pointer_) {
       AMDGPUDriver::get_instance().mem_free(i);
     }
-    kernel_arg_pointer_.erase(kernel_arg_pointer_.begin(), kernel_arg_pointer_.end());
+    kernel_arg_pointer_.erase(kernel_arg_pointer_.begin(),
+                              kernel_arg_pointer_.end());
   }
 
   void pack_args(std::vector<void *> arg_pointers,

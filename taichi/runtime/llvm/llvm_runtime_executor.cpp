@@ -560,6 +560,21 @@ void LlvmRuntimeExecutor::finalize() {
   }
 }
 
+LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
+  if (preallocated_device_buffer_alloc_ != kDeviceNullAllocation) {
+    // Materialized
+    if (config_.arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+      cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+#endif
+    } else if (config_.arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+      amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+#endif
+    }
+  }
+}
+
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                               KernelProfilerBase *profiler,
                                               uint64 **result_buffer_ptr) {

@@ -284,3 +284,41 @@ TEST_F(CapiTest, TestCreateTcmAotModule) {
     }
   }
 }
+
+TEST_F(CapiTest, DeviceMemoryLeak) {
+  size_t num_runs = 50;
+  uint32_t memory_size = 1024 * 1024 * 300;  // 300 MB * 2
+
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    // Vulkan Runtime
+    for (size_t i = 0; i < num_runs; i++) {
+      TiArch arch = TiArch::TI_ARCH_VULKAN;
+      ti::Runtime runtime(arch);
+      ti::Memory memory = runtime.allocate_memory(memory_size);
+      ti::NdArray<uint8_t> ndarray =
+          runtime.allocate_ndarray<uint8_t>({memory_size}, {});
+    }
+  }
+
+  if (ti::is_arch_available(TI_ARCH_OPENGL)) {
+    // Opengl Runtime
+    for (size_t i = 0; i < num_runs; i++) {
+      TiArch arch = TiArch::TI_ARCH_OPENGL;
+      ti::Runtime runtime(arch);
+      ti::Memory memory = runtime.allocate_memory(memory_size);
+      ti::NdArray<uint8_t> ndarray =
+          runtime.allocate_ndarray<uint8_t>({memory_size}, {});
+    }
+  }
+
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
+    // Cuda Runtime
+    for (size_t i = 0; i < num_runs; i++) {
+      TiArch arch = TiArch::TI_ARCH_CUDA;
+      ti::Runtime runtime(arch);
+      ti::Memory memory = runtime.allocate_memory(memory_size);
+      ti::NdArray<uint8_t> ndarray =
+          runtime.allocate_ndarray<uint8_t>({memory_size}, {});
+    }
+  }
+}

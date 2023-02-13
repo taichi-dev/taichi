@@ -43,6 +43,17 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
                                  &result_buffer);
 }
 
+LlvmRuntime::~LlvmRuntime() {
+  executor_.reset();
+  memory_pool_.reset();
+  if (cfg_->arch == taichi::Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    taichi::lang::CUDADriver::get_instance().mem_free((void **)result_buffer);
+#endif
+  }
+  cfg_.reset();
+}
+
 void LlvmRuntime::check_runtime_error() {
   executor_->check_runtime_error(this->result_buffer);
 }

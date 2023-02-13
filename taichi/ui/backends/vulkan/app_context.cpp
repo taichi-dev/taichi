@@ -127,6 +127,12 @@ const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
 }
 
 AppContext::~AppContext() {
+  if (!embedded_vulkan_device_) {
+    // If `embedded_vulkan_device_` then surface is provided by device creator
+    // Otherwise we need to manage it
+    vkDestroySurfaceKHR(vulkan_device_->vk_instance(), native_surface_,
+                        nullptr);
+  }
 }
 
 bool AppContext::requires_export_sharing() const {

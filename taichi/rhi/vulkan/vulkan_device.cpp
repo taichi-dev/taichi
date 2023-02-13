@@ -2777,7 +2777,6 @@ VulkanSurface::~VulkanSurface() {
   if (config_.native_surface_handle) {
     destroy_swap_chain();
     image_available_ = nullptr;
-    vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
   } else {
     for (auto &img : swapchain_images_) {
       device_->destroy_image(img);

@@ -114,11 +114,13 @@ As of Taichi v1.1.0, the capability to perform type casting on scalar variables 
 
 ### Implicit type casting
 
-Implicit type casting happens when you *accidentally* put or assign a value where a different data type is expected.
+Implicit type casting occurs when a value is placed or assigned where a different data type is expected.
 
 :::caution WARNING
-As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
-::
+
+As a general principle, implicit type casting can be a significant source of bugs. As such, Taichi strongly discourages the use of this mechanism and recommends that you explicitly specify the desired data types for all variables and operations.
+
+:::
 
 
 #### Implicit type casting in binary operations

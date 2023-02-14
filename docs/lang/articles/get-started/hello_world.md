@@ -156,7 +156,7 @@ The field pixels is treated as an iterator, with `i` and `j` being integer indic
 for i, j in pixels:
 ```
 
-It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed sequentially. 
+It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed sequentially.
 
 ```python {3,7,14-15}
 @ti.kernel
@@ -239,7 +239,7 @@ To access the complete list of Taichi examples, run `ti example`. Here are some 
 
 - `ti example -p fractal` or `ti example -P fractal` prints the source code of the fractal example.
 - `ti example -s fractal` saves the example to your current working directory.
-    
+
 ## Supported systems and backends
 
 The table below provides an overview of the operating systems supported by Taichi and the corresponding backends that are compatible with these platforms:

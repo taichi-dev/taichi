@@ -556,15 +556,15 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     AMDGPUDriver::get_instance().memcpy_host_to_device(
         context_pointer, &context, sizeof(RuntimeContext));
 
+    AMDGPUContext::get_instance().push_back_kernel_arg_pointer(context_pointer);
+
     for (auto &task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
                             {(void *)&context_pointer}, {arg_size});
     }
-    AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     TI_TRACE("Launching kernel");
-    AMDGPUDriver::get_instance().mem_free((void *)context_pointer);
 
     if (transferred) {
       for (int i = 0; i < args.size(); i++) {

@@ -217,7 +217,7 @@ Congratulations! By following the brief example above, you have learned the most
 
 - Taichi compiles and executes Taichi functions and kernels on the designated backend.
 - For loops located at the outermost scope in a Taichi kernel are automatically parallelized.
-- Taichi offers a flexible data container, known as a field, and you can utilize indices to iterate over a field.
+- Taichi offers a flexible data container, known as *field*, and you can utilize indices to iterate over a field.
 
 ## Taichi examples
 

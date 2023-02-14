@@ -65,7 +65,8 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     builder.Inliner =
         llvm::createFunctionInliningPass(builder.OptLevel, 0, false);
     builder.populateModulePassManager(module_gen_gcn_pass_manager);
-    
+    module_gen_gcn_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
+        machine_gen_gcn->getTargetIRAnalysis()));
     machine_gen_gcn->addPassesToEmitFile(module_gen_gcn_pass_manager, llvm_stream_gcn, nullptr,
                                 llvm::CGFT_AssemblyFile, true);
     module_gen_gcn_pass_manager.run(*module_clone);

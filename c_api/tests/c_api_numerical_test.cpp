@@ -33,7 +33,8 @@ TEST_F(CapiTest, Float16Fill) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  std::vector<const char *> device_extensions = {"VK_KHR_16bit_storage"};
+  std::vector<const char *> device_extensions = {
+      VK_KHR_16BIT_STORAGE_EXTENSION_NAME};
   TiRuntime ti_runtime = ti_create_vulkan_runtime_ext(
       VK_API_VERSION_1_0, 0, {} /*instance extensions*/, 1,
       device_extensions.data() /*device extensions*/);
@@ -118,7 +119,8 @@ TEST_F(CapiTest, Float16Compute) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  std::vector<const char *> device_extensions = {"VK_KHR_16bit_storage"};
+  std::vector<const char *> device_extensions = {
+      VK_KHR_16BIT_STORAGE_EXTENSION_NAME};
   TiRuntime ti_runtime = ti_create_vulkan_runtime_ext(
       VK_API_VERSION_1_0, 0, {} /*instance extensions*/, 1,
       device_extensions.data() /*device extensions*/);

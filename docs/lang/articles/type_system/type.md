@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Type System
 
-Taichi is a statically typed programming language: The type of a variable in the Taichi scope is determined at compile time; once a variable is declared, you cannot assign to it a value of a different type.
+Taichi is a statically typed programming language, meaning that the type of a variable in the Taichi scope is determined at compile time. This means that once a variable has been declared, it cannot be assigned a value of a different type.
 
 Let's see a quick example:
 
@@ -21,19 +21,20 @@ def test():
 - Line 4: `x` is reassigned a floating-point number 3.14 but takes the value 3. This is because 3.14 is automatically cast to integer 3 to match the type of `x`.
 - Line 5:  The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
-Taichi's `ti.types` module defines all the supported data types, and they are classified into two categories: primitive types and compound types.
+The `ti.types` module in Taichi defines all of the supported data types. These data types are categorized into two groups: primitive and compound.
 
-- Primitive types refer to various commonly-used numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
-- Compound types refer to various array-like or struct-like data types, including `ti.types.matrix`, `ti.types.ndarray`, and `ti.types.struct`. Compound types comprise multiple members of primitive types or of other compound types.
+- Primitive types encompass commonly utilized numerical data types, such as `ti.i32` (`int32`), `ti.u8` (`uint8`), and `ti.f64` (`float64`).
+- Compound types, on the other hand, encompass array-like or struct-like data types, including `ti.types.matrix`, `ti.types.ndarray`, and `ti.types.struct`. These types are composed of multiple members, which can be primitive or other compound types.
 
 ## Primitive types
 
-Primitive types refer to scalars, which are the smallest building blocks of compound types. Each primitive type is denoted with a character indicating its category followed by a number indicating its precision bits (number of bits for storing the data). The _category_ can be `i` (signed integers), `u` (unsigned integers), or `f` (floating-point numbers); the _precision bits_ can be `8`, `16`, `32`, or `64`. Following are the two most commonly used types:
+The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. The two most commonly used primitive types are:
 
 - `i32`: 32-bit signed integer
 - `f32` : 32-bit floating-point number.
 
-Not all backends support Taichi's primitive types. See the following table for how a primitive type is supported by various backends. Note that some backends may require extensions to support a specific primitive type.
+The support of Taichi's primitive types by various backends may vary. Consult the following table for detailed information, and note that some backends may require extensions for complete support of a specific primitive type.
+
 
 | Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
 | ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
@@ -61,15 +62,13 @@ ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 
 :::note
 
-The numeric literals in the Taichi scope also have default integer/floating-point types. For example, if the default floating-point type is `ti.f32`, then a numeric literal `3.14159265358979` in the Taichi scope suffers a precision loss because it is cast to a 32-bit floating-point number, which has a precision of about seven decimal digits.
-
-If you are working on a high-precision application scenario, such as numeric simulation for engineering, set `default_fp` as `ti.f64`.
+The numeric literals in Taichi's scope have default integer or floating-point types. For example, if the default floating-point type is `ti.f32`, a numeric literal 3.14159265358979 will be cast to a 32-bit floating-point number with a precision of approximately seven decimal digits. To ensure high precision in applications such as engineering simulations, it is recommended to set `default_fp` to `ti.f64`.
 
 :::
 
 ### Set default primitive type alias
 
-Taichi supports using `int` as the alias for the default integer type and `float` as the alias for the default floating-point type. For example, after changing the default primitive types to `i64` and `f64`, you can use `int` as the alias for `i64` and `float` as the alias for `f64`.
+In Taichi, the keywords `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use `int` as an alias for `i64` and `float` as an alias for `f64` in your code.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
@@ -89,9 +88,9 @@ def func(a: ti.f64) -> ti.i64:
 
 ### Explicit type casting
 
-As mentioned at the beginning of this document, the type of a variable in the Taichi scope is *statically typed* upon initialization. Taichi's compiler performs type checking at compile time, meaning that you *cannot* change a variable's type once it is initialized. However, from time to time, you may run into situations where you need to switch to a different data type because the original is not feasible for an assignment or calculation. In such situations, you need explicit type casting:
+As mentioned at the beginning of this document, the type of a variable in the Taichi scope is determined at compile time, meaning that it is *statically typed*. The Taichi compiler performs type checking at compile time and therefore, once a variable is declared, you *cannot* assign to it a value of a different type. However, in certain situations, you may need to switch to a different data type due to the unavailability of the original type for an assignment or calculation. In these cases, you must perform an explicit type casting.
 
-- You can use `ti.cast()` to convert a value to the target type:
+- The `ti.cast()` function allows you to convert a given value to a specific target type. For instance, you can use `ti.cast(x, float)` to transform a variable `x` into a floating-point type.
 
   ```python
   @ti.kernel
@@ -101,7 +100,7 @@ As mentioned at the beginning of this document, the type of a variable in the Ta
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-- As of v1.1.0, Taichi allows you to use primitive types such as `ti.f32` and `ti.i64` to convert a scalar variable to a different scalar type:
+As of Taichi v1.1.0, the capability to perform type casting on scalar variables has been introduced using primitive types such as `ti.f32` and `ti.i64`. This allows you to convert scalar variables to different scalar types with ease.
 
   ```python {6,7}
   @ti.kernel
@@ -115,17 +114,18 @@ As mentioned at the beginning of this document, the type of a variable in the Ta
 
 ### Implicit type casting
 
-Implicit type casting happens when you *accidentally* put or assign a value where a different data type is expected.
+Implicit type casting occurs when a value is placed or assigned where a different data type is expected.
 
 :::caution WARNING
-As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
+
+As a general principle, implicit type casting can be a significant source of bugs. As such, Taichi strongly discourages the use of this mechanism and recommends that you explicitly specify the desired data types for all variables and operations.
+
 :::
 
-Implicit type casting can happen in binary operations or in assignments, as explained below.
 
 #### Implicit type casting in binary operations
 
-Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
+In Taichi, implicit type casting can occur during binary operations or assignments. The casting rules are implemented specifically for Taichi and are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). These rules are prioritized as follows:
 
 1. Integer + floating point -> floating point
    - `i32 + f32 -> f32`
@@ -155,9 +155,10 @@ A few exceptions:
 
 #### Implicit type casting in assignments
 
-When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the value is of a higher precision than the variable, a warning of precision loss will be printed.
+In Taichi, implicit type casting is performed when assigning a value to a variable with a different data type. In cases where the value has a higher precision than the target variable, a warning indicating potential precision loss will be displayed.
 
-- Example 1: Variable `a` is initialized with type `float` and immediately reassigned `1`. The reassignment implicitly casts `1` from `int` to `float` without warning:
+
+- Example 1: The variable `a` is initialized with the data type `float`, and then immediately reassigned the value 1. This reassignment implicitly converts the data type of 1 from `int` to `float` without generating a warning.
 
   ```python
   @ti.kernel
@@ -167,7 +168,7 @@ When you assign a value to a variable of a different data type, Taichi implicitl
       print(a)  # 1.0
   ```
 
-- Example 2: Variable `a` is initialized with type `int` and immediately reassigned `3.14`. The reassignment implicitly casts `3.14` from `float` to `int` with a warning because the type of `a` is `int` and has a lower precision than `float`:
+- Example 2: The variable `a` is initialized with the data type `int`, and is immediately reassigned the value 3.14. This reassignment implicitly converts the data type of 3.14 from `float` to `int`, which results in a loss of precision due to `int` having a lower precision than `float`. As a result, a warning is generated.
 
   ```python
   @ti.kernel
@@ -199,7 +200,7 @@ vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 ```
 
-You can use these customized types to instantiate vectors and matrices or annotate the data types of function arguments and struct members. For example:
+You can utilize the customized compound types to instantiate vectors and matrices, as well as annotate the data types of function arguments and struct members. For instance:
 
 ```python
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
@@ -216,7 +217,7 @@ def test():
 
 ### Struct types and dataclass
 
-You can use the funtion `ti.types.struct()` to create a struct type. Try customizing compound types to represent a sphere in the 3D space, which can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`, respectively. These two types are the *higher-level* compound types that fit better with your scenario. Subsequently, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
+You can use the function `ti.types.struct()` to create a struct type, which can be utilized to represent a sphere in 3D space, abstracted by its center and radius. To achieve this, you can call `ti.types.vector()` and `ti.types.struct()` to create two higher-level compound types: `vec3` and `sphere_type`, respectively. These types can then be used as templates to initialize two local variables, `sphere1` and `sphere2`, to represent two instances of spheres.
 
 ```python
 # Define a compound type vec3 to represent a sphere's center
@@ -229,7 +230,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When a struct contains many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper of the struct type:
+When defining a struct with numerous members, the use of `ti.types.struct` can lead to cluttered and unorganized code. Taichi provides a more elegant solution with the `@ti.dataclass` decorator, which acts as a lightweight wrapper around the struct type.
 
 ```python
 @ti.dataclass
@@ -238,24 +239,24 @@ class Sphere:
     radius: float
 ```
 
-The code above serves the same purpose as the line below does but provides better readability:
+The code above accomplishes the same task as the following line, however it offers improved comprehensibility:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
-Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the [objective data-oriented programming](../advanced/odop.md) for more information.
+Another benefit of utilizing the `@ti.dataclass` over the `ti.types.struct` is the ability to define member functions within a dataclass, enabling object-oriented programming (OOP) capabilities. For more information on the topic of objective data-oriented programming, refer to the [objective data-oriented programming](../advanced/odop.md) documentation.
 
 
 ### Initialization
 
-Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
+In Taichi, creating instances of vector, matrix, or struct compound types can be achieved by directly calling the type, similar to how it is done with any other data type.
 
-As of v1.1.0, Taichi supports more options for initializing a struct or a dataclass.
+As of Taichi v1.1.0, multiple options are available for initializing instances of structs or dataclasses. The conventional method of calling a compound type directly still holds true. In addition, the following alternatives are also supported:
 
-- Pass positional arguments to a struct in the order they are defined.
-- Pass keyword arguments to a struct to set the corresponding struct members.
-- Unspecified struct members are automatically set to zero.
+- Pass positional arguments to the struct, in the order in which the members are defined.
+- Utilize keyword arguments to set the specific struct members.
+- Members that are not specified will be automatically set to zero.
 
 For example:
 
@@ -286,7 +287,8 @@ You can create vectors, matrices, and structs using GLSL-like broadcast syntax b
 
 ### Type casting
 
-For now, the only compound types that support type casting in Taichi are vectors and matrices. Type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
+For now, the only compound data types that support type casting in Taichi are vectors and matrices. When casting the type of a vector or matrix, it is performed element-wise, resulting in the creation of new vectors and matrices.
+
 
 ```python
 @ti.kernel

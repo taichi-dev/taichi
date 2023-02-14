@@ -48,8 +48,8 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   if (this->config_.print_kernel_amdgcn) {
     // Amdgcn will not generated during generating hsaco file
     // It's a interim impl
-    // while add machine info to pass_manager, the module will add more target-specific info
-    // e.g.
+    // while add machine info to pass_manager, the module will add more
+    // target-specific info e.g.
     //   call { i1, i32 } @llvm.amdgcn.if.i32(i1 %15)
     // then then `addPassesToEmitFile` will occur an error
     //   LLVM ERROR: Cannot select: intrinsic %llvm.amdgcn.if
@@ -57,9 +57,11 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     llvm::legacy::PassManager module_gen_gcn_pass_manager;
     llvm::SmallString<0> gcnstr;
     llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
-    std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(target->createTargetMachine(
-        triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
-        llvm::Reloc::PIC_, llvm::CodeModel::Small, llvm::CodeGenOpt::Aggressive));
+    std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(
+        target->createTargetMachine(
+            triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
+            llvm::Reloc::PIC_, llvm::CodeModel::Small,
+            llvm::CodeGenOpt::Aggressive));
     llvm::PassManagerBuilder builder;
     builder.OptLevel = 3;
     builder.Inliner =
@@ -67,12 +69,13 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     builder.populateModulePassManager(module_gen_gcn_pass_manager);
     module_gen_gcn_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
         machine_gen_gcn->getTargetIRAnalysis()));
-    machine_gen_gcn->addPassesToEmitFile(module_gen_gcn_pass_manager, llvm_stream_gcn, nullptr,
-                                llvm::CGFT_AssemblyFile, true);
+    machine_gen_gcn->addPassesToEmitFile(module_gen_gcn_pass_manager,
+                                         llvm_stream_gcn, nullptr,
+                                         llvm::CGFT_AssemblyFile, true);
     module_gen_gcn_pass_manager.run(*module_clone);
     std::string gcn(gcnstr.begin(), gcnstr.end());
     static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
-                                      "module AMDGCN");
+                                     "module AMDGCN");
     writer.write(gcn);
   }
 

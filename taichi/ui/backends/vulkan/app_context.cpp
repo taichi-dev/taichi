@@ -2,6 +2,7 @@
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/program/program.h"
+#include "taichi/ui/backends/vulkan/vertex.h"
 
 #include <string_view>
 
@@ -9,7 +10,7 @@ namespace taichi::ui {
 
 namespace vulkan {
 
-using namespace taichi::lang::vulkan;
+using namespace vulkan;
 using namespace taichi::lang;
 
 namespace {
@@ -74,7 +75,7 @@ void AppContext::init(Program *prog,
   // there is no active current program (usage from external library for AOT
   // modules for example).
   if (config.ti_arch != Arch::vulkan || prog == nullptr) {
-    VulkanDeviceCreator::Params evd_params{};
+    taichi::lang::vulkan::VulkanDeviceCreator::Params evd_params{};
     evd_params.additional_instance_extensions =
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();
@@ -99,9 +100,11 @@ void AppContext::init(Program *prog,
 #endif
       return surface;
     };
-    embedded_vulkan_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
+    embedded_vulkan_device_ =
+        std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
   } else {
-    vulkan_device_ = static_cast<VulkanDevice *>(prog->get_graphics_device());
+    vulkan_device_ = static_cast<taichi::lang::vulkan::VulkanDevice *>(
+        prog->get_graphics_device());
   }
 }
 
@@ -128,6 +131,120 @@ bool AppContext::requires_export_sharing() const {
   // true leads to crashes
   // TODO: investigate this, and think of a more universal solution.
   return config.ti_arch == Arch::cuda;
+}
+
+Pipeline *AppContext::get_raster_pipeline(const RasterPipelineConfig &config) {
+  const std::string key = fmt::format(
+      "{}${}${}${}${}${}${}", int(config.polygon_mode), int(config.blend),
+      config.frag_path, config.vert_path, int(config.prim_topology),
+      int(config.depth), int(config.vbo_instanced));
+  const auto &iter = pipelines_.find(key);
+  if (iter != pipelines_.end()) {
+    return iter->second.get();
+  } else {
+    auto vert_code = read_file(config.vert_path);
+    auto frag_code = read_file(config.frag_path);
+
+    std::vector<PipelineSourceDesc> source(2);
+    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+                 frag_code.size(), PipelineStageType::fragment};
+    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+                 vert_code.size(), PipelineStageType::vertex};
+
+    RasterParams raster_params;
+    raster_params.prim_topology = config.prim_topology;
+    raster_params.polygon_mode = config.polygon_mode;
+    raster_params.depth_test = config.depth;
+    raster_params.depth_write = config.depth;
+
+    if (config.blend) {
+      raster_params.blending.push_back(BlendingParams());
+    }
+
+    const std::vector<VertexInputBinding> vertex_inputs = {
+        {/*binding=*/0, sizeof(Vertex),
+         /*instance=*/config.vbo_instanced}};
+    // TODO: consider using uint8 for colors and normals
+    const std::vector<VertexInputAttribute> vertex_attribs = {
+        {/*location=*/0, /*binding=*/0,
+         /*format=*/BufferFormat::rgb32f,
+         /*offset=*/offsetof(Vertex, pos)},
+        {/*location=*/1, /*binding=*/0,
+         /*format=*/BufferFormat::rgb32f,
+         /*offset=*/offsetof(Vertex, normal)},
+        {/*location=*/2, /*binding=*/0,
+         /*format=*/BufferFormat::rg32f,
+         /*offset=*/offsetof(Vertex, tex_coord)},
+        {/*location=*/3, /*binding=*/0,
+         /*format=*/BufferFormat::rgba32f,
+         /*offset=*/offsetof(Vertex, color)},
+    };
+
+    auto pipeline = device().create_raster_pipeline(
+        source, raster_params, vertex_inputs, vertex_attribs);
+
+    Pipeline *pp = pipeline.get();
+    pipelines_[key] = std::move(pipeline);
+    return pp;
+  }
+}
+
+taichi::lang::Pipeline *AppContext::get_customized_raster_pipeline(
+    const RasterPipelineConfig &config,
+    const std::vector<taichi::lang::VertexInputBinding> &vertex_inputs,
+    const std::vector<taichi::lang::VertexInputAttribute> &vertex_attribs) {
+  const std::string key =
+      fmt::format("{}${}${}${}${}${}$C", int(config.polygon_mode),
+                  int(config.blend), config.frag_path, config.vert_path,
+                  int(config.prim_topology), int(config.depth));
+  const auto &iter = pipelines_.find(key);
+  if (iter != pipelines_.end()) {
+    return iter->second.get();
+  } else {
+    auto vert_code = read_file(config.vert_path);
+    auto frag_code = read_file(config.frag_path);
+
+    std::vector<PipelineSourceDesc> source(2);
+    source[0] = {PipelineSourceType::spirv_binary, frag_code.data(),
+                 frag_code.size(), PipelineStageType::fragment};
+    source[1] = {PipelineSourceType::spirv_binary, vert_code.data(),
+                 vert_code.size(), PipelineStageType::vertex};
+
+    RasterParams raster_params;
+    raster_params.prim_topology = config.prim_topology;
+    raster_params.polygon_mode = config.polygon_mode;
+    raster_params.depth_test = config.depth;
+    raster_params.depth_write = config.depth;
+
+    if (config.blend) {
+      raster_params.blending.push_back(BlendingParams());
+    }
+
+    auto pipeline = device().create_raster_pipeline(
+        source, raster_params, vertex_inputs, vertex_attribs);
+
+    Pipeline *pp = pipeline.get();
+    pipelines_[key] = std::move(pipeline);
+    return pp;
+  }
+}
+
+taichi::lang::Pipeline *AppContext::get_compute_pipeline(
+    const std::string &shader_path) {
+  const std::string &key = shader_path;
+  const auto &iter = pipelines_.find(key);
+  if (iter != pipelines_.end()) {
+    return iter->second.get();
+  } else {
+    auto comp_code = read_file(shader_path);
+    auto [pipeline, res] = device().create_pipeline_unique(
+        {PipelineSourceType::spirv_binary, comp_code.data(), comp_code.size(),
+         PipelineStageType::compute});
+    TI_ASSERT(res == RhiResult::success);
+    Pipeline *pp = pipeline.get();
+    pipelines_[key] = std::move(pipeline);
+    return pp;
+  }
 }
 
 TaichiWindow *AppContext::taichi_window() const {

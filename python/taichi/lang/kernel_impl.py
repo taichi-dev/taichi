@@ -29,6 +29,7 @@ from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
                               to_taichi_type)
 from taichi.types import (ndarray_type, primitive_types, sparse_matrix_builder,
                           template, texture_type)
+from taichi.types.compound_types import CompoundType
 from taichi.types.utils import is_signed
 
 from taichi import _logging
@@ -841,26 +842,31 @@ class Kernel:
                 runtime_ops.sync()
 
             if has_ret:
-                if id(ret_dt) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt)):
-                        ret = t_kernel.get_ret_int(0)
-                    else:
-                        ret = t_kernel.get_ret_uint(0)
-                elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = t_kernel.get_ret_float(0)
-                elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt.dtype)):
-                        it = iter(t_kernel.get_ret_int_tensor(0))
-                    else:
-                        it = iter(t_kernel.get_ret_uint_tensor(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
+                if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
+                    ret = self.construct_kernel_ret(
+                        t_kernel, ret_dt, () if isinstance(ret_dt, tuple) else
+                        (0, ))
                 else:
-                    it = iter(t_kernel.get_ret_float_tensor(0))
-                    ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                  for _ in range(ret_dt.n)],
-                                 ndim=getattr(ret_dt, 'ndim', 2))
+                    if id(ret_dt) in primitive_types.integer_type_ids:
+                        if is_signed(cook_dtype(ret_dt)):
+                            ret = t_kernel.get_ret_int(0)
+                        else:
+                            ret = t_kernel.get_ret_uint(0)
+                    elif id(ret_dt) in primitive_types.real_type_ids:
+                        ret = t_kernel.get_ret_float(0)
+                    elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
+                        if is_signed(cook_dtype(ret_dt.dtype)):
+                            it = iter(t_kernel.get_ret_int_tensor(0))
+                        else:
+                            it = iter(t_kernel.get_ret_uint_tensor(0))
+                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                      for _ in range(ret_dt.n)],
+                                     ndim=getattr(ret_dt, 'ndim', 2))
+                    else:
+                        it = iter(t_kernel.get_ret_float_tensor(0))
+                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                      for _ in range(ret_dt.n)],
+                                     ndim=getattr(ret_dt, 'ndim', 2))
             if callbacks:
                 for c in callbacks:
                     c()
@@ -868,6 +874,22 @@ class Kernel:
             return ret
 
         return func__
+
+    def construct_kernel_ret(self, t_kernel, ret_type, index=()):
+        if isinstance(ret_type, tuple):
+            return [
+                self.construct_kernel_ret(t_kernel, ret_type[i], index + (i, ))
+                for i in range(len(ret_type))
+            ]
+        if isinstance(ret_type, CompoundType):
+            return ret_type.from_kernel_struct_ret(t_kernel, index)
+        if id(ret_type) in primitive_types.integer_type_ids:
+            if is_signed(cook_dtype(ret_type)):
+                return t_kernel.get_struct_ret_int(index)
+            return t_kernel.get_struct_ret_uint(index)
+        if id(ret_type) in primitive_types.real_type_ids:
+            return t_kernel.get_struct_ret_float(index)
+        raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)

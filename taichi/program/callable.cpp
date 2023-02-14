@@ -35,12 +35,14 @@ void Callable::finalize_rets() {
   if (rets.empty()) {
     return;
   }
-  std::vector<const Type *> types;
-  types.reserve(rets.size());
-  for (const auto &ret : rets) {
-    types.push_back(ret.dt);
+  std::vector<StructMember> members;
+  members.reserve(rets.size());
+  for (int i = 0; i < rets.size(); i++) {
+    members.push_back({rets[i].dt, fmt::format("ret_{}", i)});
   }
-  ret_type =
-      TypeFactory::get_instance().get_struct_type(types)->as<StructType>();
+  auto *type =
+      TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
+  std::string layout = program->get_kernel_return_data_layout();
+  ret_type = program->get_struct_type_with_data_layout(type, layout);
 }
 }  // namespace taichi::lang

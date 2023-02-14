@@ -286,7 +286,7 @@ class Memory {
     slice().copy_to(dst.slice());
   }
 
-  MemorySlice slice(size_t offset, size_t size) const {
+  inline MemorySlice slice(size_t offset, size_t size) const {
     if (offset + size > size_) {
       ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
       return {};
@@ -297,7 +297,7 @@ class Memory {
     slice.size = size;
     return MemorySlice(runtime_, slice);
   }
-  MemorySlice slice() const {
+  inline MemorySlice slice() const {
     return slice(0, size_);
   }
 
@@ -428,7 +428,7 @@ class NdArray {
     memory().copy_to(dst.memory());
   }
 
-  MemorySlice slice() const {
+  inline MemorySlice slice() const {
     return memory_.slice();
   }
 
@@ -584,9 +584,9 @@ class Image {
     ti_transition_image(runtime_, image_, layout);
   }
 
-  ImageSlice slice(const TiImageOffset &offset,
-                   const TiImageExtent &extent,
-                   uint32_t mip_level) const {
+  inline ImageSlice slice(const TiImageOffset &offset,
+                          const TiImageExtent &extent,
+                          uint32_t mip_level) const {
     if (offset.x + extent.width > extent_.width ||
         offset.y + extent.height > extent_.height ||
         offset.z + extent.depth > extent_.depth ||
@@ -602,7 +602,7 @@ class Image {
     slice.mip_level = mip_level;
     return ImageSlice(runtime_, slice);
   }
-  ImageSlice slice() const {
+  inline ImageSlice slice() const {
     return slice(TiImageOffset{}, extent_, 0);
   }
 
@@ -662,7 +662,7 @@ class Texture {
     return *this;
   }
 
-  Texture borrow() const {
+  inline Texture borrow() const {
     return Texture(image_.borrow(), texture_);
   }
 
@@ -670,7 +670,7 @@ class Texture {
     slice().copy_to(dst.slice());
   }
 
-  constexpr ImageSlice slice() const {
+  inline ImageSlice slice() const {
     return image_.slice();
   }
 
@@ -829,7 +829,6 @@ class ComputeGraph {
     return compute_graph_;
   }
   constexpr operator TiComputeGraph() const {  // NOLINT
-
     return compute_graph_;
   }
 };

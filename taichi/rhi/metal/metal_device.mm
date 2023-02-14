@@ -2,6 +2,7 @@
 #include "spirv_msl.hpp"
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/device_capability.h"
+#include "taichi/rhi/impl_support.h"
 
 namespace taichi::lang {
 namespace metal {
@@ -20,6 +21,20 @@ RhiResult MetalMemory::mapped_ptr(void **mapped_ptr) const {
     return RhiResult::success;
   }
 }
+
+MetalImage::MetalImage(MTLTexture_id mtl_texture) : mtl_texture_(mtl_texture) {}
+MetalImage::~MetalImage() {
+  if (!dont_destroy_) {
+    [mtl_texture_ release];
+  }
+}
+
+void MetalImage::dont_destroy() {
+  dont_destroy_ = true;
+}
+
+MTLTexture_id MetalImage::mtl_texture() const { return mtl_texture_; }
+
 
 MetalPipeline::MetalPipeline(
     const MetalDevice &device, MTLLibrary_id mtl_library,
@@ -405,6 +420,7 @@ DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
 
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
+  graphics_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
   DeviceCapabilityConfig caps = collect_metal_device_caps(mtl_device);
   set_caps(std::move(caps));
@@ -419,6 +435,7 @@ MetalDevice *MetalDevice::create() {
 void MetalDevice::destroy() {
   if (!is_destroyed_) {
     compute_stream_.reset();
+    graphics_stream_.reset();
     memory_allocs_.clear();
     [mtl_device_ release];
     is_destroyed_ = true;
@@ -459,12 +476,134 @@ void MetalDevice::dealloc_memory(DeviceAllocation handle) {
   memory_allocs_.release(&get_memory(handle.alloc_id));
 }
 
+MTLPixelFormat format2mtl(BufferFormat format) {
+  static const std::map<BufferFormat, MTLPixelFormat> map {
+    {BufferFormat::unknown, MTLPixelFormatInvalid},
+    {BufferFormat::r8, MTLPixelFormatR8Unorm},
+    {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
+    {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
+    {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
+    {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
+    {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
+    {BufferFormat::r8u, MTLPixelFormatR8Uint},
+    {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
+    {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
+    {BufferFormat::r8i, MTLPixelFormatR8Sint},
+    {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
+    {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
+    {BufferFormat::r16, MTLPixelFormatR16Unorm},
+    {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
+    {BufferFormat::rgb16, MTLPixelFormatInvalid},
+    {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
+    {BufferFormat::r16u, MTLPixelFormatR16Uint},
+    {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
+    {BufferFormat::rgb16u, MTLPixelFormatInvalid},
+    {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
+    {BufferFormat::r16i, MTLPixelFormatR16Sint},
+    {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
+    {BufferFormat::rgb16i, MTLPixelFormatInvalid},
+    {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
+    {BufferFormat::r16f, MTLPixelFormatR16Float},
+    {BufferFormat::rg16f, MTLPixelFormatRG16Float},
+    {BufferFormat::rgb16f, MTLPixelFormatInvalid},
+    {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
+    {BufferFormat::r32u, MTLPixelFormatR32Uint},
+    {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
+    {BufferFormat::rgb32u, MTLPixelFormatInvalid},
+    {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
+    {BufferFormat::r32i, MTLPixelFormatR32Sint},
+    {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
+    {BufferFormat::rgb32i, MTLPixelFormatInvalid},
+    {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
+    {BufferFormat::r32f, MTLPixelFormatR32Float},
+    {BufferFormat::rg32f, MTLPixelFormatRG32Float},
+    {BufferFormat::rgb32f, MTLPixelFormatInvalid},
+    {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
+    {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
+    {BufferFormat::depth24stencil8, MTLPixelFormatDepth24Unorm_Stencil8},
+    {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
+  };
+  auto it = map.find(format);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureType dimension2mtl(ImageDimension dimension) {
+  static const std::map<ImageDimension, MTLTextureType> map = {
+      {ImageDimension::d1D, MTLTextureType1D},
+      {ImageDimension::d2D, MTLTextureType2D},
+      {ImageDimension::d3D, MTLTextureType3D},
+  };
+  auto it = map.find(dimension);
+  RHI_ASSERT(it != map.end());
+  return it->second;
+}
+MTLTextureUsage usage2mtl(ImageAllocUsage usage) {
+  MTLTextureUsage out = 0;
+  if (usage & ImageAllocUsage::Sampled) {
+    out |= MTLTextureUsageShaderRead;
+  }
+  if (usage & ImageAllocUsage::Storage) {
+    out |= MTLTextureUsageShaderWrite;
+  }
+  if (usage & ImageAllocUsage::Attachment) {
+    out |= MTLTextureUsageRenderTarget;
+  }
+  return out;
+}
+
+DeviceAllocation MetalDevice::create_image(const ImageParams &params) {
+  if (params.export_sharing) {
+    RHI_LOG_ERROR("export sharing is not available in metal");
+  }
+
+  MTLTextureDescriptor *desc = [MTLTextureDescriptor new];
+  desc.width = params.x;
+  desc.height = params.y;
+  desc.depth = params.z;
+  desc.arrayLength = 1;
+  desc.pixelFormat = format2mtl(params.format);
+  desc.textureType = dimension2mtl(params.dimension);
+  desc.usage = usage2mtl(params.usage);
+
+  MTLTexture_id mtl_texture = [mtl_device_ newTextureWithDescriptor:desc];
+
+  [desc release];
+
+  MetalImage &alloc = image_allocs_.acquire(mtl_texture);
+
+  DeviceAllocation out{};
+  out.device = this;
+  out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
+  return out;
+}
+DeviceAllocation MetalDevice::import_mtl_texture(MTLTexture_id texture) {
+  MetalImage &alloc = image_allocs_.acquire(texture);
+  alloc.dont_destroy();
+
+  DeviceAllocation out{};
+  out.device = this;
+  out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
+  return out;
+}
+void MetalDevice::destroy_image(DeviceAllocation handle) {
+  RHI_ASSERT(handle.device == this);
+  image_allocs_.release(&get_image(handle.alloc_id));
+}
+
 const MetalMemory &MetalDevice::get_memory(DeviceAllocationId alloc_id) const {
   return *reinterpret_cast<MetalMemory *>(alloc_id);
 }
 
 MetalMemory &MetalDevice::get_memory(DeviceAllocationId alloc_id) {
   return *reinterpret_cast<MetalMemory *>(alloc_id);
+}
+
+const MetalImage &MetalDevice::get_image(DeviceAllocationId alloc_id) const {
+  return *reinterpret_cast<MetalImage *>(alloc_id);
+}
+
+MetalImage &MetalDevice::get_image(DeviceAllocationId alloc_id) {
+  return *reinterpret_cast<MetalImage *>(alloc_id);
 }
 
 RhiResult MetalDevice::map_range(DevicePtr ptr, uint64_t size,
@@ -503,6 +642,7 @@ ShaderResourceSet *MetalDevice::create_resource_set() {
 }
 
 Stream *MetalDevice::get_compute_stream() { return compute_stream_.get(); }
+Stream *MetalDevice::get_graphics_stream() { return graphics_stream_.get(); }
 void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {

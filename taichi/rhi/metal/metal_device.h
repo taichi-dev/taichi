@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "taichi/common/logging.h"
 #include "taichi/rhi/device.h"
 #include "taichi/rhi/metal/metal_api.h"
 #include "taichi/rhi/impl_support.h"
@@ -16,6 +17,7 @@
 
 DEFINE_METAL_ID_TYPE(MTLDevice);
 DEFINE_METAL_ID_TYPE(MTLBuffer);
+DEFINE_METAL_ID_TYPE(MTLTexture);
 DEFINE_METAL_ID_TYPE(MTLLibrary);
 DEFINE_METAL_ID_TYPE(MTLFunction);
 DEFINE_METAL_ID_TYPE(MTLComputePipelineState);
@@ -47,6 +49,21 @@ struct MetalMemory {
 
  private:
   MTLBuffer_id mtl_buffer_;
+};
+
+struct MetalImage {
+ public:
+  // `mtl_buffer` should be already retained.
+  explicit MetalImage(MTLTexture_id texture);
+  ~MetalImage();
+
+  void dont_destroy();
+
+  MTLTexture_id mtl_texture() const;
+
+ private:
+  MTLTexture_id mtl_texture_;
+  bool dont_destroy_;
 };
 
 struct MetalWorkgroupSize {
@@ -189,7 +206,7 @@ class MetalStream final : public Stream {
   bool is_destroyed_{false};
 };
 
-class MetalDevice final : public Device {
+class MetalDevice final : public GraphicsDevice {
  public:
   // `mtl_device` should be already retained.
   explicit MetalDevice(MTLDevice_id mtl_device);
@@ -204,13 +221,25 @@ class MetalDevice final : public Device {
 
   static MetalDevice *create();
   void destroy();
+  
+  std::unique_ptr<Surface> create_surface(
+      const SurfaceConfig &config) override {
+    TI_NOT_IMPLEMENTED;
+  }
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  DeviceAllocation create_image(const ImageParams &params) override;
+  DeviceAllocation import_mtl_texture(MTLTexture_id texture);
+  void destroy_image(DeviceAllocation handle) override;
+
   const MetalMemory &get_memory(DeviceAllocationId alloc_id) const;
   MetalMemory &get_memory(DeviceAllocationId alloc_id);
 
+  const MetalImage &get_image(DeviceAllocationId alloc_id) const;
+  MetalImage &get_image(DeviceAllocationId alloc_id);
+  
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) override;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) override;
   void unmap(DevicePtr ptr) override;
@@ -222,7 +251,20 @@ class MetalDevice final : public Device {
                             PipelineCache *cache) noexcept final;
   ShaderResourceSet *create_resource_set() override;
 
+  std::unique_ptr<Pipeline> create_raster_pipeline(
+      const std::vector<PipelineSourceDesc> &src,
+      const RasterParams &raster_params,
+      const std::vector<VertexInputBinding> &vertex_inputs,
+      const std::vector<VertexInputAttribute> &vertex_attrs,
+      std::string name = "Pipeline") override {
+    TI_NOT_IMPLEMENTED;
+  }
+  RasterResources *create_raster_resources() override {
+    TI_NOT_IMPLEMENTED;
+  }
+
   Stream *get_compute_stream() override;
+  Stream *get_graphics_stream() override;
   void wait_idle() override;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
@@ -230,7 +272,9 @@ class MetalDevice final : public Device {
  private:
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
+  rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;
   std::unique_ptr<MetalStream> compute_stream_;
+  std::unique_ptr<MetalStream> graphics_stream_;
 
   bool is_destroyed_{false};
 };

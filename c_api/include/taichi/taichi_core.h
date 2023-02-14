@@ -461,11 +461,9 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   // Texture wrapped around a `handle.image`.
   TI_ARGUMENT_TYPE_TEXTURE = 3,
-  // Scalar wrapped around a `handle.buffer`
+  // Typed scalar.
   TI_ARGUMENT_TYPE_SCALAR = 4,
-
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
-
 } TiArgumentType;
 
 // BitField `TiMemoryUsageFlags` (1.4.0)
@@ -776,17 +774,29 @@ typedef struct TiTexture {
   TiFormat format;
 } TiTexture;
 
+// Union `TiScalarValue` (1.5.0)
+//
+// Scalar value represented by a power-of-two number of bits.
+//
+// **NOTE** The unsigned integer types merely hold the number of bits in memory
+// and doesn't reflect any type of the underlying data. For example, a 32-bit
+// floating-point scalar value is assigned by `*(float*)&scalar_value.x32 =
+// 0.0f`; a 16-bit signed integer is assigned by `*(int16_t)&scalar_vaue.x16 =
+// 1`. The actual type of the scalar is hinted via `type`.
 typedef union TiScalarValue {
-  // Value of a 8-bit one's complement unsigned integer.
+  // Scalar value that fits into 8 bits.
   uint8_t x8;
-  // Value of a 16-bit one's complement unsigned integer.
+  // Scalar value that fits into 16 bits.
   uint16_t x16;
-  // Value of a 32-bit one's complement unsigned integer.
-  uint16_t x32;
-  // Value of a 64-bit one's complement unsigned integer.
-  uint16_t x64;
+  // Scalar value that fits into 32 bits.
+  uint32_t x32;
+  // Scalar value that fits into 64 bits.
+  uint64_t x64;
 } TiScalarValue;
 
+// Structure `TiScalar` (1.5.0)
+//
+// A typed scalar value.
 typedef struct TiScalar {
   TiDataType type;
   TiScalarValue value;
@@ -796,11 +806,13 @@ typedef struct TiScalar {
 //
 // A scalar or structured argument value.
 typedef union TiArgumentValue {
-  // Value of a 32-bit one's complement signed integer.
+  // Value of a 32-bit one's complement signed integer. This is equivalent to
+  // `union.scalar_value.x32` with `enumeration.data_type.i32`.
   int32_t i32;
-  // Value of a 32-bit IEEE 754 single-precision floating-poing number.
+  // Value of a 32-bit IEEE 754 single-precision floating-poing number. This is
+  // equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
   float f32;
-  // An scalar to be bound
+  // An scalar to be bound.
   TiScalar scalar;
   // An ND-array to be bound.
   TiNdArray ndarray;

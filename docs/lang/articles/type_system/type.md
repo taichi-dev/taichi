@@ -90,7 +90,7 @@ def func(a: ti.f64) -> ti.i64:
 
 As mentioned at the beginning of this document, the type of a variable in the Taichi scope is determined at compile time, meaning that it is *statically typed*. The Taichi compiler performs type checking at compile time and therefore, once a variable is declared, you *cannot* assign to it a value of a different type. However, in certain situations, you may need to switch to a different data type due to the unavailability of the original type for an assignment or calculation. In these cases, you must perform an explicit type casting.
 
-- You can use `ti.cast()` to convert a value to the target type:
+- The `ti.cast()` function allows you to convert a given value to a specific target type. For instance, you can use `ti.cast(x, float)` to transform a variable `x` into a floating-point type.
 
   ```python
   @ti.kernel
@@ -100,7 +100,7 @@ As mentioned at the beginning of this document, the type of a variable in the Ta
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
-In Taichi v1.1.0, the capability to perform type casting on scalar variables has been introduced using primitive types such as `ti.f32` and `ti.i64`. This allows you to convert scalar variables to different scalar types with ease.
+As of Taichi v1.1.0, the capability to perform type casting on scalar variables has been introduced using primitive types such as `ti.f32` and `ti.i64`. This allows you to convert scalar variables to different scalar types with ease.
 
   ```python {6,7}
   @ti.kernel

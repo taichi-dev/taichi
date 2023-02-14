@@ -100,7 +100,8 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
         auto alloca_type = allocainst->getAllocatedType();
         llvm::IRBuilder<> builder(allocainst);
         // magic number 5 and 0 represent `private`,`generic` respectively
-        // more details, please ref https://llvm.org/docs/AMDGPUUsage.html#address-spaces
+        // more details, please ref
+        // https://llvm.org/docs/AMDGPUUsage.html#address-spaces
         auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
         auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
         new_alloca->setAlignment(Align(allocainst->getAlign().value()));
@@ -160,7 +161,8 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
     //   addrspacecast i32 addrspace(5)* %n to i32*
 
     // ditto magic number 5 and 0
-    // more details, please ref https://llvm.org/docs/AMDGPUUsage.html#address-spaces
+    // more details, please ref
+    // https://llvm.org/docs/AMDGPUUsage.html#address-spaces
     auto *new_alloca = builder.CreateAlloca(new_type, (unsigned)5);
     new_alloca->setAlignment(Align(8));
     auto new_ty = llvm::PointerType::get(new_type, unsigned(0));

@@ -456,9 +456,9 @@ A scalar or structured argument value.
 
 - `union.argument_value.i32`: Value of a 32-bit one's complement signed integer. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.i32`.
 - `union.argument_value.f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
-- `union.argument_value.scalar`: An scalar to be bound.
 - `union.argument_value.ndarray`: An ND-array to be bound.
 - `union.argument_value.texture`: A texture to be bound.
+- `union.argument_value.scalar`: An scalar to be bound.
 
 `structure.argument`
 

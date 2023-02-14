@@ -924,9 +924,9 @@ A typed scalar value.
 typedef union TiArgumentValue {
   int32_t i32;
   float f32;
-  TiScalar scalar;
   TiNdArray ndarray;
   TiTexture texture;
+  TiScalar scalar;
 } TiArgumentValue;
 ```
 
@@ -934,9 +934,9 @@ A scalar or structured argument value.
 
 - `i32`: Value of a 32-bit one's complement signed integer. This is equivalent to `x32` with `TI_DATA_TYPE_I32`.
 - `f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `x32` with `TI_DATA_TYPE_F32`.
-- `scalar`: An scalar to be bound.
 - `ndarray`: An ND-array to be bound.
 - `texture`: A texture to be bound.
+- `scalar`: An scalar to be bound.
 
 ---
 ### Structure `TiArgument`

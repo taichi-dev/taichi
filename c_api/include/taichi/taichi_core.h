@@ -812,12 +812,12 @@ typedef union TiArgumentValue {
   // Value of a 32-bit IEEE 754 single-precision floating-poing number. This is
   // equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
   float f32;
-  // An scalar to be bound.
-  TiScalar scalar;
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.
   TiTexture texture;
+  // An scalar to be bound.
+  TiScalar scalar;
 } TiArgumentValue;
 
 // Structure `TiArgument` (1.4.0)

@@ -498,16 +498,16 @@
                             "type": "float"
                         },
                         {
-                            "name": "scalar",
-                            "type": "structure.scalar"
-                        },
-                        {
                             "name": "ndarray",
                             "type": "structure.nd_array"
                         },
                         {
                             "name": "texture",
                             "type": "structure.texture"
+                        },
+                        {
+                            "name": "scalar",
+                            "type": "structure.scalar"
                         }
                     ]
                 },

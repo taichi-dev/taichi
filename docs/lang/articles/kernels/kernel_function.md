@@ -4,18 +4,18 @@ sidebar_position: 1
 
 # Kernels and Functions
 
-Taichi and Python have similar but *not exactly the same* syntax. To differentiate Taichi code from the native Python code, we use two decorators `@ti.kernel` and `@ti.func`:
+Taichi and Python share a similar syntax, but they are not identical. To distinguish Taichi code from native Python code, we utilize two decorators, `@ti.kernel` and `@ti.func`:
 
-- Functions decorated with `@ti.kernel` are *Taichi kernels* or *kernels* for short. They are the entry points where Taichi's runtime begins to take over the tasks, and *must* be called directly by the Python code. You can prepare your tasks, such as read data from the disk and preprocess them, in native Python and then call the kernels to let Taichi take over those computation-intensive tasks.
+- Functions decorated with `@ti.kernel` are known as *Taichi kernels* or simply *kernels*. These functions are the entry points where Taichi's runtime takes over the tasks, and they *must* be directly invoked by Python code. You can use native Python to prepare tasks, such as reading data from disk and pre-processing, before calling the kernel to offload computation-intensive tasks to Taichi.
+- Functions decorated with `@ti.func` are known as *Taichi functions*. These functions are building blocks of kernels and can only be invoked by another Taichi function or a kernel. Like normal Python functions, you can divide your tasks into multiple Taichi functions to enhance readability and reuse them across different kernels.
 
-- Functions decorated with `@ti.func` are *Taichi functions*. They are the building blocks of kernels and can *only* be called by a kernel or another Taichi function. Just as you do with normal Python functions, you can split your tasks into multiple Taichi functions to improve readability and reuse them in different kernels.
+In the following example, `inv_square()` is decorated with `@ti.func` and is a Taichi function. `partial_sum()` is decorated with `@ti.kernel` and is a kernel. The former (`inv_square()`) is called by the latter (`partial_sum()`). The arguments and return value in `partial_sum()` are type hinted, while those in the Taichi function `inv_square()` are not.
 
-In the following example, `inv_square()` is decorated with `@ti.func` and is a Taichi function; `partial_sum()` is decorated with `@ti.kernel` and is a kernel. The former (`inv_square()`) is called by the latter (`partial_sum()`). The argument and the return value in `partial_sum()` are type hinted, whilst those in the *Taichi function* `inv_square()` are not.
+Here comes a significant difference between Python and Taichi - *type hinting*:
 
-Here comes an important difference between Python and Taichi, type hinting:
+- Type hinting in Python is recommended, but not compulsory.
+- Taichi mandates that the arguments and return value of a kernel are type hinted, unless it has neither an argument nor a return statement.
 
-- Type hinting in Python is recommended, *not* mandatory.
-- Taichi makes it mandatory that you type hint the arguments and the return value of a kernel unless it does not have an argument or a return statement.
 
 ```python
 import taichi as ti
@@ -35,9 +35,7 @@ def partial_sum(n: int) -> float:  # A kernel
 
 :::caution WARNING
 
-Taichi raises a syntax error if you call a Taichi function from within the native Python code (the *Python scope*). For example:
-
-:::
+Calling a Taichi function from within the native Python code (the Python scope) results in a syntax error raised by Taichi. For example:
 
 ```python
 import taichi as ti
@@ -51,19 +49,19 @@ print(inv_square(1.0))  # Syntax error
 ```
 
 You must call Taichi functions from within the Taichi scope, a concept as opposed to the *Python scope*.
+:::
 
 :::note IMPORTANT
 
 For convenience, we introduce two concepts, *Taichi scope* and *Python scope*:
 
-- The code inside a kernel or a Taichi function is in the *Taichi scope*. The code in the Taichi scope is compiled by Taichi's runtime and executed in parallel on multi-core CPU or GPU devices for high-performance computation. The Taichi scope corresponds to the device side in CUDA.
+- The code inside a kernel or a Taichi function is part of the *Taichi scope*. Taichi's runtime compiles and executes this code in parallel on multi-core CPU or GPU devices for high-performance computation. The Taichi scope corresponds to the device side in CUDA.
 
-- Code outside of the Taichi scope is in the *Python scope*. The code in the Python scope is native Python and executed by Python's virtual machine, *not* by Taichi's runtime. The Python scope corresponds to the host side in CUDA.
+- Code outside of the Taichi scope belongs to the *Python scope*. This code is written in native Python and executed by Python's virtual machine, not by Taichi's runtime. The Python scope corresponds to the host side in CUDA.
 
 :::
 
-Do not confuse kernels with Taichi functions. They have slightly different syntax. The following sections describe their usages.
-
+It is important to distinguish between kernels and Taichi functions as they have slightly different syntax. The following sections explain their respective usages.
 
 ## Kernel
 

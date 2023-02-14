@@ -537,16 +537,19 @@ class ArgumentEntry {
   }
 
   inline void set_f16(float value) {
-    arg_->type = TI_ARGUMENT_TYPE_F16;
-    arg_->value.f32 = value;
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_F16;
+    std::memcpy(&arg_->value.scalar.value.x32, &value, sizeof(value));
   }
   inline void set_u16(uint16_t value) {
-    arg_->type = TI_ARGUMENT_TYPE_U16;
-    std::memcpy(&arg_->value.scalar.x16, &value, sizeof(value));
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_U16;
+    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
   }
   inline void set_i16(int16_t value) {
-    arg_->type = TI_ARGUMENT_TYPE_I16;
-    std::memcpy(&arg_->value.scalar.x16, &value, sizeof(value));
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_I16;
+    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
   }
 
   inline ArgumentEntry &operator=(const TiArgument &b) {

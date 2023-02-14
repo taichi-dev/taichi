@@ -156,8 +156,7 @@ The field pixels is treated as an iterator, with `i` and `j` being integer indic
 for i, j in pixels:
 ```
 
-
-Keep in mind that the *for loops not at the outermost scope are not parallelized* but handled serially:
+It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed sequentially. 
 
 ```python {3,7,14-15}
 @ti.kernel
@@ -171,7 +170,7 @@ def fill():
         for k in range(5):  # Not parallelized because it is not at the outermost scope
 ```
 
-You can also serialize a for loop at the outermost scope using `ti.loop_config(serialize=True)`. See [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for more information.
+You may also serialize a for loop at the outermost scope using `ti.loop_config(serialize=True)`. Please refer to [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for additional information.
 
 :::caution WARNING
 
@@ -210,25 +209,25 @@ while gui.running:
     i += 1
 ```
 
-The program iterates over `pixels` 1,000,000 times, and the fractal pattern stored in `pixels` is updated accordingly. Call `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.
+The program iterates over `pixels` and updates the fractal pattern stored in pixels accordingly. Use `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.
 
 ### Key takeaways
 
-Congratulations! After walking through the short example above, you have learned the most significant features of Taichi:
+Congratulations! By following the brief example above, you have learned the most important features of Taichi:
 
-- Taichi compiles and runs Taichi functions and kernels on the specified backend.
-- For loops at the outermost scope in a Taichi kernel are automatically parallelized.
-- Taichi provides a flexible data container field, and you can use indices to loop over a field.
+- Taichi compiles and executes Taichi functions and kernels on the designated backend.
+- For loops located at the outermost scope in a Taichi kernel are automatically parallelized.
+- Taichi offers a flexible data container, known as a field, and you can utilize indices to iterate over a field.
 
 ## Taichi examples
 
-The Julia fractal is one of the representative demos Taichi provides. To view more selected demos in Taichi gallery:
+The Julia fractal is one of the featured demos included in Taichi. To view additional selected demos available in the Taichi Gallery:
 
 ```bash
 ti gallery
 ```
 
-This window appears:
+A new window will open and appear on the screen:
 
 <center>
 
@@ -236,14 +235,14 @@ This window appears:
 
 </center>
 
-To access the full list of Taichi examples, run `ti example`. Other useful command lines:
+To access the complete list of Taichi examples, run `ti example`. Here are some additional useful command lines:
 
-- `ti example -p fractal`/`ti example -P fractal` prints the source code of the fractal example.
-- `ti example -s fractal` saves the example to your current work directory.
-
+- `ti example -p fractal` or `ti example -P fractal` prints the source code of the fractal example.
+- `ti example -s fractal` saves the example to your current working directory.
+    
 ## Supported systems and backends
 
-The following table lists the supported operating systems and the backends that Taichi supports on these platforms:
+The table below provides an overview of the operating systems supported by Taichi and the corresponding backends that are compatible with these platforms:
 
 | **platform** |      **CPU**       |      **CUDA**      |     **OpenGL**     |     **Metal**      |    **Vulkan**    |
 | :----------: | :----------------: | :----------------: | :----------------: | :----------------: | :----------------: |
@@ -254,7 +253,8 @@ The following table lists the supported operating systems and the backends that 
 - :heavy_check_mark:: supported;
 - N/A: not available
 
-You are now ready to move on and start writing your own Taichi programs. See the following documents for more information about how to use Taichi in some of its typical application scenarios:
+You are now prepared to begin writing your own Taichi programs. The following documents provide more information about how to utilize Taichi in some of its typical application scenarios:
+
 - [Accelerate Python with Taichi](./accelerate_python.md)
 - [Conduct Physical Simulation](./cloth_simulation.md)
 - [Accelerate PyTorch with Taichi](./accelerate_pytorch.md).

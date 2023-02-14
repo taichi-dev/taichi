@@ -1,5 +1,6 @@
 // C++ wrapper of Taichi C-API
 #pragma once
+#include <iostream>
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -16,15 +17,14 @@ namespace ti {
 struct Version {
   uint32_t version;
 
-  explicit Version(uint32_t version) : version(version) {
-  }
+  explicit Version(uint32_t version) : version(version) {}
   Version(uint32_t major, uint32_t minor, uint32_t patch)
       : version((major * 1000 + minor) * 1000 + patch) {
   }
-  Version(const Version &) = default;
+  Version(const Version&) = default;
   Version(Version &&) = default;
-  Version &operator=(const Version &) = default;
-  Version &operator=(Version &&) = default;
+  Version &operator=(const Version&) = default;
+  Version &operator=(Version&&) = default;
 
   inline uint32_t major() const {
     return version / 1000000;
@@ -211,7 +211,7 @@ class MemorySlice {
   inline const TiMemorySlice &slice() const {
     return slice_;
   }
-  inline operator const TiMemorySlice &() const {  // NOLINT
+  inline operator const TiMemorySlice &() const { // NOLINT
     return slice_;
   }
 };
@@ -314,7 +314,7 @@ class Memory {
   constexpr TiMemory memory() const {
     return memory_;
   }
-  constexpr operator TiMemory() const {  // NOLINT
+  constexpr operator TiMemory() const { // NOLINT
     return memory_;
   }
 };
@@ -454,7 +454,7 @@ class NdArray {
   constexpr const TiNdArray &ndarray() const {
     return ndarray_;
   }
-  constexpr operator TiNdArray() const {  // NOLINT
+  constexpr operator TiNdArray() const { // NOLINT
     return ndarray_;
   }
 };
@@ -508,7 +508,7 @@ class ImageSlice {
   inline const TiImageSlice &slice() const {
     return slice_;
   }
-  inline operator TiImageSlice() const {  // NOLINT
+  inline operator TiImageSlice() const { // NOLINT
     return slice_;
   }
 };
@@ -583,7 +583,7 @@ class Image {
                  format_, false);
   }
 
-  inline void copy_to(const Image &dst) const {
+  inline void copy_to(const Image& dst) const {
     slice().copy_to(dst.slice());
   }
 
@@ -673,11 +673,11 @@ class Texture {
     return Texture(image_.borrow(), texture_);
   }
 
-  inline void copy_to(const Texture &dst) const {
+  inline void copy_to(const Texture& dst) const {
     slice().copy_to(dst.slice());
   }
 
-  ImageSlice slice() const {
+  constexpr ImageSlice slice() const {
     return image_.slice();
   }
 
@@ -797,14 +797,14 @@ class ComputeGraph {
     return at(name);
   }
 
-  void launch(uint32_t argument_count, const TiNamedArgument *arguments) {
+  void launch(uint32_t argument_count, const TiNamedArgument *arguments) const {
     ti_launch_compute_graph(runtime_, compute_graph_, argument_count,
                             arguments);
   }
-  void launch() {
+  void launch() const {
     launch(args_.size(), args_.data());
   }
-  void launch(const std::vector<TiNamedArgument> &arguments) {
+  void launch(const std::vector<TiNamedArgument> &arguments) const {
     launch(arguments.size(), arguments.data());
   }
 
@@ -812,7 +812,7 @@ class ComputeGraph {
     return compute_graph_;
   }
   constexpr operator TiComputeGraph() const {  // NOLINT
-
+  
     return compute_graph_;
   }
 };
@@ -880,13 +880,13 @@ class Kernel {
     args_.clear();
   }
 
-  void launch(uint32_t argument_count, const TiArgument *arguments) {
+  void launch(uint32_t argument_count, const TiArgument *arguments) const {
     ti_launch_kernel(runtime_, kernel_, argument_count, arguments);
   }
-  void launch() {
+  void launch() const {
     launch(args_.size(), args_.data());
   }
-  void launch(const std::vector<TiArgument> &arguments) {
+  void launch(const std::vector<TiArgument> &arguments) const {
     launch(arguments.size(), arguments.data());
   }
 
@@ -944,11 +944,11 @@ class AotModule {
     return AotModule(runtime_, aot_module_, false);
   }
 
-  Kernel get_kernel(const char *name) {
+  Kernel get_kernel(const char *name) const {
     TiKernel kernel_ = ti_get_aot_module_kernel(aot_module_, name);
     return Kernel(runtime_, kernel_);
   }
-  ComputeGraph get_compute_graph(const char *name) {
+  ComputeGraph get_compute_graph(const char *name) const {
     TiComputeGraph compute_graph_ =
         ti_get_aot_module_compute_graph(aot_module_, name);
     return ComputeGraph(runtime_, compute_graph_);
@@ -969,8 +969,7 @@ class CapabilityLevelConfig {
 
   CapabilityLevelConfig() {
   }
-  explicit CapabilityLevelConfig(
-      std::vector<TiCapabilityLevelInfo> &&capabilities)
+  explicit CapabilityLevelConfig(std::vector<TiCapabilityLevelInfo> &&capabilities)
       : cap_level_infos(std::move(capabilities)) {
   }
 
@@ -1032,13 +1031,11 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_int16(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT16] =
-        value ? TI_TRUE : TI_FALSE;
+    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT64] =
-        value ? TI_TRUE : TI_FALSE;
+    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float16(bool value = true) {
@@ -1188,11 +1185,11 @@ class Runtime {
   }
 
   void set_capabilities_ext(
-      const std::vector<TiCapabilityLevelInfo> &capabilities) {
+      const std::vector<TiCapabilityLevelInfo> &capabilities) const {
     ti_set_runtime_capabilities_ext(runtime_, (uint32_t)capabilities.size(),
                                     capabilities.data());
   }
-  void set_capabilities_ext(const CapabilityLevelConfig &capabilities) {
+  void set_capabilities_ext(const CapabilityLevelConfig &capabilities) const {
     set_capabilities_ext(capabilities.cap_level_infos);
   }
   CapabilityLevelConfig get_capabilities() const {
@@ -1203,11 +1200,11 @@ class Runtime {
     return CapabilityLevelConfig{std::move(devcaps)};
   }
 
-  Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {
+  Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) const {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);
   }
-  Memory allocate_memory(size_t size, bool host_access = false) {
+  Memory allocate_memory(size_t size, bool host_access = false) const {
     TiMemoryAllocateInfo allocate_info{};
     allocate_info.size = size;
     allocate_info.host_read = host_access;
@@ -1218,7 +1215,7 @@ class Runtime {
   template <typename T>
   NdArray<T> allocate_ndarray(const std::vector<uint32_t> &shape = {},
                               const std::vector<uint32_t> &elem_shape = {},
-                              bool host_access = false) {
+                              bool host_access = false) const {
     size_t size = sizeof(T);
     TiNdArray ndarray{};
     for (size_t i = 0; i < shape.size(); ++i) {
@@ -1240,15 +1237,14 @@ class Runtime {
     return NdArray<T>(std::move(memory), ndarray);
   }
 
-  Image allocate_image(const TiImageAllocateInfo &allocate_info) {
+  Image allocate_image(const TiImageAllocateInfo &allocate_info) const {
     TiImage image = ti_allocate_image(runtime_, &allocate_info);
-    return Image(runtime_, image, allocate_info.dimension, allocate_info.extent,
-                 allocate_info.mip_level_count, allocate_info.format, true);
+    return Image(runtime_, image, allocate_info.dimension, allocate_info.extent, allocate_info.mip_level_count, allocate_info.format, true);
   }
   Texture allocate_texture2d(uint32_t width,
                              uint32_t height,
                              TiFormat format,
-                             TiSampler sampler) {
+                             TiSampler sampler) const {
     TiImageExtent extent{};
     extent.width = width;
     extent.height = height;
@@ -1273,40 +1269,39 @@ class Runtime {
     return Texture(std::move(image), texture);
   }
 
-  AotModule load_aot_module(const char *path) {
+  AotModule load_aot_module(const char *path) const {
     TiAotModule aot_module_ = ti_load_aot_module(runtime_, path);
     return AotModule(runtime_, aot_module_, true);
   }
-  AotModule load_aot_module(const std::string &path) {
+  AotModule load_aot_module(const std::string &path) const {
     return load_aot_module(path.c_str());
   }
 
-  AotModule create_aot_module(const void *tcm, size_t size) {
+  AotModule create_aot_module(const void *tcm, size_t size) const {
     TiAotModule aot_module = ti_create_aot_module(runtime_, tcm, size);
     return AotModule(runtime_, aot_module, true);
   }
-  AotModule create_aot_module(const std::vector<uint8_t> &tcm) {
+  AotModule create_aot_module(const std::vector<uint8_t> &tcm) const {
     return create_aot_module(tcm.data(), tcm.size());
   }
 
   void copy_memory_device_to_device(const MemorySlice &dst_memory,
-                                    const MemorySlice &src_memory) {
+                                    const MemorySlice &src_memory) const {
     ti_copy_memory_device_to_device(runtime_, &dst_memory.slice(),
                                     &src_memory.slice());
   }
   void copy_image_device_to_device(const ImageSlice &dst_image,
-                                   const ImageSlice &src_image) {
-    ti_copy_image_device_to_device(runtime_, &dst_image.slice(),
-                                   &src_image.slice());
+                                   const ImageSlice &src_image) const {
+    ti_copy_image_device_to_device(runtime_, &dst_image.slice(), &src_image.slice());
   }
-  void transition_image(TiImage image, TiImageLayout layout) {
+  void transition_image(TiImage image, TiImageLayout layout) const {
     ti_transition_image(runtime_, image, layout);
   }
 
-  void flush() {
+  void flush() const {
     ti_flush(runtime_);
   }
-  void wait() {
+  void wait() const {
     ti_wait(runtime_);
   }
 

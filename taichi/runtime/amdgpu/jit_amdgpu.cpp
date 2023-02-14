@@ -73,8 +73,17 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   llvm::SmallString<0> outstr;
   llvm::raw_svector_ostream llvm_stream(outstr);
 
+  llvm::SmallString<0> gcnstr;
+  llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
+
   machine->addPassesToEmitFile(module_pass_manager, llvm_stream, nullptr,
                                llvm::CGFT_ObjectFile, true);
+  
+  if (this->config_.print_kernel_amdgcn) {
+    machine->addPassesToEmitFile(module_pass_manager, llvm_stream_gcn, nullptr,
+                                llvm::CGFT_AssemblyFile, true);
+  }
+
   function_pass_manager.doInitialization();
   for (auto func = llvm_module->begin(); func != llvm_module->end(); ++func)
     function_pass_manager.run(*func);
@@ -98,6 +107,14 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
         "taichi_kernel_amdgpu_llvm_ir_optimized_{:04d}.ll",
         "unoptimized LLVM IR (AMDGPU)");
     writer.write(llvm_module.get());
+  }
+
+  if (this->config_.print_kernel_amdgcn) {
+    // Amdgcn will not generated during generating hsaco file
+    std::string gcn(gcnstr.begin(), gcnstr.end());
+    static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
+                                      "module AMDGCN");
+    writer.write(gcn);
   }
   return hsaco_str;
 }

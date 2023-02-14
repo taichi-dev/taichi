@@ -47,12 +47,13 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
 
   if (this->config_.print_kernel_amdgcn) {
     // Amdgcn will not generated during generating hsaco file
-    // It's a interim impl
-    // while add machine info to pass_manager, the module will add more
-    // target-specific info e.g.
+    // It's an interim impl
+    // while add machine info to pass_manager, the module(LLVM-IR) will add more target-specific info
+    // e.g.
     //   call { i1, i32 } @llvm.amdgcn.if.i32(i1 %15)
     // then then `addPassesToEmitFile` will occur an error
     //   LLVM ERROR: Cannot select: intrinsic %llvm.amdgcn.if
+    // related https://github.com/llvm/llvm-project/issues/60727
     auto module_clone = llvm::CloneModule(*llvm_module);
     llvm::legacy::PassManager module_gen_gcn_pass_manager;
     llvm::SmallString<0> gcnstr;

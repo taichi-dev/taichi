@@ -5,11 +5,11 @@ sidebar_position: 1
 
 # Hello, World!
 
-Taichi is a domain-specific language embedded in Python and designed specifically for high-performance, parallel computing.
+Taichi is a domain-specific language designed for high-performance, parallel computing, and is embedded in Python.
 
-When writing compute-intensive tasks in Python, you can take advantage of Taichi's high performance computation by following a few extra rules. Generally, Taichi provides two decorators `@ti.func` and `@ti.kernel`, which instruct Taichi to take over the tasks. Its just-in-time (JIT) compiler compiles the decorated functions to machine code, and all subsequent calls to these functions are executed on multi-core CPUs or GPUs. In a typical compute-intensive scenario, such as a numerical simulation, Taichi can accelerate performance by 50x~100x compared with native Python code.
+When writing compute-intensive tasks, users can leverage Taichi's high performance computation by following a set of extra rules, and making use of the two decorators `@ti.func` and `@ti.kernel`. These decorators instruct Taichi to take over the computation tasks and compile the decorated functions to machine code using its just-in-time (JIT) compiler. As a result, calls to these functions are executed on multi-core CPUs or GPUs and can achieve acceleration by 50x~100x compared to native Python code.
 
-Taichi also has a built-in ahead-of-time (AOT) system for exporting your code into binary/shader files, which can then be called in C/C++ and run without the Python environment. See [Tutorial: Run Taichi programs in C++ application](../deployment/tutorial.md) for more information.
+Additionally, Taichi also has an ahead-of-time (AOT) system for exporting code to binary/shader files that can be run without the Python environment. See [Tutorial: Run Taichi programs in C++ application](../deployment/tutorial.md) for more information.
 
 ## Prerequisites
 
@@ -97,11 +97,9 @@ See the [Math Module](../math/math_module.md) for more information.
 `ti.init(**kwargs)`- Initializes Taichi environment and allows you to customize your Taichi runtime depending on the optional arguments passed into it.
 :::
 
-For now, we only introduce the most important argument, namely, `arch`.
+The argument `arch` in `ti.init()` specifies the backend that will execute the compiled code. This backend can be either `ti.cpu` or `ti.gpu`. If the `ti.gpu` option is specified, Taichi will attempt to use the GPU backends in the following order: `ti.cuda`, `ti.vulkan`, and `ti.opengl/ti.Metal`. If no GPU architecture is available, the CPU will be used as the backend.
 
-The argument `arch` specifies the *backend* that executes the compiled code. A backend can be either `ti.cpu` or `ti.gpu`. When `ti.gpu` is specified, Taichi moves down the backend list of `ti.cuda`, `ti.vulkan`, and `ti.opengl/ti.metal`. If no GPU architecture is available, Taichi falls back to your CPU device.
-
-You can also directly specify which GPU backend to use. For example, set `arch=ti.cuda` to run your program on CUDA. Taichi raises an error if the target architecture is unavailable. See the [Global Settings](../reference/global_settings.md) for more information about `ti.init()`.
+Additionally, you can specify the desired GPU backend directly by setting `arch=ti.cuda`, for example. Taichi will raise an error if the specified architecture is not available. For further information, refer to the [Global Settings](../reference/global_settings.md) section in the Taichi documentation.
 
 ```python {4}
 import taichi as ti
@@ -115,9 +113,9 @@ ti.init(arch=ti.gpu)
 :::note
 `ti.field(dtype, shape)` - Defines a Taichi field whose shape is of `shape` and whose elements are of type `dtype`.
 
-`ti.field` is the most important and frequently used data structure in Taichi. You can compare it to NumPy's `ndarray` or PyTorch's `tensor`. But Taichi's field is more flexible. For example, a Taichi field can be [spatially sparse](../basic/sparse.md) and easily [switched between different data layouts](../basic/layout.md).
+`ti.field` is a fundamental and frequently utilized data structure in Taichi. It can be considered equivalent to NumPy's `ndarray` or PyTorch's `tensor`, but with added flexibility. For instance, a Taichi field can be [spatially sparse](../basic/sparse.md) and can be easily [changed between different data layouts](../basic/layout.md).
 
-We will introduce more advanced features of fields in other scenario-based tutorials. For now, it suffices to know that the field `pixels` is a dense 2D array.
+Further advanced features of fields will be covered in other scenario-based tutorials. For now, it is sufficient to understand that the field `pixels` is a dense two-dimensional array.
 
 ```python
 n = 320

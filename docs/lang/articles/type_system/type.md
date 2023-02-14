@@ -100,8 +100,7 @@ As mentioned at the beginning of this document, the type of a variable in the Ta
       c = ti.cast(b, ti.f32)  # 3.0
   ```
 
- Taichi v1.1.0 introduces the capability to convert scalar variables to different scalar types using primitive types, such as `ti.f32` and `ti.i64`.
-
+In Taichi v1.1.0, the capability to perform type casting on scalar variables has been introduced using primitive types such as `ti.f32` and `ti.i64`. This allows you to convert scalar variables to different scalar types with ease.
 
   ```python {6,7}
   @ti.kernel
@@ -119,13 +118,12 @@ Implicit type casting happens when you *accidentally* put or assign a value wher
 
 :::caution WARNING
 As a rule of thumb, implicit type casting is a major source of bugs. And Taichi does *not* recommend resorting to this mechanism.
-:::
+::
 
-Implicit type casting can happen in binary operations or in assignments, as explained below.
 
 #### Implicit type casting in binary operations
 
-Taichi implements its own implicit type casting rules for binary operations, which are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). In general we have three rules in descending order of priority:
+In Taichi, implicit type casting can occur during binary operations or assignments. The casting rules are implemented specifically for Taichi and are slightly different from [those for the C programming language](https://en.cppreference.com/w/c/language/conversion). These rules are prioritized as follows:
 
 1. Integer + floating point -> floating point
    - `i32 + f32 -> f32`
@@ -155,7 +153,7 @@ A few exceptions:
 
 #### Implicit type casting in assignments
 
-When you assign a value to a variable of a different data type, Taichi implicitly casts the value into that type. Further, if the value is of a higher precision than the variable, a warning of precision loss will be printed.
+In Taichi, implicit type casting is performed when assigning a value to a variable with a different data type. In cases where the value has a higher precision than the target variable, a warning indicating potential precision loss will be displayed.
 
 - Example 1: Variable `a` is initialized with type `float` and immediately reassigned `1`. The reassignment implicitly casts `1` from `int` to `float` without warning:
 
@@ -199,7 +197,7 @@ vec4d = ti.types.vector(4, ti.f64)  # a 64-bit floating-point 4D vector type
 mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 ```
 
-You can use these customized types to instantiate vectors and matrices or annotate the data types of function arguments and struct members. For example:
+You can utilize the customized compound types to instantiate vectors and matrices, as well as annotate the data types of function arguments and struct members. For instance:
 
 ```python
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
@@ -216,7 +214,7 @@ def test():
 
 ### Struct types and dataclass
 
-You can use the funtion `ti.types.struct()` to create a struct type. Try customizing compound types to represent a sphere in the 3D space, which can be abstracted with its center and radius. In the following example, you call `ti.types.vector()` and `ti.types.struct()` to create compound types `vec3` and `sphere_type`, respectively. These two types are the *higher-level* compound types that fit better with your scenario. Subsequently, you can use them as templates to create two instances of spheres (initialize two local variables `sphere1` and `sphere2`):
+You can use the function `ti.types.struct()` to create a struct type, which can be utilized to represent a sphere in 3D space, abstracted by its center and radius. To achieve this, you can call `ti.types.vector()` and `ti.types.struct()` to create two higher-level compound types: `vec3` and `sphere_type`, respectively. These types can then be used as templates to initialize two local variables, `sphere1` and `sphere2`, to represent two instances of spheres.
 
 ```python
 # Define a compound type vec3 to represent a sphere's center
@@ -229,7 +227,7 @@ sphere1 = sphere_type(center=vec3([0, 0, 0]), radius=1.0)
 sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 ```
 
-When a struct contains many members, `ti.types.struct` may make your code look messy. Taichi offers a more intuitive way to define a struct: The decorator `@ti.dataclass` is a thin wrapper of the struct type:
+When defining a struct with numerous members, the use of `ti.types.struct` can lead to cluttered and unorganized code. Taichi provides a more elegant solution with the `@ti.dataclass` decorator, which acts as a lightweight wrapper around the struct type.
 
 ```python
 @ti.dataclass
@@ -238,24 +236,24 @@ class Sphere:
     radius: float
 ```
 
-The code above serves the same purpose as the line below does but provides better readability:
+The code above accomplishes the same task as the following line, however it offers improved comprehensibility:
 
 ```python
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
-Another advantage of using `@ti.dataclass` over `ti.types.struct` is that you can define member functions in a dataclass and call them in the Taichi scope, making object-oriented programming (OOP) possible. See the [objective data-oriented programming](../advanced/odop.md) for more information.
+Another benefit of utilizing the `@ti.dataclass` over the `ti.types.struct` is the ability to define member functions within a dataclass, enabling object-oriented programming (OOP) capabilities. For more information on the topic of objective data-oriented programming, refer to the [objective data-oriented programming](../advanced/odop.md) documentation.
 
 
 ### Initialization
 
-Just as you do with any other data type, you can call a compound type directly to create vector, matrix, or struct instances in Taichi.
+In Taichi, creating instances of vector, matrix, or struct compound types can be achieved by directly calling the type, similar to how it is done with any other data type. 
 
-As of v1.1.0, Taichi supports more options for initializing a struct or a dataclass.
+As of Taichi v1.1.0, multiple options are available for initializing instances of structs or dataclasses. The conventional method of calling a compound type directly still holds true. In addition, the following alternatives are also supported:
 
-- Pass positional arguments to a struct in the order they are defined.
-- Pass keyword arguments to a struct to set the corresponding struct members.
-- Unspecified struct members are automatically set to zero.
+- Pass positional arguments to the struct, in the order in which the members are defined.
+- Utilize keyword arguments to set the specific struct members.
+- Members that are not specified will be automatically set to zero.
 
 For example:
 
@@ -286,7 +284,8 @@ You can create vectors, matrices, and structs using GLSL-like broadcast syntax b
 
 ### Type casting
 
-For now, the only compound types that support type casting in Taichi are vectors and matrices. Type casting of vectors and matrices is element-wise and results in new vectors and matrices being created:
+For now, the only compound data types that support type casting in Taichi are vectors and matrices. When casting the type of a vector or matrix, it is performed element-wise, resulting in the creation of new vectors and matrices.
+
 
 ```python
 @ti.kernel

@@ -68,7 +68,7 @@ The numeric literals in Taichi's scope have default integer or floating-point ty
 
 ### Set default primitive type alias
 
-In Taichi, the keywords `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use int as an alias for `i64` and `float` as an alias for `f64` in your code.
+In Taichi, the keywords `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use `int` as an alias for `i64` and `float` as an alias for `f64` in your code.
 
 ```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)

@@ -247,7 +247,7 @@ Another benefit of utilizing the `@ti.dataclass` over the `ti.types.struct` is t
 
 ### Initialization
 
-In Taichi, creating instances of vector, matrix, or struct compound types can be achieved by directly calling the type, similar to how it is done with any other data type. 
+In Taichi, creating instances of vector, matrix, or struct compound types can be achieved by directly calling the type, similar to how it is done with any other data type.
 
 As of Taichi v1.1.0, multiple options are available for initializing instances of structs or dataclasses. The conventional method of calling a compound type directly still holds true. In addition, the following alternatives are also supported:
 

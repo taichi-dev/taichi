@@ -126,10 +126,10 @@ void VulkanRuntime::free_image(TiImage image) {
 // -----------------------------------------------------------------------------
 
 TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
-                                       const char **instance_extensions,
                                        uint32_t instance_extension_count,
-                                       const char **device_extensions,
-                                       uint32_t device_extension_count) {
+                                       const char **instance_extensions,
+                                       uint32_t device_extension_count,
+                                       const char **device_extensions) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
   if (api_version < VK_API_VERSION_1_0) {

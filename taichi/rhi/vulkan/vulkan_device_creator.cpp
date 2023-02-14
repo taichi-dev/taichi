@@ -42,10 +42,6 @@ bool check_validation_layer_support() {
 static const std::unordered_set<std::string> ignored_messages = {
     "UNASSIGNED-DEBUG-PRINTF",
     "VUID_Undefined",
-    // FIXME(zhanlue): Fix validation errors with float16 and remove these
-    // ignores.
-    "VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332",
-    "VUID-RuntimeSpirv-storageBuffer16BitAccess-06331",
 };
 
 [[maybe_unused]] bool vk_ignore_validation_warning(
@@ -598,6 +594,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       // VK_KHR_shader_non_semantic_info isn't supported on molten-vk.
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       caps.set(DeviceCapability::spirv_has_non_semantic_info, true);
+      enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_16BIT_STORAGE_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),

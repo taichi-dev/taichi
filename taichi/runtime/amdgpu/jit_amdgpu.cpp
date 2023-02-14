@@ -1,6 +1,9 @@
 #include "taichi/runtime/amdgpu/jit_amdgpu.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 
+#include "llvm/IR/Module.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+
 namespace taichi {
 namespace lang {
 
@@ -42,6 +45,36 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
 
   llvm_module->setDataLayout(machine->createDataLayout());
 
+  if (this->config_.print_kernel_amdgcn) {
+    // Amdgcn will not generated during generating hsaco file
+    // It's a interim impl
+    // while add machine info to pass_manager, the module will add more target-specific info
+    // e.g.
+    //   call { i1, i32 } @llvm.amdgcn.if.i32(i1 %15)
+    // then then `addPassesToEmitFile` will occur an error
+    //   LLVM ERROR: Cannot select: intrinsic %llvm.amdgcn.if
+    auto module_clone = llvm::CloneModule(*llvm_module);
+    llvm::legacy::PassManager module_gen_gcn_pass_manager;
+    llvm::SmallString<0> gcnstr;
+    llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
+    std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(target->createTargetMachine(
+        triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
+        llvm::Reloc::PIC_, llvm::CodeModel::Small, llvm::CodeGenOpt::Aggressive));
+    llvm::PassManagerBuilder builder;
+    builder.OptLevel = 3;
+    builder.Inliner =
+        llvm::createFunctionInliningPass(builder.OptLevel, 0, false);
+    builder.populateModulePassManager(module_gen_gcn_pass_manager);
+    
+    machine_gen_gcn->addPassesToEmitFile(module_gen_gcn_pass_manager, llvm_stream_gcn, nullptr,
+                                llvm::CGFT_AssemblyFile, true);
+    module_gen_gcn_pass_manager.run(*module_clone);
+    std::string gcn(gcnstr.begin(), gcnstr.end());
+    static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
+                                      "module AMDGCN");
+    writer.write(gcn);
+  }
+
   llvm::legacy::FunctionPassManager function_pass_manager(llvm_module.get());
   llvm::legacy::PassManager module_pass_manager;
 
@@ -73,16 +106,8 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   llvm::SmallString<0> outstr;
   llvm::raw_svector_ostream llvm_stream(outstr);
 
-  llvm::SmallString<0> gcnstr;
-  llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
-
   machine->addPassesToEmitFile(module_pass_manager, llvm_stream, nullptr,
                                llvm::CGFT_ObjectFile, true);
-  
-  if (this->config_.print_kernel_amdgcn) {
-    machine->addPassesToEmitFile(module_pass_manager, llvm_stream_gcn, nullptr,
-                                llvm::CGFT_AssemblyFile, true);
-  }
 
   function_pass_manager.doInitialization();
   for (auto func = llvm_module->begin(); func != llvm_module->end(); ++func)
@@ -109,13 +134,6 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     writer.write(llvm_module.get());
   }
 
-  if (this->config_.print_kernel_amdgcn) {
-    // Amdgcn will not generated during generating hsaco file
-    std::string gcn(gcnstr.begin(), gcnstr.end());
-    static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
-                                      "module AMDGCN");
-    writer.write(gcn);
-  }
   return hsaco_str;
 }
 

@@ -155,7 +155,8 @@ A few exceptions:
 
 In Taichi, implicit type casting is performed when assigning a value to a variable with a different data type. In cases where the value has a higher precision than the target variable, a warning indicating potential precision loss will be displayed.
 
-- Example 1: Variable `a` is initialized with type `float` and immediately reassigned `1`. The reassignment implicitly casts `1` from `int` to `float` without warning:
+
+- Example 1: The variable `a` is initialized with the data type `float`, and then immediately reassigned the value 1. This reassignment implicitly converts the data type of 1 from `int` to `float` without generating a warning.
 
   ```python
   @ti.kernel
@@ -165,7 +166,7 @@ In Taichi, implicit type casting is performed when assigning a value to a variab
       print(a)  # 1.0
   ```
 
-- Example 2: Variable `a` is initialized with type `int` and immediately reassigned `3.14`. The reassignment implicitly casts `3.14` from `float` to `int` with a warning because the type of `a` is `int` and has a lower precision than `float`:
+- Example 2: The variable `a` is initialized with the data type `int`, and is immediately reassigned the value 3.14. This reassignment implicitly converts the data type of 3.14 from `float` to `int`, which results in a loss of precision due to `int` having a lower precision than `float`. As a result, a warning is generated.
 
   ```python
   @ti.kernel

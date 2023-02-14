@@ -461,7 +461,11 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   // Texture wrapped around a `handle.image`.
   TI_ARGUMENT_TYPE_TEXTURE = 3,
+  // Scalar wrapped around a `handle.buffer`
+  TI_ARGUMENT_TYPE_SCALAR = 4,
+
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
+
 } TiArgumentType;
 
 // BitField `TiMemoryUsageFlags` (1.4.0)
@@ -772,6 +776,22 @@ typedef struct TiTexture {
   TiFormat format;
 } TiTexture;
 
+typedef union TiScalarValue {
+  // Value of a 8-bit one's complement unsigned integer.
+  uint8_t x8;
+  // Value of a 16-bit one's complement unsigned integer.
+  uint16_t x16;
+  // Value of a 32-bit one's complement unsigned integer.
+  uint16_t x32;
+  // Value of a 64-bit one's complement unsigned integer.
+  uint16_t x64;
+} TiScalarValue;
+
+typedef struct TiScalar {
+  TiDataType type;
+  TiScalarValue value;
+} TiScalar;
+
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
@@ -780,6 +800,8 @@ typedef union TiArgumentValue {
   int32_t i32;
   // Value of a 32-bit IEEE 754 single-precision floating-poing number.
   float f32;
+  // An scalar to be bound
+  TiScalar scalar;
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.

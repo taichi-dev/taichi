@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <cassert>
 #include <list>
 #include <vector>
 #include <map>
@@ -106,11 +107,6 @@ inline void set_last_error(const Error &error) {
   set_last_error(error.error, error.message);
 }
 
-// Token type for half-precision floats.
-struct half {
-  uint16_t _;
-};
-
 namespace detail {
 
 // Template type to data type enum.
@@ -139,10 +135,6 @@ struct templ2dtype<uint16_t> {
 template <>
 struct templ2dtype<uint32_t> {
   static const TiDataType value = TI_DATA_TYPE_U32;
-};
-template <>
-struct templ2dtype<half> {
-  static const TiDataType value = TI_DATA_TYPE_F16;
 };
 template <>
 struct templ2dtype<float> {
@@ -704,6 +696,22 @@ class ArgumentEntry {
   explicit ArgumentEntry(TiArgument *arg) : arg_(arg) {
   }
 
+  inline void set_f16(float value) {
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_F16;
+    std::memcpy(&arg_->value.scalar.value.x32, &value, sizeof(value));
+  }
+  inline void set_u16(uint16_t value) {
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_U16;
+    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
+  }
+  inline void set_i16(int16_t value) {
+    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
+    arg_->value.scalar.type = TI_DATA_TYPE_I16;
+    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
+  }
+
   inline ArgumentEntry &operator=(const TiArgument &b) {
     *arg_ = b;
     return *this;
@@ -716,6 +724,14 @@ class ArgumentEntry {
   inline ArgumentEntry &operator=(float f32) {
     arg_->type = TI_ARGUMENT_TYPE_F32;
     arg_->value.f32 = f32;
+    return *this;
+  }
+  inline ArgumentEntry &operator=(uint16_t u16) {
+    this->set_u16(u16);
+    return *this;
+  }
+  inline ArgumentEntry &operator=(int16_t i16) {
+    this->set_i16(i16);
     return *this;
   }
   inline ArgumentEntry &operator=(const TiNdArray &ndarray) {
@@ -1216,6 +1232,15 @@ class Runtime {
   NdArray<T> allocate_ndarray(const std::vector<uint32_t> &shape = {},
                               const std::vector<uint32_t> &elem_shape = {},
                               bool host_access = false) const {
+    auto dtype = detail::templ2dtype<T>::value;
+    return allocate_ndarray<T>(dtype, shape, elem_shape, host_access);
+  }
+
+  template <typename T>
+  NdArray<T> allocate_ndarray(TiDataType dtype,
+                              const std::vector<uint32_t> &shape = {},
+                              const std::vector<uint32_t> &elem_shape = {},
+                              bool host_access = false) const {
     size_t size = sizeof(T);
     TiNdArray ndarray{};
     for (size_t i = 0; i < shape.size(); ++i) {
@@ -1230,7 +1255,7 @@ class Runtime {
       ndarray.elem_shape.dims[i] = x;
     }
     ndarray.elem_shape.dim_count = elem_shape.size();
-    ndarray.elem_type = detail::templ2dtype<T>::value;
+    ndarray.elem_type = dtype;
 
     ti::Memory memory = allocate_memory(size, host_access);
     ndarray.memory = memory.memory();

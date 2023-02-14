@@ -682,6 +682,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+
+  VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_feature{};
+  shader_16bit_storage_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+
   VkPhysicalDeviceBufferDeviceAddressFeaturesKHR
       buffer_device_address_feature{};
   buffer_device_address_feature.sType =
@@ -774,6 +779,15 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       }
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
+    }
+
+    if (CHECK_VERSION(1, 1) ||
+        CHECK_EXTENSION(VK_KHR_16BIT_STORAGE_EXTENSION_NAME)) {
+      features2.pNext = &shader_16bit_storage_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      *pNextEnd = &shader_16bit_storage_feature;
+      pNextEnd = &shader_16bit_storage_feature.pNext;
     }
 
     // Buffer Device Address

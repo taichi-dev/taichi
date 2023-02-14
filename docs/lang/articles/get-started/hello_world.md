@@ -127,31 +127,30 @@ pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 Lines 9~22 define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU.
 
-The main differences between Taichi functions and kernels:
+The main differences between Taichi functions and kernels are as follows:
 
-- Kernels are the entry points where Taichi kicks in and takes over the task. A kernel can be called anywhere, anytime in your program, while a Taichi function can be called only from inside a kernel or from inside another Taichi function. In the example above, the Taichi function `complex_sqr` is called by the kernel `paint`.
-- A kernel *must* take type-hinted arguments and return type-hinted results. But Taichi functions do not require type hinting. In the example above, the argument `t` in the kernel `paint` is type hinted; the argument `z` in the Taichi function `complex_sqr` is not.
-- Taichi *supports* nested functions but *does not support* nested kernels.
-- Taichi *does not* support recursive Taichi function calls.
+- Kernels serve as the entry points for Taichi to take over the execution. They can be called anywhere in the program, whereas Taichi functions can only be invoked within kernels or other Taichi functions. For instance, in the provided code example, the Taichi function `complex_sqr` is utilized within the kernel paint.
+- It is important to note that the arguments and return values of kernels must be type hinted, while Taichi functions do not require type hinting. In the example, the argument `t` in the kernel paint is type hinted, while the argument `z` in the Taichi function `complex_sqr` is not.
+- Taichi supports the use of nested functions, but nested kernels are not supported. Additionally, Taichi does not support recursive calls within Taichi functions.
+
 
 :::tip
-​
-For those who come from the world of CUDA, `ti.func` corresponds to `__device__` and `ti.kernel` corresponds to `__global__`.
 
-For those who come from the world of OpenGL, `ti.func` corresponds to the usual function in GLSL and `ti.kernel` corresponds to a `compute shader`.
+Note that, for users familiar with CUDA programming, the `ti.func` in Taichi is equivalent to the `__device__` in CUDA, while the `ti.kernel` in Taichi corresponds to the `__global__` in CUDA.
+
+For those familiar with the world of OpenGL, `ti.func` can be compared to a typical function in GLSL, while `ti.kernel` can be compared to a compute shader.
 
 :::
 
 ### Parallel for loops
 
-The key to high performance lies in how you iterate in Taichi. In particular, we can use parallelized looping to parse through our data more efficiently.
+The key to achieving high performance in Taichi lies in efficient iteration. By utilizing parallelized looping, data can be processed more effectively.
 
-The following code snippet introduces a `for` loop at the outermost scope in a Taichi kernel and thus is *automatically parallelized*. Notice that the loop is also calling both `i` and `j` at the same time, and the program will run these iterations concurrently.
+The following code snippet showcases a for loop at the outermost scope within a Taichi kernel, which is automatically parallelized. The for loop operates on the `i` and `j` indices simultaneously, allowing for concurrent execution of iterations.
 
-Taichi offers a handy syntax sugar: It parallelizes any `for` loop at the outermost scope in a kernel. This means that you can parallelize your tasks using one plain loop, without the need to know thread allocation/recycling or memory management.
+Taichi provides a convenient syntax for parallelizing tasks. Any for loop at the outermost scope within a kernel is automatically parallelized, eliminating the need for manual thread allocation, recycling, and memory management.
 
-Note that the field `pixels` is treated as an iterator. As the indices of the field elements, `i` and `j` are integers falling in the ranges `[0, 2*n-1]` and `[0, n-1]`, respectively. The pair `(i, j)` loops over the sets `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, n-1)`, ..., `(2*n-1, n-1)` in parallel.
-
+The field pixels is treated as an iterator, with `i` and `j` being integer indices ranging from `0` to `2*n-1` and `0` to `n-1`, respectively. The `(i, j)` pairs loop over the sets `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, 0)`, `(1, 1)`, ..., `(2*n-1, n-1)` in parallel.
 
 ```python
 for i, j in pixels:

@@ -121,7 +121,7 @@ def _gen_swizzles(cls):
 def _infer_entry_dt(entry):
     if isinstance(entry, (int, np.integer)):
         return impl.get_runtime().default_ip
-    if isinstance(entry, float):
+    if isinstance(entry, (float, np.floating)):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
         dt = entry.ptr.get_ret_type()

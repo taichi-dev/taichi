@@ -239,6 +239,24 @@ def test_numpy_op_with_matrix():
     test()
 
 
+@test_utils.test(debug=True)
+def test_numpy_with_matrix():
+    x = ti.Vector.field(3, dtype=ti.f32, shape=())
+    a = np.array([1, 2, 3], dtype=np.float32)
+    b = ti.Vector([0, a[2], 0], dt=ti.f32)
+
+    @ti.kernel
+    def bar():
+        foo()
+
+    @ti.func
+    def foo():
+        x[None] = ti.max(x[None], b)
+
+    bar()
+    assert (x.to_numpy() == [0.0, 3.0, 0.0]).all()
+
+
 @test_utils.test()
 def test_numpy_view():
     @ti.kernel

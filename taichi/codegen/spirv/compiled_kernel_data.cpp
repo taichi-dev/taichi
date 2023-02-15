@@ -3,6 +3,14 @@
 #include <numeric>
 
 namespace taichi::lang {
+
+static std::unique_ptr<CompiledKernelData> new_spirv_compiled_kernel_data() {
+  return std::make_unique<spirv::CompiledKernelData>();
+}
+
+CompiledKernelData::Creator *const CompiledKernelData::spriv_creator =
+    new_spirv_compiled_kernel_data;
+
 namespace spirv {
 
 CompiledKernelData::CompiledKernelData(Arch arch, InternalData data)

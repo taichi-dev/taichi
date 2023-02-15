@@ -156,8 +156,8 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 
 ### Parallel for loops
 
-```python
-@ti.kernel skip-ci:Trivial
+```python skip-ci:Trivial
+@ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
 ```

@@ -140,6 +140,11 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     if (config.saturating_grid_dim == 0) {
       config.saturating_grid_dim = num_workgroups * query_max_block_per_cu * 2;
     }
+    if (config.kernel_profiler) {
+      AMDGPUContext::get_instance().set_profiler(profiler);
+    } else {
+      AMDGPUContext::get_instance().set_profiler(nullptr);
+    }
     AMDGPUContext::get_instance().set_debug(config.debug);
     device_ = std::make_shared<amdgpu::AmdgpuDevice>();
   }
@@ -207,6 +212,10 @@ void LlvmRuntimeExecutor::synchronize() {
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     AMDGPUDriver::get_instance().stream_synchronize(nullptr);
+    // A better way
+    // use `hipFreeAsync` to free the device kernel arg mem
+    // notice: rocm version
+    AMDGPUContext::get_instance().free_kernel_arg_pointer();
 #else
     TI_ERROR("No AMDGPU support");
 #endif

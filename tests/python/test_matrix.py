@@ -1031,6 +1031,23 @@ def test_ternary_op_scalarize():
 
 
 @test_utils.test(debug=True)
+def test_ternary_op_cond_is_scalar():
+    @ti.kernel
+    def test():
+        x = ti.Vector([3, 3, 3])
+        y = ti.Vector([5, 5, 5])
+
+        for i in range(10):
+            z = ti.select(i % 2, x, y)
+            if i % 2 == 1:
+                assert z[0] == x[0] and z[1] == x[1] and z[2] == x[2]
+            else:
+                assert z[0] == y[0] and z[1] == y[1] and z[2] == y[2]
+
+    test()
+
+
+@test_utils.test(debug=True)
 def test_fill_op():
     @ti.kernel
     def test_fun():

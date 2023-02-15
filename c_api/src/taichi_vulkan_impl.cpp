@@ -1,6 +1,7 @@
 #ifdef TI_WITH_VULKAN
 #include "taichi_vulkan_impl.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
+#include "taichi/common/utils.h"
 
 #ifdef ANDROID
 #define VK_KHR_android_surface 1
@@ -126,10 +127,10 @@ void VulkanRuntime::free_image(TiImage image) {
 // -----------------------------------------------------------------------------
 
 TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
-                                       const char **instance_extensions,
                                        uint32_t instance_extension_count,
-                                       const char **device_extensions,
-                                       uint32_t device_extension_count) {
+                                       const char **instance_extensions,
+                                       uint32_t device_extension_count,
+                                       const char **device_extensions) {
   TiRuntime out = TI_NULL_HANDLE;
   TI_CAPI_TRY_CATCH_BEGIN();
   if (api_version < VK_API_VERSION_1_0) {
@@ -157,6 +158,9 @@ TiRuntime ti_create_vulkan_runtime_ext(uint32_t api_version,
     params.additional_device_extensions.push_back(device_extensions[i]);
   }
   params.surface_creator = nullptr;
+  if (is_ci()) {
+    params.enable_validation_layer = true;
+  }
   out = (TiRuntime) static_cast<Runtime *>(new VulkanRuntimeOwned(params));
   TI_CAPI_TRY_CATCH_END();
   return out;

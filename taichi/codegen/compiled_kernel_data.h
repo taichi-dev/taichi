@@ -17,7 +17,7 @@ class CompiledKernelDataFile {
     kNoError,
     kNotTicFile,
     kCorruptedFile,
-    kOutOfMemeory,
+    kOutOfMemory,
     kIOStreamError,
   };
 
@@ -74,7 +74,7 @@ class CompiledKernelData {
     kSerMetadataFailed,
     kSerSrcCodeFailed,
     kIOStreamError,
-    kOutOfMemeory,
+    kOutOfMemory,
     kTiWithoutLLVM,
     kTiWithoutSpirv,
     kUnknown,

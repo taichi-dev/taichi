@@ -12,8 +12,8 @@ static CompiledKernelData::Err translate_err(CompiledKernelDataFile::Err err) {
       return CompiledKernelData::Err::kNotTicFile;
     case CompiledKernelDataFile::Err::kCorruptedFile:
       return CompiledKernelData::Err::kCorruptedFile;
-    case CompiledKernelDataFile::Err::kOutOfMemeory:
-      return CompiledKernelData::Err::kOutOfMemeory;
+    case CompiledKernelDataFile::Err::kOutOfMemory:
+      return CompiledKernelData::Err::kOutOfMemory;
     case CompiledKernelDataFile::Err::kIOStreamError:
       return CompiledKernelData::Err::kIOStreamError;
   }
@@ -38,7 +38,7 @@ CompiledKernelDataFile::Err CompiledKernelDataFile::dump(std::ostream &os) {
       return Err::kIOStreamError;
     }
   } catch (std::bad_alloc &) {
-    return Err::kOutOfMemeory;
+    return Err::kOutOfMemory;
   }
   return Err::kNoError;
 }
@@ -73,7 +73,7 @@ CompiledKernelDataFile::Err CompiledKernelDataFile::load(std::istream &is) {
       return Err::kCorruptedFile;
     }
   } catch (std::bad_alloc &) {
-    return Err::kOutOfMemeory;
+    return Err::kOutOfMemory;
   }
   return Err::kNoError;
 }
@@ -112,7 +112,7 @@ CompiledKernelData::Err CompiledKernelData::load(std::istream &is) {
     }
     return load_impl(file);
   } catch (std::bad_alloc &) {
-    return Err::kOutOfMemeory;
+    return Err::kOutOfMemory;
   }
 }
 
@@ -125,7 +125,7 @@ CompiledKernelData::Err CompiledKernelData::dump(std::ostream &os) const {
     }
     return translate_err(file.dump(os));
   } catch (std::bad_alloc &) {
-    return Err::kOutOfMemeory;
+    return Err::kOutOfMemory;
   }
 }
 
@@ -145,7 +145,7 @@ std::unique_ptr<CompiledKernelData> CompiledKernelData::load(std::istream &is,
       err = result->load_impl(file);
     }
   } catch (std::bad_alloc &) {
-    err = Err::kOutOfMemeory;
+    err = Err::kOutOfMemory;
   }
   if (p_err) {
     *p_err = err;

@@ -153,7 +153,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
   rsc.buffer.buffer = memory.mtl_buffer();
   rsc.buffer.offset = ptr.offset;
   rsc.buffer.size = size;
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -168,7 +168,7 @@ ShaderResourceSet &MetalShaderResourceSet::buffer(uint32_t binding,
   rsc.buffer.buffer = memory.mtl_buffer();
   rsc.buffer.offset = 0;
   rsc.buffer.size = memory.size();
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -185,7 +185,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   rsc.buffer.buffer = memory.mtl_buffer();
   rsc.buffer.offset = ptr.offset;
   rsc.buffer.size = size;
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -200,7 +200,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   rsc.buffer.buffer = memory.mtl_buffer();
   rsc.buffer.offset = 0;
   rsc.buffer.size = memory.size();
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -216,7 +216,7 @@ MetalShaderResourceSet::image(uint32_t binding, DeviceAllocation alloc,
   rsc.binding = binding;
   rsc.texture.texture = image.mtl_texture();
   rsc.texture.is_sampled = true;
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -232,7 +232,7 @@ ShaderResourceSet &MetalShaderResourceSet::rw_image(uint32_t binding,
   rsc.binding = binding;
   rsc.texture.texture = image.mtl_texture();
   rsc.texture.is_sampled = false;
-  resources_.emplace_back(std::move(rsc));
+  resources_.push_back(std::move(rsc));
 
   return *this;
 }
@@ -401,7 +401,7 @@ MetalStream::submit(CommandList *cmdlist,
 
   MTLCommandBuffer_id cmdbuf = [cmdlist2->finalize() retain];
   [cmdbuf commit];
-  pending_cmdbufs_.emplace_back(cmdbuf);
+  pending_cmdbufs_.push_back(cmdbuf);
 
   return {};
 }
@@ -494,7 +494,6 @@ std::unique_ptr<MetalSampler> create_sampler(id<MTLDevice> mtl_device) {
 
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
-  graphics_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
 
   default_sampler_ = create_sampler(mtl_device);
 
@@ -511,7 +510,6 @@ MetalDevice *MetalDevice::create() {
 void MetalDevice::destroy() {
   if (!is_destroyed_) {
     compute_stream_.reset();
-    graphics_stream_.reset();
     memory_allocs_.clear();
     [mtl_device_ release];
     is_destroyed_ = true;
@@ -726,7 +724,11 @@ ShaderResourceSet *MetalDevice::create_resource_set() {
 }
 
 Stream *MetalDevice::get_compute_stream() { return compute_stream_.get(); }
-Stream *MetalDevice::get_graphics_stream() { return graphics_stream_.get(); }
+Stream *MetalDevice::get_graphics_stream() {
+  // FIXME: (penguinliong) Support true multistream in the future. We need a
+  // working semaphore.
+  return compute_stream_.get();
+}
 void MetalDevice::wait_idle() { compute_stream_->command_sync(); }
 
 void MetalDevice::memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) {

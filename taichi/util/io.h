@@ -6,26 +6,16 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/common/filesystem.hpp"
 #include <string>
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
-#include <sys/stat.h>
-
-#if defined(TI_PLATFORM_WINDOWS)
-#include <filesystem>
-#else  // POSIX
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#endif
 
 namespace taichi {
 
 inline bool path_exists(const std::string &dir) {
-  struct stat buffer;
-  return stat(dir.c_str(), &buffer) == 0;
+  return std::filesystem::exists(dir);
 }
 
 // TODO: move to std::filesystem after it's nonexperimental on all platforms
@@ -50,7 +40,6 @@ inline bool remove(const std::string &path) {
 
 template <typename Visitor>  // void(const std::string &name, bool is_dir)
 inline bool traverse_directory(const std::string &dir, Visitor v) {
-#if defined(TI_PLATFORM_WINDOWS)
   namespace fs = std::filesystem;
   std::error_code ec{};
   auto iter = fs::directory_iterator(dir, ec);
@@ -61,23 +50,6 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
     v(f.path().filename().string(), f.is_directory());
   }
   return true;
-#else  // POSIX
-  struct dirent *f = nullptr;
-  DIR *directory = ::opendir(dir.c_str());
-  if (!directory) {
-    return false;
-  }
-  while ((f = ::readdir(directory))) {
-    auto fullpath = join_path(dir, f->d_name);
-    struct stat stat_buf;
-    auto ret = ::stat(fullpath.c_str(), &stat_buf);
-    TI_ASSERT(ret == 0);
-    v(f->d_name, S_ISDIR(stat_buf.st_mode));
-  }
-  auto ret = ::closedir(directory);
-  TI_ASSERT(ret == 0);
-  return true;
-#endif
 }
 
 inline std::string filename_extension(const std::string &filename) {

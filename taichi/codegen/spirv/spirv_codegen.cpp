@@ -2304,6 +2304,9 @@ static void spriv_message_consumer(spv_message_level_t level,
 
 KernelCodegen::KernelCodegen(const Params &params)
     : params_(params), ctx_attribs_(*params.kernel, &params.caps) {
+  TI_ASSERT(params.kernel);
+  TI_ASSERT(params.ir_root);
+
   uint32_t spirv_version = params.caps.get(DeviceCapability::spirv_version);
 
   spv_target_env target_env;
@@ -2355,7 +2358,7 @@ KernelCodegen::KernelCodegen(const Params &params)
 
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                         std::vector<std::vector<uint32_t>> &generated_spirv) {
-  auto *root = params_.kernel->ir->as<Block>();
+  auto *root = params_.ir_root->as<Block>();
   auto &tasks = root->statements;
   for (int i = 0; i < tasks.size(); ++i) {
     TaskCodegen::Params tp;

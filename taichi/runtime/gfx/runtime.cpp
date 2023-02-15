@@ -781,6 +781,7 @@ GfxRuntime::RegisterParams run_codegen(
   spirv::KernelCodegen::Params params;
   params.ti_kernel_name = taichi_kernel_name;
   params.kernel = kernel;
+  params.ir_root = kernel->ir.get();
   params.compiled_structs = compiled_structs;
   params.arch = arch;
   params.caps = caps;

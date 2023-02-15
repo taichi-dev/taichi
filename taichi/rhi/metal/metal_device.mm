@@ -35,6 +35,15 @@ void MetalImage::dont_destroy() {
 
 MTLTexture_id MetalImage::mtl_texture() const { return mtl_texture_; }
 
+MetalSampler::MetalSampler(MTLSamplerState_id mtl_sampler_state)
+    : mtl_sampler_state_(mtl_sampler_state) {}
+MetalSampler::~MetalSampler() {
+  [mtl_sampler_state_ release];
+}
+
+MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
+  return mtl_sampler_state_;
+}
 
 MetalPipeline::MetalPipeline(
     const MetalDevice &device, MTLLibrary_id mtl_library,
@@ -194,6 +203,38 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   return *this;
 }
 
+ShaderResourceSet &MetalShaderResourceSet::image(uint32_t binding,
+                          DeviceAllocation alloc,
+                          ImageSamplerConfig sampler_config) {
+  RHI_ASSERT(alloc.device == (Device *)device_);
+  const MetalImage &image = device_->get_image(alloc.alloc_id);
+
+  MetalShaderResource rsc{};
+  rsc.ty = MetalShaderResourceType::texture;
+  rsc.binding = binding;
+  rsc.texture.texture = image.mtl_texture();
+  rsc.texture.is_sampled = true;
+  resources_.emplace_back(std::move(rsc));
+
+  return *this;
+}
+
+ShaderResourceSet &MetalShaderResourceSet::rw_image(uint32_t binding,
+                                                    DeviceAllocation alloc,
+                                                    int lod) {
+  RHI_ASSERT(alloc.device == (Device *)device_);
+  const MetalImage &image = device_->get_image(alloc.alloc_id);
+
+  MetalShaderResource rsc{};
+  rsc.ty = MetalShaderResourceType::texture;
+  rsc.binding = binding;
+  rsc.texture.texture = image.mtl_texture();
+  rsc.texture.is_sampled = false;
+  resources_.emplace_back(std::move(rsc));
+
+  return *this;
+}
+
 MetalCommandList::MetalCommandList(const MetalDevice &device,
                                    MTLCommandQueue_id cmd_queue)
     : device_(&device) {
@@ -300,6 +341,15 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
                    atIndex:resource.binding];
         break;
       }
+      case MetalShaderResourceType::texture: {
+        [encoder setTexture:resource.texture.texture atIndex:resource.binding];
+        if (resource.texture.is_sampled) {
+          [encoder
+              setSamplerState:device_->get_default_sampler().mtl_sampler_state()
+                      atIndex:resource.binding];
+        }
+        break;
+      }
       default:
         RHI_ASSERT(false);
       }
@@ -313,6 +363,10 @@ RhiResult MetalCommandList::dispatch(uint32_t x, uint32_t y,
 
   return RhiResult::success;
 }
+
+void MetalCommandList::image_transition(DeviceAllocation img,
+                                        ImageLayout old_layout,
+                                        ImageLayout new_layout) {}
 
 MTLCommandBuffer_id MetalCommandList::finalize() { return cmdbuf_; }
 
@@ -418,9 +472,29 @@ DeviceCapabilityConfig collect_metal_device_caps(MTLDevice_id mtl_device) {
   return caps;
 }
 
+std::unique_ptr<MetalSampler> create_sampler(id<MTLDevice> mtl_device) {
+  MTLSamplerDescriptor *desc = [MTLSamplerDescriptor new];
+  desc.magFilter = MTLSamplerMinMagFilterLinear;
+  desc.minFilter = MTLSamplerMinMagFilterLinear;
+  desc.sAddressMode = MTLSamplerAddressModeMirrorRepeat;
+  desc.tAddressMode = MTLSamplerAddressModeMirrorRepeat;
+  desc.rAddressMode = MTLSamplerAddressModeMirrorRepeat;
+  desc.compareFunction = MTLCompareFunctionAlways;
+  desc.mipFilter = MTLSamplerMipFilterLinear;
+
+  id<MTLSamplerState> mtl_sampler_state =
+      [mtl_device newSamplerStateWithDescriptor:desc];
+
+  [desc release];
+
+  return std::make_unique<MetalSampler>(mtl_sampler_state);
+}
+
 MetalDevice::MetalDevice(MTLDevice_id mtl_device) : mtl_device_(mtl_device) {
   compute_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
   graphics_stream_ = std::unique_ptr<MetalStream>(MetalStream::create(*this));
+
+  default_sampler_ = create_sampler(mtl_device);
 
   DeviceCapabilityConfig caps = collect_metal_device_caps(mtl_device);
   set_caps(std::move(caps));

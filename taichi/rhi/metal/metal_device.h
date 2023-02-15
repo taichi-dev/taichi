@@ -18,6 +18,7 @@
 DEFINE_METAL_ID_TYPE(MTLDevice);
 DEFINE_METAL_ID_TYPE(MTLBuffer);
 DEFINE_METAL_ID_TYPE(MTLTexture);
+DEFINE_METAL_ID_TYPE(MTLSamplerState);
 DEFINE_METAL_ID_TYPE(MTLLibrary);
 DEFINE_METAL_ID_TYPE(MTLFunction);
 DEFINE_METAL_ID_TYPE(MTLComputePipelineState);
@@ -33,6 +34,8 @@ namespace taichi::lang {
 namespace metal {
 
 struct MetalMemory;
+struct MetalImage;
+struct MetalSampler;
 class MetalCommandList;
 class MetalStream;
 class MetalDevice;
@@ -53,8 +56,8 @@ struct MetalMemory {
 
 struct MetalImage {
  public:
-  // `mtl_buffer` should be already retained.
-  explicit MetalImage(MTLTexture_id texture);
+  // `mtl_texture` should be already retained.
+  explicit MetalImage(MTLTexture_id mtl_texture);
   ~MetalImage();
 
   void dont_destroy();
@@ -64,6 +67,18 @@ struct MetalImage {
  private:
   MTLTexture_id mtl_texture_;
   bool dont_destroy_;
+};
+
+struct MetalSampler {
+ public:
+  // `mtl_texture` should be already retained.
+  explicit MetalSampler(MTLSamplerState_id mtl_sampler_state);
+  ~MetalSampler();
+
+  MTLSamplerState_id mtl_sampler_state() const;
+
+ private:
+  MTLSamplerState_id mtl_sampler_state_;
 };
 
 struct MetalWorkgroupSize {
@@ -105,21 +120,23 @@ class MetalPipeline final : public Pipeline {
 
 enum class MetalShaderResourceType {
   buffer,
+  texture,
 };
 struct MetalShaderBufferResource {
   MTLBuffer_id buffer;
   size_t offset;
   size_t size;
 };
-struct MetalShaderImageResource {
-  // TODO: (penguinliong)
+struct MetalShaderTextureResource {
+  MTLTexture_id texture;
+  bool is_sampled;
 };
 struct MetalShaderResource {
   MetalShaderResourceType ty;
   uint32_t binding;
   union {
     MetalShaderBufferResource buffer;
-    MetalShaderImageResource image;
+    MetalShaderTextureResource texture;
   };
 };
 class MetalShaderResourceSet final : public ShaderResourceSet {
@@ -134,6 +151,14 @@ class MetalShaderResourceSet final : public ShaderResourceSet {
 
   ShaderResourceSet &buffer(uint32_t binding, DevicePtr ptr, size_t size) final;
   ShaderResourceSet &buffer(uint32_t binding, DeviceAllocation alloc) final;
+
+  ShaderResourceSet &image(uint32_t binding,
+                           DeviceAllocation alloc,
+                           ImageSamplerConfig sampler_config) override;
+
+  ShaderResourceSet &rw_image(uint32_t binding,
+                              DeviceAllocation alloc,
+                              int lod) override;
 
   inline const std::vector<MetalShaderResource> &resources() const {
     return resources_;
@@ -161,6 +186,10 @@ class MetalCommandList final : public CommandList {
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size) noexcept final;
   void buffer_fill(DevicePtr ptr, size_t size, uint32_t data) noexcept final;
   RhiResult dispatch(uint32_t x, uint32_t y = 1, uint32_t z = 1) noexcept final;
+
+  void image_transition(DeviceAllocation img,
+                        ImageLayout old_layout,
+                        ImageLayout new_layout) final;
 
   MTLCommandBuffer_id finalize();
 
@@ -269,12 +298,17 @@ class MetalDevice final : public GraphicsDevice {
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
+  const MetalSampler &get_default_sampler() const {
+    return *default_sampler_;
+  }
+
  private:
   MTLDevice_id mtl_device_;
   rhi_impl::SyncedPtrStableObjectList<MetalMemory> memory_allocs_;
   rhi_impl::SyncedPtrStableObjectList<MetalImage> image_allocs_;
   std::unique_ptr<MetalStream> compute_stream_;
   std::unique_ptr<MetalStream> graphics_stream_;
+  std::unique_ptr<MetalSampler> default_sampler_;
 
   bool is_destroyed_{false};
 };

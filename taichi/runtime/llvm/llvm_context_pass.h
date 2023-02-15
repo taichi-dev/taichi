@@ -99,6 +99,9 @@ struct AMDGPUConvertAllocaInstAddressSpacePass : public FunctionPass {
       for (auto &allocainst : alloca_inst_vec) {
         auto alloca_type = allocainst->getAllocatedType();
         llvm::IRBuilder<> builder(allocainst);
+        // magic number 5 and 0 represent `private`,`generic` respectively
+        // more details, please ref
+        // https://llvm.org/docs/AMDGPUUsage.html#address-spaces
         auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
         auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
         new_alloca->setAlignment(Align(allocainst->getAlign().value()));
@@ -153,6 +156,13 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
     TI_ASSERT(num_found_alloca == 1 && alloca);
     auto new_type = llvm::ArrayType::get(char_type, tls_size_);
     llvm::IRBuilder<> builder(alloca);
+    // Find the allocInst `alloca i32, tls_size, align 8` and replace it with
+    //   alloca i32, tls_size, align 8, addrspace(5)
+    //   addrspacecast i32 addrspace(5)* %n to i32*
+
+    // ditto magic number 5 and 0
+    // more details, please ref
+    // https://llvm.org/docs/AMDGPUUsage.html#address-spaces
     auto *new_alloca = builder.CreateAlloca(new_type, (unsigned)5);
     new_alloca->setAlignment(Align(8));
     auto new_ty = llvm::PointerType::get(new_type, unsigned(0));
@@ -170,6 +180,39 @@ struct AMDGPUAddStructForFuncPass : public ModulePass {
     gep->eraseFromParent();
     cast->eraseFromParent();
     alloca->eraseFromParent();
+    return false;
+  }
+};
+
+struct AMDGPUConvertFunctionBodyAllocsAddressSpacePass : public FunctionPass {
+  static inline char ID{0};
+  AMDGPUConvertFunctionBodyAllocsAddressSpacePass() : FunctionPass(ID) {
+  }
+  bool runOnFunction(llvm::Function &f) override {
+    for (auto &bb : f) {
+      if (bb.getName() != "allocs")
+        continue;
+
+      std::vector<AllocaInst *> alloca_inst_vec;
+      for (Instruction &inst : bb) {
+        AllocaInst *now_alloca = dyn_cast<AllocaInst>(&inst);
+        if (!now_alloca ||
+            now_alloca->getType()->getAddressSpace() != (unsigned)0) {
+          continue;
+        }
+        alloca_inst_vec.push_back(now_alloca);
+      }
+      for (auto &allocainst : alloca_inst_vec) {
+        auto alloca_type = allocainst->getAllocatedType();
+        llvm::IRBuilder<> builder(allocainst);
+        auto *new_alloca = builder.CreateAlloca(alloca_type, (unsigned)5);
+        auto new_type = llvm::PointerType::get(alloca_type, (unsigned)0);
+        new_alloca->setAlignment(Align(allocainst->getAlign().value()));
+        auto *addrspacecast = builder.CreateAddrSpaceCast(new_alloca, new_type);
+        allocainst->replaceAllUsesWith(addrspacecast);
+        allocainst->eraseFromParent();
+      }
+    }
     return false;
   }
 };

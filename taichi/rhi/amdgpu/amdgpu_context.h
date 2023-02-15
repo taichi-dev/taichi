@@ -22,7 +22,6 @@ class AMDGPUContext {
   std::mutex lock_;
   AMDGPUDriver &driver_;
   bool debug_;
-  std::vector<void *> kernel_arg_pointer_;
 
  public:
   AMDGPUContext();
@@ -33,18 +32,6 @@ class AMDGPUContext {
 
   bool detected() const {
     return dev_count_ != 0;
-  }
-
-  void push_back_kernel_arg_pointer(void *ptr) {
-    kernel_arg_pointer_.push_back(ptr);
-  }
-
-  void free_kernel_arg_pointer() {
-    for (auto &i : kernel_arg_pointer_) {
-      AMDGPUDriver::get_instance().mem_free(i);
-    }
-    kernel_arg_pointer_.erase(kernel_arg_pointer_.begin(),
-                              kernel_arg_pointer_.end());
   }
 
   void pack_args(std::vector<void *> arg_pointers,

@@ -1,32 +1,19 @@
 // C++ wrapper of Taichi C-API
 #pragma once
-#include <iostream>
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
 #include <cstring>
-#include <cassert>
 #include <list>
 #include <vector>
 #include <map>
 #include <string>
 #include <utility>
-#include <taichi/taichi.h>
+#include "taichi/taichi.h"
 
 namespace ti {
 
 struct Version {
   uint32_t version;
-
-  explicit Version(uint32_t version) : version(version) {
-  }
-  Version(uint32_t major, uint32_t minor, uint32_t patch)
-      : version((major * 1000 + minor) * 1000 + patch) {
-  }
-  Version(const Version &) = default;
-  Version(Version &&) = default;
-  Version &operator=(const Version &) = default;
-  Version &operator=(Version &&) = default;
 
   inline uint32_t major() const {
     return version / 1000000;
@@ -37,9 +24,15 @@ struct Version {
   inline uint32_t patch() const {
     return version % 1000;
   }
+
+  operator uint32_t() const {
+    return version;
+  }
 };
 inline Version get_version() {
-  return Version(ti_get_version());
+  Version out{};
+  out.version = ti_get_version();
+  return out;
 }
 
 inline std::vector<TiArch> get_available_archs() {
@@ -74,10 +67,6 @@ inline bool is_arch_available(TiArch arch) {
 struct Error {
   TiError error;
   std::string message;
-
-  inline operator TiError() const {  // NOLINT
-    return error;
-  }
 };
 
 inline Error get_last_error() {
@@ -89,14 +78,12 @@ inline Error get_last_error() {
   return Error{error, message};
 }
 inline void check_last_error() {
+#ifdef TI_WITH_EXCEPTIONS
   Error error = get_last_error();
   if (error != TI_ERROR_SUCCESS) {
-#ifdef TI_WITH_EXCEPTIONS
     throw std::runtime_error(error.message);
-#else
-    assert(false);
-#endif  // TI_WITH_EXCEPTIONS
   }
+#endif  // TI_WITH_EXCEPTIONS
 }
 inline void set_last_error(TiError error) {
   ti_set_last_error(error, nullptr);
@@ -107,6 +94,11 @@ inline void set_last_error(TiError error, const std::string &message) {
 inline void set_last_error(const Error &error) {
   set_last_error(error.error, error.message);
 }
+
+// Token type for half-precision floats.
+struct half {
+  uint16_t _;
+};
 
 namespace detail {
 
@@ -136,6 +128,10 @@ struct templ2dtype<uint16_t> {
 template <>
 struct templ2dtype<uint32_t> {
   static const TiDataType value = TI_DATA_TYPE_U32;
+};
+template <>
+struct templ2dtype<half> {
+  static const TiDataType value = TI_DATA_TYPE_F16;
 };
 template <>
 struct templ2dtype<float> {
@@ -176,7 +172,7 @@ class MemorySlice {
   MemorySlice &operator=(const MemorySlice &) = default;
   MemorySlice &operator=(MemorySlice &&) = default;
 
-  inline void copy_to(const MemorySlice &dst) const {
+  inline void copy_to(const MemorySlice &dst) {
     if (runtime_ != dst.runtime_) {
       ti_set_last_error(
           TI_ERROR_INVALID_ARGUMENT,
@@ -192,19 +188,10 @@ class MemorySlice {
     ti_copy_memory_device_to_device(runtime_, &dst.slice_, &slice_);
   }
 
-  inline TiMemory memory() const {
-    return slice_.memory;
-  }
-  inline uint64_t offset() const {
-    return slice_.offset;
-  }
-  inline uint64_t size() const {
-    return slice_.size;
-  }
   inline const TiMemorySlice &slice() const {
     return slice_;
   }
-  inline operator const TiMemorySlice &() const {  // NOLINT
+  inline operator const TiMemorySlice &() const {
     return slice_;
   }
 };
@@ -256,10 +243,6 @@ class Memory {
     return *this;
   }
 
-  inline Memory borrow() const {
-    return Memory(runtime_, memory_, size_, false);
-  }
-
   void *map() const {
     return ti_map_memory(runtime_, memory_);
   }
@@ -282,11 +265,7 @@ class Memory {
     unmap();
   }
 
-  inline void copy_to(const ti::Memory &dst) const {
-    slice().copy_to(dst.slice());
-  }
-
-  inline MemorySlice slice(size_t offset, size_t size) const {
+  MemorySlice slice(size_t offset, size_t size) const {
     if (offset + size > size_) {
       ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "size");
       return {};
@@ -297,7 +276,7 @@ class Memory {
     slice.size = size;
     return MemorySlice(runtime_, slice);
   }
-  inline MemorySlice slice() const {
+  MemorySlice slice() const {
     return slice(0, size_);
   }
 
@@ -307,7 +286,7 @@ class Memory {
   constexpr TiMemory memory() const {
     return memory_;
   }
-  constexpr operator TiMemory() const {  // NOLINT
+  constexpr operator TiMemory() const {
     return memory_;
   }
 };
@@ -366,10 +345,6 @@ class NdArray {
     return *this;
   }
 
-  inline NdArray<T> borrow() const {
-    return NdArray<T>(memory_.borrow(), ndarray_);
-  }
-
   inline void *map() const {
     return memory_.map();
   }
@@ -423,12 +398,10 @@ class NdArray {
     write((const T *)src.data(), src.size() * (sizeof(U) / sizeof(T)));
   }
 
-  template <typename U>
-  inline void copy_to(const ti::NdArray<U> &dst) const {
-    memory().copy_to(dst.memory());
+  MemorySlice slice(size_t offset, size_t size) const {
+    return memory_.slice(offset, size);
   }
-
-  inline MemorySlice slice() const {
+  MemorySlice slice() const {
     return memory_.slice();
   }
 
@@ -447,72 +420,14 @@ class NdArray {
   constexpr const TiNdArray &ndarray() const {
     return ndarray_;
   }
-  constexpr operator TiNdArray() const {  // NOLINT
+  constexpr operator TiNdArray() const {
     return ndarray_;
-  }
-};
-
-class ImageSlice {
-  TiRuntime runtime_{TI_NULL_HANDLE};
-  TiImageSlice slice_{};
-
- public:
-  ImageSlice() = default;
-  ImageSlice(TiRuntime runtime, const TiImageSlice &slice)
-      : runtime_(runtime), slice_(slice) {
-  }
-  ImageSlice(const ImageSlice &) = default;
-  ImageSlice(ImageSlice &&) = default;
-  ImageSlice &operator=(const ImageSlice &) = default;
-  ImageSlice &operator=(ImageSlice &&) = default;
-
-  inline void copy_to(const ImageSlice &dst) const {
-    if (runtime_ != dst.runtime_) {
-      ti_set_last_error(
-          TI_ERROR_INVALID_ARGUMENT,
-          "cannot copy device memory between different runtime instances");
-      return;
-    }
-    if (slice_.extent.width != dst.slice_.extent.width ||
-        slice_.extent.height != dst.slice_.extent.height ||
-        slice_.extent.depth != dst.slice_.extent.depth ||
-        slice_.extent.array_layer_count !=
-            dst.slice_.extent.array_layer_count) {
-      ti_set_last_error(
-          TI_ERROR_INVALID_ARGUMENT,
-          "copy source and destination slice must have the same size");
-      return;
-    }
-    ti_copy_image_device_to_device(runtime_, &dst.slice_, &slice_);
-  }
-
-  inline TiImage image() const {
-    return slice_.image;
-  }
-  inline const TiImageOffset &offset() const {
-    return slice_.offset;
-  }
-  inline const TiImageExtent &extent() const {
-    return slice_.extent;
-  }
-  inline const uint32_t &mip_level() const {
-    return slice_.mip_level;
-  }
-  inline const TiImageSlice &slice() const {
-    return slice_;
-  }
-  inline operator TiImageSlice() const {  // NOLINT
-    return slice_;
   }
 };
 
 class Image {
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiImage image_{TI_NULL_HANDLE};
-  TiImageDimension dimension_{TI_IMAGE_DIMENSION_MAX_ENUM};
-  TiImageExtent extent_{0, 0, 0};
-  uint32_t mip_level_count_;
-  TiFormat format_{TI_FORMAT_UNKNOWN};
   bool should_destroy_{false};
 
  public:
@@ -533,26 +448,10 @@ class Image {
   Image(Image &&b)
       : runtime_(detail::move_handle(b.runtime_)),
         image_(detail::move_handle(b.image_)),
-        dimension_(detail::exchange(b.dimension_, TI_IMAGE_DIMENSION_MAX_ENUM)),
-        extent_(detail::exchange(b.extent_, TiImageExtent{0, 0, 0})),
-        mip_level_count_(detail::exchange(b.mip_level_count_, 0)),
-        format_(detail::exchange(b.format_, TI_FORMAT_UNKNOWN)),
         should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
-  Image(TiRuntime runtime,
-        TiImage image,
-        TiImageDimension dimension,
-        const TiImageExtent &extent,
-        uint32_t mip_level_count,
-        TiFormat format,
-        bool should_destroy)
-      : runtime_(runtime),
-        image_(image),
-        dimension_(dimension),
-        extent_(extent),
-        mip_level_count_(mip_level_count),
-        format_(format),
-        should_destroy_(should_destroy) {
+  Image(TiRuntime runtime, TiImage image, bool should_destroy)
+      : runtime_(runtime), image_(image), should_destroy_(should_destroy) {
   }
   ~Image() {
     destroy();
@@ -563,65 +462,25 @@ class Image {
     destroy();
     runtime_ = detail::move_handle(b.runtime_);
     image_ = detail::move_handle(b.image_);
-    dimension_ = detail::exchange(b.dimension_, TI_IMAGE_DIMENSION_MAX_ENUM);
-    extent_ = detail::exchange(b.extent_, TiImageExtent{0, 0, 0});
-    mip_level_count_ = detail::exchange(b.mip_level_count_, 0);
-    format_ = detail::exchange(b.format_, TI_FORMAT_UNKNOWN);
     should_destroy_ = detail::exchange(b.should_destroy_, false);
     return *this;
   }
 
-  inline Image borrow() const {
-    return Image(runtime_, image_, dimension_, extent_, mip_level_count_,
-                 format_, false);
-  }
-
-  inline void copy_to(const Image &dst) const {
-    slice().copy_to(dst.slice());
-  }
-
-  inline void transition_to(TiImageLayout layout) const {
-    ti_transition_image(runtime_, image_, layout);
-  }
-
-  inline ImageSlice slice(const TiImageOffset &offset,
-                          const TiImageExtent &extent,
-                          uint32_t mip_level) const {
-    if (offset.x + extent.width > extent_.width ||
-        offset.y + extent.height > extent_.height ||
-        offset.z + extent.depth > extent_.depth ||
-        offset.array_layer_offset + extent.array_layer_count >
-            extent_.array_layer_count) {
-      ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "extent");
-      return {};
-    }
+  TiImageSlice slice(TiImageOffset offset,
+                     TiImageExtent extent,
+                     uint32_t mip_level) const {
     TiImageSlice slice{};
     slice.image = image_;
     slice.extent = extent;
     slice.offset = offset;
     slice.mip_level = mip_level;
-    return ImageSlice(runtime_, slice);
-  }
-  inline ImageSlice slice() const {
-    return slice(TiImageOffset{}, extent_, 0);
+    return slice;
   }
 
-  constexpr TiImageDimension dimension() const {
-    return dimension_;
-  }
-  constexpr const TiImageExtent &extent() const {
-    return extent_;
-  }
-  constexpr uint32_t mip_level_count() const {
-    return mip_level_count_;
-  }
-  constexpr TiFormat format() const {
-    return format_;
-  }
   constexpr TiImage image() const {
     return image_;
   }
-  constexpr operator TiImage() const {  // NOLINT
+  constexpr operator TiImage() const {
     return image_;
   }
 };
@@ -646,7 +505,7 @@ class Texture {
   }
   Texture(Image &&image, const TiTexture &texture)
       : image_(std::move(image)), texture_(texture) {
-    if (texture.image != image_.image()) {
+    if (texture.image != image_) {
       ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "texture.image != image");
     }
   }
@@ -662,25 +521,13 @@ class Texture {
     return *this;
   }
 
-  inline Texture borrow() const {
-    return Texture(image_.borrow(), texture_);
-  }
-
-  inline void copy_to(const Texture &dst) const {
-    slice().copy_to(dst.slice());
-  }
-
-  inline ImageSlice slice() const {
-    return image_.slice();
-  }
-
   constexpr const Image &image() const {
     return image_;
   }
   constexpr TiTexture texture() const {
     return texture_;
   }
-  constexpr operator TiTexture() const {  // NOLINT
+  constexpr operator TiTexture() const {
     return texture_;
   }
 };
@@ -694,23 +541,7 @@ class ArgumentEntry {
   ArgumentEntry(const ArgumentEntry &) = delete;
   ArgumentEntry(ArgumentEntry &&b) : arg_(b.arg_) {
   }
-  explicit ArgumentEntry(TiArgument *arg) : arg_(arg) {
-  }
-
-  inline void set_f16(float value) {
-    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
-    arg_->value.scalar.type = TI_DATA_TYPE_F16;
-    std::memcpy(&arg_->value.scalar.value.x32, &value, sizeof(value));
-  }
-  inline void set_u16(uint16_t value) {
-    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
-    arg_->value.scalar.type = TI_DATA_TYPE_U16;
-    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
-  }
-  inline void set_i16(int16_t value) {
-    arg_->type = TI_ARGUMENT_TYPE_SCALAR;
-    arg_->value.scalar.type = TI_DATA_TYPE_I16;
-    std::memcpy(&arg_->value.scalar.value.x16, &value, sizeof(value));
+  ArgumentEntry(TiArgument *arg) : arg_(arg) {
   }
 
   inline ArgumentEntry &operator=(const TiArgument &b) {
@@ -725,14 +556,6 @@ class ArgumentEntry {
   inline ArgumentEntry &operator=(float f32) {
     arg_->type = TI_ARGUMENT_TYPE_F32;
     arg_->value.f32 = f32;
-    return *this;
-  }
-  inline ArgumentEntry &operator=(uint16_t u16) {
-    this->set_u16(u16);
-    return *this;
-  }
-  inline ArgumentEntry &operator=(int16_t i16) {
-    this->set_i16(i16);
     return *this;
   }
   inline ArgumentEntry &operator=(const TiNdArray &ndarray) {
@@ -814,21 +637,21 @@ class ComputeGraph {
     return at(name);
   }
 
-  void launch(uint32_t argument_count, const TiNamedArgument *arguments) const {
+  void launch(uint32_t argument_count, const TiNamedArgument *arguments) {
     ti_launch_compute_graph(runtime_, compute_graph_, argument_count,
                             arguments);
   }
-  void launch() const {
+  void launch() {
     launch(args_.size(), args_.data());
   }
-  void launch(const std::vector<TiNamedArgument> &arguments) const {
+  void launch(const std::vector<TiNamedArgument> &arguments) {
     launch(arguments.size(), arguments.data());
   }
 
   constexpr TiComputeGraph compute_graph() const {
     return compute_graph_;
   }
-  constexpr operator TiComputeGraph() const {  // NOLINT
+  constexpr operator TiComputeGraph() const {
     return compute_graph_;
   }
 };
@@ -896,20 +719,20 @@ class Kernel {
     args_.clear();
   }
 
-  void launch(uint32_t argument_count, const TiArgument *arguments) const {
+  void launch(uint32_t argument_count, const TiArgument *arguments) {
     ti_launch_kernel(runtime_, kernel_, argument_count, arguments);
   }
-  void launch() const {
+  void launch() {
     launch(args_.size(), args_.data());
   }
-  void launch(const std::vector<TiArgument> &arguments) const {
+  void launch(const std::vector<TiArgument> &arguments) {
     launch(arguments.size(), arguments.data());
   }
 
   constexpr TiKernel kernel() const {
     return kernel_;
   }
-  constexpr operator TiKernel() const {  // NOLINT
+  constexpr operator TiKernel() const {
     return kernel_;
   }
 };
@@ -956,15 +779,11 @@ class AotModule {
     return *this;
   }
 
-  inline AotModule borrow() const {
-    return AotModule(runtime_, aot_module_, false);
-  }
-
-  Kernel get_kernel(const char *name) const {
+  Kernel get_kernel(const char *name) {
     TiKernel kernel_ = ti_get_aot_module_kernel(aot_module_, name);
     return Kernel(runtime_, kernel_);
   }
-  ComputeGraph get_compute_graph(const char *name) const {
+  ComputeGraph get_compute_graph(const char *name) {
     TiComputeGraph compute_graph_ =
         ti_get_aot_module_compute_graph(aot_module_, name);
     return ComputeGraph(runtime_, compute_graph_);
@@ -973,7 +792,7 @@ class AotModule {
   constexpr TiAotModule aot_module() const {
     return aot_module_;
   }
-  constexpr operator TiAotModule() const {  // NOLINT
+  constexpr operator TiAotModule() const {
     return aot_module_;
   }
 };
@@ -983,10 +802,9 @@ class CapabilityLevelConfig {
  public:
   std::vector<TiCapabilityLevelInfo> cap_level_infos;
 
-  CapabilityLevelConfig() {
+  CapabilityLevelConfig() : cap_level_infos() {
   }
-  explicit CapabilityLevelConfig(
-      std::vector<TiCapabilityLevelInfo> &&capabilities)
+  CapabilityLevelConfig(std::vector<TiCapabilityLevelInfo> &&capabilities)
       : cap_level_infos(std::move(capabilities)) {
   }
 
@@ -1019,10 +837,10 @@ class CapabilityLevelConfig {
 
 class CapabilityLevelConfigBuilder {
   typedef CapabilityLevelConfigBuilder Self;
-  std::map<TiCapability, uint32_t> cap_level_infos_;
+  std::map<TiCapability, uint32_t> cap_level_infos;
 
  public:
-  CapabilityLevelConfigBuilder() {
+  CapabilityLevelConfigBuilder() : cap_level_infos() {
   }
   CapabilityLevelConfigBuilder(const Self &) = delete;
   Self &operator=(const Self &) = delete;
@@ -1030,11 +848,11 @@ class CapabilityLevelConfigBuilder {
   Self &spirv_version(uint32_t major, uint32_t minor) {
     if (major == 1) {
       if (minor == 3) {
-        cap_level_infos_[TI_CAPABILITY_SPIRV_VERSION] = 0x10300;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10300;
       } else if (minor == 4) {
-        cap_level_infos_[TI_CAPABILITY_SPIRV_VERSION] = 0x10400;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10400;
       } else if (minor == 5) {
-        cap_level_infos_[TI_CAPABILITY_SPIRV_VERSION] = 0x10500;
+        cap_level_infos[TI_CAPABILITY_SPIRV_VERSION] = 0x10500;
       } else {
         ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "minor");
       }
@@ -1044,103 +862,101 @@ class CapabilityLevelConfigBuilder {
     return *this;
   }
   Self &spirv_has_int8(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT8] = value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT8] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int16(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT16] =
-        value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT16] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_int64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_INT64] =
-        value ? TI_TRUE : TI_FALSE;
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_INT64] = value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float16(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_FLOAT16] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT16] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_float64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_FLOAT64] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_FLOAT64] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_int64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_INT64] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_INT64] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16_add(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_ADD] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float16_minmax(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT16_MINMAX] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float64(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_atomic_float64_add(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_ATOMIC_FLOAT64_ADD] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_variable_ptr(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_VARIABLE_PTR] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_physical_storage_buffer(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_PHYSICAL_STORAGE_BUFFER] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_basic(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BASIC] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_vote(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_VOTE] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_arithmetic(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_subgroup_ballot(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_non_semantic_info(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
   Self &spirv_has_no_integer_wrap_decoration(bool value = true) {
-    cap_level_infos_[TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION] =
+    cap_level_infos[TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION] =
         value ? TI_TRUE : TI_FALSE;
     return *this;
   }
 
   CapabilityLevelConfig build() {
     std::vector<TiCapabilityLevelInfo> out{};
-    for (const auto &pair : cap_level_infos_) {
+    for (const auto &pair : cap_level_infos) {
       TiCapabilityLevelInfo cap_level_info{};
       cap_level_info.capability = pair.first;
       cap_level_info.level = pair.second;
@@ -1179,7 +995,7 @@ class Runtime {
         runtime_(detail::move_handle(b.runtime_)),
         should_destroy_(detail::exchange(b.should_destroy_, false)) {
   }
-  explicit Runtime(TiArch arch, uint32_t device_index = 0)
+  Runtime(TiArch arch, uint32_t device_index = 0)
       : arch_(arch),
         runtime_(ti_create_runtime(arch, device_index)),
         should_destroy_(true) {
@@ -1199,16 +1015,12 @@ class Runtime {
     return *this;
   }
 
-  inline Runtime borrow() const {
-    return Runtime(arch_, runtime_, false);
-  }
-
   void set_capabilities_ext(
-      const std::vector<TiCapabilityLevelInfo> &capabilities) const {
+      const std::vector<TiCapabilityLevelInfo> &capabilities) {
     ti_set_runtime_capabilities_ext(runtime_, (uint32_t)capabilities.size(),
                                     capabilities.data());
   }
-  void set_capabilities_ext(const CapabilityLevelConfig &capabilities) const {
+  void set_capabilities_ext(const CapabilityLevelConfig &capabilities) {
     set_capabilities_ext(capabilities.cap_level_infos);
   }
   CapabilityLevelConfig get_capabilities() const {
@@ -1219,11 +1031,11 @@ class Runtime {
     return CapabilityLevelConfig{std::move(devcaps)};
   }
 
-  Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) const {
+  Memory allocate_memory(const TiMemoryAllocateInfo &allocate_info) {
     TiMemory memory = ti_allocate_memory(runtime_, &allocate_info);
     return Memory(runtime_, memory, allocate_info.size, true);
   }
-  Memory allocate_memory(size_t size, bool host_access = false) const {
+  Memory allocate_memory(size_t size, bool host_access = false) {
     TiMemoryAllocateInfo allocate_info{};
     allocate_info.size = size;
     allocate_info.host_read = host_access;
@@ -1234,16 +1046,7 @@ class Runtime {
   template <typename T>
   NdArray<T> allocate_ndarray(const std::vector<uint32_t> &shape = {},
                               const std::vector<uint32_t> &elem_shape = {},
-                              bool host_access = false) const {
-    auto dtype = detail::templ2dtype<T>::value;
-    return allocate_ndarray<T>(dtype, shape, elem_shape, host_access);
-  }
-
-  template <typename T>
-  NdArray<T> allocate_ndarray(TiDataType dtype,
-                              const std::vector<uint32_t> &shape = {},
-                              const std::vector<uint32_t> &elem_shape = {},
-                              bool host_access = false) const {
+                              bool host_access = false) {
     size_t size = sizeof(T);
     TiNdArray ndarray{};
     for (size_t i = 0; i < shape.size(); ++i) {
@@ -1258,22 +1061,21 @@ class Runtime {
       ndarray.elem_shape.dims[i] = x;
     }
     ndarray.elem_shape.dim_count = elem_shape.size();
-    ndarray.elem_type = dtype;
+    ndarray.elem_type = detail::templ2dtype<T>::value;
 
     ti::Memory memory = allocate_memory(size, host_access);
-    ndarray.memory = memory.memory();
+    ndarray.memory = memory;
     return NdArray<T>(std::move(memory), ndarray);
   }
 
-  Image allocate_image(const TiImageAllocateInfo &allocate_info) const {
+  Image allocate_image(const TiImageAllocateInfo &allocate_info) {
     TiImage image = ti_allocate_image(runtime_, &allocate_info);
-    return Image(runtime_, image, allocate_info.dimension, allocate_info.extent,
-                 allocate_info.mip_level_count, allocate_info.format, true);
+    return Image(runtime_, image, true);
   }
   Texture allocate_texture2d(uint32_t width,
                              uint32_t height,
                              TiFormat format,
-                             TiSampler sampler) const {
+                             TiSampler sampler) {
     TiImageExtent extent{};
     extent.width = width;
     extent.height = height;
@@ -1290,7 +1092,7 @@ class Runtime {
 
     Image image = allocate_image(allocate_info);
     TiTexture texture{};
-    texture.image = image.image();
+    texture.image = image;
     texture.dimension = TI_IMAGE_DIMENSION_2D;
     texture.extent = extent;
     texture.format = format;
@@ -1298,40 +1100,39 @@ class Runtime {
     return Texture(std::move(image), texture);
   }
 
-  AotModule load_aot_module(const char *path) const {
+  AotModule load_aot_module(const char *path) {
     TiAotModule aot_module_ = ti_load_aot_module(runtime_, path);
     return AotModule(runtime_, aot_module_, true);
   }
-  AotModule load_aot_module(const std::string &path) const {
+  AotModule load_aot_module(const std::string &path) {
     return load_aot_module(path.c_str());
   }
 
-  AotModule create_aot_module(const void *tcm, size_t size) const {
+  AotModule create_aot_module(const void *tcm, size_t size) {
     TiAotModule aot_module = ti_create_aot_module(runtime_, tcm, size);
     return AotModule(runtime_, aot_module, true);
   }
-  AotModule create_aot_module(const std::vector<uint8_t> &tcm) const {
+  AotModule create_aot_module(const std::vector<uint8_t> &tcm) {
     return create_aot_module(tcm.data(), tcm.size());
   }
 
   void copy_memory_device_to_device(const MemorySlice &dst_memory,
-                                    const MemorySlice &src_memory) const {
+                                    const MemorySlice &src_memory) {
     ti_copy_memory_device_to_device(runtime_, &dst_memory.slice(),
                                     &src_memory.slice());
   }
-  void copy_image_device_to_device(const ImageSlice &dst_image,
-                                   const ImageSlice &src_image) const {
-    ti_copy_image_device_to_device(runtime_, &dst_image.slice(),
-                                   &src_image.slice());
+  void copy_image_device_to_device(const TiImageSlice &dst_texture,
+                                   const TiImageSlice &src_texture) {
+    ti_copy_image_device_to_device(runtime_, &dst_texture, &src_texture);
   }
-  void transition_image(TiImage image, TiImageLayout layout) const {
+  void transition_image(TiImage image, TiImageLayout layout) {
     ti_transition_image(runtime_, image, layout);
   }
 
-  void flush() const {
+  void flush() {
     ti_flush(runtime_);
   }
-  void wait() const {
+  void wait() {
     ti_wait(runtime_);
   }
 
@@ -1341,7 +1142,7 @@ class Runtime {
   constexpr TiRuntime runtime() const {
     return runtime_;
   }
-  constexpr operator TiRuntime() const {  // NOLINT
+  constexpr operator TiRuntime() const {
     return runtime_;
   }
 };

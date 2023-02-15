@@ -39,18 +39,15 @@ bool check_validation_layer_support() {
   return true;
 }
 
-static const std::unordered_set<std::string> ignored_messages = {
-    "UNASSIGNED-DEBUG-PRINTF",
-    "VUID_Undefined",
-    // FIXME(zhanlue): Fix validation errors with float16 and remove these
-    // ignores.
-    "VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332",
-    "VUID-RuntimeSpirv-storageBuffer16BitAccess-06331",
-};
-
 [[maybe_unused]] bool vk_ignore_validation_warning(
     const std::string &msg_name) {
-  if (ignored_messages.count(msg_name) > 0) {
+  if (msg_name == "UNASSIGNED-DEBUG-PRINTF") {
+    // Ignore truncated Debug Printf message
+    return true;
+  }
+
+  if (msg_name == "VUID_Undefined") {
+    // FIXME: Remove this branch after upgrading Vulkan driver for built bots
     return true;
   }
 

@@ -218,14 +218,6 @@
     "CapiTest.TestBehaviorGetCgraphVulkan": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
         "--arch=vulkan"
-    ],
-    "CapiTest.Float16Fill": [
-        ["cpp", "aot", "python_scripts", "numerical_aot_test.py"],
-        "--arch=vulkan"
-    ],
-    "CapiTest.Float16Compute": [
-        ["cpp", "aot", "python_scripts", "numerical_aot_test.py"],
-        "--arch=vulkan"
     ]
 }
 }

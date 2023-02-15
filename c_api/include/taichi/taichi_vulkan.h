@@ -6,9 +6,7 @@
 //
 #pragma once
 
-#ifndef TAICHI_H
-#include "taichi.h"
-#endif  // TAICHI_H
+#include <taichi/taichi.h>
 
 #ifdef __cplusplus
 extern "C" {

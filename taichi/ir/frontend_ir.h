@@ -24,6 +24,14 @@ struct ForLoopConfig {
   bool uniform{false};
 };
 
+#define TI_DEFINE_CLONE_FOR_FRONTEND_IR                \
+  std::unique_ptr<Stmt> clone() const override {       \
+    std::unique_ptr<Stmt> new_stmt{                    \
+        new std::decay<decltype(*this)>::type{*this}}; \
+    new_stmt->ret_type = ret_type;                     \
+    return new_stmt;                                   \
+  }
+
 // Frontend Statements
 class FrontendExternalFuncStmt : public Stmt {
  public:
@@ -49,6 +57,7 @@ class FrontendExternalFuncStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendExprStmt : public Stmt {
@@ -59,6 +68,7 @@ class FrontendExprStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAllocaStmt : public Stmt {
@@ -81,6 +91,7 @@ class FrontendAllocaStmt : public Stmt {
   bool is_shared;
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendSNodeOpStmt : public Stmt {
@@ -96,6 +107,7 @@ class FrontendSNodeOpStmt : public Stmt {
                       const Expr &val = Expr(nullptr));
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAssertStmt : public Stmt {
@@ -118,6 +130,7 @@ class FrontendAssertStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAssignStmt : public Stmt {
@@ -127,6 +140,7 @@ class FrontendAssignStmt : public Stmt {
   FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendIfStmt : public Stmt {
@@ -142,6 +156,9 @@ class FrontendIfStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+ private:
+  FrontendIfStmt(const FrontendIfStmt &o);
 };
 
 class FrontendPrintStmt : public Stmt {
@@ -159,6 +176,7 @@ class FrontendPrintStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendForStmt : public Stmt {
@@ -203,8 +221,11 @@ class FrontendForStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 
  private:
+  FrontendForStmt(const FrontendForStmt &o);
+
   void init_config(Arch arch, const ForLoopConfig &config);
 
   void init_loop_vars(const ExprGroup &loop_vars);
@@ -225,6 +246,10 @@ class FrontendFuncDefStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+
+ private:
+  FrontendFuncDefStmt(const FrontendFuncDefStmt &o);
 };
 
 class FrontendBreakStmt : public Stmt {
@@ -237,6 +262,7 @@ class FrontendBreakStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendContinueStmt : public Stmt {
@@ -248,6 +274,7 @@ class FrontendContinueStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendWhileStmt : public Stmt {
@@ -263,6 +290,9 @@ class FrontendWhileStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+ private:
+  FrontendWhileStmt(const FrontendWhileStmt &o);
 };
 
 class FrontendReturnStmt : public Stmt {
@@ -276,6 +306,7 @@ class FrontendReturnStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 // Expressions

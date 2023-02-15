@@ -7,17 +7,14 @@
 namespace taichi::lang {
 namespace metal {
 
-MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer)
-    : mtl_buffer_(mtl_buffer) {}
+MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer) : mtl_buffer_(mtl_buffer) {}
 MetalMemory::~MetalMemory() {
   if (!dont_destroy_) {
     [mtl_buffer_ release];
   }
 }
 
-void MetalMemory::dont_destroy() {
-  dont_destroy_ = true;
-}
+void MetalMemory::dont_destroy() { dont_destroy_ = true; }
 
 MTLBuffer_id MetalMemory::mtl_buffer() const { return mtl_buffer_; }
 size_t MetalMemory::size() const { return (size_t)[mtl_buffer_ length]; }
@@ -38,17 +35,13 @@ MetalImage::~MetalImage() {
   }
 }
 
-void MetalImage::dont_destroy() {
-  dont_destroy_ = true;
-}
+void MetalImage::dont_destroy() { dont_destroy_ = true; }
 
 MTLTexture_id MetalImage::mtl_texture() const { return mtl_texture_; }
 
 MetalSampler::MetalSampler(MTLSamplerState_id mtl_sampler_state)
     : mtl_sampler_state_(mtl_sampler_state) {}
-MetalSampler::~MetalSampler() {
-  [mtl_sampler_state_ release];
-}
+MetalSampler::~MetalSampler() { [mtl_sampler_state_ release]; }
 
 MTLSamplerState_id MetalSampler::mtl_sampler_state() const {
   return mtl_sampler_state_;
@@ -212,9 +205,9 @@ ShaderResourceSet &MetalShaderResourceSet::rw_buffer(uint32_t binding,
   return *this;
 }
 
-ShaderResourceSet &MetalShaderResourceSet::image(uint32_t binding,
-                          DeviceAllocation alloc,
-                          ImageSamplerConfig sampler_config) {
+ShaderResourceSet &
+MetalShaderResourceSet::image(uint32_t binding, DeviceAllocation alloc,
+                              ImageSamplerConfig sampler_config) {
   RHI_ASSERT(alloc.device == (Device *)device_);
   const MetalImage &image = device_->get_image(alloc.alloc_id);
 
@@ -568,51 +561,51 @@ void MetalDevice::dealloc_memory(DeviceAllocation handle) {
 }
 
 MTLPixelFormat format2mtl(BufferFormat format) {
-  static const std::map<BufferFormat, MTLPixelFormat> map {
-    {BufferFormat::unknown, MTLPixelFormatInvalid},
-    {BufferFormat::r8, MTLPixelFormatR8Unorm},
-    {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
-    {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
-    {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
-    {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
-    {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
-    {BufferFormat::r8u, MTLPixelFormatR8Uint},
-    {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
-    {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
-    {BufferFormat::r8i, MTLPixelFormatR8Sint},
-    {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
-    {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
-    {BufferFormat::r16, MTLPixelFormatR16Unorm},
-    {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
-    {BufferFormat::rgb16, MTLPixelFormatInvalid},
-    {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
-    {BufferFormat::r16u, MTLPixelFormatR16Uint},
-    {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
-    {BufferFormat::rgb16u, MTLPixelFormatInvalid},
-    {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
-    {BufferFormat::r16i, MTLPixelFormatR16Sint},
-    {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
-    {BufferFormat::rgb16i, MTLPixelFormatInvalid},
-    {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
-    {BufferFormat::r16f, MTLPixelFormatR16Float},
-    {BufferFormat::rg16f, MTLPixelFormatRG16Float},
-    {BufferFormat::rgb16f, MTLPixelFormatInvalid},
-    {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
-    {BufferFormat::r32u, MTLPixelFormatR32Uint},
-    {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
-    {BufferFormat::rgb32u, MTLPixelFormatInvalid},
-    {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
-    {BufferFormat::r32i, MTLPixelFormatR32Sint},
-    {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
-    {BufferFormat::rgb32i, MTLPixelFormatInvalid},
-    {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
-    {BufferFormat::r32f, MTLPixelFormatR32Float},
-    {BufferFormat::rg32f, MTLPixelFormatRG32Float},
-    {BufferFormat::rgb32f, MTLPixelFormatInvalid},
-    {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
-    {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
-    {BufferFormat::depth24stencil8, MTLPixelFormatDepth24Unorm_Stencil8},
-    {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
+  static const std::map<BufferFormat, MTLPixelFormat> map{
+      {BufferFormat::unknown, MTLPixelFormatInvalid},
+      {BufferFormat::r8, MTLPixelFormatR8Unorm},
+      {BufferFormat::rg8, MTLPixelFormatRG8Unorm},
+      {BufferFormat::rgba8, MTLPixelFormatRGBA8Unorm},
+      {BufferFormat::rgba8srgb, MTLPixelFormatRGBA8Unorm_sRGB},
+      {BufferFormat::bgra8, MTLPixelFormatBGRA8Unorm},
+      {BufferFormat::bgra8srgb, MTLPixelFormatBGRA8Unorm_sRGB},
+      {BufferFormat::r8u, MTLPixelFormatR8Uint},
+      {BufferFormat::rg8u, MTLPixelFormatRG8Uint},
+      {BufferFormat::rgba8u, MTLPixelFormatRGBA8Uint},
+      {BufferFormat::r8i, MTLPixelFormatR8Sint},
+      {BufferFormat::rg8i, MTLPixelFormatRG8Sint},
+      {BufferFormat::rgba8i, MTLPixelFormatRGBA8Sint},
+      {BufferFormat::r16, MTLPixelFormatR16Unorm},
+      {BufferFormat::rg16, MTLPixelFormatRG16Unorm},
+      {BufferFormat::rgb16, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16, MTLPixelFormatRGBA16Unorm},
+      {BufferFormat::r16u, MTLPixelFormatR16Uint},
+      {BufferFormat::rg16u, MTLPixelFormatRG16Uint},
+      {BufferFormat::rgb16u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16u, MTLPixelFormatRGBA16Uint},
+      {BufferFormat::r16i, MTLPixelFormatR16Sint},
+      {BufferFormat::rg16i, MTLPixelFormatRG16Sint},
+      {BufferFormat::rgb16i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16i, MTLPixelFormatRGBA16Sint},
+      {BufferFormat::r16f, MTLPixelFormatR16Float},
+      {BufferFormat::rg16f, MTLPixelFormatRG16Float},
+      {BufferFormat::rgb16f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba16f, MTLPixelFormatRGBA16Float},
+      {BufferFormat::r32u, MTLPixelFormatR32Uint},
+      {BufferFormat::rg32u, MTLPixelFormatRG32Uint},
+      {BufferFormat::rgb32u, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32u, MTLPixelFormatRGBA32Uint},
+      {BufferFormat::r32i, MTLPixelFormatR32Sint},
+      {BufferFormat::rg32i, MTLPixelFormatRG32Sint},
+      {BufferFormat::rgb32i, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32i, MTLPixelFormatRGBA32Sint},
+      {BufferFormat::r32f, MTLPixelFormatR32Float},
+      {BufferFormat::rg32f, MTLPixelFormatRG32Float},
+      {BufferFormat::rgb32f, MTLPixelFormatInvalid},
+      {BufferFormat::rgba32f, MTLPixelFormatRGBA32Float},
+      {BufferFormat::depth16, MTLPixelFormatDepth16Unorm},
+      {BufferFormat::depth24stencil8, MTLPixelFormatDepth24Unorm_Stencil8},
+      {BufferFormat::depth32f, MTLPixelFormatDepth32Float},
   };
   auto it = map.find(format);
   RHI_ASSERT(it != map.end());

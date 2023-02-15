@@ -253,7 +253,7 @@ class MetalDevice final : public GraphicsDevice {
 
   static MetalDevice *create();
   void destroy();
-  
+
   std::unique_ptr<Surface> create_surface(
       const SurfaceConfig &config) override {
     TI_NOT_IMPLEMENTED;
@@ -272,7 +272,7 @@ class MetalDevice final : public GraphicsDevice {
 
   const MetalImage &get_image(DeviceAllocationId alloc_id) const;
   MetalImage &get_image(DeviceAllocationId alloc_id);
-  
+
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) override;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) override;
   void unmap(DevicePtr ptr) override;

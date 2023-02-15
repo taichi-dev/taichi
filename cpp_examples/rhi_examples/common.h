@@ -88,8 +88,15 @@ class App {
     }
 
     {
+      VkSurfaceKHR vk_surf = VK_NULL_HANDLE;
+
+      if (glfwCreateWindowSurface(device_creator->device()->vk_instance(), glfw_window, nullptr, &vk_surf) !=
+          VK_SUCCESS) {
+        TI_ERROR("failed to create window surface!");
+      }
+
       SurfaceConfig config;
-      config.native_surface_handle = device_creator->get_surface();
+      config.native_surface_handle = vk_surf;
 
       surface = device->create_surface(config);
     }

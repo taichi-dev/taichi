@@ -7,6 +7,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/filesystem.hpp"
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <cstdio>
@@ -47,7 +48,7 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
     return false;
   }
   for (auto &f : iter) {
-    v(f.path().filename().string(), f.is_directory());
+    v(f.path().filename().string(), f.status().type() == std::filesystem::file_type::directory);
   }
   return true;
 }

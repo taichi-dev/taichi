@@ -3,6 +3,8 @@
 #include "taichi/cpp/taichi.hpp"
 #include "c_api/tests/gtest_fixture.h"
 
+#ifdef TI_WITH_VULKAN
+
 std::vector<float> read_fp16_ndarray(ti::Runtime &runtime,
                                      const ti::NdArray<uint16_t> &ndarray,
                                      const std::vector<uint32_t> &shape,
@@ -31,7 +33,12 @@ TEST_F(CapiTest, Float16Fill) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  ti::Runtime runtime(arch);
+  std::vector<const char *> device_extensions = {
+      VK_KHR_16BIT_STORAGE_EXTENSION_NAME};
+  TiRuntime ti_runtime = ti_create_vulkan_runtime_ext(
+      VK_API_VERSION_1_0, 0, {} /*instance extensions*/, 1,
+      device_extensions.data() /*device extensions*/);
+  ti::Runtime runtime = ti::Runtime(arch, ti_runtime, true);
 
   ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
   ti::Kernel k_fill_scalar_array_with_fp32 =
@@ -112,7 +119,12 @@ TEST_F(CapiTest, Float16Compute) {
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
 
-  ti::Runtime runtime(arch);
+  std::vector<const char *> device_extensions = {
+      VK_KHR_16BIT_STORAGE_EXTENSION_NAME};
+  TiRuntime ti_runtime = ti_create_vulkan_runtime_ext(
+      VK_API_VERSION_1_0, 0, {} /*instance extensions*/, 1,
+      device_extensions.data() /*device extensions*/);
+  ti::Runtime runtime = ti::Runtime(arch, ti_runtime, true);
 
   ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
   ti::Kernel k_compute = aot_mod.get_kernel("compute_kernel");
@@ -181,3 +193,5 @@ TEST_F(CapiTest, Float16Compute) {
     EXPECT_EQ(data[11], 272);
   }
 }
+
+#endif

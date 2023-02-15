@@ -251,7 +251,8 @@ VulkanDeviceCreator::VulkanDeviceCreator(
   VkSurfaceKHR test_surface = VK_NULL_HANDLE;
   if (params_.is_for_ui) {
     test_surface = params_.surface_creator(instance_);
-    RHI_ASSERT((test_surface != VK_NULL_HANDLE) && "failed to create window surface!");
+    RHI_ASSERT((test_surface != VK_NULL_HANDLE) &&
+               "failed to create window surface!");
   }
   pick_physical_device(test_surface);
   create_logical_device(manual_create);

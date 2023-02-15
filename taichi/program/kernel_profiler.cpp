@@ -5,6 +5,8 @@
 #include "taichi/rhi/cuda/cuda_profiler.h"
 #include "taichi/system/timeline.h"
 
+#include "taichi/rhi/amdgpu/amdgpu_profiler.h"
+
 namespace taichi::lang {
 
 void KernelProfileStatisticalResult::insert_record(double t) {
@@ -143,6 +145,12 @@ std::unique_ptr<KernelProfilerBase> make_profiler(Arch arch, bool enable) {
     return std::make_unique<KernelProfilerCUDA>(enable);
 #else
     TI_NOT_IMPLEMENTED;
+#endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    return std::make_unique<KernelProfilerAMDGPU>();
+#else
+    TI_NOT_IMPLEMENTED
 #endif
   } else {
     return std::make_unique<DefaultProfiler>();

@@ -140,6 +140,11 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     if (config.saturating_grid_dim == 0) {
       config.saturating_grid_dim = num_workgroups * query_max_block_per_cu * 2;
     }
+    if (config.kernel_profiler) {
+      AMDGPUContext::get_instance().set_profiler(profiler);
+    } else {
+      AMDGPUContext::get_instance().set_profiler(nullptr);
+    }
     AMDGPUContext::get_instance().set_debug(config.debug);
     device_ = std::make_shared<amdgpu::AmdgpuDevice>();
   }

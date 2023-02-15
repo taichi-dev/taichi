@@ -76,11 +76,14 @@ ti.init()
 class Calc:
     def __init__(self):
         self.x = ti.field(dtype=ti.f32, shape=8)
+        self.y = ti.field(dtype=ti.f32, shape=4)
 
     @ti.kernel
     def func(self, temp: ti.template()):
         for i in range(8):
-            temp[i] = self.x[i * 2]
+            temp[i] = self.x[i * 2] + self.x[i * 2 + 1]
+        for i in range(4):
+            self.y[i] = ti.max(temp[i * 2], temp[i * 2 + 1])
 
     def call_func(self):
         fb = ti.FieldsBuilder()

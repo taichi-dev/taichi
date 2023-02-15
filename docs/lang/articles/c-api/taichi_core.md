@@ -497,6 +497,7 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_F32 = 1,
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   TI_ARGUMENT_TYPE_TEXTURE = 3,
+  TI_ARGUMENT_TYPE_SCALAR = 4,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
 ```
@@ -507,6 +508,8 @@ Types of kernel and compute graph argument.
 - `TI_ARGUMENT_TYPE_F32`: 32-bit IEEE 754 single-precision floating-point number.
 - `TI_ARGUMENT_TYPE_NDARRAY`: ND-array wrapped around a [`TiMemory`](#handle-timemory).
 - `TI_ARGUMENT_TYPE_TEXTURE`: Texture wrapped around a [`TiImage`](#handle-tiimage).
+- `TI_ARGUMENT_TYPE_SCALAR`: Typed scalar.
+
 
 ---
 ### BitField `TiMemoryUsageFlags`
@@ -873,6 +876,45 @@ Image data bound to a sampler.
 - `format`: Image texel format.
 
 ---
+### Union `TiScalarValue`
+
+> Stable since Taichi version: 1.5.0
+
+```c
+// union.scalar_value
+typedef union TiScalarValue {
+  uint8_t x8;
+  uint16_t x16;
+  uint32_t x32;
+  uint64_t x64;
+} TiScalarValue;
+```
+
+Scalar value represented by a power-of-two number of bits.
+
+**NOTE** The unsigned integer types merely hold the number of bits in memory and doesn't reflect any type of the underlying data. For example, a 32-bit floating-point scalar value is assigned by `*(float*)&scalar_value.x32 = 0.0f`; a 16-bit signed integer is assigned by `*(int16_t)&scalar_vaue.x16 = 1`. The actual type of the scalar is hinted via `type`.
+
+- `x8`: Scalar value that fits into 8 bits.
+- `x16`: Scalar value that fits into 16 bits.
+- `x32`: Scalar value that fits into 32 bits.
+- `x64`: Scalar value that fits into 64 bits.
+
+---
+### Structure `TiScalar`
+
+> Stable since Taichi version: 1.5.0
+
+```c
+// structure.scalar
+typedef struct TiScalar {
+  TiDataType type;
+  TiScalarValue value;
+} TiScalar;
+```
+
+A typed scalar value.
+
+---
 ### Union `TiArgumentValue`
 
 > Stable since Taichi version: 1.4.0
@@ -884,15 +926,17 @@ typedef union TiArgumentValue {
   float f32;
   TiNdArray ndarray;
   TiTexture texture;
+  TiScalar scalar;
 } TiArgumentValue;
 ```
 
 A scalar or structured argument value.
 
-- `i32`: Value of a 32-bit one's complement signed integer.
-- `f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number.
+- `i32`: Value of a 32-bit one's complement signed integer. This is equivalent to `x32` with `TI_DATA_TYPE_I32`.
+- `f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `x32` with `TI_DATA_TYPE_F32`.
 - `ndarray`: An ND-array to be bound.
 - `texture`: A texture to be bound.
+- `scalar`: An scalar to be bound.
 
 ---
 ### Structure `TiArgument`
@@ -961,7 +1005,9 @@ Gets a list of available archs on the current platform. An arch is only availabl
 1. The Runtime library is compiled with its support;
 2. The current platform is installed with a capable hardware or an emulation software.
 
-An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing. Please also note that the order or returned archs is **undefined**.
+An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing.
+
+**WARNING** Please also note that the order or returned archs is *undefined*.
 
 ---
 ### Function `ti_get_last_error`

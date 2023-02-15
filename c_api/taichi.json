@@ -473,7 +473,7 @@
                     "name": "scalar",
                     "type": "structure",
                     "since": "v1.5.0",
-                    "variants": [
+                    "fields": [
                         {
                             "name": "type",
                             "type": "enumeration.data_type"
@@ -498,16 +498,16 @@
                             "type": "float"
                         },
                         {
-                            "name": "scalar",
-                            "type": "structure.scalar"
-                        },
-                        {
                             "name": "ndarray",
                             "type": "structure.nd_array"
                         },
                         {
                             "name": "texture",
                             "type": "structure.texture"
+                        },
+                        {
+                            "name": "scalar",
+                            "type": "structure.scalar"
                         }
                     ]
                 },

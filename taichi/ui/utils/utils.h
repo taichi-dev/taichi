@@ -66,7 +66,6 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
 
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GLFW_FALSE);
 
   window = glfwCreateWindow(screenWidth, screenHeight, name.c_str(), nullptr,
                             nullptr);

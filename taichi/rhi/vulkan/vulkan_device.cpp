@@ -2680,7 +2680,7 @@ void VulkanSurface::create_swap_chain() {
   VkPresentModeKHR present_mode =
       choose_swap_present_mode(present_modes, config_.vsync, config_.adaptive);
 
-  VkExtent2D extent = {uint32_t(width_), uint32_t(width_)};
+  VkExtent2D extent = {uint32_t(width_), uint32_t(height_)};
   extent.width =
       std::max(capabilities.minImageExtent.width,
                std::min(capabilities.maxImageExtent.width, extent.width));

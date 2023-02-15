@@ -190,8 +190,8 @@ You may also serialize a for loop at the outermost scope using `ti.loop_config(s
 
 The `break` statement is *not* supported in parallelized loops:
 
-```python
-@ti.kernel skip-ci:ToyDemo
+```python skip-ci:ToyDemo
+@ti.kernel
 def foo():
     for i in x:
         ...

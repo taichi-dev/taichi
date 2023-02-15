@@ -614,7 +614,9 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &pyargs) {
+      .def("jit_run", [](aot::CompiledGraph *self,
+                         const CompileConfig &compile_config,
+                         const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : pyargs) {
           std::string arg_name = py::cast<std::string>(it.first);
@@ -670,7 +672,7 @@ void export_lang(py::module &m) {
             TI_NOT_IMPLEMENTED;
           }
         }
-        self->run(args);
+        self->jit_run(compile_config, args);
       });
 
   py::class_<Kernel>(m, "Kernel")

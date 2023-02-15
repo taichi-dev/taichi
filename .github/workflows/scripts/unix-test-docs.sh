@@ -16,5 +16,6 @@ python3 -m pip install dist/*.whl
 
 export PATH=$PATH:$HOME/.local/bin
 python3 -m pip install -r requirements_test.txt
+python3 -m pip install torch
 
 cat docs/cover-in-ci.lst | xargs pytest -v -n 4

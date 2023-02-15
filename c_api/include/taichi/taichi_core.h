@@ -230,7 +230,9 @@
 #define TI_C_API_VERSION 1005000
 #endif  // TI_C_API_VERSION
 
-#include <taichi/taichi.h>
+#ifndef TAICHI_H
+#include "taichi.h"
+#endif  // TAICHI_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -369,8 +371,6 @@ typedef enum TiArch {
   TI_ARCH_OPENGL = 6,
   // OpenGL ES GPU backend.
   TI_ARCH_GLES = 7,
-  // AMDGPU backend
-  TI_ARCH_AMDGPU = 8,
   TI_ARCH_MAX_ENUM = 0xffffffff,
 } TiArch;
 
@@ -461,7 +461,11 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   // Texture wrapped around a `handle.image`.
   TI_ARGUMENT_TYPE_TEXTURE = 3,
+  // Scalar wrapped around a `handle.buffer`
+  TI_ARGUMENT_TYPE_SCALAR = 4,
+
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
+
 } TiArgumentType;
 
 // BitField `TiMemoryUsageFlags` (1.4.0)
@@ -772,6 +776,22 @@ typedef struct TiTexture {
   TiFormat format;
 } TiTexture;
 
+typedef union TiScalarValue {
+  // Value of a 8-bit one's complement unsigned integer.
+  uint8_t x8;
+  // Value of a 16-bit one's complement unsigned integer.
+  uint16_t x16;
+  // Value of a 32-bit one's complement unsigned integer.
+  uint16_t x32;
+  // Value of a 64-bit one's complement unsigned integer.
+  uint16_t x64;
+} TiScalarValue;
+
+typedef struct TiScalar {
+  TiDataType type;
+  TiScalarValue value;
+} TiScalar;
+
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
@@ -780,6 +800,8 @@ typedef union TiArgumentValue {
   int32_t i32;
   // Value of a 32-bit IEEE 754 single-precision floating-poing number.
   float f32;
+  // An scalar to be bound
+  TiScalar scalar;
   // An ND-array to be bound.
   TiNdArray ndarray;
   // A texture to be bound.
@@ -824,8 +846,9 @@ TI_DLL_EXPORT uint32_t TI_API_CALL ti_get_version();
 // An available arch has at least one device available, i.e., device index 0 is
 // always available. If an arch is not available on the current platform, a call
 // to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is
-// guaranteed failing. Please also note that the order or returned archs is
-// **undefined**.
+// guaranteed failing.
+//
+// **WARNING** Please also note that the order or returned archs is *undefined*.
 TI_DLL_EXPORT void TI_API_CALL ti_get_available_archs(uint32_t *arch_count,
                                                       TiArch *archs);
 

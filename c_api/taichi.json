@@ -155,7 +155,8 @@
                         "i32": 0,
                         "f32": 1,
                         "ndarray": 2,
-                        "texture": 3
+                        "texture": 3,
+                        "scalar": 4
                     }
                 },
                 {
@@ -446,6 +447,44 @@
                     ]
                 },
                 {
+                    "name": "scalar_value",
+                    "type": "union",
+                    "since": "v1.5.0",
+                    "variants": [
+                        {
+                            "name": "x8",
+                            "type": "uint8_t"
+                        },
+                        {
+                            "name": "x16",
+                            "type": "uint16_t"
+                        },
+                        {
+                            "name": "x32",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "x64",
+                            "type": "uint64_t"
+                        }
+                    ]
+                },
+                {
+                    "name": "scalar",
+                    "type": "structure",
+                    "since": "v1.5.0",
+                    "variants": [
+                        {
+                            "name": "type",
+                            "type": "enumeration.data_type"
+                        },
+                        {
+                            "name": "value",
+                            "type": "union.scalar_value"
+                        }
+                    ]
+                },
+                {
                     "name": "argument_value",
                     "type": "union",
                     "since": "v1.4.0",
@@ -457,6 +496,10 @@
                         {
                             "name": "f32",
                             "type": "float"
+                        },
+                        {
+                            "name": "scalar",
+                            "type": "structure.scalar"
                         },
                         {
                             "name": "ndarray",

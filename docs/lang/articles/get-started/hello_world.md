@@ -85,7 +85,7 @@ Let's dive into this simple Taichi program.
 
 ### Import Taichi
 
-```python
+```python skip-ci:Trivial
 import taichi as ti
 import taichi.math as tm
 ```
@@ -97,7 +97,7 @@ See the [Math Module](../math/math_module.md) for more information.
 
 ### Initialize Taichi
 
-```python
+```python skip-ci:Trivial
 ti.init(arch=ti.gpu)
 ```
 
@@ -111,7 +111,7 @@ Additionally, you can specify the desired GPU backend directly by setting `arch=
 
 ### Define a Taichi field
 
-```python
+```python skip-ci:Trivial
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
@@ -123,7 +123,7 @@ Field is a fundamental and frequently utilized data structure in Taichi. It can 
 
 ### Kernels and functions
 
-```python
+```python skip-ci:Trivial
 @ti.func
 def complex_sqr(z):  # complex square of a 2D vector
     return tm.vec2(z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1])
@@ -161,7 +161,7 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 ### Parallel for loops
 
 ```python
-@ti.kernel
+@ti.kernel skip-ci:Trivial
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
 ```
@@ -195,7 +195,7 @@ You may also serialize a for loop at the outermost scope using `ti.loop_config(s
 The `break` statement is *not* supported in parallelized loops:
 
 ```python
-@ti.kernel
+@ti.kernel skip-ci:ToyDemo
 def foo():
     for i in x:
         ...
@@ -215,7 +215,7 @@ def foo():
 
 Finally we render the result on screen using Taichi's built-in [GUI System](../visualization/gui_system.md):
 
-```python
+```python skip-ci:Trivial
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 # Sets the window title and the resolution
 

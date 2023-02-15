@@ -11,12 +11,6 @@ Taichi and Python share a similar syntax, but they are not identical. To disting
 
 In the following example, `inv_square()` is decorated with `@ti.func` and is a Taichi function. `partial_sum()` is decorated with `@ti.kernel` and is a kernel. The former (`inv_square()`) is called by the latter (`partial_sum()`). The arguments and return value in `partial_sum()` are type hinted, while those in the Taichi function `inv_square()` are not.
 
-Here comes a significant difference between Python and Taichi - *type hinting*:
-
-- Type hinting in Python is recommended, but not compulsory.
-- Taichi mandates that the arguments and return value of a kernel are type hinted, unless it has neither an argument nor a return statement.
-
-
 ```python
 import taichi as ti
 ti.init(arch=ti.cpu)
@@ -32,6 +26,12 @@ def partial_sum(n: int) -> float:  # A kernel
         total += inv_square(n)
     return total
 ```
+
+Here comes a significant difference between Python and Taichi - *type hinting*:
+
+- Type hinting in Python is recommended, but not compulsory.
+- Taichi mandates that the arguments and return value of a kernel are type hinted, unless it has neither an argument nor a return statement.
+
 
 :::caution WARNING
 
@@ -97,9 +97,9 @@ A kernel can accept multiple arguments. However, it's important to note that you
 
 The kernel can accept various argument types, including scalars, `ti.Matrix`, `ti.Vector`, `ti.types.ndarray()`, and `ti.template()`. These argument types make it easy to pass data from the Python scope to the Taichi scope. You can find the supported types in the `ti.types` module. For more information on this, see the [Type System](../type_system/type.md).
 
-Scalars and `ti.Matrix` are passed by value, which means that the kernel receives a copy of the argument. However, `ti.types.ndarray()` and `ti.template()` are passed by reference, which means that any changes made to the argument inside the kernel will affect the original value as well.
+Scalars, `ti.Vector` and `ti.Matrix` are passed by value, which means that the kernel receives a copy of the argument. However, `ti.types.ndarray()` and `ti.template()` are passed by reference, which means that any changes made to the argument inside the kernel will affect the original value as well.
 
-Note that we won't cover ti.template() here as it is a more advanced topic and is discussed in[Metaprogramming](../advanced/meta.md#template-metaprogramming).
+Note that we won't cover `ti.template()` here as it is a more advanced topic and is discussed in [Metaprogramming](../advanced/meta.md#template-metaprogramming).
 
 Here is an example of passing arguments `x` and `y` to `my_kernel()` by value:
 
@@ -142,7 +142,7 @@ In Taichi, a kernel can have at most one return value, which can be a scalar, `t
 - Use type hint to specify the return value of a kernel.
 - Make sure that you have at most one return value in a kernel.
 - Make sure that you have at most one return statement in a kernel.
-- Ensure that the number of elements in the return value is no more than 30.
+- If the return value is a vector or matrix, please ensure that it contains no more than 32 elements. In case it contains more than 32 elements, the kernel will still compile, but a warning will be raised.
 
 #### At most one return value
 
@@ -199,12 +199,6 @@ def test_sign(x: float) -> float:
 ### Global variables are compile-time constants
 
 In Taichi, a kernel treats global variables as compile-time constants. This means that it takes in the current values of the global variables at the time it is compiled and does not track changes to them afterwards. Consider the following example:
-
-
-Let's take a look at the following example, where the global variable `a` is updated after the first call of `kernel_1`.
-
-- The second call of `kernel_1` still prints `1`, because `kernel_1` does not track changes to `a` after it is compiled.
-- `kernerl_2` takes in the current value of `a` and prints `2`, because  it is compiled after `a` is updated.
 
 ```python {15-17}
 import taichi as ti

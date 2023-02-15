@@ -42,7 +42,7 @@ class KernelProfilerAMDGPU : public KernelProfilerBase {
   uint32_t records_size_after_sync_{0};
 };
 
-class EventToolkitAMDGPU : public EventToolkitBase {
+class EventToolkitAMDGPU {
  public:
   void update_record(
       uint32_t records_size_after_sync,
@@ -51,5 +51,29 @@ class EventToolkitAMDGPU : public EventToolkitBase {
       const std::string &kernel_name) override;
   void update_timeline(
       std::vector<KernelProfileTracedRecord> &traced_records) override;
+  void clear() {
+    event_records_.clear();
+  }
+
+ private:
+  struct EventRecord {
+    std::string name;
+    float kernel_elapsed_time_in_ms{0.0};
+    float time_since_base{0.0};
+    void *start_event{nullptr};
+    void *stop_event{nullptr};
+  };
+  float64 base_time_{0.0};
+  void *base_event_{nullptr};
+  // for cuEvent profiling, clear after sync()
+  std::vector<EventRecord> event_records_;
+
+ public:
+  EventRecord *get_current_event_record() {
+    return &(event_records_.back());
+  }
+  void *get_base_event() const {
+    return base_event_;
+  }
 };
 }  // namespace taichi::lang

@@ -45,8 +45,12 @@ class FakeCompiledKernelData : public CompiledKernelData {
 
   Err dump_impl(CompiledKernelDataFile &file) const override {
     file.set_arch(kFakeArch);
-    file.set_metadata(
-        liong::json::print(liong::json::serialize(compiled_data_.metadata)));
+    try {
+      file.set_metadata(
+          liong::json::print(liong::json::serialize(compiled_data_.metadata)));
+    } catch (const liong::json::JsonException &) {
+      return CompiledKernelData::Err::kSerMetadataFailed;
+    }
     file.set_src_code(compiled_data_.so_bin);
     return CompiledKernelData::Err::kNoError;
   }

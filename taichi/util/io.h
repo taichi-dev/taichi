@@ -7,7 +7,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/common/filesystem.hpp"
-#include <filesystem>
 #include <string>
 #include <vector>
 #include <cstdio>

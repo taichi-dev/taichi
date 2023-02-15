@@ -17,7 +17,7 @@ enum class ProfilingToolkit : int {
   cupti,
 };
 
-class EventToolkitCUDA;
+class EventToolkit;
 
 // A CUDA kernel profiler
 class KernelProfilerCUDA : public KernelProfilerBase {
@@ -55,7 +55,7 @@ class KernelProfilerCUDA : public KernelProfilerBase {
 
   // Instances of these toolkits may exist at the same time,
   // but only one will be enabled.
-  std::unique_ptr<EventToolkitCUDA> event_toolkit_{nullptr};
+  std::unique_ptr<EventToolkit> event_toolkit_{nullptr};
   std::unique_ptr<CuptiToolkit> cupti_toolkit_{nullptr};
   std::vector<std::string> metric_list_;
   uint32_t records_size_after_sync_{0};

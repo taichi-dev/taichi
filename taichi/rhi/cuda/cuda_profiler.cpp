@@ -13,7 +13,7 @@ KernelProfilerCUDA::KernelProfilerCUDA(bool enable) {
   metric_list_.clear();
   if (enable) {  // default profiling toolkit: event
     tool_ = ProfilingToolkit::event;
-    event_toolkit_ = std::make_unique<EventToolkitCUDA>();
+    event_toolkit_ = std::make_unique<EventToolkit>();
   }
 }
 
@@ -271,7 +271,7 @@ bool KernelProfilerCUDA::record_kernel_attributes(void *kernel,
 // default profiling toolkit : cuEvent
 // for now put it together with KernelProfilerCUDA
 #if defined(TI_WITH_CUDA)
-KernelProfilerBase::TaskHandle EventToolkitCUDA::start_with_handle(
+KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
     const std::string &kernel_name) {
   EventRecord record;
   record.name = kernel_name;
@@ -313,7 +313,7 @@ KernelProfilerBase::TaskHandle EventToolkitCUDA::start_with_handle(
   return record.stop_event;
 }
 
-void EventToolkitCUDA::update_record(
+void EventToolkit::update_record(
     uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   uint32_t events_num = event_records_.size();
@@ -334,7 +334,7 @@ void EventToolkitCUDA::update_record(
   }
 }
 
-void EventToolkitCUDA::update_timeline(
+void EventToolkit::update_timeline(
     std::vector<KernelProfileTracedRecord> &traced_records) {
   if (Timelines::get_instance().get_enabled()) {
     auto &timeline = Timeline::get_this_thread_instance();
@@ -354,16 +354,16 @@ void EventToolkitCUDA::update_timeline(
 }
 
 #else
-KernelProfilerBase::TaskHandle EventToolkitCUDA::start_with_handle(
+KernelProfilerBase::TaskHandle EventToolkit::start_with_handle(
     const std::string &kernel_name) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkitCUDA::update_record(
+void EventToolkit::update_record(
     uint32_t records_size_after_sync,
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }
-void EventToolkitCUDA::update_timeline(
+void EventToolkit::update_timeline(
     std::vector<KernelProfileTracedRecord> &traced_records) {
   TI_NOT_IMPLEMENTED;
 }

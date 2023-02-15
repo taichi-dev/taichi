@@ -46,11 +46,11 @@ class EventToolkitAMDGPU {
  public:
   void update_record(
       uint32_t records_size_after_sync,
-      std::vector<KernelProfileTracedRecord> &traced_records) override;
+      std::vector<KernelProfileTracedRecord> &traced_records);
   KernelProfilerBase::TaskHandle start_with_handle(
-      const std::string &kernel_name) override;
+      const std::string &kernel_name);
   void update_timeline(
-      std::vector<KernelProfileTracedRecord> &traced_records) override;
+      std::vector<KernelProfileTracedRecord> &traced_records);
   void clear() {
     event_records_.clear();
   }

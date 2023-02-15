@@ -48,7 +48,8 @@ inline bool traverse_directory(const std::string &dir, Visitor v) {
     return false;
   }
   for (auto &f : iter) {
-    v(f.path().filename().string(), f.status().type() == std::filesystem::file_type::directory);
+    v(f.path().filename().string(),
+      f.status().type() == std::filesystem::file_type::directory);
   }
   return true;
 }

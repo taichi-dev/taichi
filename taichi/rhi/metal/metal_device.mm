@@ -7,8 +7,17 @@
 namespace taichi::lang {
 namespace metal {
 
-MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer) : mtl_buffer_(mtl_buffer) {}
-MetalMemory::~MetalMemory() { [mtl_buffer_ release]; }
+MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer)
+    : mtl_buffer_(mtl_buffer) {}
+MetalMemory::~MetalMemory() {
+  if (!dont_destroy_) {
+    [mtl_buffer_ release];
+  }
+}
+
+void MetalMemory::dont_destroy() {
+  dont_destroy_ = true;
+}
 
 MTLBuffer_id MetalMemory::mtl_buffer() const { return mtl_buffer_; }
 size_t MetalMemory::size() const { return (size_t)[mtl_buffer_ length]; }
@@ -544,7 +553,15 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
   out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
   return out;
 }
+DeviceAllocation MetalDevice::import_mtl_buffer(MTLBuffer_id buffer) {
+  MetalMemory &alloc = memory_allocs_.acquire(buffer);
+  alloc.dont_destroy();
 
+  DeviceAllocation out{};
+  out.device = this;
+  out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
+  return out;
+}
 void MetalDevice::dealloc_memory(DeviceAllocation handle) {
   RHI_ASSERT(handle.device == this);
   memory_allocs_.release(&get_memory(handle.alloc_id));

@@ -46,12 +46,15 @@ struct MetalMemory {
   explicit MetalMemory(MTLBuffer_id mtl_buffer);
   ~MetalMemory();
 
+  void dont_destroy();
+
   MTLBuffer_id mtl_buffer() const;
   size_t size() const;
   RhiResult mapped_ptr(void **mapped_ptr) const;
 
  private:
   MTLBuffer_id mtl_buffer_;
+  bool dont_destroy_;
 };
 
 struct MetalImage {
@@ -257,6 +260,7 @@ class MetalDevice final : public GraphicsDevice {
   }
 
   DeviceAllocation allocate_memory(const AllocParams &params) override;
+  DeviceAllocation import_mtl_buffer(MTLBuffer_id buffer);
   void dealloc_memory(DeviceAllocation handle) override;
 
   DeviceAllocation create_image(const ImageParams &params) override;

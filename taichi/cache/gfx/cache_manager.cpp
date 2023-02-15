@@ -1,5 +1,6 @@
 #include "taichi/cache/gfx/cache_manager.h"
 #include "taichi/analysis/offline_cache_util.h"
+#include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/common/cleanup.h"
 #include "taichi/common/version.h"

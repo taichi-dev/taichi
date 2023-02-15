@@ -62,9 +62,7 @@ while gui.running:
     i += 1
 ```
 
-Save the code above to your local machine and run this program.
-
-You get the following animation:
+Save the code above to your local machine and run this program, you get the following animation:
 
 <center>
 

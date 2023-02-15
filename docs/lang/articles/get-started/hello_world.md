@@ -77,7 +77,7 @@ You get the following animation:
 If you are *not* using an IDE for running code, you can simply run the code from your terminal by:
 
 1. Go to the directory that contains your .py file
-2. Type in `python3 filename.py` (replace *filename* with your programs name. Be sure to include the `.py` extension)
+2. Type in `python3 filename.py` (replace *filename* with your script's name. Be sure to include the `.py` extension)
 
 :::
 
@@ -90,9 +90,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-The first two lines import Taichi and its `math` module. The `math` module contains built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices.
-
-See the [Math Module](../math/math_module.md) for more information.
+The first two lines import Taichi and its `math` module. The `math` module contains built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices. See the [Math Module](../math/math_module.md) for more information.
 
 
 ### Initialize Taichi
@@ -140,7 +138,7 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 ```
 
-The above code define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU.
+The code above defines two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU, which is determined by the `arch` argument in the `ti.init()` call.
 
 The main differences between Taichi functions and kernels are as follows:
 
@@ -168,7 +166,7 @@ def paint(t: float):
 
 The key to achieving high performance in Taichi lies in efficient iteration. By utilizing parallelized looping, data can be processed more effectively.
 
-The above code snippet showcases a for loop at the outermost scope within a Taichi kernel, which is automatically parallelized. The for loop operates on the `i` and `j` indices simultaneously, allowing for concurrent execution of iterations.
+The code snippet above showcases a for loop at the outermost scope within a Taichi kernel, which is automatically parallelized. The for loop operates on the `i` and `j` indices simultaneously, allowing for concurrent execution of iterations.
 
 Taichi provides a convenient syntax for parallelizing tasks. Any for loop at the outermost scope within a kernel is automatically parallelized, eliminating the need for manual thread allocation, recycling, and memory management.
 

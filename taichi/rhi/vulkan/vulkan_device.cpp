@@ -2608,32 +2608,11 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
-#ifdef ANDROID
-  window_ = (ANativeWindow *)config.window_handle;
-#else
-  window_ = (GLFWwindow *)config.window_handle;
-#endif
-  if (window_) {
-    if (config.native_surface_handle) {
-      surface_ = (VkSurfaceKHR)config.native_surface_handle;
-    } else {
-#ifdef ANDROID
-      VkAndroidSurfaceCreateInfoKHR createInfo{
-          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-          .pNext = nullptr,
-          .flags = 0,
-          .window = window_};
+  width_ = config.width;
+  height_ = config.height;
 
-      vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
-                                &surface_);
-#else
-      glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-      BAIL_ON_VK_BAD_RESULT_NO_RETURN(
-          glfwCreateWindowSurface(device->vk_instance(), window_, nullptr,
-                                  &surface_),
-          "Failed to create window surface ({})");
-#endif
-    }
+  if (config.native_surface_handle) {
+    surface_ = (VkSurfaceKHR)config.native_surface_handle;
 
     create_swap_chain();
 
@@ -2649,8 +2628,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     // screenshot_image_ = device->create_image(params);
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
-    width_ = config.width;
-    height_ = config.height;
   }
 }
 
@@ -2703,15 +2680,7 @@ void VulkanSurface::create_swap_chain() {
   VkPresentModeKHR present_mode =
       choose_swap_present_mode(present_modes, config_.vsync, config_.adaptive);
 
-  int width, height;
-#ifdef ANDROID
-  width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getHeight(window_);
-#else
-  glfwGetFramebufferSize(window_, &width, &height);
-#endif
-
-  VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  VkExtent2D extent = {uint32_t(width_), uint32_t(height_)};
   extent.width =
       std::max(capabilities.minImageExtent.width,
                std::min(capabilities.maxImageExtent.width, extent.width));
@@ -2770,7 +2739,7 @@ void VulkanSurface::create_swap_chain() {
   for (VkImage img : swapchain_images) {
     vkapi::IVkImage image = vkapi::create_image(
         device_->vk_device(), img, surface_format.format, VK_IMAGE_TYPE_2D,
-        VkExtent3D{uint32_t(width), uint32_t(height), 1}, 1u, 1u, usage);
+        VkExtent3D{uint32_t(width_), uint32_t(height_), 1}, 1u, 1u, usage);
 
     VkImageViewCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -2805,10 +2774,9 @@ int VulkanSurface::get_image_count() {
 }
 
 VulkanSurface::~VulkanSurface() {
-  if (config_.window_handle) {
+  if (config_.native_surface_handle) {
     destroy_swap_chain();
     image_available_ = nullptr;
-    vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
   } else {
     for (auto &img : swapchain_images_) {
       device_->destroy_image(img);
@@ -2827,7 +2795,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 }
 
 StreamSemaphore VulkanSurface::acquire_next_image() {
-  if (!config_.window_handle) {
+  if (!config_.native_surface_handle) {
     image_index_ = (image_index_ + 1) % uint32_t(swapchain_images_.size());
     return nullptr;
   } else {
@@ -2910,38 +2878,12 @@ DeviceAllocation VulkanSurface::get_image_data() {
   auto [w, h] = get_size();
   size_t size_bytes = size_t(w * h) * sizeof(uint8_t) * 4;
 
-  /*
-  if (screenshot_image_ == kDeviceNullAllocation) {
-    ImageParams params = {ImageDimension::d2D,
-                          BufferFormat::rgba8,
-                          ImageLayout::transfer_dst,
-                          w,
-                          h,
-                          1,
-                          false};
-    screenshot_image_ = device_->create_image(params);
-  }
-  */
-
   if (!screenshot_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
     screenshot_buffer_ = device_->allocate_memory_unique(params);
   }
-
-  /*
-  if (config_.window_handle) {
-    // TODO: check if blit is supported, and use copy_image if not
-    cmd_list = stream->new_command_list();
-    cmd_list->blit_image(screenshot_image_, img_alloc,
-                         ImageLayout::transfer_dst, ImageLayout::transfer_src,
-                         {w, h, 1});
-    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
-                               ImageLayout::transfer_src);
-    stream->submit_synced(cmd_list.get());
-  }
-  */
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
@@ -2956,12 +2898,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
-  /*
-  if (config_.window_handle) {
-    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
-                               ImageLayout::transfer_dst);
-  }
-  */
   stream->submit_synced(cmd_list.get());
 
   return *screenshot_buffer_;

@@ -54,6 +54,10 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
     // then then `addPassesToEmitFile` will occur an error
     //   LLVM ERROR: Cannot select: intrinsic %llvm.amdgcn.if
     // related https://github.com/llvm/llvm-project/issues/60727
+    //    we can't though the `addPassesToEmitFile` to generate GCN file directly
+    // another way
+    //    llvm-objdump -d xxxx.hsaco(can ensure that hsaco and gcn correspond to each other)
+
     auto module_clone = llvm::CloneModule(*llvm_module);
     llvm::legacy::PassManager module_gen_gcn_pass_manager;
     llvm::SmallString<0> gcnstr;

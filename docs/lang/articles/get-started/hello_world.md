@@ -170,7 +170,7 @@ Taichi provides a convenient syntax for parallelizing tasks. Any for loop at the
 
 The field pixels is treated as an iterator, with `i` and `j` being integer indices ranging from `0` to `2*n-1` and `0` to `n-1`, respectively. The `(i, j)` pairs loop over the sets `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, 0)`, `(1, 1)`, ..., `(2*n-1, n-1)` in parallel.
 
-It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed sequentially.
+It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed *sequentially*.
 
 ```python {3,7,14-15}
 @ti.kernel
@@ -223,7 +223,7 @@ while gui.running:
     i += 1
 ```
 
-The program iterates over `pixels` and updates the fractal pattern stored in pixels accordingly. Use `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.
+To display the result on your screen, use the `gui.set_image()` method to set the content of the window, and then call the `gui.show()` method to show the updated image.
 
 ### Key takeaways
 

@@ -142,7 +142,7 @@ In Taichi, a kernel can have at most one return value, which can be a scalar, `t
 - Use type hint to specify the return value of a kernel.
 - Make sure that you have at most one return value in a kernel.
 - Make sure that you have at most one return statement in a kernel.
-- Ensure that the number of elements in the return value is no more than 30.
+- If the return value is a vector or matrix, please ensure that it contains no more than 32 elements. In case it contains more than 32 elements, the kernel will still compile, but a warning will be raised.
 
 #### At most one return value
 

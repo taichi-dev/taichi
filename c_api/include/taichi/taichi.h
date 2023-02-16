@@ -22,4 +22,8 @@
 #include "taichi_cpu.h"
 #endif  // TI_WITH_CPU
 
+#ifdef TI_WITH_METAL
+#include "taichi_metal.h"
+#endif  // TI_WITH_METAL
+
 #endif  // TAICHI_H

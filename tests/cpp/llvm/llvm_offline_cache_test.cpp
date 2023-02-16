@@ -2,19 +2,12 @@
 
 #include "taichi/common/platform_macros.h"
 #include "taichi/common/cleanup.h"
+#include "taichi/common/filesystem.hpp"
 
 #ifdef TI_WITH_LLVM
-
 #if defined(TI_PLATFORM_LINUX) || defined(TI_PLATFORM_WINDOWS)
-#if __has_include(<filesystem>)
-#include <filesystem>
+
 namespace fs = std::filesystem;
-#elif __has_include(<experimental/filesystem>)
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#else
-#error "Missing the <filesystem> header."
-#endif  //  __has_include(<filesystem>)
 
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"

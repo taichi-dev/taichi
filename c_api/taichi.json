@@ -1540,6 +1540,167 @@
             ]
         },
         {
+            "name": "taichi/taichi_metal.h",
+            "required_modules": [
+                "taichi/taichi_core.h"
+            ],
+            "declarations": [
+                {
+                    "name": "ns_bundle",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "mtl_device",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "mtl_buffer",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "mtl_texture",
+                    "type": "handle",
+                    "is_dispatchable": false
+                },
+                {
+                    "name": "metal_runtime_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "bundle",
+                            "type": "handle.ns_bundle"
+                        },
+                        {
+                            "name": "device",
+                            "type": "handle.mtl_device"
+                        }
+                    ]
+                },
+                {
+                    "name": "metal_memory_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "buffer",
+                            "type": "handle.mtl_buffer"
+                        }
+                    ]
+                },
+                {
+                    "name": "metal_image_interop_info",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "texture",
+                            "type": "handle.mtl_texture"
+                        }
+                    ]
+                },
+                {
+                    "name": "import_metal_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_runtime_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_metal_runtime",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_runtime_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "import_metal_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.memory"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_memory_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_metal_memory",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.memory"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_memory_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                },
+                {
+                    "name": "import_metal_image",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "name": "@return",
+                            "type": "handle.image"
+                        },
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_image_interop_info",
+                            "by_ref": true
+                        }
+                    ]
+                },
+                {
+                    "name": "export_metal_image",
+                    "type": "function",
+                    "parameters": [
+                        {
+                            "type": "handle.runtime"
+                        },
+                        {
+                            "type": "handle.image"
+                        },
+                        {
+                            "name": "interop_info",
+                            "type": "structure.metal_image_interop_info",
+                            "by_mut": true
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "name": "taichi/taichi_unity.h",
             "required_modules": [
                 "taichi/taichi_core.h"

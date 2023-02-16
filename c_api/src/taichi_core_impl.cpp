@@ -112,6 +112,14 @@ VulkanRuntime *Runtime::as_vk() {
   return nullptr;
 #endif
 }
+capi::MetalRuntime *Runtime::as_mtl() {
+  TI_ASSERT(arch == taichi::Arch::metal);
+#ifdef TI_WITH_METAL
+  return static_cast<capi::MetalRuntime *>(this);
+#else
+  return nullptr;
+#endif
+}
 
 TiMemory Runtime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
@@ -276,8 +284,7 @@ TiRuntime ti_create_runtime(TiArch arch, uint32_t device_index) {
 #endif  // TI_WITH_LLVM
 #ifdef TI_WITH_METAL
     case TI_ARCH_METAL: {
-      out = (TiRuntime)(static_cast<Runtime *>(
-          new capi::MetalRuntime(taichi::Arch::metal)));
+      out = (TiRuntime)(static_cast<Runtime *>(new capi::MetalRuntime()));
       break;
     }
 #endif  // TI_WITH_METAL

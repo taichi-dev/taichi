@@ -19,7 +19,7 @@ def test():
 
 - Line 3: `x` is an integer since it is assigned an integer value when it is declared for the first time.
 - Line 4: `x` is reassigned a floating-point number 3.14. However, the value of `x` is 3 instead of 3.14. This is because 3.14 is automatically cast to an integer 3 to match the type of `x`.
-- Line 5: In this line, we are assigning a `ti.Vector` to `x`. However, the system throws an error because a `ti.Vector` cannot be cast into an integer.
+- Line 5: The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
 The `ti.types` module in Taichi defines all of the supported data types. These data types are categorized into two groups: primitive and compound.
 

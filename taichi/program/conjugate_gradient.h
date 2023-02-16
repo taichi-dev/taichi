@@ -89,7 +89,7 @@ class CUCG {
 
  private:
   void init_solver();
-  cublasHandle_t handle;
+  cublasHandle_t handle_;
   SparseMatrix &A_;
   int max_iters_{0};
   float tol_{0.0f};

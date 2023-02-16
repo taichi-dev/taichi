@@ -9,10 +9,10 @@ void CUCG::init_solver() {
       TI_ERROR("Failed to load cublas library!");
     }
   }
-  CUBLASDriver::get_instance().cubCreate(&handle);
-  // int version;
-  // CUBLASDriver::get_instance().cubGetVersion(handle, &version);
-  // fmt::print("CUBLAS version: {}\n", version);
+  CUBLASDriver::get_instance().cubCreate(&handle_);
+  int version;
+  CUBLASDriver::get_instance().cubGetVersion(handle_, &version);
+  TI_TRACE("CUBLAS version: {}\n", version);
 #endif
 }
 
@@ -39,10 +39,10 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b) {
 
   // r = r - Ax = b - Ax
   float alpham1 = -1.0f;
-  CUBLASDriver::get_instance().cubSaxpy(handle, m, &alpham1, d_Ax, 1, d_r, 1);
+  CUBLASDriver::get_instance().cubSaxpy(handle_, m, &alpham1, d_Ax, 1, d_r, 1);
 
   float r1 = 0.0f;
-  CUBLASDriver::get_instance().cubSdot(handle, m, d_r, 1, d_r, 1, &r1);
+  CUBLASDriver::get_instance().cubSdot(handle_, m, d_r, 1, d_r, 1, &r1);
 
   int k = 1;
   float alpha = 1.0, beta = 0.0, r0 = 0.0, dot = 0.0;
@@ -52,8 +52,8 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b) {
       // beta = r'_{k+1} @ r_{k+1} / r'_k @ r_k
       beta = r1 / r0;
       // p = r + beta * p
-      CUBLASDriver::get_instance().cubSscal(handle, m, &beta, d_p, 1);
-      CUBLASDriver::get_instance().cubSaxpy(handle, m, &alpha, d_r, 1, d_p, 1);
+      CUBLASDriver::get_instance().cubSscal(handle_, m, &beta, d_p, 1);
+      CUBLASDriver::get_instance().cubSaxpy(handle_, m, &alpha, d_r, 1, d_p, 1);
     } else {
       // p = r
       CUDADriver::get_instance().memcpy_device_to_device(
@@ -63,17 +63,17 @@ void CUCG::solve(Program *prog, const Ndarray &x, const Ndarray &b) {
     // Ap = A @ p
     A.spmv(size_t(d_p), size_t(d_Ax));
     // dot = p @ Ap
-    CUBLASDriver::get_instance().cubSdot(handle, m, d_p, 1, d_Ax, 1, &dot);
+    CUBLASDriver::get_instance().cubSdot(handle_, m, d_p, 1, d_Ax, 1, &dot);
     float a = r1 / dot;
     // x = x + a * p
-    CUBLASDriver::get_instance().cubSaxpy(handle, m, &a, d_p, 1, (float *)dX,
+    CUBLASDriver::get_instance().cubSaxpy(handle_, m, &a, d_p, 1, (float *)dX,
                                           1);
     // r = r - a * Ap
     float na = -a;
-    CUBLASDriver::get_instance().cubSaxpy(handle, m, &na, d_Ax, 1, d_r, 1);
+    CUBLASDriver::get_instance().cubSaxpy(handle_, m, &na, d_Ax, 1, d_r, 1);
     r0 = r1;
     // r1 = r @ r
-    CUBLASDriver::get_instance().cubSdot(handle, m, d_r, 1, d_r, 1, &r1);
+    CUBLASDriver::get_instance().cubSdot(handle_, m, d_r, 1, d_r, 1, &r1);
     if (verbose_)
       fmt::print("iter: {}, r1: {}\n", k, r1);
     k++;

@@ -225,9 +225,11 @@ while gui.running:
 
 Taichi's GUI system uses the standard Cartesian coordinate system to define pixel coordinates. The origin of the coordinate system is located at the lower left corner of the screen. The `(0, 0)` element in `pixels` will be mapped to the lower left corner of the window, and the `(639, 319)` element will be mapped to the upper right corner of the window, as shown in the following image:
 
-<div align="center">
-![](https://raw.githubusercontent.com/taichi-dev/public_files/d3cdc37dfca4e5fb35c3a93f22e59f54ec741ed5/taichi/doc/pixels.svg)
-</div>
+<center>
+
+![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/pixels.svg)
+
+</center>
 
 
 ### Key takeaways

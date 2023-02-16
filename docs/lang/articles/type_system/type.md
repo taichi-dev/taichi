@@ -90,7 +90,7 @@ x = ti.field(ti.f64, 5)
 y = ti.Matrix([1, 2, 3, 4], dt=ti.i64)
 ```
 
-However, when using `int` and `float` outside of Taichi's data containers in regular Python code, they refer to their standard meaning as built-in functions and not aliases for Taichi's `default_ip` and `default_fp`. Therefore, in Python code outside of Taichi's data containers, `int` and `float` have their standard meaning as built-in functions.
+However, when using `int` and `float` outside of Taichi's data containers in regular Python code, they refer to their standard meaning as built-in functions and not aliases for Taichi's `default_ip` and `default_fp`. Therefore, in Python scope and outside of Taichi's data containers, `int` and `float` have their standard meaning as built-in functions.
 
 ```python skip-ci
 x = numpy.array([1, 2, 3, 4], dtype=int)  # NumPy's int64 type

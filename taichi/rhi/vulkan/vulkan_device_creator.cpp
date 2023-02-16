@@ -164,8 +164,8 @@ VulkanQueueFamilyIndices find_queue_families(VkPhysicalDevice device,
                                            &present_support);
       char msg_buf[128];
       RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf),
-                         "Queue %d %s support for presenting",
-                         i, present_support ? "has" : "does NOT have");
+                         "Queue %d %s support for presenting", i,
+                         present_support ? "has" : "does NOT have");
       RHI_LOG_DEBUG(msg_buf);
 
       if (present_support) {

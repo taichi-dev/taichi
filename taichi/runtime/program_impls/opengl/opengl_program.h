@@ -24,7 +24,8 @@ class OpenglProgramImpl : public ProgramImpl {
 
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr) override;
+                           uint64 **result_buffer_ptr,
+                           char **device_arg_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 

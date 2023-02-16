@@ -108,7 +108,8 @@ TEST(LlvmAotTest, CpuField) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer,
+                           nullptr);
 
   cpu::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -133,7 +134,7 @@ TEST(LlvmAotTest, CudaField) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer, nullptr);
 
     cuda::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

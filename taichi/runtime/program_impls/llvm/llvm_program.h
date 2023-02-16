@@ -104,9 +104,10 @@ class LlvmProgramImpl : public ProgramImpl {
    */
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr) override {
-    runtime_exec_->materialize_runtime(memory_pool, profiler,
-                                       result_buffer_ptr);
+                           uint64 **result_buffer_ptr,
+                           char **device_arg_buffer_ptr) override {
+    runtime_exec_->materialize_runtime(memory_pool, profiler, result_buffer_ptr,
+                                       device_arg_buffer_ptr);
   }
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
@@ -290,7 +291,7 @@ class LlvmProgramImpl : public ProgramImpl {
   std::string get_kernel_argument_data_layout() override {
     return get_llvm_context()->get_data_layout_string();
   };
-  const StructType *get_struct_type_with_data_layout(
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
       const std::string &layout) override {
     return get_llvm_context()->get_struct_type_with_data_layout(old_ty, layout);

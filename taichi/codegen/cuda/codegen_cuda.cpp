@@ -695,6 +695,9 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     }
     CUDADriver::get_instance().context_set_limit(
         CU_LIMIT_STACK_SIZE, executor->get_config().cuda_stack_limit);
+    CUDADriver::get_instance().memcpy_host_to_device(context.device_arg_buffer,
+                                                     context.host_arg_buffer,
+                                                     taichi_max_arg_size);
 
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,

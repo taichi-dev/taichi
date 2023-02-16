@@ -15,7 +15,7 @@ class TI_DLL_EXPORT Callable {
   std::unique_ptr<FrontendContext> context{nullptr};
 
   struct Parameter {
-    bool is_array{
+    bool is_ptr{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
 
@@ -45,7 +45,7 @@ class TI_DLL_EXPORT Callable {
         this->dt_ = dt;
       }
 
-      this->is_array = is_array;
+      this->is_ptr = is_array;
       this->total_dim = total_dim;
     }
 
@@ -80,6 +80,9 @@ class TI_DLL_EXPORT Callable {
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;
+  size_t ret_size{0};
+  const StructType *args_type = nullptr;
+  size_t args_size{0};
 
   Callable();
   virtual ~Callable();
@@ -90,10 +93,13 @@ class TI_DLL_EXPORT Callable {
                        int total_dim,
                        std::vector<int> element_shape);
   int insert_texture_param(const DataType &dt);
+  int insert_pointer_param(const DataType &dt);
 
   int insert_ret(const DataType &dt);
 
   void finalize_rets();
+
+  void finalize_params();
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 };

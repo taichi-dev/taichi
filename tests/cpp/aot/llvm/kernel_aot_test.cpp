@@ -30,7 +30,8 @@ TEST(LlvmAotTest, CpuKernel) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer,
+                           nullptr);
 
   constexpr int kArrLen = 32;
   constexpr int kArrBytes = kArrLen * sizeof(int32_t);
@@ -76,7 +77,7 @@ TEST(LlvmAotTest, CudaKernel) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer, nullptr);
 
     constexpr int kArrLen = 32;
     constexpr int kArrBytes = kArrLen * sizeof(int32_t);

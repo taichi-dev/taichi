@@ -39,10 +39,12 @@ class LlvmRuntimeExecutor {
 
   /**
    * Initializes the runtime system for LLVM based backends.
+   * TODO: Check all the usages and fill arg_buffer_ptr
    */
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr);
+                           uint64 **result_buffer_ptr,
+                           char **device_arg_buffer_ptr);
 
   // SNodeTree Allocation
   void initialize_llvm_runtime_snodes(

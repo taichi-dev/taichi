@@ -61,8 +61,8 @@ KernelContextAttributes::KernelContextAttributes(
     ArgAttributes aa;
     aa.dtype = ka.get_element_type()->as<PrimitiveType>()->type;
     const size_t dt_bytes = ka.get_element_size();
-    aa.is_array = ka.is_array;
-    if (aa.is_array) {
+    aa.is_ptr = ka.is_ptr;
+    if (aa.is_ptr) {
       aa.field_dim = ka.total_dim - ka.get_element_shape().size();
       aa.element_shape = ka.get_element_shape();
     }
@@ -78,13 +78,13 @@ KernelContextAttributes::KernelContextAttributes(
       TI_ASSERT(tensor_dtype->is<PrimitiveType>());
       ra.dtype = tensor_dtype->cast<PrimitiveType>()->type;
       dt_bytes = data_type_size(tensor_dtype);
-      ra.is_array = true;
+      ra.is_ptr = true;
       ra.stride = tensor_type->get_num_elements() * dt_bytes;
     } else {
       TI_ASSERT(kr.dt->is<PrimitiveType>());
       ra.dtype = kr.dt->cast<PrimitiveType>()->type;
       dt_bytes = data_type_size(kr.dt);
-      ra.is_array = false;
+      ra.is_ptr = false;
       ra.stride = dt_bytes;
     }
     ra.index = ret_attribs_vec_.size();
@@ -97,17 +97,16 @@ KernelContextAttributes::KernelContextAttributes(
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
       const size_t dt_bytes =
-          (attribs.is_array && !is_ret && has_buffer_ptr)
+          (attribs.is_ptr && !is_ret && has_buffer_ptr)
               ? sizeof(uint64_t)
               : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;
       bytes += is_ret ? attribs.stride : dt_bytes;
-      TI_TRACE(
-          "  at={} {} offset_in_mem={} stride={}",
-          (*vec)[i].is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
-          attribs.offset_in_mem, attribs.stride);
+      TI_TRACE("  at={} {} offset_in_mem={} stride={}",
+               (*vec)[i].is_ptr ? (is_ret ? "array" : "vector ptr") : "scalar",
+               i, attribs.offset_in_mem, attribs.stride);
     }
     return bytes - offset;
   };

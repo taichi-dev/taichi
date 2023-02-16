@@ -1255,6 +1255,11 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
+  if (!stmt->is_grad) {
+    llvm_val[stmt] = get_struct_arg({stmt->arg_id});
+    return;
+  }
+
   auto raw_arg = stmt->is_grad
                      ? (call(builder.get(), "RuntimeContext_get_grad_args",
                              get_context(), tlctx->get_constant(stmt->arg_id)))
@@ -2766,6 +2771,36 @@ void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
   std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
   create_return(buffer, buffer_type, elements, ret_type, current_element,
                 current_index);
+}
+
+llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
+  auto *args_ptr = get_args_ptr();
+  auto *args_type = current_callable->args_type;
+  auto *arg_type = args_type->get_element_type(index);
+  std::vector<llvm::Value *> gep_index;
+  gep_index.push_back(tlctx->get_constant(0));
+  for (int ind : index) {
+    gep_index.push_back(tlctx->get_constant(ind));
+  }
+  auto *gep =
+      builder->CreateGEP(tlctx->get_data_type(args_type), args_ptr, gep_index);
+  return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
+}
+
+llvm::Value *TaskCodeGenLLVM::get_args_ptr() {
+  auto *context = get_context();
+  auto *runtime_context_type = get_runtime_type("RuntimeContext");
+  auto *args_type = tlctx->get_data_type(current_callable->args_type);
+  auto *zero = tlctx->get_constant(0);
+  auto *args_ptr =
+      builder->CreateGEP(runtime_context_type, context, {zero, zero});
+  args_ptr = builder->CreatePointerCast(
+      args_ptr,
+      llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
+  args_ptr =
+      builder->CreateLoad(llvm::PointerType::get(args_type, 0), args_ptr);
+  args_ptr->getType()->dump();
+  return args_ptr;
 };
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

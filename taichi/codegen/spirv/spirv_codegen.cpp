@@ -638,7 +638,7 @@ class TaskCodegen : public IRVisitor {
       ir_->register_value(stmt->raw_name(), linear_offset);
     }
 
-    if (ctx_attribs_->args()[arg_id].is_array) {
+    if (ctx_attribs_->args()[arg_id].is_ptr) {
       ptr_to_buffers_[stmt] = {BufferType::ExtArr, arg_id};
     } else {
       ptr_to_buffers_[stmt] = BufferType::Args;
@@ -2132,7 +2132,7 @@ class TaskCodegen : public IRVisitor {
     std::vector<const tinyir::Type *> element_types;
     for (auto &arg : ctx_attribs_->args()) {
       const tinyir::Type *t;
-      if (arg.is_array &&
+      if (arg.is_ptr &&
           caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
         t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
       } else {

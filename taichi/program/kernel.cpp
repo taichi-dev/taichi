@@ -84,11 +84,14 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
+      host_arg_buffer(new char[kernel->args_size]),
       ctx_(owned_ctx_.get()) {
+  ctx_->args_type = kernel_->args_type;
+  ctx_->host_arg_buffer = host_arg_buffer.get();
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_ptr,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -127,7 +130,7 @@ void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 }
 
 void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_ptr,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -173,7 +176,7 @@ void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
     uint64 size,
     const std::vector<int64> &shape) {
   TI_ASSERT_INFO(
-      kernel_->parameter_list[arg_id].is_array,
+      kernel_->parameter_list[arg_id].is_ptr,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   ActionRecorder::get_instance().record(
@@ -219,7 +222,7 @@ void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
 }
 
 void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
+  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_ptr,
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -342,6 +345,7 @@ void Kernel::init(Program &program,
   }
 
   func();
+  finalize_params();
 }
 
 TypedConstant Kernel::fetch_ret(const std::vector<int> &index) {

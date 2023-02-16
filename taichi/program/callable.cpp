@@ -27,6 +27,10 @@ int Callable::insert_arr_param(const DataType &dt,
 
 int Callable::insert_texture_param(const DataType &dt) {
   // FIXME: we shouldn't abuse is_array for texture parameters
+  return insert_pointer_param(dt);
+}
+
+int Callable::insert_pointer_param(const DataType &dt) {
   parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/true);
   return (int)parameter_list.size() - 1;
 }
@@ -43,6 +47,31 @@ void Callable::finalize_rets() {
   auto *type =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
   std::string layout = program->get_kernel_return_data_layout();
-  ret_type = program->get_struct_type_with_data_layout(type, layout);
+  std::tie(ret_type, ret_size) =
+      program->get_struct_type_with_data_layout(type, layout);
 }
+
+void Callable::finalize_params() {
+  TI_INFO("finalize_params");
+  if (parameter_list.empty()) {
+    return;
+  }
+  TI_INFO("inside finalize_params");
+  std::vector<StructMember> members;
+  members.reserve(parameter_list.size());
+  for (int i = 0; i < parameter_list.size(); i++) {
+    auto &param = parameter_list[i];
+    members.push_back(
+        {param.is_ptr
+             ? TypeFactory::get_instance().get_pointer_type(param.get_dtype())
+             : (const Type *)param.get_dtype(),
+         fmt::format("arg_{}", i)});
+  }
+  auto *type =
+      TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
+  std::string layout = program->get_kernel_argument_data_layout();
+  std::tie(args_type, args_size) =
+      program->get_struct_type_with_data_layout(type, layout);
+}
+
 }  // namespace taichi::lang

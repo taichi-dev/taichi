@@ -36,7 +36,7 @@ def test_range_loops():
         assert x[i] == i + 123
 
 
-@test_utils.test()
+@test_utils.test(arch=ti.cpu, print_ir=True)
 def test_python_access():
     n = 128
     x = ti.field(ti.i32, shape=n)

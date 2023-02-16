@@ -60,7 +60,7 @@ class HostDeviceContextBlitter {
       const auto &arg = ctx_attribs_->args()[i];
       void *device_ptr = (uint8_t *)device_base + arg.offset_in_mem;
       do {
-        if (arg.is_array) {
+        if (arg.is_ptr) {
           if (host_ctx_->device_allocation_type[i] ==
                   RuntimeContext::DevAllocType::kNone &&
               ext_arr_size.at(i)) {
@@ -138,7 +138,7 @@ class HostDeviceContextBlitter {
 
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
-      if (arg.is_array &&
+      if (arg.is_ptr &&
           host_ctx_->device_allocation_type[i] ==
               RuntimeContext::DevAllocType::kNone &&
           ext_arr_size.at(i)) {
@@ -453,7 +453,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
     int i = 0;
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
-      if (arg.is_array) {
+      if (arg.is_ptr) {
         if (host_ctx->device_allocation_type[i] !=
             RuntimeContext::DevAllocType::kNone) {
           DeviceAllocation devalloc = kDeviceNullAllocation;

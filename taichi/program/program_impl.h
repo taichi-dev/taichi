@@ -44,7 +44,8 @@ class ProgramImpl {
    */
   virtual void materialize_runtime(MemoryPool *memory_pool,
                                    KernelProfilerBase *profiler,
-                                   uint64 **result_buffer_ptr) = 0;
+                                   uint64 **result_buffer_ptr,
+                                   char **device_arg_buffer_ptr) = 0;
 
   /**
    * JIT compiles @param tree to backend-specific data types.
@@ -173,10 +174,10 @@ class ProgramImpl {
     return "";
   };
 
-  virtual const StructType *get_struct_type_with_data_layout(
-      const StructType *old_ty,
-      const std::string &layout) {
-    return old_ty;
+  virtual std::pair<const StructType *, size_t>
+  get_struct_type_with_data_layout(const StructType *old_ty,
+                                   const std::string &layout) {
+    return {old_ty, 0};
   }
 
  private:

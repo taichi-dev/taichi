@@ -63,6 +63,11 @@ def test_kernel_keyword_args():
     foo(1, b=2)
 
 
+#
+# ti.init(debug=True, arch=ti.cuda)
+# test_kernel_keyword_args()
+
+
 @test_utils.test(debug=True)
 def test_kernel_keyword_args_missing():
     @ti.kernel

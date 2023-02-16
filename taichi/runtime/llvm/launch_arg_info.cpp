@@ -12,7 +12,7 @@ std::vector<LlvmLaunchArgInfo> infer_launch_args(const Kernel *kernel) {
   std::vector<LlvmLaunchArgInfo> res;
   res.reserve(kernel->parameter_list.size());
   for (const auto &a : kernel->parameter_list) {
-    res.push_back(LlvmLaunchArgInfo{a.is_array});
+    res.push_back(LlvmLaunchArgInfo{a.is_ptr});
   }
   return res;
 }

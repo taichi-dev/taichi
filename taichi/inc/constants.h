@@ -7,6 +7,7 @@ constexpr int taichi_max_num_indices = 12;
 constexpr int taichi_max_num_args = 8;
 // used in llvm backend: only the first 32 arguments can be types.ndarray
 // TODO: refine argument passing
+constexpr std::size_t taichi_max_arg_size = 1024;
 constexpr int taichi_max_num_args_total = 64;
 constexpr int taichi_max_num_args_extra = 32;
 constexpr int taichi_max_num_snodes = 1024;

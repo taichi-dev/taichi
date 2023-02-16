@@ -198,8 +198,17 @@ FunctionType Program::compile(const CompileConfig &compile_config,
 }
 
 void Program::materialize_runtime() {
+  // TODO: support other backends
   program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                     &result_buffer);
+                                     &result_buffer, &device_arg_buffer);
+  if (compile_config().arch == Arch::cuda) {
+    owned_host_arg_buffer = std::make_unique<char[]>(taichi_max_arg_size);
+    host_arg_buffer = owned_host_arg_buffer.get();
+  } else {
+    host_arg_buffer = device_arg_buffer;
+  }
+  TI_INFO("device {} host {}", (uint64)device_arg_buffer,
+          (uint64)host_arg_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
@@ -270,6 +279,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
+  ker.finalize_params();
   ker.finalize_rets();
   return ker;
 }
@@ -298,6 +308,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
+  ker.finalize_params();
   return ker;
 }
 
@@ -518,6 +529,11 @@ int Program::allocate_snode_tree_id() {
 
 void Program::prepare_runtime_context(RuntimeContext *ctx) {
   ctx->result_buffer = result_buffer;
+  if (compile_config().arch == Arch::cuda) {
+    ctx->device_arg_buffer = device_arg_buffer;
+  } else {
+    ctx->device_arg_buffer = ctx->host_arg_buffer;
+  }
   program_impl_->prepare_runtime_context(ctx);
 }
 

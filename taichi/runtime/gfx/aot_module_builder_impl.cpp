@@ -45,7 +45,7 @@ class AotDataConverter {
     res.args_buffer_size = in.ctx_attribs.args_bytes();
     res.rets_buffer_size = in.ctx_attribs.rets_bytes();
     for (const auto &arg : in.ctx_attribs.args()) {
-      if (!arg.is_array) {
+      if (!arg.is_ptr) {
         aot::ScalarArg scalar_arg{};
         scalar_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
         scalar_arg.offset_in_args_buf = arg.offset_in_mem;

@@ -152,7 +152,7 @@ class KernelContextAttributes {
     // Index of the input arg or the return value in the host `Context`
     int index{-1};
     PrimitiveTypeID dtype{PrimitiveTypeID::unknown};
-    bool is_array{false};
+    bool is_ptr{false};
     std::vector<int> element_shape;
     std::size_t field_dim{0};
 
@@ -160,7 +160,7 @@ class KernelContextAttributes {
               offset_in_mem,
               index,
               dtype,
-              is_array,
+              is_ptr,
               element_shape,
               field_dim);
   };

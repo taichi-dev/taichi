@@ -62,6 +62,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
    private:
     Kernel *kernel_;
     std::unique_ptr<RuntimeContext> owned_ctx_;
+    std::unique_ptr<char[]> host_arg_buffer;
     // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
     // that the caller passes a RuntimeContext pointer externally. In that case,
     // |owned_ctx_| will be nullptr.

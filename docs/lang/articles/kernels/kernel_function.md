@@ -25,6 +25,8 @@ def partial_sum(n: int) -> float:  # A kernel
     for i in range(1, n + 1):
         total += inv_square(n)
     return total
+
+partial_sum(1000)
 ```
 
 Here comes a significant difference between Python and Taichi - *type hinting*:
@@ -37,7 +39,7 @@ Here comes a significant difference between Python and Taichi - *type hinting*:
 
 Calling a Taichi function from within the native Python code (the Python scope) results in a syntax error raised by Taichi. For example:
 
-```python
+```python skip-ci:NotRunnable
 import taichi as ti
 ti.init(arch=ti.cpu)
 
@@ -51,15 +53,11 @@ print(inv_square(1.0))  # Syntax error
 You must call Taichi functions from within the Taichi scope, a concept as opposed to the *Python scope*.
 :::
 
-:::note IMPORTANT
-
-For convenience, we introduce two concepts, *Taichi scope* and *Python scope*:
+Let's introduce two important concepts: *Taichi scope* and *Python scope*.
 
 - The code inside a kernel or a Taichi function is part of the *Taichi scope*. Taichi's runtime compiles and executes this code in parallel on multi-core CPU or GPU devices for high-performance computation. The Taichi scope corresponds to the device side in CUDA.
 
 - Code outside of the Taichi scope belongs to the *Python scope*. This code is written in native Python and executed by Python's virtual machine, not by Taichi's runtime. The Python scope corresponds to the host side in CUDA.
-
-:::
 
 It is important to distinguish between kernels and Taichi functions as they have slightly different syntax. The following sections explain their respective usages.
 
@@ -69,7 +67,7 @@ A kernel is the basic unit of execution in Taichi, and serves as the entry point
 
 For instance, the `partial_sum()` kernel can be called from within a Python function:
 
-```python {1,6,7}
+```python skip-ci:ToyDemo
 @ti.kernel
 def partial_sum(n: int) -> float:
     ...
@@ -103,7 +101,7 @@ Note that we won't cover `ti.template()` here as it is a more advanced topic and
 
 Here is an example of passing arguments `x` and `y` to `my_kernel()` by value:
 
-```python {1}
+```python
 @ti.kernel
 def my_kernel(x: int, y: float):
     print(x + y)
@@ -149,7 +147,7 @@ In Taichi, a kernel can have at most one return value, which can be a scalar, `t
 In this code snippet, the `test()` kernel cannot have more than one return value:
 
 
-```python
+```python skip-ci:ToyDemo
 vec2 = ti.math.vec2
 
 @ti.kernel
@@ -162,7 +160,7 @@ def test(x: float, y: float) -> vec2: # Return value must be type hinted
 
 In the following code snippet, the return value is automatically cast into the hinted type:
 
-```python
+```python skip-ci:ToyDemo
 @ti.kernel
 def my_kernel() -> ti.i32:  # int32
     return 128.32
@@ -174,7 +172,7 @@ print(my_kernel())  # 128
 
 In this code snippet, Taichi raises an error because the kernel `test_sign()` has more than one return statement:
 
-```python
+```python skip-ci:ToyDemo
 @ti.kernel
 def test_sign(x: float) -> float:
     if x >= 0:
@@ -186,7 +184,7 @@ def test_sign(x: float) -> float:
 
 As a workaround, you can save the result in a local variable and return it at the end:
 
-```python
+```python skip-ci:ToyDemo
 @ti.kernel
 def test_sign(x: float) -> float:
     sign = 1.0
@@ -200,7 +198,7 @@ def test_sign(x: float) -> float:
 
 In Taichi, a kernel treats global variables as compile-time constants. This means that it takes in the current values of the global variables at the time it is compiled and does not track changes to them afterwards. Consider the following example:
 
-```python {15-17}
+```python skip-ci:ToyDemo
 import taichi as ti
 ti.init()
 

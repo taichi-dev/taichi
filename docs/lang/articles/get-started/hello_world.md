@@ -227,7 +227,7 @@ Taichi's GUI system uses the standard Cartesian coordinate system to define pixe
 
 <center>
 
-![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/pixels.svg)
+![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/pixels.png)
 
 </center>
 

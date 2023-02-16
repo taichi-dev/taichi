@@ -79,7 +79,7 @@ def example_cast() -> int:  # the returned type is ti.i64
     y = int(x)  # equivalent to ti.i64(x)
 ```
 
-Furthermore, in the Python scope, when declaring Taichi's data containers using ti.field, ti.Vector, ti.Matrix, ti.ndarray, int, or float, these keywords also serve as aliases for the default integer and floating-point types. For example:
+Furthermore, in the Python scope, when declaring Taichi's data containers using `ti.field`, `ti.Vector`, `ti.Matrix`, `ti.ndarray`, these two names also serve as aliases for the default integer and floating-point types. For example:
 
 ```python skip-ci
 x = ti.field(float, 5)

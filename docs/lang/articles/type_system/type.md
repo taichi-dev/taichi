@@ -84,10 +84,8 @@ Furthermore, in the Python scope, when declaring Taichi's data containers using 
 
 ```python skip-ci
 x = ti.field(float, 5)
-y = ti.Matrix([1, 2, 3, 4], dt=int)
 # Is equivalent to:
 x = ti.field(ti.f64, 5)
-y = ti.Matrix([1, 2, 3, 4], dt=ti.i64)
 ```
 
 However, when using `int` and `float` outside of Taichi's data containers in regular Python code, they refer to their standard meaning as built-in functions and not aliases for Taichi's `default_ip` and `default_fp`. Therefore, in Python scope and outside of Taichi's data containers, `int` and `float` have their standard meaning as built-in functions.
@@ -244,8 +242,8 @@ sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 
 When defining a struct with numerous members, the use of `ti.types.struct` can lead to cluttered and unorganized code. Taichi provides a more elegant solution with the `@ti.dataclass` decorator, which acts as a lightweight wrapper around the struct type.
 
-```python
-@ti.dataclass skip-ci
+```python skip-ci
+@ti.dataclass
 class Sphere:
     center: vec3
     radius: float

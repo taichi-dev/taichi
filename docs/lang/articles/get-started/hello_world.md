@@ -156,8 +156,8 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 
 ### Parallel for loops
 
-```python
-@ti.kernel skip-ci:Trivial
+```python skip-ci:Trivial
+@ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
 ```
@@ -190,8 +190,8 @@ You may also serialize a for loop at the outermost scope using `ti.loop_config(s
 
 The `break` statement is *not* supported in parallelized loops:
 
-```python
-@ti.kernel skip-ci:ToyDemo
+```python skip-ci:ToyDemo
+@ti.kernel
 def foo():
     for i in x:
         ...

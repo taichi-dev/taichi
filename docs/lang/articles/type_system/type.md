@@ -77,6 +77,7 @@ ti.init(default_ip=ti.i64, default_fp=ti.f64)
 def example_cast() -> int:  # the returned type is ti.i64
     x = 3.14    # x is of ti.f64 type
     y = int(x)  # equivalent to ti.i64(x)
+    return y
 ```
 
 Furthermore, in the Python scope, when declaring Taichi's data containers using `ti.field`, `ti.Vector`, `ti.Matrix`, `ti.ndarray`, these two names also serve as aliases for the default integer and floating-point types. For example:

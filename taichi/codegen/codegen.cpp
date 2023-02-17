@@ -107,7 +107,7 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
 
   // Generate offline cache key & Try loading kernel from offline cache
   if (enable_offline_cache) {
-    std::string key = get_hashed_offline_cache_key(compile_config_, kernel);
+    std::string key = get_hashed_offline_cache_key(compile_config_, {}, kernel);
     kernel->set_kernel_key_for_cache(key);
     if (auto res = maybe_read_compilation_from_cache(key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),

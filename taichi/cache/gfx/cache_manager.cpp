@@ -168,7 +168,8 @@ CompiledKernelData CacheManager::load_or_compile(const CompileConfig &config,
                             runtime_->get_ti_device()->get_caps(),
                             compiled_structs_, config);
   }
-  std::string kernel_key = make_kernel_key(config, kernel);
+  std::string kernel_key =
+      make_kernel_key(config, runtime_->get_ti_device()->get_caps(), kernel);
   if (mode_ > NotCache) {
     if (auto opt = this->try_load_cached_kernel(kernel, kernel_key)) {
       return *opt;
@@ -295,13 +296,14 @@ CompiledKernelData CacheManager::compile_and_cache_kernel(
 }
 
 std::string CacheManager::make_kernel_key(const CompileConfig &config,
+                                          const DeviceCapabilityConfig &caps,
                                           Kernel *kernel) const {
   if (mode_ < MemAndDiskCache) {
     return kernel->get_name();
   }
   auto key = kernel->get_cached_kernel_key();
   if (key.empty()) {
-    key = get_hashed_offline_cache_key(config, kernel);
+    key = get_hashed_offline_cache_key(config, caps, kernel);
     kernel->set_kernel_key_for_cache(key);
   }
   return key;

@@ -209,7 +209,7 @@ def foo():
 
 ### Display the result
 
-Finally we render the result on screen using Taichi's built-in [GUI System](../visualization/gui_system.md):
+To render the result on screen, Taichi provides a built-in [GUI System](../visualization/gui_system.md). Use the `gui.set_image()` method to set the content of the window and `gui.show()` method to show the updated image.
 
 ```python skip-ci:Trivial
 gui = ti.GUI("Julia Set", res=(n * 2, n))
@@ -223,7 +223,14 @@ while gui.running:
     i += 1
 ```
 
-To display the result on your screen, use the `gui.set_image()` method to set the content of the window, and then call the `gui.show()` method to show the updated image.
+Taichi's GUI system uses the standard Cartesian coordinate system to define pixel coordinates. The origin of the coordinate system is located at the lower left corner of the screen. The `(0, 0)` element in `pixels` will be mapped to the lower left corner of the window, and the `(639, 319)` element will be mapped to the upper right corner of the window, as shown in the following image:
+
+<center>
+
+![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/pixels.png)
+
+</center>
+
 
 ### Key takeaways
 

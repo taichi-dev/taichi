@@ -27,6 +27,7 @@ void Window::init(Program *prog, const AppConfig &config) {
                                &renderer_->swap_chain(), glfw_window_);
   fps_limit_ = config.fps_limit;
 
+  resize();
   prepare_for_next_frame();
 }
 

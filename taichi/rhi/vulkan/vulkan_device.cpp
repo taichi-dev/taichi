@@ -2787,6 +2787,8 @@ VulkanSurface::~VulkanSurface() {
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
   destroy_swap_chain();
+  this->width_ = width;
+  this->height_ = height;
   create_swap_chain();
 }
 

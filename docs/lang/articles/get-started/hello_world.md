@@ -62,9 +62,7 @@ while gui.running:
     i += 1
 ```
 
-Save the code above to your local machine and run this program.
-
-You get the following animation:
+Save the code above to your local machine and run this program, you get the following animation:
 
 <center>
 
@@ -77,7 +75,7 @@ You get the following animation:
 If you are *not* using an IDE for running code, you can simply run the code from your terminal by:
 
 1. Go to the directory that contains your .py file
-2. Type in `python3 filename.py` (replace *filename* with your programs name. Be sure to include the `.py` extension)
+2. Type in `python3 filename.py` (replace *filename* with your script's name. Be sure to include the `.py` extension)
 
 :::
 
@@ -90,9 +88,7 @@ import taichi as ti
 import taichi.math as tm
 ```
 
-The first two lines import Taichi and its `math` module. The `math` module contains built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices.
-
-See the [Math Module](../math/math_module.md) for more information.
+The first two lines import Taichi and its `math` module. The `math` module contains built-in vectors and matrices of small dimensions, such as `vec2` for 2D real vectors and `mat3` for 3&times;3 real matrices. See the [Math Module](../math/math_module.md) for more information.
 
 
 ### Initialize Taichi
@@ -140,7 +136,7 @@ def paint(t: float):
         pixels[i, j] = 1 - iterations * 0.02
 ```
 
-The above code define two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU.
+The code above defines two functions, one decorated with `@ti.func` and the other with `@ti.kernel`. They are called *Taichi function* and *kernel* respectively. Taichi functions and kernels are not executed by Python's interpreter but taken over by Taichi's JIT compiler and deployed to your parallel multi-core CPU or GPU, which is determined by the `arch` argument in the `ti.init()` call.
 
 The main differences between Taichi functions and kernels are as follows:
 
@@ -160,21 +156,21 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 
 ### Parallel for loops
 
-```python
-@ti.kernel skip-ci:Trivial
+```python skip-ci:Trivial
+@ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
 ```
 
 The key to achieving high performance in Taichi lies in efficient iteration. By utilizing parallelized looping, data can be processed more effectively.
 
-The above code snippet showcases a for loop at the outermost scope within a Taichi kernel, which is automatically parallelized. The for loop operates on the `i` and `j` indices simultaneously, allowing for concurrent execution of iterations.
+The code snippet above showcases a for loop at the outermost scope within a Taichi kernel, which is automatically parallelized. The for loop operates on the `i` and `j` indices simultaneously, allowing for concurrent execution of iterations.
 
 Taichi provides a convenient syntax for parallelizing tasks. Any for loop at the outermost scope within a kernel is automatically parallelized, eliminating the need for manual thread allocation, recycling, and memory management.
 
 The field pixels is treated as an iterator, with `i` and `j` being integer indices ranging from `0` to `2*n-1` and `0` to `n-1`, respectively. The `(i, j)` pairs loop over the sets `(0, 0)`, `(0, 1)`, ..., `(0, n-1)`, `(1, 0)`, `(1, 1)`, ..., `(2*n-1, n-1)` in parallel.
 
-It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed sequentially.
+It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed *sequentially*.
 
 ```python {3,7,14-15}
 @ti.kernel
@@ -194,8 +190,8 @@ You may also serialize a for loop at the outermost scope using `ti.loop_config(s
 
 The `break` statement is *not* supported in parallelized loops:
 
-```python
-@ti.kernel skip-ci:ToyDemo
+```python skip-ci:ToyDemo
+@ti.kernel
 def foo():
     for i in x:
         ...
@@ -213,7 +209,7 @@ def foo():
 
 ### Display the result
 
-Finally we render the result on screen using Taichi's built-in [GUI System](../visualization/gui_system.md):
+To render the result on screen, Taichi provides a built-in [GUI System](../visualization/gui_system.md). Use the `gui.set_image()` method to set the content of the window and `gui.show()` method to show the updated image.
 
 ```python skip-ci:Trivial
 gui = ti.GUI("Julia Set", res=(n * 2, n))
@@ -227,7 +223,14 @@ while gui.running:
     i += 1
 ```
 
-The program iterates over `pixels` and updates the fractal pattern stored in pixels accordingly. Use `gui.set_image()` to set the window and `gui.show()` to display the synchronized result on your screen.
+Taichi's GUI system uses the standard Cartesian coordinate system to define pixel coordinates. The origin of the coordinate system is located at the lower left corner of the screen. The `(0, 0)` element in `pixels` will be mapped to the lower left corner of the window, and the `(639, 319)` element will be mapped to the upper right corner of the window, as shown in the following image:
+
+<center>
+
+![](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/pixels.png)
+
+</center>
+
 
 ### Key takeaways
 

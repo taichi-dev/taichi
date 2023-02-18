@@ -48,7 +48,7 @@ endif()
 
 if (TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
-  #list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
 endif()
 
 if (TI_WITH_VULKAN)
@@ -122,7 +122,6 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/Vulkan-Headers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include

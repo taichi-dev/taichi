@@ -9,7 +9,7 @@ Taichi is a statically typed programming language, meaning that the type of a va
 
 Let's see a quick example:
 
-```python {3-5}
+```python skip-ci:NotRunnable
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
@@ -17,9 +17,9 @@ def test():
     x = ti.Vector([1, 1])  # Error!
 ```
 
-- Line 3: `x` is an integer because it is assigned an integer value the first time it is declared.
-- Line 4: `x` is reassigned a floating-point number 3.14 but takes the value 3. This is because 3.14 is automatically cast to integer 3 to match the type of `x`.
-- Line 5:  The system throws an error, because `ti.Vector` cannot be cast into an integer.
+- Line 3: `x` is an integer since it is assigned an integer value when it is declared for the first time.
+- Line 4: `x` is reassigned a floating-point number 3.14. However, the value of `x` is 3 instead of 3.14. This is because 3.14 is automatically cast to an integer 3 to match the type of `x`.
+- Line 5: The system throws an error, because `ti.Vector` cannot be cast into an integer.
 
 The `ti.types` module in Taichi defines all of the supported data types. These data types are categorized into two groups: primitive and compound.
 
@@ -55,7 +55,7 @@ When initializing the Taichi runtime, Taichi automatically uses the following da
 
 Taichi allows you to specify the default primitive data type(s) when calling `init()`:
 
-```python
+```python skip-ci:ToyDemo
 ti.init(default_ip=ti.i64)  # Sets the default integer type to ti.i64
 ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 ```
@@ -66,25 +66,35 @@ The numeric literals in Taichi's scope have default integer or floating-point ty
 
 :::
 
-### Set default primitive type alias
+### Data type Aliases
 
-In Taichi, the keywords `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use `int` as an alias for `i64` and `float` as an alias for `f64` in your code.
+In Taichi scope, the two names `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use `int` as an alias for `i64` and `float` as an alias for `f64` in your code.
 
-```python
+```python skip-ci
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
 
+@ti.kernel
+def example_cast() -> int:  # the returned type is ti.i64
+    x = 3.14    # x is of ti.f64 type
+    y = int(x)  # equivalent to ti.i64(x)
+    return y
+```
+
+Furthermore, in the Python scope, when declaring Taichi's data containers using `ti.field`, `ti.Vector`, `ti.Matrix`, `ti.ndarray`, these two names also serve as aliases for the default integer and floating-point types. For example:
+
+```python skip-ci
 x = ti.field(float, 5)
-y = ti.field(int, 5)
 # Is equivalent to:
 x = ti.field(ti.f64, 5)
-y = ti.field(ti.i64, 5)
-
-def func(a: float) -> int:
-    ...
-# Is equivalent to:
-def func(a: ti.f64) -> ti.i64:
-    ...
 ```
+
+However, when using `int` and `float` outside of Taichi's data containers in regular Python code, they refer to their standard meaning as built-in functions and not aliases for Taichi's `default_ip` and `default_fp`. Therefore, in Python scope and outside of Taichi's data containers, `int` and `float` have their standard meaning as built-in functions.
+
+```python skip-ci
+x = numpy.array([1, 2, 3, 4], dtype=int)  # NumPy's int64 type
+y = int(3.14)  # Python's built-in int type
+```
+
 
 ### Explicit type casting
 
@@ -232,7 +242,7 @@ sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 
 When defining a struct with numerous members, the use of `ti.types.struct` can lead to cluttered and unorganized code. Taichi provides a more elegant solution with the `@ti.dataclass` decorator, which acts as a lightweight wrapper around the struct type.
 
-```python
+```python skip-ci
 @ti.dataclass
 class Sphere:
     center: vec3
@@ -241,7 +251,7 @@ class Sphere:
 
 The code above accomplishes the same task as the following line, however it offers improved comprehensibility:
 
-```python
+```python skip-ci
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 

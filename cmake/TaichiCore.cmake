@@ -135,13 +135,6 @@ endif()
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
-if (APPLE)
-    # Ask OS X to minic Linux dynamic linking behavior
-    set_target_properties(${CORE_LIBRARY_NAME}
-      PROPERTIES INTERFACE_LINK_LIBRARIES "-undefined dynamic_lookup"
-    )
-endif()
-
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/include)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/SPIRV-Tools/include)
@@ -320,7 +313,7 @@ endif()
 # SPIR-V codegen is always there, regardless of Vulkan
 set(SPIRV_SKIP_EXECUTABLES true)
 set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
-
+set(ENABLE_SPIRV_TOOLS_INSTALL OFF)
 add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/cache/gfx)
@@ -367,19 +360,16 @@ endif ()
 
 # Optional dependencies
 if (APPLE)
-  find_library(COCOA Cocoa)
-  if (NOT COCOA)
-    message(FATAL_ERROR "Cocoa not found")
-  endif()
-  find_library(METAL Metal)
-  if (NOT METAL)
-    message(FATAL_ERROR "Metal not found")
-  endif()
-  target_link_libraries(${CORE_LIBRARY_NAME}
-    PRIVATE
-      ${COCOA}
-      ${METAL}
-    )
+    set(APPLE_FRAMEWORKS "")
+    find_library(Foundation NAMES Foundation REQUIRED)
+    find_library(Metal NAMES Metal REQUIRED)
+    list(APPEND APPLE_FRAMEWORKS ${Foundation} ${Metal})
+    if (NOT IOS)
+        find_library(ApplicationServices NAMES ApplicationServices REQUIRED)
+        find_library(Cocoa NAMES Cocoa REQUIRED)
+        list(APPEND APPLE_FRAMEWORKS ${ApplicationServices} ${Cocoa})
+    endif()
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE ${APPLE_FRAMEWORKS})
 endif ()
 
 if (NOT WIN32)
@@ -420,13 +410,13 @@ foreach (source IN LISTS TAICHI_CORE_SOURCE)
     source_group("${source_path_msvc}" FILES "${source}")
 endforeach ()
 
-# TODO Use TI_WITH_UI to guard the compilation of this target.
-# This requires refactoring on the python/export_*.cpp as well as better
-# error message on the Python side.
-add_subdirectory(taichi/ui)
-target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
-
 if(TI_WITH_PYTHON)
+    # TODO Use TI_WITH_UI to guard the compilation of this target.
+    # This requires refactoring on the python/export_*.cpp as well as better
+    # error message on the Python side.
+    add_subdirectory(taichi/ui)
+    target_link_libraries(taichi_ui PUBLIC ${CORE_LIBRARY_NAME})
+
     message("PYTHON_LIBRARIES: " ${PYTHON_LIBRARIES})
     set(CORE_WITH_PYBIND_LIBRARY_NAME taichi_python)
     if (NOT ANDROID)

@@ -417,8 +417,8 @@ void VulkanPipeline::create_pipeline_layout() {
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
   std::array<char, 512> msg_buf;
-  RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(), "Compiling Vulkan pipeline %s",
-                     params.name.data());
+  RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
+                     "Compiling Vulkan pipeline %s", params.name.data());
   RHI_LOG_DEBUG(msg_buf.data());
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
                                              pipeline_layout_, params.cache);
@@ -942,8 +942,8 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
     for (const auto &binding : set->get_bindings()) {
       std::array<char, 256> msg_buf;
       RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
-                         "Binding %d: (VkDescriptorType) %d",
-                         binding.first, binding.second.type);
+                         "Binding %d: (VkDescriptorType) %d", binding.first,
+                         binding.second.type);
       RHI_LOG_ERROR(msg_buf.data());
     }
 
@@ -2677,8 +2677,8 @@ void VulkanSurface::create_swap_chain() {
   {
     std::array<char, 512> msg_buf;
     RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
-                       "Creating suface of %u x %u",
-                       extent.width, extent.height);
+                       "Creating suface of %u x %u", extent.width,
+                       extent.height);
     RHI_LOG_DEBUG(msg_buf.data());
   }
   VkImageUsageFlags usage =

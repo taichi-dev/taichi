@@ -318,6 +318,7 @@ add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
 add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)
+add_subdirectory(taichi/com_mgr)
 
 if (TI_WITH_OPENGL OR TI_WITH_VULKAN OR TI_WITH_DX11 OR TI_WITH_METAL)
   target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE spirv_codegen)

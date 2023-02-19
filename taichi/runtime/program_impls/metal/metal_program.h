@@ -96,6 +96,9 @@ class MetalProgramImpl : public ProgramImpl {
 
   ~MetalProgramImpl() override;
 
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+
  private:
   std::unique_ptr<metal::MetalDevice> embedded_device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> gfx_runtime_{nullptr};

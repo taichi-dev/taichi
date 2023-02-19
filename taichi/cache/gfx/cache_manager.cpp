@@ -160,8 +160,9 @@ CacheManager::CacheManager(Params &&init_params)
   offline_cache_metadata_.version[2] = TI_VERSION_PATCH;
 }
 
-CompiledKernelData CacheManager::load_or_compile(const CompileConfig &config,
-                                                 Kernel *kernel) {
+CacheManager::CompiledKernelData CacheManager::load_or_compile(
+    const CompileConfig &config,
+    Kernel *kernel) {
   if (kernel->is_evaluator) {
     spirv::lower(config, kernel);
     return gfx::run_codegen(kernel, runtime_->get_ti_device()->arch(),
@@ -241,9 +242,8 @@ void CacheManager::clean_offline_cache(offline_cache::CleanCachePolicy policy,
   }
 }
 
-std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
-    Kernel *kernel,
-    const std::string &key) {
+std::optional<CacheManager::CompiledKernelData>
+CacheManager::try_load_cached_kernel(Kernel *kernel, const std::string &key) {
   if (mode_ == NotCache) {
     return std::nullopt;
   }
@@ -276,7 +276,7 @@ std::optional<CompiledKernelData> CacheManager::try_load_cached_kernel(
   return std::nullopt;
 }
 
-CompiledKernelData CacheManager::compile_and_cache_kernel(
+CacheManager::CompiledKernelData CacheManager::compile_and_cache_kernel(
     const std::string &key,
     Kernel *kernel) {
   TI_DEBUG_IF(mode_ == MemAndDiskCache, "Cache kernel '{}' (key='{}')",

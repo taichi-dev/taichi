@@ -3,6 +3,8 @@
 #include "taichi/runtime/program_impls/dx/dx_program.h"
 
 #include "taichi/rhi/dx/dx_api.h"
+#include "taichi/codegen/spirv/kernel_compiler.h"
+#include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
@@ -81,6 +83,14 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
   return get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false});
+}
+
+std::unique_ptr<KernelCompiler> Dx11ProgramImpl::make_kernel_compiler() {
+  spirv::KernelCompiler::Config cfg;
+  cfg.compiled_struct_data = runtime_
+                                 ? &snode_tree_mgr_->get_compiled_structs()
+                                 : &aot_compiled_snode_structs_;
+  return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
 }
 
 }  // namespace taichi::lang

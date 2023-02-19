@@ -75,6 +75,9 @@ class OpenglProgramImpl : public ProgramImpl {
 
   const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
 
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+
  private:
   std::shared_ptr<Device> device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};

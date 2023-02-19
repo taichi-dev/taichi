@@ -99,17 +99,15 @@ class VulkanProgramImpl : public ProgramImpl {
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
 
-  void dump_cache_data_to_disk() override;
-
-  const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
-
   ~VulkanProgramImpl() override;
+
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> vulkan_runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
-  std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
 }  // namespace taichi::lang

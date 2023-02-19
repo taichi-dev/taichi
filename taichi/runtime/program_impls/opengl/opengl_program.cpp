@@ -1,6 +1,7 @@
 #include "opengl_program.h"
 
 #include "taichi/analysis/offline_cache_util.h"
+#include "taichi/codegen/spirv/kernel_compiler.h"
 #include "taichi/rhi/opengl/opengl_api.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
@@ -119,6 +120,13 @@ const std::unique_ptr<gfx::CacheManager>
     cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
   }
   return cache_manager_;
+}
+
+std::unique_ptr<KernelCompiler> OpenglProgramImpl::make_kernel_compiler() {
+  spirv::KernelCompiler::Config cfg;
+  cfg.compiled_struct_data = runtime_ ? &snode_tree_mgr_->get_compiled_structs()
+                                      : &aot_compiled_snode_structs_;
+  return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
 }
 
 }  // namespace taichi::lang

@@ -2,6 +2,8 @@
 
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/aot/graph_data.h"
+#include "taichi/codegen/spirv/kernel_compiler.h"
+#include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/rhi/metal/metal_device.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
@@ -125,6 +127,14 @@ MetalProgramImpl::~MetalProgramImpl() {
   cache_manager_.reset();
   gfx_runtime_.reset();
   embedded_device_.reset();
+}
+
+std::unique_ptr<KernelCompiler> MetalProgramImpl::make_kernel_compiler() {
+  spirv::KernelCompiler::Config cfg;
+  cfg.compiled_struct_data = gfx_runtime_
+                                 ? &snode_tree_mgr_->get_compiled_structs()
+                                 : &aot_compiled_snode_structs_;
+  return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
 }
 
 }  // namespace taichi::lang

@@ -71,10 +71,6 @@ class OpenglProgramImpl : public ProgramImpl {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
 
-  void dump_cache_data_to_disk() override;
-
-  const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
-
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
@@ -83,7 +79,6 @@ class OpenglProgramImpl : public ProgramImpl {
   std::unique_ptr<gfx::GfxRuntime> runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_;
-  std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
 
 }  // namespace taichi::lang

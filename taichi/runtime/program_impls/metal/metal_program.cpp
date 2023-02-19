@@ -31,9 +31,19 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config)
 
 FunctionType MetalProgramImpl::compile(const CompileConfig &compile_config,
                                        Kernel *kernel) {
-  return register_params_to_executable(
-      get_cache_manager()->load_or_compile(compile_config, kernel),
-      gfx_runtime_.get());
+  // NOTE: Temporary implementation
+  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
+  auto &mgr = get_kernel_compilation_manager();
+  const auto &compiled = mgr.load_or_compile(
+      compile_config, gfx_runtime_->get_ti_device()->get_caps(), *kernel);
+  const auto *spirv_compiled =
+      dynamic_cast<const spirv::CompiledKernelData *>(&compiled);
+  const auto &spirv_data = spirv_compiled->get_internal_data();
+  gfx::GfxRuntime::RegisterParams params;
+  params.kernel_attribs = spirv_data.metadata.kernel_attribs;
+  params.task_spirv_source_codes = spirv_data.src.spirv_src;
+  params.num_snode_trees = spirv_data.metadata.num_snode_trees;
+  return register_params_to_executable(std::move(params), gfx_runtime_.get());
 }
 
 void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -96,35 +106,7 @@ void MetalProgramImpl::enqueue_compute_op_lambda(
   gfx_runtime_->enqueue_compute_op_lambda(op, image_refs);
 }
 
-void MetalProgramImpl::dump_cache_data_to_disk() {
-  const auto &mgr = get_cache_manager();
-  mgr->clean_offline_cache(offline_cache::string_to_clean_cache_policy(
-                               config->offline_cache_cleaning_policy),
-                           config->offline_cache_max_size_of_files,
-                           config->offline_cache_cleaning_factor);
-  mgr->dump_with_merging();
-}
-
-const std::unique_ptr<gfx::CacheManager>
-    &MetalProgramImpl::get_cache_manager() {
-  if (!cache_manager_) {
-    TI_ASSERT(gfx_runtime_ && snode_tree_mgr_ && embedded_device_);
-    using Mgr = gfx::CacheManager;
-    Mgr::Params params;
-    params.arch = config->arch;
-    params.mode = config->offline_cache ? Mgr::MemAndDiskCache : Mgr::MemCache;
-    params.cache_path = config->offline_cache_file_path;
-    params.runtime = gfx_runtime_.get();
-    params.compile_config = config;
-    params.caps = embedded_device_.get()->get_caps();
-    params.compiled_structs = &snode_tree_mgr_->get_compiled_structs();
-    cache_manager_ = std::make_unique<gfx::CacheManager>(std::move(params));
-  }
-  return cache_manager_;
-}
-
 MetalProgramImpl::~MetalProgramImpl() {
-  cache_manager_.reset();
   gfx_runtime_.reset();
   embedded_device_.reset();
 }

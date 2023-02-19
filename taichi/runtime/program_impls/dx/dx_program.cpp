@@ -10,30 +10,37 @@
 #include "taichi/codegen/spirv/spirv_codegen.h"
 
 namespace taichi::lang {
-namespace directx11 {
+namespace {
 
-FunctionType compile_to_executable(Kernel *kernel,
-                                   gfx::GfxRuntime *runtime,
-                                   const CompileConfig &compile_config,
-                                   gfx::SNodeTreeManager *snode_tree_mgr) {
-  auto handle = runtime->register_taichi_kernel(
-      gfx::run_codegen(kernel, Arch::dx11, runtime->get_ti_device()->get_caps(),
-                       snode_tree_mgr->get_compiled_structs(), compile_config));
+FunctionType register_params_to_executable(
+    gfx::GfxRuntime::RegisterParams &&params,
+    gfx::GfxRuntime *runtime) {
+  auto handle = runtime->register_taichi_kernel(std::move(params));
   return [runtime, handle](RuntimeContext &ctx) {
     runtime->launch_kernel(handle, &ctx);
   };
 }
 
-}  // namespace directx11
+}  // namespace
 
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
 FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
                                       Kernel *kernel) {
-  spirv::lower(compile_config, kernel);
-  return directx11::compile_to_executable(
-      kernel, runtime_.get(), compile_config, snode_tree_mgr_.get());
+  // NOTE: Temporary implementation
+  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
+  auto &mgr = get_kernel_compilation_manager();
+  const auto &compiled = mgr.load_or_compile(
+      compile_config, runtime_->get_ti_device()->get_caps(), *kernel);
+  const auto *spirv_compiled =
+      dynamic_cast<const spirv::CompiledKernelData *>(&compiled);
+  const auto &spirv_data = spirv_compiled->get_internal_data();
+  gfx::GfxRuntime::RegisterParams params;
+  params.kernel_attribs = spirv_data.metadata.kernel_attribs;
+  params.task_spirv_source_codes = spirv_data.src.spirv_src;
+  params.num_snode_trees = spirv_data.metadata.num_snode_trees;
+  return register_params_to_executable(std::move(params), runtime_.get());
 }
 
 void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -87,9 +94,8 @@ DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
 
 std::unique_ptr<KernelCompiler> Dx11ProgramImpl::make_kernel_compiler() {
   spirv::KernelCompiler::Config cfg;
-  cfg.compiled_struct_data = runtime_
-                                 ? &snode_tree_mgr_->get_compiled_structs()
-                                 : &aot_compiled_snode_structs_;
+  cfg.compiled_struct_data = runtime_ ? &snode_tree_mgr_->get_compiled_structs()
+                                      : &aot_compiled_snode_structs_;
   return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
 }
 

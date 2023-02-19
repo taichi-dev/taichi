@@ -361,6 +361,7 @@ struct PyWindow {
            py::tuple pos,
            bool vsync,
            bool show_window,
+           double fps_limit,
            std::string package_path,
            Arch ti_arch) {
     AppConfig config = {name,
@@ -370,6 +371,7 @@ struct PyWindow {
                         pos[1].cast<int>(),
                         vsync,
                         show_window,
+                        fps_limit,
                         package_path,
                         ti_arch};
     if (!lang::vulkan::is_vulkan_api_available()) {
@@ -484,7 +486,7 @@ void export_ggui(py::module &m) {
 
   py::class_<PyWindow>(m, "PyWindow")
       .def(py::init<Program *, std::string, py::tuple, py::tuple, bool, bool,
-                    std::string, Arch>())
+                    double, std::string, Arch>())
       .def("get_canvas", &PyWindow::get_canvas)
       .def("show", &PyWindow::show)
       .def("get_window_shape", &PyWindow::get_window_shape)

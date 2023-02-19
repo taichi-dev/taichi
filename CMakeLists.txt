@@ -18,6 +18,7 @@ if (NOT DEFINED TI_VERSION_MAJOR)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 execute_process(
@@ -70,7 +71,11 @@ option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
 
 if(LINUX OR APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    if (NOT IOS)
+        # (penguinliong) Not compatible with -fembed-bitcode. Not sure where it
+        # comes from; probably a XCode preset?
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    endif()
 endif()
 
 if (USE_LLD)

@@ -30,8 +30,11 @@ class InputHandler {
       first_mouse_ = false;
     }
 
-    last_x_ = xpos;
-    last_y_ = ypos;
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+
+    last_x_ = xpos / double(w);
+    last_y_ = ypos / double(h);
 
     for (auto f : user_mouse_pos_callbacks_) {
       f(xpos, ypos);

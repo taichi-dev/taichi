@@ -84,6 +84,41 @@ TEST(FrontendTypeInference, TernaryOp) {
   EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
 }
 
+TEST(FrontendTypeInference, TernaryOp_NoBroadcast) {
+  auto cond = value<int32>(42);
+  cond->type_check(nullptr);
+  EXPECT_EQ(cond->ret_type, PrimitiveType::i32);
+
+  auto const_3 = Expr::make<ConstExpression, int32>(3);
+  auto const_5 = Expr::make<ConstExpression, int32>(5);
+  std::vector<int> shape = {3, 1};
+
+  std::vector<Expr> op2_element = {const_3, const_3, const_3};
+  std::vector<Expr> op3_element = {const_5, const_5, const_5};
+
+  auto op2 =
+      Expr::make<MatrixExpression>(op2_element, shape, PrimitiveType::i32);
+  op2->type_check(nullptr);
+  auto op3 =
+      Expr::make<MatrixExpression>(op2_element, shape, PrimitiveType::i32);
+  op3->type_check(nullptr);
+
+  auto ternary =
+      Expr::make<TernaryOpExpression>(TernaryOpType::select, cond, op2, op3);
+  ternary->type_check(nullptr);
+
+  auto ternary_expr = ternary.cast<TernaryOpExpression>();
+  auto cond_ret_type = ternary_expr->op1->ret_type;
+  auto op2_ret_type = ternary_expr->op2->ret_type;
+  auto op3_ret_type = ternary_expr->op3->ret_type;
+
+  EXPECT_TRUE(op2_ret_type->is<TensorType>() &&
+              op2_ret_type->cast<TensorType>()->get_shape() == shape);
+  EXPECT_TRUE(op3_ret_type->is<TensorType>() &&
+              op3_ret_type->cast<TensorType>()->get_shape() == shape);
+  EXPECT_EQ(cond_ret_type, PrimitiveType::i32);
+}
+
 TEST(FrontendTypeInference, GlobalPtr_Field) {
   auto prog = std::make_unique<Program>(Arch::x64);
   auto func = []() {};

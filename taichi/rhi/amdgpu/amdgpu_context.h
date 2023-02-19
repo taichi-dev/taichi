@@ -20,8 +20,10 @@ class AMDGPUContext {
   int compute_capability_;
   std::string mcpu_;
   std::mutex lock_;
+  KernelProfilerBase *profiler_;
   AMDGPUDriver &driver_;
   bool debug_;
+  std::vector<void *> kernel_arg_pointer_;
 
  public:
   AMDGPUContext();
@@ -34,11 +36,27 @@ class AMDGPUContext {
     return dev_count_ != 0;
   }
 
+  void push_back_kernel_arg_pointer(void *ptr) {
+    kernel_arg_pointer_.push_back(ptr);
+  }
+
+  void free_kernel_arg_pointer() {
+    for (auto &i : kernel_arg_pointer_) {
+      AMDGPUDriver::get_instance().mem_free(i);
+    }
+    kernel_arg_pointer_.erase(kernel_arg_pointer_.begin(),
+                              kernel_arg_pointer_.end());
+  }
+
   void pack_args(std::vector<void *> arg_pointers,
                  std::vector<int> arg_sizes,
                  char *arg_packed);
 
   int get_args_byte(std::vector<int> arg_sizes);
+
+  void set_profiler(KernelProfilerBase *profiler) {
+    profiler_ = profiler;
+  }
 
   void launch(void *func,
               const std::string &task_name,

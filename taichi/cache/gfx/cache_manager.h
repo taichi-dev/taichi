@@ -51,6 +51,7 @@ class CacheManager {
   CompiledKernelData compile_and_cache_kernel(const std::string &key,
                                               Kernel *kernel);
   std::string make_kernel_key(const CompileConfig &config,
+                              const DeviceCapabilityConfig &caps,
                               Kernel *kernel) const;
 
   Mode mode_{MemCache};

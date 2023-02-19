@@ -112,12 +112,16 @@ struct Error {
   }
 };
 
+namespace capi {
+class MetalRuntime;
+}  // namespace capi
+
 class Runtime {
  protected:
   // 32 is a magic number in `taichi/inc/constants.h`.
   std::array<uint64_t, 32> host_result_buffer_;
 
-  Runtime(taichi::Arch arch);
+  explicit Runtime(taichi::Arch arch);
 
  public:
   const taichi::Arch arch;
@@ -173,7 +177,7 @@ class Runtime {
   virtual void wait() = 0;
 
   class VulkanRuntime *as_vk();
-  class MetalRuntime *as_mtl();
+  class capi::MetalRuntime *as_mtl();
 };
 
 class AotModule {

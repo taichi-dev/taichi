@@ -885,7 +885,6 @@ struct SurfaceConfig {
   //   waiting, a tearing may appear, reduces overall latency
   bool vsync{false};
   bool adaptive{true};
-  void *window_handle{nullptr};
   uint32_t width{1};
   uint32_t height{1};
   void *native_surface_handle{nullptr};

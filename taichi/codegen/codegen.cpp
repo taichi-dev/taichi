@@ -98,7 +98,7 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   std::string kernel_key =
-      get_hashed_offline_cache_key(compile_config_, kernel);
+      get_hashed_offline_cache_key(compile_config_, {}, kernel);
   kernel->set_kernel_key_for_cache(kernel_key);
   if (compile_config_.offline_cache && this->supports_offline_cache() &&
       !kernel->is_evaluator) {

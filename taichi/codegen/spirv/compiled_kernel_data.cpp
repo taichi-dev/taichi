@@ -76,8 +76,8 @@ CompiledKernelData::Err CompiledKernelData::str2src(
     const std::string &str,
     InternalData::Source &result) {
   return read_from_binary(result, str.data(), str.size())
-             ? Err::kParseSrcCodeFailed
-             : Err::kNoError;
+             ? Err::kNoError
+             : Err::kParseSrcCodeFailed;
 }
 
 }  // namespace spirv

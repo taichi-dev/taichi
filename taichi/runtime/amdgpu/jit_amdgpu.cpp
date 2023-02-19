@@ -1,7 +1,6 @@
 #include "taichi/runtime/amdgpu/jit_amdgpu.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/runtime/llvm/llvm_context_pass.h"
-#include "llvm/CodeGen/CommandFlags.h"
 
 namespace taichi {
 namespace lang {

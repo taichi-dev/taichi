@@ -33,7 +33,7 @@ std::unique_ptr<lang::CompiledKernelData> CompiledKernelData::clone() const {
 
 CompiledKernelData::Err CompiledKernelData::load_impl(
     const CompiledKernelDataFile &file) {
-  if (arch_uses_spirv(file.arch())) {
+  if (!arch_uses_spirv(file.arch())) {
     return Err::kArchNotMatched;
   }
   try {

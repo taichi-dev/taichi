@@ -51,6 +51,7 @@ void KernelCompilationManager::dump() {
   if (!lock_with_file(lock_path)) {
     TI_WARN("Lock {} failed. Please run 'ti cache clean -p {}' and try again.",
             lock_path, config_.offline_cache_path);
+    return;
   }
 
   auto _ = make_unlocker(lock_path);

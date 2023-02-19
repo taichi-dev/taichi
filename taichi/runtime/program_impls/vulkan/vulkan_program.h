@@ -9,7 +9,6 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/cache/gfx/cache_manager.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
 #include "vk_mem_alloc.h"
 

@@ -7,7 +7,6 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/cache/gfx/cache_manager.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"

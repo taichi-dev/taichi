@@ -316,7 +316,6 @@ set(SPIRV-Headers_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Headers)
 set(ENABLE_SPIRV_TOOLS_INSTALL OFF)
 add_subdirectory(external/SPIRV-Tools)
 add_subdirectory(taichi/codegen/spirv)
-add_subdirectory(taichi/cache/gfx)
 add_subdirectory(taichi/runtime/gfx)
 add_subdirectory(taichi/com_mgr)
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "taichi/cache/gfx/cache_manager.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/program/program_impl.h"

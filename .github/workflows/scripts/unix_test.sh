@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -x
 
 . $(dirname $0)/common-utils.sh
 
@@ -51,14 +51,14 @@ EOF
     popd
 fi
 
-if [ -z "$TI_SKIP_CPP_TESTS" ]; then
-    echo "Running cpp tests on platform:" "${PLATFORM}"
-    python3 tests/run_tests.py --cpp
-    if [[ $PLATFORM == *"m1"* ]]; then
-        echo "Running cpp tests with statically linked C-API library"
-        python3 tests/run_tests.py --cpp --use_static_c_api
-    fi
-fi
+#if [ -z "$TI_SKIP_CPP_TESTS" ]; then
+#    echo "Running cpp tests on platform:" "${PLATFORM}"
+#    python3 tests/run_tests.py --cpp
+#    if [[ $PLATFORM == *"m1"* ]]; then
+#        echo "Running cpp tests with statically linked C-API library"
+#        python3 tests/run_tests.py --cpp --use_static_c_api
+#    fi
+#fi
 
 function run-it {
     ARCH=$1

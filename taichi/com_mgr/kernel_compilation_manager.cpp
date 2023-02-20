@@ -7,8 +7,6 @@ namespace taichi::lang {
 
 KernelCompilationManager::KernelCompilationManager(Config config)
     : config_(std::move(config)) {
-  using Error = offline_cache::LoadMetadataError;
-
   TI_DEBUG("Create KernelCompilationManager with offline_cache_file_path = {}",
            config_.offline_cache_path);
   auto filepath = join_path(config_.offline_cache_path, kMetadataFilename);

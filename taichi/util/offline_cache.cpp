@@ -22,8 +22,7 @@ std::string get_cache_path_by_arch(const std::string &base_path, Arch arch) {
   std::string subdir;
   if (arch_uses_llvm(arch)) {
     subdir = kLlvmCachSubPath;
-  } else if (arch == Arch::vulkan || arch == Arch::opengl ||
-             arch == Arch::gles || arch == Arch::metal) {
+  } else if (arch_uses_spirv(arch)) {
     subdir = kSpirvCacheSubPath;
   } else if (arch == Arch::dx12) {
     subdir = "dx12";

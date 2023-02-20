@@ -207,3 +207,19 @@ def test_print_seq(capfd):
     print("outside kernel")
     out = capfd.readouterr().out
     assert "inside kernel\noutside kernel" in out
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], print_ir=True, debug=True)
+def test_fp16_print_ir():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    @ti.kernel
+    def test():
+        x = half2(1.0)
+        y = half2(2.0)
+
+        for i in range(2):
+            x[i] = y[i]
+            print(x[i])
+
+    test()

@@ -278,4 +278,4 @@ You are now prepared to begin writing your own Taichi programs. The following do
 
 - [Accelerate Python with Taichi](./accelerate_python.md)
 - [Conduct Physical Simulation](./cloth_simulation.md)
-- [Accelerate PyTorch with Taichi](./accelerate_pytorch.md).
+- [Accelerate PyTorch with Taichi](./accelerate_pytorch.md)

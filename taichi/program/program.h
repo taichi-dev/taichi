@@ -94,8 +94,6 @@ class TI_DLL_EXPORT Program {
   using Kernel = taichi::lang::Kernel;
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
-  char *host_arg_buffer{nullptr};
-  std::unique_ptr<char[]> owned_host_arg_buffer;  // for cuda
   char *device_arg_buffer{nullptr};
 
   std::vector<std::unique_ptr<Kernel>> kernels;

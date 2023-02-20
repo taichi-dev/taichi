@@ -201,14 +201,6 @@ void Program::materialize_runtime() {
   // TODO: support other backends
   program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
                                      &result_buffer, &device_arg_buffer);
-  if (compile_config().arch == Arch::cuda) {
-    owned_host_arg_buffer = std::make_unique<char[]>(taichi_max_arg_size);
-    host_arg_buffer = owned_host_arg_buffer.get();
-  } else {
-    host_arg_buffer = device_arg_buffer;
-  }
-  TI_INFO("device {} host {}", (uint64)device_arg_buffer,
-          (uint64)host_arg_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {

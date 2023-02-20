@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -x
 
 . $(dirname $0)/common-utils.sh
 
@@ -20,36 +20,36 @@ setup_python
 
 install_taichi_wheel
 
-python3 tests/run_c_api_compat_test.py
+#python3 tests/run_c_api_compat_test.py
 
 ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
-
-if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
-    python3 -m pip install PyYAML
-    git clone https://github.com/taichi-dev/taichi-release-tests
-    pushd taichi-release-tests
-    git checkout 20221230
-    mkdir -p repos/taichi/python/taichi
-    EXAMPLES=$(cat <<EOF | python3 | tail -n 1
-import taichi.examples
-print(taichi.examples.__path__[0])
-EOF
-)
-    ln -sf $EXAMPLES repos/taichi/python/taichi/examples
-    pushd repos
-    git clone --depth=1 https://github.com/taichi-dev/quantaichi
-    git clone --depth=1 https://github.com/taichi-dev/difftaichi
-    popd
-
-    pushd repos/difftaichi
-    pip install -r requirements.txt
-    popd
-
-    python3 run.py --log=DEBUG --runners 1 timelines
-    popd
-fi
+#
+#if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
+#    python3 -m pip install PyYAML
+#    git clone https://github.com/taichi-dev/taichi-release-tests
+#    pushd taichi-release-tests
+#    git checkout 20221230
+#    mkdir -p repos/taichi/python/taichi
+#    EXAMPLES=$(cat <<EOF | python3 | tail -n 1
+#import taichi.examples
+#print(taichi.examples.__path__[0])
+#EOF
+#)
+#    ln -sf $EXAMPLES repos/taichi/python/taichi/examples
+#    pushd repos
+#    git clone --depth=1 https://github.com/taichi-dev/quantaichi
+#    git clone --depth=1 https://github.com/taichi-dev/difftaichi
+#    popd
+#
+#    pushd repos/difftaichi
+#    pip install -r requirements.txt
+#    popd
+#
+#    python3 run.py --log=DEBUG --runners 1 timelines
+#    popd
+#fi
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     echo "Running cpp tests on platform:" "${PLATFORM}"

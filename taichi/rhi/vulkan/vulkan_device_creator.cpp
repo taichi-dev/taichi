@@ -39,15 +39,14 @@ bool check_validation_layer_support() {
   return true;
 }
 
+static const std::unordered_set<std::string> ignored_messages = {
+    "UNASSIGNED-DEBUG-PRINTF",
+    "VUID_Undefined",
+};
+
 [[maybe_unused]] bool vk_ignore_validation_warning(
     const std::string &msg_name) {
-  if (msg_name == "UNASSIGNED-DEBUG-PRINTF") {
-    // Ignore truncated Debug Printf message
-    return true;
-  }
-
-  if (msg_name == "VUID_Undefined") {
-    // FIXME: Remove this branch after upgrading Vulkan driver for built bots
+  if (ignored_messages.count(msg_name) > 0) {
     return true;
   }
 
@@ -248,10 +247,13 @@ VulkanDeviceCreator::VulkanDeviceCreator(
 
   create_instance(vk_api_version, manual_create);
   setup_debug_messenger();
+  VkSurfaceKHR test_surface = VK_NULL_HANDLE;
   if (params_.is_for_ui) {
-    create_surface();
+    test_surface = params_.surface_creator(instance_);
+    RHI_ASSERT((test_surface != VK_NULL_HANDLE) &&
+               "failed to create window surface!");
   }
-  pick_physical_device();
+  pick_physical_device(test_surface);
   create_logical_device(manual_create);
 
   {
@@ -267,13 +269,14 @@ VulkanDeviceCreator::VulkanDeviceCreator(
         queue_family_indices_.graphics_family.value();
     ti_device_->init_vulkan_structs(params);
   }
+
+  if (params_.is_for_ui) {
+    vkDestroySurfaceKHR(instance_, test_surface, kNoVkAllocCallbacks);
+  }
 }
 
 VulkanDeviceCreator::~VulkanDeviceCreator() {
   ti_device_.reset();
-  if (surface_ != VK_NULL_HANDLE) {
-    vkDestroySurfaceKHR(instance_, surface_, kNoVkAllocCallbacks);
-  }
   if (params_.enable_validation_layer) {
     destroy_debug_utils_messenger_ext(instance_, debug_messenger_,
                                       kNoVkAllocCallbacks);
@@ -409,12 +412,7 @@ void VulkanDeviceCreator::setup_debug_messenger() {
       "failed to set up debug messenger");
 }
 
-void VulkanDeviceCreator::create_surface() {
-  surface_ = params_.surface_creator(instance_);
-  RHI_ASSERT(surface_ && "failed to create window surface!");
-}
-
-void VulkanDeviceCreator::pick_physical_device() {
+void VulkanDeviceCreator::pick_physical_device(VkSurfaceKHR test_surface) {
   uint32_t device_count = 0;
   vkEnumeratePhysicalDevices(instance_, &device_count, nullptr);
   RHI_ASSERT(device_count > 0 && "failed to find GPUs with Vulkan support");
@@ -443,7 +441,7 @@ void VulkanDeviceCreator::pick_physical_device() {
                "TI_VISIBLE_DEVICE=%d is not valid, found %d devices available",
                id, device_count);
       RHI_LOG_ERROR(msg_buf);
-    } else if (get_device_score(devices[id], surface_)) {
+    } else if (get_device_score(devices[id], test_surface)) {
       physical_device_ = devices[id];
       has_visible_device = true;
     }
@@ -453,7 +451,7 @@ void VulkanDeviceCreator::pick_physical_device() {
     // could not find a user defined visible device, use the first one suitable
     size_t max_score = 0;
     for (const auto &device : devices) {
-      size_t score = get_device_score(device, surface_);
+      size_t score = get_device_score(device, test_surface);
       if (score > max_score) {
         physical_device_ = device;
         max_score = score;
@@ -463,7 +461,7 @@ void VulkanDeviceCreator::pick_physical_device() {
   RHI_ASSERT(physical_device_ != VK_NULL_HANDLE &&
              "failed to find a suitable GPU");
 
-  queue_family_indices_ = find_queue_families(physical_device_, surface_);
+  queue_family_indices_ = find_queue_families(physical_device_, test_surface);
 }
 
 void VulkanDeviceCreator::create_logical_device(bool manual_create) {
@@ -596,6 +594,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       caps.set(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_16BIT_STORAGE_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
                          params_.additional_device_extensions.end(),
                          name) != params_.additional_device_extensions.end()) {
@@ -681,6 +681,11 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{};
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
+
+  VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_feature{};
+  shader_16bit_storage_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
+
   VkPhysicalDeviceBufferDeviceAddressFeaturesKHR
       buffer_device_address_feature{};
   buffer_device_address_feature.sType =
@@ -773,6 +778,15 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       }
       *pNextEnd = &shader_f16_i8_feature;
       pNextEnd = &shader_f16_i8_feature.pNext;
+    }
+
+    if (CHECK_VERSION(1, 1) ||
+        CHECK_EXTENSION(VK_KHR_16BIT_STORAGE_EXTENSION_NAME)) {
+      features2.pNext = &shader_16bit_storage_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      *pNextEnd = &shader_16bit_storage_feature;
+      pNextEnd = &shader_16bit_storage_feature.pNext;
     }
 
     // Buffer Device Address

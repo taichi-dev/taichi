@@ -5,6 +5,7 @@
 #include "taichi/rhi/dx/dx_api.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/codegen/spirv/spirv_codegen.h"
 
 namespace taichi::lang {
 namespace directx11 {

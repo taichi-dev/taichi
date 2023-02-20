@@ -304,6 +304,8 @@ Types of kernel and compute graph argument.
 - `enumeration.argument_type.f32`: 32-bit IEEE 754 single-precision floating-point number.
 - `enumeration.argument_type.ndarray`: ND-array wrapped around a `handle.memory`.
 - `enumeration.argument_type.texture`: Texture wrapped around a `handle.image`.
+- `enumeration.argument_type.scalar`: Typed scalar.
+
 
 `bit_field.memory_usage`
 
@@ -433,14 +435,30 @@ Image data bound to a sampler.
 - `structure.texture.extent`: Image extent.
 - `structure.texture.format`: Image texel format.
 
+`union.scalar_value`
+
+Scalar value represented by a power-of-two number of bits.
+
+**NOTE** The unsigned integer types merely hold the number of bits in memory and doesn't reflect any type of the underlying data. For example, a 32-bit floating-point scalar value is assigned by `*(float*)&scalar_value.x32 = 0.0f`; a 16-bit signed integer is assigned by `*(int16_t)&scalar_vaue.x16 = 1`. The actual type of the scalar is hinted via `structure.scalar.type`.
+
+- `union.scalar_value.x8`: Scalar value that fits into 8 bits.
+- `union.scalar_value.x16`: Scalar value that fits into 16 bits.
+- `union.scalar_value.x32`: Scalar value that fits into 32 bits.
+- `union.scalar_value.x64`: Scalar value that fits into 64 bits.
+
+`structure.scalar`
+
+A typed scalar value.
+
 `union.argument_value`
 
 A scalar or structured argument value.
 
-- `union.argument_value.i32`: Value of a 32-bit one's complement signed integer.
-- `union.argument_value.f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number.
+- `union.argument_value.i32`: Value of a 32-bit one's complement signed integer. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.i32`.
+- `union.argument_value.f32`: Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
 - `union.argument_value.ndarray`: An ND-array to be bound.
 - `union.argument_value.texture`: A texture to be bound.
+- `union.argument_value.scalar`: An scalar to be bound.
 
 `structure.argument`
 

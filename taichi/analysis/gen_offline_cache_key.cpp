@@ -53,10 +53,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   using IRVisitor::visit;
 
  public:
-  explicit ASTSerializer(std::ostream *os) : ExpressionVisitor(true), os_(os) {
-    // TODO(PGZXB): Set allow_undefined_visitor as false. (blocked by
-    // constant-folding)
-    this->allow_undefined_visitor = true;
+  explicit ASTSerializer(std::ostream *os) : ExpressionVisitor(false), os_(os) {
+    this->allow_undefined_visitor = false;
   }
 
   void set_ostream(std::ostream *os) {

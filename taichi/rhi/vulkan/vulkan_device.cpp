@@ -416,10 +416,10 @@ void VulkanPipeline::create_pipeline_layout() {
 }
 
 void VulkanPipeline::create_compute_pipeline(const Params &params) {
-  char msg_buf[512];
-  RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf), "Compiling Vulkan pipeline %s",
-                     params.name.data());
-  RHI_LOG_DEBUG(msg_buf);
+  std::array<char, 512> msg_buf;
+  RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
+                     "Compiling Vulkan pipeline %s", params.name.data());
+  RHI_LOG_DEBUG(msg_buf.data());
   pipeline_ = vkapi::create_compute_pipeline(device_, 0, shader_stages_[0],
                                              pipeline_layout_, params.cache);
 }
@@ -554,11 +554,12 @@ void VulkanPipeline::create_graphics_pipeline(
   if (raster_params.blending.size()) {
     if (raster_params.blending.size() != color_blending.attachmentCount) {
       std::array<char, 256> buf;
-      snprintf(buf.data(), buf.size(),
-               "RasterParams::blending (size=%u) must either be zero sized "
-               "or match the number of fragment shader outputs (size=%u).",
-               uint32_t(raster_params.blending.size()),
-               uint32_t(color_blending.attachmentCount));
+      RHI_DEBUG_SNPRINTF(
+          buf.data(), buf.size(),
+          "RasterParams::blending (size=%u) must either be zero sized "
+          "or match the number of fragment shader outputs (size=%u).",
+          uint32_t(raster_params.blending.size()),
+          uint32_t(color_blending.attachmentCount));
       RHI_LOG_ERROR(buf.data());
       RHI_ASSERT(false);
     }
@@ -931,17 +932,19 @@ RhiResult VulkanCommandList::bind_shader_resources(ShaderResourceSet *res,
     VulkanResourceSet &set_template = templates.at(set_index);
 
     for (const auto &template_binding : set_template.get_bindings()) {
-      char msg[512];
-      snprintf(msg, 512, "Template binding %d: (VkDescriptorType) %d",
-               template_binding.first, template_binding.second.type);
-      RHI_LOG_ERROR(msg);
+      std::array<char, 256> msg_buf;
+      RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
+                         "Template binding %d: (VkDescriptorType) %d",
+                         template_binding.first, template_binding.second.type);
+      RHI_LOG_ERROR(msg_buf.data());
     }
 
     for (const auto &binding : set->get_bindings()) {
-      char msg[512];
-      snprintf(msg, 512, "Binding %d: (VkDescriptorType) %d", binding.first,
-               binding.second.type);
-      RHI_LOG_ERROR(msg);
+      std::array<char, 256> msg_buf;
+      RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
+                         "Binding %d: (VkDescriptorType) %d", binding.first,
+                         binding.second.type);
+      RHI_LOG_ERROR(msg_buf.data());
     }
 
     return RhiResult::invalid_usage;
@@ -1612,7 +1615,6 @@ VulkanDevice::~VulkanDevice() {
   compute_streams_.reset();
   graphics_streams_.reset();
 
-  framebuffer_pools_.clear();
   renderpass_pools_.clear();
   desc_set_layouts_.clear();
   desc_pool_ = nullptr;
@@ -1826,10 +1828,11 @@ RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
         "wrapper)");
     return RhiResult::invalid_usage;
   } else if (res != VK_SUCCESS) {
-    char msg_buf[256];
-    snprintf(msg_buf, sizeof(msg_buf),
-             "failed to map memory for unknown reasons. VkResult = %d", res);
-    RHI_LOG_ERROR(msg_buf);
+    std::array<char, 256> msg_buf;
+    RHI_DEBUG_SNPRINTF(
+        msg_buf.data(), msg_buf.size(),
+        "failed to map memory for unknown reasons. VkResult = %d", res);
+    RHI_LOG_ERROR(msg_buf.data());
     return RhiResult::error;
   }
 
@@ -2021,23 +2024,12 @@ StreamSemaphore VulkanStream::submit(
   auto fence = vkapi::create_fence(buffer->device, 0);
 
   // Resource tracking, check previously submitted commands
-  // FIXME: Figure out why it doesn't work
-  /*
-  std::remove_if(submitted_cmdbuffers_.begin(), submitted_cmdbuffers_.end(),
-                 [&](const TrackedCmdbuf &tracked) {
-                   // If fence is signaled, cmdbuf has completed
-                   VkResult res =
-                       vkGetFenceStatus(buffer->device, tracked.fence->fence);
-                   return res == VK_SUCCESS;
-    });
-  */
-
   submitted_cmdbuffers_.push_back(TrackedCmdbuf{fence, buffer});
 
   BAIL_ON_VK_BAD_RESULT_NO_RETURN(
       vkQueueSubmit(queue_, /*submitCount=*/1, &submit_info,
                     /*fence=*/fence->fence),
-      "failed to submit command buffer");
+      "Vulkan device might be lost (vkQueueSubmit failed)");
 
   return std::make_shared<VulkanStreamSemaphoreObject>(semaphore);
 }
@@ -2052,9 +2044,6 @@ StreamSemaphore VulkanStream::submit_synced(
 
 void VulkanStream::command_sync() {
   vkQueueWaitIdle(queue_);
-
-  VkPhysicalDeviceProperties props{};
-  vkGetPhysicalDeviceProperties(device_.vk_physical_device(), &props);
 
   device_.profiler_sync();
 
@@ -2130,14 +2119,12 @@ VulkanDevice::get_vk_image(const DeviceAllocation &alloc) const {
 
 vkapi::IVkFramebuffer VulkanDevice::get_framebuffer(
     const VulkanFramebufferDesc &desc) {
-  if (framebuffer_pools_.find(desc) != framebuffer_pools_.end()) {
-    return framebuffer_pools_.at(desc);
-  }
-
+  // We won't pool framebuffer and resuse it, as doing so requires hashing the
+  // referenced IVkImageView objects, which might destruct unless we hold strong
+  // references. Thus doing so is way too ugly, and Vulkan is moving towards
+  // dynamic rendering anyways.
   vkapi::IVkFramebuffer framebuffer = vkapi::create_framebuffer(
       0, desc.renderpass, desc.attachments, desc.width, desc.height, 1);
-
-  framebuffer_pools_.insert({desc, framebuffer});
 
   return framebuffer;
 }
@@ -2608,32 +2595,11 @@ VkPresentModeKHR choose_swap_present_mode(
 
 VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     : config_(config), device_(device) {
-#ifdef ANDROID
-  window_ = (ANativeWindow *)config.window_handle;
-#else
-  window_ = (GLFWwindow *)config.window_handle;
-#endif
-  if (window_) {
-    if (config.native_surface_handle) {
-      surface_ = (VkSurfaceKHR)config.native_surface_handle;
-    } else {
-#ifdef ANDROID
-      VkAndroidSurfaceCreateInfoKHR createInfo{
-          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-          .pNext = nullptr,
-          .flags = 0,
-          .window = window_};
+  width_ = config.width;
+  height_ = config.height;
 
-      vkCreateAndroidSurfaceKHR(device->vk_instance(), &createInfo, nullptr,
-                                &surface_);
-#else
-      glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-      BAIL_ON_VK_BAD_RESULT_NO_RETURN(
-          glfwCreateWindowSurface(device->vk_instance(), window_, nullptr,
-                                  &surface_),
-          "Failed to create window surface ({})");
-#endif
-    }
+  if (config.native_surface_handle) {
+    surface_ = (VkSurfaceKHR)config.native_surface_handle;
 
     create_swap_chain();
 
@@ -2649,8 +2615,6 @@ VulkanSurface::VulkanSurface(VulkanDevice *device, const SurfaceConfig &config)
     // screenshot_image_ = device->create_image(params);
     swapchain_images_.push_back(device->create_image(params));
     swapchain_images_.push_back(device->create_image(params));
-    width_ = config.width;
-    height_ = config.height;
   }
 }
 
@@ -2703,15 +2667,7 @@ void VulkanSurface::create_swap_chain() {
   VkPresentModeKHR present_mode =
       choose_swap_present_mode(present_modes, config_.vsync, config_.adaptive);
 
-  int width, height;
-#ifdef ANDROID
-  width = ANativeWindow_getWidth(window_);
-  height = ANativeWindow_getHeight(window_);
-#else
-  glfwGetFramebufferSize(window_, &width, &height);
-#endif
-
-  VkExtent2D extent = {uint32_t(width), uint32_t(height)};
+  VkExtent2D extent = {uint32_t(width_), uint32_t(height_)};
   extent.width =
       std::max(capabilities.minImageExtent.width,
                std::min(capabilities.maxImageExtent.width, extent.width));
@@ -2719,10 +2675,11 @@ void VulkanSurface::create_swap_chain() {
       std::max(capabilities.minImageExtent.height,
                std::min(capabilities.maxImageExtent.height, extent.height));
   {
-    char msg_buf[512];
-    RHI_DEBUG_SNPRINTF(msg_buf, sizeof(msg_buf), "Creating suface of %u x %u",
-                       extent.width, extent.height);
-    RHI_LOG_DEBUG(msg_buf);
+    std::array<char, 512> msg_buf;
+    RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
+                       "Creating suface of %u x %u", extent.width,
+                       extent.height);
+    RHI_LOG_DEBUG(msg_buf.data());
   }
   VkImageUsageFlags usage =
       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -2770,7 +2727,7 @@ void VulkanSurface::create_swap_chain() {
   for (VkImage img : swapchain_images) {
     vkapi::IVkImage image = vkapi::create_image(
         device_->vk_device(), img, surface_format.format, VK_IMAGE_TYPE_2D,
-        VkExtent3D{uint32_t(width), uint32_t(height), 1}, 1u, 1u, usage);
+        VkExtent3D{uint32_t(width_), uint32_t(height_), 1}, 1u, 1u, usage);
 
     VkImageViewCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -2805,10 +2762,9 @@ int VulkanSurface::get_image_count() {
 }
 
 VulkanSurface::~VulkanSurface() {
-  if (config_.window_handle) {
+  if (config_.native_surface_handle) {
     destroy_swap_chain();
     image_available_ = nullptr;
-    vkDestroySurfaceKHR(device_->vk_instance(), surface_, nullptr);
   } else {
     for (auto &img : swapchain_images_) {
       device_->destroy_image(img);
@@ -2819,6 +2775,8 @@ VulkanSurface::~VulkanSurface() {
 
 void VulkanSurface::resize(uint32_t width, uint32_t height) {
   destroy_swap_chain();
+  this->width_ = width;
+  this->height_ = height;
   create_swap_chain();
 }
 
@@ -2827,7 +2785,7 @@ std::pair<uint32_t, uint32_t> VulkanSurface::get_size() {
 }
 
 StreamSemaphore VulkanSurface::acquire_next_image() {
-  if (!config_.window_handle) {
+  if (!config_.native_surface_handle) {
     image_index_ = (image_index_ + 1) % uint32_t(swapchain_images_.size());
     return nullptr;
   } else {
@@ -2910,38 +2868,12 @@ DeviceAllocation VulkanSurface::get_image_data() {
   auto [w, h] = get_size();
   size_t size_bytes = size_t(w * h) * sizeof(uint8_t) * 4;
 
-  /*
-  if (screenshot_image_ == kDeviceNullAllocation) {
-    ImageParams params = {ImageDimension::d2D,
-                          BufferFormat::rgba8,
-                          ImageLayout::transfer_dst,
-                          w,
-                          h,
-                          1,
-                          false};
-    screenshot_image_ = device_->create_image(params);
-  }
-  */
-
   if (!screenshot_buffer_) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
     screenshot_buffer_ = device_->allocate_memory_unique(params);
   }
-
-  /*
-  if (config_.window_handle) {
-    // TODO: check if blit is supported, and use copy_image if not
-    cmd_list = stream->new_command_list();
-    cmd_list->blit_image(screenshot_image_, img_alloc,
-                         ImageLayout::transfer_dst, ImageLayout::transfer_src,
-                         {w, h, 1});
-    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_dst,
-                               ImageLayout::transfer_src);
-    stream->submit_synced(cmd_list.get());
-  }
-  */
 
   BufferImageCopyParams copy_params;
   copy_params.image_extent.x = w;
@@ -2956,12 +2888,6 @@ DeviceAllocation VulkanSurface::get_image_data() {
                             ImageLayout::transfer_src, copy_params);
   cmd_list->image_transition(img_alloc, ImageLayout::transfer_src,
                              ImageLayout::present_src);
-  /*
-  if (config_.window_handle) {
-    cmd_list->image_transition(screenshot_image_, ImageLayout::transfer_src,
-                               ImageLayout::transfer_dst);
-  }
-  */
   stream->submit_synced(cmd_list.get());
 
   return *screenshot_buffer_;

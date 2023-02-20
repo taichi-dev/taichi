@@ -2,6 +2,10 @@
 #include "taichi/program/program.h"
 #include "taichi/common/filesystem.hpp"
 
+// FIXME: (penguinliong) Special offer for `run_codegen`. Find a new home for it
+// in the future.
+#include "taichi/codegen/spirv/spirv_codegen.h"
+
 #include <chrono>
 #include <array>
 #include <iostream>

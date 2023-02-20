@@ -14,7 +14,9 @@ class MetalRuntime : public GfxRuntime {
   taichi::lang::gfx::GfxRuntime gfx_runtime_;
 
  public:
-  explicit MetalRuntime(taichi::Arch arch);
+  explicit MetalRuntime();
+  explicit MetalRuntime(
+      std::unique_ptr<taichi::lang::metal::MetalDevice> &&mtl_device);
 
   taichi::lang::Device &get() override;
   taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override;

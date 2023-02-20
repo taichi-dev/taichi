@@ -76,7 +76,11 @@ template <typename... Args>
 inline int execute(std::string fmt, Args &&...args) {
   auto cmd = fmt::format(fmt, std::forward<Args>(args)...);
   TI_TRACE("Executing command: {}", cmd);
+#ifdef TI_WITH_CC
   int ret = std::system(cmd.c_str());
+#else
+  int ret = 1;
+#endif  // TI_WITH_CC
   TI_TRACE("Command exit status: {}", ret);
   return ret;
 }

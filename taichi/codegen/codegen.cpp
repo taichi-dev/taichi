@@ -97,19 +97,26 @@ void KernelCodeGen::cache_kernel(const std::string &kernel_key,
 }
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
-  std::string kernel_key =
-      get_hashed_offline_cache_key(compile_config_, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
-  if (compile_config_.offline_cache && this->supports_offline_cache() &&
-      !kernel->is_evaluator) {
-    auto res = maybe_read_compilation_from_cache(kernel_key);
-    if (res) {
+  // NOTE: The code below (codegen + offline cache) is a little confusing. But
+  // don't worry, the KernelCompilationManager to be introduced to unify the
+  // implementation of the offline cache will resolve the problem.
+
+  bool enable_offline_cache = compile_config_.offline_cache &&
+                              this->supports_offline_cache() &&
+                              !kernel->is_evaluator;
+
+  // Generate offline cache key & Try loading kernel from offline cache
+  if (enable_offline_cache) {
+    std::string key = get_hashed_offline_cache_key(compile_config_, {}, kernel);
+    kernel->set_kernel_key_for_cache(key);
+    if (auto res = maybe_read_compilation_from_cache(key)) {
       TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               kernel_key);
-      cache_kernel(kernel_key, *res);
+               key);
       return std::move(*res);
     }
   }
+
+  // Compile & Cache it
 
   irpass::ast_to_ir(compile_config_, *kernel, false);
 
@@ -139,10 +146,13 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   }
   auto linked = tlctx_.link_compiled_tasks(std::move(data));
 
-  if (!kernel->is_evaluator) {
-    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), kernel_key);
-    cache_kernel(kernel_key, linked);
+  if (enable_offline_cache) {
+    const auto &key = kernel->get_cached_kernel_key();
+    TI_ASSERT(!key.empty());
+    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), key);
+    cache_kernel(key, linked);
   }
+
   return linked;
 }
 

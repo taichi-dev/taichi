@@ -7,12 +7,6 @@
 
 #include "vk_mem_alloc.h"
 
-#ifdef ANDROID
-#include <android/native_window_jni.h>
-#else
-#include <GLFW/glfw3.h>
-#endif
-
 #include <memory>
 #include <optional>
 #include <list>
@@ -57,14 +51,13 @@ struct VulkanRenderPassDesc {
 
 struct RenderPassDescHasher {
   std::size_t operator()(const VulkanRenderPassDesc &desc) const {
-    // TODO: Come up with a better hash
-    size_t hash = 0;
+    size_t hash = std::hash<uint64_t>()((uint64_t(desc.depth_attachment) << 1) |
+                                        uint64_t(desc.clear_depth));
     for (auto &pair : desc.color_attachments) {
-      hash ^= (size_t(pair.first) + pair.second);
-      hash = (hash << 3) || (hash >> 61);
+      size_t hash_pair = std::hash<uint64_t>()((uint64_t(pair.first) << 1) |
+                                               uint64_t(pair.second));
+      rhi_impl::hash_combine(hash, hash_pair);
     }
-    hash ^= (size_t(desc.depth_attachment) + desc.clear_depth);
-    hash = (hash << 3) || (hash >> 61);
     return hash;
   }
 };
@@ -78,20 +71,6 @@ struct VulkanFramebufferDesc {
   bool operator==(const VulkanFramebufferDesc &other) const {
     return width == other.width && height == other.height &&
            renderpass == other.renderpass && attachments == other.attachments;
-  }
-};
-
-struct FramebufferDescHasher {
-  std::size_t operator()(const VulkanFramebufferDesc &desc) const {
-    size_t hash = 0;
-    for (auto &view : desc.attachments) {
-      hash ^= size_t(view->view);
-      hash = (hash << 3) || (hash >> 61);
-    }
-    hash ^= desc.width;
-    hash ^= desc.height;
-    hash ^= size_t(desc.renderpass->renderpass);
-    return hash;
   }
 };
 
@@ -524,11 +503,6 @@ class VulkanSurface : public Surface {
   VkSurfaceKHR surface_{VK_NULL_HANDLE};
   VkSwapchainKHR swapchain_{VK_NULL_HANDLE};
   vkapi::IVkSemaphore image_available_{nullptr};
-#ifdef ANDROID
-  ANativeWindow *window_{nullptr};
-#else
-  GLFWwindow *window_{nullptr};
-#endif
   BufferFormat image_format_{BufferFormat::unknown};
 
   uint32_t image_index_{0};
@@ -819,10 +793,6 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                 vkapi::IVkRenderPass,
                 RenderPassDescHasher>
       renderpass_pools_;
-  unordered_map<VulkanFramebufferDesc,
-                vkapi::IVkFramebuffer,
-                FramebufferDescHasher>
-      framebuffer_pools_;
 
   // Descriptors / Layouts / Pools
   unordered_map<VulkanResourceSet,

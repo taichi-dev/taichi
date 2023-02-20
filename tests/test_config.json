@@ -183,8 +183,16 @@
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
         "--arch=cuda"
     ],
+    "CapiTest.AotTestCudaSharedArray": [
+        ["cpp", "aot", "python_scripts", "shared_array_aot_test.py"],
+        "--arch=cuda"
+    ],
     "CapiTest.AotTestVulkanKernel": [
         ["cpp", "aot", "python_scripts", "kernel_aot_test1.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.AotTestVulkanSharedArray": [
+        ["cpp", "aot", "python_scripts", "shared_array_aot_test.py"],
         "--arch=vulkan"
     ],
     "CapiTest.AotTestOpenglKernel": [
@@ -217,6 +225,14 @@
     ],
     "CapiTest.TestBehaviorGetCgraphVulkan": [
         ["cpp", "aot", "python_scripts", "graph_aot_test.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.Float16Fill": [
+        ["cpp", "aot", "python_scripts", "numerical_aot_test.py"],
+        "--arch=vulkan"
+    ],
+    "CapiTest.Float16Compute": [
+        ["cpp", "aot", "python_scripts", "numerical_aot_test.py"],
         "--arch=vulkan"
     ]
 }

@@ -71,6 +71,27 @@ void AppContext::init(Program *prog,
   prog_ = prog;
   this->config = config;
 
+  auto make_vk_surface = [window](VkInstance instance) -> VkSurfaceKHR {
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+#ifdef ANDROID
+    VkAndroidSurfaceCreateInfoKHR createInfo{
+        .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .window = window};
+
+    vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
+#else
+    VkResult result = VK_SUCCESS;
+    if ((result = glfwCreateWindowSurface(instance, window, nullptr,
+                                          &surface)) != VK_SUCCESS) {
+      TI_WARN("Failed to create window: error {}", result);
+      return nullptr;
+    }
+#endif
+    return surface;
+  };
+
   // Create a Vulkan device if the original configuration is not for Vulkan or
   // there is no active current program (usage from external library for AOT
   // modules for example).
@@ -80,31 +101,18 @@ void AppContext::init(Program *prog,
         get_required_instance_extensions();
     evd_params.additional_device_extensions = get_required_device_extensions();
     evd_params.is_for_ui = config.show_window;
-    evd_params.surface_creator = [&](VkInstance instance) -> VkSurfaceKHR {
-      VkSurfaceKHR surface = VK_NULL_HANDLE;
-#ifdef ANDROID
-      VkAndroidSurfaceCreateInfoKHR createInfo{
-          .sType = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-          .pNext = nullptr,
-          .flags = 0,
-          .window = window};
-
-      vkCreateAndroidSurfaceKHR(instance, &createInfo, nullptr, &surface);
-#else
-      VkResult result = VK_SUCCESS;
-      if ((result = glfwCreateWindowSurface(instance, window, nullptr,
-                                            &surface)) != VK_SUCCESS) {
-        TI_WARN("Failed to create window: error {}", result);
-        return nullptr;
-      }
-#endif
-      return surface;
-    };
+    evd_params.surface_creator = make_vk_surface;
     embedded_vulkan_device_ =
         std::make_unique<taichi::lang::vulkan::VulkanDeviceCreator>(evd_params);
+    vulkan_device_ = embedded_vulkan_device_->device();
   } else {
     vulkan_device_ = static_cast<taichi::lang::vulkan::VulkanDevice *>(
         prog->get_graphics_device());
+  }
+
+  if (config.show_window) {
+    TI_ASSERT(window);
+    native_surface_ = make_vk_surface(vulkan_device_->vk_instance());
   }
 }
 
@@ -123,6 +131,12 @@ const taichi::lang::vulkan::VulkanDevice &AppContext::device() const {
 }
 
 AppContext::~AppContext() {
+  if (native_surface_ != VK_NULL_HANDLE) {
+    // If `embedded_vulkan_device_` then surface is provided by device creator
+    // Otherwise we need to manage it
+    vkDestroySurfaceKHR(vulkan_device_->vk_instance(), native_surface_,
+                        nullptr);
+  }
 }
 
 bool AppContext::requires_export_sharing() const {

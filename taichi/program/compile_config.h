@@ -63,6 +63,7 @@ struct CompileConfig {
   bool print_kernel_llvm_ir;
   bool print_kernel_llvm_ir_optimized;
   bool print_kernel_nvptx;
+  bool print_kernel_amdgcn;
 
   // CUDA/AMDGPU backend options:
   float64 device_memory_GB;

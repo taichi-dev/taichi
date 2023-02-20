@@ -57,7 +57,8 @@ bool arch_is_gpu(Arch arch) {
 }
 
 bool arch_uses_spirv(Arch arch) {
-  return arch == Arch::opengl || arch == Arch::vulkan || arch == Arch::dx11;
+  return arch == Arch::opengl || arch == Arch::gles || arch == Arch::vulkan ||
+         arch == Arch::dx11 || arch == Arch::metal;
 }
 
 Arch host_arch() {

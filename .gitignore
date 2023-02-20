@@ -91,3 +91,4 @@ imgui.ini
 .do-not-clean
 *.dylib
 *.ply
+.clangd/

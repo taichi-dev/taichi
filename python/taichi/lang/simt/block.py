@@ -10,7 +10,7 @@ def arch_uses_spv(arch):
 
 def sync():
     arch = impl.get_runtime().prog.config().arch
-    if arch == _ti_core.cuda:
+    if arch == _ti_core.cuda or arch == _ti_core.amdgpu:
         return impl.call_internal("block_barrier", with_runtime_context=False)
     if arch_uses_spv(arch):
         return impl.call_internal("workgroupBarrier",

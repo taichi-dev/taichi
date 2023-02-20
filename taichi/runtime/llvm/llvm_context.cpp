@@ -539,6 +539,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       function_pass_manager.doFinalization();
       patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
       patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+      patch_intrinsic("block_barrier", llvm::Intrinsic::amdgcn_s_barrier, false);
 
       link_module_with_amdgpu_libdevice(module);
       patch_amdgpu_kernel_dim(

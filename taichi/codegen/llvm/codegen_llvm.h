@@ -86,7 +86,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *get_struct_arg(std::vector<int> index);
 
-  llvm::Value *get_args_ptr();
+  llvm::Value *get_args_ptr(Callable *callable, llvm::Value *context);
 
   llvm::Value *get_context();
 
@@ -143,7 +143,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Value *create_print(std::string tag, llvm::Value *value);
 
-  void create_return(const std::vector<Stmt *> &elements);
+  void set_struct_to_buffer(const StructType *struct_type,
+                            llvm::Value *buffer,
+                            const std::vector<Stmt *> &elements);
 
   llvm::Value *cast_pointer(llvm::Value *val,
                             std::string dest_ty_name,
@@ -409,12 +411,12 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   ~TaskCodeGenLLVM() override = default;
 
  private:
-  void create_return(llvm::Value *buffer,
-                     llvm::Type *buffer_type,
-                     const std::vector<Stmt *> &elements,
-                     const Type *current_type,
-                     int &current_element,
-                     std::vector<llvm::Value *> &current_index);
+  void set_struct_to_buffer(llvm::Value *buffer,
+                            llvm::Type *buffer_type,
+                            const std::vector<Stmt *> &elements,
+                            const Type *current_type,
+                            int &current_element,
+                            std::vector<llvm::Value *> &current_index);
 
   virtual std::tuple<llvm::Value *, llvm::Value *> get_spmd_info() = 0;
 };

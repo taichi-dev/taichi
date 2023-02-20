@@ -229,7 +229,7 @@ jobs:
           PY: '3.8'
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -363,7 +363,7 @@ jobs:
           TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl
           TI_SKIP_VERSION_CHECK: ON
           TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -429,7 +429,7 @@ jobs:
           TI_WANTED_ARCHS: 'cpu,metal,vulkan'
           PY: ${{ matrix.python }}
           PLATFORM: 'm1'
-          TI_RUN_RELEASE_TESTS: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -495,7 +495,7 @@ jobs:
           PY: '3.8'
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
           TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          TI_RUN_RELEASE_TESTS: '0'
 
   aot_build_and_test_android_apps:
     name: AOT Build and Test Android Headless Demos

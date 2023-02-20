@@ -1283,7 +1283,8 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
   } else {
     TI_ASSERT(stmt->values.size() ==
               current_callable->ret_type->get_num_elements());
-    create_return(stmt->values);
+    auto *buffer = call("RuntimeContext_get_result_buffer", get_context());
+    set_struct_to_buffer(current_callable->ret_type, buffer, stmt->values);
   }
   builder->CreateBr(final_block);
   returned = true;
@@ -2696,12 +2697,8 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   llvm::Function *llvm_func = func_map[stmt->func];
   auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
-  for (int i = 0; i < stmt->args.size(); i++) {
-    auto *val =
-        bitcast_to_u64(llvm_val[stmt->args[i]], stmt->args[i]->ret_type);
-    call("RuntimeContext_set_args", new_ctx,
-         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
-  }
+  auto *buffer = get_args_ptr(stmt->func, new_ctx);
+  set_struct_to_buffer(stmt->func->args_type, buffer, stmt->args);
   llvm::Value *result_buffer = nullptr;
   if (stmt->ret_type) {
     auto *ret_type = tlctx->get_data_type(stmt->ret_type);
@@ -2729,12 +2726,13 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
-                                    llvm::Type *buffer_type,
-                                    const std::vector<Stmt *> &elements,
-                                    const Type *current_type,
-                                    int &current_element,
-                                    std::vector<llvm::Value *> &current_index) {
+void TaskCodeGenLLVM::set_struct_to_buffer(
+    llvm::Value *buffer,
+    llvm::Type *buffer_type,
+    const std::vector<Stmt *> &elements,
+    const Type *current_type,
+    int &current_element,
+    std::vector<llvm::Value *> &current_index) {
   if (auto primitive_type = current_type->cast<PrimitiveType>()) {
     TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
     auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
@@ -2744,8 +2742,8 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     int i = 0;
     for (const auto &element : struct_type->elements()) {
       current_index.push_back(tlctx->get_constant(i++));
-      create_return(buffer, buffer_type, elements, element.type,
-                    current_element, current_index);
+      set_struct_to_buffer(buffer, buffer_type, elements, element.type,
+                           current_element, current_index);
       current_index.pop_back();
     }
   } else {
@@ -2754,27 +2752,28 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     Type *element_type = tensor_type->get_element_type();
     for (int i = 0; i < num_elements; i++) {
       current_index.push_back(tlctx->get_constant(i));
-      create_return(buffer, buffer_type, elements, element_type,
-                    current_element, current_index);
+      set_struct_to_buffer(buffer, buffer_type, elements, element_type,
+                           current_element, current_index);
       current_index.pop_back();
     }
   }
 }
 
-void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
-  auto buffer = call("RuntimeContext_get_result_buffer", get_context());
-  auto ret_type = current_callable->ret_type;
-  auto buffer_type = tlctx->get_data_type(ret_type);
+void TaskCodeGenLLVM::set_struct_to_buffer(
+    const StructType *struct_type,
+    llvm::Value *buffer,
+    const std::vector<Stmt *> &elements) {
+  auto buffer_type = tlctx->get_data_type(struct_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));
   int current_element = 0;
   std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
-  create_return(buffer, buffer_type, elements, ret_type, current_element,
-                current_index);
+  set_struct_to_buffer(buffer, buffer_type, elements, struct_type,
+                       current_element, current_index);
 }
 
 llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
-  auto *args_ptr = get_args_ptr();
+  auto *args_ptr = get_args_ptr(current_callable, get_context());
   auto *args_type = current_callable->args_type;
   auto *arg_type = args_type->get_element_type(index);
   std::vector<llvm::Value *> gep_index;
@@ -2787,10 +2786,10 @@ llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
   return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
 }
 
-llvm::Value *TaskCodeGenLLVM::get_args_ptr() {
-  auto *context = get_context();
+llvm::Value *TaskCodeGenLLVM::get_args_ptr(Callable *callable,
+                                           llvm::Value *context) {
   auto *runtime_context_type = get_runtime_type("RuntimeContext");
-  auto *args_type = tlctx->get_data_type(current_callable->args_type);
+  auto *args_type = tlctx->get_data_type(callable->args_type);
   auto *zero = tlctx->get_constant(0);
   auto *args_ptr =
       builder->CreateGEP(runtime_context_type, context, {zero, zero});

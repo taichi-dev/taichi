@@ -122,6 +122,41 @@ void texture_aot_kernel_test(TiArch arch) {
   }
 }
 
+static void shared_array_aot_test(TiArch arch) {
+  uint32_t kArrLen = 8192;
+
+  const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+  std::stringstream aot_mod_ss;
+  aot_mod_ss << folder_dir;
+
+  ti::Runtime runtime(arch);
+
+  ti::NdArray<float> v_array =
+      runtime.allocate_ndarray<float>({kArrLen}, {}, true);
+  ti::NdArray<float> d_array =
+      runtime.allocate_ndarray<float>({kArrLen}, {}, true);
+  ti::NdArray<float> a_array =
+      runtime.allocate_ndarray<float>({kArrLen}, {}, true);
+  ti::AotModule aot_mod = runtime.load_aot_module(aot_mod_ss.str().c_str());
+  ti::Kernel k_run = aot_mod.get_kernel("run");
+
+  k_run.push_arg(v_array);
+  k_run.push_arg(d_array);
+  k_run.push_arg(a_array);
+  k_run.launch();
+  runtime.wait();
+
+  // Check Results
+  float *data = reinterpret_cast<float *>(a_array.map());
+
+  for (int i = 0; i < kArrLen; ++i) {
+    EXPECT_EQ(data[i], kArrLen);
+  }
+
+  a_array.unmap();
+}
+
 TEST_F(CapiTest, AotTestCpuField) {
   TiArch arch = TiArch::TI_ARCH_X64;
   field_aot_test(arch);
@@ -164,5 +199,19 @@ TEST_F(CapiTest, GraphTestVulkanTextureKernel) {
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
     texture_aot_kernel_test(arch);
+  }
+}
+
+TEST_F(CapiTest, AotTestCudaSharedArray) {
+  if (ti::is_arch_available(TI_ARCH_CUDA)) {
+    TiArch arch = TiArch::TI_ARCH_CUDA;
+    shared_array_aot_test(arch);
+  }
+}
+
+TEST_F(CapiTest, AotTestVulkanSharedArray) {
+  if (ti::is_arch_available(TI_ARCH_VULKAN)) {
+    TiArch arch = TiArch::TI_ARCH_VULKAN;
+    shared_array_aot_test(arch);
   }
 }

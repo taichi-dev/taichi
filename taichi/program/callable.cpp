@@ -52,11 +52,9 @@ void Callable::finalize_rets() {
 }
 
 void Callable::finalize_params() {
-  TI_INFO("finalize_params");
   if (parameter_list.empty()) {
     return;
   }
-  TI_INFO("inside finalize_params");
   std::vector<StructMember> members;
   members.reserve(parameter_list.size());
   for (int i = 0; i < parameter_list.size(); i++) {

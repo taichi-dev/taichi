@@ -90,8 +90,6 @@ struct RuntimeContext {
   void set_struct_arg(std::vector<int> index, T v) {
     int offset = args_type->get_element_offset(index);
     memcpy(host_arg_buffer + offset, &v, sizeof(T));
-    TI_INFO("set {} {} {}, got {}", (uint64)host_arg_buffer, offset, v,
-            *(T *)(host_arg_buffer + offset));
   }
 
   template <typename T>

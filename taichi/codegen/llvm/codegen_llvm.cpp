@@ -2799,7 +2799,6 @@ llvm::Value *TaskCodeGenLLVM::get_args_ptr() {
       llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
   args_ptr =
       builder->CreateLoad(llvm::PointerType::get(args_type, 0), args_ptr);
-  args_ptr->getType()->dump();
   return args_ptr;
 };
 

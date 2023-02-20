@@ -7,7 +7,6 @@
 
 namespace taichi {
 namespace lang {
-
 #if defined(TI_WITH_AMDGPU)
 JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
                                          int max_reg) {
@@ -47,7 +46,24 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   auto triple_str = llvm_module->getTargetTriple();
   std::string error_str;
   auto target = llvm::TargetRegistry::lookupTarget(triple_str, error_str);
+
   llvm::TargetOptions options;
+  options.MCOptions.AsmVerbose = false;
+  if (this->config_.fast_math) {
+    options.AllowFPOpFusion = FPOpFusion::Fast;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
+  options.HonorSignDependentRoundingFPMathOption = 0;
+  options.NoZerosInBSS = 0;
+  options.GuaranteedTailCallOpt = 0;
+
   std::unique_ptr<llvm::TargetMachine> machine(target->createTargetMachine(
       triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
       llvm::Reloc::PIC_, llvm::CodeModel::Small, llvm::CodeGenOpt::Aggressive));

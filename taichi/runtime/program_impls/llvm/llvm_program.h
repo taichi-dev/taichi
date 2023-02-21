@@ -103,9 +103,10 @@ class LlvmProgramImpl : public ProgramImpl {
    */
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr) override {
-    runtime_exec_->materialize_runtime(memory_pool, profiler,
-                                       result_buffer_ptr);
+                           uint64 *&result_buffer_ptr,
+                           char *&device_arg_buffer_ptr) override {
+    runtime_exec_->materialize_runtime(memory_pool, profiler, result_buffer_ptr,
+                                       device_arg_buffer_ptr);
   }
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {

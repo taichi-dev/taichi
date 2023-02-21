@@ -85,8 +85,9 @@ FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
 
 void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                             KernelProfilerBase *profiler,
-                                            uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+                                            uint64 *&result_buffer_ptr,
+                                            char *&device_arg_buffer_ptr) {
+  result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
 // Android is meant to be embedded in other application only so the creation of
@@ -151,7 +152,7 @@ void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
 
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = *result_buffer_ptr;
+  params.host_result_buffer = result_buffer_ptr;
   params.device = embedded_device_->device();
   params.profiler = profiler;
   vulkan_runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));

@@ -36,14 +36,15 @@ FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
 
 void Dx11ProgramImpl::materialize_runtime(MemoryPool *memory_pool,
                                           KernelProfilerBase *profiler,
-                                          uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+                                          uint64 *&result_buffer_ptr,
+                                          char *&device_arg_buffer_ptr) {
+  result_buffer_ptr = (uint64 *)memory_pool->allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
   device_ = directx11::make_dx11_device();
 
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = *result_buffer_ptr;
+  params.host_result_buffer = result_buffer_ptr;
   params.device = device_.get();
   runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
   snode_tree_mgr_ = std::make_unique<gfx::SNodeTreeManager>(runtime_.get());

@@ -120,6 +120,7 @@ class Runtime {
  protected:
   // 32 is a magic number in `taichi/inc/constants.h`.
   std::array<uint64_t, 32> host_result_buffer_;
+  char *device_args_buffer{nullptr};
 
   explicit Runtime(taichi::Arch arch);
 

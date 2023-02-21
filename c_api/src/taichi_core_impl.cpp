@@ -956,7 +956,7 @@ void ti_launch_compute_graph(TiRuntime runtime,
       }
     }
   }
-  ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map);
+  ((taichi::lang::aot::CompiledGraph *)compute_graph)->run(arg_map, nullptr);
   TI_CAPI_TRY_CATCH_END();
 }
 

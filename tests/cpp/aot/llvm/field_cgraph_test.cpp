@@ -22,7 +22,8 @@ namespace taichi::lang {
 
 void run_graph_tests(aot::Module *mod,
                      LlvmRuntimeExecutor *exec,
-                     uint64 *result_buffer) {
+                     uint64 *result_buffer,
+                     char *device_args_buffer) {
   // Initialize SNodeTree
   aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
   allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
@@ -37,7 +38,7 @@ void run_graph_tests(aot::Module *mod,
   args.insert({"base0", taichi::lang::aot::IValue::create(base0)});
   args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
 
-  run_graph->run(args);
+  run_graph->run(args, device_args_buffer);
 
   // Check assertion error from ti.kernel
   exec->check_runtime_error(result_buffer);
@@ -54,7 +55,9 @@ TEST(LlvmCGraph, CpuField) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  char *device_args_buffer{nullptr};
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, result_buffer,
+                           device_args_buffer);
 
   cpu::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -65,7 +68,7 @@ TEST(LlvmCGraph, CpuField) {
   aot_params.executor_ = &exec;
   std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
 
-  run_graph_tests(mod.get(), &exec, result_buffer);
+  run_graph_tests(mod.get(), &exec, result_buffer, device_args_buffer);
 }
 
 TEST(LlvmCGraph, CudaField) {
@@ -79,7 +82,9 @@ TEST(LlvmCGraph, CudaField) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    char *device_args_buffer{nullptr};
+    exec.materialize_runtime(nullptr, kNoProfiler, result_buffer,
+                             device_args_buffer);
 
     cuda::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -90,7 +95,7 @@ TEST(LlvmCGraph, CudaField) {
     aot_params.executor_ = &exec;
     auto mod = cuda::make_aot_module(aot_params);
 
-    run_graph_tests(mod.get(), &exec, result_buffer);
+    run_graph_tests(mod.get(), &exec, result_buffer, device_args_buffer);
   }
 #endif
 }

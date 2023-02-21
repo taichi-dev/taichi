@@ -40,7 +40,7 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
   // thus we won't be able to modify the address where the std::array's data
   // pointer is pointing to.
   executor_->materialize_runtime(memory_pool_.get(), nullptr /*kNoProfiler*/,
-                                 &result_buffer);
+                                 result_buffer, device_args_buffer);
 }
 
 void LlvmRuntime::check_runtime_error() {

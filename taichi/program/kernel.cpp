@@ -84,6 +84,7 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
+      host_arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
       ctx_(owned_ctx_.get()) {
 }
 

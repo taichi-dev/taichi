@@ -13,6 +13,8 @@ struct DeviceAllocation;
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
 struct RuntimeContext {
+  char *device_arg_buffer;
+  char *host_arg_buffer;
   enum class DevAllocType : int8_t {
     kNone = 0,
     kNdarray = 1,

@@ -42,7 +42,8 @@ class LlvmRuntimeExecutor {
    */
   void materialize_runtime(MemoryPool *memory_pool,
                            KernelProfilerBase *profiler,
-                           uint64 **result_buffer_ptr);
+                           uint64 *&result_buffer_ptr,
+                           char *&device_arg_buffer_ptr);
 
   // SNodeTree Allocation
   void initialize_llvm_runtime_snodes(

@@ -34,7 +34,8 @@ TEST(LlvmCGraph, Mpm88Cpu) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer,
+                           <#initializer #>);
 
   /* AOTLoader */
   cpu::AotModuleParams aot_params;
@@ -70,7 +71,7 @@ TEST(LlvmCGraph, Mpm88Cpu) {
   args.insert({"v", taichi::lang::aot::IValue::create(v)});
   args.insert({"J", taichi::lang::aot::IValue::create(J)});
 
-  g_init->run(args);
+  g_init->run(args, nullptr);
   exec.synchronize();
 
   // Prepare & Run "update" Graph
@@ -104,7 +105,7 @@ TEST(LlvmCGraph, Mpm88Cpu) {
   args.insert({"grid_m", taichi::lang::aot::IValue::create(grid_m)});
   args.insert({"pos", taichi::lang::aot::IValue::create(pos)});
 
-  g_update->run(args);
+  g_update->run(args, nullptr);
   exec.synchronize();
 }
 
@@ -117,7 +118,8 @@ TEST(LlvmCGraph, Mpm88Cuda) {
     constexpr KernelProfilerBase *kNoProfiler = nullptr;
     LlvmRuntimeExecutor exec{cfg, kNoProfiler};
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer,
+                             <#initializer #>);
 
     /* AOTLoader */
     cuda::AotModuleParams aot_params;
@@ -153,7 +155,7 @@ TEST(LlvmCGraph, Mpm88Cuda) {
     args.insert({"v", taichi::lang::aot::IValue::create(v)});
     args.insert({"J", taichi::lang::aot::IValue::create(J)});
 
-    g_init->run(args);
+    g_init->run(args, nullptr);
     exec.synchronize();
 
     // Prepare & Run "update" Graph
@@ -188,7 +190,7 @@ TEST(LlvmCGraph, Mpm88Cuda) {
     args.insert({"grid_m", taichi::lang::aot::IValue::create(grid_m)});
     args.insert({"pos", taichi::lang::aot::IValue::create(pos)});
 
-    g_update->run(args);
+    g_update->run(args, nullptr);
     exec.synchronize();
   }
 #endif

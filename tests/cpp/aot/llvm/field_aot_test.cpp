@@ -22,7 +22,8 @@ namespace taichi::lang {
 
 static void run_field_tests(aot::Module *mod,
                             LlvmRuntimeExecutor *exec,
-                            uint64 *result_buffer) {
+                            uint64 *result_buffer,
+                            char *device_args_buffer) {
   aot::Kernel *k_init_fields = mod->get_kernel("init_fields");
   aot::Kernel *k_check_init_x = mod->get_kernel("check_init_x");
   aot::Kernel *k_check_init_y = mod->get_kernel("check_init_y");
@@ -47,6 +48,7 @@ static void run_field_tests(aot::Module *mod,
   {
     RuntimeContext ctx;
     ctx.runtime = exec->get_llvm_runtime();
+    ctx.device_arg_buffer = device_args_buffer;
     ctx.set_arg(0, base_value);
     k_init_fields->launch(&ctx);
   }
@@ -55,6 +57,7 @@ static void run_field_tests(aot::Module *mod,
   {
     RuntimeContext ctx;
     ctx.runtime = exec->get_llvm_runtime();
+    ctx.device_arg_buffer = device_args_buffer;
     ctx.set_arg(0, base_value);
     k_check_init_x->launch(&ctx);
   }
@@ -108,7 +111,9 @@ TEST(LlvmAotTest, CpuField) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  char *device_args_buffer{nullptr};
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, result_buffer,
+                           device_args_buffer);
 
   cpu::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -119,7 +124,7 @@ TEST(LlvmAotTest, CpuField) {
   aot_params.executor_ = &exec;
   std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
 
-  run_field_tests(mod.get(), &exec, result_buffer);
+  run_field_tests(mod.get(), &exec, result_buffer, device_args_buffer);
 }
 
 TEST(LlvmAotTest, CudaField) {
@@ -133,7 +138,9 @@ TEST(LlvmAotTest, CudaField) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    char *device_args_buffer{nullptr};
+    exec.materialize_runtime(nullptr, kNoProfiler, result_buffer,
+                             device_args_buffer);
 
     cuda::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
@@ -144,7 +151,7 @@ TEST(LlvmAotTest, CudaField) {
     aot_params.executor_ = &exec;
     auto mod = cuda::make_aot_module(aot_params);
 
-    run_field_tests(mod.get(), &exec, result_buffer);
+    run_field_tests(mod.get(), &exec, result_buffer, device_args_buffer);
   }
 #endif
 }

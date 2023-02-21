@@ -297,7 +297,7 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
 
   // Prepare & Run "init" Graph
   auto graph = module->get_graph("run_graph");
-  graph->run(args);
+  graph->run(args, nullptr);
   gfx_runtime->synchronize();
 
   int dst[size] = {0};
@@ -366,7 +366,7 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
   auto arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
   args.insert({"arr", aot::IValue::create(arr)});
   args.insert({"x", aot::IValue::create<int>(2)});
-  graph->run(args);
+  graph->run(args, nullptr);
   gfx_runtime->synchronize();
 
   int dst[size] = {1};
@@ -468,7 +468,7 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   args.insert({"v", taichi::lang::aot::IValue::create(v)});
   args.insert({"J", taichi::lang::aot::IValue::create(J)});
 
-  g_init->run(args);
+  g_init->run(args, nullptr);
   gfx_runtime->synchronize();
 
   args.insert({"C", taichi::lang::aot::IValue::create(C)});
@@ -478,7 +478,7 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
 
   // Run update graph once. In real application this runs as long as window is
   // alive.
-  g_update->run(args);
+  g_update->run(args, nullptr);
   gfx_runtime->synchronize();
 
   device_->dealloc_memory(devalloc_x);

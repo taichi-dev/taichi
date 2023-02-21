@@ -31,7 +31,9 @@ TEST(LlvmCGraph, RunGraphCpu) {
   // Must have handled all the arch fallback logic by this point.
   auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  char *device_args_buffer{nullptr};
+  exec.materialize_runtime(memory_pool.get(), kNoProfiler, result_buffer,
+                           device_args_buffer);
 
   /* AOTLoader */
   cpu::AotModuleParams aot_params;
@@ -72,7 +74,7 @@ TEST(LlvmCGraph, RunGraphCpu) {
   args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
   args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
 
-  run_graph->run(args);
+  run_graph->run(args, device_args_buffer);
   exec.synchronize();
 
   auto *data_0 = reinterpret_cast<int32_t *>(
@@ -98,7 +100,9 @@ TEST(LlvmCGraph, RunGraphCuda) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    char *device_args_buffer{nullptr};
+    exec.materialize_runtime(nullptr, kNoProfiler, result_buffer,
+                             device_args_buffer);
 
     /* AOTLoader */
     cuda::AotModuleParams aot_params;
@@ -138,7 +142,7 @@ TEST(LlvmCGraph, RunGraphCuda) {
     args.insert({"base1", taichi::lang::aot::IValue::create(base1)});
     args.insert({"base2", taichi::lang::aot::IValue::create(base2)});
 
-    run_graph->run(args);
+    run_graph->run(args, device_args_buffer);
     exec.synchronize();
 
     std::vector<int32_t> cpu_data(ArrLength);

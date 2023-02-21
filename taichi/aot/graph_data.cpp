@@ -9,10 +9,11 @@
 namespace taichi::lang {
 namespace aot {
 
-void CompiledGraph::run(
-    const std::unordered_map<std::string, IValue> &args) const {
+void CompiledGraph::run(const std::unordered_map<std::string, IValue> &args,
+                        char *device_args_buffer) const {
   for (const auto &dispatch : dispatches) {
     RuntimeContext ctx = ctx_;
+    ctx.device_arg_buffer = device_args_buffer;
     TI_ASSERT(dispatch.compiled_kernel);
     init_runtime_context(dispatch.symbolic_args, args, ctx);
     // Run cgraph loaded from AOT module

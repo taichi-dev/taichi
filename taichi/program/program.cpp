@@ -199,7 +199,7 @@ FunctionType Program::compile(const CompileConfig &compile_config,
 
 void Program::materialize_runtime() {
   program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                     &result_buffer);
+                                     result_buffer, device_arg_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {

@@ -571,7 +571,8 @@ void LlvmRuntimeExecutor::finalize() {
 
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                               KernelProfilerBase *profiler,
-                                              uint64 **result_buffer_ptr) {
+                                              uint64 *&result_buffer_ptr,
+                                              char *&device_arg_buffer_ptr) {
   std::size_t prealloc_size = 0;
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -597,11 +598,18 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
                                       prealloc_size);
-    *result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
+
+    result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
     size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
     preallocated_device_buffer_ =
         (char *)preallocated_device_buffer_ + result_buffer_size;
     prealloc_size -= result_buffer_size;
+
+    device_arg_buffer_ptr = (char *)preallocated_device_buffer_;
+    size_t device_arg_buffer_size = taichi_max_arg_size;
+    preallocated_device_buffer_ =
+        (char *)preallocated_device_buffer_ + device_arg_buffer_size;
+    prealloc_size -= device_arg_buffer_size;
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -629,16 +637,21 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,
                                         prealloc_size);
-    *result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
+    result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
     size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
     preallocated_device_buffer_ =
         (char *)preallocated_device_buffer_ + result_buffer_size;
     prealloc_size -= result_buffer_size;
+    device_arg_buffer_ptr = (char *)preallocated_device_buffer_;
+    size_t device_arg_buffer_size = taichi_max_arg_size;
+    preallocated_device_buffer_ =
+        (char *)preallocated_device_buffer_ + device_arg_buffer_size;
+    prealloc_size -= device_arg_buffer_size;
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+    result_buffer_ptr = (uint64 *)memory_pool->allocate(
         sizeof(uint64) * taichi_result_buffer_entries, 8);
   }
   auto *const runtime_jit = get_runtime_jit_module();
@@ -667,14 +680,14 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
   runtime_jit
       ->call<void *, void *, std::size_t, void *, int, void *, void *, void *>(
-          "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
+          "runtime_initialize", result_buffer_ptr, memory_pool, prealloc_size,
           preallocated_device_buffer_, num_rand_states,
           (void *)&taichi_allocate_aligned, (void *)std::printf,
           (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");
   llvm_runtime_ = fetch_result<void *>(taichi_result_buffer_ret_value_id,
-                                       *result_buffer_ptr);
+                                       result_buffer_ptr);
   TI_TRACE("LLVMRuntime pointer fetched");
 
   if (config_.arch == Arch::cuda) {
@@ -691,7 +704,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   if (arch_use_host_memory(config_.arch)) {
     runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime_);
     auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
-                                              *result_buffer_ptr);
+                                              result_buffer_ptr);
     memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
   }
 

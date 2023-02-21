@@ -44,7 +44,8 @@ class ProgramImpl {
    */
   virtual void materialize_runtime(MemoryPool *memory_pool,
                                    KernelProfilerBase *profiler,
-                                   uint64 **result_buffer_ptr) = 0;
+                                   uint64 *&result_buffer_ptr,
+                                   char *&device_arg_buffer_ptr) = 0;
 
   /**
    * JIT compiles @param tree to backend-specific data types.

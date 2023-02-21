@@ -94,6 +94,8 @@ class TI_DLL_EXPORT Program {
   using Kernel = taichi::lang::Kernel;
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
+  char *device_arg_buffer{
+      nullptr};  // Only used by CUDA backend and AMDGPU backend
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 

@@ -161,7 +161,8 @@ struct TI_DLL_EXPORT CompiledGraph {
   std::unordered_map<std::string, aot::Arg> args;
   RuntimeContext ctx_;
 
-  void run(const std::unordered_map<std::string, IValue> &args) const;
+  void run(const std::unordered_map<std::string, IValue> &args,
+           char *device_args_buffer = nullptr) const;
   void jit_run(const CompileConfig &compile_config,
                const std::unordered_map<std::string, IValue> &args) const;
 

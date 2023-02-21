@@ -125,6 +125,9 @@ jobs:
     env:
       PY: ${{ matrix.python }}
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0'
@@ -186,6 +189,9 @@ jobs:
 
     runs-on: ${{ matrix.tags }}
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -253,6 +259,9 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, amdgpu]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -388,6 +397,9 @@ jobs:
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     runs-on: [self-hosted, m1]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           fetch-depth: '0'
@@ -453,6 +465,9 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -511,6 +526,9 @@ jobs:
       REDIS_HOST: 172.16.5.8
       PY: '3.9'
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         name: Checkout taichi
         with:
@@ -589,6 +607,9 @@ jobs:
       REDIS_HOST: 172.16.5.8
       PY: '3.9'
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         name: Checkout taichi
         with:
@@ -666,6 +687,9 @@ jobs:
       REDIS_HOST: 172.16.5.8
       PY: '3.9'
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         name: Checkout taichi
         with:
@@ -755,6 +779,9 @@ jobs:
 
     runs-on: ${{ matrix.tags }}
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'

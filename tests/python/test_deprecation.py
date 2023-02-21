@@ -95,7 +95,7 @@ def test_deprecate_texture_channel_format_num_channels():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The fmt argument is only required for RW textures since v1.5.0, you can remove it safely.'
+            'The channel_format and num_channels arguments are only required for RW textures since v1.5.0, you can remove them safely.'
     ):
         ti.graph.Arg(ti.graph.ArgKind.TEXTURE,
                      'x',

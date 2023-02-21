@@ -574,6 +574,8 @@ class ASTTransformer(Builder):
             if node.returns is not None:
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
+            impl.get_runtime().compiling_callable.finalize_rets()
+
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -618,6 +620,7 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
                             ctx.func.arguments[i].annotation))
+            impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []
 

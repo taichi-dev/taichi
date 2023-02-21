@@ -1,6 +1,5 @@
 import sys
 
-import taichi.types as types
 from taichi._funcs import *
 from taichi._lib import core as _ti_core
 from taichi._lib.utils import warn_restricted_version

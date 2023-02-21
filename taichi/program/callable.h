@@ -80,6 +80,10 @@ class TI_DLL_EXPORT Callable {
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;
+  size_t ret_size;
+
+  const StructType *args_type = nullptr;
+  size_t args_size{0};
 
   Callable();
   virtual ~Callable();
@@ -94,6 +98,8 @@ class TI_DLL_EXPORT Callable {
   int insert_ret(const DataType &dt);
 
   void finalize_rets();
+
+  void finalize_params();
 
   [[nodiscard]] virtual std::string get_name() const = 0;
 };

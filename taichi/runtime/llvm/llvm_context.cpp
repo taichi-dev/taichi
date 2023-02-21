@@ -1064,28 +1064,31 @@ std::string TaichiLLVMContext::get_data_layout_string() {
   return get_data_layout().getStringRepresentation();
 }
 
-const StructType *TaichiLLVMContext::get_struct_type_with_data_layout(
-    const StructType *old_ty,
-    const std::string &layout) {
+std::pair<const StructType *, size_t>
+TaichiLLVMContext::get_struct_type_with_data_layout(const StructType *old_ty,
+                                                    const std::string &layout) {
+  auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
+  auto data_layout = llvm::DataLayout::parse(layout);
+  TI_ASSERT(data_layout);
+  size_t struct_size = data_layout->getTypeAllocSize(llvm_struct_type);
   if (old_ty->get_layout() == layout) {
-    return old_ty;
+    return {old_ty, struct_size};
   }
   std::vector<StructMember> elements = old_ty->elements();
   for (auto &element : elements) {
     if (auto struct_type = element.type->cast<StructType>()) {
-      element.type = get_struct_type_with_data_layout(struct_type, layout);
+      element.type =
+          get_struct_type_with_data_layout(struct_type, layout).first;
     }
   }
-  auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
-  auto data_layout = llvm::DataLayout::parse(layout);
-  TI_ASSERT(data_layout);
   auto struct_layout = data_layout->getStructLayout(llvm_struct_type);
   for (int i = 0; i < elements.size(); i++) {
     elements[i].offset = struct_layout->getElementOffset(i);
   }
-  return TypeFactory::get_instance()
-      .get_struct_type(elements, layout)
-      ->cast<StructType>();
+  return {TypeFactory::get_instance()
+              .get_struct_type(elements, layout)
+              ->cast<StructType>(),
+          struct_size};
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

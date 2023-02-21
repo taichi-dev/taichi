@@ -43,6 +43,28 @@ void Callable::finalize_rets() {
   auto *type =
       TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
   std::string layout = program->get_kernel_return_data_layout();
-  ret_type = program->get_struct_type_with_data_layout(type, layout);
+  std::tie(ret_type, ret_size) =
+      program->get_struct_type_with_data_layout(type, layout);
+}
+
+void Callable::finalize_params() {
+  if (parameter_list.empty()) {
+    return;
+  }
+  std::vector<StructMember> members;
+  members.reserve(parameter_list.size());
+  for (int i = 0; i < parameter_list.size(); i++) {
+    auto &param = parameter_list[i];
+    members.push_back(
+        {param.is_array
+             ? TypeFactory::get_instance().get_pointer_type(param.get_dtype())
+             : (const Type *)param.get_dtype(),
+         fmt::format("arg_{}", i)});
+  }
+  auto *type =
+      TypeFactory::get_instance().get_struct_type(members)->as<StructType>();
+  std::string layout = program->get_kernel_argument_data_layout();
+  std::tie(args_type, args_size) =
+      program->get_struct_type_with_data_layout(type, layout);
 }
 }  // namespace taichi::lang

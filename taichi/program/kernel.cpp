@@ -342,6 +342,9 @@ void Kernel::init(Program &program,
   }
 
   func();
+
+  finalize_params();
+  finalize_rets();
 }
 
 TypedConstant Kernel::fetch_ret(const std::vector<int> &index) {

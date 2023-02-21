@@ -308,7 +308,7 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_kernel_argument_data_layout();
   };
 
-  const StructType *get_struct_type_with_data_layout(
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
       const std::string &layout) {
     return program_impl_->get_struct_type_with_data_layout(old_ty, layout);

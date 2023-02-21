@@ -1,3 +1,4 @@
+from typing import Any, Dict, List
 import warnings
 from typing import Any
 
@@ -99,7 +100,7 @@ class Graph:
                                      flattened)
 
 
-def _deprecate_arg_args(kwargs: dict[str, Any]):
+def _deprecate_arg_args(kwargs: Dict[str, Any]):
     if "field_dim" in kwargs:
         warnings.warn(
             "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
@@ -148,8 +149,7 @@ def _deprecate_arg_args(kwargs: dict[str, Any]):
             del kwargs["channel_format"]
             del kwargs["num_channels"]
 
-
-def _check_args(kwargs: dict[str, Any], allowed_kwargs: list[str]):
+def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):
     for k, v in kwargs.items():
         if k not in allowed_kwargs:
             raise TaichiRuntimeError(
@@ -164,8 +164,7 @@ def _check_args(kwargs: dict[str, Any], allowed_kwargs: list[str]):
                 raise TaichiRuntimeError(
                     f'name must be a string, but found {type(v)}.')
 
-
-def _make_arg_scalar(kwargs: dict[str, Any]):
+def _make_arg_scalar(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
         "name",
@@ -180,8 +179,7 @@ def _make_arg_scalar(kwargs: dict[str, Any]):
         )
     return _ti_core.Arg(ArgKind.SCALAR, name, dtype, 0, [])
 
-
-def _make_arg_ndarray(kwargs: dict[str, Any]):
+def _make_arg_ndarray(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
         "name",
@@ -200,8 +198,7 @@ def _make_arg_ndarray(kwargs: dict[str, Any]):
         )
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
 
-
-def _make_arg_matrix(kwargs: dict[str, Any]):
+def _make_arg_matrix(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
         "name",
@@ -225,8 +222,7 @@ def _make_arg_matrix(kwargs: dict[str, Any]):
         arg_list.append(arg_sublist)
     return arg_list
 
-
-def _make_arg_texture(kwargs: dict[str, Any]):
+def _make_arg_texture(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
         "name",
@@ -237,8 +233,7 @@ def _make_arg_texture(kwargs: dict[str, Any]):
     ndim = kwargs["ndim"]
     return _ti_core.Arg(ArgKind.TEXTURE, name, impl.f32, 4, [2] * ndim)
 
-
-def _make_arg_rwtexture(kwargs: dict[str, Any]):
+def _make_arg_rwtexture(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
         "name",
@@ -258,7 +253,7 @@ def _make_arg_rwtexture(kwargs: dict[str, Any]):
                         [2] * ndim)
 
 
-def _make_arg(kwargs: dict[str, Any]):
+def _make_arg(kwargs: Dict[str, Any]):
     assert "tag" in kwargs
     _deprecate_arg_args(kwargs)
     proc = {

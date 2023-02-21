@@ -123,7 +123,7 @@ def test_deprecate_texture_ndim():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The shape argument for texture will be deprecated in v1.5.0, use ndim instead. (Note that you no longer need the exact texture size.)'
+            r'The shape argument for texture will be deprecated in v1.5.0, use ndim instead. \(Note that you no longer need the exact texture size.\)'
     ):
         ti.graph.Arg(ti.graph.ArgKind.TEXTURE,
                      'x',
@@ -136,7 +136,7 @@ def test_deprecate_rwtexture_ndim():
     with pytest.warns(
             DeprecationWarning,
             match=
-            'The shape argument for texture will be deprecated in v1.5.0, use ndim instead. (Note that you no longer need the exact texture size.)'
+            r'The shape argument for texture will be deprecated in v1.5.0, use ndim instead. \(Note that you no longer need the exact texture size.\)'
     ):
         ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
                      'x',

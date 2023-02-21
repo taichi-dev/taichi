@@ -1,3 +1,4 @@
+import pytest
 import taichi as ti
 from tests import test_utils
 
@@ -376,3 +377,18 @@ def test_atomic_xor_expr_evaled():
     func()
 
     assert c[None] == 0
+
+
+@test_utils.test()
+def test_atomic_min_rvalue_as_frist_op():
+    @ti.kernel
+    def func():
+        y = ti.Vector([1, 2, 3])
+        z = ti.atomic_min([3, 2, 1], y)
+
+    with pytest.raises(ti.TaichiSyntaxError) as e:
+        func()
+
+    assert 'atomic_min' in str(e.value)
+    assert 'cannot use a non-writable target as the first operand of' in str(
+        e.value)

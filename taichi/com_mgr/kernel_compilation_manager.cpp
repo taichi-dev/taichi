@@ -27,8 +27,7 @@ const CompiledKernelData &KernelCompilationManager::load_or_compile(
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps,
     const Kernel &kernel_def) {
-  auto cache_mode = compile_config.offline_cache ? CacheData::MemAndDiskCache
-                                                 : CacheData::MemCache;
+  auto cache_mode = get_cache_mode(compile_config, kernel_def);
   const auto kernel_key = make_kernel_key(compile_config, caps, kernel_def);
   auto cached_kernel = try_load_cached_kernel(kernel_def, kernel_key,
                                               compile_config.arch, cache_mode);
@@ -123,8 +122,13 @@ std::string KernelCompilationManager::make_kernel_key(
     const Kernel &kernel_def) const {
   auto kernel_key = kernel_def.get_cached_kernel_key();
   if (kernel_key.empty()) {
-    kernel_key = get_hashed_offline_cache_key(compile_config, caps,
-                                              (Kernel *)&kernel_def);
+    if (!kernel_def.ir_is_ast()) {
+      kernel_key = kernel_def.get_name();
+    } else {  // The kernel key is generated from AST
+      kernel_key = get_hashed_offline_cache_key(compile_config, caps,
+                                                (Kernel *)&kernel_def);
+    }
+
     kernel_def.set_kernel_key_for_cache(kernel_key);
   }
   return kernel_key;
@@ -169,8 +173,7 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps,
     const Kernel &kernel_def) {
-  auto cache_mode = compile_config.offline_cache ? CacheData::MemAndDiskCache
-                                                 : CacheData::MemCache;
+  auto cache_mode = get_cache_mode(compile_config, kernel_def);
   TI_DEBUG_IF(cache_mode == CacheData::MemAndDiskCache,
               "Cache kernel '{}' (key='{}')", kernel_def.get_name(),
               kernel_key);
@@ -201,6 +204,14 @@ std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
     return ckd;
   }
   return nullptr;
+}
+
+CacheData::CacheMode KernelCompilationManager::get_cache_mode(
+    const CompileConfig &compile_config,
+    const Kernel &kernel_def) {
+  return compile_config.offline_cache && kernel_def.ir_is_ast()
+             ? CacheData::MemAndDiskCache
+             : CacheData::MemCache;
 }
 
 }  // namespace taichi::lang

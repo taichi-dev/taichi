@@ -93,6 +93,10 @@ class KernelCompilationManager final {
   std::unique_ptr<CompiledKernelData> load_ckd(const std::string &kernel_key,
                                                Arch arch);
 
+  static CacheData::CacheMode get_cache_mode(
+      const CompileConfig &compile_config,
+      const Kernel &kernel_def);
+
   Config config_;
   CachingKernels caching_kernels_;
   CacheData cached_data_;

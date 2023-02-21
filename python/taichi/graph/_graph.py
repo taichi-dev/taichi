@@ -108,6 +108,11 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
             raise TaichiRuntimeError(
                 "field_dim is deprecated, please do not specify field_dim and ndim at the same time."
             )
+        if "element_shape" in kwargs:
+            warnings.warn(
+                "The element_shape argument for scalar will be deprecated in v1.5.0. You can remove them safely.",
+                DeprecationWarning)
+            del kwargs["element_shape"]
         kwargs["ndim"] = kwargs["field_dim"]
         del kwargs["field_dim"]
     tag = kwargs["tag"]

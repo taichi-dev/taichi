@@ -64,6 +64,19 @@ def test_deprecate_field_dim_ndarray_annotation():
 
 
 @test_utils.test()
+def test_deprecate_element_shape_scalar():
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            'The element_shape argument for scalar will be deprecated in v1.5.0. You can remove them safely.'
+    ):
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.SCALAR,
+                             'x',
+                             dtype=ti.f32,
+                             element_shape=())
+
+
+@test_utils.test()
 def test_deprecate_field_dim_ndarray_arg():
     with pytest.warns(
             DeprecationWarning,

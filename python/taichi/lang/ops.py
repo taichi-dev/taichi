@@ -141,7 +141,8 @@ def writeback_binary(foo):
                 f'cannot augassign taichi class {type(b)} to scalar expr')
         if not (is_taichi_expr(a) and a.ptr.is_lvalue()):
             raise TaichiSyntaxError(
-                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\'')
+                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\''
+            )
         else:
             return imp_foo(a, b)
 

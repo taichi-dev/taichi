@@ -1330,7 +1330,6 @@ def atomic_min(x, y):
         >>>
         >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
-
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 

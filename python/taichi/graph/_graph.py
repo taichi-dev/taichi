@@ -174,7 +174,7 @@ def _make_arg_scalar(kwargs: Dict[str, Any]):
     _check_args(kwargs, allowed_kwargs)
     name = kwargs["name"]
     dtype = kwargs["dtype"]
-    if not isinstance(dtype, MatrixType):
+    if isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(
             f'Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.'
         )
@@ -194,7 +194,7 @@ def _make_arg_ndarray(kwargs: Dict[str, Any]):
     ndim = kwargs["ndim"]
     dtype = kwargs["dtype"]
     element_shape = kwargs["element_shape"]
-    if not isinstance(dtype, MatrixType):
+    if isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(
             f'Tag ArgKind.NDARRAY must specify a scalar type, but found {type(dtype)}.'
         )

@@ -76,24 +76,8 @@ class TypeCheck : public IRVisitor {
       stmt->accept(this);
   }
 
-  std::function<void(const std::string &)>
-  make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-    if (!verbose) {
-      return [](const std::string &) {};
-    }
-    return [ir, kernel_name](const std::string &pass) {
-      TI_INFO("[{}] {}:", kernel_name, pass);
-      std::cout << std::flush;
-      irpass::re_id(ir);
-      irpass::print(ir);
-      std::cout << std::flush;
-    };
-  }
-
   void visit(AtomicOpStmt *stmt) override {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
-    auto print = make_pass_printer(true, "", stmt->get_parent());
-    print("XXXXXX");
 
     stmt->ret_type = type_check_store(
         stmt, stmt->dest, stmt->val,

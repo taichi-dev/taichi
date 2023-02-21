@@ -290,6 +290,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           llvm_val[atomic_stmt->dest], half_type->getPointerTo());
 
       // Prepare value
+      /*
       std::cout << 11111 << std::endl;
       std::string type_str;
       llvm::raw_string_ostream rso(type_str);
@@ -331,8 +332,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
       llvm::Value *val_ptr =
           builder->CreateBitCast(half_val, half_type->getPointerTo());
-
-      call("half2_atomic_add", dest_half2_ptr, old_val_ptr, val_ptr);
+      */
+      call("half2_atomic_add", dest_half2_ptr, old_val_ptr, old_val_ptr);
       llvm_val[atomic_stmt] = builder->CreateLoad(
           old_val->getType()->getPointerElementType(), old_val);
       return;

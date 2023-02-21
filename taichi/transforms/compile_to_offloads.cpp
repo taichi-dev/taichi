@@ -306,14 +306,14 @@ void offload_to_executable(IRNode *ir,
   if (config.half2_vectorization) {
     irpass::vectorize_half2(ir);
 
-    irpass::die(ir);
-    print("Half2 vectorized die");
-
-    irpass::whole_kernel_cse(ir);
-    print("Half2 vectorized");
-
     irpass::type_check(ir, config);
-    print("Half2 vectorized type check");
+
+    irpass::full_simplify(
+        ir, config,
+        {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+
+    irpass::flag_access(ir);
+    print("Half2 vectorized");
   }
 
   // Final field registration correctness & type checking

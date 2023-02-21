@@ -752,12 +752,7 @@ void export_lang(py::module &m) {
              return expr->cast<FieldExpression>()->snode_grad_type ==
                     SNodeGradType::kPrimal;
            })
-      .def("is_lvalue",
-           [](Expr *expr) {
-             return expr->is<IdExpression>() || expr->is<IndexExpression>() ||
-                    (expr->is<ArgLoadExpression>() &&
-                     expr->cast<ArgLoadExpression>()->is_lvalue());
-           })
+      .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {

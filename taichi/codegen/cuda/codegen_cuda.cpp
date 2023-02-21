@@ -273,67 +273,42 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     auto dest_type = atomic_stmt->dest->ret_type.ptr_removed();
     auto val_type = atomic_stmt->val->ret_type;
     if (is_cuda_half2(dest_type) && is_cuda_half2(val_type)) {
-      // Define half struct type
-      // llvm::Type *half_type = llvm::StructType::get(*llvm_context, {
-      // llvm::Type::getInt16Ty(*tlctx->get_this_thread_context()) }, false);
-      llvm::Type *half_type =
-          llvm::StructType::getTypeByName(*llvm_context, "struct.__half");
-      llvm::Type *half_vec_type = llvm::ArrayType::get(half_type, 2);
-
       // Prepare old_val
-      llvm::Value *old_val = builder->CreateAlloca(half_vec_type);
-      llvm::Value *old_val_ptr =
-          builder->CreateBitCast(old_val, half_type->getPointerTo());
+      auto char_type = llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
+      auto half_type = llvm::Type::getHalfTy(*tlctx->get_this_thread_context());
+      auto ptr_type = llvm::PointerType::get(char_type, 0);
+
+      llvm::Value *old_val = builder->CreateAlloca(half_type);
+      llvm::Value *old_val_ptr = builder->CreateBitCast(old_val, ptr_type);
 
       // Bit cast
-      llvm::Value *dest_half2_ptr = builder->CreateBitCast(
-          llvm_val[atomic_stmt->dest], half_type->getPointerTo());
+      llvm::Value *dest_half2_ptr =
+          builder->CreateBitCast(llvm_val[atomic_stmt->dest], ptr_type);
 
       // Prepare value
-      /*
-      std::cout << 11111 << std::endl;
-      std::string type_str;
-      llvm::raw_string_ostream rso(type_str);
-      llvm_val[atomic_stmt->val]->print(rso);
-      std::cout << rso.str() << std::endl;
+      llvm::ArrayType *array_type = llvm::ArrayType::get(half_type, 2);
+      llvm::Value *value_ptr = builder->CreateAlloca(array_type);
 
-      auto val0_ptr = builder->CreateGEP(
-          llvm::ArrayType::get(llvm::Type::getHalfTy(*llvm_context), 2),
-          llvm_val[atomic_stmt->val], {tlctx->get_constant(0)});
-      std::cout << 11111 << std::endl;
-      auto val1_ptr = builder->CreateGEP(
-          llvm::ArrayType::get(llvm::Type::getHalfTy(*llvm_context), 2),
-          llvm_val[atomic_stmt->val], {tlctx->get_constant(1)});
-      std::cout << 11111 << std::endl;
-
-      llvm::Value *half_val = builder->CreateAlloca(half_vec_type);
-
-      auto half_val_0 =
-          builder->CreateGEP(half_vec_type, half_val,
+      // store from llvm_val[atomic_stmt->val] to value_ptr
+      llvm::Value *value_ptr0 =
+          builder->CreateGEP(array_type, value_ptr,
                              {tlctx->get_constant(0), tlctx->get_constant(0)});
-      auto half_val_1 =
-          builder->CreateGEP(half_vec_type, half_val,
+      llvm::Value *value_ptr1 =
+          builder->CreateGEP(array_type, value_ptr,
                              {tlctx->get_constant(0), tlctx->get_constant(1)});
 
-      std::cout << 11111 << std::endl;
-      builder->CreateStore(
-          builder->CreateBitCast(
-              builder->CreateLoad(val0_ptr->getType()->getPointerElementType(),
-                                  val0_ptr),
-              half_type),
-          half_val_0);
-      builder->CreateStore(
-          builder->CreateBitCast(
-              builder->CreateLoad(val1_ptr->getType()->getPointerElementType(),
-                                  val1_ptr),
-              half_type),
-          half_val_1);
-      std::cout << 11111 << std::endl;
+      llvm::Value *value0 =
+          builder->CreateExtractValue(llvm_val[atomic_stmt->val], {0});
+      llvm::Value *value1 =
+          builder->CreateExtractValue(llvm_val[atomic_stmt->val], {1});
 
-      llvm::Value *val_ptr =
-          builder->CreateBitCast(half_val, half_type->getPointerTo());
-      */
-      call("half2_atomic_add", dest_half2_ptr, old_val_ptr, old_val_ptr);
+      builder->CreateStore(value0, value_ptr0);
+      builder->CreateStore(value1, value_ptr1);
+
+      llvm::Value *value_half2_ptr =
+          builder->CreateBitCast(value_ptr, ptr_type);
+
+      call("half2_atomic_add", dest_half2_ptr, old_val_ptr, value_half2_ptr);
       llvm_val[atomic_stmt] = builder->CreateLoad(
           old_val->getType()->getPointerElementType(), old_val);
       return;

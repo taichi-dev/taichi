@@ -122,6 +122,9 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                 else:
                     kwargs["element_shape"] = ()
         else:
+            warnings.warn(
+                "The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.",
+                DeprecationWarning)
             if "dtype" not in kwargs:
                 dtype = kwargs["dtype"]
                 if isinstance(dtype, MatrixType):
@@ -130,23 +133,38 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                     )
 
     if tag == ArgKind.RWTEXTURE or tag == ArgKind.TEXTURE:
+        if "dtype" in kwargs:
+            warnings.warn(
+                "The dtype argument for texture will be deprecated in v1.5.0, use format instead.",
+                DeprecationWarning)
+            del kwargs["dtype"]
+
         if "shape" in kwargs:
             warnings.warn(
-                "The shape argument for texture will be deprecated in v1.5.0, use ndim instead. (Note that you no longer need the exact texture size)",
+                "The shape argument for texture will be deprecated in v1.5.0, use ndim instead. (Note that you no longer need the exact texture size.)",
                 DeprecationWarning)
             kwargs["ndim"] = len(kwargs["shape"])
-            del kwargs["ndim"]
+            del kwargs["shape"]
 
         if "channel_format" in kwargs or "num_channels" in kwargs:
             if "fmt" in kwargs:
                 raise TaichiRuntimeError(
                     "channel_format and num_channels are deprecated, please do not specify channel_format/num_channels and fmt at the same time."
                 )
-            fmt = TY_CH2FORMAT[(kwargs["channel_format"],
-                                kwargs["num_channels"])]
-            kwargs["fmt"] = fmt
-            del kwargs["channel_format"]
-            del kwargs["num_channels"]
+            if tag == ArgKind.RWTEXTURE:
+                fmt = TY_CH2FORMAT[(kwargs["channel_format"],
+                                    kwargs["num_channels"])]
+                kwargs["fmt"] = fmt
+                warnings.warn(
+                    "The channel_format and num_channels arguments for texture will be deprecated in v1.5.0, use fmt instead.",
+                    DeprecationWarning)
+            else:
+                warnings.warn(
+                    "The fmt argument is only required for RW textures since v1.5.0, you can remove it safely.")
+            if "channel_format" in kwargs:
+                del kwargs["channel_format"]
+            if "num_channels" in kwargs:
+                del kwargs["num_channels"]
 
 
 def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):

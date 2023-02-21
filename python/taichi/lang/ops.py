@@ -139,6 +139,9 @@ def writeback_binary(foo):
         if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
+        if not (is_taichi_expr(a) and a.ptr.is_lvalue()):
+            raise TaichiSyntaxError(
+                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\'')
         else:
             return imp_foo(a, b)
 
@@ -1326,6 +1329,7 @@ def atomic_min(x, y):
         >>>
         >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
+
     return impl.expr_init(
         expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 

@@ -1,9 +1,9 @@
-from typing import Any
 import warnings
+from typing import Any
 
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
-from taichi.lang import impl, kernel_impl, enums
+from taichi.lang import enums, impl, kernel_impl
 from taichi.lang._ndarray import Ndarray
 from taichi.lang._texture import Texture
 from taichi.lang.exception import TaichiRuntimeError
@@ -125,7 +125,9 @@ def _deprecate_arg_args(kwargs: dict[str, Any]):
             if "dtype" not in kwargs:
                 dtype = kwargs["dtype"]
                 if isinstance(dtype, MatrixType):
-                    raise TaichiRuntimeError("Please do not specify element_shape when dtype is a matrix type.")
+                    raise TaichiRuntimeError(
+                        "Please do not specify element_shape when dtype is a matrix type."
+                    )
 
     if tag == ArgKind.RWTEXTURE or tag == ArgKind.TEXTURE:
         if "shape" in kwargs:
@@ -140,10 +142,12 @@ def _deprecate_arg_args(kwargs: dict[str, Any]):
                 raise TaichiRuntimeError(
                     "channel_format and num_channels are deprecated, please do not specify channel_format/num_channels and fmt at the same time."
                 )
-            fmt = TY_CH2FORMAT[(kwargs["channel_format"], kwargs["num_channels"])]
+            fmt = TY_CH2FORMAT[(kwargs["channel_format"],
+                                kwargs["num_channels"])]
             kwargs["fmt"] = fmt
             del kwargs["channel_format"]
             del kwargs["num_channels"]
+
 
 def _check_args(kwargs: dict[str, Any], allowed_kwargs: list[str]):
     for k, v in kwargs.items():
@@ -160,6 +164,7 @@ def _check_args(kwargs: dict[str, Any], allowed_kwargs: list[str]):
                 raise TaichiRuntimeError(
                     f'name must be a string, but found {type(v)}.')
 
+
 def _make_arg_scalar(kwargs: dict[str, Any]):
     allowed_kwargs = [
         "tag",
@@ -171,8 +176,10 @@ def _make_arg_scalar(kwargs: dict[str, Any]):
     dtype = kwargs["dtype"]
     if not isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(
-            f'Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.')
+            f'Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.'
+        )
     return _ti_core.Arg(ArgKind.SCALAR, name, dtype, 0, [])
+
 
 def _make_arg_ndarray(kwargs: dict[str, Any]):
     allowed_kwargs = [
@@ -189,8 +196,10 @@ def _make_arg_ndarray(kwargs: dict[str, Any]):
     element_shape = kwargs["element_shape"]
     if not isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(
-            f'Tag ArgKind.NDARRAY must specify a scalar type, but found {type(dtype)}.')
+            f'Tag ArgKind.NDARRAY must specify a scalar type, but found {type(dtype)}.'
+        )
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
+
 
 def _make_arg_matrix(kwargs: dict[str, Any]):
     allowed_kwargs = [
@@ -210,10 +219,12 @@ def _make_arg_matrix(kwargs: dict[str, Any]):
         arg_sublist = []
         for _ in range(dtype.m):
             arg_sublist.append(
-                _ti_core.Arg(ArgKind.MATRIX, f'{name}_mat_arg_{i}', dtype.dtype, 0, []))
+                _ti_core.Arg(ArgKind.MATRIX, f'{name}_mat_arg_{i}',
+                             dtype.dtype, 0, []))
             i += 1
         arg_list.append(arg_sublist)
     return arg_list
+
 
 def _make_arg_texture(kwargs: dict[str, Any]):
     allowed_kwargs = [
@@ -225,6 +236,7 @@ def _make_arg_texture(kwargs: dict[str, Any]):
     name = kwargs["name"]
     ndim = kwargs["ndim"]
     return _ti_core.Arg(ArgKind.TEXTURE, name, impl.f32, 4, [2] * ndim)
+
 
 def _make_arg_rwtexture(kwargs: dict[str, Any]):
     allowed_kwargs = [
@@ -239,9 +251,12 @@ def _make_arg_rwtexture(kwargs: dict[str, Any]):
     fmt = kwargs["fmt"]
     if fmt == enums.Format.unknown:
         raise TaichiRuntimeError(
-            f'Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}.')
+            f'Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}.'
+        )
     channel_format, num_channels = FORMAT2TY_CH[fmt]
-    return _ti_core.Arg(ArgKind.RWTEXTURE, name, channel_format, num_channels, [2] * ndim)
+    return _ti_core.Arg(ArgKind.RWTEXTURE, name, channel_format, num_channels,
+                        [2] * ndim)
+
 
 def _make_arg(kwargs: dict[str, Any]):
     assert "tag" in kwargs
@@ -255,6 +270,7 @@ def _make_arg(kwargs: dict[str, Any]):
     }
     tag = kwargs["tag"]
     return proc[tag](kwargs)
+
 
 def _kwarg_rewriter(args, kwargs):
     for i, arg in enumerate(args):
@@ -273,6 +289,7 @@ def _kwarg_rewriter(args, kwargs):
             kwargs[rewrite_map[i]] = arg
         else:
             raise TaichiRuntimeError(f"Unexpected {i}th positional argument")
+
 
 def Arg(*args, **kwargs):
     _kwarg_rewriter(args, kwargs)

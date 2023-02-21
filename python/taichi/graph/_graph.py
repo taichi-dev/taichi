@@ -1,6 +1,5 @@
-from typing import Any, Dict, List
 import warnings
-from typing import Any
+from typing import Any, Dict, List
 
 from taichi._lib import core as _ti_core
 from taichi.aot.utils import produce_injected_args
@@ -149,6 +148,7 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
             del kwargs["channel_format"]
             del kwargs["num_channels"]
 
+
 def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):
     for k, v in kwargs.items():
         if k not in allowed_kwargs:
@@ -164,6 +164,7 @@ def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):
                 raise TaichiRuntimeError(
                     f'name must be a string, but found {type(v)}.')
 
+
 def _make_arg_scalar(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
@@ -178,6 +179,7 @@ def _make_arg_scalar(kwargs: Dict[str, Any]):
             f'Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.'
         )
     return _ti_core.Arg(ArgKind.SCALAR, name, dtype, 0, [])
+
 
 def _make_arg_ndarray(kwargs: Dict[str, Any]):
     allowed_kwargs = [
@@ -197,6 +199,7 @@ def _make_arg_ndarray(kwargs: Dict[str, Any]):
             f'Tag ArgKind.NDARRAY must specify a scalar type, but found {type(dtype)}.'
         )
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
+
 
 def _make_arg_matrix(kwargs: Dict[str, Any]):
     allowed_kwargs = [
@@ -222,6 +225,7 @@ def _make_arg_matrix(kwargs: Dict[str, Any]):
         arg_list.append(arg_sublist)
     return arg_list
 
+
 def _make_arg_texture(kwargs: Dict[str, Any]):
     allowed_kwargs = [
         "tag",
@@ -232,6 +236,7 @@ def _make_arg_texture(kwargs: Dict[str, Any]):
     name = kwargs["name"]
     ndim = kwargs["ndim"]
     return _ti_core.Arg(ArgKind.TEXTURE, name, impl.f32, 4, [2] * ndim)
+
 
 def _make_arg_rwtexture(kwargs: Dict[str, Any]):
     allowed_kwargs = [

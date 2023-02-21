@@ -162,8 +162,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getDoubleTy(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
-  } else if (dt->is<TensorType>()) {
-    auto tensor_type = dt->cast<TensorType>();
+  } else if (const auto *tensor_type = dt->cast<TensorType>()) {
     auto element_type = get_data_type(tensor_type->get_element_type());
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
@@ -173,13 +172,15 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
                                    /*scalable=*/false);
     }
     return llvm::ArrayType::get(element_type, num_elements);
-  } else if (dt->is<StructType>()) {
+  } else if (const auto *struct_type = dt->cast<StructType>()) {
     std::vector<llvm::Type *> types;
-    auto struct_type = dt->cast<StructType>();
     for (const auto &element : struct_type->elements()) {
       types.push_back(get_data_type(element.type));
     }
     return llvm::StructType::get(*ctx, types);
+  } else if (const auto *pointer_type = dt->cast<PointerType>()) {
+    return llvm::PointerType::get(
+        get_data_type(pointer_type->get_pointee_type()), 0);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;

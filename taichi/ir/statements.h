@@ -350,6 +350,7 @@ class ExternalPtrStmt : public Stmt {
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
+  bool overrided_dtype = false;
 
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 

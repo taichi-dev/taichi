@@ -303,6 +303,19 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
+  if (config.half2_vectorization) {
+    irpass::vectorize_half2(ir);
+
+    irpass::die(ir);
+    print("Half2 vectorized die");
+
+    irpass::whole_kernel_cse(ir);
+    print("Half2 vectorized");
+
+    irpass::type_check(ir, config);
+    print("Half2 vectorized type check");
+  }
+
   // Final field registration correctness & type checking
   irpass::type_check(ir, config);
   irpass::analysis::verify(ir);

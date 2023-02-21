@@ -198,6 +198,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
+      .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",

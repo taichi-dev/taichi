@@ -40,6 +40,7 @@ struct CompileConfig {
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
   bool real_matrix_scalarize;
+  bool half2_vectorization;
   DataType default_fp;
   DataType default_ip;
   DataType default_up;

@@ -26,6 +26,16 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
+static bool is_cuda_half2(DataType dt) {
+  if (dt->is<TensorType>()) {
+    auto tensor_type = dt->as<TensorType>();
+    return tensor_type->get_element_type() == PrimitiveType::f16 &&
+           tensor_type->get_num_elements() == 2;
+  }
+
+  return false;
+}
+
 class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
@@ -257,6 +267,78 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
               fast_reductions.at(prim_type).end());
     return call(fast_reductions.at(prim_type).at(op), llvm_val[stmt->dest],
                 llvm_val[stmt->val]);
+  }
+
+  void visit(AtomicOpStmt *atomic_stmt) override {
+    auto dest_type = atomic_stmt->dest->ret_type.ptr_removed();
+    auto val_type = atomic_stmt->val->ret_type;
+    if (is_cuda_half2(dest_type) && is_cuda_half2(val_type)) {
+      // Define half struct type
+      // llvm::Type *half_type = llvm::StructType::get(*llvm_context, {
+      // llvm::Type::getInt16Ty(*tlctx->get_this_thread_context()) }, false);
+      llvm::Type *half_type =
+          llvm::StructType::getTypeByName(*llvm_context, "struct.__half");
+      llvm::Type *half_vec_type = llvm::ArrayType::get(half_type, 2);
+
+      // Prepare old_val
+      llvm::Value *old_val = builder->CreateAlloca(half_vec_type);
+      llvm::Value *old_val_ptr =
+          builder->CreateBitCast(old_val, half_type->getPointerTo());
+
+      // Bit cast
+      llvm::Value *dest_half2_ptr = builder->CreateBitCast(
+          llvm_val[atomic_stmt->dest], half_type->getPointerTo());
+
+      // Prepare value
+      std::cout << 11111 << std::endl;
+      std::string type_str;
+      llvm::raw_string_ostream rso(type_str);
+      llvm_val[atomic_stmt->val]->print(rso);
+      std::cout << rso.str() << std::endl;
+
+      auto val0_ptr = builder->CreateGEP(
+          llvm::ArrayType::get(llvm::Type::getHalfTy(*llvm_context), 2),
+          llvm_val[atomic_stmt->val], {tlctx->get_constant(0)});
+      std::cout << 11111 << std::endl;
+      auto val1_ptr = builder->CreateGEP(
+          llvm::ArrayType::get(llvm::Type::getHalfTy(*llvm_context), 2),
+          llvm_val[atomic_stmt->val], {tlctx->get_constant(1)});
+      std::cout << 11111 << std::endl;
+
+      llvm::Value *half_val = builder->CreateAlloca(half_vec_type);
+
+      auto half_val_0 =
+          builder->CreateGEP(half_vec_type, half_val,
+                             {tlctx->get_constant(0), tlctx->get_constant(0)});
+      auto half_val_1 =
+          builder->CreateGEP(half_vec_type, half_val,
+                             {tlctx->get_constant(0), tlctx->get_constant(1)});
+
+      std::cout << 11111 << std::endl;
+      builder->CreateStore(
+          builder->CreateBitCast(
+              builder->CreateLoad(val0_ptr->getType()->getPointerElementType(),
+                                  val0_ptr),
+              half_type),
+          half_val_0);
+      builder->CreateStore(
+          builder->CreateBitCast(
+              builder->CreateLoad(val1_ptr->getType()->getPointerElementType(),
+                                  val1_ptr),
+              half_type),
+          half_val_1);
+      std::cout << 11111 << std::endl;
+
+      llvm::Value *val_ptr =
+          builder->CreateBitCast(half_val, half_type->getPointerTo());
+
+      call("half2_atomic_add", dest_half2_ptr, old_val_ptr, val_ptr);
+      llvm_val[atomic_stmt] = builder->CreateLoad(
+          old_val->getType()->getPointerElementType(), old_val);
+      return;
+    }
+
+    TaskCodeGenLLVM::visit(atomic_stmt);
   }
 
   void visit(RangeForStmt *for_stmt) override {

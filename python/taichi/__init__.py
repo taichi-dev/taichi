@@ -6,7 +6,7 @@ from taichi._lib.utils import warn_restricted_version
 from taichi._logging import *
 from taichi._snode import *
 from taichi.lang import *  # pylint: disable=W0622 # TODO(archibate): It's `taichi.lang.core` overriding `taichi.core`
-import taichi.types as types
+from taichi import types
 from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *

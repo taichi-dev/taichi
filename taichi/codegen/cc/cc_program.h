@@ -75,6 +75,11 @@ class CCProgramImpl : public ProgramImpl {
   CCContext *update_context(RuntimeContext *ctx);
   void context_to_result_buffer();
 
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
+    TI_NOT_IMPLEMENTED;
+  }
+
  private:
   void add_kernel(std::unique_ptr<CCKernel> kernel);
 

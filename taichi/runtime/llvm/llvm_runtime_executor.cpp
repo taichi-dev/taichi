@@ -575,9 +575,6 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   std::size_t prealloc_size = 0;
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().malloc(
-        (void **)result_buffer_ptr,
-        sizeof(uint64) * taichi_result_buffer_entries);
     const auto total_mem = CUDAContext::get_instance().get_total_memory();
     if (config_.device_memory_fraction == 0) {
       TI_ASSERT(config_.device_memory_GB > 0);
@@ -600,6 +597,11 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
                                       prealloc_size);
+    *result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
+    size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
+    preallocated_device_buffer_ =
+        (char *)preallocated_device_buffer_ + result_buffer_size;
+    prealloc_size -= result_buffer_size;
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -630,6 +632,11 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,
                                         prealloc_size);
+    *result_buffer_ptr = (uint64 *)preallocated_device_buffer_;
+    size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
+    preallocated_device_buffer_ =
+        (char *)preallocated_device_buffer_ + result_buffer_size;
+    prealloc_size -= result_buffer_size;
 #else
     TI_NOT_IMPLEMENTED
 #endif

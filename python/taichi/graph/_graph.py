@@ -108,14 +108,16 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
             raise TaichiRuntimeError(
                 "field_dim is deprecated, please do not specify field_dim and ndim at the same time."
             )
+        kwargs["ndim"] = kwargs["field_dim"]
+        del kwargs["field_dim"]
+    tag = kwargs["tag"]
+
+    if tag == ArgKind.SCALAR:
         if "element_shape" in kwargs:
             warnings.warn(
                 "The element_shape argument for scalar will be deprecated in v1.5.0. You can remove them safely.",
                 DeprecationWarning)
             del kwargs["element_shape"]
-        kwargs["ndim"] = kwargs["field_dim"]
-        del kwargs["field_dim"]
-    tag = kwargs["tag"]
 
     if tag == ArgKind.NDARRAY:
         if "element_shape" not in kwargs:
@@ -220,7 +222,7 @@ def _make_arg_ndarray(kwargs: Dict[str, Any]):
     element_shape = kwargs["element_shape"]
     if isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(
-            f'Tag ArgKind.NDARRAY must specify a scalar type, but found {type(dtype)}.'
+            f'Tag ArgKind.NDARRAY must specify a scalar type, but found {dtype}.'
         )
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
 

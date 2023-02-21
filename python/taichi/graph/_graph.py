@@ -160,7 +160,8 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                     DeprecationWarning)
             else:
                 warnings.warn(
-                    "The fmt argument is only required for RW textures since v1.5.0, you can remove it safely.")
+                    "The fmt argument is only required for RW textures since v1.5.0, you can remove it safely."
+                )
             if "channel_format" in kwargs:
                 del kwargs["channel_format"]
             if "num_channels" in kwargs:

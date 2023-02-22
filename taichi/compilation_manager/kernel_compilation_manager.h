@@ -12,7 +12,10 @@
 namespace taichi::lang {
 
 struct CacheData {
-  enum CacheMode { MemCache, MemAndDiskCache };
+  enum CacheMode {
+    MemCache,        // Cache the kernel in memory
+    MemAndDiskCache  // Cache the kernel in memory and disk
+  };
   using Version = std::uint16_t[3];
 
   struct KernelData {

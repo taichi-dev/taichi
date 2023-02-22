@@ -95,9 +95,9 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
 #include "taichi/rhi/amdgpu/amdgpu_driver_functions.inc.h"
 #undef PER_AMDGPU_FUNCTION
 
-  char (*get_error_name)(uint32);
+  char* (*get_error_name)(uint32);
 
-  char (*get_error_string)(uint32);
+  char* (*get_error_string)(uint32);
 
   void (*driver_get_version)(int *);
 

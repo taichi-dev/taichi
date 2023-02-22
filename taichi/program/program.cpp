@@ -502,7 +502,7 @@ int Program::allocate_snode_tree_id() {
 }
 
 void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->result_buffer = result_buffer;
+  ctx->result_buffer = (uint64 *)host_result_buffer.data();
   program_impl_->prepare_runtime_context(ctx);
 }
 

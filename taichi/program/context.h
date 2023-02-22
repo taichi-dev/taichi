@@ -48,6 +48,7 @@ struct RuntimeContext {
   // LLVMRuntime is shared among functions. So we moved the pointer to
   // RuntimeContext which each function have one.
   uint64 *result_buffer;
+  size_t result_buffer_size;
 
   static constexpr size_t extra_args_size = sizeof(extra_args);
 

@@ -94,6 +94,8 @@ class TI_DLL_EXPORT Program {
   using Kernel = taichi::lang::Kernel;
 
   uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
+  std::array<char, sizeof(uint64) * taichi_result_buffer_entries>
+      host_result_buffer;
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 
@@ -184,7 +186,7 @@ class TI_DLL_EXPORT Program {
   uint64 fetch_result_uint64(int i);
 
   TypedConstant fetch_result(int offset, const Type *dt) {
-    return program_impl_->fetch_result((char *)result_buffer, offset, dt);
+    return program_impl_->fetch_result(host_result_buffer.data(), offset, dt);
   }
 
   template <typename T>

@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])
 def test_shared_array_nested_loop():
     block_dim = 128
     nBlocks = 64

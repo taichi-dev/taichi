@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   gpu_backends:
@@ -48,10 +49,19 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
 
+          FREQ=($(sudo nvidia-smi --query-supported-clocks=mem,gr --format=csv | head -n 2 | tail -n 1))
+          sudo nvidia-smi -pm 1
+          sudo nvidia-smi -lmc ${FREQ[0]}
+          sudo nvidia-smi -lgc ${FREQ[2]}
+
           ci-docker-run-gpu --name taichi-benchmark-run \
             -e BENCHMARK_UPLOAD_TOKEN \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
+
+          sudo nvidia-smi -rmc
+          sudo nvidia-smi -rgc
+          sudo nvidia-smi -pm 0
         env:
           PY: '3.8'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}

@@ -80,7 +80,7 @@ class TI_DLL_EXPORT Callable {
   std::vector<Ret> rets;
 
   const StructType *ret_type = nullptr;
-  size_t ret_size;
+  size_t ret_size{0};
 
   const StructType *args_type = nullptr;
   size_t args_size{0};

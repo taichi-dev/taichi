@@ -53,10 +53,15 @@ fi
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     echo "Running cpp tests on platform:" "${PLATFORM}"
-    python3 tests/run_tests.py --cpp
-    if [[ $PLATFORM == *"m1"* ]]; then
-        echo "Running cpp tests with statically linked C-API library"
-        python3 tests/run_tests.py --cpp --use_static_c_api
+    # Temporary hack before CI Pipeline Overhaul
+    if [[ $PLATFORM == *"linux"* ]]; then
+        if nvidia-smi -L | grep "Tesla P4"; then
+            python3 tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
+        else
+            python3 tests/run_tests.py --cpp -vr2 -t6
+        fi
+    else
+        python3 tests/run_tests.py --cpp -vr2 -t6
     fi
 fi
 

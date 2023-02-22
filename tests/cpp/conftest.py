@@ -52,7 +52,7 @@ class CPPTestsFile(pytest.File):
                     script=test.get('script'),
                     args=test.get('args'),
                 )
-                for m in test.get('marks', []):
+                for m in test.get('markers', []):
                     item.add_marker(getattr(pytest.mark, m))
 
                 yield item

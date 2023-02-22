@@ -176,11 +176,11 @@
   - test: CapiTest.Float16Fill
     script: aot/python_scripts/numerical_aot_test_.py
     args: --arch=vulkan
-    marks: [sm70]
+    markers: [sm70]
   - test: CapiTest.Float16Compute
     script: aot/python_scripts/numerical_aot_test_.py
     args: --arch=vulkan
-    marks: [sm70]
+    markers: [sm70]
 
 - name: C-API Tests (Static binary)
   binary: ../../build/taichi_static_c_api_tests

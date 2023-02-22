@@ -167,7 +167,7 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                     DeprecationWarning)
             else:
                 warnings.warn(
-                    "The channel_format and num_channels arguments are only required for RW textures since v1.5.0, you can remove them safely.",
+                    "The channel_format and num_channels arguments are no longer required for non-RW textures since v1.5.0, you can remove them safely.",
                     DeprecationWarning)
             if "channel_format" in kwargs:
                 del kwargs["channel_format"]

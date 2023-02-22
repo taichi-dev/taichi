@@ -762,23 +762,23 @@ void LlvmRuntimeExecutor::fetch_result_impl(void *dest,
                                             int offset,
                                             int size) {
   synchronize();
-  if (config_.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(
-        dest, result_buffer + offset, size);
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else if (config_.arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-    AMDGPUDriver::get_instance().memcpy_device_to_host(
-        dest, result_buffer + offset, size);
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else {
-    memcpy(dest, result_buffer + offset, size);
-  }
+  //  if (config_.arch == Arch::cuda) {
+  // #if defined(TI_WITH_CUDA)
+  //    CUDADriver::get_instance().memcpy_device_to_host(
+  //        dest, result_buffer + offset, size);
+  // #else
+  //    TI_NOT_IMPLEMENTED;
+  // #endif
+  //  } else if (config_.arch == Arch::amdgpu) {
+  // #if defined(TI_WITH_AMDGPU)
+  //    AMDGPUDriver::get_instance().memcpy_device_to_host(
+  //        dest, result_buffer + offset, size);
+  // #else
+  //    TI_NOT_IMPLEMENTED;
+  // #endif
+  //  } else {
+  memcpy(dest, result_buffer + offset, size);
+  //  }
 }
 
 }  // namespace taichi::lang

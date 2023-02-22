@@ -86,6 +86,7 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
       owned_ctx_(std::make_unique<RuntimeContext>()),
       host_arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
       ctx_(owned_ctx_.get()) {
+  ctx_->result_buffer_size = kernel->ret_size;
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {

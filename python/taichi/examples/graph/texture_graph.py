@@ -51,19 +51,14 @@ def main():
 
     _rw_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE,
                            'rw_tex',
-                           channel_format=ti.f32,
-                           shape=(128, 128),
-                           num_channels=1)
+                           fmt=ti.Format.r32f,
+                           ndim=2)
     g_init_builder = ti.graph.GraphBuilder()
     g_init_builder.dispatch(make_texture, _rw_tex)
     g_init = g_init_builder.compile()
 
     g_init.run({'rw_tex': texture})
-    _tex = ti.graph.Arg(ti.graph.ArgKind.TEXTURE,
-                        'tex',
-                        channel_format=ti.f32,
-                        shape=(128, 128),
-                        num_channels=1)
+    _tex = ti.graph.Arg(ti.graph.ArgKind.TEXTURE, 'tex', ndim=2)
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(paint, _t, _pixels_arr, _tex)
     g = g_builder.compile()

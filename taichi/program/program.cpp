@@ -442,34 +442,17 @@ DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
   DeviceCapabilityConfig cfg{};
   for (const std::string &cap : caps) {
     std::string_view key;
-    std::string_view value;
+    uint32_t value;
     size_t ieq = cap.find('=');
     if (ieq == std::string::npos) {
       key = cap;
+      value = 1;
     } else {
       key = std::string_view(cap.c_str(), ieq);
-      value = std::string_view(cap.c_str() + ieq + 1);
+      value = (uint32_t)std::atol(cap.c_str() + ieq + 1);
     }
     DeviceCapability devcap = str2devcap(key);
-    switch (devcap) {
-      case DeviceCapability::spirv_version: {
-        if (value == "1.3") {
-          cfg.set(devcap, 0x10300);
-        } else if (value == "1.4") {
-          cfg.set(devcap, 0x10400);
-        } else if (value == "1.5") {
-          cfg.set(devcap, 0x10500);
-        } else {
-          TI_ERROR(
-              "'{}' is not a valid value of device capability `spirv_version`",
-              value);
-        }
-        break;
-      }
-      default:
-        cfg.set(devcap, 1);
-        break;
-    }
+    cfg.set(devcap, value);
   }
 
   // Assign default caps (that always present).
@@ -519,7 +502,7 @@ int Program::allocate_snode_tree_id() {
 }
 
 void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->result_buffer = result_buffer;
+  ctx->result_buffer = (uint64 *)host_result_buffer.data();
   program_impl_->prepare_runtime_context(ctx);
 }
 

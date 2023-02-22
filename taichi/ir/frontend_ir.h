@@ -10,6 +10,7 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/ir/type_system.h"
 
 namespace taichi::lang {
 
@@ -447,17 +448,11 @@ class TernaryOpExpression : public Expression {
 
 class InternalFuncCallExpression : public Expression {
  public:
-  std::string func_name;
+  Operation *op;
   std::vector<Expr> args;
-  bool with_runtime_context;
 
-  InternalFuncCallExpression(const std::string &func_name,
-                             const std::vector<Expr> &args_,
-                             bool with_runtime_context)
-      : func_name(func_name), with_runtime_context(with_runtime_context) {
-    for (auto &a : args_) {
-      args.push_back(a);
-    }
+  InternalFuncCallExpression(Operation *op, const std::vector<Expr> &args_)
+      : op(op), args(args_) {
   }
 
   void type_check(const CompileConfig *config) override;

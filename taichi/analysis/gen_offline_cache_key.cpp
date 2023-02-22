@@ -132,9 +132,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(InternalFuncCallExpression *expr) override {
     emit(ExprOpCode::InternalFuncCallExpression);
-    emit(expr->func_name);
+    emit(expr->op->name);
     emit(expr->args);
-    emit(expr->with_runtime_context);
   }
 
   void visit(ExternalTensorExpression *expr) override {

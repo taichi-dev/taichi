@@ -542,22 +542,16 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void InternalFuncCallExpression::type_check(const CompileConfig *) {
+  std::vector<DataType> arg_types;
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
+    arg_types.push_back(arg.get_ret_type());
   }
-  // internal func calls have default return type
-  ret_type = PrimitiveType::i32;
+  ret_type = op->type_check(arg_types);
 }
 
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> args_stmts(args.size());
-  for (int i = 0; i < (int)args.size(); ++i) {
-    args_stmts[i] = flatten_rvalue(args[i], ctx);
-  }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
-                                   with_runtime_context);
-  stmt = ctx->back_stmt();
+  stmt = op->flatten(ctx, args, ret_type);
   stmt->tb = tb;
 }
 
@@ -1328,7 +1322,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
   return Expr::make<InternalFuncCallExpression>(
-      "linear_thread_idx", std::vector<Expr>{}, /*with_runtime_context=*/true);
+      Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {

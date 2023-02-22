@@ -75,6 +75,10 @@ class CCProgramImpl : public ProgramImpl {
   CCContext *update_context(RuntimeContext *ctx);
   void context_to_result_buffer();
 
+  void dump_cache_data_to_disk() override {
+    // Do nothing
+  }
+
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
     TI_NOT_IMPLEMENTED;

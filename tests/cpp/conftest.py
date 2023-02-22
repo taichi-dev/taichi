@@ -69,7 +69,7 @@ class CPPTestsFile(pytest.File):
                     )
 
     def list_all_tests(self, binary):
-        proc = subprocess.Popen([binary, '--gtest_list_tests'],
+        proc = subprocess.Popen([str(binary), '--gtest_list_tests'],
                                 stdout=subprocess.PIPE)
         out, _ = proc.communicate()
 

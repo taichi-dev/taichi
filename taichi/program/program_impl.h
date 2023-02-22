@@ -10,7 +10,7 @@
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/codegen/kernel_compiler.h"
-#include "taichi/com_mgr/kernel_compilation_manager.h"
+#include "taichi/compilation_manager/kernel_compilation_manager.h"
 
 namespace taichi::lang {
 

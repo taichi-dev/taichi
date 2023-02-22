@@ -273,7 +273,7 @@ endif()
 add_subdirectory(taichi/util)
 add_subdirectory(taichi/common)
 add_subdirectory(taichi/rhi/interop)
-add_subdirectory(taichi/com_mgr)
+add_subdirectory(taichi/compilation_manager)
 
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)

@@ -1,4 +1,4 @@
-#include "taichi/com_mgr/kernel_compilation_manager.h"
+#include "taichi/compilation_manager/kernel_compilation_manager.h"
 
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/compiled_kernel_data.h"

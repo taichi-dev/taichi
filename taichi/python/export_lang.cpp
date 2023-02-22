@@ -153,6 +153,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
       .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
+      .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",
@@ -751,6 +752,7 @@ void export_lang(py::module &m) {
              return expr->cast<FieldExpression>()->snode_grad_type ==
                     SNodeGradType::kPrimal;
            })
+      .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
@@ -816,12 +818,9 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args,
-            bool with_runtime_context) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
-                                                        with_runtime_context);
-        });
+  m.def("insert_internal_func_call", [&](Operation *op, const ExprGroup &args) {
+    return Expr::make<InternalFuncCallExpression>(op, args.exprs);
+  });
 
   m.def("make_get_element_expr",
         Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
@@ -1435,6 +1434,16 @@ void export_lang(py::module &m) {
       ::Sleep(100);
 #endif
   });
+
+  auto operationClass = py::class_<Operation>(m, "Operation");
+  auto internalOpClass = py::class_<InternalOp>(m, "InternalOp");
+
+#define PER_INTERNAL_OP(x)                                           \
+  internalOpClass.def_property_readonly_static(                      \
+      #x, [](py::object) { return Operations::get(InternalOp::x); }, \
+      py::return_value_policy::reference);
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 }
 
 }  // namespace taichi

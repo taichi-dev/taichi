@@ -309,6 +309,15 @@ class BinarySerializer : public Serializer {
     write_data_to_file(fn, reinterpret_cast<uint8_t *>(ptr), head);
   }
 
+  void write_to_stream(std::ostream &os) {
+    void *ptr = c_data;
+    if (!ptr) {
+      assert(!data.empty());
+      ptr = &data[0];
+    }
+    os.write(reinterpret_cast<const char *>(ptr), head);
+  }
+
   template <bool writing_ = writing>
   typename std::enable_if<writing_, bool>::type initialize(
       std::size_t preserved_ = std::size_t(0),
@@ -919,6 +928,15 @@ void write_to_binary_file(const T &t, const std::string &file_name) {
   writer(t);
   writer.finalize();
   writer.write_to_file(file_name);
+}
+
+template <typename T>
+void write_to_binary_stream(const T &t, std::ostream &os) {
+  BinaryOutputSerializer writer;
+  writer.initialize();
+  writer(t);
+  writer.finalize();
+  writer.write_to_stream(os);
 }
 
 // Compile-Time Tests

@@ -2,9 +2,11 @@
 #include "taichi/runtime/llvm/llvm_context.h"
 #include "taichi/runtime/llvm/llvm_context_pass.h"
 
+#include "llvm/IR/Module.h"
+#include "llvm/Transforms/Utils/Cloning.h"
+
 namespace taichi {
 namespace lang {
-
 #if defined(TI_WITH_AMDGPU)
 JITModule *JITSessionAMDGPU ::add_module(std::unique_ptr<llvm::Module> M,
                                          int max_reg) {
@@ -44,12 +46,70 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
   auto triple_str = llvm_module->getTargetTriple();
   std::string error_str;
   auto target = llvm::TargetRegistry::lookupTarget(triple_str, error_str);
+
   llvm::TargetOptions options;
+  options.MCOptions.AsmVerbose = false;
+  if (this->config_.fast_math) {
+    options.AllowFPOpFusion = FPOpFusion::Fast;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
+  options.HonorSignDependentRoundingFPMathOption = 0;
+  options.NoZerosInBSS = 0;
+  options.GuaranteedTailCallOpt = 0;
+
   std::unique_ptr<llvm::TargetMachine> machine(target->createTargetMachine(
       triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
       llvm::Reloc::PIC_, llvm::CodeModel::Small, llvm::CodeGenOpt::Aggressive));
 
   llvm_module->setDataLayout(machine->createDataLayout());
+
+  if (this->config_.print_kernel_amdgcn) {
+    // Amdgcn will not generated during generating hsaco file
+    // It's an interim impl
+    // while add machine info to pass_manager, the module(LLVM-IR) will add more
+    // target-specific info e.g.
+    //   call { i1, i32 } @llvm.amdgcn.if.i32(i1 %15)
+    // then then `addPassesToEmitFile` will occur an error
+    //   LLVM ERROR: Cannot select: intrinsic %llvm.amdgcn.if
+    // related https://github.com/llvm/llvm-project/issues/60727
+    //    we can't though the `addPassesToEmitFile` to generate GCN file
+    //    directly
+    // another way
+    //    llvm-objdump -d xxxx.hsaco(can ensure that hsaco and gcn correspond to
+    //    each other)
+
+    auto module_clone = llvm::CloneModule(*llvm_module);
+    llvm::legacy::PassManager module_gen_gcn_pass_manager;
+    llvm::SmallString<0> gcnstr;
+    llvm::raw_svector_ostream llvm_stream_gcn(gcnstr);
+    std::unique_ptr<llvm::TargetMachine> machine_gen_gcn(
+        target->createTargetMachine(
+            triple_str, AMDGPUContext::get_instance().get_mcpu(), "", options,
+            llvm::Reloc::PIC_, llvm::CodeModel::Small,
+            llvm::CodeGenOpt::Aggressive));
+    llvm::PassManagerBuilder builder;
+    builder.OptLevel = 3;
+    builder.Inliner =
+        llvm::createFunctionInliningPass(builder.OptLevel, 0, false);
+    builder.populateModulePassManager(module_gen_gcn_pass_manager);
+    module_gen_gcn_pass_manager.add(llvm::createTargetTransformInfoWrapperPass(
+        machine_gen_gcn->getTargetIRAnalysis()));
+    machine_gen_gcn->addPassesToEmitFile(module_gen_gcn_pass_manager,
+                                         llvm_stream_gcn, nullptr,
+                                         llvm::CGFT_AssemblyFile, true);
+    module_gen_gcn_pass_manager.run(*module_clone);
+    std::string gcn(gcnstr.begin(), gcnstr.end());
+    static FileSequenceWriter writer("taichi_kernel_amdgcn_{:04d}.gcn",
+                                     "module AMDGCN");
+    writer.write(gcn);
+  }
 
   llvm::legacy::FunctionPassManager function_pass_manager(llvm_module.get());
   llvm::legacy::PassManager module_pass_manager;
@@ -84,6 +144,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
 
   machine->addPassesToEmitFile(module_pass_manager, llvm_stream, nullptr,
                                llvm::CGFT_ObjectFile, true);
+
   function_pass_manager.doInitialization();
   for (auto func = llvm_module->begin(); func != llvm_module->end(); ++func)
     function_pass_manager.run(*func);
@@ -108,6 +169,7 @@ std::string JITSessionAMDGPU::compile_module_to_hsaco(
         "unoptimized LLVM IR (AMDGPU)");
     writer.write(llvm_module.get());
   }
+
   return hsaco_str;
 }
 

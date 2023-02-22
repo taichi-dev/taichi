@@ -86,10 +86,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(InternalFuncCallExpression *expr) override {
-    emit("internal call ", expr->func_name, '(');
-    if (expr->with_runtime_context) {
-      emit("runtime, ");
-    }
+    emit("internal call ", expr->op->name, '(');
     emit_vector(expr->args);
     emit(')');
   }

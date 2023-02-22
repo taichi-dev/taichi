@@ -41,6 +41,12 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   }
 }
 
+FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
+    : condition(o.condition),
+      true_statements(o.true_statements->clone()),
+      false_statements(o.false_statements->clone()) {
+}
+
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
@@ -79,6 +85,22 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   add_loop_var(loop_var);
 }
 
+FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
+    : snode(o.snode),
+      external_tensor(o.external_tensor),
+      mesh(o.mesh),
+      element_type(o.element_type),
+      begin(o.begin),
+      end(o.end),
+      body(o.body->clone()),
+      loop_var_ids(o.loop_var_ids),
+      is_bit_vectorized(o.is_bit_vectorized),
+      num_cpu_threads(o.num_cpu_threads),
+      strictly_serialized(o.strictly_serialized),
+      mem_access_opt(o.mem_access_opt),
+      block_dim(o.block_dim) {
+}
+
 void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   is_bit_vectorized = config.is_bit_vectorized;
   strictly_serialized = config.strictly_serialized;
@@ -106,6 +128,14 @@ void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
 void FrontendForStmt::add_loop_var(const Expr &loop_var) {
   loop_var_ids.push_back(loop_var.cast<IdExpression>()->id);
   loop_var.expr->ret_type = PrimitiveType::i32;
+}
+
+FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
+    : funcid(o.funcid), body(o.body->clone()) {
+}
+
+FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
+    : cond(o.cond), body(o.body->clone()) {
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
@@ -512,22 +542,16 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void InternalFuncCallExpression::type_check(const CompileConfig *) {
+  std::vector<DataType> arg_types;
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
+    arg_types.push_back(arg.get_ret_type());
   }
-  // internal func calls have default return type
-  ret_type = PrimitiveType::i32;
+  ret_type = op->type_check(arg_types);
 }
 
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> args_stmts(args.size());
-  for (int i = 0; i < (int)args.size(); ++i) {
-    args_stmts[i] = flatten_rvalue(args[i], ctx);
-  }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
-                                   with_runtime_context);
-  stmt = ctx->back_stmt();
+  stmt = op->flatten(ctx, args, ret_type);
   stmt->tb = tb;
 }
 
@@ -935,9 +959,7 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(
-      dest.is<IdExpression>() || dest.is<IndexExpression>() ||
-      (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
+  TI_ASSERT(dest.expr->is_lvalue());
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {
@@ -1300,7 +1322,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
   return Expr::make<InternalFuncCallExpression>(
-      "linear_thread_idx", std::vector<Expr>{}, /*with_runtime_context=*/true);
+      Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {

@@ -97,11 +97,10 @@ bool CompiledKernelDataFile::update_hash() {
 CompiledKernelData::Creator *const CompiledKernelData::llvm_creator = nullptr;
 // #endif
 
-// FIXME: Uncomment after impl SpirvCompiledKernelData
-// #if !defined(TI_WITH_VULKAN) && !defined(TI_WITH_OPENGL) && \
-//     !defined(TI_WITH_DX11) && !defined(TI_WITH_METAL)
+#if !defined(TI_WITH_VULKAN) && !defined(TI_WITH_OPENGL) && \
+    !defined(TI_WITH_DX11) && !defined(TI_WITH_METAL)
 CompiledKernelData::Creator *const CompiledKernelData::spriv_creator = nullptr;
-// #endif
+#endif
 
 CompiledKernelData::Err CompiledKernelData::load(std::istream &is) {
   try {

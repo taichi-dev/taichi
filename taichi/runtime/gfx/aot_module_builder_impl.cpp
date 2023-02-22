@@ -134,6 +134,17 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on Unified Device API backends.");
 
+  const auto &spirv_codes = ti_aot_data_.spirv_codes;
+  for (int i = 0; i < spirv_codes.size(); ++i) {
+    auto &k = ti_aot_data_.kernels[i];
+    for (int j = 0; j < spirv_codes[i].size(); ++j) {
+      if (!spirv_codes[i][j].empty()) {
+        std::string spv_path =
+            write_spv_file(output_dir, k.tasks_attribs[j], spirv_codes[i][j]);
+      }
+    }
+  }
+
   {
     std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
     std::fstream f(output_dir + "/metadata.json",

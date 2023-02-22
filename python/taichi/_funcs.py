@@ -279,6 +279,123 @@ def _sym_eig2x2(A, dt):
     eigenvectors = Matrix.cols([v1, v2])
     return eigenvalues, eigenvectors
 
+@func
+def dsytrd3(A, Q, dt):
+    Q[0,0] = 1.0
+    Q[1,1] = 1.0
+    Q[2,2] = 1.0
+    e = Vector([0.0, 0.0, 0.0], dt=dt)
+    u = Vector([0.0, 0.0, 0.0], dt=dt)
+    q = Vector([0.0, 0.0, 0.0], dt=dt)
+    d = Vector([0.0, 0.0, 0.0], dt=dt)
+    h = A[0, 1]**2 + A[0, 2]**2
+    g = 0.0
+    if (A[0, 1] > 0):
+        g = -ops.sqrt(h)
+    else:
+        g = ops.sqrt(h)
+    e[0] = g
+    f    = g * A[0, 1]
+    u[1] = A[0, 1] - g
+    u[2] = A[0, 2]
+    omega = h - f
+    if (omega > 0.0):
+        omega = 1.0 / omega
+        K     = 0.0
+        f    = A[1, 1] * u[1] + A[1, 2] * u[2]
+        q[1] = omega * f                  # p
+        K   += u[1] * f                   # u* A u
+
+        f    = A[1, 2] * u[1] + A[2, 2] * u[2]
+        q[2] = omega * f                  # p
+        K   += u[2] * f                   # u* A u
+
+        K *= 0.5 * omega * omega
+
+        q[1] = q[1] - K * u[1]
+        q[2] = q[2] - K * u[2]
+        
+        d[0] = A[0, 0]
+        d[1] = A[1, 1] - 2.0*q[1]*u[1]
+        d[2] = A[2, 2] - 2.0*q[2]*u[2]
+
+        for j in range(1, 3):
+            f = omega * u[j]
+            for i in range(1, 3):
+                Q[i, j] = Q[i, j] - f*u[i]
+
+        # Calculate updated A[1, 2] and store it in e[1]
+        e[1] = A[1, 2] - q[1]*u[2] - u[1]*q[2]
+    else:
+        d[0] = A[0, 0]
+        d[1] = A[1, 1]
+        d[2] = A[2, 2]
+        e[1] = A[1, 2]
+    return d, e, Q
+
+@func
+def dsyevq3(A, Q, w, dt):
+    w, e, Q = dsytrd3(A, Q, dt)
+    for l in range(0, 2):
+        nIter = 0
+        while (True):
+            # Check for convergence and exit iteration loop if off-diagonal
+            # element e(l) is zero
+            m = 0
+            for i in range(l, 2):
+                m = i
+                g = ops.abs(w[m])+ops.abs(w[m+1])
+                if (ops.abs(e[m]) + g == g):
+                    break
+            if (m == l):
+                break
+
+            nIter+=1
+            assert (nIter <= 30), "Timeout"
+
+            # Calculate g = d_m - k
+            g = (w[l+1] - w[l]) / (e[l] + e[l])
+            r = ops.sqrt(g*g + 1.0)
+            if (g > 0):
+                g = w[m] - w[l] + e[l]/(g + r)
+            else:
+                g = w[m] - w[l] + e[l]/(g - r)
+
+            s = c = 1.0
+            p = 0.0
+            i = m-1
+            while i >= l:
+                f = s * e[i]
+                b = c * e[i]
+                if (ops.abs(f) > ops.abs(g)):
+                    c      = g / f
+                    r      = ops.sqrt(c*c + 1.0)
+                    e[i+1] = f * r
+                    s = 1.0/r
+                    c     *= s
+                else:
+                    s      = f / g
+                    r      = ops.sqrt(s*s + 1.0)
+                    e[i+1] = g * r
+                    c = 1.0/r
+                    s     *= c
+                
+                g = w[i+1] - p
+                r = (w[i] - g)*s + 2.0*c*b
+                p = s * r
+                w[i+1] = g + p
+                g = c*r - b
+
+                for k in range(0, 3):
+                    t = Q[k, i+1]
+                    Q[k, i+1] = s*Q[k, i] + c*t
+                    Q[k, i]   = c*Q[k, i] - s*t
+
+                i -= 1
+            w[l] -= p
+            e[l]  = g
+            e[m]  = 0.0
+    return Q, w
 
 @func
 def _sym_eig3x3(A, dt):
@@ -296,6 +413,7 @@ def _sym_eig3x3(A, dt):
     """
     assert all(A == A.transpose()), "A needs to be symmetric"
     M_SQRT3 = 1.73205080756887729352744634151
+    DBL_EPSILON = 2.2204460492503131e-16
     m = A.trace()
     dd = A[0, 1] * A[0, 1]
     ee = A[1, 2] * A[1, 2]
@@ -314,10 +432,11 @@ def _sym_eig3x3(A, dt):
     c = sqrt_p * ops.cos(phi)
     s = (1.0 / M_SQRT3) * sqrt_p * ops.sin(phi)
     eigenvalues = Vector([0.0, 0.0, 0.0], dt=dt)
-    eigenvalues[2] = (1.0 / 3.0) * (m - c)
-    eigenvalues[1] = eigenvalues[2] + s
-    eigenvalues[0] = eigenvalues[2] + c
-    eigenvalues[2] = eigenvalues[2] - s
+    eigenvalues_final = Vector([0.0, 0.0, 0.0], dt=dt)
+    eigenvalues[1] = (1.0 / 3.0) * (m - c)
+    eigenvalues[2] = eigenvalues[1] + s
+    eigenvalues[0] = eigenvalues[1] + c
+    eigenvalues[1] = eigenvalues[1] - s
 
     t = ops.abs(eigenvalues[0])
     u = ops.abs(eigenvalues[1])
@@ -330,33 +449,49 @@ def _sym_eig3x3(A, dt):
         u = t
     else:
         u = t * t
+    error = 256.0 * DBL_EPSILON * u*u;
     Q = Matrix.zero(dt, 3, 3)
+    Q_final = Matrix.zero(dt, 3, 3)
     Q[0, 1] = A[0, 1] * A[1, 2] - A[0, 2] * A[1, 1]
     Q[1, 1] = A[0, 2] * A[0, 1] - A[1, 2] * A[0, 0]
     Q[2, 1] = A[0, 1] * A[0, 1]
-
+    
     Q[0, 0] = Q[0, 1] + A[0, 2] * eigenvalues[0]
     Q[1, 0] = Q[1, 1] + A[1, 2] * eigenvalues[0]
     Q[2, 0] = (A[0, 0] - eigenvalues[0]) * (A[1, 1] - eigenvalues[0]) - Q[2, 1]
     norm = Q[0, 0] * Q[0, 0] + Q[1, 0] * Q[1, 0] + Q[2, 0] * Q[2, 0]
-    norm = ops.sqrt(1.0 / norm)
-    Q[0, 0] *= norm
-    Q[1, 0] *= norm
-    Q[2, 0] *= norm
+    early_ret = 0
+    if (norm <= error):
+        Q_final, eigenvalues_final = dsyevq3(A, Q, eigenvalues, dt)
+        early_ret = 1
+    else:
+        norm = ops.sqrt(1.0 / norm)
+        Q[0, 0] *= norm
+        Q[1, 0] *= norm
+        Q[2, 0] *= norm
+    
+    if (not early_ret):
 
-    Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
-    Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
-    Q[2, 1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2, 1]
-    norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
+        Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
+        Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
+        Q[2, 1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2, 1]
+        norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
+        if (norm <= error):
+            Q_final, eigenvalues_final = dsyevq3(A, Q, eigenvalues, dt)
+            early_ret = 1
+        else:
+            norm = ops.sqrt(1.0 / norm)
+            Q[0, 1] *= norm
+            Q[1, 1] *= norm
+            Q[2, 1] *= norm
 
-    norm = ops.sqrt(1.0 / norm)
-    Q[0, 1] *= norm
-    Q[1, 1] *= norm
-    Q[2, 1] *= norm
-
-    Q[0, 2] = Q[1, 0] * Q[2, 1] - Q[2, 0] * Q[1, 1]
-    Q[1, 2] = Q[2, 0] * Q[0, 1] - Q[0, 0] * Q[2, 1]
-    Q[2, 2] = Q[0, 0] * Q[1, 1] - Q[1, 0] * Q[0, 1]
+        Q[0, 2] = Q[1, 0] * Q[2, 1] - Q[2, 0] * Q[1, 1]
+        Q[1, 2] = Q[2, 0] * Q[0, 1] - Q[0, 0] * Q[2, 1]
+        Q[2, 2] = Q[0, 0] * Q[1, 1] - Q[1, 0] * Q[0, 1]
+    
+    if (early_ret):
+        Q = Q_final
+        eigenvalues = eigenvalues_final
     return eigenvalues, Q
 
 

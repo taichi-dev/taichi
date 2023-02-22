@@ -41,6 +41,12 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   }
 }
 
+FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
+    : condition(o.condition),
+      true_statements(o.true_statements->clone()),
+      false_statements(o.false_statements->clone()) {
+}
+
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
@@ -79,6 +85,22 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   add_loop_var(loop_var);
 }
 
+FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
+    : snode(o.snode),
+      external_tensor(o.external_tensor),
+      mesh(o.mesh),
+      element_type(o.element_type),
+      begin(o.begin),
+      end(o.end),
+      body(o.body->clone()),
+      loop_var_ids(o.loop_var_ids),
+      is_bit_vectorized(o.is_bit_vectorized),
+      num_cpu_threads(o.num_cpu_threads),
+      strictly_serialized(o.strictly_serialized),
+      mem_access_opt(o.mem_access_opt),
+      block_dim(o.block_dim) {
+}
+
 void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   is_bit_vectorized = config.is_bit_vectorized;
   strictly_serialized = config.strictly_serialized;
@@ -106,6 +128,14 @@ void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
 void FrontendForStmt::add_loop_var(const Expr &loop_var) {
   loop_var_ids.push_back(loop_var.cast<IdExpression>()->id);
   loop_var.expr->ret_type = PrimitiveType::i32;
+}
+
+FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
+    : funcid(o.funcid), body(o.body->clone()) {
+}
+
+FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
+    : cond(o.cond), body(o.body->clone()) {
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {

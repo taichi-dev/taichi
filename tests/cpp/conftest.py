@@ -49,7 +49,8 @@ class CPPTestsFile(pytest.File):
                     name=name,
                     binary=binary,
                     test=test['test'],
-                    prestart=test.get('prestart'),
+                    script=test.get('script'),
+                    args=test.get('args'),
                 )
                 for m in test.get('marks', []):
                     item.add_marker(getattr(pytest.mark, m))
@@ -100,11 +101,12 @@ class CPPTestsFile(pytest.File):
 
 
 class CPPTestItem(pytest.Item):
-    def __init__(self, *, binary, test, prestart=None, **kwargs):
+    def __init__(self, *, binary, test, script=None, args=None, **kwargs):
         super().__init__(**kwargs)
         self.binary = binary
         self.test = test
-        self.prestart = prestart
+        self.script = script
+        self.args = args
 
     def runtest(self):
         import taichi as ti
@@ -118,11 +120,12 @@ class CPPTestItem(pytest.Item):
                     'TI_LIB_DIR': str(ti_lib_dir),
                     'TAICHI_AOT_FOLDER_PATH': tmpdir,
                 })
-                if self.prestart:
-                    subprocess.check_call(f'{sys.executable} {self.prestart}',
-                                          shell=True,
-                                          cwd=str(BASE),
-                                          env=env)
+                if self.script:
+                    subprocess.check_call(
+                        f'{sys.executable} {self.script} {self.args}',
+                        shell=True,
+                        cwd=str(BASE),
+                        env=env)
 
                 subprocess.check_call(
                     f'{self.binary} --gtest_filter={self.test}',

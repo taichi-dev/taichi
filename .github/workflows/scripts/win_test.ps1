@@ -31,9 +31,9 @@ Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 #
 # Temporary hack before CI Pipeline Overhaul
 if (nvidia-smi -L | Select-String "Tesla P4") {
-    Invoke python3 tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
+    Invoke python tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
 } else {
-    Invoke python3 tests/run_tests.py --cpp -vr2 -t6
+    Invoke python tests/run_tests.py --cpp -vr2 -t6
 }
 
 # Fail fast, give priority to the error-prone tests

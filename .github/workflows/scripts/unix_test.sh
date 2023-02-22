@@ -26,6 +26,22 @@ ti diagnose
 ti changelog
 echo "wanted archs: $TI_WANTED_ARCHS"
 
+
+if [ -z "$TI_SKIP_CPP_TESTS" ]; then
+    echo "Running cpp tests on platform:" "${PLATFORM}"
+    # Temporary hack before CI Pipeline Overhaul
+    if [[ $PLATFORM == *"linux"* ]]; then
+        if nvidia-smi -L | grep "Tesla P4"; then
+            python3 tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
+        else
+            python3 tests/run_tests.py --cpp -vr2 -t6
+        fi
+    else
+        python3 tests/run_tests.py --cpp -vr2 -t6
+    fi
+fi
+
+
 if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
     git clone https://github.com/taichi-dev/taichi-release-tests
@@ -49,20 +65,6 @@ EOF
 
     python3 run.py --log=DEBUG --runners 1 timelines
     popd
-fi
-
-if [ -z "$TI_SKIP_CPP_TESTS" ]; then
-    echo "Running cpp tests on platform:" "${PLATFORM}"
-    # Temporary hack before CI Pipeline Overhaul
-    if [[ $PLATFORM == *"linux"* ]]; then
-        if nvidia-smi -L | grep "Tesla P4"; then
-            python3 tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
-        else
-            python3 tests/run_tests.py --cpp -vr2 -t6
-        fi
-    else
-        python3 tests/run_tests.py --cpp -vr2 -t6
-    fi
 fi
 
 function run-it {

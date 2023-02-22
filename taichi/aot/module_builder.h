@@ -74,7 +74,7 @@ class AotModuleBuilder {
 
   static bool all_fields_are_dense_in_container(const SNode *container);
 
- private:
+protected:
   std::unordered_map<std::string, aot::CompiledGraph> graphs_;
 };
 

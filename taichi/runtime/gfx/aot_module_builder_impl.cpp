@@ -133,30 +133,20 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on Unified Device API backends.");
-  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
-  write_to_binary_file(ti_aot_data_, bin_path);
 
-  auto converted = AotDataConverter::convert(ti_aot_data_);
-  const auto &spirv_codes = ti_aot_data_.spirv_codes;
-  for (int i = 0; i < std::min(ti_aot_data_.kernels.size(), spirv_codes.size());
-       ++i) {
-    auto &k = ti_aot_data_.kernels[i];
-    for (int j = 0; j < std::min(k.tasks_attribs.size(), spirv_codes[i].size());
-         ++j) {
-      if (!spirv_codes[i][j].empty()) {
-        std::string spv_path =
-            write_spv_file(output_dir, k.tasks_attribs[j], spirv_codes[i][j]);
-        converted.kernels[k.name].tasks[j].source_path = spv_path;
-      }
-    }
+  {
+    std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
+    std::fstream f(output_dir + "/metadata.json",
+                   std::ios::trunc | std::ios::out);
+    f.write(json.data(), json.size());
   }
 
-  std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
-  std::fstream f(output_dir + "/metadata.json",
-                 std::ios::trunc | std::ios::out);
-  f.write(json.data(), json.size());
-
-  dump_graph(output_dir);
+  {
+    std::string json = liong::json::print(liong::json::serialize(graphs_));
+    std::fstream f(output_dir + "/graphs.json",
+                   std::ios::trunc | std::ios::out);
+    f.write(json.data(), json.size());
+  }
 }
 
 void AotModuleBuilderImpl::mangle_aot_data() {

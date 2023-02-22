@@ -31,20 +31,20 @@ class AotModuleImpl : public aot::Module {
     const io::VirtualDir *dir =
         params.dir == nullptr ? dir_alt.get() : params.dir;
 
-    bool succ = true;
+    {
+      std::vector<uint8_t> metadata_json{};
+      bool succ = dir->load_file("metadata.json", metadata_json) != 0;
 
-    std::vector<uint8_t> metadata_json{};
-    succ = dir->load_file("metadata.json", metadata_json) != 0;
-
-    if (!succ) {
-      mark_corrupted();
-      TI_WARN("'metadata.json' cannot be read");
-      return;
+      if (!succ) {
+        mark_corrupted();
+        TI_WARN("'metadata.json' cannot be read");
+        return;
+      }
+      auto json = liong::json::parse(
+          (const char *)metadata_json.data(),
+          (const char *)(metadata_json.data() + metadata_json.size()));
+      liong::json::deserialize(json, ti_aot_data_);
     }
-    auto json = liong::json::parse(
-        (const char *)metadata_json.data(),
-        (const char *)(metadata_json.data() + metadata_json.size()));
-    liong::json::deserialize(json, ti_aot_data_);
 
     if (!params.enable_lazy_loading) {
       for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
@@ -71,14 +71,20 @@ class AotModuleImpl : public aot::Module {
       }
     }
 
-    std::vector<uint8_t> graphs_tcb{};
-    succ = dir->load_file("graphs.tcb", graphs_tcb) &&
-           read_from_binary(graphs_, graphs_tcb.data(), graphs_tcb.size());
+    {
+      std::vector<uint8_t> graphs_json{};
+      bool succ = dir->load_file("graphs.json", graphs_json) != 0;
 
-    if (!succ) {
-      mark_corrupted();
-      TI_WARN("'graphs.tcb' cannot be read");
-      return;
+      if (!succ) {
+        mark_corrupted();
+        TI_WARN("'graphs.json' cannot be read");
+        return;
+      }
+
+      auto json = liong::json::parse(
+          (const char *)graphs_json.data(),
+          (const char *)(graphs_json.data() + graphs_json.size()));
+      liong::json::deserialize(json, graphs_);
     }
   }
 

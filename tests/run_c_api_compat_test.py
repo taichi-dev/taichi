@@ -4,12 +4,12 @@ latest Taichi Runtime.
 """
 import glob
 import os
-import pathlib
 import subprocess
+from pathlib import Path
 
 import yaml
 
-BASE = (pathlib.Path(__file__).parent / 'cpp').resolve()
+BASE = (Path(__file__).parent / 'cpp').resolve()
 
 run_dict = {}
 
@@ -20,15 +20,18 @@ def init_dict(run_dict, aot_files):
         test_config = yaml.safe_load(f.read())
 
     for x in aot_files:
-        path_name = pathlib.Path(x).name[:-3]
+        path_name = Path(x).name[:-3]
         run_dict[path_name] = []
 
     for binary in test_config:
+        binpath = Path(BASE / binary['binary']).resolve()
+        if not binpath.exists():
+            continue
         for test in binary['tests']:
             if '--arch=vulkan' not in test.get('args', ''):
                 continue
-            run_dict[pathlib.Path(test['script']).stem].append([
-                str((BASE / binary['binary']).resolve()),
+            run_dict[Path(test['script']).stem].append([
+                str(binpath),
                 f"--gtest_filter={test['test']}",
             ])
 
@@ -38,7 +41,7 @@ def run():
     init_dict(run_dict, aot_files)
     print(run_dict)
     for x in aot_files:
-        path_name = pathlib.Path(x).name[:-3]
+        path_name = Path(x).stem
         os.environ[
             "TAICHI_AOT_FOLDER_PATH"] = f'{BASE}/aot/python_scripts/{path_name}'
         if len(os.listdir(f'{BASE}/aot/python_scripts/' + path_name)) == 0:

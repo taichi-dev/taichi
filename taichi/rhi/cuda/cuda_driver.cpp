@@ -88,6 +88,44 @@ CUDADriver &CUDADriver::get_instance() {
   return get_instance_without_context();
 }
 
+void CUDADriver::memcpy_host_to_device_async(void *dst,
+                                             const void *src,
+                                             size_t size,
+                                             CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    memcpy_host_to_device_async_impl(dst, src, size, stream);
+  } else {
+    memcpy_host_to_device(dst, src, size);
+  }
+}
+
+void CUDADriver::memcpy_device_to_host_async(void *dst,
+                                             const void *src,
+                                             size_t size,
+                                             CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    memcpy_device_to_host_async_impl(dst, src, size, stream);
+  } else {
+    memcpy_device_to_host(dst, src, size);
+  }
+}
+
+void CUDADriver::malloc_async(void **dev_ptr, size_t size, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    malloc_async_impl(dev_ptr, size, stream);
+  } else {
+    malloc(dev_ptr, size);
+  }
+}
+
+void CUDADriver::mem_free_async(void *dev_ptr, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    mem_free_async_impl(dev_ptr, stream);
+  } else {
+    mem_free(dev_ptr);
+  }
+}
+
 CUSPARSEDriver::CUSPARSEDriver() {
 }
 

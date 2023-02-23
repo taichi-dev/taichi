@@ -109,7 +109,11 @@ class ConstantFold : public BasicStmtVisitor {
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
-      ret = ker->fetch_ret({0});
+      if (arch_uses_llvm(compile_config.arch)) {
+        ret = ker->fetch_ret({0});
+      } else {
+        ret.val_i64 = program->fetch_result<int64_t>(0);
+      }
     }
     return true;
   }
@@ -132,7 +136,11 @@ class ConstantFold : public BasicStmtVisitor {
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
-      ret = ker->fetch_ret({0});
+      if (arch_uses_llvm(compile_config.arch)) {
+        ret = ker->fetch_ret({0});
+      } else {
+        ret.val_i64 = program->fetch_result<int64_t>(0);
+      }
     }
     return true;
   }

@@ -1,4 +1,6 @@
 #include "taichi/codegen/spirv/kernel_compiler.h"
+
+#include "taichi/ir/analysis.h"
 #include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/codegen/spirv/compiled_kernel_data.h"
 
@@ -11,7 +13,7 @@ KernelCompiler::KernelCompiler(Config config) : config_(std::move(config)) {
 KernelCompiler::IRNodePtr KernelCompiler::compile(
     const CompileConfig &compile_config,
     const Kernel &kernel_def) const {
-  auto ir = kernel_def.ir->clone();
+  auto ir = irpass::analysis::clone(kernel_def.ir.get());
   irpass::compile_to_executable(ir.get(), compile_config, &kernel_def,
                                 kernel_def.autodiff_mode,
                                 /*ad_use_stack=*/false, compile_config.print_ir,

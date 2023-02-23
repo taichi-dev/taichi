@@ -7,7 +7,6 @@
 #include "taichi/rhi/metal/metal_device.h"
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/cache/gfx/cache_manager.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
@@ -90,18 +89,16 @@ class MetalProgramImpl : public ProgramImpl {
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
 
-  void dump_cache_data_to_disk() override;
-
-  const std::unique_ptr<gfx::CacheManager> &get_cache_manager();
-
   ~MetalProgramImpl() override;
+
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
  private:
   std::unique_ptr<metal::MetalDevice> embedded_device_{nullptr};
   std::unique_ptr<gfx::GfxRuntime> gfx_runtime_{nullptr};
   std::unique_ptr<gfx::SNodeTreeManager> snode_tree_mgr_{nullptr};
   std::vector<spirv::CompiledSNodeStructs> aot_compiled_snode_structs_{};
-  std::unique_ptr<gfx::CacheManager> cache_manager_{nullptr};
 };
 
 }  // namespace taichi::lang

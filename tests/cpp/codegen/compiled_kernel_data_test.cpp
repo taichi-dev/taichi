@@ -20,6 +20,10 @@ class FakeCompiledKernelData : public CompiledKernelData {
       : compiled_data_(o.compiled_data_) {
   }
 
+  Arch arch() const override {
+    return kFakeArch;
+  }
+
   std::size_t size() const override {
     return compiled_data_.so_bin.size();
   }

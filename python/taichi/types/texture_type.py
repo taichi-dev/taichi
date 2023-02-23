@@ -69,7 +69,6 @@ class RWTextureType:
         if fmt is None:
             raise TaichiCompilationError("fmt is required for rw_texture type")
         else:
-            self.channel_format, self.num_channels = FORMAT2TY_CH[fmt]
             self.fmt = fmt
         self.lod = lod
 

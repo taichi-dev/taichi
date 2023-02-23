@@ -388,10 +388,8 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   }
 }
 
-Texture *Program::create_texture(const DataType type,
-                                 int num_channels,
+Texture *Program::create_texture(BufferFormat buffer_format,
                                  const std::vector<int> &shape) {
-  BufferFormat buffer_format = type_channels2buffer_format(type, num_channels);
   if (shape.size() == 1) {
     textures_.push_back(
         std::make_unique<Texture>(this, buffer_format, shape[0], 1, 1));

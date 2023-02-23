@@ -1,12 +1,13 @@
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._texture import Texture
+from taichi.lang.enums import Format
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import (Matrix, MatrixNdarray, MatrixType,
                                 VectorNdarray, VectorType)
 from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
-from taichi.types.texture_type import TY_CH2FORMAT, RWTextureType, TextureType
+from taichi.types.texture_type import RWTextureType, TextureType
 
 template_types = (NdarrayType, TextureType, template)
 
@@ -97,14 +98,8 @@ def produce_injected_args(kernel, symbolic_args=None):
             fmt = anno.fmt
             injected_args.append(Texture(fmt, texture_shape))
         elif isinstance(anno, TextureType):
-            if symbolic_args is None:
-                raise RuntimeError(
-                    'Texture type annotation doesn\'t have enough information for aot. Please either specify the channel_format, shape and num_channels in the graph arg declaration.'
-                )
-            texture_shape = tuple(symbolic_args[i].texture_shape)
-            fmt = TY_CH2FORMAT[(symbolic_args[i].channel_format(),
-                                symbolic_args[i].num_channels)]
-            injected_args.append(Texture(fmt, texture_shape))
+            texture_shape = (2, ) * anno.num_dimensions
+            injected_args.append(Texture(Format.rgba8, texture_shape))
         elif isinstance(anno, MatrixType):
             if not isinstance(symbolic_args[i], list):
                 raise RuntimeError('Expected a symbolic arg with Matrix type.')

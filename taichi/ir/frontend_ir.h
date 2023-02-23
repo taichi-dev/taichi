@@ -342,24 +342,18 @@ class TexturePtrExpression : public Expression {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
   explicit TexturePtrExpression(int arg_id, int num_dims)
       : arg_id(arg_id), num_dims(num_dims) {
   }
 
-  TexturePtrExpression(int arg_id,
-                       int num_dims,
-                       int num_channels,
-                       DataType channel_format,
-                       int lod)
+  TexturePtrExpression(int arg_id, int num_dims, BufferFormat format, int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
   }
 

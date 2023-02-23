@@ -55,6 +55,7 @@ class AotDataConverter {
         arr_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
         arr_arg.field_dim = arg.field_dim;
         arr_arg.element_shape = arg.element_shape;
+        arr_arg.format = arg.format;
         arr_arg.shape_offset_in_args_buf = arg.index * sizeof(int32_t);
         res.arr_args[arg.index] = arr_arg;
       }

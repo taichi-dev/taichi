@@ -5,8 +5,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.matrix import Matrix
 from taichi.lang.util import taichi_scope
 from taichi.types import vector
-from taichi.types.primitive_types import f32, u8
-from taichi.types.texture_type import FORMAT2TY_CH
+from taichi.types.primitive_types import f32
 
 
 def _get_entries(mat):
@@ -130,12 +129,8 @@ class Texture:
         shape (Tuple[int]): Shape of the Texture.
     """
     def __init__(self, fmt, arr_shape):
-        dtype, num_channels = FORMAT2TY_CH[fmt]
-        self.tex = impl.get_runtime().prog.create_texture(
-            dtype, num_channels, arr_shape)
+        self.tex = impl.get_runtime().prog.create_texture(fmt, arr_shape)
         self.fmt = fmt
-        self.dtype = dtype
-        self.num_channels = num_channels
         self.num_dims = len(arr_shape)
         self.shape = arr_shape
 
@@ -172,8 +167,6 @@ class Texture:
         assert image.size == tuple(self.shape)
 
         assert self.num_dims == 2
-        assert self.dtype == u8
-        assert self.num_channels == 4
         # Don't use transpose method since its enums are too new
         image = image.rotate(90, expand=True)
         arr = np.asarray(image)
@@ -188,8 +181,6 @@ class Texture:
             img (PIL.Image.Image): a PIL image in RGB mode, with the same size as source texture.
         """
         assert self.num_dims == 2
-        assert self.dtype == u8
-        assert self.num_channels == 4
         from PIL import Image  # pylint: disable=import-outside-toplevel
         res = np.zeros(self.shape + (3, ), np.uint8)
         from taichi._kernels import \

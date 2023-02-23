@@ -1123,45 +1123,7 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       if (stmt->is_storage) {
-        BufferFormat format = BufferFormat::unknown;
-
-        if (stmt->num_channels == 1) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::r8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::r16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::r16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::r32f;
-          }
-        } else if (stmt->num_channels == 2) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rg8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rg16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rg16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rg32f;
-          }
-        } else if (stmt->num_channels == 4) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rgba8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rgba16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rgba16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rgba32f;
-          }
-        }
+        BufferFormat format = stmt->format;
 
         int binding = binding_head_++;
         val =

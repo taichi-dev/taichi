@@ -89,8 +89,11 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->arg_id);
     emit(expr->num_dims);
     emit(expr->is_storage);
-    emit(expr->num_channels);
-    emit(expr->channel_format);
+    // FIXME (penguinliong): ?? What happens here?
+    auto [channel_format, num_channels] =
+        buffer_format2type_channels(expr->format);
+    emit((int)num_channels);
+    emit(channel_format);
     emit(expr->lod);
   }
 

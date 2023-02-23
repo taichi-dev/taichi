@@ -22,6 +22,7 @@ constexpr char kLlvmCacheFilenameLLExt[] = "ll";
 constexpr char kLlvmCacheFilenameBCExt[] = "bc";
 constexpr char kSpirvCacheFilenameExt[] = "spv";
 constexpr char kMetalCacheFilenameExt[] = "metal";
+constexpr char kTiCacheFilenameExt[] = "tic";
 constexpr char kLlvmCachSubPath[] = "llvm";
 constexpr char kSpirvCacheSubPath[] = "gfx";
 constexpr char kMetalCacheSubPath[] = "metal";

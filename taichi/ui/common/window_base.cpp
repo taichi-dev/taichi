@@ -100,10 +100,8 @@ void WindowBase::set_is_running(bool value) {
 std::pair<float, float> WindowBase::get_cursor_pos() {
   CHECK_WINDOW_SHOWING;
   float x = input_handler_.last_x();
-  float y = input_handler_.last_y();
+  float y = 1.0 - input_handler_.last_y();
 
-  x = x / (float)config_.width;
-  y = (config_.height - y) / (float)config_.height;
   return std::make_pair(x, y);
 }
 

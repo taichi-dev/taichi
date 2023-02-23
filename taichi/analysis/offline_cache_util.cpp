@@ -6,6 +6,7 @@
 #include "taichi/ir/transforms.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/program/kernel.h"
+#include "taichi/rhi/device_capability.h"
 
 #include "picosha2.h"
 
@@ -64,6 +65,15 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config.real_matrix_scalarize);
   serializer.finalize();
 
+  return serializer.data;
+}
+
+static std::vector<std::uint8_t> get_offline_cache_key_of_device_caps(
+    const DeviceCapabilityConfig &caps) {
+  BinaryOutputSerializer serializer;
+  serializer.initialize();
+  serializer(caps.devcaps);
+  serializer.finalize();
   return serializer.data;
 }
 
@@ -141,6 +151,7 @@ std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
 }
 
 std::string get_hashed_offline_cache_key(const CompileConfig &config,
+                                         const DeviceCapabilityConfig &caps,
                                          Kernel *kernel) {
   std::string kernel_ast_string;
   if (kernel) {
@@ -150,10 +161,12 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   }
 
   auto compile_config_key = get_offline_cache_key_of_compile_config(config);
+  auto device_caps_key = get_offline_cache_key_of_device_caps(caps);
   std::string autodiff_mode =
       std::to_string(static_cast<std::size_t>(kernel->autodiff_mode));
   picosha2::hash256_one_by_one hasher;
   hasher.process(compile_config_key.begin(), compile_config_key.end());
+  hasher.process(device_caps_key.begin(), device_caps_key.end());
   hasher.process(kernel_ast_string.begin(), kernel_ast_string.end());
   hasher.process(autodiff_mode.begin(), autodiff_mode.end());
   hasher.finish();

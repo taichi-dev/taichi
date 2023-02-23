@@ -38,28 +38,22 @@ class ConstantFold : public BasicStmtVisitor {
 
     auto kernel_name = fmt::format("jit_evaluator_{}", cache.size());
     auto func = [&id](Kernel *kernel) {
-      auto lhstmt =
-          Stmt::make<ArgLoadStmt>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
-      auto rhstmt =
-          Stmt::make<ArgLoadStmt>(/*arg_id=*/1, id.rhs, /*is_ptr=*/false);
-      pStmt oper;
+      auto left =
+          Expr::make<ArgLoadExpression>(/*arg_id=*/0, id.lhs, /*is_ptr=*/false);
+      auto right =
+          Expr::make<ArgLoadExpression>(/*arg_id=*/1, id.rhs, /*is_ptr=*/false);
+      Expr oper;
       if (id.is_binary) {
-        oper = Stmt::make<BinaryOpStmt>(id.binary_op(), lhstmt.get(),
-                                        rhstmt.get());
-        oper->set_tb(id.tb);
+        oper = Expr::make<BinaryOpExpression>(id.binary_op(), left, right);
+        oper.set_tb(id.tb);
       } else {
-        oper = Stmt::make<UnaryOpStmt>(id.unary_op(), lhstmt.get());
+        oper = Expr::make<UnaryOpExpression>(id.unary_op(), left);
         if (unary_op_is_cast(id.unary_op())) {
-          oper->cast<UnaryOpStmt>()->cast_type = id.rhs;
+          oper.cast<UnaryOpExpression>()->cast_type = id.rhs;
         }
       }
       auto &ast_builder = kernel->context->builder();
-      auto ret = Stmt::make<ReturnStmt>(oper.get());
-      ast_builder.insert(std::move(lhstmt));
-      if (id.is_binary) {
-        ast_builder.insert(std::move(rhstmt));
-      }
-      ast_builder.insert(std::move(oper));
+      auto ret = Stmt::make<FrontendReturnStmt>(ExprGroup(oper));
       ast_builder.insert(std::move(ret));
     };
 

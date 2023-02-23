@@ -133,70 +133,31 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
                                 const std::string &filename) const {
   TI_WARN_IF(!filename.empty(),
              "Filename prefix is ignored on Unified Device API backends.");
-  const std::string bin_path = fmt::format("{}/metadata.tcb", output_dir);
-  write_to_binary_file(ti_aot_data_, bin_path);
 
-  auto converted = AotDataConverter::convert(ti_aot_data_);
   const auto &spirv_codes = ti_aot_data_.spirv_codes;
-  for (int i = 0; i < std::min(ti_aot_data_.kernels.size(), spirv_codes.size());
-       ++i) {
+  for (int i = 0; i < spirv_codes.size(); ++i) {
     auto &k = ti_aot_data_.kernels[i];
-    for (int j = 0; j < std::min(k.tasks_attribs.size(), spirv_codes[i].size());
-         ++j) {
+    for (int j = 0; j < spirv_codes[i].size(); ++j) {
       if (!spirv_codes[i][j].empty()) {
         std::string spv_path =
             write_spv_file(output_dir, k.tasks_attribs[j], spirv_codes[i][j]);
-        converted.kernels[k.name].tasks[j].source_path = spv_path;
       }
     }
   }
 
-  std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
-  std::fstream f(output_dir + "/metadata.json",
-                 std::ios::trunc | std::ios::out);
-  f.write(json.data(), json.size());
-
-  dump_graph(output_dir);
-}
-
-void AotModuleBuilderImpl::mangle_aot_data() {
-  // Only for offline cache
-  for (auto &kernel : ti_aot_data_.kernels) {
-    const auto &prefix = kernel.name;
-    for (std::size_t i = 0; i < kernel.tasks_attribs.size(); ++i) {
-      kernel.tasks_attribs[i].name = prefix + std::to_string(i);
-    }
+  {
+    std::string json = liong::json::print(liong::json::serialize(ti_aot_data_));
+    std::fstream f(output_dir + "/metadata.json",
+                   std::ios::trunc | std::ios::out);
+    f.write(json.data(), json.size());
   }
-}
 
-void AotModuleBuilderImpl::merge_with_old_meta_data(const std::string &path) {
-  // Only for offline cache
-  auto filename = taichi::join_path(path, "metadata.tcb");
-  if (taichi::path_exists(filename)) {
-    TaichiAotData old_data;
-    read_from_binary_file(old_data, filename);
-    // Ignore root_buffer_size and fields which aren't needed for offline cache
-    ti_aot_data_.kernels.insert(ti_aot_data_.kernels.end(),
-                                old_data.kernels.begin(),
-                                old_data.kernels.end());
+  {
+    std::string json = liong::json::print(liong::json::serialize(graphs_));
+    std::fstream f(output_dir + "/graphs.json",
+                   std::ios::trunc | std::ios::out);
+    f.write(json.data(), json.size());
   }
-}
-
-std::optional<GfxRuntime::RegisterParams>
-AotModuleBuilderImpl::try_get_kernel_register_params(
-    const std::string &kernel_name) const {
-  const auto &kernels = ti_aot_data_.kernels;
-  for (std::size_t i = 0; i < kernels.size(); ++i) {
-    if (kernels[i].name == kernel_name) {
-      GfxRuntime::RegisterParams result;
-      result.kernel_attribs = kernels[i];
-      result.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
-      // We only support a single SNodeTree during AOT.
-      result.num_snode_trees = 1;
-      return result;
-    }
-  }
-  return std::nullopt;
 }
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,

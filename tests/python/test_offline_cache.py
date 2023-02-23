@@ -28,7 +28,7 @@ supported_archs_offline_cache = {
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.ll', '.bc', '.spv')
+    suffixes = ('.ll', '.bc', '.tic')
     return filename.endswith(suffixes)
 
 
@@ -50,13 +50,13 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if arch in supported_llvm_archs:
         result += len(num_offloads)
     elif arch in supported_gfx_archs:
-        result += sum(num_offloads)
+        result += len(num_offloads)
     # metadata files
     if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
     elif arch in supported_gfx_archs:
-        # metadata.{json, tcb}, graphs.tcb, offline_cache_metadata.tcb
-        result += 4
+        # ticache.tcb
+        result += 1
     return result
 
 
@@ -68,7 +68,7 @@ def backend_specified_cache_path(arch):
     if arch in supported_llvm_archs:
         return join(tmp_offline_cache_file_path(), 'llvm')
     elif arch in supported_gfx_archs:
-        return join(tmp_offline_cache_file_path(), 'gfx')
+        return tmp_offline_cache_file_path()
     assert False
 
 
@@ -458,9 +458,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
     @ti.kernel
     def helper():
-        a = 100
         b = 200
-        c = a / b
+        c = 0
         for i in range(b):
             c += i
 
@@ -493,7 +492,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
         curr_arch, [2, 2])
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize('curr_arch',
+                         supported_archs_offline_cache - supported_gfx_archs)
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec

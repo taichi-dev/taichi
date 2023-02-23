@@ -9,6 +9,8 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
+#include "taichi/codegen/kernel_compiler.h"
+#include "taichi/compilation_manager/kernel_compilation_manager.h"
 
 namespace taichi::lang {
 
@@ -82,8 +84,7 @@ class ProgramImpl {
   /**
    * Dump Offline-cache data to disk
    */
-  virtual void dump_cache_data_to_disk() {
-  }
+  virtual void dump_cache_data_to_disk();
 
   virtual Device *get_compute_device() {
     return nullptr;
@@ -179,7 +180,13 @@ class ProgramImpl {
     return old_ty;
   }
 
+  KernelCompilationManager &get_kernel_compilation_manager();
+
+ protected:
+  virtual std::unique_ptr<KernelCompiler> make_kernel_compiler() = 0;
+
  private:
+  std::unique_ptr<KernelCompilationManager> kernel_com_mgr_;
 };
 
 }  // namespace taichi::lang

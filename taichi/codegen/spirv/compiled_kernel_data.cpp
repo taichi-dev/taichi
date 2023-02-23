@@ -17,6 +17,10 @@ CompiledKernelData::CompiledKernelData(Arch arch, InternalData data)
     : arch_(arch), data_(std::move(data)) {
 }
 
+Arch CompiledKernelData::arch() const {
+  return arch_;
+}
+
 std::size_t CompiledKernelData::size() const {
   return sizeof(std::uint32_t) *
          std::accumulate(

@@ -340,6 +340,11 @@ class LlvmProgramImpl : public ProgramImpl {
   }
   ParallelExecutor compilation_workers;  // parallel compilation
 
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
+    TI_NOT_IMPLEMENTED;
+  }
+
  private:
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;

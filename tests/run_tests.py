@@ -1,152 +1,17 @@
 import argparse
 import atexit
-import copy
 import os
-import pdb
-import platform
-import re
 import shutil
-import subprocess
-import sys
 import tempfile
-import warnings
-
-from test_utils import (__aot_test_cases, __capi_aot_test_cases,
-                        print_aot_test_guide, print_section)
 
 import taichi as ti
 
 
-def _run_cpp_test(test_filename, build_dir, gtest_option="", extra_env=None):
-    ti.reset()
-    ti_lib_dir = os.path.join(ti.__path__[0], '_lib', 'runtime')
-    fullpath = os.path.join(build_dir, test_filename)
-
-    if os.path.exists(fullpath):
-        env_copy = os.environ.copy()
-        env_copy['TI_LIB_DIR'] = ti_lib_dir
-
-        cmd = [fullpath]
-        if gtest_option: cmd.append(gtest_option)
-        if extra_env: env_copy.update(extra_env)
-
-        subprocess.check_call(cmd, env=env_copy, cwd=build_dir)
-
-
-def _test_cpp_aot(test_filename, build_dir, test_info):
-    for cpp_test_name, (python_rpath, args) in test_info.items():
-        # Temporary folder will be removed upon handle destruction
-        temp_handle = tempfile.TemporaryDirectory()
-        temp_folderpath = temp_handle.name
-
-        curr_dir = os.path.dirname(os.path.abspath(__file__))
-        python_file_path = os.path.join(curr_dir, python_rpath)
-
-        extra_env = {
-            "TAICHI_AOT_FOLDER_PATH": temp_folderpath,
-        }
-
-        env_copy = os.environ.copy()
-        env_copy.update(extra_env)
-
-        cmd_list = [sys.executable, python_file_path] + args.split(" ")
-        subprocess.check_call(cmd_list, env=env_copy)
-
-        # Run AOT C++ codes
-        _run_cpp_test(test_filename, build_dir,
-                      f"--gtest_filter={cpp_test_name}", extra_env)
-
-
-def _test_cpp(test_keys=None, use_static_c_api_test=False):
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(curr_dir, '../build')
-    cpp_test_filename = 'taichi_cpp_tests'
-    capi_test_filename = 'taichi_c_api_tests'
-    if use_static_c_api_test:
-        capi_test_filename = 'taichi_static_c_api_tests'
-
-    if platform.system() == "Windows":
-        cpp_test_filename += ".exe"
-        capi_test_filename += ".exe"
-
-    capi_tests_exe_path = os.path.join(build_dir, capi_test_filename)
-    cpp_tests_exe_path = os.path.join(build_dir, cpp_test_filename)
-
-    # Run manually specified C++ tests only, for example:
-    # "python3 tests/run_tests.py --cpp -k Scalarize.*"
-    if test_keys:
-        # Search AOT tests
-        aot_test_cases = copy.copy(__aot_test_cases)
-        for cpp_test_name, (_, _) in __aot_test_cases.items():
-
-            name_match = re.match(test_keys, cpp_test_name, re.I)
-            if name_match is None:
-                aot_test_cases.pop(cpp_test_name, None)
-        if aot_test_cases:
-            print_section("Running Taichi AOT tests")
-            _test_cpp_aot(cpp_test_filename, build_dir, aot_test_cases)
-
-        # Search CAPI tests
-        capi_aot_test_cases = copy.copy(__capi_aot_test_cases)
-        for cpp_test_name, (_, _) in __capi_aot_test_cases.items():
-            name_match = re.match(test_keys, cpp_test_name, re.I)
-            if name_match is None:
-                capi_aot_test_cases.pop(cpp_test_name, None)
-
-        if capi_aot_test_cases:
-            print_section("Running C-API AOT tests")
-            _test_cpp_aot(capi_test_filename, build_dir, capi_aot_test_cases)
-
-        # Search Cpp tests
-        print_section("Running Taichi C++ tests")
-
-        exclude_cpp_aot_tests = ":".join(__aot_test_cases.keys())
-        _run_cpp_test(cpp_test_filename, build_dir,
-                      f"--gtest_filter={test_keys}:-{exclude_cpp_aot_tests}")
-
-        print_section("Running C-API C++ tests")
-
-        exclude_capi_aot_tests = ":".join(__capi_aot_test_cases.keys())
-        _run_cpp_test(capi_test_filename, build_dir,
-                      f"--gtest_filter={test_keys}:-{exclude_capi_aot_tests}")
-
-        return
-
-    # Regular C++ tests
-    if os.path.exists(capi_tests_exe_path):
-        # Run C-API test cases
-        print_section("Running C-API AOT tests")
-        _test_cpp_aot(capi_test_filename, build_dir, __capi_aot_test_cases)
-
-        # Run rest of the C-API tests
-        print_section("Running C-API C++ tests")
-        exclude_tests_cmd = "--gtest_filter=-" + ":".join(
-            __capi_aot_test_cases.keys())
-        _run_cpp_test(capi_test_filename, build_dir, exclude_tests_cmd)
-    else:
-        print(f'Not found {capi_tests_exe_path}, skipping...')
-
-    if os.path.exists(cpp_tests_exe_path):
-        # Run AOT test cases
-        print_section("Running Taichi AOT tests")
-        _test_cpp_aot(cpp_test_filename, build_dir, __aot_test_cases)
-
-        # Run rest of the cpp tests
-        print_section("Running Taichi C++ tests")
-        exclude_tests_cmd = "--gtest_filter=-" + ":".join(
-            __aot_test_cases.keys())
-        _run_cpp_test(cpp_test_filename, build_dir, exclude_tests_cmd)
-    else:
-        print(f'Not found {cpp_tests_exe_path}, skipping...')
-
-
-def _test_python(args):
+def _test_python(args, default_dir='python'):
     print("\nRunning Python tests...\n")
 
-    test_38 = sys.version_info >= (3, 8)
-
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    test_dir = os.path.join(curr_dir, 'python')
+    test_dir = os.path.join(curr_dir, default_dir)
     pytest_args = []
 
     # TODO: use pathlib to deal with suffix and stem name manipulation
@@ -216,8 +81,7 @@ def _test_python(args):
 
 def test():
     """Run the tests"""
-    parser = argparse.ArgumentParser(
-        description=f"Run taichi cpp & python test")
+    parser = argparse.ArgumentParser(description=f"Run taichi python test")
     parser.add_argument('files',
                         nargs='*',
                         help='Test name(s) to be run, e.g. "cli"')
@@ -227,11 +91,6 @@ def test():
                         default=False,
                         action='store_true',
                         help='Only run the C++ tests')
-    parser.add_argument('--use_static_c_api',
-                        dest='static_c_api',
-                        default=False,
-                        action='store_true',
-                        help='Test with taichi_static_c_api_test instead')
     parser.add_argument('-s',
                         '--show',
                         dest='show_output',
@@ -322,10 +181,6 @@ def test():
         action='store_true',
         help=
         'Exclude arch(s) from test instead of include them, together with -a')
-    parser.add_argument('--help-aot',
-                        action='store_true',
-                        default=False,
-                        help='Show AOT test programming guide')
     parser.add_argument('--with-offline-cache',
                         action='store_true',
                         default=os.environ.get('TI_TEST_OFFLINE_CACHE',
@@ -344,10 +199,6 @@ def test():
     run_count = 1
     args = parser.parse_args()
     print(args)
-
-    if args.help_aot:
-        print_aot_test_guide()
-        exit(1)
 
     if args.arch:
         arch = args.arch
@@ -390,8 +241,10 @@ def test():
         os.environ['TI_OFFLINE_CACHE'] = '0'
 
     if args.cpp:
-        _test_cpp(args.keys, args.static_c_api)
-        return
+        # C++ tests are now handled by pytest too,
+        # so we can use `_test_python` to run them,
+        # though they are not really python tests.
+        exit(_test_python(args, 'cpp'))
 
     for _ in range(run_count):
         if _test_python(args) != 0:

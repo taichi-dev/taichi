@@ -15,7 +15,7 @@ def test_return_without_type_hint():
 
 
 def test_const_func_ret():
-    ti.init(ti.cuda, print_ir=True)
+    ti.init()
 
     @ti.kernel
     def func1() -> ti.f32:

@@ -142,7 +142,7 @@
 // ```
 //
 // `/path/to/aot/module` should point to the directory that contains a
-// `metadata.tcb`.
+// `metadata.json`.
 //
 // You can destroy an unused AOT module, but please ensure that there is no
 // kernel or compute graph related to it pending to

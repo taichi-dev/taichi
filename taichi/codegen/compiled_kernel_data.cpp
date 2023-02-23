@@ -143,6 +143,9 @@ std::unique_ptr<CompiledKernelData> CompiledKernelData::load(std::istream &is,
       TI_ASSERT(result);
       err = result->load_impl(file);
     }
+    if (err != Err::kNoError) {
+      result = nullptr;
+    }
   } catch (std::bad_alloc &) {
     err = Err::kOutOfMemory;
   }
@@ -150,6 +153,37 @@ std::unique_ptr<CompiledKernelData> CompiledKernelData::load(std::istream &is,
     *p_err = err;
   }
   return result;
+}
+
+std::string CompiledKernelData::get_err_msg(Err err) {
+  switch (err) {
+    case Err::kNoError:
+      return "Success";
+    case Err::kNotTicFile:
+      return "The file is not TIC file";
+    case Err::kCorruptedFile:
+      return "The file was corrupted";
+    case Err::kParseMetadataFailed:
+      return "Parse metadata failed";
+    case Err::kParseSrcCodeFailed:
+      return "Parse src code failed";
+    case Err::kArchNotMatched:
+      return "Arch not matched";
+    case Err::kSerMetadataFailed:
+      return "Serialize metadata failed";
+    case Err::kSerSrcCodeFailed:
+      return "Serialize src code failed";
+    case Err::kIOStreamError:
+      return "IO error";
+    case Err::kOutOfMemory:
+      return "Out of memory";
+    case Err::kTiWithoutLLVM:
+      return "The taichi is not built with llvm";
+    case Err::kTiWithoutSpirv:
+      return "The taichi is not built with spirv";
+    case Err::kUnknown:
+      return "Unkown error";
+  }
 }
 
 std::unique_ptr<CompiledKernelData> CompiledKernelData::create(Arch arch,

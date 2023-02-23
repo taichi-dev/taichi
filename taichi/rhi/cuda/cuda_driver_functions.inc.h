@@ -8,6 +8,7 @@ PER_CUDA_FUNCTION(device_get_count, cuDeviceGetCount, int *);
 PER_CUDA_FUNCTION(device_get, cuDeviceGet, void *, void *);
 PER_CUDA_FUNCTION(device_get_name, cuDeviceGetName, char *, int, void *);
 PER_CUDA_FUNCTION(device_get_attribute, cuDeviceGetAttribute, int *, uint32, void *);
+PER_CUDA_FUNCTION(device_get_default_mem_pool, cuDeviceGetDefaultMemPool, void **, void *);
 
 
 // Context management
@@ -36,6 +37,7 @@ PER_CUDA_FUNCTION(mem_free_async, cuMemFreeAsync, void *, void *);
 PER_CUDA_FUNCTION(mem_advise, cuMemAdvise, void *, std::size_t, uint32, uint32);
 PER_CUDA_FUNCTION(mem_get_info, cuMemGetInfo_v2, std::size_t *, std::size_t *);
 PER_CUDA_FUNCTION(mem_get_attribute, cuPointerGetAttribute, void *, uint32, void *);
+PER_CUDA_FUNCTION(mem_pool_set_attribute, cuMemPoolSetAttribute, void *, uint32, void *);
 
 // Module and kernels
 PER_CUDA_FUNCTION(module_get_function, cuModuleGetFunction, void **, void *, const char *);

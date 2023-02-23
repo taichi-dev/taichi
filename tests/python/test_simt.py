@@ -66,7 +66,7 @@ def test_any_nonzero():
 @test_utils.test(arch=ti.cuda)
 def test_unique():
     a = ti.field(dtype=ti.u32, shape=32)
-    b = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.i32, shape=32)
 
     @ti.kernel
     def check():
@@ -102,7 +102,7 @@ def test_unique():
 @test_utils.test(arch=ti.cuda)
 def test_ballot():
     a = ti.field(dtype=ti.u32, shape=32)
-    b = ti.field(dtype=ti.u32, shape=32)
+    b = ti.field(dtype=ti.i32, shape=32)
 
     @ti.kernel
     def foo():

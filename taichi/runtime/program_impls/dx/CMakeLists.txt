@@ -16,3 +16,4 @@ target_include_directories(dx_program_impl
   )
 
 target_link_libraries(dx_program_impl PRIVATE dx_rhi)
+target_link_libraries(dx_program_impl PRIVATE compilation_manager)

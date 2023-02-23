@@ -49,10 +49,12 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
 
-          FREQ=($(sudo nvidia-smi --query-supported-clocks=mem,gr --format=csv | head -n 2 | tail -n 1))
+          MEMFREQ=($(sudo nvidia-smi --query-supported-clocks=mem --format=csv | head -n 2 | tail -n 1))
+          GRFREQ=($(sudo nvidia-smi --query-supported-clocks=gr --format=csv | head -n 35 | tail -n 1))
           sudo nvidia-smi -pm 1
-          sudo nvidia-smi -lmc ${FREQ[0]}
-          sudo nvidia-smi -lgc ${FREQ[2]}
+          sudo nvidia-smi -lmc ${MEMFREQ[0]}
+          sudo nvidia-smi -lgc ${GRFREQ[0]}
+          sleep 0.5
 
           ci-docker-run-gpu --name taichi-benchmark-run \
             -e BENCHMARK_UPLOAD_TOKEN \

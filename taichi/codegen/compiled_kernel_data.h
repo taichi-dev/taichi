@@ -85,6 +85,7 @@ class CompiledKernelData {
   CompiledKernelData &operator=(const CompiledKernelData &) = delete;
   virtual ~CompiledKernelData() = default;
 
+  virtual Arch arch() const = 0;
   virtual std::size_t size() const = 0;
 
   Err load(std::istream &is);
@@ -101,6 +102,8 @@ class CompiledKernelData {
   }
 
   static std::unique_ptr<CompiledKernelData> load(std::istream &is, Err *p_err);
+
+  static std::string get_err_msg(Err err);
 
  protected:
   virtual Err load_impl(const CompiledKernelDataFile &file) = 0;

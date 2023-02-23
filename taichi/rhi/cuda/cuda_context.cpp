@@ -30,6 +30,20 @@ CUDAContext::CUDAContext()
   driver_.device_get_attribute(
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_);
 
+  int device_supports_mem_pool;
+  driver_.device_get_attribute(&device_supports_mem_pool,
+                               CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,
+                               device_);
+  if (device_supports_mem_pool) {
+    supports_mem_pool_ = true;
+    void *default_mem_pool;
+    driver_.device_get_default_mem_pool(&default_mem_pool, device_);
+    constexpr uint64 kMemPoolReleaseThreshold = 1048576 * 128;
+    driver_.mem_pool_set_attribute(default_mem_pool,
+                                   CU_MEMPOOL_ATTR_RELEASE_THRESHOLD,
+                                   (void *)&kMemPoolReleaseThreshold);
+  }
+
   TI_TRACE("CUDA Device Compute Capability: {}.{}", cc_major, cc_minor);
   driver_.primary_context_retain(&context_, 0);
   driver_.context_set_current(context_);

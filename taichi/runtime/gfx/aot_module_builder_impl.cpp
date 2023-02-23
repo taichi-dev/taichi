@@ -159,46 +159,6 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
   dump_graph(output_dir);
 }
 
-void AotModuleBuilderImpl::mangle_aot_data() {
-  // Only for offline cache
-  for (auto &kernel : ti_aot_data_.kernels) {
-    const auto &prefix = kernel.name;
-    for (std::size_t i = 0; i < kernel.tasks_attribs.size(); ++i) {
-      kernel.tasks_attribs[i].name = prefix + std::to_string(i);
-    }
-  }
-}
-
-void AotModuleBuilderImpl::merge_with_old_meta_data(const std::string &path) {
-  // Only for offline cache
-  auto filename = taichi::join_path(path, "metadata.tcb");
-  if (taichi::path_exists(filename)) {
-    TaichiAotData old_data;
-    read_from_binary_file(old_data, filename);
-    // Ignore root_buffer_size and fields which aren't needed for offline cache
-    ti_aot_data_.kernels.insert(ti_aot_data_.kernels.end(),
-                                old_data.kernels.begin(),
-                                old_data.kernels.end());
-  }
-}
-
-std::optional<GfxRuntime::RegisterParams>
-AotModuleBuilderImpl::try_get_kernel_register_params(
-    const std::string &kernel_name) const {
-  const auto &kernels = ti_aot_data_.kernels;
-  for (std::size_t i = 0; i < kernels.size(); ++i) {
-    if (kernels[i].name == kernel_name) {
-      GfxRuntime::RegisterParams result;
-      result.kernel_attribs = kernels[i];
-      result.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
-      // We only support a single SNodeTree during AOT.
-      result.num_snode_trees = 1;
-      return result;
-    }
-  }
-  return std::nullopt;
-}
-
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
   spirv::lower(config_, kernel);

@@ -1,0 +1,187 @@
+---
+- name: C++ Tests
+  binary: ../../build/taichi_cpp_tests
+  tests:
+  - test: LlvmAotTest.CpuKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=cpu
+  - test: LlvmAotTest.CudaKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=cuda
+  - test: LlvmAotTest.DX12Kernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=dx12
+  - test: LlvmAotTest.CpuField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cpu
+  - test: LlvmAotTest.CudaField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cuda
+  - test: LlvmAotTest.CpuDynamic
+    script: aot/python_scripts/dynamic_aot_test_.py
+    args: --arch=cpu
+  - test: LlvmAotTest.CudaDynamic
+    script: aot/python_scripts/dynamic_aot_test_.py
+    args: --arch=cuda
+  - test: LlvmAotTest.CpuBitmasked
+    script: aot/python_scripts/bitmasked_aot_test_.py
+    args: --arch=cpu
+  - test: LlvmAotTest.CudaBitmasked
+    script: aot/python_scripts/bitmasked_aot_test_.py
+    args: --arch=cuda
+  - test: LlvmCGraph.RunGraphCpu
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=cpu
+  - test: LlvmCGraph.RunGraphCuda
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=cuda
+  - test: LlvmCGraph.CpuField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cpu --cgraph
+  - test: LlvmCGraph.CudaField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cuda --cgraph
+  - test: LlvmCGraph.Mpm88Cpu
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=cpu --cgraph
+  - test: LlvmCGraph.Mpm88Cuda
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=cuda --cgraph
+  - test: CGraphAotTest.VulkanMpm88
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=vulkan --cgraph
+  - test: CGraphAotTest.OpenglMpm88
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=opengl --cgraph
+  - test: GfxAotTest.VulkanDenseField
+    script: aot/python_scripts/dense_field_aot_test_.py
+    args: --arch=vulkan
+  - test: GfxAotTest.OpenglDenseField
+    script: aot/python_scripts/dense_field_aot_test_.py
+    args: --arch=opengl
+  - test: GfxAotTest.VulkanKernelTest1
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=vulkan
+  - test: GfxAotTest.OpenglKernelTest1
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=opengl
+  - test: GfxAotTest.VulkanKernelTest2
+    script: aot/python_scripts/kernel_aot_test2.py
+    args: --arch=vulkan
+  - test: GfxAotTest.OpenglKernelTest2
+    script: aot/python_scripts/kernel_aot_test2.py
+    args: --arch=opengl
+  - test: CGraphAotTest.VulkanRunCGraph1
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=vulkan
+  - test: CGraphAotTest.VulkanRunCGraph2
+    script: aot/python_scripts/kernel_aot_test2.py
+    args: --arch=vulkan --cgraph
+  - test: CGraphAotTest.OpenglRunCGraph1
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=opengl
+  - test: CGraphAotTest.OpenglRunCGraph2
+    script: aot/python_scripts/kernel_aot_test2.py
+    args: --arch=opengl --cgraph
+
+- name: C-API Tests
+  binary: ../../build/taichi_c_api_tests
+  tests: &c-api-tests
+  - test: CapiTest.Mpm88TestVulkan
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=vulkan
+  - test: CapiTest.Mpm88TestOpengl
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=opengl
+  - test: CapiTest.Mpm88TestCuda
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=cuda
+  - test: CapiTest.SphTestVulkan
+    script: aot/python_scripts/sph_aot.py
+    args: --arch=vulkan
+  - test: CapiTest.SphTestOpengl
+    script: aot/python_scripts/sph_aot.py
+    args: --arch=opengl
+  - test: CapiTest.SphTestCuda
+    script: aot/python_scripts/sph_aot.py
+    args: --arch=cuda
+  - test: CapiTest.CometTestCuda
+    script: aot/python_scripts/comet_aot.py
+    args: --arch=cuda
+  - test: CapiTest.TaichiSparseTestCuda
+    script: aot/python_scripts/taichi_sparse_test_.py
+  - test: CapiTest.AotTestCpuField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cpu
+  - test: CapiTest.AotTestCudaField
+    script: aot/python_scripts/field_aot_test_.py
+    args: --arch=cuda
+  - test: CapiTest.GraphTestCpuGraph
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=cpu
+  - test: CapiTest.GraphTestCudaGraph
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=cuda
+  - test: CapiTest.GraphTestVulkanGraph
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.GraphTestVulkanTextureGraph
+    script: aot/python_scripts/texture_aot_test_.py
+    args: --arch=vulkan --graph
+  - test: CapiTest.GraphTestVulkanTextureKernel
+    script: aot/python_scripts/texture_aot_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.GraphTestOpenglGraph
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=opengl
+  - test: CapiTest.AotTestCpuKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=cpu
+  - test: CapiTest.AotTestCudaKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=cuda
+  - test: CapiTest.AotTestCudaSharedArray
+    script: aot/python_scripts/shared_array_aot_test_.py
+    args: --arch=cuda
+  - test: CapiTest.AotTestVulkanKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=vulkan
+  - test: CapiTest.AotTestVulkanSharedArray
+    script: aot/python_scripts/shared_array_aot_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.AotTestOpenglKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=opengl
+  - test: CapiTest.DryRunVulkanAotModule
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=vulkan
+  - test: CapiTest.DryRunOpenglAotModule
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=opengl
+  - test: CapiTest.TestLoadTcmAotModule
+    script: aot/python_scripts/tcm_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.TestCreateTcmAotModule
+    script: aot/python_scripts/tcm_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.TestBehaviorLoadAOTModuleVulkan
+    script: aot/python_scripts/aot_module_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.TestBehaviorDestroyAotModuleVulkan
+    script: aot/python_scripts/aot_module_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.TestBehaviorGetCgraphVulkan
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=vulkan
+  - test: CapiTest.Float16Fill
+    script: aot/python_scripts/numerical_aot_test_.py
+    args: --arch=vulkan
+    markers: [sm70]
+  - test: CapiTest.Float16Compute
+    script: aot/python_scripts/numerical_aot_test_.py
+    args: --arch=vulkan
+    markers: [sm70]
+
+- name: C-API Tests (Static binary)
+  binary: ../../build/taichi_static_c_api_tests
+  tests: *c-api-tests

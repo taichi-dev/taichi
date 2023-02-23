@@ -116,7 +116,7 @@ You can load a Taichi AOT module from the filesystem.
 TiAotModule aot_module = ti_load_aot_module(runtime, "/path/to/aot/module");
 ```
 
-`/path/to/aot/module` should point to the directory that contains a `metadata.tcb`.
+`/path/to/aot/module` should point to the directory that contains a `metadata.json`.
 
 You can destroy an unused AOT module, but please ensure that there is no kernel or compute graph related to it pending to [`ti_flush`](#function-ti_flush).
 

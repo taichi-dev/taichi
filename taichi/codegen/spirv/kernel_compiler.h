@@ -12,6 +12,9 @@ namespace spirv {
 class KernelCompiler : public lang::KernelCompiler {
  public:
   struct Config {
+    // NOTE: Ideally, compiled_struct_data should be used as an argument to
+    // KernelCompiler::compile, but this necessitates the use of a unified
+    // structure to represent the compiled struct.
     const std::vector<CompiledSNodeStructs> *compiled_struct_data{nullptr};
   };
 

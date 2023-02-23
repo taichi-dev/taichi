@@ -46,29 +46,27 @@ class AotModuleImpl : public aot::Module {
         (const char *)(metadata_json.data() + metadata_json.size()));
     liong::json::deserialize(json, ti_aot_data_);
 
-    if (!params.enable_lazy_loading) {
-      for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
-        auto k = ti_aot_data_.kernels[i];
-        std::vector<std::vector<uint32_t>> spirv_sources_codes;
-        for (int j = 0; j < k.tasks_attribs.size(); ++j) {
-          std::string spirv_path = k.tasks_attribs[j].name + ".spv";
+    for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
+      auto k = ti_aot_data_.kernels[i];
+      std::vector<std::vector<uint32_t>> spirv_sources_codes;
+      for (int j = 0; j < k.tasks_attribs.size(); ++j) {
+        std::string spirv_path = k.tasks_attribs[j].name + ".spv";
 
-          std::vector<uint32_t> spirv;
-          dir->load_file(spirv_path, spirv);
+        std::vector<uint32_t> spirv;
+        dir->load_file(spirv_path, spirv);
 
-          if (spirv.size() == 0) {
-            mark_corrupted();
-            TI_WARN("spirv '{}' cannot be read", spirv_path);
-            return;
-          }
-          if (spirv.at(0) != 0x07230203) {
-            TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path,
-                    spirv.at(0));
-          }
-          spirv_sources_codes.emplace_back(std::move(spirv));
+        if (spirv.size() == 0) {
+          mark_corrupted();
+          TI_WARN("spirv '{}' cannot be read", spirv_path);
+          return;
         }
-        ti_aot_data_.spirv_codes.emplace_back(std::move(spirv_sources_codes));
+        if (spirv.at(0) != 0x07230203) {
+          TI_WARN("spirv '{}' has a incorrect magic number {}", spirv_path,
+                  spirv.at(0));
+        }
+        spirv_sources_codes.emplace_back(std::move(spirv));
       }
+      ti_aot_data_.spirv_codes.emplace_back(std::move(spirv_sources_codes));
     }
 
     std::vector<uint8_t> graphs_tcb{};
@@ -130,9 +128,6 @@ class AotModuleImpl : public aot::Module {
       // AOT, only use the name of the function which should be the first part
       // of the struct
       if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
-        if (!try_load_spv_kernel(i)) {
-          return false;
-        }
         kernel.kernel_attribs = ti_aot_data_.kernels[i];
         kernel.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
         // We don't have to store the number of SNodeTree in |ti_aot_data_| yet,
@@ -168,24 +163,6 @@ class AotModuleImpl : public aot::Module {
       return nullptr;
     }
     return std::make_unique<FieldImpl>(runtime_, field);
-  }
-
-  bool try_load_spv_kernel(std::size_t index) {
-    if (index >= ti_aot_data_.spirv_codes.size() ||
-        ti_aot_data_.spirv_codes[index].empty()) {
-      ti_aot_data_.spirv_codes.resize(index + 1);
-      auto &codes = ti_aot_data_.spirv_codes[index];
-      const auto &k = ti_aot_data_.kernels[index];
-      for (const auto &t : k.tasks_attribs) {
-        auto spv = read_spv_file(module_path_, t);
-        if (spv.empty()) {
-          mark_corrupted();
-          return false;
-        }
-        codes.push_back(spv);
-      }
-    }
-    return true;
   }
 
   static std::vector<uint32_t> read_spv_file(const std::string &output_dir,

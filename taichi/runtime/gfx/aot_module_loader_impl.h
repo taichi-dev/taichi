@@ -20,7 +20,6 @@ struct TI_DLL_EXPORT AotModuleParams {
   std::string module_path{};
   const io::VirtualDir *dir{nullptr};
   GfxRuntime *runtime{nullptr};
-  bool enable_lazy_loading{false};
 
   AotModuleParams() = default;
 

@@ -43,14 +43,6 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.hookimpl(trylast=True)
-def pytest_configure(config):
-    config.addinivalue_line(
-        "markers",
-        "run_in_serial: mark test to run serially(usually for resource intensive tests)."
-    )
-
-
-@pytest.hookimpl(trylast=True)
 def pytest_runtest_logreport(report):
     '''
     Intentionally crash test workers when a test fails.

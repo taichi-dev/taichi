@@ -24,7 +24,9 @@ try:
     import wget
     from scipy.spatial.transform import Rotation as R
 except:
-    raise ImportError("The Taichi NGP renderer requires cv2, wget and scipy to be installed.")
+    raise ImportError(
+        "The Taichi NGP renderer requires cv2, wget and scipy to be installed."
+    )
 
 
 def depth2img(depth):

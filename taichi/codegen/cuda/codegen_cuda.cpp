@@ -629,6 +629,10 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
     std::vector<DeviceAllocation> temporary_devallocs(args.size());
+    char *device_result_buffer{nullptr};
+    CUDADriver::get_instance().malloc_async(
+        (void **)&device_result_buffer,
+        std::max(context.result_buffer_size, sizeof(uint64)), nullptr);
 
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
@@ -658,9 +662,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
             // See CUDA driver API `cuPointerGetAttribute` for more details.
             transferred = true;
 
-            auto result_buffer = context.result_buffer;
-            DeviceAllocation devalloc =
-                executor->allocate_memory_ndarray(arr_sz, result_buffer);
+            DeviceAllocation devalloc = executor->allocate_memory_ndarray(
+                arr_sz, (uint64 *)device_result_buffer);
             device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
             temporary_devallocs[i] = devalloc;
 
@@ -694,10 +697,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
     char *host_result_buffer = (char *)context.result_buffer;
-    char *device_result_buffer{nullptr};
     if (context.result_buffer_size > 0) {
-      CUDADriver::get_instance().malloc_async(
-          (void **)&device_result_buffer, context.result_buffer_size, nullptr);
       context.result_buffer = (uint64 *)device_result_buffer;
     }
     CUDADriver::get_instance().context_set_limit(
@@ -713,8 +713,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().memcpy_device_to_host_async(
           host_result_buffer, device_result_buffer, context.result_buffer_size,
           nullptr);
-      CUDADriver::get_instance().mem_free_async(device_result_buffer, nullptr);
     }
+    CUDADriver::get_instance().mem_free_async(device_result_buffer, nullptr);
     // copy data back to host
     if (transferred) {
       CUDADriver::get_instance().stream_synchronize(nullptr);

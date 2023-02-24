@@ -31,6 +31,24 @@ You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, 
 
 ## Data structures
 
+
+### Why I cannot declare a field with a very large dimension?
+
+In Taichi, the maximum size of each dimension of a field is restricted to the range represented by the int32 type (less than or equal to 2^31-1) due to Taichi's current internal implementation.
+
+If a field with a size of a dimension larger than int32 is declared, Taichi will raise an error. For example, the following code will raise an error:
+
+```python skip-ci:Error
+x = ti.field(int, shape=(10**10))  # error!
+```
+
+However, multi-dimensional fields of large size can still be declared as long as each dimension does not exceed the int32 limit. For example, the following code declares a three-dimensional field:
+
+```python skip-ci:Error
+x = ti.field(int, shape=(10**4, 10**4,, 10**2))  # OK!
+```
+
+
 ### How do I declare a field with a **dynamic length**?
 
 The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python.

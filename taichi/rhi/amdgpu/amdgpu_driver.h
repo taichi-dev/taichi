@@ -13,7 +13,9 @@ constexpr uint32 HIP_STREAM_NON_BLOCKING = 0x1;
 constexpr uint32 HIP_MEM_ATTACH_GLOBAL = 0x1;
 constexpr uint32 HIP_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 26;
+constexpr uint32 HIP_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED = 88;
 constexpr uint32 HIP_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 63;
+constexpr uint32 HIP_MEMPOOL_ATTR_RELEASE_THRESHOLD = 4;
 constexpr uint32 HIP_DEVICE_PROPERTIES_STRUCT_SIZE = 792;
 constexpr uint32 HIP_DEVICE_GCN_ARCH = 98;
 constexpr uint32 HIP_ERROR_ASSERT = 710;
@@ -100,6 +102,10 @@ class AMDGPUDriver : protected AMDGPUDriverBase {
   char *(*get_error_string)(uint32);
 
   void (*driver_get_version)(int *);
+
+  void malloc_async(void **ptr, size_t size, void *stream);
+
+  void mem_free_async(void *ptr, void *stream);
 
   bool detected();
 

@@ -1272,6 +1272,7 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
+  bool overrided_dtype = false;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
   GetChStmt(Stmt *input_ptr,

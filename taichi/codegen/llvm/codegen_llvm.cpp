@@ -1800,10 +1800,16 @@ void TaskCodeGenLLVM::visit(GetChStmt *stmt) {
         stmt->output_snode->get_ch_from_parent_func_name(),
         builder->CreateBitCast(llvm_val[stmt->input_ptr],
                                llvm::PointerType::getInt8PtrTy(*llvm_context)));
-    llvm_val[stmt] = builder->CreateBitCast(
-        ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
-                                       module.get(), stmt->output_snode),
-                                   0));
+    if (stmt->overrided_dtype) {
+      auto dt = stmt->ret_type.ptr_removed();
+      llvm_val[stmt] = builder->CreateBitCast(
+          ch, llvm::PointerType::get(tlctx->get_data_type(dt), 0));
+    } else {
+      llvm_val[stmt] = builder->CreateBitCast(
+          ch, llvm::PointerType::get(StructCompilerLLVM::get_llvm_node_type(
+                                         module.get(), stmt->output_snode),
+                                     0));
+    }
   }
 }
 

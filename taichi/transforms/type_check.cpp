@@ -504,6 +504,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
+    if (stmt->overrided_dtype)
+      return;
+
     if (stmt->is_bit_vectorized) {
       auto physical_type = stmt->output_snode->physical_type;
       auto ptr_ret_type =

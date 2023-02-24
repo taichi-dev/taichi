@@ -45,7 +45,7 @@ x = ti.field(int, shape=(10**10))  # error!
 However, multi-dimensional fields of large size can still be declared as long as each dimension does not exceed the int32 limit. For example, the following code declares a three-dimensional field:
 
 ```python skip-ci:Error
-x = ti.field(int, shape=(10**4, 10**4,, 10**2))  # OK!
+x = ti.field(int, shape=(10**4, 10**4, 10**2))  # OK!
 ```
 
 

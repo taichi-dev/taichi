@@ -252,12 +252,19 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendPrintStmt *print_stmt) override {
     std::vector<std::string> contents;
-    for (auto const &c : print_stmt->contents) {
+    for (auto i = 0; i != print_stmt->contents.size(); ++i) {
+      auto const &c = print_stmt->contents[i];
+      auto const &f = print_stmt->formats[i];
+
       std::string name;
       if (std::holds_alternative<Expr>(c))
         name = expr_to_string(std::get<Expr>(c).expr.get());
       else
         name = c_quoted(std::get<std::string>(c));
+      if (f.has_value()) {
+        name += " ";
+        name += f.value();
+      }
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));

@@ -716,3 +716,30 @@ def test_ndarray_in_python_func():
 
     for i in range(300):
         test()
+
+
+@pytest.mark.run_in_serial
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+def test_ndarray_with_fp16():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    @ti.kernel
+    def init(x: ti.types.ndarray(dtype=half2, field_dim=1)):
+        for i in x:
+            x[i] = half2(2.0)
+
+    @ti.kernel
+    def test(table: ti.types.ndarray(dtype=half2, field_dim=1)):
+        tmp = ti.Vector([ti.cast(0.0, ti.f16), ti.cast(0.0, ti.f16)])
+        for i in ti.static(range(2)):
+            tmp = tmp + 4.0 * table[i]
+
+        table[0] = tmp
+
+    acc = ti.ndarray(dtype=half2, shape=(40))
+    table = ti.ndarray(dtype=half2, shape=(40))
+
+    init(table)
+    test(table)
+
+    assert (table.to_numpy()[0] == 16.).any()

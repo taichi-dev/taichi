@@ -551,8 +551,8 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     }
     char *host_result_buffer = (char *)context.result_buffer;
     if (context.result_buffer_size > 0) {
-      AMDGPUDriver::get_instance().malloc_async(
-          (void **)&device_result_buffer, context.result_buffer_size, nullptr);
+      AMDGPUDriver::get_instance().malloc((void **)&device_result_buffer,
+                                          context.result_buffer_size);
       context.result_buffer = (uint64 *)device_result_buffer;
     }
     void *context_pointer;
@@ -572,11 +572,9 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     }
     TI_TRACE("Launching kernel");
     if (context.result_buffer_size > 0) {
-      AMDGPUDriver::get_instance().memcpy_device_to_host_async(
-          host_result_buffer, device_result_buffer, context.result_buffer_size,
-          nullptr);
-      AMDGPUDriver::get_instance().mem_free_async(device_result_buffer,
-                                                  nullptr);
+      AMDGPUDriver::get_instance().memcpy_device_to_host(
+          host_result_buffer, device_result_buffer, context.result_buffer_size);
+      AMDGPUDriver::get_instance().mem_free(device_result_buffer);
     }
     if (transferred) {
       for (int i = 0; i < args.size(); i++) {

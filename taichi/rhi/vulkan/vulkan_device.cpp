@@ -2633,6 +2633,12 @@ void VulkanSurface::create_swap_chain() {
   VkSurfaceCapabilitiesKHR capabilities;
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device_->vk_physical_device(),
                                             surface_, &capabilities);
+  if (capabilities.maxImageCount == 0) {
+    // https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSurfaceCapabilitiesKHR.html
+    // When maxImageCount is 0, there is no limit on the number of images.
+    capabilities.maxImageCount =
+        std::max<uint32_t>(capabilities.minImageCount, 3);
+  }
 
   VkBool32 supported = false;
   vkGetPhysicalDeviceSurfaceSupportKHR(device_->vk_physical_device(),
@@ -2677,8 +2683,8 @@ void VulkanSurface::create_swap_chain() {
   {
     std::array<char, 512> msg_buf;
     RHI_DEBUG_SNPRINTF(msg_buf.data(), msg_buf.size(),
-                       "Creating suface of %u x %u", extent.width,
-                       extent.height);
+                       "Creating suface of %u x %u, present mode %d",
+                       extent.width, extent.height, present_mode);
     RHI_LOG_DEBUG(msg_buf.data());
   }
   VkImageUsageFlags usage =
@@ -2789,9 +2795,10 @@ StreamSemaphore VulkanSurface::acquire_next_image() {
     image_index_ = (image_index_ + 1) % uint32_t(swapchain_images_.size());
     return nullptr;
   } else {
-    vkAcquireNextImageKHR(device_->vk_device(), swapchain_, UINT64_MAX,
-                          image_available_->semaphore, VK_NULL_HANDLE,
-                          &image_index_);
+    VkResult res = vkAcquireNextImageKHR(
+        device_->vk_device(), swapchain_, uint64_t(4 * 1e9),
+        image_available_->semaphore, VK_NULL_HANDLE, &image_index_);
+    BAIL_ON_VK_BAD_RESULT_NO_RETURN(res, "vkAcquireNextImageKHR failed");
     return std::make_shared<VulkanStreamSemaphoreObject>(image_available_);
   }
 }

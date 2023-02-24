@@ -635,6 +635,10 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
+  void visit(ReturnStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(WhileControlStmt *stmt) override {
     TI_NOT_IMPLEMENTED
   }

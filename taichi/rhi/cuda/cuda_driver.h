@@ -124,16 +124,6 @@ class CUDADriver : protected CUDADriverBase {
 
   void (*driver_get_version)(int *);
 
-  void memcpy_host_to_device_async(void *dst,
-                                   const void *src,
-                                   size_t size,
-                                   CUstream stream);
-
-  void memcpy_device_to_host_async(void *dst,
-                                   const void *src,
-                                   size_t size,
-                                   CUstream stream);
-
   void malloc_async(void **ptr, size_t size, CUstream stream);
 
   void mem_free_async(void *ptr, CUstream stream);

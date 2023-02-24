@@ -79,8 +79,9 @@ class TaichiLLVMContext {
 
   std::size_t get_struct_element_offset(llvm::StructType *type, int idx);
 
-  const StructType *get_struct_type_with_data_layout(const StructType *old_ty,
-                                                     const std::string &layout);
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout);
 
   template <typename T>
   llvm::Value *get_constant(T t);

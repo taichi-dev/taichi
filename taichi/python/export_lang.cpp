@@ -688,6 +688,7 @@ void export_lang(py::module &m) {
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
+      .def("finalize_params", &Kernel::finalize_params)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -734,6 +735,7 @@ void export_lang(py::module &m) {
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))
       .def("finalize_rets", &Function::finalize_rets)
+      .def("finalize_params", &Function::finalize_params)
       .def(
           "ast_builder",
           [](Function *self) -> ASTBuilder * {

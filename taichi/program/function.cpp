@@ -16,6 +16,8 @@ void Function::set_function_body(const std::function<void()> &func) {
   ir_type_ = IRType::AST;
 
   func();
+  finalize_params();
+  finalize_rets();
 
   if (program->compile_config().offline_cache) {  // For generating AST-Key
     std::ostringstream oss;

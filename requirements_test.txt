@@ -13,3 +13,4 @@ scipy
 setproctitle
 nbmake
 marko
+PyYAML

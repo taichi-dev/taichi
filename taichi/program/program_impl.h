@@ -174,10 +174,10 @@ class ProgramImpl {
     return "";
   };
 
-  virtual const StructType *get_struct_type_with_data_layout(
-      const StructType *old_ty,
-      const std::string &layout) {
-    return old_ty;
+  virtual std::pair<const StructType *, size_t>
+  get_struct_type_with_data_layout(const StructType *old_ty,
+                                   const std::string &layout) {
+    return {old_ty, 0};
   }
 
   KernelCompilationManager &get_kernel_compilation_manager();

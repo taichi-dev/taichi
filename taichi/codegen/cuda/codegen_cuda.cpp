@@ -700,6 +700,15 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     if (context.result_buffer_size > 0) {
       context.result_buffer = (uint64 *)device_result_buffer;
     }
+    char *device_arg_buffer = nullptr;
+    if (context.arg_buffer_size > 0) {
+      CUDADriver::get_instance().malloc_async((void **)&device_arg_buffer,
+                                              context.arg_buffer_size, nullptr);
+      CUDADriver::get_instance().memcpy_host_to_device_async(
+          device_arg_buffer, context.arg_buffer, context.arg_buffer_size,
+          nullptr);
+      context.arg_buffer = device_arg_buffer;
+    }
     CUDADriver::get_instance().context_set_limit(
         CU_LIMIT_STACK_SIZE, executor->get_config().cuda_stack_limit);
 
@@ -708,6 +717,9 @@ FunctionType CUDAModuleToFunctionConverter::convert(
                task.block_dim);
       cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
                           {&context}, {});
+    }
+    if (context.arg_buffer_size > 0) {
+      CUDADriver::get_instance().mem_free_async(device_arg_buffer, nullptr);
     }
     if (context.result_buffer_size > 0) {
       CUDADriver::get_instance().memcpy_device_to_host_async(

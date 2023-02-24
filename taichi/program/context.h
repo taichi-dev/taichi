@@ -4,17 +4,20 @@
 #include "taichi/inc/constants.h"
 
 #if defined(TI_RUNTIME_HOST)
+#include "taichi/ir/type.h"
 namespace taichi::lang {
 #endif
 
 struct LLVMRuntime;
 struct DeviceAllocation;
+class StructType;
 // "RuntimeContext" holds necessary data for kernel body execution, such as a
 // pointer to the LLVMRuntime struct, kernel arguments, and the thread id (if on
 // CPU).
 struct RuntimeContext {
   char *arg_buffer;
   size_t arg_buffer_size;
+  const StructType *args_type;
   enum class DevAllocType : int8_t {
     kNone = 0,
     kNdarray = 1,
@@ -57,9 +60,18 @@ struct RuntimeContext {
 #if defined(TI_RUNTIME_HOST)
   template <typename T>
   T get_arg(int i) {
+    if (arg_buffer_size > 0) {
+      // Currently arg_buffer_size is always zero on non-LLVM-based backends
+      return get_struct_arg<T>({i});
+    }
     return taichi_union_cast_with_different_sizes<T>(args[i]);
   }
 
+  template <typename T>
+  T get_struct_arg(std::vector<int> index) {
+    int offset = args_type->get_element_offset(index);
+    return *(T *)(arg_buffer + offset);
+  }
   template <typename T>
   T get_grad_arg(int i) {
     return taichi_union_cast_with_different_sizes<T>(grad_args[i]);
@@ -71,8 +83,20 @@ struct RuntimeContext {
 
   template <typename T>
   void set_arg(int i, T v) {
+    set_struct_arg({i}, v);
     args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
     set_array_device_allocation_type(i, DevAllocType::kNone);
+  }
+
+  template <typename T>
+  void set_struct_arg(std::vector<int> index, T v) {
+    if (arg_buffer_size == 0) {
+      // Currently arg_buffer_size is always zero on non-LLVM-based backends,
+      // and this function is no-op for these backends.
+      return;
+    }
+    int offset = args_type->get_element_offset(index);
+    *(T *)(arg_buffer + offset) = v;
   }
 
   template <typename T>
@@ -94,6 +118,7 @@ struct RuntimeContext {
   }
 
   void set_arg_texture(int arg_id, intptr_t alloc_ptr) {
+    set_struct_arg({arg_id}, alloc_ptr);
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
     set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
   }
@@ -101,6 +126,7 @@ struct RuntimeContext {
   void set_arg_rw_texture(int arg_id,
                           intptr_t alloc_ptr,
                           const std::array<int, 3> &shape) {
+    set_struct_arg({arg_id}, alloc_ptr);
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
     set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
     TI_ASSERT(shape.size() <= taichi_max_num_indices);
@@ -130,6 +156,7 @@ struct RuntimeContext {
     // Set has_grad value
     this->has_grad[arg_id] = has_grad;
 
+    set_struct_arg({arg_id}, devalloc_ptr);
     // Set args[arg_id] value
     args[arg_id] = taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
 

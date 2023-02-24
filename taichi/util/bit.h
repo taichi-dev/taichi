@@ -47,6 +47,21 @@ TI_FORCE_INLINE float32 half_to_float(const uint16 x) {
                              0x007FE000)));  // sign : normalized : denormalized
 }
 
+TI_FORCE_INLINE uint16 float_to_half(const float32 x) {
+  // Reference: https://stackoverflow.com/a/60047308
+  const uint32 b = as_uint(x) + 0x00001000;  // round-to-nearest-even: add last
+                                             // bit after truncated mantissa
+  const uint32 e = (b & 0x7F800000) >> 23;   // exponent
+  const uint32 m = b & 0x007FFFFF;  // mantissa; in line below: 0x007FF000 =
+                                    // 0x00800000-0x00001000 = decimal indicator
+                                    // flag - initial rounding
+  return (b & 0x80000000) >> 16 |
+         (e > 112) * ((((e - 112) << 10) & 0x7C00) | m >> 13) |
+         ((e < 113) & (e > 101)) *
+             ((((0x007FF000 + m) >> (125 - e)) + 1) >> 1) |
+         (e > 143) * 0x7FFF;  // sign : normalized : denormalized : saturate
+}
+
 template <int length>
 struct Bits {
   static_assert(is_power_of_two(length), "length must be a power of two");

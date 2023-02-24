@@ -56,19 +56,23 @@ class TI_DLL_EXPORT Kernel : public Callable {
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.
     void set_arg_raw(int arg_id, uint64 d);
+    TypedConstant fetch_ret(const std::vector<int> &index);
+    float64 get_struct_ret_float(const std::vector<int> &index);
+    int64 get_struct_ret_int(const std::vector<int> &index);
+    uint64 get_struct_ret_uint(const std::vector<int> &index);
 
     RuntimeContext &get_context();
 
    private:
     Kernel *kernel_;
     std::unique_ptr<RuntimeContext> owned_ctx_;
-    std::unique_ptr<char[]> arg_buffer_;
-    std::unique_ptr<char[]> result_buffer_;
     // |ctx_| *almost* always points to |owned_ctx_|. However, it is possible
     // that the caller passes a RuntimeContext pointer externally. In that case,
     // |owned_ctx_| will be nullptr.
     // Invariant: |ctx_| will never be nullptr.
     RuntimeContext *ctx_;
+    std::unique_ptr<char[]> arg_buffer_;
+    std::unique_ptr<char[]> result_buffer_;
   };
 
   Kernel(Program &program,

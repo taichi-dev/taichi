@@ -121,17 +121,25 @@ class CPPTestItem(pytest.Item):
                     'TAICHI_AOT_FOLDER_PATH': tmpdir,
                 })
                 if self.script:
-                    subprocess.check_call(
+                    retcode = subprocess.call(
                         f'{sys.executable} {self.script} {self.args}',
                         shell=True,
                         cwd=str(BASE),
                         env=env)
 
-                subprocess.check_call(
+                    retcode and pytest.fail(
+                        f'{self.script} {self.args} reported failure, exit code {retcode}'
+                    )
+
+                retcode = subprocess.call(
                     f'{self.binary} --gtest_filter={self.test}',
                     shell=True,
                     cwd=str(BASE),
                     env=env)
+
+                retcode and pytest.fail(
+                    f'C++ part reported failure, exit code {retcode}')
+
             except Exception:
                 excinfo = sys.exc_info()
                 raise CPPTestException(excinfo)

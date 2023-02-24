@@ -365,7 +365,7 @@ float32 &TypedConstant::val_float32() {
 }
 
 float32 &TypedConstant::val_float16() {
-  TI_ASSERT(get_data_type<float32>() == dt);
+  TI_ASSERT(dt == PrimitiveType::f16);
   return val_f32;
 }
 

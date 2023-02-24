@@ -38,23 +38,6 @@ AMDGPUContext::AMDGPUContext()
   compute_capability_ = *((int *)hip_device_prop + HIP_DEVICE_GCN_ARCH);
   std::free(hip_device_prop);
 
-  int device_supports_mem_pool;
-  driver_.device_get_attribute(&device_supports_mem_pool,
-                               HIP_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED, 0);
-  if (device_supports_mem_pool) {
-    TI_INFO("Device supports memory pool");
-    supports_mem_pool_ = true;
-    void *default_mem_pool;
-    driver_.device_get_default_mem_pool(&default_mem_pool, 0);
-    constexpr uint64 kMemPoolReleaseThreshold = 1048576 * 128;
-    driver_.mem_pool_set_attribute(default_mem_pool,
-                                   HIP_MEMPOOL_ATTR_RELEASE_THRESHOLD,
-                                   (void *)&kMemPoolReleaseThreshold);
-  } else {
-    TI_INFO("Device does not support memory pool");
-    supports_mem_pool_ = false;
-  }
-
   mcpu_ = fmt::format("gfx{}", compute_capability_);
 
   TI_TRACE("Emitting AMDGPU code for {}", mcpu_);

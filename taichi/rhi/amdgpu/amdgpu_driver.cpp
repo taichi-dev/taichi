@@ -78,22 +78,5 @@ AMDGPUDriver &AMDGPUDriver::get_instance() {
   return get_instance_without_context();
 }
 
-void AMDGPUDriver::malloc_async(void **dev_ptr, size_t size, void *stream) {
-  if (AMDGPUContext::get_instance().supports_mem_pool()) {
-    malloc_async_impl(dev_ptr, size, stream);
-  } else {
-    malloc(dev_ptr, size);
-  }
-}
-
-void AMDGPUDriver::mem_free_async(void *dev_ptr, void *stream) {
-  if (AMDGPUContext::get_instance().supports_mem_pool()) {
-    TI_INFO("Freeing memory asynchronously");
-    mem_free_async_impl(dev_ptr, stream);
-  } else {
-    mem_free(dev_ptr);
-  }
-}
-
 }  // namespace lang
 }  // namespace taichi

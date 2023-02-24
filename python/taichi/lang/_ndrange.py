@@ -1,5 +1,6 @@
 import collections.abc
 from typing import Iterable
+
 import numpy as np
 from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError

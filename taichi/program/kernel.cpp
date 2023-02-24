@@ -84,8 +84,13 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
+      arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
+      result_buffer_(std::make_unique<char[]>(kernel->ret_size)),
       ctx_(owned_ctx_.get()) {
   ctx_->result_buffer_size = kernel->ret_size;
+  ctx_->result_buffer = (uint64 *)result_buffer_.get();
+  ctx_->arg_buffer_size = kernel->args_size;
+  ctx_->arg_buffer = arg_buffer_.get();
 }
 
 void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {

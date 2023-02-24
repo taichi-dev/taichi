@@ -1,5 +1,5 @@
 import collections.abc
-
+from typing import Iterable
 import numpy as np
 from taichi.lang import ops
 from taichi.lang.exception import TaichiSyntaxError, TaichiTypeError
@@ -55,7 +55,7 @@ class _Ndrange:
         return GroupedNDRange(self)
 
 
-def ndrange(*args):
+def ndrange(*args) -> Iterable:
     """Return an immutable iterator object for looping over multi-dimensional indices.
 
     This returned set of multi-dimensional indices is the direct product (in the set-theory sense)

@@ -331,7 +331,10 @@ class Scalarize : public BasicStmtVisitor {
         }
         merged_contents.push_back(content);
         auto const &stmt = std::get<Stmt *>(content);
-        merged_formats.push_back(new_formats[stmt]);
+        auto format = new_formats.find(stmt);
+        if (format != new_formats.end()) {
+          merged_formats.push_back(format->second);
+        }
       }
     }
     if (!merged_string.empty()) {

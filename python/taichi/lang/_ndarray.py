@@ -1,3 +1,5 @@
+import functools
+
 import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
@@ -76,6 +78,14 @@ class Ndarray:
             impl.get_runtime().prog.fill_uint(self.arr, val)
         else:
             self._fill_by_kernel(val)
+
+    def size(self):
+        """Gets the total number of elements.
+
+        Returns:
+            int: The total number of elements.
+        """
+        return functools.reduce(lambda x, y: x * y, self.arr.total_shape())
 
     @python_scope
     def _ndarray_to_numpy(self):

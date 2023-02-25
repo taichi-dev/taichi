@@ -151,14 +151,18 @@ class TaskCodegen : public IRVisitor {
     std::string formats;
     std::vector<Value> vals;
 
-    for (auto const &content : stmt->contents) {
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
+        formats += format.has_value()
+                       ? "%" + format.value()
+                       : data_type_format(arg_stmt->ret_type, Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += arg_str;

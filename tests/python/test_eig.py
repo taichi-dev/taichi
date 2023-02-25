@@ -136,6 +136,7 @@ def _test_sym_eig3x3(dt, a00):
     _eigen_vector_equal(w_ti[:, idx_ti[1]], w_np[:, idx_np[1]], tol)
     _eigen_vector_equal(w_ti[:, idx_ti[2]], w_np[:, idx_np[2]], tol)
 
+
 def _test_sym_eig3x3_identity(dt):
     A = ti.Matrix.field(3, 3, dtype=dt, shape=())
     v = ti.Vector.field(3, dtype=dt, shape=())
@@ -145,9 +146,9 @@ def _test_sym_eig3x3_identity(dt):
 
     @ti.kernel
     def eigen_solve():
-        X = ti.Matrix.identity(dt,3)
+        X = ti.Matrix.identity(dt, 3)
         v[None], w[None] = ti.sym_eig(X)
-    
+
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64
 

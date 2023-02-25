@@ -263,7 +263,7 @@ class IRPrinter : public IRVisitor {
         name = c_quoted(std::get<std::string>(c));
 
       if (f.has_value()) {
-        name += " ";
+        name += ":";
         name += f.value();
       }
       contents.push_back(name);
@@ -284,7 +284,7 @@ class IRPrinter : public IRVisitor {
         name = c_quoted(std::get<std::string>(c));
 
       if (f.has_value()) {
-        name += " ";
+        name += ":";
         name += f.value();
       }
       names.push_back(name);

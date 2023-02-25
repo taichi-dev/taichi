@@ -204,7 +204,7 @@ def test_sym_eig3x3_identity_f64():
     _test_sym_eig3x3_identity(ti.f64)
 
 
-@pytest.mark.parametrize('a00', [i for i in range(1)])
+@pytest.mark.parametrize('a00', [i for i in range(10)])
 @test_utils.test(default_fp=ti.f32, fast_math=False)
 def test_sym_eig3x3_f32(a00):
     _test_sym_eig3x3(ti.f32, a00)

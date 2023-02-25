@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=ti.amdgpu)
 def test_subscript_user_classes_in_kernel():
     class MyList:
         def __init__(self, elements):

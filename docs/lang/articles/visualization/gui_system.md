@@ -259,5 +259,3 @@ while gui.running:
     gui.circle((xcoor.value, 0.5), radius=radius.value)
     gui.show()
 ```
-
-##

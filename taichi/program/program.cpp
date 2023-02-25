@@ -270,6 +270,8 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
+  ker.finalize_params();
+  ker.finalize_rets();
   return ker;
 }
 
@@ -297,6 +299,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
+  ker.finalize_params();
   return ker;
 }
 
@@ -439,34 +442,17 @@ DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
   DeviceCapabilityConfig cfg{};
   for (const std::string &cap : caps) {
     std::string_view key;
-    std::string_view value;
+    uint32_t value;
     size_t ieq = cap.find('=');
     if (ieq == std::string::npos) {
       key = cap;
+      value = 1;
     } else {
       key = std::string_view(cap.c_str(), ieq);
-      value = std::string_view(cap.c_str() + ieq + 1);
+      value = (uint32_t)std::atol(cap.c_str() + ieq + 1);
     }
     DeviceCapability devcap = str2devcap(key);
-    switch (devcap) {
-      case DeviceCapability::spirv_version: {
-        if (value == "1.3") {
-          cfg.set(devcap, 0x10300);
-        } else if (value == "1.4") {
-          cfg.set(devcap, 0x10400);
-        } else if (value == "1.5") {
-          cfg.set(devcap, 0x10500);
-        } else {
-          TI_ERROR(
-              "'{}' is not a valid value of device capability `spirv_version`",
-              value);
-        }
-        break;
-      }
-      default:
-        cfg.set(devcap, 1);
-        break;
-    }
+    cfg.set(devcap, value);
   }
 
   // Assign default caps (that always present).
@@ -484,9 +470,12 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
   if (arch == Arch::wasm) {
-    // Have to check WASM first, or it dispatches to the LlvmProgramImpl.
+    // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
 #ifdef TI_WITH_LLVM
-    return std::make_unique<wasm::AotModuleBuilderImpl>(compile_config());
+    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
+    TI_ASSERT(llvm_prog != nullptr);
+    return std::make_unique<wasm::AotModuleBuilderImpl>(
+        compile_config(), *llvm_prog->get_llvm_context());
 #else
     TI_NOT_IMPLEMENTED
 #endif

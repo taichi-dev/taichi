@@ -12,12 +12,12 @@ using namespace taichi::lang::vulkan;
 Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UniformBufferObject);
+  config.depth = true;
   config.blending = true;
   config.fragment_shader_path =
       app_context->config.package_path + "/shaders/Particles_vk_frag.spv";
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/Particles_vk_vert.spv";
-  config.vbo_attrs = vbo_attrs;
   config.vertex_input_rate_instance = true;  // point instancing
 
   Renderable::init(config, app_context);
@@ -63,7 +63,7 @@ void Particles::record_this_frame_commands(CommandList *command_list) {
   resource_set_->buffer(0, uniform_buffer_->get_ptr(0));
   resource_set_->rw_buffer(1, storage_buffer_->get_ptr(0));
 
-  command_list->bind_pipeline(pipeline_.get());
+  command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());
   command_list->bind_shader_resources(resource_set_.get());
 

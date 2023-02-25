@@ -31,9 +31,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   using IRVisitor::visit;
 
   explicit TaskCodeGenCUDA(const CompileConfig &config,
+                           TaichiLLVMContext &tlctx,
                            Kernel *kernel,
                            IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(config, kernel, ir) {
+      : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -599,18 +600,15 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenCUDA gen(config, kernel, stmt);
+  TaskCodeGenCUDA gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
 }
 
 FunctionType KernelCodeGenCUDA::compile_to_function() {
   TI_AUTO_PROF
-  auto *llvm_prog = get_llvm_program(prog);
-  auto *tlctx = llvm_prog->get_llvm_context();
-
-  CUDAModuleToFunctionConverter converter{tlctx,
-                                          llvm_prog->get_runtime_executor()};
-
+  CUDAModuleToFunctionConverter converter{
+      &get_taichi_llvm_context(),
+      get_llvm_program(prog)->get_runtime_executor()};
   return converter.convert(this->kernel, compile_kernel_to_module());
 }
 

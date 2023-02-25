@@ -10,8 +10,9 @@ namespace taichi::lang {
 namespace directx12 {
 
 AotModuleBuilderImpl::AotModuleBuilderImpl(const CompileConfig &config,
-                                           LlvmProgramImpl *prog)
-    : config_(config), prog(prog) {
+                                           LlvmProgramImpl *prog,
+                                           TaichiLLVMContext &tlctx)
+    : config_(config), prog(prog), tlctx_(tlctx) {
   // FIXME: set correct root buffer size.
   module_data.root_buffer_size = 1;
 }
@@ -21,7 +22,7 @@ void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
   auto &dxil_codes = module_data.dxil_codes[identifier];
   auto &compiled_kernel = module_data.kernels[identifier];
 
-  KernelCodeGenDX12 cgen(config_, kernel);
+  KernelCodeGenDX12 cgen(config_, kernel, tlctx_);
   auto compiled_data = cgen.compile();
   for (auto &dxil : compiled_data.task_dxil_source_codes) {
     dxil_codes.emplace_back(dxil);
@@ -71,7 +72,7 @@ void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
   auto &dxil_codes = module_data.dxil_codes[tmpl_identifier];
   auto &compiled_kernel = module_data.kernels[tmpl_identifier];
 
-  KernelCodeGenDX12 cgen(config_, kernel);
+  KernelCodeGenDX12 cgen(config_, kernel, tlctx_);
   auto compiled_data = cgen.compile();
   for (auto &dxil : compiled_data.task_dxil_source_codes) {
     dxil_codes.emplace_back(dxil);

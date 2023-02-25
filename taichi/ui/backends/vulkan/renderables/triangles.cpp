@@ -29,7 +29,6 @@ Triangles::Triangles(AppContext *app_context, VertexAttributes vbo_attrs) {
   config.vertex_shader_path =
       app_context->config.package_path + "/shaders/Triangles_vk_vert.spv";
   config.blending = true;
-  config.vbo_attrs = vbo_attrs;
 
   Renderable::init(config, app_context);
 }

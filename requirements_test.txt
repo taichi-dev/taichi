@@ -12,3 +12,5 @@ cffi
 scipy
 setproctitle
 nbmake
+marko
+PyYAML

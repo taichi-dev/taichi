@@ -140,6 +140,10 @@ class EigenSparseMatrix : public SparseMatrix {
     return &matrix_;
   };
 
+  void *get_matrix() {
+    return &matrix_;
+  };
+
   virtual EigenSparseMatrix &operator+=(const EigenSparseMatrix &other) {
     this->matrix_ += other.matrix_;
     return *this;
@@ -280,7 +284,9 @@ class CuSparseMatrix : public SparseMatrix {
                           void *coo_values_ptr,
                           int nnz) override;
 
-  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+  void nd_spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+
+  void spmv(size_t x, size_t y);
 
   const void *get_matrix() const override {
     return &matrix_;

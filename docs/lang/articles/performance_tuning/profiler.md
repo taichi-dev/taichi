@@ -15,9 +15,7 @@ Currently, Taichi provides two profiling tools:
 
 ## ScopedProfiler
 
-`ScopedProfiler` tracks the time spent on **host tasks**, such as JIT compilation.
-
-This profiler is enabled by default. To display results in a hierarchical format, call `ti.profiler.print_scoped_profiler_info()`.
+`ScopedProfiler` is a profiler in Taichi that tracks the time spent on **host tasks** such as JIT compilation. It is enabled by default. To display results in a hierarchical format, you can call `ti.profiler.print_scoped_profiler_info()`.
 
 For example:
 
@@ -42,13 +40,13 @@ ti.profiler.print_scoped_profiler_info()
 
 ## KernelProfiler
 
-`KernelProfiler` retrieves the kernel profiling records from the backend, counts them in the Python scope, and prints the results to the console. Note that `kernel_profiler` supports CPU and CUDA only. Ensure that you call `ti.sync()` before performance profiling if your program is running on GPU.
+`KernelProfiler` retrieves kernel profiling records from the backend, aggregates them in the Python scope, and prints the results to the console. Note that `kernelProfiler` supports CPU and CUDA only. Ensure that you call `ti.sync()` before performance profiling if your program runs on GPU.
 
-1. To enable this profiler, set `kernel profiler=True` while executing `ti.init()`.
-2. Use `ti.profiler.print kernel profiler info()` to see the profiling results. There are two printing methods:
-    1. In "count" mode (the default), profiling recordings with the same kernel name are counted as a single profiling result.
-    2. The profiler displays a list of kernels launched on hardware during the profiling period in "trace" mode. This option displays more comprehensive performance and hardware characteristics for each kernel.
-3. Use `ti.profiler.clear_kernel_profiler_info()` to clear the entries in this profiler.
+ 1. To enable the profiler, set `kernel_profiler=True` when calling `ti.init()`.
+ 2. Use `ti.profiler.print_kernel_profiler_info()` to display profiling results. There are two printing modes:
+     1. In "count" mode (the default), profiling recordings with the same kernel name are counted as a single profiling result.
+     2. In "trace" mode, the profiler prints a list of kernels launched on hardware during the profiling period, including comprehensive performance and hardware characteristics for each kernel.
+ 3. Use `ti.profiler.clear_kernel_profiler_info()` to clear the entries in this profiler.
 
 For example:
 
@@ -111,14 +109,13 @@ X64 Profiler(count)
 
 ### Advanced mode
 
-`KernelProfiler` offers an experimental GPU profiling toolkit based on the Nvidia CUPTI for the CUDA backend, which has minimal and predictable profiling overhead and can record over 6,000 hardware metrics.
+`KernelProfiler` provides an experimental GPU profiling toolkit based on the Nvidia CUPTI for the CUDA backend, which offers minimal and predictable profiling overhead and can record over 6,000 hardware metrics.
 
-Prerequisites to using CUPTI:
+To use the CUPTI-based GPU profiler, you must first satisfy the following prerequisites:
 
-1. Install CUDA Toolkit.
-2. Build Taichi from source with CUDA toolkit:
-    `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`
-3. Resolve the privileges issue of Nvidia profiling module (run with `sudo` to get administrative privileges):
-    - Add `options nvidia NVreg_RestrictProfilingToAdminUsers=0` to `/etc/modprobe.d/nvidia-kernel-common.conf`
-    - Then `reboot` should resolve the permission issue (probably need to run `update-initramfs -u` before `reboot`)
-    - See also [ERR_NVGPUCTRPERM](https://developer.nvidia.com/ERR_NVGPUCTRPERM).
+1. Install the CUDA Toolkit.
+2. Build Taichi from source with the CUDA toolkit using the command: `TAICHI_CMAKE_ARGS="-DTI_WITH_CUDA_TOOLKIT:BOOL=ON" python3 setup.py develop --user`.
+3. Resolve any permission issues related to the Nvidia profiling module by:
+    - Adding the `options nvidia NVreg_RestrictProfilingToAdminUsers=0` line to the `/etc/modprobe.d/nvidia-kernel-common.conf` file.
+    - After modifying the configuration file, reboot the system, which should resolve the permission issue. Note that you may need to run `update-initramfs -u` before rebooting the system.
+    - Refer to the [ERR_NVGPUCTRPERM](https://developer.nvidia.com/ERR_NVGPUCTRPERM) documentation for more information.

@@ -17,6 +17,8 @@ To achieve the ends, Taichi enabled the `@ti.dataclass` decorator on a Python cl
 The following is an example of defining a Taichi struct type under a Python class:
 
 ```python
+vec3 = ti.math.vec3
+
 @ti.dataclass
 class Sphere:
     center: vec3
@@ -24,7 +26,7 @@ class Sphere:
 ```
 This is the same equivalent as using `ti.types.struct()`:
 
-```python
+```python cont
 Sphere = ti.types.struct(center=vec3, radius=ti.f32)
 ```
 The `@ti.dataclass` decorator converts the annotated members in the *Python class* to members in the resulting *struct type*. In both of the above examples, you end up with the same struct field.
@@ -35,6 +37,8 @@ The `@ti.dataclass` decorator converts the annotated members in the *Python clas
 Both Python classes and Taichi struct types can have functions attached to them. Building from the above example, one can embed functions in the struct as follows:
 
 ```python
+vec3 = ti.math.vec3
+
 @ti.dataclass
 class Sphere:
     center: vec3
@@ -52,14 +56,14 @@ class Sphere:
 
 Functions associated with structs follow the same scope rules as other functions. In other words, they can be placed in either the Taichi scope or the Python scope. Each instance of the `Sphere` struct type now have the above functions attached to them. The functions can be called in the following way:
 
-```python{3,10}
-a_python_struct = Sphere(center=vec3(0.0), radius=1.0)
+```python {3,10} cont
+a_python_struct = Sphere(center=ti.math.vec3(0.0), radius=1.0)
 # calls a python scope function from python
 a_python_struct.is_zero_sized() # False
 
 @ti.kernel
 def get_area() -> ti.f32:
-    a_taichi_struct = Sphere(center=vec3(0.0), radius=4.0)
+    a_taichi_struct = Sphere(center=ti.math.vec3(0.0), radius=4.0)
     # return the area of the sphere, a taichi scope function
     return a_taichi_struct.area()
 get_area() # 201.062...
@@ -76,6 +80,6 @@ def area(self):
     # a function to run in taichi scope
     return 4 * math.pi * self.radius * self.radius
 
-Sphere = ti.types.struct(center=vec3, radius=ti.f32,
+Sphere = ti.types.struct(center=ti.math.vec3, radius=ti.f32,
                          __struct_methods={'area': area})
 ```

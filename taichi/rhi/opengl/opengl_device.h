@@ -10,7 +10,20 @@ namespace opengl {
 
 class GLDevice;
 
-void check_opengl_error(const std::string &msg = "OpenGL");
+std::string get_opengl_error_string(GLenum err);
+
+#define check_opengl_error(msg)                                      \
+  {                                                                  \
+    auto err = glGetError();                                         \
+    if (err != GL_NO_ERROR) {                                        \
+      auto estr = get_opengl_error_string(err);                      \
+      char msgbuf[1024];                                             \
+      snprintf(msgbuf, sizeof(msgbuf), "%s: %s", msg, estr.c_str()); \
+      RHI_LOG_ERROR(msgbuf);                                         \
+      assert(false);                                                 \
+    }                                                                \
+  }
+
 extern void *kGetOpenglProcAddr;
 
 class GLResourceSet : public ShaderResourceSet {
@@ -252,6 +265,18 @@ class GLDevice : public GraphicsDevice {
   void dealloc_memory(DeviceAllocation handle) override;
 
   GLint get_devalloc_size(DeviceAllocation handle);
+
+  RhiResult upload_data(DevicePtr *device_ptr,
+                        const void **data,
+                        size_t *size,
+                        int num_alloc = 1) noexcept final;
+
+  RhiResult readback_data(
+      DevicePtr *device_ptr,
+      void **data,
+      size_t *size,
+      int num_alloc = 1,
+      const std::vector<StreamSemaphore> &wait_sema = {}) noexcept final;
 
   RhiResult create_pipeline(Pipeline **out_pipeline,
                             const PipelineSourceDesc &src,

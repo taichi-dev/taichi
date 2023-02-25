@@ -26,13 +26,13 @@ Apart from the constructor, Taichi provides some basic operations to interact wi
 
 - Fill in the ndarray with a scalar value
 
-    ```python
+    ```python cont
     arr.fill(1.0)
     ```
 
 - Read/write ndarray elements from the Python scope
 
-    ```python
+    ```python cont
     # Returns a ti.Vector, which is a copy of the element
     print(arr[0, 0]) # [1.0, 1.0, 1.0]
 
@@ -51,7 +51,7 @@ Accessing elements of an ndarray from the Python scope can be convenient, but it
 
     Both shallow copy and deep copy from one ndarray to another are supported.
 
-    ```python
+    ```python cont
     # Copies from another ndarray with the same size
     b = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     b.copy_from(arr)  # Copies all data from arr to b
@@ -67,7 +67,7 @@ Accessing elements of an ndarray from the Python scope can be convenient, but it
 
 - Bidirectional data exchange with NumPy ndarrays
 
-    ```python
+    ```python cont
     # to_numpy returns a NumPy array with the same shape as d and a copy of d's value
     e = d.to_numpy()
 
@@ -82,8 +82,8 @@ To use an ndarray in a Taichi kernel, you need to properly annotate its type in 
 
 ```python
 @ti.kernel
-def foo(A : ti.types.ndarray(dtype=ti.f32, ndim=2)):
-    # Do something
+def foo(A: ti.types.ndarray(dtype=ti.f32, ndim=2)):
+    do_something()
 ```
 
 It is important to note that the `dtype` and `ndim` arguments are optional when an ndarray is instantiated. If left unspecified, the data type and the number of dimensions are inferred from the passed-in array at runtime. However, if the arguments are specified, Taichi validates that the specified data type and dimensions match those of the passed-in array. If a mismatch is detected, an error is thrown.
@@ -134,15 +134,15 @@ The external arrays can be fed into the Taichi kernel without further type conve
 
 To feed a NumPy ndarray:
 
-```python
-arr_np = numpy.ones((3, 3), dtype=numpy.float32)
+```python cont
+arr_np = np.ones((3, 3), dtype=np.float32)
 add_one(arr_np) # arr_np is updated by taichi kernel
 ```
 
 To feed a PyTorch tensor:
 
-```python
-arr_torch = torch.Tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], device='cuda:0')
+```python cont
+arr_torch = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], device='cuda:0')
 add_one(arr_torch) # arr_torch is updated by taichi kernel
 ```
 
@@ -168,10 +168,10 @@ Only contiguous NumPy arrays and PyTorch tensors are supported.
 
 :::
 
-```python
+```python known-error:NotWorkingAsExpected
 # Transposing the tensor returns a view of the tensor, which is not contiguous
 p = arr_torch.T
-add_one(p) # Error!
+# add_one(p) # Error!
 z = p.clone()
 add_one(z) # Correct
 k = p.contiguous()
@@ -209,7 +209,7 @@ Consider `ti.types.ndarray()` as a template type on parameters `dtype` and `ndim
 
 The code snippet below provides more examples to demonstrate the behavior:
 
-```python
+```python cont
 a = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
 b = ti.ndarray(dtype=ti.math.vec3, shape=(5, 5))
 c = ti.ndarray(dtype=ti.f32, shape=(4, 4))

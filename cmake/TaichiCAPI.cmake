@@ -48,7 +48,7 @@ endif()
 
 if (TI_WITH_METAL)
   list(APPEND C_API_SOURCE "c_api/src/taichi_metal_impl.mm")
-  #list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
+  list(APPEND C_API_PUBLIC_HEADERS "c_api/include/taichi/taichi_metal.h")
 endif()
 
 if (TI_WITH_VULKAN)
@@ -114,7 +114,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         $<BUILD_INTERFACE:${taichi_c_api_BINARY_DIR}/c_api/include>
         $<BUILD_INTERFACE:${taichi_c_api_SOURCE_DIR}/c_api/include>
         # Used when installing the library:
-        $<INSTALL_INTERFACE:/c_api/include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/c_api/include>
     PRIVATE
         # Used only when building the library:
         ${PROJECT_SOURCE_DIR}
@@ -122,7 +122,6 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/Vulkan-Headers/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/external/SPIRV-Tools/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include

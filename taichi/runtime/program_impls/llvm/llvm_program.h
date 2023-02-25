@@ -9,6 +9,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/program/program_impl.h"
 #include "taichi/program/parallel_executor.h"
+#include "taichi/util/bit.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -57,7 +58,6 @@ class LlvmProgramImpl : public ProgramImpl {
   void cache_kernel(const std::string &kernel_key,
                     const LLVMCompiledKernel &data,
                     std::vector<LlvmLaunchArgInfo> &&args);
-  ;
 
   void cache_field(int snode_tree_id,
                    int root_id,
@@ -158,6 +158,48 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->fetch_result_uint64(i, result_buffer);
   }
 
+  TypedConstant fetch_result(char *result_buffer,
+                             int offset,
+                             const Type *dt) override {
+    if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<float32>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<float64>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<int32>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<int64>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<int8>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<int16>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<uint8>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<uint16>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<uint32>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
+      return TypedConstant(
+          runtime_exec_->fetch_result<uint64>(result_buffer, offset));
+    } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+      // first fetch the data as u16, and then convert it to f32
+      uint16 half = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
+      return TypedConstant(bit::half_to_float(half));
+    } else {
+      TI_NOT_IMPLEMENTED
+    }
+  }
+
   template <typename T, typename... Args>
   T runtime_query(const std::string &key,
                   uint64 *result_buffer,
@@ -240,6 +282,19 @@ class LlvmProgramImpl : public ProgramImpl {
     return cache_reader_;
   }
 
+  std::string get_kernel_return_data_layout() override {
+    return get_llvm_context()->get_data_layout_string();
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    return get_llvm_context()->get_data_layout_string();
+  };
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    return get_llvm_context()->get_struct_type_with_data_layout(old_ty, layout);
+  }
+
   // TODO(zhanlue): Rearrange llvm::Context's ownership
   //
   // In LLVM backend, most of the compiled information are stored in
@@ -284,6 +339,11 @@ class LlvmProgramImpl : public ProgramImpl {
     runtime_exec_.reset();
   }
   ParallelExecutor compilation_workers;  // parallel compilation
+
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
+    TI_NOT_IMPLEMENTED;
+  }
 
  private:
   std::size_t num_snode_trees_processed_{0};

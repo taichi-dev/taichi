@@ -7,6 +7,7 @@
 #include "taichi/rhi/vulkan/vulkan_common.h"
 
 #include <taichi/rhi/device.h>
+#include <taichi/program/kernel_profiler.h>
 
 #include <memory>
 #include <optional>
@@ -69,15 +70,10 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
     return ti_device_.get();
   }
 
-  VkSurfaceKHR get_surface() {
-    return surface_;
-  }
-
  private:
   void create_instance(uint32_t vk_api_version, bool manual_create);
   void setup_debug_messenger();
-  void create_surface();
-  void pick_physical_device();
+  void pick_physical_device(VkSurfaceKHR test_surface);
   void create_logical_device(bool manual_create);
 
   VkInstance instance_{VK_NULL_HANDLE};
@@ -88,8 +84,6 @@ class TI_DLL_EXPORT VulkanDeviceCreator {
 
   VkQueue compute_queue_{VK_NULL_HANDLE};
   VkQueue graphics_queue_{VK_NULL_HANDLE};
-
-  VkSurfaceKHR surface_{VK_NULL_HANDLE};
 
   std::unique_ptr<VulkanDevice> ti_device_{nullptr};
 

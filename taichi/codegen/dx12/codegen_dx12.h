@@ -13,8 +13,9 @@ namespace taichi::lang {
 class KernelCodeGenDX12 : public KernelCodeGen {
  public:
   explicit KernelCodeGenDX12(const CompileConfig &compile_config,
-                             Kernel *kernel)
-      : KernelCodeGen(compile_config, kernel) {
+                             Kernel *kernel,
+                             TaichiLLVMContext &tlctx)
+      : KernelCodeGen(compile_config, kernel, tlctx) {
   }
   struct CompileResult {
     std::vector<std::vector<uint8_t>> task_dxil_source_codes;

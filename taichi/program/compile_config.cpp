@@ -55,6 +55,7 @@ CompileConfig::CompileConfig() {
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
   print_kernel_nvptx = false;
+  print_kernel_amdgcn = false;
   print_kernel_llvm_ir_optimized = false;
 
   // CUDA/AMDGPU backend options:

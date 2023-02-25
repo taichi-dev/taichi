@@ -85,18 +85,20 @@ real measure_cpe(std::function<void()> target,
 }
 
 bool command_exist(const std::string &command) {
-#if defined(TI_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_LINUX)
   if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
     return false;
   } else {
     return true;
   }
-#else
+#elif defined(TI_PLATFORM_WINDOWS)
   if (std::system(fmt::format("where {} >nul 2>nul", command).c_str())) {
     return false;
   } else {
     return true;
   }
+#else
+  return false;
 #endif
 }
 

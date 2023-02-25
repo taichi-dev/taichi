@@ -176,6 +176,18 @@ class Dx11Device : public GraphicsDevice {
   DeviceAllocation allocate_memory(const AllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  RhiResult upload_data(DevicePtr *device_ptr,
+                        const void **data,
+                        size_t *size,
+                        int num_alloc = 1) noexcept final;
+
+  RhiResult readback_data(
+      DevicePtr *device_ptr,
+      void **data,
+      size_t *size,
+      int num_alloc = 1,
+      const std::vector<StreamSemaphore> &wait_sema = {}) noexcept final;
+
   ShaderResourceSet *create_resource_set() final {
     return new Dx11ResourceSet;
   }

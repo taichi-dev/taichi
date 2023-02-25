@@ -15,7 +15,8 @@ struct ModuleDataDX12 : public aot::ModuleData {
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(const CompileConfig &config,
-                                LlvmProgramImpl *prog);
+                                LlvmProgramImpl *prog,
+                                TaichiLLVMContext &tlctx);
 
   void dump(const std::string &output_dir,
             const std::string &filename) const override;
@@ -38,6 +39,7 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
   const CompileConfig &config_;
   LlvmProgramImpl *prog;
   ModuleDataDX12 module_data;
+  TaichiLLVMContext &tlctx_;
 };
 
 }  // namespace directx12

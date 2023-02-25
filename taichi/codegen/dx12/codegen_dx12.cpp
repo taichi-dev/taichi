@@ -21,8 +21,11 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenLLVMDX12(const CompileConfig &config, Kernel *kernel, IRNode *ir)
-      : TaskCodeGenLLVM(config, kernel, ir, nullptr) {
+  TaskCodeGenLLVMDX12(const CompileConfig &config,
+                      TaichiLLVMContext &tlctx,
+                      Kernel *kernel,
+                      IRNode *ir)
+      : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -227,8 +230,6 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
 KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   const auto &config = get_compile_config();
-  std::string kernel_key = get_hashed_offline_cache_key(config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
 
   irpass::ast_to_ir(config, *kernel, false);
 
@@ -262,7 +263,7 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenLLVMDX12 gen(config, kernel, stmt);
+  TaskCodeGenLLVMDX12 gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM

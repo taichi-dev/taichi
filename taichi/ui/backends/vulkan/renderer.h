@@ -83,7 +83,7 @@ class TI_DLL_EXPORT Renderer {
   SwapChain swap_chain_;
 
   std::vector<std::unique_ptr<Renderable>> renderables_;
-  int next_renderable_;
+  std::vector<Renderable *> render_queue_;
 
   taichi::lang::StreamSemaphore render_complete_semaphore_{nullptr};
 

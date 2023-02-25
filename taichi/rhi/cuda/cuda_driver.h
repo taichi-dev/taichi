@@ -179,4 +179,24 @@ class CUSOLVERDriver : protected CUDADriverBase {
   bool cusolver_loaded_{false};
 };
 
+class CUBLASDriver : protected CUDADriverBase {
+ public:
+  static CUBLASDriver &get_instance();
+
+#define PER_CUBLAS_FUNCTION(name, symbol_name, ...) \
+  CUDADriverFunction<__VA_ARGS__> name;
+#include "taichi/rhi/cuda/cublas_functions.inc.h"
+#undef PER_CUBLAS_FUNCTION
+
+  bool load_cublas();
+
+  inline bool is_loaded() {
+    return cublas_loaded_;
+  }
+
+ private:
+  CUBLASDriver();
+  std::mutex lock_;
+  bool cublas_loaded_{false};
+};
 }  // namespace taichi::lang

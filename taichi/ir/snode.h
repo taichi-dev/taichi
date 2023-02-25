@@ -315,6 +315,7 @@ class SNode {
   uint64 read_uint(const std::vector<int> &i);
   float64 read_float(const std::vector<int> &i);
   void write_int(const std::vector<int> &i, int64 val);
+  void write_uint(const std::vector<int> &i, uint64 val);
   void write_float(const std::vector<int> &i, float64 val);
 
   Expr get_expr() const;
@@ -326,6 +327,8 @@ class SNode {
   void set_snode_tree_id(int id);
 
   int get_snode_tree_id() const;
+
+  const SNode *get_root() const;
 
   static void reset_counter() {
     counter = 0;

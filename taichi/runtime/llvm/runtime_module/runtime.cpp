@@ -760,8 +760,15 @@ void taichi_assert_format(LLVMRuntime *runtime,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
+#ifdef ARCH_amdgpu
+  // TODO: find out why error with mark_force_no_inline
+  //  llvm::SDValue llvm::SelectionDAG::getNode(unsigned int, const llvm::SDLoc
+  //  &, llvm::EVT, llvm::SDValue, const llvm::SDNodeFlags): Assertion
+  //  `VT.getSizeInBits() == Operand.getValueSizeInBits() && "Cannot BITCAST
+  //  between types of different sizes!"' failed.
+#else
   mark_force_no_inline();
-
+#endif
   if (!enable_assert || test != 0)
     return;
   if (!runtime->error_code) {
@@ -1510,7 +1517,13 @@ void gpu_parallel_range_for(RuntimeContext *context,
                             range_for_xlogue epilogue,
                             const std::size_t tls_size) {
   int idx = thread_idx() + block_dim() * block_idx() + begin;
+#ifdef ARCH_amdgpu
+  // AMDGPU doesn't support dynamic array
+  // TODO: find a better way to set the tls_size (maybe like struct_for
+  alignas(8) char tls_buffer[64];
+#else
   alignas(8) char tls_buffer[tls_size];
+#endif
   auto tls_ptr = &tls_buffer[0];
   if (prologue)
     prologue(context, tls_ptr);
@@ -1588,7 +1601,13 @@ void gpu_parallel_mesh_for(RuntimeContext *context,
                            MeshForTaskFunc *func,
                            mesh_for_xlogue epilogue,
                            const std::size_t tls_size) {
+#ifdef ARCH_amdgpu
+  // AMDGPU doesn't support dynamic array
+  // TODO: find a better way to set the tls_size (maybe like struct_for
+  alignas(8) char tls_buffer[64];
+#else
   alignas(8) char tls_buffer[tls_size];
+#endif
   auto tls_ptr = &tls_buffer[0];
   for (int idx = block_idx(); idx < num_patches; idx += grid_dim()) {
     if (prologue)

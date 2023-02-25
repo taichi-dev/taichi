@@ -2,6 +2,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/util/bit.h"
+#include "taichi/util/hash.h"
 
 namespace taichi::lang {
 
@@ -196,33 +197,50 @@ class TensorType : public Type {
 
   std::string to_string() const override;
 
+  size_t get_element_offset(int ind) const;
+
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
 };
 
+struct StructMember {
+  const Type *type;
+  std::string name;
+  size_t offset{0};
+  bool operator==(const StructMember &other) const {
+    return type == other.type && name == other.name && offset == other.offset;
+  }
+};
+
 class StructType : public Type {
  public:
-  explicit StructType(std::vector<const Type *> elements)
-      : elements_(std::move(elements)) {
+  explicit StructType(const std::vector<StructMember> &elements,
+                      const std::string &layout = "none")
+      : elements_(elements), layout_(layout) {
   }
 
   std::string to_string() const override;
 
-  Type *get_element_type(const std::vector<int> &indices) const;
-  const std::vector<const Type *> &elements() const {
+  const std::string &get_layout() const {
+    return layout_;
+  }
+
+  const Type *get_element_type(const std::vector<int> &indices) const;
+  size_t get_element_offset(const std::vector<int> &indices) const;
+  const std::vector<StructMember> &elements() const {
     return elements_;
   }
 
   int get_num_elements() const {
     int num = 0;
     for (const auto &element : elements_) {
-      if (auto struct_type = element->cast<StructType>()) {
+      if (auto struct_type = element.type->cast<StructType>()) {
         num += struct_type->get_num_elements();
-      } else if (auto tensor_type = element->cast<TensorType>()) {
+      } else if (auto tensor_type = element.type->cast<TensorType>()) {
         num += tensor_type->get_num_elements();
       } else {
-        TI_ASSERT(element->is<PrimitiveType>());
+        TI_ASSERT(element.type->is<PrimitiveType>());
         num += 1;
       }
     }
@@ -234,7 +252,8 @@ class StructType : public Type {
   }
 
  private:
-  std::vector<const Type *> elements_;
+  std::vector<StructMember> elements_;
+  std::string layout_;
 };
 
 class QuantIntType : public Type {
@@ -527,3 +546,18 @@ class TypedConstant {
 };
 
 }  // namespace taichi::lang
+
+namespace taichi::hashing {
+
+template <>
+struct Hasher<lang::StructMember> {
+ public:
+  size_t operator()(lang::StructMember const &member) const {
+    size_t ret = hash_value(member.type);
+    hash_combine(ret, member.name);
+    hash_combine(ret, member.offset);
+    return ret;
+  }
+};
+
+}  // namespace taichi::hashing

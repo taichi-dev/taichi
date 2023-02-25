@@ -244,7 +244,7 @@ pixel.place(x)
 #### 1. Activity checking
 You can use `ti.is_active(snode, [i, j, ...])` to explicitly query if `snode[i, j, ...]` is active or not.
 
-```python{3}
+```python {3} cont
 @ti.kernel
 def activity_checking(snode: ti.template(), i: ti.i32, j: ti.i32):
     print(ti.is_active(snode, [i, j]))
@@ -261,16 +261,16 @@ for i in range(12):
 ```
 #### 2. Activation
 You can use `ti.activate(snode, [i, j, ...])` to explicitly activate a cell of `snode[i, j, ...]`.
-```python{3,4,5}
+```python {3,4,5} cont
 @ti.kernel
-def activate_snodes()
+def activate_snodes():
     ti.activate(block1, [1, 0])
     ti.activate(block2, [3, 1])
     ti.activate(pixel, [7, 3])
 
-activity_checking(block1, [1, 0]) # output: 1
-activity_checking(block2, [3, 1]) # output: 1
-activity_checking(pixel, [7, 3])  # output: 1
+activity_checking(block1, 1, 0) # output: 1
+activity_checking(block2, 3, 1) # output: 1
+activity_checking(pixel, 7, 3)  # output: 1
 ```
 
 <center>
@@ -299,7 +299,7 @@ Similarly, `ti.deactivate` ...
 #### 4. Ancestor index query
 You can use `ti.rescale_index(descendant_snode/field, ancestor_snode, index)` to compute the ancestor index given a descendant index.
 
-```python
+```python cont
 print(ti.rescale_index(x, block1, ti.Vector([7, 3]))) # output: [1, 0]
 print(ti.rescale_index(x, block2, [7, 3]))            # output: [3, 1]
 print(ti.rescale_index(x, pixel,  [7, 3]))            # output: [7, 3]

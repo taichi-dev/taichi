@@ -41,12 +41,13 @@ struct RenderableConfig {
   size_t ubo_size{0};
   size_t ssbo_size{0};
   bool blending{false};
+
   std::string vertex_shader_path;
   std::string fragment_shader_path;
   taichi::lang::TopologyType topology_type{
       taichi::lang::TopologyType::Triangles};
   taichi::lang::PolygonMode polygon_mode{taichi::lang::PolygonMode::Fill};
-  VertexAttributes vbo_attrs{VboHelpers::all()};
+  bool depth{false};
   bool vertex_input_rate_instance{false};
 };
 
@@ -85,7 +86,7 @@ class Renderable {
   int max_vertices_count{0};
   int max_indices_count{0};
 
-  std::unique_ptr<Pipeline> pipeline_{nullptr};
+  Pipeline *pipeline_{nullptr};  // Factory owns pipelines
   std::unique_ptr<ShaderResourceSet> resource_set_{nullptr};
 
   DeviceAllocationUnique vertex_buffer_{nullptr};

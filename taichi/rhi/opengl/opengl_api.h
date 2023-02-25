@@ -1,6 +1,7 @@
 #pragma once
 
 #include "taichi/common/core.h"
+#include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/device.h"
 
 namespace taichi::lang {

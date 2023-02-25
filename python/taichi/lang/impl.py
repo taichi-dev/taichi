@@ -813,12 +813,16 @@ def ti_format_list_to_content_entries(raw):
     def entry2content(_var):
         if isinstance(_var, str):
             return _var
-        elif isinstance(_var, list):
-            assert(len(_var) == 2 and isinstance(_var[0], Expr) and isinstance(_var[1], str))
+        if isinstance(_var, Expr):
+            return Expr(_var).ptr
+        # handle Expr with optional format specifier
+        if isinstance(_var, list):
+            assert len(_var) == 2 and isinstance(
+                _var[0], Expr) and (isinstance(_var[1], str)
+                                    or _var[1] is None)
             _var[0] = Expr(_var[0]).ptr
             return _var
-        else:
-            return Expr(_var).ptr
+        assert False
 
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintenance cost
@@ -882,6 +886,7 @@ def ti_format_list_to_content_entries(raw):
     contents, formats = extract_formats(entries)
     return contents, formats
 
+
 @taichi_scope
 def ti_print(*_vars, sep=' ', end='\n'):
     def add_separators(_vars):
@@ -893,7 +898,8 @@ def ti_print(*_vars, sep=' ', end='\n'):
 
     _vars = add_separators(_vars)
     contents, formats = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(contents, formats)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats)
 
 
 @taichi_scope

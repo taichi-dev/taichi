@@ -330,10 +330,11 @@ class Scalarize : public BasicStmtVisitor {
           merged_string = "";
         }
         merged_contents.push_back(content);
-        auto const &stmt = std::get<Stmt *>(content);
-        auto format = new_formats.find(stmt);
+        const auto format = new_formats.find(std::get<Stmt *>(content));
         if (format != new_formats.end()) {
           merged_formats.push_back(format->second);
+        } else {
+          merged_formats.push_back(std::nullopt);
         }
       }
     }
@@ -342,6 +343,7 @@ class Scalarize : public BasicStmtVisitor {
       merged_formats.push_back(std::nullopt);
     }
 
+    assert(merged_contents.size() == merged_formats.size());
     delayed_modifier_.insert_before(
         stmt, Stmt::make<PrintStmt>(merged_contents, merged_formats));
     delayed_modifier_.erase(stmt);

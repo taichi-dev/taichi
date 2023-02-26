@@ -813,16 +813,13 @@ def ti_format_list_to_content_entries(raw):
     def entry2content(_var):
         if isinstance(_var, str):
             return _var
-        if isinstance(_var, Expr):
-            return Expr(_var).ptr
-        # handle Expr with optional format specifier
+        # handle optional format specifier
         if isinstance(_var, list):
-            assert len(_var) == 2 and isinstance(
-                _var[0], Expr) and (isinstance(_var[1], str)
+            assert len(_var) == 2 and (isinstance(_var[1], str)
                                     or _var[1] is None)
             _var[0] = Expr(_var[0]).ptr
             return _var
-        assert False
+        return Expr(_var).ptr
 
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintenance cost

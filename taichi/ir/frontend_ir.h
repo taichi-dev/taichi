@@ -148,8 +148,8 @@ class FrontendPrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Expr, std::string>;
   using FormatType = std::optional<std::string>;
-  std::vector<EntryType> contents;
-  std::vector<FormatType> formats;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
   FrontendPrintStmt(const std::vector<EntryType> &contents_,
                     const std::vector<FormatType> &formats_)

@@ -853,8 +853,8 @@ class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
   using FormatType = std::optional<std::string>;
-  std::vector<EntryType> contents;
-  std::vector<FormatType> formats;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
   explicit PrintStmt(const std::vector<EntryType> &contents_)
       : contents(contents_) {

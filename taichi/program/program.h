@@ -316,8 +316,7 @@ class TI_DLL_EXPORT Program {
 
   void delete_ndarray(Ndarray *ndarray);
 
-  Texture *create_texture(const DataType type,
-                          int num_channels,
+  Texture *create_texture(BufferFormat buffer_format,
                           const std::vector<int> &shape);
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);

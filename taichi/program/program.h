@@ -185,8 +185,10 @@ class TI_DLL_EXPORT Program {
 
   uint64 fetch_result_uint64(int i);
 
-  TypedConstant fetch_result(int offset, const Type *dt) {
-    return program_impl_->fetch_result(host_result_buffer.data(), offset, dt);
+  TypedConstant fetch_result(int offset,
+                             const Type *dt,
+                             char *result_buffer = nullptr) {
+    return program_impl_->fetch_result(result_buffer, offset, dt);
   }
 
   template <typename T>

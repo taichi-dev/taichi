@@ -154,7 +154,8 @@ class Scene:
         copy_all_to_vbo(vbo, vertices, 0, 0,
                         per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_info = get_field_info(indices)
+        indices_ndarray = get_indices_field(indices) if indices is not None else None
+        indices_info = get_field_info(indices_ndarray)
         self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
                          width, index_count, index_offset, vertex_count,
                          vertex_offset)
@@ -222,7 +223,7 @@ class Scene:
         copy_all_to_vbo(vbo, vertices, normals, 0,
                         per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(indices) if indices else None
+        indices_ndarray = get_indices_field(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
 
         self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,

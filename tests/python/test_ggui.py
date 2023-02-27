@@ -239,7 +239,7 @@ def test_draw_3d_lines():
             coor_pos[idx] = ti.Vector([i, j, k])
             fpos = ti.cast(ti.Vector([i, j, k]), ti.f32) + 0.01
             colors[idx] = fpos.normalized() * (0.1 + 2.0 / (ti.math.distance(fpos, CAMERA_POS) - 3.0))
-        for i in ti.ndrange(N * N * N):
+        for i in ti.ndrange(N * N * N - 1):
             ipos0 = decode_morton(i)
             lindex0 = ipos0.x * N * N + ipos0.y * N + ipos0.z
             ipos1 = decode_morton(i + 1)

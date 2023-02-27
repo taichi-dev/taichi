@@ -93,9 +93,9 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
 
-  uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
-  std::array<char, sizeof(uint64) * taichi_result_buffer_entries>
-      host_result_buffer;
+  uint64 *result_buffer{nullptr};  // Note that this result_buffer is used
+                                   // only for runtime JIT functions (e.g.
+                                   // `runtime_memory_allocate_aligned`)
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 

@@ -512,10 +512,15 @@ class ASTTransformer(Builder):
         # e.g., '{0:.2f} is a float, so is {a:.3f}.' -> ('{} is a float, so is {}.', {0: '.2f', a: '.3f'})
         raw_brackets = re.findall(r'{(.*?)}', raw_string)
         brackets = []
+        unnamed = 0
         for bracket in raw_brackets:
             item, spec = bracket.split(':') if ':' in bracket else (bracket,
                                                                     None)
             item = int(item) if item.isdigit() else item
+            # handle unnamed positional args
+            if item == "":
+                item = unnamed
+                unnamed += 1
             brackets.append([item, spec])
 
         # check error first

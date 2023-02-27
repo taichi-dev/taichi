@@ -201,14 +201,15 @@ def test_rw_texture_2d_struct_for_dim_check():
     ) as e:
         write(tex)
 
+
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_wrong_fmt():
     tex = ti.Texture(ti.Format.rgba8, (32, 32))
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                        fmt=ti.Format.r32f,
-                                        lod=0)):
+                                       fmt=ti.Format.r32f,
+                                       lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
@@ -219,20 +220,19 @@ def test_rw_texture_wrong_fmt():
     ) as e:
         write(tex)
 
+
 @test_utils.test(arch=supported_archs_texture)
 def test_rw_texture_wrong_ndim():
     tex = ti.Texture(ti.Format.rgba8, (32, 32))
 
     @ti.kernel
     def write(tex: ti.types.rw_texture(num_dimensions=1,
-                                        fmt=ti.Format.rgba8,
-                                        lod=0)):
+                                       fmt=ti.Format.rgba8,
+                                       lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
     with pytest.raises(
             ti.TaichiCompilationError,
-            match=
-            "RWTextureType dimension mismatch: expected 1, got 2"
-    ) as e:
+            match="RWTextureType dimension mismatch: expected 1, got 2") as e:
         write(tex)

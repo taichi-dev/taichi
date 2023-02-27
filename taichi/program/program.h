@@ -188,9 +188,6 @@ class TI_DLL_EXPORT Program {
   TypedConstant fetch_result(int offset,
                              const Type *dt,
                              char *result_buffer = nullptr) {
-    if (result_buffer == nullptr) {
-      result_buffer = host_result_buffer.data();
-    }
     return program_impl_->fetch_result(result_buffer, offset, dt);
   }
 

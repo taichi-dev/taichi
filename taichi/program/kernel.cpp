@@ -89,8 +89,8 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
           arch_uses_llvm(kernel->program->compile_config().arch)
               ? kernel->ret_size
               : sizeof(uint64) * taichi_result_buffer_entries)) {
-  ctx_->result_buffer_size = kernel->ret_size;
   ctx_->result_buffer = (uint64 *)result_buffer_.get();
+  ctx_->result_buffer_size = kernel->ret_size;
   ctx_->arg_buffer_size = kernel->args_size;
   ctx_->arg_buffer = arg_buffer_.get();
   ctx_->args_type = kernel->args_type;
@@ -108,8 +108,8 @@ Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
           arch_uses_llvm(kernel->program->compile_config().arch)
               ? kernel->ret_size
               : sizeof(uint64) * taichi_result_buffer_entries)) {
-  ctx_->result_buffer_size = kernel->ret_size;
   ctx_->result_buffer = (uint64 *)result_buffer_.get();
+  ctx_->result_buffer_size = kernel->ret_size;
   ctx_->arg_buffer_size = kernel->args_size;
   ctx_->arg_buffer = arg_buffer_.get();
   ctx_->args_type = kernel->args_type;
@@ -393,5 +393,4 @@ uint64 Kernel::LaunchContextBuilder::get_struct_ret_uint(
     const std::vector<int> &index) {
   return fetch_ret(index).val_uint();
 }
-
 }  // namespace taichi::lang

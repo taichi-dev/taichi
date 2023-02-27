@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 
+#include "taichi/codegen/codegen_utils.h"
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/statements.h"
@@ -160,9 +161,8 @@ class TaskCodegen : public IRVisitor {
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += format.has_value()
-                       ? "%" + format.value()
-                       : data_type_format(arg_stmt->ret_type, Arch::vulkan);
+        formats += merge_format_data_type(
+            format, data_type_format(arg_stmt->ret_type, Arch::vulkan));
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += arg_str;

@@ -8,6 +8,7 @@
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
 #include "cc_utils.h"
+#include "taichi/codegen/codegen_utils.h"
 
 #define C90_COMPAT 0
 
@@ -299,7 +300,7 @@ class CCTransformer : public IRVisitor {
   static inline std::string invoke_libc(std::string name,
                                         DataType dt,
                                         std::string const &fmt,
-                                        Args &&... args) {
+                                        Args &&...args) {
     auto arguments = fmt::format(fmt, std::forward<Args>(args)...);
     return invoke_libc(name, dt, arguments);
   }
@@ -388,8 +389,8 @@ class CCTransformer : public IRVisitor {
 
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
-        formats += format.has_value() ? "%" + format.value()
-                                      : data_type_format(arg_stmt->ret_type);
+        formats += merge_format_data_type(format,
+                                          data_type_format(arg_stmt->ret_type));
         values.push_back(arg_stmt->raw_name());
 
       } else {
@@ -576,12 +577,12 @@ class CCTransformer : public IRVisitor {
   }
 
   template <typename... Args>
-  void emit(std::string f, Args &&... args) {
+  void emit(std::string f, Args &&...args) {
     line_appender_.append(std::move(f), std::move(args)...);
   }
 
   template <typename... Args>
-  void emit_header(std::string f, Args &&... args) {
+  void emit_header(std::string f, Args &&...args) {
     line_appender_header_.append(std::move(f), std::move(args)...);
   }
 };  // namespace cccp

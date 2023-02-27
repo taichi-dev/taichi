@@ -102,8 +102,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        formats += format.has_value() ? "%" + format.value()
-                                      : data_type_format(arg_stmt->ret_type);
+        formats += merge_format_data_type(format,
+                                          data_type_format(arg_stmt->ret_type));
 
         auto value = llvm_val[arg_stmt];
         auto value_type = value->getType();

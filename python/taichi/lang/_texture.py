@@ -154,7 +154,7 @@ class Texture:
         return self.tex.device_allocation_ptr()
 
     def from_image(self, image):
-        """Loads a PIL image to texture. This method is only allowed a 2D texture with `ti.u8` dtype and `num_channels=4`.
+        """Loads a PIL image to texture. This method is only allowed a 2D texture with `ti.Format.rgba8`.
 
         Args:
             image (PIL.Image.Image): Source PIL image to load from.
@@ -175,7 +175,7 @@ class Texture:
         load_texture_from_numpy(self, arr)
 
     def to_image(self):
-        """Saves a texture to a PIL image in RGB mode. This method is only allowed a 2D texture with `ti.u8` dtype and `num_channels=4`.
+        """Saves a texture to a PIL image in RGB mode. This method is only allowed a 2D texture with `ti.Format.rgba8`.
 
         Returns:
             img (PIL.Image.Image): a PIL image in RGB mode, with the same size as source texture.

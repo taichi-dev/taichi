@@ -206,39 +206,47 @@ def test_geometry_3d():
     verify_image(window.get_image_buffer_as_numpy(), 'test_geometry_3d')
     window.destroy()
 
-    
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_3d_lines():
     N = 4
     CAMERA_POS = ti.Vector([-3, 2.5, -4])
 
-    coor_pos = ti.Vector.field(3, dtype=ti.f32, shape = N * N * N)
-    colors = ti.Vector.field(3, dtype = ti.f32, shape = N * N * N)
-    coor_idx = ti.ndarray(dtype=ti.i32, shape = N * N * N * 2)   # not works
+    coor_pos = ti.Vector.field(3, dtype=ti.f32, shape=N * N * N)
+    colors = ti.Vector.field(3, dtype=ti.f32, shape=N * N * N)
+    coor_idx = ti.ndarray(dtype=ti.i32, shape=N * N * N * 2)  # not works
 
     # Inverse of Part1By2 - "delete" all bits not at positions divisible by 3
     @ti.func
-    def compact_1by2(input : ti.u32):
-      x = input & 0x09249249           # x = ---- 9--8 --7- -6-- 5--4 --3- -2-- 1--0
-      x = (x ^ (x >>  2)) & 0x030c30c3 # x = ---- --98 ---- 76-- --54 ---- 32-- --10
-      x = (x ^ (x >>  4)) & 0x0300f00f # x = ---- --98 ---- ---- 7654 ---- ---- 3210
-      x = (x ^ (x >>  8)) & 0x7f0000ff # x = ---- --98 ---- ---- ---- ---- 7654 3210
-      x = (x ^ (x >> 16)) & 0x000003ff # x = ---- ---- ---- ---- ---- --98 7654 3210
-      return x
+    def compact_1by2(input: ti.u32):
+        x = input & 0x09249249  # x = ---- 9--8 --7- -6-- 5--4 --3- -2-- 1--0
+        x = (x ^ (x >> 2)
+             ) & 0x030c30c3  # x = ---- --98 ---- 76-- --54 ---- 32-- --10
+        x = (x ^ (x >> 4)
+             ) & 0x0300f00f  # x = ---- --98 ---- ---- 7654 ---- ---- 3210
+        x = (x ^ (x >> 8)
+             ) & 0x7f0000ff  # x = ---- --98 ---- ---- ---- ---- 7654 3210
+        x = (x ^ (x >> 16)
+             ) & 0x000003ff  # x = ---- ---- ---- ---- ---- --98 7654 3210
+        return x
 
     @ti.func
-    def decode_morton(code : ti.u32):
-        return ti.Vector([compact_1by2(code >> 0), compact_1by2(code >> 1), compact_1by2(code >> 2)])
-
+    def decode_morton(code: ti.u32):
+        return ti.Vector([
+            compact_1by2(code >> 0),
+            compact_1by2(code >> 1),
+            compact_1by2(code >> 2)
+        ])
 
     @ti.kernel
     def init_coordinates(coor_idx: ti.types.ndarray()):
-        for i,j,k in ti.ndrange(N, N, N):
+        for i, j, k in ti.ndrange(N, N, N):
             idx = i * N * N + j * N + k
             coor_pos[idx] = ti.Vector([i, j, k])
             fpos = ti.cast(ti.Vector([i, j, k]), ti.f32) + 0.01
-            colors[idx] = fpos.normalized() * (0.1 + 2.0 / (ti.math.distance(fpos, CAMERA_POS) - 3.0))
+            colors[idx] = fpos.normalized() * (
+                0.1 + 2.0 / (ti.math.distance(fpos, CAMERA_POS) - 3.0))
         for i in ti.ndrange(N * N * N):
             ipos0 = decode_morton(i)
             lindex0 = ipos0.x * N * N + ipos0.y * N + ipos0.z
@@ -246,8 +254,9 @@ def test_draw_3d_lines():
             lindex1 = ipos1.x * N * N + ipos1.y * N + ipos1.z
             coor_idx[i * 2 + 0] = lindex0
             coor_idx[i * 2 + 1] = lindex1
-    
-    window = ti.ui.Window("Test for Drawing 3d-lines", (512, 512), show_window=False)
+
+    window = ti.ui.Window("Test for Drawing 3d-lines", (512, 512),
+                          show_window=False)
     canvas = window.get_canvas()
     scene = ti.ui.Scene()
 
@@ -257,13 +266,16 @@ def test_draw_3d_lines():
         camera.position(CAMERA_POS.x, CAMERA_POS.y, CAMERA_POS.z)
         camera.lookat(2, 1, 2)
         scene.set_camera(camera)
-        scene.lines(coor_pos, indices=coor_idx, per_vertex_color = colors, width = 3.0)
+        scene.lines(coor_pos,
+                    indices=coor_idx,
+                    per_vertex_color=colors,
+                    width=3.0)
         canvas.scene(scene)
-    
+
     render()
     verify_image(window.get_image_buffer_as_numpy(), 'test_draw_3d_lines')
     window.destroy()
- 
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)

@@ -291,6 +291,9 @@ class Scalarize : public BasicStmtVisitor {
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
                 new_contents.push_back(matrix_init_stmt->values[index]);
+                if (format.has_value()) {
+                  new_formats[matrix_init_stmt->values[index]] = format.value();
+                }
                 if (j != n - 1)
                   new_contents.push_back(", ");
               }
@@ -302,6 +305,9 @@ class Scalarize : public BasicStmtVisitor {
           } else {
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back(matrix_init_stmt->values[i]);
+              if (format.has_value()) {
+                new_formats[matrix_init_stmt->values[i]] = format.value();
+              }
               if (i != m - 1)
                 new_contents.push_back(", ");
             }

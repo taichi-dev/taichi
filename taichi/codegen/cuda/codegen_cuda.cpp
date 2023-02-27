@@ -29,6 +29,7 @@ using namespace llvm;
 class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
+  int dynamic_shared_array_bytes{0};
 
   explicit TaskCodeGenCUDA(const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
@@ -145,6 +146,36 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
 
     llvm_val[stmt] = create_print(formats, types, values);
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    // Override shared memory codegen logic for large shared memory
+    if (stmt->ret_type->is<TensorType>() && stmt->is_shared) {
+      auto tensor_type = stmt->ret_type->cast<TensorType>();
+      size_t shared_array_threshold = 49152;
+      size_t shared_array_bytes =
+          tensor_type->get_num_elements() *
+          data_type_size(tensor_type->get_element_type());
+      if (shared_array_bytes > shared_array_threshold) {
+        if (dynamic_shared_array_bytes > 0) {
+          TI_ERROR("Only one single shared array instance is allowed in current version.")
+        }
+        // Clear tensor shape for dynamic shared memory.
+        tensor_type->set_shape(std::vector<int>({0}));
+        dynamic_shared_array_bytes += shared_array_bytes;
+      }
+
+      auto type = tlctx->get_data_type(tensor_type);
+      auto base = new llvm::GlobalVariable(
+          *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
+          fmt::format("shared_array_{}", stmt->id), nullptr,
+          llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
+      base->setAlignment(llvm::MaybeAlign(8));
+      auto ptr_type = llvm::PointerType::get(type, 0);
+      llvm_val[stmt] = builder->CreatePointerCast(base, ptr_type);
+    } else {
+      TaskCodeGenLLVM::visit(stmt);
+    }
   }
 
   void emit_extra_unary(UnaryOpStmt *stmt) override {
@@ -506,6 +537,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         current_task->grid_dim = num_SMs * query_max_block_per_sm;
       }
       current_task->block_dim = stmt->block_dim;
+      current_task->dynamic_shared_array_bytes = dynamic_shared_array_bytes;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
       offloaded_tasks.push_back(*current_task);
@@ -699,7 +731,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim, task.dynamic_shared_array_bytes,
                           {&context}, {});
     }
 

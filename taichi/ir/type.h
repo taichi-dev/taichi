@@ -191,6 +191,10 @@ class TensorType : public Type {
     return shape_;
   }
 
+  void set_shape(std::vector<int> shape) {
+    shape_ = shape;
+  }
+
   Type *get_compute_type() override {
     return this;
   }

@@ -19,7 +19,8 @@ inline std::string merge_format_data_type(
   std::string const &format = from_format.value();
   size_t fmt_dt_pivot = format.find_first_of(data_type_specifier);
   std::string fmt = format.substr(0, fmt_dt_pivot);
-  std::string fmt_dt = format.substr(fmt_dt_pivot);
+  std::string fmt_dt =
+      fmt_dt_pivot == format.npos ? "" : format.substr(fmt_dt_pivot);
 
   std::string dt = from_data_type.substr(1);
 

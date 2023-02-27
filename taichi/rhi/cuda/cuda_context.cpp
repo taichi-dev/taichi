@@ -44,7 +44,9 @@ CUDAContext::CUDAContext()
     compute_capability_ = 86;
   }
 
-  driver_.device_get_attribute(&max_shared_memory_bytes_, CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, device_);
+  driver_.device_get_attribute(
+      &max_shared_memory_bytes_,
+      CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN, device_);
 
   mcpu_ = fmt::format("sm_{}", compute_capability_);
 
@@ -114,7 +116,10 @@ void CUDAContext::launch(void *func,
     std::lock_guard<std::mutex> _(lock_);
     if (dynamic_shared_mem_bytes > 0) {
       if (dynamic_shared_mem_bytes > max_shared_memory_bytes_) {
-        TI_ERROR("Requested dynamic shared memory size of {} bytes, but the device supports max capacity of {} bytes.", dynamic_shared_mem_bytes, max_shared_memory_bytes_);
+        TI_ERROR(
+            "Requested dynamic shared memory size of {} bytes, but the device "
+            "supports max capacity of {} bytes.",
+            dynamic_shared_mem_bytes, max_shared_memory_bytes_);
       }
       driver_.kernel_set_attribute(
           func, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,

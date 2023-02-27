@@ -158,7 +158,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
           data_type_size(tensor_type->get_element_type());
       if (shared_array_bytes > shared_array_threshold) {
         if (dynamic_shared_array_bytes > 0) {
-          TI_ERROR("Only one single shared array instance is allowed in current version.")
+          TI_ERROR(
+              "Only one single shared array instance is allowed in current "
+              "version.")
         }
         // Clear tensor shape for dynamic shared memory.
         tensor_type->set_shape(std::vector<int>({0}));
@@ -731,8 +733,8 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     for (auto task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, task.dynamic_shared_array_bytes,
-                          {&context}, {});
+      cuda_module->launch(task.name, task.grid_dim, task.block_dim,
+                          task.dynamic_shared_array_bytes, {&context}, {});
     }
 
     // copy data back to host

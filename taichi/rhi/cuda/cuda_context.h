@@ -28,6 +28,7 @@ class CUDAContext {
   CUDADriver &driver_;
   bool debug_;
   int max_shared_memory_bytes_;
+
  public:
   CUDAContext();
 

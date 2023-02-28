@@ -1,7 +1,5 @@
 from typing import Any, List
-
-import taichi.aot.conventions.gfxruntime140.sr as sr
-from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
+from taichi.aot.conventions.gfxruntime140 import sr, GfxRuntime140
 
 dtype2ctype = {
     sr.DataType.f16: "half_t",
@@ -35,8 +33,7 @@ def check_arg(actual: str, expect: Any) -> List[str]:
 def get_arg_dst(i: int, is_named: bool) -> str:
     if is_named:
         return f"args[{i}].argument"
-    else:
-        return f"args[{i}]"
+    return f"args[{i}]"
 
 
 def generate_scalar_assign(cls_name: str, i: int, arg_name: str,

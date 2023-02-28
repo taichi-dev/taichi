@@ -38,6 +38,9 @@ CUDAContext::CUDAContext()
     supports_mem_pool_ = true;
     void *default_mem_pool;
     driver_.device_get_default_mem_pool(&default_mem_pool, device_);
+    // Let the memory pool have 128MB
+    // TODO: make this configurable after we let the memory pool replace the
+    // preallocated memory
     constexpr uint64 kMemPoolReleaseThreshold = 1048576 * 128;
     driver_.mem_pool_set_attribute(default_mem_pool,
                                    CU_MEMPOOL_ATTR_RELEASE_THRESHOLD,

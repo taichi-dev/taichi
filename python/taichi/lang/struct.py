@@ -162,7 +162,7 @@ class Struct(TaichiOperations):
 
     def _element_wise_unary(self, foo):
         warnings.warn(
-            f"Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
             DeprecationWarning)
         entries = {}
         for k, v in self.items:
@@ -174,7 +174,7 @@ class Struct(TaichiOperations):
 
     def _element_wise_binary(self, foo, other):
         warnings.warn(
-            f"Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
             DeprecationWarning)
         other = self._broadcast_copy(other)
         entries = {}
@@ -209,7 +209,7 @@ class Struct(TaichiOperations):
             )
         if foo.__name__ != 'assign':
             warnings.warn(
-                f"Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+                "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
                 DeprecationWarning)
         other = self._broadcast_copy(other)
         entries = {}
@@ -222,7 +222,7 @@ class Struct(TaichiOperations):
 
     def _element_wise_ternary(self, foo, other, extra):
         warnings.warn(
-            f"Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
             DeprecationWarning)
         other = self._broadcast_copy(other)
         extra = self._broadcast_copy(extra)
@@ -243,7 +243,7 @@ class Struct(TaichiOperations):
             val (Union[int, float]): Value to fill.
         """
         warnings.warn(
-            f"fill() on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0.",
+            "fill() on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0.",
             DeprecationWarning)
         for k, v in self.items:
             if isinstance(v, impl.Expr) and v.ptr.is_tensor():

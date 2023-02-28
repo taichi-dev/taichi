@@ -257,7 +257,8 @@ def test_deprecate_struct_unary():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."):
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
         run()
 
 
@@ -274,7 +275,8 @@ def test_deprecate_struct_binary():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."):
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
         run()
 
 
@@ -291,7 +293,8 @@ def test_deprecate_struct_ternary():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."):
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
         run()
 
 
@@ -308,7 +311,8 @@ def test_deprecate_struct_writeback_binary():
     with pytest.warns(
             DeprecationWarning,
             match=
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."):
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
         run()
 
 
@@ -325,5 +329,6 @@ def test_deprecate_struct_fill():
     with pytest.warns(
             DeprecationWarning,
             match=
-            r"fill\(\) on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0."):
+            r"fill\(\) on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0."
+    ):
         run()

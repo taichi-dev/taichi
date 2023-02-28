@@ -53,8 +53,7 @@ if __name__ == "__main__":
         compile_kernel_aot_test2(arch=ti.vulkan,
                                  save_compute_graph=args.cgraph)
     elif args.arch == "metal":
-        compile_kernel_aot_test2(arch=ti.metal,
-                                 save_compute_graph=args.cgraph)
+        compile_kernel_aot_test2(arch=ti.metal, save_compute_graph=args.cgraph)
     elif args.arch == "opengl":
         compile_kernel_aot_test2(arch=ti.opengl,
                                  save_compute_graph=args.cgraph)

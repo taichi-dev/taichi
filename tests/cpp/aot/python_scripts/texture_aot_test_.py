@@ -101,5 +101,7 @@ if __name__ == "__main__":
 
     if args.arch == "vulkan":
         compile_aot(arch=ti.vulkan, is_graph=args.graph)
+    elif args.arch == "metal":
+        compile_aot(arch=ti.metal, is_graph=args.graph)
     else:
         assert False

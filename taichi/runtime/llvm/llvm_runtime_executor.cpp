@@ -572,6 +572,12 @@ void LlvmRuntimeExecutor::finalize() {
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                               KernelProfilerBase *profiler,
                                               uint64 **result_buffer_ptr) {
+  // The result buffer allocated here is only used for the launches of
+  // runtime JIT functions. To avoid memory leak, we use the head of
+  // the preallocated device buffer as the result buffer in
+  // CUDA and AMDGPU backends.
+  // | ==================preallocated device buffer ========================== |
+  // |<- reserved for return ->|<---- usable for allocators on the device ---->|
   std::size_t prealloc_size = 0;
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -742,30 +748,6 @@ void LlvmRuntimeExecutor::init_runtime_jit_module(
     std::unique_ptr<llvm::Module> module) {
   llvm_context_->init_runtime_module(module.get());
   runtime_jit_module_ = create_jit_module(std::move(module));
-}
-
-void LlvmRuntimeExecutor::fetch_result_impl(void *dest,
-                                            char *result_buffer,
-                                            int offset,
-                                            int size) {
-  synchronize();
-  if (config_.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDADriver::get_instance().memcpy_device_to_host(
-        dest, result_buffer + offset, size);
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else if (config_.arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-    AMDGPUDriver::get_instance().memcpy_device_to_host(
-        dest, result_buffer + offset, size);
-#else
-    TI_NOT_IMPLEMENTED;
-#endif
-  } else {
-    memcpy(dest, result_buffer + offset, size);
-  }
 }
 
 }  // namespace taichi::lang

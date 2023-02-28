@@ -888,9 +888,10 @@ void recycle_runtime_context(LLVMRuntime *runtime, RuntimeContext *ptr) {
 
 void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
                                      std::size_t size,
-                                     std::size_t alignment) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      runtime->allocate_aligned(size, alignment));
+                                     std::size_t alignment,
+                                     uint64 *result) {
+  *result = taichi_union_cast_with_different_sizes<uint64>(
+      runtime->allocate_aligned(size, alignment));
 }
 
 void runtime_get_mem_req_queue(LLVMRuntime *runtime) {

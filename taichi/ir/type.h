@@ -14,8 +14,25 @@ enum class PrimitiveTypeID : int {
 #undef PER_TYPE
 };
 
+enum class TypeKind : int {
+  Primitive,
+  Pointer,
+  Tensor,
+  Struct,
+  QuantInt,
+  QuantFloat,
+  QuantFixed,
+  BitStruct,
+  QuantArray,
+};
+
 class TI_DLL_EXPORT Type {
  public:
+  Type() = default;
+
+  Type(TypeKind type_kind) : type_kind(type_kind) {
+  }
+  TypeKind type_kind;
   virtual std::string to_string() const = 0;
 
   template <typename T>
@@ -49,6 +66,13 @@ class TI_DLL_EXPORT Type {
     return p;
   }
 
+  template <typename S, typename T>
+  static typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+  ptr_io(const T *&ptr, S &serializer, bool writing);
+
+  // For serialization
+  virtual const Type *get_type() const = 0;
+
   bool is_primitive(PrimitiveTypeID type) const;
 
   virtual Type *get_compute_type() {
@@ -58,6 +82,18 @@ class TI_DLL_EXPORT Type {
   virtual ~Type() {
   }
 };
+
+template <typename S, typename T>
+typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
+  if (writing) {
+    serializer("ptr_content", *ptr);
+  } else {
+    T content;
+    serializer("ptr_content", content);
+    ptr = content.get_type().template as<T>();
+  }
+}
 
 // A "Type" handle. This should be removed later.
 class TI_DLL_EXPORT DataType {
@@ -132,7 +168,8 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   // TODO(type): make 'type' private and add a const getter
   PrimitiveTypeID type;
 
-  explicit PrimitiveType(PrimitiveTypeID type) : type(type) {
+  explicit PrimitiveType(PrimitiveTypeID type = PrimitiveTypeID::unknown)
+      : Type(TypeKind::Primitive), type(type) {
   }
 
   std::string to_string() const override;
@@ -142,12 +179,18 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   }
 
   static DataType get(PrimitiveTypeID type);
+
+  const Type *get_type() const override;
 };
 
 class PointerType : public Type {
  public:
+  PointerType() : Type(TypeKind::Pointer){};
+
   PointerType(Type *pointee, bool is_bit_pointer)
-      : pointee_(pointee), is_bit_pointer_(is_bit_pointer) {
+      : Type(TypeKind::Pointer),
+        pointee_(pointee),
+        is_bit_pointer_(is_bit_pointer) {
   }
 
   Type *get_pointee_type() const {
@@ -164,6 +207,8 @@ class PointerType : public Type {
 
   std::string to_string() const override;
 
+  const Type *get_type() const override;
+
  private:
   Type *pointee_{nullptr};
   int addr_space_{0};  // TODO: make this an enum
@@ -172,8 +217,9 @@ class PointerType : public Type {
 
 class TensorType : public Type {
  public:
+  TensorType() : Type(TypeKind::Tensor){};
   TensorType(std::vector<int> shape, Type *element)
-      : shape_(std::move(shape)), element_(element) {
+      : Type(TypeKind::Tensor), shape_(std::move(shape)), element_(element) {
   }
 
   Type *get_element_type() const {
@@ -199,6 +245,8 @@ class TensorType : public Type {
 
   size_t get_element_offset(int ind) const;
 
+  const Type *get_type() const override;
+
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
@@ -215,6 +263,7 @@ struct StructMember {
 
 class StructType : public Type {
  public:
+  StructType() = default;
   explicit StructType(const std::vector<StructMember> &elements,
                       const std::string &layout = "none")
       : elements_(elements), layout_(layout) {
@@ -251,6 +300,8 @@ class StructType : public Type {
     return this;
   }
 
+  const Type *get_type() const override;
+
  private:
   std::vector<StructMember> elements_;
   std::string layout_;
@@ -258,6 +309,7 @@ class StructType : public Type {
 
 class QuantIntType : public Type {
  public:
+  QuantIntType() = default;
   QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
 
   std::string to_string() const override;
@@ -274,6 +326,8 @@ class QuantIntType : public Type {
     return is_signed_;
   }
 
+  const Type *get_type() const override;
+
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
@@ -284,6 +338,7 @@ class QuantIntType : public Type {
 
 class QuantFixedType : public Type {
  public:
+  QuantFixedType() = default;
   QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
@@ -302,6 +357,8 @@ class QuantFixedType : public Type {
     return scale_;
   }
 
+  const Type *get_type() const override;
+
  private:
   Type *digits_type_{nullptr};
   Type *compute_type_{nullptr};
@@ -310,6 +367,7 @@ class QuantFixedType : public Type {
 
 class QuantFloatType : public Type {
  public:
+  QuantFloatType() = default;
   QuantFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
 
   std::string to_string() const override;
@@ -332,6 +390,8 @@ class QuantFloatType : public Type {
     return compute_type_;
   }
 
+  const Type *get_type() const override;
+
  private:
   Type *digits_type_{nullptr};
   Type *exponent_type_{nullptr};
@@ -340,6 +400,7 @@ class QuantFloatType : public Type {
 
 class BitStructType : public Type {
  public:
+  BitStructType() = default;
   BitStructType(PrimitiveType *physical_type,
                 const std::vector<Type *> &member_types,
                 const std::vector<int> &member_bit_offsets,
@@ -377,6 +438,8 @@ class BitStructType : public Type {
     return member_exponent_users_[i];
   }
 
+  const Type *get_type() const override;
+
  private:
   PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
@@ -387,6 +450,7 @@ class BitStructType : public Type {
 
 class QuantArrayType : public Type {
  public:
+  QuantArrayType() = default;
   QuantArrayType(PrimitiveType *physical_type,
                  Type *element_type_,
                  int num_elements_)
@@ -420,6 +484,8 @@ class QuantArrayType : public Type {
   int get_element_num_bits() const {
     return element_num_bits_;
   }
+
+  const Type *get_type() const override;
 
  private:
   PrimitiveType *physical_type_;

@@ -24,8 +24,8 @@ def check_arg(actual: str, expect: Any) -> List[str]:
     out += [
         f"    if (value.{actual} != {expect}) {{",
         f"      ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, \"value.{actual} != {expect}\");",
-        f"      return *this;",
-        f"    }}",
+        "      return *this;",
+        "    }",
     ]
 
     return out
@@ -143,7 +143,7 @@ def generate_kernel_args_builder(kernel: sr.Kernel) -> List[str]:
         f"  TiArgument args[{len(kernel.context.args)}];",
         "",
         f"  explicit Kernel_{kernel.name}(TiRuntime runtime, TiKernel kernel) :",
-        f"    runtime(runtime), kernel(kernel) {{}}",
+        "    runtime(runtime), kernel(kernel) {}",
         f"  explicit Kernel_{kernel.name}(TiRuntime runtime, TiAotModule aot_module) :",
         f"    runtime(runtime), kernel(ti_get_aot_module_kernel(aot_module, \"{kernel.name}\")) {{}}",
         "",
@@ -182,7 +182,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
         f"  TiNamedArgument args[{len(graph.args)}];",
         "",
         f"  explicit Graph_{graph.name}(TiRuntime runtime, TiComputeGraph graph) :",
-        f"    runtime(runtime), graph(graph) {{}}",
+        "    runtime(runtime), graph(graph) {}",
         f"  explicit Graph_{graph.name}(TiRuntime runtime, TiAotModule aot_module) :",
         f"    runtime(runtime), graph(ti_get_aot_module_compute_graph(aot_module, \"{graph.name}\")) {{}}",
         "",
@@ -223,7 +223,7 @@ def generate_module_content_repr(m: GfxRuntime140,
         ]
     else:
         out += [
-            f"struct Module {{",
+            "struct Module {",
         ]
 
     out += [
@@ -231,8 +231,8 @@ def generate_module_content_repr(m: GfxRuntime140,
         "  TiAotModule aot_module;",
         "  bool should_destroy;",
         "",
-        f"  explicit Module(TiRuntime runtime, TiAotModule aot_module, bool should_destroy = true) :",
-        f"    runtime(runtime), aot_module(aot_module), should_destroy(should_destroy) {{}}",
+        "  explicit Module(TiRuntime runtime, TiAotModule aot_module, bool should_destroy = true) :",
+        "    runtime(runtime), aot_module(aot_module), should_destroy(should_destroy) {}",
         "  ~Module() {",
         "    if (should_destroy) {",
         "      ti_destroy_aot_module(aot_module);",

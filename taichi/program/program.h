@@ -185,7 +185,7 @@ class TI_DLL_EXPORT Program {
 
   uint64 fetch_result_uint64(int i);
 
-  TypedConstant fetch_result(int offset, const Type *dt, char *result_buffer) {
+  TypedConstant fetch_result(char *result_buffer, int offset, const Type *dt) {
     return program_impl_->fetch_result(result_buffer, offset, dt);
   }
 

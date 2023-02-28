@@ -204,6 +204,24 @@ class Serializer {
   };
 
   template <typename T>
+  struct has_ptr_io {
+    template <typename T_>
+    static constexpr auto helper(T_ *)
+        -> std::is_same<decltype((T_::ptr_io(std::declval<const T_ *&>(),
+                                             std::declval<Serializer &>(),
+                                             std::declval<bool>()))),
+                        void>;
+
+    template <typename>
+    static constexpr auto helper(...) -> std::false_type;
+
+   public:
+    using T__ = typename type::remove_cvref_t<T>;
+    using type = decltype(helper<T__>(nullptr));
+    static constexpr bool value = type::value;
+  };
+
+  template <typename T>
   struct has_free_io {
     template <typename T_>
     static constexpr auto helper(T_ *) ->
@@ -511,8 +529,10 @@ class BinarySerializer : public Serializer {
 
   // Raw pointers (no ownership)
   template <typename T>
-  typename std::enable_if<std::is_pointer<T>::value, void>::type process(
-      const T &val_) {
+  typename std::enable_if<std::is_pointer<T>::value &&
+                              !has_ptr_io<std::remove_pointer_t<T>>::value,
+                          void>::type
+  process(const T &val_) {
     auto &val = get_writable(val_);
     if (writing) {
       this->process(ptr_to_int(val));
@@ -531,6 +551,17 @@ class BinarySerializer : public Serializer {
             assets[val_ptr]);
       }
     }
+  }
+
+  template <typename T>
+  typename std::enable_if<std::is_pointer<T>::value &&
+                              has_ptr_io<std::remove_pointer_t<T>>::value,
+                          void>::type
+  process(const T &val_) {
+    using T_ = std::remove_pointer_t<T>;
+    ;
+    auto &val = get_writable(val_);
+    T_::ptr_io((const T_ *&)val, *this, writing);
   }
 
   // enum class

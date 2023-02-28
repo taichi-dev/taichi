@@ -430,12 +430,10 @@ void export_lang(py::module &m) {
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
-          [&](Program *program, const DataType &dt, int num_channels,
-              const std::vector<int> &shape) -> Texture * {
-            return program->create_texture(dt, num_channels, shape);
-          },
-          py::arg("dt"), py::arg("num_channels"),
-          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
+          [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
+              -> Texture * { return program->create_texture(fmt, shape); },
+          py::arg("fmt"), py::arg("shape") = py::tuple(),
+          py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -686,6 +684,7 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
@@ -733,6 +732,7 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
       .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_rw_texture_param", &Function::insert_rw_texture_param)
       .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
@@ -953,7 +953,7 @@ void export_lang(py::module &m) {
 
   m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
+        Expr::make<TexturePtrExpression, int, int, const BufferFormat &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());

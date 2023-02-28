@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "taichi/common/core.h"
+#include "taichi/ir/type_factory.h"
 
 namespace taichi::lang {
 namespace {
@@ -142,6 +143,21 @@ TEST(Serialization, MoveOnly) {
   EXPECT_EQ(act_item1.foo, exp_item1.foo);
   EXPECT_EQ(act_item1.bar, exp_item1.bar);
   EXPECT_EQ(act_item1.ptr, nullptr);
+}
+
+TEST(SERIALIZATION, Type) {
+  BinIoPair bp;
+
+  auto *int32_type =
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
+  auto *tensor_type =
+      TypeFactory::get_instance().get_tensor_type({2, 2}, int32_type);
+  auto *struct_type = TypeFactory::get_instance().get_struct_type(
+      {{int32_type, "i32", 0}, {tensor_type, "tensor", 4}}, "test");
+  auto *pointer_type =
+      TypeFactory::get_instance().get_pointer_type((Type *)struct_type, false);
+  auto actual = bp.run(pointer_type);
+  EXPECT_EQ(actual->to_string(), pointer_type->to_string());
 }
 
 }  // namespace

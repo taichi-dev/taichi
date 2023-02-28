@@ -84,6 +84,10 @@ std::string PrimitiveType::to_string() const {
   return data_type_name(DataType(const_cast<PrimitiveType *>(this)));
 }
 
+const Type *PrimitiveType::get_type() const {
+  return TypeFactory::get_instance().get_primitive_type(type);
+}
+
 std::string PointerType::to_string() const {
   if (is_bit_pointer_) {
     // "^" for bit-level pointers
@@ -92,6 +96,11 @@ std::string PointerType::to_string() const {
     // "*" for C-style byte-level pointers
     return fmt::format("*{}", pointee_->to_string());
   }
+}
+
+const Type *PointerType::get_type() const {
+  return TypeFactory::get_instance().get_pointer_type(pointee_,
+                                                      is_bit_pointer_);
 }
 
 std::string TensorType::to_string() const {
@@ -105,6 +114,10 @@ std::string TensorType::to_string() const {
 
 size_t TensorType::get_element_offset(int ind) const {
   return data_type_size(element_) * ind;
+}
+
+const Type *TensorType::get_type() const {
+  return TypeFactory::get_instance().get_tensor_type(shape_, element_);
 }
 
 std::string StructType::to_string() const {
@@ -150,6 +163,10 @@ size_t StructType::get_element_offset(const std::vector<int> &indices) const {
   return offset;
 }
 
+const Type *StructType::get_type() const {
+  return TypeFactory::get_instance().get_struct_type(elements_, layout_);
+}
+
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;
@@ -171,6 +188,11 @@ QuantIntType::QuantIntType(int num_bits, bool is_signed, Type *compute_type)
   }
 }
 
+const Type *QuantIntType::get_type() const {
+  return TypeFactory::get_instance().get_quant_int_type(num_bits_, is_signed_,
+                                                        compute_type_);
+}
+
 QuantFixedType::QuantFixedType(Type *digits_type,
                                Type *compute_type,
                                float64 scale)
@@ -189,6 +211,11 @@ bool QuantFixedType::get_is_signed() const {
   return digits_type_->as<QuantIntType>()->get_is_signed();
 }
 
+const Type *QuantFixedType::get_type() const {
+  return TypeFactory::get_instance().get_quant_fixed_type(
+      digits_type_, compute_type_, scale_);
+}
+
 QuantFloatType::QuantFloatType(Type *digits_type,
                                Type *exponent_type,
                                Type *compute_type)
@@ -203,6 +230,11 @@ QuantFloatType::QuantFloatType(Type *digits_type,
   TI_ASSERT(exponent_type->as<QuantIntType>()->get_num_bits() <= 8);
   TI_ASSERT(exponent_type->as<QuantIntType>()->get_is_signed() == false);
   TI_ASSERT(get_digit_bits() <= 23);
+}
+
+const Type *QuantFloatType::get_type() const {
+  return TypeFactory::get_instance().get_quant_float_type(
+      digits_type_, exponent_type_, compute_type_);
 }
 
 std::string QuantFloatType::to_string() const {
@@ -287,8 +319,19 @@ std::string BitStructType::to_string() const {
   return str + ")";
 }
 
+const Type *BitStructType::get_type() const {
+  return TypeFactory::get_instance().get_bit_struct_type(
+      physical_type_, member_types_, member_bit_offsets_, member_exponents_,
+      member_exponent_users_);
+}
+
 std::string QuantArrayType::to_string() const {
   return fmt::format("qa({}x{})", element_type_->to_string(), num_elements_);
+}
+
+const Type *QuantArrayType::get_type() const {
+  return TypeFactory::get_instance().get_quant_array_type(
+      physical_type_, element_type_, num_elements_);
 }
 
 std::string TypedConstant::stringify() const {

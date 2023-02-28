@@ -405,7 +405,7 @@ class TaichiCallableTemplateMapper:
                 )
             if arg.fmt != anno.fmt:
                 raise TaichiRuntimeTypeError(
-                    f'RWTextureType data type mismatch: expected {anno.fmt}, got {arg.fmt}'
+                    f'RWTextureType format mismatch: expected {anno.fmt}, got {arg.fmt}'
                 )
             # (penguinliong) '0' is the assumed LOD level. We currently don't
             # support mip-mapping.

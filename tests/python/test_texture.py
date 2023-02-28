@@ -45,8 +45,16 @@ def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
 
 
 @ti.kernel
-def make_texture_2d(tex: ti.types.rw_texture(
+def make_texture_2d_r32f(tex: ti.types.rw_texture(
     num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
+    for i, j in ti.ndrange(n, n):
+        ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
+        tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+
+@ti.kernel
+def make_texture_2d_rgba8(tex: ti.types.rw_texture(
+    num_dimensions=2, fmt=ti.Format.rgba8, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
@@ -86,15 +94,15 @@ def test_texture_compiled_functions():
     texture1 = ti.Texture(ti.Format.r32f, (n1, n1))
     n2 = 256
     texture2 = ti.Texture(ti.Format.r32f, (n2, n2))
-    texture3 = ti.Texture(ti.Format.r8, (n1, n1))
+    texture3 = ti.Texture(ti.Format.rgba8, (n1, n1))
 
-    make_texture_2d(texture1, n1)
+    make_texture_2d_r32f(texture1, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 1
 
-    make_texture_2d(texture2, n2)
+    make_texture_2d_r32f(texture2, n2)
     assert impl.get_runtime().get_num_compiled_functions() == 1
 
-    make_texture_2d(texture3, n1)
+    make_texture_2d_rgba8(texture3, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 2
 
     paint(0.1, texture1, n1)
@@ -214,7 +222,7 @@ def test_rw_texture_wrong_fmt():
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
     with pytest.raises(
-            ti.TaichiCompilationError,
+            ti.TaichiRuntimeError,
             match=
             "RWTextureType data type mismatch: expected Format.r32f, got Format.rgba8"
     ) as e:
@@ -233,6 +241,6 @@ def test_rw_texture_wrong_ndim():
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
     with pytest.raises(
-            ti.TaichiCompilationError,
+            ti.TaichiRuntimeError,
             match="RWTextureType dimension mismatch: expected 1, got 2") as e:
         write(tex)

@@ -204,9 +204,7 @@ def test_rw_texture_2d_struct_for_dim_check():
 
     with pytest.raises(
             ti.TaichiCompilationError,
-            match=
-            "RWTextureType dimension mismatch: expected 2, got 3"
-    ) as e:
+            match="RWTextureType dimension mismatch: expected 2, got 3") as e:
         write(tex)
 
 

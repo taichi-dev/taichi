@@ -205,7 +205,7 @@ def test_rw_texture_2d_struct_for_dim_check():
     with pytest.raises(
             ti.TaichiCompilationError,
             match=
-            "Number of struct-for indices does not match loop variable dimensionality \(2 != 3\)."
+            "RWTextureType dimension mismatch: expected 2, got 3"
     ) as e:
         write(tex)
 
@@ -224,7 +224,7 @@ def test_rw_texture_wrong_fmt():
     with pytest.raises(
             ti.TaichiRuntimeError,
             match=
-            "RWTextureType data type mismatch: expected Format.r32f, got Format.rgba8"
+            "RWTextureType format mismatch: expected Format.r32f, got Format.rgba8"
     ) as e:
         write(tex)
 

@@ -1,3 +1,5 @@
+from typing import Any
+
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._texture import Texture
 from taichi.lang.enums import Format
@@ -126,3 +128,33 @@ def produce_injected_args(kernel, symbolic_args=None):
             # For primitive types, we can just inject a dummy value.
             injected_args.append(0)
     return injected_args
+
+
+def json_data_model(f):
+    """
+    Decorates a JSON data model. A JSON data model MUST NOT have any member
+    functions and it MUST be constructible from a JSON object.
+
+    This is merely a marker.
+    """
+    f._is_json_data_model = True
+    return f
+
+
+def is_json_data_model(cls) -> bool:
+    return hasattr(cls, '_is_json_data_model')
+
+
+def dump_json_data_model(x: object) -> Any:
+    if isinstance(x, (int, float, str, bool, type(None))):
+        return x
+    if isinstance(x, (list, tuple)):
+        return [dump_json_data_model(e) for e in x]
+    if isinstance(x, dict):
+        return {k: dump_json_data_model(v) for k, v in x.items()}
+    if is_json_data_model(x):
+        return {
+            k: dump_json_data_model(v)
+            for k, v in x.__dict__.items() if k != '_is_json_data_model'
+        }
+    return x

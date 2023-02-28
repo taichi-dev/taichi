@@ -1,13 +1,7 @@
-"""
-C++ header generator for Taichi AOT modules.
-"""
-import argparse
-import json
-from pathlib import Path
 from typing import Any, List
-
 import taichi.aot.conventions.gfxruntime140.sr as sr
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
+
 
 dtype2ctype = {
     sr.DataType.f16: "half_t",
@@ -91,7 +85,7 @@ def generate_ndarray_assign(cls_name: str, i: int, arg_name: str,
     out = []
 
     out += [
-        f"  {cls_name} &{arg_name}(const TiNdArray &value) {{",
+        f"  {cls_name} &set_{arg_name}(const TiNdArray &value) {{",
     ]
 
     out += check_arg("elem_type", arg.dtype)
@@ -120,7 +114,7 @@ def generate_texture_assign(cls_name: str, i: int, arg_name: str,
     out = []
 
     out += [
-        f"  {cls_name} &{arg_name}(const TiTexture &value) {{",
+        f"  {cls_name} &set_{arg_name}(const TiTexture &value) {{",
     ]
 
     assert arg.ndim in [1, 2, 3]
@@ -269,17 +263,13 @@ def generate_module_content_repr(m: GfxRuntime140,
 
 def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     # This has all kernels including all the ones launched by compute graphs.
-    kernel_names = [x for x in m.metadata.kernels]
-    cgraph_kernel_names = [
-        dispatch.kernel.name in kernel_names for graph in m.graphs
-        for dispatch in graph.dispatches
-    ]
+    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches)
 
     out = []
     for kernel in m.metadata.kernels.values():
-        out += generate_kernel_args_builder(kernel)
         if kernel.name in cgraph_kernel_names:
             continue
+        out += generate_kernel_args_builder(kernel)
 
     for graph in m.graphs:
         out += generate_graph_args_builder(graph)
@@ -289,9 +279,11 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(m: GfxRuntime140, module_name: str,
+def generate_header(metadata_json: str, graphs_json: str, module_name: str,
                     namespace: str) -> List[str]:
     out = []
+
+    m = GfxRuntime140(metadata_json, graphs_json)
 
     out += [
         "// THIS IS A GENERATED HEADER; PLEASE DO NOT MODIFY.",
@@ -312,52 +304,3 @@ def generate_header(m: GfxRuntime140, module_name: str,
         out += [f"}} // namespace {namespace}", ""]
 
     return out
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("MODOLE",
-                        help="Path to the module directory, or TCM archive.")
-    parser.add_argument("-n",
-                        "--namespace",
-                        type=str,
-                        help="C++ namespace if wanted.")
-    parser.add_argument(
-        "-m",
-        "--module-name",
-        type=str,
-        help=
-        "Module name to be a part of the module class. By default, it's the directory name.",
-        default=None)
-    parser.add_argument("-o",
-                        "--output",
-                        type=str,
-                        help="Output C++ header path.",
-                        default="module.h")
-    a = parser.parse_args()
-
-    module_path = a.MODOLE
-
-    with open(f"{module_path}/metadata.json") as f:
-        metadata_json = json.load(f)
-
-    with open(f"{module_path}/graphs.json") as f:
-        graphs_json = json.load(f)
-
-    m = GfxRuntime140(metadata_json, graphs_json)
-
-    if a.module_name:
-        module_name = a.module_name
-    else:
-        module_name = Path(module_path).name
-        if module_name.endswith(".tcm"):
-            module_name = module_name[:-4]
-
-    out = generate_header(m, module_name, a.namespace)
-
-    with open(a.output, "w") as f:
-        f.write('\n'.join(out))
-
-
-if __name__ == "__main__":
-    main()

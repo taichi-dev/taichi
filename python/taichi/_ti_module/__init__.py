@@ -2,14 +2,16 @@ import argparse
 import json
 from pathlib import Path
 from typing import List
-import taichi as ti
+
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 
+import taichi as ti
+
+
 def module_cppgen(parser: argparse.ArgumentParser):
     """Generate C++ headers for Taichi modules."""
-    parser.add_argument("MODOLE",
-                        help="Path to the module directory.")
+    parser.add_argument("MODOLE", help="Path to the module directory.")
     parser.add_argument("-n",
                         "--namespace",
                         type=str,
@@ -28,10 +30,13 @@ def module_cppgen(parser: argparse.ArgumentParser):
                         default="module.h")
     parser.set_defaults(func=module_cppgen_impl)
 
+
 def module_cppgen_impl(a):
     module_path = a.MODOLE
 
-    print(f"Generating C++ header for Taichi module: {Path(module_path).absolute()}")
+    print(
+        f"Generating C++ header for Taichi module: {Path(module_path).absolute()}"
+    )
 
     with open(f"{module_path}/metadata.json") as f:
         metadata_json = json.load(f)
@@ -56,8 +61,10 @@ def module_cppgen_impl(a):
 
 def module(arguments: List[str]):
     """Taichi module tools."""
-    parser = argparse.ArgumentParser(prog='ti module', description=module.__doc__)
-    subparsers = parser.add_subparsers(title="Taichi module manager commands", required=True)
+    parser = argparse.ArgumentParser(prog='ti module',
+                                     description=module.__doc__)
+    subparsers = parser.add_subparsers(title="Taichi module manager commands",
+                                       required=True)
 
     cppgen_parser = subparsers.add_parser('cppgen', help=module_cppgen.__doc__)
     module_cppgen(cppgen_parser)

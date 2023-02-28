@@ -1,7 +1,7 @@
 from typing import Any, List
+
 import taichi.aot.conventions.gfxruntime140.sr as sr
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
-
 
 dtype2ctype = {
     sr.DataType.f16: "half_t",
@@ -263,7 +263,8 @@ def generate_module_content_repr(m: GfxRuntime140,
 
 def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     # This has all kernels including all the ones launched by compute graphs.
-    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches)
+    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs
+                              for dispatch in graph.dispatches)
 
     out = []
     for kernel in m.metadata.kernels.values():

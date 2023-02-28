@@ -1,5 +1,6 @@
 from typing import Any, List
-from taichi.aot.conventions.gfxruntime140 import sr, GfxRuntime140
+
+from taichi.aot.conventions.gfxruntime140 import GfxRuntime140, sr
 
 dtype2ctype = {
     sr.DataType.f16: "half_t",

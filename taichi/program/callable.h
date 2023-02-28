@@ -1,5 +1,6 @@
 #pragma once
 
+#include "taichi/rhi/device.h"
 #include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
@@ -18,6 +19,7 @@ class TI_DLL_EXPORT Callable {
     bool is_array{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
+    BufferFormat format{BufferFormat::unknown};
 
     /* [arguments with TensorType]
 
@@ -36,7 +38,8 @@ class TI_DLL_EXPORT Callable {
                        bool is_array = false,
                        std::size_t size_unused = 0,
                        int total_dim = 0,
-                       std::vector<int> element_shape = {}) {
+                       std::vector<int> element_shape = {},
+                       BufferFormat format = BufferFormat::unknown) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
@@ -47,6 +50,7 @@ class TI_DLL_EXPORT Callable {
 
       this->is_array = is_array;
       this->total_dim = total_dim;
+      this->format = format;
     }
 
     std::vector<int> get_element_shape() const {
@@ -93,7 +97,8 @@ class TI_DLL_EXPORT Callable {
   int insert_arr_param(const DataType &dt,
                        int total_dim,
                        std::vector<int> element_shape);
-  int insert_texture_param(const DataType &dt);
+  int insert_texture_param(int total_dim);
+  int insert_rw_texture_param(int total_dim, BufferFormat format);
 
   int insert_ret(const DataType &dt);
 

@@ -185,9 +185,7 @@ class TI_DLL_EXPORT Program {
 
   uint64 fetch_result_uint64(int i);
 
-  TypedConstant fetch_result(int offset,
-                             const Type *dt,
-                             char *result_buffer = nullptr) {
+  TypedConstant fetch_result(int offset, const Type *dt, char *result_buffer) {
     return program_impl_->fetch_result(result_buffer, offset, dt);
   }
 
@@ -320,8 +318,7 @@ class TI_DLL_EXPORT Program {
 
   void delete_ndarray(Ndarray *ndarray);
 
-  Texture *create_texture(const DataType type,
-                          int num_channels,
+  Texture *create_texture(BufferFormat buffer_format,
                           const std::vector<int> &shape);
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);

@@ -32,12 +32,12 @@ if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     # Temporary hack before CI Pipeline Overhaul
     if [[ "$(uname -s)" == "Linux" ]]; then
         if nvidia-smi -L | grep "Tesla P4"; then
-            python3 tests/run_tests.py --cpp -vr2 -t6 -m "not sm70"
+            python3 tests/run_tests.py --cpp -vr2 -t4 -m "not sm70"
         else
-            python3 tests/run_tests.py --cpp -vr2 -t6
+            python3 tests/run_tests.py --cpp -vr2 -t4
         fi
     else
-        python3 tests/run_tests.py --cpp -vr2 -t6
+        python3 tests/run_tests.py --cpp -vr2 -t4
     fi
 fi
 

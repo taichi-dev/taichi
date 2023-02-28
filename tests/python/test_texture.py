@@ -103,8 +103,10 @@ def test_texture_compiled_functions():
     paint(0.2, texture2, n2)
     assert impl.get_runtime().get_num_compiled_functions() == 3
 
+    # (penguinliong) Remember that non-RW textures don't enforce a format so
+    # it's the same as the first call to `paint`.
     paint(0.3, texture3, n1)
-    assert impl.get_runtime().get_num_compiled_functions() == 4
+    assert impl.get_runtime().get_num_compiled_functions() == 3
 
 
 @test_utils.test(arch=supported_archs_texture_excluding_load_store)

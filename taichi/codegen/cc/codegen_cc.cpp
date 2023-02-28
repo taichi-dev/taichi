@@ -81,6 +81,12 @@ class CCTransformer : public IRVisitor {
     }
   }
 
+  void visit(MatrixPtrStmt *stmt) override {
+    TI_ERROR(
+        "[cc] Dynamic indexing is not supported on cc backend, please use a "
+        "compile time constant for indexing");
+  }
+
   void visit(GetRootStmt *stmt) override {
     auto *root = kernel_->program->get_snode_root(SNodeTree::kFirstID);
     emit("{} = ti_ctx->root;",

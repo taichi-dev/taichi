@@ -362,7 +362,7 @@ TypedConstant Kernel::LaunchContextBuilder::fetch_ret(
     const std::vector<int> &index) {
   const Type *dt = kernel_->ret_type->get_element_type(index);
   int offset = kernel_->ret_type->get_element_offset(index);
-  return kernel_->program->fetch_result(offset, dt, result_buffer_.get());
+  return kernel_->program->fetch_result(result_buffer_.get(), offset, dt);
 }
 
 float64 Kernel::LaunchContextBuilder::get_struct_ret_float(

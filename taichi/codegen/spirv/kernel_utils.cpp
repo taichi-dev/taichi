@@ -68,6 +68,7 @@ KernelContextAttributes::KernelContextAttributes(
     }
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
+    aa.format = ka.format;
     arg_attribs_vec_.push_back(aa);
   }
   for (const auto &kr : kernel.rets) {

@@ -8,6 +8,8 @@ target_sources(spirv_codegen
     spirv_codegen.cpp
     spirv_ir_builder.cpp
     spirv_types.cpp
+    compiled_kernel_data.cpp
+    kernel_compiler.cpp
   )
 
 target_include_directories(spirv_codegen

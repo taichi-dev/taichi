@@ -172,7 +172,7 @@ The field pixels is treated as an iterator, with `i` and `j` being integer indic
 
 It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed *sequentially*.
 
-```python {3,7,14-15}
+```python
 @ti.kernel
 def fill():
     total = 0

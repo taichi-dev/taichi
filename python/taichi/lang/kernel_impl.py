@@ -387,11 +387,29 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return arg.num_dims, arg.dtype
+            if not isinstance(arg, taichi.lang._texture.Texture):
+                raise TaichiRuntimeTypeError(
+                    f'Argument must be a texture, got {type(arg)}')
+            if arg.num_dims != anno.num_dimensions:
+                raise TaichiRuntimeTypeError(
+                    f'TextureType dimension mismatch: expected {anno.num_dimensions}, got {arg.num_dims}'
+                )
+            return (arg.num_dims, )
         if isinstance(anno, texture_type.RWTextureType):
+            if not isinstance(arg, taichi.lang._texture.Texture):
+                raise TaichiRuntimeTypeError(
+                    f'Argument must be a texture, got {type(arg)}')
+            if arg.num_dims != anno.num_dimensions:
+                raise TaichiRuntimeTypeError(
+                    f'RWTextureType dimension mismatch: expected {anno.num_dimensions}, got {arg.num_dims}'
+                )
+            if arg.fmt != anno.fmt:
+                raise TaichiRuntimeTypeError(
+                    f'RWTextureType format mismatch: expected {anno.fmt}, got {arg.fmt}'
+                )
             # (penguinliong) '0' is the assumed LOD level. We currently don't
             # support mip-mapping.
-            return arg.num_dims, arg.num_channels, arg.dtype, 0
+            return arg.num_dims, arg.fmt, 0
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())

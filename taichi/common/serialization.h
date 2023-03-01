@@ -559,7 +559,6 @@ class BinarySerializer : public Serializer {
                           void>::type
   process(const T &val_) {
     using T_ = std::remove_pointer_t<T>;
-    ;
     auto &val = get_writable(val_);
     T_::ptr_io((const T_ *&)val, *this, writing);
   }
@@ -683,7 +682,7 @@ class TextSerializer : public Serializer {
   template <typename T>
   inline static constexpr bool is_elementary_type_v =
       !has_io<T>::value && !has_free_io<T>::value && !std::is_enum_v<T> &&
-      std::is_pod_v<T>;
+      std::is_pod_v<T> && !std::is_pointer_v<T>;
 
  public:
   TextSerializer() {
@@ -798,6 +797,19 @@ class TextSerializer : public Serializer {
     std::stringstream ss;
     ss << std::boolalpha << val;
     add_raw(ss.str());
+  }
+
+  template <typename T>
+  std::enable_if_t<std::is_pointer_v<T> &&
+                       has_ptr_io<std::remove_pointer_t<T>>::value,
+                   void>
+  process(const T &val) {
+    add_raw("ptr {");
+    indent_++;
+    using T_ = std::remove_pointer_t<T>;
+    T_::ptr_io((const T_ *&)val, *this, true);
+    indent_--;
+    add_raw("}");
   }
 
   template <typename T>

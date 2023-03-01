@@ -180,7 +180,10 @@ std::string QuantIntType::to_string() const {
 }
 
 QuantIntType::QuantIntType(int num_bits, bool is_signed, Type *compute_type)
-    : compute_type_(compute_type), num_bits_(num_bits), is_signed_(is_signed) {
+    : Type(TypeKind::QuantInt),
+      compute_type_(compute_type),
+      num_bits_(num_bits),
+      is_signed_(is_signed) {
   if (compute_type == nullptr) {
     auto type_id = is_signed ? PrimitiveTypeID::i32 : PrimitiveTypeID::u32;
     this->compute_type_ =
@@ -196,7 +199,10 @@ const Type *QuantIntType::get_type() const {
 QuantFixedType::QuantFixedType(Type *digits_type,
                                Type *compute_type,
                                float64 scale)
-    : digits_type_(digits_type), compute_type_(compute_type), scale_(scale) {
+    : Type(TypeKind::QuantFixed),
+      digits_type_(digits_type),
+      compute_type_(compute_type),
+      scale_(scale) {
   TI_ASSERT(digits_type->is<QuantIntType>());
   TI_ASSERT(compute_type->is<PrimitiveType>());
   TI_ASSERT(is_real(compute_type));
@@ -219,7 +225,8 @@ const Type *QuantFixedType::get_type() const {
 QuantFloatType::QuantFloatType(Type *digits_type,
                                Type *exponent_type,
                                Type *compute_type)
-    : digits_type_(digits_type),
+    : Type(TypeKind::QuantFloat),
+      digits_type_(digits_type),
       exponent_type_(exponent_type),
       compute_type_(compute_type) {
   TI_ASSERT(digits_type->is<QuantIntType>());
@@ -263,7 +270,8 @@ BitStructType::BitStructType(
     const std::vector<int> &member_bit_offsets,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users)
-    : physical_type_(physical_type),
+    : Type(TypeKind::BitStruct),
+      physical_type_(physical_type),
       member_types_(member_types),
       member_bit_offsets_(member_bit_offsets),
       member_exponents_(member_exponents),

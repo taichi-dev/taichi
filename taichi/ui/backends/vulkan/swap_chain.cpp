@@ -64,7 +64,8 @@ bool SwapChain::copy_depth_buffer_to_ndarray(
                                /*host_read*/ false, /*export_sharing*/ true,
                                AllocUsage::Uniform};
 
-    auto [depth_staging_buffer, res_alloc] = device.allocate_memory_unique(params);
+    auto [depth_staging_buffer, res_alloc] =
+        device.allocate_memory_unique(params);
     TI_ASSERT(res_alloc == RhiResult::success);
 
     BufferImageCopyParams copy_params;

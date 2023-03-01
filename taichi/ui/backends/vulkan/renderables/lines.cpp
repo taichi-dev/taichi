@@ -88,7 +88,7 @@ void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
          /*export_sharing=*/false,
          /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
     TI_ASSERT(res == RhiResult::success);
-    vbo_translated_ = std::move(buf);    
+    vbo_translated_ = std::move(buf);
   }
 
   {

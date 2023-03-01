@@ -152,6 +152,7 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
       return;
     }
 
+    std::vector<AtomicOpStmt *> atomic_ops_to_remove;
     for (auto iter : recorded_atomic_ops_) {
       auto *atomic_op = iter;
       if (stmt_type == 0) {
@@ -174,7 +175,7 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
                     ->val.val_int32() ==
             1) {
           // Found pair
-          recorded_atomic_ops_.erase(iter);
+          atomic_ops_to_remove.push_back(iter);
 
           if (self_extern_indices.back()->cast<ConstStmt>()->val.val_int32() ==
               0) {
@@ -197,7 +198,7 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
                      static_cast<int>(other_global_temp_stmt->offset));
         if (offset_diff == 2) {
           // Found pair
-          recorded_atomic_ops_.erase(iter);
+          atomic_ops_to_remove.push_back(iter);
 
           if (self_global_temp_stmt->offset < other_global_temp_stmt->offset) {
             should_remove.insert(atomic_op);
@@ -220,7 +221,7 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
         if ((self_get_ch_stmt->chid == 0 && other_get_ch_stmt->chid == 1) ||
             (self_get_ch_stmt->chid == 1 && other_get_ch_stmt->chid == 0)) {
           // Found pair
-          recorded_atomic_ops_.erase(iter);
+          atomic_ops_to_remove.push_back(iter);
 
           if (self_get_ch_stmt->chid == 0) {
             should_remove.insert(atomic_op);
@@ -231,6 +232,10 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
           }
         }
       }
+    }
+
+    for (auto stmt : atomic_ops_to_remove) {
+      recorded_atomic_ops_.erase(stmt);
     }
 
     recorded_atomic_ops_.insert(stmt);

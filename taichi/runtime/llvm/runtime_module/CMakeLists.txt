@@ -6,13 +6,13 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
     add_custom_target(
         "generate_llvm_runtime_${rtm_arch}"
         COMMAND ${CLANG_EXECUTABLE} ${CLANG_OSX_FLAGS} -c runtime.cpp -o "runtime_${rtm_arch}.bc" -fno-exceptions -emit-llvm -std=c++17 -D "ARCH_${rtm_arch}" -I ${PROJECT_SOURCE_DIR};
-        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 -nocudalib
+        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_86 -emit-llvm -std=c++17 -nocudalib #--cuda-path=/usr/local/cuda-11.5
         # TODO, it's better to avoid polluting the source dir, keep in build
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${rtm_arch}")
     install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
-    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
+    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_86.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
 endfunction()
 
 

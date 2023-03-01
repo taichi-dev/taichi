@@ -587,13 +587,13 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-#if defined(__clang__) || defined(__GNUC__)
-    } else if (compile_config.debug && is_integral(stmt->ret_type)) {
-      llvm_val[stmt] =
-          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
-               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
-#endif
+      // #if defined(__clang__) || defined(__GNUC__)
+      //     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
+      //       llvm_val[stmt] =
+      //           call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
+      //                llvm_val[stmt->lhs], llvm_val[stmt->rhs],
+      //                builder->CreateGlobalStringPtr(stmt->tb));
+      // #endif
     } else {
       llvm_val[stmt] =
           builder->CreateMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

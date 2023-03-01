@@ -187,7 +187,7 @@ def test_print_string_format_specifier_32():
         print("{:f} {:F}".format(a[0], a[1]))
         print("{:e} {:E}".format(a[0], a[1]))
         print("{:a} {:A}".format(a[0], a[1]))
-        print("{:G} {:G}".format(a[0], a[1]))
+        print("{:g} {:G}".format(a[0], a[1]))
 
         print("{:.2} {:.3}".format(a[0], a[1]))
         print("{:.2f} {:.3F}".format(a[0], a[1]))
@@ -228,7 +228,7 @@ def test_print_string_format_specifier_64():
         print("{:f} {:F}".format(a[0], a[1]))
         print("{:e} {:E}".format(a[0], a[1]))
         print("{:a} {:A}".format(a[0], a[1]))
-        print("{:G} {:G}".format(a[0], a[1]))
+        print("{:g} {:G}".format(a[0], a[1]))
 
         print("{:.2} {:.3}".format(a[0], a[1]))
         print("{:.2f} {:.3F}".format(a[0], a[1]))
@@ -347,7 +347,7 @@ def test_print_fstring_specifier_32():
         print(f"{a[0]:f} {a[1]:F}")
         print(f"{a[0]:e} {a[1]:E}")
         print(f"{a[0]:a} {a[1]:A}")
-        print(f"{a[0]:G} {a[1]:G}")
+        print(f"{a[0]:g} {a[1]:G}")
 
         print(f"{a[0]:.2} {a[1]:.3}")
         print(f"{a[0]:.2f} {a[1]:.3F}")
@@ -384,7 +384,7 @@ def test_print_fstring_specifier_64():
         print(f"{a[0]:f} {a[1]:F}")
         print(f"{a[0]:e} {a[1]:E}")
         print(f"{a[0]:a} {a[1]:A}")
-        print(f"{a[0]:G} {a[1]:G}")
+        print(f"{a[0]:g} {a[1]:G}")
 
         print(f"{a[0]:.2} {a[1]:.3}")
         print(f"{a[0]:.2f} {a[1]:.3F}")

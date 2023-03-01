@@ -395,12 +395,13 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_FormattedValue(ctx, node):
         node.ptr = build_stmt(ctx, node.value)
-        # it seems that format_spec.values only contains one str
-        assert node.format_spec is None or len(node.format_spec.values) <= 1
-        format_str = node.format_spec.values[
-            0].value if node.format_spec and len(
-                node.format_spec.values) > 0 else None
-        return node.ptr if format_str is None else [node.ptr, format_str]
+        if node.format_spec is None or len(node.format_spec.values) == 0:
+            return node.ptr
+        values = node.format_spec.values
+        assert len(values) == 1
+        format_str = values[0].s if version_info < (3, 8) else values[0].value
+        assert format_str is not None
+        return [node.ptr, format_str]
 
     @staticmethod
     def build_JoinedStr(ctx, node):

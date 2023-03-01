@@ -26,7 +26,7 @@ using namespace llvm;
 // NVVM IR Spec:
 // https://docs.nvidia.com/cuda/archive/10.0/pdf/NVVM_IR_Specification.pdf
 
-static bool is_cuda_half2(DataType dt) {
+static bool is_half2(DataType dt) {
   if (dt->is<TensorType>()) {
     auto tensor_type = dt->as<TensorType>();
     return tensor_type->get_element_type() == PrimitiveType::f16 &&
@@ -272,8 +272,39 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   void visit(AtomicOpStmt *atomic_stmt) override {
     auto dest_type = atomic_stmt->dest->ret_type.ptr_removed();
     auto val_type = atomic_stmt->val->ret_type;
-    if (is_cuda_half2(dest_type) && is_cuda_half2(val_type)) {
-      // Prepare old_val
+
+    // Half2 atomic_add is supported starting from sm_60
+    //
+    // TODO(zhanlue): Add capability support & validation for CUDA AOT
+    //
+    // For now, the following code may potentially cause trouble for CUDA AOT.
+    // With half2 vectorization enabled, if one compiles the code on GPU with
+    // caps >= 60, then distribute it to runtime machine with GPU caps < 60,
+    // it's likely gonna crash
+
+    int cap = CUDAContext::get_instance().get_compute_capability();
+    if (is_half2(dest_type) && is_half2(val_type) &&
+        atomic_stmt->op_type == AtomicOpType::add && cap >= 60) {
+      /*
+        Half2 optimization for float16 atomic add
+
+        [CHI IR]
+            TensorType<2 x f16> old_val = atomic_add(TensorType<2 x f16>
+        dest_ptr*, TensorType<2 x f16> val)
+
+        [CodeGen]
+            old_val_ptr = Alloca(TensorType<2 x f16>)
+
+            val_ptr = Alloca(TensorType<2 x f16>)
+            GEP(val_ptr, 0) = ExtractValue(val, 0)
+            GEP(val_ptr, 1) = ExtractValue(val, 1)
+
+            half2_atomic_add(dest_ptr, old_val_ptr, val_ptr)
+
+            old_val = Load(old_val_ptr)
+      */
+
+      // Allocate old_val_ptr to store the result of atomic_add
       auto char_type = llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
       auto half_type = llvm::Type::getHalfTy(*tlctx->get_this_thread_context());
       auto ptr_type = llvm::PointerType::get(char_type, 0);
@@ -281,34 +312,31 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       llvm::Value *old_val = builder->CreateAlloca(half_type);
       llvm::Value *old_val_ptr = builder->CreateBitCast(old_val, ptr_type);
 
-      // Bit cast
+      // Prepare dest_ptr via pointer cast
       llvm::Value *dest_half2_ptr =
           builder->CreateBitCast(llvm_val[atomic_stmt->dest], ptr_type);
 
-      // Prepare value
+      // Prepare value_ptr from val
       llvm::ArrayType *array_type = llvm::ArrayType::get(half_type, 2);
       llvm::Value *value_ptr = builder->CreateAlloca(array_type);
-
-      // store from llvm_val[atomic_stmt->val] to value_ptr
       llvm::Value *value_ptr0 =
           builder->CreateGEP(array_type, value_ptr,
                              {tlctx->get_constant(0), tlctx->get_constant(0)});
       llvm::Value *value_ptr1 =
           builder->CreateGEP(array_type, value_ptr,
                              {tlctx->get_constant(0), tlctx->get_constant(1)});
-
       llvm::Value *value0 =
           builder->CreateExtractValue(llvm_val[atomic_stmt->val], {0});
       llvm::Value *value1 =
           builder->CreateExtractValue(llvm_val[atomic_stmt->val], {1});
-
       builder->CreateStore(value0, value_ptr0);
       builder->CreateStore(value1, value_ptr1);
-
       llvm::Value *value_half2_ptr =
           builder->CreateBitCast(value_ptr, ptr_type);
 
+      // Defined in taichi/runtime/llvm/runtime_module/cuda_runtime.cu
       call("half2_atomic_add", dest_half2_ptr, old_val_ptr, value_half2_ptr);
+
       llvm_val[atomic_stmt] = builder->CreateLoad(
           old_val->getType()->getPointerElementType(), old_val);
       return;

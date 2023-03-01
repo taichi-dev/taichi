@@ -7,6 +7,124 @@
 #include "taichi/program/program.h"
 #include "taichi/system/profiler.h"
 
+/* Auto vectorization for "half2" - TensorType(fp16, 2)
+
+In general, this Pass detects two AtomicOpStmt-Add with adjacent "dest_ptr" of
+float16*, then merge them into AtomicOpStmt(TensorType(2 x fp16)*). This
+vectorization is a pre-requisite to enable CUDA half2 optimization for float16
+atomic add.
+
+TODO: Remove this pass once irpass::scalarize() is turned off by default in CHI
+IR.
+
+The "dest_ptr" may point to various data structures and we have to handle them
+separately as follow:
+
+[Ndarray] Implemented
+Condition: Two ExternalPtrStmts having the same base_ptr & inner most
+indices are 0 and 1 Before: i32 const_0 = ConstStmt(0) i32 const_1 =
+ConstStmt(1)
+
+    f16* ptr_0 = ExternalPtrStmt(arg, [$1, const_0])
+    f16* ptr_1 = ExternalPtrStmt(arg, [$1, const_1])
+
+    f16 old_val0 = AtomicStmt(ptr_0, $7)
+    f16 old_val1 = AtomicStmt(ptr_1, $8)
+
+After:
+    TensorType(2, f16) val = MatrixInitStmt([$7, $8])
+
+    TensorType(2, f16)* ptr = ExternalPtrStmt(arg, [$1])
+    TensorType(2, f16) old_val = AtomicStmt(ptr, val)
+
+    TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
+    StoreStmt(old_val, old_val_alloc)
+
+    f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
+    f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
+
+    alloca_stmt0->replace_all_usages_with(old_val0);
+    alloca_stmt1->replace_all_usages_with(old_val1);
+
+[GlobalTemp] Implemented
+Condition: Two GlobalTempStmts' offsets diff is 2
+Before:
+    f16* ptr_0 = GlobalTempStmt(offset0)
+    f16* ptr_1 = GlobalTempStmt(offset0 + 2)
+
+    f16 old_val0 = AtomicStmt(ptr_0, $7)
+    f16 old_val1 = AtomicStmt(ptr_1, $8)
+
+After:
+    TensorType(2, f16) val = MatrixInitStmt([$7, $8])
+
+    TensorType(2, f16)* ptr = GlobalTempStmt(offset0)
+    TensorType(2, f16) old_val = AtomicStmt(ptr, val)
+
+    TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
+    StoreStmt(old_val, old_val_alloc)
+
+    f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
+    f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
+
+    alloca_stmt0->replace_all_usages_with(old_val0);
+    alloca_stmt1->replace_all_usages_with(old_val1);
+
+[Field] Implemented
+Condition: Two GetChStmts having the same container & chids are 0 and 1
+Before:
+    gen* container = SNodeLookupStmt(...)
+
+    fp16* ptr_0 = GetChStmt(container, 0)
+    fp16* ptr_1 = GetChStmt(container, 1)
+
+    f16 old_val0 = AtomicStmt(ptr_0, $7)
+    f16 old_val1 = AtomicStmt(ptr_1, $8)
+
+After:
+    TensorType(2, f16) val = MatrixInitStmt([$7, $8])
+
+    TensorType(2, f16)* ptr = GetChStmt(container, 0)
+    TensorType(2, f16) old_val = AtomicStmt(ptr, val)
+
+    TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
+    StoreStmt(old_val, old_val_alloc)
+
+    f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
+    f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
+
+    alloca_stmt0->replace_all_usages_with(old_val0);
+    alloca_stmt1->replace_all_usages_with(old_val1);
+
+[Alloca] To be implemented
+Before:
+    f16* ptr_0 = AllocaStmt(fp16)
+    f16* ptr_1 = AllocaStmt(fp16)
+
+    f16 old_val0 = AtomicStmt(ptr_0, $7)
+    f16 old_val1 = AtomicStmt(ptr_1, $8)
+
+After:
+    TensorType(2, f16)* ptr = AllocaStmt(TensorType(2, f16))
+    f16* ptr_0 = MatrixPtrStmt(ptr, 0)
+    f16* ptr_1 = MatrixPtrStmt(ptr, 1)
+    alloca_stmt0.replace_all_usages_with(ptr_0)
+    alloca_stmt1.replace_all_usages_with(ptr_1)
+
+    TensorType(2, f16) val = MatrixInitStmt([$7, $8])
+
+    TensorType(2, f16) old_val = AtomicStmt(ptr, val)
+
+    TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
+    StoreStmt(old_val, old_val_alloc)
+
+    f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
+    f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
+
+    alloca_stmt0->replace_all_usages_with(old_val0);
+    alloca_stmt1->replace_all_usages_with(old_val1);
+*/
+
 namespace taichi::lang {
 
 class Half2VectorizationAnalyzer : public BasicStmtVisitor {
@@ -23,113 +141,6 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
   std::map<AtomicOpStmt *, AtomicOpStmt *>
       should_replace_get_ch;  // self: other
 
-  /* Auto vectorization for "half2" - TensorType(fp16, 2)
-
-    [Ndarray] Implemented
-    Condition: Two ExternalPtrStmts having the same base_ptr & inner most
-    indices are 0 and 1 Before: i32 const_0 = ConstStmt(0) i32 const_1 =
-    ConstStmt(1)
-
-        f16* ptr_0 = ExternalPtrStmt(arg, [$1, const_0])
-        f16* ptr_1 = ExternalPtrStmt(arg, [$1, const_1])
-
-        f16 old_val0 = AtomicStmt(ptr_0, $7)
-        f16 old_val1 = AtomicStmt(ptr_1, $8)
-
-    After:
-        TensorType(2, f16) val = MatrixInitStmt([$7, $8])
-
-        TensorType(2, f16)* ptr = ExternalPtrStmt(arg, [$1])
-        TensorType(2, f16) old_val = AtomicStmt(ptr, val)
-
-        TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
-        StoreStmt(old_val, old_val_alloc)
-
-        f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
-        f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
-
-        alloca_stmt0->replace_all_usages_with(old_val0);
-        alloca_stmt1->replace_all_usages_with(old_val1);
-
-    [GlobalTemp] Implemented
-    Condition: Two GlobalTempStmts' offsets diff is 2
-    Before:
-        f16* ptr_0 = GlobalTempStmt(offset0)
-        f16* ptr_1 = GlobalTempStmt(offset0 + 2)
-
-        f16 old_val0 = AtomicStmt(ptr_0, $7)
-        f16 old_val1 = AtomicStmt(ptr_1, $8)
-
-    After:
-        TensorType(2, f16) val = MatrixInitStmt([$7, $8])
-
-        TensorType(2, f16)* ptr = GlobalTempStmt(offset0)
-        TensorType(2, f16) old_val = AtomicStmt(ptr, val)
-
-        TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
-        StoreStmt(old_val, old_val_alloc)
-
-        f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
-        f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
-
-        alloca_stmt0->replace_all_usages_with(old_val0);
-        alloca_stmt1->replace_all_usages_with(old_val1);
-
-    [Alloca]
-    Before:
-        f16* ptr_0 = AllocaStmt(fp16)
-        f16* ptr_1 = AllocaStmt(fp16)
-
-        f16 old_val0 = AtomicStmt(ptr_0, $7)
-        f16 old_val1 = AtomicStmt(ptr_1, $8)
-
-    After:
-        TensorType(2, f16)* ptr = AllocaStmt(TensorType(2, f16))
-        f16* ptr_0 = MatrixPtrStmt(ptr, 0)
-        f16* ptr_1 = MatrixPtrStmt(ptr, 1)
-        alloca_stmt0.replace_all_usages_with(ptr_0)
-        alloca_stmt1.replace_all_usages_with(ptr_1)
-
-        TensorType(2, f16) val = MatrixInitStmt([$7, $8])
-
-        TensorType(2, f16) old_val = AtomicStmt(ptr, val)
-
-        TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
-        StoreStmt(old_val, old_val_alloc)
-
-        f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
-        f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
-
-        alloca_stmt0->replace_all_usages_with(old_val0);
-        alloca_stmt1->replace_all_usages_with(old_val1);
-
-    [Field] Implemented
-    Condition: Two GetChStmts having the same container & chids are 0 and 1
-    Before:
-        gen* container = SNodeLookupStmt(...)
-
-        fp16* ptr_0 = GetChStmt(container, 0)
-        fp16* ptr_1 = GetChStmt(container, 1)
-
-        f16 old_val0 = AtomicStmt(ptr_0, $7)
-        f16 old_val1 = AtomicStmt(ptr_1, $8)
-
-    After:
-        TensorType(2, f16) val = MatrixInitStmt([$7, $8])
-
-        TensorType(2, f16)* ptr = GetChStmt(container, 0)
-        TensorType(2, f16) old_val = AtomicStmt(ptr, val)
-
-        TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
-        StoreStmt(old_val, old_val_alloc)
-
-        f16 old_val0 = MatrixPtrStmt(old_val_alloc, 0)
-        f16 old_val1 = MatrixPtrStmt(old_val_alloc, 1)
-
-        alloca_stmt0->replace_all_usages_with(old_val0);
-        alloca_stmt1->replace_all_usages_with(old_val1);
-
-  */
   void visit(AtomicOpStmt *stmt) override {
     // opt-out
     if (stmt->ret_type != PrimitiveType::f16) {
@@ -156,6 +167,10 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
     for (auto iter : recorded_atomic_ops_) {
       auto *atomic_op = iter;
       if (stmt_type == 0) {
+        // [AtomicOpStmt with ExternalPtrStmt]
+        // vectorization patterns:
+        // 1. Same ExternalPtrStmt->base_ptr
+        // 2. Absolute diff of ExternalPtrStmt->offset is 1 (element)
         auto *self_extern_stmt = stmt->dest->cast<ExternalPtrStmt>();
         auto *other_extern_stmt = atomic_op->dest->cast<ExternalPtrStmt>();
 
@@ -189,6 +204,9 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
       }
 
       if (stmt_type == 1) {
+        // [AtomicOpStmt with GlobalTemporaryStmt]
+        // vectorization patterns:
+        // 1. Absolute diff of GlobalTemporaryStmt->offset is 2 (bytes)
         auto *self_global_temp_stmt = stmt->dest->cast<GlobalTemporaryStmt>();
         auto *other_global_temp_stmt =
             atomic_op->dest->cast<GlobalTemporaryStmt>();
@@ -211,6 +229,10 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
       }
 
       if (stmt_type == 2) {
+        // [AtomicOpStmt with GetChStmt]
+        // vectorization patterns:
+        // 1. Same GetChStmt->input_ptr
+        // 2. Absolute diff of GetChStmt->chid is 1 (element)
         auto *self_get_ch_stmt = stmt->dest->cast<GetChStmt>();
         auto *other_get_ch_stmt = atomic_op->dest->cast<GetChStmt>();
 

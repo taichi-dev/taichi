@@ -1,4 +1,18 @@
+#pragma once
+
 #include <cuda_fp16.h>
+
+/*
+    Enable optimizations via hand-writting cuda kernels
+
+    CUDA kernels defined in this file will be compiled by clang++ following:
+   https://llvm.org/docs/CompileCudaWithLLVM.html. The resulting LLVM module
+   will get loaded via "module_from_bitcode_file" and link with the LLVM Module
+   from Taichi JIT compiler.
+
+    During code generation, one may apply call("half2_atomic_add", ...) to make
+   use of the kernels.
+*/
 
 extern "C" {
 

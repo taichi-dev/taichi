@@ -303,7 +303,8 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
-  if (config.half2_vectorization && !kernel->is_evaluator) {
+  if (config.arch == Arch::cuda && config.half2_vectorization &&
+      !kernel->is_evaluator) {
     irpass::vectorize_half2(ir);
 
     irpass::type_check(ir, config);

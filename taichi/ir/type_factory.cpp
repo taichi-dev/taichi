@@ -2,8 +2,6 @@
 
 #include "taichi/ir/type_utils.h"
 
-#include <signal.h>
-
 namespace taichi::lang {
 
 TypeFactory &TypeFactory::get_instance() {

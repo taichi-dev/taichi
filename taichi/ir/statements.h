@@ -350,6 +350,10 @@ class ExternalPtrStmt : public Stmt {
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
+
+  // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
+  // We use "overrided_dtype" to prevernt type inference from
+  // irpass::check_type()
   bool overrided_dtype = false;
 
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
@@ -1272,6 +1276,9 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
+  // irpass::vectorize_half2() will override the ret_type of GetChStmt.
+  // We use "overrided_dtype" to prevernt type inference from
+  // irpass::check_type()
   bool overrided_dtype = false;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);

@@ -490,7 +490,7 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       std::unique_ptr<llvm::Module> cuda_utils_module =
           module_from_bitcode_file(
               fmt::format("{}/{}", runtime_lib_dir(),
-                          "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_86.bc"),
+                          "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc"),
               ctx);
 
       bool failed =

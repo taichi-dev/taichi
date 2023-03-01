@@ -1,4 +1,5 @@
 #include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/impl_support.h"
 
 namespace taichi::lang {
 
@@ -36,6 +37,8 @@ DeviceAllocation CpuDevice::allocate_memory_runtime(
     const LlvmRuntimeAllocParams &params) {
   DeviceAllocation alloc;
   RhiResult res = allocate_memory(params, &alloc);
+  RHI_ASSERT(res == RhiResult::success &&
+             "Failed to allocate memory for runtime");
   return alloc;
 }
 

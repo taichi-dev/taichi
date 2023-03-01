@@ -427,7 +427,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         {ti_kernel->get_args_buffer_size(),
          /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
-    TI_ASSERT(res == RhiResult::success, "Failed to allocate args buffer");
+    TI_ASSERT_INFO(res == RhiResult::success, "Failed to allocate args buffer");
     args_buffer = std::move(buf);
   }
 
@@ -436,7 +436,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
         {ti_kernel->get_ret_buffer_size(),
          /*host_write=*/false, /*host_read=*/true,
          /*export_sharing=*/false, AllocUsage::Storage});
-    TI_ASSERT(res == RhiResult::success, "Failed to allocate ret buffer");
+    TI_ASSERT_INFO(res == RhiResult::success, "Failed to allocate ret buffer");
     ret_buffer = std::move(buf);
   }
 
@@ -495,7 +495,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           auto [allocated, res] = device_->allocate_memory_unique(
               {alloc_size, host_write, false, /*export_sharing=*/false,
                AllocUsage::Storage});
-          TI_ASSERT(res == RhiResult::success,
+          TI_ASSERT_INFO(res == RhiResult::success,
                     "Failed to allocate ext arr buffer");
           any_arrays[i] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
@@ -708,7 +708,7 @@ void GfxRuntime::init_nonroot_buffers() {
         {kGtmpBufferSize,
          /*host_write=*/false, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Storage});
-    TI_ASSERT(res == RhiResult::success, "gtmp allocation failed");
+    TI_ASSERT_INFO(res == RhiResult::success, "gtmp allocation failed");
     global_tmps_buffer_ = std::move(buf);
   }
 
@@ -717,7 +717,7 @@ void GfxRuntime::init_nonroot_buffers() {
         {kListGenBufferSize,
          /*host_write=*/false, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Storage});
-    TI_ASSERT(res == RhiResult::success, "listgen allocation failed");
+    TI_ASSERT_INFO(res == RhiResult::success, "listgen allocation failed");
     listgen_buffer_ = std::move(buf);
   }
 
@@ -743,7 +743,8 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
           {root_buffer_size,
            /*host_write=*/false, /*host_read=*/false,
            /*export_sharing=*/false, AllocUsage::Storage});
-  TI_ASSERT(res_buffer == RhiResult::success, "Failed to allocate root buffer");
+  TI_ASSERT_INFO(res_buffer == RhiResult::success,
+                 "Failed to allocate root buffer");
   Stream *stream = device_->get_compute_stream();
   auto [cmdlist, res_cmdlist] =
       device_->get_compute_stream()->new_command_list_unique();

@@ -63,8 +63,6 @@ inline std::string merge_printf_specifier(
   // Vulkan doesn't support length, flags, or width specifier.
   // https://vulkan.lunarg.com/doc/view/1.2.162.1/linux/debug_printf.html
   //
-  // CUDA supports all of them.
-  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
   if (arch == Arch::vulkan) {
     if (!user_flags.empty()) {
       TI_WARN(
@@ -93,6 +91,13 @@ inline std::string merge_printf_specifier(
     if (dt_precision == ".12" || dt_length == "ll") {
       TI_WARN(
           "Vulkan does not support 64-bit printing, except for unsigned long.");
+    }
+  }
+  // CUDA supports all of them but not 'F'.
+  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
+  else if (arch == Arch::cuda) {
+    if (user_conversion == "F") {
+      user_conversion = "f";
     }
   }
 

@@ -17,7 +17,7 @@ endfunction()
 function(COMPILE_CUDA_LIBRARY cuda_path)
     add_custom_target(
         "generate_cuda_library"
-        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 --no-cuda-version-check #--cuda-path ${cuda_path}
+        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 --no-cuda-version-check -nocudalib #--cuda-path ${cuda_path}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_cuda_library")

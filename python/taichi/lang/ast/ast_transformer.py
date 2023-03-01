@@ -527,6 +527,9 @@ class ASTTransformer(Builder):
             if item == "":
                 item = unnamed
                 unnamed += 1
+            # handle empty spec
+            if spec == "":
+                spec = None
             brackets.append([item, spec])
 
         # check error first

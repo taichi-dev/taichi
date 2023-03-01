@@ -282,9 +282,11 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     // caps >= 60, then distribute it to runtime machine with GPU caps < 60,
     // it's likely gonna crash
 
+    std::string cuda_library_path = get_custom_cuda_library_path();
     int cap = CUDAContext::get_instance().get_compute_capability();
     if (is_half2(dest_type) && is_half2(val_type) &&
-        atomic_stmt->op_type == AtomicOpType::add && cap >= 60) {
+        atomic_stmt->op_type == AtomicOpType::add && cap >= 60 &&
+        !cuda_library_path.empty()) {
       /*
         Half2 optimization for float16 atomic add
 

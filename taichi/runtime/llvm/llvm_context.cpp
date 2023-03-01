@@ -487,16 +487,19 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
 
       patch_intrinsic("block_memfence", Intrinsic::nvvm_membar_cta, false);
 
-      std::unique_ptr<llvm::Module> cuda_utils_module =
-          module_from_bitcode_file(
-              fmt::format("{}/{}", runtime_lib_dir(),
-                          "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc"),
-              ctx);
+      std::string cuda_library_path = get_custom_cuda_library_path();
+      if (!cuda_library_path.empty()) {
+        std::unique_ptr<llvm::Module> cuda_library_module =
+            module_from_bitcode_file(
+                fmt::format("{}/{}", runtime_lib_dir(),
+                            "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc"),
+                ctx);
 
-      bool failed =
-          llvm::Linker::linkModules(*module, std::move(cuda_utils_module));
-      if (failed) {
-        TI_ERROR("cuda_runtime.bc linking failure.");
+        bool failed =
+            llvm::Linker::linkModules(*module, std::move(cuda_library_module));
+        if (failed) {
+          TI_ERROR("cuda_runtime.bc linking failure.");
+        }
       }
 
       link_module_with_cuda_libdevice(module);

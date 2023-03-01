@@ -82,6 +82,23 @@ inline std::string merge_printf_specifier(
     // DO NOTHING
   }
 
+  // Respect user_precision if and only if dt_conversion is float and
+  // dt_precision is empty.
+  TI_ASSERT(!dt_conversion.empty());
+  if (!(dt_conversion.back() == 'f' && dt_precision.empty()) &&
+      user_precision != dt_precision) {
+    TI_WARN("The printf precision specifier '{}' is overritten by '{}'",
+            user_precision, dt_precision);
+    user_precision = dt_precision;
+  }
+
+  // Discard user_length and give warning if it doesn't match with dt_length.
+  if (!user_length.empty() && user_length != dt_length) {
+    TI_WARN("The printf length specifier '{}' is overritten by '{}'",
+            user_length, dt_length);
+    user_length = dt_length;
+  }
+
   // Override user_conversion with dt_conversion.
   if (!user_conversion.empty() &&
       user_conversion.back() != dt_conversion.back()) {
@@ -106,11 +123,6 @@ inline std::string merge_printf_specifier(
   }
   TI_ASSERT(!dt_conversion.empty());
   user_conversion = dt_conversion;
-
-  // If dt_precision exists, then discard user_precision.
-  if (!dt_precision.empty()) {
-    user_precision = dt_precision;
-  }
 
   std::string res = "%" + user_flags + user_width + user_length +
                     user_precision + user_conversion;

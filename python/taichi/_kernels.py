@@ -257,7 +257,7 @@ def snode_deactivate_dynamic(b: template()):
 
 @kernel
 def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                         fmt=Format.rgba8u,
+                                                         fmt=Format.rgba8,
                                                          lod=0),
                             img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:
@@ -269,7 +269,7 @@ def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
 
 @kernel
 def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                       fmt=Format.rgba8u,
+                                                       fmt=Format.rgba8,
                                                        lod=0),
                           img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
     for i, j in img:

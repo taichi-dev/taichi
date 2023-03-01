@@ -82,13 +82,17 @@ inline std::string merge_printf_specifier(
     }
     // except for unsigned long
     if (!user_length.empty() &&
-        !(user_length == "l" &&
+        !(user_length == "l" && !user_conversion.empty() &&
           unsigned_group.find(user_conversion) != std::string::npos)) {
       TI_WARN(
           "The printf length modifier '{}' is not supported in Vulkan, "
           "and will be discarded.",
           user_length);
       user_length.clear();
+    }
+    if (dt_precision == ".12" || dt_length == "ll") {
+      TI_WARN(
+          "Vulkan does not support 64-bit printing, except for unsigned long.");
     }
   }
 
@@ -129,8 +133,8 @@ inline std::string merge_printf_specifier(
     user_conversion = dt_conversion;
   }
 
-  std::string res = "%" + user_flags + user_width + user_length +
-                    user_precision + user_conversion;
+  std::string res = "%" + user_flags + user_width + user_precision +
+                    user_length + user_conversion;
   TI_TRACE("Merge %{} and {} into {}.", user, from_data_type, res);
   return res;
 }

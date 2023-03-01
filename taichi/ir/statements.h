@@ -4,6 +4,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/rhi/arch.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -1599,21 +1600,18 @@ class TexturePtrStmt : public Stmt {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{0};
   int lod{0};
 
   explicit TexturePtrStmt(Stmt *stmt,
                           int dimensions,
                           bool is_storage,
-                          int num_channels,
-                          DataType channel_format,
+                          BufferFormat format,
                           int lod)
       : arg_load_stmt(stmt),
         dimensions(dimensions),
         is_storage(is_storage),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
     TI_STMT_REG_FIELDS;
   }
@@ -1623,12 +1621,7 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt,
-                     dimensions,
-                     is_storage,
-                     num_channels,
-                     channel_format,
-                     lod);
+  TI_STMT_DEF_FIELDS(arg_load_stmt, dimensions, is_storage, format, lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

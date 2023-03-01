@@ -1141,45 +1141,7 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       if (stmt->is_storage) {
-        BufferFormat format = BufferFormat::unknown;
-
-        if (stmt->num_channels == 1) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::r8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::r16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::r16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::r32f;
-          }
-        } else if (stmt->num_channels == 2) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rg8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rg16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rg16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rg32f;
-          }
-        } else if (stmt->num_channels == 4) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rgba8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rgba16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rgba16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rgba32f;
-          }
-        }
+        BufferFormat format = stmt->format;
 
         int binding = binding_head_++;
         val =
@@ -2322,6 +2284,9 @@ static void spriv_message_consumer(spv_message_level_t level,
 
 KernelCodegen::KernelCodegen(const Params &params)
     : params_(params), ctx_attribs_(*params.kernel, &params.caps) {
+  TI_ASSERT(params.kernel);
+  TI_ASSERT(params.ir_root);
+
   uint32_t spirv_version = params.caps.get(DeviceCapability::spirv_version);
 
   spv_target_env target_env;
@@ -2373,7 +2338,7 @@ KernelCodegen::KernelCodegen(const Params &params)
 
 void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
                         std::vector<std::vector<uint32_t>> &generated_spirv) {
-  auto *root = params_.kernel->ir->as<Block>();
+  auto *root = params_.ir_root->as<Block>();
   auto &tasks = root->statements;
   for (int i = 0; i < tasks.size(); ++i) {
     TaskCodegen::Params tp;

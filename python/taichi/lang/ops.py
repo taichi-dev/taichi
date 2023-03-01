@@ -2,6 +2,7 @@ import builtins
 import functools
 import math
 import operator as _bt_ops_mod  # bt for builtin
+from typing import Union
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
@@ -139,6 +140,10 @@ def writeback_binary(foo):
         if is_taichi_class(b):
             raise TaichiSyntaxError(
                 f'cannot augassign taichi class {type(b)} to scalar expr')
+        if not (is_taichi_expr(a) and a.ptr.is_lvalue()):
+            raise TaichiSyntaxError(
+                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\''
+            )
         else:
             return imp_foo(a, b)
 
@@ -638,7 +643,7 @@ def logical_not(a):
     return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
 
 
-def random(dtype=float):
+def random(dtype=float) -> Union[float, int]:
     """Return a single random float/integer according to the specified data type.
     Must be called in taichi scope.
 

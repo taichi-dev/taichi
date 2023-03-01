@@ -53,10 +53,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   using IRVisitor::visit;
 
  public:
-  explicit ASTSerializer(std::ostream *os) : ExpressionVisitor(true), os_(os) {
-    // TODO(PGZXB): Set allow_undefined_visitor as false. (blocked by
-    // constant-folding)
-    this->allow_undefined_visitor = true;
+  explicit ASTSerializer(std::ostream *os) : ExpressionVisitor(false), os_(os) {
+    this->allow_undefined_visitor = false;
   }
 
   void set_ostream(std::ostream *os) {
@@ -91,8 +89,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->arg_id);
     emit(expr->num_dims);
     emit(expr->is_storage);
-    emit(expr->num_channels);
-    emit(expr->channel_format);
+    emit(expr->format);
     emit(expr->lod);
   }
 
@@ -134,9 +131,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
 
   void visit(InternalFuncCallExpression *expr) override {
     emit(ExprOpCode::InternalFuncCallExpression);
-    emit(expr->func_name);
+    emit(expr->op->name);
     emit(expr->args);
-    emit(expr->with_runtime_context);
   }
 
   void visit(ExternalTensorExpression *expr) override {
@@ -638,6 +634,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   DEFINE_EMIT_ENUM(mesh::MeshRelationType);
   DEFINE_EMIT_ENUM(mesh::ConvType);
   DEFINE_EMIT_ENUM(SNodeGradType);
+  DEFINE_EMIT_ENUM(BufferFormat);
 
 #undef DEFINE_EMIT_ENUM
 

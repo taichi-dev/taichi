@@ -816,7 +816,7 @@ def ti_format_list_to_content_entries(raw):
         # handle optional format specifier
         if isinstance(_var, list):
             assert len(_var) == 2 and (isinstance(_var[1], str)
-                                    or _var[1] is None)
+                                       or _var[1] is None)
             _var[0] = Expr(_var[0]).ptr
             return _var
         return Expr(_var).ptr

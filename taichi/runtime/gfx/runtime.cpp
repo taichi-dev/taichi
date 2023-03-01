@@ -496,7 +496,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
               {alloc_size, host_write, false, /*export_sharing=*/false,
                AllocUsage::Storage});
           TI_ASSERT_INFO(res == RhiResult::success,
-                    "Failed to allocate ext arr buffer");
+                         "Failed to allocate ext arr buffer");
           any_arrays[i] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
         }
@@ -738,11 +738,10 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   if (root_buffer_size == 0) {
     root_buffer_size = 4;  // there might be empty roots
   }
-  auto [new_buffer, res_buffer] =
-      device_->allocate_memory_unique(
-          {root_buffer_size,
-           /*host_write=*/false, /*host_read=*/false,
-           /*export_sharing=*/false, AllocUsage::Storage});
+  auto [new_buffer, res_buffer] = device_->allocate_memory_unique(
+      {root_buffer_size,
+       /*host_write=*/false, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Storage});
   TI_ASSERT_INFO(res_buffer == RhiResult::success,
                  "Failed to allocate root buffer");
   Stream *stream = device_->get_compute_stream();

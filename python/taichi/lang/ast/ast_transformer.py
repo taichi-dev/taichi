@@ -395,12 +395,12 @@ class ASTTransformer(Builder):
     @staticmethod
     def build_FormattedValue(ctx, node):
         node.ptr = build_stmt(ctx, node.value)
-        # FIXME: support more format specification other than the first one
+        # it seems that format_spec.values only contains one str
+        assert node.format_spec is None or len(node.format_spec.values) <= 1
         format_str = node.format_spec.values[
             0].value if node.format_spec and len(
                 node.format_spec.values) > 0 else None
-        # return Expr with its format specifier as a list
-        return [node.ptr, format_str]
+        return node.ptr if format_str is None else [node.ptr, format_str]
 
     @staticmethod
     def build_JoinedStr(ctx, node):
@@ -507,10 +507,16 @@ class ASTTransformer(Builder):
             module="taichi")
 
     @staticmethod
-    def extract_positional_args(raw_string, *raw_args, **keywords):
-        # extract format specifier from raw_string
-        # e.g., '{0:.2f} is a float, so is {a:.3f}.' -> ('{} is a float, so is {}.', {0: '.2f', a: '.3f'})
+    # extract format specifier from raw_string, and also handles positional arguments, if there are any
+    def extract_printf_format(raw_string, *raw_args, **keywords):
         raw_brackets = re.findall(r'{(.*?)}', raw_string)
+        # fallback to old behavior
+        if all(':' not in bracket and not bracket.isdigit()
+               for bracket in raw_brackets):
+            raw_args = list(raw_args)
+            raw_args.insert(0, raw_string)
+            return raw_args, keywords
+
         brackets = []
         unnamed = 0
         for bracket in raw_brackets:
@@ -526,13 +532,9 @@ class ASTTransformer(Builder):
         # check error first
         for (item, _) in brackets:
             if isinstance(item, int) and item >= len(raw_args):
-                raise TaichiSyntaxError(
-                    f'Index {item} is out of range for format string "{raw_string}".'
-                )
+                raise TaichiSyntaxError(f'Index {item} is out of range.')
             if isinstance(item, str) and item not in keywords:
-                raise TaichiSyntaxError(
-                    f'Keyword "{item}" is not found for format string "{raw_string}".'
-                )
+                raise TaichiSyntaxError(f'Keyword "{item}" is not found.')
 
         args = []
         for (item, spec) in brackets:
@@ -542,7 +544,8 @@ class ASTTransformer(Builder):
             ])
 
         args.insert(0, re.sub(r'{.*?}', '{}', raw_string))
-        return args, keywords
+        # TODO: unify keyword args handling
+        return args, {}
 
     @staticmethod
     def build_Call(ctx, node):
@@ -580,7 +583,7 @@ class ASTTransformer(Builder):
         if isinstance(node.func, ast.Attribute) and isinstance(
                 node.func.value.ptr, str) and node.func.attr == 'format':
             raw_string = node.func.value.ptr
-            args, keywords = ASTTransformer.extract_positional_args(
+            args, keywords = ASTTransformer.extract_printf_format(
                 raw_string, *args, **keywords)
             node.ptr = impl.ti_format(*args, **keywords)
             return node.ptr

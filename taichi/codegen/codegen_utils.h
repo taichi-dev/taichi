@@ -35,6 +35,11 @@ inline std::string merge_printf_specifier(
   std::string user_length = user_match[4];
   std::string user_conversion = user_match[5];
 
+  // Assert that there are no dangeous specifiers.
+  if (user_width == "*" || user_precision == ".*" || user_conversion == "n") {
+    TI_NOT_IMPLEMENTED
+  }
+
   const std::regex dt_re = std::regex(
       "%"
       "(\\.(?:\\d+))?"
@@ -46,42 +51,45 @@ inline std::string merge_printf_specifier(
   std::string dt_length = dt_match[2];
   std::string dt_conversion = dt_match[3];
 
-  // Assert there's no dangeous specifier.
-
   // Vulkan doesn't support length, flags, or width specifier.
   // https://vulkan.lunarg.com/doc/view/1.2.162.1/linux/debug_printf.html
   if (arch == Arch::vulkan) {
     if (!user_flags.empty()) {
       TI_WARN(
-          "printf flags %{} are not supported in Vulkan, "
+          "The printf flags '{}' are not supported in Vulkan, "
           "and will be discarded.",
           user_flags);
       user_flags.clear();
     }
     if (!user_width.empty()) {
       TI_WARN(
-          "printf width modifiers %{} are not supported in Vulkan, "
+          "The printf width modifier '{}' is not supported in Vulkan, "
           "and will be discarded.",
           user_width);
       user_width.clear();
     }
     if (!user_length.empty()) {
       TI_WARN(
-          "printf length modifier %{} are not supported in Vulkan, "
+          "The printf length modifier '{}' is not supported in Vulkan, "
           "and will be discarded.",
           user_length);
       user_length.clear();
     }
   }
+  // CUDA supports all of them.
+  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
+  else if (arch == Arch::cuda) {
+    // DO NOTHING
+  }
 
-  // The user_conversion are overridden by dt_conversion.
+  // Override user_conversion with dt_conversion.
   if (!user_conversion.empty() &&
       user_conversion.back() != dt_conversion.back()) {
-    // Keep user_conversion in some corner cases, e.g.,
-    // when printing unsigned decimal numbers with hex or oct format,
-    // or printing float number using exponent notation.
+    // Preserves user_conversion when user and dt conversions belong to the same
+    // group, e.g., when printing unsigned decimal numbers in hexadecimal
+    // or octal format, or floating point numbers in exponential notation.
     constexpr std::string_view signed_group = "di";
-    constexpr std::string_view unsigned_group = "oxX";
+    constexpr std::string_view unsigned_group = "oxXu";
     constexpr std::string_view float_group = "fFeEaAgG";
 
     if ((signed_group.find(user_conversion.back()) != std::string::npos &&
@@ -92,19 +100,21 @@ inline std::string merge_printf_specifier(
          float_group.find(dt_conversion.back()) != std::string::npos)) {
       dt_conversion.back() = user_conversion.back();
     } else {
-      TI_WARN("printf conversion specifier %{} overridden by %{}",
+      TI_WARN("The printf conversion specifier '{}' is overritten by '{}'",
               user_conversion, dt_conversion);
-      user_conversion = dt_conversion;
     }
   }
+  TI_ASSERT(!dt_conversion.empty());
+  user_conversion = dt_conversion;
 
-  // If dt_precision exists, then ignore user_precision.
+  // If dt_precision exists, then discard user_precision.
   if (!dt_precision.empty()) {
     user_precision = dt_precision;
   }
 
   std::string res = "%" + user_flags + user_width + user_length +
                     user_precision + user_conversion;
+  TI_TRACE("Merge %{} and {} into {}.", from_user.value(), from_data_type, res);
   return res;
 }
 

@@ -589,8 +589,10 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    preallocated_device_buffer_alloc_ =
-        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params);
+    RhiResult res =
+        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params,
+                                       &preallocated_device_buffer_alloc_);
+    TI_ASSERT(res == RhiResult::success);
     cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
         cuda_device()->get_alloc_info(preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
@@ -621,8 +623,10 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    preallocated_device_buffer_alloc_ = amdgpu_device()->allocate_memory(
-        preallocated_device_buffer_alloc_params);
+    RhiResult res = amdgpu_device()->allocate_memory(
+        preallocated_device_buffer_alloc_params,
+        &preallocated_device_buffer_alloc_);
+    TI_ASSERT(res == RhiResult::success);
     amdgpu::AmdgpuDevice::AllocInfo preallocated_device_buffer_alloc_info =
         amdgpu_device()->get_alloc_info(preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;

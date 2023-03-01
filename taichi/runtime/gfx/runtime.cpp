@@ -423,17 +423,21 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
       ret_buffer{nullptr};
 
   if (ti_kernel->get_args_buffer_size()) {
-    args_buffer = device_->allocate_memory_unique(
+    auto [buf, res] = device_->allocate_memory_unique(
         {ti_kernel->get_args_buffer_size(),
          /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
+    TI_ASSERT(res == RhiResult::success, "Failed to allocate args buffer");
+    args_buffer = std::move(buf);
   }
 
   if (ti_kernel->get_ret_buffer_size()) {
-    ret_buffer = device_->allocate_memory_unique(
+    auto [buf, res] = device_->allocate_memory_unique(
         {ti_kernel->get_ret_buffer_size(),
          /*host_write=*/false, /*host_read=*/true,
          /*export_sharing=*/false, AllocUsage::Storage});
+    TI_ASSERT(res == RhiResult::success, "Failed to allocate ret buffer");
+    ret_buffer = std::move(buf);
   }
 
   // Create context blitter
@@ -488,9 +492,11 @@ void GfxRuntime::launch_kernel(KernelHandle handle, RuntimeContext *host_ctx) {
           // Alloc ext arr
           size_t alloc_size = std::max(size_t(32), ext_array_size.at(i));
           bool host_write = access & uint32_t(irpass::ExternalPtrAccess::READ);
-          auto allocated = device_->allocate_memory_unique(
+          auto [allocated, res] = device_->allocate_memory_unique(
               {alloc_size, host_write, false, /*export_sharing=*/false,
                AllocUsage::Storage});
+          TI_ASSERT(res == RhiResult::success,
+                    "Failed to allocate ext arr buffer");
           any_arrays[i] = *allocated.get();
           ctx_buffers_.push_back(std::move(allocated));
         }
@@ -697,15 +703,23 @@ void GfxRuntime::submit_current_cmdlist_if_timeout() {
 }
 
 void GfxRuntime::init_nonroot_buffers() {
-  global_tmps_buffer_ = device_->allocate_memory_unique(
-      {kGtmpBufferSize,
-       /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false, AllocUsage::Storage});
+  {
+    auto [buf, res] = device_->allocate_memory_unique(
+        {kGtmpBufferSize,
+         /*host_write=*/false, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
+    TI_ASSERT(res == RhiResult::success, "gtmp allocation failed");
+    global_tmps_buffer_ = std::move(buf);
+  }
 
-  listgen_buffer_ = device_->allocate_memory_unique(
-      {kListGenBufferSize,
-       /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false, AllocUsage::Storage});
+  {
+    auto [buf, res] = device_->allocate_memory_unique(
+        {kListGenBufferSize,
+         /*host_write=*/false, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
+    TI_ASSERT(res == RhiResult::success, "listgen allocation failed");
+    listgen_buffer_ = std::move(buf);
+  }
 
   // Need to zero fill the buffers, otherwise there could be NaN.
   Stream *stream = device_->get_compute_stream();
@@ -724,15 +738,16 @@ void GfxRuntime::add_root_buffer(size_t root_buffer_size) {
   if (root_buffer_size == 0) {
     root_buffer_size = 4;  // there might be empty roots
   }
-  std::unique_ptr<DeviceAllocationGuard> new_buffer =
+  auto [new_buffer, res_buffer] =
       device_->allocate_memory_unique(
           {root_buffer_size,
            /*host_write=*/false, /*host_read=*/false,
            /*export_sharing=*/false, AllocUsage::Storage});
+  TI_ASSERT(res_buffer == RhiResult::success, "Failed to allocate root buffer");
   Stream *stream = device_->get_compute_stream();
-  auto [cmdlist, res] =
+  auto [cmdlist, res_cmdlist] =
       device_->get_compute_stream()->new_command_list_unique();
-  TI_ASSERT(res == RhiResult::success);
+  TI_ASSERT(res_cmdlist == RhiResult::success);
   cmdlist->buffer_fill(new_buffer->get_ptr(0), kBufferSizeEntireSize,
                        /*data=*/0);
   stream->submit_synced(cmdlist.get());

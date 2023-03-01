@@ -84,7 +84,8 @@ class CudaDevice : public LlvmDevice {
 
   ~CudaDevice() override{};
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;

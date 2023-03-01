@@ -91,9 +91,12 @@ std::unique_ptr<AotModuleBuilder> MetalProgramImpl::make_aot_module_builder(
 DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return get_compute_device()->allocate_memory(
+  DeviceAllocation alloc;
+  RhiResult res = get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false});
+       /*export_sharing=*/false}, &alloc);
+  TI_ASSERT(alloc == RhiResult::success);
+  return alloc;
 }
 
 DeviceAllocation MetalProgramImpl::allocate_texture(const ImageParams &params) {

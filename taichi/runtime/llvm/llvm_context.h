@@ -132,6 +132,9 @@ class TaichiLLVMContext {
       llvm::Module *module,
       llvm::LLVMContext *target_context);
 
+  void link_module_with_custom_cuda_library(
+      std::unique_ptr<llvm::Module> &module);
+
   void link_module_with_cuda_libdevice(std::unique_ptr<llvm::Module> &module);
 
   void link_module_with_amdgpu_libdevice(std::unique_ptr<llvm::Module> &module);

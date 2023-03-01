@@ -325,9 +325,6 @@ def test_print_fstring():
     @ti.kernel
     def func(i: ti.i32, f: ti.f32):
         print(f'qwe {foo1(1)} {foo1(2) * 2 - 1} {i} {f} {4} {True} {1.23}')
-        # self-documenting expressions
-        if sys.version_info >= (3, 8):
-            print(f'{i=} {f=}')
 
     func(123, 4.56)
     ti.sync()

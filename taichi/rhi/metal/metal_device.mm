@@ -516,7 +516,8 @@ void MetalDevice::destroy() {
   }
 }
 
-RhiResult MetalDevice::allocate_memory(const AllocParams &params, DeviceAllocation &out_devalloc) {
+RhiResult MetalDevice::allocate_memory(const AllocParams &params,
+                                       DeviceAllocation &out_devalloc) {
   if (params.export_sharing) {
     RHI_LOG_ERROR("export sharing is not available in metal");
   }

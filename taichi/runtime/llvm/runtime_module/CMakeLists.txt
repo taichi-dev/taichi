@@ -14,10 +14,10 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
 
 endfunction()
 
-function(COMPILE_CUSTOM_CUDA_LIBRARY)
+function(COMPILE_CUSTOM_CUDA_LIBRARY cuda_path)
     add_custom_target(
         "generate_cuda_library"
-        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 --no-cuda-version-check -nocudalib
+        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 --no-cuda-version-check -nocudalib --cuda-path=${cuda_path}
         WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_cuda_library")
@@ -32,7 +32,7 @@ endforeach()
 
 if(CUDA_ARCH)
     find_package(CUDAToolkit)
-    if(${CUDAToolkit_FOUND})
-        compile_custom_cuda_library()
+    if(${CUDAToolkit_FOUND} AND ${CUDAToolkit_VERSION_MAJOR} GREATER_EQUAL 8)
+        compile_custom_cuda_library(${CUDAToolkit_TARGET_DIR})
     endif()
 endif()

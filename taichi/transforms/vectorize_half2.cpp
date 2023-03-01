@@ -22,8 +22,11 @@ separately as follow:
 
 [Ndarray] Implemented
 Condition: Two ExternalPtrStmts having the same base_ptr & inner most
-indices are 0 and 1 Before: i32 const_0 = ConstStmt(0) i32 const_1 =
-ConstStmt(1)
+indices are 0 and 1
+
+Before:
+    i32 const_0 = ConstStmt(0)
+    i32 const_1 = ConstStmt(1)
 
     f16* ptr_0 = ExternalPtrStmt(arg, [$1, const_0])
     f16* ptr_1 = ExternalPtrStmt(arg, [$1, const_1])

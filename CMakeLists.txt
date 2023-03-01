@@ -74,7 +74,7 @@ if(LINUX OR APPLE)
     if (NOT IOS)
         # (penguinliong) Not compatible with -fembed-bitcode. Not sure where it
         # comes from; probably a XCode preset?
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -fstandalone-debug")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
     endif()
 endif()
 

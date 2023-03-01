@@ -516,7 +516,7 @@ void MetalDevice::destroy() {
   }
 }
 
-DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
+RhiResult MetalDevice::allocate_memory(const AllocParams &params, DeviceAllocation &out_devalloc) {
   if (params.export_sharing) {
     RHI_LOG_ERROR("export sharing is not available in metal");
   }
@@ -539,10 +539,11 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
 
   MetalMemory &alloc = memory_allocs_.acquire(buffer);
 
-  DeviceAllocation out{};
-  out.device = this;
-  out.alloc_id = reinterpret_cast<uint64_t>(&alloc);
-  return out;
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->device = this;
+  out_devalloc->alloc_id = reinterpret_cast<uint64_t>(&alloc);
+
+  return RhiResult::success;
 }
 DeviceAllocation MetalDevice::import_mtl_buffer(MTLBuffer_id buffer) {
   MetalMemory &alloc = memory_allocs_.acquire(buffer);

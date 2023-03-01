@@ -96,7 +96,7 @@ DeviceAllocation MetalProgramImpl::allocate_memory_ndarray(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
        /*export_sharing=*/false},
       &alloc);
-  TI_ASSERT(alloc == RhiResult::success);
+  TI_ASSERT(res == RhiResult::success);
   return alloc;
 }
 

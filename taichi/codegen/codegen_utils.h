@@ -51,6 +51,11 @@ inline std::string merge_printf_specifier(
   std::string dt_length = dt_match[2];
   std::string dt_conversion = dt_match[3];
 
+  // Constant for convensions in group.
+  constexpr std::string_view signed_group = "di";
+  constexpr std::string_view unsigned_group = "oxXu";
+  constexpr std::string_view float_group = "fFeEaAgG";
+
   // Vulkan doesn't support length, flags, or width specifier.
   // https://vulkan.lunarg.com/doc/view/1.2.162.1/linux/debug_printf.html
   if (arch == Arch::vulkan) {
@@ -68,7 +73,10 @@ inline std::string merge_printf_specifier(
           user_width);
       user_width.clear();
     }
-    if (!user_length.empty()) {
+    // except for unsigned long
+    if (!user_length.empty() &&
+        !(user_length == "l" &&
+          unsigned_group.find(user_conversion) != std::string::npos)) {
       TI_WARN(
           "The printf length modifier '{}' is not supported in Vulkan, "
           "and will be discarded.",
@@ -105,10 +113,6 @@ inline std::string merge_printf_specifier(
     // Preserves user_conversion when user and dt conversions belong to the same
     // group, e.g., when printing unsigned decimal numbers in hexadecimal
     // or octal format, or floating point numbers in exponential notation.
-    constexpr std::string_view signed_group = "di";
-    constexpr std::string_view unsigned_group = "oxXu";
-    constexpr std::string_view float_group = "fFeEaAgG";
-
     if ((signed_group.find(user_conversion.back()) != std::string::npos &&
          signed_group.find(dt_conversion.back()) != std::string::npos) ||
         (unsigned_group.find(user_conversion.back()) != std::string::npos &&

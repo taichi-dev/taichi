@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Set
 
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140, sr
 
@@ -214,7 +214,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
 
 
 def generate_module_content_repr(m: GfxRuntime140, module_name: str,
-                                 cgraph_kernel_names: List[str]) -> List[str]:
+                                 cgraph_kernel_names: Set[str]) -> List[str]:
     out = []
 
     if module_name:

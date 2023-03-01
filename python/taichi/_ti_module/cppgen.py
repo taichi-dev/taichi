@@ -213,8 +213,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
     return out
 
 
-def generate_module_content_repr(m: GfxRuntime140,
-                                 module_name: str,
+def generate_module_content_repr(m: GfxRuntime140, module_name: str,
                                  cgraph_kernel_names: List[str]) -> List[str]:
     out = []
 

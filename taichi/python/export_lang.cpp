@@ -153,6 +153,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
       .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
+      .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",
@@ -429,12 +430,10 @@ void export_lang(py::module &m) {
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
-          [&](Program *program, const DataType &dt, int num_channels,
-              const std::vector<int> &shape) -> Texture * {
-            return program->create_texture(dt, num_channels, shape);
-          },
-          py::arg("dt"), py::arg("num_channels"),
-          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
+          [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
+              -> Texture * { return program->create_texture(fmt, shape); },
+          py::arg("fmt"), py::arg("shape") = py::tuple(),
+          py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -685,8 +684,10 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
+      .def("finalize_params", &Kernel::finalize_params)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
@@ -728,11 +729,13 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
       .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_rw_texture_param", &Function::insert_rw_texture_param)
       .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))
       .def("finalize_rets", &Function::finalize_rets)
+      .def("finalize_params", &Function::finalize_params)
       .def(
           "ast_builder",
           [](Function *self) -> ASTBuilder * {
@@ -751,6 +754,7 @@ void export_lang(py::module &m) {
              return expr->cast<FieldExpression>()->snode_grad_type ==
                     SNodeGradType::kPrimal;
            })
+      .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
@@ -816,12 +820,9 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args,
-            bool with_runtime_context) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
-                                                        with_runtime_context);
-        });
+  m.def("insert_internal_func_call", [&](Operation *op, const ExprGroup &args) {
+    return Expr::make<InternalFuncCallExpression>(op, args.exprs);
+  });
 
   m.def("make_get_element_expr",
         Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
@@ -949,7 +950,7 @@ void export_lang(py::module &m) {
 
   m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
+        Expr::make<TexturePtrExpression, int, int, const BufferFormat &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
@@ -1435,6 +1436,16 @@ void export_lang(py::module &m) {
       ::Sleep(100);
 #endif
   });
+
+  auto operationClass = py::class_<Operation>(m, "Operation");
+  auto internalOpClass = py::class_<InternalOp>(m, "InternalOp");
+
+#define PER_INTERNAL_OP(x)                                           \
+  internalOpClass.def_property_readonly_static(                      \
+      #x, [](py::object) { return Operations::get(InternalOp::x); }, \
+      py::return_value_policy::reference);
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 }
 
 }  // namespace taichi

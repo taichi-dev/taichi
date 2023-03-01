@@ -180,6 +180,7 @@ void autograd() {
     kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
     kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
     kernel_ext->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {n});
+    kernel_ext->finalize_params();
   }
 
   auto ctx_init = kernel_init->make_launch_context();

@@ -162,8 +162,7 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
     return llvm::Type::getDoubleTy(*ctx);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     return llvm::Type::getHalfTy(*ctx);
-  } else if (dt->is<TensorType>()) {
-    auto tensor_type = dt->cast<TensorType>();
+  } else if (const auto *tensor_type = dt->cast<TensorType>()) {
     auto element_type = get_data_type(tensor_type->get_element_type());
     auto num_elements = tensor_type->get_num_elements();
     // Return type is <element_type * num_elements> if real matrix is used,
@@ -173,13 +172,15 @@ llvm::Type *TaichiLLVMContext::get_data_type(DataType dt) {
                                    /*scalable=*/false);
     }
     return llvm::ArrayType::get(element_type, num_elements);
-  } else if (dt->is<StructType>()) {
+  } else if (const auto *struct_type = dt->cast<StructType>()) {
     std::vector<llvm::Type *> types;
-    auto struct_type = dt->cast<StructType>();
     for (const auto &element : struct_type->elements()) {
       types.push_back(get_data_type(element.type));
     }
     return llvm::StructType::get(*ctx, types);
+  } else if (const auto *pointer_type = dt->cast<PointerType>()) {
+    return llvm::PointerType::get(
+        get_data_type(pointer_type->get_pointee_type()), 0);
   } else {
     TI_INFO(data_type_name(dt));
     TI_NOT_IMPLEMENTED;
@@ -539,6 +540,8 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
       function_pass_manager.doFinalization();
       patch_intrinsic("thread_idx", llvm::Intrinsic::amdgcn_workitem_id_x);
       patch_intrinsic("block_idx", llvm::Intrinsic::amdgcn_workgroup_id_x);
+      patch_intrinsic("block_barrier", llvm::Intrinsic::amdgcn_s_barrier,
+                      false);
 
       link_module_with_amdgpu_libdevice(module);
       patch_amdgpu_kernel_dim(
@@ -1064,28 +1067,31 @@ std::string TaichiLLVMContext::get_data_layout_string() {
   return get_data_layout().getStringRepresentation();
 }
 
-const StructType *TaichiLLVMContext::get_struct_type_with_data_layout(
-    const StructType *old_ty,
-    const std::string &layout) {
+std::pair<const StructType *, size_t>
+TaichiLLVMContext::get_struct_type_with_data_layout(const StructType *old_ty,
+                                                    const std::string &layout) {
+  auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
+  auto data_layout = llvm::DataLayout::parse(layout);
+  TI_ASSERT(data_layout);
+  size_t struct_size = data_layout->getTypeAllocSize(llvm_struct_type);
   if (old_ty->get_layout() == layout) {
-    return old_ty;
+    return {old_ty, struct_size};
   }
   std::vector<StructMember> elements = old_ty->elements();
   for (auto &element : elements) {
     if (auto struct_type = element.type->cast<StructType>()) {
-      element.type = get_struct_type_with_data_layout(struct_type, layout);
+      element.type =
+          get_struct_type_with_data_layout(struct_type, layout).first;
     }
   }
-  auto *llvm_struct_type = llvm::cast<llvm::StructType>(get_data_type(old_ty));
-  auto data_layout = llvm::DataLayout::parse(layout);
-  TI_ASSERT(data_layout);
   auto struct_layout = data_layout->getStructLayout(llvm_struct_type);
   for (int i = 0; i < elements.size(); i++) {
     elements[i].offset = struct_layout->getElementOffset(i);
   }
-  return TypeFactory::get_instance()
-      .get_struct_type(elements, layout)
-      ->cast<StructType>();
+  return {TypeFactory::get_instance()
+              .get_struct_type(elements, layout)
+              ->cast<StructType>(),
+          struct_size};
 }
 
 TI_REGISTER_TASK(make_slim_libdevice);

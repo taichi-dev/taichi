@@ -1105,8 +1105,8 @@ def default_cfg():
 
 def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
-        _ti_core.insert_internal_func_call(name, make_expr_group(args),
-                                           with_runtime_context))
+        _ti_core.insert_internal_func_call(getattr(_ti_core.InternalOp, name),
+                                           make_expr_group(args)))
 
 
 def get_cuda_compute_capability():

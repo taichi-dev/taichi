@@ -235,25 +235,6 @@ class Struct(TaichiOperations):
                 entries[k] = foo(v, other.entries[k], extra.entries[k])
         return Struct(entries)
 
-    @taichi_scope
-    def fill(self, val):
-        """Fills the Struct with a specific value in Taichi scope.
-
-        Args:
-            val (Union[int, float]): Value to fill.
-        """
-        warnings.warn(
-            "fill() on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0.",
-            DeprecationWarning)
-        for k, v in self.items:
-            if isinstance(v, impl.Expr) and v.ptr.is_tensor():
-                from taichi.lang import matrix_ops  # pylint: disable=C0415
-                matrix_ops.fill(v, val)
-            elif isinstance(v, (Struct, Matrix)):
-                v._element_wise_binary(ops.assign, val)
-            else:
-                ops.assign(v, val)
-
     def __len__(self):
         """Get the number of entries in a custom struct"""
         return len(self.entries)

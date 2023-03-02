@@ -99,7 +99,8 @@ def test_struct_fill():
     @ti.kernel
     def fill_elements():
         for i in x:
-            x[i].fill(i + 0.5)
+            x[i].a = i + 0.5
+            x[i].b.fill(i + 0.5)
 
     fill_each()
     for i in range(n):

@@ -130,7 +130,7 @@ user_api[ti.ScalarField] = [
 user_api[ti.ScalarNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
-user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
+user_api[ti.Struct] = ['field', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
     'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',

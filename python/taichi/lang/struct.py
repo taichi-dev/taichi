@@ -4,10 +4,12 @@ from types import MethodType
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiRuntimeTypeError, TaichiSyntaxError, TaichiTypeError
+from taichi.lang.exception import (TaichiRuntimeTypeError, TaichiSyntaxError,
+                                   TaichiTypeError)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
+from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
+                              taichi_scope)
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 from taichi.types.utils import is_signed
@@ -160,7 +162,8 @@ class Struct:
     @taichi_scope
     def _assign(self, other):
         if not isinstance(other, (dict, Struct)):
-            raise TaichiTypeError("Only dict or Struct can be assigned to a Struct")
+            raise TaichiTypeError(
+                "Only dict or Struct can be assigned to a Struct")
         if isinstance(other, dict):
             other = Struct(other)
         if self.entries.keys() != other.entries.keys():

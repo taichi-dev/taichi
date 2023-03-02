@@ -1,6 +1,6 @@
 Pillow
 pytest
-git+https://github.com/taichi-dev/pytest-xdist@e3e1ccf517#egg=pytest-xdist
+git+https://github.com/taichi-dev/pytest-xdist@a3b5ad3038#egg=pytest-xdist
 pytest-rerunfailures
 pytest-cov
 numpy

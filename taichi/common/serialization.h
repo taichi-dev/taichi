@@ -553,6 +553,7 @@ class BinarySerializer : public Serializer {
     }
   }
 
+  // Pointer with a custom serialization function.
   template <typename T>
   typename std::enable_if<std::is_pointer<T>::value &&
                               has_ptr_io<std::remove_pointer_t<T>>::value,
@@ -799,6 +800,7 @@ class TextSerializer : public Serializer {
     add_raw(ss.str());
   }
 
+  // Pointer with a custom serialization function.
   template <typename T>
   std::enable_if_t<std::is_pointer_v<T> &&
                        has_ptr_io<std::remove_pointer_t<T>>::value,

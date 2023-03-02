@@ -633,12 +633,12 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
       return;
     }
     serializer("type_kind", ptr->type_kind);
+    if (false) {
+    }
 #define PER_TYPE_KIND(x)                                     \
   else if (ptr->type_kind == TypeKind::x) {                  \
     serializer("ptr_content", *ptr->template as<x##Type>()); \
   }
-    if (false) {
-    }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
     else {
@@ -651,14 +651,14 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
       ptr = nullptr;
       return;
     }
+    if (false) {
+    }
 #define PER_TYPE_KIND(x)                \
   else if (type_kind == TypeKind::x) {  \
     x##Type content;                    \
     serializer("ptr_content", content); \
     ptr = content.get_type()->as<T>();  \
   }
-    if (false) {
-    }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
     else {
@@ -701,11 +701,13 @@ Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
     TypeKind type_kind = (TypeKind)(int)value["type_kind"];
     if (false) {
     }
-#define PER_TYPE_KIND(x)                                             \
-  else if (type_kind == TypeKind::x) {                               \
-    x##Type content;                                                 \
-    content.json_deserialize_fields((JsonObject &)value["content"]); \
-    ptr = content.get_type()->as<T>();                               \
+#define PER_TYPE_KIND(x)                              \
+  else if (type_kind == TypeKind::x) {                \
+    x##Type content;                                  \
+    auto &content_val = value["content"];             \
+    TI_ASSERT(content_val.is_obj());                  \
+    content.json_deserialize_fields(content_val.obj); \
+    ptr = content.get_type()->as<T>();                \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND

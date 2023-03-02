@@ -275,7 +275,7 @@ def test_print_string_format_specifier_vulkan_ul():
         print("{:lu}".format(llu))
         print("{name:lu}".format(name=llu))
 
-        # FIXME: %lx works on vulkan bot %lX only prints lower 32 bits... why?
+        # FIXME: %lx works on vulkan but %lX only prints lower 32 bits... why?
         print("{:lx}".format(llu))
         print("{name:lx}".format(name=llu))
 
@@ -416,7 +416,7 @@ def test_print_fstring_specifier_vulkan_ul():
         print(f"{llu:u}")
         print(f"{llu:lu}")
 
-        # FIXME: %lx works on vulkan bot %lX only prints lower 32 bits... why?
+        # FIXME: %lx works on vulkan but %lX only prints lower 32 bits... why?
         print(f"{llu:lx}")
         print(f"{llu:lX}")
 

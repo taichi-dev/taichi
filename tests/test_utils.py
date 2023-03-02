@@ -141,9 +141,11 @@ def expected_archs():
     Returns:
         List[taichi_python.Arch]: All expected archs on the machine.
     """
-    archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
-    # TODO: now expected_archs is not called per test so we cannot test it
-    archs = set(filter(is_arch_supported, archs))
+    def get_archs():
+        archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
+        # TODO: now expected_archs is not called per test so we cannot test it
+        archs = set(filter(is_arch_supported, archs))
+        return archs
 
     wanted_archs = os.environ.get('TI_WANTED_ARCHS', '')
     want_exclude = wanted_archs.startswith('^')
@@ -162,9 +164,9 @@ def expected_archs():
         else:
             expanded_wanted_archs.add(_ti_core.arch_from_name(arch))
     if len(expanded_wanted_archs) == 0:
-        return list(archs)
+        return list(get_archs())
     if want_exclude:
-        expected = archs - expanded_wanted_archs
+        expected = get_archs() - expanded_wanted_archs
     else:
         expected = expanded_wanted_archs
     return list(expected)

@@ -74,7 +74,7 @@ def _test_python(args, default_dir='python'):
         )
     else:
         if int(threads) > 1:
-            pytest_args += ['-n', str(threads)]
+            pytest_args += ['-n', str(threads), '--dist=worksteal']
     import pytest  # pylint: disable=C0415
     return int(pytest.main(pytest_args))
 

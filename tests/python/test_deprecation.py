@@ -242,3 +242,93 @@ def test_deprecate_sparse_matrix_builder():
             r"ti\.linalg\.sparse_matrix_builder is deprecated, and it will be removed in Taichi v1\.6\.0\."
     ):
         ti.linalg.sparse_matrix_builder()
+
+
+@test_utils.test()
+def test_deprecate_struct_unary():
+    n = 32
+    x = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+
+    @ti.kernel
+    def run():
+        for i in x:
+            x[i] = -x[i]
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
+        run()
+
+
+@test_utils.test()
+def test_deprecate_struct_binary():
+    n = 32
+    x = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+
+    @ti.kernel
+    def run():
+        for i in x:
+            x[i] = x[i] + x[i]
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
+        run()
+
+
+@test_utils.test()
+def test_deprecate_struct_ternary():
+    n = 32
+    x = ti.Struct.field({"a": ti.i32, "b": ti.i32}, shape=(n, ))
+
+    @ti.kernel
+    def run():
+        for i in x:
+            x[i] = x[i] if x[i] else x[i]
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
+        run()
+
+
+@test_utils.test()
+def test_deprecate_struct_writeback_binary():
+    n = 32
+    x = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+
+    @ti.kernel
+    def run():
+        for i in x:
+            x[i] += x[i]
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0."
+    ):
+        run()
+
+
+@test_utils.test()
+def test_deprecate_struct_fill():
+    n = 32
+    x = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+
+    @ti.kernel
+    def run():
+        for i in x:
+            x[i].fill(1)
+
+    with pytest.warns(
+            DeprecationWarning,
+            match=
+            r"fill\(\) on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0."
+    ):
+        run()

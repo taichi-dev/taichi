@@ -718,8 +718,7 @@ def test_ndarray_in_python_func():
         test()
 
 
-@pytest.mark.run_in_serial
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cpu, ti.cuda], exclude=[ti.amdgpu])
 def test_ndarray_with_fp16():
     half2 = ti.types.vector(n=2, dtype=ti.f16)
 
@@ -729,8 +728,8 @@ def test_ndarray_with_fp16():
             x[i] = half2(2.0)
 
     @ti.kernel
-    def test(table: ti.types.ndarray(dtype=half2, field_dim=1)):
-        tmp = ti.Vector([ti.cast(0.0, ti.f16), ti.cast(0.0, ti.f16)])
+    def test(table: ti.types.ndarray(dtype=half2, ndim=1)):
+        tmp = ti.Vector([ti.f16(0.0), ti.f16(0.0)])
         for i in ti.static(range(2)):
             tmp = tmp + 4.0 * table[i]
 
@@ -742,7 +741,7 @@ def test_ndarray_with_fp16():
     init(table)
     test(table)
 
-    assert (table.to_numpy()[0] == 16.).any()
+    assert (table.to_numpy()[0] == 16.).all()
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray,

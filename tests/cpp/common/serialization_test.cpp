@@ -148,6 +148,14 @@ TEST(Serialization, MoveOnly) {
 TEST(SERIALIZATION, Type) {
   BinIoPair bp;
 
+  // Tests for null type
+  Type *null_type = nullptr;
+  EXPECT_EQ(bp.run(null_type), null_type);
+  auto json_value_null = liong::json::serialize(null_type);
+  Type *deserialized_null;
+  liong::json::deserialize(json_value_null, deserialized_null);
+  EXPECT_EQ(deserialized_null, null_type);
+
   // Tests for PrimitiveType, TensorType, StructType, PointerType
   auto *int32_type =
       TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
@@ -165,8 +173,6 @@ TEST(SERIALIZATION, Type) {
   Type *deserialized;
   liong::json::deserialize(json_value, deserialized);
   EXPECT_EQ(deserialized, pointer_type);
-  Type *null_type = nullptr;
-  EXPECT_EQ(bp.run(null_type), null_type);
 
   // Tests for QuantIntType, QuantFloatType, QuantFixedType, BitStructType
   auto *quant_int6_type =

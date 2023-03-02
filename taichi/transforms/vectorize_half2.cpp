@@ -166,6 +166,7 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
       return;
     }
 
+    bool found_pair = false;
     std::vector<AtomicOpStmt *> atomic_ops_to_remove;
     for (auto iter : recorded_atomic_ops_) {
       auto *atomic_op = iter;
@@ -203,6 +204,8 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
             should_remove.insert(stmt);
             should_replace_extern[atomic_op] = stmt;
           }
+          found_pair = true;
+          break;
         }
       }
 
@@ -228,6 +231,8 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
             should_remove.insert(stmt);
             should_replace_global_temp[atomic_op] = stmt;
           }
+          found_pair = true;
+          break;
         }
       }
 
@@ -255,6 +260,8 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
             should_remove.insert(stmt);
             should_replace_get_ch[atomic_op] = stmt;
           }
+          found_pair = true;
+          break;
         }
       }
     }
@@ -263,7 +270,8 @@ class Half2VectorizationAnalyzer : public BasicStmtVisitor {
       recorded_atomic_ops_.erase(stmt);
     }
 
-    recorded_atomic_ops_.insert(stmt);
+    if (!found_pair)
+      recorded_atomic_ops_.insert(stmt);
   }
 
   void visit(OffloadedStmt *stmt) override {

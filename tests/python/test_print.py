@@ -407,7 +407,7 @@ def test_print_fstring_specifier_64():
 
 
 @test_utils.test(arch=[ti.cc, ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[ti.amdgpu],
+                 exclude=[vk_on_mac, ti.amdgpu],
                  debug=True)
 def test_print_fstring_specifier_vulkan_ul():
     @ti.kernel

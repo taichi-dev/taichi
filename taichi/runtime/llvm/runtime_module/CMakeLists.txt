@@ -11,9 +11,32 @@ function(COMPILE_LLVM_RUNTIME rtm_arch)
     )
     add_dependencies(${CORE_LIBRARY_NAME} "generate_llvm_runtime_${rtm_arch}")
     install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/runtime_${arch}.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
+
+endfunction()
+
+function(COMPILE_CUSTOM_CUDA_LIBRARY cuda_path)
+    add_custom_target(
+        "generate_cuda_library"
+        COMMAND ${CLANG_EXECUTABLE} -c cuda_runtime.cu --cuda-gpu-arch=sm_60 -emit-llvm -std=c++17 --no-cuda-version-check -nocudalib --cuda-path=${cuda_path}
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_dependencies(${CORE_LIBRARY_NAME} "generate_cuda_library")
+    install(FILES "${CMAKE_SOURCE_DIR}/taichi/runtime/llvm/runtime_module/cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc" DESTINATION ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/runtime)
+
 endfunction()
 
 # Build llvm-runtime for host arch and cuda (if available)
 foreach(arch IN LISTS HOST_ARCH CUDA_ARCH DX12_ARCH AMDGPU_ARCH)
   compile_llvm_runtime(${arch})
 endforeach()
+
+if(NOT WIN32)
+    # clang++ on Windows reports an internal error of "<built-in>:1:10: fatal error: '__clang_cuda_runtime_wrapper.h' file not found" when compiling for CUDA targets
+    # so we can't use hand-writen cuda libraries util this issue get resolved
+    if(CUDA_ARCH)
+        find_package(CUDAToolkit)
+        if(${CUDAToolkit_FOUND} AND ${CUDAToolkit_VERSION_MAJOR} GREATER_EQUAL 8)
+            compile_custom_cuda_library(${CUDAToolkit_TARGET_DIR})
+        endif()
+    endif()
+endif()

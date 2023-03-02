@@ -45,6 +45,7 @@ CompileConfig::CompileConfig() {
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
   real_matrix_scalarize = true;
+  half2_vectorization = false;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

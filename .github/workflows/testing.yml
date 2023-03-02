@@ -513,7 +513,7 @@ jobs:
           TI_RUN_RELEASE_TESTS: '1'
 
   aot_build_and_test_android_apps:
-    name: AOT Build and Test Android Headless Demos
+    name: AOT Build and Test Android Apps
     # Skip this job when testing the offline cache
     if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files

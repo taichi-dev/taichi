@@ -443,6 +443,8 @@ float64 TypedConstant::val_float() const {
   TI_ASSERT(is_real(dt));
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     return val_f32;
+  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+    return val_f32;
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return val_f64;
   } else {

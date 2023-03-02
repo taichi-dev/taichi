@@ -289,13 +289,21 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Build
-        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        shell: cmd
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer 15 -installVulkan -libsDir "$env:LocalAppData/buildbot"
+          python .\.github\workflows\scripts\build.py
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=ON
+            -DTI_WITH_VULKAN:BOOL=ON
+            -DTI_WITH_DX11:BOOL=ON
+            -DTI_WITH_DX12:BOOL=ON
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
+            -DTI_WITH_C_API=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3

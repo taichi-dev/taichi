@@ -1277,7 +1277,7 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
-  // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
+  // irpass::vectorize_half2() will override the ret_type of GetChStmt.
   // We use "overrided_dtype" to prevent type inference from
   // irpass::type_check()
   bool overrided_dtype = false;

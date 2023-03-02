@@ -7,6 +7,7 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 
@@ -304,7 +305,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (config.arch == Arch::cuda && config.half2_vectorization &&
-      !kernel->is_evaluator) {
+      !kernel->is_evaluator && !get_custom_cuda_library_path().empty()) {
     irpass::vectorize_half2(ir);
 
     irpass::type_check(ir, config);

@@ -78,13 +78,26 @@ Kernel::LaunchContextBuilder Kernel::make_launch_context() {
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
                                                    RuntimeContext *ctx)
-    : kernel_(kernel), owned_ctx_(nullptr), ctx_(ctx) {
+    : kernel_(kernel),
+      owned_ctx_(nullptr),
+      ctx_(ctx),
+      result_buffer_(std::make_unique<char[]>(
+          arch_uses_llvm(kernel->program->compile_config().arch)
+              ? kernel->ret_size
+              : sizeof(uint64) * taichi_result_buffer_entries)) {
+  ctx_->result_buffer = (uint64 *)result_buffer_.get();
+  ctx_->result_buffer_size = kernel->ret_size;
 }
 
 Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
-      ctx_(owned_ctx_.get()) {
+      ctx_(owned_ctx_.get()),
+      result_buffer_(std::make_unique<char[]>(
+          arch_uses_llvm(kernel->program->compile_config().arch)
+              ? kernel->ret_size
+              : sizeof(uint64) * taichi_result_buffer_entries)) {
+  ctx_->result_buffer = (uint64 *)result_buffer_.get();
   ctx_->result_buffer_size = kernel->ret_size;
 }
 
@@ -345,22 +358,25 @@ void Kernel::init(Program &program,
   func();
 }
 
-TypedConstant Kernel::fetch_ret(const std::vector<int> &index) {
-  const Type *dt = ret_type->get_element_type(index);
-  int offset = ret_type->get_element_offset(index);
-  return program->fetch_result(offset, dt);
+TypedConstant Kernel::LaunchContextBuilder::fetch_ret(
+    const std::vector<int> &index) {
+  const Type *dt = kernel_->ret_type->get_element_type(index);
+  int offset = kernel_->ret_type->get_element_offset(index);
+  return kernel_->program->fetch_result(result_buffer_.get(), offset, dt);
 }
 
-float64 Kernel::get_struct_ret_float(const std::vector<int> &index) {
+float64 Kernel::LaunchContextBuilder::get_struct_ret_float(
+    const std::vector<int> &index) {
   return fetch_ret(index).val_float();
 }
 
-int64 Kernel::get_struct_ret_int(const std::vector<int> &index) {
+int64 Kernel::LaunchContextBuilder::get_struct_ret_int(
+    const std::vector<int> &index) {
   return fetch_ret(index).val_int();
 }
 
-uint64 Kernel::get_struct_ret_uint(const std::vector<int> &index) {
+uint64 Kernel::LaunchContextBuilder::get_struct_ret_uint(
+    const std::vector<int> &index) {
   return fetch_ret(index).val_uint();
 }
-
 }  // namespace taichi::lang

@@ -500,11 +500,6 @@ int Program::allocate_snode_tree_id() {
 }
 
 void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  if (arch_uses_llvm(compile_config().arch)) {
-    ctx->result_buffer = (uint64 *)host_result_buffer.data();
-  } else {
-    ctx->result_buffer = result_buffer;
-  }
   program_impl_->prepare_runtime_context(ctx);
 }
 

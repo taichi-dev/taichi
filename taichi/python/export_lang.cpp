@@ -694,9 +694,6 @@ void export_lang(py::module &m) {
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
       .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
-      .def("get_struct_ret_int", &Kernel::get_struct_ret_int)
-      .def("get_struct_ret_uint", &Kernel::get_struct_ret_uint)
-      .def("get_struct_ret_float", &Kernel::get_struct_ret_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -723,7 +720,13 @@ void export_lang(py::module &m) {
       .def("set_arg_rw_texture",
            &Kernel::LaunchContextBuilder::set_arg_rw_texture)
       .def("set_extra_arg_int",
-           &Kernel::LaunchContextBuilder::set_extra_arg_int);
+           &Kernel::LaunchContextBuilder::set_extra_arg_int)
+      .def("get_struct_ret_int",
+           &Kernel::LaunchContextBuilder::get_struct_ret_int)
+      .def("get_struct_ret_uint",
+           &Kernel::LaunchContextBuilder::get_struct_ret_uint)
+      .def("get_struct_ret_float",
+           &Kernel::LaunchContextBuilder::get_struct_ret_float);
 
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)

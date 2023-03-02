@@ -862,8 +862,8 @@ class Kernel:
             if has_ret:
                 if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
                     ret = self.construct_kernel_ret(
-                        t_kernel, ret_dt, () if isinstance(ret_dt, tuple) else
-                        (0, ))
+                        launch_ctx, ret_dt,
+                        () if isinstance(ret_dt, tuple) else (0, ))
                 else:
                     if id(ret_dt) in primitive_types.integer_type_ids:
                         if is_signed(cook_dtype(ret_dt)):
@@ -893,20 +893,21 @@ class Kernel:
 
         return func__
 
-    def construct_kernel_ret(self, t_kernel, ret_type, index=()):
+    def construct_kernel_ret(self, launch_ctx, ret_type, index=()):
         if isinstance(ret_type, tuple):
             return [
-                self.construct_kernel_ret(t_kernel, ret_type[i], index + (i, ))
+                self.construct_kernel_ret(launch_ctx, ret_type[i],
+                                          index + (i, ))
                 for i in range(len(ret_type))
             ]
         if isinstance(ret_type, CompoundType):
-            return ret_type.from_kernel_struct_ret(t_kernel, index)
+            return ret_type.from_kernel_struct_ret(launch_ctx, index)
         if id(ret_type) in primitive_types.integer_type_ids:
             if is_signed(cook_dtype(ret_type)):
-                return t_kernel.get_struct_ret_int(index)
-            return t_kernel.get_struct_ret_uint(index)
+                return launch_ctx.get_struct_ret_int(index)
+            return launch_ctx.get_struct_ret_uint(index)
         if id(ret_type) in primitive_types.real_type_ids:
-            return t_kernel.get_struct_ret_float(index)
+            return launch_ctx.get_struct_ret_float(index)
         raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 
     def ensure_compiled(self, *args):

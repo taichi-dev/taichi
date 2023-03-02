@@ -642,9 +642,9 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
     serializer("type_kind", ptr->type_kind);
     if (false) {
     }
-#define PER_TYPE_KIND(x)                                     \
-  else if (ptr->type_kind == TypeKind::x) {                  \
-    serializer("ptr_content", *ptr->template as<x##Type>()); \
+#define PER_TYPE_KIND(x)                                 \
+  else if (ptr->type_kind == TypeKind::x) {              \
+    serializer("content", *ptr->template as<x##Type>()); \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
@@ -660,11 +660,11 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
     }
     if (false) {
     }
-#define PER_TYPE_KIND(x)                \
-  else if (type_kind == TypeKind::x) {  \
-    x##Type content;                    \
-    serializer("ptr_content", content); \
-    ptr = content.get_type()->as<T>();  \
+#define PER_TYPE_KIND(x)               \
+  else if (type_kind == TypeKind::x) { \
+    x##Type content;                   \
+    serializer("content", content);    \
+    ptr = content.get_type()->as<T>(); \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND

@@ -718,7 +718,7 @@ def test_ndarray_in_python_func():
         test()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[ti.amdgpu])
+@test_utils.test(arch=[ti.cpu, ti.cuda], exclude=[ti.amdgpu])
 def test_ndarray_with_fp16():
     half2 = ti.types.vector(n=2, dtype=ti.f16)
 

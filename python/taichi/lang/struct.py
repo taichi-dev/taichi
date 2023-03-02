@@ -1,22 +1,19 @@
 import numbers
-import warnings
 from types import MethodType
 
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
-from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.enums import Layout
-from taichi.lang.exception import TaichiRuntimeTypeError, TaichiSyntaxError
+from taichi.lang.exception import TaichiRuntimeTypeError, TaichiSyntaxError, TaichiTypeError
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.util import (cook_dtype, in_python_scope, is_taichi_class,
-                              python_scope, taichi_scope)
+from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 from taichi.types.utils import is_signed
 
 
-class Struct(TaichiOperations):
+class Struct:
     """The Struct type class.
 
     A struct is a dictionary-like data structure that stores members as
@@ -160,80 +157,18 @@ class Struct(TaichiOperations):
 
         return setter
 
-    def _element_wise_unary(self, foo):
-        warnings.warn(
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
-            DeprecationWarning)
-        entries = {}
-        for k, v in self.items:
-            if is_taichi_class(v):
-                entries[k] = v._element_wise_unary(foo)
-            else:
-                entries[k] = foo(v)
-        return Struct(entries)
-
-    def _element_wise_binary(self, foo, other):
-        warnings.warn(
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
-            DeprecationWarning)
-        other = self._broadcast_copy(other)
-        entries = {}
-        for k, v in self.items:
-            if is_taichi_class(v):
-                entries[k] = v._element_wise_binary(foo, other.entries[k])
-            else:
-                entries[k] = foo(v, other.entries[k])
-        return Struct(entries)
-
-    def _broadcast_copy(self, other):
+    @taichi_scope
+    def _assign(self, other):
+        if not isinstance(other, (dict, Struct)):
+            raise TaichiTypeError("Only dict or Struct can be assigned to a Struct")
         if isinstance(other, dict):
             other = Struct(other)
-        if not isinstance(other, Struct):
-            entries = {}
-            for k, v in self.items:
-                if is_taichi_class(v):
-                    entries[k] = v._broadcast_copy(other)
-                else:
-                    entries[k] = other
-            other = Struct(entries)
         if self.entries.keys() != other.entries.keys():
-            raise TypeError(
+            raise TaichiTypeError(
                 f"Member mismatch between structs {self.keys}, {other.keys}")
-        return other
-
-    def _element_wise_writeback_binary(self, foo, other):
-        if foo.__name__ == 'assign' and not isinstance(other, (dict, Struct)):
-            raise TaichiSyntaxError(
-                'cannot assign scalar expr to '
-                f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
-            )
-        if foo.__name__ != 'assign':
-            warnings.warn(
-                "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
-                DeprecationWarning)
-        other = self._broadcast_copy(other)
-        entries = {}
         for k, v in self.items:
-            if is_taichi_class(v):
-                entries[k] = v._element_wise_binary(foo, other.entries[k])
-            else:
-                entries[k] = foo(v, other.entries[k])
-        return self if foo.__name__ == 'assign' else Struct(entries)
-
-    def _element_wise_ternary(self, foo, other, extra):
-        warnings.warn(
-            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
-            DeprecationWarning)
-        other = self._broadcast_copy(other)
-        extra = self._broadcast_copy(extra)
-        entries = {}
-        for k, v in self.items:
-            if is_taichi_class(v):
-                entries[k] = v._element_wise_ternary(foo, other.entries[k],
-                                                     extra.entries[k])
-            else:
-                entries[k] = foo(v, other.entries[k], extra.entries[k])
-        return Struct(entries)
+            v._assign(other.entries[k])
+        return self
 
     def __len__(self):
         """Get the number of entries in a custom struct"""

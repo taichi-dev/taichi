@@ -8,6 +8,13 @@ jobs:
     name: ghstack Land
     runs-on: ubuntu-latest
     steps:
+    - name: Show Environment Variables
+      run: env
+    - name: Show Github Object
+      run: |
+        cat <<'EOF'
+        ${{ toJson(github) }}
+        EOF
     - uses: actions/checkout@v3
       with:
         token: ${{ secrets.GARDENER_PAT }}

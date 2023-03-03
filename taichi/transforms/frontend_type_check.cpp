@@ -52,13 +52,14 @@ class FrontendTypeCheck : public IRVisitor {
     auto rhs_type = stmt->rhs->ret_type;
 
     auto error = [&]() {
-      throw TaichiTypeError(
-          fmt::format("{}cannot assign '{}' to '{}'", stmt->tb, rhs_type->to_string(),
-                      lhs_type->to_string()));
+      throw TaichiTypeError(fmt::format("{}cannot assign '{}' to '{}'",
+                                        stmt->tb, rhs_type->to_string(),
+                                        lhs_type->to_string()));
     };
 
     // No implicit cast at frontend for now
-    if (is_tensor(lhs_type) && is_tensor(rhs_type) && lhs_type.get_shape() != rhs_type.get_shape()) {
+    if (is_tensor(lhs_type) && is_tensor(rhs_type) &&
+        lhs_type.get_shape() != rhs_type.get_shape()) {
       error();
     }
   }

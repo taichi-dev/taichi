@@ -90,6 +90,8 @@ def test_assign():
     def floor():
         f[None] = ti.Vector([1, 2, 3])
 
-    with pytest.raises(ti.TaichiTypeError,
-                       match=r"cannot assign '\[Tensor \(3\) i32\]' to '\[Tensor \(4\) i32\]'"):
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match=
+            r"cannot assign '\[Tensor \(3\) i32\]' to '\[Tensor \(4\) i32\]'"):
         floor()

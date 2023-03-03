@@ -8,30 +8,29 @@ import subprocess
 
 import requests
 
-gh = requests.Session()
-gh.headers.update({
-    'Authorization': f'Bearer {os.environ["GITHUB_TOKEN"]}',
-    'Accept': 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-})
-EV = json.loads(open(os.environ['GITHUB_EVENT_PATH'], 'r').read())
-REPO = EV['repository']
-PR = EV['event']['client_payload']['pull_request']
-NUMBER = PR['number']
-
-
-def must(cond, msg):
-    if not cond:
-        print(msg)
-        gh.post(
-            f'https://api.github.com/repos/{REPO}/issues/{NUMBER}/comments',
-            json={
-                'body': f'ghstack bot failed: {msg}',
-            })
-        exit(1)
-
 
 def main():
+    gh = requests.Session()
+    gh.headers.update({
+        'Authorization': f'Bearer {os.environ["GITHUB_TOKEN"]}',
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+    })
+    EV = json.loads(open(os.environ['GITHUB_EVENT_PATH'], 'r').read())
+    REPO = EV['repository']
+    PR = EV['event']['client_payload']['pull_request']
+    NUMBER = PR['number']
+
+    def must(cond, msg):
+        if not cond:
+            print(msg)
+            gh.post(
+                f'https://api.github.com/repos/{REPO}/issues/{NUMBER}/comments',
+                json={
+                    'body': f'ghstack bot failed: {msg}',
+                })
+            exit(1)
+
     head_ref = PR['head']['ref']
     must(head_ref and re.match(r'^gh/[A-Za-z0-9-]+/[0-9]+/head$', head_ref),
          'Not a ghstack PR')
@@ -77,7 +76,7 @@ def main():
         for u, cc in idmap.items():
             approved = approved or cc == 'APPROVED'
             must(cc in ('APPROVED', 'DISMISSED'),
-                 f'@{u} has `{cc}` PR #{n}, please resolve it first!')
+                 f'@{u} has stamped PR #{n} `{cc}`, please resolve it first!')
 
         must(approved, f'PR #{n} is not approved yet!')
 

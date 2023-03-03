@@ -15,7 +15,12 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.9
-    - run: |
+    - name: Check Current CI Status
+      run: .github/workflows/scripts/ghstack-perm-check.py
+      env:
+        GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
+    - name: Land It!
+      run: |
         cd .github/workflows/scripts
         git config --global user.email "taichi-gardener@taichi.graphics"
         git config --global user.name "Taichi Gardener"

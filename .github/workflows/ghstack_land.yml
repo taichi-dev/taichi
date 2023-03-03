@@ -16,12 +16,13 @@ jobs:
       with:
         python-version: 3.9
     - name: Check Current CI Status
-      run: .github/workflows/scripts/ghstack-perm-check.py
+      run: |
+        pip install requests ghstack
+        .github/workflows/scripts/ghstack-perm-check.py
       env:
         GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
     - name: Land It!
       run: |
-        cd .github/workflows/scripts
         git config --global user.email "taichi-gardener@taichi.graphics"
         git config --global user.name "Taichi Gardener"
         cat <<EOF > ~/.ghstackrc
@@ -31,7 +32,6 @@ jobs:
         github_username = taichi-gardener
         remote_name = origin
         EOF
-        pip install ghstack
         ghstack land "${{ github.event.client_payload.pull_request.html_url }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

@@ -190,7 +190,7 @@ while not gui.get_event(ti.GUI.ESCAPE):
     gui.show()
 ```
 
-`gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated. 
+`gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated.
 
 For example:
 

@@ -291,7 +291,7 @@ def dsytrd3(A, Q, dt):
     d = Vector([0.0, 0.0, 0.0], dt=dt)
     h = A[0, 1]**2 + A[0, 2]**2
     g = 0.0
-    if (A[0, 1] > 0):
+    if A[0, 1] > 0:
         g = -ops.sqrt(h)
     else:
         g = ops.sqrt(h)
@@ -300,7 +300,7 @@ def dsytrd3(A, Q, dt):
     u[1] = A[0, 1] - g
     u[2] = A[0, 2]
     omega = h - f
-    if (omega > 0.0):
+    if omega > 0.0:
         omega = 1.0 / omega
         K = 0.0
         f = A[1, 1] * u[1] + A[1, 2] * u[2]
@@ -340,16 +340,16 @@ def dsyevq3(A, Q, w, dt):
     w, e, Q = dsytrd3(A, Q, dt)
     for l in range(0, 2):
         nIter = 0
-        while (True):
+        while True:
             # Check for convergence and exit iteration loop if off-diagonal
             # element e(l) is zero
             m = 0
             for i in range(l, 2):
                 m = i
                 g = ops.abs(w[m]) + ops.abs(w[m + 1])
-                if (ops.abs(e[m]) + g == g):
+                if ops.abs(e[m]) + g == g:
                     break
-            if (m == l):
+            if m == l:
                 break
 
             nIter += 1
@@ -358,7 +358,7 @@ def dsyevq3(A, Q, w, dt):
             # Calculate g = d_m - k
             g = (w[l + 1] - w[l]) / (e[l] + e[l])
             r = ops.sqrt(g * g + 1.0)
-            if (g > 0):
+            if g > 0:
                 g = w[m] - w[l] + e[l] / (g + r)
             else:
                 g = w[m] - w[l] + e[l] / (g - r)
@@ -369,7 +369,7 @@ def dsyevq3(A, Q, w, dt):
             while i >= l:
                 f = s * e[i]
                 b = c * e[i]
-                if (ops.abs(f) > ops.abs(g)):
+                if ops.abs(f) > ops.abs(g):
                     c = g / f
                     r = ops.sqrt(c * c + 1.0)
                     e[i + 1] = f * r
@@ -464,7 +464,7 @@ def _sym_eig3x3(A, dt):
     Q[2, 0] = (A[0, 0] - eigenvalues[0]) * (A[1, 1] - eigenvalues[0]) - Q[2, 1]
     norm = Q[0, 0] * Q[0, 0] + Q[1, 0] * Q[1, 0] + Q[2, 0] * Q[2, 0]
     early_ret = 0
-    if (norm <= error):
+    if norm <= error:
         Q_final, eigenvalues_final = dsyevq3(A, Q, eigenvalues, dt)
         early_ret = 1
     else:
@@ -473,7 +473,7 @@ def _sym_eig3x3(A, dt):
         Q[1, 0] *= norm
         Q[2, 0] *= norm
 
-    if (not early_ret):
+    if not early_ret:
 
         Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
         Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
@@ -481,7 +481,7 @@ def _sym_eig3x3(A, dt):
           1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2,
                                                                            1]
         norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
-        if (norm <= error):
+        if norm <= error:
             Q_final, eigenvalues_final = dsyevq3(A, Q, eigenvalues, dt)
             early_ret = 1
         else:
@@ -494,7 +494,7 @@ def _sym_eig3x3(A, dt):
         Q[1, 2] = Q[2, 0] * Q[0, 1] - Q[0, 0] * Q[2, 1]
         Q[2, 2] = Q[0, 0] * Q[1, 1] - Q[1, 0] * Q[0, 1]
 
-    if (early_ret):
+    if early_ret:
         Q = Q_final
         eigenvalues = eigenvalues_final
     return eigenvalues, Q

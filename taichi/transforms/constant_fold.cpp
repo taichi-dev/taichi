@@ -63,6 +63,7 @@ class ConstantFold : public BasicStmtVisitor {
     if (id.is_binary)
       ker->insert_scalar_param(id.rhs);
     ker->is_evaluator = true;
+    ker->finalize_params();
     ker->finalize_rets();
 
     auto *ker_ptr = ker.get();
@@ -108,7 +109,11 @@ class ConstantFold : public BasicStmtVisitor {
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
-      ret.val_i64 = program->fetch_result<int64_t>(0);
+      if (arch_uses_llvm(compile_config.arch)) {
+        ret = launch_ctx.fetch_ret({0});
+      } else {
+        ret.val_i64 = program->fetch_result<int64_t>(0);
+      }
     }
     return true;
   }
@@ -131,7 +136,11 @@ class ConstantFold : public BasicStmtVisitor {
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
-      ret.val_i64 = program->fetch_result<int64_t>(0);
+      if (arch_uses_llvm(compile_config.arch)) {
+        ret = launch_ctx.fetch_ret({0});
+      } else {
+        ret.val_i64 = program->fetch_result<int64_t>(0);
+      }
     }
     return true;
   }

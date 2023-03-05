@@ -716,3 +716,83 @@ def test_ndarray_in_python_func():
 
     for i in range(300):
         test()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], exclude=[ti.amdgpu])
+def test_ndarray_with_fp16():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    @ti.kernel
+    def init(x: ti.types.ndarray(dtype=half2, field_dim=1)):
+        for i in x:
+            x[i] = half2(2.0)
+
+    @ti.kernel
+    def test(table: ti.types.ndarray(dtype=half2, ndim=1)):
+        tmp = ti.Vector([ti.f16(0.0), ti.f16(0.0)])
+        for i in ti.static(range(2)):
+            tmp = tmp + 4.0 * table[i]
+
+        table[0] = tmp
+
+    acc = ti.ndarray(dtype=half2, shape=(40))
+    table = ti.ndarray(dtype=half2, shape=(40))
+
+    init(table)
+    test(table)
+
+    assert (table.to_numpy()[0] == 16.).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 require=ti.extension.assertion,
+                 debug=True,
+                 check_out_of_bound=True,
+                 gdb_trigger=False)
+def test_scalar_ndarray_oob():
+    @ti.kernel
+    def access_arr(input: ti.types.ndarray(), x: ti.i32) -> ti.f32:
+        return input[x]
+
+    input = np.random.randn(4)
+
+    # Works
+    access_arr(input, 1)
+
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, 4)
+
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, -1)
+
+
+# SOA layout for ndarray is deprecated so no need to test
+@test_utils.test(arch=supported_archs_taichi_ndarray,
+                 require=ti.extension.assertion,
+                 debug=True,
+                 check_out_of_bound=True,
+                 gdb_trigger=False)
+def test_matrix_ndarray_oob():
+    @ti.kernel
+    def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32,
+                   y: ti.i32) -> ti.f32:
+        return input[p, q][x, y]
+
+    input = ti.ndarray(dtype=ti.math.mat2, shape=(4, 5))
+
+    # Works
+    access_arr(input, 2, 3, 0, 1)
+
+    # element_shape
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, 2, 3, 2, 1)
+    # field_shape[0]
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, 4, 4, 0, 1)
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, -3, 4, 1, 1)
+    # field_shape[1]
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, 3, 5, 0, 1)
+    with pytest.raises(AssertionError, match=r'Out of bound access'):
+        access_arr(input, 2, -10, 1, 1)

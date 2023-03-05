@@ -1,6 +1,6 @@
 import numbers
 from types import FunctionType, MethodType
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
@@ -999,7 +999,7 @@ def axes(*x: Iterable[int]):
 Axis = _ti_core.Axis
 
 
-def static(x, *xs):
+def static(x, *xs) -> Any:
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is

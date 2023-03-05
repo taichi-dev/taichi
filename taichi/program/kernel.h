@@ -56,6 +56,10 @@ class TI_DLL_EXPORT Kernel : public Callable {
     // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
     // This ignores the underlying kernel's |arg_id|-th arg type.
     void set_arg_raw(int arg_id, uint64 d);
+    TypedConstant fetch_ret(const std::vector<int> &index);
+    float64 get_struct_ret_float(const std::vector<int> &index);
+    int64 get_struct_ret_int(const std::vector<int> &index);
+    uint64 get_struct_ret_uint(const std::vector<int> &index);
 
     RuntimeContext &get_context();
 
@@ -67,6 +71,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
     // |owned_ctx_| will be nullptr.
     // Invariant: |ctx_| will never be nullptr.
     RuntimeContext *ctx_;
+    std::unique_ptr<char[]> result_buffer_;
   };
 
   Kernel(Program &program,
@@ -125,11 +130,11 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   [[nodiscard]] std::string get_name() const override;
 
-  void set_kernel_key_for_cache(const std::string &kernel_key) {
+  void set_kernel_key_for_cache(const std::string &kernel_key) const {
     kernel_key_ = kernel_key;
   }
 
-  const std::string &get_cached_kernel_key() {
+  const std::string &get_cached_kernel_key() const {
     return kernel_key_;
   }
 
@@ -148,7 +153,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // OffloadedStmt for async execution TODO(Lin): Check this comment
   bool lowered_{false};
   std::atomic<uint64> task_counter_{0};
-  std::string kernel_key_;
+  mutable std::string kernel_key_;
 };
 
 }  // namespace taichi::lang

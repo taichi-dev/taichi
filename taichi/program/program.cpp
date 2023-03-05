@@ -270,6 +270,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
+  ker.finalize_params();
   ker.finalize_rets();
   return ker;
 }
@@ -298,6 +299,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
+  ker.finalize_params();
   return ker;
 }
 
@@ -388,10 +390,8 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   }
 }
 
-Texture *Program::create_texture(const DataType type,
-                                 int num_channels,
+Texture *Program::create_texture(BufferFormat buffer_format,
                                  const std::vector<int> &shape) {
-  BufferFormat buffer_format = type_channels2buffer_format(type, num_channels);
   if (shape.size() == 1) {
     textures_.push_back(
         std::make_unique<Texture>(this, buffer_format, shape[0], 1, 1));
@@ -500,7 +500,6 @@ int Program::allocate_snode_tree_id() {
 }
 
 void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->result_buffer = result_buffer;
   program_impl_->prepare_runtime_context(ctx);
 }
 

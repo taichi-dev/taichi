@@ -81,8 +81,7 @@ Now that we're done with Kernel compilation, let's take a look at the generated 
 ├── demo
 │   ├── add_base_c78_0_k0001_vk_0_t00.spv
 │   ├── init_c76_0_k0000_vk_0_t00.spv
-│   ├── metadata.json
-│   └── metadata.tcb
+│   └── metadata.json
 └── demo.py
 ```
 

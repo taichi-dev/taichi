@@ -513,6 +513,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     AMDGPUContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
+    char *device_result_buffer{nullptr};
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array) {
@@ -548,7 +549,12 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     if (transferred) {
       AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     }
-
+    char *host_result_buffer = (char *)context.result_buffer;
+    if (context.result_buffer_size > 0) {
+      AMDGPUDriver::get_instance().malloc((void **)&device_result_buffer,
+                                          context.result_buffer_size);
+      context.result_buffer = (uint64 *)device_result_buffer;
+    }
     void *context_pointer;
     int arg_size = sizeof(RuntimeContext *);
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
@@ -565,7 +571,11 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
                             {(void *)&context_pointer}, {arg_size});
     }
     TI_TRACE("Launching kernel");
-
+    if (context.result_buffer_size > 0) {
+      AMDGPUDriver::get_instance().memcpy_device_to_host(
+          host_result_buffer, device_result_buffer, context.result_buffer_size);
+      AMDGPUDriver::get_instance().mem_free(device_result_buffer);
+    }
     if (transferred) {
       for (int i = 0; i < args.size(); i++) {
         if (device_buffers[i] != arg_buffers[i]) {

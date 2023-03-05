@@ -431,6 +431,10 @@ class QuantArrayType : public Type {
 class TypedConstant {
  public:
   DataType dt;
+
+  /*
+    Note: Float16 is represented by "float32 value" + "dt = PrimitiveType::f16".
+  */
   union {
     uint64 value_bits;
     int32 val_i32;
@@ -498,6 +502,8 @@ class TypedConstant {
       val_i64 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
       val_f64 = value;
+    } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+      val_f32 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
       val_i8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
@@ -530,6 +536,7 @@ class TypedConstant {
 
   int32 &val_int32();
   float32 &val_float32();
+  float32 &val_float16();
   int64 &val_int64();
   float64 &val_float64();
   int8 &val_int8();

@@ -140,6 +140,8 @@ class TI_DLL_EXPORT DataType {
 
   DataType get_element_type() const;
 
+  TI_IO_DEF(ptr_);
+
  private:
   Type *ptr_;
 };
@@ -640,16 +642,16 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
       return;
     }
     serializer("type_kind", ptr->type_kind);
-    if (false) {
-    }
+    switch (ptr->type_kind) {
 #define PER_TYPE_KIND(x)                                 \
-  else if (ptr->type_kind == TypeKind::x) {              \
+  case TypeKind::x: {                                    \
     serializer("content", *ptr->template as<x##Type>()); \
+    break;                                               \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
-    else {
-      TI_NOT_IMPLEMENTED;
+      default:
+        TI_NOT_IMPLEMENTED;
     }
   } else {
     TypeKind type_kind = (TypeKind)-1;
@@ -658,18 +660,18 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
       ptr = nullptr;
       return;
     }
-    if (false) {
-    }
+    switch (type_kind) {
 #define PER_TYPE_KIND(x)               \
-  else if (type_kind == TypeKind::x) { \
+  case TypeKind::x: {                  \
     x##Type content;                   \
     serializer("content", content);    \
     ptr = content.get_type()->as<T>(); \
+    break;                             \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
-    else {
-      TI_NOT_IMPLEMENTED;
+      default:
+        TI_NOT_IMPLEMENTED;
     }
   }
 }
@@ -686,16 +688,16 @@ Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
     obj.inner["type_kind"] = JsonValue((int)ptr->type_kind);
     JsonValue content;
 
-    if (false) {
-    }
+    switch (ptr->type_kind) {
 #define PER_TYPE_KIND(x)                                            \
-  else if (ptr->type_kind == TypeKind::x) {                         \
+  case TypeKind::x: {                                               \
     content = ptr->template as<x##Type>()->json_serialize_fields(); \
+    break;                                                          \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
-    else {
-      TI_NOT_IMPLEMENTED
+      default:
+        TI_NOT_IMPLEMENTED
     }
 
     obj.inner["content"] = std::move(content);
@@ -706,20 +708,20 @@ Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
       return;
     }
     TypeKind type_kind = (TypeKind)(int)value["type_kind"];
-    if (false) {
-    }
+    switch (type_kind) {
 #define PER_TYPE_KIND(x)                              \
-  else if (type_kind == TypeKind::x) {                \
+  case TypeKind::x: {                                 \
     x##Type content;                                  \
     auto &content_val = value["content"];             \
     TI_ASSERT(content_val.is_obj());                  \
     content.json_deserialize_fields(content_val.obj); \
     ptr = content.get_type()->as<T>();                \
+    break;                                            \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND
-    else {
-      TI_NOT_IMPLEMENTED
+      default:
+        TI_NOT_IMPLEMENTED
     }
   }
 }

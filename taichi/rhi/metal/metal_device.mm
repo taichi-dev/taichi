@@ -240,7 +240,10 @@ ShaderResourceSet &MetalShaderResourceSet::rw_image(uint32_t binding,
 MetalCommandList::MetalCommandList(const MetalDevice &device,
                                    MTLCommandQueue_id cmd_queue)
     : device_(&device) {
-  cmdbuf_ = [cmd_queue commandBuffer];
+  @autoreleasepool {
+    cmdbuf_ = [cmd_queue commandBuffer];
+    [cmdbuf_ retain];
+  }
 }
 
 MetalCommandList::~MetalCommandList() { [cmdbuf_ release]; }

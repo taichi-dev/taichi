@@ -80,3 +80,18 @@ def test_non_0d_ndarray():
             "Only 0-dimensional numpy array can be used to initialize a scalar expression"
     ):
         foo()
+
+
+@test_utils.test(arch=ti.cpu)
+def test_assign():
+    f = ti.Vector.field(4, dtype=ti.i32, shape=())
+
+    @ti.kernel
+    def floor():
+        f[None] = ti.Vector([1, 2, 3])
+
+    with pytest.raises(
+            ti.TaichiTypeError,
+            match=
+            r"cannot assign '\[Tensor \(3\) i32\]' to '\[Tensor \(4\) i32\]'"):
+        floor()

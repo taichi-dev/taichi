@@ -12,6 +12,8 @@
 
 namespace taichi::lang {
 
+std::string get_custom_cuda_library_path();
+
 real get_cpu_frequency();
 
 extern real default_measurement_time;

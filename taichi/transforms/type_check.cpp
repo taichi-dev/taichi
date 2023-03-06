@@ -78,6 +78,7 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
+
     stmt->ret_type = type_check_store(
         stmt, stmt->dest, stmt->val,
         fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
@@ -453,7 +454,9 @@ class TypeCheck : public IRVisitor {
     auto arg_load_stmt = stmt->base_ptr->cast<ArgLoadStmt>();
 
     int external_dims = arg_load_stmt->field_dims_;
-    if (external_dims == stmt->indices.size() || external_dims == -1) {
+    if (stmt->overrided_dtype) {
+      // pass
+    } else if (external_dims == stmt->indices.size() || external_dims == -1) {
       stmt->ret_type = arg_load_stmt->ret_type;
     } else {
       stmt->ret_type = arg_load_stmt->ret_type.ptr_removed().get_element_type();
@@ -501,6 +504,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
+    if (stmt->overrided_dtype)
+      return;
+
     if (stmt->is_bit_vectorized) {
       auto physical_type = stmt->output_snode->physical_type;
       auto ptr_ret_type =

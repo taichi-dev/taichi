@@ -723,7 +723,7 @@ def test_ndarray_with_fp16():
     half2 = ti.types.vector(n=2, dtype=ti.f16)
 
     @ti.kernel
-    def init(x: ti.types.ndarray(dtype=half2, field_dim=1)):
+    def init(x: ti.types.ndarray(dtype=half2, ndim=1)):
         for i in x:
             x[i] = half2(2.0)
 

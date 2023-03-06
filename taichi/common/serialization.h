@@ -801,6 +801,7 @@ class TextSerializer : public Serializer {
   }
 
   // Pointer with a custom serialization function.
+  // TODO: switch to concept when C++20 is available
   template <typename T>
   std::enable_if_t<std::is_pointer_v<T> &&
                        has_ptr_io<std::remove_pointer_t<T>>::value,

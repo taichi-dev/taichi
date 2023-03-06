@@ -161,9 +161,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     extra = []
 
     if proj == 'taichi-nightly':
-        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
-        # Nightly don't have a version number, forcing 2.0.0
-        os.environ['RELEASE_VERSION'] = '2.0.0'
+        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=1'])
         # Include C-API in nightly builds
         os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 

@@ -15,6 +15,8 @@ jobs:
         cat <<'EOF'
         ${{ toJson(github) }}
         EOF
+    - name: Show Github Event Path Json
+      run: 'cat $GITHUB_EVENT_PATH || true'
     - uses: actions/checkout@v3
       with:
         token: ${{ secrets.GARDENER_PAT }}
@@ -25,7 +27,9 @@ jobs:
     - name: Check Current CI Status
       run: |
         pip install requests ghstack
-        .github/workflows/scripts/ghstack-perm-check.py
+        .github/workflows/scripts/ghstack-perm-check.py <<'EOF'
+        ${{ toJson(github) }}
+        EOF
       env:
         GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
     - name: Land It!

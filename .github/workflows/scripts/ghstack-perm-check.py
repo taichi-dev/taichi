@@ -5,6 +5,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 
 import requests
 
@@ -16,7 +17,7 @@ def main():
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28',
     })
-    EV = json.loads(open(os.environ['GITHUB_EVENT_PATH'], 'r').read())
+    EV = json.loads(sys.stdin.read())
     REPO = EV['repository']
     PR = EV['event']['client_payload']['pull_request']
     NUMBER = PR['number']

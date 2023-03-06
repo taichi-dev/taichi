@@ -21,6 +21,8 @@ class TI_DLL_EXPORT Callable {
     std::size_t total_dim{0};  // total dim of array
     BufferFormat format{BufferFormat::unknown};
 
+    TI_IO_DEF(is_array, total_dim, format, dt_);
+
     /* [arguments with TensorType]
 
     Taichi used to represent TensorType with the combination of "PrimitiveType"
@@ -75,6 +77,8 @@ class TI_DLL_EXPORT Callable {
 
   struct Ret {
     DataType dt;
+
+    TI_IO_DEF(dt);
 
     explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
     }

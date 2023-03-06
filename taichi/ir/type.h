@@ -140,6 +140,8 @@ class TI_DLL_EXPORT DataType {
 
   DataType get_element_type() const;
 
+  TI_IO_DEF(ptr_);
+
  private:
   Type *ptr_;
 };

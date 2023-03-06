@@ -39,7 +39,7 @@ class CUDAModuleToFunctionConverter : public ModuleToFunctionConverter {
   using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
-                       const std::vector<Callable::Parameter> &args,
+                       const std::vector<LlvmLaunchArgInfo> &args,
                        LLVMCompiledKernel data) const override;
 };
 

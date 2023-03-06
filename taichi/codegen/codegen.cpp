@@ -92,7 +92,8 @@ KernelCodeGen::maybe_read_compilation_from_cache(
 
 void KernelCodeGen::cache_kernel(const std::string &kernel_key,
                                  const LLVMCompiledKernel &data) {
-  get_llvm_program(prog)->cache_kernel(kernel_key, data, kernel);
+  get_llvm_program(prog)->cache_kernel(kernel_key, data,
+                                       infer_launch_args(kernel));
 }
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
@@ -163,7 +164,7 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(
 
 FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
                                                 LLVMCompiledKernel data) const {
-  return convert(kernel->name, kernel->parameter_list, std::move(data));
+  return convert(kernel->name, infer_launch_args(kernel), std::move(data));
 }
 
 #endif

@@ -23,15 +23,8 @@ struct LlvmOfflineCache {
 
   struct KernelCacheData {
     std::string kernel_key;
-    std::vector<Callable::Parameter> args;
-    std::vector<Callable::Ret> rets;
+    std::vector<LlvmLaunchArgInfo> args;
     LLVMCompiledKernel compiled_data;
-
-    const StructType *ret_type = nullptr;
-    size_t ret_size{0};
-
-    const StructType *args_type = nullptr;
-    size_t args_size{0};
 
     // For cache cleaning
     std::size_t size{0};          // byte
@@ -45,17 +38,7 @@ struct LlvmOfflineCache {
 
     KernelCacheData clone() const;
 
-    TI_IO_DEF(kernel_key,
-              args,
-              compiled_data,
-              size,
-              created_at,
-              last_used_at,
-              rets,
-              ret_type,
-              ret_size,
-              args_type,
-              args_size);
+    TI_IO_DEF(kernel_key, args, compiled_data, size, created_at, last_used_at);
   };
 
   struct FieldCacheData {

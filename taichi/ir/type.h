@@ -140,8 +140,6 @@ class TI_DLL_EXPORT DataType {
 
   DataType get_element_type() const;
 
-  TI_IO_DEF(ptr_);
-
  private:
   Type *ptr_;
 };
@@ -174,7 +172,7 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   TI_IO_DEF(type);
 };
 
-class TI_DLL_EXPORT PointerType : public Type {
+class PointerType : public Type {
  public:
   PointerType() : Type(TypeKind::Pointer){};
 
@@ -208,7 +206,7 @@ class TI_DLL_EXPORT PointerType : public Type {
   bool is_bit_pointer_{false};
 };
 
-class TI_DLL_EXPORT TensorType : public Type {
+class TensorType : public Type {
  public:
   TensorType() : Type(TypeKind::Tensor){};
   TensorType(std::vector<int> shape, Type *element)
@@ -247,7 +245,7 @@ class TI_DLL_EXPORT TensorType : public Type {
   Type *element_{nullptr};
 };
 
-struct TI_DLL_EXPORT StructMember {
+struct StructMember {
   const Type *type;
   std::string name;
   size_t offset{0};
@@ -257,7 +255,7 @@ struct TI_DLL_EXPORT StructMember {
   TI_IO_DEF(type, name, offset)
 };
 
-class TI_DLL_EXPORT StructType : public Type {
+class StructType : public Type {
  public:
   StructType() : Type(TypeKind::Struct){};
   explicit StructType(const std::vector<StructMember> &elements,
@@ -305,7 +303,7 @@ class TI_DLL_EXPORT StructType : public Type {
   std::string layout_;
 };
 
-class TI_DLL_EXPORT QuantIntType : public Type {
+class QuantIntType : public Type {
  public:
   QuantIntType() : Type(TypeKind::QuantInt){};
   QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
@@ -336,7 +334,7 @@ class TI_DLL_EXPORT QuantIntType : public Type {
   bool is_signed_{true};
 };
 
-class TI_DLL_EXPORT QuantFixedType : public Type {
+class QuantFixedType : public Type {
  public:
   QuantFixedType() : Type(TypeKind::QuantFixed){};
   QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
@@ -367,7 +365,7 @@ class TI_DLL_EXPORT QuantFixedType : public Type {
   float64 scale_{1.0};
 };
 
-class TI_DLL_EXPORT QuantFloatType : public Type {
+class QuantFloatType : public Type {
  public:
   QuantFloatType() : Type(TypeKind::QuantFloat) {
   }
@@ -403,7 +401,7 @@ class TI_DLL_EXPORT QuantFloatType : public Type {
   Type *compute_type_{nullptr};
 };
 
-class TI_DLL_EXPORT BitStructType : public Type {
+class BitStructType : public Type {
  public:
   BitStructType() : Type(TypeKind::BitStruct){};
   BitStructType(PrimitiveType *physical_type,
@@ -459,7 +457,7 @@ class TI_DLL_EXPORT BitStructType : public Type {
   std::vector<std::vector<int>> member_exponent_users_;
 };
 
-class TI_DLL_EXPORT QuantArrayType : public Type {
+class QuantArrayType : public Type {
  public:
   QuantArrayType() : Type(TypeKind::QuantArray) {
   }

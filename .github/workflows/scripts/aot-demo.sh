@@ -11,8 +11,8 @@ export TAICHI_AOT_DEMO_BRANCH=master
 export TAICHI_UNITY2_URL=https://github.com/taichi-dev/taichi-unity2
 export TAICHI_UNITY2_BRANCH=main
 
-export TAICHI_UNITY_EXAMPLE_URL=https://github.com/taichi-dev/Taichi-UnityExample
-export TAICHI_UNITY_EXAMPLE_BRANCH=main
+export TAICHI_UNITY_EXAMPLE_URL=https://github.com/turbo0628/Taichi-UnityExample
+export TAICHI_UNITY_EXAMPLE_BRANCH=replace_field_dim_ndim
 
 . $(dirname $0)/common-utils.sh
 

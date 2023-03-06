@@ -500,7 +500,7 @@ FunctionType KernelCodeGenAMDGPU::compile_to_function() {
 
 FunctionType AMDGPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
-    const std::vector<Callable::Parameter> &args,
+    const std::vector<LlvmLaunchArgInfo> &args,
     LLVMCompiledKernel data) const {
   auto &mod = data.module;
   auto &tasks = data.tasks;

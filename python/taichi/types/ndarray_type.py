@@ -76,35 +76,19 @@ class NdarrayType:
     Args:
         dtype (Union[PrimitiveType, VectorType, MatrixType, NoneType], optional): None if not speicified.
         ndim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
-        [DEPRECATED] element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
-        [DEPRECATED] element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
-        [DEPRECATED] field_dim (Union[Int, NoneType]): None if not specified, number of field dimensions. This argument is ignored for external arrays for now.
+        element_dim (Union[Int, NoneType], optional): None if not specified (will be treated as 0 for external arrays), 0 if scalar elements, 1 if vector elements, and 2 if matrix elements.
+        element_shape (Union[Tuple[Int], NoneType]): None if not specified, shapes of each element. For example, element_shape must be 1d for vector and 2d tuple for matrix. This argument is ignored for external arrays for now.
     """
     def __init__(self,
                  dtype=None,
                  ndim=None,
                  element_dim=None,
-                 element_shape=None,
-                 field_dim=None):
-        # TODO(Haidong) Deprecate element shape in 1.5.0. Use dtype to manage element-level arguments.
+                 element_shape=None):
         if element_dim is not None or element_shape is not None:
-            warnings.warn(
-                "The element_dim and element_shape arguments for ndarray will be deprecated in v1.5.0, use matrix dtype instead.",
-                DeprecationWarning)
             self.dtype = _make_matrix_dtype_from_element_shape(
                 element_dim, element_shape, dtype)
         else:
             self.dtype = dtype
-
-        if field_dim is not None:
-            warnings.warn(
-                "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
-                DeprecationWarning)
-            if ndim is not None:
-                raise ValueError(
-                    "Cannot specify ndim and field_dim at the same time. The field_dim is going to be deprecated."
-                )
-            ndim = field_dim
 
         self.ndim = ndim
         self.layout = Layout.AOS

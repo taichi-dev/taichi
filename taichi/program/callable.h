@@ -23,6 +23,11 @@ class TI_DLL_EXPORT Callable {
 
     TI_IO_DEF(is_array, total_dim, format, dt_);
 
+    bool operator==(const Parameter &o) const {
+      return is_array == o.is_array && total_dim == o.total_dim &&
+             format == o.format && dt_ == o.dt_;
+    }
+
     /* [arguments with TensorType]
 
     Taichi used to represent TensorType with the combination of "PrimitiveType"

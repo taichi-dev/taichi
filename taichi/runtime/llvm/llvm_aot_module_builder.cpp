@@ -22,7 +22,12 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   LlvmOfflineCache::KernelCacheData kcache;
   kcache.kernel_key = identifier;
   kcache.compiled_data = std::move(compiled);
-  kcache.args = infer_launch_args(kernel);
+  kcache.args = kernel->parameter_list;
+  kcache.args_type = kernel->args_type;
+  kcache.args_size = kernel->args_size;
+  kcache.rets = kernel->rets;
+  kcache.ret_size = kernel->ret_size;
+  kcache.ret_type = kernel->ret_type;
   kcache.last_used_at = std::time(nullptr);
   kcache.created_at = std::time(nullptr);
   cache_.kernels[identifier] = std::move(kcache);

@@ -30,7 +30,7 @@ void CompiledGraph::jit_run(
     // Compile & Run (JIT): The compilation result will be cached, so don't
     // worry that the kernels dispatched by this cgraph will be compiled
     // repeatedly.
-    lang::Kernel::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
+    lang::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
     (*dispatch.ti_kernel)(compile_config, launch_ctx);
   }
 }

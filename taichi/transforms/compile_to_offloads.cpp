@@ -7,6 +7,7 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 
@@ -301,6 +302,20 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::quant)) {
     irpass::optimize_bit_struct_stores(ir, config, amgr.get());
     print("Bit struct stores optimized");
+  }
+
+  if (config.arch == Arch::cuda && config.half2_vectorization &&
+      !kernel->is_evaluator && !get_custom_cuda_library_path().empty()) {
+    irpass::vectorize_half2(ir);
+
+    irpass::type_check(ir, config);
+
+    irpass::full_simplify(
+        ir, config,
+        {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+
+    irpass::flag_access(ir);
+    print("Half2 vectorized");
   }
 
   // Final field registration correctness & type checking

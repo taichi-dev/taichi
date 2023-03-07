@@ -164,6 +164,7 @@ if(TI_WITH_LLVM)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
 
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)

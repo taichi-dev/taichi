@@ -702,7 +702,7 @@ FunctionType KernelCodeGenCUDA::compile_to_function() {
 
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
+    const std::vector<Callable::Parameter> &args,
     LLVMCompiledKernel data) const {
   auto &mod = data.module;
   auto &tasks = data.tasks;

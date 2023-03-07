@@ -161,7 +161,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     extra = []
 
     if proj == 'taichi-nightly':
-        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=1'])
+        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
         # Include C-API in nightly builds
         os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 

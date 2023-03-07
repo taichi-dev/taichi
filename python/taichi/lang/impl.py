@@ -813,6 +813,12 @@ def ti_format_list_to_content_entries(raw):
     def entry2content(_var):
         if isinstance(_var, str):
             return _var
+        # handle optional format specifier
+        if isinstance(_var, list):
+            assert len(_var) == 2 and (isinstance(_var[1], str)
+                                       or _var[1] is None)
+            _var[0] = Expr(_var[0]).ptr
+            return _var
         return Expr(_var).ptr
 
     def list_ti_repr(_var):
@@ -832,6 +838,10 @@ def ti_format_list_to_content_entries(raw):
                 if len(_var) > 0 and isinstance(
                         _var[0], str) and _var[0] == '__ti_format__':
                     res = _var[1:]
+                elif len(_var) > 0 and isinstance(
+                        _var[0], str) and _var[0] == '__ti_fmt_list__':
+                    yield _var[1:]
+                    continue
                 else:
                     res = list_ti_repr(_var)
             else:
@@ -854,9 +864,24 @@ def ti_format_list_to_content_entries(raw):
         if accumated:
             yield accumated
 
+    def extract_formats(entries):
+        contents = []
+        formats = []
+        for entry in entries:
+            if isinstance(entry, list):
+                assert len(entry) == 2
+                contents.append(entry[0])
+                formats.append(entry[1])
+            else:
+                contents.append(entry)
+                formats.append(None)
+        return contents, formats
+
     entries = vars2entries(raw)
     entries = fused_string(entries)
-    return [entry2content(entry) for entry in entries]
+    entries = [entry2content(entry) for entry in entries]
+    contents, formats = extract_formats(entries)
+    return contents, formats
 
 
 @taichi_scope
@@ -869,8 +894,9 @@ def ti_print(*_vars, sep=' ', end='\n'):
         yield end
 
     _vars = add_separators(_vars)
-    entries = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(entries)
+    contents, formats = ti_format_list_to_content_entries(_vars)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats)
 
 
 @taichi_scope
@@ -883,6 +909,11 @@ def ti_format(*args, **kwargs):
     for x in mixed:
         if isinstance(x, Expr):
             new_mixed.append('{}')
+            args.append(x)
+        # add tag if encounter an Expr with format specifier
+        elif isinstance(x, list):
+            new_mixed.append('{}')
+            x.insert(0, '__ti_fmt_list__')
             args.append(x)
         else:
             new_mixed.append(x)

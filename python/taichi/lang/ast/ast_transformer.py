@@ -2,6 +2,7 @@ import ast
 import collections.abc
 import itertools
 import operator
+import re
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -392,13 +393,24 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_FormattedValue(ctx, node):
+        node.ptr = build_stmt(ctx, node.value)
+        if node.format_spec is None or len(node.format_spec.values) == 0:
+            return node.ptr
+        values = node.format_spec.values
+        assert len(values) == 1
+        format_str = values[0].s if version_info < (3, 8) else values[0].value
+        assert format_str is not None
+        return [node.ptr, format_str]
+
+    @staticmethod
     def build_JoinedStr(ctx, node):
         str_spec = ''
         args = []
         for sub_node in node.values:
             if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
-                args.append(build_stmt(ctx, sub_node.value))
+                args.append(build_stmt(ctx, sub_node))
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
             elif isinstance(sub_node, ast.Str):
@@ -1467,7 +1479,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def ti_format_list_to_assert_msg(raw):
-        entries = impl.ti_format_list_to_content_entries([raw])
+        #TODO: ignore formats here for now
+        entries, _ = impl.ti_format_list_to_content_entries([raw])
         msg = ""
         args = []
         for entry in entries:

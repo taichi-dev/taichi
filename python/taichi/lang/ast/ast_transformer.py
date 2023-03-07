@@ -2,7 +2,6 @@ import ast
 import collections.abc
 import itertools
 import operator
-import re
 import warnings
 from collections import ChainMap
 from sys import version_info

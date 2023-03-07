@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 
+#include "taichi/codegen/codegen_utils.h"
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/statements.h"
@@ -164,14 +165,19 @@ class TaskCodegen : public IRVisitor {
     std::string formats;
     std::vector<Value> vals;
 
-    for (auto const &content : stmt->contents) {
+    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type, Arch::vulkan),
+            Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += sanitize_format_string(arg_str);

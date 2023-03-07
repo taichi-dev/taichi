@@ -105,11 +105,16 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     std::string formats;
     size_t num_contents = 0;
-    for (auto const &content : stmt->contents) {
+    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
+
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type), Arch::cuda);
 
         auto value = llvm_val[arg_stmt];
         auto value_type = value->getType();

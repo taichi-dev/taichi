@@ -955,7 +955,11 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
                                  tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
-  for (auto const &content : stmt->contents) {
+  TI_ASSERT(stmt->contents.size() == stmt->formats.size());
+  for (auto i = 0; i < stmt->contents.size(); ++i) {
+    auto const &content = stmt->contents[i];
+    auto const &format = stmt->formats[i];
+
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
@@ -977,7 +981,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         formats += data_type_format(arg_stmt->ret_type);
       } else {
         args.push_back(value_for_printf(value, arg_stmt->ret_type));
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type), current_arch());
       }
     } else {
       auto arg_str = std::get<std::string>(content);
@@ -1666,7 +1671,7 @@ llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
 template <typename... Args>
 llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
                                                const std::string &func_name,
-                                               Args &&...args) {
+                                               Args &&... args) {
   auto func = get_struct_function(func_name, tree_id);
   auto arglist = std::vector<llvm::Value *>({args...});
   check_func_call_signature(func->getFunctionType(), func->getName(), arglist,

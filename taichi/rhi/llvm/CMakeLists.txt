@@ -55,6 +55,9 @@ target_sources(${LLVM_RHI}
 target_include_directories(${LLVM_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
+  )
+target_include_directories(${LLVM_RHI}
+  PUBLIC
     ${LLVM_INCLUDE_DIRS}
   )
 

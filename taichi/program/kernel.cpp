@@ -63,7 +63,9 @@ void Kernel::operator()(const CompileConfig &compile_config,
     compile(compile_config);
   }
 
-  compiled_(ctx_builder.get_context());
+  auto &context = ctx_builder.get_context();
+  program->prepare_runtime_context(&context);
+  compiled_(context);
 
   const auto arch = compile_config.arch;
   if (compile_config.debug &&
@@ -72,183 +74,8 @@ void Kernel::operator()(const CompileConfig &compile_config,
   }
 }
 
-Kernel::LaunchContextBuilder Kernel::make_launch_context() {
+LaunchContextBuilder Kernel::make_launch_context() {
   return LaunchContextBuilder(this);
-}
-
-Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel,
-                                                   RuntimeContext *ctx)
-    : kernel_(kernel),
-      owned_ctx_(nullptr),
-      ctx_(ctx),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->program->compile_config().arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)) {
-  ctx_->result_buffer = (uint64 *)result_buffer_.get();
-  ctx_->result_buffer_size = kernel->ret_size;
-}
-
-Kernel::LaunchContextBuilder::LaunchContextBuilder(Kernel *kernel)
-    : kernel_(kernel),
-      owned_ctx_(std::make_unique<RuntimeContext>()),
-      ctx_(owned_ctx_.get()),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->program->compile_config().arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)) {
-  ctx_->result_buffer = (uint64 *)result_buffer_.get();
-  ctx_->result_buffer_size = kernel->ret_size;
-}
-
-void Kernel::LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_float64",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("val", d)});
-
-  auto dt = kernel_->parameter_list[arg_id].get_dtype();
-  if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    ctx_->set_arg(arg_id, (float32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    ctx_->set_arg(arg_id, (float64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    ctx_->set_arg(arg_id, (int32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    ctx_->set_arg(arg_id, (int64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    ctx_->set_arg(arg_id, (int8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    ctx_->set_arg(arg_id, (int16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    ctx_->set_arg(arg_id, (uint8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    ctx_->set_arg(arg_id, (uint16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    ctx_->set_arg(arg_id, (uint32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    ctx_->set_arg(arg_id, (uint64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // use f32 to interact with python
-    ctx_->set_arg(arg_id, (float32)d);
-  } else {
-    TI_NOT_IMPLEMENTED
-  }
-}
-
-void Kernel::LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_integer",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("val", d)});
-
-  auto dt = kernel_->parameter_list[arg_id].get_dtype();
-  if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    ctx_->set_arg(arg_id, (int32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    ctx_->set_arg(arg_id, (int64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    ctx_->set_arg(arg_id, (int8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    ctx_->set_arg(arg_id, (int16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    ctx_->set_arg(arg_id, (uint8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    ctx_->set_arg(arg_id, (uint16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    ctx_->set_arg(arg_id, (uint32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    ctx_->set_arg(arg_id, (uint64)d);
-  } else {
-    TI_INFO(dt->to_string());
-    TI_NOT_IMPLEMENTED
-  }
-}
-
-void Kernel::LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
-  set_arg_int(arg_id, d);
-}
-
-void Kernel::LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
-  ctx_->extra_args[i][j] = d;
-}
-
-void Kernel::LaunchContextBuilder::set_arg_external_array_with_shape(
-    int arg_id,
-    uintptr_t ptr,
-    uint64 size,
-    const std::vector<int64> &shape) {
-  TI_ASSERT_INFO(
-      kernel_->parameter_list[arg_id].is_array,
-      "Assigning external (numpy) array to scalar argument is not allowed.");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_ext_ptr",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("address", fmt::format("0x{:x}", ptr)),
-       ActionArg("array_size_in_bytes", (int64)size)});
-
-  TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
-                 "External array cannot have > {max_num_indices} indices");
-  ctx_->set_arg_external_array(arg_id, ptr, size, shape);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_ndarray(int arg_id,
-                                                   const Ndarray &arr) {
-  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
-  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
-                 "External array cannot have > {max_num_indices} indices");
-  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad(
-    int arg_id,
-    const Ndarray &arr,
-    const Ndarray &arr_grad) {
-  intptr_t ptr = arr.get_device_allocation_ptr_as_int();
-  intptr_t ptr_grad = arr_grad.get_device_allocation_ptr_as_int();
-  TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
-                 "External array cannot have > {max_num_indices} indices");
-  ctx_->set_arg_ndarray(arg_id, ptr, arr.shape, true, ptr_grad);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_texture(int arg_id,
-                                                   const Texture &tex) {
-  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg_texture(arg_id, ptr);
-}
-
-void Kernel::LaunchContextBuilder::set_arg_rw_texture(int arg_id,
-                                                      const Texture &tex) {
-  intptr_t ptr = tex.get_device_allocation_ptr_as_int();
-  ctx_->set_arg_rw_texture(arg_id, ptr, tex.get_size());
-}
-
-void Kernel::LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
-
-  if (!kernel_->is_evaluator) {
-    ActionRecorder::get_instance().record(
-        "set_arg_raw",
-        {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-         ActionArg("val", (int64)d)});
-  }
-  ctx_->set_arg<uint64>(arg_id, d);
-}
-
-RuntimeContext &Kernel::LaunchContextBuilder::get_context() {
-  kernel_->program->prepare_runtime_context(ctx_);
-  return *ctx_;
 }
 
 template <typename T>
@@ -344,6 +171,7 @@ void Kernel::init(Program &program,
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
+  arch = program.compile_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
@@ -356,27 +184,5 @@ void Kernel::init(Program &program,
   }
 
   func();
-}
-
-TypedConstant Kernel::LaunchContextBuilder::fetch_ret(
-    const std::vector<int> &index) {
-  const Type *dt = kernel_->ret_type->get_element_type(index);
-  int offset = kernel_->ret_type->get_element_offset(index);
-  return kernel_->program->fetch_result(result_buffer_.get(), offset, dt);
-}
-
-float64 Kernel::LaunchContextBuilder::get_struct_ret_float(
-    const std::vector<int> &index) {
-  return fetch_ret(index).val_float();
-}
-
-int64 Kernel::LaunchContextBuilder::get_struct_ret_int(
-    const std::vector<int> &index) {
-  return fetch_ret(index).val_int();
-}
-
-uint64 Kernel::LaunchContextBuilder::get_struct_ret_uint(
-    const std::vector<int> &index) {
-  return fetch_ret(index).val_uint();
 }
 }  // namespace taichi::lang

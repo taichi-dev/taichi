@@ -9,12 +9,8 @@ class Program;
 class IRNode;
 class FrontendContext;
 
-class TI_DLL_EXPORT Callable {
+class TI_DLL_EXPORT CallableBase {
  public:
-  Program *program{nullptr};
-  std::unique_ptr<IRNode> ir{nullptr};
-  std::unique_ptr<FrontendContext> context{nullptr};
-
   struct Parameter {
     bool is_array{
         false};  // This is true for both ndarray and external array args.
@@ -88,6 +84,16 @@ class TI_DLL_EXPORT Callable {
 
   const StructType *args_type = nullptr;
   size_t args_size{0};
+
+  Arch arch;
+  std::string name;
+};
+
+class TI_DLL_EXPORT Callable : public CallableBase {
+ public:
+  Program *program{nullptr};
+  std::unique_ptr<IRNode> ir{nullptr};
+  std::unique_ptr<FrontendContext> context{nullptr};
 
   Callable();
   virtual ~Callable();

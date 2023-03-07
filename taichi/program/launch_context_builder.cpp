@@ -14,8 +14,10 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
           arch_uses_llvm(kernel->arch)
               ? kernel->ret_size
               : sizeof(uint64) * taichi_result_buffer_entries)) {
-  ctx_->result_buffer = (uint64 *)result_buffer_.get();
-  ctx_->result_buffer_size = kernel->ret_size;
+  if (arch_uses_llvm(kernel->arch)) {
+    ctx_->result_buffer = (uint64 *)result_buffer_.get();
+    ctx_->result_buffer_size = kernel->ret_size;
+  }
 }
 
 LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)

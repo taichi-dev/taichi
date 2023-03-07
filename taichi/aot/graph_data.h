@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include "taichi/ir/type.h"
+#include "taichi/program/callable.h"
 #include "taichi/aot/module_data.h"
 #include "taichi/program/compile_config.h"
 #define TI_RUNTIME_HOST
@@ -127,7 +128,7 @@ struct TI_DLL_EXPORT IValue {
   }
 };
 
-class TI_DLL_EXPORT Kernel {
+class TI_DLL_EXPORT Kernel : public CallableBase {
  public:
   // Rule of 5 to make MSVC happy
   Kernel() = default;

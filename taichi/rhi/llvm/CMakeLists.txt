@@ -12,7 +12,6 @@ if(${LLVM_PACKAGE_VERSION} VERSION_LESS "10.0")
 message(FATAL_ERROR "LLVM version < 10 is not supported")
 endif()
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${LLVM_INCLUDE_DIRS})
 
 message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
 message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
@@ -56,6 +55,7 @@ target_sources(${LLVM_RHI}
 target_include_directories(${LLVM_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(${LLVM_RHI} PRIVATE taichi_util)

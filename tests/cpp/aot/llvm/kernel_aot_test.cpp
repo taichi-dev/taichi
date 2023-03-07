@@ -47,7 +47,8 @@ TEST(LlvmAotTest, CpuKernel) {
   auto mod = cpu::make_aot_module(aot_params);
   auto *k_run = mod->get_kernel("run");
 
-  RuntimeContext ctx;
+  LaunchContextBuilder builder(k_run);
+  RuntimeContext &ctx = builder.get_context();
   ctx.runtime = exec.get_llvm_runtime();
   ctx.set_arg(0, /*v=*/0);
   ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
@@ -92,7 +93,8 @@ TEST(LlvmAotTest, CudaKernel) {
     aot_params.executor_ = &exec;
     auto mod = cuda::make_aot_module(aot_params);
     auto *k_run = mod->get_kernel("run");
-    RuntimeContext ctx;
+    LaunchContextBuilder builder(k_run);
+    RuntimeContext &ctx = builder.get_context();
     ctx.runtime = exec.get_llvm_runtime();
     ctx.set_arg(0, /*v=*/0);
     ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),

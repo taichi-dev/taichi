@@ -14,6 +14,7 @@ void CompiledGraph::run(
   for (const auto &dispatch : dispatches) {
     RuntimeContext ctx = ctx_;
     TI_ASSERT(dispatch.compiled_kernel);
+    LaunchContextBuilder launch_ctx(dispatch.compiled_kernel, &ctx);
     init_runtime_context(dispatch.symbolic_args, args, ctx);
     // Run cgraph loaded from AOT module
     dispatch.compiled_kernel->launch(&ctx);
@@ -26,11 +27,11 @@ void CompiledGraph::jit_run(
   for (const auto &dispatch : dispatches) {
     RuntimeContext ctx = ctx_;
     TI_ASSERT(dispatch.ti_kernel);
+    LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
     init_runtime_context(dispatch.symbolic_args, args, ctx);
     // Compile & Run (JIT): The compilation result will be cached, so don't
     // worry that the kernels dispatched by this cgraph will be compiled
     // repeatedly.
-    lang::LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
     (*dispatch.ti_kernel)(compile_config, launch_ctx);
   }
 }

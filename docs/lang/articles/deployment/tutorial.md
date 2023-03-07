@@ -157,7 +157,7 @@ int main(int argc, const char** argv) {
   auto pixels_data = (const float*)pixels.map();
   save_ppm(pixels_data, w, h, "result.ppm");
   pixels.unmap();
-  
+
   return 0;
 }
 ```
@@ -191,7 +191,7 @@ add_executable(${TAICHI_AOT_APP_NAME} app.cpp)
 target_include_directories(${TAICHI_AOT_APP_NAME} PUBLIC ${TAICHI_C_API_INSTALL_DIR}/include)
 
 # Find and link Taichi runtime library.
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake) 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Taichi REQUIRED)
 target_link_libraries(${TAICHI_AOT_APP_NAME} Taichi::Runtime)
 ```

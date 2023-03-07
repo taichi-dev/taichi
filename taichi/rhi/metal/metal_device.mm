@@ -74,6 +74,7 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     mtl_library = [device.mtl_device() newLibraryWithSource:msl_ns
                                                     options:nil
                                                       error:&err];
+    [msl_ns release];
 
     if (mtl_library == nil) {
       if (err != nil) {

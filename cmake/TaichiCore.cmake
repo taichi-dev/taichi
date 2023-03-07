@@ -418,6 +418,7 @@ if(TI_WITH_PYTHON)
         ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
         ${PROJECT_SOURCE_DIR}/external/imgui
         ${PROJECT_SOURCE_DIR}/external/imgui/backends
+        ${LLVM_INCLUDE_DIRS}
       )
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME} SYSTEM
       PRIVATE

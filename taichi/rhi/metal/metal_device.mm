@@ -64,6 +64,8 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
   spirv_cross::CompilerMSL::Options options{};
   options.enable_decoration_binding = true;
+  // Subgroups are only supported in Metal 2.1 and up.
+  options.set_msl_version(2, 1, 0);
   compiler.set_msl_options(options);
   std::string msl = compiler.compile();
 

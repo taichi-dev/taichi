@@ -25,7 +25,7 @@
 
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/system/timer.h"

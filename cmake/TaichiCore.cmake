@@ -86,7 +86,6 @@ endif()
 file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h"
     "taichi/ir/*"
-    "taichi/jit/*"
     "taichi/math/*"
     "taichi/program/*"
     "taichi/struct/*"

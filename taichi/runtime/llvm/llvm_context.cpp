@@ -40,7 +40,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 
 #include "taichi/util/lang_util.h"
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 #include "taichi/common/task.h"
 #include "taichi/util/environ_config.h"
 #include "llvm_context.h"

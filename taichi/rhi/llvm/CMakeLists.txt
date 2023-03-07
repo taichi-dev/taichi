@@ -4,6 +4,7 @@ set(LLVM_RHI llvm_rhi)
 add_library(${LLVM_RHI})
 target_sources(${LLVM_RHI}
   PRIVATE
+    jit_session.cpp
     llvm_device.cpp
   )
 

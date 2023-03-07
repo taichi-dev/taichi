@@ -1,4 +1,4 @@
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 
 #ifdef TI_WITH_LLVM
 #include "llvm/IR/DataLayout.h"

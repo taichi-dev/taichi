@@ -399,7 +399,7 @@ class ASTTransformer(Builder):
             return node.ptr
         values = node.format_spec.values
         assert len(values) == 1
-        format_str = values[0].s if version_info < (3, 8) else values[0].value
+        format_str = values[0].s
         assert format_str is not None
         return [node.ptr, format_str]
 

@@ -39,8 +39,7 @@ def test_multi_print():
     ti.sync()
 
 
-# TODO: vulkan doesn't support %s but we should ignore it instead of crashing.
-@test_utils.test(exclude=[ti.vulkan, ti.dx11, ti.amdgpu])
+@test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_string():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):

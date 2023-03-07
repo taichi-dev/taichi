@@ -97,6 +97,19 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  // Replace the wild '%' in the format string with "%%".
+  std::string sanitize_format_string(std::string const &str) {
+    std::string sanitized_str;
+    for (char c : str) {
+      if (c == '%') {
+        sanitized_str += "%%";
+      } else {
+        sanitized_str += c;
+      }
+    }
+    return sanitized_str;
+  }
+
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
@@ -161,7 +174,7 @@ class TaskCodegen : public IRVisitor {
         formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
-        formats += arg_str;
+        formats += sanitize_format_string(arg_str);
       }
     }
     ir_->call_debugprintf(formats, vals);

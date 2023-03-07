@@ -11,6 +11,12 @@
   - test: LlvmAotTest.DX12Kernel
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=dx12
+  - test: LlvmAotTest.CpuReturn
+    script: aot/python_scripts/kernel_return_aot_test_.py
+    args: --arch=cpu
+  - test: LlvmAotTest.CudaReturn
+    script: aot/python_scripts/kernel_return_aot_test_.py
+    args: --arch=cuda
   - test: LlvmAotTest.CpuField
     script: aot/python_scripts/field_aot_test_.py
     args: --arch=cpu

@@ -35,14 +35,16 @@ static void run_dynamic_tests(aot::Module *mod,
   /* -------- Test Case 1 ------ */
   // Kernel: activate()
   {
-    RuntimeContext ctx;
+    LaunchContextBuilder builder(k_activate);
+    RuntimeContext &ctx = builder.get_context();
     ctx.runtime = exec->get_llvm_runtime();
     k_activate->launch(&ctx);
   }
 
   // Kernel: check_value_0()
   {
-    RuntimeContext ctx;
+    LaunchContextBuilder builder(k_check_value_0);
+    RuntimeContext &ctx = builder.get_context();
     ctx.runtime = exec->get_llvm_runtime();
     k_check_value_0->launch(&ctx);
   }
@@ -50,13 +52,15 @@ static void run_dynamic_tests(aot::Module *mod,
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate()
   {
-    RuntimeContext ctx;
+    LaunchContextBuilder builder(k_deactivate);
+    RuntimeContext &ctx = builder.get_context();
     ctx.runtime = exec->get_llvm_runtime();
     k_deactivate->launch(&ctx);
   }
   // Kernel: check_value_1()
   {
-    RuntimeContext ctx;
+    LaunchContextBuilder builder(k_check_value_1);
+    RuntimeContext &ctx = builder.get_context();
     ctx.runtime = exec->get_llvm_runtime();
     k_check_value_1->launch(&ctx);
   }

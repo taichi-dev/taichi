@@ -21,56 +21,25 @@
 
 namespace taichi::lang {
 
-static void run_bitmasked_tests(aot::Module *mod,
-                                LlvmRuntimeExecutor *exec,
-                                uint64 *result_buffer) {
-  aot::Kernel *k_activate = mod->get_kernel("activate");
-  aot::Kernel *k_check_value_0 = mod->get_kernel("check_value_0");
-  aot::Kernel *k_deactivate = mod->get_kernel("deactivate");
-  aot::Kernel *k_check_value_1 = mod->get_kernel("check_value_1");
+static void run_return_tests(aot::Module *mod,
+                             LlvmRuntimeExecutor *exec,
+                             uint64 *result_buffer) {
+  aot::Kernel *k_ret = mod->get_kernel("test_ret");
 
-  // Initialize SNodeTree
-  aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
-  allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
-
-  /* -------- Test Case 1 ------ */
-  // Kernel: activate()
-  {
-    LaunchContextBuilder builder(k_activate);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate->launch(&ctx);
-  }
-
-  // Kernel: check_value_0()
-  {
-    LaunchContextBuilder builder(k_check_value_0);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_0->launch(&ctx);
-  }
-
-  /* -------- Test Case 2 ------ */
-  // Kernel: deactivate()
-  {
-    LaunchContextBuilder builder(k_deactivate);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate->launch(&ctx);
-  }
-  // Kernel: check_value_1()
-  {
-    LaunchContextBuilder builder(k_check_value_1);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_1->launch(&ctx);
-  }
-
+  LaunchContextBuilder builder(k_ret);
+  RuntimeContext &ctx = builder.get_context();
+  ctx.runtime = exec->get_llvm_runtime();
+  k_ret->launch(&ctx);
+  exec->synchronize();
+  EXPECT_EQ(builder.get_struct_ret_int({0, 0}), 1);
+  EXPECT_EQ(builder.get_struct_ret_float({0, 1, 0}), 2);
+  EXPECT_EQ(builder.get_struct_ret_float({0, 1, 1}), 3);
+  EXPECT_EQ(builder.get_struct_ret_float({0, 1, 2}), 4);
   // Check assertion error from ti.kernel
   exec->check_runtime_error(result_buffer);
 }
 
-TEST(LlvmAotTest, CpuBitmasked) {
+TEST(LlvmAotTest, CpuReturn) {
   CompileConfig cfg;
   cfg.arch = Arch::x64;
   cfg.kernel_profiler = false;
@@ -92,10 +61,10 @@ TEST(LlvmAotTest, CpuBitmasked) {
   aot_params.executor_ = &exec;
   std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
 
-  run_bitmasked_tests(mod.get(), &exec, result_buffer);
+  run_return_tests(mod.get(), &exec, result_buffer);
 }
 
-TEST(LlvmAotTest, CudaBitmasked) {
+TEST(LlvmAotTest, CudaReturn) {
 #ifdef TI_WITH_CUDA
   if (is_cuda_api_available()) {
     CompileConfig cfg;
@@ -117,7 +86,7 @@ TEST(LlvmAotTest, CudaBitmasked) {
     aot_params.executor_ = &exec;
     auto mod = cuda::make_aot_module(aot_params);
 
-    run_bitmasked_tests(mod.get(), &exec, result_buffer);
+    run_return_tests(mod.get(), &exec, result_buffer);
   }
 #endif
 }

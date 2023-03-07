@@ -54,7 +54,7 @@ struct MetalMemory {
 
  private:
   MTLBuffer_id mtl_buffer_;
-  bool dont_destroy_;
+  bool dont_destroy_{false};
 };
 
 struct MetalImage {
@@ -69,7 +69,7 @@ struct MetalImage {
 
  private:
   MTLTexture_id mtl_texture_;
-  bool dont_destroy_;
+  bool dont_destroy_{false};
 };
 
 struct MetalSampler {

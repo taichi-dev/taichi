@@ -92,11 +92,21 @@ class DemoteAtomics : public BasicStmtVisitor {
         }
       }
     }
-    if (stmt->dest->is<AllocaStmt>() ||
-        (stmt->dest->is<MatrixPtrStmt>() &&
-         stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>())) {
-      demote = true;
-      is_local = true;
+    if (stmt->dest->is<AllocaStmt>()) {
+      // Except shared array
+      if (!stmt->dest->as<AllocaStmt>()->is_shared) {
+        demote = true;
+        is_local = true;
+      }
+    }
+    if (stmt->dest->is<MatrixPtrStmt>() &&
+        stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>()) {
+      if (!stmt->dest->cast<MatrixPtrStmt>()
+               ->origin->as<AllocaStmt>()
+               ->is_shared) {
+        demote = true;
+        is_local = true;
+      }
     }
 
     if (auto dest_pointer_type = stmt->dest->ret_type->cast<PointerType>()) {

@@ -118,7 +118,7 @@ def test_print_multiple_threads():
     ti.sync()
 
 
-@test_utils.test(exclude=[ti.cc, ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
+@test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_list():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
     y = ti.Vector.field(3, dtype=ti.f32, shape=())

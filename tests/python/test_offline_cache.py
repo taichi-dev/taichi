@@ -492,8 +492,7 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
         curr_arch, [2, 2])
 
 
-@pytest.mark.parametrize('curr_arch',
-                         supported_archs_offline_cache - supported_gfx_archs)
+@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
 @pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
 @pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
 @_test_offline_cache_dec
@@ -522,7 +521,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
 
-    run_simple_kernels(1024**3)  # 1GB
+    run_simple_kernels(1024**3)  # 1GB (>> size_of_cache_files)
     ti.reset()  # Dumping cache data
     size_of_cache_files = cache_files_size(
         backend_specified_cache_path(curr_arch))
@@ -534,7 +533,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     assert added_files(curr_arch) == expected_num_cache_files(
         curr_arch, [kern[3] for kern in simple_kernels_to_test])
 
-    only_init(size_of_cache_files)
+    only_init(1)  # 1B (<< size_of_cache_files)
     ti.reset()
     rem = []
     if policy in ['never', 'version']:

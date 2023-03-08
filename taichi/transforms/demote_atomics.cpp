@@ -101,6 +101,7 @@ class DemoteAtomics : public BasicStmtVisitor {
     }
     if (stmt->dest->is<MatrixPtrStmt>() &&
         stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>()) {
+      // Except shared array
       if (!stmt->dest->cast<MatrixPtrStmt>()
                ->origin->as<AllocaStmt>()
                ->is_shared) {

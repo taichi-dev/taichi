@@ -46,7 +46,7 @@ def test_shared_array_nested_loop():
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr)
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan])
+@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])
 def test_shared_array_atomics():
     N = 256
     block_dim = 32
@@ -59,12 +59,12 @@ def test_shared_array_atomics():
           sharr = ti.simt.block.SharedArray((block_dim,), ti.i32)
           sharr[tid] = val
           ti.simt.block.sync()
-          ti.atomic_add(sharr[0], val)
+          sharr[0] += val
           ti.simt.block.sync()
           out[i] = sharr[tid]
     arr = ti.ndarray(ti.i32, (N))
     atomic_test(arr)
-    # print(arr.to_numpy())
+    ti.sync()
     sum = block_dim * (block_dim - 1) // 2
     assert arr[0] == sum
     assert arr[32] == sum

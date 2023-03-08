@@ -204,7 +204,7 @@ endif()
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
-option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+option(TI_WITH_C_API "build taichi runtime c-api library" ON)
 option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)
 
 if(TI_WITH_STATIC_C_API)

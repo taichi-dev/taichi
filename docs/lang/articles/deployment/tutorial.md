@@ -21,7 +21,17 @@ Although this tutorial only demonstrates integrating Taichi in a C++ application
 
 ## Quick-Start
 
-In this section, we will write a Taichi kernel for generating an image with color gradient and deploy it in a C++ application. The C++ program firstly allocates memory for the image data, and then the loaded Taichi kernel calculates the RGB value for each pixel. Finally, the image is output with a plain text ppm format. In this case, the Taichi kernel acts as a fragment shader and shades each pixel in parallel.
+In this section, we will write a Taichi kernel for generating images for [Julia fractal](https://en.wikipedia.org/wiki/Julia_set) and deploy it in a C++ application. The following shows the project layout. Next, we will walk through the steps to see what they do.
+
+```
+.
+├── cmake
+│   └── FindTaichi.cmake    // finds the Taichi runtime library
+├── CMakeLists.txt          // builds the project
+├── app.py                  // defines and compiles the Taichi kernel
+├── app.cpp                 // deploys the compiled artifact to the application
+└── module.tcm              // the compiled Taichi kernel artifact
+```
 
 ### 1. Compile Taichi kernel in Python script
 
@@ -35,11 +45,15 @@ if ti.lang.impl.current_cfg().arch != ti.vulkan:
     raise RuntimeError("Vulkan is not available.")
 
 @ti.kernel
-def paint(pixels: ti.types.ndarray(dtype=ti.types.vector(3, ti.f32), ndim=2)):
+def paint(n: ti.u32, t: ti.f32, pixels: ti.types.ndarray(dtype=ti.f32, ndim=2)):
     for i, j in pixels:  # Parallelized over all pixels
-        pixels[i, j][0] = float(i) / pixels.shape[1]
-        pixels[i, j][1] = float(j) / pixels.shape[0]
-        pixels[i, j][2] = 0.75
+        c = ti.Vector([-0.8, ti.cos(t) * 0.2])
+        z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
+        iterations = 0
+        while z.norm() < 20 and iterations < 50:
+            z = ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2]) + c
+            iterations += 1
+        pixels[i, j] = 1 - iterations * 0.02
 
 mod = ti.aot.Module(ti.vulkan)
 mod.add_kernel(paint)
@@ -56,19 +70,23 @@ if ti.lang.impl.current_cfg().arch != ti.vulkan:
     raise RuntimeError("Vulkan is not available.")
 ```
 
-Then, we define our Taichi kernel for shading each pixel in our program. A Taichi kernel describes two aspects of a computer program: the computation itself, and the data it operates on. Because we don't know what kind of data will be fed into the kernel before execution, we have to clearly annotate the argument types for the AOT compiler.
+Then, we define our Taichi kernel for computing each pixel in our program. A Taichi kernel describes two aspects of a computer program: the computation itself, and the data it operates on. Because we don't know what kind of data will be fed into the kernel before execution, we have to clearly annotate the argument types for the AOT compiler.
 
 Taichi AOT module supports the following argument types: `ti.i32`, `ti.f32`, `ti.Ndarray`. Despite integers and floating-point numbers, we have a commonly-used data container called [`Ndarray`](https://docs.taichi-lang.org/api/taichi/lang/_ndarray/#taichi.lang._ndarray.Ndarray). It's similar to an [`ndarray`](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html) in NumPy, or a [`Tensor`](https://pytorch.org/docs/stable/tensors.html) in PyTorch. It can be multidimensional and is laid out continuously in memory. If you have experienced the multidimensional arrays in C++, You can treat it as a nested array type like `float[6][14]`.
 
-Our Taichi kernel accepts an Ndarray argument called `pixels`, which is a 2-dimensional Ndarray of 3D Vectors. Each element of the 3D Vector is a 32-bit floating-point number ranging from 0.0 to 1.0, representing the values of the three RGB channels.
+Our Taichi kernel accepts an integer `n`, a float-pointing number `t` and a 2-dimensional Ndarray `pixels` as arguments. Each element of `pixels` is a floating-point number ranges from 0.0 to 1.0.
 
 ```python
 @ti.kernel
-def paint(pixels: ti.types.ndarray(dtype=ti.types.vector(3, ti.f32), ndim=2)):
-    for i, j in pixels:
-        pixels[i, j][0] = float(i) / pixels.shape[1]
-        pixels[i, j][1] = float(j) / pixels.shape[0]
-        pixels[i, j][2] = 0.75
+def paint(n: ti.i32, t: ti.f32, pixels: ti.types.ndarray(dtype=ti.f32, ndim=2)):
+    for i, j in pixels:  # Parallelized over all pixels
+        c = ti.Vector([-0.8, ti.cos(t) * 0.2])
+        z = ti.Vector([i / n - 1, j / n - 0.5]) * 2
+        iterations = 0
+        while z.norm() < 20 and iterations < 50:
+            z = ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2]) + c
+            iterations += 1
+        pixels[i, j] = 1 - iterations * 0.02
 ```
 
 Finally, we compile the kernel into an artifact. The following piece of code initializes the AOT module and add the kernel to the module. The compiled artifact is saved as `module.tcm` in the working directory.
@@ -83,7 +101,7 @@ mod.archive("module.tcm")
 
 We are now done with Python and well prepared to build our application. The compiled artifacts saved as `module.tcm` and the Taichi Runtime Libirary (TiRT) are all we need. TiRT provides a fundamental C interface to help achieve optimal portability, however we also kindly provide a header-only C++ wrapper to save you from writing verbose C code. For simplicity purpose, we'll stick with the C++ wrapper in this tutorial.
 
-Firstly, we need to include the C++ wrapper header of Taichi C-API. Please ensure the environment variable `TAICHI_C_API_INSTALL_DIR` has been configured.
+Firstly, we need to include the C++ wrapper header of Taichi C-API.
 
 ```c++
 #include <taichi/cpp/taichi.hpp>
@@ -97,18 +115,20 @@ ti::AotModule aot_module = runtime.load_aot_module("module.tcm");
 ti::Kernel kernel_paint = aot_module.get_kernel("paint");
 ```
 
-The `paint` kernel acts as a fragment shader, and thus we allocate a piece of memory as its render target. Considering that the kernel accept an Ndarray input argument, we allocate memory through TiRT's `allocate_ndarray` interface. We set both the width and height of the allocated Ndarray memory to 512. Each element of the Ndarray is a 3D vector of 32-bit floating-point numbers, representing the RGB values of the pixel.
+The `paint` kernel accepts three arguments, and thus we need to declare corresponding variables in C++ program. We allocate memory through TiRT's `allocate_ndarray` interface for the `pixels`, the width and the height are set to `2 * n` and `n` respectively, and the element shape is set to `1`.
 
 ```c++
-const uint32_t w = 512;
-const uint32_t h = 512;
-ti::NdArray<float> pixels = runtime.allocate_ndarray<float>({w, h}, {3}, true);
+int n = 320;
+float t = 0.0f;
+ti::NdArray<float> pixels = runtime.allocate_ndarray<float>({(uint32_t)(2 * n), (uint32_t)n}, {1}, true);
 ```
 
-Then, we specify the argument `pixels` for the kernel, where the index `0` indicates the position in the kernel's argument list. Launch the kernel, and wait for the Taichi kernel process to finish.
+Then, we specify the arguments for the kernel, where the index for `kernel_paint` indicates the position in the kernel's argument list. Launch the kernel, and wait for the Taichi kernel process to finish.
 
 ```c++
-kernel_paint[0] = pixels;
+kernel_paint[0] = n;
+kernel_paint[1] = t;
+kernel_paint[2] = pixels;
 kernel_paint.launch();
 runtime.wait();
 ```
@@ -117,7 +137,7 @@ Finally, the `pixels` Ndarray holds the kernel output. Before we read the output
 
 ```c++
 auto pixels_data = (const float*)pixels.map();
-save_ppm(pixels_data, w, h, "result.ppm");
+save_ppm(pixels_data, 2 * n, n, "result.ppm");
 pixels.unmap();
 ```
 
@@ -130,11 +150,11 @@ The complete C++ source code is shown below, which is saved as `app.cpp` in the 
 void save_ppm(const float* pixels, uint32_t w, uint32_t h, const char* path) {
   std::fstream f(path, std::ios::out | std::ios::trunc);
   f << "P3\n" << w << ' ' << h << "\n255\n";
-  for (int i = 0; i < h; ++i) {
-    for (int j = 0; j < w; ++j) {
-      f << static_cast<uint32_t>(255.999 * pixels[(i * w + j) * 3 + 0]) << ' '
-        << static_cast<uint32_t>(255.999 * pixels[(i * w + j) * 3 + 1]) << ' '
-        << static_cast<uint32_t>(255.999 * pixels[(i * w + j) * 3 + 2]) << '\n';
+  for (int j = h - 1; j >= 0; --j) {
+    for (int i = 0; i < w; ++i) {
+      f << static_cast<uint32_t>(255.999 * pixels[i * h + j]) << ' '
+        << static_cast<uint32_t>(255.999 * pixels[i * h + j]) << ' '
+        << static_cast<uint32_t>(255.999 * pixels[i * h + j]) << '\n';
     }
   }
   f.flush();
@@ -146,16 +166,18 @@ int main(int argc, const char** argv) {
   ti::AotModule aot_module = runtime.load_aot_module("module.tcm");
   ti::Kernel kernel_paint = aot_module.get_kernel("paint");
 
-  const uint32_t w = 512;
-  const uint32_t h = 512;
-  ti::NdArray<float> pixels = runtime.allocate_ndarray<float>({w, h}, {3}, true);
+  int n = 320;
+  float t = 0.0f;
+  ti::NdArray<float> pixels = runtime.allocate_ndarray<float>({(uint32_t)(2 * n), (uint32_t)n}, {1}, true);
 
-  kernel_paint[0] = pixels;
+  kernel_paint[0] = n;
+  kernel_paint[1] = t;
+  kernel_paint[2] = pixels;
   kernel_paint.launch();
   runtime.wait();
 
   auto pixels_data = (const float*)pixels.map();
-  save_ppm(pixels_data, w, h, "result.ppm");
+  save_ppm(pixels_data, 2 * n, n, "result.ppm");
   pixels.unmap();
 
   return 0;
@@ -164,19 +186,9 @@ int main(int argc, const char** argv) {
 
 ### 3. Build project with CMake
 
-CMake is utilized to build the project. We introduce the file [`FindTaichi.cmake`](https://github.com/taichi-dev/taichi/blob/master/c_api/cmake/FindTaichi.cmake) to find Taichi C-API library, which is saved under the path `cmake/` in our working directory. The following shows the layout of our project.
+CMake is utilized to build our project, and we introduce the utility CMake module [`cmake/FindTaichi.cmake`](https://github.com/taichi-dev/taichi/blob/master/c_api/cmake/FindTaichi.cmake). It firstly find Taichi installation directory according to the environment variable `TAICHI_C_API_INSTALL_DIR`, without which CMake will find the Taichi library in Python wheel. Then, it will define the `Taichi::Runtime` target which is linked to our project.
 
-```
-.
-├── cmake
-│   └── FindTaichi.cmake
-├── app.cpp
-├── app.py
-├── CMakeLists.txt
-└── module.tcm
-```
-
-The `CMakeLists.txt` file in our project is shown below.
+The utility module is further included in the `CMakeLists.txt` which looks like as below.
 
 ```cmake
 cmake_minimum_required(VERSION 3.13)
@@ -209,9 +221,9 @@ Return back to the project directory and run the executable TaichiAOT demo:
 cd .. && ./build/TaichiAOT
 ```
 
-An image with color gradient shown below is saved as `result.ppm` in the project directory.
+An image of Julia fractal shown below is saved as `result.ppm` in the project directory.
 
-![Color gradient image](../static/assets/color_gradient.png)
+![](../static/assets/fractal.png)
 
 ## FAQ
 

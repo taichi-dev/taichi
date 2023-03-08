@@ -1671,7 +1671,7 @@ llvm::Function *TaskCodeGenLLVM::get_struct_function(const std::string &name,
 template <typename... Args>
 llvm::Value *TaskCodeGenLLVM::call_struct_func(int tree_id,
                                                const std::string &func_name,
-                                               Args &&... args) {
+                                               Args &&...args) {
   auto func = get_struct_function(func_name, tree_id);
   auto arglist = std::vector<llvm::Value *>({args...});
   check_func_call_signature(func->getFunctionType(), func->getName(), arglist,

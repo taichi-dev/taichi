@@ -211,8 +211,8 @@ target_link_libraries(${TAICHI_AOT_APP_NAME} Taichi::Runtime)
 Build the project with the commands:
 
 ```shell
-mkdir build && cd build
-cmake .. && cmake --build .
+cmake -B build
+cmake --build build
 ```
 
 Return back to the project directory and run the executable TaichiAOT demo:

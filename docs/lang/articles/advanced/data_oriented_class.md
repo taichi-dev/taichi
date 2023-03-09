@@ -99,7 +99,7 @@ for i in range(16):
 a.call_func()
 print(a.y)  # [ 5. 13. 21. 29.]
 ```
-
+To know more about `FieldsBuilder`, please refer to [FieldsBuilder](https://docs.taichi-lang.org/docs/master/layout#manual-field-allocation-and-destruction).
 
 ## Inheritance of Data-Oriented classes
 

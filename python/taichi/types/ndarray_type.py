@@ -83,7 +83,12 @@ class NdarrayType:
                  dtype=None,
                  ndim=None,
                  element_dim=None,
-                 element_shape=None):
+                 element_shape=None,
+                 field_dim=None):
+        if field_dim is not None:
+            raise ValueError(
+                "The field_dim argument for ndarray type is already deprecated. Please use ndim instead."
+            )
         if element_dim is not None or element_shape is not None:
             self.dtype = _make_matrix_dtype_from_element_shape(
                 element_dim, element_shape, dtype)

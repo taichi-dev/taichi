@@ -54,7 +54,6 @@ class MyClass:
 
 a = MyClass() # creating an instance of Data-Oriented Class
 
-a = MyClass() # creating an instance of Data-Oriented Class
 # a.call_inc() cannot be called, because a.temp has not been allocated at this point
 a.allocate_temp(4) # [0 0 0 0]
 a.call_inc() # [1 1 1 1]
@@ -75,7 +74,7 @@ ti.init()
 @ti.data_oriented
 class Calc:
     def __init__(self):
-        self.x = ti.field(dtype=ti.f32, shape=8)
+        self.x = ti.field(dtype=ti.f32, shape=16)
         self.y = ti.field(dtype=ti.f32, shape=4)
 
     @ti.kernel
@@ -100,7 +99,7 @@ for i in range(16):
 a.call_func()
 print(a.y)  # [ 5. 13. 21. 29.]
 ```
-
+To know more about `FieldsBuilder`, please refer to [FieldsBuilder](https://docs.taichi-lang.org/docs/master/layout#manual-field-allocation-and-destruction).
 
 ## Inheritance of Data-Oriented classes
 
@@ -118,7 +117,7 @@ class BaseClass:
         self.num = ti.field(dtype=ti.i32, shape=(self.n, ))
 
     @ti.kernel
-    def count(self) -> ti.i32:
+    def sum(self) -> ti.i32:
         ret = 0
         for i in range(self.n):
             ret += self.num[i]
@@ -144,16 +143,16 @@ class DeviatedClass(DataOrientedClass):
 a = DeviatedClass()
 a.add(1)
 a.sub(1)
-print(a.count())  # 0
+print(a.sum())  # 0
 
 
 b = DataOrientedClass()
 b.add(2)
-print(b.count())  # 1
+print(b.sum())  # 20
 
 c = BaseClass()
 # c.add(3)
-# print(c.count())
+# print(c.sum())
 # The two lines above trigger a kernel define error, because class c is not decorated with @ti.data_oriented
 ```
 

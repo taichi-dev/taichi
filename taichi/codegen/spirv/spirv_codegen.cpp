@@ -260,6 +260,9 @@ class TaskCodegen : public IRVisitor {
             ir_->get_primitive_type(dt), origin_val.stype.storage_class);
         ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
                                   offset_val);
+        if (stmt->origin->as<AllocaStmt>()->is_shared) {
+          ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+        }
       } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
         spirv::Value dt_bytes = ir_->int_immediate_number(
             ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
@@ -1438,22 +1441,26 @@ class TaskCodegen : public IRVisitor {
 
     spirv::Value addr_ptr;
 
-    if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        addr_ptr = at_buffer(stmt->dest, dt);
-      } else {
-        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
-      }
-    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
-          stmt->op_type == AtomicOpType::add) {
-        addr_ptr = at_buffer(stmt->dest, dt);
-      } else {
-        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
-      }
+    if (stmt->dest->is<MatrixPtrStmt>()) {
+      addr_ptr = ir_->query_value(stmt->dest->raw_name());
     } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
+      if (dt->is_primitive(PrimitiveTypeID::f64)) {
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          addr_ptr = at_buffer(stmt->dest, dt);
+        } else {
+          addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+        }
+      } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+        if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
+            stmt->op_type == AtomicOpType::add) {
+          addr_ptr = at_buffer(stmt->dest, dt);
+        } else {
+          addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+        }
+      } else {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      }
     }
 
     auto ret_type = ir_->get_primitive_type(dt);

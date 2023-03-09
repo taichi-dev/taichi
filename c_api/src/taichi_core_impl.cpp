@@ -704,6 +704,10 @@ void ti_launch_kernel(TiRuntime runtime,
   if (arg_count > 0) {
     TI_CAPI_ARGUMENT_NULL(args);
   }
+  if (arg_count > taichi_max_num_args_total) {
+    ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "arg_count");
+    return;
+  }
 
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;

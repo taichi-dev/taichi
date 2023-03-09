@@ -102,7 +102,7 @@ class Graph:
 def _deprecate_arg_args(kwargs: Dict[str, Any]):
     if "field_dim" in kwargs:
         warnings.warn(
-            "The field_dim argument for ndarray will be deprecated in v1.5.0, use ndim instead.",
+            "The field_dim argument for ndarray will be deprecated in v1.6.0, use ndim instead.",
             DeprecationWarning)
         if "ndim" in kwargs:
             raise TaichiRuntimeError(
@@ -115,7 +115,7 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
     if tag == ArgKind.SCALAR:
         if "element_shape" in kwargs:
             warnings.warn(
-                "The element_shape argument for scalar will be deprecated in v1.5.0. You can remove them safely.",
+                "The element_shape argument for scalar will be deprecated in v1.6.0. You can remove them safely.",
                 DeprecationWarning)
             del kwargs["element_shape"]
 
@@ -130,7 +130,7 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                     kwargs["element_shape"] = ()
         else:
             warnings.warn(
-                "The element_shape argument for ndarray will be deprecated in v1.5.0, use vector or matrix data type instead.",
+                "The element_shape argument for ndarray will be deprecated in v1.6.0, use vector or matrix data type instead.",
                 DeprecationWarning)
             if "dtype" not in kwargs:
                 dtype = kwargs["dtype"]
@@ -142,13 +142,13 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
     if tag == ArgKind.RWTEXTURE or tag == ArgKind.TEXTURE:
         if "dtype" in kwargs:
             warnings.warn(
-                "The dtype argument for texture will be deprecated in v1.5.0, use format instead.",
+                "The dtype argument for texture will be deprecated in v1.6.0, use format instead.",
                 DeprecationWarning)
             del kwargs["dtype"]
 
         if "shape" in kwargs:
             warnings.warn(
-                "The shape argument for texture will be deprecated in v1.5.0, use ndim instead. (Note that you no longer need the exact texture size.)",
+                "The shape argument for texture will be deprecated in v1.6.0, use ndim instead. (Note that you no longer need the exact texture size.)",
                 DeprecationWarning)
             kwargs["ndim"] = len(kwargs["shape"])
             del kwargs["shape"]
@@ -163,11 +163,11 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                                     kwargs["num_channels"])]
                 kwargs["fmt"] = fmt
                 warnings.warn(
-                    "The channel_format and num_channels arguments for texture will be deprecated in v1.5.0, use fmt instead.",
+                    "The channel_format and num_channels arguments for texture will be deprecated in v1.6.0, use fmt instead.",
                     DeprecationWarning)
             else:
                 warnings.warn(
-                    "The channel_format and num_channels arguments are no longer required for non-RW textures since v1.5.0, you can remove them safely.",
+                    "The channel_format and num_channels arguments are no longer required for non-RW textures since v1.6.0, you can remove them safely.",
                     DeprecationWarning)
             if "channel_format" in kwargs:
                 del kwargs["channel_format"]

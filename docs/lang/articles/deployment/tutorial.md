@@ -99,7 +99,7 @@ mod.archive("module.tcm")
 
 ### 2. Work with Taichi C-API in C++ program
 
-We are now done with Python and well prepared to build our application. The compiled artifacts saved as `module.tcm` and the Taichi Runtime Libirary (TiRT) are all we need. TiRT provides a fundamental C interface to help achieve optimal portability, however we also kindly provide a header-only C++ wrapper to save you from writing verbose C code. For simplicity purpose, we'll stick with the C++ wrapper in this tutorial.
+We are now done with Python and well prepared to build our application. The compiled artifacts saved as `module.tcm` and the Taichi Runtime Libirary (TiRT) are all we need. TiRT provides a fundamental C interface to help achieve optimal portability, however we also provide a header-only C++ wrapper to save you from writing verbose C code. For simplicity purpose, we'll stick with the C++ wrapper in this tutorial.
 
 Firstly, we need to include the C++ wrapper header of Taichi C-API.
 

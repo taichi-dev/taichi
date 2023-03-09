@@ -31,7 +31,7 @@ struct CacheCleanerUtils<CacheData> {
       const CacheCleanerConfig &config,
       const KernelMetaData &kernel_meta) {
     auto fn = fmt::format(KernelCompilationManager::kCacheFilenameFormat,
-                          kernel_meta.kernel_key, arch_name(kernel_meta.arch));
+                          kernel_meta.kernel_key);
     return {fn};
   }
 
@@ -155,9 +155,8 @@ void KernelCompilationManager::clean_offline_cache(
 std::string KernelCompilationManager::make_filename(
     const std::string &kernel_key,
     Arch arch) const {
-  return join_path(
-      config_.offline_cache_path,
-      fmt::format(kCacheFilenameFormat, kernel_key, arch_name(arch)));
+  return join_path(config_.offline_cache_path,
+                   fmt::format(kCacheFilenameFormat, kernel_key));
 }
 
 std::unique_ptr<CompiledKernelData> KernelCompilationManager::compile_kernel(
@@ -233,7 +232,6 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
               kernel_key);
   TI_ASSERT(caching_kernels_.find(kernel_key) == caching_kernels_.end());
   KernelCacheData k;
-  k.arch = compile_config.arch;
   k.kernel_key = kernel_key;
   k.created_at = k.last_used_at = std::time(nullptr);
   k.compiled_kernel_data = compile_kernel(compile_config, caps, kernel_def);

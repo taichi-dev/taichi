@@ -810,16 +810,16 @@ def ndarray(dtype, shape, needs_grad=False):
 
 @taichi_scope
 def ti_format_list_to_content_entries(raw):
+    # return a pair of [content, format]
     def entry2content(_var):
         if isinstance(_var, str):
-            return _var
-        # handle optional format specifier
+            return [_var, None]
         if isinstance(_var, list):
             assert len(_var) == 2 and (isinstance(_var[1], str)
                                        or _var[1] is None)
             _var[0] = Expr(_var[0]).ptr
             return _var
-        return Expr(_var).ptr
+        return [Expr(_var).ptr, None]
 
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintenance cost
@@ -865,23 +865,13 @@ def ti_format_list_to_content_entries(raw):
             yield accumated
 
     def extract_formats(entries):
-        contents = []
-        formats = []
-        for entry in entries:
-            if isinstance(entry, list):
-                assert len(entry) == 2
-                contents.append(entry[0])
-                formats.append(entry[1])
-            else:
-                contents.append(entry)
-                formats.append(None)
-        return contents, formats
+        contents, formats = zip(*entries)
+        return list(contents), list(formats)
 
     entries = vars2entries(raw)
     entries = fused_string(entries)
     entries = [entry2content(entry) for entry in entries]
-    contents, formats = extract_formats(entries)
-    return contents, formats
+    return extract_formats(entries)
 
 
 @taichi_scope

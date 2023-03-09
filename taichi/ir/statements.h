@@ -862,11 +862,6 @@ class PrintStmt : public Stmt {
   const std::vector<EntryType> contents;
   const std::vector<FormatType> formats;
 
-  explicit PrintStmt(const std::vector<EntryType> &contents_)
-      : contents(contents_) {
-    TI_STMT_REG_FIELDS;
-  }
-
   PrintStmt(const std::vector<EntryType> &contents_,
             const std::vector<FormatType> &formats_)
       : contents(contents_), formats(formats_) {

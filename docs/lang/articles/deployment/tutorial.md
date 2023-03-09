@@ -62,7 +62,7 @@ mod.archive("module.tcm")
 
 Let's dive into the code example to see what happened.
 
-We initialize Taichi specifing the backend as `ti.vulkan` at the beginning. Considering that Taichi will fall back to CPU device if the target architecture is unavailable, we check if the current backend meet our requirement.
+We initialize Taichi specifing the backend as `ti.vulkan` at the beginning. Considering that Taichi will fall back to CPU device if the target architecture is unavailable, we check if the current backend meets our requirement.
 
 ```python
 ti.init(arch=ti.vulkan)

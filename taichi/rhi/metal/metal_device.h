@@ -102,7 +102,8 @@ class MetalPipeline final : public Pipeline {
 
   static MetalPipeline *create(const MetalDevice &device,
                                const uint32_t *spv_data,
-                               size_t spv_size);
+                               size_t spv_size,
+                               const std::string& name);
   void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {

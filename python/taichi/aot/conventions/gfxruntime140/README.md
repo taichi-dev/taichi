@@ -2,7 +2,7 @@
 
 GfxRuntime140 is a legacy AOT module convention that serves the Vulkan, Metal and OpenGL backends.
 
-GfxRuntime140 only accept SPIR-V as the only valid code artifact. For each SPIR-V artifact, all of the following requirements *must* be satisfied.
+GfxRuntime140 only accepts SPIR-V as the only valid code artifact. For each SPIR-V artifact, all of the following requirements *must* be satisfied.
 
 - SPIR-V module version is 1.3 or higher.
 - There is only one entry point function called `main`. It's execution model is `GLCompute`. Workgroup size Y and Z are always `1`.

@@ -97,14 +97,16 @@ class SparseMatrix {
 
   template <class T>
   T get_element(int row, int col) {
-    std::cout << "get_element not implemented" << std::endl;
-    return 0;
+    TI_NOT_IMPLEMENTED;
   }
 
   template <class T>
   void set_element(int row, int col, T value) {
-    std::cout << "set_element not implemented" << std::endl;
-    return;
+    TI_NOT_IMPLEMENTED;
+  }
+
+  virtual void mmwrite(const std::string &filename) {
+    TI_NOT_IMPLEMENTED;
   }
 
  protected:
@@ -135,6 +137,9 @@ class EigenSparseMatrix : public SparseMatrix {
 
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
+
+  // Write the sparse matrix to a Matrix Market file
+  void mmwrite(const std::string &filename) override;
 
   const void *get_matrix() const override {
     return &matrix_;

@@ -1,6 +1,6 @@
 #include "taichi/program/sparse_matrix.h"
 
-#include <unordered_map>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -258,6 +258,19 @@ const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
   std::ostringstream ostr;
   ostr << Eigen::MatrixXf(matrix_.template cast<float>()).format(clean_fmt);
   return ostr.str();
+}
+
+template <class EigenMatrix>
+void EigenSparseMatrix<EigenMatrix>::mmwrite(const std::string &filename){
+  std::ofstream file(filename);
+  file << "%%MatrixMarket matrix coordinate real general\n %" << std::endl;
+  file << matrix_.rows() << " " << matrix_.cols() << " " << matrix_.nonZeros() << std::endl;
+  for (int k=0; k<matrix_.outerSize(); ++k){
+    for (typename EigenMatrix::InnerIterator it(matrix_,k); it; ++it){
+      file << it.row() + 1 << " " << it.col() + 1 << " " << it.value() << std::endl;
+    }
+  }
+  file.close();
 }
 
 template <class EigenMatrix>

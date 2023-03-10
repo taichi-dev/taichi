@@ -209,7 +209,10 @@ class SparseMatrix:
             )
 
     def mmwrite(self, filename):
-        """Write the sparse matrix to a file in Matrix Market format.
+        """Writes the sparse matrix to Matrix Market file-like target.
+
+        Args:
+            filename (str): the file name to write the sparse matrix to.
         """
         self.matrix.mmwrite(filename)
 

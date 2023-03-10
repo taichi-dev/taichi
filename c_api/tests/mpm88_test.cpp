@@ -126,6 +126,19 @@ TEST_F(CapiTest, Mpm88TestVulkan) {
   }
 }
 
+TEST_F(CapiTest, Mpm88TestMetal) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
+
+    auto impl = std::make_unique<demo::MPM88DemoImpl>(aot_mod_ss.str().c_str(),
+                                                      TiArch::TI_ARCH_METAL);
+    impl->Step();
+  }
+}
+
 TEST_F(CapiTest, Mpm88TestOpengl) {
   if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

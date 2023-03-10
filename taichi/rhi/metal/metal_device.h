@@ -43,7 +43,7 @@ class MetalDevice;
 struct MetalMemory {
  public:
   // `mtl_buffer` should be already retained.
-  explicit MetalMemory(MTLBuffer_id mtl_buffer);
+  explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
   ~MetalMemory();
 
   void dont_destroy();
@@ -54,6 +54,7 @@ struct MetalMemory {
 
  private:
   MTLBuffer_id mtl_buffer_;
+  bool can_map_{false};
   bool dont_destroy_{false};
 };
 

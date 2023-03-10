@@ -7,7 +7,8 @@
 namespace taichi::lang {
 namespace metal {
 
-MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer) : mtl_buffer_(mtl_buffer) {}
+MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
+    : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
 MetalMemory::~MetalMemory() {
   if (!dont_destroy_) {
     [mtl_buffer_ release];
@@ -19,6 +20,9 @@ void MetalMemory::dont_destroy() { dont_destroy_ = true; }
 MTLBuffer_id MetalMemory::mtl_buffer() const { return mtl_buffer_; }
 size_t MetalMemory::size() const { return (size_t)[mtl_buffer_ length]; }
 RhiResult MetalMemory::mapped_ptr(void **mapped_ptr) const {
+  if (!can_map_) {
+    return RhiResult::invalid_usage;
+  }
   void *ptr = [mtl_buffer_ contents];
   if (ptr == nullptr) {
     return RhiResult::invalid_usage;
@@ -541,7 +545,7 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
   MTLBuffer_id buffer = [mtl_device_ newBufferWithLength:params.size
                                                  options:resource_options];
 
-  MetalMemory &alloc = memory_allocs_.acquire(buffer);
+  MetalMemory &alloc = memory_allocs_.acquire(buffer, can_map);
 
   DeviceAllocation out{};
   out.device = this;
@@ -549,7 +553,8 @@ DeviceAllocation MetalDevice::allocate_memory(const AllocParams &params) {
   return out;
 }
 DeviceAllocation MetalDevice::import_mtl_buffer(MTLBuffer_id buffer) {
-  MetalMemory &alloc = memory_allocs_.acquire(buffer);
+  bool can_map = [buffer contents] != nullptr;
+  MetalMemory &alloc = memory_allocs_.acquire(buffer, can_map);
   alloc.dont_destroy();
 
   DeviceAllocation out{};

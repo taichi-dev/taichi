@@ -7,7 +7,8 @@
 namespace taichi::lang {
 namespace metal {
 
-MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map) : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
+MetalMemory::MetalMemory(MTLBuffer_id mtl_buffer, bool can_map)
+    : mtl_buffer_(mtl_buffer), can_map_(can_map) {}
 MetalMemory::~MetalMemory() {
   if (!dont_destroy_) {
     [mtl_buffer_ release];

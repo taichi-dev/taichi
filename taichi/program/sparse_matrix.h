@@ -314,6 +314,8 @@ class CuSparseMatrix : public SparseMatrix {
     return nnz_;
   }
 
+  void mmwrite(const std::string &filename) override;
+
  private:
   cusparseSpMatDescr_t matrix_{nullptr};
   void *csr_row_ptr_{nullptr};

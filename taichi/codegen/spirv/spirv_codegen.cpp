@@ -1441,23 +1441,24 @@ class TaskCodegen : public IRVisitor {
 
     spirv::Value addr_ptr;
 
-    if (stmt->dest->is<MatrixPtrStmt>()) {
-      addr_ptr = ir_->query_value(stmt->dest->raw_name());
+    if (dt->is_primitive(PrimitiveTypeID::f64)) {
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
+          stmt->op_type == AtomicOpType::add) {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      } else {
+        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+      }
+    } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
+      if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
+          stmt->op_type == AtomicOpType::add) {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      } else {
+        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+      }
     } else {
-      if (dt->is_primitive(PrimitiveTypeID::f64)) {
-        if (caps_->get(DeviceCapability::spirv_has_atomic_float64_add) &&
-            stmt->op_type == AtomicOpType::add) {
-          addr_ptr = at_buffer(stmt->dest, dt);
-        } else {
-          addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
-        }
-      } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-        if (caps_->get(DeviceCapability::spirv_has_atomic_float_add) &&
-            stmt->op_type == AtomicOpType::add) {
-          addr_ptr = at_buffer(stmt->dest, dt);
-        } else {
-          addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
-        }
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        // Shared arrays have already created an accesschain, use it directly.
+        addr_ptr = ir_->query_value(stmt->dest->raw_name());
       } else {
         addr_ptr = at_buffer(stmt->dest, dt);
       }

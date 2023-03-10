@@ -5,7 +5,7 @@ GfxRuntime140 is a legacy AOT module convention that serves the Vulkan, Metal an
 GfxRuntime140 only accept SPIR-V as the only valid code artifact. For each SPIR-V artifact, all of the following requirements *must* be satisfied.
 
 - SPIR-V module version is 1.3 or higher.
-- There is only one entry point function called `main`. It's execution model is `GLCompute`. Workgroup size Y and Z are always 1.
+- There is only one entry point function called `main`. It's execution model is `GLCompute`. Workgroup size Y and Z are always `1`.
 - There is only one descriptor set, where `Set=0`.
 - The context buffer is a uniform bufffer in `std140` layout, bound to `Binding=0`. Its elements are aligned to 4 bytes. The size is at least 1536 bytes. The context buffer content must be consumed following the rules listed below in "Context buffer format".
 - The root buffer is a storage buffer in `std430` layout, bound to `Binding=1`.

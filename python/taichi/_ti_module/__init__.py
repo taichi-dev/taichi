@@ -38,12 +38,6 @@ def module_cppgen_impl(a):
         f"Generating C++ header for Taichi module: {Path(module_path).absolute()}"
     )
 
-    with open(f"{module_path}/metadata.json") as f:
-        metadata_json = json.load(f)
-
-    with open(f"{module_path}/graphs.json") as f:
-        graphs_json = json.load(f)
-
     if a.module_name:
         module_name = a.module_name
     else:
@@ -51,7 +45,9 @@ def module_cppgen_impl(a):
         if module_name.endswith(".tcm"):
             module_name = module_name[:-4]
 
-    out = generate_header(metadata_json, graphs_json, module_name, a.namespace)
+    m = GfxRuntime140.from_module(module_path)
+
+    out = generate_header(m, module_name, a.namespace)
 
     with open(a.output, "w") as f:
         f.write('\n'.join(out))

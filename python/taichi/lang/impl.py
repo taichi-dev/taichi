@@ -838,10 +838,6 @@ def ti_format_list_to_content_entries(raw):
                 if len(_var) > 0 and isinstance(
                         _var[0], str) and _var[0] == '__ti_format__':
                     res = _var[1:]
-                elif len(_var) > 0 and isinstance(
-                        _var[0], str) and _var[0] == '__ti_fmt_list__':
-                    yield _var[1:]
-                    continue
                 else:
                     res = list_ti_repr(_var)
             else:
@@ -899,11 +895,6 @@ def ti_format(*args, **kwargs):
     for x in mixed:
         if isinstance(x, Expr):
             new_mixed.append('{}')
-            args.append(x)
-        # add tag if encounter an Expr with format specifier
-        elif isinstance(x, list):
-            new_mixed.append('{}')
-            x.insert(0, '__ti_fmt_list__')
             args.append(x)
         else:
             new_mixed.append(x)

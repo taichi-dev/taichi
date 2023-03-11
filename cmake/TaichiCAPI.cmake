@@ -190,8 +190,9 @@ endfunction()
 
 
 set(TAICHI_C_API_INSTALL_DIR c_api)
+install_taichi_c_api("c_api")
 if (TI_WITH_PYTHON)
-  set(TAICHI_C_API_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api)
+  install_taichi_c_api("${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api")
 endif()
 
 if(TI_WITH_STATIC_C_API)

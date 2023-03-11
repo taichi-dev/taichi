@@ -68,6 +68,22 @@ def test_print_matrix():
 
 
 @test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
+def test_print_matrix_fstring():
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
+    y = ti.Vector.field(3, dtype=ti.f32, shape=3)
+
+    @ti.kernel
+    def func(k: ti.f32):
+        x[None][0, 0] = -1.0
+        y[2] += 1.0
+        print(f'hello {x[None]} world!')
+        print(f'{y[2] * k} {x[None] / k} {y[2]}')
+
+    func(233.3)
+    ti.sync()
+
+
+@test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_sep_end():
     @ti.kernel
     def func():

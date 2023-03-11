@@ -74,7 +74,7 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *stmt) override {
-    // Noop
+    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
   }
 
   void visit(FrontendForStmt *stmt) override {

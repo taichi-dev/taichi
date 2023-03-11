@@ -105,7 +105,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     std::string formats;
     size_t num_contents = 0;
-    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
     for (auto i = 0; i < stmt->contents.size(); ++i) {
       auto const &content = stmt->contents[i];
       auto const &format = stmt->formats[i];

@@ -955,7 +955,6 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
                                  tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
-  TI_ASSERT(stmt->contents.size() == stmt->formats.size());
   for (auto i = 0; i < stmt->contents.size(); ++i) {
     auto const &content = stmt->contents[i];
     auto const &format = stmt->formats[i];

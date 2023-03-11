@@ -389,7 +389,6 @@ class CCTransformer : public IRVisitor {
     std::string formats;
     std::vector<std::string> values;
 
-    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
     for (int i = 0; i < stmt->contents.size(); i++) {
       auto const &content = stmt->contents[i];
       auto const &format = stmt->formats[i];

@@ -165,7 +165,6 @@ class TaskCodegen : public IRVisitor {
     std::string formats;
     std::vector<Value> vals;
 
-    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
     for (auto i = 0; i < stmt->contents.size(); ++i) {
       auto const &content = stmt->contents[i];
       auto const &format = stmt->formats[i];

@@ -400,7 +400,8 @@ class ASTTransformer(Builder):
         assert len(values) == 1
         format_str = values[0].s
         assert format_str is not None
-        return [node.ptr, format_str]
+        # distinguished from normal list
+        return ['__ti_fmt_value__', node.ptr, format_str]
 
     @staticmethod
     def build_JoinedStr(ctx, node):

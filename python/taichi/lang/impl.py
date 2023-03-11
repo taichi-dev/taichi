@@ -831,7 +831,12 @@ def ti_format_list_to_content_entries(raw):
 
     def vars2entries(_vars):
         for _var in _vars:
-            if hasattr(_var, '__ti_repr__'):
+            # If the first element is '__ti_format__', this list is an Expr and its format.
+            if isinstance(_var, list) and len(_var) == 3 and isinstance(_var[0], str) and _var[0] == '__ti_fmt_value__':
+                # yield [Expr, format] as a whole and don't pass it to vars2entries() again
+                yield _var[1:]
+                continue
+            elif hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
                 # If the first element is '__ti_format__', this list is the result of ti_format.
@@ -893,7 +898,8 @@ def ti_format(*args, **kwargs):
     new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, Expr):
+        # x is a (formatted) Expr
+        if isinstance(x, Expr) or (isinstance(x, list) and len(x) == 3 and x[0] == '__ti_fmt_value__'):
             new_mixed.append('{}')
             args.append(x)
         else:

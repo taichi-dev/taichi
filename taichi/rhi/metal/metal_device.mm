@@ -61,15 +61,40 @@ MetalPipeline::MetalPipeline(
       workgroup_size_(workgroup_size) {}
 MetalPipeline::~MetalPipeline() { destroy(); }
 MetalPipeline *MetalPipeline::create(const MetalDevice &device,
-                                     const uint32_t *spv_data,
-                                     size_t spv_size) {
+                                     const uint32_t *spv_data, size_t spv_size,
+                                     const std::string &name) {
   RHI_ASSERT((size_t)spv_data % sizeof(uint32_t) == 0);
   RHI_ASSERT(spv_size % sizeof(uint32_t) == 0);
   spirv_cross::CompilerMSL compiler(spv_data, spv_size / sizeof(uint32_t));
   spirv_cross::CompilerMSL::Options options{};
   options.enable_decoration_binding = true;
+
+  // Choose a proper msl version according to the device capability.
+  DeviceCapabilityConfig caps = device.get_caps();
+  bool feature_simd_scoped_permute_operations =
+      caps.contains(DeviceCapability::spirv_has_subgroup_vote) ||
+      caps.contains(DeviceCapability::spirv_has_subgroup_ballot);
+  bool feature_simd_scoped_reduction_operations =
+      caps.contains(DeviceCapability::spirv_has_subgroup_arithmetic);
+
+  if (feature_simd_scoped_permute_operations ||
+      feature_simd_scoped_reduction_operations) {
+    // Subgroups are only supported in Metal 2.1 and up.
+    options.set_msl_version(2, 1, 0);
+  }
+
   compiler.set_msl_options(options);
-  std::string msl = compiler.compile();
+
+  std::string msl = "";
+  try {
+    msl = compiler.compile();
+  } catch (const spirv_cross::CompilerError &e) {
+    std::array<char, 4096> msgbuf;
+    snprintf(msgbuf.data(), msgbuf.size(), "(spirv-cross compiler) %s: %s",
+             name.c_str(), e.what());
+    RHI_LOG_ERROR(msgbuf.data());
+    return nullptr;
+  }
 
   MTLLibrary_id mtl_library = nil;
   {
@@ -96,7 +121,7 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
   {
     NSString *entry_name_ns = [[NSString alloc] initWithUTF8String:"main0"];
     mtl_function = [mtl_library newFunctionWithName:entry_name_ns];
-    if (mtl_library == nil) {
+    if (mtl_function == nil) {
       // FIXME: (penguinliong) Specify the actual entry name after we compile
       // directly to MSL in codegen.
       RHI_LOG_ERROR(
@@ -721,8 +746,8 @@ RhiResult MetalDevice::create_pipeline(Pipeline **out_pipeline,
                                        PipelineCache *cache) noexcept {
   RHI_ASSERT(src.type == PipelineSourceType::spirv_binary);
   try {
-    *out_pipeline =
-        MetalPipeline::create(*this, (const uint32_t *)src.data, src.size);
+    *out_pipeline = MetalPipeline::create(*this, (const uint32_t *)src.data,
+                                          src.size, name);
   } catch (const std::exception &e) {
     return RhiResult::error;
   }

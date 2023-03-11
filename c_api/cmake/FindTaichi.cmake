@@ -66,16 +66,16 @@ if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}")
     message("-- Looking for Taichi libraries via environment variable TAICHI_C_API_INSTALL_DIR")
     set(TAICHI_C_API_INSTALL_DIR $ENV{TAICHI_C_API_INSTALL_DIR})
 endif()
+# New installation location after 2022-03-11.
+if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
+    message("-- Looking for Taichi libraries via Python package installation (v2)")
+    execute_process(COMMAND ${Python_EXECUTABLE} -c "import sys; import pathlib; print([pathlib.Path(x + '/taichi/_lib/c_api').resolve() for x in sys.path if pathlib.Path(x + '/taichi/_lib/c_api').exists()][0], end='')" OUTPUT_VARIABLE TAICHI_C_API_INSTALL_DIR)
+endif()
 # If the user didn't specity the environment variable, try find the C-API
 # library in Python wheel.
 if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
     message("-- Looking for Taichi libraries via Python package installation")
     execute_process(COMMAND ${Python_EXECUTABLE} -c "import sys; import pathlib; print([pathlib.Path(x + '/../../../c_api').resolve() for x in sys.path if pathlib.Path(x + '/../../../c_api').exists()][0], end='')" OUTPUT_VARIABLE TAICHI_C_API_INSTALL_DIR)
-endif()
-# New installation location after 2022-03-11.
-if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
-    message("-- Looking for Taichi libraries via Python package installation (v2)")
-    execute_process(COMMAND ${Python_EXECUTABLE} -c "import sys; import pathlib; print([pathlib.Path(x + '/taichi/_lib/c_api').resolve() for x in sys.path if pathlib.Path(x + '/taichi/_lib/c_api').exists()][0], end='')" OUTPUT_VARIABLE TAICHI_C_API_INSTALL_DIR)
 endif()
 message("-- TAICHI_C_API_INSTALL_DIR=${TAICHI_C_API_INSTALL_DIR}")
 if(EXISTS "${TAICHI_C_API_INSTALL_DIR}")

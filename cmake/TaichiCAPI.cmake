@@ -131,8 +131,8 @@ set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_H
 # This helper provides us standard locations across Linux/Windows/MacOS
 include(GNUInstallDirs)
 
-function(install_taichi_c_api TAICHI_C_API_INSTALL_DIR)
-  install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets
+function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
+  install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets${INSTALL_NAME}
       LIBRARY DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
       RUNTIME DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_BINDIR}
@@ -148,7 +148,7 @@ function(install_taichi_c_api TAICHI_C_API_INSTALL_DIR)
   )
 
   # Install the export set, which contains the meta data of the target
-  install(EXPORT TaichiExportTargets
+  install(EXPORT TaichiExportTargets${INSTALL_NAME}
       FILE TaichiTargets.cmake
       DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
       )
@@ -190,9 +190,9 @@ endfunction()
 
 
 set(TAICHI_C_API_INSTALL_DIR c_api)
-install_taichi_c_api("c_api")
+install_taichi_c_api(Distribute c_api)
 if (TI_WITH_PYTHON)
-  install_taichi_c_api("${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api")
+  install_taichi_c_api(PyTaichi ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api)
 endif()
 
 if(TI_WITH_STATIC_C_API)

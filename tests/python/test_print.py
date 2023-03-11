@@ -170,6 +170,21 @@ def test_print_fstring():
     ti.sync()
 
 
+@test_utils.test(arch=[ti.cpu, ti.vulkan],
+                 exclude=[vk_on_mac, ti.amdgpu],
+                 debug=True)
+def test_print_fstring_with_spec():
+    def foo1(x):
+        return x + 1
+
+    @ti.kernel
+    def func(i: ti.i32, f: ti.f32):
+        print(f'qwe {foo1(1):d} {(foo1(2) * 2 - 1):10d} {i} {f:.1f} {4} {True} {1.23}')
+
+    func(123, 4.56)
+    ti.sync()
+
+
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
                  exclude=[vk_on_mac, ti.amdgpu],
                  debug=True)

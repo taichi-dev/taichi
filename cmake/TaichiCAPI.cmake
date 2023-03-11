@@ -131,65 +131,67 @@ set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_H
 # This helper provides us standard locations across Linux/Windows/MacOS
 include(GNUInstallDirs)
 
+function(install_taichi_c_api TAICHI_C_API_INSTALL_DIR)
+  install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets
+      LIBRARY DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+      ARCHIVE DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
+      RUNTIME DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_BINDIR}
+      PUBLIC_HEADER DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi
+      )
+
+  # The C++ wrapper is saved in a dedicated directory.
+  install(
+      FILES
+          "c_api/include/taichi/cpp/taichi.hpp"
+      DESTINATION
+          ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi/cpp
+  )
+
+  # Install the export set, which contains the meta data of the target
+  install(EXPORT TaichiExportTargets
+      FILE TaichiTargets.cmake
+      DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+      )
+
+  include(CMakePackageConfigHelpers)
+
+  # Generate the config file
+  configure_package_config_file(
+          "${PROJECT_SOURCE_DIR}/cmake/TaichiConfig.cmake.in"
+          "${PROJECT_BINARY_DIR}/TaichiConfig.cmake"
+      INSTALL_DESTINATION
+          ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+      )
+
+  # Generate the config version file
+  set(TAICHI_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
+  write_basic_package_version_file(
+      "TaichiConfigVersion.cmake"
+      VERSION ${TAICHI_VERSION}
+      COMPATIBILITY SameMajorVersion
+      )
+
+  # Install the config files
+  install(
+      FILES
+          "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfig.cmake"
+          "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfigVersion.cmake"
+      DESTINATION
+          ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+      )
+
+  if(TI_WITH_LLVM)
+  # Install runtime .bc files for LLVM backend
+  install(DIRECTORY
+        ${INSTALL_LIB_DIR}/runtime
+        DESTINATION ${TAICHI_C_API_INSTALL_DIR})
+  endif()
+endfunction()
+
+
+set(TAICHI_C_API_INSTALL_DIR c_api)
 if (TI_WITH_PYTHON)
   set(TAICHI_C_API_INSTALL_DIR ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api)
-else()
-  set(TAICHI_C_API_INSTALL_DIR c_api)
-endif()
-
-install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets
-    LIBRARY DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_BINDIR}
-    PUBLIC_HEADER DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi
-    )
-
-# The C++ wrapper is saved in a dedicated directory.
-install(
-    FILES
-        "c_api/include/taichi/cpp/taichi.hpp"
-    DESTINATION
-        ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi/cpp
-)
-
-# Install the export set, which contains the meta data of the target
-install(EXPORT TaichiExportTargets
-    FILE TaichiTargets.cmake
-    DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-    )
-
-include(CMakePackageConfigHelpers)
-
-# Generate the config file
-configure_package_config_file(
-        "${PROJECT_SOURCE_DIR}/cmake/TaichiConfig.cmake.in"
-        "${PROJECT_BINARY_DIR}/TaichiConfig.cmake"
-    INSTALL_DESTINATION
-        ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-    )
-
-# Generate the config version file
-set(TAICHI_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
-write_basic_package_version_file(
-    "TaichiConfigVersion.cmake"
-    VERSION ${TAICHI_VERSION}
-    COMPATIBILITY SameMajorVersion
-    )
-
-# Install the config files
-install(
-    FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfigVersion.cmake"
-    DESTINATION
-        ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-    )
-
-if(TI_WITH_LLVM)
-# Install runtime .bc files for LLVM backend
-install(DIRECTORY
-      ${INSTALL_LIB_DIR}/runtime
-      DESTINATION ${TAICHI_C_API_INSTALL_DIR})
 endif()
 
 if(TI_WITH_STATIC_C_API)

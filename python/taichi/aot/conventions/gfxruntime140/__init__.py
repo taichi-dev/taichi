@@ -1,7 +1,7 @@
 import json
+import zipfile
 from pathlib import Path
 from typing import Any, List
-import zipfile
 
 from taichi.aot.conventions.gfxruntime140 import dr, sr
 

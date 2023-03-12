@@ -24,7 +24,8 @@ inline std::string merge_printf_specifier(
   //   b. 'e' (use decimal exponent notation),
   //   c. '-+10lf' (left align, show sign explicitly, minimum field width is 10
   //      characters, print an double),
-  //   d. nullopt_t (default),
+  //   d. '.2' (only specify precision, use default conversion),
+  //   e. nullopt_t (default),
   // as the specifier.
   // 2. taichi will infer the specifier as '%.12f'.
 
@@ -32,7 +33,8 @@ inline std::string merge_printf_specifier(
   //   a. '%.2f',
   //   b. '%.12e',
   //   c. '%-+10.12f' ('lf' means the same thing as 'f'),
-  //   d. '%.12f',
+  //   d. '%.2f',
+  //   e. '%.12f',
   // accordingly.
 
   return from_data_type;

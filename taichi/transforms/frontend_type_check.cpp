@@ -85,7 +85,10 @@ class FrontendTypeCheck : public IRVisitor {
 
       Expr const &expr = std::get<Expr>(content);
       TI_ASSERT(expr.expr != nullptr);
-      DataType const &data_type = expr->ret_type;
+      DataType data_type = expr->ret_type;
+      if (data_type->is<TensorType>()) {
+        data_type = DataType(data_type->as<TensorType>()->get_element_type());
+      }
       TI_ASSERT(!format->empty());
       std::string const &format_spec = format.value();
       auto const &conversion = format_spec.back();

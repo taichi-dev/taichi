@@ -117,11 +117,9 @@ class FrontendTypeCheck : public IRVisitor {
            !(is_integral(data_type) && is_signed(data_type))) ||
           (unsigned_group.find(conversion) != std::string::npos &&
            !(is_integral(data_type) && is_unsigned(data_type)))) {
-        std::string const &expr_string =
-            ExpressionHumanFriendlyPrinter::expr_to_string(
-                const_cast<Expr &>(expr));
         throw TaichiTypeError(fmt::format("{} '{}' doesn't match '{}'.",
-                                          stmt->tb, format_spec, expr_string));
+                                          stmt->tb, format_spec,
+                                          data_type->to_string()));
       }
     }
   }

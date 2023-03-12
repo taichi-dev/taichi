@@ -97,7 +97,6 @@ def test_print_matrix_fstring_with_spec():
         print(f'{(y[2] * k):.3f} {(x[None] / k):e} {y[2]:.2}')
         print(f'hello {z[None]:+d} world!')
 
-
     func(233.3)
     ti.sync()
 
@@ -120,20 +119,16 @@ def test_print_matrix_fstring_with_spec_mismatch():
     def test_z():
         print(f'hello {z[None]:.2e} world!')
 
-
     x[None][0, 0] = -1.0
     y[2] += 1.0
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'.2d' doesn't match 'f32'."):
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'.2d' doesn't match 'f32'."):
         test_x()
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'- #0.233lli' doesn't match 'f32'."):
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'- #0.233lli' doesn't match 'f32'."):
         test_y(233.3)
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'.2e' doesn't match 'i32'."):
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'.2e' doesn't match 'i32'."):
         test_z()
     ti.sync()
 
@@ -267,33 +262,21 @@ def test_print_fstring_with_spec_mismatch():
 
     @ti.kernel
     def test_i(i: ti.i32):
-        print(
-            f'{foo1(i):u}'
-        )
+        print(f'{foo1(i):u}')
 
     @ti.kernel
     def test_u(u: ti.u32):
-        print(
-            f'{foo1(u):d}'
-        )
+        print(f'{foo1(u):d}')
 
     @ti.kernel
     def test_f(u: ti.f32):
-        print(
-            f'{foo1(u):i}'
-        )
+        print(f'{foo1(u):i}')
 
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'u' doesn't match 'i32'."):
+    with pytest.raises(ti.TaichiTypeError, match=r"'u' doesn't match 'i32'."):
         test_i(123)
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'d' doesn't match 'u32'."):
+    with pytest.raises(ti.TaichiTypeError, match=r"'d' doesn't match 'u32'."):
         test_u(123)
-    with pytest.raises(
-        ti.TaichiTypeError,
-        match=r"'i' doesn't match 'f32'."):
+    with pytest.raises(ti.TaichiTypeError, match=r"'i' doesn't match 'f32'."):
         test_f(123)
     ti.sync()
 

@@ -261,7 +261,8 @@ class MetalDevice final : public GraphicsDevice {
     TI_NOT_IMPLEMENTED;
   }
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   DeviceAllocation import_mtl_buffer(MTLBuffer_id buffer);
   void dealloc_memory(DeviceAllocation handle) override;
 

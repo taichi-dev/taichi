@@ -1,4 +1,5 @@
 #include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/impl_support.h"
 
 namespace taichi::lang {
 
@@ -9,7 +10,8 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
   return allocations_[handle.alloc_id];
 }
 
-DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
+RhiResult CpuDevice::allocate_memory(const AllocParams &params,
+                                     DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
   auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
@@ -17,18 +19,27 @@ DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
   info.size = vm->size;
   info.use_cached = false;
 
-  DeviceAllocation alloc;
-  alloc.alloc_id = allocations_.size();
-  alloc.device = this;
+  if (vm->ptr == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->alloc_id = allocations_.size();
+  out_devalloc->device = this;
 
   allocations_.push_back(info);
-  virtual_memories_[alloc.alloc_id] = std::move(vm);
-  return alloc;
+  virtual_memories_[out_devalloc->alloc_id] = std::move(vm);
+
+  return RhiResult::success;
 }
 
 DeviceAllocation CpuDevice::allocate_memory_runtime(
     const LlvmRuntimeAllocParams &params) {
-  return allocate_memory(params);
+  DeviceAllocation alloc;
+  RhiResult res = allocate_memory(params, &alloc);
+  RHI_ASSERT(res == RhiResult::success &&
+             "Failed to allocate memory for runtime");
+  return alloc;
 }
 
 void CpuDevice::dealloc_memory(DeviceAllocation handle) {

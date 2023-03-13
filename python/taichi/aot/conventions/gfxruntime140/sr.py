@@ -341,7 +341,7 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
     for i, arg in enumerate(s.context.args):
         if isinstance(arg, ArgumentNdArray):
             j = {
-                "dtype": arg.dtype,
+                "dtype": arg.dtype.value,
                 "element_shape": arg.element_shape,
                 "field_dim": arg.ndim,
                 "format": ti.Format.unknown,
@@ -380,7 +380,7 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
             arr_access += [0]
         elif isinstance(arg, ArgumentScalar):
             j = {
-                "dtype": arg.dtype,
+                "dtype": arg.dtype.value,
                 "element_shape": [],
                 "field_dim": 0,
                 "format": ti.Format.unknown,
@@ -401,7 +401,7 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
     if s.context.ret is not None:
         for i, ret in enumerate([s.context.ret]):
             j = {
-                "dtype": ret.dtype,
+                "dtype": ret.dtype.value,
                 "element_shape": [],
                 "field_dim": 0,
                 "format": ti.Format.unknown,

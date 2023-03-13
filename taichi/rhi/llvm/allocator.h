@@ -9,11 +9,10 @@
 #include <set>
 
 namespace taichi::lang {
-namespace cuda {
 
-class CudaCachingAllocator {
+class CachingAllocator {
  public:
-  explicit CudaCachingAllocator(LlvmDevice *device);
+  explicit CachingAllocator(LlvmDevice *device);
 
   uint64_t *allocate(const LlvmDevice::LlvmRuntimeAllocParams &params);
   void release(size_t sz, uint64_t *ptr);
@@ -26,5 +25,4 @@ class CudaCachingAllocator {
   LlvmDevice *device_{nullptr};
 };
 
-}  // namespace cuda
 }  // namespace taichi::lang

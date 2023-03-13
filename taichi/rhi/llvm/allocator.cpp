@@ -1,14 +1,12 @@
-#include "taichi/rhi/cuda/cuda_caching_allocator.h"
+#include "taichi/rhi/llvm/allocator.h"
 #include "taichi/runtime/llvm/snode_tree_buffer_manager.h"
 
 namespace taichi::lang {
-namespace cuda {
 
-CudaCachingAllocator::CudaCachingAllocator(LlvmDevice *device)
-    : device_(device) {
+CachingAllocator::CachingAllocator(LlvmDevice *device) : device_(device) {
 }
 
-void CudaCachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
+void CachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
   // merge with right block
   if (ptr_map_[ptr + size]) {
     std::size_t tmp = ptr_map_[ptr + size];
@@ -31,7 +29,7 @@ void CudaCachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
   ptr_map_[ptr] = size;
 }
 
-uint64_t *CudaCachingAllocator::allocate(
+uint64_t *CachingAllocator::allocate(
     const LlvmDevice::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
   auto size_aligned = taichi::iroundup(params.size, taichi_page_size);
@@ -57,9 +55,8 @@ uint64_t *CudaCachingAllocator::allocate(
   return ret;
 }
 
-void CudaCachingAllocator::release(size_t sz, uint64_t *ptr) {
+void CachingAllocator::release(size_t sz, uint64_t *ptr) {
   merge_and_insert(reinterpret_cast<uint8_t *>(ptr), sz);
 }
 
-}  // namespace cuda
 }  // namespace taichi::lang

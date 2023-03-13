@@ -29,7 +29,9 @@ def test_print(dt):
 
 # TODO: As described by @k-ye above, what we want to ensure
 #       is that, the content shows on console is *correct*.
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_multi_print():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
@@ -39,7 +41,9 @@ def test_multi_print():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_string():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
@@ -51,7 +55,9 @@ def test_print_string():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_matrix():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -67,7 +73,9 @@ def test_print_matrix():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_matrix_fstring():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -83,7 +91,9 @@ def test_print_matrix_fstring():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
 def test_print_matrix_fstring_with_spec(capfd):
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -110,7 +120,9 @@ hello [[0, 0, 0], [0, 0, 0]] world!
     # assert out == 'qwe 2         5 123 4.6 4 True 1.23\n' and err == ''
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_matrix_fstring_with_spec_mismatch():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -142,7 +154,9 @@ def test_print_matrix_fstring_with_spec_mismatch():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_sep_end():
     @ti.kernel
     def func():
@@ -162,7 +176,9 @@ def test_print_sep_end():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_multiple_threads():
     x = ti.field(dtype=ti.f32, shape=(128, ))
 
@@ -178,7 +194,9 @@ def test_print_multiple_threads():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_list():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=(2, 3))
     y = ti.Vector.field(3, dtype=ti.f32, shape=())
@@ -199,7 +217,9 @@ def test_print_list():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_python_scope_print_field():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -210,7 +230,9 @@ def test_python_scope_print_field():
     print(z)
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_string_format():
     @ti.kernel
     def func(k: ti.f32):
@@ -226,7 +248,9 @@ def test_print_string_format():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_fstring():
     @ti.func
     def foo1(x):
@@ -240,7 +264,9 @@ def test_print_fstring():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_fstring_with_spec(capfd):
     @ti.func
     def foo1(x):
@@ -262,7 +288,9 @@ def test_print_fstring_with_spec(capfd):
     # assert out == 'qwe 2         5 123 4.6 4 True 1.23\n' and err == ''
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_fstring_with_spec_mismatch():
     @ti.func
     def foo1(x):
@@ -289,7 +317,9 @@ def test_print_fstring_with_spec_mismatch():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_u64():
     @ti.kernel
     def func(i: ti.u64):
@@ -299,7 +329,9 @@ def test_print_u64():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_i64():
     @ti.kernel
     def func(i: ti.i64):
@@ -309,7 +341,9 @@ def test_print_i64():
     ti.sync()
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac], debug=True)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_seq(capfd):
     @ti.kernel
     def foo():

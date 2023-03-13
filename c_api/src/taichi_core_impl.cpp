@@ -708,7 +708,6 @@ void ti_launch_kernel(TiRuntime runtime,
     ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "arg_count");
     return;
   }
-  auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
 
   auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
 

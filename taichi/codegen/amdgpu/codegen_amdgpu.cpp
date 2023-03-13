@@ -555,6 +555,14 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
                                           context.result_buffer_size);
       context.result_buffer = (uint64 *)device_result_buffer;
     }
+    char *device_arg_buffer = nullptr;
+    if (context.arg_buffer_size > 0) {
+      AMDGPUDriver::get_instance().malloc((void **)&device_arg_buffer,
+                                          context.arg_buffer_size);
+      AMDGPUDriver::get_instance().memcpy_host_to_device(
+          device_arg_buffer, context.arg_buffer, context.arg_buffer_size);
+      context.arg_buffer = device_arg_buffer;
+    }
     void *context_pointer;
     int arg_size = sizeof(RuntimeContext *);
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
@@ -571,6 +579,9 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
                             {(void *)&context_pointer}, {arg_size});
     }
     TI_TRACE("Launching kernel");
+    if (context.arg_buffer_size > 0) {
+      AMDGPUDriver::get_instance().mem_free(device_arg_buffer);
+    }
     if (context.result_buffer_size > 0) {
       AMDGPUDriver::get_instance().memcpy_device_to_host(
           host_result_buffer, device_result_buffer, context.result_buffer_size);

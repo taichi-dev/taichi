@@ -21,7 +21,6 @@ $whl = & Get-ChildItem -Filter '*.whl' -Path dist | Select-Object -First 1
 echo $whl
 Invoke python -m pip install $whl.FullName
 Invoke python -c "import taichi"
-Invoke ti cache clean
 Invoke ti diagnose
 # Invoke ti changelog
 echo wanted arch: $env:TI_WANTED_ARCHS

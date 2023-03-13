@@ -417,18 +417,12 @@ class TypeCheck : public IRVisitor {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
-    if (!stmt->ret_type) {
-      stmt->ret_type = PrimitiveType::unknown;
-    }
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
-    if (!stmt->ret_type) {
-      stmt->ret_type = PrimitiveType::unknown;
-    }
   }
 
   void visit(GetElementStmt *stmt) override {

@@ -2697,14 +2697,14 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   llvm::Function *llvm_func = func_map[stmt->func];
   auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
-  if (!stmt->args.empty()) {
+  if (!stmt->func->parameter_list.empty()) {
     auto *buffer =
         builder->CreateAlloca(tlctx->get_data_type(stmt->func->args_type));
     set_args_ptr(stmt->func, new_ctx, buffer);
     set_struct_to_buffer(stmt->func->args_type, buffer, stmt->args);
   }
   llvm::Value *result_buffer = nullptr;
-  if (stmt->ret_type != PrimitiveType::unknown) {
+  if (!stmt->func->rets.empty()) {
     auto *ret_type = tlctx->get_data_type(stmt->ret_type);
     result_buffer = builder->CreateAlloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(

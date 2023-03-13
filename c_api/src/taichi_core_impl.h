@@ -28,7 +28,6 @@
 #define TI_RUNTIME_HOST 1
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
-#include "taichi/program/launch_context_builder.h"
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/aot/module_loader.h"

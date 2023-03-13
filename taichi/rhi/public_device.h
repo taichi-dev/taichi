@@ -80,7 +80,7 @@ struct DevicePtr;
 // opque types such as images work as an allocation
 using DeviceAllocationId = uint64_t;
 
-struct TI_DLL_EXPORT DeviceAllocation {
+struct RHI_DLL_EXPORT DeviceAllocation {
   Device *device{nullptr};
   DeviceAllocationId alloc_id{0};
   // TODO: Shall we include size here?
@@ -96,7 +96,7 @@ struct TI_DLL_EXPORT DeviceAllocation {
   }
 };
 
-struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
+struct RHI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
   explicit DeviceAllocationGuard(DeviceAllocation alloc)
       : DeviceAllocation(alloc) {
   }
@@ -106,7 +106,7 @@ struct TI_DLL_EXPORT DeviceAllocationGuard : public DeviceAllocation {
 
 using DeviceAllocationUnique = std::unique_ptr<DeviceAllocationGuard>;
 
-struct TI_DLL_EXPORT DeviceImageGuard : public DeviceAllocation {
+struct RHI_DLL_EXPORT DeviceImageGuard : public DeviceAllocation {
   explicit DeviceImageGuard(DeviceAllocation alloc) : DeviceAllocation(alloc) {
   }
   DeviceImageGuard(const DeviceAllocationGuard &) = delete;
@@ -115,7 +115,7 @@ struct TI_DLL_EXPORT DeviceImageGuard : public DeviceAllocation {
 
 using DeviceImageUnique = std::unique_ptr<DeviceImageGuard>;
 
-struct TI_DLL_EXPORT DevicePtr : public DeviceAllocation {
+struct RHI_DLL_EXPORT DevicePtr : public DeviceAllocation {
   uint64_t offset{0};
 
   bool operator==(const DevicePtr &other) const {
@@ -135,7 +135,7 @@ constexpr DevicePtr kDeviceNullPtr{};
 struct ImageSamplerConfig {};
 
 // A set of shader resources (that is bound at once)
-class TI_DLL_EXPORT ShaderResourceSet {
+class RHI_DLL_EXPORT ShaderResourceSet {
  public:
   virtual ~ShaderResourceSet() = default;
 
@@ -184,7 +184,7 @@ class TI_DLL_EXPORT ShaderResourceSet {
   virtual ShaderResourceSet &image(uint32_t binding,
                                    DeviceAllocation alloc,
                                    ImageSamplerConfig sampler_config) {
-    TI_NOT_IMPLEMENTED;
+    RHI_NOT_IMPLEMENTED;
   }
 
   /**
@@ -195,12 +195,12 @@ class TI_DLL_EXPORT ShaderResourceSet {
   virtual ShaderResourceSet &rw_image(uint32_t binding,
                                       DeviceAllocation alloc,
                                       int lod) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 };
 
 // A set of states / resources for rasterization
-class TI_DLL_EXPORT RasterResources {
+class RHI_DLL_EXPORT RasterResources {
  public:
   virtual ~RasterResources() = default;
 
@@ -210,7 +210,7 @@ class TI_DLL_EXPORT RasterResources {
    * @params binding The binding index of the vertex buffer
    */
   virtual RasterResources &vertex_buffer(DevicePtr ptr, uint32_t binding = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 
   /**
@@ -221,7 +221,7 @@ class TI_DLL_EXPORT RasterResources {
    *                     index_width = 16 -> uint16 index
    */
   virtual RasterResources &index_buffer(DevicePtr ptr, size_t index_width) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 };
 
@@ -262,7 +262,7 @@ enum class BufferFormat : uint32_t {
 #undef PER_BUFFER_FORMAT
 };
 
-class TI_DLL_EXPORT Pipeline {
+class RHI_DLL_EXPORT Pipeline {
  public:
   virtual ~Pipeline() {
   }
@@ -307,7 +307,7 @@ struct ImageCopyParams {
   uint32_t depth{1};
 };
 
-class TI_DLL_EXPORT CommandList {
+class RHI_DLL_EXPORT CommandList {
  public:
   virtual ~CommandList() {
   }
@@ -473,65 +473,65 @@ class TI_DLL_EXPORT CommandList {
                                 std::vector<float> *clear_colors,
                                 DeviceAllocation *depth_attachment,
                                 bool depth_clear) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void end_renderpass() {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void draw(uint32_t num_verticies, uint32_t start_vertex = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void draw_instance(uint32_t num_verticies,
                              uint32_t num_instances,
                              uint32_t start_vertex = 0,
                              uint32_t start_instance = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void set_line_width(float width) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void draw_indexed(uint32_t num_indicies,
                             uint32_t start_vertex = 0,
                             uint32_t start_index = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void draw_indexed_instance(uint32_t num_indicies,
                                      uint32_t num_instances,
                                      uint32_t start_vertex = 0,
                                      uint32_t start_index = 0,
                                      uint32_t start_instance = 0) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void image_transition(DeviceAllocation img,
                                 ImageLayout old_layout,
                                 ImageLayout new_layout) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void buffer_to_image(DeviceAllocation dst_img,
                                DevicePtr src_buf,
                                ImageLayout img_layout,
                                const BufferImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void image_to_buffer(DevicePtr dst_buf,
                                DeviceAllocation src_img,
                                ImageLayout img_layout,
                                const BufferImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void copy_image(DeviceAllocation dst_img,
                           DeviceAllocation src_img,
                           ImageLayout dst_img_layout,
                           ImageLayout src_img_layout,
                           const ImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
   virtual void blit_image(DeviceAllocation dst_img,
                           DeviceAllocation src_img,
                           ImageLayout dst_img_layout,
                           ImageLayout src_img_layout,
                           const ImageCopyParams &params) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 };
 
@@ -554,7 +554,7 @@ enum class AllocUsage : int {
 
 MAKE_ENUM_FLAGS(AllocUsage)
 
-class TI_DLL_EXPORT StreamSemaphoreObject {
+class RHI_DLL_EXPORT StreamSemaphoreObject {
  public:
   virtual ~StreamSemaphoreObject() {
   }
@@ -562,7 +562,7 @@ class TI_DLL_EXPORT StreamSemaphoreObject {
 
 using StreamSemaphore = std::shared_ptr<StreamSemaphoreObject>;
 
-class TI_DLL_EXPORT Stream {
+class RHI_DLL_EXPORT Stream {
  public:
   virtual ~Stream() {
   }
@@ -594,7 +594,7 @@ class TI_DLL_EXPORT Stream {
   virtual void command_sync() = 0;
 };
 
-class TI_DLL_EXPORT PipelineCache {
+class RHI_DLL_EXPORT PipelineCache {
  public:
   virtual ~PipelineCache() = default;
 
@@ -616,7 +616,7 @@ class TI_DLL_EXPORT PipelineCache {
 
 using UPipelineCache = std::unique_ptr<PipelineCache>;
 
-class TI_DLL_EXPORT Device {
+class RHI_DLL_EXPORT Device {
   DeviceCapabilityConfig caps_{};
 
  public:
@@ -763,7 +763,7 @@ class TI_DLL_EXPORT Device {
       const std::vector<StreamSemaphore> &wait_sema = {}) noexcept;
 
   virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 
   // Each thraed will acquire its own stream
@@ -877,7 +877,7 @@ class TI_DLL_EXPORT Device {
   }
 };
 
-class TI_DLL_EXPORT Surface {
+class RHI_DLL_EXPORT Surface {
  public:
   virtual ~Surface() {
   }
@@ -892,7 +892,7 @@ class TI_DLL_EXPORT Surface {
   virtual void resize(uint32_t width, uint32_t height) = 0;
   virtual DeviceAllocation get_depth_data(DeviceAllocation &depth_alloc) = 0;
   virtual DeviceAllocation get_image_data() {
-    TI_NOT_IMPLEMENTED
+    RHI_NOT_IMPLEMENTED
   }
 };
 
@@ -969,7 +969,7 @@ struct RasterParams {
   std::vector<BlendingParams> blending{};
 };
 
-class TI_DLL_EXPORT GraphicsDevice : public Device {
+class RHI_DLL_EXPORT GraphicsDevice : public Device {
  public:
   virtual std::unique_ptr<Pipeline> create_raster_pipeline(
       const std::vector<PipelineSourceDesc> &src,

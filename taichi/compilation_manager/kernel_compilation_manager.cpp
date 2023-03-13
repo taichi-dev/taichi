@@ -2,8 +2,53 @@
 
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/codegen/compiled_kernel_data.h"
+#include "taichi/util/offline_cache.h"
 
 namespace taichi::lang {
+
+namespace offline_cache {
+
+template <>
+struct CacheCleanerUtils<CacheData> {
+  using MetadataType = CacheData;
+  using KernelMetaData = typename MetadataType::KernelMetadata;
+
+  // To save metadata as file
+  static bool save_metadata(const CacheCleanerConfig &config,
+                            const MetadataType &data) {
+    write_to_binary_file(
+        data, taichi::join_path(config.path, config.metadata_filename));
+    return true;
+  }
+
+  static bool save_debugging_metadata(const CacheCleanerConfig &config,
+                                      const MetadataType &data) {
+    return true;
+  }
+
+  // To get cache files name
+  static std::vector<std::string> get_cache_files(
+      const CacheCleanerConfig &config,
+      const KernelMetaData &kernel_meta) {
+    auto fn = fmt::format(KernelCompilationManager::kCacheFilenameFormat,
+                          kernel_meta.kernel_key);
+    return {fn};
+  }
+
+  // To remove other files except cache files and offline cache metadta files
+  static void remove_other_files(const CacheCleanerConfig &config) {
+    // Do nothing
+  }
+
+  // To check if a file is cache file
+  static bool is_valid_cache_file(const CacheCleanerConfig &config,
+                                  const std::string &name) {
+    std::string ext = filename_extension(name);
+    return ext == kTiCacheFilenameExt;
+  }
+};
+
+}  // namespace offline_cache
 
 KernelCompilationManager::KernelCompilationManager(Config config)
     : config_(std::move(config)) {
@@ -95,15 +140,23 @@ void KernelCompilationManager::clean_offline_cache(
     offline_cache::CleanCachePolicy policy,
     int max_bytes,
     double cleaning_factor) const {
-  // TODO(PGZXB): Impl
+  using CacheCleaner = offline_cache::CacheCleaner<CacheData>;
+  offline_cache::CacheCleanerConfig config;
+  config.path = config_.offline_cache_path;
+  config.policy = policy;
+  config.cleaning_factor = cleaning_factor;
+  config.max_size = max_bytes;
+  config.metadata_filename = kMetadataFilename;
+  config.debugging_metadata_filename = "";
+  config.metadata_lock_name = kMetadataLockName;
+  CacheCleaner::run(config);
 }
 
 std::string KernelCompilationManager::make_filename(
     const std::string &kernel_key,
     Arch arch) const {
-  return join_path(
-      config_.offline_cache_path,
-      fmt::format(kCacheFilenameFormat, kernel_key, arch_name(arch)));
+  return join_path(config_.offline_cache_path,
+                   fmt::format(kCacheFilenameFormat, kernel_key));
 }
 
 std::unique_ptr<CompiledKernelData> KernelCompilationManager::compile_kernel(

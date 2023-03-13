@@ -396,27 +396,38 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   TI_TRACE("Allocating data structure of size {} bytes", root_size);
   std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
 
-  Ptr root_buffer = snode_tree_buffer_manager_->allocate(
-      runtime_jit, llvm_runtime_, rounded_size, taichi_page_size, tree_id,
-      result_buffer);
+  DeviceAllocation alloc = snode_tree_buffer_manager_->allocate(
+      rounded_size, tree_id, result_buffer);
+  Ptr root_buffer = nullptr;
+
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
+    root_buffer =
+        (Ptr)llvm_device()
+            ->get_alloc_info<cuda::CudaDevice, cuda::CudaDevice::AllocInfo>(
+                alloc)
+            .ptr;
     CUDADriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
+    root_buffer = (Ptr)llvm_device()
+                      ->get_alloc_info<amdgpu::AmdgpuDevice,
+                                       amdgpu::AmdgpuDevice::AllocInfo>(alloc)
+                      .ptr;
     AMDGPUDriver::get_instance().memset(root_buffer, 0, rounded_size);
 #else
     TI_NOT_IMPLEMENTED;
 #endif
   } else {
+    root_buffer =
+        (Ptr)llvm_device()
+            ->get_alloc_info<cpu::CpuDevice, cpu::CpuDevice::AllocInfo>(alloc)
+            .ptr;
     std::memset(root_buffer, 0, rounded_size);
   }
-
-  DeviceAllocation alloc =
-      llvm_device()->import_memory(root_buffer, rounded_size);
 
   snode_tree_allocs_[tree_id] = alloc;
 

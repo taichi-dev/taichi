@@ -54,7 +54,12 @@ def decl_scalar_arg(dtype):
         is_ref = True
         dtype = dtype.tp
     dtype = cook_dtype(dtype)
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype)
+    if is_ref:
+        arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(
+            dtype)
+    else:
+        arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
+            dtype)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 

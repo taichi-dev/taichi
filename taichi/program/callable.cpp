@@ -46,9 +46,6 @@ int Callable::insert_rw_texture_param(int total_dim, BufferFormat format) {
 }
 
 void Callable::finalize_rets() {
-  if (rets.empty()) {
-    return;
-  }
   std::vector<StructMember> members;
   members.reserve(rets.size());
   for (int i = 0; i < rets.size(); i++) {
@@ -62,9 +59,6 @@ void Callable::finalize_rets() {
 }
 
 void Callable::finalize_params() {
-  if (parameter_list.empty()) {
-    return;
-  }
   std::vector<StructMember> members;
   members.reserve(parameter_list.size());
   for (int i = 0; i < parameter_list.size(); i++) {

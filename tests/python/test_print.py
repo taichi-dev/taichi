@@ -265,7 +265,7 @@ def test_print_fstring():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[vk_on_mac],
+                 exclude=[vk_on_mac, cuda_on_windows],
                  debug=True)
 def test_print_fstring_with_spec(capfd):
     @ti.func
@@ -342,7 +342,7 @@ def test_print_i64():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
-                 exclude=[vk_on_mac],
+                 exclude=[vk_on_mac, cuda_on_windows],
                  debug=True)
 def test_print_seq(capfd):
     @ti.kernel

@@ -1224,3 +1224,37 @@ def test_matrix_type_inference():
         assert a == 2.5
 
     foo()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
+def test_matrix_arithmatics():
+    f = ti.ndarray(ti.math.vec4, 4)
+
+    @ti.kernel
+    def fill(arr: ti.types.ndarray()):
+        v0 = ti.math.vec4([0.0, 1.0, 2.0, 3.0])
+        v1 = ti.math.vec4([1.0, 2.0, 3.0, 4.0])
+        v2 = ti.math.vec4([2.0, 3.0, 4.0, 5.0])
+        v3 = ti.math.vec4([4.0, 5.0, 6.0, 7.0])
+        arr[0] = v0
+        arr[1] = v1
+        arr[2] = v2
+        arr[3] = v3
+
+    @ti.kernel
+    def vec_test(arr: ti.types.ndarray()):
+        v0 = arr[0]
+        v1 = arr[1]
+        v2 = arr[2]
+        v3 = arr[3]
+
+        arr[0] = v0 * v1 + v2
+        arr[1] = v1 * v2 + v3
+        arr[2] = v0 * v2 + v3
+
+    fill(f)
+    vec_test(f)
+
+    assert (f.to_numpy() == np.array([[2., 5., 10., 17.], [6., 11., 18., 27.],
+                                      [4., 8., 14., 22.], [4., 5., 6.,
+                                                           7.]])).all()

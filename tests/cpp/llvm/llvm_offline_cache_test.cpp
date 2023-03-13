@@ -80,10 +80,16 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto tmp_dir_str{tmp_dir.u8string()};
   const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
-  const std::vector<LlvmLaunchArgInfo> arg_infos = {
-      LlvmLaunchArgInfo{/*is_array=*/false},
-      LlvmLaunchArgInfo{/*is_array=*/true},
+  const std::vector<Callable::Parameter> arg_infos = {
+      Callable::Parameter{DataType(PrimitiveType::i32), false},
+      Callable::Parameter{DataType(PrimitiveType::i32), false},
   };
+  auto member1 = StructMember{PrimitiveType::i32, "a"};
+  auto member2 = StructMember{PrimitiveType::i32, "b"};
+  auto struct_type =
+      TypeFactory::get_instance().get_struct_type({member1, member2});
+  auto arg_type = tlctx_->get_struct_type_with_data_layout(
+      struct_type->as<StructType>(), tlctx_->get_data_layout_string());
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
@@ -101,6 +107,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.compiled_data.tasks = tasks;
     kcache.compiled_data.module = make_module(*llvm_ctx);
     kcache.args = arg_infos;
+    kcache.args_type = arg_type.first;
+    kcache.args_size = arg_type.second;
     LlvmOfflineCacheFileWriter writer1;
     writer1.add_kernel_cache(kKernelName, kcache.clone());
     writer1.set_no_mangle();

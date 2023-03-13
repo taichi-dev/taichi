@@ -4,33 +4,32 @@ import os
 import taichi as ti
 
 
-def main(arch):
+def compile_kernel_return_aot(arch):
     ti.init(arch=arch)
 
-    if ti.lang.impl.current_cfg().arch != arch:
-        return
+    s = ti.types.struct(a=ti.i32, b=ti.math.vec3)
 
-    arr = ti.ndarray(int, shape=16)
+    @ti.kernel
+    def test_ret() -> s:
+        return s(1, ti.math.vec3([2, 3, 4]))
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
     m = ti.aot.Module()
 
-    tcm_path = dir_name + "/module.tcm"
+    m.add_kernel(test_ret, template_args={})
+
     m.save(dir_name)
-    m.archive(tcm_path)
-    print(tcm_path)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--arch", type=str)
     args = parser.parse_args()
-
-    if args.arch == "vulkan":
-        main(arch=ti.vulkan)
-    elif args.arch == "metal":
-        main(arch=ti.metal)
+    if args.arch == "cpu":
+        compile_kernel_return_aot(arch=ti.cpu)
+    elif args.arch == "cuda":
+        compile_kernel_return_aot(arch=ti.cuda)
     else:
         assert False

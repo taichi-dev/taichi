@@ -189,14 +189,8 @@ bool LlvmOfflineCacheFileReader::get_kernel_cache(
       return false;  // Must return
     }
   }
-  res.compiled_data = data.clone();
-
   kernel_data.last_used_at = std::time(nullptr);
-
-  res.created_at = kernel_data.created_at;
-  res.last_used_at = kernel_data.last_used_at;
-  res.kernel_key = key;
-  res.args = kernel_data.args;
+  res = kernel_data.clone();
 
   // Verify the `res: LlvmOfflineCache::KernelCacheData`
   const auto &compiled_data = res.compiled_data;
@@ -414,10 +408,15 @@ LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
   LlvmOfflineCache::KernelCacheData result;
   result.kernel_key = kernel_key;
   result.args = args;
+  result.rets = rets;
   result.compiled_data = compiled_data.clone();
   result.size = size;
   result.created_at = created_at;
   result.last_used_at = last_used_at;
+  result.ret_size = ret_size;
+  result.ret_type = ret_type;
+  result.args_size = args_size;
+  result.args_type = args_type;
   return result;
 }
 }  // namespace taichi::lang

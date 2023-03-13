@@ -158,9 +158,10 @@ TypedConstant Ndarray::read(const std::vector<int> &I) const {
   alloc_params.host_write = false;
   alloc_params.host_read = true;
   alloc_params.size = size;
-  alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  auto staging_buf_ =
+  alloc_params.usage = AllocUsage::Storage;
+  auto [staging_buf_, res] =
       this->ndarray_alloc_.device->allocate_memory_unique(alloc_params);
+  TI_ASSERT(res == RhiResult::success);
   staging_buf_->device->memcpy_internal(
       staging_buf_->get_ptr(),
       this->ndarray_alloc_.get_ptr(/*offset=*/index * size), size);
@@ -183,9 +184,10 @@ void Ndarray::write(const std::vector<int> &I, T val) const {
   alloc_params.host_write = true;
   alloc_params.host_read = false;
   alloc_params.size = size_;
-  alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  auto staging_buf_ =
+  alloc_params.usage = AllocUsage::Storage;
+  auto [staging_buf_, res] =
       this->ndarray_alloc_.device->allocate_memory_unique(alloc_params);
+  TI_ASSERT(res == RhiResult::success);
 
   T *device_arr_ptr{nullptr};
   TI_ASSERT(staging_buf_->device->map(

@@ -22,6 +22,9 @@ class MetalRuntime : public GfxRuntime {
   taichi::lang::gfx::GfxRuntime &get_gfx_runtime() override;
 
   taichi::lang::metal::MetalDevice &get_mtl();
+  virtual TiImage allocate_image(
+      const taichi::lang::ImageParams &params) override final;
+  virtual void free_image(TiImage image) override final;
 };
 
 }  // namespace capi

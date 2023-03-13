@@ -265,6 +265,9 @@ class TaskCodegen : public IRVisitor {
             ir_->get_primitive_type(dt), origin_val.stype.storage_class);
         ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
                                   offset_val);
+        if (stmt->origin->as<AllocaStmt>()->is_shared) {
+          ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+        }
       } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
         spirv::Value dt_bytes = ir_->int_immediate_number(
             ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
@@ -1458,7 +1461,12 @@ class TaskCodegen : public IRVisitor {
         addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        // Shared arrays have already created an accesschain, use it directly.
+        addr_ptr = ir_->query_value(stmt->dest->raw_name());
+      } else {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      }
     }
 
     auto ret_type = ir_->get_primitive_type(dt);

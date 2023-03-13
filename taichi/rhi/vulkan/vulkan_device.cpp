@@ -1682,7 +1682,8 @@ RhiResult VulkanDevice::create_pipeline(Pipeline **out_pipeline,
   return RhiResult::success;
 }
 
-DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
+RhiResult VulkanDevice::allocate_memory(const AllocParams &params,
+                                        DeviceAllocation *out_devalloc) {
   AllocationInternal &alloc = allocations_.acquire();
 
   RHI_ASSERT(params.size > 0);
@@ -1781,6 +1782,10 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
   alloc.buffer = vkapi::create_buffer(
       device_, export_sharing ? allocator_export_ : allocator_, &buffer_info,
       &alloc_info);
+  if (alloc.buffer == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
   vmaGetAllocationInfo(alloc.buffer->allocator, alloc.buffer->allocation,
                        &alloc.alloc_info);
 
@@ -1792,7 +1797,8 @@ DeviceAllocation VulkanDevice::allocate_memory(const AllocParams &params) {
     alloc.addr = vkGetBufferDeviceAddressKHR(device_, &info);
   }
 
-  return DeviceAllocation{this, (uint64_t)&alloc};
+  *out_devalloc = DeviceAllocation{this, (uint64_t)&alloc};
+  return RhiResult::success;
 }
 
 RhiResult VulkanDevice::map_internal(AllocationInternal &alloc_int,
@@ -2849,7 +2855,9 @@ DeviceAllocation VulkanSurface::get_depth_data(DeviceAllocation &depth_alloc) {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    depth_buffer_ = device_->allocate_memory_unique(params);
+    auto [buf, res] = device_->allocate_memory_unique(params);
+    RHI_ASSERT(res == RhiResult::success);
+    depth_buffer_ = std::move(buf);
   }
 
   BufferImageCopyParams copy_params;
@@ -2879,7 +2887,9 @@ DeviceAllocation VulkanSurface::get_image_data() {
     Device::AllocParams params{size_bytes, /*host_wrtie*/ false,
                                /*host_read*/ true, /*export_sharing*/ false,
                                AllocUsage::Uniform};
-    screenshot_buffer_ = device_->allocate_memory_unique(params);
+    auto [buf, res] = device_->allocate_memory_unique(params);
+    RHI_ASSERT(res == RhiResult::success);
+    screenshot_buffer_ = std::move(buf);
   }
 
   BufferImageCopyParams copy_params;

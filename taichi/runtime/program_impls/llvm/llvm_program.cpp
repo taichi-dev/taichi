@@ -106,14 +106,19 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
 
 void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
                                    const LLVMCompiledKernel &data,
-                                   std::vector<LlvmLaunchArgInfo> &&args) {
+                                   Kernel *kernel) {
   if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
     return;
   }
   auto &kernel_cache = cache_data_->kernels[kernel_key];
   kernel_cache.kernel_key = kernel_key;
   kernel_cache.compiled_data = data.clone();
-  kernel_cache.args = std::move(args);
+  kernel_cache.args = kernel->parameter_list;
+  kernel_cache.rets = kernel->rets;
+  kernel_cache.args_size = kernel->args_size;
+  kernel_cache.args_type = kernel->args_type;
+  kernel_cache.ret_size = kernel->ret_size;
+  kernel_cache.ret_type = kernel->ret_type;
   kernel_cache.created_at = std::time(nullptr);
   kernel_cache.last_used_at = std::time(nullptr);
 }

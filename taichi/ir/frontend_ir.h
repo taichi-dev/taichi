@@ -822,6 +822,7 @@ class FrontendFuncCallStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class GetElementExpression : public Expression {

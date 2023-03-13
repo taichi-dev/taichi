@@ -513,7 +513,7 @@ jobs:
           TI_RUN_RELEASE_TESTS: '1'
 
   aot_build_and_test_android_apps:
-    name: AOT Build and Test Android Headless Demos
+    name: AOT Build and Test Android Apps
     # Skip this job when testing the offline cache
     if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files
@@ -523,7 +523,7 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
@@ -604,7 +604,7 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
@@ -684,7 +684,7 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue

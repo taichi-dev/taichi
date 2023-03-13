@@ -43,7 +43,7 @@ class MetalDevice;
 struct MetalMemory {
  public:
   // `mtl_buffer` should be already retained.
-  explicit MetalMemory(MTLBuffer_id mtl_buffer);
+  explicit MetalMemory(MTLBuffer_id mtl_buffer, bool host_access);
   ~MetalMemory();
 
   void dont_destroy();
@@ -54,7 +54,8 @@ struct MetalMemory {
 
  private:
   MTLBuffer_id mtl_buffer_;
-  bool dont_destroy_;
+  bool can_map_{false};
+  bool dont_destroy_{false};
 };
 
 struct MetalImage {
@@ -69,7 +70,7 @@ struct MetalImage {
 
  private:
   MTLTexture_id mtl_texture_;
-  bool dont_destroy_;
+  bool dont_destroy_{false};
 };
 
 struct MetalSampler {
@@ -102,7 +103,8 @@ class MetalPipeline final : public Pipeline {
 
   static MetalPipeline *create(const MetalDevice &device,
                                const uint32_t *spv_data,
-                               size_t spv_size);
+                               size_t spv_size,
+                               const std::string &name);
   void destroy();
 
   inline MTLComputePipelineState_id mtl_compute_pipeline_state() const {
@@ -259,7 +261,8 @@ class MetalDevice final : public GraphicsDevice {
     TI_NOT_IMPLEMENTED;
   }
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   DeviceAllocation import_mtl_buffer(MTLBuffer_id buffer);
   void dealloc_memory(DeviceAllocation handle) override;
 

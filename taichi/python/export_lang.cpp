@@ -199,6 +199,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
+      .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -694,9 +695,6 @@ void export_lang(py::module &m) {
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
       .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
-      .def("get_struct_ret_int", &Kernel::get_struct_ret_int)
-      .def("get_struct_ret_uint", &Kernel::get_struct_ret_uint)
-      .def("get_struct_ret_float", &Kernel::get_struct_ret_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -704,26 +702,26 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__",
-           [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
-             py::gil_scoped_release release;
-             kernel->operator()(kernel->program->compile_config(), launch_ctx);
-           });
+      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
+        py::gil_scoped_release release;
+        kernel->operator()(kernel->program->compile_config(), launch_ctx);
+      });
 
-  py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
-      .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
-      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
-      .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
+  py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
+      .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
+      .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
-           &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+           &LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
-           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
-      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
-      .def("set_arg_rw_texture",
-           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int",
-           &Kernel::LaunchContextBuilder::set_extra_arg_int);
+           &LaunchContextBuilder::set_arg_ndarray_with_grad)
+      .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
+      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
+      .def("get_struct_ret_int", &LaunchContextBuilder::get_struct_ret_int)
+      .def("get_struct_ret_uint", &LaunchContextBuilder::get_struct_ret_uint)
+      .def("get_struct_ret_float", &LaunchContextBuilder::get_struct_ret_float);
 
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)
@@ -1196,6 +1194,7 @@ void export_lang(py::module &m) {
       .def("to_string", &SparseMatrix::to_string)
       .def("get_element", &SparseMatrix::get_element<float32>)
       .def("set_element", &SparseMatrix::set_element<float32>)
+      .def("mmwrite", &SparseMatrix::mmwrite)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols)
       .def("get_data_type", &SparseMatrix::get_data_type);

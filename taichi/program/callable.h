@@ -9,17 +9,20 @@ class Program;
 class IRNode;
 class FrontendContext;
 
-class TI_DLL_EXPORT Callable {
+class TI_DLL_EXPORT CallableBase {
  public:
-  Program *program{nullptr};
-  std::unique_ptr<IRNode> ir{nullptr};
-  std::unique_ptr<FrontendContext> context{nullptr};
-
   struct Parameter {
     bool is_array{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
     BufferFormat format{BufferFormat::unknown};
+
+    TI_IO_DEF(is_array, total_dim, format, dt_);
+
+    bool operator==(const Parameter &o) const {
+      return is_array == o.is_array && total_dim == o.total_dim &&
+             format == o.format && dt_ == o.dt_;
+    }
 
     /* [arguments with TensorType]
 
@@ -76,6 +79,8 @@ class TI_DLL_EXPORT Callable {
   struct Ret {
     DataType dt;
 
+    TI_IO_DEF(dt);
+
     explicit Ret(const DataType &dt = PrimitiveType::unknown) : dt(dt) {
     }
   };
@@ -88,6 +93,16 @@ class TI_DLL_EXPORT Callable {
 
   const StructType *args_type = nullptr;
   size_t args_size{0};
+
+  Arch arch;
+  std::string name;
+};
+
+class TI_DLL_EXPORT Callable : public CallableBase {
+ public:
+  Program *program{nullptr};
+  std::unique_ptr<IRNode> ir{nullptr};
+  std::unique_ptr<FrontendContext> context{nullptr};
 
   Callable();
   virtual ~Callable();

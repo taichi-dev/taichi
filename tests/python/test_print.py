@@ -39,8 +39,7 @@ def test_multi_print():
     ti.sync()
 
 
-# TODO: vulkan doesn't support %s but we should ignore it instead of crashing.
-@test_utils.test(exclude=[ti.vulkan, ti.dx11, ti.amdgpu])
+@test_utils.test(exclude=[ti.dx11, vk_on_mac, ti.amdgpu], debug=True)
 def test_print_string():
     @ti.kernel
     def func(x: ti.i32, y: ti.f32):
@@ -207,3 +206,19 @@ def test_print_seq(capfd):
     print("outside kernel")
     out = capfd.readouterr().out
     assert "inside kernel\noutside kernel" in out
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], print_ir=True, debug=True)
+def test_fp16_print_ir():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    @ti.kernel
+    def test():
+        x = half2(1.0)
+        y = half2(2.0)
+
+        for i in range(2):
+            x[i] = y[i]
+            print(x[i])
+
+    test()

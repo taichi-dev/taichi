@@ -96,7 +96,7 @@ class ModuleToFunctionConverter {
   virtual ~ModuleToFunctionConverter() = default;
 
   virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<LlvmLaunchArgInfo> &args,
+                               const std::vector<Callable::Parameter> &args,
                                LLVMCompiledKernel data) const = 0;
 
   virtual FunctionType convert(const Kernel *kernel,

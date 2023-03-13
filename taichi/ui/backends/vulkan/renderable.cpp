@@ -22,12 +22,20 @@ void Renderable::create_buffer_with_staging(Device &device,
                                             AllocUsage usage,
                                             DeviceAllocationUnique &buffer,
                                             DeviceAllocationUnique &staging) {
-  Device::AllocParams params{size, false, false, false, usage};
-  buffer = device.allocate_memory_unique(params);
+  {
+    Device::AllocParams params{size, false, false, false, usage};
+    auto [buf, res] = device.allocate_memory_unique(params);
+    TI_ASSERT(res == RhiResult::success);
+    buffer = std::move(buf);
+  }
 
-  Device::AllocParams staging_params{size, true, false, false,
-                                     AllocUsage::None};
-  staging = device.allocate_memory_unique(staging_params);
+  {
+    Device::AllocParams staging_params{size, true, false, false,
+                                       AllocUsage::None};
+    auto [buf, res] = device.allocate_memory_unique(staging_params);
+    TI_ASSERT(res == RhiResult::success);
+    staging = std::move(buf);
+  }
 }
 
 void Renderable::init_buffers() {
@@ -50,9 +58,11 @@ void Renderable::init_buffers() {
   }
   // Uniform buffer
   if (config_.ubo_size) {
-    uniform_buffer_ = app_context_->device().allocate_memory_unique(
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
         {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
+    TI_ASSERT(res == RhiResult::success);
+    uniform_buffer_ = std::move(buf);
   }
   // Storage buffer
   resize_storage_buffers(config_.ssbo_size);
@@ -232,9 +242,11 @@ void Renderable::resize_storage_buffers(int new_ssbo_size) {
   storage_buffer_.reset();
   config_.ssbo_size = new_ssbo_size;
   if (config_.ssbo_size) {
-    storage_buffer_ = app_context_->device().allocate_memory_unique(
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
         {config_.ssbo_size, /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Storage});
+    TI_ASSERT(res == RhiResult::success);
+    storage_buffer_ = std::move(buf);
   }
 }
 

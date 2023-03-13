@@ -190,7 +190,9 @@ while not gui.get_event(ti.GUI.ESCAPE):
     gui.show()
 ```
 
-`gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated. For example:
+`gui.is_pressed()` detects the pressed keys. As the following code snippet shows, you must use it together with `gui.get_event()`. Otherwise, it is not updated.
+
+For example:
 
 ```python
 while True:
@@ -206,17 +208,6 @@ while True:
 Call `gui.get_event()` before calling `gui.is_pressed()`. Otherwise, `gui.is_pressed()` does not take effect.
 
 :::
-
-For example:
-
-```python
-while True:
-    gui.get_event() # must be called before is_pressed
-    if gui.is_pressed('a', ti.GUI.LEFT):
-        print('Go left!')
-    elif gui.is_pressed('d', ti.GUI.RIGHT):
-        print('Go right!')
-```
 
 #### Retrieve cursor position
 

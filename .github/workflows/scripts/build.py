@@ -25,9 +25,9 @@ def setup_clang(as_compiler=True) -> None:
     if u.system == 'Linux':
         pass
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
-        out = get_cache_home() / 'clang-15'
-        url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
-        download_dep(url, out)
+        out = get_cache_home() / 'clang-15-v2'
+        url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-15.0.0-win-complete.zip'
+        download_dep(url, out, force=True)
         clang = str(out / 'bin' / 'clang++.exe').replace('\\', '\\\\')
         os.environ['TAICHI_CMAKE_ARGS'] += f' -DCLANG_EXECUTABLE={clang}'
 
@@ -161,7 +161,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     extra = []
 
     if proj == 'taichi-nightly':
-        proj_tags.extend(['egg_info', '--tag-date'])
+        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
         # Include C-API in nightly builds
         os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 

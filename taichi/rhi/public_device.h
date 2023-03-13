@@ -35,8 +35,6 @@
 
 #include "taichi/rhi/device_capability.h"
 #include "taichi/rhi/arch.h"
-#include "taichi/rhi/device_capability.h"
-#include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
 

@@ -708,9 +708,11 @@ void ti_launch_kernel(TiRuntime runtime,
     ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE, "arg_count");
     return;
   }
+  auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
 
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
+  taichi::lang::LaunchContextBuilder builder(ti_kernel, &runtime_context);
   std::vector<std::unique_ptr<taichi::lang::DeviceAllocation>> devallocs;
 
   for (uint32_t i = 0; i < arg_count; ++i) {

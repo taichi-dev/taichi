@@ -303,7 +303,8 @@ class IRPrinter : public IRVisitor {
       args += expr_to_string(stmt->args.exprs[i]);
     }
     print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
-          stmt->id, stmt->func->get_name(), args, stmt->ident->name());
+          stmt->id, stmt->func->get_name(), args,
+          stmt->ident.has_value() ? stmt->ident->name() : "void");
   }
 
   void visit(FuncCallStmt *stmt) override {

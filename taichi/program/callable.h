@@ -113,6 +113,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
                        int total_dim,
                        std::vector<int> element_shape);
   int insert_texture_param(int total_dim);
+  int insert_pointer_param(const DataType &dt);
   int insert_rw_texture_param(int total_dim, BufferFormat format);
 
   int insert_ret(const DataType &dt);

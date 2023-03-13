@@ -1,5 +1,6 @@
 #pragma once
 #include "taichi/program/program.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 

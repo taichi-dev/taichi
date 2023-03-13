@@ -9,7 +9,7 @@
 #include "taichi/program/graph_builder.h"
 #include "taichi/runtime/dx12/aot_module_loader_impl.h"
 #include "taichi/rhi/dx12/dx12_api.h"
-#include <filesystem>
+#include "taichi/common/filesystem.hpp"
 
 using namespace taichi;
 using namespace lang;

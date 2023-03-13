@@ -8,6 +8,15 @@ jobs:
     name: ghstack Land
     runs-on: ubuntu-latest
     steps:
+    - name: Show Environment Variables
+      run: env
+    - name: Show Github Object
+      run: |
+        cat <<'EOF'
+        ${{ toJson(github) }}
+        EOF
+    - name: Show Github Event Path Json
+      run: 'cat $GITHUB_EVENT_PATH || true'
     - uses: actions/checkout@v3
       with:
         token: ${{ secrets.GARDENER_PAT }}
@@ -15,8 +24,16 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: 3.9
-    - run: |
-        cd .github/workflows/scripts
+    - name: Check Current CI Status
+      run: |
+        pip install requests ghstack
+        .github/workflows/scripts/ghstack-perm-check.py <<'EOF'
+        ${{ toJson(github) }}
+        EOF
+      env:
+        GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}
+    - name: Land It!
+      run: |
         git config --global user.email "taichi-gardener@taichi.graphics"
         git config --global user.name "Taichi Gardener"
         cat <<EOF > ~/.ghstackrc
@@ -26,7 +43,6 @@ jobs:
         github_username = taichi-gardener
         remote_name = origin
         EOF
-        pip install ghstack
         ghstack land "${{ github.event.client_payload.pull_request.html_url }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

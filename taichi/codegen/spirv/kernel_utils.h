@@ -155,6 +155,9 @@ class KernelContextAttributes {
     bool is_array{false};
     std::vector<int> element_shape;
     std::size_t field_dim{0};
+    // Only used with textures. Sampled textures always have unknown format;
+    // while RW textures always have a valid format.
+    BufferFormat format{BufferFormat::unknown};
 
     TI_IO_DEF(stride,
               offset_in_mem,
@@ -162,7 +165,8 @@ class KernelContextAttributes {
               dtype,
               is_array,
               element_shape,
-              field_dim);
+              field_dim,
+              format);
   };
 
  public:

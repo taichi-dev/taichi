@@ -33,7 +33,9 @@ constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR = 106;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED = 115;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
+constexpr uint32 CU_MEMPOOL_ATTR_RELEASE_THRESHOLD = 4;
 constexpr uint32 CUDA_ERROR_ASSERT = 710;
 constexpr uint32 CU_JIT_MAX_REGISTERS = 0;
 constexpr uint32 CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
@@ -122,6 +124,10 @@ class CUDADriver : protected CUDADriverBase {
 
   void (*driver_get_version)(int *);
 
+  void malloc_async(void **ptr, size_t size, CUstream stream);
+
+  void mem_free_async(void *ptr, CUstream stream);
+
   bool detected();
 
   static CUDADriver &get_instance();
@@ -179,4 +185,24 @@ class CUSOLVERDriver : protected CUDADriverBase {
   bool cusolver_loaded_{false};
 };
 
+class CUBLASDriver : protected CUDADriverBase {
+ public:
+  static CUBLASDriver &get_instance();
+
+#define PER_CUBLAS_FUNCTION(name, symbol_name, ...) \
+  CUDADriverFunction<__VA_ARGS__> name;
+#include "taichi/rhi/cuda/cublas_functions.inc.h"
+#undef PER_CUBLAS_FUNCTION
+
+  bool load_cublas();
+
+  inline bool is_loaded() {
+    return cublas_loaded_;
+  }
+
+ private:
+  CUBLASDriver();
+  std::mutex lock_;
+  bool cublas_loaded_{false};
+};
 }  // namespace taichi::lang

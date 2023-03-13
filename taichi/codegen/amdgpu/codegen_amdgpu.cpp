@@ -500,7 +500,7 @@ FunctionType KernelCodeGenAMDGPU::compile_to_function() {
 
 FunctionType AMDGPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
+    const std::vector<Callable::Parameter> &args,
     LLVMCompiledKernel data) const {
   auto &mod = data.module;
   auto &tasks = data.tasks;
@@ -513,6 +513,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     AMDGPUContext::get_instance().make_current();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
+    char *device_result_buffer{nullptr};
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array) {
@@ -548,7 +549,12 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     if (transferred) {
       AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     }
-
+    char *host_result_buffer = (char *)context.result_buffer;
+    if (context.result_buffer_size > 0) {
+      AMDGPUDriver::get_instance().malloc((void **)&device_result_buffer,
+                                          context.result_buffer_size);
+      context.result_buffer = (uint64 *)device_result_buffer;
+    }
     void *context_pointer;
     int arg_size = sizeof(RuntimeContext *);
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
@@ -556,16 +562,20 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     AMDGPUDriver::get_instance().memcpy_host_to_device(
         context_pointer, &context, sizeof(RuntimeContext));
 
+    AMDGPUContext::get_instance().push_back_kernel_arg_pointer(context_pointer);
+
     for (auto &task : offloaded_tasks) {
       TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
                task.block_dim);
       amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
                             {(void *)&context_pointer}, {arg_size});
     }
-    AMDGPUDriver::get_instance().stream_synchronize(nullptr);
     TI_TRACE("Launching kernel");
-    AMDGPUDriver::get_instance().mem_free((void *)context_pointer);
-
+    if (context.result_buffer_size > 0) {
+      AMDGPUDriver::get_instance().memcpy_device_to_host(
+          host_result_buffer, device_result_buffer, context.result_buffer_size);
+      AMDGPUDriver::get_instance().mem_free(device_result_buffer);
+    }
     if (transferred) {
       for (int i = 0; i < args.size(); i++) {
         if (device_buffers[i] != arg_buffers[i]) {

@@ -8,6 +8,7 @@ namespace taichi::lang {
 Function::Function(Program *program, const FunctionKey &func_key)
     : func_key(func_key) {
   this->program = program;
+  arch = program->compile_config().arch;
 }
 
 void Function::set_function_body(const std::function<void()> &func) {
@@ -16,6 +17,8 @@ void Function::set_function_body(const std::function<void()> &func) {
   ir_type_ = IRType::AST;
 
   func();
+  finalize_params();
+  finalize_rets();
 
   if (program->compile_config().offline_cache) {  // For generating AST-Key
     std::ostringstream oss;

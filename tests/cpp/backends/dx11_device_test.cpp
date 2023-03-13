@@ -38,8 +38,8 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   params.size = 1048576;
   params.host_read = true;
   params.host_write = true;
-  const taichi::lang::DeviceAllocation device_alloc =
-      device->allocate_memory(params);
+  taichi::lang::DeviceAllocation device_alloc;
+  EXPECT_EQ(device->allocate_memory(params, &device_alloc), RhiResult::success);
 
   // The purpose of the device_alloc_guard is to rule out double free
   const taichi::lang::DeviceAllocationGuard device_alloc_guard(device_alloc);

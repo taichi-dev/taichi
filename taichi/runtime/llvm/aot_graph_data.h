@@ -11,6 +11,17 @@ class KernelImpl : public aot::Kernel {
   explicit KernelImpl(FunctionType fn,
                       LlvmOfflineCache::KernelCacheData &&kernel_data)
       : kernel_data_(std::move(kernel_data)), fn_(fn) {
+    rets = kernel_data_.rets;
+    ret_type = kernel_data_.ret_type;
+    ret_size = kernel_data_.ret_size;
+    parameter_list = kernel_data_.args;
+    args_type = kernel_data_.args_type;
+    args_size = kernel_data_.args_size;
+    arch = Arch::x64;  // Only for letting the launch context builder know
+                       // the arch uses LLVM.
+                       // TODO: remove arch after the refactoring of
+                       //  SPIR-V based backends completes.
+    name = kernel_data_.kernel_key;
   }
 
   void launch(RuntimeContext *ctx) override {

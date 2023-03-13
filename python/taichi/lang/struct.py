@@ -1,4 +1,5 @@
 import numbers
+import warnings
 from types import MethodType
 
 from taichi._lib import core as _ti_core
@@ -160,6 +161,9 @@ class Struct(TaichiOperations):
         return setter
 
     def _element_wise_unary(self, foo):
+        warnings.warn(
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            DeprecationWarning)
         entries = {}
         for k, v in self.items:
             if is_taichi_class(v):
@@ -169,6 +173,9 @@ class Struct(TaichiOperations):
         return Struct(entries)
 
     def _element_wise_binary(self, foo, other):
+        warnings.warn(
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            DeprecationWarning)
         other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
@@ -200,6 +207,10 @@ class Struct(TaichiOperations):
                 'cannot assign scalar expr to '
                 f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
             )
+        if foo.__name__ != 'assign':
+            warnings.warn(
+                "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+                DeprecationWarning)
         other = self._broadcast_copy(other)
         entries = {}
         for k, v in self.items:
@@ -210,6 +221,9 @@ class Struct(TaichiOperations):
         return self if foo.__name__ == 'assign' else Struct(entries)
 
     def _element_wise_ternary(self, foo, other, extra):
+        warnings.warn(
+            "Arithmetic operations on ti.Struct are deprecated, and they will be removed in Taichi v1.6.0.",
+            DeprecationWarning)
         other = self._broadcast_copy(other)
         extra = self._broadcast_copy(extra)
         entries = {}
@@ -228,6 +242,9 @@ class Struct(TaichiOperations):
         Args:
             val (Union[int, float]): Value to fill.
         """
+        warnings.warn(
+            "fill() on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0.",
+            DeprecationWarning)
         for k, v in self.items:
             if isinstance(v, impl.Expr) and v.ptr.is_tensor():
                 from taichi.lang import matrix_ops  # pylint: disable=C0415
@@ -720,25 +737,25 @@ class StructType(CompoundType):
 
         return Struct(d)
 
-    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
+    def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
         d = {}
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name] = dtype.from_kernel_struct_ret(t_kernel,
+                d[name] = dtype.from_kernel_struct_ret(launch_ctx,
                                                        ret_index + (index, ))
             else:
                 if id(dtype) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt)):
-                        d[name] = t_kernel.get_struct_ret_int(ret_index +
-                                                              (index, ))
+                    if is_signed(cook_dtype(dtype)):
+                        d[name] = launch_ctx.get_struct_ret_int(ret_index +
+                                                                (index, ))
                     else:
-                        d[name] = t_kernel.get_struct_ret_uint(ret_index +
-                                                               (index, ))
+                        d[name] = launch_ctx.get_struct_ret_uint(ret_index +
+                                                                 (index, ))
                 elif id(dtype) in primitive_types.real_type_ids:
-                    d[name] = t_kernel.get_struct_ret_float(ret_index +
-                                                            (index, ))
+                    d[name] = launch_ctx.get_struct_ret_float(ret_index +
+                                                              (index, ))
                 else:
                     raise TaichiRuntimeTypeError(
                         f"Invalid return type on index={ret_index + (index, )}"

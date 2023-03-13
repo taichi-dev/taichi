@@ -88,6 +88,22 @@ CUDADriver &CUDADriver::get_instance() {
   return get_instance_without_context();
 }
 
+void CUDADriver::malloc_async(void **dev_ptr, size_t size, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    malloc_async_impl(dev_ptr, size, stream);
+  } else {
+    malloc(dev_ptr, size);
+  }
+}
+
+void CUDADriver::mem_free_async(void *dev_ptr, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    mem_free_async_impl(dev_ptr, stream);
+  } else {
+    mem_free(dev_ptr);
+  }
+}
+
 CUSPARSEDriver::CUSPARSEDriver() {
 }
 
@@ -132,4 +148,32 @@ bool CUSOLVERDriver::load_cusolver() {
 #undef PER_CUSOLVER_FUNCTION
   return cusolver_loaded_;
 }
+
+CUBLASDriver::CUBLASDriver() {
+}
+
+CUBLASDriver &CUBLASDriver::get_instance() {
+  static CUBLASDriver *instance = new CUBLASDriver();
+  return *instance;
+}
+
+bool CUBLASDriver::load_cublas() {
+  /* To be compatible with torch environment, please libcublas.so.11 other than
+   * libcublas.so. When using libcublas.so, the system cublas will be loaded and
+   * it would confict with torch's cublas. When using libcublas.so.11, the
+   * torch's cublas will be loaded.
+   */
+  cublas_loaded_ = load_lib("libcublas.so.11", "cublas64_11.dll");
+  if (!cublas_loaded_) {
+    return false;
+  }
+#define PER_CUBLAS_FUNCTION(name, symbol_name, ...) \
+  name.set(loader_->load_function(#symbol_name));   \
+  name.set_lock(&lock_);                            \
+  name.set_names(#name, #symbol_name);
+#include "taichi/rhi/cuda/cublas_functions.inc.h"
+#undef PER_CUBLAS_FUNCTION
+  return cublas_loaded_;
+}
+
 }  // namespace taichi::lang

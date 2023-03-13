@@ -25,7 +25,11 @@ void Window::init(Program *prog, const AppConfig &config) {
   canvas_ = std::make_unique<Canvas>(renderer_.get());
   gui_ = std::make_unique<Gui>(&renderer_->app_context(),
                                &renderer_->swap_chain(), glfw_window_);
+  fps_limit_ = config.fps_limit;
 
+  if (config_.show_window) {
+    resize();
+  }
   prepare_for_next_frame();
 }
 
@@ -84,6 +88,24 @@ void Window::draw_frame() {
 }
 
 void Window::present_frame() {
+  const double target = 1000.0 / fps_limit_ - limiter_overshoot_;
+  const auto time_now = std::chrono::high_resolution_clock::now();
+  const double time_diff =
+      std::chrono::duration<double, std::milli>(time_now - last_frame_time_)
+          .count();
+  if (time_diff <= target) {
+    std::this_thread::sleep_until(
+        last_frame_time_ + std::chrono::duration<double, std::milli>(target));
+    const auto after_sleep = std::chrono::high_resolution_clock::now();
+    const double sleep_diff = std::chrono::duration<double, std::milli>(
+                                  after_sleep - last_frame_time_)
+                                  .count();
+    limiter_overshoot_ = sleep_diff - target;
+    last_frame_time_ = after_sleep;
+  } else {
+    last_frame_time_ = time_now;
+    limiter_overshoot_ *= 0.9;
+  }
   renderer_->swap_chain().surface().present_image(
       {renderer_->get_render_complete_semaphore()});
 }

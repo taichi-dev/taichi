@@ -16,5 +16,3 @@ pre-commit
 scikit-build
 numpy
 ninja; platform_system != 'Windows'
-cairocffi
-opencv-python

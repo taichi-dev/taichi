@@ -26,6 +26,7 @@
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
 #include "taichi/program/sparse_solver.h"
+#include "taichi/program/conjugate_gradient.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/ir/mesh.h"
 
@@ -152,6 +153,7 @@ void export_lang(py::module &m) {
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
       .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
+      .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
       .def_readwrite("simplify_after_lower_access",
@@ -197,6 +199,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
+      .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -428,12 +431,10 @@ void export_lang(py::module &m) {
       .def("delete_ndarray", &Program::delete_ndarray)
       .def(
           "create_texture",
-          [&](Program *program, const DataType &dt, int num_channels,
-              const std::vector<int> &shape) -> Texture * {
-            return program->create_texture(dt, num_channels, shape);
-          },
-          py::arg("dt"), py::arg("num_channels"),
-          py::arg("shape") = py::tuple(), py::return_value_policy::reference)
+          [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)
+              -> Texture * { return program->create_texture(fmt, shape); },
+          py::arg("fmt"), py::arg("shape") = py::tuple(),
+          py::return_value_policy::reference)
       .def("get_ndarray_data_ptr_as_int",
            [](Program *program, Ndarray *ndarray) {
              return program->get_ndarray_data_ptr_as_int(ndarray);
@@ -614,7 +615,9 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("run", [](aot::CompiledGraph *self, const py::dict &pyargs) {
+      .def("jit_run", [](aot::CompiledGraph *self,
+                         const CompileConfig &compile_config,
+                         const py::dict &pyargs) {
         std::unordered_map<std::string, aot::IValue> args;
         for (auto it : pyargs) {
           std::string arg_name = py::cast<std::string>(it.first);
@@ -670,7 +673,7 @@ void export_lang(py::module &m) {
             TI_NOT_IMPLEMENTED;
           }
         }
-        self->run(args);
+        self->jit_run(compile_config, args);
       });
 
   py::class_<Kernel>(m, "Kernel")
@@ -682,17 +685,16 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
+      .def("finalize_params", &Kernel::finalize_params)
       .def("get_ret_int", &Kernel::get_ret_int)
       .def("get_ret_uint", &Kernel::get_ret_uint)
       .def("get_ret_float", &Kernel::get_ret_float)
       .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
       .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
       .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
-      .def("get_struct_ret_int", &Kernel::get_struct_ret_int)
-      .def("get_struct_ret_uint", &Kernel::get_struct_ret_uint)
-      .def("get_struct_ret_float", &Kernel::get_struct_ret_float)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -700,36 +702,38 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__",
-           [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
-             py::gil_scoped_release release;
-             kernel->operator()(kernel->program->compile_config(), launch_ctx);
-           });
+      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
+        py::gil_scoped_release release;
+        kernel->operator()(kernel->program->compile_config(), launch_ctx);
+      });
 
-  py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
-      .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
-      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
-      .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
+  py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
+      .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
+      .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
-           &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+           &LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
-           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
-      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
-      .def("set_arg_rw_texture",
-           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int",
-           &Kernel::LaunchContextBuilder::set_extra_arg_int);
+           &LaunchContextBuilder::set_arg_ndarray_with_grad)
+      .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
+      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
+      .def("get_struct_ret_int", &LaunchContextBuilder::get_struct_ret_int)
+      .def("get_struct_ret_uint", &LaunchContextBuilder::get_struct_ret_uint)
+      .def("get_struct_ret_float", &LaunchContextBuilder::get_struct_ret_float);
 
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
       .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_rw_texture_param", &Function::insert_rw_texture_param)
       .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
            py::overload_cast<const std::function<void()> &>(
                &Function::set_function_body))
       .def("finalize_rets", &Function::finalize_rets)
+      .def("finalize_params", &Function::finalize_params)
       .def(
           "ast_builder",
           [](Function *self) -> ASTBuilder * {
@@ -748,6 +752,7 @@ void export_lang(py::module &m) {
              return expr->cast<FieldExpression>()->snode_grad_type ==
                     SNodeGradType::kPrimal;
            })
+      .def("is_lvalue", [](Expr *expr) { return expr->expr->is_lvalue(); })
       .def("set_tb", &Expr::set_tb)
       .def("set_name",
            [&](Expr *expr, std::string na) {
@@ -813,12 +818,9 @@ void export_lang(py::module &m) {
 
   py::class_<Stmt>(m, "Stmt");  // NOLINT(bugprone-unused-raii)
 
-  m.def("insert_internal_func_call",
-        [&](const std::string &func_name, const ExprGroup &args,
-            bool with_runtime_context) {
-          return Expr::make<InternalFuncCallExpression>(func_name, args.exprs,
-                                                        with_runtime_context);
-        });
+  m.def("insert_internal_func_call", [&](Operation *op, const ExprGroup &args) {
+    return Expr::make<InternalFuncCallExpression>(op, args.exprs);
+  });
 
   m.def("make_get_element_expr",
         Expr::make<GetElementExpression, const Expr &, std::vector<int>>);
@@ -946,7 +948,7 @@ void export_lang(py::module &m) {
 
   m.def("make_texture_ptr_expr", Expr::make<TexturePtrExpression, int, int>);
   m.def("make_rw_texture_ptr_expr",
-        Expr::make<TexturePtrExpression, int, int, int, const DataType &, int>);
+        Expr::make<TexturePtrExpression, int, int, const BufferFormat &, int>);
 
   auto &&texture =
       py::enum_<TextureOpType>(m, "TextureOpType", py::arithmetic());
@@ -1192,8 +1194,10 @@ void export_lang(py::module &m) {
       .def("to_string", &SparseMatrix::to_string)
       .def("get_element", &SparseMatrix::get_element<float32>)
       .def("set_element", &SparseMatrix::set_element<float32>)
+      .def("mmwrite", &SparseMatrix::mmwrite)
       .def("num_rows", &SparseMatrix::num_rows)
-      .def("num_cols", &SparseMatrix::num_cols);
+      .def("num_cols", &SparseMatrix::num_cols)
+      .def("get_data_type", &SparseMatrix::get_data_type);
 
 #define MAKE_SPARSE_MATRIX(TYPE, STORAGE, VTYPE)                             \
   using STORAGE##TYPE##EigenMatrix =                                         \
@@ -1233,7 +1237,7 @@ void export_lang(py::module &m) {
   py::class_<CuSparseMatrix, SparseMatrix>(m, "CuSparseMatrix")
       .def(py::init<int, int, DataType>())
       .def(py::init<const CuSparseMatrix &>())
-      .def("spmv", &CuSparseMatrix::spmv)
+      .def("spmv", &CuSparseMatrix::nd_spmv)
       .def(py::self + py::self)
       .def(py::self - py::self)
       .def(py::self * float32())
@@ -1285,6 +1289,37 @@ void export_lang(py::module &m) {
 
   m.def("make_sparse_solver", &make_sparse_solver);
   m.def("make_cusparse_solver", &make_cusparse_solver);
+
+  // Conjugate Gradient solver
+  py::class_<CG<Eigen::VectorXf, float>>(m, "CGf")
+      .def(py::init<SparseMatrix &, int, float, bool>())
+      .def("solve", &CG<Eigen::VectorXf, float>::solve)
+      .def("set_x", &CG<Eigen::VectorXf, float>::set_x)
+      .def("get_x", &CG<Eigen::VectorXf, float>::get_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXf, float>::set_x_ndarray)
+      .def("set_b", &CG<Eigen::VectorXf, float>::set_b)
+      .def("set_b_ndarray", &CG<Eigen::VectorXf, float>::set_b_ndarray)
+      .def("is_success", &CG<Eigen::VectorXf, float>::is_success);
+  py::class_<CG<Eigen::VectorXd, double>>(m, "CGd")
+      .def(py::init<SparseMatrix &, int, double, bool>())
+      .def("solve", &CG<Eigen::VectorXd, double>::solve)
+      .def("set_x", &CG<Eigen::VectorXd, double>::set_x)
+      .def("set_x_ndarray", &CG<Eigen::VectorXd, double>::set_x_ndarray)
+      .def("get_x", &CG<Eigen::VectorXd, double>::get_x)
+      .def("set_b_ndarray", &CG<Eigen::VectorXd, double>::set_b_ndarray)
+      .def("set_b", &CG<Eigen::VectorXd, double>::set_b)
+      .def("is_success", &CG<Eigen::VectorXd, double>::is_success);
+  m.def("make_float_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
+                                   bool verbose) {
+    return make_cg_solver<Eigen::VectorXf, float>(A, max_iters, tol, verbose);
+  });
+  m.def("make_double_cg_solver", [](SparseMatrix &A, int max_iters, float tol,
+                                    bool verbose) {
+    return make_cg_solver<Eigen::VectorXd, double>(A, max_iters, tol, verbose);
+  });
+
+  py::class_<CUCG>(m, "CUCG").def("solve", &CUCG::solve);
+  m.def("make_cucg_solver", make_cucg_solver);
 
   // Mesh Class
   // Mesh related.
@@ -1400,6 +1435,16 @@ void export_lang(py::module &m) {
       ::Sleep(100);
 #endif
   });
+
+  auto operationClass = py::class_<Operation>(m, "Operation");
+  auto internalOpClass = py::class_<InternalOp>(m, "InternalOp");
+
+#define PER_INTERNAL_OP(x)                                           \
+  internalOpClass.def_property_readonly_static(                      \
+      #x, [](py::object) { return Operations::get(InternalOp::x); }, \
+      py::return_value_policy::reference);
+#include "taichi/inc/internal_ops.inc.h"
+#undef PER_INTERNAL_OP
 }
 
 }  // namespace taichi

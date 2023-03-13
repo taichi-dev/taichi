@@ -1,6 +1,6 @@
 import numbers
 from types import FunctionType, MethodType
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
@@ -999,7 +999,7 @@ def axes(*x: Iterable[int]):
 Axis = _ti_core.Axis
 
 
-def static(x, *xs):
+def static(x, *xs) -> Any:
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is
@@ -1105,8 +1105,8 @@ def default_cfg():
 
 def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
-        _ti_core.insert_internal_func_call(name, make_expr_group(args),
-                                           with_runtime_context))
+        _ti_core.insert_internal_func_call(getattr(_ti_core.InternalOp, name),
+                                           make_expr_group(args)))
 
 
 def get_cuda_compute_capability():

@@ -61,8 +61,8 @@ Accessing elements of an ndarray from the Python scope can be convenient, but it
     c = copy.deepcopy(b)  # c is a new ndarray that has a copy of b's data.
 
     # Shallow copy
-    d = copy.copy(b) # d is a shallow copy of b; they share the underlying memory
-    c[0, 0][0] = 1.2 # This mutates b as well, so b[0, 0][0] is now 1.2
+    d = copy.copy(b)  # d is a shallow copy of b; they share the underlying memory
+    d[0, 0][0] = 1.2  # This mutates b as well, so b[0, 0][0] is now 1.2
     ```
 
 - Bidirectional data exchange with NumPy ndarrays

@@ -7,6 +7,7 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 
@@ -31,7 +32,7 @@ make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
 
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
@@ -177,7 +178,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            bool verbose,
                            bool determine_ad_stack_size,
                            bool lower_global_access,
@@ -303,6 +304,20 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
+  if (config.arch == Arch::cuda && config.half2_vectorization &&
+      !kernel->is_evaluator && !get_custom_cuda_library_path().empty()) {
+    irpass::vectorize_half2(ir);
+
+    irpass::type_check(ir, config);
+
+    irpass::full_simplify(
+        ir, config,
+        {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+
+    irpass::flag_access(ir);
+    print("Half2 vectorized");
+  }
+
   // Final field registration correctness & type checking
   irpass::type_check(ir, config);
   irpass::analysis::verify(ir);
@@ -310,7 +325,7 @@ void offload_to_executable(IRNode *ir,
 
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,

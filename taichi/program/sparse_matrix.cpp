@@ -1,6 +1,6 @@
 #include "taichi/program/sparse_matrix.h"
 
-#include <unordered_map>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -258,6 +258,21 @@ const std::string EigenSparseMatrix<EigenMatrix>::to_string() const {
   std::ostringstream ostr;
   ostr << Eigen::MatrixXf(matrix_.template cast<float>()).format(clean_fmt);
   return ostr.str();
+}
+
+template <class EigenMatrix>
+void EigenSparseMatrix<EigenMatrix>::mmwrite(const std::string &filename) {
+  std::ofstream file(filename);
+  file << "%%MatrixMarket matrix coordinate real general\n %" << std::endl;
+  file << matrix_.rows() << " " << matrix_.cols() << " " << matrix_.nonZeros()
+       << std::endl;
+  for (int k = 0; k < matrix_.outerSize(); ++k) {
+    for (typename EigenMatrix::InnerIterator it(matrix_, k); it; ++it) {
+      file << it.row() + 1 << " " << it.col() + 1 << " " << it.value()
+           << std::endl;
+    }
+  }
+  file.close();
 }
 
 template <class EigenMatrix>
@@ -733,11 +748,8 @@ std::unique_ptr<SparseMatrix> CuSparseMatrix::transpose() const {
 #endif
 }
 
-void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
+void CuSparseMatrix::spmv(size_t dX, size_t dY) {
 #if defined(TI_WITH_CUDA)
-  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
-  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
-
   cusparseDnVecDescr_t vecX, vecY;
   CUSPARSEDriver::get_instance().cpCreateDnVec(&vecX, cols_, (void *)dX,
                                                CUDA_R_32F);
@@ -763,6 +775,16 @@ void CuSparseMatrix::spmv(Program *prog, const Ndarray &x, const Ndarray &y) {
   CUSPARSEDriver::get_instance().cpDestroyDnVec(vecY);
   CUSPARSEDriver::get_instance().cpDestroy(cusparse_handle);
   CUDADriver::get_instance().mem_free(dBuffer);
+#endif
+}
+
+void CuSparseMatrix::nd_spmv(Program *prog,
+                             const Ndarray &x,
+                             const Ndarray &y) {
+#if defined(TI_WITH_CUDA)
+  size_t dX = prog->get_ndarray_data_ptr_as_int(&x);
+  size_t dY = prog->get_ndarray_data_ptr_as_int(&y);
+  spmv(dX, dY);
 #endif
 }
 
@@ -832,6 +854,44 @@ float CuSparseMatrix::get_element(int row, int col) const {
   delete[] hV;
 #endif  // TI_WITH_CUDA
   return res;
+}
+
+void CuSparseMatrix::mmwrite(const std::string &filename) {
+#ifdef TI_WITH_CUDA
+  size_t rows, cols, nnz;
+  float *dR;
+  int *dC, *dV;
+  cusparseIndexType_t row_type, column_type;
+  cusparseIndexBase_t idx_base;
+  cudaDataType value_type;
+  CUSPARSEDriver::get_instance().cpCsrGet(
+      matrix_, &rows, &cols, &nnz, (void **)&dR, (void **)&dC, (void **)&dV,
+      &row_type, &column_type, &idx_base, &value_type);
+
+  auto *hR = new int[rows + 1];
+  auto *hC = new int[nnz];
+  auto *hV = new float[nnz];
+
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hR, (void *)dR,
+                                                   (rows + 1) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hC, (void *)dC,
+                                                   (nnz) * sizeof(int));
+  CUDADriver::get_instance().memcpy_device_to_host((void *)hV, (void *)dV,
+                                                   (nnz) * sizeof(float));
+
+  std::ofstream file(filename);
+  file << "%%MatrixMarket matrix coordinate real general\n%" << std::endl;
+  file << rows << " " << cols << " " << nnz << std::endl;
+  for (int r = 0; r < rows; r++) {
+    for (int c = hR[r]; c < hR[r + 1]; c++) {
+      file << r + 1 << " " << hC[c] + 1 << " " << hV[c] << std::endl;
+    }
+  }
+  file.close();
+  delete[] hR;
+  delete[] hC;
+  delete[] hV;
+#endif
 }
 
 }  // namespace taichi::lang

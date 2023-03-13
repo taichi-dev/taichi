@@ -89,12 +89,14 @@ struct ArrayArg {
   std::size_t shape_offset_in_args_buf{0};
   // For Vulkan/OpenGL/Metal, this is the binding index
   int bind_index{0};
+  BufferFormat format{BufferFormat::unknown};
 
   TI_IO_DEF(dtype_name,
             field_dim,
             element_shape,
             shape_offset_in_args_buf,
-            bind_index);
+            bind_index,
+            format);
 };
 
 struct CompiledTaichiKernel {

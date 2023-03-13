@@ -160,6 +160,7 @@ class LlvmRuntimeExecutor {
   friend LlvmProgramImpl;
   friend SNodeTreeBufferManager;
 
+  bool finalized_{false};
   KernelProfilerBase *profiler_ = nullptr;
 };
 

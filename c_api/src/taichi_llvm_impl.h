@@ -18,7 +18,7 @@ namespace capi {
 class LlvmRuntime : public Runtime {
  public:
   LlvmRuntime(taichi::Arch arch);
-  virtual ~LlvmRuntime();
+  virtual ~LlvmRuntime() = default;
 
   void check_runtime_error();
   taichi::lang::Device &get() override;

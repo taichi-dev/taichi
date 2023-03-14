@@ -22,7 +22,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
-from taichi.lang.matrix import Matrix, MatrixType
+from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
@@ -662,12 +662,12 @@ class Kernel:
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
-                    if not isinstance(v, (float, int)):
+                    if not isinstance(v, (float, int, np.floating, np.integer)):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
-                    if not isinstance(v, int):
+                    if not isinstance(v, (int, np.integer)):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
                     if is_signed(cook_dtype(needed)):
@@ -803,7 +803,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, (int, float)):
+                                if not isinstance(val, (int, float, np.integer, np.floating)):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_float(
@@ -813,7 +813,7 @@ class Kernel:
                         for a in range(needed.n):
                             for b in range(needed.m):
                                 val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, int):
+                                if not isinstance(val, (int, np.integer)):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
                                 if is_signed(needed.dtype):
@@ -872,19 +872,18 @@ class Kernel:
                             ret = t_kernel.get_ret_uint(0)
                     elif id(ret_dt) in primitive_types.real_type_ids:
                         ret = t_kernel.get_ret_float(0)
-                    elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                        if is_signed(cook_dtype(ret_dt.dtype)):
-                            it = iter(t_kernel.get_ret_int_tensor(0))
-                        else:
-                            it = iter(t_kernel.get_ret_uint_tensor(0))
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                      for _ in range(ret_dt.n)],
-                                     ndim=getattr(ret_dt, 'ndim', 2))
                     else:
-                        it = iter(t_kernel.get_ret_float_tensor(0))
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                      for _ in range(ret_dt.n)],
-                                     ndim=getattr(ret_dt, 'ndim', 2))
+                        if id(ret_dt.dtype) in primitive_types.integer_type_ids:
+                            if is_signed(cook_dtype(ret_dt.dtype)):
+                                it = iter(t_kernel.get_ret_int_tensor(0))
+                            else:
+                                it = iter(t_kernel.get_ret_uint_tensor(0))
+                        else:
+                            it = iter(t_kernel.get_ret_float_tensor(0))
+                        if ret_dt.ndim == 1:
+                            ret = Vector([next(it) for _ in range(ret_dt.n)])
+                        else:
+                            ret = Matrix([[next(it) for _ in range(ret_dt.m)] for _ in range(ret_dt.n)])
             if callbacks:
                 for c in callbacks:
                     c()

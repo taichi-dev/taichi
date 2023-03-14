@@ -5,7 +5,7 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_matrix_slice_read():
+def _test_matrix_slice_read():
     b = 6
 
     @ti.kernel

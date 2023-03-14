@@ -97,7 +97,7 @@ def _clamp_unsigned_to_range(npty, val):
 
 
 def make_constant_expr(val, dtype):
-    if isinstance(val, bool):
+    if isinstance(val, (bool, np.bool_)):
         constant_dtype = primitive_types.i32
         return Expr(_ti_core.make_const_expr_int(constant_dtype, val))
 

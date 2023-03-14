@@ -86,7 +86,6 @@ class CompiledKernelData {
   virtual ~CompiledKernelData() = default;
 
   virtual Arch arch() const = 0;
-  virtual std::size_t size() const = 0;
 
   Err load(std::istream &is);
   Err dump(std::ostream &os) const;

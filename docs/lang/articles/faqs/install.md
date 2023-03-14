@@ -38,7 +38,7 @@ sidebar_position: 2
   - Make sure you're using Python version 3.7/3.8/3.9/3.10:
 
     ```bash
-    python3 -c "print(__import__('sys').version[:3])"
+    python3 -c "import sys;print(sys.version[:sys.version.find('.', 2)])"
     # 3.7, 3.8, 3.9, or 3.10
     ```
 

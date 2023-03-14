@@ -10,7 +10,8 @@ CudaDevice::AllocInfo CudaDevice::get_alloc_info(
   return allocations_[handle.alloc_id];
 }
 
-DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
+RhiResult CudaDevice::allocate_memory(const AllocParams &params,
+                                      DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
   if (params.host_read || params.host_write) {
@@ -20,17 +21,21 @@ DeviceAllocation CudaDevice::allocate_memory(const AllocParams &params) {
     CUDADriver::get_instance().malloc(&info.ptr, params.size);
   }
 
+  if (info.ptr == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
   info.size = params.size;
   info.is_imported = false;
   info.use_cached = false;
   info.use_preallocated = false;
 
-  DeviceAllocation alloc;
-  alloc.alloc_id = allocations_.size();
-  alloc.device = this;
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->alloc_id = allocations_.size();
+  out_devalloc->device = this;
 
   allocations_.push_back(info);
-  return alloc;
+  return RhiResult::success;
 }
 
 DeviceAllocation CudaDevice::allocate_memory_runtime(

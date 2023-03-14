@@ -30,7 +30,6 @@ class CompiledKernelData : public lang::CompiledKernelData {
   CompiledKernelData(Arch arch, InternalData data);
 
   Arch arch() const override;
-  std::size_t size() const override;
   std::unique_ptr<lang::CompiledKernelData> clone() const override;
 
   const InternalData &get_internal_data() const {

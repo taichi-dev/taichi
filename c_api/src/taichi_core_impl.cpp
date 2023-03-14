@@ -123,7 +123,11 @@ capi::MetalRuntime *Runtime::as_mtl() {
 
 TiMemory Runtime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
-  taichi::lang::DeviceAllocation devalloc = this->get().allocate_memory(params);
+  taichi::lang::DeviceAllocation devalloc;
+  taichi::lang::RhiResult res = this->get().allocate_memory(params, &devalloc);
+  if (res != taichi::lang::RhiResult::success) {
+    throw std::bad_alloc();
+  }
   return devalloc2devmem(*this, devalloc);
 }
 void Runtime::free_memory(TiMemory devmem) {

@@ -263,10 +263,14 @@ class Scalarize : public BasicStmtVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    auto &contents = stmt->contents;
+    auto const &contents = stmt->contents;
+    auto const &formats = stmt->formats;
     std::vector<std::variant<Stmt *, std::string>> new_contents;
+    // Sparse mapping between formatted expr and its specifier
+    std::map<Stmt *, std::string> new_formats;
     for (size_t i = 0; i < contents.size(); i++) {
-      auto content = contents[i];
+      auto const &content = contents[i];
+      auto const &format = formats[i];
       if (auto string_ptr = std::get_if<std::string>(&content)) {
         new_contents.push_back(*string_ptr);
       } else {
@@ -287,6 +291,9 @@ class Scalarize : public BasicStmtVisitor {
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
                 new_contents.push_back(matrix_init_stmt->values[index]);
+                if (format.has_value()) {
+                  new_formats[matrix_init_stmt->values[index]] = format.value();
+                }
                 if (j != n - 1)
                   new_contents.push_back(", ");
               }
@@ -298,6 +305,9 @@ class Scalarize : public BasicStmtVisitor {
           } else {
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back(matrix_init_stmt->values[i]);
+              if (format.has_value()) {
+                new_formats[matrix_init_stmt->values[i]] = format.value();
+              }
               if (i != m - 1)
                 new_contents.push_back(", ");
             }
@@ -305,12 +315,16 @@ class Scalarize : public BasicStmtVisitor {
           new_contents.push_back("]");
         } else {
           new_contents.push_back(print_stmt);
+          if (format.has_value()) {
+            new_formats[print_stmt] = format.value();
+          }
         }
       }
     }
 
     // Merge string contents
     std::vector<std::variant<Stmt *, std::string>> merged_contents;
+    std::vector<std::optional<std::string>> merged_formats;
     std::string merged_string = "";
     for (const auto &content : new_contents) {
       if (auto string_content = std::get_if<std::string>(&content)) {
@@ -318,16 +332,26 @@ class Scalarize : public BasicStmtVisitor {
       } else {
         if (!merged_string.empty()) {
           merged_contents.push_back(merged_string);
+          merged_formats.push_back(std::nullopt);
           merged_string = "";
         }
         merged_contents.push_back(content);
+        const auto format = new_formats.find(std::get<Stmt *>(content));
+        if (format != new_formats.end()) {
+          merged_formats.push_back(format->second);
+        } else {
+          merged_formats.push_back(std::nullopt);
+        }
       }
     }
-    if (!merged_string.empty())
+    if (!merged_string.empty()) {
       merged_contents.push_back(merged_string);
+      merged_formats.push_back(std::nullopt);
+    }
 
-    delayed_modifier_.insert_before(stmt,
-                                    Stmt::make<PrintStmt>(merged_contents));
+    assert(merged_contents.size() == merged_formats.size());
+    delayed_modifier_.insert_before(
+        stmt, Stmt::make<PrintStmt>(merged_contents, merged_formats));
     delayed_modifier_.erase(stmt);
   }
 

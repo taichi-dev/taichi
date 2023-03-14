@@ -62,11 +62,13 @@ class SampleApp : public App {
 
     // Create the vertex buffer
     {
-      vertex_buffer = device->allocate_memory_unique(Device::AllocParams{
+      auto [buf, res] = device->allocate_memory_unique(Device::AllocParams{
           /* size = */ 3 * sizeof(Vertex),
           /* host_write = */ true,
           /* host_read = */ false, /* export_sharing = */ false,
           /* usage = */ AllocUsage::Vertex});
+      TI_ASSERT(res == RhiResult::success);
+      vertex_buffer = std::move(buf);
       void *mapped{nullptr};
       TI_ASSERT(device->map(*vertex_buffer, &mapped) == RhiResult::success);
       memcpy(mapped, vertices.data(), sizeof(Vertex) * vertices.size());

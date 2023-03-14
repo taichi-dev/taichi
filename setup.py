@@ -85,7 +85,8 @@ class Clean(clean):
         if os.path.exists(self.build_temp):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
-                             'python/taichi/_lib/runtime', 'taichi.egg-info',
+                             'python/taichi/_lib/runtime',
+                             'python/taichi/_lib/c_api', 'taichi.egg-info',
                              'python/taichi.egg-info', 'build')
         for d in generated_folders:
             if os.path.exists(d):
@@ -179,6 +180,10 @@ def sign_development_for_apple_m1():
                 print(f"signing {path}..")
                 subprocess.check_call(
                     ['codesign', '--force', '--deep', '--sign', '-', path])
+            for path in glob.glob("python/taichi/_lib/c_api/lib/*.so"):
+                print(f"signing {path}..")
+                subprocess.check_call(
+                    ['codesign', '--force', '--deep', '--sign', '-', path])
         except:
             print("cannot sign python shared library for macos arm64 build")
 
@@ -197,7 +202,9 @@ setup(name=project_name,
           'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'
       ],
-      data_files=[(os.path.join('_lib', 'runtime'), data_files)],
+      data_files=[
+          (os.path.join('_lib', 'runtime'), data_files),
+      ],
       keywords=['graphics', 'simulation'],
       license=
       'Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)',

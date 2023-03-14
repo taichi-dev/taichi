@@ -858,10 +858,13 @@ class IfStmt : public Stmt {
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit PrintStmt(const std::vector<EntryType> &contents_)
-      : contents(contents_) {
+  PrintStmt(const std::vector<EntryType> &contents_,
+            const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
     TI_STMT_REG_FIELDS;
   }
 

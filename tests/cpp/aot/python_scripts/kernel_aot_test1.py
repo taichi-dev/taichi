@@ -36,6 +36,8 @@ if __name__ == "__main__":
         compile_kernel_aot_test1(arch=ti.cuda)
     elif args.arch == "vulkan":
         compile_kernel_aot_test1(arch=ti.vulkan)
+    elif args.arch == "metal":
+        compile_kernel_aot_test1(arch=ti.metal)
     elif args.arch == "opengl":
         compile_kernel_aot_test1(arch=ti.opengl)
     elif args.arch == "dx12":

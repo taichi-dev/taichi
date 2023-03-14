@@ -1,6 +1,7 @@
 #include "taichi/ir/ir.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/expression_printer.h"
 
 namespace taichi::lang {
 
@@ -74,7 +75,53 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendPrintStmt *stmt) override {
-    // Noop
+    TI_ASSERT(stmt->contents.size() == stmt->formats.size());
+    for (int i = 0; i < stmt->contents.size(); i++) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
+      if (std::holds_alternative<std::string>(content) || !format.has_value()) {
+        continue;
+      }
+
+      Expr const &expr = std::get<Expr>(content);
+      TI_ASSERT(expr.expr != nullptr);
+      DataType data_type = expr->ret_type;
+      if (data_type->is<TensorType>()) {
+        data_type = DataType(data_type->as<TensorType>()->get_element_type());
+      }
+      TI_ASSERT(!format->empty());
+      std::string const &format_spec = format.value();
+      auto const &conversion = format_spec.back();
+
+      // all possible conversions in printf
+      constexpr std::string_view conversions = "csdioxXufFeEaAgGnp";
+      if (conversions.find(conversion) == std::string::npos) {
+        // allow empty conversion
+        continue;
+      }
+
+      // convensions categorized by data type.
+      constexpr std::string_view unsupported_group = "csnp";
+      constexpr std::string_view signed_group = "di";
+      constexpr std::string_view unsigned_group = "oxXu";
+      constexpr std::string_view real_group = "fFeEaAgG";
+
+      if (unsupported_group.find(conversion) != std::string::npos) {
+        throw TaichiTypeError(fmt::format("{}conversion '{}' is not supported.",
+                                          stmt->tb, conversion));
+      }
+
+      if ((real_group.find(conversion) != std::string::npos &&
+           !is_real(data_type)) ||
+          (signed_group.find(conversion) != std::string::npos &&
+           !(is_integral(data_type) && is_signed(data_type))) ||
+          (unsigned_group.find(conversion) != std::string::npos &&
+           !(is_integral(data_type) && is_unsigned(data_type)))) {
+        throw TaichiTypeError(fmt::format("{} '{}' doesn't match '{}'.",
+                                          stmt->tb, format_spec,
+                                          data_type->to_string()));
+      }
+    }
   }
 
   void visit(FrontendForStmt *stmt) override {

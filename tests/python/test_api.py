@@ -76,13 +76,14 @@ user_api[ti] = [
     'j', 'jk', 'jkl', 'jl', 'k', 'kernel', 'kl', 'l', 'lang', 'length',
     'linalg', 'log', 'loop_config', 'math', 'max', 'mesh_local',
     'mesh_patch_idx', 'metal', 'min', 'ndarray', 'ndrange', 'no_activate',
-    'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'randn', 'random',
-    'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset', 'rgb_to_hex',
-    'root', 'round', 'rsqrt', 'select', 'set_logging_level', 'simt', 'sin',
-    'solve', 'sparse_matrix_builder', 'sqrt', 'static', 'static_assert',
-    'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync', 'tan', 'tanh',
-    'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8', 'ui', 'uint16',
-    'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64', 'x86_64', 'zero'
+    'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'pyfunc', 'randn',
+    'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
+    'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
+    'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
+    'static_assert', 'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync',
+    'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
+    'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'wasm', 'x64',
+    'x86_64', 'zero'
 ]
 user_api[ti.ad] = [
     'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
@@ -130,7 +131,7 @@ user_api[ti.ScalarField] = [
 user_api[ti.ScalarNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
-user_api[ti.Struct] = ['field', 'fill', 'items', 'keys', 'to_dict']
+user_api[ti.Struct] = ['field', 'items', 'keys', 'to_dict']
 user_api[ti.StructField] = [
     'copy_from', 'dtype', 'fill', 'from_numpy', 'from_paddle', 'from_torch',
     'get_member_field', 'keys', 'parent', 'shape', 'snode', 'to_numpy',

@@ -56,5 +56,7 @@ if __name__ == "__main__":
         shared_array_aot_test(arch=ti.cuda)
     elif args.arch == "vulkan":
         shared_array_aot_test(arch=ti.vulkan)
+    elif args.arch == "metal":
+        shared_array_aot_test(arch=ti.metal)
     else:
         assert False

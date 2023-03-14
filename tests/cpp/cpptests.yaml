@@ -96,6 +96,9 @@
   - test: CapiTest.Mpm88TestVulkan
     script: aot/python_scripts/mpm88_graph_aot.py
     args: --arch=vulkan
+  - test: CapiTest.Mpm88TestMetal
+    script: aot/python_scripts/mpm88_graph_aot.py
+    args: --arch=metal
   - test: CapiTest.Mpm88TestOpengl
     script: aot/python_scripts/mpm88_graph_aot.py
     args: --arch=opengl
@@ -105,6 +108,9 @@
   - test: CapiTest.SphTestVulkan
     script: aot/python_scripts/sph_aot.py
     args: --arch=vulkan
+  - test: CapiTest.SphTestMetal
+    script: aot/python_scripts/sph_aot.py
+    args: --arch=metal
   - test: CapiTest.SphTestOpengl
     script: aot/python_scripts/sph_aot.py
     args: --arch=opengl
@@ -137,6 +143,15 @@
   - test: CapiTest.GraphTestVulkanTextureKernel
     script: aot/python_scripts/texture_aot_test_.py
     args: --arch=vulkan
+  - test: CapiTest.GraphTestMetalGraph
+    script: aot/python_scripts/graph_aot_test_.py
+    args: --arch=metal
+  - test: CapiTest.GraphTestMetalTextureGraph
+    script: aot/python_scripts/texture_aot_test_.py
+    args: --arch=metal --graph
+  - test: CapiTest.GraphTestMetalTextureKernel
+    script: aot/python_scripts/texture_aot_test_.py
+    args: --arch=metal
   - test: CapiTest.GraphTestOpenglGraph
     script: aot/python_scripts/graph_aot_test_.py
     args: --arch=opengl
@@ -155,21 +170,36 @@
   - test: CapiTest.AotTestVulkanSharedArray
     script: aot/python_scripts/shared_array_aot_test_.py
     args: --arch=vulkan
+  - test: CapiTest.AotTestMetalKernel
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=metal
+  - test: CapiTest.AotTestMetalSharedArray
+    script: aot/python_scripts/shared_array_aot_test_.py
+    args: --arch=metal
   - test: CapiTest.AotTestOpenglKernel
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=opengl
   - test: CapiTest.DryRunVulkanAotModule
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=vulkan
+  - test: CapiTest.DryRunMetalAotModule
+    script: aot/python_scripts/kernel_aot_test1.py
+    args: --arch=metal
   - test: CapiTest.DryRunOpenglAotModule
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=opengl
-  - test: CapiTest.TestLoadTcmAotModule
+  - test: CapiTest.TestLoadTcmAotModuleVulkan
     script: aot/python_scripts/tcm_test_.py
     args: --arch=vulkan
-  - test: CapiTest.TestCreateTcmAotModule
+  - test: CapiTest.TestCreateTcmAotModuleVulkan
     script: aot/python_scripts/tcm_test_.py
     args: --arch=vulkan
+  - test: CapiTest.TestLoadTcmAotModuleMetal
+    script: aot/python_scripts/tcm_test_.py
+    args: --arch=metal
+  - test: CapiTest.TestCreateTcmAotModuleMetal
+    script: aot/python_scripts/tcm_test_.py
+    args: --arch=metal
   - test: CapiTest.TestBehaviorLoadAOTModuleVulkan
     script: aot/python_scripts/aot_module_test_.py
     args: --arch=vulkan

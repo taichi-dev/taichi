@@ -1149,4 +1149,4 @@ def data_oriented(cls):
     return cls
 
 
-__all__ = ["data_oriented", "func", "kernel"]
+__all__ = ["data_oriented", "func", "kernel", "pyfunc"]

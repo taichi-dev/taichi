@@ -87,9 +87,13 @@ std::unique_ptr<AotModuleBuilder> Dx11ProgramImpl::make_aot_module_builder(
 DeviceAllocation Dx11ProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return get_compute_device()->allocate_memory(
+  DeviceAllocation alloc;
+  RhiResult res = get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false});
+       /*export_sharing=*/false},
+      &alloc);
+  TI_ASSERT(res == RhiResult::success);
+  return alloc;
 }
 
 std::unique_ptr<KernelCompiler> Dx11ProgramImpl::make_kernel_compiler() {

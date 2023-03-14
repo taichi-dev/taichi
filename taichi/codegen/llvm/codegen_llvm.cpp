@@ -955,7 +955,10 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
                                  tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
-  for (auto const &content : stmt->contents) {
+  for (auto i = 0; i < stmt->contents.size(); ++i) {
+    auto const &content = stmt->contents[i];
+    auto const &format = stmt->formats[i];
+
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
@@ -977,7 +980,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         formats += data_type_format(arg_stmt->ret_type);
       } else {
         args.push_back(value_for_printf(value, arg_stmt->ret_type));
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type), current_arch());
       }
     } else {
       auto arg_str = std::get<std::string>(content);
@@ -1903,14 +1907,15 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     auto address_offset = builder->CreateSExt(
         linear_index, llvm::Type::getInt64Ty(*llvm_context));
 
-    if (stmt->ret_type->is<TensorType>()) {
+    auto stmt_ret_type = stmt->ret_type.ptr_removed();
+    if (stmt_ret_type->is<TensorType>()) {
       // This case corresponds to outter indexing only
       // The stride for linear_index is num_elements() in TensorType.
       address_offset = builder->CreateMul(
           address_offset,
           tlctx->get_constant(
               get_data_type<int64>(),
-              stmt->ret_type->cast<TensorType>()->get_num_elements()));
+              stmt_ret_type->cast<TensorType>()->get_num_elements()));
     } else {
       // This case corresponds to outter + inner indexing
       // Since both outter and inner indices are linearized into linear_index,

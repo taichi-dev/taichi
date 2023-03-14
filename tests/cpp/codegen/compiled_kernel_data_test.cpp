@@ -24,10 +24,6 @@ class FakeCompiledKernelData : public CompiledKernelData {
     return kFakeArch;
   }
 
-  std::size_t size() const override {
-    return compiled_data_.so_bin.size();
-  }
-
   std::unique_ptr<CompiledKernelData> clone() const override {
     return std::make_unique<FakeCompiledKernelData>(*this);
   }

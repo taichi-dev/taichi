@@ -135,10 +135,10 @@ print(x)  # Prints [5, 7, 9]
 
 ### Return value
 
-In Taichi, a kernel can have at most one return value, which can be a scalar, `ti.Matrix`, or `ti.Vector`.
-The return value can also be a `ti.Struct` in the LLVM-based backends (CPU and CUDA backends).
+In Taichi, a kernel is allowed to have a maximum of one return value, which could either be a scalar, `ti.Matrix`, or `ti.Vector`.
+Moreover, in the LLVM-based backends (CPU and CUDA backends), a return value could also be a `ti.Struct`.
 
-Here is an example of a kernel that returns a struct:
+Here is an example of a kernel that returns a ti.Struct:
 
 ```python
 s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
@@ -151,7 +151,7 @@ def foo() -> s1:
 print(foo())  # {'a': 1.0, 'b': {'a': [100.0, 0.2, 3.0], 'b': 1}}
 ```
 
-Here are the rules to follow when defining the return value of a kernel:
+When defining the return value of a kernel in Taichi, it is important to follow these rules:
 
 - Use type hint to specify the return value of a kernel.
 - Make sure that you have at most one return value in a kernel.

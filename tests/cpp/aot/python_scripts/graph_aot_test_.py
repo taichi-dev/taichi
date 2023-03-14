@@ -66,6 +66,8 @@ if __name__ == "__main__":
         compile_graph_aot(arch=ti.cuda)
     elif args.arch == "vulkan":
         compile_graph_aot(arch=ti.vulkan)
+    elif args.arch == "metal":
+        compile_graph_aot(arch=ti.metal)
     elif args.arch == "opengl":
         compile_graph_aot(arch=ti.opengl)
     else:

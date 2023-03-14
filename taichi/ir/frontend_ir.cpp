@@ -1349,8 +1349,9 @@ void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
 }
 
 void ASTBuilder::create_print(
-    std::vector<std::variant<Expr, std::string>> contents) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents));
+    std::vector<std::variant<Expr, std::string>> contents,
+    std::vector<std::optional<std::string>> formats) {
+  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {

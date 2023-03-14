@@ -21,6 +21,8 @@ class LaunchContextBuilder {
   void set_arg_int(int arg_id, int64 d);
   void set_arg_uint(int arg_id, uint64 d);
 
+  void set_arg(int arg_id, TypedConstant d);
+
   template <typename T>
   void set_arg_u8(int arg_id, T d) {
     auto dt = kernel_->parameter_list[arg_id].get_dtype();
@@ -44,9 +46,6 @@ class LaunchContextBuilder {
   void set_arg_texture(int arg_id, const Texture &tex);
   void set_arg_rw_texture(int arg_id, const Texture &tex);
 
-  // Sets the |arg_id|-th arg in the context to the bits stored in |d|.
-  // This ignores the underlying kernel's |arg_id|-th arg type.
-  void set_arg_raw(int arg_id, uint64 d);
   TypedConstant fetch_ret(const std::vector<int> &index);
   float64 get_struct_ret_float(const std::vector<int> &index);
   int64 get_struct_ret_int(const std::vector<int> &index);

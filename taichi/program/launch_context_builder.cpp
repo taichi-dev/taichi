@@ -128,6 +128,18 @@ void LaunchContextBuilder::set_arg_uint(int arg_id, uint64 d) {
   set_arg_int(arg_id, d);
 }
 
+void LaunchContextBuilder::set_arg(int arg_id, TypedConstant d) {
+  if (is_real(d.dt)) {
+    set_arg_float(arg_id, d.val_float());
+  } else {
+    if (is_signed(d.dt)) {
+      set_arg_int(arg_id, d.val_int());
+    } else {
+      set_arg_uint(arg_id, d.val_uint());
+    }
+  }
+}
+
 void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
@@ -194,14 +206,6 @@ void LaunchContextBuilder::set_arg_texture(int arg_id, const Texture &tex) {
 void LaunchContextBuilder::set_arg_rw_texture(int arg_id, const Texture &tex) {
   intptr_t ptr = tex.get_device_allocation_ptr_as_int();
   ctx_->set_arg_rw_texture(arg_id, ptr, tex.get_size());
-}
-
-void LaunchContextBuilder::set_arg_raw(int arg_id, uint64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
-
-  ctx_->set_arg<uint64>(arg_id, d);
 }
 
 RuntimeContext &LaunchContextBuilder::get_context() {

@@ -618,6 +618,7 @@ def test_ndarray_grouped():
     _test_ndarray_grouped()
 
 
+
 @test_utils.test(arch=[ti.cpu, ti.cuda], real_matrix_scalarize=False)
 def test_ndarray_grouped_real_matrix():
     _test_ndarray_grouped()

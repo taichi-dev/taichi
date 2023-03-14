@@ -902,11 +902,11 @@ class Kernel:
             ]
         if isinstance(ret_type, CompoundType):
             return ret_type.from_kernel_struct_ret(launch_ctx, index)
-        if id(ret_type) in primitive_types.integer_type_ids:
+        if ret_type in primitive_types.integer_types:
             if is_signed(cook_dtype(ret_type)):
                 return launch_ctx.get_struct_ret_int(index)
             return launch_ctx.get_struct_ret_uint(index)
-        if id(ret_type) in primitive_types.real_type_ids:
+        if ret_type in primitive_types.real_types:
             return launch_ctx.get_struct_ret_float(index)
         raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 

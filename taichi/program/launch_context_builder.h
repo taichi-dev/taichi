@@ -21,6 +21,14 @@ class LaunchContextBuilder {
   void set_arg_int(int arg_id, int64 d);
   void set_arg_uint(int arg_id, uint64 d);
 
+  template <typename T>
+  void set_arg_u8(int arg_id, T d) {
+    auto dt = kernel_->parameter_list[arg_id].get_dtype();
+    TI_ASSERT(dt->is_primitive(PrimitiveTypeID::u8));
+  }
+  template <typename T>
+  void set_struct_arg(std::vector<int> index, T v);
+
   void set_extra_arg_int(int i, int j, int32 d);
 
   void set_arg_external_array_with_shape(int arg_id,

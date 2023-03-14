@@ -132,6 +132,23 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
   ctx_->extra_args[i][j] = d;
 }
 
+template <typename T>
+void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
+  if (ctx_->arg_buffer_size == 0) {
+    // Currently arg_buffer_size is always zero on non-LLVM-based backends,
+    // and this function is no-op for these backends.
+    return;
+  }
+  int offset = ctx_->args_type->get_element_offset(index);
+  *(T *)(ctx_->arg_buffer + offset) = v;
+}
+
+#define PER_C_TYPE(x, ctype)                                 \
+  template void LaunchContextBuilder::set_struct_arg<ctype>( \
+      std::vector<int> index, ctype v);
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+
 void LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,

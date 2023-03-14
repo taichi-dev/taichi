@@ -394,7 +394,8 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   const int root_id = field_cache_data.root_id;
 
   TI_TRACE("Allocating data structure of size {} bytes", root_size);
-  std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
+  size_t allocate_size = root_size + taichi_min_bytes_to_allocate;
+  std::size_t rounded_size = taichi::iroundup(allocate_size, taichi_page_size);
 
   DeviceAllocation alloc = snode_tree_buffer_manager_->allocate(
       rounded_size, tree_id, result_buffer);

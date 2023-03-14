@@ -12,8 +12,11 @@ SNodeTreeBufferManager::SNodeTreeBufferManager(
 DeviceAllocation SNodeTreeBufferManager::allocate(std::size_t size,
                                                   const int snode_tree_id,
                                                   uint64 *result_buffer) {
+  std::cout << 1111 << std::endl;
+  std::cout << size << std::endl;
   DeviceAllocation devalloc =
       runtime_exec_->allocate_memory_ndarray(size, result_buffer);
+  std::cout << 2222 << std::endl;
   roots_[snode_tree_id] = devalloc;
   sizes_[snode_tree_id] = size;
 

@@ -12,6 +12,8 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
 
 RhiResult CpuDevice::allocate_memory(const AllocParams &params,
                                      DeviceAllocation *out_devalloc) {
+  TI_ASSERT(params.size > 0);
+
   AllocInfo info;
 
   auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);

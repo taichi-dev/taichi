@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+constexpr int taichi_min_bytes_to_allocate = 1;
 constexpr int taichi_max_num_indices = 12;
 // legacy: only used in cc and opengl backends
 constexpr int taichi_max_num_args = 8;

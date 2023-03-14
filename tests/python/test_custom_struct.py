@@ -57,8 +57,8 @@ def test_struct_whole_access():
     @ti.kernel
     def run_taichi_scope():
         for i in x:
-            # element-wise ops only work in Taichi scope
-            y[i] = x[i] * 2 + 1
+            y[i].a = x[i].a * 2 + 1
+            y[i].b = x[i].b * 2 + 1
 
     def run_python_scope():
         for i in range(n):
@@ -99,7 +99,8 @@ def test_struct_fill():
     @ti.kernel
     def fill_elements():
         for i in x:
-            x[i].fill(i + 0.5)
+            x[i].a = i + 0.5
+            x[i].b.fill(i + 0.5)
 
     fill_each()
     for i in range(n):

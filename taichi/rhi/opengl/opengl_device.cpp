@@ -532,7 +532,8 @@ GLDevice::GLDevice() : stream_(this) {
 GLDevice::~GLDevice() {
 }
 
-DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
+RhiResult GLDevice::allocate_memory(const AllocParams &params,
+                                    DeviceAllocation *out_devalloc) {
   GLenum target_hint = GL_SHADER_STORAGE_BUFFER;
   if (params.usage && AllocUsage::Storage) {
     target_hint = GL_SHADER_STORAGE_BUFFER;
@@ -550,13 +551,13 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
   GLuint alloc_res = glGetError();
 
   if (alloc_res == GL_OUT_OF_MEMORY) {
-    throw std::bad_alloc();
+    return RhiResult::out_of_memory;
   }
   check_opengl_error("glBufferData");
 
-  DeviceAllocation alloc;
-  alloc.device = this;
-  alloc.alloc_id = buffer;
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->device = this;
+  out_devalloc->alloc_id = buffer;
 
   if (params.host_read && params.host_write) {
     buffer_to_access_[buffer] = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
@@ -566,7 +567,7 @@ DeviceAllocation GLDevice::allocate_memory(const AllocParams &params) {
     buffer_to_access_[buffer] = GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT;
   }
 
-  return alloc;
+  return RhiResult::success;
 }
 
 void GLDevice::dealloc_memory(DeviceAllocation handle) {

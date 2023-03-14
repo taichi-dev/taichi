@@ -2829,6 +2829,7 @@ void TaskCodeGenLLVM::set_args_ptr(Callable *callable,
       llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
   builder->CreateStore(ptr, args_ptr);
 };
+
 LLVMCompiledTask LLVMCompiledTask::clone() const {
   return {tasks, llvm::CloneModule(*module), used_tree_ids,
           struct_for_tls_sizes};

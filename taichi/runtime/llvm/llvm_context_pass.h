@@ -249,8 +249,9 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
       std::vector<llvm::Type *> new_func_params;
       for (auto &arg : f->args()) {
         if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
-          auto new_type = llvm::PointerType::get(
-              arg.getType()->getPointerElementType(), unsigned(1));
+          auto &context = M.getContext();
+          auto new_type = llvm::PointerType::get(context, unsigned(1));
+
           new_func_params.push_back(new_type);
         } else {
           new_func_params.push_back(arg.getType());

@@ -173,7 +173,8 @@ class Dx11Device : public GraphicsDevice {
     return Arch::dx11;
   }
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   RhiResult upload_data(DevicePtr *device_ptr,

@@ -106,4 +106,7 @@ if (NOT ANDROID)
   )
 endif ()
 
+if(LINUX)
+    target_link_options(${TESTS_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+endif()
 add_test(NAME ${TESTS_NAME} COMMAND ${TESTS_NAME})

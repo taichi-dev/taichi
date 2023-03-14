@@ -722,10 +722,11 @@ void Dx11Device::BufferTuple::copy_back(ID3D11Buffer *buffer,
   context->CopyResource(get_default_copy(device), buffer);
 }
 
-DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
-  DeviceAllocation alloc;
-  alloc.device = this;
-  alloc.alloc_id = alloc_serial_++;
+RhiResult Dx11Device::allocate_memory(const AllocParams &params,
+                                      DeviceAllocation *out_devalloc) {
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->device = this;
+  out_devalloc->alloc_id = alloc_serial_++;
 
   BufferTuple tuple;
   tuple.cpu_read = params.host_read;
@@ -740,9 +741,9 @@ DeviceAllocation Dx11Device::allocate_memory(const AllocParams &params) {
   } else {
     tuple.default_copy = 2;
   }
-  alloc_id_to_buffer_[alloc.alloc_id] = std::move(tuple);
+  alloc_id_to_buffer_[out_devalloc->alloc_id] = std::move(tuple);
 
-  return alloc;
+  return RhiResult::success;
 }
 
 void Dx11Device::dealloc_memory(DeviceAllocation handle) {

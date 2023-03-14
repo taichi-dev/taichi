@@ -154,12 +154,15 @@ RhiResult Device::upload_data(DevicePtr *device_ptr,
     if (device_ptr[i].device != this || !data[i]) {
       return RhiResult::invalid_usage;
     }
-    DeviceAllocationUnique staging = this->allocate_memory_unique(
+    auto [staging, res] = this->allocate_memory_unique(
         {size[i], /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Upload});
+    if (res != RhiResult::success) {
+      return res;
+    }
 
     void *mapped{nullptr};
-    RhiResult res = this->map(*staging, &mapped);
+    res = this->map(*staging, &mapped);
     if (res != RhiResult::success) {
       return res;
     }
@@ -203,9 +206,12 @@ RhiResult Device::readback_data(
     if (device_ptr[i].device != this || !data[i]) {
       return RhiResult::invalid_usage;
     }
-    DeviceAllocationUnique staging = this->allocate_memory_unique(
+    auto [staging, res] = this->allocate_memory_unique(
         {size[i], /*host_write=*/false, /*host_read=*/true,
          /*export_sharing=*/false, AllocUsage::None});
+    if (res != RhiResult::success) {
+      return res;
+    }
 
     cmdlist->buffer_copy(staging->get_ptr(0), device_ptr[i], size[i]);
     stagings.push_back(std::move(staging));

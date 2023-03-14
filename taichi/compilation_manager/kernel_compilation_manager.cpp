@@ -115,11 +115,11 @@ void KernelCompilationManager::dump() {
   for (auto &[kernel_key, kernel] : caching_kernels_) {
     if (kernel.cache_mode == CacheData::MemAndDiskCache) {
       auto [iter, ok] = kernels.insert({kernel_key, std::move(kernel)});
-      data.size += ok ? iter->second.size : 0;
+      TI_ASSERT(!ok || iter->second.size == 0);
     }
   }
   // Dump cached CompiledKernelData to disk
-  for (const auto &[_, k] : kernels) {
+  for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
       const auto arch = k.compiled_kernel_data->arch();
       auto cache_filename = make_filename(k.kernel_key, arch);
@@ -127,6 +127,8 @@ void KernelCompilationManager::dump() {
         std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
         TI_ASSERT(fs.is_open());
         k.compiled_kernel_data->dump(fs);
+        k.size = fs.tellp();
+        data.size += k.size;
       }
     }
   }
@@ -235,7 +237,7 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
   k.kernel_key = kernel_key;
   k.created_at = k.last_used_at = std::time(nullptr);
   k.compiled_kernel_data = compile_kernel(compile_config, caps, kernel_def);
-  k.size = k.compiled_kernel_data->size();
+  k.size = 0;  // Populate `size` within the KernelCompilationManager::dump()
   k.cache_mode = cache_mode;
   const auto &kernel_data = (caching_kernels_[kernel_key] = std::move(k));
   return *kernel_data.compiled_kernel_data;

@@ -73,6 +73,8 @@ if __name__ == "__main__":
         compile_numerical_aot_test(arch=ti.cuda)
     elif args.arch == "vulkan":
         compile_numerical_aot_test(arch=ti.vulkan)
+    elif args.arch == "metal":
+        compile_numerical_aot_test(arch=ti.metal)
     elif args.arch == "opengl":
         compile_numerical_aot_test(arch=ti.opengl)
     elif args.arch == "dx12":

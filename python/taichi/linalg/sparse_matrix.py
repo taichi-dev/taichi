@@ -208,6 +208,14 @@ class SparseMatrix:
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
 
+    def mmwrite(self, filename):
+        """Writes the sparse matrix to Matrix Market file-like target.
+
+        Args:
+            filename (str): the file name to write the sparse matrix to.
+        """
+        self.matrix.mmwrite(filename)
+
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.

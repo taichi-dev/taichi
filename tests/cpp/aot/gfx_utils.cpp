@@ -30,7 +30,9 @@ void view_devalloc_as_ndarray(Device *device_) {
   alloc_params.host_write = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
 
   std::vector<int> element_shape = {4};
   auto arr1 = Ndarray(devalloc_arr_, PrimitiveType::i32, {10}, element_shape);
@@ -146,7 +148,9 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
 
   host_ctx.set_arg(/*arg_id=*/0, /*base=*/0);
@@ -209,7 +213,9 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
   host_ctx.set_arg_ndarray(0, arr.get_device_allocation_ptr_as_int(),
                            arr.shape);
@@ -279,8 +285,12 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_0 = device_->allocate_memory(alloc_params);
-  DeviceAllocation devalloc_arr_1 = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_0;
+  DeviceAllocation devalloc_arr_1;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_0),
+            RhiResult::success);
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_1),
+            RhiResult::success);
   Ndarray arr0 = Ndarray(devalloc_arr_0, PrimitiveType::i32, {size});
   Ndarray arr1 = Ndarray(devalloc_arr_1, PrimitiveType::i32, {size}, {1});
 
@@ -355,7 +365,9 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
 
   int src[size] = {0};
   src[0] = 2;
@@ -423,43 +435,50 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   alloc_params.size = NR_PARTICLES * 2 * sizeof(float);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
 
-  taichi::lang::DeviceAllocation devalloc_x =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_x;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_x),
+            RhiResult::success);
   auto x = taichi::lang::Ndarray(devalloc_x, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
-  taichi::lang::DeviceAllocation devalloc_v =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_v;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_v),
+            RhiResult::success);
   auto v = taichi::lang::Ndarray(devalloc_v, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
   alloc_params.size = NR_PARTICLES * 3 * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_pos =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_pos;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_pos),
+            RhiResult::success);
   auto pos = taichi::lang::Ndarray(
       devalloc_pos, taichi::lang::PrimitiveType::f32, {NR_PARTICLES}, {3});
 
   alloc_params.size = NR_PARTICLES * sizeof(float) * 2 * 2;
-  taichi::lang::DeviceAllocation devalloc_C =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_C;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_C),
+            RhiResult::success);
   auto C = taichi::lang::Ndarray(devalloc_C, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2, 2});
 
   alloc_params.size = NR_PARTICLES * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_J =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_J;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_J),
+            RhiResult::success);
   auto J = taichi::lang::Ndarray(devalloc_J, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES});
 
   alloc_params.size = N_GRID * N_GRID * 2 * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_grid_v =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_grid_v;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_grid_v),
+            RhiResult::success);
   auto grid_v = taichi::lang::Ndarray(
       devalloc_grid_v, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID}, {2});
 
   alloc_params.size = N_GRID * N_GRID * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_grid_m =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_grid_m;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_grid_m),
+            RhiResult::success);
   auto grid_m = taichi::lang::Ndarray(
       devalloc_grid_m, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID});
 

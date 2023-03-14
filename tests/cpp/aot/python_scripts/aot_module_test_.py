@@ -30,5 +30,7 @@ if __name__ == "__main__":
 
     if args.arch == "vulkan":
         main(arch=ti.vulkan)
+    elif args.arch == "metal":
+        main(arch=ti.metal)
     else:
         assert False

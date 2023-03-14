@@ -610,7 +610,8 @@ class TI_DLL_EXPORT VulkanDevice : public GraphicsDevice {
                             std::string name,
                             PipelineCache *cache) noexcept final;
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   uint64_t get_memory_physical_pointer(DeviceAllocation handle) override;

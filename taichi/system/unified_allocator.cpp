@@ -26,7 +26,8 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
     alloc_params.host_write = true;
 
     cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
-    alloc = cpu_device->allocate_memory(alloc_params);
+    RhiResult res = cpu_device->allocate_memory(alloc_params, &alloc);
+    TI_ASSERT(res == RhiResult::success);
     data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
 #else
     TI_NOT_IMPLEMENTED

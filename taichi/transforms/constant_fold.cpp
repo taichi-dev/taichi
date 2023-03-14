@@ -104,28 +104,9 @@ class ConstantFold : public BasicStmtVisitor {
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
+    launch_ctx.set_arg(0, lhs);
+    launch_ctx.set_arg(1, rhs);
 
-    if (is_integral(lhs.dt) && is_signed(lhs.dt)) {
-      launch_ctx.set_arg_int(0, lhs.val_int());
-    } else if (is_integral(lhs.dt) && is_unsigned(lhs.dt)) {
-      launch_ctx.set_arg_int(0, lhs.val_uint());
-    } else if (is_real(lhs.dt)) {
-      launch_ctx.set_arg_float(0, lhs.val_float());
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-
-    if (is_integral(rhs.dt) && is_signed(rhs.dt)) {
-      launch_ctx.set_arg_int(1, rhs.val_int());
-    } else if (is_integral(rhs.dt) && is_unsigned(rhs.dt)) {
-      launch_ctx.set_arg_int(1, rhs.val_uint());
-    } else if (is_real(rhs.dt)) {
-      launch_ctx.set_arg_float(1, rhs.val_float());
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
-    //    launch_ctx.set_arg_raw(0, lhs.val_u64);
-    //    launch_ctx.set_arg_raw(1, rhs.val_u64);
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
@@ -152,15 +133,8 @@ class ConstantFold : public BasicStmtVisitor {
                       false};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
-    if (is_integral(operand.dt) && is_signed(operand.dt)) {
-      launch_ctx.set_arg_int(0, operand.val_int());
-    } else if (is_integral(operand.dt) && is_unsigned(operand.dt)) {
-      launch_ctx.set_arg_int(0, operand.val_uint());
-    } else if (is_real(operand.dt)) {
-      launch_ctx.set_arg_float(0, operand.val_float());
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
+    launch_ctx.set_arg(0, operand);
+
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);

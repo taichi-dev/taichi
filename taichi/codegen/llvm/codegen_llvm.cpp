@@ -2703,7 +2703,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
          llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
   }
   llvm::Value *result_buffer = nullptr;
-  if (stmt->ret_type) {
+  if (!stmt->func->rets.empty()) {
     auto *ret_type = tlctx->get_data_type(stmt->ret_type);
     result_buffer = builder->CreateAlloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(

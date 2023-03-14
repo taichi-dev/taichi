@@ -44,8 +44,8 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
 }
 
 LlvmRuntime::~LlvmRuntime() {
-  executor_.reset();
   memory_pool_.reset();
+  executor_.reset();
   cfg_.reset();
 }
 

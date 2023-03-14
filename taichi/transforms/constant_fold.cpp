@@ -106,7 +106,6 @@ class ConstantFold : public BasicStmtVisitor {
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg(0, lhs);
     launch_ctx.set_arg(1, rhs);
-
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
@@ -134,7 +133,6 @@ class ConstantFold : public BasicStmtVisitor {
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
     launch_ctx.set_arg(0, operand);
-
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);

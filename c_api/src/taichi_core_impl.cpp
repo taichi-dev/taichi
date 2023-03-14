@@ -5,6 +5,7 @@
 #include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
+#include "taichi/program/launch_context_builder.h"
 #include "taichi/common/virtual_dir.h"
 #include "taichi/common/utils.h"
 

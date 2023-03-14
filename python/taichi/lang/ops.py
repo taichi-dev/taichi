@@ -1,9 +1,9 @@
 import builtins
 import functools
-import numpy as np
 import operator as _bt_ops_mod  # bt for builtin
 from typing import Union
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
@@ -75,7 +75,8 @@ def binary(foo):
             return NotImplemented
         from taichi.lang.matrix import Matrix
         if isinstance(a, Matrix) or isinstance(b, Matrix):
-            return Matrix(foo(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
+            return Matrix(
+                foo(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
         return foo(a, b)
 
     binary_ops.append(wrapped)
@@ -94,8 +95,11 @@ def ternary(foo):
                 c, Field):
             return NotImplemented
         from taichi.lang.matrix import Matrix
-        if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(c, Matrix):
-            return Matrix(foo(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b), _read_matrix_or_scalar(c)))
+        if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(
+                c, Matrix):
+            return Matrix(
+                foo(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b),
+                    _read_matrix_or_scalar(c)))
         return foo(a, b, c)
 
     ternary_ops.append(wrapped)

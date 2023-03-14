@@ -1,12 +1,12 @@
 import ast
 import collections.abc
 import itertools
-import numpy as np
 import operator
 import warnings
 from collections import ChainMap
 from sys import version_info
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
                          matrix, mesh)

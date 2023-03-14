@@ -245,7 +245,8 @@ class Matrix(TaichiOperations):
                 self.entries = arr
                 self.is_host_access = True
             else:
-                self.entries = np.array(arr, None if dt is None else to_numpy_type(dt))
+                self.entries = np.array(
+                    arr, None if dt is None else to_numpy_type(dt))
                 self.is_host_access = False
         else:  # vector
             self.ndim = 1
@@ -254,7 +255,8 @@ class Matrix(TaichiOperations):
                 self.entries = arr
                 self.is_host_access = True
             else:
-                self.entries = np.array(arr, None if dt is None else to_numpy_type(dt))
+                self.entries = np.array(
+                    arr, None if dt is None else to_numpy_type(dt))
                 self.is_host_access = False
 
         if self.n * self.m > 32:
@@ -394,9 +396,13 @@ class Matrix(TaichiOperations):
         """
         if self.is_host_access:
             if self.ndim == 1:
-                return [_read_host_access(self.entries[i]) for i in range(self.n)]
+                return [
+                    _read_host_access(self.entries[i]) for i in range(self.n)
+                ]
             assert self.ndim == 2
-            return [[_read_host_access(self.entries[i][j]) for j in range(self.m)] for i in range(self.n)]
+            return [[
+                _read_host_access(self.entries[i][j]) for j in range(self.m)
+            ] for i in range(self.n)]
         return self.entries.tolist()
 
     @taichi_scope

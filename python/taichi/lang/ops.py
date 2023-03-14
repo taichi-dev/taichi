@@ -55,7 +55,7 @@ def unary(foo):
     def wrapped(a):
         if isinstance(a, Field):
             return NotImplemented
-        from taichi.lang.matrix import Matrix
+        from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
         if isinstance(a, Matrix):
             return Matrix(foo(a.to_numpy()))
         return foo(a)
@@ -73,7 +73,7 @@ def binary(foo):
 
         if isinstance(a, Field) or isinstance(b, Field):
             return NotImplemented
-        from taichi.lang.matrix import Matrix
+        from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
         if isinstance(a, Matrix) or isinstance(b, Matrix):
             return Matrix(
                 foo(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
@@ -94,7 +94,7 @@ def ternary(foo):
         if isinstance(a, Field) or isinstance(b, Field) or isinstance(
                 c, Field):
             return NotImplemented
-        from taichi.lang.matrix import Matrix
+        from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
         if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(
                 c, Matrix):
             return Matrix(

@@ -4,7 +4,7 @@
 
 #include "taichi/common/core.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
-#include "taichi/rhi/cuda/cuda_caching_allocator.h"
+#include "taichi/rhi/llvm/allocator.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
 
@@ -136,7 +136,7 @@ class CudaDevice : public LlvmDevice {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
-  std::unique_ptr<CudaCachingAllocator> caching_allocator_{nullptr};
+  std::unique_ptr<CachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace cuda

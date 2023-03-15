@@ -255,7 +255,7 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
           // following code with llvm::PointerType::get(M.getContext(),
           // usigned(1))
           llvm::PointerType::getWithSamePointeeType(
-              dyn_cast<PointerType>(arg.getType()), unsigned(1));
+              llvm::dyn_cast<llvm::PointerType>(arg.getType()), unsigned(1));
 
           new_func_params.push_back(new_type);
         } else {

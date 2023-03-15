@@ -31,6 +31,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void eliminate_immutable_local_vars(IRNode *root);
 void scalarize(IRNode *root);
+void vectorize_half2(IRNode *root);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
@@ -161,7 +162,7 @@ std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
 // comment
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
@@ -169,7 +170,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            bool verbose,
                            bool determine_ad_stack_size,
                            bool lower_global_access,
@@ -179,7 +180,7 @@ void offload_to_executable(IRNode *ir,
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,

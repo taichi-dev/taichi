@@ -121,7 +121,7 @@ def _gen_swizzles(cls):
 def _infer_entry_dt(entry):
     if isinstance(entry, (int, np.integer)):
         return impl.get_runtime().default_ip
-    if isinstance(entry, float):
+    if isinstance(entry, (float, np.floating)):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
         dt = entry.ptr.get_ret_type()
@@ -1510,14 +1510,14 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
-    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
-        if id(self.dtype) in primitive_types.integer_type_ids:
+    def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
+        if self.dtype in primitive_types.integer_types:
             if is_signed(cook_dtype(self.dtype)):
-                get_ret_func = t_kernel.get_struct_ret_int
+                get_ret_func = launch_ctx.get_struct_ret_int
             else:
-                get_ret_func = t_kernel.get_struct_ret_uint
-        elif id(self.dtype) in primitive_types.real_type_ids:
-            get_ret_func = t_kernel.get_struct_ret_float
+                get_ret_func = launch_ctx.get_struct_ret_uint
+        elif self.dtype in primitive_types.real_types:
+            get_ret_func = launch_ctx.get_struct_ret_float
         else:
             raise TaichiRuntimeTypeError(
                 f"Invalid return type on index={ret_index}")

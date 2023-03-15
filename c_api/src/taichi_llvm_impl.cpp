@@ -43,6 +43,12 @@ LlvmRuntime::LlvmRuntime(taichi::Arch arch) : Runtime(arch) {
                                  &result_buffer);
 }
 
+LlvmRuntime::~LlvmRuntime() {
+  memory_pool_.reset();
+  executor_.reset();
+  cfg_.reset();
+}
+
 void LlvmRuntime::check_runtime_error() {
   executor_->check_runtime_error(this->result_buffer);
 }

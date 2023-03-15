@@ -1,6 +1,6 @@
 import numbers
 from types import FunctionType, MethodType
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
@@ -810,10 +810,16 @@ def ndarray(dtype, shape, needs_grad=False):
 
 @taichi_scope
 def ti_format_list_to_content_entries(raw):
+    # return a pair of [content, format]
     def entry2content(_var):
         if isinstance(_var, str):
+            return [_var, None]
+        if isinstance(_var, list):
+            assert len(_var) == 2 and (isinstance(_var[1], str)
+                                       or _var[1] is None)
+            _var[0] = Expr(_var[0]).ptr
             return _var
-        return Expr(_var).ptr
+        return [Expr(_var).ptr, None]
 
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintenance cost
@@ -825,7 +831,13 @@ def ti_format_list_to_content_entries(raw):
 
     def vars2entries(_vars):
         for _var in _vars:
-            if hasattr(_var, '__ti_repr__'):
+            # If the first element is '__ti_fmt_value__', this list is an Expr and its format.
+            if isinstance(_var, list) and len(_var) == 3 and isinstance(
+                    _var[0], str) and _var[0] == '__ti_fmt_value__':
+                # yield [Expr, format] as a whole and don't pass it to vars2entries() again
+                yield _var[1:]
+                continue
+            elif hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
                 # If the first element is '__ti_format__', this list is the result of ti_format.
@@ -854,9 +866,14 @@ def ti_format_list_to_content_entries(raw):
         if accumated:
             yield accumated
 
+    def extract_formats(entries):
+        contents, formats = zip(*entries)
+        return list(contents), list(formats)
+
     entries = vars2entries(raw)
     entries = fused_string(entries)
-    return [entry2content(entry) for entry in entries]
+    entries = [entry2content(entry) for entry in entries]
+    return extract_formats(entries)
 
 
 @taichi_scope
@@ -869,8 +886,9 @@ def ti_print(*_vars, sep=' ', end='\n'):
         yield end
 
     _vars = add_separators(_vars)
-    entries = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(entries)
+    contents, formats = ti_format_list_to_content_entries(_vars)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats)
 
 
 @taichi_scope
@@ -881,7 +899,9 @@ def ti_format(*args, **kwargs):
     new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, Expr):
+        # x is a (formatted) Expr
+        if isinstance(x, Expr) or (isinstance(x, list) and len(x) == 3
+                                   and x[0] == '__ti_fmt_value__'):
             new_mixed.append('{}')
             args.append(x)
         else:
@@ -999,7 +1019,7 @@ def axes(*x: Iterable[int]):
 Axis = _ti_core.Axis
 
 
-def static(x, *xs):
+def static(x, *xs) -> Any:
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is
@@ -1105,8 +1125,8 @@ def default_cfg():
 
 def call_internal(name, *args, with_runtime_context=True):
     return expr_init(
-        _ti_core.insert_internal_func_call(name, make_expr_group(args),
-                                           with_runtime_context))
+        _ti_core.insert_internal_func_call(getattr(_ti_core.InternalOp, name),
+                                           make_expr_group(args)))
 
 
 def get_cuda_compute_capability():

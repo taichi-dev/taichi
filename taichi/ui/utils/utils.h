@@ -75,10 +75,6 @@ inline GLFWwindow *create_glfw_window_(const std::string &name,
     exit(EXIT_FAILURE);
   }
 
-  if (glfwVulkanSupported() != GLFW_TRUE) {
-    printf("GLFW reports no Vulkan support\n");
-  }
-
   // Reset the window hints to default
   glfwDefaultWindowHints();
 

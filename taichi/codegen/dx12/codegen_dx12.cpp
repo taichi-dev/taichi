@@ -230,8 +230,6 @@ static std::vector<uint8_t> generate_dxil_from_llvm(
 KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   const auto &config = get_compile_config();
-  std::string kernel_key = get_hashed_offline_cache_key(config, kernel);
-  kernel->set_kernel_key_for_cache(kernel_key);
 
   irpass::ast_to_ir(config, *kernel, false);
 

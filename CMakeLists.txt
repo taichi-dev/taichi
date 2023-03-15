@@ -18,6 +18,7 @@ if (NOT DEFINED TI_VERSION_MAJOR)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_EXPORT_COMPILECOMMANDS ON)
 
 execute_process(
@@ -70,7 +71,11 @@ option(USE_MOLD "Use mold (A Modern Linker)" OFF)
 option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
 
 if(LINUX OR APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    if (NOT IOS)
+        # (penguinliong) Not compatible with -fembed-bitcode. Not sure where it
+        # comes from; probably a XCode preset?
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections")
+    endif()
 endif()
 
 if (USE_LLD)
@@ -122,6 +127,7 @@ endif()
 macro(check_clang_version)
   execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
   string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+
   message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
 
   set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
@@ -199,7 +205,7 @@ endif()
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
-option(TI_WITH_C_API "build taichi runtime c-api library" OFF)
+option(TI_WITH_C_API "build taichi runtime c-api library" ON)
 option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)
 
 if(TI_WITH_STATIC_C_API)

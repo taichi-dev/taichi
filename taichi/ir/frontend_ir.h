@@ -10,6 +10,7 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/program/function.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/ir/type_system.h"
 
 namespace taichi::lang {
 
@@ -23,6 +24,14 @@ struct ForLoopConfig {
   int block_dim{0};
   bool uniform{false};
 };
+
+#define TI_DEFINE_CLONE_FOR_FRONTEND_IR                \
+  std::unique_ptr<Stmt> clone() const override {       \
+    std::unique_ptr<Stmt> new_stmt{                    \
+        new std::decay<decltype(*this)>::type{*this}}; \
+    new_stmt->ret_type = ret_type;                     \
+    return new_stmt;                                   \
+  }
 
 // Frontend Statements
 class FrontendExternalFuncStmt : public Stmt {
@@ -49,6 +58,7 @@ class FrontendExternalFuncStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendExprStmt : public Stmt {
@@ -59,6 +69,7 @@ class FrontendExprStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAllocaStmt : public Stmt {
@@ -81,6 +92,7 @@ class FrontendAllocaStmt : public Stmt {
   bool is_shared;
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendSNodeOpStmt : public Stmt {
@@ -96,6 +108,7 @@ class FrontendSNodeOpStmt : public Stmt {
                       const Expr &val = Expr(nullptr));
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAssertStmt : public Stmt {
@@ -118,6 +131,7 @@ class FrontendAssertStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendAssignStmt : public Stmt {
@@ -127,6 +141,7 @@ class FrontendAssignStmt : public Stmt {
   FrontendAssignStmt(const Expr &lhs, const Expr &rhs);
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendIfStmt : public Stmt {
@@ -142,23 +157,25 @@ class FrontendIfStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+ private:
+  FrontendIfStmt(const FrontendIfStmt &o);
 };
 
 class FrontendPrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Expr, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit FrontendPrintStmt(const std::vector<EntryType> &contents_) {
-    for (const auto &c : contents_) {
-      if (std::holds_alternative<Expr>(c))
-        contents.push_back(std::get<Expr>(c));
-      else
-        contents.push_back(c);
-    }
+  FrontendPrintStmt(const std::vector<EntryType> &contents_,
+                    const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendForStmt : public Stmt {
@@ -203,8 +220,11 @@ class FrontendForStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 
  private:
+  FrontendForStmt(const FrontendForStmt &o);
+
   void init_config(Arch arch, const ForLoopConfig &config);
 
   void init_loop_vars(const ExprGroup &loop_vars);
@@ -225,6 +245,10 @@ class FrontendFuncDefStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+
+ private:
+  FrontendFuncDefStmt(const FrontendFuncDefStmt &o);
 };
 
 class FrontendBreakStmt : public Stmt {
@@ -237,6 +261,7 @@ class FrontendBreakStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendContinueStmt : public Stmt {
@@ -248,6 +273,7 @@ class FrontendContinueStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class FrontendWhileStmt : public Stmt {
@@ -263,6 +289,9 @@ class FrontendWhileStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
+ private:
+  FrontendWhileStmt(const FrontendWhileStmt &o);
 };
 
 class FrontendReturnStmt : public Stmt {
@@ -276,6 +305,7 @@ class FrontendReturnStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 // Expressions
@@ -310,24 +340,22 @@ class TexturePtrExpression : public Expression {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
   explicit TexturePtrExpression(int arg_id, int num_dims)
-      : arg_id(arg_id), num_dims(num_dims) {
+      : arg_id(arg_id),
+        num_dims(num_dims),
+        is_storage(false),
+        format(BufferFormat::rgba8),
+        lod(0) {
   }
 
-  TexturePtrExpression(int arg_id,
-                       int num_dims,
-                       int num_channels,
-                       DataType channel_format,
-                       int lod)
+  TexturePtrExpression(int arg_id, int num_dims, BufferFormat format, int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
   }
 
@@ -416,17 +444,11 @@ class TernaryOpExpression : public Expression {
 
 class InternalFuncCallExpression : public Expression {
  public:
-  std::string func_name;
+  Operation *op;
   std::vector<Expr> args;
-  bool with_runtime_context;
 
-  InternalFuncCallExpression(const std::string &func_name,
-                             const std::vector<Expr> &args_,
-                             bool with_runtime_context)
-      : func_name(func_name), with_runtime_context(with_runtime_context) {
-    for (auto &a : args_) {
-      args.push_back(a);
-    }
+  InternalFuncCallExpression(Operation *op, const std::vector<Expr> &args_)
+      : op(op), args(args_) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -800,6 +822,7 @@ class FrontendFuncCallStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class GetElementExpression : public Expression {
@@ -949,7 +972,8 @@ class ASTBuilder {
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
-  void create_print(std::vector<std::variant<Expr, std::string>> contents);
+  void create_print(std::vector<std::variant<Expr, std::string>> contents,
+                    std::vector<std::optional<std::string>> formats);
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
   void begin_frontend_if(const Expr &cond);

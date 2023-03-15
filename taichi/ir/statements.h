@@ -4,6 +4,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/rhi/arch.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -350,6 +351,11 @@ class ExternalPtrStmt : public Stmt {
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
+
+  // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
 
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
@@ -852,10 +858,13 @@ class IfStmt : public Stmt {
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit PrintStmt(const std::vector<EntryType> &contents_)
-      : contents(contents_) {
+  PrintStmt(const std::vector<EntryType> &contents_,
+            const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1271,6 +1280,10 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
+  // irpass::vectorize_half2() will override the ret_type of GetChStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
   GetChStmt(Stmt *input_ptr,
@@ -1591,21 +1604,18 @@ class TexturePtrStmt : public Stmt {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{0};
   int lod{0};
 
   explicit TexturePtrStmt(Stmt *stmt,
                           int dimensions,
                           bool is_storage,
-                          int num_channels,
-                          DataType channel_format,
+                          BufferFormat format,
                           int lod)
       : arg_load_stmt(stmt),
         dimensions(dimensions),
         is_storage(is_storage),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
     TI_STMT_REG_FIELDS;
   }
@@ -1615,12 +1625,7 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt,
-                     dimensions,
-                     is_storage,
-                     num_channels,
-                     channel_format,
-                     lod);
+  TI_STMT_DEF_FIELDS(arg_load_stmt, dimensions, is_storage, format, lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

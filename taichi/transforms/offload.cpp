@@ -113,7 +113,7 @@ class Offloader {
           offloaded->end_value = val->val.val_int32();
         } else {
           if ((arch == Arch::opengl || arch == Arch::vulkan ||
-               arch == Arch::gles) &&
+               arch == Arch::gles || arch == Arch::metal) &&
               demotable_axis_load(s->end)) {
             // TODO: We need to update codegen for each backend gradually so
             // let's limit it to opengl backend for now.
@@ -387,7 +387,7 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
         (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
       return;
     if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan ||
-         config_.arch == Arch::gles) &&
+         config_.arch == Arch::gles || config_.arch == Arch::metal) &&
         demotable_axis_load(stmt))
       return;
     // Not yet allocated

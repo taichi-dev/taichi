@@ -244,8 +244,7 @@ def test_stack():
     func()
 
 
-#FIXME: amdgpu backend(assign gale)
-@test_utils.test(exclude=ti.amdgpu)
+@test_utils.test()
 def test_if_condition_depend_on_for_loop_index():
     scalar = lambda: ti.field(dtype=ti.f32)
     vec = lambda: ti.Vector.field(3, dtype=ti.f32)

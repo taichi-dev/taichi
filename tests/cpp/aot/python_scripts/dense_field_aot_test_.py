@@ -48,6 +48,8 @@ if __name__ == "__main__":
     # TODO: add test agaist cpu and cuda as well
     if args.arch == "vulkan":
         compile_dense_field_aot_test(arch=ti.vulkan)
+    elif args.arch == "metal":
+        compile_dense_field_aot_test(arch=ti.metal)
     elif args.arch == "opengl":
         compile_dense_field_aot_test(arch=ti.opengl)
     else:

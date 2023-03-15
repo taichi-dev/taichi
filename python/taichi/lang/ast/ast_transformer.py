@@ -392,13 +392,25 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_FormattedValue(ctx, node):
+        node.ptr = build_stmt(ctx, node.value)
+        if node.format_spec is None or len(node.format_spec.values) == 0:
+            return node.ptr
+        values = node.format_spec.values
+        assert len(values) == 1
+        format_str = values[0].s
+        assert format_str is not None
+        # distinguished from normal list
+        return ['__ti_fmt_value__', node.ptr, format_str]
+
+    @staticmethod
     def build_JoinedStr(ctx, node):
         str_spec = ''
         args = []
         for sub_node in node.values:
             if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
-                args.append(build_stmt(ctx, sub_node.value))
+                args.append(build_stmt(ctx, sub_node))
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
             elif isinstance(sub_node, ast.Str):
@@ -575,6 +587,7 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
             impl.get_runtime().compiling_callable.finalize_rets()
+
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -608,7 +621,7 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
                             ctx.arg_features[i][0], ctx.arg_features[i][1],
-                            ctx.arg_features[i][2], ctx.arg_features[i][3]))
+                            ctx.arg_features[i][2]))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
@@ -619,6 +632,7 @@ class ASTTransformer(Builder):
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
                             ctx.func.arguments[i].annotation))
+            impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []
 
@@ -1465,7 +1479,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def ti_format_list_to_assert_msg(raw):
-        entries = impl.ti_format_list_to_content_entries([raw])
+        #TODO: ignore formats here for now
+        entries, _ = impl.ti_format_list_to_content_entries([raw])
         msg = ""
         args = []
         for entry in entries:

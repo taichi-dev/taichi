@@ -376,3 +376,39 @@ def test_cast_f64_to_f16():
         return ti.cast(a * b, ti.f16)
 
     assert func() == pytest.approx(23.0 * 4.0, 1e-4)
+
+
+@test_utils.test(arch=[ti.cuda], half2_vectorization=True)
+def test_half2_vectorize():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    table = half2.field(shape=(40), needs_grad=True)
+    embeddings = half2.field(shape=(40, 16), needs_grad=True)
+    B = 1
+
+    @ti.kernel
+    def test(B: ti.i32):
+        for i, level in ti.ndrange(B, 16):
+            w = 4.0
+            local_feature = ti.Vector([ti.f16(0.0), ti.f16(0.0)])
+            for index in ti.static(range(64)):
+                local_feature += w * table[index]
+
+            embeddings[i, level] = local_feature
+
+    test(B)
+
+    for i in range(10):
+        test.grad(B)
+
+    ti.sync()
+
+    for i in range(40):
+        for j in range(16):
+            embeddings.grad[i, j] = half2(1.0)
+
+    for i in range(1000):
+        test.grad(B)
+    ti.sync()
+
+    assert (table.grad.to_numpy() == 64).all()

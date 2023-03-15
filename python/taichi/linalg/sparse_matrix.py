@@ -26,6 +26,7 @@ class SparseMatrix:
                  sm=None,
                  dtype=f32,
                  storage_format="col_major"):
+        self.dtype = dtype
         if sm is None:
             self.n = n
             self.m = m if m else n
@@ -207,6 +208,14 @@ class SparseMatrix:
                 'Sparse matrix only supports building from [ti.ndarray, ti.Vector.ndarray, ti.Matrix.ndarray]'
             )
 
+    def mmwrite(self, filename):
+        """Writes the sparse matrix to Matrix Market file-like target.
+
+        Args:
+            filename (str): the file name to write the sparse matrix to.
+        """
+        self.matrix.mmwrite(filename)
+
 
 class SparseMatrixBuilder:
     """A python wrap around sparse matrix builder.
@@ -254,10 +263,13 @@ class SparseMatrixBuilder:
         taichi_arch = get_runtime().prog.config().arch
         if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
             sm = self.ptr.build()
-            return SparseMatrix(sm=sm)
+            return SparseMatrix(sm=sm, dtype=dtype)
         if taichi_arch == _ti_core.Arch.cuda:
+            if dtype != f32:
+                raise TaichiRuntimeError(
+                    'CUDA sparse matrix only supports f32.')
             sm = self.ptr.build_cuda()
-            return SparseMatrix(sm=sm)
+            return SparseMatrix(sm=sm, dtype=dtype)
         raise TaichiRuntimeError(
             'Sparse matrix only supports CPU and CUDA backends.')
 

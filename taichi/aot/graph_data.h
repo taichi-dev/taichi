@@ -3,7 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include "taichi/ir/type.h"
+#include "taichi/program/callable.h"
 #include "taichi/aot/module_data.h"
+#include "taichi/program/compile_config.h"
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
 #undef TI_RUNTIME_HOST
@@ -126,7 +128,7 @@ struct TI_DLL_EXPORT IValue {
   }
 };
 
-class TI_DLL_EXPORT Kernel {
+class TI_DLL_EXPORT Kernel : public CallableBase {
  public:
   // Rule of 5 to make MSVC happy
   Kernel() = default;
@@ -161,8 +163,16 @@ struct TI_DLL_EXPORT CompiledGraph {
   RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;
+  void jit_run(const CompileConfig &compile_config,
+               const std::unordered_map<std::string, IValue> &args) const;
 
   TI_IO_DEF(dispatches);
+
+ private:
+  static void init_runtime_context(
+      const std::vector<Arg> &paramter_list,
+      const std::unordered_map<std::string, IValue> &args,
+      RuntimeContext &ctx);
 };
 
 }  // namespace aot

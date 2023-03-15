@@ -112,6 +112,7 @@ TEST(IRBuilder, ExternalPtr) {
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   ker->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
+  ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});
@@ -172,6 +173,7 @@ TEST(IRBuilder, AtomicOp) {
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   ker->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
+  ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});

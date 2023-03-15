@@ -28,7 +28,7 @@ supported_archs_offline_cache = {
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.ll', '.bc', '.spv')
+    suffixes = ('.ll', '.bc', '.tic')
     return filename.endswith(suffixes)
 
 
@@ -50,13 +50,13 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     if arch in supported_llvm_archs:
         result += len(num_offloads)
     elif arch in supported_gfx_archs:
-        result += sum(num_offloads)
+        result += len(num_offloads)
     # metadata files
     if arch in supported_llvm_archs:
         result += 2  # metadata.{json, tcb}
     elif arch in supported_gfx_archs:
-        # metadata.{json, tcb}, graphs.tcb, offline_cache_metadata.tcb
-        result += 4
+        # ticache.tcb
+        result += 1
     return result
 
 
@@ -68,7 +68,7 @@ def backend_specified_cache_path(arch):
     if arch in supported_llvm_archs:
         return join(tmp_offline_cache_file_path(), 'llvm')
     elif arch in supported_gfx_archs:
-        return join(tmp_offline_cache_file_path(), 'gfx')
+        return tmp_offline_cache_file_path()
     assert False
 
 
@@ -458,9 +458,8 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
     @ti.kernel
     def helper():
-        a = 100
         b = 200
-        c = a / b
+        c = 0
         for i in range(b):
             c += i
 
@@ -511,8 +510,6 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
         only_init(max_size)
         for kernel, args, get_res, num_offloads in simple_kernels_to_test:
             assert kernel(*args) == test_utils.approx(get_res(*args))
-            # The timestamp used by cache cleaning is at second precision, so we should make sure the kernels are not used in the same second
-            sleep(1)
 
     kernel_count = len(simple_kernels_to_test)
     count_of_cache_file = cache_files_cnt(curr_arch)
@@ -522,7 +519,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
     assert added_files(curr_arch) == expected_num_cache_files(curr_arch)
 
-    run_simple_kernels(1024**3)  # 1GB
+    run_simple_kernels(1024**3)  # 1GB (>> size_of_cache_files)
     ti.reset()  # Dumping cache data
     size_of_cache_files = cache_files_size(
         backend_specified_cache_path(curr_arch))
@@ -534,7 +531,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     assert added_files(curr_arch) == expected_num_cache_files(
         curr_arch, [kern[3] for kern in simple_kernels_to_test])
 
-    only_init(size_of_cache_files)
+    only_init(1)  # 1B (<< size_of_cache_files)
     ti.reset()
     rem = []
     if policy in ['never', 'version']:

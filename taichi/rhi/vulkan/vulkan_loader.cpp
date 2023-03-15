@@ -6,8 +6,6 @@
 #ifdef __APPLE__
 // For `runtime_lib_dir()`
 #include "taichi/util/lang_util.h"
-// For `glfwInitVulkanLoader`
-#include "GLFW/glfw3.h"
 #endif
 
 namespace taichi::lang {
@@ -17,10 +15,6 @@ VulkanLoader::VulkanLoader() {
 }
 
 bool VulkanLoader::check_vulkan_device() {
-#ifdef __APPLE__
-  glfwInitVulkanLoader(vkGetInstanceProcAddr);
-#endif
-
   bool found_device_with_compute = false;
 
   // We create an temporary Vulkan instance to probe the Vulkan devices.

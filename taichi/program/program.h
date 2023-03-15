@@ -93,7 +93,9 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
 
-  uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
+  uint64 *result_buffer{nullptr};  // Note that this result_buffer is used
+                                   // only for runtime JIT functions (e.g.
+                                   // `runtime_memory_allocate_aligned`)
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 
@@ -183,8 +185,8 @@ class TI_DLL_EXPORT Program {
 
   uint64 fetch_result_uint64(int i);
 
-  TypedConstant fetch_result(int offset, const Type *dt) {
-    return program_impl_->fetch_result((char *)result_buffer, offset, dt);
+  TypedConstant fetch_result(char *result_buffer, int offset, const Type *dt) {
+    return program_impl_->fetch_result(result_buffer, offset, dt);
   }
 
   template <typename T>
@@ -308,7 +310,7 @@ class TI_DLL_EXPORT Program {
     return program_impl_->get_kernel_argument_data_layout();
   };
 
-  const StructType *get_struct_type_with_data_layout(
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
       const StructType *old_ty,
       const std::string &layout) {
     return program_impl_->get_struct_type_with_data_layout(old_ty, layout);
@@ -316,8 +318,7 @@ class TI_DLL_EXPORT Program {
 
   void delete_ndarray(Ndarray *ndarray);
 
-  Texture *create_texture(const DataType type,
-                          int num_channels,
+  Texture *create_texture(BufferFormat buffer_format,
                           const std::vector<int> &shape);
 
   intptr_t get_ndarray_data_ptr_as_int(const Ndarray *ndarray);

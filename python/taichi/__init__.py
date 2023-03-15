@@ -10,7 +10,8 @@ from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
-from taichi import ad, algorithms, experimental, graph, linalg, math, tools
+from taichi import (ad, algorithms, experimental, graph, linalg, math, tools,
+                    types)
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
@@ -51,7 +52,6 @@ __customized_deprecations__ = {
                   'lang.misc._serialize'),
     'block_dim': ('Please use ti.loop_config(block_dim=...) instead.',
                   'lang.misc._block_dim'),
-    'pyfunc': ('Please avoid using it.', 'lang.kernel_impl.pyfunc'),
     'TriMesh':
     ('Please import meshtaichi_patcher as Patcher and use Patcher.load_mesh(...) instead.',
      'lang.mesh._TriMesh'),

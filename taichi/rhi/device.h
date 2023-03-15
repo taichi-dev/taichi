@@ -604,7 +604,8 @@ class TI_DLL_EXPORT Device {
     AllocUsage usage{AllocUsage::Storage};
   };
 
-  virtual DeviceAllocation allocate_memory(const AllocParams &params) = 0;
+  virtual RhiResult allocate_memory(const AllocParams &params,
+                                    DeviceAllocation *out_devalloc) = 0;
 
   virtual void dealloc_memory(DeviceAllocation handle) = 0;
 
@@ -676,10 +677,14 @@ class TI_DLL_EXPORT Device {
     return std::make_pair(UPipeline(pipeline), res);
   }
 
-  std::unique_ptr<DeviceAllocationGuard> allocate_memory_unique(
+  inline std::pair<DeviceAllocationUnique, RhiResult> allocate_memory_unique(
       const AllocParams &params) {
-    return std::make_unique<DeviceAllocationGuard>(
-        this->allocate_memory(params));
+    DeviceAllocation alloc;
+    RhiResult res = allocate_memory(params, &alloc);
+    if (res != RhiResult::success) {
+      return std::make_pair(nullptr, res);
+    }
+    return std::make_pair(std::make_unique<DeviceAllocationGuard>(alloc), res);
   }
 
   /**
@@ -885,7 +890,6 @@ struct SurfaceConfig {
   //   waiting, a tearing may appear, reduces overall latency
   bool vsync{false};
   bool adaptive{true};
-  void *window_handle{nullptr};
   uint32_t width{1};
   uint32_t height{1};
   void *native_surface_handle{nullptr};

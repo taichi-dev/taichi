@@ -4,6 +4,7 @@
 
 #include "gtest/gtest.h"
 #include "taichi/common/core.h"
+#include "taichi/ir/type_factory.h"
 
 namespace taichi::lang {
 namespace {
@@ -142,6 +143,71 @@ TEST(Serialization, MoveOnly) {
   EXPECT_EQ(act_item1.foo, exp_item1.foo);
   EXPECT_EQ(act_item1.bar, exp_item1.bar);
   EXPECT_EQ(act_item1.ptr, nullptr);
+}
+
+TEST(SERIALIZATION, Type) {
+  BinIoPair bp;
+
+  // Tests for null type
+  Type *null_type = nullptr;
+  EXPECT_EQ(bp.run(null_type), null_type);
+  auto json_value_null = liong::json::serialize(null_type);
+  Type *deserialized_null;
+  liong::json::deserialize(json_value_null, deserialized_null);
+  EXPECT_EQ(deserialized_null, null_type);
+
+  // Tests for PrimitiveType, TensorType, StructType, PointerType
+  auto *int32_type =
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::i32);
+  auto *float32_type =
+      TypeFactory::get_instance().get_primitive_type(PrimitiveTypeID::f32);
+  auto *tensor_type =
+      TypeFactory::get_instance().get_tensor_type({2, 2}, int32_type);
+  auto *struct_type = TypeFactory::get_instance().get_struct_type(
+      {{int32_type, "i32", 0}, {tensor_type, "tensor", 4}}, "test");
+  auto *pointer_type =
+      TypeFactory::get_instance().get_pointer_type((Type *)struct_type, false);
+  // The pointer should be the same as the original one
+  EXPECT_EQ(bp.run(pointer_type->as<PointerType>()), pointer_type);
+  auto json_value = liong::json::serialize(pointer_type->as<PointerType>());
+  Type *deserialized;
+  liong::json::deserialize(json_value, deserialized);
+  EXPECT_EQ(deserialized, pointer_type);
+
+  // Tests for QuantIntType, QuantFloatType, QuantFixedType, BitStructType
+  auto *quant_int6_type =
+      TypeFactory::get_instance().get_quant_int_type(6, false, int32_type);
+  auto *quant_int5_type =
+      TypeFactory::get_instance().get_quant_int_type(5, false, int32_type);
+  auto *quant_int7_type =
+      TypeFactory::get_instance().get_quant_int_type(7, false, int32_type);
+  auto *quant_float11_type = TypeFactory::get_instance().get_quant_float_type(
+      quant_int5_type, quant_int6_type, float32_type);
+  auto *quant_fixed_type = TypeFactory::get_instance().get_quant_fixed_type(
+      quant_int7_type, float32_type, 2.0);
+  auto *bit_struct_type = TypeFactory::get_instance().get_bit_struct_type(
+      int32_type->as<PrimitiveType>(),
+      {quant_int6_type, quant_float11_type, quant_fixed_type}, {0, 6, 11},
+      {-1, -1, -1}, {{}, {}, {}});
+  // BitStructType doesn't have a deduplication mechanism, so we can't compare
+  // the pointers
+  EXPECT_EQ(bp.run(bit_struct_type)->to_string(), bit_struct_type->to_string());
+  auto json_value2 = liong::json::serialize(bit_struct_type);
+  const Type *deserialized2;
+  liong::json::deserialize(json_value2, deserialized2);
+  EXPECT_EQ(deserialized2->to_string(), bit_struct_type->to_string());
+
+  // Tests for QuantArrayType
+  auto *quant_array_type = TypeFactory::get_instance().get_quant_array_type(
+      int32_type->as<PrimitiveType>(), quant_int6_type, 3);
+  // QuantArrayType doesn't have a deduplication mechanism, so we can't compare
+  // the pointers
+  EXPECT_EQ(bp.run(quant_array_type)->to_string(),
+            quant_array_type->to_string());
+  auto json_value3 = liong::json::serialize(quant_array_type);
+  const Type *deserialized3;
+  liong::json::deserialize(json_value3, deserialized3);
+  EXPECT_EQ(deserialized3->to_string(), quant_array_type->to_string());
 }
 
 }  // namespace

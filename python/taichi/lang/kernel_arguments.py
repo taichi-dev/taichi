@@ -10,7 +10,7 @@ from taichi.lang.expr import Expr
 from taichi.lang.matrix import MatrixType, VectorType, make_matrix
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype
-from taichi.types.primitive_types import RefType, f32, u64
+from taichi.types.primitive_types import RefType, u64
 
 
 class KernelArgument:
@@ -54,7 +54,12 @@ def decl_scalar_arg(dtype):
         is_ref = True
         dtype = dtype.tp
     dtype = cook_dtype(dtype)
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype)
+    if is_ref:
+        arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(
+            dtype)
+    else:
+        arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
+            dtype)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
@@ -91,17 +96,19 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
 
 def decl_texture_arg(num_dimensions):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_texture_param(f32)
+    arg_id = impl.get_runtime().compiling_callable.insert_texture_param(
+        num_dimensions)
     return TextureSampler(
         _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
-def decl_rw_texture_arg(num_dimensions, num_channels, channel_format, lod):
+def decl_rw_texture_arg(num_dimensions, buffer_format, lod):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_texture_param(f32)
+    arg_id = impl.get_runtime().compiling_callable.insert_rw_texture_param(
+        num_dimensions, buffer_format)
     return RWTextureAccessor(
-        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, num_channels,
-                                          channel_format, lod), num_dimensions)
+        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions,
+                                          buffer_format, lod), num_dimensions)
 
 
 def decl_ret(dtype, real_func=False):

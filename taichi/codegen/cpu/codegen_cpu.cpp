@@ -226,7 +226,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 #ifdef TI_WITH_LLVM
 FunctionType CPUModuleToFunctionConverter::convert(
     const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
+    const std::vector<Callable::Parameter> &args,
     LLVMCompiledKernel data) const {
   TI_AUTO_PROF;
   auto jit_module = executor_->create_jit_module(std::move(data.module));

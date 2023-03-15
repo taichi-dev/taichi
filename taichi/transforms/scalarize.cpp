@@ -263,10 +263,14 @@ class Scalarize : public BasicStmtVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    auto &contents = stmt->contents;
+    auto const &contents = stmt->contents;
+    auto const &formats = stmt->formats;
     std::vector<std::variant<Stmt *, std::string>> new_contents;
+    // Sparse mapping between formatted expr and its specifier
+    std::map<Stmt *, std::string> new_formats;
     for (size_t i = 0; i < contents.size(); i++) {
-      auto content = contents[i];
+      auto const &content = contents[i];
+      auto const &format = formats[i];
       if (auto string_ptr = std::get_if<std::string>(&content)) {
         new_contents.push_back(*string_ptr);
       } else {
@@ -287,6 +291,9 @@ class Scalarize : public BasicStmtVisitor {
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
                 new_contents.push_back(matrix_init_stmt->values[index]);
+                if (format.has_value()) {
+                  new_formats[matrix_init_stmt->values[index]] = format.value();
+                }
                 if (j != n - 1)
                   new_contents.push_back(", ");
               }
@@ -298,6 +305,9 @@ class Scalarize : public BasicStmtVisitor {
           } else {
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back(matrix_init_stmt->values[i]);
+              if (format.has_value()) {
+                new_formats[matrix_init_stmt->values[i]] = format.value();
+              }
               if (i != m - 1)
                 new_contents.push_back(", ");
             }
@@ -305,12 +315,16 @@ class Scalarize : public BasicStmtVisitor {
           new_contents.push_back("]");
         } else {
           new_contents.push_back(print_stmt);
+          if (format.has_value()) {
+            new_formats[print_stmt] = format.value();
+          }
         }
       }
     }
 
     // Merge string contents
     std::vector<std::variant<Stmt *, std::string>> merged_contents;
+    std::vector<std::optional<std::string>> merged_formats;
     std::string merged_string = "";
     for (const auto &content : new_contents) {
       if (auto string_content = std::get_if<std::string>(&content)) {
@@ -318,16 +332,26 @@ class Scalarize : public BasicStmtVisitor {
       } else {
         if (!merged_string.empty()) {
           merged_contents.push_back(merged_string);
+          merged_formats.push_back(std::nullopt);
           merged_string = "";
         }
         merged_contents.push_back(content);
+        const auto format = new_formats.find(std::get<Stmt *>(content));
+        if (format != new_formats.end()) {
+          merged_formats.push_back(format->second);
+        } else {
+          merged_formats.push_back(std::nullopt);
+        }
       }
     }
-    if (!merged_string.empty())
+    if (!merged_string.empty()) {
       merged_contents.push_back(merged_string);
+      merged_formats.push_back(std::nullopt);
+    }
 
-    delayed_modifier_.insert_before(stmt,
-                                    Stmt::make<PrintStmt>(merged_contents));
+    assert(merged_contents.size() == merged_formats.size());
+    delayed_modifier_.insert_before(
+        stmt, Stmt::make<PrintStmt>(merged_contents, merged_formats));
     delayed_modifier_.erase(stmt);
   }
 
@@ -443,8 +467,7 @@ class Scalarize : public BasicStmtVisitor {
     auto cond_dtype = stmt->op1->ret_type;
     auto op2_dtype = stmt->op2->ret_type;
     auto op3_dtype = stmt->op3->ret_type;
-    if (cond_dtype->is<TensorType>() || op2_dtype->is<TensorType>() ||
-        op3_dtype->is<TensorType>()) {
+    if (cond_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // TernaryOpExpression::type_check().
       TI_ASSERT(cond_dtype->is<TensorType>() && op2_dtype->is<TensorType>() &&
@@ -477,6 +500,46 @@ class Scalarize : public BasicStmtVisitor {
       for (size_t i = 0; i < num_elements; i++) {
         auto ternary_stmt = std::make_unique<TernaryOpStmt>(
             stmt->op_type, cond_vals[i], op2_vals[i], op3_vals[i]);
+        matrix_init_values.push_back(ternary_stmt.get());
+        ternary_stmt->ret_type = primitive_type;
+
+        delayed_modifier_.insert_before(stmt, std::move(ternary_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      delayed_modifier_.erase(stmt);
+    } else if (cond_dtype->is<PrimitiveType>() &&
+               (op2_dtype->is<TensorType>() || op3_dtype->is<TensorType>())) {
+      TI_ASSERT(cond_dtype->is<PrimitiveType>() &&
+                op2_dtype->is<TensorType>() && op3_dtype->is<TensorType>());
+      TI_ASSERT(op2_dtype.get_shape() == op3_dtype.get_shape());
+      // Scalarization for LoadStmt should have already replaced all operands
+      // to MatrixInitStmt.
+      TI_ASSERT(stmt->op2->is<MatrixInitStmt>());
+      TI_ASSERT(stmt->op3->is<MatrixInitStmt>());
+
+      Stmt *cond_val = stmt->op1;
+
+      auto op2_matrix_init_stmt = stmt->op2->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op2_vals = op2_matrix_init_stmt->values;
+
+      auto op3_matrix_init_stmt = stmt->op3->cast<MatrixInitStmt>();
+      std::vector<Stmt *> op3_vals = op3_matrix_init_stmt->values;
+
+      TI_ASSERT(op2_vals.size() == op3_vals.size());
+
+      size_t num_elements = op2_vals.size();
+      auto primitive_type = stmt->ret_type.get_element_type();
+      std::vector<Stmt *> matrix_init_values;
+      for (size_t i = 0; i < num_elements; i++) {
+        auto ternary_stmt = std::make_unique<TernaryOpStmt>(
+            stmt->op_type, cond_val, op2_vals[i], op3_vals[i]);
         matrix_init_values.push_back(ternary_stmt.get());
         ternary_stmt->ret_type = primitive_type;
 

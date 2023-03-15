@@ -48,8 +48,10 @@ void SetImage::update_data(const SetImageInfo &info) {
   DevicePtr img_dev_ptr = info.img.dev_alloc.get_ptr();
   bool uses_host = img.field_source == FieldSource::HostMappedPtr;
   if (uses_host) {
-    DeviceAllocation staging = app_context_->device().allocate_memory(
-        {img_size_bytes, true, false, false, AllocUsage::None});
+    DeviceAllocation staging;
+    RhiResult res = app_context_->device().allocate_memory(
+        {img_size_bytes, true, false, false, AllocUsage::None}, &staging);
+    TI_ASSERT(res == RhiResult::success);
 
     // Map the staing buffer and perform memcpy
     void *dst_ptr{nullptr};
@@ -158,9 +160,13 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
   create_graphics_pipeline();
 
   // Create UBO
-  uniform_buffer_ = app_context_->device().allocate_memory_unique(
-      {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
-       /*export_sharing=*/false, AllocUsage::Uniform});
+  {
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
+        {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Uniform});
+    TI_ASSERT(res == RhiResult::success);
+    uniform_buffer_ = std::move(buf);
+  }
 
   // Create & upload vertex buffer (constant)
   const std::vector<Vertex> vertices = {
@@ -172,9 +178,13 @@ SetImage::SetImage(AppContext *app_context, VertexAttributes vbo_attrs) {
       {{1.f, 1.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 0.f}, {1.f, 1.f, 1.f}},
       {{1.f, -1.f, 0.f}, {0.f, 0.f, 1.f}, {1.f, 1.f}, {1.f, 1.f, 1.f}},
   };
-  vertex_buffer_ = app_context_->device().allocate_memory_unique(
-      {sizeof(Vertex) * vertices.size(), /*host_write=*/true,
-       /*host_read=*/false, /*export_sharing=*/false, AllocUsage::Vertex});
+  {
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
+        {sizeof(Vertex) * vertices.size(), /*host_write=*/true,
+         /*host_read=*/false, /*export_sharing=*/false, AllocUsage::Vertex});
+    TI_ASSERT(res == RhiResult::success);
+    vertex_buffer_ = std::move(buf);
+  }
   void *mapped_vbo{nullptr};
   RHI_VERIFY(
       app_context_->device().map(vertex_buffer_->get_ptr(0), &mapped_vbo));

@@ -3,8 +3,7 @@
 Last update: 2022-04-21
 
 ---
-
-Taichi's LLVM sparse runtime lives under the [`taichi/runtime/llvm`](https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm/runtime_module) directory. It includes one header file for every single SNode type, and a common [runtime.cpp](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/runtime.cpp) source file for all SNode types.
+The Taichi LLVM sparse runtime can be found in the taichi/runtime/llvm directory of the Taichi repository on GitHub. It consists of one header file for each SNode type and a single common source file, **runtime.cpp**, which applies to all SNode types. The URL for the Taichi repository on GitHub is: <https://github.com/taichi-dev/taichi/tree/master/taichi/runtime/llvm/runtime_module>
 
 # SNode
 
@@ -50,7 +49,7 @@ Layout of a `dense` SNode:
 
 ## `pointer` SNode
 
-`pointer` is usually the go-to sparse SNode. It allocates memory only when a cell is activated, and recycles the memory to a memory pool once the cell is deactivated. In this way, it saves the memory resource in large-scale grid computation. You can regard it as an `std::array<Cell*, N>`.
+The pointer SNode is a popular choice for sparse computation. It dynamically allocates memory only for activated cells and recycles it back into a memory pool once the cell is deactivated, conserving memory resources in large-scale grid computation. The pointer SNode can be thought of as an `std::array<Cell*, N>`.
 
 Upon initialization, Taichi preallocates a chunk of memory space named `ambient_elements`, which is shared across all inactive sparse SNodes. Therefore, dereferencing an inactive sparse SNode generates the default value (usually zero) stored in `ambient_elements`.
 
@@ -114,7 +113,7 @@ void Pointer_activate(Ptr meta_, Ptr node, int i) {
 4. The winning thread tries to acquire the lock using [`locked_task`](https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/locked_task.h).
 5. Retrieves the memory allocator (`node_allocators`) for this particular SNode, allocates a new cell, and stores the address of the allocated cell into `data_ptr`. Because the cell size of each SNode is different, the runtime has a dedicated allocator for each SNode, which knows how much space to allocate per cell.
 
-The deactivation and the checking-for-active procedures are quite similar. We omit them for brevity.
+The procedures for deactivating and checking the active status of cells are similar, so they have been omitted for brevity.
 
 ## `dynamic` SNode
 
@@ -208,7 +207,7 @@ i32 Dynamic_append(Ptr meta_, Ptr node_, i32 data) {
 
 # Runtime
 
-Runtime for the LLVM backends is in https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/runtime.cpp. Note that this file is *NOT* linked into Taichi's core C++ library. Instead, it is compiled into an LLVM byte code file (`.bc`). Upon starting Taichi, the `.bc` file is loaded back into the memory, de-serialized into an `llvm::Module`, and linked together with the JIT compiled Taichi kernels. This design has the advantage that the runtime code can be written once and shared between backends using LLVM, such as CPU and CUDA. In addition, the sparse runtime can be implemented in any language with enough abstraction (e.g., C++) instead of raw LLVM IR.
+The runtime code for the LLVM backends can be found at this URL: <https://github.com/taichi-dev/taichi/blob/master/taichi/runtime/llvm/runtime_module/runtime.cpp>. It is important to note that this file is not linked into the core C++ library of Taichi, but instead is compiled into an LLVM byte code file (`.bc`). When Taichi starts, the `.bc` file is loaded into memory, deserialized into an `llvm::Module`, and linked with the JIT compiled Taichi kernels. This design allows the runtime code to be written once and shared between all LLVM backends, such as CPU and CUDA. Furthermore, the sparse runtime can be implemented in any language with sufficient abstraction (e.g., C++) rather than in raw LLVM IR.
 
 The core data structure of this runtime is [`LLVMRuntime`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L543), which holds a handful of data:
 
@@ -396,7 +395,12 @@ void gc_parallel_1(RuntimeContext *context, int snode_id) {
 }
 ```
 
-It is important to understand that this stage must run on a single thread to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created to store the number of elements of `recycled_list` into `recycle_list_size_backup` in advance (1) and then clear the list (2). Fortunately, the computation task here is light and does not take too much time even running in serial.
+It is important to understand that this stage must run on a single thread in order to avoid data races on `recycled_list`. During GC, `recycled_list` must be cleared, with all of its contents transferred into `free_list`. If this were done in the third stage (which runs in parallel), it would be difficult to coordinate the event sequence of clearing and transferring among the GPU threads. As a result, this serial stage is created, when the following steps are implemented to handle the storage and clearing of the elements in the `recycled_list`:
+
+1. Back up the number of elements in the `recycled_list` into `recycle_list_size_backup`.
+2. Clear the `recycled_list`.
+
+Note: The computation task involved in these steps is relatively simple and does not pose a significant burden in terms of processing time, even when executed in serial.
 
 3. [`gc_parallel_2`](https://github.com/taichi-dev/taichi/blob/172cab8a57fcfc2d766fe2b7cd40af669dadf326/taichi/runtime/llvm/runtime.cpp#L1642-L1681): Replenishes `free_list` with the indices in `recycled_list`, then zero-fills all the recycled memory locations.
 

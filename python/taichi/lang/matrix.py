@@ -227,7 +227,6 @@ class Matrix(TaichiOperations):
 
     def __init__(self, arr, dt=None):
         if not isinstance(arr, (list, tuple, np.ndarray)):
-            print(arr, type(arr))
             raise TaichiTypeError(
                 "An Matrix/Vector can only be initialized with an array-like object"
             )

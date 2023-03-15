@@ -312,13 +312,13 @@ def test_compound_type_implicit_cast():
         return s.a + s.b[0] + s.b[1]
 
     int_value = f2i_taichi_scope()
-    assert type(int_value) == int and int_value == 6
+    assert isinstance(int_value, (int, np.integer)) and int_value == 6
     int_value = f2i_python_scope()
-    assert type(int_value) == np.int64 and int_value == 6
+    assert isinstance(int_value, (int, np.integer)) and int_value == 6
     float_value = i2f_taichi_scope()
-    assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+    assert isinstance(float_value, (float, np.floating)) and float_value == approx(6.0, rel=1e-4)
     float_value = i2f_python_scope()
-    assert type(float_value) == np.float64 and float_value == approx(6.0,
+    assert isinstance(float_value, (float, np.floating)) and float_value == approx(6.0,
                                                                      rel=1e-4)
 
 

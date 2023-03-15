@@ -4,7 +4,7 @@ from taichi.lang import impl
 from taichi.lang.common_ops import TaichiOperations
 from taichi.lang.exception import TaichiCompilationError, TaichiTypeError
 from taichi.lang.matrix import make_matrix
-from taichi.lang.util import is_taichi_class, to_numpy_type
+from taichi.lang.util import is_matrix_class, is_taichi_class, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.primitive_types import integer_types, real_types
 
@@ -20,10 +20,8 @@ class Expr(TaichiOperations):
             elif isinstance(args[0], Expr):
                 self.ptr = args[0].ptr
                 self.tb = args[0].tb
-            elif is_taichi_class(args[0]):
-                raise TaichiTypeError(
-                    'Cannot initialize scalar expression from '
-                    f'taichi class: {type(args[0])}')
+            elif is_matrix_class(args[0]):
+                self.ptr = make_matrix(args[0].to_list()).ptr
             elif isinstance(args[0], (list, tuple)):
                 self.ptr = make_matrix(args[0]).ptr
             else:

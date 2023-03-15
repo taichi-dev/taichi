@@ -6,21 +6,23 @@
 #include "taichi/inc/constants.h"
 #include <stdint.h>
 #include <map>
+#include <set>
 
 namespace taichi::lang {
-namespace cuda {
 
-class CudaCachingAllocator {
+class CachingAllocator {
  public:
-  explicit CudaCachingAllocator(LlvmDevice *device);
+  explicit CachingAllocator(LlvmDevice *device);
 
   uint64_t *allocate(const LlvmDevice::LlvmRuntimeAllocParams &params);
   void release(size_t sz, uint64_t *ptr);
 
  private:
-  std::multimap<size_t, uint64_t *> mem_blocks_;
+  void merge_and_insert(uint8_t *ptr, std::size_t size);
+
+  std::set<std::pair<std::size_t, uint8_t *>> mem_blocks_;
+  std::map<uint8_t *, std::size_t> ptr_map_;
   LlvmDevice *device_{nullptr};
 };
 
-}  // namespace cuda
 }  // namespace taichi::lang

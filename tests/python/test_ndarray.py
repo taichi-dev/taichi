@@ -273,7 +273,7 @@ def test_ndarray_deepcopy():
 
 
 @test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
-def test_ndarray_cuda_caching_allocator():
+def test_ndarray_caching_allocator():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)

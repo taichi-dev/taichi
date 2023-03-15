@@ -1,6 +1,6 @@
-from collections import defaultdict
-import subprocess
 import os
+import subprocess
+from collections import defaultdict
 from glob import glob
 from typing import Dict, List
 
@@ -13,11 +13,13 @@ OUTPUT_LIB_PATH = f"{INSTALL_DIR}/libtaichi_c_api.a"
 if os.path.exists(OUTPUT_MACHO_PATH):
     os.remove(OUTPUT_MACHO_PATH)
 
+
 def find_c_api_build_dir() -> str:
     for path, dirs, files in os.walk("build-taichi-ios-arm64/"):
         if "taichi_c_api.build" in path:
             return path
     assert False, "cannot find taichi c-api build directory"
+
 
 IMPL_DIR = find_c_api_build_dir()
 print("c-api object find root is:", IMPL_DIR)
@@ -37,13 +39,17 @@ print()
 
 SEARCH_ROOT = "build-taichi-ios-arm64"
 
+
 class Symbol:
     def __init__(self):
         self.defined_in = []
         self.depended_on_by = []
 
+
 def dump_symbols(o: str) -> Dict[str, List[str]]:
-    symbols = str(subprocess.check_output(["objdump", "--demangle", "--syms", o]), encoding="utf8").splitlines()
+    symbols = str(subprocess.check_output(
+        ["objdump", "--demangle", "--syms", o]),
+                  encoding="utf8").splitlines()
 
     while not symbols[0].startswith("SYMBOL TABLE:"):
         symbols = symbols[1:]
@@ -57,6 +63,7 @@ def dump_symbols(o: str) -> Dict[str, List[str]]:
         k, v = x.split(' ', 1)
         out[k] += [v]
     return out
+
 
 # symbol name -> obj file paths
 SYMBOL_DEFS = defaultdict(list)
@@ -131,7 +138,10 @@ for dep in set(DEPS):
     print(f"  {dep}")
 print()
 
-cmd = ["clang++", "-target", "aarch64-apple-ios13.0", "-r", "-o", OUTPUT_MACHO_PATH] + DEPS
+cmd = [
+    "clang++", "-target", "aarch64-apple-ios13.0", "-r", "-o",
+    OUTPUT_MACHO_PATH
+] + DEPS
 subprocess.check_call(cmd)
 print(f"prelinked mach-o to: {OUTPUT_MACHO_PATH}")
 

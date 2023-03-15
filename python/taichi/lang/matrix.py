@@ -1511,12 +1511,12 @@ class MatrixType(CompoundType):
         ])
 
     def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
-        if id(self.dtype) in primitive_types.integer_type_ids:
+        if self.dtype in primitive_types.integer_types:
             if is_signed(cook_dtype(self.dtype)):
                 get_ret_func = launch_ctx.get_struct_ret_int
             else:
                 get_ret_func = launch_ctx.get_struct_ret_uint
-        elif id(self.dtype) in primitive_types.real_type_ids:
+        elif self.dtype in primitive_types.real_types:
             get_ret_func = launch_ctx.get_struct_ret_float
         else:
             raise TaichiRuntimeTypeError(

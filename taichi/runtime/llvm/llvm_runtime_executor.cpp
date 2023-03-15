@@ -567,6 +567,13 @@ void LlvmRuntimeExecutor::finalize() {
 #endif
     }
   }
+  finalized_ = true;
+}
+
+LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
+  if (!finalized_) {
+    finalize();
+  }
 }
 
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,

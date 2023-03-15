@@ -3,6 +3,7 @@
 #include <taichi/program/context.h>
 #undef TI_RUNTIME_HOST
 #include "taichi/util/action_recorder.h"
+#include "fp16.h"
 
 namespace taichi::lang {
 LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
@@ -84,7 +85,7 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
       ctx_->set_arg(arg_id, (float32)d);
       return;
     }
-    uint16 half = bit::float_to_half(d);
+    uint16 half = fp16_ieee_from_fp32_value((float32)d);
     ctx_->set_arg(arg_id, half);
   } else {
     TI_NOT_IMPLEMENTED

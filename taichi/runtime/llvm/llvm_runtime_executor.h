@@ -36,7 +36,7 @@ class CpuDevice;
 class LlvmRuntimeExecutor {
  public:
   LlvmRuntimeExecutor(CompileConfig &config, KernelProfilerBase *profiler);
-
+  virtual ~LlvmRuntimeExecutor();
   /**
    * Initializes the runtime system for LLVM based backends.
    */
@@ -160,6 +160,7 @@ class LlvmRuntimeExecutor {
   friend LlvmProgramImpl;
   friend SNodeTreeBufferManager;
 
+  bool finalized_{false};
   KernelProfilerBase *profiler_ = nullptr;
 };
 

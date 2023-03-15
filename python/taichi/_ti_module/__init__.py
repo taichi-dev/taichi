@@ -86,13 +86,22 @@ def module_build_impl(a):
         module_path = f"{source_path.name[:-3]}.tcm"
     module_path = Path(module_path)
 
+    print()
     print(f"Building Taichi module: {source_path}")
 
-    runpy.run_path(str(source_path), run_name="__main__")
+    d = runpy.run_path(str(source_path), run_name="__main__")
 
-    m = ti.aot.Module()
+    required_caps = d["REQUIRED_CAPS"] if "REQUIRED_CAPS" in d else []
+    assert isinstance(required_caps, list), "REQUIRED_CAPS must be a list."
+
+    if required_caps:
+        print("Module requires the following capabilities:")
+        for cap in required_caps:
+            print(f"  - {cap}")
+
+    m = ti.aot.Module(caps=required_caps)
     for kernel in _aot_kernels:
-        print("+ Kernel:", kernel.__name__)
+        print("Added kernel:", kernel.__name__)
         m.add_kernel(kernel)
 
     if module_path.name.endswith(".tcm"):
@@ -101,6 +110,7 @@ def module_build_impl(a):
         m.save(str(module_path))
 
     print(f"Module is archive to: {module_path}")
+    print()
 
 
 def module(arguments: List[str]):

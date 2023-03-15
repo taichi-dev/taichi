@@ -7,6 +7,7 @@ import taichi.aot.conventions
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 from taichi.aot.module import Module
 from taichi.aot.record import *
+
 import taichi as ti
 
 _aot_kernels = []

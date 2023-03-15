@@ -236,7 +236,9 @@ def mouse_addspeed(cur_posx: int, cur_posy: int, prev_posx: int,
         vec2 = ti.Vector([i - prev_posx, j - prev_posy])
         dotans = tm.dot(vec1, vec2)
         distance = abs(tm.cross(vec1, vec2)) / (tm.length(vec1) + 0.001)
-        if dotans >= 0 and dotans <= eulerSimParam['mouse_respondDistance'] * tm.length(vec1) and distance <= mouseRadius:
+        if dotans >= 0 and dotans <= eulerSimParam[
+                'mouse_respondDistance'] * tm.length(
+                    vec1) and distance <= mouseRadius:
             new_vf[i, j] = vf[i, j] + vec1 * eulerSimParam['mouse_speed']
         else:
             new_vf[i, j] = vf[i, j]

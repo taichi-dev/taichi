@@ -8,8 +8,7 @@ from taichi._lib import core as _ti_core
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 
-import taichi as ti
-from taichi.aot import _aot_kernels
+from taichi.aot import _aot_kernels, Module
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -99,7 +98,7 @@ def module_build_impl(a):
         for cap in required_caps:
             print(f"  - {cap}")
 
-    m = ti.aot.Module(caps=required_caps)
+    m = Module(caps=required_caps)
     for kernel in _aot_kernels:
         print("Added kernel:", kernel.__name__)
         m.add_kernel(kernel)

@@ -2793,6 +2793,7 @@ llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
   auto *args_type = current_callable->args_type;
   auto *arg_type = args_type->get_element_type(index);
   std::vector<llvm::Value *> gep_index;
+  gep_index.reserve(index.size() + 1);
   gep_index.push_back(tlctx->get_constant(0));
   for (int ind : index) {
     gep_index.push_back(tlctx->get_constant(ind));
@@ -2807,11 +2808,14 @@ llvm::Value *TaskCodeGenLLVM::get_args_ptr(Callable *callable,
   auto *runtime_context_type = get_runtime_type("RuntimeContext");
   auto *args_type = tlctx->get_data_type(callable->args_type);
   auto *zero = tlctx->get_constant(0);
+  // The address of the arg buffer is the first element of RuntimeContext
   auto *args_ptr =
       builder->CreateGEP(runtime_context_type, context, {zero, zero});
+  // casting from i8 ** to args_type **
   args_ptr = builder->CreatePointerCast(
       args_ptr,
       llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
+  // loading the address of the arg buffer (args_type *)
   args_ptr =
       builder->CreateLoad(llvm::PointerType::get(args_type, 0), args_ptr);
   return args_ptr;
@@ -2822,11 +2826,14 @@ void TaskCodeGenLLVM::set_args_ptr(Callable *callable,
   auto *runtime_context_type = get_runtime_type("RuntimeContext");
   auto *args_type = tlctx->get_data_type(callable->args_type);
   auto *zero = tlctx->get_constant(0);
+  // The address of the arg buffer is the first element of RuntimeContext
   auto *args_ptr =
       builder->CreateGEP(runtime_context_type, context, {zero, zero});
+  // casting from i8 ** to args_type **
   args_ptr = builder->CreatePointerCast(
       args_ptr,
       llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
+  // storing the address of the arg buffer (args_type *)
   builder->CreateStore(ptr, args_ptr);
 };
 

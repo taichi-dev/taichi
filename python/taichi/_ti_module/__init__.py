@@ -8,7 +8,7 @@ from taichi._lib import core as _ti_core
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 
-from taichi.aot import _aot_kernels, Module
+from taichi.aot import Module, _aot_kernels
 
 
 def module_cppgen(parser: argparse.ArgumentParser):

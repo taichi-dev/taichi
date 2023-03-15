@@ -133,18 +133,16 @@ def _binary_operation(taichi_op, python_op, a, b):
 
 
 def _ternary_operation(taichi_op, python_op, a, b, c):
-    if isinstance(a, Field) or isinstance(b, Field) or isinstance(
-            c, Field):
+    if isinstance(a, Field) or isinstance(b, Field) or isinstance(c, Field):
         return NotImplemented
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
         return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
-    if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(
-            c, Matrix):
+    if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(c, Matrix):
         return Matrix(
             python_op(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b),
-                _read_matrix_or_scalar(c)))
+                      _read_matrix_or_scalar(c)))
     return python_op(a, b, c)
 
 

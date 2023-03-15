@@ -15,6 +15,17 @@ def process_file(file_path, new_file_path):
             include_section_end = index
 
     macro_def = '''
+#include "AOTPlugin.h"
+
+/*
+  This is a modified version of the original "taichi/cpp/taichi.hpp"
+  Since UE5 loads third-party libraries in "dlopen" manner, we need to
+  use "dlsym" to get the address of the function we want to call.
+
+  All direct function calls to C-API in the original taichi.hpp are
+  replaced by the CALL_C_API_FUNC macro.
+*/
+
 #define CALL_C_API_FUNC(FunctionName)                                                                                                                            \\
 []() {                                                                                                                                                     \\
 	using FunctionType = decltype(&FunctionName);                                                                                                          \\

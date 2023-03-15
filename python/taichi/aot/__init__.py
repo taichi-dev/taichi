@@ -10,9 +10,11 @@ from taichi.aot.record import *
 
 _aot_kernels = []
 
+
 def export(f):
     import taichi as ti
-    assert hasattr(f, "_is_wrapped_kernel"), "Only Taichi kernels can be exported"
+    assert hasattr(f,
+                   "_is_wrapped_kernel"), "Only Taichi kernels can be exported"
     out = f
     _aot_kernels.append(out)
     return out

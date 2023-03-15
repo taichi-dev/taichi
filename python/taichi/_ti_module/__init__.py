@@ -1,15 +1,15 @@
 import argparse
 import json
-from pathlib import Path
 import runpy
+from pathlib import Path
 from typing import List
 
 from taichi._lib import core as _ti_core
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
-from taichi.aot import _aot_kernels
 
 import taichi as ti
+from taichi.aot import _aot_kernels
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -60,7 +60,8 @@ def module_cppgen_impl(a):
 
 def module_build(parser: argparse.ArgumentParser):
     """Build Taichi modules from python scripts."""
-    parser.add_argument("SOURCE", help="Path to the Taichi program source (Python script).")
+    parser.add_argument(
+        "SOURCE", help="Path to the Taichi program source (Python script).")
     parser.add_argument("-o",
                         "--output",
                         type=str,

@@ -254,7 +254,7 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
           // we can compeletely comply to opaque pointer and replace the
           // following code with llvm::PointerType::get(M.getContext(),
           // usigned(1))
-          llvm::PointerType::getWithSamePointeeType(
+          auto new_type = llvm::PointerType::getWithSamePointeeType(
               llvm::dyn_cast<llvm::PointerType>(arg.getType()), unsigned(1));
 
           new_func_params.push_back(new_type);

@@ -1,5 +1,7 @@
+# 2D Euler Fluid Simulation using Taichi, originally created by @Lee-abcde
 import taichi as ti
 import taichi.math as tm
+from taichi.examples.patterns import taichi_logo
 
 ti.init(arch=ti.gpu)
 
@@ -31,50 +33,6 @@ def bilerp(vf, u, v, shape):
     # fract
     fu, fv = s - iu, t - iv
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
-
-#####################
-#   Taichi Logo auto generation
-#####################
-@ti.func
-def inside(p, c, r):
-  return (p - c).norm_sqr() <= r * r
-
-@ti.func
-def inside_taichi(p_):
-  p = p_
-  p = tm.vec2(0.5, 0.5) + (p - tm.vec2(0.5, 0.5)) * 1.11
-  ret = -1
-  if not inside(p, tm.vec2(0.50, 0.50), 0.55):
-    if ret == -1:
-      ret = 0
-  if not inside(p, tm.vec2(0.50, 0.50), 0.50):
-    if ret == -1:
-      ret = 1
-  if inside(p, tm.vec2(0.50, 0.25), 0.09):
-    if ret == -1:
-      ret = 1
-  if inside(p, tm.vec2(0.50, 0.75), 0.09):
-    if ret == -1:
-      ret = 0
-  if inside(p, tm.vec2(0.50, 0.25), 0.25):
-    if ret == -1:
-      ret = 0
-  if inside(p, tm.vec2(0.50, 0.75), 0.25):
-    if ret == -1:
-      ret = 1
-  if p[0] < 0.5:
-    if ret == -1:
-      ret = 1
-  else:
-    if ret == -1:
-      ret = 0
-  return ret
-
-@ti.kernel
-def paint(n_x:int,n_y:int,x:ti.template()):
-  for i, j in ti.ndrange(n_x * 4, n_y * 4):
-      ret = 1.0 - inside_taichi(tm.vec2(1.0 * i / n_x / 4, 1.0 * j / n_y / 4))
-      x[i // 4, j // 4] += ret / 16
 
 #####################
 #   Simulation parameters
@@ -113,12 +71,15 @@ velocities_pair = TexPair(velocityField, _new_velocityField)
 pressure_pair = TexPair(pressField, _new_pressField)
 color_pair = TexPair(colorField, _new_colorField)
 
-# @ti.kernel
+@ti.kernel
 def init_field():
     # init pressure and velocity fieldfield
     pressField.fill(0)
     velocityField.fill(0)
-    paint(eulerSimParam['shape'][0],eulerSimParam['shape'][1], colorField)
+    for i, j in ti.ndrange(eulerSimParam['shape'][0] * 4, eulerSimParam['shape'][1] * 4):
+        # 4x4 super sampling:
+        ret = taichi_logo(ti.Vector([i, j]) / (eulerSimParam['shape'][0] * 4))
+        colorField[i // 4, j // 4] += ret / 16
 
 @ti.kernel
 def advection(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):

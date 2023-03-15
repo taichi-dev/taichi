@@ -41,8 +41,7 @@ runtimes/libtaichi_python*
 .pypirc
 dist/
 python/MANIFEST
-build/
-build_clang_tidy/
+build*
 bin/
 tmp/
 cmake-build-*

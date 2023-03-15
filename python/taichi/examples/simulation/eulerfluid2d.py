@@ -106,7 +106,7 @@ def vorticity_projection(cf: ti.template(), vf: ti.template(),
             0.5 * (cf[i, j + 1] - cf[i, j - 1]), 0
         ])
         GradCurlLength = tm.length(gradcurl)
-        if (GradCurlLength > 1e-5):
+        if GradCurlLength > 1e-5:
             force = eulerSimParam['curl_param'] * tm.cross(
                 gradcurl / GradCurlLength, ti.Vector([0, 0, 1]))
             vf_new[i, j] = vf[i, j] + eulerSimParam['dt'] * force[:2]
@@ -223,9 +223,7 @@ def mouse_addspeed(cur_posx: int, cur_posy: int, prev_posx: int,
         vec2 = ti.Vector([i - prev_posx, j - prev_posy])
         dotans = tm.dot(vec1, vec2)
         distance = abs(tm.cross(vec1, vec2)) / (tm.length(vec1) + 0.001)
-        if dotans >= 0 and dotans <= eulerSimParam[
-                'mouse_respondDistance'] * tm.length(
-                    vec1) and distance <= mouseRadius:
+        if dotans >= 0 and dotans <= eulerSimParam['mouse_respondDistance'] * tm.length(vec1) and distance <= mouseRadius:
             new_vf[i, j] = vf[i, j] + vec1 * eulerSimParam['mouse_speed']
         else:
             new_vf[i, j] = vf[i, j]

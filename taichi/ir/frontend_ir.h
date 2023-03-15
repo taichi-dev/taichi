@@ -165,15 +165,13 @@ class FrontendIfStmt : public Stmt {
 class FrontendPrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Expr, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit FrontendPrintStmt(const std::vector<EntryType> &contents_) {
-    for (const auto &c : contents_) {
-      if (std::holds_alternative<Expr>(c))
-        contents.push_back(std::get<Expr>(c));
-      else
-        contents.push_back(c);
-    }
+  FrontendPrintStmt(const std::vector<EntryType> &contents_,
+                    const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
   }
 
   TI_DEFINE_ACCEPT
@@ -974,7 +972,8 @@ class ASTBuilder {
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
-  void create_print(std::vector<std::variant<Expr, std::string>> contents);
+  void create_print(std::vector<std::variant<Expr, std::string>> contents,
+                    std::vector<std::optional<std::string>> formats);
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
   void begin_frontend_if(const Expr &cond);

@@ -1349,8 +1349,9 @@ void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
 }
 
 void ASTBuilder::create_print(
-    std::vector<std::variant<Expr, std::string>> contents) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents));
+    std::vector<std::variant<Expr, std::string>> contents,
+    std::vector<std::optional<std::string>> formats) {
+  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1402,7 +1403,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
                                                  const ExprGroup &args) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
-  if (func->ret_type) {
+  if (!func->rets.empty()) {
     auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,

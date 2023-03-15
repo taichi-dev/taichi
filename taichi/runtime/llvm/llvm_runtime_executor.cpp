@@ -534,6 +534,13 @@ void LlvmRuntimeExecutor::finalize() {
       llvm_device()->dealloc_memory(preallocated_device_buffer_alloc_);
     }
   }
+  finalized_ = true;
+}
+
+LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
+  if (!finalized_) {
+    finalize();
+  }
 }
 
 void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,

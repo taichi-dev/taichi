@@ -141,7 +141,7 @@ class LowerAST : public IRVisitor {
         new_contents.push_back(x);
       }
     }
-    fctx.push_back<PrintStmt>(new_contents);
+    fctx.push_back<PrintStmt>(new_contents, stmt->formats);
     stmt->parent->replace_with(stmt, std::move(fctx.stmts));
   }
 

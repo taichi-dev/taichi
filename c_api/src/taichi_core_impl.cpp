@@ -5,6 +5,7 @@
 #include "taichi_metal_impl.h"
 #include "taichi/program/ndarray.h"
 #include "taichi/program/texture.h"
+#include "taichi/program/launch_context_builder.h"
 #include "taichi/common/virtual_dir.h"
 #include "taichi/common/utils.h"
 
@@ -713,8 +714,11 @@ void ti_launch_kernel(TiRuntime runtime,
     return;
   }
 
+  auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
+
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
+  taichi::lang::LaunchContextBuilder builder(ti_kernel, &runtime_context);
   std::vector<std::unique_ptr<taichi::lang::DeviceAllocation>> devallocs;
 
   for (uint32_t i = 0; i < arg_count; ++i) {
@@ -795,7 +799,7 @@ void ti_launch_kernel(TiRuntime runtime,
       }
     }
   }
-  ((taichi::lang::aot::Kernel *)kernel)->launch(&runtime_context);
+  ti_kernel->launch(&runtime_context);
   TI_CAPI_TRY_CATCH_END();
 }
 

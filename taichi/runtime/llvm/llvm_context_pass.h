@@ -249,8 +249,12 @@ struct AMDGPUConvertFuncParamAddressSpacePass : public ModulePass {
       std::vector<llvm::Type *> new_func_params;
       for (auto &arg : f->args()) {
         if (arg.getType()->getTypeID() == llvm::Type::PointerTyID) {
-          auto &context = M.getContext();
-          auto new_type = llvm::PointerType::get(context, unsigned(1));
+          // This is a temporary LLVM interface to handle transition from typed
+          // pointer to opaque pointer In the future, if we only clang++ > 14,
+          // we can compeletely comply to opaque pointer and replace the
+          // following code with llvm::PointerType::get(M.getContext(),
+          // usigned(1))
+          llvm::PointerType::getWithSamePointeeType(arg.getType(), unsigned(1));
 
           new_func_params.push_back(new_type);
         } else {

@@ -1,9 +1,11 @@
 # 2D Euler Fluid Simulation using Taichi, originally created by @Lee-abcde
-import taichi as ti
-import taichi.math as tm
 from taichi.examples.patterns import taichi_logo
 
+import taichi as ti
+import taichi.math as tm
+
 ti.init(arch=ti.gpu)
+
 
 #####################
 #   Bilinear Interpolation function
@@ -16,10 +18,12 @@ def sample(vf, u, v, shape):
     j = ti.max(0, ti.min(shape[1] - 1, j))
     return vf[i, j]
 
+
 @ti.func
 def lerp(vl, vr, frac):
     # frac: [0.0, 1.0]
     return (1 - frac) * vl + frac * vr
+
 
 @ti.func
 def bilerp(vf, u, v, shape):
@@ -34,6 +38,7 @@ def bilerp(vf, u, v, shape):
     fu, fv = s - iu, t - iv
     return lerp(lerp(a, b, fu), lerp(c, d, fu), fv)
 
+
 #####################
 #   Simulation parameters
 #####################
@@ -43,9 +48,11 @@ eulerSimParam = {
     'iteration_step': 20,
     'mouse_radius': 0.01,  # [0.0,1.0] float
     'mouse_speed': 125.,
-    'mouse_respondDistance': 0.5,  # for every frame, only half the trace of the mouse will influence water
+    'mouse_respondDistance':
+    0.5,  # for every frame, only half the trace of the mouse will influence water
     'curl_param': 15
 }
+
 
 #   Double Buffer
 class TexPair:
@@ -55,6 +62,7 @@ class TexPair:
 
     def swap(self):
         self.cur, self.nxt = self.nxt, self.cur
+
 
 velocityField = ti.Vector.field(2, float, shape=(eulerSimParam['shape']))
 _new_velocityField = ti.Vector.field(2, float, shape=(eulerSimParam['shape']))
@@ -71,15 +79,18 @@ velocities_pair = TexPair(velocityField, _new_velocityField)
 pressure_pair = TexPair(pressField, _new_pressField)
 color_pair = TexPair(colorField, _new_colorField)
 
+
 @ti.kernel
 def init_field():
     # init pressure and velocity fieldfield
     pressField.fill(0)
     velocityField.fill(0)
-    for i, j in ti.ndrange(eulerSimParam['shape'][0] * 4, eulerSimParam['shape'][1] * 4):
+    for i, j in ti.ndrange(eulerSimParam['shape'][0] * 4,
+                           eulerSimParam['shape'][1] * 4):
         # 4x4 super sampling:
         ret = taichi_logo(ti.Vector([i, j]) / (eulerSimParam['shape'][0] * 4))
         colorField[i // 4, j // 4] += ret / 16
+
 
 @ti.kernel
 def advection(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
@@ -91,11 +102,13 @@ def advection(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
                         (eulerSimParam['shape']))
         new_qf[i, j] = q_prev
 
+
 @ti.kernel
 def curl(vf: ti.template(), cf: ti.template()):
     for i, j in vf:
         cf[i, j] = 0.5 * ((vf[i + 1, j][1] - vf[i - 1, j][1]) -
                           (vf[i, j + 1][0] - vf[i, j - 1][0]))
+
 
 @ti.kernel
 def vorticity_projection(cf: ti.template(), vf: ti.template(),

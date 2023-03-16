@@ -427,12 +427,7 @@ class StructField(Field):
 
     def _register_fields(self):
         for k in self.keys:
-            setattr(
-                StructField, k,
-                property(
-                    StructField._make_getter(k),
-                    StructField._make_setter(k),
-                ))
+            setattr(self, k, self.field_dict[k])
 
     def _get_field_members(self):
         """Gets A flattened list of all struct elements.

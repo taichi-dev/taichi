@@ -163,10 +163,7 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val, rhs->val)) {
-      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-      stmt->replace_usages_with(evaluated.get());
-      modifier.insert_before(stmt, std::move(evaluated));
-      modifier.erase(stmt);
+      insert_and_erase(stmt, new_constant);
     }
   }
 
@@ -182,7 +179,6 @@ class ConstantFold : public BasicStmtVisitor {
     if (stmt->is_cast()) {
       bool cast_available = true;
       TypedConstant new_constant(stmt->ret_type);
-      auto operand = stmt->operand->cast<ConstStmt>();
       if (stmt->op_type == UnaryOpType::cast_bits) {
         new_constant.value_bits = operand->val.value_bits;
       } else {
@@ -195,20 +191,14 @@ class ConstantFold : public BasicStmtVisitor {
         }
       }
       if (cast_available) {
-        auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-        stmt->replace_usages_with(evaluated.get());
-        modifier.insert_before(stmt, std::move(evaluated));
-        modifier.erase(stmt);
+        insert_and_erase(stmt, new_constant);
         return;
       }
     }
     auto dst_type = stmt->ret_type;
     TypedConstant new_constant(dst_type);
     if (jit_evaluate_unary_op(new_constant, stmt, operand->val)) {
-      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-      stmt->replace_usages_with(evaluated.get());
-      modifier.insert_before(stmt, std::move(evaluated));
-      modifier.erase(stmt);
+      insert_and_erase(stmt, new_constant);
     }
   }
 
@@ -228,6 +218,14 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
     return modified;
+  }
+
+ private:
+  void insert_and_erase(Stmt *stmt, const TypedConstant &new_constant) {
+    auto evaluated = Stmt::make<ConstStmt>(new_constant);
+    stmt->replace_usages_with(evaluated.get());
+    modifier.insert_before(stmt, std::move(evaluated));
+    modifier.erase(stmt);
   }
 };
 

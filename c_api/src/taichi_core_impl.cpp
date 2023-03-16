@@ -717,8 +717,8 @@ void ti_launch_kernel(TiRuntime runtime,
   auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
 
   Runtime &runtime2 = *((Runtime *)runtime);
-  taichi::lang::RuntimeContext &runtime_context = runtime2.runtime_context_;
-  taichi::lang::LaunchContextBuilder builder(ti_kernel, &runtime_context);
+  taichi::lang::LaunchContextBuilder builder(ti_kernel);
+  runtime2.prepare_launch_context(builder);
   std::vector<std::unique_ptr<taichi::lang::DeviceAllocation>> devallocs;
 
   for (uint32_t i = 0; i < arg_count; ++i) {
@@ -729,18 +729,18 @@ void ti_launch_kernel(TiRuntime runtime,
           case TI_DATA_TYPE_I16: {
             int16_t arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x16, sizeof(arg_val));
-            runtime_context.set_arg(i, arg_val);
+            builder.set_arg(i, arg_val);
             break;
           }
           case TI_DATA_TYPE_U16: {
             uint16_t arg_val = arg.value.scalar.value.x16;
-            runtime_context.set_arg(i, arg_val);
+            builder.set_arg(i, arg_val);
             break;
           }
           case TI_DATA_TYPE_F16: {
             float arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x32, sizeof(arg_val));
-            runtime_context.set_arg(i, arg_val);
+            builder.set_arg(i, arg_val);
             break;
           }
           default: {
@@ -754,11 +754,11 @@ void ti_launch_kernel(TiRuntime runtime,
       }
 
       case TI_ARGUMENT_TYPE_I32: {
-        runtime_context.set_arg(i, arg.value.i32);
+        builder.set_arg(i, arg.value.i32);
         break;
       }
       case TI_ARGUMENT_TYPE_F32: {
-        runtime_context.set_arg(i, arg.value.f32);
+        builder.set_arg(i, arg.value.f32);
         break;
       }
       case TI_ARGUMENT_TYPE_NDARRAY: {
@@ -774,7 +774,7 @@ void ti_launch_kernel(TiRuntime runtime,
         std::vector<int> shape(ndarray.shape.dims,
                                ndarray.shape.dims + ndarray.shape.dim_count);
 
-        runtime_context.set_arg_ndarray(i, (intptr_t)devalloc.get(), shape);
+        builder.set_arg_ndarray_impl(i, (intptr_t)devalloc.get(), shape);
 
         devallocs.emplace_back(std::move(devalloc));
         break;
@@ -787,8 +787,8 @@ void ti_launch_kernel(TiRuntime runtime,
         int width = arg.value.texture.extent.width;
         int height = arg.value.texture.extent.height;
         int depth = arg.value.texture.extent.depth;
-        runtime_context.set_arg_rw_texture(i, (intptr_t)devalloc.get(),
-                                           {width, height, depth});
+        builder.set_arg_rw_texture_impl(i, (intptr_t)devalloc.get(),
+                                        {width, height, depth});
         devallocs.emplace_back(std::move(devalloc));
         break;
       }
@@ -799,7 +799,7 @@ void ti_launch_kernel(TiRuntime runtime,
       }
     }
   }
-  ti_kernel->launch(&runtime_context);
+  ti_kernel->launch(builder);
   TI_CAPI_TRY_CATCH_END();
 }
 

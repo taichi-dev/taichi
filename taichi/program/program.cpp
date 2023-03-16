@@ -499,8 +499,8 @@ int Program::allocate_snode_tree_id() {
   }
 }
 
-void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  program_impl_->prepare_runtime_context(ctx);
+void Program::prepare_runtime_context(LaunchContextBuilder &ctx) {
+  program_impl_->prepare_launch_context(ctx);
 }
 
 void Program::enqueue_compute_op_lambda(

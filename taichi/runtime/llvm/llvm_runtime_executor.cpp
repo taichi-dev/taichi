@@ -751,8 +751,8 @@ LLVMRuntime *LlvmRuntimeExecutor::get_llvm_runtime() {
   return static_cast<LLVMRuntime *>(llvm_runtime_);
 }
 
-void LlvmRuntimeExecutor::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->runtime = get_llvm_runtime();
+void LlvmRuntimeExecutor::prepare_launch_context(LaunchContextBuilder &ctx) {
+  ctx.get_context().runtime = get_llvm_runtime();
 }
 
 void LlvmRuntimeExecutor::init_runtime_jit_module(

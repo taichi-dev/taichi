@@ -22,6 +22,8 @@ class LlvmRuntime : public Runtime {
 
   void check_runtime_error();
   taichi::lang::Device &get() override;
+  void prepare_launch_context(
+      taichi::lang::LaunchContextBuilder &builder) override;
 
  private:
   /* Internally used interfaces */
@@ -43,6 +45,7 @@ class LlvmRuntime : public Runtime {
   std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
   std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
   taichi::uint64 *result_buffer{nullptr};
+  taichi::lang::LLVMRuntime *llvm_runtime_ = nullptr;
 };
 
 }  // namespace capi

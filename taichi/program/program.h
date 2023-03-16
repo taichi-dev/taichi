@@ -329,7 +329,7 @@ class TI_DLL_EXPORT Program {
     return Identifier(global_id_counter_++, name);
   }
 
-  void prepare_runtime_context(RuntimeContext *ctx);
+  void prepare_runtime_context(LaunchContextBuilder &ctx);
 
   /** Enqueue a custom compute op to the current program execution flow.
    *

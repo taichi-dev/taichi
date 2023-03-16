@@ -24,7 +24,7 @@ class KernelImpl : public aot::Kernel {
     name = kernel_data_.kernel_key;
   }
 
-  void launch(RuntimeContext *ctx) override {
+  void launch(LaunchContextBuilder &ctx) override {
     fn_(*ctx);
   }
 

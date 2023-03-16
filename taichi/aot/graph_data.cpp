@@ -17,7 +17,7 @@ void CompiledGraph::run(
     LaunchContextBuilder launch_ctx(dispatch.compiled_kernel, &ctx);
     init_runtime_context(dispatch.symbolic_args, args, ctx);
     // Run cgraph loaded from AOT module
-    dispatch.compiled_kernel->launch(&ctx);
+    dispatch.compiled_kernel->launch(launch_ctx);
   }
 }
 

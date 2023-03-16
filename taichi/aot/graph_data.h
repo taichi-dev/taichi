@@ -145,7 +145,7 @@ class TI_DLL_EXPORT Kernel : public CallableBase {
    *
    * @param ctx Host context
    */
-  virtual void launch(RuntimeContext *ctx) = 0;
+  virtual void launch(LaunchContextBuilder &ctx) = 0;
 };
 
 struct CompiledDispatch {
@@ -160,6 +160,7 @@ struct CompiledDispatch {
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
   std::unordered_map<std::string, aot::Arg> args;
+  LLVMRuntime *llvm_runtime;
   RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;

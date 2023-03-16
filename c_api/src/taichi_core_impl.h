@@ -125,7 +125,6 @@ class Runtime {
 
  public:
   const taichi::Arch arch;
-  taichi::lang::RuntimeContext runtime_context_;
 
   virtual ~Runtime();
 
@@ -139,6 +138,11 @@ class Runtime {
     err.set_last_error();
     return aot_module;
   }
+
+  virtual void prepare_launch_context(
+      taichi::lang::LaunchContextBuilder &builder) {
+  }
+
   virtual Error create_aot_module(const taichi::io::VirtualDir *dir,
                                   TiAotModule &out) {
     TI_NOT_IMPLEMENTED

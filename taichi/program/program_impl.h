@@ -133,7 +133,7 @@ class ProgramImpl {
   }
 
   // TODO: Move to Runtime Object
-  virtual void prepare_runtime_context(RuntimeContext *ctx) {
+  virtual void prepare_launch_context(LaunchContextBuilder &ctx) {
   }
 
   virtual void enqueue_compute_op_lambda(

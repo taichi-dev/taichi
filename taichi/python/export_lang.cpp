@@ -714,10 +714,10 @@ void export_lang(py::module &m) {
       .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
            &LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_ndarray_impl", &LaunchContextBuilder::set_arg_ndarray_impl)
+      .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
            &LaunchContextBuilder::set_arg_ndarray_with_grad)
-      .def("set_arg_texture_impl", &LaunchContextBuilder::set_arg_texture_impl)
+      .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture_impl",
            &LaunchContextBuilder::set_arg_rw_texture_impl)
       .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)

@@ -36,6 +36,9 @@ class LaunchContextBuilder {
   void set_arg(int i, T v);
 
   template <typename T>
+  void set_grad_arg(int i, T v);
+
+  template <typename T>
   void set_struct_arg(std::vector<int> index, T v);
 
   template <typename T>

@@ -185,6 +185,11 @@ void LaunchContextBuilder::set_arg(int i, T v) {
 }
 
 template <typename T>
+void LaunchContextBuilder::set_grad_arg(int i, T v) {
+  ctx_->grad_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
+}
+
+template <typename T>
 T LaunchContextBuilder::get_ret(int i) {
   return taichi_union_cast_with_different_sizes<T>(ctx_->result_buffer[i]);
 }
@@ -196,6 +201,7 @@ T LaunchContextBuilder::get_ret(int i) {
   template ctype LaunchContextBuilder::get_struct_arg(std::vector<int> index); \
   template ctype LaunchContextBuilder::get_grad_arg(int i);                    \
   template void LaunchContextBuilder::set_arg(int i, ctype v);                 \
+  template void LaunchContextBuilder::set_grad_arg(int i, ctype v);            \
   template ctype LaunchContextBuilder::get_ret(int i);
 #include "taichi/inc/data_type_with_c_type.inc.h"
 #undef PER_C_TYPE

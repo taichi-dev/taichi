@@ -835,7 +835,7 @@ class TaichiMain:
     def module(self, arguments: list = sys.argv[2:]):
         """Taichi module tools"""
         from taichi import _ti_module  # pylint: disable=C0415
-        _ti_module.module(arguments)
+        _ti_module._main(arguments)
 
     @staticmethod
     @register

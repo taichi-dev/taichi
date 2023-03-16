@@ -490,9 +490,11 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
 
       link_module_with_cuda_libdevice(module);
 
+#ifdef TI_WITH_CUDA
       int cap = CUDAContext::get_instance().get_compute_capability();
       if (cap >= 60)
         link_module_with_custom_cuda_library(module);
+#endif
 
       // To prevent potential symbol name conflicts, we use "cuda_vprintf"
       // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for

@@ -6,8 +6,8 @@ from typing import List
 
 from taichi._lib import core as _ti_core
 from taichi._ti_module.cppgen import generate_header
-from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 from taichi.aot._export import _aot_kernels
+from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -92,7 +92,6 @@ def module_build_impl(a):
         for cap in required_caps:
             print(f"  - {cap}")
         print()
-        
 
     m = Module(caps=required_caps)
     for kernel in _aot_kernels:

@@ -195,8 +195,8 @@ T LaunchContextBuilder::get_ret(int i) {
 }
 
 #define PER_C_TYPE(type, ctype)                                                \
-  template void LaunchContextBuilder::set_struct_arg<ctype>(                   \
-      std::vector<int> index, ctype v);                                        \
+  template void LaunchContextBuilder::set_struct_arg(std::vector<int> index,   \
+                                                     ctype v);                 \
   template ctype LaunchContextBuilder::get_arg(int i);                         \
   template ctype LaunchContextBuilder::get_struct_arg(std::vector<int> index); \
   template ctype LaunchContextBuilder::get_grad_arg(int i);                    \
@@ -204,6 +204,7 @@ T LaunchContextBuilder::get_ret(int i) {
   template void LaunchContextBuilder::set_grad_arg(int i, ctype v);            \
   template ctype LaunchContextBuilder::get_ret(int i);
 #include "taichi/inc/data_type_with_c_type.inc.h"
+PER_C_TYPE(gen, void *)  // Register void* as a valid type
 #undef PER_C_TYPE
 
 void LaunchContextBuilder::set_array_runtime_size(int i, uint64 size) {

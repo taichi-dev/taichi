@@ -7,8 +7,7 @@ from typing import List
 from taichi._lib import core as _ti_core
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
-
-from taichi.aot import Module, _aot_kernels
+from taichi.aot._export import _aot_kernels
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -66,18 +65,12 @@ def module_build(parser: argparse.ArgumentParser):
                         type=str,
                         help="Output module path.",
                         default=None)
-    parser.add_argument("-a",
-                        "--arch",
-                        type=str,
-                        help="Target architecture.",
-                        default="vulkan")
     parser.set_defaults(func=module_build_impl)
 
 
 def module_build_impl(a):
     source_path = a.SOURCE
     module_path = a.output
-    arch = _ti_core.arch_from_name(a.arch)
 
     source_path = Path(source_path)
     assert source_path.name.endswith(".py"), "Source must be a Python script."
@@ -85,10 +78,11 @@ def module_build_impl(a):
         module_path = f"{source_path.name[:-3]}.tcm"
     module_path = Path(module_path)
 
-    print()
     print(f"Building Taichi module: {source_path}")
+    print()
 
     d = runpy.run_path(str(source_path), run_name="__main__")
+    print()
 
     required_caps = d["REQUIRED_CAPS"] if "REQUIRED_CAPS" in d else []
     assert isinstance(required_caps, list), "REQUIRED_CAPS must be a list."
@@ -97,11 +91,14 @@ def module_build_impl(a):
         print("Module requires the following capabilities:")
         for cap in required_caps:
             print(f"  - {cap}")
+        print()
+        
 
     m = Module(caps=required_caps)
     for kernel in _aot_kernels:
         print("Added kernel:", kernel.__name__)
         m.add_kernel(kernel)
+    print()
 
     if module_path.name.endswith(".tcm"):
         m.archive(str(module_path))

@@ -95,8 +95,9 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
       prog_(prog) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
-  ndarray_data_base_ptr_ = std::make_unique<Ndarray>(
-      prog_, dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
+  ndarray_data_base_ptr_ = prog->create_ndarray(
+      dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1},
+      ExternalArrayLayout::kNull, false);
 }
 
 template <typename T, typename G>
@@ -149,7 +150,7 @@ void SparseMatrixBuilder::print_triplets_cuda() {
 }
 
 intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
-  return prog_->get_ndarray_data_ptr_as_int(ndarray_data_base_ptr_.get());
+  return prog_->get_ndarray_data_ptr_as_int(ndarray_data_base_ptr_);
 }
 
 template <typename T, typename G>

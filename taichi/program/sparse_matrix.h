@@ -42,7 +42,7 @@ class SparseMatrixBuilder {
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
+  Ndarray *ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};

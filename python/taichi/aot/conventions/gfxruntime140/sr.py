@@ -476,7 +476,8 @@ class Graph:
     def __init__(self, name: str, dispatches: List[Dispatch]):
         self.name = name
         self.dispatches = dispatches
-        self.args = [y for x in dispatches for y in x.args]
+        args = {y.name: y.arg for x in dispatches for y in x.args}
+        self.args: List[NamedArgument] = [NamedArgument(k, v) for k, v in args.items()]
 
 
 def from_dr_graph(meta: Metadata, j: dr.Graph) -> Graph:

@@ -86,7 +86,7 @@ def generate_ndarray_assign(cls_name: str, i: int, arg_name: str,
         f"  {cls_name} &set_{arg_name}(const TiNdArray &value) {{",
     ]
 
-    out += check_arg("elem_type", arg.dtype)
+    out += check_arg("elem_type", f"TI_DATA_TYPE_{arg.dtype.name.upper()}")
     out += check_arg("shape.dim_count", arg.ndim)
     assert len(arg.element_shape) <= 16
     out += check_arg("elem_shape.dim_count", len(arg.element_shape))
@@ -218,22 +218,19 @@ def generate_module_content_repr(m: GfxRuntime140, module_name: str,
     out = []
 
     if module_name:
-        out += [
-            f"struct Module_{module_name} {{",
-        ]
+        module_name = f"Module_{module_name}"
     else:
-        out += [
-            "struct Module {",
-        ]
+        module_name = "Module"
 
     out += [
+        f"struct {module_name} {{",
         "  TiRuntime runtime;",
         "  TiAotModule aot_module;",
         "  bool should_destroy;",
         "",
-        "  explicit Module(TiRuntime runtime, TiAotModule aot_module, bool should_destroy = true) :",
+        f"  explicit {module_name}(TiRuntime runtime, TiAotModule aot_module, bool should_destroy = true) :",
         "    runtime(runtime), aot_module(aot_module), should_destroy(should_destroy) {}",
-        "  ~Module() {",
+        f"  ~{module_name}() {{",
         "    if (should_destroy) {",
         "      ti_destroy_aot_module(aot_module);",
         "    }",

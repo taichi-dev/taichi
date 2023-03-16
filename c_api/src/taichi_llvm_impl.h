@@ -43,7 +43,6 @@ class LlvmRuntime : public Runtime {
   std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
   std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::LLVMRuntime *llvm_runtime_ = nullptr;
 };
 
 }  // namespace capi

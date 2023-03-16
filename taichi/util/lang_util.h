@@ -22,7 +22,7 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-struct LaunchContextBuilder;
+class LaunchContextBuilder;
 
 using FunctionType = std::function<void(LaunchContextBuilder &)>;
 

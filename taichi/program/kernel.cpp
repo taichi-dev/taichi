@@ -63,7 +63,6 @@ void Kernel::operator()(const CompileConfig &compile_config,
     compile(compile_config);
   }
 
-  program->prepare_runtime_context(ctx_builder);
   compiled_(ctx_builder);
 
   const auto arch = compile_config.arch;

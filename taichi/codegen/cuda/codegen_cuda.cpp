@@ -723,6 +723,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         (void **)&device_result_buffer,
         std::max(context.get_context().result_buffer_size, sizeof(uint64)),
         nullptr);
+    context.get_context().runtime = executor->get_llvm_runtime();
 
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {

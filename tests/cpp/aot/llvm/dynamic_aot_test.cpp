@@ -36,14 +36,12 @@ static void run_dynamic_tests(aot::Module *mod,
   // Kernel: activate()
   {
     LaunchContextBuilder builder(k_activate);
-    exec->prepare_launch_context(builder);
     k_activate->launch(builder);
   }
 
   // Kernel: check_value_0()
   {
     LaunchContextBuilder builder(k_check_value_0);
-    exec->prepare_launch_context(builder);
     k_check_value_0->launch(builder);
   }
 
@@ -51,13 +49,11 @@ static void run_dynamic_tests(aot::Module *mod,
   // Kernel: deactivate()
   {
     LaunchContextBuilder builder(k_deactivate);
-    exec->prepare_launch_context(builder);
     k_deactivate->launch(builder);
   }
   // Kernel: check_value_1()
   {
     LaunchContextBuilder builder(k_check_value_1);
-    exec->prepare_launch_context(builder);
     k_check_value_1->launch(builder);
   }
 

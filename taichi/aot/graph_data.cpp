@@ -12,10 +12,10 @@ namespace aot {
 void CompiledGraph::run(
     const std::unordered_map<std::string, IValue> &args) const {
   for (const auto &dispatch : dispatches) {
-    RuntimeContext ctx = ctx_;
     TI_ASSERT(dispatch.compiled_kernel);
-    LaunchContextBuilder launch_ctx(dispatch.compiled_kernel, &ctx);
-    init_runtime_context(dispatch.symbolic_args, args, ctx);
+    LaunchContextBuilder launch_ctx(dispatch.compiled_kernel);
+    init_runtime_context(dispatch.symbolic_args, args,
+                         launch_ctx.get_context());
     // Run cgraph loaded from AOT module
     dispatch.compiled_kernel->launch(launch_ctx);
   }
@@ -25,10 +25,10 @@ void CompiledGraph::jit_run(
     const CompileConfig &compile_config,
     const std::unordered_map<std::string, IValue> &args) const {
   for (const auto &dispatch : dispatches) {
-    RuntimeContext ctx = ctx_;
     TI_ASSERT(dispatch.ti_kernel);
-    LaunchContextBuilder launch_ctx(dispatch.ti_kernel, &ctx);
-    init_runtime_context(dispatch.symbolic_args, args, ctx);
+    LaunchContextBuilder launch_ctx(dispatch.ti_kernel);
+    init_runtime_context(dispatch.symbolic_args, args,
+                         launch_ctx.get_context());
     // Compile & Run (JIT): The compilation result will be cached, so don't
     // worry that the kernels dispatched by this cgraph will be compiled
     // repeatedly.

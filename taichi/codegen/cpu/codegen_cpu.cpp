@@ -243,6 +243,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
   return [executor = this->executor_, args, kernel_name,
           task_funcs](LaunchContextBuilder &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
+    context.get_context().runtime = executor->get_llvm_runtime();
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {

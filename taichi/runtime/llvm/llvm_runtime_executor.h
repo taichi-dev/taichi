@@ -71,8 +71,6 @@ class LlvmRuntimeExecutor {
 
   LLVMRuntime *get_llvm_runtime();
 
-  void prepare_launch_context(LaunchContextBuilder &ctx);
-
   Device *get_compute_device();
 
   LlvmDevice *llvm_device();

@@ -22,8 +22,6 @@ class LlvmRuntime : public Runtime {
 
   void check_runtime_error();
   taichi::lang::Device &get() override;
-  void prepare_launch_context(
-      taichi::lang::LaunchContextBuilder &builder) override;
 
  private:
   /* Internally used interfaces */

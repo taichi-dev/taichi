@@ -160,8 +160,6 @@ struct CompiledDispatch {
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
   std::unordered_map<std::string, aot::Arg> args;
-  LLVMRuntime *llvm_runtime;
-  RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;
   void jit_run(const CompileConfig &compile_config,

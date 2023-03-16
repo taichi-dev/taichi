@@ -132,10 +132,6 @@ class ProgramImpl {
     TI_ERROR("fill_ndarray() not implemented on the current backend");
   }
 
-  // TODO: Move to Runtime Object
-  virtual void prepare_launch_context(LaunchContextBuilder &ctx) {
-  }
-
   virtual void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) {

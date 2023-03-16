@@ -139,10 +139,6 @@ class Runtime {
     return aot_module;
   }
 
-  virtual void prepare_launch_context(
-      taichi::lang::LaunchContextBuilder &builder) {
-  }
-
   virtual Error create_aot_module(const taichi::io::VirtualDir *dir,
                                   TiAotModule &out) {
     TI_NOT_IMPLEMENTED

@@ -329,8 +329,6 @@ class TI_DLL_EXPORT Program {
     return Identifier(global_id_counter_++, name);
   }
 
-  void prepare_runtime_context(LaunchContextBuilder &ctx);
-
   /** Enqueue a custom compute op to the current program execution flow.
    *
    *  @params op The lambda that is invoked to construct the custom compute Op

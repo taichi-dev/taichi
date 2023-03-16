@@ -138,11 +138,6 @@ void LlvmRuntime::wait() {
   executor_->synchronize();
 }
 
-void LlvmRuntime::prepare_launch_context(
-    taichi::lang::LaunchContextBuilder &builder) {
-  builder.get_context().runtime = llvm_runtime_;
-}
-
 }  // namespace capi
 
 // function.export_cpu_runtime

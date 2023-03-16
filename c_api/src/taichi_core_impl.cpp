@@ -718,7 +718,6 @@ void ti_launch_kernel(TiRuntime runtime,
 
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::LaunchContextBuilder builder(ti_kernel);
-  runtime2.prepare_launch_context(builder);
   std::vector<std::unique_ptr<taichi::lang::DeviceAllocation>> devallocs;
 
   for (uint32_t i = 0; i < arg_count; ++i) {

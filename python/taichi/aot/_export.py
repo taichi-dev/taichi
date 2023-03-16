@@ -1,5 +1,3 @@
-import taichi as ti
-
 _aot_kernels = []
 
 

@@ -1,11 +1,12 @@
 import argparse
-from pathlib import Path
 import runpy
+from pathlib import Path
 from typing import List
+
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot._export import _aot_kernels
-from taichi.aot.module import Module
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
+from taichi.aot.module import Module
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -15,7 +16,8 @@ def module_cppgen(parser: argparse.ArgumentParser):
                         "--namespace",
                         type=str,
                         help="C++ namespace if wanted.")
-    parser.add_argument("-m",
+    parser.add_argument(
+        "-m",
         "--module-name",
         type=str,
         help=

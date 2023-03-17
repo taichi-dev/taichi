@@ -19,8 +19,6 @@ class KernelCodeGenWASM : public KernelCodeGen {
       : KernelCodeGen(compile_config, kernel, ir, tlctx) {
   }
 
-  FunctionType compile_to_function() override;
-
 #ifdef TI_WITH_LLVM
   LLVMCompiledTask compile_task(
       const CompileConfig &config,

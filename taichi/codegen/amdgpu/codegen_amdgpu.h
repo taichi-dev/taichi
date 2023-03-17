@@ -11,8 +11,9 @@ class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
   KernelCodeGenAMDGPU(const CompileConfig &config,
                       const Kernel *kernel,
+                      IRNode *ir,
                       TaichiLLVMContext &tlctx)
-      : KernelCodeGen(config, kernel, tlctx) {
+      : KernelCodeGen(config, kernel, ir, tlctx) {
   }
 
 // TODO: Stop defining this macro guards in the headers

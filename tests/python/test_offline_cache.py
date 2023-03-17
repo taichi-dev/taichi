@@ -18,7 +18,7 @@ from tests import test_utils
 OFFLINE_CACHE_TEMP_DIR = mkdtemp()
 atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 
-supported_llvm_archs = set()
+supported_llvm_archs = {ti.cpu, ti.cuda}
 supported_gfx_archs = {ti.opengl, ti.vulkan, ti.metal}
 supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs
 supported_archs_offline_cache = {
@@ -28,7 +28,7 @@ supported_archs_offline_cache = {
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.ll', '.bc', '.tic')
+    suffixes = ('.tic', )
     return filename.endswith(suffixes)
 
 
@@ -45,19 +45,8 @@ def expected_num_cache_files(arch, num_offloads: List[int] = None) -> int:
     assert arch in supported_archs_offline_cache
     if not num_offloads:
         return 0
-    result = 0
-    # code files
-    if arch in supported_llvm_archs:
-        result += len(num_offloads)
-    elif arch in supported_gfx_archs:
-        result += len(num_offloads)
-    # metadata files
-    if arch in supported_llvm_archs:
-        result += 2  # metadata.{json, tcb}
-    elif arch in supported_gfx_archs:
-        # ticache.tcb
-        result += 1
-    return result
+    # code files(*.tic) + metadata files(ticache.tcb)
+    return len(num_offloads) + 1
 
 
 def tmp_offline_cache_file_path():
@@ -65,11 +54,7 @@ def tmp_offline_cache_file_path():
 
 
 def backend_specified_cache_path(arch):
-    if arch in supported_llvm_archs:
-        return join(tmp_offline_cache_file_path(), 'llvm')
-    elif arch in supported_gfx_archs:
-        return tmp_offline_cache_file_path()
-    assert False
+    return tmp_offline_cache_file_path()
 
 
 def current_thread_ext_options():
@@ -558,29 +543,29 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
 
     def helper1():
         @ti.experimental.real_func
-        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+        def sum(l: ti.i32, r: ti.i32, R: ti.i32) -> ti.i32:
             if l == r:
                 return l
             else:
-                return sum(l, (l + r) // 2) + sum((l + r) // 2 + 1, r)
+                return sum(l, (l + r) // R, R) + sum((l + r) // R + 1, r, R)
 
         @ti.kernel
         def get_sum() -> ti.i32:
-            return sum(0, 99)
+            return sum(0, 99, 2)
 
         assert get_sum() == 99 * 50
 
     def helper2():
         @ti.experimental.real_func
-        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
+        def sum(l: ti.i32, r: ti.i32, R: ti.i32) -> ti.i32:
             if l == r:
                 return l
             else:
-                return sum((l + r) // 2 + 1, r) + sum(l, (l + r) // 2)
+                return sum((l + r) // R + 1, r, R) + sum(l, (l + r) // R, R)
 
         @ti.kernel
         def get_sum() -> ti.i32:
-            return sum(0, 99)
+            return sum(0, 99, 2)
 
         assert get_sum() == 99 * 50
 

@@ -25,7 +25,7 @@
 namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
-                             Kernel *kernel,
+                             const Kernel *kernel,
                              TaichiLLVMContext &tlctx)
     : prog(kernel->program),
       kernel(kernel),
@@ -36,7 +36,7 @@ KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
     const CompileConfig &compile_config,
-    Kernel *kernel,
+    const Kernel *kernel,
     TaichiLLVMContext &tlctx) {
 #ifdef TI_WITH_LLVM
   const auto arch = compile_config.arch;

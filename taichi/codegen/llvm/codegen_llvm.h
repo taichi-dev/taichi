@@ -34,7 +34,7 @@ class FunctionCreationGuard {
 class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
  public:
   const CompileConfig &compile_config;
-  Kernel *kernel;
+  const Kernel *kernel;
   IRNode *ir;
   Program *prog;
   std::string kernel_name;
@@ -61,7 +61,7 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   bool returned{false};
   std::unordered_set<int> used_tree_ids;
   std::unordered_set<int> struct_for_tls_sizes;
-  Callable *current_callable{nullptr};
+  const Callable *current_callable{nullptr};
 
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
@@ -72,8 +72,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   explicit TaskCodeGenLLVM(const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
-                           Kernel *kernel,
-                           IRNode *ir = nullptr,
+                           const Kernel *kernel,
+                           IRNode *ir,
                            std::unique_ptr<llvm::Module> &&module = nullptr);
 
   Arch current_arch() const {

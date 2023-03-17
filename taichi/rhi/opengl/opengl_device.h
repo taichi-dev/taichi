@@ -24,7 +24,8 @@ std::string get_opengl_error_string(GLenum err);
     }                                                                \
   }
 
-extern void *kGetOpenglProcAddr;
+extern std::optional<void *>kGetOpenglProcAddr;
+extern std::optional<void *>imported_process_address;
 
 class GLResourceSet : public ShaderResourceSet {
  public:

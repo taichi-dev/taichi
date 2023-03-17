@@ -210,7 +210,7 @@ class RuntimeObject {
   template <typename... Args>
   llvm::Value *call(const std::string &func_name, Args &&...args) {
     auto func = get_func(func_name);
-    auto arglist = std::vector<llvm::Value *>({ptr, args...});
+    auto arglist = std::vector<::llvm::Value *>({ptr, args...});
     check_func_call_signature(func->getFunctionType(), func->getName(), arglist,
                               builder);
     return builder->CreateCall(func, std::move(arglist));

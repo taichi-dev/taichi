@@ -239,8 +239,15 @@ class SparseMatrixBuilder:
         self.num_cols = num_cols if num_cols else num_rows
         self.dtype = dtype
         if num_rows is not None:
-            self.ptr = get_runtime().prog.create_sparse_matrix_builder(
-                num_rows, num_cols, max_num_triplets, dtype, storage_format)
+            taichi_arch = get_runtime().prog.config().arch
+            if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 or taichi_arch == _ti_core.Arch.cuda:
+                self.ptr = _ti_core.SparseMatrixBuilder(
+                    num_rows, num_cols, max_num_triplets, dtype,
+                    storage_format,
+                    get_runtime().prog)
+            else:
+                raise TaichiRuntimeError(
+                    "SparseMatrix only supports CPU and CUDA for now.")
 
     def _get_addr(self):
         """Get the address of the sparse matrix"""

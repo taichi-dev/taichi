@@ -96,8 +96,11 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
   ndarray_data_base_ptr_ = prog->create_ndarray(
-      dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1},
-      ExternalArrayLayout::kNull, false);
+      dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
+}
+
+SparseMatrixBuilder::~SparseMatrixBuilder() {
+  prog_->delete_ndarray(ndarray_data_base_ptr_);
 }
 
 template <typename T, typename G>

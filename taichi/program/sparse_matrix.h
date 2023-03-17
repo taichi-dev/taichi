@@ -22,6 +22,7 @@ class SparseMatrixBuilder {
                       const std::string &storage_format,
                       Program *prog);
 
+  ~SparseMatrixBuilder();
   void print_triplets_eigen();
   void print_triplets_cuda();
 

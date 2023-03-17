@@ -184,8 +184,10 @@ simple_kernels_to_test = [
     (kernel0, (), python_kernel0, 1),
     (kernel1, (100, 200, 10.2), python_kernel1, 1),
     (kernel2, (1024, ), python_kernel2, 3),
-    (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]],
-                             ti.i32)), python_kernel3, 1),
+    # FIXME: add this kernel back once we have a better way to compare matrices
+    #  with test_utils.approx()
+    # (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]],
+    #                          ti.i32)), python_kernel3, 1),
     # FIXME: add this kernel back once #6221 is fixed
     #   (kernel4, (1, 10, 2), python_kernel4, 3),
     (kernel5, (1, 2, 2), python_kernel5, 3)

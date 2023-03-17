@@ -270,6 +270,6 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
 
 FunctionType KernelCodeGenDX12::compile_to_function() {
   // FIXME: implement compile_to_function.
-  return [](RuntimeContext &ctx) {};
+  return [](LaunchContextBuilder &ctx) {};
 }
 }  // namespace taichi::lang

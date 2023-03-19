@@ -305,7 +305,7 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
                                  TaichiLLVMContext &tlctx,
-                                 Kernel *kernel,
+                                 const Kernel *kernel,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
@@ -2608,7 +2608,7 @@ void TaskCodeGenLLVM::emit_to_module() {
 LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
   auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
-                                  Kernel *kernel) {
+                                  const Kernel *kernel) {
     bool verbose = config.print_ir;
     if ((kernel->is_accessor && !config.print_accessor_ir) ||
         (kernel->is_evaluator && !config.print_evaluator_ir)) {
@@ -2693,7 +2693,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     auto guard = get_function_creation_guard(
         {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
         stmt->func->get_name());
-    Callable *old_callable = current_callable;
+    const Callable *old_callable = current_callable;
     current_callable = stmt->func;
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);

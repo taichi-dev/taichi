@@ -39,19 +39,19 @@ class TaichiLLVMContext;
 class KernelCodeGen {
  protected:
   Program *prog;
-  Kernel *kernel;
+  const Kernel *kernel;
   IRNode *ir;
 
  public:
   explicit KernelCodeGen(const CompileConfig &compile_config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          TaichiLLVMContext &tlctx);
 
   virtual ~KernelCodeGen() = default;
 
   static std::unique_ptr<KernelCodeGen> create(
       const CompileConfig &compile_config,
-      Kernel *kernel,
+      const Kernel *kernel,
       TaichiLLVMContext &tlctx);
 
   virtual FunctionType compile_to_function() = 0;

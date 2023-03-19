@@ -32,11 +32,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
       compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
-  if (config_.offline_cache) {
-    cache_reader_ =
-        LlvmOfflineCacheFileReader::make(offline_cache::get_cache_path_by_arch(
-            config_.offline_cache_file_path, config->arch));
-  }
 }
 
 FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
@@ -102,25 +97,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
 
   TI_NOT_IMPLEMENTED;
   return nullptr;
-}
-
-void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
-                                   const LLVMCompiledKernel &data,
-                                   Kernel *kernel) {
-  if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
-    return;
-  }
-  auto &kernel_cache = cache_data_->kernels[kernel_key];
-  kernel_cache.kernel_key = kernel_key;
-  kernel_cache.compiled_data = data.clone();
-  kernel_cache.args = kernel->parameter_list;
-  kernel_cache.rets = kernel->rets;
-  kernel_cache.args_size = kernel->args_size;
-  kernel_cache.args_type = kernel->args_type;
-  kernel_cache.ret_size = kernel->ret_size;
-  kernel_cache.ret_type = kernel->ret_type;
-  kernel_cache.created_at = std::time(nullptr);
-  kernel_cache.last_used_at = std::time(nullptr);
 }
 
 void LlvmProgramImpl::cache_field(int snode_tree_id,

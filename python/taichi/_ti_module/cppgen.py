@@ -280,11 +280,9 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(metadata_json: str, graphs_json: str, module_name: str,
+def generate_header(m: GfxRuntime140, module_name: str,
                     namespace: str) -> List[str]:
     out = []
-
-    m = GfxRuntime140(metadata_json, graphs_json)
 
     out += [
         "// THIS IS A GENERATED HEADER; PLEASE DO NOT MODIFY.",

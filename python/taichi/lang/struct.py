@@ -427,12 +427,7 @@ class StructField(Field):
 
     def _register_fields(self):
         for k in self.keys:
-            setattr(
-                StructField, k,
-                property(
-                    StructField._make_getter(k),
-                    StructField._make_setter(k),
-                ))
+            setattr(self, k, self.field_dict[k])
 
     def _get_field_members(self):
         """Gets A flattened list of all struct elements.
@@ -665,14 +660,14 @@ class StructType(CompoundType):
                 d[name] = dtype.from_kernel_struct_ret(launch_ctx,
                                                        ret_index + (index, ))
             else:
-                if id(dtype) in primitive_types.integer_type_ids:
+                if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
                         d[name] = launch_ctx.get_struct_ret_int(ret_index +
                                                                 (index, ))
                     else:
                         d[name] = launch_ctx.get_struct_ret_uint(ret_index +
                                                                  (index, ))
-                elif id(dtype) in primitive_types.real_type_ids:
+                elif dtype in primitive_types.real_types:
                     d[name] = launch_ctx.get_struct_ret_float(ret_index +
                                                               (index, ))
                 else:

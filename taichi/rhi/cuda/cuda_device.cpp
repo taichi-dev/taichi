@@ -44,7 +44,7 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   info.size = taichi::iroundup(params.size, taichi_page_size);
   if (params.use_cached) {
     if (caching_allocator_ == nullptr) {
-      caching_allocator_ = std::make_unique<CudaCachingAllocator>(this);
+      caching_allocator_ = std::make_unique<CachingAllocator>(this);
     }
     info.ptr = caching_allocator_->allocate(params);
     CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
@@ -72,7 +72,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
     if (caching_allocator_ == nullptr) {
-      TI_ERROR("the CudaCachingAllocator is not initialized");
+      TI_ERROR("the CachingAllocator is not initialized");
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {

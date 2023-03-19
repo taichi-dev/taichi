@@ -33,6 +33,11 @@ int Callable::insert_texture_param(int total_dim) {
   return (int)parameter_list.size() - 1;
 }
 
+int Callable::insert_pointer_param(const DataType &dt) {
+  parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/true);
+  return (int)parameter_list.size() - 1;
+}
+
 int Callable::insert_rw_texture_param(int total_dim, BufferFormat format) {
   // FIXME: we shouldn't abuse is_array for texture parameters
   parameter_list.emplace_back(PrimitiveType::f32, /*is_array=*/true, 0,
@@ -41,9 +46,6 @@ int Callable::insert_rw_texture_param(int total_dim, BufferFormat format) {
 }
 
 void Callable::finalize_rets() {
-  if (rets.empty()) {
-    return;
-  }
   std::vector<StructMember> members;
   members.reserve(rets.size());
   for (int i = 0; i < rets.size(); i++) {
@@ -57,9 +59,6 @@ void Callable::finalize_rets() {
 }
 
 void Callable::finalize_params() {
-  if (parameter_list.empty()) {
-    return;
-  }
   std::vector<StructMember> members;
   members.reserve(parameter_list.size());
   for (int i = 0; i < parameter_list.size(); i++) {

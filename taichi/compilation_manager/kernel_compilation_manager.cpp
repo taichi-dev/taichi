@@ -124,7 +124,6 @@ void KernelCompilationManager::dump() {
   // Dump cached CompiledKernelData to disk
   for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
-      const auto arch = k.compiled_kernel_data->arch();
       auto cache_filename = make_filename(k.kernel_key);
       if (try_lock_with_file(cache_filename)) {
         std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};

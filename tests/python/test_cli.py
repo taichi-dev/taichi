@@ -217,7 +217,7 @@ def test_cli_cache():
         ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.gles, ti.amdgpu
     }
     archs = {v for v in archs if v in test_utils.expected_archs()}
-    exts = ('ll', 'bc', 'spv', 'metal', 'tcb', 'lock')
+    exts = ('tic', 'tcb', 'lock')
     tmp_path = tempfile.mkdtemp()
 
     @ti.kernel

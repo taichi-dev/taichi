@@ -292,7 +292,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   llvm::SmallString<8> outstr;
   raw_svector_ostream ostream(outstr);
   ostream.SetUnbuffered();
-  if (this->config_.print_kernel_asm) {
+  if (this->config_.print_kernel_nvptx) {
     // Generate assembly code if neccesary
     target_machine->addPassesToEmitFile(module_pass_manager, ostream, nullptr,
                                         llvm::CGFT_AssemblyFile);
@@ -303,7 +303,7 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
     module_pass_manager.run(*module);
   }
 
-  if (this->config_.print_kernel_asm) {
+  if (this->config_.print_kernel_nvptx) {
     static FileSequenceWriter writer(
         "taichi_kernel_cpu_llvm_ir_optimized_asm_{:04d}.s",
         "optimized assembly code (CPU)");

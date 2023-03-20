@@ -8,7 +8,7 @@ namespace taichi::lang {
 JITModule *JITSessionCUDA ::add_module(std::unique_ptr<llvm::Module> M,
                                        int max_reg) {
   auto ptx = compile_module_to_ptx(M);
-  if (this->config_.print_kernel_asm) {
+  if (this->config_.print_kernel_nvptx) {
     static FileSequenceWriter writer("taichi_kernel_nvptx_{:04d}.ptx",
                                      "module NVPTX");
     writer.write(ptx);

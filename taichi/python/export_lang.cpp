@@ -152,7 +152,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::print_kernel_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
-      .def_readwrite("print_kernel_asm", &CompileConfig::print_kernel_asm)
+      .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
       .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)

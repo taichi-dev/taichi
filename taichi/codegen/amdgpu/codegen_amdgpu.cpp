@@ -571,7 +571,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
     AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
                                         sizeof(RuntimeContext));
     AMDGPUDriver::get_instance().memcpy_host_to_device(
-        context_pointer, &context, sizeof(RuntimeContext));
+        context_pointer, &context.get_context(), sizeof(RuntimeContext));
 
     AMDGPUContext::get_instance().push_back_kernel_arg_pointer(context_pointer);
 

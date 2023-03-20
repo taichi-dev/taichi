@@ -191,7 +191,7 @@ CMake is utilized to build our project, and we introduce the utility CMake modul
 The utility module is further included in the `CMakeLists.txt` which looks like as below.
 
 ```cmake
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.17)
 
 set(TAICHI_AOT_APP_NAME TaichiAot)
 project(${TAICHI_AOT_APP_NAME} LANGUAGES C CXX)

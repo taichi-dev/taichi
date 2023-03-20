@@ -72,7 +72,8 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
-void make_cpu_multithreaded_range_for(IRNode *root, const CompileConfig &config);
+void make_cpu_multithreaded_range_for(IRNode *root,
+                                      const CompileConfig &config);
 void make_mesh_thread_local(IRNode *root,
                             const CompileConfig &config,
                             const MakeBlockLocalPass::Args &args);

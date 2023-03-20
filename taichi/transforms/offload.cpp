@@ -29,7 +29,6 @@ bool demotable_axis_load(Stmt *stmt) {
   }
   return true;
 }
-
 class SquashPtrOffset : public IRVisitor {
  public:
   SquashPtrOffset() {

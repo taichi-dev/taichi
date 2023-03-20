@@ -15,17 +15,12 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
   TI_ASSERT(offloaded->task_type == TaskType::range_for);
 
   auto offloaded_body = std::make_unique<Block>();
-  // offloaded_body->insert(
-  //     Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 0)));
-  // auto zero = offloaded_body->back();
   offloaded_body->insert(
       Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1)));
   auto one = offloaded_body->back();
   offloaded_body->insert(Stmt::make_typed<ConstStmt>(
       TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads)));
   auto num_threads = offloaded_body->back();
-
-  // auto offloaded_body = offloaded_body.get();
   offloaded_body->insert(Stmt::make_typed<LoopIndexStmt>(offloaded, 0));
   auto thread_index = offloaded_body->back();
 

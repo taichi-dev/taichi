@@ -2,6 +2,7 @@ import numbers
 from types import FunctionType, MethodType
 from typing import Any, Iterable, Sequence
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
@@ -43,11 +44,7 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        if rhs.ndim == 1:
-            entries = [rhs(i) for i in range(rhs.n)]
-        else:
-            entries = [[rhs(i, j) for j in range(rhs.m)] for i in range(rhs.n)]
-        return make_matrix(entries)
+        return make_matrix(rhs.to_list())
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
@@ -167,8 +164,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
 
     flattened_indices = []
     for _index in _indices:
-        if is_taichi_class(_index):
-            ind = _index.entries
+        if isinstance(_index, Matrix):
+            ind = _index.to_list()
         elif isinstance(_index, slice):
             ind = [_index]
             has_slice = True
@@ -1067,6 +1064,8 @@ def static(x, *xs) -> Any:
     if isinstance(x,
                   (bool, int, float, range, list, tuple, enumerate,
                    GroupedNDRange, _Ndrange, zip, filter, map)) or x is None:
+        return x
+    if isinstance(x, (np.bool_, np.integer, np.floating)):
         return x
 
     if isinstance(x, AnyArray):

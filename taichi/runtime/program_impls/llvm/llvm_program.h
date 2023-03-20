@@ -131,10 +131,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->fill_ndarray(alloc, size, data);
   }
 
-  void prepare_runtime_context(RuntimeContext *ctx) override {
-    runtime_exec_->prepare_runtime_context(ctx);
-  }
-
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override {
     return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);

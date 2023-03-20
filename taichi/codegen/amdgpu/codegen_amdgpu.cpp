@@ -510,8 +510,8 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
 
   return [amdgpu_module, kernel_name, args, offloaded_tasks = tasks,
           executor = this->executor_](LaunchContextBuilder &context) {
-    context.get_context().runtime = executor->get_llvm_runtime();
     AMDGPUContext::get_instance().make_current();
+    context.get_context().runtime = executor->get_llvm_runtime();
     std::vector<void *> arg_buffers(args.size(), nullptr);
     std::vector<void *> device_buffers(args.size(), nullptr);
     char *device_result_buffer{nullptr};

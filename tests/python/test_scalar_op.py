@@ -94,7 +94,8 @@ def test_python_scope_linalg():
 
     assert test_utils.allclose(x.dot(y), np.dot(a, b))
     assert test_utils.allclose(x.norm(), np.sqrt(np.dot(a, a)))
-    assert test_utils.allclose(x.normalized(), a / np.sqrt(np.dot(a, a)))
+    assert test_utils.allclose(x.normalized().to_numpy(),
+                               a / np.sqrt(np.dot(a, a)))
     assert x.any() == 1  # To match that of Taichi IR, we return -1 for True
     assert y.all() == 0
 

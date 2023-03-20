@@ -6,6 +6,7 @@ import warnings
 from collections import ChainMap
 from sys import version_info
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
                          matrix, mesh)
@@ -18,7 +19,7 @@ from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
                                    TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
-from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
+from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.snode import append, deactivate, length
 from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
@@ -746,7 +747,7 @@ class ASTTransformer(Builder):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
-                        not is_vector(values) else iter(values.to_list())
+                        values.ndim == 1 else iter(values.to_list())
                 else:
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
@@ -1021,7 +1022,7 @@ class ASTTransformer(Builder):
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
             val = ti_ops.bit_and(val, op(l, r))
-        if not isinstance(val, bool):
+        if not isinstance(val, (bool, np.bool_)):
             val = ti_ops.cast(val, primitive_types.i32)
         node.ptr = val
         return node.ptr

@@ -106,24 +106,20 @@ TEST(Half2Vectorization, Ndarray) {
   /*
   After:
     <f16> $0 = arg[0]
-    <i32> $1 = const 10
-    <i32> $2 = const 20
-    <f16> $3 = cast_value<f16> $1
-    <[Tensor (2) f16]> $4 = [$3, $7]
-    <*[Tensor (2) f16]> $5 = external_ptr $0, [], (2) element_dim=-1 layout=AOS
+    <f16> $1 = const 10.0
+    <[Tensor (2) f16]> $2 = [$1, $5]
+    <*[Tensor (2) f16]> $3 = external_ptr $0, [], (2) element_dim=-1 layout=AOS
   is_grad=false
-    <[Tensor (2) f16]> $6 = atomic add($5, $4)
-    <f16> $7 = cast_value<f16> $2
+    <[Tensor (2) f16]> $4 = atomic add($3, $2)
+    <f16> $5 = const 20.0
   */
-
-  EXPECT_EQ(block->size(), 1 /*argload*/ + 2 /*const*/ + 1 /*cast*/ +
-                               1 /*matrix_init*/ + 1 /*external*/ +
-                               1 /*atomic*/ + 1 /*cast*/);
+  EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*const*/ + 1 /*matrix_init*/ +
+                               1 /*external*/ + 1 /*atomic*/ + 1 /*const*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[4]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[5]->is<ExternalPtrStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[2]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[3]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[4]->is<AtomicOpStmt>(), true);
 }
 
 TEST(Half2Vectorization, GlobalTemporary) {
@@ -198,22 +194,19 @@ TEST(Half2Vectorization, GlobalTemporary) {
 
   /*
     After:
-      <i32> $0 = const 10
-      <i32> $1 = const 20
-      <f16> $2 = cast_value<f16> $0
-      <[Tensor (2) f16]> $3 = [$2, $6]
-      <*[Tensor (2) f16]> $4 = global tmp var (offset = 0 B)
-      <[Tensor (2) f16]> $5 = atomic add($4, $3)
-      <f16> $6 = cast_value<f16> $1
+      <f16> $0 = const 10.0
+      <[Tensor (2) f16]> $1 = [$0, $4]
+      <*[Tensor (2) f16]> $2 = global tmp var (offset = 0 B)
+      <[Tensor (2) f16]> $3 = atomic add($2, $1)
+      <f16> $4 = const 20.0
   */
-
-  EXPECT_EQ(block->size(), 2 /*const*/ + 1 /*cast*/ + 1 /*matrix_init*/ +
-                               1 /*global_temp*/ + 1 /*atomic*/ + 1 /*cast*/);
+  EXPECT_EQ(block->size(), 1 /*const*/ + 1 /*matrix_init*/ + 1 /*global_temp*/ +
+                               1 /*atomic*/ + 1 /*const*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[3]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[4]->is<GlobalTemporaryStmt>(), true);
-  EXPECT_EQ(block->statements[5]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[1]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[2]->is<GlobalTemporaryStmt>(), true);
+  EXPECT_EQ(block->statements[3]->is<AtomicOpStmt>(), true);
 }
 
 TEST(Half2Vectorization, Field) {
@@ -306,23 +299,20 @@ TEST(Half2Vectorization, Field) {
       <*gen> $0 = get root nullptr
       <i32> $1 = const 0
       <*gen> $2 = [S1root][root]::lookup($0, $1) activate = false
-      <i32> $3 = const 10
-      <i32> $4 = const 20
-      <f16> $5 = cast_value<f16> $3
-      <[Tensor (2) f16]> $6 = [$5, $9]
-      <*[Tensor (2) f16]> $7 = get child [S1root->S2place<gen>] $2
-      <[Tensor (2) f16]> $8 = atomic add($7, $6)
-      <f16> $9 = cast_value<f16> $4
+      <f16> $3 = const 10.0
+      <[Tensor (2) f16]> $4 = [$3, $7]
+      <*[Tensor (2) f16]> $5 = get child [S1root->S2place<gen>] $2
+      <[Tensor (2) f16]> $6 = atomic add($5, $4)
+      <f16> $7 = const 20.0
   */
-
   EXPECT_EQ(block->size(), 1 /*root*/ + 1 /*const*/ + 1 /*loopup*/ +
-                               2 /*const*/ + 1 /*cast*/ + 1 /*matrix_init*/ +
-                               1 /*get_child*/ + 1 /*atomic*/ + 1 /*cast*/);
+                               1 /*const*/ + 1 /*matrix_init*/ +
+                               1 /*get_child*/ + 1 /*atomic*/ + 1 /*const*/);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[6]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[7]->is<GetChStmt>(), true);
-  EXPECT_EQ(block->statements[8]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[4]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[5]->is<GetChStmt>(), true);
+  EXPECT_EQ(block->statements[6]->is<AtomicOpStmt>(), true);
 }
 
 }  // namespace taichi::lang

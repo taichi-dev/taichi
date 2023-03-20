@@ -43,46 +43,60 @@ class MakeCPUMultithreadingLoop : public IRVisitor {
     }
     // Make constants before multithreading loop
     mt_body_ = std::make_unique<Block>();
-    mt_body_->insert(Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 0)));
+    mt_body_->insert(
+        Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 0)));
     auto zero = mt_body_->back();
-    mt_body_->insert(Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1)));
+    mt_body_->insert(
+        Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1)));
     auto one = mt_body_->back();
-    mt_body_->insert(Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, config_.cpu_max_num_threads)));
+    mt_body_->insert(Stmt::make_typed<ConstStmt>(
+        TypedConstant(PrimitiveType::i32, config_.cpu_max_num_threads)));
     auto num_threads = mt_body_->back();
 
     auto mt_loop = Stmt::make_typed<RangeForStmt>(
-              zero, num_threads, std::make_unique<Block>(), false, config_.cpu_max_num_threads, 1, /*strictly_serialized*/false);
-    
+        zero, num_threads, std::make_unique<Block>(), false,
+        config_.cpu_max_num_threads, 1, /*strictly_serialized*/ false);
+
     // Build serial loop with in each thread.
     auto loop_body = mt_loop->body.get();
 
     loop_body->insert(Stmt::make_typed<LoopIndexStmt>(mt_loop.get(), 0));
     auto thread_index = loop_body->back();
-    // Inner serial block range is 
+    // Inner serial block range is
     // $[max(((end - begin) + (num_threads - 1)) / num_threads, 1)]
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, stmt->end, stmt->begin));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, loop_body->back(), num_threads));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, loop_body->back(), one));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::floordiv, loop_body->back(), num_threads));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::max, loop_body->back(), one));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub,
+                                                     stmt->end, stmt->begin));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::add, loop_body->back(), num_threads));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub,
+                                                     loop_body->back(), one));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::floordiv, loop_body->back(), num_threads));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::max,
+                                                     loop_body->back(), one));
 
     // Inner loop begins at $[begin + block_range * thread_id]
     auto block_range = loop_body->back();
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::mul, block_range, thread_index));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, stmt->begin, loop_body->back()));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::mul, block_range, thread_index));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::add, stmt->begin, loop_body->back()));
     auto block_begin = loop_body->back();
 
     // Inner loop ends at $[min(block_begin + block_range), end))]
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, block_begin, block_range));
-    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::min, stmt->end, loop_body->back()));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add,
+                                                     block_begin, block_range));
+    loop_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::min, stmt->end, loop_body->back()));
     auto block_end = loop_body->back();
 
     loop_body->insert(Stmt::make_typed<RangeForStmt>(
-              block_begin, block_end, std::move(stmt->body), false, 1, 1,  /*strictly_serialized*/true, stmt->range_hint));
+        block_begin, block_end, std::move(stmt->body), false, 1, 1,
+        /*strictly_serialized*/ true, stmt->range_hint));
     auto inner_loop = loop_body->back();
 
     replace_all_usages_with(inner_loop, stmt, inner_loop);
-    
+
     mt_body_->insert(std::move(mt_loop));
   }
 

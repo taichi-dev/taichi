@@ -218,6 +218,13 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (arch_is_cpu(config.arch)) {
+    irpass::make_cpu_multithreaded_range_for(ir, config);
+    irpass::type_check(ir, config);
+    print("Make CPU multithreaded ranage-for");
+    irpass::analysis::verify(ir);
+  }
+
   if (is_extension_supported(config.arch, Extension::mesh) &&
       config.demote_no_access_mesh_fors) {
     irpass::demote_no_access_mesh_fors(ir);

@@ -200,6 +200,9 @@ class IRBuilder {
   BinaryOpStmt *create_cmp_ge(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_eq(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_ne(Stmt *l, Stmt *r);
+  // Logical
+  BinaryOpStmt *create_logical_or(Stmt *l, Stmt *r);
+  BinaryOpStmt *create_logical_and(Stmt *l, Stmt *r);
 
   // Atomic operations.
   AtomicOpStmt *create_atomic_add(Stmt *dest, Stmt *val);

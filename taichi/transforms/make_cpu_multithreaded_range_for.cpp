@@ -18,6 +18,8 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
   offloaded_body->insert(
       Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 1)));
   auto one = offloaded_body->back();
+  auto minimal_block_range = offloaded_body->insert(
+      Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 512)));
   offloaded_body->insert(Stmt::make_typed<ConstStmt>(
       TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads)));
   auto num_threads = offloaded_body->back();
@@ -55,7 +57,7 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
   offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
       BinaryOpType::floordiv, offloaded_body->back(), num_threads));
   offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-      BinaryOpType::max, offloaded_body->back(), one));
+      BinaryOpType::max, offloaded_body->back(), minimal_block_range));
 
   // Inner loop begins at $[begin + block_range * thread_id]
   auto block_range = offloaded_body->back();

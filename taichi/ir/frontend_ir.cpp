@@ -206,6 +206,12 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
   }
 
+  if ((type == UnaryOpType::bit_not) && is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+  }
+
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);

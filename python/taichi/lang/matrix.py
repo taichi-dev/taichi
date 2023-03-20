@@ -1106,7 +1106,6 @@ class Vector(Matrix):
             n (int): Size of the vector.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
 
         Example:
             The code below shows how a Taichi ndarray with vector elements can be declared and defined::
@@ -1662,7 +1661,6 @@ class VectorNdarray(Ndarray):
         n (int): Size of the vector.
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
-        layout (Layout): Memory layout.
 
     Example::
 

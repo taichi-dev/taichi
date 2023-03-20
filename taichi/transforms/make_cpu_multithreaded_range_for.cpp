@@ -35,15 +35,17 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
   } else {
     begin_stmt = offloaded_body->insert(Stmt::make<GlobalTemporaryStmt>(
         offloaded->begin_offset, PrimitiveType::i32));
-    begin_stmt = offloaded_body->insert(Stmt::make<GlobalLoadStmt>(offloaded_body->back()));
+    begin_stmt = offloaded_body->insert(
+        Stmt::make<GlobalLoadStmt>(offloaded_body->back()));
   }
   if (offloaded->const_end) {
     end_stmt = offloaded_body->insert(Stmt::make_typed<ConstStmt>(
         TypedConstant(PrimitiveType::i32, offloaded->end_value)));
   } else {
-    end_stmt =  offloaded_body->insert(Stmt::make<GlobalTemporaryStmt>(
+    end_stmt = offloaded_body->insert(Stmt::make<GlobalTemporaryStmt>(
         offloaded->end_offset, PrimitiveType::i32));
-    end_stmt = offloaded_body->insert(Stmt::make<GlobalLoadStmt>(offloaded_body->back()));
+    end_stmt = offloaded_body->insert(
+        Stmt::make<GlobalLoadStmt>(offloaded_body->back()));
   }
 
   // Inner serial block range is

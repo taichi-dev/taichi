@@ -114,7 +114,7 @@ The efficiency of the Taichi implementation of Instant NGP is very close to the 
 ## Quickly modify the model using Taichi
 In addition to not having to write CUDA code manually, another advantage of developing NeRF with Taichi is the ability to quickly iterate on the model code. Here, we want to share an example of making targeted modifications to the Instant NGP model during the development of mobile deployment.
 
-In our early attempts, we tried to extract the inference part of the Taichi NeRF training code and deploy it directly to a mobile device, only to achieve a dismal performance of 1 fps. The main performance bottleneck lies in the highly random access to data in the hash encoding part of Instant NGP. This is not an issue in CUDA when the cache can hold all hash tables, but on mobile devices, due to insufficient cache, the efficiency becomes very low.
+In our early attempts, we tried to extract the inference part from the Taichi NeRF training code and deploy it directly to a mobile device, only to achieve a dismal performance of 1 fps. The main performance bottleneck lies in the highly random access to data in the hash encoding part of Instant NGP. This is not an issue in CUDA where the cache can hold all hash tables, but mobile devices suffer this due to insufficient cache, resulting in low performance.
 
 We expect that data reads and writes are done in a continuous manner, which requires tightly packed memory layout. Therefore, we replaced the hash table with compact grid structure, significantly improving the throughput of memory access. This code modification required less than 30 lines. Combined with other optimization methods, we finally achieved real-time interaction with over 20 fps on mobile devices.
 

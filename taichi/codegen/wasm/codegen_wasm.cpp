@@ -25,7 +25,7 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
 
   TaskCodeGenWASM(const CompileConfig &config,
                   TaichiLLVMContext &tlctx,
-                  Kernel *kernel,
+                  const Kernel *kernel,
                   IRNode *ir,
                   std::unique_ptr<llvm::Module> &&M = nullptr)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir, std::move(M)) {

@@ -22,8 +22,7 @@ class LlvmDevice : public Device {
 
   template <typename DEVICE>
   DEVICE *as() {
-    
-    auto* device = dynamic_cast<DEVICE *>(this);
+    auto *device = dynamic_cast<DEVICE *>(this);
     TI_ASSERT(device != nullptr);
     return device;
   }

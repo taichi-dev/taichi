@@ -24,8 +24,8 @@ class KernelImpl : public aot::Kernel {
     name = kernel_data_.kernel_key;
   }
 
-  void launch(RuntimeContext *ctx) override {
-    fn_(*ctx);
+  void launch(LaunchContextBuilder &ctx) override {
+    fn_(ctx);
   }
 
   LlvmOfflineCache::KernelCacheData kernel_data_;

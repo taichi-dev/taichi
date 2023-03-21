@@ -63,8 +63,7 @@ void Kernel::operator()(const CompileConfig &compile_config,
     compile(compile_config);
   }
 
-  auto &context = ctx_builder.get_context();
-  compiled_(context);
+  compiled_(ctx_builder);
 
   const auto arch = compile_config.arch;
   if (compile_config.debug &&

@@ -14,8 +14,8 @@ class KernelImpl : public aot::Kernel {
                           //  SPIR-V based backends completes.
   }
 
-  void launch(RuntimeContext *ctx) override {
-    runtime_->launch_kernel(handle_, ctx);
+  void launch(LaunchContextBuilder &ctx) override {
+    runtime_->launch_kernel(handle_, &ctx.get_context());
   }
 
   const GfxRuntime::RegisterParams &params() {

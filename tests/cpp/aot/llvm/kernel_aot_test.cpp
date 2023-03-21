@@ -48,16 +48,15 @@ TEST(LlvmAotTest, CpuKernel) {
   auto *k_run = mod->get_kernel("run");
 
   LaunchContextBuilder builder(k_run);
-  RuntimeContext &ctx = builder.get_context();
-  ctx.runtime = exec.get_llvm_runtime();
-  ctx.set_arg(0, /*v=*/0);
-  ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
-                      /*shape=*/arr.shape);
+  builder.set_arg(0, /*v=*/0);
+  builder.set_arg_ndarray_impl(/*arg_id=*/1,
+                               arr.get_device_allocation_ptr_as_int(),
+                               /*shape=*/arr.shape);
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
-    ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+    builder.set_arg(/*arg_id=*/i + 2, vec[i]);
   }
-  k_run->launch(&ctx);
+  k_run->launch(builder);
 
   auto *data = reinterpret_cast<int32_t *>(
       exec.get_ndarray_alloc_info_ptr(arr_devalloc));
@@ -94,16 +93,15 @@ TEST(LlvmAotTest, CudaKernel) {
     auto mod = cuda::make_aot_module(aot_params);
     auto *k_run = mod->get_kernel("run");
     LaunchContextBuilder builder(k_run);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec.get_llvm_runtime();
-    ctx.set_arg(0, /*v=*/0);
-    ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
-                        /*shape=*/arr.shape);
+    builder.set_arg(0, /*v=*/0);
+    builder.set_arg_ndarray_impl(/*arg_id=*/1,
+                                 arr.get_device_allocation_ptr_as_int(),
+                                 /*shape=*/arr.shape);
     std::vector<int> vec = {1, 2, 3};
     for (int i = 0; i < vec.size(); ++i) {
-      ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+      builder.set_arg(/*arg_id=*/i + 2, vec[i]);
     }
-    k_run->launch(&ctx);
+    k_run->launch(builder);
 
     auto *data = reinterpret_cast<int32_t *>(
         exec.get_ndarray_alloc_info_ptr(arr_devalloc));

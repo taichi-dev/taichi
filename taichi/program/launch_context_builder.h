@@ -5,6 +5,8 @@
 
 namespace taichi::lang {
 
+struct RuntimeContext;
+
 class LaunchContextBuilder {
  public:
   enum class DevAllocType : int8_t {

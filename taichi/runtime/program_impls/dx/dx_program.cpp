@@ -16,8 +16,8 @@ FunctionType register_params_to_executable(
     gfx::GfxRuntime::RegisterParams &&params,
     gfx::GfxRuntime *runtime) {
   auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
+  return [runtime, handle](LaunchContextBuilder &ctx) {
+    runtime->launch_kernel(handle, &ctx.get_context());
   };
 }
 

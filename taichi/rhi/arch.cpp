@@ -32,6 +32,7 @@ Arch arch_from_name(const std::string &arch_name) {
     RHI_DEBUG_SNPRINTF(buf.data(), buf.size(), "Unknown architecture name: %s",
                        arch_name.c_str());
     RHI_LOG_ERROR(buf.data());
+    RHI_NOT_IMPLEMENTED
   }
 
 #undef PER_ARCH

@@ -239,8 +239,17 @@ class SparseMatrixBuilder:
         self.num_cols = num_cols if num_cols else num_rows
         self.dtype = dtype
         if num_rows is not None:
-            self.ptr = get_runtime().prog.create_sparse_matrix_builder(
-                num_rows, num_cols, max_num_triplets, dtype, storage_format)
+            taichi_arch = get_runtime().prog.config().arch
+            if taichi_arch in [
+                    _ti_core.Arch.x64, _ti_core.Arch.arm64, _ti_core.Arch.cuda
+            ]:
+                self.ptr = _ti_core.SparseMatrixBuilder(
+                    num_rows, num_cols, max_num_triplets, dtype,
+                    storage_format,
+                    get_runtime().prog)
+            else:
+                raise TaichiRuntimeError(
+                    "SparseMatrix only supports CPU and CUDA for now.")
 
     def _get_addr(self):
         """Get the address of the sparse matrix"""
@@ -253,7 +262,7 @@ class SparseMatrixBuilder:
     def print_triplets(self):
         """Print the triplets stored in the builder"""
         taichi_arch = get_runtime().prog.config().arch
-        if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+        if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             self.ptr.print_triplets_eigen()
         elif taichi_arch == _ti_core.Arch.cuda:
             self.ptr.print_triplets_cuda()
@@ -261,7 +270,7 @@ class SparseMatrixBuilder:
     def build(self, dtype=f32, _format='CSR'):
         """Create a sparse matrix using the triplets"""
         taichi_arch = get_runtime().prog.config().arch
-        if taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64:
+        if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             sm = self.ptr.build()
             return SparseMatrix(sm=sm, dtype=dtype)
         if taichi_arch == _ti_core.Arch.cuda:

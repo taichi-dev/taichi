@@ -49,9 +49,7 @@ TEST(LlvmAotTest, CpuKernel) {
 
   LaunchContextBuilder builder(k_run);
   builder.set_arg(0, /*v=*/0);
-  builder.set_arg_ndarray_impl(/*arg_id=*/1,
-                               arr.get_device_allocation_ptr_as_int(),
-                               /*shape=*/arr.shape);
+  builder.set_arg_ndarray(/*arg_id=*/1, arr);
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
     builder.set_arg(/*arg_id=*/i + 2, vec[i]);
@@ -94,9 +92,7 @@ TEST(LlvmAotTest, CudaKernel) {
     auto *k_run = mod->get_kernel("run");
     LaunchContextBuilder builder(k_run);
     builder.set_arg(0, /*v=*/0);
-    builder.set_arg_ndarray_impl(/*arg_id=*/1,
-                                 arr.get_device_allocation_ptr_as_int(),
-                                 /*shape=*/arr.shape);
+    builder.set_arg_ndarray(/*arg_id=*/1, arr);
     std::vector<int> vec = {1, 2, 3};
     for (int i = 0; i < vec.size(); ++i) {
       builder.set_arg(/*arg_id=*/i + 2, vec[i]);

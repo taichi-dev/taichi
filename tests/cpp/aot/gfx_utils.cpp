@@ -87,7 +87,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
     host_ctx.result_buffer = result_buffer;
     simple_ret_kernel->launch(builder);
     gfx_runtime->synchronize();
-    EXPECT_FLOAT_EQ(host_ctx.get_ret<float>(0), 0.2);
+    EXPECT_FLOAT_EQ(builder.get_ret<float>(0), 0.2);
   }
 
   {
@@ -168,14 +168,12 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
 
   builder.set_arg(/*arg_id=*/0, /*base=*/0);
-  builder.set_arg_ndarray_impl(/*arg_id=*/1,
-                               arr.get_device_allocation_ptr_as_int(),
-                               /*shape=*/arr.shape);
+  builder.set_arg_ndarray(/*arg_id=*/1, arr);
 
   // Hack to set vector/matrix args
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
-    host_ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+    builder.set_arg(/*arg_id=*/i + 2, vec[i]);
   }
   k_run->launch(builder);
   gfx_runtime->synchronize();
@@ -233,8 +231,7 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
     auto &host_ctx = builder.get_context();
     host_ctx.result_buffer = result_buffer;
 
-    builder.set_arg_ndarray_impl(0, arr.get_device_allocation_ptr_as_int(),
-                                 arr.shape);
+    builder.set_arg_ndarray(0, arr);
     int src[size] = {0};
     src[0] = 2;
     src[2] = 40;
@@ -254,8 +251,7 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
     LaunchContextBuilder builder(ker2);
     auto &host_ctx = builder.get_context();
     host_ctx.result_buffer = result_buffer;
-    builder.set_arg_ndarray_impl(0, arr.get_device_allocation_ptr_as_int(),
-                                 arr.shape);
+    builder.set_arg_ndarray(0, arr);
     builder.set_arg(1, 3);
     ker2->launch(builder);
     gfx_runtime->synchronize();

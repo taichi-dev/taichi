@@ -142,7 +142,7 @@ By using more deployment-friendly models (based on Octree, Spherical Harmonics, 
 
 # Conclusion
 
-In the first part of the Taichi NeRF series, we introduced the basic concepts of NeRF, performance optimization, training, and deployment. As a differentiable renderer, NeRF has many other uses besides novel view synthesis. In the next part, we will bring you more exciting content, so stay tuned!
+In the first part of the Taichi NeRF series, we introduced the basic concepts of NeRF, performance optimization, training, and deployment. As a differentiable renderer, NeRF has many other uses besides novel view synthesis. In the upcoming articles, we will bring you more exciting content, so stay tuned!
 
 If you are interested in NeRF, feel free to join our chat group by scanning the QR code. For partners interested in mobile NeRF training and deployment, please contact us at contact@taichi.graphics.
 

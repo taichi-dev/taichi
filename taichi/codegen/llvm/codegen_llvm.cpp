@@ -2803,7 +2803,7 @@ llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
   return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
 }
 
-llvm::Value *TaskCodeGenLLVM::get_args_ptr(Callable *callable,
+llvm::Value *TaskCodeGenLLVM::get_args_ptr(const Callable *callable,
                                            llvm::Value *context) {
   auto *runtime_context_type = get_runtime_type("RuntimeContext");
   auto *args_type = tlctx->get_data_type(callable->args_type);

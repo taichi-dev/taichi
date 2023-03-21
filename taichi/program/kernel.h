@@ -45,7 +45,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return lowered_;
   }
 
-  void set_lowered(bool lowered) {
+  void set_lowered(bool lowered) const {
     lowered_ = lowered;
   }
 
@@ -66,7 +66,7 @@ class TI_DLL_EXPORT Kernel : public Callable {
   std::vector<uint64> get_ret_uint_tensor(int i);
   std::vector<float64> get_ret_float_tensor(int i);
 
-  uint64 get_next_task_id() {
+  uint64 get_next_task_id() const {
     return task_counter_++;
   }
 
@@ -93,8 +93,8 @@ class TI_DLL_EXPORT Kernel : public Callable {
   // A flag to record whether |ir| has been fully lowered.
   // lower initial AST all the way down to a bunch of
   // OffloadedStmt for async execution TODO(Lin): Check this comment
-  bool lowered_{false};
-  std::atomic<uint64> task_counter_{0};
+  mutable bool lowered_{false};                  // TODO(PGZXB): Remove it
+  mutable std::atomic<uint64> task_counter_{0};  // TODO(PGZXB): Remove it
   mutable std::string kernel_key_;
 };
 

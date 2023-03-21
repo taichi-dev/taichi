@@ -65,3 +65,13 @@ def test_bit_not_invalid():
 
     with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
         test(1.0)
+
+
+@test_utils.test()
+def test_logic_not_invalid():
+    @ti.kernel
+    def test(x: ti.f32) -> ti.i32:
+        return not x
+
+    with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
+        test(1.0)

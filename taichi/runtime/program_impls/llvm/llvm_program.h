@@ -127,10 +127,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->fill_ndarray(alloc, size, data);
   }
 
-  void prepare_runtime_context(RuntimeContext *ctx) override {
-    runtime_exec_->prepare_runtime_context(ctx);
-  }
-
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override {
     return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);
@@ -256,14 +252,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   DevicePtr get_snode_tree_device_ptr(int tree_id) override {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);
-  }
-
-  cuda::CudaDevice *cuda_device() {
-    return runtime_exec_->cuda_device();
-  }
-
-  cpu::CpuDevice *cpu_device() {
-    return runtime_exec_->cpu_device();
   }
 
   LlvmDevice *llvm_device() {

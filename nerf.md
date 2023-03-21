@@ -21,7 +21,7 @@ Not only researchers in the field of deep learning, but also professionals in ma
 
 The main purpose of this article is twofold:
 
-1. We want to introduce how Taichi and PyTorch can be combined to create a fully Python-based Instant NGP development workflow. Without a single line of CUDA code, Taichi will automatically calculate the derivatives of your kernel and achieve similar performance as CUDA. This allows you to spend more time on research idea iterations than tedious CUDA programming and performance tuning. 
+1. We want to introduce how Taichi and PyTorch can be combined to create a fully Python-based Instant NGP development workflow. Without a single line of CUDA code, Taichi will automatically calculate the derivatives of your kernel and achieve similar performance as CUDA. This allows you to spend more time on research idea iterations than tedious CUDA programming and performance tuning.
 2. Mobile devices will be an essential scenario for NeRF implementation in the future. We introduce the use of Taichi AOT (ahead-of-time compilation) framework, which can deploy the trained NeRF model on mobile devices without worrying about platform compatibility.
 The following animation demonstrates our efforts using Taichi's AOT framework to port the Lego model from the Instant NGP paper to an iPad for real-time inference and rendering:
 
@@ -146,5 +146,3 @@ In the first part of the Taichi NeRF series, we introduced the basic concepts of
 If you are interested in NeRF, feel free to join our chat group by scanning the QR code. For partners interested in mobile NeRF training and deployment, please contact us at contact@taichi.graphics.
 
 ![](https://files.mdnice.com/user/11544/f6556ed2-de59-4a66-a519-cb91cd75aa86.png)
-
-

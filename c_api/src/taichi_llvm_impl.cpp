@@ -118,8 +118,6 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
                                                this->result_buffer);
   }
 
-  // Insert LLVMRuntime to RuntimeContext
-  executor_->prepare_runtime_context(&this->runtime_context_);
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));
 }
 

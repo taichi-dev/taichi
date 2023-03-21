@@ -106,7 +106,7 @@ class CpuDevice : public LlvmDevice {
   void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
   void unmap(DeviceAllocation alloc) final;
 
-  DeviceAllocation import_memory(void *ptr, size_t size);
+  DeviceAllocation import_memory(void *ptr, size_t size) override;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 

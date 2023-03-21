@@ -116,7 +116,7 @@ In addition to not having to write CUDA code manually, another advantage of deve
 
 In our early attempts, we tried to extract the inference part of the Taichi NeRF training code and deploy it directly to a mobile device, only to achieve a dismal performance of 1 fps. The main performance bottleneck lies in the highly random access to data in the hash encoding part of Instant NGP. This is not an issue in CUDA when the cache can hold all hash tables, but on mobile devices, due to insufficient cache, the efficiency becomes very low.
 
-We hope that data reads and writes are done in as continuous a manner as possible, which requires a tightly packed memory layout. Therefore, we replaced the hash table with a compact grid structure, significantly improving the throughput of memory access. This code modification required less than 30 lines. Combined with other optimization methods, we finally achieved real-time interaction with over 20 fps on mobile devices.
+We expect that data reads and writes are done in a continuous manner, which requires tightly packed memory layout. Therefore, we replaced the hash table with compact grid structure, significantly improving the throughput of memory access. This code modification required less than 30 lines. Combined with other optimization methods, we finally achieved real-time interaction with over 20 fps on mobile devices.
 
 # Part III: Deploying Taichi-NGP on mobile devices with Taichi AOT
 

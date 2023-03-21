@@ -70,7 +70,8 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
 
   // Create the serial inner loop.
   auto inner_loop = offloaded_body->insert(Stmt::make_typed<RangeForStmt>(
-      block_begin, block_end, std::move(offloaded->body), false, 1, 1,
+      block_begin, block_end, std::move(offloaded->body),
+      /*is_bit_vectorized*/ false, /*num_cpu_threads*/ 1, /*block_dim*/ 1,
       /*strictly_serialized*/ true, offloaded->range_hint));
 
   irpass::replace_all_usages_with(inner_loop, offloaded, inner_loop);

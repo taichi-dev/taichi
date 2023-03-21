@@ -122,10 +122,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   /* ------ Member Access ----- */
   /* -------------------------- */
-  cuda::CudaDevice *cuda_device();
-  cpu::CpuDevice *cpu_device();
-  amdgpu::AmdgpuDevice *amdgpu_device();
-
   void finalize();
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);

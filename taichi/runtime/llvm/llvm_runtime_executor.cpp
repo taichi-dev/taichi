@@ -415,23 +415,8 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
     std::memset(root_buffer, 0, rounded_size);
   }
 
-  DeviceAllocation alloc{kDeviceNullAllocation};
-
-  if (config_.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    alloc = cuda_device()->import_memory(root_buffer, rounded_size);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else if (config_.arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-    alloc = amdgpu_device()->import_memory(root_buffer, rounded_size);
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    alloc = cpu_device()->import_memory(root_buffer, rounded_size);
-  }
+  DeviceAllocation alloc =
+      llvm_device()->import_memory(root_buffer, rounded_size);
 
   snode_tree_allocs_[tree_id] = alloc;
 
@@ -474,25 +459,6 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   }
 }
 
-cuda::CudaDevice *LlvmRuntimeExecutor::cuda_device() {
-  if (config_.arch != Arch::cuda) {
-    TI_ERROR("arch is not cuda");
-  }
-  return static_cast<cuda::CudaDevice *>(device_.get());
-}
-
-amdgpu::AmdgpuDevice *LlvmRuntimeExecutor::amdgpu_device() {
-  if (config_.arch != Arch::amdgpu) {
-    TI_ERROR("arch is not amdgpu");
-  }
-  return static_cast<amdgpu::AmdgpuDevice *>(device_.get());
-}
-
-cpu::CpuDevice *LlvmRuntimeExecutor::cpu_device() {
-  TI_ERROR_IF(!arch_is_cpu(config_.arch), "arch is not cpu");
-  return static_cast<cpu::CpuDevice *>(device_.get());
-}
-
 LlvmDevice *LlvmRuntimeExecutor::llvm_device() {
   TI_ASSERT(dynamic_cast<LlvmDevice *>(device_.get()));
   return static_cast<LlvmDevice *>(device_.get());
@@ -511,7 +477,7 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
 }
 
 void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
-  cuda_device()->dealloc_memory(handle);
+  llvm_device()->dealloc_memory(handle);
 }
 
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
@@ -539,32 +505,35 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
     const DeviceAllocation &alloc) {
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return (uint64_t *)cuda_device()->get_alloc_info(alloc).ptr;
+    return (uint64_t *)llvm_device()
+        ->as<cuda::CudaDevice>()
+        ->get_alloc_info(alloc)
+        .ptr;
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-    return (uint64_t *)amdgpu_device()->get_alloc_info(alloc).ptr;
+    return (uint64_t *)llvm_device()
+        ->as<amdgpu::AmdgpuDevice>()
+        ->get_alloc_info(alloc)
+        .ptr;
 #else
-    TI_NOT_IMPLEMENTED
+    TI_NOT_IMPLEMENTED;
 #endif
-  } else {
-    return (uint64_t *)cpu_device()->get_alloc_info(alloc).ptr;
   }
+
+  return (uint64_t *)llvm_device()
+      ->as<cpu::CpuDevice>()
+      ->get_alloc_info(alloc)
+      .ptr;
 }
 
 void LlvmRuntimeExecutor::finalize() {
   profiler_ = nullptr;
   if (preallocated_device_buffer_ != nullptr) {
-    if (config_.arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-      cuda_device()->dealloc_memory(preallocated_device_buffer_alloc_);
-#endif
-    } else if (config_.arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-      amdgpu_device()->dealloc_memory(preallocated_device_buffer_alloc_);
-#endif
+    if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
+      llvm_device()->dealloc_memory(preallocated_device_buffer_alloc_);
     }
   }
   finalized_ = true;
@@ -603,11 +572,12 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
     RhiResult res =
-        cuda_device()->allocate_memory(preallocated_device_buffer_alloc_params,
+        llvm_device()->allocate_memory(preallocated_device_buffer_alloc_params,
                                        &preallocated_device_buffer_alloc_);
     TI_ASSERT(res == RhiResult::success);
     cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        cuda_device()->get_alloc_info(preallocated_device_buffer_alloc_);
+        llvm_device()->as<cuda::CudaDevice>()->get_alloc_info(
+            preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
@@ -636,12 +606,13 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
     Device::AllocParams preallocated_device_buffer_alloc_params;
     preallocated_device_buffer_alloc_params.size = prealloc_size;
-    RhiResult res = amdgpu_device()->allocate_memory(
-        preallocated_device_buffer_alloc_params,
-        &preallocated_device_buffer_alloc_);
+    RhiResult res =
+        llvm_device()->allocate_memory(preallocated_device_buffer_alloc_params,
+                                       &preallocated_device_buffer_alloc_);
     TI_ASSERT(res == RhiResult::success);
     amdgpu::AmdgpuDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        amdgpu_device()->get_alloc_info(preallocated_device_buffer_alloc_);
+        llvm_device()->as<amdgpu::AmdgpuDevice>()->get_alloc_info(
+            preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,

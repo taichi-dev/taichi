@@ -254,14 +254,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);
   }
 
-  cuda::CudaDevice *cuda_device() {
-    return runtime_exec_->cuda_device();
-  }
-
-  cpu::CpuDevice *cpu_device() {
-    return runtime_exec_->cpu_device();
-  }
-
   LlvmDevice *llvm_device() {
     return runtime_exec_->llvm_device();
   }

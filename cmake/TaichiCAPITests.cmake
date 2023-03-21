@@ -43,10 +43,6 @@ target_include_directories(${C_API_TESTS_NAME}
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})
 
-if(LINUX)
-    target_link_options(${C_API_TESTS_NAME} PUBLIC -static-libgcc -static-libstdc++)
-endif()
-
 if(TI_WITH_STATIC_C_API)
     set(C_STATIC_API_TESTS_NAME taichi_static_c_api_tests)
 

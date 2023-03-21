@@ -21,7 +21,7 @@ Not only researchers in the field of deep learning, but also professionals in ma
 
 The main purpose of this article is twofold:
 
-1. We want to introduce how Taichi and PyTorch can be combined to create a fully Python-based Instant NGP development workflow. Without having to write any CUDA code or manually derive, Taichi will automatically calculate the derivatives of your kernel and achieve similar performance as CUDA. This allows you to **"Oblivious to CUDA programming, racing against time to publish papers"**.
+1. We want to introduce how Taichi and PyTorch can be combined to create a fully Python-based Instant NGP development workflow. Without a single line of CUDA code, Taichi will automatically calculate the derivatives of your kernel and achieve similar performance as CUDA. This allows you to spend more time on research idea iterations than tedious CUDA programming and performance tuning. 
 2. Mobile devices will be an essential scenario for NeRF implementation in the future. We introduce the use of Taichi AOT (ahead-of-time compilation) framework, which can deploy the trained NeRF model on mobile devices without worrying about platform compatibility.
 The following animation demonstrates our efforts using Taichi's AOT framework to port the Lego model from the Instant NGP paper to an iPad for real-time inference and rendering:
 
@@ -66,7 +66,7 @@ In actual calculations, we need to use discrete sums to approximate the integral
 
 ## NeRF Training
 
-With the knowledge of neural fields and volume rendering, let's further look into the training process of NeRF. The entire process is divided into five steps, as shown in the following figure:
+With the knowledge of neural radiance fields and volume rendering, let's further look into the training process of NeRF. The entire process is divided into five steps, as shown in the following figure:
 
 ![来源：https://arxiv.org/pdf/2102.07064.pdf](https://files.mdnice.com/user/11544/167e08ef-f631-4972-bb48-368a53a7dbbe.png)
 
@@ -84,9 +84,9 @@ Another important engineering optimization of Instant NGP is to implement the en
 
 # Part II: Training Instant NGP with Taichi
 
-The NGP project is open-sourced [their CUDA implementation](https://github.com/NVlabs/instant-ngp). The project is written in CUDA and carefully optimized for all core components, making it very fast. However, using CUDA usually accompanies manually managing memory and writing parallel computing code for derivatives, which is very painful and error-prone.
+The NGP project is [open-sourced](https://github.com/NVlabs/instant-ngp). The project is written in CUDA and carefully optimized for all core components, making it very fast. However, using CUDA usually accompanies manually managing memory and hand-written parallel computing code for derivatives, which is very painful and error-prone.
 
-There are also community-contributed [PyTorch-based implementations](https://github.com/ashawkey/torch-ngp), but the pure PyTorch version's runtime efficiency is significantly lower than the CUDA implementation. Although PyTorch is well-optimized for networks like MLP, it is less efficient for the hash encoding and volume rendering parts in Instant NGP. Due to interpolation, ray sampling, and other tedious operations, PyTorch is forced to launch many small kernels, resulting in very low efficiency.
+There are also community-contributed [PyTorch-based implementations](https://github.com/ashawkey/torch-ngp), but the pure PyTorch version is significantly lower than the CUDA implementation. Although PyTorch is well-optimized for networks like MLP, it is less efficient for the hash encoding and volume rendering parts. For operations like interpolation and ray sampling, PyTorch launches many small kernels, resulting in very low efficiency.
 
 Is there a way to achieve CUDA-like runtime efficiency without writing CUDA and only writing Python? Of course! You can combine Taichi and PyTorch: use PyTorch for the MLP inference and training parts while writing the hash encoding and volume rendering parts with Taichi. The workflow is shown in the following diagram:
 
@@ -94,11 +94,11 @@ Is there a way to achieve CUDA-like runtime efficiency without writing CUDA and 
 
 As shown in the diagram, we replace the hash encoding and volume rendering computations that PyTorch is not good at with corresponding Taichi kernels while retaining the PyTorch inference and training network parts. Taichi and PyTorch can conveniently and efficiently exchange data between each other, allowing users to easily organize Taichi and PyTorch code in a modular manner and conveniently modify or replace modules.
 
-> Note: We also implemented a completely Taichi-based Instant NGP, so we won't rely on Pytorch for deployment
+> Note: We also implemented a completely Taichi-based Instant NGP, so that we don't depend on PyTorch for mobile deployment
 
 Unlike PyTorch, Taichi adopts a SIMT programming model similar to CUDA, encapsulating all computations in a single kernel as much as possible. Therefore, Taichi can achieve efficiency close to CUDA.
 
-Moreover, Taichi has automatic differentiation (Autodiff) capabilities, significantly improving development efficiency and ensuring gradient accuracy, eliminating the need for a large amount of manual gradient derivation work.
+Moreover, Taichi supports automatic differentiation (Autodiff), significantly improving development efficiency and ensuring gradient accuracy, eliminating the need for a large amount of manual gradient derivation work.
 
 The Taichi NeRF Github repository is here: https://github.com/taichi-dev/taichi-nerfs. Try it out!
 
@@ -111,7 +111,7 @@ The efficiency of the Taichi implementation of Instant NGP is very close to the 
 * Lego model with 800x800 resolution, trained for 20,000 iterations, tested on a machine running Ubuntu 20.04 with a single RTX 3090 GPU.
 * For detailed training method, please refer to: [https://github.com/taichi-dev/taichi-nerfs#train-with-preprocessed-datasets](https://github.com/taichi-dev/taichi-nerfs#train-with-preprocessed-datasets)
 
-## Quickly modify the model using Taichi
+## Fast model iteration using Taichi
 In addition to not having to write CUDA code manually, another advantage of developing NeRF with Taichi is the ability to quickly iterate on the model code. Here, we want to share an example of making targeted modifications to the Instant NGP model during the development of mobile deployment.
 
 In our early attempts, we tried to extract the inference part from the Taichi NeRF training code and deploy it directly to a mobile device, only to achieve a dismal performance of 1 fps. The main performance bottleneck lies in the highly random access to data in the hash encoding part of Instant NGP. This is not an issue in CUDA where the cache can hold all hash tables, but mobile devices suffer this due to insufficient cache, resulting in low performance.
@@ -148,13 +148,3 @@ If you are interested in NeRF, feel free to join our chat group by scanning the 
 ![](https://files.mdnice.com/user/11544/f6556ed2-de59-4a66-a519-cb91cd75aa86.png)
 
 
-## Team Introduction
-
-Taichi Graphics is a graphics software company with core products including the open-source parallel computing framework "Taichi Programming Language" and the cloud-based rendering tool "Dianshi Renderer":
-
-- [Taichi Programming Language](https://taichi-lang.cn/): Taichi is an open-source, Python-embedded parallel programming language. The company provides physics simulation, mobile deployment, and other products and solutions based on open-source software. Taichi has been adopted by over a hundred universities and research institutes worldwide, and mobile deployment products based on Taichi AOT have been implemented in companies like OPPO.
-- [Dianshi Renderer](https://dianshiapp.com/): A real-time ray tracing cloud renderer SaaS, targeting product visualization needs for e-commerce and industrial designers. The Alpha version is currently online, and the Beta version will be released in the middle of this year.
-
-The team currently consists of several dozen members, more than half of whom are involved in research and development. The technical atmosphere is strong, the work philosophy is pragmatic, and the communication style is transparent. Wednesdays are designated as No Meeting Days, and team members can choose to work from home. The team includes outstanding colleagues from various industries, and everyone is happy to share and exchange ideas in a fun and challenging entrepreneurial environment.
-
-As usual, we will slightly expand the team this year, and we welcome interested candidates to join us! Click on this [link](https://app.mokahr.com/apply/taichi/70120#/) to view open positions :)

@@ -34,7 +34,7 @@ We will first briefly review the principles of NeRF and the improvements of Inst
 
 In simple terms, a neural radiance field is the encoding of an entire 3D scene into the parameters of a neural network. To render a scene from any new viewpoint, the neural network needs to learn the RGB color and volume density $\sigma$ (i.e., whether the point is "occupied" or not) of each point in space. The volume density at a point is independent of the viewpoint, but the color changes with the viewpoint (e.g., the object seen from a different angle changes), so the neural network actually needs to learn the color $(r,g,b)$ and volume density $\sigma$ of a point $(x,y,z)$ under different camera angles $(\theta,\phi)$ (i.e., latitude and longitude).
 
-So, the input to the neural radiance field is a five-dimensional vector $(x,y,z,\theta,\phi)$, and the output is a four-dimensional vector $(r,g,b,\sigma)$:
+Therefore, the input to the neural radiance field is a five-dimensional vector $(x,y,z,\theta,\phi)$, and the output is a four-dimensional vector $(r,g,b,\sigma)$:
 
 ![图片来源：https://inst.eecs.berkeley.edu/~cs194-26/fa22/Lectures/nerf_lecture2.pdf](https://files.mdnice.com/user/11544/44e8c984-5120-4a88-aec4-bc2935b99351.png)
 

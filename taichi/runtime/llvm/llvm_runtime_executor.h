@@ -71,8 +71,6 @@ class LlvmRuntimeExecutor {
 
   LLVMRuntime *get_llvm_runtime();
 
-  void prepare_runtime_context(RuntimeContext *ctx);
-
   Device *get_compute_device();
 
   LlvmDevice *llvm_device();
@@ -124,10 +122,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   /* ------ Member Access ----- */
   /* -------------------------- */
-  cuda::CudaDevice *cuda_device();
-  cpu::CpuDevice *cpu_device();
-  amdgpu::AmdgpuDevice *amdgpu_device();
-
   void finalize();
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);

@@ -24,7 +24,7 @@ target_include_directories(${executable_name} SYSTEM
   PUBLIC
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
   )
-target_link_libraries(${executable_name} ti_device_api glfw)
+target_link_libraries(${executable_name} taichi_c_api ti_device_api glfw)
 endmacro()
 
 make_sample(sample_1_window sample_1_window.cpp)

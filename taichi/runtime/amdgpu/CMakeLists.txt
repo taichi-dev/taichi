@@ -13,5 +13,3 @@ target_include_directories(amdgpu_runtime
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(amdgpu_runtime PRIVATE amdgpu_rhi)

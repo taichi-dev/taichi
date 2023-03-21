@@ -17,5 +17,3 @@ target_include_directories(cpu_runtime
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(cpu_runtime PRIVATE cpu_rhi)

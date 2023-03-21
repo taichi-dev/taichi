@@ -15,5 +15,3 @@ target_include_directories(dx12_program_impl
     ${PROJECT_SOURCE_DIR}/external/DirectX-Headers/include
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(dx12_program_impl PRIVATE dx12_rhi)

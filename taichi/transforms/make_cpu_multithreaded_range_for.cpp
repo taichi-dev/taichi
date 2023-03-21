@@ -21,7 +21,8 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
       Stmt::make_typed<ConstStmt>(TypedConstant(PrimitiveType::i32, 512)));
   auto num_threads = offloaded_body->insert(Stmt::make_typed<ConstStmt>(
       TypedConstant(PrimitiveType::i32, config.cpu_max_num_threads)));
-  auto thread_index = offloaded_body->insert(Stmt::make_typed<LoopIndexStmt>(offloaded, 0));
+  auto thread_index =
+      offloaded_body->insert(Stmt::make_typed<LoopIndexStmt>(offloaded, 0));
 
   // Retrieve range-for bounds.
   Stmt *begin_stmt;
@@ -49,8 +50,8 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
       Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, end_stmt, begin_stmt));
   block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
       BinaryOpType::add, block_range, num_threads));
-  block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-      BinaryOpType::sub, block_range, one));
+  block_range = offloaded_body->insert(
+      Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, block_range, one));
   block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
       BinaryOpType::floordiv, block_range, num_threads));
   block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
@@ -65,8 +66,8 @@ void make_multithreaded_range_for(OffloadedStmt *offloaded,
   // Inner loop ends at $[min(block_begin + block_range), end))]
   auto block_end = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
       BinaryOpType::add, block_begin, block_range));
-  block_end = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-      BinaryOpType::min, end_stmt, block_end));
+  block_end = offloaded_body->insert(
+      Stmt::make_typed<BinaryOpStmt>(BinaryOpType::min, end_stmt, block_end));
 
   // Create the serial inner loop.
   auto inner_loop = offloaded_body->insert(Stmt::make_typed<RangeForStmt>(

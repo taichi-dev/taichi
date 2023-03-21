@@ -15,10 +15,8 @@ concurrency:
 
 env:
   TI_CI: "1"
-  TI_SKIP_VERSION_CHECK: 'ON'
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
-  CI_IMAGE_VERSION: '202303211008'
 
 jobs:
   show_environ:
@@ -211,7 +209,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -231,7 +229,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
@@ -281,7 +279,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-build \
-            registry.botmaster.tgr/taichi-build-amdgpu:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -301,7 +299,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-test \
-             registry.botmaster.tgr/taichi-test-amdgpu:${{ env.CI_IMAGE_VERSION }} \
+             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
@@ -433,8 +431,6 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
-        env:
-          PY: ${{ matrix.python }}
 
       - name: Test
         id: test
@@ -488,7 +484,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -508,7 +504,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix-test-docs.sh
         env:
           PY: '3.8'
@@ -561,7 +557,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -576,22 +572,22 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py android
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_LLVM:BOOL=OFF
-            -DTI_WITH_C_API:BOOL=ON
+            -DTI_WITH_C_API=ON
 
       - name: Test For Android AOT
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run-gpu --name taichi-test-android \
-            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
         env:
@@ -642,7 +638,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -657,8 +653,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py android
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -672,7 +668,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run-gpu --name taichi-test-capi-headless-demo \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
         env:
           TI_DEVICE_MEMORY_GB: '0.1'
@@ -722,7 +718,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -737,8 +733,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py android
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            /home/dev/taichi/.github/workflows/scripts/android-build.sh
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -752,7 +748,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-prepare-unity-build-env \
-            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
@@ -768,7 +764,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-run-unity-demo \
-            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
   aot_build_and_test_gpu_linux:
@@ -803,7 +799,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -823,11 +819,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
-
-        env:
-          PY: '3.8'
 
       - name: Build & Run C-API Headless Demos (Desktop)
         run: |
@@ -835,7 +828,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
         env:
           PY: '3.8'
@@ -848,7 +841,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
              /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
         env:
           PY: '3.8'

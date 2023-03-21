@@ -1,0 +1,24 @@
+FROM registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.3
+ENV ANDROID_SDK_ROOT=/android-sdk
+USER root
+RUN mkdir /android-sdk && \
+    wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip && \
+    unzip commandlinetools-linux-8512546_latest.zip && \
+    mv cmdline-tools /android-sdk && \
+    rm commandlinetools-linux-8512546_latest.zip && \
+    rm /etc/apt/sources.list.d/* && apt-get update && apt-get install openjdk-11-jdk redis-tools -y && \
+    yes | /android-sdk/cmdline-tools/bin/sdkmanager --sdk_root=/android-sdk --install \
+        'ndk-bundle' \
+        'build-tools;30.0.3' \
+        'build-tools;33.0.0' \
+        'cmake;3.10.2.4988404' \
+        'platforms;android-30' \
+        'platforms;android-33' \
+        'platform-tools' \
+        'patcher;v4' \
+        emulator \
+        && \
+    chown -R dev:dev /android-sdk
+USER dev
+# Manually add adb pairing keys
+# ADD --chown dev:dev dot-android /home/dev/.android

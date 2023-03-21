@@ -7,7 +7,6 @@ import glob
 import os
 import pathlib
 import subprocess
-import sys
 
 curr_dir = os.path.dirname(os.path.abspath(__file__))
 curr_dir = os.path.dirname(curr_dir)
@@ -26,7 +25,7 @@ def generate():
         os.environ[
             "TAICHI_AOT_FOLDER_PATH"] = curr_dir + '/tests/cpp/aot/python_scripts/' + path_name
         try:
-            subprocess.check_call([sys.executable, x, "--arch=vulkan"])
+            subprocess.check_call(["python", x, "--arch=vulkan"])
         except subprocess.CalledProcessError:
             continue
 

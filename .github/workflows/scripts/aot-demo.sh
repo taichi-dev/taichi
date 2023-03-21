@@ -18,17 +18,16 @@ export TAICHI_UNITY_EXAMPLE_BRANCH=main
 
 
 function build-and-smoke-test-android-aot-demo {
-    setup-android-ndk-env
-
     pushd taichi
     GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
-    setup_python
+    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    . /tmp/ti-aot-env.sh
     popd
 
     export TAICHI_REPO_DIR=$(pwd)/taichi
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
+    git clone --recursive --jobs=4 --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
 
     # Install taichi-python
     pip install /taichi-wheel/*.whl
@@ -46,6 +45,8 @@ function build-and-smoke-test-android-aot-demo {
 
 function prepare-unity-build-env {
     cd taichi
+    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    . /tmp/ti-aot-env.sh
 
     # Dependencies
     git clone --reference-if-able /var/lib/git-cache -b "$TAICHI_UNITY_EXAMPLE_BRANCH" "$TAICHI_UNITY_EXAMPLE_URL"
@@ -66,7 +67,7 @@ function prepare-unity-build-env {
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
 
     pushd Taichi-UnityExample
-    pip install /taichi-wheel/*.whl
+    python -m pip install /taichi-wheel/*.whl
     python scripts/implicit_fem.cgraph.py --aot
     popd
 }
@@ -100,27 +101,20 @@ function smoke-test-unity-demo {
 }
 
 function build-and-test-headless-demo {
-    setup-android-ndk-env
-
     pushd taichi
-    setup_python
-    popd
-
-    export TAICHI_REPO_DIR=$(pwd)/taichi
-
-    pushd taichi
+    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    . /tmp/ti-aot-env.sh
     pip install /taichi-wheel/*.whl
     sudo chmod 0777 $HOME/.cache
     popd
 
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
+    git clone --recursive --jobs=4 --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
     cd taichi-aot-demo
 
     . $(pwd)/ci/test_utils.sh
 
     # Build demos
-    export TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
     build_demos "$ANDROID_CMAKE_ARGS"
 
     export PATH=/android-sdk/platform-tools:$PATH
@@ -155,25 +149,28 @@ function build-and-test-headless-demo {
 
 function build-and-test-headless-demo-desktop {
     pushd taichi
-    setup_python
+    python3 .github/workflows/scripts/build.py wheel --write-env=/tmp/ti-aot-env.sh
+    . /tmp/ti-aot-env.sh
     python3 -m pip install dist/*.whl
-    sudo chmod 0777 $HOME/.cache
-    export TAICHI_REPO_DIR=$(pwd)
     popd
 
+    sudo chmod 0777 $HOME/.cache
+
     rm -rf taichi-aot-demo
-    git clone --recursive --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
+    git clone --recursive --jobs=4 --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
     cd taichi-aot-demo
 
-    TAICHI_C_API_INSTALL_DIR=$(find $TAICHI_REPO_DIR -name cmake-install -type d | head -n 1)/c_api
     python3 -m pip install -r ci/requirements.txt
     python3 ci/run_tests.py -l $TAICHI_C_API_INSTALL_DIR
 }
 
 function check-c-api-export-symbols {
-    cd taichi
-    TAICHI_REPO_DIR=$(pwd)
-    TAICHI_C_API_DIR=$(find $TAICHI_REPO_DIR -name libtaichi_c_api.* | head -n 1)
+    [ ! -z $IN_DOCKER ] && cd taichi
+
+    python3 .github/workflows/scripts/build.py wheel --write-env=/tmp/ti-aot-env.sh
+    . /tmp/ti-aot-env.sh
+
+    LIBTAICHI_C_API=$TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so
 
     # T: global functions
     # B: global variables (uninitialized)
@@ -184,10 +181,10 @@ function check-c-api-export-symbols {
     CAPI_SYM=" _\?ti_"
     CAPI_UTILS_SYM=" capi::utils::"
 
-    NUM_LEAK_SYM=$(nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
+    NUM_LEAK_SYM=$(nm -C --extern-only ${LIBTAICHI_C_API} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}" | wc -l)
     if [ ${NUM_LEAK_SYM} -gt 0 ]; then
         echo "Following symbols leaked from libtaichi_c_api: "
-        nm -C --extern-only ${TAICHI_C_API_DIR} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
+        nm -C --extern-only ${LIBTAICHI_C_API} | grep "${EXPORT_SYM}" | grep -v "${CAPI_SYM}" | grep -v "${CAPI_UTILS_SYM}"
         exit 1
     fi
 }

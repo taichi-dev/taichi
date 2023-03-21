@@ -27,9 +27,7 @@ static void run_return_tests(aot::Module *mod,
   aot::Kernel *k_ret = mod->get_kernel("test_ret");
 
   LaunchContextBuilder builder(k_ret);
-  RuntimeContext &ctx = builder.get_context();
-  ctx.runtime = exec->get_llvm_runtime();
-  k_ret->launch(&ctx);
+  k_ret->launch(builder);
   exec->synchronize();
   EXPECT_EQ(builder.get_struct_ret_int({0, 0}), 1);
   EXPECT_EQ(builder.get_struct_ret_float({0, 1, 0}), 2);

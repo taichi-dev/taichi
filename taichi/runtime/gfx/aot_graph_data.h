@@ -15,7 +15,7 @@ class KernelImpl : public aot::Kernel {
   }
 
   void launch(LaunchContextBuilder &ctx) override {
-    runtime_->launch_kernel(handle_, &ctx.get_context());
+    runtime_->launch_kernel(handle_, ctx);
   }
 
   const GfxRuntime::RegisterParams &params() {

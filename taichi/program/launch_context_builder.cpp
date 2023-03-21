@@ -3,6 +3,7 @@
 #include <taichi/program/context.h>
 #undef TI_RUNTIME_HOST
 #include "taichi/util/action_recorder.h"
+#include "fp16.h"
 
 namespace taichi::lang {
 LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
@@ -10,6 +11,10 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
     : kernel_(kernel),
       owned_ctx_(nullptr),
       ctx_(ctx),
+      arg_buffer_(std::make_unique<char[]>(
+          arch_uses_llvm(kernel->arch)
+              ? kernel->args_size
+              : sizeof(uint64) * taichi_max_num_args_total)),
       result_buffer_(std::make_unique<char[]>(
           arch_uses_llvm(kernel->arch)
               ? kernel->ret_size
@@ -17,6 +22,9 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
   if (arch_uses_llvm(kernel->arch)) {
     ctx_->result_buffer = (uint64 *)result_buffer_.get();
     ctx_->result_buffer_size = kernel->ret_size;
+    ctx_->arg_buffer_size = kernel->args_size;
+    ctx_->arg_buffer = arg_buffer_.get();
+    ctx_->args_type = kernel->args_type;
   }
 }
 
@@ -24,6 +32,10 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()),
+      arg_buffer_(std::make_unique<char[]>(
+          arch_uses_llvm(kernel->arch)
+              ? kernel->args_size
+              : sizeof(uint64) * taichi_max_num_args_total)),
       result_buffer_(std::make_unique<char[]>(
           arch_uses_llvm(kernel->arch)
               ? kernel->ret_size
@@ -31,6 +43,9 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
       ret_type_(kernel->ret_type) {
   ctx_->result_buffer = (uint64 *)result_buffer_.get();
   ctx_->result_buffer_size = kernel->ret_size;
+  ctx_->arg_buffer_size = kernel->args_size;
+  ctx_->arg_buffer = arg_buffer_.get();
+  ctx_->args_type = kernel->args_type;
 }
 
 void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
@@ -65,8 +80,13 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     ctx_->set_arg(arg_id, (uint64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    // use f32 to interact with python
-    ctx_->set_arg(arg_id, (float32)d);
+    if (!arch_uses_llvm(kernel_->arch)) {
+      // TODO: remove this once we refactored the SPIR-V based backends
+      ctx_->set_arg(arg_id, (float32)d);
+      return;
+    }
+    uint16 half = fp16_ieee_from_fp32_value((float32)d);
+    ctx_->set_arg(arg_id, half);
   } else {
     TI_NOT_IMPLEMENTED
   }

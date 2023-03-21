@@ -171,7 +171,7 @@ struct TI_DLL_EXPORT CompiledGraph {
   static void init_runtime_context(
       const std::vector<Arg> &paramter_list,
       const std::unordered_map<std::string, IValue> &args,
-      RuntimeContext &ctx);
+      LaunchContextBuilder &ctx);
 };
 
 }  // namespace aot

@@ -22,7 +22,10 @@ class LlvmDevice : public Device {
 
   template <typename DEVICE>
   DEVICE *as() {
-    return dynamic_cast<DEVICE *>(this);
+    
+    auto* device = dynamic_cast<DEVICE *>(this);
+    TI_ASSERT(device != nullptr);
+    return device;
   }
 
   virtual DeviceAllocation import_memory(void *ptr, size_t size) {

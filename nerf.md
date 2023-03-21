@@ -16,7 +16,6 @@ Compared with previous research, the significant breakthroughs achieved by the m
 2. Based on NeRF's work, Instant NGP significantly shortens training and rendering time, reducing training time to within a minute, and making real-time rendering easily achievable.
 These improvements make NeRF technology truly feasible for implementation.
 
-These improvements make NeRF technology truly feasible for implementation.
 
 Not only researchers in the field of deep learning, but also professionals in many other industries are closely following the progress of NeRF, thinking about the possibilities of applying NeRF in their fields.
 

@@ -323,25 +323,15 @@ TypedConstant LaunchContextBuilder::fetch_ret_impl(int offset, const Type *dt) {
   auto primitive_type = dt->as<PrimitiveType>();
   char *ptr = result_buffer_.get() + offset;
   switch (primitive_type->type) {
-#define RETURN_PRIMITIVE(type, ctype) \
-  case PrimitiveTypeID::type:         \
+#define PER_C_TYPE(type, ctype) \
+  case PrimitiveTypeID::type:   \
     return TypedConstant(*(ctype *)ptr);
-
-    RETURN_PRIMITIVE(f32, float32);
-    RETURN_PRIMITIVE(f64, float64);
-    RETURN_PRIMITIVE(i8, int8);
-    RETURN_PRIMITIVE(i16, int16);
-    RETURN_PRIMITIVE(i32, int32);
-    RETURN_PRIMITIVE(i64, int64);
-    RETURN_PRIMITIVE(u8, uint8);
-    RETURN_PRIMITIVE(u16, uint16);
-    RETURN_PRIMITIVE(u32, uint32);
-    RETURN_PRIMITIVE(u64, uint64);
-#undef RETURN_PRIMITIVE
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
     case PrimitiveTypeID::f16: {
       // first fetch the data as u16, and then convert it to f32
       uint16 half = *(uint16 *)ptr;
-      return TypedConstant(bit::half_to_float(half));
+      return TypedConstant(fp16_ieee_to_fp32_value(half));
     }
     default:
       TI_NOT_IMPLEMENTED

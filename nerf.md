@@ -94,7 +94,7 @@ Is there a way to achieve CUDA-like runtime efficiency without writing CUDA and 
 
 As shown in the diagram, we replace the hash encoding and volume rendering computations that PyTorch is not good at with corresponding Taichi kernels while retaining the PyTorch inference and training network parts. Taichi and PyTorch can conveniently and efficiently exchange data between each other, allowing users to easily organize Taichi and PyTorch code in a modular manner and conveniently modify or replace modules.
 
-> Note: We have also implemented a completely Taichi-based network inference and training part, which can be completely independent of torch when deployed.
+> Note: We also implemented a completely Taichi-based Instant NGP, so we won't rely on Pytorch for deployment
 
 Unlike PyTorch, Taichi adopts a SIMT programming model similar to CUDA, encapsulating all computations in a single kernel as much as possible. Therefore, Taichi can achieve efficiency close to CUDA.
 

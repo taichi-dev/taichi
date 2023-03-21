@@ -45,7 +45,7 @@ Assuming we have such a neural radiance field, sending the corresponding $(r,g,b
 
 ## Volume Rendering
 
-The core step of NeRF training and rendering is volume rendering. Volume rendering can "flatten" the neural field into a 2D image, which can be compared to a reference image. This process is differentiable, so it can be used to train the network!
+The core step of NeRF is a processed called **volume rendering**. Volume rendering can "flatten" the neural field into a 2D image, which will then be compared with a reference image to generate loss. This process is differentiable, so it can be used to train the network!
 
 Before introducing volume rendering, let's first understand the basic principles of camera imaging. In computer graphics, to save computational resources, it is assumed that the color of a point in the scene after being hit by a ray emitted from the camera is the color of the pixel at the intersection of the ray and the screen:
 

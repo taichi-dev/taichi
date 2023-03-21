@@ -198,7 +198,7 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 
 void ast_to_ir(const CompileConfig &config,
-               Kernel &kernel,
+               const Kernel &kernel,
                bool to_executable = true);
 
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);

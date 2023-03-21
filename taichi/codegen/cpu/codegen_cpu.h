@@ -12,7 +12,7 @@ namespace taichi::lang {
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
   explicit KernelCodeGenCPU(const CompileConfig &compile_config,
-                            Kernel *kernel,
+                            const Kernel *kernel,
                             TaichiLLVMContext &tlctx)
       : KernelCodeGen(compile_config, kernel, tlctx) {
   }

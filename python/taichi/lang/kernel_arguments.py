@@ -48,7 +48,7 @@ class SparseMatrixProxy:
         return SparseMatrixEntry(self.ptr, i, j, self.dtype)
 
 
-def decl_scalar_arg(dtype):
+def decl_scalar_arg(dtype, name):
     is_ref = False
     if isinstance(dtype, RefType):
         is_ref = True
@@ -56,37 +56,37 @@ def decl_scalar_arg(dtype):
     dtype = cook_dtype(dtype)
     if is_ref:
         arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(
-            dtype)
+            dtype, name)
     else:
         arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
-            dtype)
+            dtype, name)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
-def decl_matrix_arg(matrixtype):
+def decl_matrix_arg(matrixtype, name):
     if isinstance(matrixtype, VectorType):
         return make_matrix(
-            [decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.n)])
+            [decl_scalar_arg(matrixtype.dtype, f"{name}_{i}") for i in range(matrixtype.n)])
     return make_matrix(
-        [[decl_scalar_arg(matrixtype.dtype) for _ in range(matrixtype.m)]
-         for _ in range(matrixtype.n)])
+        [[decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}") for i in range(matrixtype.m)]
+         for j in range(matrixtype.n)])
 
 
-def decl_sparse_matrix(dtype):
+def decl_sparse_matrix(dtype, name):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
     arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
-        ptr_type)
+        ptr_type, name)
     return SparseMatrixProxy(
         _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, dim, element_shape, layout):
+def decl_ndarray_arg(dtype, dim, element_shape, layout, name):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
     arg_id = impl.get_runtime().compiling_callable.insert_arr_param(
-        dtype, dim, element_shape)
+        dtype, dim, element_shape, name)
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(
@@ -94,18 +94,18 @@ def decl_ndarray_arg(dtype, dim, element_shape, layout):
                                            element_shape))
 
 
-def decl_texture_arg(num_dimensions):
+def decl_texture_arg(num_dimensions, name):
     # FIXME: texture_arg doesn't have element_shape so better separate them
     arg_id = impl.get_runtime().compiling_callable.insert_texture_param(
-        num_dimensions)
+        num_dimensions, name)
     return TextureSampler(
         _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
-def decl_rw_texture_arg(num_dimensions, buffer_format, lod):
+def decl_rw_texture_arg(num_dimensions, buffer_format, lod, name):
     # FIXME: texture_arg doesn't have element_shape so better separate them
     arg_id = impl.get_runtime().compiling_callable.insert_rw_texture_param(
-        num_dimensions, buffer_format)
+        num_dimensions, buffer_format, name)
     return RWTextureAccessor(
         _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions,
                                           buffer_format, lod), num_dimensions)

@@ -601,7 +601,7 @@ class ASTTransformer(Builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_sparse_matrix(
-                            to_taichi_type(ctx.arg_features[i])))
+                            to_taichi_type(ctx.arg_features[i]), ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 ndarray_type.NdarrayType):
                     ctx.create_variable(
@@ -609,30 +609,30 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
-                            ctx.arg_features[i][3]))
+                            ctx.arg_features[i][3], ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.TextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_texture_arg(
-                            ctx.arg_features[i][0]))
+                            ctx.arg_features[i][0], ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.RWTextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
                             ctx.arg_features[i][0], ctx.arg_features[i][1],
-                            ctx.arg_features[i][2]))
+                            ctx.arg_features[i][2], ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation, ctx.func.arguments[i].name))
                 else:
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation, ctx.func.arguments[i].name))
             impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []

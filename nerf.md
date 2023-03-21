@@ -4,7 +4,7 @@ Imagine this: when you flip through a photo album and see pictures of past famil
 
 NeRF (Neural Radiance Field) technology is the key to making these things a reality. It can reconstruct the 3D representation of a scene from multi-angle captured images and generate images of the scene from any viewpoint and position (new viewpoint synthesis).
 
-The following video demonstrates using NeRF technology to achieve 3D roaming by capturing some static images of Taichi offices with a mobile phone:
+The following video demonstrates how NeRF technology is used to achieve 3D roaming by capturing some static images of Taichi offices with a mobile phone:
 
 TODO: Insert Taichi office roaming video
 

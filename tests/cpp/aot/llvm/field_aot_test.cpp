@@ -46,58 +46,44 @@ static void run_field_tests(aot::Module *mod,
   // Kernel: init_fields(int)
   {
     LaunchContextBuilder builder(k_init_fields);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_init_fields->launch(&ctx);
+    builder.set_arg(0, base_value);
+    k_init_fields->launch(builder);
   }
 
   // Kernel: check_init_x(int)
   {
     LaunchContextBuilder builder(k_check_init_x);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_check_init_x->launch(&ctx);
+    builder.set_arg(0, base_value);
+    k_check_init_x->launch(builder);
   }
   // Kernel: check_init_y()
   {
     LaunchContextBuilder builder(k_check_init_y);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_init_y->launch(&ctx);
+    k_check_init_y->launch(builder);
   }
 
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate_pointer_fields()
   {
     LaunchContextBuilder builder(k_deactivate_pointer_fields);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate_pointer_fields->launch(&ctx);
+    k_deactivate_pointer_fields->launch(builder);
   }
   // Kernel: check_deactivate_pointer_fields()
   {
     LaunchContextBuilder builder(k_check_deactivate_pointer_fields);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_deactivate_pointer_fields->launch(&ctx);
+    k_check_deactivate_pointer_fields->launch(builder);
   }
 
   /* -------- Test Case 3 ------ */
   // Kernel: activate_pointer_fields()
   {
     LaunchContextBuilder builder(k_activate_pointer_fields);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate_pointer_fields->launch(&ctx);
+    k_activate_pointer_fields->launch(builder);
   }
   // Kernel: check_activate_pointer_fields()
   {
     LaunchContextBuilder builder(k_check_activate_pointer_fields);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_activate_pointer_fields->launch(&ctx);
+    k_check_activate_pointer_fields->launch(builder);
   }
 
   // Check assertion error from ti.kernel

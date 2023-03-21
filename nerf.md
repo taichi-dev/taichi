@@ -84,7 +84,7 @@ Another important engineering optimization of Instant NGP is to implement the en
 
 # Part II: Training Instant NGP with Taichi
 
-The author of the Instant NGP project has open-sourced [their CUDA implementation](https://github.com/NVlabs/instant-ngp). The project is written in CUDA and carefully optimized for all core components, making it very fast. However, using CUDA also means manually managing memory and writing parallel computing code for derivatives, which is very painful and error-prone.
+The NGP project is open-sourced [their CUDA implementation](https://github.com/NVlabs/instant-ngp). The project is written in CUDA and carefully optimized for all core components, making it very fast. However, using CUDA usually accompanies manually managing memory and writing parallel computing code for derivatives, which is very painful and error-prone.
 
 There are also community-contributed [PyTorch-based implementations](https://github.com/ashawkey/torch-ngp), but the pure PyTorch version's runtime efficiency is significantly lower than the CUDA implementation. Although PyTorch is well-optimized for networks like MLP, it is less efficient for the hash encoding and volume rendering parts in Instant NGP. Due to interpolation, ray sampling, and other tedious operations, PyTorch is forced to launch many small kernels, resulting in very low efficiency.
 

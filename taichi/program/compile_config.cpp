@@ -55,7 +55,7 @@ CompileConfig::CompileConfig() {
   // LLVM backend options:
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
-  print_kernel_nvptx = false;
+  print_kernel_asm = false;
   print_kernel_amdgcn = false;
   print_kernel_llvm_ir_optimized = false;
 

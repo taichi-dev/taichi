@@ -29,7 +29,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   using IRVisitor::visit;
   TaskCodeGenAMDGPU(const CompileConfig &config,
                     TaichiLLVMContext &tlctx,
-                    Kernel *kernel,
+                    const Kernel *kernel,
                     IRNode *ir = nullptr)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
   }

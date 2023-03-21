@@ -42,6 +42,9 @@ bool check_validation_layer_support() {
 static const std::unordered_set<std::string> ignored_messages = {
     "UNASSIGNED-DEBUG-PRINTF",
     "VUID_Undefined",
+    // (penguinliong): Attempting to map a non-host-visible piece of memory.
+    // `VulkanDevice::map()` returns `RhiResult::invalid_usage` in this case.
+    "VUID-vkMapMemory-memory-00682",
 };
 
 [[maybe_unused]] bool vk_ignore_validation_warning(

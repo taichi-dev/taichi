@@ -52,6 +52,10 @@ bool glfw_context_acquire() {
 
 void glfw_context_release() {
   std::lock_guard lg(glfw_state.mutex);
+  if (glfw_state.glfw_ref_count <= 0) {
+    assert(glfw_state.glfw_ref_count == 0 && "GLFW ref count underflow");
+    return;
+  }
   glfw_state.glfw_ref_count--;
   if (glfw_state.glfw_ref_count == 0) {
     glfwTerminate();

@@ -29,8 +29,7 @@ int Callable::insert_arr_param(const DataType &dt,
   return (int)parameter_list.size() - 1;
 }
 
-int Callable::insert_texture_param(int total_dim,
-                                   const std::string &name) {
+int Callable::insert_texture_param(int total_dim, const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
   parameter_list.emplace_back(PrimitiveType::f32, /*is_array=*/true, 0,
                               total_dim, std::vector<int>{});

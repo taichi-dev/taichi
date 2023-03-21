@@ -55,8 +55,8 @@ class NdArrayAccess(Enum):
 
 
 class ArgumentNdArray(Argument):
-    def __init__(self, name: Optional[str], dtype: DataType, element_shape: List[int],
-                 ndim: int, access: NdArrayAccess):
+    def __init__(self, name: Optional[str], dtype: DataType,
+                 element_shape: List[int], ndim: int, access: NdArrayAccess):
         super().__init__(name)
         self.dtype: DataType = dtype
         self.element_shape: List[int] = element_shape
@@ -247,8 +247,7 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                 if binding_ty == OpaqueArgumentType.NdArray:
                     args += [
                         ArgumentNdArray(
-                            arg.name,
-                            DataType(arg.dtype), arg.element_shape,
+                            arg.name, DataType(arg.dtype), arg.element_shape,
                             arg.field_dim,
                             NdArrayAccess(d.ctx_attribs.arr_access[i]))
                     ]
@@ -256,7 +255,8 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                     args += [ArgumentTexture(arg.name, arg.field_dim)]
                 elif binding_ty == OpaqueArgumentType.RwTexture:
                     args += [
-                        ArgumentRwTexture(arg.name, ti.Format(arg.format), arg.field_dim)
+                        ArgumentRwTexture(arg.name, ti.Format(arg.format),
+                                          arg.field_dim)
                     ]
                 else:
                     assert False
@@ -483,7 +483,9 @@ class Graph:
         self.name = name
         self.dispatches = dispatches
         args = {y.name: y.arg for x in dispatches for y in x.args}
-        self.args: List[NamedArgument] = [NamedArgument(k, v) for k, v in args.items()]
+        self.args: List[NamedArgument] = [
+            NamedArgument(k, v) for k, v in args.items()
+        ]
 
 
 def from_dr_graph(meta: Metadata, j: dr.Graph) -> Graph:

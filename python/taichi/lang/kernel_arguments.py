@@ -65,11 +65,14 @@ def decl_scalar_arg(dtype, name):
 
 def decl_matrix_arg(matrixtype, name):
     if isinstance(matrixtype, VectorType):
-        return make_matrix(
-            [decl_scalar_arg(matrixtype.dtype, f"{name}_{i}") for i in range(matrixtype.n)])
-    return make_matrix(
-        [[decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}") for i in range(matrixtype.m)]
-         for j in range(matrixtype.n)])
+        return make_matrix([
+            decl_scalar_arg(matrixtype.dtype, f"{name}_{i}")
+            for i in range(matrixtype.n)
+        ])
+    return make_matrix([[
+        decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}")
+        for i in range(matrixtype.m)
+    ] for j in range(matrixtype.n)])
 
 
 def decl_sparse_matrix(dtype, name):

@@ -61,7 +61,7 @@ $$C(\mathbf{r})=\int_{t_n}^{t_f} T(t) \sigma(t) \mathbf{c}(\mathbf{r}(t), \mathb
 
 In the formula, $T(t)$ represents the proportion of light transmitted to point $t$, and $\sigma(t)\mathrm{d}t$ represents the proportion of light blocked by a small neighborhood near point $t$. The product of the two is the proportion of light reaching $t$ and being blocked at $t$, multiplied by the color $\textbf{c}(\textbf{r}(t),\textbf{d})$ of that point, which is the contribution of this point to the final color of the ray. The integral interval $[t_n, t_f]$ represents the nearest intersection point $t_{near}$ and the farthest intersection point $t_{far}$ of the ray with the medium.
 
-In actual calculations, we need to use discrete sums to approximate the integral value. That is, we sample some discrete points along the ray and weight their colors by summing them. We won't go into the details of this discretization process, but you can check out explanations like the one in the image link above.
+In actual calculations, we need to use discrete sums to approximate the integral value. That is, we sample certain discrete points along the ray and weight their colors by summing them up. We won't go into details of this discretization process, but you can check out explanations like the one in the image link above.
 
 
 ## NeRF Training

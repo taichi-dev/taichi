@@ -10,7 +10,7 @@ namespace lang {
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
   KernelCodeGenAMDGPU(const CompileConfig &config,
-                      Kernel *kernel,
+                      const Kernel *kernel,
                       TaichiLLVMContext &tlctx)
       : KernelCodeGen(config, kernel, tlctx) {
   }

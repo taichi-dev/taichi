@@ -11,7 +11,7 @@ static bool supports_lowering(Arch arch) {
 }
 
 void ast_to_ir(const CompileConfig &config,
-               Kernel &kernel,
+               const Kernel &kernel,
                bool to_executable) {
   TI_ASSERT(supports_lowering(config.arch));
   if (kernel.lowered()) {

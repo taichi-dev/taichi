@@ -79,30 +79,30 @@ if (TI_WITH_VULKAN)
 
     # TODO: this dependency is here because program.cpp includes vulkan_program.h
     # Should be removed
-    target_link_libraries(${TAICHI_DEVICE_API} PRIVATE vulkan_rhi)
+    target_link_libraries(${TAICHI_DEVICE_API} PUBLIC vulkan_rhi)
 endif ()
 
 if(TI_WITH_LLVM)
     add_subdirectory(cpu)
-    target_link_libraries(${TAICHI_DEVICE_API} PRIVATE cpu_rhi)
+    target_link_libraries(${TAICHI_DEVICE_API} PUBLIC cpu_rhi)
 
     if (TI_WITH_CUDA)
         add_subdirectory(cuda)
-        target_link_libraries(${TAICHI_DEVICE_API} PRIVATE cuda_rhi)
+        target_link_libraries(${TAICHI_DEVICE_API} PUBLIC cuda_rhi)
     endif()
 
     if (TI_WITH_AMDGPU)
         add_subdirectory(amdgpu)
-        target_link_libraries(${TAICHI_DEVICE_API} PRIVATE amdgpu_rhi)
+        target_link_libraries(${TAICHI_DEVICE_API} PUBLIC amdgpu_rhi)
     endif()
 
     if (TI_WITH_DX12)
         add_subdirectory(dx12)
-        target_link_libraries(${TAICHI_DEVICE_API} PRIVATE dx12_rhi)
+        target_link_libraries(${TAICHI_DEVICE_API} PUBLIC dx12_rhi)
     endif()
 
     add_subdirectory(llvm)
-    target_link_libraries(${TAICHI_DEVICE_API} PRIVATE llvm_rhi)
+    target_link_libraries(${TAICHI_DEVICE_API} PUBLIC llvm_rhi)
 endif()
 
 add_subdirectory(interop)
@@ -110,4 +110,4 @@ target_link_libraries(${TAICHI_DEVICE_API} PUBLIC interop_rhi)
 
 # Generate shared library
 add_library(ti_device_api_shared SHARED public_device.h)
-target_link_libraries(ti_device_api_shared PRIVATE ${TAICHI_DEVICE_API})
+target_link_libraries(ti_device_api_shared PUBLIC ${TAICHI_DEVICE_API})

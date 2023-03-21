@@ -66,7 +66,7 @@ In actual calculations, we need to use discrete sums to approximate the integral
 
 ## NeRF Training
 
-With the knowledge of neural fields and volume rendering, let's introduce the training of NeRF. The entire process is divided into five steps, as shown in the following figure:
+With the knowledge of neural fields and volume rendering, let's further look into the training process of NeRF. The entire process is divided into five steps, as shown in the following figure:
 
 ![来源：https://arxiv.org/pdf/2102.07064.pdf](https://files.mdnice.com/user/11544/167e08ef-f631-4972-bb48-368a53a7dbbe.png)
 

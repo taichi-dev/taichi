@@ -20,7 +20,7 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
   TaskCodeGenCPU(const CompileConfig &config,
                  TaichiLLVMContext &tlctx,
-                 Kernel *kernel,
+                 const Kernel *kernel,
                  IRNode *ir)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF

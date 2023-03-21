@@ -506,7 +506,8 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return (uint64_t *)llvm_device()
-        ->get_alloc_info<cuda::CudaDevice, cuda::CudaDevice::AllocInfo>(alloc)
+        ->as<cuda::CudaDevice>()
+        ->get_alloc_info(alloc)
         .ptr;
 #else
     TI_NOT_IMPLEMENTED
@@ -514,8 +515,8 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
   } else if (config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
     return (uint64_t *)llvm_device()
-        ->get_alloc_info<amdgpu::AmdgpuDevice, amdgpu::AmdgpuDevice::AllocInfo>(
-            alloc)
+        ->as<amdgpu::AmdgpuDevice>()
+        ->get_alloc_info(alloc)
         .ptr;
 #else
     TI_NOT_IMPLEMENTED;
@@ -523,7 +524,8 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
   }
 
   return (uint64_t *)llvm_device()
-      ->get_alloc_info<cpu::CpuDevice, cpu::CpuDevice::AllocInfo>(alloc)
+      ->as<cpu::CpuDevice>()
+      ->get_alloc_info(alloc)
       .ptr;
 }
 
@@ -574,9 +576,8 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                        &preallocated_device_buffer_alloc_);
     TI_ASSERT(res == RhiResult::success);
     cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        llvm_device()
-            ->get_alloc_info<cuda::CudaDevice, cuda::CudaDevice::AllocInfo>(
-                preallocated_device_buffer_alloc_);
+        llvm_device()->as<cuda::CudaDevice>()->get_alloc_info(
+            preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
@@ -610,10 +611,8 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
                                        &preallocated_device_buffer_alloc_);
     TI_ASSERT(res == RhiResult::success);
     amdgpu::AmdgpuDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        llvm_device()
-            ->get_alloc_info<amdgpu::AmdgpuDevice,
-                             amdgpu::AmdgpuDevice::AllocInfo>(
-                preallocated_device_buffer_alloc_);
+        llvm_device()->as<amdgpu::AmdgpuDevice>()->get_alloc_info(
+            preallocated_device_buffer_alloc_);
     preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
 
     AMDGPUDriver::get_instance().memset(preallocated_device_buffer_, 0,

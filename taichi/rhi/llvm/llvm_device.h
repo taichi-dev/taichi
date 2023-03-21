@@ -20,11 +20,9 @@ class LlvmDevice : public Device {
     TI_NOT_IMPLEMENTED
   }
 
-  template <typename DEVICE, typename ALLOCINFO>
-  ALLOCINFO get_alloc_info(const DeviceAllocation handle) {
-    auto *device = dynamic_cast<DEVICE *>(this);
-    TI_ASSERT(device);
-    return device->get_alloc_info(handle);
+  template <typename DEVICE>
+  DEVICE *as() {
+    return dynamic_cast<DEVICE *>(this);
   }
 
   virtual DeviceAllocation import_memory(void *ptr, size_t size) {

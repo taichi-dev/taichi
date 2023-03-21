@@ -238,9 +238,9 @@ FunctionType CPUModuleToFunctionConverter::convert(
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array &&
-          context.get_context().device_allocation_type[i] !=
-              RuntimeContext::DevAllocType::kNone &&
-          context.get_context().array_runtime_sizes[i] > 0) {
+          context.device_allocation_type[i] !=
+              LaunchContextBuilder::DevAllocType::kNone &&
+          context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
@@ -248,7 +248,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
         context.set_array_device_allocation_type(
             i, LaunchContextBuilder::DevAllocType::kNone);
 
-        if (context.get_context().has_grad[i]) {
+        if (context.has_grad[i]) {
           DeviceAllocation *ptr_grad =
               static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
           uint64 host_ptr_grad =

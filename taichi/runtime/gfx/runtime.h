@@ -100,7 +100,7 @@ class TI_DLL_EXPORT GfxRuntime {
 
   KernelHandle register_taichi_kernel(RegisterParams params);
 
-  void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
+  void launch_kernel(KernelHandle handle, LaunchContextBuilder &host_ctx);
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
   void copy_image(DeviceAllocation dst,

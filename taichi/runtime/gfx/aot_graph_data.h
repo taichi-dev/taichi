@@ -14,7 +14,7 @@ class KernelImpl : public aot::Kernel {
                           //  SPIR-V based backends completes.
   }
 
-  void launch(RuntimeContext *ctx) override {
+  void launch(LaunchContextBuilder &ctx) override {
     runtime_->launch_kernel(handle_, ctx);
   }
 

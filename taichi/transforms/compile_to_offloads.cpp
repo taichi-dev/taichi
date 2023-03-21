@@ -218,7 +218,7 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (arch_is_cpu(config.arch)) {
+  if (config.make_cpu_multithreading_loop && arch_is_cpu(config.arch)) {
     irpass::make_cpu_multithreaded_range_for(ir, config);
     irpass::type_check(ir, config);
     print("Make CPU multithreaded range-for");

@@ -18,7 +18,9 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
-  TI_CI: 1
+  CI_IMAGE_VERSION: '202303211008'
+  TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: 'ON'
 
 jobs:
   add_version_to_database:
@@ -86,7 +88,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           PY: ${{ matrix.python }}
@@ -109,7 +111,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
@@ -138,8 +140,9 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
+             registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/build.py
+
 
         env:
           PY: ${{ matrix.python }}
@@ -162,7 +165,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}

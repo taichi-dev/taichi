@@ -11,6 +11,8 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
+bash $(dirname $0)/install-gcc-11.sh
+
 python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
 . /tmp/ti-env.sh
 

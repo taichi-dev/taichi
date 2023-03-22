@@ -11,16 +11,22 @@ export LD_LIBRARY_PATH=$PWD/build/:$LD_LIBRARY_PATH
 export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 
 
-pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+# Disable compat tests to save time.
+# According to @PENGUINLIONG, this is currently not doing its job, and
+# will be refactored.
+# pip3 install -i https://pypi.taichi.graphics/simple/ taichi-nightly
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
-python3 tests/generate_compat_test_modules.py
-python3 -m pip uninstall taichi-nightly -y
+# python3 tests/generate_compat_test_modules.py
+# python3 -m pip uninstall taichi-nightly -y
 
-setup_python
+bash $(dirname $0)/install-gcc-11.sh
+
+python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
+. /tmp/ti-env.sh
 
 install_taichi_wheel
 
-python3 tests/run_c_api_compat_test.py
+# python3 tests/run_c_api_compat_test.py
 
 ti diagnose
 ti changelog

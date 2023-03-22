@@ -4,6 +4,10 @@
 # the need for a more recent version of libstdc++.
 # In the subsequent commit (static linking), we can eliminate this workaround.
 
+if [ "$(uname -s)" != "Linux" ]; then
+  exit 0
+fi
+
 sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test

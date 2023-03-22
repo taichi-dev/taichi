@@ -412,6 +412,20 @@ class LowerAST : public IRVisitor {
     auto fctx = make_flatten_ctx();
     auto expr_stmt = flatten_rvalue(expr, &fctx);
     auto dest_stmt = flatten_lvalue(dest, &fctx);
+
+    // Perform broadcast
+    if (auto dest_tensor_type =
+            dest_stmt->ret_type.ptr_removed()->cast<TensorType>()) {
+      if (expr_stmt->ret_type->is<PrimitiveType>()) {
+        int num_elements = dest_tensor_type->get_num_elements();
+        std::vector<Stmt *> matrix_members(num_elements, expr_stmt);
+
+        auto bcast_expr_stmt = fctx.push_back<MatrixInitStmt>(matrix_members);
+        bcast_expr_stmt->ret_type = dest_tensor_type;
+        expr_stmt = bcast_expr_stmt;
+      }
+    }
+
     if (dest.is<IdExpression>()) {
       fctx.push_back<LocalStoreStmt>(dest_stmt, expr_stmt);
     } else if (dest.is<IndexExpression>()) {

@@ -4,6 +4,7 @@
 # the need for a more recent version of libstdc++.
 # In the subsequent commit (static linking), we can eliminate this workaround.
 
+sudo apt update
 sudo apt install -y software-properties-common
 sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
 sudo apt update

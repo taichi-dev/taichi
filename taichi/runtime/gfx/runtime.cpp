@@ -65,8 +65,8 @@ class HostDeviceContextBlitter {
       void *device_ptr = (uint8_t *)device_base + arg.offset_in_mem;
       do {
         if (arg.is_array) {
-          if (host_ctx_.get_context().device_allocation_type[i] ==
-                  RuntimeContext::DevAllocType::kNone &&
+          if (host_ctx_.device_allocation_type[i] ==
+                  LaunchContextBuilder::DevAllocType::kNone &&
               ext_arr_size.at(i)) {
             // Only need to blit ext arrs (host array)
             uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
@@ -84,10 +84,10 @@ class HostDeviceContextBlitter {
 
           // (penguinliong) We don't check the availability of physical pointer
           // here. It should be done before you need this class.
-          if ((host_ctx_.get_context().device_allocation_type[i] ==
-                   RuntimeContext::DevAllocType::kNone ||
-               host_ctx_.get_context().device_allocation_type[i] ==
-                   RuntimeContext::DevAllocType::kNdarray)) {
+          if ((host_ctx_.device_allocation_type[i] ==
+                   LaunchContextBuilder::DevAllocType::kNone ||
+               host_ctx_.device_allocation_type[i] ==
+                   LaunchContextBuilder::DevAllocType::kNdarray)) {
             uint64_t addr =
                 device_->get_memory_physical_pointer(ext_arrays.at(i));
             reinterpret_cast<uint64 *>(device_ptr)[0] = addr;
@@ -143,8 +143,8 @@ class HostDeviceContextBlitter {
     for (int i = 0; i < ctx_attribs_->args().size(); ++i) {
       const auto &arg = ctx_attribs_->args()[i];
       if (arg.is_array &&
-          host_ctx_.get_context().device_allocation_type[i] ==
-              RuntimeContext::DevAllocType::kNone &&
+          host_ctx_.device_allocation_type[i] ==
+              LaunchContextBuilder::DevAllocType::kNone &&
           ext_arr_size.at(i)) {
         uint32_t access = uint32_t(ctx_attribs_->arr_access.at(i));
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
@@ -463,8 +463,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
     const auto &args = ti_kernel->ti_kernel_attribs().ctx_attribs.args();
     for (auto &arg : args) {
       if (arg.is_array) {
-        if (host_ctx.get_context().device_allocation_type[i] !=
-            RuntimeContext::DevAllocType::kNone) {
+        if (host_ctx.device_allocation_type[i] !=
+            LaunchContextBuilder::DevAllocType::kNone) {
           DeviceAllocation devalloc = kDeviceNullAllocation;
 
           // NDArray / Texture
@@ -472,21 +472,21 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
             devalloc = *(DeviceAllocation *)(host_ctx.get_context().args[i]);
           }
 
-          if (host_ctx.get_context().device_allocation_type[i] ==
-              RuntimeContext::DevAllocType::kNdarray) {
+          if (host_ctx.device_allocation_type[i] ==
+              LaunchContextBuilder::DevAllocType::kNdarray) {
             any_arrays[i] = devalloc;
             ndarrays_in_use_.insert(devalloc.alloc_id);
-          } else if (host_ctx.get_context().device_allocation_type[i] ==
-                     RuntimeContext::DevAllocType::kTexture) {
+          } else if (host_ctx.device_allocation_type[i] ==
+                     LaunchContextBuilder::DevAllocType::kTexture) {
             textures[i] = devalloc;
-          } else if (host_ctx.get_context().device_allocation_type[i] ==
-                     RuntimeContext::DevAllocType::kRWTexture) {
+          } else if (host_ctx.device_allocation_type[i] ==
+                     LaunchContextBuilder::DevAllocType::kRWTexture) {
             textures[i] = devalloc;
           } else {
             TI_NOT_IMPLEMENTED;
           }
         } else {
-          ext_array_size[i] = host_ctx.get_context().array_runtime_sizes[i];
+          ext_array_size[i] = host_ctx.array_runtime_sizes[i];
           uint32_t access = uint32_t(
               ti_kernel->ti_kernel_attribs().ctx_attribs.arr_access.at(i));
 

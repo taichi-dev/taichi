@@ -655,10 +655,15 @@ class Kernel:
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
+            max_arg_num = 64 if impl.current_cfg().arch != _ti_core.cc else 8
+            exceed_max_arg_num = False
             for i, v in enumerate(args):
                 needed = self.arguments[i].annotation
                 if isinstance(needed, template):
                     continue
+                if actual_argument_slot >= max_arg_num:
+                    exceed_max_arg_num = True
+                    break
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
@@ -803,6 +808,9 @@ class Kernel:
                     if needed.dtype in primitive_types.real_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
+                                if actual_argument_slot >= max_arg_num:
+                                    exceed_max_arg_num = True
+                                    break
                                 val = v[a, b] if needed.ndim == 2 else v[a]
                                 if not isinstance(
                                         val,
@@ -815,6 +823,9 @@ class Kernel:
                     elif needed.dtype in primitive_types.integer_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
+                                if actual_argument_slot >= max_arg_num:
+                                    exceed_max_arg_num = True
+                                    break
                                 val = v[a, b] if needed.ndim == 2 else v[a]
                                 if not isinstance(val, (int, np.integer)):
                                     raise TaichiRuntimeTypeError.get(
@@ -837,16 +848,9 @@ class Kernel:
                     )
                 actual_argument_slot += 1
 
-            if actual_argument_slot > 8 and impl.current_cfg(
-            ).arch == _ti_core.cc:
+            if exceed_max_arg_num:
                 raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
-                )
-
-            if actual_argument_slot > 64 and impl.current_cfg(
-            ).arch != _ti_core.cc:
-                raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+                    f"The number of elements in kernel arguments is too big! Do not exceed {max_arg_num} on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
             try:

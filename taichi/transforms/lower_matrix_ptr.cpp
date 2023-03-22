@@ -21,6 +21,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         auto offset = stmt->offset->as<ConstStmt>();
         auto lowered = std::make_unique<GlobalPtrStmt>(
             origin->snodes[offset->val.val_int()], origin->indices);
+        lowered->ret_type.set_is_pointer(true);
         stmt->replace_usages_with(lowered.get());
         modifier_.insert_before(stmt, std::move(lowered));
         modifier_.erase(stmt);
@@ -35,6 +36,7 @@ class LowerMatrixPtr : public BasicStmtVisitor {
             BinaryOpType::mul, stmt->offset, stride.get());
         auto ptr_base =
             std::make_unique<GlobalPtrStmt>(origin->snodes[0], origin->indices);
+        ptr_base->ret_type.set_is_pointer(true);
         auto lowered =
             std::make_unique<MatrixPtrStmt>(ptr_base.get(), offset.get());
         stmt->replace_usages_with(lowered.get());

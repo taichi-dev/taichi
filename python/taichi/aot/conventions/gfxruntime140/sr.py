@@ -36,12 +36,14 @@ def get_data_type_size(dtype: DataType) -> int:
 
 
 class Argument(ABC):
-    def __init__(self):
+    def __init__(self, name: Optional[str]):
+        self.name = name
         pass
 
 
 class ArgumentScalar(Argument):
-    def __init__(self, dtype: DataType):
+    def __init__(self, name: Optional[str], dtype: DataType):
+        super().__init__(name)
         self.dtype: DataType = dtype
 
 
@@ -53,8 +55,9 @@ class NdArrayAccess(Enum):
 
 
 class ArgumentNdArray(Argument):
-    def __init__(self, dtype: DataType, element_shape: List[int], ndim: int,
-                 access: NdArrayAccess):
+    def __init__(self, name: Optional[str], dtype: DataType,
+                 element_shape: List[int], ndim: int, access: NdArrayAccess):
+        super().__init__(name)
         self.dtype: DataType = dtype
         self.element_shape: List[int] = element_shape
         self.ndim: int = ndim
@@ -62,12 +65,14 @@ class ArgumentNdArray(Argument):
 
 
 class ArgumentTexture(Argument):
-    def __init__(self, ndim: int):
+    def __init__(self, name: Optional[str], ndim: int):
+        super().__init__(name)
         self.ndim: int = ndim
 
 
 class ArgumentRwTexture(Argument):
-    def __init__(self, fmt: ti.Format, ndim: int):
+    def __init__(self, name: Optional[str], fmt: ti.Format, ndim: int):
+        super().__init__(name)
         self.fmt: ti.Format = fmt
         self.ndim: int = ndim
 
@@ -242,20 +247,21 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                 if binding_ty == OpaqueArgumentType.NdArray:
                     args += [
                         ArgumentNdArray(
-                            DataType(arg.dtype), arg.element_shape,
+                            arg.name, DataType(arg.dtype), arg.element_shape,
                             arg.field_dim,
                             NdArrayAccess(d.ctx_attribs.arr_access[i]))
                     ]
                 elif binding_ty == OpaqueArgumentType.Texture:
-                    args += [ArgumentTexture(arg.field_dim)]
+                    args += [ArgumentTexture(arg.name, arg.field_dim)]
                 elif binding_ty == OpaqueArgumentType.RwTexture:
                     args += [
-                        ArgumentRwTexture(ti.Format(arg.format), arg.field_dim)
+                        ArgumentRwTexture(arg.name, ti.Format(arg.format),
+                                          arg.field_dim)
                     ]
                 else:
                     assert False
         else:
-            args += [ArgumentScalar(DataType(arg.dtype))]
+            args += [ArgumentScalar(arg.name, DataType(arg.dtype))]
 
     assert len(d.ctx_attribs.ret_attribs_vec_) <= 1
     if len(d.ctx_attribs.ret_attribs_vec_) != 0:
@@ -476,7 +482,10 @@ class Graph:
     def __init__(self, name: str, dispatches: List[Dispatch]):
         self.name = name
         self.dispatches = dispatches
-        self.args = [y for x in dispatches for y in x.args]
+        args = {y.name: y.arg for x in dispatches for y in x.args}
+        self.args: List[NamedArgument] = [
+            NamedArgument(k, v) for k, v in args.items()
+        ]
 
 
 def from_dr_graph(meta: Metadata, j: dr.Graph) -> Graph:

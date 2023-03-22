@@ -4,7 +4,7 @@
 # the need for a more recent version of libstdc++.
 # In the subsequent commit (static linking), we can eliminate this workaround.
 
-apt install -y software-properties-common
-add-apt-repository -y ppa:ubuntu-toolchain-r/test
-apt update
-apt install -y g++-11
+sudo apt install -y software-properties-common
+sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+sudo apt update
+sudo apt install -y g++-11

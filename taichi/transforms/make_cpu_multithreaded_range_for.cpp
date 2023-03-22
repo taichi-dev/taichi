@@ -10,10 +10,46 @@ namespace {
 
 using TaskType = OffloadedStmt::TaskType;
 
+/* This pass divides the range-for loop into multithreading blocks, and
+ * inserts a new range-for loop that iterates over the number of threads
+ * available on the CPU. The computing logics in the original range-for
+ * loop are then packed into an inner serial for loop. In a nutshell,
+ * the outer offloaded range-for loop is used to parallelize the computation,
+ * and inner range-for loop conducts real computation logics.
+ *
+ * For example, the following code:
+ *
+ *   @ti.kernel
+ *   def foo():
+ *     for i in range(1024):
+ *       a[i] = i
+ *
+ * becomes:
+ *
+ *   @ti.kernel
+ *   def foo():
+ *     for __thread_id in range(8):
+ *       block_begin = __thread_id * 128
+ *       block_end = min(block_begin + 128, 1024)
+ *       for i in range(block_begin, block_end):
+ *           a[i] = i
+ *
+ * where 8 is the number of threads available on the CPU.
+ *
+ * This pass is only applied to range-for loops that are offloaded to
+ * CPUs. The number of threads is determined by the config option
+ * "cpu_max_num_threads".
+ *
+ * The effect is that more invarants in the inner most can be identified and
+ * moved outside, so that LLVM has more chance to vectorize the innermost
+ * loop. This pass especially accelerates simple single level loops, e.g.
+ * memcpy and vecadd, even when the loop bounds are determined at runtime.
+ */
+
 class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
  public:
   MakeCPUMultithreadedRangeFor(const CompileConfig &config)
-      : config(config), modified(false) {
+      : config(config) {
   }
 
   void visit(Block *block) override {
@@ -59,25 +95,28 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     }
 
     // Inner serial block range is
-    // $[max(((end - begin) + (num_threads - 1)) / num_threads, 1)]
-    auto block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
+    // max(((end - begin) + (num_threads - 1)) / num_threads, minimal_block_range)
+    auto total_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::sub, end_stmt, begin_stmt));
-    block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-        BinaryOpType::add, block_range, num_threads));
-    block_range = offloaded_body->insert(
-        Stmt::make_typed<BinaryOpStmt>(BinaryOpType::sub, block_range, one));
-    block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-        BinaryOpType::floordiv, block_range, num_threads));
+    auto saturated_total_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::sub,
+        Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, total_range,
+                                       num_threads),
+        one));
+    auto block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
+        BinaryOpType::floordiv, saturated_total_range, num_threads));
     block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::max, block_range, minimal_block_range));
 
-    // Inner loop begins at $[begin + block_range * thread_id]
+    // Inner loop begins at 
+    // begin + block_range * thread_id
     auto block_begin = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::mul, block_range, thread_index));
     block_begin = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::add, begin_stmt, block_begin));
 
-    // Inner loop ends at $[min(block_begin + block_range), end))]
+    // Inner loop ends at 
+    // min(block_begin + block_range), end))
     auto block_end = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::add, block_begin, block_range));
     block_end = offloaded_body->insert(
@@ -92,6 +131,8 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     irpass::replace_all_usages_with(inner_loop, offloaded, inner_loop);
 
     // Update the offloaded stmt.
+    // The statement now iterates over max CPU thread numbers.
+    // Therefore it has constant begin and end values.
     offloaded->const_begin = true;
     offloaded->const_end = true;
     offloaded->begin_value = 0;

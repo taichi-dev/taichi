@@ -78,35 +78,51 @@ function run-it {
     fi
 }
 
+# Workaround for 'cannot allocate memory in static TLS block' issue
+# During the test, the library below is loaded and unloaded multiple times,
+# each time leaking some static TLS memory, and eventually depleting it.
+# Preloading the library here to avoid unloading it during the test.
+LIBNVIDIA_TLS=$(ls /usr/lib/x86_64-linux-gnu/libnvidia-tls.so.* 2>/dev/null || true)
+if [ ! -z $LIBNVIDIA_TLS ]; then
+    export LD_PRELOAD=$LIBNVIDIA_TLS${LD_PRELOAD:+:$LD_PRELOAD}
+fi
+
+
+N=$(nproc)
+
+# FIXME: This variable (GPU_TEST) only adds confusion, should refactor it out.
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
-        run-it cpu 4
+        run-it cpu    4
         run-it vulkan 4
-        run-it metal 2
+        run-it metal  2
 
-        python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
+        run-it cpu    1 "torch"
+        run-it vulkan 1 "torch"
+        run-it metal  1 "torch"
     else
+        echo "::warning:: Hitting Running CPU tests only"
         # Fail fast, give priority to the error-prone tests
         if [[ $OSTYPE == "linux-"* ]]; then
-            python3 tests/run_tests.py -vr2 -t1 -k "paddle" -a "$TI_WANTED_ARCHS"
+            run-it cpu 1 "paddle"
         fi
-        python3 tests/run_tests.py -vr2 -t4 -k "not paddle" -a "$TI_WANTED_ARCHS"
+        run-it cpu $N
+        run-it cpu 1 "torch"
     fi
-elif [ ! -z "$AMDGPU_TEST" ]; then
-    run-it cpu    $(nproc)
-    run-it amdgpu 8
 else
+    run-it cpu    $N
     run-it cuda   8
-    run-it cpu    $(nproc)
     run-it vulkan 8
     run-it opengl 4
     run-it gles   4
+    run-it amdgpu 8
 
-    python3 tests/run_tests.py -vr2 -t1 -k "torch" -a "$TI_WANTED_ARCHS"
+    run-it cpu    1 "torch"
+    run-it cuda   1 "torch"
+    run-it vulkan 1 "torch"
+    run-it opengl 1 "torch"
+    run-it gles   1 "torch"
+    # run-it amdgpu 1 "torch"
+
     # Paddle's paddle.fluid.core.Tensor._ptr() is only available on develop branch, and CUDA version on linux will get error `Illegal Instruction`
-
-    # FIXME: Running gles test separatelyfor now, add gles to TI_WANTED_ARCHS once running "-a vulkan,opengl,gles" is fixed
-    if [[ $TI_WANTED_ARCHS == *opengl* ]]; then
-      python3 tests/run_tests.py -vr2 -t1 -k "torch" -a gles
-    fi
 fi

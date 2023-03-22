@@ -16,7 +16,6 @@ class LaunchContextBuilder {
     kRWTexture = 3
   };
 
-  LaunchContextBuilder(CallableBase *kernel, RuntimeContext *ctx);
   explicit LaunchContextBuilder(CallableBase *kernel);
 
   LaunchContextBuilder(LaunchContextBuilder &&) = default;
@@ -64,7 +63,7 @@ class LaunchContextBuilder {
   void set_arg_ndarray_impl(int arg_id,
                             intptr_t devalloc_ptr,
                             const std::vector<int> &shape,
-                            bool has_grad = false,
+                            bool grad = false,
                             intptr_t devalloc_ptr_grad = 0);
   void set_arg_ndarray(int arg_id, const Ndarray &arr);
   void set_arg_ndarray_with_grad(int arg_id,
@@ -97,6 +96,24 @@ class LaunchContextBuilder {
   std::unique_ptr<char[]> arg_buffer_;
   std::unique_ptr<char[]> result_buffer_;
   const StructType *ret_type_;
+
+ public:
+  size_t arg_buffer_size{0};
+  const StructType *args_type{nullptr};
+  size_t result_buffer_size{0};
+  bool has_grad[taichi_max_num_args_total];
+
+  // Note that I've tried to group `array_runtime_size` and
+  // `is_device_allocations` into a small struct. However, it caused some test
+  // cases to stuck.
+
+  // `array_runtime_size` records the runtime size of the
+  // corresponding array arguments.
+  uint64 array_runtime_sizes[taichi_max_num_args_total]{0};
+  // `device_allocation_type` is set iff i-th arg is a `DeviceAllocation*`,
+  // otherwise it is set to DevAllocType::kNone
+  DevAllocType device_allocation_type[taichi_max_num_args_total]{
+      DevAllocType::kNone};
 };
 
 }  // namespace taichi::lang

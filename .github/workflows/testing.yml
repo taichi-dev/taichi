@@ -126,7 +126,7 @@ jobs:
       PY: ${{ matrix.python }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -190,7 +190,7 @@ jobs:
     runs-on: ${{ matrix.tags }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -260,7 +260,7 @@ jobs:
     runs-on: [self-hosted, amdgpu]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -333,7 +333,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: |
           git config --system core.longpaths true
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -398,7 +398,7 @@ jobs:
     runs-on: [self-hosted, m1]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -466,7 +466,7 @@ jobs:
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -527,7 +527,7 @@ jobs:
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -608,7 +608,7 @@ jobs:
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -688,7 +688,7 @@ jobs:
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -780,7 +780,7 @@ jobs:
     runs-on: ${{ matrix.tags }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:

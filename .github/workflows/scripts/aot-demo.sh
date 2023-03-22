@@ -51,7 +51,7 @@ function prepare-unity-build-env {
     # Dependencies
     git clone --reference-if-able /var/lib/git-cache -b "$TAICHI_UNITY_EXAMPLE_BRANCH" "$TAICHI_UNITY_EXAMPLE_URL"
 
-    python misc/generate_unity_language_binding.py
+    python3 misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated
     cp build/libtaichi_c_api.so Taichi-UnityExample/Assets/Plugins/Android
 
@@ -67,8 +67,8 @@ function prepare-unity-build-env {
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
 
     pushd Taichi-UnityExample
-    python -m pip install /taichi-wheel/*.whl
-    python scripts/implicit_fem.cgraph.py --aot
+    python3 -m pip install /taichi-wheel/*.whl
+    python3 scripts/implicit_fem.cgraph.py --aot
     popd
 }
 

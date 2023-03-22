@@ -157,7 +157,7 @@ while gui.running:
 You can draw a single arrow on a GUI canvas by specifying its start point and direction:
 
 ```python
-import numpy as np                                                                                                                               
+import numpy as np
 gui = ti.GUI('Single Arrow', res=(400, 400))
 begin = [0.3, 0.3]
 increment = [0.5, 0.5]
@@ -173,7 +173,7 @@ while gui.running:
 You can draw a single line of text on a GUI canvas by specifying its position and contents:
 
 ```python
-gui = ti.GUI('Text', res=(400, 400))                                                                                           
+gui = ti.GUI('Text', res=(400, 400))
 position = [0.3, 0.5]
 while gui.running:
     gui.text(content='Hello Taichi', pos=position, font_size=34, color=0xFFFFFF)
@@ -247,11 +247,11 @@ while gui.running:
 The following code generates 100 random sized arrows, with `begins` and `direction` represents their begin points and incrementals:
 
 ```python
-import numpy as np                                                                                                                               
+import numpy as np
 begins = np.random.random((100, 2))
 directions = np.random.uniform(low=-0.05, high=0.05, size=(100, 2))
-gui = ti.GUI('arrows', res=(400, 400))                                                                                                         
-while gui.running:                                                                                                             
+gui = ti.GUI('arrows', res=(400, 400))
+while gui.running:
     gui.arrows(orig=begins, direction=directions, radius=1)
     gui.show()
 ```

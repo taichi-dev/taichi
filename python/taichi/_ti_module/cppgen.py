@@ -172,7 +172,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
         f"struct ComputeGraph_{graph.name} : public ti::ComputeGraph {{",
         f"  explicit ComputeGraph_{graph.name}(TiRuntime runtime, TiComputeGraph graph) :",
         "    ti::ComputeGraph(runtime, graph) {",
-        f"    args_.resize({len(graph.args)})",
+        f"    args_.resize({len(graph.args)});",
         "  }",
         "",
     ]

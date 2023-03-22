@@ -210,6 +210,7 @@ class MemorySlice {
 };
 
 class Memory {
+ protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiMemory memory_{TI_NULL_HANDLE};
   size_t size_{0};
@@ -314,6 +315,7 @@ class Memory {
 
 template <typename T>
 class NdArray {
+ protected:
   Memory memory_{};
   TiNdArray ndarray_{};
   size_t elem_count_{};
@@ -507,6 +509,7 @@ class ImageSlice {
 };
 
 class Image {
+ protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiImage image_{TI_NULL_HANDLE};
   TiImageDimension dimension_{TI_IMAGE_DIMENSION_MAX_ENUM};
@@ -627,6 +630,7 @@ class Image {
 };
 
 class Texture {
+ protected:
   Image image_{};
   TiTexture texture_{};
 
@@ -748,6 +752,7 @@ class ArgumentEntry {
 };
 
 class ComputeGraph {
+ protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiComputeGraph compute_graph_{TI_NULL_HANDLE};
   std::list<std::string> arg_names_{};  // For stable addresses.
@@ -834,6 +839,7 @@ class ComputeGraph {
 };
 
 class Kernel {
+ protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiKernel kernel_{TI_NULL_HANDLE};
   std::vector<TiArgument> args_{};
@@ -915,6 +921,7 @@ class Kernel {
 };
 
 class AotModule {
+ protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiAotModule aot_module_{TI_NULL_HANDLE};
   bool should_destroy_{false};
@@ -1155,6 +1162,7 @@ inline CapabilityLevelConfigBuilder CapabilityLevelConfig::builder() {
 }
 
 class Runtime {
+ protected:
   TiArch arch_{TI_ARCH_MAX_ENUM};
   TiRuntime runtime_{TI_NULL_HANDLE};
   bool should_destroy_{false};

@@ -88,17 +88,22 @@ TEST_F(ConstantFoldTest, Binary) {
   auto *atan2 = builder.create_atan2(cmp_ne, one);
   auto *pow = builder.create_pow(atan2, two);
   auto *pow_cast = builder.create_cast(pow, PrimitiveType::i32);
-  auto *logical_or = builder.create_logical_or(pow_cast, two);
-  auto *logical_and = builder.create_logical_or(logical_or, one);
+  // Note: DONT test logical_or/and here since their behaviors are different
+  // between C++ and Python. For example: 0 || 2 returns 2 in Python/Taichi but
+  // returns true in C++
+  //   In Taichi logical_or/and are lowered in frontend IR and constant_fold
+  //   doesn't have to handle them at all
+  // auto *logical_or = builder.create_logical_or(pow_cast, two);
+  // auto *logical_and = builder.create_logical_or(logical_or, one);
 
-  auto *result = builder.create_sub(x, logical_and);
+  auto *result = builder.create_sub(x, pow_cast);
   builder.create_return(result);
 
   auto ir = builder.extract_ir();
   ASSERT_TRUE(ir->is<Block>());
   auto *ir_block = ir->as<Block>();
   irpass::type_check(ir_block, CompileConfig());
-  EXPECT_EQ(ir_block->size(), 41);
+  EXPECT_EQ(ir_block->size(), 39);
 
   irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
   irpass::die(ir_block);
@@ -106,7 +111,7 @@ TEST_F(ConstantFoldTest, Binary) {
   EXPECT_EQ(ir_block->size(), 4);
   EXPECT_EQ(ir_block->statements[0].get(), x);
   EXPECT_TRUE(ir_block->statements[1]->is<ConstStmt>());
-  EXPECT_EQ(ir_block->statements[1]->as<ConstStmt>()->val.val_float(), 2);
+  EXPECT_EQ(ir_block->statements[1]->as<ConstStmt>()->val.val_float(), 0);
 }
 
 TEST_F(ConstantFoldTest, BinaryCmp) {

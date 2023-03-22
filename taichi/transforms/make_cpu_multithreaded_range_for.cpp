@@ -48,8 +48,7 @@ using TaskType = OffloadedStmt::TaskType;
 
 class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
  public:
-  MakeCPUMultithreadedRangeFor(const CompileConfig &config)
-      : config(config) {
+  MakeCPUMultithreadedRangeFor(const CompileConfig &config) : config(config) {
   }
 
   void visit(Block *block) override {
@@ -95,27 +94,29 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     }
 
     // Inner serial block range is
-    // max(((end - begin) + (num_threads - 1)) / num_threads, minimal_block_range)
+    // max(((end - begin) + (num_threads - 1)) / num_threads,
+    // minimal_block_range)
     auto total_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::sub, end_stmt, begin_stmt));
-    auto saturated_total_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
-        BinaryOpType::sub,
-        Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, total_range,
-                                       num_threads),
-        one));
+    auto saturated_total_range =
+        offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
+            BinaryOpType::sub,
+            Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, total_range,
+                                           num_threads),
+            one));
     auto block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::floordiv, saturated_total_range, num_threads));
     block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::max, block_range, minimal_block_range));
 
-    // Inner loop begins at 
+    // Inner loop begins at
     // begin + block_range * thread_id
     auto block_begin = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::mul, block_range, thread_index));
     block_begin = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::add, begin_stmt, block_begin));
 
-    // Inner loop ends at 
+    // Inner loop ends at
     // min(block_begin + block_range), end))
     auto block_end = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::add, block_begin, block_range));

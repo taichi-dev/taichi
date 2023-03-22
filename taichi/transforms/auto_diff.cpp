@@ -34,12 +34,14 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
+              stmt->src->is<MatrixOfMatrixPtrStmt>());
     touched_allocas_.insert(stmt->src);
   }
 
   void visit(LocalStoreStmt *stmt) override {
-    TI_ASSERT(stmt->dest->is<AllocaStmt>() || stmt->dest->is<MatrixPtrStmt>());
+    TI_ASSERT(stmt->dest->is<AllocaStmt>() || stmt->dest->is<MatrixPtrStmt>() ||
+              stmt->dest->is<MatrixOfMatrixPtrStmt>());
     touched_allocas_.insert(stmt->dest);
   }
 

@@ -200,6 +200,8 @@ void export_lang(py::module &m) {
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
+      .def_readwrite("make_cpu_multithreading_loop",
+                     &CompileConfig::make_cpu_multithreading_loop)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",

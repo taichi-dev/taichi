@@ -78,15 +78,6 @@ function run-it {
     fi
 }
 
-# Workaround for 'cannot allocate memory in static TLS block' issue
-# During the test, the library below is loaded and unloaded multiple times,
-# each time leaking some static TLS memory, and eventually depleting it.
-# Preloading the library here to avoid unloading it during the test.
-LIBNVIDIA_TLS=$(ls /usr/lib/x86_64-linux-gnu/libnvidia-tls.so.* 2>/dev/null || true)
-if [ ! -z $LIBNVIDIA_TLS ]; then
-    export LD_PRELOAD=$LIBNVIDIA_TLS${LD_PRELOAD:+:$LD_PRELOAD}
-fi
-
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
         run-it cpu 4

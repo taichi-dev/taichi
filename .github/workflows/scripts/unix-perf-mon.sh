@@ -5,7 +5,8 @@ set -ex
 
 export PYTHONUNBUFFERED=1
 
-setup_python
+python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
+. /tmp/ti-env.sh
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 

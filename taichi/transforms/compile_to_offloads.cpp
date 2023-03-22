@@ -66,6 +66,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 
+  irpass::type_check(ir, config);
+  print("Typechecked");
+  irpass::analysis::verify(ir);
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -76,10 +80,6 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
-
-  irpass::type_check(ir, config);
-  print("Typechecked");
-  irpass::analysis::verify(ir);
 
   if (kernel->is_evaluator) {
     TI_ASSERT(autodiff_mode == AutodiffMode::kNone);

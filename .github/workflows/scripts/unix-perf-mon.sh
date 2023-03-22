@@ -5,6 +5,7 @@ set -ex
 
 export PYTHONUNBUFFERED=1
 
+setup-android-ndk-env
 setup_python
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi

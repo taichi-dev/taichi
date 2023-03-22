@@ -319,11 +319,13 @@ Here, we do not want to repeat some best practices summarized in the following G
 
 
 <a name="ghstack-workflow"></a>
+
 ### Implementing the ghstack workflow for complex changesets
 
 The standard GitHub PR workflow can become unwieldy when dealing with large changesets.
 With the help of [ghstack](https://github.com/ezyang/ghstack), you can break down a large changeset into multiple PRs, each building upon the previous one.
 Each PR will undergo its own review process and CI/CD checks.
+
 For details on how to use ghstack, please consult its documentation, with the exception of the landing step.
 To land ghstack commits, simply comment `/land` on the PR. A landing bot will then verify if the corresponding PR and all its predecessors have been approved and passed the CI/CD checks.
 If all checks have been cleared, the bot will execute `ghstack land` for you.

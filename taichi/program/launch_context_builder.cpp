@@ -6,27 +6,6 @@
 #include "fp16.h"
 
 namespace taichi::lang {
-LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel,
-                                           RuntimeContext *ctx)
-    : kernel_(kernel),
-      owned_ctx_(nullptr),
-      ctx_(ctx),
-      arg_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->args_size
-              : sizeof(uint64) * taichi_max_num_args_total)),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)) {
-  if (arch_uses_llvm(kernel->arch)) {
-    ctx_->result_buffer = (uint64 *)result_buffer_.get();
-    ctx_->result_buffer_size = kernel->ret_size;
-    ctx_->arg_buffer_size = kernel->args_size;
-    ctx_->arg_buffer = arg_buffer_.get();
-    ctx_->args_type = kernel->args_type;
-  }
-}
 
 LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
@@ -40,12 +19,12 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
           arch_uses_llvm(kernel->arch)
               ? kernel->ret_size
               : sizeof(uint64) * taichi_result_buffer_entries)),
-      ret_type_(kernel->ret_type) {
+      ret_type_(kernel->ret_type),
+      arg_buffer_size(kernel->args_size),
+      args_type(kernel->args_type),
+      result_buffer_size(kernel->ret_size) {
   ctx_->result_buffer = (uint64 *)result_buffer_.get();
-  ctx_->result_buffer_size = kernel->ret_size;
-  ctx_->arg_buffer_size = kernel->args_size;
   ctx_->arg_buffer = arg_buffer_.get();
-  ctx_->args_type = kernel->args_type;
 }
 
 void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
@@ -148,18 +127,18 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (ctx_->arg_buffer_size == 0) {
+  if (arg_buffer_size == 0) {
     // Currently arg_buffer_size is always zero on non-LLVM-based backends,
     // and this function is no-op for these backends.
     return;
   }
-  int offset = ctx_->args_type->get_element_offset(index);
+  int offset = args_type->get_element_offset(index);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (ctx_->arg_buffer_size > 0) {
+  if (arg_buffer_size > 0) {
     // Currently arg_buffer_size is always zero on non-LLVM-based backends
     return get_struct_arg<T>({i});
   }
@@ -168,7 +147,7 @@ T LaunchContextBuilder::get_arg(int i) {
 
 template <typename T>
 T LaunchContextBuilder::get_struct_arg(std::vector<int> index) {
-  int offset = ctx_->args_type->get_element_offset(index);
+  int offset = args_type->get_element_offset(index);
   return *(T *)(ctx_->arg_buffer + offset);
 }
 
@@ -208,13 +187,13 @@ PER_C_TYPE(gen, void *)  // Register void* as a valid type
 #undef PER_C_TYPE
 
 void LaunchContextBuilder::set_array_runtime_size(int i, uint64 size) {
-  ctx_->array_runtime_sizes[i] = size;
+  array_runtime_sizes[i] = size;
 }
 
 void LaunchContextBuilder::set_array_device_allocation_type(
     int i,
     DevAllocType usage) {
-  ctx_->device_allocation_type[i] = (RuntimeContext::DevAllocType)usage;
+  device_allocation_type[i] = usage;
 }
 
 void LaunchContextBuilder::set_arg_external_array_with_shape(
@@ -292,10 +271,10 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
 void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
                                                 intptr_t devalloc_ptr,
                                                 const std::vector<int> &shape,
-                                                bool has_grad,
+                                                bool grad,
                                                 intptr_t devalloc_ptr_grad) {
   // Set has_grad value
-  ctx_->has_grad[arg_id] = has_grad;
+  has_grad[arg_id] = grad;
 
   set_struct_arg({arg_id}, devalloc_ptr);
   // Set args[arg_id] value
@@ -303,7 +282,7 @@ void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
       taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
 
   // Set grad_args[arg_id] value
-  if (has_grad) {
+  if (grad) {
     ctx_->grad_args[arg_id] =
         taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
   }
@@ -344,25 +323,15 @@ TypedConstant LaunchContextBuilder::fetch_ret_impl(int offset, const Type *dt) {
   auto primitive_type = dt->as<PrimitiveType>();
   char *ptr = result_buffer_.get() + offset;
   switch (primitive_type->type) {
-#define RETURN_PRIMITIVE(type, ctype) \
-  case PrimitiveTypeID::type:         \
+#define PER_C_TYPE(type, ctype) \
+  case PrimitiveTypeID::type:   \
     return TypedConstant(*(ctype *)ptr);
-
-    RETURN_PRIMITIVE(f32, float32);
-    RETURN_PRIMITIVE(f64, float64);
-    RETURN_PRIMITIVE(i8, int8);
-    RETURN_PRIMITIVE(i16, int16);
-    RETURN_PRIMITIVE(i32, int32);
-    RETURN_PRIMITIVE(i64, int64);
-    RETURN_PRIMITIVE(u8, uint8);
-    RETURN_PRIMITIVE(u16, uint16);
-    RETURN_PRIMITIVE(u32, uint32);
-    RETURN_PRIMITIVE(u64, uint64);
-#undef RETURN_PRIMITIVE
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
     case PrimitiveTypeID::f16: {
       // first fetch the data as u16, and then convert it to f32
       uint16 half = *(uint16 *)ptr;
-      return TypedConstant(bit::half_to_float(half));
+      return TypedConstant(fp16_ieee_to_fp32_value(half));
     }
     default:
       TI_NOT_IMPLEMENTED

@@ -101,8 +101,8 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     auto saturated_total_range =
         offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
             BinaryOpType::sub,
-            Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, total_range,
-                                           num_threads),
+            offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
+                BinaryOpType::add, total_range, num_threads)),
             one));
     auto block_range = offloaded_body->insert(Stmt::make_typed<BinaryOpStmt>(
         BinaryOpType::floordiv, saturated_total_range, num_threads));

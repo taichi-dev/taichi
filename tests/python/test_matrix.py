@@ -943,6 +943,22 @@ def test_load_store_scalarize():
 
 
 @test_utils.test()
+def test_load_broadcast():
+    @ti.func
+    def func(a: ti.template()):
+        for i in ti.grouped(a):
+            a[i] = 42
+
+    def verify(x):
+        for i in range(5):
+            assert (x[i] == [[42, 42], [42, 42]]).all()
+
+    field = ti.Matrix.field(2, 2, ti.i32, shape=5)
+    ndarray = ti.Matrix.ndarray(2, 2, ti.i32, shape=5)
+    _test_field_and_ndarray(field, ndarray, func, verify)
+
+
+@test_utils.test()
 def test_unary_op_scalarize():
     @ti.func
     def func(a: ti.template()):

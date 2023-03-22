@@ -143,6 +143,7 @@ class KernelContextAttributes {
    * Attributes that are shared by the input arg and the return value.
    */
   struct AttribsBase {
+    std::string name;
     // For scalar arg, this is max(stride(dt), 4)
     // For array arg, this is #elements * max(stride(dt), 4)
     // Unit: byte
@@ -159,7 +160,8 @@ class KernelContextAttributes {
     // while RW textures always have a valid format.
     BufferFormat format{BufferFormat::unknown};
 
-    TI_IO_DEF(stride,
+    TI_IO_DEF(name,
+              stride,
               offset_in_mem,
               index,
               dtype,

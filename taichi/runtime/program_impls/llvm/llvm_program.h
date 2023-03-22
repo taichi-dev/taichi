@@ -55,10 +55,6 @@ class LlvmProgramImpl : public ProgramImpl {
   // initialize_llvm_runtime_snodes It's a 2-in-1 interface
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
-  void cache_kernel(const std::string &kernel_key,
-                    const LLVMCompiledKernel &data,
-                    Kernel *kernel);
-
   void cache_field(int snode_tree_id,
                    int root_id,
                    const StructCompiler &struct_compiler);
@@ -129,10 +125,6 @@ class LlvmProgramImpl : public ProgramImpl {
                     std::size_t size,
                     uint32_t data) override {
     return runtime_exec_->fill_ndarray(alloc, size, data);
-  }
-
-  void prepare_runtime_context(RuntimeContext *ctx) override {
-    runtime_exec_->prepare_runtime_context(ctx);
   }
 
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
@@ -262,24 +254,12 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);
   }
 
-  cuda::CudaDevice *cuda_device() {
-    return runtime_exec_->cuda_device();
-  }
-
-  cpu::CpuDevice *cpu_device() {
-    return runtime_exec_->cpu_device();
-  }
-
   LlvmDevice *llvm_device() {
     return runtime_exec_->llvm_device();
   }
 
   LlvmRuntimeExecutor *get_runtime_executor() {
     return runtime_exec_.get();
-  }
-
-  const std::unique_ptr<LlvmOfflineCacheFileReader> &get_cache_reader() {
-    return cache_reader_;
   }
 
   std::string get_kernel_return_data_layout() override {
@@ -332,10 +312,7 @@ class LlvmProgramImpl : public ProgramImpl {
     // 1. Destructs cache_data_
     cache_data_.reset();
 
-    // 2. Destructs cache_reader_
-    cache_reader_.reset();
-
-    // 3. Destructs runtime_exec_
+    // 2. Destructs runtime_exec_
     runtime_exec_.reset();
   }
   ParallelExecutor compilation_workers;  // parallel compilation
@@ -349,7 +326,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
   std::unique_ptr<LlvmOfflineCache> cache_data_;
-  std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_;
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

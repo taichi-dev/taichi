@@ -51,6 +51,15 @@ jobs:
 
           MEMFREQ=($(sudo nvidia-smi --query-supported-clocks=mem --format=csv | head -n 2 | tail -n 1))
           GRFREQ=($(sudo nvidia-smi --query-supported-clocks=gr --format=csv | head -n 35 | tail -n 1))
+
+          function restore-freq-pinning {
+            sudo nvidia-smi -rmc
+            sudo nvidia-smi -rgc
+            sudo nvidia-smi -pm 0
+          }
+
+          trap restore-freq-pinning EXIT
+
           sudo nvidia-smi -pm 1
           sudo nvidia-smi -lmc ${MEMFREQ[0]}
           sudo nvidia-smi -lgc ${GRFREQ[0]}
@@ -61,9 +70,6 @@ jobs:
             registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
 
-          sudo nvidia-smi -rmc
-          sudo nvidia-smi -rgc
-          sudo nvidia-smi -pm 0
         env:
           PY: '3.8'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}

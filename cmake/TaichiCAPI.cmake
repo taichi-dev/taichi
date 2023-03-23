@@ -133,8 +133,19 @@ set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_H
 
 # This helper provides us standard locations across Linux/Windows/MacOS
 include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
+
+  # (penguinliong) This is the `CMAKE_INSTALL_PREFIX` from command line.
+  set(CMAKE_INSTALL_PREFIX_BACKUP ${CMAKE_INSTALL_PREFIX})
+  # This thing is read by `install(EXPORT ...)` to generate `_IMPORT_PREFIX` in
+  # `TaichiTargets.cmake`. Replace the original value to avoid the absolute
+  # path.
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_BACKUP}/${TAICHI_C_API_INSTALL_DIR})
+
+  message("Installing to ${CMAKE_INSTALL_PREFIX}")
+
   install(TARGETS ${TAICHI_C_API_NAME} EXPORT TaichiExportTargets${INSTALL_NAME}
       LIBRARY DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
       ARCHIVE DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}
@@ -150,23 +161,26 @@ function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
           ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_INCLUDEDIR}/taichi/cpp
   )
 
-  # Install the export set, which contains the meta data of the target
-  install(EXPORT TaichiExportTargets${INSTALL_NAME}
-      FILE TaichiTargets.cmake
-      DESTINATION ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
-      )
+  # Install the target script.
+  # 2023-03-23 (penguinliong) We used to generate this by `install(EXPORT ...)`
+  # but the generated content is generally uncontrollable so we turn to a hand
+  # written script instead. CMake is really something.
+  install(
+      FILES
+          "cmake/TaichiTargets.cmake"
+      DESTINATION
+          ${TAICHI_C_API_INSTALL_DIR}/taichi/${CMAKE_INSTALL_LIBDIR}/cmake/taichi
+  )
 
-  include(CMakePackageConfigHelpers)
-
-  # Generate the config file
+  # Generate the config file. Put it to the same dir as `TaichiTargets.cmake`.
   configure_package_config_file(
           "${PROJECT_SOURCE_DIR}/cmake/TaichiConfig.cmake.in"
           "${PROJECT_BINARY_DIR}/TaichiConfig.cmake"
       INSTALL_DESTINATION
-          ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+          ${TAICHI_C_API_INSTALL_DIR}/taichi/${CMAKE_INSTALL_LIBDIR}/cmake/taichi
       )
 
-  # Generate the config version file
+  # Generate the config version file.
   set(TAICHI_VERSION "${TI_VERSION_MAJOR}.${TI_VERSION_MINOR}.${TI_VERSION_PATCH}")
   write_basic_package_version_file(
       "TaichiConfigVersion.cmake"
@@ -180,7 +194,7 @@ function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
           "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfig.cmake"
           "${CMAKE_CURRENT_BINARY_DIR}/TaichiConfigVersion.cmake"
       DESTINATION
-          ${TAICHI_C_API_INSTALL_DIR}/${CMAKE_INSTALL_LIBDIR}/cmake/${TAICHI_C_API_NAME}
+          ${TAICHI_C_API_INSTALL_DIR}/taichi/${CMAKE_INSTALL_LIBDIR}/cmake/taichi
       )
 
   if(TI_WITH_LLVM)
@@ -189,13 +203,15 @@ function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
         ${INSTALL_LIB_DIR}/runtime
         DESTINATION ${TAICHI_C_API_INSTALL_DIR})
   endif()
+
+  # (penguinliong) Recover the original value in case it's used by other
+  # targets.
+  set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_BACKUP})
 endfunction()
 
-
-set(TAICHI_C_API_INSTALL_DIR c_api)
 install_taichi_c_api(Distribute c_api)
 if (TI_WITH_PYTHON)
-  install_taichi_c_api(PyTaichi ${CMAKE_INSTALL_PREFIX}/python/taichi/_lib/c_api)
+  install_taichi_c_api(PyTaichi python/taichi/_lib/c_api)
 endif()
 
 if(TI_WITH_STATIC_C_API)

@@ -206,6 +206,13 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
   }
 
+  if ((type == UnaryOpType::bit_not || type == UnaryOpType::logic_not) &&
+      is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+  }
+
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);
@@ -1714,7 +1721,10 @@ Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr_stmt));
+  auto load_stmt = std::make_unique<GlobalLoadStmt>(ptr_stmt);
+  auto pointee_type = load_stmt->src->ret_type.ptr_removed();
+  load_stmt->ret_type = pointee_type->get_compute_type();
+  ctx->push_back(std::move(load_stmt));
   return ctx->back_stmt();
 }
 

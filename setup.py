@@ -33,6 +33,7 @@ classifiers = [
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
 ]
 
 
@@ -160,12 +161,27 @@ def get_cmake_args():
 
 
 # Control files to be included in package data
+BLACKLISTED_FILES = [
+    'libSPIRV-Tools-shared.so',
+    'libSPIRV-Tools-shared.dll',
+]
+
+WHITELISTED_FILES = [
+    'libMoltenVK.dylib',
+]
+
+
 def cmake_install_manifest_filter(manifest_files):
-    return [
-        f for f in manifest_files
-        if f.endswith(('.so', 'pyd', '.dll', '.bc', '.h', '.dylib', '.cmake',
-                       '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
-    ]
+    def should_include(f):
+        basename = os.path.basename(f)
+        if basename in WHITELISTED_FILES:
+            return True
+        if basename in BLACKLISTED_FILES:
+            return False
+        return f.endswith(
+            ('.so', 'pyd', '.dll', '.bc', '.h', '.dylib', '.cmake', '.hpp'))
+
+    return [f for f in manifest_files if should_include(f)]
 
 
 def sign_development_for_apple_m1():
@@ -197,7 +213,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
-      python_requires=">=3.6,<3.11",
+      python_requires=">=3.6,<3.12",
       install_requires=[
           'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'

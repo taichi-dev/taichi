@@ -145,7 +145,7 @@ class TI_DLL_EXPORT Kernel : public CallableBase {
    *
    * @param ctx Host context
    */
-  virtual void launch(RuntimeContext *ctx) = 0;
+  virtual void launch(LaunchContextBuilder &ctx) = 0;
 };
 
 struct CompiledDispatch {
@@ -160,7 +160,6 @@ struct CompiledDispatch {
 struct TI_DLL_EXPORT CompiledGraph {
   std::vector<CompiledDispatch> dispatches;
   std::unordered_map<std::string, aot::Arg> args;
-  RuntimeContext ctx_;
 
   void run(const std::unordered_map<std::string, IValue> &args) const;
   void jit_run(const CompileConfig &compile_config,
@@ -172,7 +171,7 @@ struct TI_DLL_EXPORT CompiledGraph {
   static void init_runtime_context(
       const std::vector<Arg> &paramter_list,
       const std::unordered_map<std::string, IValue> &args,
-      RuntimeContext &ctx);
+      LaunchContextBuilder &ctx);
 };
 
 }  // namespace aot

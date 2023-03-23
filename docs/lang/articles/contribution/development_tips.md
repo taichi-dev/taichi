@@ -42,7 +42,7 @@ to make the Taichi compiler print out IRs in different stages:
   kernel compilers.
 - `print_kernel_llvm_ir_optimized=True`: save the optimized LLVM IR
   of each kernel.
-- `print_kernel_nvptx=True`: save the emitted NVPTX of each kernel
+- `print_kernel_asm=True`: save the emitted assembly code of each kernel
   (CUDA only).
 
 :::note

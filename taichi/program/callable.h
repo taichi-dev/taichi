@@ -12,6 +12,7 @@ class FrontendContext;
 class TI_DLL_EXPORT CallableBase {
  public:
   struct Parameter {
+    std::string name;
     bool is_array{
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
@@ -107,14 +108,16 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   Callable();
   virtual ~Callable();
 
-  int insert_scalar_param(const DataType &dt);
-
+  int insert_scalar_param(const DataType &dt, const std::string &name = "");
   int insert_arr_param(const DataType &dt,
                        int total_dim,
-                       std::vector<int> element_shape);
-  int insert_texture_param(int total_dim);
-  int insert_pointer_param(const DataType &dt);
-  int insert_rw_texture_param(int total_dim, BufferFormat format);
+                       std::vector<int> element_shape,
+                       const std::string &name = "");
+  int insert_texture_param(int total_dim, const std::string &name = "");
+  int insert_pointer_param(const DataType &dt, const std::string &name = "");
+  int insert_rw_texture_param(int total_dim,
+                              BufferFormat format,
+                              const std::string &name = "");
 
   int insert_ret(const DataType &dt);
 

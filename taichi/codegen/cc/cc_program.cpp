@@ -21,7 +21,9 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));
-  return [ker_ptr](RuntimeContext &ctx) { return ker_ptr->launch(&ctx); };
+  return [ker_ptr](LaunchContextBuilder &ctx) {
+    return ker_ptr->launch(&ctx.get_context());
+  };
 }
 
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,

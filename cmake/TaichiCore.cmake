@@ -373,36 +373,26 @@ if (APPLE)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE ${APPLE_FRAMEWORKS})
 endif ()
 
-if (NOT WIN32)
+if (ANDROID)
     # Android has a custom toolchain so pthread is not available and should
     # link against other libraries as well for logcat and internal features.
-    if (ANDROID)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE android log)
-    else()
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE pthread stdc++)
-    endif()
-
-    if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	# OS X or BSD
-    else()
-        # Linux
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE stdc++fs X11)
-
-        target_link_options(${CORE_LIBRARY_NAME} PRIVATE -static-libgcc -static-libstdc++)
-        if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-            # Avoid glibc dependencies
-            if (TI_WITH_VULKAN)
-                target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f)
-            else()
-                # Enforce compatibility with manylinux2014
-                target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
-            endif()
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE android log)
+elseif (LINUX)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE X11 pthread)
+    if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+        # Avoid glibc dependencies
+        if (TI_WITH_VULKAN)
+            target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f)
+        else()
+            # Enforce compatibility with manylinux2014
+            target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
         endif()
     endif()
-else()
-    # windows
+elseif (WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE Winmm)
-endif ()
+endif()
+
+
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
@@ -434,6 +424,11 @@ if(TI_WITH_PYTHON)
     # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+        if (NOT ANDROID)
+            # Excluding Android
+            # Android defaults to static linking with libc++, no tinkering needed.
+            target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -static-libgcc -static-libstdc++)
+        endif()
     endif()
 
     if (TI_WITH_BACKTRACE)

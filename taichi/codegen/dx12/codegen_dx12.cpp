@@ -233,7 +233,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 
   irpass::ast_to_ir(config, *kernel, false);
 
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto block = dynamic_cast<Block *>(ir);
   TI_ASSERT(block);
 
   auto &offloads = block->statements;

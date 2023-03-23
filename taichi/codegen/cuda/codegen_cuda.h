@@ -11,8 +11,9 @@ class KernelCodeGenCUDA : public KernelCodeGen {
  public:
   explicit KernelCodeGenCUDA(const CompileConfig &compile_config,
                              const Kernel *kernel,
+                             IRNode *ir,
                              TaichiLLVMContext &tlctx)
-      : KernelCodeGen(compile_config, kernel, tlctx) {
+      : KernelCodeGen(compile_config, kernel, ir, tlctx) {
   }
 
 // TODO: Stop defining this macro guards in the headers

@@ -5,10 +5,10 @@ set -ex
 
 export PYTHONUNBUFFERED=1
 
-setup-android-ndk-env
-setup_python
-
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
+
+python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-env.sh
+. /tmp/ti-env.sh
 
 python3 -m pip install dist/*.whl
 git clone https://github.com/taichi-dev/taichi_benchmark

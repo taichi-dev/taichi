@@ -5,6 +5,9 @@ on:
       - master
   workflow_dispatch:
 
+env:
+  CI_IMAGE_VERSION: '202303211008'
+
 jobs:
   gpu_backends:
     name: Performance Monitoring
@@ -29,7 +32,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-benchmark-build \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -58,7 +61,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-benchmark-run \
             -e BENCHMARK_UPLOAD_TOKEN \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
 
           sudo nvidia-smi -rmc

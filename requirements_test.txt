@@ -6,7 +6,7 @@ pytest-cov
 numpy
 psutil
 autograd
-requests==2.26
+requests
 matplotlib
 cffi
 scipy

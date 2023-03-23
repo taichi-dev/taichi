@@ -289,9 +289,26 @@ void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
   module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));
   module_pass_manager.add(llvm::createEarlyCSEPass(true));
 
+  llvm::SmallString<8> outstr;
+  raw_svector_ostream ostream(outstr);
+  ostream.SetUnbuffered();
+  if (this->config_.print_kernel_asm) {
+    // Generate assembly code if neccesary
+    target_machine->addPassesToEmitFile(module_pass_manager, ostream, nullptr,
+                                        llvm::CGFT_AssemblyFile);
+  }
+
   {
     TI_PROFILER("llvm_module_pass");
     module_pass_manager.run(*module);
+  }
+
+  if (this->config_.print_kernel_asm) {
+    static FileSequenceWriter writer(
+        "taichi_kernel_cpu_llvm_ir_optimized_asm_{:04d}.s",
+        "optimized assembly code (CPU)");
+    std::string buffer(outstr.begin(), outstr.end());
+    writer.write(buffer);
   }
 
   if (this->config_.print_kernel_llvm_ir_optimized) {

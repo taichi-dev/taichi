@@ -7,8 +7,11 @@ export PYTHONUNBUFFERED=1
 
 [[ "$IN_DOCKER" == "true" ]] && cd taichi
 
-python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-env.sh
+python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
 . /tmp/ti-env.sh
+
+# TODO: hard code Android NDK path in Docker image, should be handled by build.py
+export ANDROID_NDK_ROOT=/android-sdk/ndk-bundle
 
 python -m pip install dist/*.whl
 

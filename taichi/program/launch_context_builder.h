@@ -5,9 +5,17 @@
 
 namespace taichi::lang {
 
+struct RuntimeContext;
+
 class LaunchContextBuilder {
  public:
-  LaunchContextBuilder(CallableBase *kernel, RuntimeContext *ctx);
+  enum class DevAllocType : int8_t {
+    kNone = 0,
+    kNdarray = 1,
+    kTexture = 2,
+    kRWTexture = 3
+  };
+
   explicit LaunchContextBuilder(CallableBase *kernel);
 
   LaunchContextBuilder(LaunchContextBuilder &&) = default;
@@ -21,8 +29,30 @@ class LaunchContextBuilder {
   void set_arg_int(int arg_id, int64 d);
   void set_arg_uint(int arg_id, uint64 d);
 
-  void set_arg(int arg_id, TypedConstant d);
+  void set_array_runtime_size(int i, uint64 size);
 
+  void set_array_device_allocation_type(int i, DevAllocType usage);
+
+  template <typename T>
+  void set_arg(int i, T v);
+
+  template <typename T>
+  void set_grad_arg(int i, T v);
+
+  template <typename T>
+  void set_struct_arg(std::vector<int> index, T v);
+
+  template <typename T>
+  T get_arg(int i);
+
+  template <typename T>
+  T get_struct_arg(std::vector<int> index);
+
+  template <typename T>
+  T get_grad_arg(int i);
+
+  template <typename T>
+  T get_ret(int i);
   void set_extra_arg_int(int i, int j, int32 d);
 
   void set_arg_external_array_with_shape(int arg_id,
@@ -30,12 +60,21 @@ class LaunchContextBuilder {
                                          uint64 size,
                                          const std::vector<int64> &shape);
 
+  void set_arg_ndarray_impl(int arg_id,
+                            intptr_t devalloc_ptr,
+                            const std::vector<int> &shape,
+                            bool grad = false,
+                            intptr_t devalloc_ptr_grad = 0);
   void set_arg_ndarray(int arg_id, const Ndarray &arr);
   void set_arg_ndarray_with_grad(int arg_id,
                                  const Ndarray &arr,
                                  const Ndarray &arr_grad);
 
+  void set_arg_texture_impl(int arg_id, intptr_t alloc_ptr);
   void set_arg_texture(int arg_id, const Texture &tex);
+  void set_arg_rw_texture_impl(int arg_id,
+                               intptr_t alloc_ptr,
+                               const std::array<int, 3> &shape);
   void set_arg_rw_texture(int arg_id, const Texture &tex);
 
   TypedConstant fetch_ret(const std::vector<int> &index);
@@ -54,8 +93,27 @@ class LaunchContextBuilder {
   // |owned_ctx_| will be nullptr.
   // Invariant: |ctx_| will never be nullptr.
   RuntimeContext *ctx_;
+  std::unique_ptr<char[]> arg_buffer_;
   std::unique_ptr<char[]> result_buffer_;
   const StructType *ret_type_;
+
+ public:
+  size_t arg_buffer_size{0};
+  const StructType *args_type{nullptr};
+  size_t result_buffer_size{0};
+  bool has_grad[taichi_max_num_args_total];
+
+  // Note that I've tried to group `array_runtime_size` and
+  // `is_device_allocations` into a small struct. However, it caused some test
+  // cases to stuck.
+
+  // `array_runtime_size` records the runtime size of the
+  // corresponding array arguments.
+  uint64 array_runtime_sizes[taichi_max_num_args_total]{0};
+  // `device_allocation_type` is set iff i-th arg is a `DeviceAllocation*`,
+  // otherwise it is set to DevAllocType::kNone
+  DevAllocType device_allocation_type[taichi_max_num_args_total]{
+      DevAllocType::kNone};
 };
 
 }  // namespace taichi::lang

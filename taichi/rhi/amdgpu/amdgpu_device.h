@@ -96,7 +96,7 @@ class AmdgpuDevice : public LlvmDevice {
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  DeviceAllocation import_memory(void *ptr, size_t size);
+  DeviceAllocation import_memory(void *ptr, size_t size) override;
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 

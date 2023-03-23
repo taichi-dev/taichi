@@ -90,7 +90,4 @@ def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
     python = sh.bake(str(exe))
     pip = python.bake('-m', 'pip')
 
-    pip.install('-U', 'pip')
-    pip.uninstall('-y', 'taichi', 'taichi-nightly')
-
     return python, pip

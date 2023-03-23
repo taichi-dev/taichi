@@ -66,6 +66,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 
+  irpass::type_check(ir, config);
+  print("Typechecked");
+  irpass::analysis::verify(ir);
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -76,10 +80,6 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
-
-  irpass::type_check(ir, config);
-  print("Typechecked");
-  irpass::analysis::verify(ir);
 
   if (kernel->is_evaluator) {
     TI_ASSERT(autodiff_mode == AutodiffMode::kNone);
@@ -215,6 +215,13 @@ void offload_to_executable(IRNode *ir,
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir, config);
     print("Dense struct-for demoted");
+    irpass::analysis::verify(ir);
+  }
+
+  if (config.make_cpu_multithreading_loop && arch_is_cpu(config.arch)) {
+    irpass::make_cpu_multithreaded_range_for(ir, config);
+    irpass::type_check(ir, config);
+    print("Make CPU multithreaded range-for");
     irpass::analysis::verify(ir);
   }
 

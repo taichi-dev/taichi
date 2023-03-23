@@ -152,7 +152,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::print_kernel_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
-      .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
+      .def_readwrite("print_kernel_asm", &CompileConfig::print_kernel_asm)
       .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
@@ -200,6 +200,8 @@ void export_lang(py::module &m) {
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
+      .def_readwrite("make_cpu_multithreading_loop",
+                     &CompileConfig::make_cpu_multithreading_loop)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -387,15 +389,6 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
-      .def("create_sparse_matrix_builder",
-           [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
-                             !arch_is_cuda(program->compile_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format, program);
-           })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
@@ -1181,6 +1174,10 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+      .def(py::init<int, int, int, DataType, const std::string &, Program *>(),
+           py::arg("rows"), py::arg("cols"), py::arg("max_num_triplets"),
+           py::arg("dt") = PrimitiveType::f32,
+           py::arg("storage_format") = "col_major", py::arg("prog") = nullptr)
       .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
       .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)

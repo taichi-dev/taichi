@@ -36,33 +36,25 @@ static void run_dynamic_tests(aot::Module *mod,
   // Kernel: activate()
   {
     LaunchContextBuilder builder(k_activate);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate->launch(&ctx);
+    k_activate->launch(builder);
   }
 
   // Kernel: check_value_0()
   {
     LaunchContextBuilder builder(k_check_value_0);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_0->launch(&ctx);
+    k_check_value_0->launch(builder);
   }
 
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate()
   {
     LaunchContextBuilder builder(k_deactivate);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate->launch(&ctx);
+    k_deactivate->launch(builder);
   }
   // Kernel: check_value_1()
   {
     LaunchContextBuilder builder(k_check_value_1);
-    RuntimeContext &ctx = builder.get_context();
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_1->launch(&ctx);
+    k_check_value_1->launch(builder);
   }
 
   // Check assertion error from ti.kernel

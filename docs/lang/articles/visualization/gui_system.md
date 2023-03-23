@@ -43,6 +43,7 @@ Each window is built on a coordinate system: the origin is located in the lower-
 To display a Taichi field or a NumPy ndarray, call `gui.set_image()`. The method accepts both types as input.
 
 ```python
+gui = ti.GUI('Set Image', (640, 480))
 image = ti.Vector.field(3, ti.f32, shape=(640, 480))
 while gui.running:
     gui.set_image(image)
@@ -64,7 +65,7 @@ In each loop of the `gui.set_image()` method call, the GUI system converts the i
 If you only need to call the `set_image()` method without using any drawing command, you can enable `fast_gui` mode for better performance. This mode allows Taichi GUI to write the image data directly to the frame buffer without additional copying, and significantly increases FPS.
 
 ```python
-gui = ti.GUI(res, title, fast_gui=True)
+gui = ti.GUI('Fast GUI', res=(400, 400), fast_gui=True)
 ```
 
 For this mode to work, ensure that the data passed into `gui.set_image()` is in a display-compatible format. In other words, If it is a Taichi field, ensure that it is one of the following:
@@ -315,7 +316,6 @@ The following code defines that the `while` loop goes on until **ESC** is presse
 ```python
 gui = ti.GUI('Title', (640, 480))
 while not gui.get_event(ti.GUI.ESCAPE):
-    gui.set_image(img)
     gui.show()
 ```
 

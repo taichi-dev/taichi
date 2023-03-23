@@ -56,7 +56,6 @@ endif()
 add_library(taichi_c_api SHARED IMPORTED)
 
 list(APPEND _cmake_import_check_targets taichi_c_api )
-list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/lib/libtaichi_c_api.dylib" )
 
 if (APPLE)
   set_target_properties(taichi_c_api PROPERTIES
@@ -64,18 +63,21 @@ if (APPLE)
     IMPORTED_SONAME "@rpath/libtaichi_c_api.dylib"
     INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
   )
+  list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/lib/libtaichi_c_api.dylib" )
 elseif (WIN32)
   set_target_properties(taichi_c_api PROPERTIES
-    IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libtaichi_c_api.dll"
-    IMPORTED_IMPLIB "${_IMPORT_PREFIX}/lib/libtaichi_c_api.lib"
+    IMPORTED_LOCATION "${_IMPORT_PREFIX}/bin/taichi_c_api.dll"
+    IMPORTED_IMPLIB "${_IMPORT_PREFIX}/lib/taichi_c_api.lib"
     INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
   )
+  list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/bin/taichi_c_api.dll" )
 elseif (UNIX)
   set_target_properties(taichi_c_api PROPERTIES
     IMPORTED_LOCATION "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so"
     IMPORTED_SONAME "libtaichi_c_api.so"
     INTERFACE_INCLUDE_DIRECTORIES "${_IMPORT_PREFIX}/include"
   )
+  list(APPEND _cmake_import_check_files_for_taichi_c_api "${_IMPORT_PREFIX}/lib/libtaichi_c_api.so" )
 endif()
 
 # ------------------------------------------------------------------------------

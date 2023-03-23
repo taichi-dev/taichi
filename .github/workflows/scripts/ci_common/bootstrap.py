@@ -101,10 +101,16 @@ def set_common_env():
     '''
     Set common environment variables.
     '''
+    # FIXME: Should be in GitHub Actions yaml
     os.environ['TI_CI'] = '1'
+    os.environ['TI_SKIP_VERSION_CHECK'] = 'ON'
+    if 'TAICHI_CMAKE_ARGS' not in os.environ:
+        os.environ['TAICHI_CMAKE_ARGS'] = ''
 
 
 _Environ = os.environ.__class__
+
+_CHANGED_ENV = {}
 
 
 class _EnvironWrapper(_Environ):
@@ -120,8 +126,11 @@ class _EnvironWrapper(_Environ):
         N = escape_codes['reset']
 
         if orig == new:
-            pass
-        elif orig == None:
+            return
+
+        _CHANGED_ENV[name] = new
+
+        if orig == None:
             print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
         elif new.startswith(orig):
             l = len(orig)
@@ -136,6 +145,9 @@ class _EnvironWrapper(_Environ):
         else:
             print(f'{R}:: ENV- {name}={orig}{N}', file=sys.stderr, flush=True)
             print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
+
+    def get_changed_envs(self):
+        return dict(_CHANGED_ENV)
 
 
 def monkey_patch_environ():

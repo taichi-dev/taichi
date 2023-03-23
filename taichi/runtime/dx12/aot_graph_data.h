@@ -9,7 +9,7 @@ class KernelImpl : public aot::Kernel {
   explicit KernelImpl() {
   }
 
-  void launch(RuntimeContext *ctx) override {
+  void launch(LaunchContextBuilder &ctx) override {
   }
 };
 }  // namespace directx12

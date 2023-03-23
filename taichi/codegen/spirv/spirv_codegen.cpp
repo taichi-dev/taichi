@@ -1782,6 +1782,14 @@ class TaskCodegen : public IRVisitor {
   }
 
   void gen_array_range(Stmt *stmt) {
+    /* Fix issue 7493
+     *
+     * Prevent repeated range generation for the same array
+     * when loop range has multiple dimensions.
+     */
+    if (ir_->check_value_existence(stmt->raw_name())) {
+      return;
+    }
     int num_operands = stmt->num_operands();
     for (int i = 0; i < num_operands; i++) {
       gen_array_range(stmt->operand(i));

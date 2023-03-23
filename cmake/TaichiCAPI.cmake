@@ -82,6 +82,9 @@ set_target_properties(${TAICHI_C_API_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)
 # Note that on Windows, external symbols will be excluded from .dll automatically, by default.
 if(LINUX)
     target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,--version-script,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_linux.lds)
+    if (NOT ANDROID)
+        target_link_options(${TAICHI_C_API_NAME} PRIVATE -static-libgcc -static-libstdc++)
+    endif()
 elseif(APPLE)
     # Unfortunately, ld on MacOS does not support --exclude-libs and we have to manually specify the exported symbols
     target_link_options(${TAICHI_C_API_NAME} PRIVATE -Wl,-exported_symbols_list,${CMAKE_CURRENT_SOURCE_DIR}/c_api/version_scripts/export_symbols_mac.lds)
@@ -114,7 +117,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         $<BUILD_INTERFACE:${taichi_c_api_BINARY_DIR}/c_api/include>
         $<BUILD_INTERFACE:${taichi_c_api_SOURCE_DIR}/c_api/include>
         # Used when installing the library:
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_PREFIX}/c_api/include>
+        $<INSTALL_INTERFACE:c_api/include>
     PRIVATE
         # Used only when building the library:
         ${PROJECT_SOURCE_DIR}

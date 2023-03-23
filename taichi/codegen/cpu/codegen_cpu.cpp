@@ -58,16 +58,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     auto [begin, end] = get_range_for_bounds(stmt);
 
-    // adaptive block_dim
-    if (compile_config.cpu_block_dim_adaptive) {
-      int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
-      int num_threads = stmt->num_cpu_threads;
-      int items_per_thread = std::max(1, num_items / (num_threads * 32));
-      // keep each task has at least 512 items to amortize scheduler overhead
-      // also saturate the value to 1024 for better load balancing
-      stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
-    }
-
     call("cpu_parallel_range_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
@@ -241,21 +231,22 @@ FunctionType CPUModuleToFunctionConverter::convert(
   }
   // Do NOT capture `this`...
   return [executor = this->executor_, args, kernel_name,
-          task_funcs](RuntimeContext &context) {
+          task_funcs](LaunchContextBuilder &context) {
     TI_TRACE("Launching kernel {}", kernel_name);
+    context.get_context().runtime = executor->get_llvm_runtime();
     // For taichi ndarrays, context.args saves pointer to its
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array &&
           context.device_allocation_type[i] !=
-              RuntimeContext::DevAllocType::kNone &&
+              LaunchContextBuilder::DevAllocType::kNone &&
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(
-            i, RuntimeContext::DevAllocType::kNone);
+            i, LaunchContextBuilder::DevAllocType::kNone);
 
         if (context.has_grad[i]) {
           DeviceAllocation *ptr_grad =
@@ -267,7 +258,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
       }
     }
     for (auto task : task_funcs) {
-      task(&context);
+      task(&context.get_context());
     }
   };
 }

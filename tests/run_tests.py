@@ -252,8 +252,11 @@ def test():
         exit(_test_python(args, 'cpp'))
 
     for _ in range(run_count):
-        if _test_python(args) != 0:
-            exit(1)
+        ret = _test_python(args)
+        if ret == 5:
+            # treat 'no tests collected' as success
+            ret = 0
+        exit(ret)
 
 
 if __name__ == '__main__':

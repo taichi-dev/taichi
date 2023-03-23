@@ -79,8 +79,6 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 #ifdef TI_WITH_LLVM
 
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
-  irpass::ast_to_ir(compile_config_, *kernel, false);
-
   auto block = dynamic_cast<Block *>(ir);
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;
   TI_ASSERT(block);

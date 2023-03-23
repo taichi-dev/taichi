@@ -248,10 +248,10 @@ FunctionType KernelCodeGenWASM::compile_to_function() {
   auto *executor = get_llvm_program(prog)->get_runtime_executor();
   auto *jit_module = executor->create_jit_module(std::move(linked.module));
   auto kernel_symbol = jit_module->lookup_function(linked.tasks[0].name);
-  return [kernel_symbol](RuntimeContext &context) {
+  return [kernel_symbol](LaunchContextBuilder &context) {
     TI_TRACE("Launching Taichi Kernel Function");
     auto func = (int32(*)(void *))kernel_symbol;
-    func(&context);
+    func(&context.get_context());
   };
 }
 

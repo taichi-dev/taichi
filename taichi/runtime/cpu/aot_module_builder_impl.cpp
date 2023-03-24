@@ -9,8 +9,8 @@ namespace taichi::lang {
 namespace cpu {
 
 LLVMCompiledKernel AotModuleBuilderImpl::compile_kernel(Kernel *kernel) {
-  auto cgen =
-      KernelCodeGenCPU(get_compile_config(), kernel, get_taichi_llvm_context());
+  auto cgen = KernelCodeGenCPU(get_compile_config(), kernel, kernel->ir.get(),
+                               get_taichi_llvm_context());
   return cgen.compile_kernel_to_module();
 }
 

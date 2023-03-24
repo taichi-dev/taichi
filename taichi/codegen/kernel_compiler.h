@@ -21,7 +21,7 @@ class KernelCompiler {
   virtual CKDPtr compile(const CompileConfig &compile_config,
                          const DeviceCapabilityConfig &device_caps,
                          const Kernel &kernel_def,
-                         const IRNode &chi_ir) const = 0;
+                         IRNode &chi_ir) const = 0;
 
   virtual ~KernelCompiler() = default;
 };

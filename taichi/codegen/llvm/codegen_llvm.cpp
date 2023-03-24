@@ -785,7 +785,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       TI_NOT_IMPLEMENTED
     }
     llvm_val[stmt] =
-        builder->CreateSExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is

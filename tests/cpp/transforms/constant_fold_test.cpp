@@ -109,4 +109,29 @@ TEST_F(ConstantFoldTest, Binary) {
   EXPECT_EQ(ir_block->statements[1]->as<ConstStmt>()->val.val_float(), 2);
 }
 
+TEST_F(ConstantFoldTest, BinaryCmp) {
+  IRBuilder builder;
+
+  auto *x = builder.create_arg_load(0, get_data_type<float>(), false);
+  auto *one = builder.get_int32(1);
+  auto *two = builder.get_int32(2);
+  auto *cmp_lt = builder.create_cmp_lt(one, two);
+
+  auto *result = builder.create_sub(x, cmp_lt);
+  builder.create_return(result);
+
+  auto ir = builder.extract_ir();
+  ASSERT_TRUE(ir->is<Block>());
+  auto *ir_block = ir->as<Block>();
+  irpass::type_check(ir_block, CompileConfig());
+  EXPECT_EQ(ir_block->size(), 7);
+
+  irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
+  irpass::die(ir_block);
+
+  EXPECT_EQ(ir_block->size(), 4);
+  EXPECT_EQ(ir_block->statements[0].get(), x);
+  EXPECT_TRUE(ir_block->statements[1]->is<ConstStmt>());
+  EXPECT_EQ(ir_block->statements[1]->as<ConstStmt>()->val.val_float(), 1);
+}
 }  // namespace taichi::lang

@@ -8,6 +8,7 @@ target_sources(llvm_codegen
     llvm_codegen_utils.cpp
     struct_llvm.cpp
     compiled_kernel_data.cpp
+    kernel_compiler.cpp
   )
 
 target_include_directories(llvm_codegen

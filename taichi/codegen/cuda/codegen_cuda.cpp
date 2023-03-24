@@ -693,14 +693,6 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::compile_to_function() {
-  TI_AUTO_PROF
-  CUDAModuleToFunctionConverter converter{
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(this->kernel, compile_kernel_to_module());
-}
-
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<Callable::Parameter> &args,
@@ -721,20 +713,19 @@ FunctionType CUDAModuleToFunctionConverter::convert(
     char *device_result_buffer{nullptr};
     CUDADriver::get_instance().malloc_async(
         (void **)&device_result_buffer,
-        std::max(context.get_context().result_buffer_size, sizeof(uint64)),
-        nullptr);
+        std::max(context.result_buffer_size, sizeof(uint64)), nullptr);
     context.get_context().runtime = executor->get_llvm_runtime();
 
     bool transferred = false;
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array) {
-        const auto arr_sz = context.get_context().array_runtime_sizes[i];
+        const auto arr_sz = context.array_runtime_sizes[i];
         if (arr_sz == 0) {
           continue;
         }
         arg_buffers[i] = context.get_arg<void *>(i);
-        if (context.get_context().device_allocation_type[i] ==
-            RuntimeContext::DevAllocType::kNone) {
+        if (context.device_allocation_type[i] ==
+            LaunchContextBuilder::DevAllocType::kNone) {
           // Note: both numpy and PyTorch support arrays/tensors with zeros
           // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
           // `arr_sz` zero.
@@ -788,17 +779,16 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       CUDADriver::get_instance().stream_synchronize(nullptr);
     }
     char *host_result_buffer = (char *)context.get_context().result_buffer;
-    if (context.get_context().result_buffer_size > 0) {
+    if (context.result_buffer_size > 0) {
       context.get_context().result_buffer = (uint64 *)device_result_buffer;
     }
     char *device_arg_buffer = nullptr;
-    if (context.get_context().arg_buffer_size > 0) {
-      CUDADriver::get_instance().malloc_async(
-          (void **)&device_arg_buffer, context.get_context().arg_buffer_size,
-          nullptr);
+    if (context.arg_buffer_size > 0) {
+      CUDADriver::get_instance().malloc_async((void **)&device_arg_buffer,
+                                              context.arg_buffer_size, nullptr);
       CUDADriver::get_instance().memcpy_host_to_device_async(
           device_arg_buffer, context.get_context().arg_buffer,
-          context.get_context().arg_buffer_size, nullptr);
+          context.arg_buffer_size, nullptr);
       context.get_context().arg_buffer = device_arg_buffer;
     }
     CUDADriver::get_instance().context_set_limit(
@@ -810,13 +800,13 @@ FunctionType CUDAModuleToFunctionConverter::convert(
       cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
                           {&context.get_context()}, {});
     }
-    if (context.get_context().arg_buffer_size > 0) {
+    if (context.arg_buffer_size > 0) {
       CUDADriver::get_instance().mem_free_async(device_arg_buffer, nullptr);
     }
-    if (context.get_context().result_buffer_size > 0) {
+    if (context.result_buffer_size > 0) {
       CUDADriver::get_instance().memcpy_device_to_host_async(
-          host_result_buffer, device_result_buffer,
-          context.get_context().result_buffer_size, nullptr);
+          host_result_buffer, device_result_buffer, context.result_buffer_size,
+          nullptr);
     }
     CUDADriver::get_instance().mem_free_async(device_result_buffer, nullptr);
     // copy data back to host
@@ -826,7 +816,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         if (device_buffers[i] != arg_buffers[i]) {
           CUDADriver::get_instance().memcpy_device_to_host(
               arg_buffers[i], (void *)device_buffers[i],
-              context.get_context().array_runtime_sizes[i]);
+              context.array_runtime_sizes[i]);
           executor->deallocate_memory_ndarray(temporary_devallocs[i]);
         }
       }

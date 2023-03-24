@@ -212,12 +212,12 @@ def test_cli_run():
         assert args.filename == "a.py"
 
 
-def _test_cli_cache():  # TODO(PGZXB): Re-enable the test
+def test_cli_cache():
     archs = {
         ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.gles, ti.amdgpu
     }
     archs = {v for v in archs if v in test_utils.expected_archs()}
-    exts = ('ll', 'bc', 'spv', 'metal', 'tcb', 'lock')
+    exts = ('tic', 'tcb', 'lock')
     tmp_path = tempfile.mkdtemp()
 
     @ti.kernel

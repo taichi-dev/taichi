@@ -33,6 +33,7 @@ classifiers = [
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
 ]
 
 
@@ -212,7 +213,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
-      python_requires=">=3.6,<3.11",
+      python_requires=">=3.6,<3.12",
       install_requires=[
           'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'

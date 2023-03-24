@@ -72,8 +72,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) override;
 
-  void dump_cache_data_to_disk() override;
-
   /* -------------------------------- */
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */
@@ -148,48 +146,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
     return runtime_exec_->fetch_result_uint64(i, result_buffer);
-  }
-
-  TypedConstant fetch_result(char *result_buffer,
-                             int offset,
-                             const Type *dt) override {
-    if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<float32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<float64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int8>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int16>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint8>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint16>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-      // first fetch the data as u16, and then convert it to f32
-      uint16 half = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
-      return TypedConstant(bit::half_to_float(half));
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
   }
 
   template <typename T, typename... Args>
@@ -318,9 +274,7 @@ class LlvmProgramImpl : public ProgramImpl {
   ParallelExecutor compilation_workers;  // parallel compilation
 
  protected:
-  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
  private:
   std::size_t num_snode_trees_processed_{0};

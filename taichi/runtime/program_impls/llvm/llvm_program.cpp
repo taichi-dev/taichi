@@ -2,6 +2,8 @@
 
 #include "llvm/IR/Module.h"
 
+#include "taichi/codegen/cpu/codegen_cpu.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
@@ -24,7 +26,45 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
 
+#include "taichi/codegen/llvm/kernel_compiler.h"
+#include "taichi/codegen/llvm/compiled_kernel_data.h"
+
 namespace taichi::lang {
+namespace {
+FunctionType llvm_compiled_kernel_to_executable(
+    Arch arch,
+    TaichiLLVMContext *tlctx,
+    LlvmRuntimeExecutor *executor,
+    Kernel *kernel,
+    LLVMCompiledKernel llvm_compiled_kernel) {
+  TI_ASSERT(arch_uses_llvm(arch));
+
+  FunctionType func = nullptr;
+  if (arch_is_cpu(arch)) {
+    CPUModuleToFunctionConverter converter(tlctx, executor);
+    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
+  } else if (arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    CUDAModuleToFunctionConverter converter(tlctx, executor);
+    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
+#endif
+  } else if (arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    AMDGPUModuleToFunctionConverter converter(tlctx, executor);
+    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
+#endif
+  } else if (arch == Arch::wasm) {
+    // Not implemented
+  } else if (arch == Arch::dx12) {
+    // Not implemented
+  }
+
+  if (!func) {
+    TI_NOT_IMPLEMENTED;
+  }
+  return func;
+}
+}  // namespace
 
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
@@ -36,9 +76,15 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
 
 FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
                                       Kernel *kernel) {
-  auto codegen = KernelCodeGen::create(compile_config, kernel,
-                                       *runtime_exec_->get_llvm_context());
-  return codegen->compile_to_function();
+  // NOTE: Temporary implementation
+  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
+  auto &mgr = get_kernel_compilation_manager();
+  const auto &compiled = mgr.load_or_compile(compile_config, {}, *kernel);
+  auto &llvm_data = dynamic_cast<const llvm::CompiledKernelData &>(compiled);
+  return llvm_compiled_kernel_to_executable(
+      compile_config.arch, runtime_exec_->get_llvm_context(),
+      runtime_exec_.get(), kernel,
+      llvm_data.get_internal_data().compiled_data.clone());
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
@@ -126,26 +172,10 @@ void LlvmProgramImpl::cache_field(int snode_tree_id,
   cache_data_->fields[snode_tree_id] = std::move(ret);
 }
 
-void LlvmProgramImpl::dump_cache_data_to_disk() {
-  if (config->offline_cache) {
-    auto policy = offline_cache::string_to_clean_cache_policy(
-        config->offline_cache_cleaning_policy);
-    LlvmOfflineCacheFileWriter::clean_cache(
-        offline_cache::get_cache_path_by_arch(config->offline_cache_file_path,
-                                              config->arch),
-        policy, config->offline_cache_max_size_of_files,
-        config->offline_cache_cleaning_factor);
-    if (!cache_data_->kernels.empty()) {
-      LlvmOfflineCacheFileWriter writer{};
-      writer.set_data(std::move(cache_data_));
-
-      // Note: For offline-cache, new-metadata should be merged with
-      // old-metadata
-      writer.dump(offline_cache::get_cache_path_by_arch(
-                      config->offline_cache_file_path, config->arch),
-                  LlvmOfflineCache::LL, true);
-    }
-  }
+std::unique_ptr<KernelCompiler> LlvmProgramImpl::make_kernel_compiler() {
+  lang::llvm::KernelCompiler::Config cfg;
+  cfg.tlctx = runtime_exec_->get_llvm_context();
+  return std::make_unique<lang::llvm::KernelCompiler>(std::move(cfg));
 }
 
 LlvmProgramImpl *get_llvm_program(Program *prog) {

@@ -46,6 +46,7 @@ CompileConfig::CompileConfig() {
   ndarray_use_cached_allocator = true;
   real_matrix_scalarize = true;
   half2_vectorization = false;
+  make_cpu_multithreading_loop = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;

@@ -58,16 +58,6 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
 
     auto [begin, end] = get_range_for_bounds(stmt);
 
-    // adaptive block_dim
-    if (compile_config.cpu_block_dim_adaptive) {
-      int num_items = (stmt->end_value - stmt->begin_value) / std::abs(step);
-      int num_threads = stmt->num_cpu_threads;
-      int items_per_thread = std::max(1, num_items / (num_threads * 32));
-      // keep each task has at least 512 items to amortize scheduler overhead
-      // also saturate the value to 1024 for better load balancing
-      stmt->block_dim = std::min(1024, std::max(512, items_per_thread));
-    }
-
     call("cpu_parallel_range_for", get_arg(0),
          tlctx->get_constant(stmt->num_cpu_threads), begin, end,
          tlctx->get_constant(step), tlctx->get_constant(stmt->block_dim),
@@ -248,9 +238,9 @@ FunctionType CPUModuleToFunctionConverter::convert(
     // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
     for (int i = 0; i < (int)args.size(); i++) {
       if (args[i].is_array &&
-          context.get_context().device_allocation_type[i] !=
-              RuntimeContext::DevAllocType::kNone &&
-          context.get_context().array_runtime_sizes[i] > 0) {
+          context.device_allocation_type[i] !=
+              LaunchContextBuilder::DevAllocType::kNone &&
+          context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
             static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
         uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
@@ -258,7 +248,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
         context.set_array_device_allocation_type(
             i, LaunchContextBuilder::DevAllocType::kNone);
 
-        if (context.get_context().has_grad[i]) {
+        if (context.has_grad[i]) {
           DeviceAllocation *ptr_grad =
               static_cast<DeviceAllocation *>(context.get_grad_arg<void *>(i));
           uint64 host_ptr_grad =
@@ -281,12 +271,4 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
-
-FunctionType KernelCodeGenCPU::compile_to_function() {
-  TI_AUTO_PROF;
-  CPUModuleToFunctionConverter converter(
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, compile_kernel_to_module());
-}
 }  // namespace taichi::lang

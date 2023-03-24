@@ -255,6 +255,7 @@ RUN set -x && \
         && \
     clang++ -v && \
     true
+ENV CC="clang" CXX="clang++"
 
 FROM centos:7 AS manylinux2014
 USE manylinux2014-addons

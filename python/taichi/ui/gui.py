@@ -342,6 +342,41 @@ class GUI:
 
         self.core.set_img(self.img.ctypes.data)
 
+    def contour(self, scalar_field, normalize=False):
+        """Plot a contour view of a scalar field.
+        
+        The input scalar_field will be converted to a Numpy array first, and then plotted
+        by the Matplotlib colormap 'Plasma'. Notice this method will automatically perform
+        a bilinear interpolation on the field if the size of the field does not match with
+        the GUI window size.
+
+        Args:
+            scalar_field (ti.field): The scalar field being plotted.
+            normalize (bool, Optional): Display the normalized scalar field if set to True. 
+            Default is False.
+        """
+        import matplotlib.cm as cm
+        scalar_field_np = scalar_field.to_numpy()
+        if self.res != scalar_field_np.shape:
+            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0]))
+            x_idx = x * (scalar_field_np.shape[1] - 1)
+            y_idx = y * (scalar_field_np.shape[0] - 1)
+            x1 = x_idx.astype(int)
+            x2 = np.minimum(x1 + 1, scalar_field_np.shape[1] - 1)
+            y1 = y_idx.astype(int)
+            y2 = np.minimum(y1 + 1, scalar_field_np.shape[0] - 1)
+            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (1 - (y_idx - y1)) +\
+                scalar_field_np[y1, x2] * (x_idx - x1) * (1 - (y_idx - y1))
+            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (y_idx - y1) + \
+                scalar_field_np[y2, x2] * (x_idx - x1) * (y_idx - y1)
+            output = array_y1 + array_y2
+        else:
+            output = scalar_field_np
+        if normalize:
+            max, min = np.max(output), np.min(output)
+            output = (output - min) / (max - min)
+        self.set_image(cm.plasma(output))
+
     def circle(self, pos, color=0xFFFFFF, radius=1):
         """Draws a circle on canvas.
 

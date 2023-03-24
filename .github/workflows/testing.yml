@@ -18,7 +18,7 @@ env:
   TI_SKIP_VERSION_CHECK: 'ON'
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
-  CI_IMAGE_VERSION: '202303211008'
+  CI_IMAGE_VERSION: '202303241150'
 
 jobs:
   show_environ:
@@ -254,6 +254,50 @@ jobs:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
           retention-days: 7
+
+  build_and_test_manylinux2014:
+    name: Build and Test (manylinux2014)
+    needs: check_files
+    runs-on: [self-hosted, cuda, cn, release]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/build.py
+
+        env:
+          PY: "3.8"
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
+
+      - name: Test
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: "3.8"
+          TI_WANTED_ARCHS: "cuda,cpu"
 
   build_and_test_amdgpu_linux:
     name: Build and Test (AMDGPU)

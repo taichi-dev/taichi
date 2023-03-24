@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  CI_IMAGE_VERSION: '202303211008'
+  CI_IMAGE_VERSION: '202303241150'
 
 jobs:
   gpu_backends:

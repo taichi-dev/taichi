@@ -30,7 +30,6 @@ class KernelCodeGenDX12 : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif
-  FunctionType compile_to_function() override;
 };
 
 }  // namespace taichi::lang

@@ -23,12 +23,6 @@ class KernelCodeGenAMDGPU : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
-
-  bool supports_offline_cache() const override {
-    return true;
-  }
-
-  FunctionType compile_to_function() override;
 };
 
 class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {

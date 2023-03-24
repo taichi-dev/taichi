@@ -271,12 +271,4 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
-
-FunctionType KernelCodeGenCPU::compile_to_function() {
-  TI_AUTO_PROF;
-  CPUModuleToFunctionConverter converter(
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor());
-  return converter.convert(kernel, compile_kernel_to_module());
-}
 }  // namespace taichi::lang

@@ -285,5 +285,5 @@ def test_deprecate_struct_fill():
 @test_utils.test(arch=ti.cc)
 def test_cc_deprecation():
     ti.reset()
-    with pytest.warns(DeprecationWarning, match=r""):
+    with pytest.warns(DeprecationWarning, match=r"ti.cc will be deprecated"):
         ti.init(arch=ti.cc)

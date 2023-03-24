@@ -124,5 +124,5 @@ jobs:
              registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: ${{ matrix.python }}
+          PY: "3.8"
           TI_WANTED_ARCHS: "cuda,cpu"

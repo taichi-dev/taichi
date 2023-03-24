@@ -124,8 +124,7 @@ void KernelCompilationManager::dump() {
   // Dump cached CompiledKernelData to disk
   for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
-      const auto arch = k.compiled_kernel_data->arch();
-      auto cache_filename = make_filename(k.kernel_key, arch);
+      auto cache_filename = make_filename(k.kernel_key);
       if (try_lock_with_file(cache_filename)) {
         std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
         TI_ASSERT(fs.is_open());
@@ -164,8 +163,7 @@ void KernelCompilationManager::clean_offline_cache(
 }
 
 std::string KernelCompilationManager::make_filename(
-    const std::string &kernel_key,
-    Arch arch) const {
+    const std::string &kernel_key) const {
   return join_path(config_.offline_cache_path,
                    fmt::format(kCacheFilenameFormat, kernel_key));
 }
@@ -255,7 +253,7 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
 std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
     const std::string &kernel_key,
     Arch arch) {
-  const auto filename = make_filename(kernel_key, arch);
+  const auto filename = make_filename(kernel_key);
   if (std::ifstream ifs(filename, std::ios::in | std::ios::binary);
       ifs.is_open()) {
     CompiledKernelData::Err err;

@@ -326,7 +326,7 @@ class PyTaichi:
 
     def validate_fields_builder(self):
         for builder, tb in self.unfinalized_fields_builder.items():
-            raise RuntimeError(
+            raise TaichiRuntimeError(
                 f'Field builder {builder} is not finalized. '
                 f'Please call finalize() on it. Traceback:\n{tb}')
 

@@ -271,7 +271,8 @@ std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
 CacheData::CacheMode KernelCompilationManager::get_cache_mode(
     const CompileConfig &compile_config,
     const Kernel &kernel_def) {
-  return compile_config.offline_cache && kernel_def.ir_is_ast()
+  return compile_config.offline_cache && kernel_def.ir_is_ast() &&
+                 !kernel_def.is_evaluator
              ? CacheData::MemAndDiskCache
              : CacheData::MemCache;
 }

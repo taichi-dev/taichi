@@ -543,29 +543,29 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
 
     def helper1():
         @ti.experimental.real_func
-        def sum(l: ti.i32, r: ti.i32, R: ti.i32) -> ti.i32:
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
             if l == r:
                 return l
             else:
-                return sum(l, (l + r) // R, R) + sum((l + r) // R + 1, r, R)
+                return sum(l, (l + r) // 2) + sum((l + r) // 2 + 1, r)
 
         @ti.kernel
         def get_sum() -> ti.i32:
-            return sum(0, 99, 2)
+            return sum(0, 99)
 
         assert get_sum() == 99 * 50
 
     def helper2():
         @ti.experimental.real_func
-        def sum(l: ti.i32, r: ti.i32, R: ti.i32) -> ti.i32:
+        def sum(l: ti.i32, r: ti.i32) -> ti.i32:
             if l == r:
                 return l
             else:
-                return sum((l + r) // R + 1, r, R) + sum(l, (l + r) // R, R)
+                return sum((l + r) // 2 + 1, r) + sum(l, (l + r) // 2)
 
         @ti.kernel
         def get_sum() -> ti.i32:
-            return sum(0, 99, 2)
+            return sum(0, 99)
 
         assert get_sum() == 99 * 50
 

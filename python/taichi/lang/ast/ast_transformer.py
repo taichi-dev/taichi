@@ -511,7 +511,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     # extract format specifier from raw_string, and also handles positional arguments, if there are any
-    def extract_format_spec(raw_string, *raw_args, **keywords):
+    def extract_format_spec(raw_string, *raw_args, **raw_keywords):
         raw_brackets = re.findall(r'{(.*?)}', raw_string)
         brackets = []
         unnamed = 0
@@ -530,21 +530,28 @@ class ASTTransformer(Builder):
             brackets.append([item, spec])
 
         # check error first
-        for (item, _) in brackets:
-            assert isinstance(item, int) or isinstance(item, str)
-            if isinstance(item, int) and item >= len(raw_args):
-                raise TaichiSyntaxError(f'Index {item} is out of range.')
-            if isinstance(item, str) and item not in keywords:
+        max_args_index = max([t[0] for t in brackets if isinstance(t[0], int)], default=-1)
+        if max_args_index + 1 != len(raw_args):
+            raise TaichiSyntaxError(f'Expected {max_args_index + 1} positional argument(s), but received {len(raw_args)} instead.')
+        brackets_keywords = [t[0] for t in brackets if isinstance(t[0], str)]
+        for item in brackets_keywords:
+            if item not in raw_keywords:
                 raise TaichiSyntaxError(f'Keyword "{item}" is not found.')
+        for item in raw_keywords:
+            if item not in brackets_keywords:
+                raise TaichiSyntaxError(f'Keyword "{item}" is not used.')
 
         args = []
         for (item, spec) in brackets:
-            args.append([
-                '__ti_fmt_value__',
-                raw_args[item] if isinstance(item, int) else keywords[item],
-                spec
-            ])
-
+            new_item = raw_args[item] if isinstance(item, int) else raw_keywords[item]
+            if spec is not None:
+                args.append([
+                    '__ti_fmt_value__',
+                    new_item,
+                    spec
+                ])
+            else:
+                args.append(new_item)
         args.insert(0, re.sub(r'{.*?}', '{}', raw_string))
         return args
 

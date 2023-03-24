@@ -344,7 +344,7 @@ class GUI:
 
     def contour(self, scalar_field, normalize=False):
         """Plot a contour view of a scalar field.
-        
+
         The input scalar_field will be converted to a Numpy array first, and then plotted
         by the Matplotlib colormap 'Plasma'. Notice this method will automatically perform
         a bilinear interpolation on the field if the size of the field does not match with
@@ -352,13 +352,14 @@ class GUI:
 
         Args:
             scalar_field (ti.field): The scalar field being plotted.
-            normalize (bool, Optional): Display the normalized scalar field if set to True. 
+            normalize (bool, Optional): Display the normalized scalar field if set to True.
             Default is False.
         """
         import matplotlib.cm as cm
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
-            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0]))
+            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),
+                               np.linspace(0, 1, self.res[0]))
             x_idx = x * (scalar_field_np.shape[1] - 1)
             y_idx = y * (scalar_field_np.shape[0] - 1)
             x1 = x_idx.astype(int)

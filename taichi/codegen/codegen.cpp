@@ -25,7 +25,7 @@
 namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
-                             Kernel *kernel,
+                             const Kernel *kernel,
                              TaichiLLVMContext &tlctx)
     : prog(kernel->program),
       kernel(kernel),
@@ -36,7 +36,7 @@ KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
     const CompileConfig &compile_config,
-    Kernel *kernel,
+    const Kernel *kernel,
     TaichiLLVMContext &tlctx) {
 #ifdef TI_WITH_LLVM
   const auto arch = compile_config.arch;
@@ -71,53 +71,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 }
 #ifdef TI_WITH_LLVM
 
-std::optional<LLVMCompiledKernel>
-KernelCodeGen::maybe_read_compilation_from_cache(
-    const std::string &kernel_key) {
-  TI_AUTO_PROF;
-  auto *llvm_prog = get_llvm_program(prog);
-  const auto &reader = llvm_prog->get_cache_reader();
-  if (!reader) {
-    return std::nullopt;
-  }
-
-  LlvmOfflineCache::KernelCacheData cache_data;
-  auto &llvm_ctx = *tlctx_.get_this_thread_context();
-
-  if (!reader->get_kernel_cache(cache_data, kernel_key, llvm_ctx)) {
-    return std::nullopt;
-  }
-  return {std::move(cache_data.compiled_data)};
-}
-
-void KernelCodeGen::cache_kernel(const std::string &kernel_key,
-                                 const LLVMCompiledKernel &data) {
-  get_llvm_program(prog)->cache_kernel(kernel_key, data,
-                                       infer_launch_args(kernel));
-}
-
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
-  // NOTE: The code below (codegen + offline cache) is a little confusing. But
-  // don't worry, the KernelCompilationManager to be introduced to unify the
-  // implementation of the offline cache will resolve the problem.
-
-  bool enable_offline_cache = compile_config_.offline_cache &&
-                              this->supports_offline_cache() &&
-                              !kernel->is_evaluator;
-
-  // Generate offline cache key & Try loading kernel from offline cache
-  if (enable_offline_cache) {
-    std::string key = get_hashed_offline_cache_key(compile_config_, {}, kernel);
-    kernel->set_kernel_key_for_cache(key);
-    if (auto res = maybe_read_compilation_from_cache(key)) {
-      TI_DEBUG("Create kernel '{}' from cache (key='{}')", kernel->get_name(),
-               key);
-      return std::move(*res);
-    }
-  }
-
-  // Compile & Cache it
-
   irpass::ast_to_ir(compile_config_, *kernel, false);
 
   auto block = dynamic_cast<Block *>(kernel->ir.get());
@@ -144,16 +98,7 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-  auto linked = tlctx_.link_compiled_tasks(std::move(data));
-
-  if (enable_offline_cache) {
-    const auto &key = kernel->get_cached_kernel_key();
-    TI_ASSERT(!key.empty());
-    TI_DEBUG("Cache kernel '{}' (key='{}')", kernel->get_name(), key);
-    cache_kernel(key, linked);
-  }
-
-  return linked;
+  return tlctx_.link_compiled_tasks(std::move(data));
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(
@@ -164,7 +109,7 @@ ModuleToFunctionConverter::ModuleToFunctionConverter(
 
 FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
                                                 LLVMCompiledKernel data) const {
-  return convert(kernel->name, infer_launch_args(kernel), std::move(data));
+  return convert(kernel->name, kernel->parameter_list, std::move(data));
 }
 
 #endif

@@ -93,7 +93,9 @@ class TI_DLL_EXPORT Program {
  public:
   using Kernel = taichi::lang::Kernel;
 
-  uint64 *result_buffer{nullptr};  // Note result_buffer is used by all backends
+  uint64 *result_buffer{nullptr};  // Note that this result_buffer is used
+                                   // only for runtime JIT functions (e.g.
+                                   // `runtime_memory_allocate_aligned`)
 
   std::vector<std::unique_ptr<Kernel>> kernels;
 
@@ -182,10 +184,6 @@ class TI_DLL_EXPORT Program {
   Kernel &get_snode_writer(SNode *snode);
 
   uint64 fetch_result_uint64(int i);
-
-  TypedConstant fetch_result(int offset, const Type *dt) {
-    return program_impl_->fetch_result((char *)result_buffer, offset, dt);
-  }
 
   template <typename T>
   T fetch_result(int i) {
@@ -326,8 +324,6 @@ class TI_DLL_EXPORT Program {
   Identifier get_next_global_id(const std::string &name = "") {
     return Identifier(global_id_counter_++, name);
   }
-
-  void prepare_runtime_context(RuntimeContext *ctx);
 
   /** Enqueue a custom compute op to the current program execution flow.
    *

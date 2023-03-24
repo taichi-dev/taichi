@@ -15,8 +15,8 @@ FunctionType register_params_to_executable(
     gfx::GfxRuntime::RegisterParams &&params,
     gfx::GfxRuntime *runtime) {
   auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
+  return [runtime, handle](LaunchContextBuilder &ctx) {
+    runtime->launch_kernel(handle, ctx);
   };
 }
 
@@ -87,9 +87,13 @@ std::unique_ptr<AotModuleBuilder> OpenglProgramImpl::make_aot_module_builder(
 DeviceAllocation OpenglProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return get_compute_device()->allocate_memory(
+  DeviceAllocation alloc;
+  RhiResult res = get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false});
+       /*export_sharing=*/false},
+      &alloc);
+  TI_ASSERT(res == RhiResult::success);
+  return alloc;
 }
 DeviceAllocation OpenglProgramImpl::allocate_texture(
     const ImageParams &params) {

@@ -329,3 +329,15 @@ def test_n_loop_var_neq_dimension():
             match=
             "Ndrange for loop with number of the loop variables not equal to"):
         iter()
+
+
+@test_utils.test()
+def test_2d_loop_over_ndarray():
+    @ti.kernel
+    def foo(arr: ti.types.ndarray(dtype=ti.i32, ndim=1)):
+        M = arr.shape[0]
+        for i, j in ti.ndrange(M, M):
+            verts = ti.math.vec4(arr[i], arr[i + 1], arr[j], arr[j + 1])
+
+    array = ti.ndarray(ti.i32, shape=(16, ))
+    foo(array)

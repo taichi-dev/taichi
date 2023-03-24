@@ -45,6 +45,8 @@ CompileConfig::CompileConfig() {
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
   real_matrix_scalarize = true;
+  half2_vectorization = false;
+  make_cpu_multithreading_loop = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;
@@ -54,7 +56,7 @@ CompileConfig::CompileConfig() {
   // LLVM backend options:
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
-  print_kernel_nvptx = false;
+  print_kernel_asm = false;
   print_kernel_amdgcn = false;
   print_kernel_llvm_ir_optimized = false;
 

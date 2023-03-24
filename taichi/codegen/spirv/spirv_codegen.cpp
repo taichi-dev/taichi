@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 
+#include "taichi/codegen/codegen_utils.h"
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/statements.h"
@@ -97,6 +98,19 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  // Replace the wild '%' in the format string with "%%".
+  std::string sanitize_format_string(std::string const &str) {
+    std::string sanitized_str;
+    for (char c : str) {
+      if (c == '%') {
+        sanitized_str += "%%";
+      } else {
+        sanitized_str += c;
+      }
+    }
+    return sanitized_str;
+  }
+
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
@@ -151,17 +165,21 @@ class TaskCodegen : public IRVisitor {
     std::string formats;
     std::vector<Value> vals;
 
-    for (auto const &content : stmt->contents) {
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type, Arch::vulkan),
+            Arch::vulkan);
       } else {
         auto arg_str = std::get<std::string>(content);
-        formats += arg_str;
+        formats += sanitize_format_string(arg_str);
       }
     }
     ir_->call_debugprintf(formats, vals);
@@ -247,6 +265,9 @@ class TaskCodegen : public IRVisitor {
             ir_->get_primitive_type(dt), origin_val.stype.storage_class);
         ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
                                   offset_val);
+        if (stmt->origin->as<AllocaStmt>()->is_shared) {
+          ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+        }
       } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
         spirv::Value dt_bytes = ir_->int_immediate_number(
             ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
@@ -1440,7 +1461,12 @@ class TaskCodegen : public IRVisitor {
         addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        // Shared arrays have already created an accesschain, use it directly.
+        addr_ptr = ir_->query_value(stmt->dest->raw_name());
+      } else {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      }
     }
 
     auto ret_type = ir_->get_primitive_type(dt);
@@ -1756,6 +1782,14 @@ class TaskCodegen : public IRVisitor {
   }
 
   void gen_array_range(Stmt *stmt) {
+    /* Fix issue 7493
+     *
+     * Prevent repeated range generation for the same array
+     * when loop range has multiple dimensions.
+     */
+    if (ir_->check_value_existence(stmt->raw_name())) {
+      return;
+    }
     int num_operands = stmt->num_operands();
     for (int i = 0; i < num_operands; i++) {
       gen_array_range(stmt->operand(i));

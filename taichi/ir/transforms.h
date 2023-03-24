@@ -31,6 +31,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void eliminate_immutable_local_vars(IRNode *root);
 void scalarize(IRNode *root);
+void vectorize_half2(IRNode *root);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
@@ -71,6 +72,8 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
+void make_cpu_multithreaded_range_for(IRNode *root,
+                                      const CompileConfig &config);
 void make_mesh_thread_local(IRNode *root,
                             const CompileConfig &config,
                             const MakeBlockLocalPass::Args &args);
@@ -197,7 +200,7 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 
 void ast_to_ir(const CompileConfig &config,
-               Kernel &kernel,
+               const Kernel &kernel,
                bool to_executable = true);
 
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);

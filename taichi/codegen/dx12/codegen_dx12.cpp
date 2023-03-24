@@ -23,7 +23,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 
   TaskCodeGenLLVMDX12(const CompileConfig &config,
                       TaichiLLVMContext &tlctx,
-                      Kernel *kernel,
+                      const Kernel *kernel,
                       IRNode *ir)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF
@@ -210,7 +210,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 static std::vector<uint8_t> generate_dxil_from_llvm(
     LLVMCompiledTask &compiled_data,
     const CompileConfig &config,
-    taichi::lang::Kernel *kernel) {
+    const taichi::lang::Kernel *kernel) {
   // generate dxil from llvm ir.
   auto offloaded_local = compiled_data.tasks;
   auto module = compiled_data.module.get();
@@ -270,6 +270,6 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
 
 FunctionType KernelCodeGenDX12::compile_to_function() {
   // FIXME: implement compile_to_function.
-  return [](RuntimeContext &ctx) {};
+  return [](LaunchContextBuilder &ctx) {};
 }
 }  // namespace taichi::lang

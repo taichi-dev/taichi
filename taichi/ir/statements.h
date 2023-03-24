@@ -352,6 +352,11 @@ class ExternalPtrStmt : public Stmt {
   // SOA: element_dim > 0
   int element_dim;
 
+  // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
+
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
   ExternalPtrStmt(Stmt *base_ptr,
@@ -853,10 +858,13 @@ class IfStmt : public Stmt {
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit PrintStmt(const std::vector<EntryType> &contents_)
-      : contents(contents_) {
+  PrintStmt(const std::vector<EntryType> &contents_,
+            const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1272,6 +1280,10 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
+  // irpass::vectorize_half2() will override the ret_type of GetChStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
   GetChStmt(Stmt *input_ptr,

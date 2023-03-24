@@ -104,35 +104,16 @@ class ConstantFold : public BasicStmtVisitor {
                       true};
     auto *ker = get_jit_evaluator_kernel(id);
     auto launch_ctx = ker->make_launch_context();
-    launch_ctx.set_arg_raw(0, lhs.val_u64);
-    launch_ctx.set_arg_raw(1, rhs.val_u64);
+    launch_ctx.set_arg(0, lhs);
+    launch_ctx.set_arg(1, rhs);
     {
       std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
       (*ker)(compile_config, launch_ctx);
-      ret.val_i64 = program->fetch_result<int64_t>(0);
-    }
-    return true;
-  }
-
-  bool jit_evaluate_unary_op(TypedConstant &ret,
-                             UnaryOpStmt *stmt,
-                             const TypedConstant &operand) {
-    if (!is_good_type(ret.dt))
-      return false;
-    JITEvaluatorId id{std::this_thread::get_id(),
-                      (int)stmt->op_type,
-                      ret.dt,
-                      operand.dt,
-                      stmt->cast_type,
-                      "",
-                      false};
-    auto *ker = get_jit_evaluator_kernel(id);
-    auto launch_ctx = ker->make_launch_context();
-    launch_ctx.set_arg_raw(0, operand.val_u64);
-    {
-      std::lock_guard<std::mutex> _(program->jit_evaluator_cache_mut);
-      (*ker)(compile_config, launch_ctx);
-      ret.val_i64 = program->fetch_result<int64_t>(0);
+      if (arch_uses_llvm(compile_config.arch)) {
+        ret = launch_ctx.fetch_ret({0});
+      } else {
+        ret.val_i64 = program->fetch_result<int64_t>(0);
+      }
     }
     return true;
   }
@@ -155,10 +136,7 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
     if (jit_evaluate_binary_op(new_constant, stmt, lhs->val, rhs->val)) {
-      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-      stmt->replace_usages_with(evaluated.get());
-      modifier.insert_before(stmt, std::move(evaluated));
-      modifier.erase(stmt);
+      insert_and_erase(stmt, new_constant);
     }
   }
 
@@ -171,37 +149,76 @@ class ConstantFold : public BasicStmtVisitor {
     auto operand = stmt->operand->cast<ConstStmt>();
     if (!operand)
       return;
-    if (stmt->is_cast()) {
-      bool cast_available = true;
+    if (stmt->is_cast() && stmt->op_type == UnaryOpType::cast_bits) {
       TypedConstant new_constant(stmt->ret_type);
-      auto operand = stmt->operand->cast<ConstStmt>();
-      if (stmt->op_type == UnaryOpType::cast_bits) {
-        new_constant.value_bits = operand->val.value_bits;
-      } else {
-        if (stmt->cast_type == PrimitiveType::f32) {
-          new_constant.val_f32 = float32(operand->val.val_cast_to_float64());
-        } else if (stmt->cast_type == PrimitiveType::f64) {
-          new_constant.val_f64 = operand->val.val_cast_to_float64();
-        } else {
-          cast_available = false;
-        }
-      }
-      if (cast_available) {
-        auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-        stmt->replace_usages_with(evaluated.get());
-        modifier.insert_before(stmt, std::move(evaluated));
-        modifier.erase(stmt);
+      new_constant.value_bits = operand->val.value_bits;
+      insert_and_erase(stmt, new_constant);
+      return;
+    }
+    const auto dt = operand->val.dt;
+    if (!is_good_type(dt))
+      return;
+    const auto dst_type = stmt->ret_type;
+    switch (stmt->op_type) {
+#define HANDLE_REAL_AND_INTEGRAL_UNARY(OP_TYPE, OP_CPP)                     \
+  case UnaryOpType::OP_TYPE: {                                              \
+    if (dt->is_primitive(PrimitiveTypeID::f32) ||                           \
+        dt->is_primitive(PrimitiveTypeID::f64)) {                           \
+      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_float())); \
+      insert_and_erase(stmt, res);                                          \
+    } else if (dt->is_primitive(PrimitiveTypeID::i32) ||                    \
+               dt->is_primitive(PrimitiveTypeID::i64)) {                    \
+      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_int()));   \
+      insert_and_erase(stmt, res);                                          \
+    } else if (dt->is_primitive(PrimitiveTypeID::u32) ||                    \
+               dt->is_primitive(PrimitiveTypeID::u64)) {                    \
+      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint()));  \
+      insert_and_erase(stmt, res);                                          \
+    }                                                                       \
+    break;                                                                  \
+  }
+
+      HANDLE_REAL_AND_INTEGRAL_UNARY(neg, -)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(sqrt, std::sqrt)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(round, std::round)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(floor, std::floor)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(ceil, std::ceil)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(abs, std::fabs)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(sin, std::sin)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(asin, std::asin)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(cos, std::cos)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(acos, std::acos)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(tan, std::tan)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(tanh, std::tanh)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(log, std::log)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(exp, std::exp)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(cast_value, )
+      HANDLE_REAL_AND_INTEGRAL_UNARY(rsqrt, 1.0 / std::sqrt)
+      HANDLE_REAL_AND_INTEGRAL_UNARY(logic_not, !)
+#undef HANDLE_REAL_AND_INTEGRAL_UNARY
+
+#define HANDLE_INTEGRAL_UNARY(OP_TYPE, OP_CPP)                             \
+  case UnaryOpType::OP_TYPE: {                                             \
+    if (dt->is_primitive(PrimitiveTypeID::i32) ||                          \
+        dt->is_primitive(PrimitiveTypeID::i64)) {                          \
+      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_int()));  \
+      insert_and_erase(stmt, res);                                         \
+    } else if (dt->is_primitive(PrimitiveTypeID::u32) ||                   \
+               dt->is_primitive(PrimitiveTypeID::u64)) {                   \
+      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint())); \
+      insert_and_erase(stmt, res);                                         \
+    }                                                                      \
+    break;                                                                 \
+  }
+
+      HANDLE_INTEGRAL_UNARY(bit_not, ~)
+#undef HANDLE_INTEGRAL_UNARY
+
+      default:
         return;
-      }
     }
-    auto dst_type = stmt->ret_type;
-    TypedConstant new_constant(dst_type);
-    if (jit_evaluate_unary_op(new_constant, stmt, operand->val)) {
-      auto evaluated = Stmt::make<ConstStmt>(TypedConstant(new_constant));
-      stmt->replace_usages_with(evaluated.get());
-      modifier.insert_before(stmt, std::move(evaluated));
-      modifier.erase(stmt);
-    }
+
+    return;
   }
 
   static bool run(IRNode *node,
@@ -220,6 +237,14 @@ class ConstantFold : public BasicStmtVisitor {
     }
 
     return modified;
+  }
+
+ private:
+  void insert_and_erase(Stmt *stmt, const TypedConstant &new_constant) {
+    auto evaluated = Stmt::make<ConstStmt>(new_constant);
+    stmt->replace_usages_with(evaluated.get());
+    modifier.insert_before(stmt, std::move(evaluated));
+    modifier.erase(stmt);
   }
 };
 

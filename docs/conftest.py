@@ -45,7 +45,10 @@ ti.init()
 i, j, k = (0, 0, 0)
 N = 16
 M = 8
+'''
 
+PRELUDES['gui'] = '''
+gui = ti.GUI('Title', res=(400, 400))
 '''
 
 
@@ -194,9 +197,14 @@ class MarkdownItem(pytest.Item):
         if spec.known_error:
             warnings.warn('Known Error, please fix it')
             pytest.skip('KnownError')
-            return
 
-        source = [PRELUDES[p] for p in spec.preludes] + [spec.code]
+        preludes = list(spec.preludes)
+        if '-init' in preludes:
+            preludes.remove('-init')
+        else:
+            preludes.insert(0, 'init')
+
+        source = [PRELUDES[p] for p in preludes] + [spec.code]
         source = ''.join(source)
         fn = f'<snippet:{uuid.uuid4()}>'
         code = compile(source, fn, 'exec')

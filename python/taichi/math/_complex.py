@@ -157,8 +157,7 @@ def cexp(z):
     `z` is a 2d vector treated as a complex number.
 
     Args:
-        z (:class:`~taichi.math.vec2`): The base.
-        a (float): The exponent.
+        z (:class:`~taichi.math.vec2`): The exponent.
 
     Example::
 
@@ -168,7 +167,7 @@ def cexp(z):
         >>>     w = ti.math.cexp(z)  # [1.468694, 2.287355]
 
     Returns:
-        :class:`~taichi.math.vec2`: The power :math:`z^a`
+        :class:`~taichi.math.vec2`: The power :math:`exp(z)`
     """
     r = ti.exp(z[0])
     return vec2(r * ti.cos(z[1]), r * ti.sin(z[1]))

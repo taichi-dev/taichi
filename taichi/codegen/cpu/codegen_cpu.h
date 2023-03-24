@@ -12,7 +12,7 @@ namespace taichi::lang {
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
   explicit KernelCodeGenCPU(const CompileConfig &compile_config,
-                            Kernel *kernel,
+                            const Kernel *kernel,
                             TaichiLLVMContext &tlctx)
       : KernelCodeGen(compile_config, kernel, tlctx) {
   }
@@ -44,7 +44,7 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
   using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
-                       const std::vector<LlvmLaunchArgInfo> &args,
+                       const std::vector<Callable::Parameter> &args,
                        LLVMCompiledKernel data) const override;
 };
 

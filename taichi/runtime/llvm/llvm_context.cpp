@@ -490,6 +490,12 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
 
       link_module_with_cuda_libdevice(module);
 
+#ifdef TI_WITH_CUDA
+      int cap = CUDAContext::get_instance().get_compute_capability();
+      if (cap >= 60)
+        link_module_with_custom_cuda_library(module);
+#endif
+
       // To prevent potential symbol name conflicts, we use "cuda_vprintf"
       // instead of "vprintf" in llvm/runtime.cpp. Now we change it back for
       // linking
@@ -553,6 +559,25 @@ std::unique_ptr<llvm::Module> TaichiLLVMContext::module_from_file(
   }
 
   return module;
+}
+
+void TaichiLLVMContext::link_module_with_custom_cuda_library(
+    std::unique_ptr<llvm::Module> &module) {
+  std::string cuda_library_path = get_custom_cuda_library_path();
+  if (!cuda_library_path.empty()) {
+    std::unique_ptr<llvm::Module> cuda_library_module =
+        module_from_bitcode_file(
+            fmt::format("{}/{}", runtime_lib_dir(),
+                        "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc"),
+            get_this_thread_context());
+
+    module->setDataLayout(cuda_library_module->getDataLayout());
+    bool failed =
+        llvm::Linker::linkModules(*module, std::move(cuda_library_module));
+    if (failed) {
+      TI_ERROR("cuda_runtime.bc linking failure.");
+    }
+  }
 }
 
 void TaichiLLVMContext::link_module_with_cuda_libdevice(

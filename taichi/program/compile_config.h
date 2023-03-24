@@ -40,6 +40,8 @@ struct CompileConfig {
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
   bool real_matrix_scalarize;
+  bool half2_vectorization;
+  bool make_cpu_multithreading_loop;
   DataType default_fp;
   DataType default_ip;
   DataType default_up;
@@ -62,7 +64,7 @@ struct CompileConfig {
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
   bool print_kernel_llvm_ir_optimized;
-  bool print_kernel_nvptx;
+  bool print_kernel_asm;
   bool print_kernel_amdgcn;
 
   // CUDA/AMDGPU backend options:

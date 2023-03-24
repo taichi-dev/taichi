@@ -10,7 +10,7 @@ namespace lang {
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
   KernelCodeGenAMDGPU(const CompileConfig &config,
-                      Kernel *kernel,
+                      const Kernel *kernel,
                       TaichiLLVMContext &tlctx)
       : KernelCodeGen(config, kernel, tlctx) {
   }
@@ -39,7 +39,7 @@ class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
   using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
-                       const std::vector<LlvmLaunchArgInfo> &args,
+                       const std::vector<Callable::Parameter> &args,
                        LLVMCompiledKernel data) const override;
 };
 

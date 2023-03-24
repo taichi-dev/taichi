@@ -6,6 +6,7 @@ import warnings
 from collections import ChainMap
 from sys import version_info
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
                          matrix, mesh)
@@ -18,7 +19,7 @@ from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
                                    TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
-from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
+from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.snode import append, deactivate, length
 from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
@@ -392,13 +393,25 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_FormattedValue(ctx, node):
+        node.ptr = build_stmt(ctx, node.value)
+        if node.format_spec is None or len(node.format_spec.values) == 0:
+            return node.ptr
+        values = node.format_spec.values
+        assert len(values) == 1
+        format_str = values[0].s
+        assert format_str is not None
+        # distinguished from normal list
+        return ['__ti_fmt_value__', node.ptr, format_str]
+
+    @staticmethod
     def build_JoinedStr(ctx, node):
         str_spec = ''
         args = []
         for sub_node in node.values:
             if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
-                args.append(build_stmt(ctx, sub_node.value))
+                args.append(build_stmt(ctx, sub_node))
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
             elif isinstance(sub_node, ast.Str):
@@ -588,7 +601,8 @@ class ASTTransformer(Builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_sparse_matrix(
-                            to_taichi_type(ctx.arg_features[i])))
+                            to_taichi_type(ctx.arg_features[i]),
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 ndarray_type.NdarrayType):
                     ctx.create_variable(
@@ -596,30 +610,35 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
-                            ctx.arg_features[i][3]))
+                            ctx.arg_features[i][3],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.TextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_texture_arg(
-                            ctx.arg_features[i][0]))
+                            ctx.arg_features[i][0],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.RWTextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
                             ctx.arg_features[i][0], ctx.arg_features[i][1],
-                            ctx.arg_features[i][2]))
+                            ctx.arg_features[i][2],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name))
                 else:
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name))
             impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []
@@ -734,7 +753,7 @@ class ASTTransformer(Builder):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
-                        not is_vector(values) else iter(values.to_list())
+                        values.ndim == 1 else iter(values.to_list())
                 else:
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
@@ -1009,7 +1028,7 @@ class ASTTransformer(Builder):
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
             val = ti_ops.bit_and(val, op(l, r))
-        if not isinstance(val, bool):
+        if not isinstance(val, (bool, np.bool_)):
             val = ti_ops.cast(val, primitive_types.i32)
         node.ptr = val
         return node.ptr
@@ -1467,7 +1486,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def ti_format_list_to_assert_msg(raw):
-        entries = impl.ti_format_list_to_content_entries([raw])
+        #TODO: ignore formats here for now
+        entries, _ = impl.ti_format_list_to_content_entries([raw])
         msg = ""
         args = []
         for entry in entries:

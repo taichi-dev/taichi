@@ -33,6 +33,12 @@ In this section, we will write a Taichi kernel for generating images for [Julia 
 └── module.tcm              // the compiled Taichi kernel artifact
 ```
 
+Before we start, it is recommended to install Taichi through `taichi-nightly` Python wheels using the following command. Be aware that there's no strong version compatibility enforced yet, so it's highly recommended to use the Taichi built from exactly the same commit.
+
+```shell
+pip install -i https://pypi.taichi.graphics/simple/ taichi-nightly
+```
+
 ### 1. Compile Taichi kernel in Python script
 
 We firstly write a Python script named `app.py`, which compiles the Taichi kernel as an artifact. Save the following code to your local machine and run the program, you will obtain an archived `module.tcm` in the same directory as `app.py`.
@@ -215,10 +221,10 @@ cmake -B build
 cmake --build build
 ```
 
-Return back to the project directory and run the executable TaichiAOT demo:
+Run the executable TaichiAOT demo:
 
 ```shell
-cd .. && ./build/TaichiAOT
+./build/TaichiAOT
 ```
 
 An image of Julia fractal shown below is saved as `result.ppm` in the project directory.

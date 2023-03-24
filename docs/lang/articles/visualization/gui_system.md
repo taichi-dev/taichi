@@ -291,7 +291,7 @@ ti.GUI.WHEEL   # Mouse Wheel Scrolling
 
 An *event filter* is a combined list of *key*, *type*, and *(type, key)* tuple. For example:
 
-```python
+```python preludes:gui
 # if ESC pressed or released:
 gui.get_event(ti.GUI.ESCAPE)
 
@@ -306,16 +306,17 @@ gui.get_event((ti.GUI.PRESS, ti.GUI.ESCAPE), (ti.GUI.RELEASE, ti.GUI.SPACE))
 
 `gui.get_event()` pops an event from the queue and saves it to `gui.event`. For example:
 
-```python
+```python preludes:gui
 if gui.get_event():
     print('Got event, key =', gui.event.key)
 ```
 
 The following code defines that the `while` loop goes on until **ESC** is pressed:
 
-```python
-gui = ti.GUI('Title', (640, 480))
-while not gui.get_event(ti.GUI.ESCAPE):
+```python preludes:gui
+while gui.running:
+    if gui.get_event(ti.GUI.ESCAPE):
+        break
     gui.show()
 ```
 
@@ -323,8 +324,8 @@ while not gui.get_event(ti.GUI.ESCAPE):
 
 For example:
 
-```python
-while True:
+```python preludes:gui
+while gui.running:
     gui.get_event()  # must be called before is_pressed
     if gui.is_pressed('a', ti.GUI.LEFT):
         print('Go left!')
@@ -342,7 +343,7 @@ Call `gui.get_event()` before calling `gui.is_pressed()`. Otherwise, `gui.is_pre
 
 `gui.get_cursor_pos()` returns the cursor's current position in the window. The return value is a pair of floats in the range `[0.0, 1.0]`. For example:
 
-```python
+```python preludes:gui
 mouse_x, mouse_y = gui.get_cursor_pos()
 ```
 

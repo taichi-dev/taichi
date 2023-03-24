@@ -860,6 +860,8 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
+    // host only
+    /*
     auto i = atomic_add_i32(&mem_req_queue->tail, 1);
     taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
                           "Too many memory allocation requests.");
@@ -874,6 +876,8 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
 #endif
     };
     return r->ptr;
+    */
+    return (Ptr)vm_allocator(memory_pool, size, alignment);
   }
 }
 

@@ -2,6 +2,7 @@ import ast
 import collections.abc
 import itertools
 import operator
+import re
 import warnings
 from collections import ChainMap
 from sys import version_info
@@ -509,6 +510,45 @@ class ASTTransformer(Builder):
             module="taichi")
 
     @staticmethod
+    # extract format specifier from raw_string, and also handles positional arguments, if there are any
+    def extract_format_spec(raw_string, *raw_args, **keywords):
+        raw_brackets = re.findall(r'{(.*?)}', raw_string)
+        brackets = []
+        unnamed = 0
+        for bracket in raw_brackets:
+            item, spec = bracket.split(':') if ':' in bracket else (bracket,
+                                                                    None)
+            if item.isdigit():
+                item = int(item)
+            # handle unnamed positional args
+            if item == '':
+                item = unnamed
+                unnamed += 1
+            # handle empty spec
+            if spec == '':
+                spec = None
+            brackets.append([item, spec])
+
+        # check error first
+        for (item, _) in brackets:
+            assert isinstance(item, int) or isinstance(item, str)
+            if isinstance(item, int) and item >= len(raw_args):
+                raise TaichiSyntaxError(f'Index {item} is out of range.')
+            if isinstance(item, str) and item not in keywords:
+                raise TaichiSyntaxError(f'Keyword "{item}" is not found.')
+
+        args = []
+        for (item, spec) in brackets:
+            args.append([
+                '__ti_fmt_value__',
+                raw_args[item] if isinstance(item, int) else keywords[item],
+                spec
+            ])
+
+        args.insert(0, re.sub(r'{.*?}', '{}', raw_string))
+        return args
+
+    @staticmethod
     def build_Call(ctx, node):
         if ASTTransformer.get_decorator(ctx, node) == 'static':
             with ctx.static_scope_guard():
@@ -543,8 +583,10 @@ class ASTTransformer(Builder):
 
         if isinstance(node.func, ast.Attribute) and isinstance(
                 node.func.value.ptr, str) and node.func.attr == 'format':
-            args.insert(0, node.func.value.ptr)
-            node.ptr = impl.ti_format(*args, **keywords)
+            raw_string = node.func.value.ptr
+            args = ASTTransformer.extract_format_spec(raw_string, *args,
+                                                      **keywords)
+            node.ptr = impl.ti_format(*args)
             return node.ptr
 
         if id(func) == id(Matrix) or id(func) == id(Vector):

@@ -889,11 +889,10 @@ def ti_print(*_vars, sep=' ', end='\n'):
 
 
 @taichi_scope
-def ti_format(*args, **kwargs):
+def ti_format(*args):
     content = args[0]
     mixed = args[1:]
     new_mixed = []
-    new_mixed_kwargs = {}
     args = []
     for x in mixed:
         # x is a (formatted) Expr
@@ -903,17 +902,7 @@ def ti_format(*args, **kwargs):
             args.append(x)
         else:
             new_mixed.append(x)
-    for k, v in kwargs.items():
-        if isinstance(v, Expr):
-            new_mixed_kwargs[k] = '{}'
-            args.append(v)
-        else:
-            new_mixed_kwargs[k] = v
-    try:
-        content = content.format(*new_mixed, **new_mixed_kwargs)
-    except ValueError:
-        print('Number formatting is not supported with Taichi fields')
-        exit(1)
+    content = content.format(*new_mixed)
     res = content.split('{}')
     assert len(res) == len(
         args

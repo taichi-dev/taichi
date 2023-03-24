@@ -319,7 +319,7 @@ class PyTaichi:
         self.unfinalized_fields_builder = {}
 
     def initialize_fields_builder(self, builder):
-        self.unfinalized_fields_builder[builder] = get_traceback()
+        self.unfinalized_fields_builder[builder] = get_traceback(2)
 
     def finalize_fields_builder(self, builder):
         self.unfinalized_fields_builder.pop(builder)

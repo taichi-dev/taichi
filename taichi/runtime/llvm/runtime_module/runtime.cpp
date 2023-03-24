@@ -566,7 +566,6 @@ struct LLVMRuntime {
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
-  MemRequestQueue *mem_req_queue;
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
@@ -860,23 +859,6 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
-    // host only
-    /*
-    auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-    taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
-                          "Too many memory allocation requests.");
-    auto volatile r = &mem_req_queue->requests[i];
-    atomic_exchange_u64((uint64 *)&r->size, size);
-    atomic_exchange_u64((uint64 *)&r->alignment, alignment);
-
-    // wait for host to allocate
-    while (r->ptr == nullptr) {
-#if defined(ARCH_cuda)
-      system_memfence();
-#endif
-    };
-    return r->ptr;
-    */
     return (Ptr)vm_allocator(memory_pool, size, alignment);
   }
 }
@@ -896,11 +878,6 @@ void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
                                      uint64 *result) {
   *result = taichi_union_cast_with_different_sizes<uint64>(
       runtime->allocate_aligned(size, alignment));
-}
-
-void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
-  runtime->set_result(taichi_result_buffer_ret_value_id,
-                      runtime->mem_req_queue);
 }
 
 void runtime_initialize(
@@ -940,10 +917,6 @@ void runtime_initialize(
   runtime->memory_pool = memory_pool;
 
   runtime->total_requested_memory = 0;
-
-  // runtime->allocate ready to use
-  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);

@@ -369,6 +369,11 @@ def init(arch=None,
         raise KeyError(
             "'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead."
         )
+
+    if arch == cc:
+        warnings.warn(
+            'ti.cc will be deprecated in favor of TiRT and its C API, if you still need it please let us know at https://github.com/taichi-dev/taichi/issues/7629.',
+            DeprecationWarning)
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.

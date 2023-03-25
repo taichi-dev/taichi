@@ -280,3 +280,10 @@ def test_deprecate_struct_fill():
             r"fill\(\) on ti.Struct is deprecated, and it will be removed in Taichi v1.6.0."
     ):
         run()
+
+
+@test_utils.test(arch=ti.cc)
+def test_cc_deprecation():
+    ti.reset()
+    with pytest.warns(DeprecationWarning, match=r"ti.cc will be deprecated"):
+        ti.init(arch=ti.cc)

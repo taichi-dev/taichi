@@ -8,8 +8,7 @@
 #define VK_NO_PROTOTYPES 1
 #endif  // VK_NO_PROTOTYPES
 
-#include <vulkan/vulkan_core.h>
-
+#include <taichi/rhi/vulkan/vulkan_common.h>
 #include <taichi/rhi/device.h>
 #include <taichi/program/kernel_profiler.h>
 

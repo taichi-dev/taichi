@@ -8,7 +8,7 @@
 
 namespace taichi::lang {
 
-namespace llvm {
+namespace LLVM {
 
 class CompiledKernelData : public lang::CompiledKernelData {
  public:
@@ -61,7 +61,7 @@ class CompiledKernelData : public lang::CompiledKernelData {
   Err dump_impl(CompiledKernelDataFile &file) const override;
 
  private:
-  ::llvm::LLVMContext llvm_ctx_;
+  llvm::LLVMContext llvm_ctx_;
   Arch arch_;
   InternalData data_;
 };

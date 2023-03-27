@@ -6,7 +6,7 @@
 #include "taichi/codegen/llvm/compiled_kernel_data.h"
 
 namespace taichi::lang {
-namespace llvm {
+namespace LLVM {
 
 KernelCompiler::KernelCompiler(Config config) : config_(std::move(config)) {
 }
@@ -33,7 +33,7 @@ KernelCompiler::CKDPtr KernelCompiler::compile(
     const DeviceCapabilityConfig &device_caps,
     const Kernel &kernel_def,
     IRNode &chi_ir) const {
-  llvm::CompiledKernelData::InternalData data;
+  LLVM::CompiledKernelData::InternalData data;
   auto codegen = KernelCodeGen::create(compile_config, &kernel_def, &chi_ir,
                                        *config_.tlctx);
   data.compiled_data = codegen->compile_kernel_to_module();
@@ -43,7 +43,7 @@ KernelCompiler::CKDPtr KernelCompiler::compile(
   data.args_size = kernel_def.args_size;
   data.ret_type = kernel_def.ret_type;
   data.ret_size = kernel_def.ret_size;
-  return std::make_unique<llvm::CompiledKernelData>(compile_config.arch, data);
+  return std::make_unique<LLVM::CompiledKernelData>(compile_config.arch, data);
 }
 
 }  // namespace llvm

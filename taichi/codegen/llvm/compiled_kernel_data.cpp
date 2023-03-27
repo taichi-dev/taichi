@@ -63,5 +63,5 @@ CompiledKernelData::Err CompiledKernelData::dump_impl(
   return Err::kNoError;
 }
 
-}  // namespace llvm
+}  // namespace LLVM
 }  // namespace taichi::lang

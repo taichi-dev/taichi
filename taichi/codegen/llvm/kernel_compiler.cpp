@@ -46,5 +46,5 @@ KernelCompiler::CKDPtr KernelCompiler::compile(
   return std::make_unique<LLVM::CompiledKernelData>(compile_config.arch, data);
 }
 
-}  // namespace llvm
+}  // namespace LLVM
 }  // namespace taichi::lang

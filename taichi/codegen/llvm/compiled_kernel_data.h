@@ -66,6 +66,6 @@ class CompiledKernelData : public lang::CompiledKernelData {
   InternalData data_;
 };
 
-}  // namespace llvm
+}  // namespace LLVM
 
 }  // namespace taichi::lang

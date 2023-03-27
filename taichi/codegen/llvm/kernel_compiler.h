@@ -27,5 +27,5 @@ class KernelCompiler : public lang::KernelCompiler {
   Config config_;
 };
 
-}  // namespace llvm
+}  // namespace LLVM
 }  // namespace taichi::lang

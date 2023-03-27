@@ -44,6 +44,9 @@ def test_random_int():
             assert (X**i).mean() == test_utils.approx(1 / (i + 1), rel=1e-2)
 
 
+test_random_int()
+
+
 @test_utils.test()
 def test_random_independent_product():
     n = 1024

@@ -105,7 +105,7 @@ class VulkanProgramImpl : public ProgramImpl {
     // TODO: refactor this.
     TI_TRACE("get_struct_type_with_data_layout: {}", layout);
     auto is_ret = layout[0] == 'r';
-    //    auto has_buffer_ptr = layout[1] == 'b';
+    auto has_buffer_ptr = layout[1] == 'b';
     auto members = old_ty->elements();
     size_t bytes = 0;
     for (int i = 0; i < members.size(); i++) {
@@ -126,7 +126,7 @@ class VulkanProgramImpl : public ProgramImpl {
         stride = data_type_size(primitive_type);
       }
 
-      const size_t dt_bytes = member.type->is<PointerType>()
+      const size_t dt_bytes = (member.type->is<PointerType>() && has_buffer_ptr)
                                   ? sizeof(uint64_t)
                                   : data_type_size(element_type);
       TI_TRACE("dt_bytes={} stride={} is_array={} is_ret={}", dt_bytes, stride,

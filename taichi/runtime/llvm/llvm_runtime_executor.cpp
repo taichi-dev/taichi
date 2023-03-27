@@ -677,13 +677,6 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   }
 
   if (arch_use_host_memory(config_.arch)) {
-    runtime_jit->call<void *>("runtime_get_mem_req_queue", llvm_runtime_);
-    auto mem_req_queue = fetch_result<void *>(taichi_result_buffer_ret_value_id,
-                                              *result_buffer_ptr);
-    memory_pool->set_queue((MemRequestQueue *)mem_req_queue);
-  }
-
-  if (arch_use_host_memory(config_.arch)) {
     runtime_jit->call<void *, void *, void *>(
         "LLVMRuntime_initialize_thread_pool", llvm_runtime_, thread_pool_.get(),
         (void *)ThreadPool::static_run);

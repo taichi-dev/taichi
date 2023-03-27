@@ -385,6 +385,93 @@ def test_print_string_format_with_spec_mismatch():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_string_format_with_positional_arg(capfd):
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0} {1} {2}".format(1, 2, 3))
+        print("{2} {1} {}".format(3, 2, 1))
+        print("{2} {} {1} {k} {0} {k} {0} {k}".format(3, 2, 1, k=k))
+
+    func(233.3)
+    ti.sync()
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''1 2 3
+1 2 3
+1 3 2 233.300003 3 233.300003 3 233.300003
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_string_format_with_positional_arg_with_spec(capfd):
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0:D} {1:} {2:+i}".format(1, 2, 3))
+        print("{2:d} {1: } {:-10}".format(3, 2, 1))
+        print(
+            "{2:.1} {:.2} {1:.3} {k:.4e} {0:.5} {k:.6f} {0:.5} {k:.4g}".format(
+                3., 2., 1., k=k))
+
+    func(233.3)
+    ti.sync()
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''1 2 3
+1 2 3
+1.000000 3.000000 2.000000 233.300003 3.000000 233.300003 3.000000 233.300003
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_string_format_with_positional_arg_mismatch():
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0} {1} {2}".format(1, 2))
+        print("{2} {1} {}".format(3, 2, 1))
+        print("{0} {} {0} {k} {0} {k}".format(1, k=k))
+
+    @ti.kernel
+    def func_k_not_used(k: ti.f32):
+        print("".format(k=k))
+
+    @ti.kernel
+    def func_k_not_defined():
+        print("{k}".format())
+
+    @ti.kernel
+    def func_more_args():
+        print("{0} {1} {2}".format(1, 2, 3, 4))
+
+    @ti.kernel
+    def func_less_args():
+        print("{0} {1} {2}".format(1, 2))
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Expected 3 positional argument\(s\), but received 4 instead."):
+        func_more_args()
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Expected 3 positional argument\(s\), but received 2 instead."):
+        func_less_args()
+    with pytest.raises(ti.TaichiSyntaxError, match=r"Keyword 'k' not used."):
+        func_k_not_used(233.3)
+    with pytest.raises(ti.TaichiSyntaxError, match=r"Keyword 'k' not found."):
+        func_k_not_defined()
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
                  exclude=[vk_on_mac],
                  debug=True)
 def test_print_fstring():

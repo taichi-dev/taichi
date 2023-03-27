@@ -530,26 +530,26 @@ class ASTTransformer(Builder):
             brackets.append([item, spec])
 
         # check error first
-        max_args_index = max([t[0] for t in brackets if isinstance(t[0], int)], default=-1)
+        max_args_index = max([t[0] for t in brackets if isinstance(t[0], int)],
+                             default=-1)
         if max_args_index + 1 != len(raw_args):
-            raise TaichiSyntaxError(f'Expected {max_args_index + 1} positional argument(s), but received {len(raw_args)} instead.')
+            raise TaichiSyntaxError(
+                f'Expected {max_args_index + 1} positional argument(s), but received {len(raw_args)} instead.'
+            )
         brackets_keywords = [t[0] for t in brackets if isinstance(t[0], str)]
         for item in brackets_keywords:
             if item not in raw_keywords:
-                raise TaichiSyntaxError(f'Keyword "{item}" is not found.')
+                raise TaichiSyntaxError(f"Keyword '{item}' not found.")
         for item in raw_keywords:
             if item not in brackets_keywords:
-                raise TaichiSyntaxError(f'Keyword "{item}" is not used.')
+                raise TaichiSyntaxError(f"Keyword '{item}' not used.")
 
         args = []
         for (item, spec) in brackets:
-            new_item = raw_args[item] if isinstance(item, int) else raw_keywords[item]
+            new_item = raw_args[item] if isinstance(
+                item, int) else raw_keywords[item]
             if spec is not None:
-                args.append([
-                    '__ti_fmt_value__',
-                    new_item,
-                    spec
-                ])
+                args.append(['__ti_fmt_value__', new_item, spec])
             else:
                 args.append(new_item)
         args.insert(0, re.sub(r'{.*?}', '{}', raw_string))

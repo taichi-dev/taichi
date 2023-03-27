@@ -130,6 +130,13 @@ def test_ndarray_1d():
         assert b[i] == i * i + (i + 1) * 2
 
 
+ti.init(ti.vulkan, print_ir=True)
+
+#ti.set_logging_level(ti.TRACE)
+
+test_ndarray_1d()
+
+
 def _test_ndarray_2d():
     n = 4
     m = 7

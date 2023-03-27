@@ -242,7 +242,7 @@ FunctionType CPUModuleToFunctionConverter::convert(
               LaunchContextBuilder::DevAllocType::kNone &&
           context.array_runtime_sizes[i] > 0) {
         DeviceAllocation *ptr =
-            static_cast<DeviceAllocation *>(context.get_arg<void *>(i));
+            static_cast<DeviceAllocation *>(context.array_ptrs[{i}]);
         uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
         context.set_arg(i, host_ptr);
         context.set_array_device_allocation_type(

@@ -98,6 +98,67 @@ class VulkanProgramImpl : public ProgramImpl {
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
 
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    // Ported from KernelContextAttributes::KernelContextAttributes as is.
+    // TODO: refactor this.
+    TI_TRACE("get_struct_type_with_data_layout: {}", layout);
+    auto is_ret = layout[0] == 'r';
+    //    auto has_buffer_ptr = layout[1] == 'b';
+    auto members = old_ty->elements();
+    size_t bytes = 0;
+    for (int i = 0; i < members.size(); i++) {
+      auto &member = members[i];
+      const Type *element_type;
+      size_t stride = 0;
+      bool is_array = false;
+      if (!is_ret) {
+        element_type = DataType(member.type).ptr_removed().get_element_type();
+        is_array = member.type->is<PointerType>();
+      } else if (auto tensor_type = member.type->cast<TensorType>()) {
+        element_type = tensor_type->get_element_type();
+        stride = tensor_type->get_num_elements() * data_type_size(element_type);
+        is_array = true;
+      } else {
+        auto primitive_type = member.type->as<PrimitiveType>();
+        element_type = primitive_type;
+        stride = data_type_size(primitive_type);
+      }
+
+      const size_t dt_bytes = member.type->is<PointerType>()
+                                  ? sizeof(uint64_t)
+                                  : data_type_size(element_type);
+      TI_TRACE("dt_bytes={} stride={} is_array={} is_ret={}", dt_bytes, stride,
+               is_array, is_ret);
+      // Align bytes to the nearest multiple of dt_bytes
+      bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
+      member.offset = bytes;
+      bytes += is_ret ? stride : dt_bytes;
+      TI_TRACE("  at={} {} offset_in_mem={} stride={}",
+               is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
+               member.offset, stride);
+    }
+    if (!is_ret) {
+      bytes = (bytes + 4 - 1) / 4 * 4;
+    }
+    TI_TRACE("  total_bytes={}", bytes);
+    return {TypeFactory::get_instance()
+                .get_struct_type(members, layout)
+                ->as<StructType>(),
+            bytes};
+  }
+
+  std::string get_kernel_return_data_layout() override {
+    return "r-";
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    auto has_buffer_ptr = vulkan_runtime_->get_ti_device()->get_caps().get(
+        DeviceCapability::spirv_has_physical_storage_buffer);
+    return "a" + std::string(has_buffer_ptr ? "b" : "-");
+  };
+
   ~VulkanProgramImpl() override;
 
  protected:

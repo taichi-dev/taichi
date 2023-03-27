@@ -11,14 +11,8 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()),
-      arg_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->args_size
-              : sizeof(uint64) * taichi_max_num_args_total)),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)),
+      arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
+      result_buffer_(std::make_unique<char[]>(kernel->ret_size)),
       ret_type_(kernel->ret_type),
       arg_buffer_size(kernel->args_size),
       args_type(kernel->args_type),
@@ -59,11 +53,6 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     set_arg(arg_id, (uint64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    if (!arch_uses_llvm(kernel_->arch)) {
-      // TODO: remove this once we refactored the SPIR-V based backends
-      set_arg(arg_id, (float32)d);
-      return;
-    }
     uint16 half = fp16_ieee_from_fp32_value((float32)d);
     set_arg(arg_id, half);
   } else {
@@ -127,22 +116,13 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (arg_buffer_size == 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends,
-    // and this function is no-op for these backends.
-    return;
-  }
   int offset = args_type->get_element_offset(index);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (arg_buffer_size > 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends
-    return get_struct_arg<T>({i});
-  }
-  return taichi_union_cast_with_different_sizes<T>(ctx_->args[i]);
+  return get_struct_arg<T>({i});
 }
 
 template <typename T>
@@ -159,7 +139,6 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg({i}, v);
-  ctx_->args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
   set_array_device_allocation_type(i, DevAllocType::kNone);
 }
 
@@ -207,7 +186,7 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
 
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  set_arg(arg_id, ptr);
+  array_ptrs[{arg_id}] = (void *)ptr;
   set_array_runtime_size(arg_id, size);
   set_array_device_allocation_type(arg_id, DevAllocType::kNone);
   for (uint64 i = 0; i < shape.size(); ++i) {
@@ -248,9 +227,8 @@ RuntimeContext &LaunchContextBuilder::get_context() {
 
 void LaunchContextBuilder::set_arg_texture_impl(int arg_id,
                                                 intptr_t alloc_ptr) {
-  set_struct_arg({arg_id}, alloc_ptr);
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
+  //  set_struct_arg({arg_id}, alloc_ptr);
+  array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
 }
 
@@ -258,9 +236,8 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
     int arg_id,
     intptr_t alloc_ptr,
     const std::array<int, 3> &shape) {
-  set_struct_arg({arg_id}, alloc_ptr);
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
+  //  set_struct_arg({arg_id}, alloc_ptr);
+  array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
   for (int i = 0; i < shape.size(); i++) {
@@ -276,10 +253,9 @@ void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
   // Set has_grad value
   has_grad[arg_id] = grad;
 
-  set_struct_arg({arg_id}, devalloc_ptr);
+  //  set_struct_arg({arg_id}, devalloc_ptr);
   // Set args[arg_id] value
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+  array_ptrs[{arg_id}] = (void *)devalloc_ptr;
 
   // Set grad_args[arg_id] value
   if (grad) {

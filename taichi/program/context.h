@@ -19,7 +19,6 @@ struct RuntimeContext {
   // - primitive_types
   // - raw ptrs: for external array, or torch-based ndarray
   // - DeviceAllocation*: for taichi ndaray
-  uint64 args[taichi_max_num_args_total];
   uint64 grad_args[taichi_max_num_args_total];
   int32 extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32 cpu_thread_id;

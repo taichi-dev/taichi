@@ -521,7 +521,7 @@ FunctionType AMDGPUModuleToFunctionConverter::convert(
         const auto arr_sz = context.array_runtime_sizes[i];
         if (arr_sz == 0)
           continue;
-        arg_buffers[i] = context.get_arg<void *>(i);
+        arg_buffers[i] = context.array_ptrs[{i}];
         if (context.device_allocation_type[i] ==
             LaunchContextBuilder::DevAllocType::kNone) {
           unsigned int attr_val[8];

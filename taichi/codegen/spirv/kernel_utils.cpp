@@ -99,7 +99,7 @@ KernelContextAttributes::KernelContextAttributes(
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
       const size_t dt_bytes =
-          (attribs.is_array && !is_ret && has_buffer_ptr)
+          (attribs.is_array && !is_ret /* && has_buffer_ptr*/)
               ? sizeof(uint64_t)
               : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
@@ -115,14 +115,32 @@ KernelContextAttributes::KernelContextAttributes(
   };
 
   TI_TRACE("args:");
+  TI_TRACE("has_physical_storage_buffer: {}",
+           caps->get(DeviceCapability::spirv_has_physical_storage_buffer));
   args_bytes_ = arange_args(
       &arg_attribs_vec_, 0, false,
       caps->get(DeviceCapability::spirv_has_physical_storage_buffer));
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
+  TI_TRACE("total bytes: {}", args_bytes_);
 
   TI_TRACE("rets:");
   rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true, false);
+
+  TI_ASSERT(arg_attribs_vec_.size() == kernel.args_type->elements().size());
+  for (int i = 0; i < arg_attribs_vec_.size(); ++i) {
+    TI_ASSERT(arg_attribs_vec_[i].offset_in_mem ==
+              kernel.args_type->get_element_offset({i}));
+  }
+
+  TI_ASSERT(ret_attribs_vec_.size() == kernel.ret_type->elements().size());
+  for (int i = 0; i < ret_attribs_vec_.size(); ++i) {
+    TI_ASSERT(ret_attribs_vec_[i].offset_in_mem ==
+              kernel.ret_type->get_element_offset({i}));
+  }
+
+  TI_ASSERT(args_bytes_ == kernel.args_size);
+  TI_ASSERT(rets_bytes_ == kernel.ret_size);
 
   TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

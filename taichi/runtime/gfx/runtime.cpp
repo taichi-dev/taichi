@@ -75,7 +75,7 @@ class HostDeviceContextBlitter {
               void *device_arr_ptr{nullptr};
               TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
                         RhiResult::success);
-              const void *host_ptr = host_ctx_.get_arg<void *>(i);
+              const void *host_ptr = host_ctx_.array_ptrs[{i}];
               std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
               device_->unmap(buffer);
             }
@@ -108,11 +108,7 @@ class HostDeviceContextBlitter {
         TO_DEVICE(i64, int64)
         TO_DEVICE(u64, uint64)
         TO_DEVICE(f64, float64)
-        if (arg.dtype == PrimitiveTypeID::f16) {
-          auto d = fp16_ieee_from_fp32_value(host_ctx_.get_arg<float>(i));
-          reinterpret_cast<uint16 *>(device_ptr)[0] = d;
-          break;
-        }
+        TO_DEVICE(f16, uint16)
         TI_ERROR("Device does not support arg type={}",
                  PrimitiveType::get(arg.dtype).to_string());
       } while (false);
@@ -150,7 +146,7 @@ class HostDeviceContextBlitter {
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
           // Only need to blit ext arrs (host array)
           readback_dev_ptrs.push_back(ext_arrays.at(i).get_ptr(0));
-          readback_host_ptrs.push_back(host_ctx_.get_arg<void *>(i));
+          readback_host_ptrs.push_back(host_ctx_.array_ptrs[{i}]);
           readback_sizes.push_back(ext_arr_size.at(i));
           require_sync = true;
         }
@@ -468,8 +464,8 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
           DeviceAllocation devalloc = kDeviceNullAllocation;
 
           // NDArray / Texture
-          if (host_ctx.get_context().args[i]) {
-            devalloc = *(DeviceAllocation *)(host_ctx.get_context().args[i]);
+          if (host_ctx.array_ptrs.count({i})) {
+            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{i}]);
           }
 
           if (host_ctx.device_allocation_type[i] ==

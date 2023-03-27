@@ -88,36 +88,6 @@ function Setup-VS {
     throw "Could not find Visual Studio with Clang"
 }
 
-function Setup-Python($libsDir, $version = "3.7") {
-    if (Get-Command python -ErrorAction SilentlyContinue) {
-        $ver = & python --version
-        Info "Found $ver" "Python"
-        if ($ver.Startswith("Python ${version}.")) {
-            Info "Using $ver" "Python"
-            $venv = "$libsDir/taichi-venv-$version"
-            if(-not (Test-Path $venv)) {
-                Invoke python -m venv $venv
-            }
-            . "$libsDir/taichi-venv-$version/Scripts/activate.ps1"
-            PipOps
-            return
-        }
-    }
-
-    if (Get-Command conda -ErrorAction SilentlyContinue) {
-        Info "Using conda environment" "Python"
-        $condaEnv = "$libsDir/taichi-conda-$version"
-        if (-not (Test-Path $condaEnv)) {
-            conda create -y -q --prefix=$condaEnv python=$version
-        }
-        conda activate $condaEnv
-        PipOps
-        return
-    }
-
-    throw "Could not setup Python"
-}
-
 function Resolve-Path-String-Force {
     <#
     .SYNOPSIS

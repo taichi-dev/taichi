@@ -80,7 +80,7 @@ FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
   // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
   auto &mgr = get_kernel_compilation_manager();
   const auto &compiled = mgr.load_or_compile(compile_config, {}, *kernel);
-  auto &llvm_data = dynamic_cast<const llvm::CompiledKernelData &>(compiled);
+  auto &llvm_data = dynamic_cast<const LLVM::CompiledKernelData &>(compiled);
   return llvm_compiled_kernel_to_executable(
       compile_config.arch, runtime_exec_->get_llvm_context(),
       runtime_exec_.get(), kernel,
@@ -173,9 +173,9 @@ void LlvmProgramImpl::cache_field(int snode_tree_id,
 }
 
 std::unique_ptr<KernelCompiler> LlvmProgramImpl::make_kernel_compiler() {
-  lang::llvm::KernelCompiler::Config cfg;
+  lang::LLVM::KernelCompiler::Config cfg;
   cfg.tlctx = runtime_exec_->get_llvm_context();
-  return std::make_unique<lang::llvm::KernelCompiler>(std::move(cfg));
+  return std::make_unique<lang::LLVM::KernelCompiler>(std::move(cfg));
 }
 
 LlvmProgramImpl *get_llvm_program(Program *prog) {

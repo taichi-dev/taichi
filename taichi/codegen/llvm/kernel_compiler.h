@@ -5,7 +5,7 @@
 #include "taichi/runtime/llvm/llvm_context.h"
 
 namespace taichi::lang {
-namespace llvm {
+namespace LLVM {
 
 class KernelCompiler : public lang::KernelCompiler {
  public:
@@ -27,5 +27,5 @@ class KernelCompiler : public lang::KernelCompiler {
   Config config_;
 };
 
-}  // namespace llvm
+}  // namespace LLVM
 }  // namespace taichi::lang

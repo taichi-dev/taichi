@@ -76,7 +76,7 @@ class ProgramImpl {
   }
 
   /**
-   * Make a AotModulerBuilder, currently only supported by metal and wasm.
+   * Make a AotModulerBuilder.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) = 0;

@@ -693,10 +693,6 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
   return gen.run_compilation();
 }
 
-void KernelCodeGenCUDA::optimize_module(llvm::Module *module) {
-  
-}
-
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<Callable::Parameter> &args,

@@ -105,7 +105,10 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   if (!kernel->is_evaluator) {
     worker.flush();
   }
-  return tlctx_.link_compiled_tasks(std::move(data));
+
+  auto llvm_compiled_kernel = tlctx_.link_compiled_tasks(std::move(data));
+  optimize_module(llvm_compiled_kernel.module.get());
+  return llvm_compiled_kernel;
 }
 
 ModuleToFunctionConverter::ModuleToFunctionConverter(

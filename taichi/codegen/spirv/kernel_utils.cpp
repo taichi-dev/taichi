@@ -114,6 +114,9 @@ KernelContextAttributes::KernelContextAttributes(
     return bytes - offset;
   };
 
+  args_type_ = kernel.args_type;
+  rets_type_ = kernel.ret_type;
+
   TI_TRACE("args:");
   TI_TRACE("has_physical_storage_buffer: {}",
            caps->get(DeviceCapability::spirv_has_physical_storage_buffer));

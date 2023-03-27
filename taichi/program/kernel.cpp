@@ -169,7 +169,6 @@ void Kernel::init(Program &program,
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
-  arch = program.compile_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;

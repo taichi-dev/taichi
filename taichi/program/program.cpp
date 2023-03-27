@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
 #include "taichi/codegen/cc/cc_program.h"
@@ -468,17 +467,6 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
-  if (arch == Arch::wasm) {
-    // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
-#ifdef TI_WITH_LLVM
-    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
-    TI_ASSERT(llvm_prog != nullptr);
-    return std::make_unique<wasm::AotModuleBuilderImpl>(
-        compile_config(), *llvm_prog->get_llvm_context());
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
   if (arch_uses_llvm(compile_config().arch) ||
       compile_config().arch == Arch::metal ||
       compile_config().arch == Arch::vulkan ||

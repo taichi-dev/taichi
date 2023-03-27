@@ -40,8 +40,7 @@ TEST(Simplify, SimplifyLinearizedWithTrivialInputs) {
       test_prog.prog()->compile_config());  // should lower linearized
   // EXPECT_EQ(block->size(), 11);  // not required to check size here
 
-  irpass::constant_fold(block.get(), test_prog.prog()->compile_config(),
-                        {test_prog.prog()});
+  irpass::constant_fold(block.get());
   irpass::alg_simp(block.get(), test_prog.prog()->compile_config());
   irpass::die(block.get());  // should eliminate consts
   irpass::simplify(block.get(), test_prog.prog()->compile_config());

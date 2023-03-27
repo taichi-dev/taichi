@@ -9,24 +9,19 @@ namespace taichi::lang {
 
 class ConstantFoldTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    tp_.setup();
-  }
-
   void run_constant_fold() {
     ir = builder.extract_ir();
     ASSERT_TRUE(ir->is<Block>());
     auto *ir_block = ir->as<Block>();
     irpass::type_check(ir_block, CompileConfig());
 
-    irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
+    irpass::constant_fold(ir_block);
     irpass::die(ir_block);
 
     EXPECT_EQ(ir_block->size(), 4);
     EXPECT_TRUE(ir_block->statements[1]->is<ConstStmt>());
   }
 
-  TestProgram tp_;
   IRBuilder builder;
   std::unique_ptr<Block> ir;
 };

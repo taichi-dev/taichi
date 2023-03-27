@@ -18,7 +18,6 @@ struct CompileConfig {
   bool print_preprocessed_ir;
   bool print_ir;
   bool print_accessor_ir;
-  bool print_evaluator_ir;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;

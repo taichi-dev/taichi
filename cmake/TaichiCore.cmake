@@ -86,7 +86,6 @@ endif()
 file(GLOB TAICHI_CORE_SOURCE
     "taichi/analysis/*.cpp" "taichi/analysis/*.h"
     "taichi/ir/*"
-    "taichi/jit/*"
     "taichi/math/*"
     "taichi/program/*"
     "taichi/struct/*"
@@ -160,48 +159,15 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
 endif()
 
 if(TI_WITH_LLVM)
-    if(DEFINED ENV{LLVM_DIR})
-        set(LLVM_DIR $ENV{LLVM_DIR})
-        message("Getting LLVM_DIR=${LLVM_DIR} from the environment variable")
-    endif()
+    add_subdirectory(taichi/rhi/llvm)
+    add_subdirectory(taichi/codegen/llvm)
+    add_subdirectory(taichi/runtime/llvm)
+    add_subdirectory(taichi/runtime/program_impls/llvm)
 
-    # http://llvm.org/docs/CMake.html#embedding-llvm-in-your-project
-    find_package(LLVM REQUIRED CONFIG)
-    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-    if(${LLVM_PACKAGE_VERSION} VERSION_LESS "10.0")
-        message(FATAL_ERROR "LLVM version < 10 is not supported")
-    endif()
-    message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-    target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${LLVM_INCLUDE_DIRS})
-
-    message("LLVM include dirs ${LLVM_INCLUDE_DIRS}")
-    message("LLVM library dirs ${LLVM_LIBRARY_DIRS}")
-    add_definitions(${LLVM_DEFINITIONS})
-
-    llvm_map_components_to_libnames(llvm_libs
-            Core
-            ExecutionEngine
-            InstCombine
-            OrcJIT
-            RuntimeDyld
-            TransformUtils
-            BitReader
-            BitWriter
-            Object
-            ScalarOpts
-            Support
-            native
-            Linker
-            Target
-            MC
-            Passes
-            ipo
-            Analysis
-            )
-
-    if (APPLE AND "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
-        llvm_map_components_to_libnames(llvm_aarch64_libs AArch64)
-    endif()
+    target_include_directories(${CORE_LIBRARY_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
 
     add_subdirectory(taichi/codegen/cpu)
     add_subdirectory(taichi/runtime/cpu)
@@ -246,15 +212,6 @@ if(TI_WITH_LLVM)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_runtime)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_program_impl)
     endif()
-
-    add_subdirectory(taichi/rhi/llvm)
-    add_subdirectory(taichi/codegen/llvm)
-    add_subdirectory(taichi/runtime/llvm)
-    add_subdirectory(taichi/runtime/program_impls/llvm)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
 
     add_subdirectory(taichi/codegen/wasm)
     add_subdirectory(taichi/runtime/wasm)
@@ -456,6 +413,7 @@ if(TI_WITH_PYTHON)
         ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
         ${PROJECT_SOURCE_DIR}/external/imgui
         ${PROJECT_SOURCE_DIR}/external/imgui/backends
+        ${LLVM_INCLUDE_DIRS}
       )
     target_include_directories(${CORE_WITH_PYBIND_LIBRARY_NAME} SYSTEM
       PRIVATE

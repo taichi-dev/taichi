@@ -128,6 +128,7 @@ target_include_directories(${TAICHI_C_API_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/external/volk
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
         ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw/include
+        ${LLVM_INCLUDE_DIRS}
     )
 set_property(TARGET ${TAICHI_C_API_NAME} PROPERTY PUBLIC_HEADER ${C_API_PUBLIC_HEADERS})
 

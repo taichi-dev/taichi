@@ -39,6 +39,7 @@ target_include_directories(${C_API_TESTS_NAME}
     ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/glad/include
     ${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})

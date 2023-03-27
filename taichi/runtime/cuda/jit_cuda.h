@@ -21,7 +21,7 @@
 
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
 #include "taichi/system/timer.h"

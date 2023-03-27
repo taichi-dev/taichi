@@ -12,7 +12,7 @@
 #include "taichi/util/lang_util.h"
 #include "taichi/runtime/llvm/llvm_fwd.h"
 #include "taichi/ir/snode.h"
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
 
 namespace taichi::lang {

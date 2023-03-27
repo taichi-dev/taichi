@@ -43,10 +43,10 @@
 
 #endif
 
-#include "taichi/jit/jit_module.h"
+#include "taichi/rhi/llvm/jit_module.h"
 #include "taichi/util/lang_util.h"
 #include "taichi/program/program.h"
-#include "taichi/jit/jit_session.h"
+#include "taichi/rhi/llvm/jit_session.h"
 #include "taichi/util/file_sequence_writer.h"
 #include "taichi/runtime/llvm/llvm_context.h"
 

@@ -1,5 +1,5 @@
 #include "taichi/rhi/llvm/llvm_device.h"
-#include "taichi/jit/jit_module.h"
+#include "taichi/rhi/llvm/jit_module.h"
 
 namespace taichi::lang {
 

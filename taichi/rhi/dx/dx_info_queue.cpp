@@ -1,5 +1,5 @@
 #ifdef TI_WITH_DX11
-
+#include "taichi/platform/windows/windows.h"
 #include "taichi/rhi/dx/dx_info_queue.h"
 
 namespace taichi::lang {

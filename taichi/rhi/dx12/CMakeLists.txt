@@ -11,6 +11,7 @@ target_include_directories(${DX12_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
+    ${LLVM_INCLUDE_DIRS}
   )
 
 target_link_libraries(${DX12_RHI} PRIVATE )

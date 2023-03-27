@@ -144,11 +144,6 @@ cc = _ti_core.cc
 
 # ----------------------
 
-wasm = _ti_core.wasm
-"""The WebAssembly backend.
-"""
-# ----------------------
-
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
@@ -175,7 +170,7 @@ GPU is detected, Taichi falls back to the CPU backend.
 
 cpu = _ti_core.host_arch()
 """A list of CPU backends supported on the current system.
-Currently contains 'x64', 'x86_64', 'arm64', 'cc', 'wasm'.
+Currently contains 'x64', 'x86_64', 'arm64', 'cc'.
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
@@ -739,7 +734,6 @@ def is_arch_supported(arch):
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
         dx12: _ti_core.with_dx12,
-        wasm: lambda: True,
         cpu: lambda: True,
     }
     with_arch = arch_table.get(arch, lambda: False)
@@ -774,9 +768,9 @@ def get_host_arch_list():
 
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
-    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'wasm', 'arm64', 'cc',
-    'cpu', 'cuda', 'amdgpu', 'gles', 'gpu', 'metal', 'opengl', 'vulkan',
-    'extension', 'loop_config', 'global_thread_idx', 'assume_in_range',
-    'block_local', 'cache_read_only', 'init', 'mesh_local', 'no_activate',
-    'reset', 'mesh_patch_idx'
+    'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'arm64', 'cc', 'cpu',
+    'cuda', 'amdgpu', 'gles', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
+    'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
+    'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
+    'mesh_patch_idx'
 ]

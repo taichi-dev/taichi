@@ -256,12 +256,6 @@ if(TI_WITH_LLVM)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
 
-    add_subdirectory(taichi/codegen/wasm)
-    add_subdirectory(taichi/runtime/wasm)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_codegen)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
-
     if (LINUX)
         # Remove symbols from llvm static libs
         foreach(LETTER ${llvm_libs})

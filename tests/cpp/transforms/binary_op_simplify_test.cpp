@@ -33,7 +33,7 @@ TEST_F(BinaryOpSimplifyTest, MultiplyPOT) {
   // -> (x << 5) << 3
   irpass::binary_op_simplify(ir_block, CompileConfig());
   // -> x << (5 + 3)
-  irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
+  irpass::constant_fold(ir_block);
   // -> x << 8
   irpass::die(ir_block);
 
@@ -83,7 +83,7 @@ TEST_F(BinaryOpSimplifyTest, ModPOT) {
   EXPECT_EQ(ir_block->size(), 5);
 
   // -> x & 7
-  irpass::constant_fold(ir_block, CompileConfig(), {tp_.prog()});
+  irpass::constant_fold(ir_block);
   irpass::die(ir_block);
   EXPECT_EQ(ir_block->size(), 4);
   EXPECT_EQ(ir_block->statements[0].get(), x);

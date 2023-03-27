@@ -29,15 +29,6 @@ class ConstantFold : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   DelayedIRModifier modifier;
-  Program *program;
-  CompileConfig compile_config;
-
-  explicit ConstantFold(Program *program, const CompileConfig &compile_config)
-      : program(program), compile_config(compile_config) {
-    this->compile_config.advanced_optimization = false;
-    this->compile_config.constant_folding = false;
-    this->compile_config.external_optimization_level = 0;
-  }
 
   static bool is_good_type(DataType dt) {
     // ConstStmt of `bad` types like `i8` is not supported by LLVM.
@@ -237,10 +228,8 @@ class ConstantFold : public BasicStmtVisitor {
     return;
   }
 
-  static bool run(IRNode *node,
-                  Program *program,
-                  const CompileConfig &compile_config) {
-    ConstantFold folder(program, compile_config);
+  static bool run(IRNode *node) {
+    ConstantFold folder;
     bool modified = false;
 
     while (true) {
@@ -268,13 +257,9 @@ const PassID ConstantFoldPass::id = "ConstantFoldPass";
 
 namespace irpass {
 
-bool constant_fold(IRNode *root,
-                   const CompileConfig &compile_config,
-                   const ConstantFoldPass::Args &args) {
+bool constant_fold(IRNode *root) {
   TI_AUTO_PROF;
-  if (!compile_config.advanced_optimization)
-    return false;
-  return ConstantFold::run(root, args.program, compile_config);
+  return ConstantFold::run(root);
 }
 
 }  // namespace irpass

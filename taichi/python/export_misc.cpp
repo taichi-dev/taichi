@@ -16,7 +16,6 @@
 #include "taichi/python/export.h"
 #include "taichi/python/memory_usage_monitor.h"
 #include "taichi/system/benchmark.h"
-#include "taichi/system/dynamic_loader.h"
 #include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
 #include "taichi/util/offline_cache.h"

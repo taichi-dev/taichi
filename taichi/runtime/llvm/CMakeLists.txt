@@ -38,3 +38,5 @@ endif()
 if (TI_WITH_DX12)
     target_link_libraries(llvm_runtime PRIVATE ${llvm_directx_libs})
 endif()
+
+target_link_libraries(llvm_runtime PRIVATE ti_device_api)

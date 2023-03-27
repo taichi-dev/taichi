@@ -1,7 +1,3 @@
-param (
-    [string]$libsDir = "."
-)
-
 $ErrorActionPreference = "Stop"
 
 . $PSScriptRoot\common-utils.ps1

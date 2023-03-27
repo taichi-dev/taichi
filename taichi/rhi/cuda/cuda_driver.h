@@ -3,6 +3,7 @@
 #include <mutex>
 
 #include "taichi/system/dynamic_loader.h"
+#include "taichi/common/core.h"
 #include "taichi/rhi/cuda/cuda_types.h"
 
 #if (0)

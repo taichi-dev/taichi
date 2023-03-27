@@ -9,7 +9,7 @@ $env:TI_CI = 1
 $env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
 
 Invoke python .github/workflows/scripts/build.py --write-env=ti-env.ps1
-. ti-env.ps1
+. .\ti-env.ps1
 # <Workaround> bad conda in container
 Invoke conda shell.powershell hook | Out-String | Invoke-Expression
 # </Workaround>

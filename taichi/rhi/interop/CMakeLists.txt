@@ -8,18 +8,6 @@ target_sources(${INTEROP_RHI}
     vulkan_cuda_interop.cpp
   )
 
-if (TI_WITH_CUDA)
-  target_compile_definitions(${INTEROP_RHI} PRIVATE -DTI_WITH_CUDA)
-endif()
-
-if (TI_WITH_AMDGPU)
-  target_compile_definitions(${INTEROP_RHI} PRIVATE -DTI_WITH_AMDGPU)
-endif()
-
-if (TI_WITH_VULKAN)
-  target_compile_definitions(${INTEROP_RHI} PRIVATE -DTI_WITH_VULKAN)
-endif()
-
 target_include_directories(${INTEROP_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}

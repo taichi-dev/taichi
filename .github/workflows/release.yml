@@ -317,7 +317,7 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_test.ps1
         env:
           PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cpu,cuda,opengl,vulkan"

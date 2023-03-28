@@ -19,29 +19,37 @@ MemoryPool::MemoryPool(Arch arch, Device *device)
     : arch_(arch), device_(device) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
            default_allocator_size / 1024 / 1024);
+  // TODO: initialize allocator according to arch
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   std::lock_guard<std::mutex> _(mut_allocators);
   void *ret = nullptr;
-  if (!allocators.empty()) {
-    ret = allocators.back()->allocate(size, alignment);
+
+  // TODO: refactor this part to allocator->allocate(size, alignment)
+  if (arch_is_cpu(arch_)) {
+    if (!allocators.empty()) {
+      ret = allocators.back()->allocate(size, alignment);
+    }
+    if (!ret) {
+      // allocation have failed
+      auto new_buffer_size = std::max(size, default_allocator_size);
+      allocators.emplace_back(
+          std::make_unique<UnifiedAllocator>(new_buffer_size, device_, this));
+      ret = allocators.back()->allocate(size, alignment);
+    }
+    TI_ASSERT(ret);
+  } else {
+    TI_NOT_IMPLEMENTED;
   }
-  if (!ret) {
-    // allocation have failed
-    auto new_buffer_size = std::max(size, default_allocator_size);
-    allocators.emplace_back(
-        std::make_unique<UnifiedAllocator>(new_buffer_size, arch_, device_));
-    ret = allocators.back()->allocate(size, alignment);
-  }
-  TI_ASSERT(ret);
+
   return ret;
 }
 
-void *MemoryPool::allocate_raw_memory(std::size_t size, Arch arch) {
+void *MemoryPool::allocate_raw_memory(std::size_t size) {
   std::lock_guard<std::mutex> _(mut_raw_alloc);
   void *ptr = nullptr;
-  if (arch_is_cpu(arch)) {
+  if (arch_is_cpu(arch_)) {
 // http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf Sec 3.1
 #if defined(TI_PLATFORM_UNIX)
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
@@ -68,20 +76,20 @@ void *MemoryPool::allocate_raw_memory(std::size_t size, Arch arch) {
     TI_NOT_IMPLEMENTED;
   }
 
-  if (ptr_map_.count(ptr)) {
+  if (raw_memory_chunks_.count(ptr)) {
     TI_ERROR("Memory address ({:}) is already allocated", ptr);
   }
 
-  ptr_map_[ptr] = size;
+  raw_memory_chunks_[ptr] = size;
   return ptr;
 }
 
 void MemoryPool::deallocate_raw_memory(void *ptr) {
-  if (!ptr_map_.count(ptr)) {
+  if (!raw_memory_chunks_.count(ptr)) {
     TI_ERROR("Memory address ({:}) is not allocated", ptr);
   }
 
-  std::size_t size = ptr_map_[ptr];
+  std::size_t size = raw_memory_chunks_[ptr];
 #if defined(TI_PLATFORM_UNIX)
   if (munmap(ptr, size) != 0)
 #else
@@ -91,11 +99,11 @@ void MemoryPool::deallocate_raw_memory(void *ptr) {
 #endif
     TI_ERROR("Failed to free virtual memory ({} B)", size);
 
-  ptr_map_.erase(ptr);
+  raw_memory_chunks_.erase(ptr);
 }
 
 MemoryPool::~MemoryPool() {
-  const auto ptr_map_copied = ptr_map_;
+  const auto ptr_map_copied = raw_memory_chunks_;
 
   for (auto &ptr : ptr_map_copied) {
     deallocate_raw_memory(ptr.first);

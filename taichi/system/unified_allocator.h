@@ -6,47 +6,28 @@
 #include "taichi/rhi/arch.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-class VirtualMemoryAllocator;
-}
-
 namespace taichi::lang {
+
+class MemoryPool;
 
 // This class can only have one instance
 class UnifiedAllocator {
-  std::unique_ptr<VirtualMemoryAllocator> cpu_vm_;
   std::size_t size_;
-  Arch arch_;
 
   // put these two on the unified memory so that GPU can have access
  public:
   uint8 *data;
-  DeviceAllocation alloc{kDeviceNullAllocation};
   uint8 *head;
   uint8 *tail;
-  std::mutex lock;
 
  public:
-  UnifiedAllocator(std::size_t size, Arch arch, Device *device);
+  UnifiedAllocator(std::size_t size, Device *device, MemoryPool *memory_pool);
 
   ~UnifiedAllocator();
 
-  void *allocate(std::size_t size, std::size_t alignment) {
-    std::lock_guard<std::mutex> _(lock);
-    auto ret =
-        head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
-    TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
-             size, (tail - head));
-    head = ret + size;
-    if (head > tail) {
-      // allocation failed
-      return nullptr;
-    } else {
-      // success
-      TI_ASSERT((std::size_t)ret % alignment == 0);
-      return ret;
-    }
-  }
+  void *allocate(std::size_t size, std::size_t alignment);
+
+  void release(size_t sz, uint64_t *ptr);
 
   void memset(unsigned char val);
 

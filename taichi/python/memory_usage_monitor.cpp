@@ -13,8 +13,6 @@ namespace taichi {
 namespace py = pybind11;
 using namespace py::literals;
 
-constexpr size_t VirtualMemoryAllocator::page_size;
-
 float64 bytes_to_GB(float64 bytes) {
   return float64(bytes) * pow<3>(1.0_f64 / 1024.0_f64);
 }

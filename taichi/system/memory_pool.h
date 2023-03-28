@@ -12,6 +12,8 @@
 
 namespace taichi::lang {
 
+class UnifiedAllocator;
+
 // A memory pool that runs on the host
 
 class TI_DLL_EXPORT MemoryPool {
@@ -23,8 +25,6 @@ class TI_DLL_EXPORT MemoryPool {
   std::mutex mut_allocators;
   std::mutex mut_raw_alloc;
 
-  // In the future we wish to move the MemoryPool inside each Device
-  // so that the memory allocated from each Device can be used as-is.
   MemoryPool(Arch arch, Device *device);
 
   void *allocate(std::size_t size, std::size_t alignment);
@@ -32,13 +32,19 @@ class TI_DLL_EXPORT MemoryPool {
   ~MemoryPool();
 
  private:
-  void *allocate_raw_memory(std::size_t size, Arch arch);
+  void *allocate_raw_memory(std::size_t size);
+
+  // Only MemoryPool can deallocate raw memory
   void deallocate_raw_memory(void *ptr);
 
-  std::map<void *, std::size_t> ptr_map_;
+  // All the raw memory allocated from OS/Driver
+  // We need to keep track of them to guarantee that they are freed
+  std::map<void *, std::size_t> raw_memory_chunks_;
 
   Arch arch_;
   Device *device_;
+
+  friend class UnifiedAllocator;
 };
 
 }  // namespace taichi::lang

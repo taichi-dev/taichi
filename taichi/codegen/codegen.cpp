@@ -4,7 +4,6 @@
 
 #if defined(TI_WITH_LLVM)
 #include "taichi/codegen/cpu/codegen_cpu.h"
-#include "taichi/codegen/wasm/codegen_wasm.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #endif
@@ -42,12 +41,9 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
     TaichiLLVMContext &tlctx) {
 #ifdef TI_WITH_LLVM
   const auto arch = compile_config.arch;
-  if (arch_is_cpu(arch) && arch != Arch::wasm) {
+  if (arch_is_cpu(arch)) {
     return std::make_unique<KernelCodeGenCPU>(compile_config, kernel, ir,
                                               tlctx);
-  } else if (arch == Arch::wasm) {
-    return std::make_unique<KernelCodeGenWASM>(compile_config, kernel, ir,
-                                               tlctx);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
     return std::make_unique<KernelCodeGenCUDA>(compile_config, kernel, ir,

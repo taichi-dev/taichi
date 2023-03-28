@@ -76,6 +76,86 @@ def test_print_matrix():
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
                  exclude=[vk_on_mac],
                  debug=True)
+def test_print_matrix_string_format():
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
+    y = ti.Vector.field(3, dtype=ti.f32, shape=3)
+
+    @ti.kernel
+    def func(k: ti.f32):
+        x[None][0, 0] = -1.0
+        y[2] += 1.0
+        print('hello {} world!'.format(x[None]))
+        print('{} {} {}'.format(y[2] * k, x[None] / k, y[2]))
+
+    func(233.3)
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_matrix_string_format_with_spec(capfd):
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
+    y = ti.Vector.field(3, dtype=ti.f32, shape=3)
+    z = ti.Matrix.field(2, 3, dtype=ti.i32, shape=())
+
+    @ti.kernel
+    def func(k: ti.f32):
+        x[None][0, 0] = -1.0
+        y[2] += 1.0
+        print('hello {:.2f} world!'.format(x[None]))
+        print('{:.3f} {:e} {:.2}'.format(y[2] * k, x[None] / k, y[2]))
+        print('hello {:+d} world!'.format(z[None]))
+
+    func(233.3)
+    ti.sync()
+
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''hello [[-1.000000, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] world!
+[233.300003, 233.300003, 233.300003] [[-0.004286, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] [1.000000, 1.000000, 1.000000]
+hello [[0, 0, 0], [0, 0, 0]] world!
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_matrix_string_format_with_spec_mismatch():
+    x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
+    y = ti.Vector.field(3, dtype=ti.f32, shape=3)
+    z = ti.Matrix.field(2, 3, dtype=ti.i32, shape=())
+
+    @ti.kernel
+    def test_x():
+        print('hello {:.2d} world!'.format(x[None]))
+
+    @ti.kernel
+    def test_y(k: ti.f32):
+        print('{:- #0.233lli} {:e} {:.2}'.format(y[2] * k, x[None] / k, y[2]))
+
+    @ti.kernel
+    def test_z():
+        print('hello {:.2e} world!'.format(z[None]))
+
+    x[None][0, 0] = -1.0
+    y[2] += 1.0
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'.2d' doesn't match 'f32'."):
+        test_x()
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'- #0.233lli' doesn't match 'f32'."):
+        test_y(233.3)
+    with pytest.raises(ti.TaichiTypeError,
+                       match=r"'.2e' doesn't match 'i32'."):
+        test_z()
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
 def test_print_matrix_fstring():
     x = ti.Matrix.field(2, 3, dtype=ti.f32, shape=())
     y = ti.Vector.field(3, dtype=ti.f32, shape=3)
@@ -103,7 +183,7 @@ def test_print_matrix_fstring_with_spec(capfd):
     def func(k: ti.f32):
         x[None][0, 0] = -1.0
         y[2] += 1.0
-        print(f'hello {k:.2f} world!')
+        print(f'hello {x[None]:.2f} world!')
         print(f'{(y[2] * k):.3f} {(x[None] / k):e} {y[2]:.2}')
         print(f'hello {z[None]:+d} world!')
 
@@ -112,12 +192,11 @@ def test_print_matrix_fstring_with_spec(capfd):
 
     out, err = capfd.readouterr()
     # TODO: format specifiers are ignored for now
-    expected_out = '''hello 233.300003 world!
+    expected_out = '''hello [[-1.000000, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] world!
 [233.300003, 233.300003, 233.300003] [[-0.004286, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] [1.000000, 1.000000, 1.000000]
 hello [[0, 0, 0], [0, 0, 0]] world!
 '''
     assert out == expected_out and err == ''
-    # assert out == 'qwe 2         5 123 4.6 4 True 1.23\n' and err == ''
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
@@ -249,6 +328,150 @@ def test_print_string_format():
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_string_format_with_spec(capfd):
+    @ti.kernel
+    def func(k: ti.f32):
+        print(123)
+        print("{:d} abc".format(123))
+        print("{: } {:+} {:10d}".format(1, 2, 3))
+        print("{:.2} {name:D} {value:d}".format(k, name=999, value=123))
+        name = 123.4
+        value = 456.7
+        print("{:.2e} {name:.3G} {value:.4f}".format(k, name=name,
+                                                     value=value))
+
+    func(233.3)
+    ti.sync()
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''123
+123 abc
+1 2 3
+233.300003 999 123
+233.300003 123.400002 456.700012
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_string_format_with_spec_mismatch():
+    @ti.func
+    def foo1(x):
+        return x + 1
+
+    @ti.kernel
+    def test_i(i: ti.i32):
+        print('{:u}'.format(foo1(i)))
+
+    @ti.kernel
+    def test_u(u: ti.u32):
+        print('{:d}'.format(foo1(u)))
+
+    @ti.kernel
+    def test_f(u: ti.f32):
+        print('{:i}'.format(foo1(u)))
+
+    with pytest.raises(ti.TaichiTypeError, match=r"'u' doesn't match 'i32'."):
+        test_i(123)
+    with pytest.raises(ti.TaichiTypeError, match=r"'d' doesn't match 'u32'."):
+        test_u(123)
+    with pytest.raises(ti.TaichiTypeError, match=r"'i' doesn't match 'f32'."):
+        test_f(123)
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_string_format_with_positional_arg(capfd):
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0} {1} {2}".format(1, 2, 3))
+        print("{2} {1} {}".format(3, 2, 1))
+        print("{2} {} {1} {k} {0} {k} {0} {k}".format(3, 2, 1, k=k))
+
+    func(233.3)
+    ti.sync()
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''1 2 3
+1 2 3
+1 3 2 233.300003 3 233.300003 3 233.300003
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_string_format_with_positional_arg_with_spec(capfd):
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0:D} {1:} {2:+i}".format(1, 2, 3))
+        print("{2:d} {1: } {:-10}".format(3, 2, 1))
+        print(
+            "{2:.1} {:.2} {1:.3} {k:.4e} {0:.5} {k:.6f} {0:.5} {k:.4g}".format(
+                3., 2., 1., k=k))
+
+    func(233.3)
+    ti.sync()
+    out, err = capfd.readouterr()
+    # TODO: format specifiers are ignored for now
+    expected_out = '''1 2 3
+1 2 3
+1.000000 3.000000 2.000000 233.300003 3.000000 233.300003 3.000000 233.300003
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac],
+                 debug=True)
+def test_print_string_format_with_positional_arg_mismatch():
+    @ti.kernel
+    def func(k: ti.f32):
+        print("{0} {1} {2}".format(1, 2))
+        print("{2} {1} {}".format(3, 2, 1))
+        print("{0} {} {0} {k} {0} {k}".format(1, k=k))
+
+    @ti.kernel
+    def func_k_not_used(k: ti.f32):
+        print("".format(k=k))
+
+    @ti.kernel
+    def func_k_not_defined():
+        print("{k}".format())
+
+    @ti.kernel
+    def func_more_args():
+        print("{0} {1} {2}".format(1, 2, 3, 4))
+
+    @ti.kernel
+    def func_less_args():
+        print("{0} {1} {2}".format(1, 2))
+
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Expected 3 positional argument\(s\), but received 4 instead."):
+        func_more_args()
+    with pytest.raises(
+            ti.TaichiSyntaxError,
+            match=
+            r"Expected 3 positional argument\(s\), but received 2 instead."):
+        func_less_args()
+    with pytest.raises(ti.TaichiSyntaxError, match=r"Keyword 'k' not used."):
+        func_k_not_used(233.3)
+    with pytest.raises(ti.TaichiSyntaxError, match=r"Keyword 'k' not found."):
+        func_k_not_defined()
+    ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
                  exclude=[vk_on_mac],
                  debug=True)
 def test_print_fstring():
@@ -285,7 +508,6 @@ def test_print_fstring_with_spec(capfd):
     expected_out = '''qwe 2 5 123 4.560000 4 True 1.23
 '''
     assert out == expected_out and err == ''
-    # assert out == 'qwe 2         5 123 4.6 4 True 1.23\n' and err == ''
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],

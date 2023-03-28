@@ -63,7 +63,6 @@ init_args = {
     'kernel_profiler': [False, TF],
     'check_out_of_bound': [False, TF],
     'print_accessor_ir': [False, TF],
-    'print_evaluator_ir': [False, TF],
     'print_struct_llvm_ir': [False, TF],
     'print_kernel_llvm_ir': [False, TF],
     'print_kernel_llvm_ir_optimized': [False, TF],

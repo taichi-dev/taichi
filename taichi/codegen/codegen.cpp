@@ -96,15 +96,9 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
                                          offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
-    if (kernel->is_evaluator) {
-      compile_func();
-    } else {
-      worker.enqueue(compile_func);
-    }
+    worker.enqueue(compile_func);
   }
-  if (!kernel->is_evaluator) {
-    worker.flush();
-  }
+  worker.flush();
   return tlctx_.link_compiled_tasks(std::move(data));
 }
 

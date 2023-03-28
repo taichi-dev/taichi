@@ -15,7 +15,14 @@ export ANDROID_NDK_ROOT=/android-sdk/ndk-bundle
 
 python -m pip install dist/*.whl
 
+TAG=$(git describe --exact-match --tags 2>/dev/null || true)
+if [ ! -z "$TAG" ]; then
+    MORE_TAGS="--tags type=release,release=$TAG"
+else
+    MORE_TAGS=""
+fi
+
 git clone https://github.com/taichi-dev/taichi_benchmark
 cd taichi_benchmark
 pip install -r requirements.txt
-python run.py --upload-auth $BENCHMARK_UPLOAD_TOKEN
+python run.py --upload-auth $BENCHMARK_UPLOAD_TOKEN $MORE_TAGS

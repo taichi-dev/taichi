@@ -3,7 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_runtime.h"

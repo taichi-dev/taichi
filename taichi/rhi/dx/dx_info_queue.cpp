@@ -104,13 +104,14 @@ std::vector<std::string> Dx11InfoQueue::get_updated_messages() {
   const int n = num_messages - last_message_count_;
   ret.resize(n);
   for (int i = 0; i < n; i++) {
-    D3D11_MESSAGE *msg;
+    D3D11_MESSAGE *msg{nullptr};
     size_t len = 0;
     HRESULT hr =
-        info_queue_->GetMessageW(i + last_message_count_, nullptr, &len);
+        info_queue_->GetMessage(i + last_message_count_, nullptr, &len);
     check_dx_error(hr, "Check D3D11 info queue message length");
     msg = (D3D11_MESSAGE *)malloc(len);
-    hr = info_queue_->GetMessageW(i + last_message_count_, msg, &len);
+    assert(msg);
+    hr = info_queue_->GetMessage(i + last_message_count_, msg, &len);
     check_dx_error(hr, "Obtain D3D11 info queue message content");
     ret[i] = std::string(msg->pDescription);
     free(msg);

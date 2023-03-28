@@ -101,10 +101,6 @@ class TI_DLL_EXPORT Program {
 
   std::unique_ptr<KernelProfilerBase> profiler{nullptr};
 
-  std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
-      jit_evaluator_cache;
-  std::mutex jit_evaluator_cache_mut;
-
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
   static TypeFactory &get_type_factory();

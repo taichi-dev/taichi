@@ -177,6 +177,8 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 
 ### Demos
 
+- [Nerf with Taichi](https://github.com/taichi-dev/taichi-nerfs)
+- [Taichi AOT demos & tutorial](https://github.com/taichi-dev/taichi-aot-demo/)
 - [Taichi Lang examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi Lang examples](https://github.com/taichi-dev/advanced_examples)
 - [Awesome Taichi](https://github.com/taichi-dev/awesome-taichi)

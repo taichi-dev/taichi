@@ -11,7 +11,7 @@ install_taichi_wheel() {
     if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
         # No FORTRAN compiler is currently working reliably on M1 Macs
         # We can't just pip install scipy, using conda instead
-        conda install -y scipy
+        conda install -n $PY -y scipy
     fi
 
     python3 -m pip install dist/*.whl

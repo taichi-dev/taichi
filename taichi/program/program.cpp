@@ -314,7 +314,6 @@ void Program::finalize() {
   TI_TRACE("Program finalizing...");
 
   synchronize();
-  memory_pool_->terminate();
   if (arch_uses_llvm(compile_config().arch)) {
     program_impl_->finalize();
   }

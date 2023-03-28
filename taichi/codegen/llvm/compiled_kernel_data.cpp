@@ -6,13 +6,13 @@
 namespace taichi::lang {
 
 static std::unique_ptr<CompiledKernelData> new_llvm_compiled_kernel_data() {
-  return std::make_unique<llvm::CompiledKernelData>();
+  return std::make_unique<LLVM::CompiledKernelData>();
 }
 
 CompiledKernelData::Creator *const CompiledKernelData::llvm_creator =
     new_llvm_compiled_kernel_data;
 
-namespace llvm {
+namespace LLVM {
 
 CompiledKernelData::CompiledKernelData(Arch arch, InternalData data)
     : arch_(arch), data_(std::move(data)) {
@@ -37,8 +37,8 @@ CompiledKernelData::Err CompiledKernelData::load_impl(
   } catch (const liong::json::JsonException &) {
     return Err::kParseMetadataFailed;
   }
-  ::llvm::SMDiagnostic err;
-  auto ret = ::llvm::parseAssemblyString(file.src_code(), err, llvm_ctx_);
+  llvm::SMDiagnostic err;
+  auto ret = llvm::parseAssemblyString(file.src_code(), err, llvm_ctx_);
   if (!ret) {  // File not found or Parse failed
     TI_DEBUG("Fail to parse llvm::Module from string: {}",
              err.getMessage().str());
@@ -57,11 +57,11 @@ CompiledKernelData::Err CompiledKernelData::dump_impl(
     return Err::kSerMetadataFailed;
   }
   std::string str;
-  ::llvm::raw_string_ostream oss(str);
+  llvm::raw_string_ostream oss(str);
   data_.compiled_data.module->print(oss, /*AAW=*/nullptr);
   file.set_src_code(std::move(str));
   return Err::kNoError;
 }
 
-}  // namespace llvm
+}  // namespace LLVM
 }  // namespace taichi::lang

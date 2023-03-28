@@ -12,7 +12,14 @@ $env:PYTHONUNBUFFERED = 1
 $env:TI_CI = 1
 $env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
 
-Setup-Python $libsDir $env:PY
+Invoke python .github/workflows/scripts/build.py --write-env=ti-env.ps1
+. .\ti-env.ps1
+
+Invoke python -m pip install -U pip wheel
+Invoke python -m pip uninstall taichi taichi-nightly -y
+# These have to be re-installed to avoid strange certificate issue
+# on CPU docker environment
+Invoke python -m pip install --upgrade --force-reinstall numpy cmake wheel
 
 $os = Get-CimInstance -Class Win32_OperatingSystem
 Info "Total system memory: $($os.TotalVisibleMemorySize / 1024 / 1024) GB"

@@ -106,9 +106,7 @@ void differentiation_validation_check(IRNode *root,
  * AD-stacks before this pass.
  */
 bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
-bool constant_fold(IRNode *root,
-                   const CompileConfig &config,
-                   const ConstantFoldPass::Args &args);
+bool constant_fold(IRNode *root);
 void offload(IRNode *root, const CompileConfig &config);
 bool transform_statements(
     IRNode *root,

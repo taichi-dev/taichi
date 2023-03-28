@@ -20,6 +20,14 @@ MemoryPool::MemoryPool(Arch arch, Device *device)
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
            default_allocator_size / 1024 / 1024);
   // TODO: initialize allocator according to arch
+
+  if (!arch_is_cuda(arch_) && !arch_is_cpu(arch_)) {
+#if defined TI_PLATFORM_OSX
+    arch_ = Arch::arm64;
+#else
+    arch_ = Arch::x64;
+#endif
+  }
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {

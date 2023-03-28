@@ -1,5 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/impl_support.h"
+#include "taichi/system/memory_pool.h"
 
 namespace taichi::lang {
 
@@ -10,16 +11,24 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
   return allocations_[handle.alloc_id];
 }
 
+RhiResult CpuDevice::CpuDevice() {
+#if defined TI_PLATFORM_OSX
+  arch_ = Arch::arm64;
+#else
+  arch_ = Arch::x64;
+#endif
+}
+
 RhiResult CpuDevice::allocate_memory(const AllocParams &params,
                                      DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
-  info.ptr = vm->ptr;
-  info.size = vm->size;
+  info.ptr = MemoryPool::get_instance(arch_).allocate(params.size,
+                                                      MemoryPool::page_size);
+  info.size = params.size;
   info.use_cached = false;
 
-  if (vm->ptr == nullptr) {
+  if (info.ptr == nullptr) {
     return RhiResult::out_of_memory;
   }
 
@@ -28,7 +37,6 @@ RhiResult CpuDevice::allocate_memory(const AllocParams &params,
   out_devalloc->device = this;
 
   allocations_.push_back(info);
-  virtual_memories_[out_devalloc->alloc_id] = std::move(vm);
 
   return RhiResult::success;
 }
@@ -49,8 +57,7 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   if (!info.use_cached) {
-    // Use at() to ensure that the memory is allocated, and not imported
-    virtual_memories_.at(handle.alloc_id).reset();
+    MemoryPool::get_instance(arch_).release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

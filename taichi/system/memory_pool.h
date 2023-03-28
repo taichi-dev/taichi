@@ -28,6 +28,7 @@ class TI_DLL_EXPORT MemoryPool {
   std::mutex mut_raw_alloc;
 
   void *allocate(std::size_t size, std::size_t alignment);
+  void release(std::size_t size, void *ptr);
 
   ~MemoryPool();
   MemoryPool(Arch arch);

@@ -63,6 +63,16 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
   return ret;
 }
 
+void MemoryPool::release(std::size_t size, void *ptr) {
+  std::lock_guard<std::mutex> _(mut_allocators);
+  for (auto &allocator : allocators) {
+    if (allocator->data == ptr) {
+      allocator->release(size, (uint64_t *)ptr);
+      return;
+    }
+  }
+}
+
 void *MemoryPool::allocate_raw_memory(std::size_t size) {
   std::lock_guard<std::mutex> _(mut_raw_alloc);
   void *ptr = nullptr;
@@ -102,6 +112,7 @@ void *MemoryPool::allocate_raw_memory(std::size_t size) {
 }
 
 void MemoryPool::deallocate_raw_memory(void *ptr) {
+  std::lock_guard<std::mutex> _(mut_raw_alloc);
   if (!raw_memory_chunks_.count(ptr)) {
     TI_ERROR("Memory address ({:}) is not allocated", ptr);
   }

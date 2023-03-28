@@ -72,8 +72,6 @@ class LlvmProgramImpl : public ProgramImpl {
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) override;
 
-  void dump_cache_data_to_disk() override;
-
   /* -------------------------------- */
   /* ---- JIT-Runtime Interfaces ---- */
   /* -------------------------------- */
@@ -276,9 +274,7 @@ class LlvmProgramImpl : public ProgramImpl {
   ParallelExecutor compilation_workers;  // parallel compilation
 
  protected:
-  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
  private:
   std::size_t num_snode_trees_processed_{0};

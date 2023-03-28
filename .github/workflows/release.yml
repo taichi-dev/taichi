@@ -18,7 +18,7 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
-  CI_IMAGE_VERSION: '202303211008'
+  CI_IMAGE_VERSION: '202303241150'
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
 
@@ -52,16 +52,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports 3.8 and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -143,7 +143,6 @@ jobs:
              registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/build.py
 
-
         env:
           PY: ${{ matrix.python }}
           PROJECT_NAME: ${{ matrix.name }}
@@ -165,7 +164,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
+             registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
@@ -318,7 +317,7 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_test.ps1
         env:
           PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cpu,cuda,opengl,vulkan"

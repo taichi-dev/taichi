@@ -1052,11 +1052,10 @@ class TaskCodegen : public IRVisitor {
     }
 #undef BINARY_OP_TO_SPIRV_BITWISE
 
-#define BINARY_OP_TO_SPIRV_LOGICAL(op, func)                          \
-  else if (op_type == BinaryOpType::op) {                             \
-    bin_value = ir_->func(lhs_value, rhs_value);                      \
-    bin_value = ir_->cast(dst_type, bin_value);                       \
-    bin_value = ir_->make_value(spv::OpSNegate, dst_type, bin_value); \
+#define BINARY_OP_TO_SPIRV_LOGICAL(op, func)     \
+  else if (op_type == BinaryOpType::op) {        \
+    bin_value = ir_->func(lhs_value, rhs_value); \
+    bin_value = ir_->cast(dst_type, bin_value);  \
   }
 
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_lt, lt)
@@ -2412,7 +2411,6 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   }
   kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
   kernel_attribs.name = params_.ti_kernel_name;
-  kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
 }
 
 void lower(const CompileConfig &config, Kernel *kernel) {

@@ -81,18 +81,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
 
-  if (kernel->is_evaluator) {
-    TI_ASSERT(autodiff_mode == AutodiffMode::kNone);
-
-    irpass::demote_operations(ir, config);
-    print("Operations demoted");
-
-    irpass::offload(ir, config);
-    print("Offloaded");
-    irpass::analysis::verify(ir);
-    return;
-  }
-
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
   if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
@@ -312,7 +300,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (config.arch == Arch::cuda && config.half2_vectorization &&
-      !kernel->is_evaluator && !get_custom_cuda_library_path().empty()) {
+      !get_custom_cuda_library_path().empty()) {
     irpass::vectorize_half2(ir);
 
     irpass::type_check(ir, config);

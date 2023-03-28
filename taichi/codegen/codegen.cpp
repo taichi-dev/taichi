@@ -25,37 +25,43 @@ namespace taichi::lang {
 
 KernelCodeGen::KernelCodeGen(const CompileConfig &compile_config,
                              const Kernel *kernel,
+                             IRNode *ir,
                              TaichiLLVMContext &tlctx)
     : prog(kernel->program),
       kernel(kernel),
+      ir(ir),
       compile_config_(compile_config),
       tlctx_(tlctx) {
-  this->ir = kernel->ir.get();
 }
 
 std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
     const CompileConfig &compile_config,
     const Kernel *kernel,
+    IRNode *ir,
     TaichiLLVMContext &tlctx) {
 #ifdef TI_WITH_LLVM
   const auto arch = compile_config.arch;
   if (arch_is_cpu(arch)) {
-    return std::make_unique<KernelCodeGenCPU>(compile_config, kernel, tlctx);
+    return std::make_unique<KernelCodeGenCPU>(compile_config, kernel, ir,
+                                              tlctx);
   } else if (arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
-    return std::make_unique<KernelCodeGenCUDA>(compile_config, kernel, tlctx);
+    return std::make_unique<KernelCodeGenCUDA>(compile_config, kernel, ir,
+                                               tlctx);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (arch == Arch::dx12) {
 #if defined(TI_WITH_DX12)
-    return std::make_unique<KernelCodeGenDX12>(compile_config, kernel, tlctx);
+    return std::make_unique<KernelCodeGenDX12>(compile_config, kernel, ir,
+                                               tlctx);
 #else
     TI_NOT_IMPLEMENTED
 #endif
   } else if (arch == Arch::amdgpu) {
 #if defined(TI_WITH_AMDGPU)
-    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel, tlctx);
+    return std::make_unique<KernelCodeGenAMDGPU>(compile_config, kernel, ir,
+                                                 tlctx);
 #else
     TI_NOT_IMPLEMENTED
 #endif
@@ -71,7 +77,7 @@ std::unique_ptr<KernelCodeGen> KernelCodeGen::create(
 LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   irpass::ast_to_ir(compile_config_, *kernel, false);
 
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto block = dynamic_cast<Block *>(ir);
   auto &worker = get_llvm_program(kernel->program)->compilation_workers;
   TI_ASSERT(block);
 
@@ -86,15 +92,9 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
                                          offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
-    if (kernel->is_evaluator) {
-      compile_func();
-    } else {
-      worker.enqueue(compile_func);
-    }
+    worker.enqueue(compile_func);
   }
-  if (!kernel->is_evaluator) {
-    worker.flush();
-  }
+  worker.flush();
   return tlctx_.link_compiled_tasks(std::move(data));
 }
 

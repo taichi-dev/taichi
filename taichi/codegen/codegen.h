@@ -45,6 +45,7 @@ class KernelCodeGen {
  public:
   explicit KernelCodeGen(const CompileConfig &compile_config,
                          const Kernel *kernel,
+                         IRNode *ir,
                          TaichiLLVMContext &tlctx);
 
   virtual ~KernelCodeGen() = default;
@@ -52,12 +53,8 @@ class KernelCodeGen {
   static std::unique_ptr<KernelCodeGen> create(
       const CompileConfig &compile_config,
       const Kernel *kernel,
+      IRNode *ir,
       TaichiLLVMContext &tlctx);
-
-  virtual FunctionType compile_to_function() = 0;
-  virtual bool supports_offline_cache() const {
-    return false;
-  }
 
 #ifdef TI_WITH_LLVM
   virtual LLVMCompiledKernel compile_kernel_to_module();

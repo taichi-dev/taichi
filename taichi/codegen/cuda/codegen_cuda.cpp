@@ -693,14 +693,6 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
   return gen.run_compilation();
 }
 
-FunctionType KernelCodeGenCUDA::compile_to_function() {
-  TI_AUTO_PROF
-  CUDAModuleToFunctionConverter converter{
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(this->kernel, compile_kernel_to_module());
-}
-
 FunctionType CUDAModuleToFunctionConverter::convert(
     const std::string &kernel_name,
     const std::vector<Callable::Parameter> &args,

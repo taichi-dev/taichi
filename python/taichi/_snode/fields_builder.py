@@ -38,6 +38,7 @@ class FieldsBuilder:
         self.root = snode.SNode(self.ptr)
         self.finalized = False
         self.empty = True
+        impl.get_runtime().initialize_fields_builder(self)
 
     # TODO: move this into SNodeTree
     @classmethod
@@ -171,6 +172,7 @@ class FieldsBuilder:
         if self.empty and raise_warning:
             warning("Finalizing an empty FieldsBuilder!")
         self.finalized = True
+        impl.get_runtime().finalize_fields_builder(self)
         return SNodeTree(
             _ti_core.finalize_snode_tree(_snode_registry, self.ptr,
                                          impl.get_runtime().prog,

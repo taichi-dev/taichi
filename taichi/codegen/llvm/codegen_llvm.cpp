@@ -785,7 +785,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       TI_NOT_IMPLEMENTED
     }
     llvm_val[stmt] =
-        builder->CreateSExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -2610,8 +2610,7 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
                                   const Kernel *kernel) {
     bool verbose = config.print_ir;
-    if ((kernel->is_accessor && !config.print_accessor_ir) ||
-        (kernel->is_evaluator && !config.print_evaluator_ir)) {
+    if (kernel->is_accessor && !config.print_accessor_ir) {
       verbose = false;
     }
     irpass::offload_to_executable(

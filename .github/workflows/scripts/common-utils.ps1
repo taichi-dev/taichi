@@ -88,53 +88,6 @@ function Setup-VS {
     throw "Could not find Visual Studio with Clang"
 }
 
-function Setup-Python($libsDir, $version = "3.7") {
-    if ([string]::IsNullOrEmpty($version)) {
-        throw "Should specify Python version"
-    }
-
-    Info "Setting up Python environment $version"
-
-    function PipOps {
-        Invoke python -m pip install -U pip wheel
-        Invoke python -m pip uninstall taichi taichi-nightly -y
-        # These have to be re-installed to avoid strange certificate issue
-        # on CPU docker environment
-        Invoke python -m pip install --upgrade --force-reinstall numpy cmake wheel
-    }
-
-    if (Get-Command python -ErrorAction SilentlyContinue) {
-        $ver = & python --version
-        Info "Found $ver" "Python"
-        if ($ver.Startswith("Python ${version}.")) {
-            Info "Using $ver" "Python"
-            $venv = "$libsDir/taichi-venv-$version"
-            if(-not (Test-Path $venv)) {
-                Invoke python -m venv $venv
-            }
-            . "$libsDir/taichi-venv-$version/Scripts/activate.ps1"
-            PipOps
-            return
-        }
-    }
-
-    if (Get-Command conda -ErrorAction SilentlyContinue) {
-        Info "Using conda environment" "Python"
-        # <Workaround> bad conda in container
-        Invoke conda shell.powershell hook | Out-String | Invoke-Expression
-        # </Workaround>
-        $condaEnv = "$libsDir/taichi-conda-$version"
-        if (-not (Test-Path $condaEnv)) {
-            conda create -y -q --prefix=$condaEnv python=$version
-        }
-        conda activate $condaEnv
-        PipOps
-        return
-    }
-
-    throw "Could not setup Python"
-}
-
 function Resolve-Path-String-Force {
     <#
     .SYNOPSIS

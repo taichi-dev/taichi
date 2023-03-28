@@ -40,7 +40,6 @@ Kernel::Kernel(Program &program,
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
-  is_evaluator = false;
   compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
 
@@ -164,7 +163,6 @@ void Kernel::init(Program &program,
   this->program = &program;
 
   is_accessor = false;
-  is_evaluator = false;
   compiled_ = nullptr;
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();

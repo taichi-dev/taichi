@@ -33,6 +33,7 @@ classifiers = [
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
 ]
 
 
@@ -163,6 +164,9 @@ def get_cmake_args():
 BLACKLISTED_FILES = [
     'libSPIRV-Tools-shared.so',
     'libSPIRV-Tools-shared.dll',
+    'libtaichi_c_api.so',
+    'taichi_c_api.dll',
+    'libtaichi_c_api.dylib',
 ]
 
 WHITELISTED_FILES = [
@@ -212,7 +216,7 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
-      python_requires=">=3.6,<3.11",
+      python_requires=">=3.6,<3.12",
       install_requires=[
           'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'

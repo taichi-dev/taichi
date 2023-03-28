@@ -25,9 +25,6 @@ i32 do_nothing(RuntimeContext *context) {
 }
 
 i32 refresh_counter(RuntimeContext *context) {
-  auto runtime = context->runtime;
-  auto queue = runtime->mem_req_queue;
-  queue->tail++;
   return 0;
 }
 

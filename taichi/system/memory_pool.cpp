@@ -15,8 +15,7 @@ namespace taichi::lang {
 
 // In the future we wish to move the MemoryPool inside each Device
 // so that the memory allocated from each Device can be used as-is.
-MemoryPool::MemoryPool(Arch arch, Device *device)
-    : arch_(arch), device_(device) {
+MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
            default_allocator_size / 1024 / 1024);
   // TODO: initialize allocator according to arch
@@ -43,7 +42,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
       // allocation have failed
       auto new_buffer_size = std::max(size, default_allocator_size);
       allocators.emplace_back(
-          std::make_unique<UnifiedAllocator>(new_buffer_size, device_, this));
+          std::make_unique<UnifiedAllocator>(new_buffer_size, this));
       ret = allocators.back()->allocate(size, alignment);
     }
     TI_ASSERT(ret);

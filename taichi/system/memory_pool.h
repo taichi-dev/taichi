@@ -18,6 +18,12 @@ class UnifiedAllocator;
 
 class TI_DLL_EXPORT MemoryPool {
  public:
+  template <typename ARCH>
+  MemoryPool &get_instance() {
+    static MemoryPool *memory_pool = new MemoryPool(ARCH);
+    return *memory_pool;
+  }
+
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
   static constexpr std::size_t default_allocator_size =
       1 << 30;                                    // 1 GB per allocator
@@ -25,13 +31,13 @@ class TI_DLL_EXPORT MemoryPool {
   std::mutex mut_allocators;
   std::mutex mut_raw_alloc;
 
-  MemoryPool(Arch arch, Device *device);
-
   void *allocate(std::size_t size, std::size_t alignment);
 
   ~MemoryPool();
 
  private:
+  MemoryPool(Arch arch);
+
   void *allocate_raw_memory(std::size_t size);
 
   // Only MemoryPool can deallocate raw memory
@@ -42,7 +48,6 @@ class TI_DLL_EXPORT MemoryPool {
   std::map<void *, std::size_t> raw_memory_chunks_;
 
   Arch arch_;
-  Device *device_;
 
   friend class UnifiedAllocator;
 };

@@ -21,7 +21,7 @@ class UnifiedAllocator {
   uint8 *tail;
 
  public:
-  UnifiedAllocator(std::size_t size, Device *device, MemoryPool *memory_pool);
+  UnifiedAllocator(std::size_t size, MemoryPool *memory_pool);
 
   ~UnifiedAllocator();
 
@@ -36,9 +36,6 @@ class UnifiedAllocator {
   }
 
   UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
-
- private:
-  Device *device_{nullptr};
 };
 
 }  // namespace taichi::lang

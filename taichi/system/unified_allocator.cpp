@@ -16,10 +16,8 @@
 
 namespace taichi::lang {
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size,
-                                   Device *device,
-                                   MemoryPool *memory_pool)
-    : size_(size), device_(device) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, MemoryPool *memory_pool)
+    : size_(size) {
   auto t = Time::get_time();
 
   TI_TRACE("Allocating virtual address space of size {} MB",

@@ -155,8 +155,6 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
    * https://github.com/taichi-dev/taichi/blob/734da3f8f4439ce7f6a5337df7c54fb6dc34def8/python/taichi/lang/kernel_impl.py#L360-L362
    */
   std::string extract_original_kernel_name(const std::string &kernel_name) {
-    if (kernel->is_evaluator)
-      return kernel_name;
     int pos = kernel_name.length() - 1;
     int underline_count = 0;
     int redundant_count = 3;
@@ -241,19 +239,6 @@ class TaskCodeGenWASM : public TaskCodeGenLLVM {
     TI_NOT_IMPLEMENTED;
   }
 };
-
-FunctionType KernelCodeGenWASM::compile_to_function() {
-  TI_AUTO_PROF
-  auto linked = compile_kernel_to_module();
-  auto *executor = get_llvm_program(prog)->get_runtime_executor();
-  auto *jit_module = executor->create_jit_module(std::move(linked.module));
-  auto kernel_symbol = jit_module->lookup_function(linked.tasks[0].name);
-  return [kernel_symbol](LaunchContextBuilder &context) {
-    TI_TRACE("Launching Taichi Kernel Function");
-    auto func = (int32(*)(void *))kernel_symbol;
-    func(&context.get_context());
-  };
-}
 
 LLVMCompiledTask KernelCodeGenWASM::compile_task(
     const CompileConfig &config,

@@ -14,8 +14,9 @@ class KernelCodeGenDX12 : public KernelCodeGen {
  public:
   explicit KernelCodeGenDX12(const CompileConfig &compile_config,
                              const Kernel *kernel,
+                             IRNode *ir,
                              TaichiLLVMContext &tlctx)
-      : KernelCodeGen(compile_config, kernel, tlctx) {
+      : KernelCodeGen(compile_config, kernel, ir, tlctx) {
   }
   struct CompileResult {
     std::vector<std::vector<uint8_t>> task_dxil_source_codes;
@@ -29,7 +30,6 @@ class KernelCodeGenDX12 : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif
-  FunctionType compile_to_function() override;
 };
 
 }  // namespace taichi::lang

@@ -37,8 +37,9 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  auto module_info = KernelCodeGenWASM(compile_config_, kernel, tlctx_)
-                         .compile_kernel_to_module();
+  auto module_info =
+      KernelCodeGenWASM(compile_config_, kernel, kernel->ir.get(), tlctx_)
+          .compile_kernel_to_module();
   if (module_) {
     llvm::Linker::linkModules(*module_, std::move(module_info.module),
                               llvm::Linker::OverrideFromSrc);

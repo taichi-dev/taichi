@@ -93,6 +93,7 @@ void KernelCompilationManager::dump() {
   if (!lock_with_file(lock_path)) {
     TI_WARN("Lock {} failed. Please run 'ti cache clean -p {}' and try again.",
             lock_path, config_.offline_cache_path);
+    caching_kernels_.clear();  // Ignore the caching kernels
     return;
   }
 
@@ -118,17 +119,24 @@ void KernelCompilationManager::dump() {
       TI_ASSERT(!ok || iter->second.size == 0);
     }
   }
+  // Clear caching_kernels_
+  caching_kernels_.clear();
   // Dump cached CompiledKernelData to disk
   for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
-      const auto arch = k.compiled_kernel_data->arch();
-      auto cache_filename = make_filename(k.kernel_key, arch);
+      auto cache_filename = make_filename(k.kernel_key);
       if (try_lock_with_file(cache_filename)) {
         std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
         TI_ASSERT(fs.is_open());
-        k.compiled_kernel_data->dump(fs);
-        k.size = fs.tellp();
-        data.size += k.size;
+        auto err = k.compiled_kernel_data->dump(fs);
+        if (err == CompiledKernelData::Err::kNoError) {
+          TI_ASSERT(!!fs);
+          k.size = fs.tellp();
+          data.size += k.size;
+        } else {
+          TI_DEBUG("Dump cached CompiledKernelData(kernel_key={}) failed: {}",
+                   k.kernel_key, CompiledKernelData::get_err_msg(err));
+        }
       }
     }
   }
@@ -155,8 +163,7 @@ void KernelCompilationManager::clean_offline_cache(
 }
 
 std::string KernelCompilationManager::make_filename(
-    const std::string &kernel_key,
-    Arch arch) const {
+    const std::string &kernel_key) const {
   return join_path(config_.offline_cache_path,
                    fmt::format(kCacheFilenameFormat, kernel_key));
 }
@@ -246,7 +253,7 @@ const CompiledKernelData &KernelCompilationManager::compile_and_cache_kernel(
 std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
     const std::string &kernel_key,
     Arch arch) {
-  const auto filename = make_filename(kernel_key, arch);
+  const auto filename = make_filename(kernel_key);
   if (std::ifstream ifs(filename, std::ios::in | std::ios::binary);
       ifs.is_open()) {
     CompiledKernelData::Err err;

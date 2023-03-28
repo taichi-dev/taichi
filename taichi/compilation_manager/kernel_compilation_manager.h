@@ -72,7 +72,7 @@ class KernelCompilationManager final {
                            double cleaning_factor) const;
 
  private:
-  std::string make_filename(const std::string &kernel_key, Arch arch) const;
+  std::string make_filename(const std::string &kernel_key) const;
 
   std::unique_ptr<CompiledKernelData> compile_kernel(
       const CompileConfig &compile_config,

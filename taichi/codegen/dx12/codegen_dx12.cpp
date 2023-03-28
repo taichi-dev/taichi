@@ -233,7 +233,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 
   irpass::ast_to_ir(config, *kernel, false);
 
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  auto block = dynamic_cast<Block *>(ir);
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
@@ -267,9 +267,4 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
-
-FunctionType KernelCodeGenDX12::compile_to_function() {
-  // FIXME: implement compile_to_function.
-  return [](LaunchContextBuilder &ctx) {};
-}
 }  // namespace taichi::lang

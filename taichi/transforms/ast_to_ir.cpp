@@ -19,8 +19,7 @@ void ast_to_ir(const CompileConfig &config,
   }
 
   bool verbose = config.print_ir;
-  if ((kernel.is_accessor && !config.print_accessor_ir) ||
-      (kernel.is_evaluator && !config.print_evaluator_ir))
+  if (kernel.is_accessor && !config.print_accessor_ir)
     verbose = false;
 
   if (to_executable) {

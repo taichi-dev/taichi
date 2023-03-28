@@ -14,11 +14,10 @@ class KernelCodeGenWASM : public KernelCodeGen {
  public:
   explicit KernelCodeGenWASM(const CompileConfig &compile_config,
                              const Kernel *kernel,
+                             IRNode *ir,
                              TaichiLLVMContext &tlctx)
-      : KernelCodeGen(compile_config, kernel, tlctx) {
+      : KernelCodeGen(compile_config, kernel, ir, tlctx) {
   }
-
-  FunctionType compile_to_function() override;
 
 #ifdef TI_WITH_LLVM
   LLVMCompiledTask compile_task(

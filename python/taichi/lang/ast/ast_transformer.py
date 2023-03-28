@@ -510,8 +510,16 @@ class ASTTransformer(Builder):
             module="taichi")
 
     @staticmethod
-    # extract format specifier from raw_string, and also handles positional arguments, if there are any
-    def extract_format_spec(raw_string, *raw_args, **raw_keywords):
+    # Parses a formatted string and extracts format specifiers from it, along with positional and keyword arguments.
+    # This function produces a canonicalized formatted string that includes solely empty replacement fields, e.g. 'qwerty {} {} {} {} {}'.
+    # Note that the arguments can be used multiple times in the string.
+    # e.g.:
+    # origin input: 'qwerty {1} {} {1:.3f} {k:.4f} {k:}'.format(1.0, 2.0, k=k)
+    # raw_string: 'qwerty {1} {} {1:.3f} {k:.4f} {k:}'
+    # raw_args: [1.0, 2.0]
+    # raw_keywords: {'k': <ti.Expr>}
+    # return value: ['qwerty {} {} {} {} {}', 2.0, 1.0, ['__ti_fmt_value__', 2.0, '.3f'], ['__ti_fmt_value__', <ti.Expr>, '.4f'], <ti.Expr>]
+    def canonicalize_formatted_string(raw_string, *raw_args, **raw_keywords):
         raw_brackets = re.findall(r'{(.*?)}', raw_string)
         brackets = []
         unnamed = 0
@@ -527,9 +535,9 @@ class ASTTransformer(Builder):
             # handle empty spec
             if spec == '':
                 spec = None
-            brackets.append([item, spec])
+            brackets.append((item, spec))
 
-        # check error first
+        # check for errors in the arguments
         max_args_index = max([t[0] for t in brackets if isinstance(t[0], int)],
                              default=-1)
         if max_args_index + 1 != len(raw_args):
@@ -544,14 +552,16 @@ class ASTTransformer(Builder):
             if item not in brackets_keywords:
                 raise TaichiSyntaxError(f"Keyword '{item}' not used.")
 
+        # reorganize the arguments based on their positions, keywords, and format specifiers
         args = []
         for (item, spec) in brackets:
-            new_item = raw_args[item] if isinstance(
-                item, int) else raw_keywords[item]
+            new_arg = raw_args[item] if isinstance(item,
+                                                   int) else raw_keywords[item]
             if spec is not None:
-                args.append(['__ti_fmt_value__', new_item, spec])
+                args.append(['__ti_fmt_value__', new_arg, spec])
             else:
-                args.append(new_item)
+                args.append(new_arg)
+        # put the formatted string as the first argument to make ti.format() happy
         args.insert(0, re.sub(r'{.*?}', '{}', raw_string))
         return args
 
@@ -591,8 +601,8 @@ class ASTTransformer(Builder):
         if isinstance(node.func, ast.Attribute) and isinstance(
                 node.func.value.ptr, str) and node.func.attr == 'format':
             raw_string = node.func.value.ptr
-            args = ASTTransformer.extract_format_spec(raw_string, *args,
-                                                      **keywords)
+            args = ASTTransformer.canonicalize_formatted_string(
+                raw_string, *args, **keywords)
             node.ptr = impl.ti_format(*args)
             return node.ptr
 

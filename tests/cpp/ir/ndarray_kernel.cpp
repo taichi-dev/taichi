@@ -23,6 +23,7 @@ std::unique_ptr<Kernel> setup_kernel1(Program *prog) {
   auto ker1 = std::make_unique<Kernel>(*prog, std::move(block), "ker1");
   ker1->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
   ker1->finalize_params();
+  ker1->finalize_rets();
   return ker1;
 }
 
@@ -43,6 +44,7 @@ std::unique_ptr<Kernel> setup_kernel2(Program *prog) {
   ker2->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
   ker2->insert_scalar_param(get_data_type<int>());
   ker2->finalize_params();
+  ker2->finalize_rets();
   return ker2;
 }
 }  // namespace taichi::lang

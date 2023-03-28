@@ -25,6 +25,8 @@ class KernelCodeGenCPU : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 
+ protected:
+  void optimize_module(llvm::Module *module) override;
 #endif  // TI_WITH_LLVM
 };
 

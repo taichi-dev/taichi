@@ -17,6 +17,7 @@
 
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
+#include "fp16.h"
 
 namespace taichi::lang {
 namespace spirv {
@@ -193,6 +194,9 @@ class TaskCodegen : public IRVisitor {
       if (dt->is_primitive(PrimitiveTypeID::f32)) {
         return ir_->float_immediate_number(
             stype, static_cast<double>(const_val.val_f32), false);
+      } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        return ir_->float_immediate_number(
+            stype, double(fp16_ieee_to_fp32_value(const_val.val_u16)), false);
       } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
         return ir_->int_immediate_number(
             stype, static_cast<int64_t>(const_val.val_i32), false);

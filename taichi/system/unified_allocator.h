@@ -21,7 +21,7 @@ class UnifiedAllocator {
   uint8 *tail;
 
  public:
-  UnifiedAllocator(std::size_t size, MemoryPool *memory_pool);
+  UnifiedAllocator(std::size_t size, Arch arch);
 
   ~UnifiedAllocator();
 

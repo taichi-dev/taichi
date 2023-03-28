@@ -148,7 +148,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   Device *compute_device = nullptr;
   compute_device = program_impl_->get_compute_device();
   // Must have handled all the arch fallback logic by this point.
-  memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
   total_compilation_time_ = 0;
   num_instances_ += 1;
@@ -197,8 +196,7 @@ FunctionType Program::compile(const CompileConfig &compile_config,
 }
 
 void Program::materialize_runtime() {
-  program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                     &result_buffer);
+  program_impl_->materialize_runtime(profiler.get(), &result_buffer);
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {

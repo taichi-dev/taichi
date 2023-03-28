@@ -13,20 +13,30 @@
 
 namespace taichi::lang {
 
+MemoryPool &MemoryPool::get_instance(Arch arch) {
+  if (!arch_is_cuda(arch) && !arch_is_cpu(arch)) {
+#if defined TI_PLATFORM_OSX
+    arch = Arch::arm64;
+#else
+    arch = Arch::x64;
+#endif
+  }
+
+  if (arch_is_cuda(arch)) {
+    static MemoryPool *cuda_memory_pool = new MemoryPool(arch);
+    return *cuda_memory_pool;
+  }
+
+  static MemoryPool *cpu_memory_pool = new MemoryPool(arch);
+  return *cpu_memory_pool;
+}
+
 // In the future we wish to move the MemoryPool inside each Device
 // so that the memory allocated from each Device can be used as-is.
 MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
   TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
            default_allocator_size / 1024 / 1024);
   // TODO: initialize allocator according to arch
-
-  if (!arch_is_cuda(arch_) && !arch_is_cpu(arch_)) {
-#if defined TI_PLATFORM_OSX
-    arch_ = Arch::arm64;
-#else
-    arch_ = Arch::x64;
-#endif
-  }
 }
 
 void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
@@ -42,7 +52,7 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
       // allocation have failed
       auto new_buffer_size = std::max(size, default_allocator_size);
       allocators.emplace_back(
-          std::make_unique<UnifiedAllocator>(new_buffer_size, this));
+          std::make_unique<UnifiedAllocator>(new_buffer_size, arch_));
       ret = allocators.back()->allocate(size, alignment);
     }
     TI_ASSERT(ret);

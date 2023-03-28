@@ -16,13 +16,12 @@
 
 namespace taichi::lang {
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, MemoryPool *memory_pool)
-    : size_(size) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch) : size_(size) {
   auto t = Time::get_time();
 
   TI_TRACE("Allocating virtual address space of size {} MB",
            size / 1024 / 1024);
-  void *ptr = memory_pool->allocate_raw_memory(size);
+  void *ptr = MemoryPool::get_instance(arch).allocate_raw_memory(size);
   data = (uint8 *)ptr;
 
   TI_ASSERT(data != nullptr);

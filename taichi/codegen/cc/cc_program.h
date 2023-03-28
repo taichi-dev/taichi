@@ -38,8 +38,7 @@ class CCProgramImpl : public ProgramImpl {
     return 0;  // TODO: support sparse in cc.
   }
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *,
+  void materialize_runtime(KernelProfilerBase *,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;

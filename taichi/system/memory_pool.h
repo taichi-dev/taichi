@@ -18,11 +18,7 @@ class UnifiedAllocator;
 
 class TI_DLL_EXPORT MemoryPool {
  public:
-  template <typename ARCH>
-  MemoryPool &get_instance() {
-    static MemoryPool *memory_pool = new MemoryPool(ARCH);
-    return *memory_pool;
-  }
+  static MemoryPool &get_instance(Arch arch);
 
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
   static constexpr std::size_t default_allocator_size =
@@ -34,10 +30,9 @@ class TI_DLL_EXPORT MemoryPool {
   void *allocate(std::size_t size, std::size_t alignment);
 
   ~MemoryPool();
-
- private:
   MemoryPool(Arch arch);
 
+ private:
   void *allocate_raw_memory(std::size_t size);
 
   // Only MemoryPool can deallocate raw memory

@@ -14,7 +14,6 @@ CompileConfig::CompileConfig() {
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;
-  print_evaluator_ir = false;
   use_llvm = true;
   demote_dense_struct_fors = true;
   advanced_optimization = true;

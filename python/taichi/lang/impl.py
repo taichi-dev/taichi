@@ -316,6 +316,22 @@ class PyTaichi:
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
+        self.unfinalized_fields_builder = {}
+
+    def initialize_fields_builder(self, builder):
+        self.unfinalized_fields_builder[builder] = get_traceback(2)
+
+    def finalize_fields_builder(self, builder):
+        self.unfinalized_fields_builder.pop(builder)
+
+    def validate_fields_builder(self):
+        for builder, tb in self.unfinalized_fields_builder.items():
+            if builder == _root_fb:
+                continue
+
+            raise TaichiRuntimeError(
+                f'Field builder {builder} is not finalized. '
+                f'Please call finalize() on it. Traceback:\n{tb}')
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions)
@@ -428,6 +444,8 @@ class PyTaichi:
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
+
+        self.validate_fields_builder()
 
         self._check_field_not_placed()
         self._check_gradient_field_not_placed("grad")

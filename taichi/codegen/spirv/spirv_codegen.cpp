@@ -2411,7 +2411,6 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   }
   kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
   kernel_attribs.name = params_.ti_kernel_name;
-  kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
 }
 
 void lower(const CompileConfig &config, Kernel *kernel) {

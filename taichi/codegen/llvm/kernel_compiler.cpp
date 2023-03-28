@@ -16,8 +16,7 @@ KernelCompiler::IRNodePtr KernelCompiler::compile(
     const Kernel &kernel_def) const {
   auto ir = irpass::analysis::clone(kernel_def.ir.get());
   bool verbose = compile_config.print_ir;
-  if ((kernel_def.is_accessor && !compile_config.print_accessor_ir) ||
-      (kernel_def.is_evaluator && !compile_config.print_evaluator_ir)) {
+  if (kernel_def.is_accessor && !compile_config.print_accessor_ir) {
     verbose = false;
   }
   irpass::compile_to_offloads(ir.get(), compile_config, &kernel_def,

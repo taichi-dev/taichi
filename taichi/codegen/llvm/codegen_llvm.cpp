@@ -2610,8 +2610,7 @@ LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
                                   const Kernel *kernel) {
     bool verbose = config.print_ir;
-    if ((kernel->is_accessor && !config.print_accessor_ir) ||
-        (kernel->is_evaluator && !config.print_evaluator_ir)) {
+    if (kernel->is_accessor && !config.print_accessor_ir) {
       verbose = false;
     }
     irpass::offload_to_executable(

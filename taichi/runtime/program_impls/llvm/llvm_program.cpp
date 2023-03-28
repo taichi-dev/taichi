@@ -53,8 +53,6 @@ FunctionType llvm_compiled_kernel_to_executable(
     AMDGPUModuleToFunctionConverter converter(tlctx, executor);
     func = converter.convert(kernel, std::move(llvm_compiled_kernel));
 #endif
-  } else if (arch == Arch::wasm) {
-    // Not implemented
   } else if (arch == Arch::dx12) {
     // Not implemented
   }

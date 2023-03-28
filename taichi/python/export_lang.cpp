@@ -782,6 +782,8 @@ void export_lang(py::module &m) {
       .def("get_ret_type", &Expr::get_ret_type)
       .def("is_tensor",
            [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+      .def("is_struct",
+           [](Expr *expr) { return expr->expr->ret_type->is<StructType>(); })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
              if (expr->expr->ret_type->is<TensorType>()) {
@@ -865,6 +867,7 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(sqrt)
   DEFINE_EXPRESSION_OP(round)
   DEFINE_EXPRESSION_OP(floor)
+  DEFINE_EXPRESSION_OP(frexp)
   DEFINE_EXPRESSION_OP(ceil)
   DEFINE_EXPRESSION_OP(abs)
   DEFINE_EXPRESSION_OP(sin)

@@ -199,6 +199,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::frexp) {
+      // frexp returns a struct type of {double, i32} and it's set in frontend
+      // IR lowering.
+      return;
+    }
     auto operand_type = stmt->operand->ret_type;
     stmt->ret_type = operand_type;
     if (stmt->is_cast()) {

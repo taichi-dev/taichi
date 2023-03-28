@@ -18,11 +18,10 @@ class TI_DLL_EXPORT MemoryPool {
  public:
   std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
   static constexpr std::size_t default_allocator_size =
-      1 << 30;  // 1 GB per allocator
+      1 << 30;                                    // 1 GB per allocator
+  static constexpr size_t page_size = (1 << 12);  // 4 KB page size by default
   std::mutex mut_allocators;
-
-  void *cuda_stream{nullptr};
-  void *amdgpu_stream{nullptr};
+  std::mutex mut_raw_alloc;
 
   // In the future we wish to move the MemoryPool inside each Device
   // so that the memory allocated from each Device can be used as-is.
@@ -33,8 +32,11 @@ class TI_DLL_EXPORT MemoryPool {
   ~MemoryPool();
 
  private:
-  static constexpr bool use_cuda_stream = false;
-  static constexpr bool use_amdgpu_stream = false;
+  void *allocate_raw_memory(std::size_t size, Arch arch);
+  void deallocate_raw_memory(void *ptr);
+
+  std::map<void *, std::size_t> ptr_map_;
+
   Arch arch_;
   Device *device_;
 };

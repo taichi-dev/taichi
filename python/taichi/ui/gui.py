@@ -355,7 +355,7 @@ class GUI:
             normalize (bool, Optional): Display the normalized scalar field if set to True.
             Default is False.
         """
-        import matplotlib.cm as cm
+        from matplotlib import cm  # pylint: disable=import-outside-toplevel
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
             x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),
@@ -374,8 +374,8 @@ class GUI:
         else:
             output = scalar_field_np
         if normalize:
-            max, min = np.max(output), np.min(output)
-            output = (output - min) / (max - min)
+            scalar_max, scalar_min = np.max(output), np.min(output)
+            output = (output - scalar_min) / (scalar_max - scalar_min)
         self.set_image(cm.plasma(output))
 
     def circle(self, pos, color=0xFFFFFF, radius=1):

@@ -47,16 +47,23 @@ void *MemoryPool::allocate(std::size_t size,
 
   // TODO: refactor this part to allocator->allocate(size, alignment)
   if (arch_is_cpu(arch_)) {
-    // For UnifiedAllocator, we have to make it exclusive to make sure it's
-    // releasable
-    if (!allocators.empty() && !releasable) {
+    if (releasable) {
+      // For UnifiedAllocator, we have to make it exclusive to make sure it's
+      // releasable, usually used for small memory allocations so it's easy to
+      // alloc - release
+      allocators.emplace_back(std::make_unique<UnifiedAllocator>(
+          size, arch_, true /* is_exclusive */));
+      ret = allocators.back()->allocate(size, alignment);
+
+    } else if (!allocators.empty()) {
       ret = allocators.back()->allocate(size, alignment);
     }
+
     if (!ret) {
       // allocation have failed
       auto new_buffer_size = std::max(size, default_allocator_size);
-      allocators.emplace_back(std::make_unique<UnifiedAllocator>(
-          new_buffer_size, arch_, releasable /*is_exclusive*/));
+      allocators.emplace_back(
+          std::make_unique<UnifiedAllocator>(new_buffer_size, arch_));
       ret = allocators.back()->allocate(size, alignment);
     }
     TI_ASSERT(ret);

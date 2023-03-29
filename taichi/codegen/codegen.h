@@ -66,8 +66,11 @@ class KernelCodeGen {
     TI_NOT_IMPLEMENTED
   }
 
-#endif
  protected:
+  virtual void optimize_module(llvm::Module *module) {
+  }
+#endif
+
   const CompileConfig &get_compile_config() const {
     return compile_config_;
   }

@@ -4,7 +4,7 @@
 #include <mutex>
 
 #include "taichi/rhi/vulkan/vulkan_common.h"
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 
 namespace taichi::lang {
 namespace vulkan {

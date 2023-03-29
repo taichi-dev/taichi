@@ -15,5 +15,3 @@ target_include_directories(cuda_runtime
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(cuda_runtime PRIVATE cuda_rhi)

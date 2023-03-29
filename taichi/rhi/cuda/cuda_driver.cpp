@@ -1,6 +1,6 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/util/environ_config.h"
 

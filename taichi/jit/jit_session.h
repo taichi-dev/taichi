@@ -39,9 +39,6 @@ class JITSession {
                                             const CompileConfig &config,
                                             Arch arch);
 
-  virtual void global_optimize_module(llvm::Module *module) {
-  }
-
   virtual ~JITSession() = default;
 };
 

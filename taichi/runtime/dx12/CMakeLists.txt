@@ -14,5 +14,3 @@ target_include_directories(dx12_runtime
     ${PROJECT_SOURCE_DIR}
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(dx12_runtime PRIVATE dx12_rhi)

@@ -6,7 +6,7 @@
 #pragma once
 
 #include <array>
-#include <cassert>
+#include <assert.h>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -20,8 +20,11 @@
 #include <vector>
 #include "taichi/common/json.h"
 #include "taichi/common/json_serde.h"
+#include "taichi/common/zip.h"
 
 #ifdef TI_INCLUDED
+#include "taichi/common/logging.h"
+
 namespace taichi {
 #else
 #define TI_TRACE

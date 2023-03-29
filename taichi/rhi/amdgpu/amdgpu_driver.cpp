@@ -1,6 +1,6 @@
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/util/environ_config.h"
 

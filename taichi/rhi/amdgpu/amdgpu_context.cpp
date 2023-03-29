@@ -5,7 +5,6 @@
 #include <mutex>
 
 #include "taichi/util/lang_util.h"
-#include "taichi/program/program.h"
 #include "taichi/system/threading.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 #include "taichi/rhi/amdgpu/amdgpu_profiler.h"

@@ -40,7 +40,4 @@ target_include_directories(taichi_ui_vulkan
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_core)
 target_link_libraries(taichi_ui_vulkan PRIVATE taichi_common)
 target_link_libraries(taichi_ui_vulkan PRIVATE imgui)
-
-if(TI_WITH_VULKAN)
-  target_link_libraries(taichi_ui_vulkan PUBLIC vulkan_rhi)
-endif()
+target_link_libraries(taichi_ui_vulkan PRIVATE ti_device_api)

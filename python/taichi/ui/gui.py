@@ -740,7 +740,7 @@ class GUI:
 
         Args:
             vector_field (ti.Vector.field): The vector field being displayed.
-            arrow_spacing (int, optional): The spacing between vectors. 
+            arrow_spacing (int, optional): The spacing between vectors.
             color (Union[int, np.array], optional): The color of vectors.
 
         """
@@ -751,7 +751,7 @@ class GUI:
 
         # The largest vector should occupy 10% of the window
         scale_factor = min(self.res) * 0.1 / (max_magnitude + 1e-16)
-        
+
         x = np.arange(0, 1, arrow_spacing / nx)
         y = np.arange(0, 1, arrow_spacing / ny)
         X, Y = np.meshgrid(x, y)
@@ -760,7 +760,7 @@ class GUI:
                  * np.array([scale_factor / nx, scale_factor / ny])) \
                  .reshape(-1, 2, order='C')
         self.arrows(orig=begin, direction=incre, radius=1, color=color)
-        
+
     def show(self, file=None):
         """Shows the frame content in the gui window, or save the content to an
         image file.

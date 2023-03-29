@@ -13,6 +13,7 @@ class MemoryPool;
 // This class can only have one instance
 class UnifiedAllocator {
   std::size_t size_;
+  Arch arch_;
 
   // put these two on the unified memory so that GPU can have access
  public:

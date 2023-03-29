@@ -17,6 +17,7 @@ namespace taichi::lang {
 
 UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch) : size_(size) {
   auto t = Time::get_time();
+  arch_ = arch;
 
   TI_TRACE("Allocating virtual address space of size {} MB",
            size / 1024 / 1024);
@@ -53,8 +54,10 @@ void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
 }
 
 void UnifiedAllocator::release(size_t sz, uint64_t *ptr) {
-  // UnifiedAllocator never reuses the previously allocated memory
-  // therefore there's nothing to do here
+  // UnifiedAllocator is special in that it never reuses the previously
+  // allocated memory We have to release the entire memory chunk to avoid memory
+  // leak
+  MemoryPool::get_instance(arch_).deallocate_raw_memory(ptr);
 }
 
 taichi::lang::UnifiedAllocator::~UnifiedAllocator() {

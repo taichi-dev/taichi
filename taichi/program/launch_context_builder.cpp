@@ -127,9 +127,7 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (arg_buffer_size == 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends,
-    // and this function is no-op for these backends.
+  if (!arch_uses_llvm(kernel->arch)) {
     return;
   }
   int offset = args_type->get_element_offset(index);
@@ -138,8 +136,7 @@ void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (arg_buffer_size > 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends
+  if (arch_uses_llvm(kernel->arch)) {
     return get_struct_arg<T>({i});
   }
   return taichi_union_cast_with_different_sizes<T>(ctx_->args[i]);

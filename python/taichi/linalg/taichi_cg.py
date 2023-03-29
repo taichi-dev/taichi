@@ -1,0 +1,96 @@
+import taichi as ti
+from math import sqrt
+
+@ti.data_oriented
+class LinearOperator:
+    def __init__(self, matvec_kernel):
+        self._matvec = matvec_kernel
+
+    def matvec(self, x, Ax):
+        assert x.shape == Ax.shape, "Dimension mismatch x.shape != Ax.shape."
+        self._matvec(x, Ax)
+
+def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
+    assert b.dtype == x.dtype, "Dtype mismatch b.dtype != x.dtype."
+    if str(b.dtype) == 'f32':
+        solver_dtype = ti.f32
+    elif str(b.dtype) == 'f64':
+        solver_dtype = ti.f64
+    else:
+        print("Not supported dtype:", b.dtype)
+        exit()
+        
+    assert b.shape == x.shape, "Dimension mismatch b.shape != x.shape."
+    size = b.shape
+    
+    vector_fields_builder = ti.FieldsBuilder()
+    p = ti.field(dtype=solver_dtype)
+    r = ti.field(dtype=solver_dtype)
+    Ap = ti.field(dtype=solver_dtype)
+    vector_fields_builder.dense(ti.ij, size).place(p, r, Ap)
+    vector_fields_snode_tree = vector_fields_builder.finalize()
+
+    scalar_builder = ti.FieldsBuilder()
+    alpha = ti.field(dtype=solver_dtype)
+    beta = ti.field(dtype=solver_dtype)
+    scalar_builder.place(alpha, beta)
+    scalar_snode_tree = scalar_builder.finalize()
+
+    @ti.kernel
+    def init():
+        for I in ti.grouped(x):
+            r[I] = b[I]
+            p[I] = 0.0
+            Ap[I] = 0.0
+            
+    @ti.kernel
+    def reduce(p: ti.template(), q: ti.template()) -> solver_dtype:
+        result = 0.0
+        for I in ti.grouped(p):
+            result += p[I] * q[I]
+        return result
+
+    @ti.kernel
+    def update_x():
+        for I in ti.grouped(x):
+            x[I] += alpha[None] * p[I]
+            
+    @ti.kernel
+    def update_r():
+        for I in ti.grouped(r):
+            r[I] -= alpha[None] * Ap[I]
+
+    @ti.kernel
+    def update_p():
+        for I in ti.grouped(p):
+            p[I] = r[I] + beta[None] * p[I]
+
+    def solve():
+        init()
+        initial_rTr = reduce(r, r)
+        if not quiet:
+            print(">>> Initial residual =", (initial_rTr))
+        old_rTr = initial_rTr
+        update_p()
+        # -- Main loop --
+        for i in range(maxiter):
+            A._matvec(p, Ap)  # compute Ap = A x p
+            pAp = reduce(p, Ap)
+            alpha[None] = old_rTr / pAp
+            update_x()
+            update_r()
+            new_rTr = reduce(r, r)
+            if sqrt(new_rTr) < tol:
+                if not quiet:
+                    print('>>> Conjugate Gradient method converged.')
+                    print('>>> #iterations', i)
+                break
+            beta[None] = new_rTr / old_rTr
+            update_p()
+            old_rTr = new_rTr
+            if not quiet:
+                print(f'>>> Iter = {i+1:4}, Residual = {(new_rTr):e}')
+        
+    solve()
+    vector_fields_snode_tree.destroy()
+    scalar_snode_tree.destroy()

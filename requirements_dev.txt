@@ -8,7 +8,7 @@ yapf
 distro
 isort
 pylint
-requests==2.26
+requests
 twine
 wheel
 astunparse
@@ -16,5 +16,3 @@ pre-commit
 scikit-build
 numpy
 ninja; platform_system != 'Windows'
-cairocffi
-opencv-python

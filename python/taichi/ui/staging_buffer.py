@@ -37,12 +37,16 @@ def get_vbo_field(vertices):
 
 
 def get_indices_field(indices):
+    if isinstance(indices, np.ndarray):
+        return indices
     indices_arr = indices.to_numpy()
     indices_ndarray_cache[indices] = indices_arr
     return indices_arr
 
 
 def get_transforms_field(transforms):
+    if isinstance(transforms, np.ndarray):
+        return transforms
     transforms_arr = transforms.to_numpy()
     transforms_ndarray_cache[transforms] = transforms_arr
     return transforms_arr

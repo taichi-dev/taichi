@@ -2,7 +2,8 @@
 
 #include <mutex>
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
+#include "taichi/common/core.h"
 #include "taichi/rhi/cuda/cuda_types.h"
 
 #if (0)
@@ -34,7 +35,9 @@ constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN = 97;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR = 106;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED = 115;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR = 76;
+constexpr uint32 CU_MEMPOOL_ATTR_RELEASE_THRESHOLD = 4;
 constexpr uint32 CUDA_ERROR_ASSERT = 710;
 constexpr uint32 CU_JIT_MAX_REGISTERS = 0;
 constexpr uint32 CU_POINTER_ATTRIBUTE_MEMORY_TYPE = 2;
@@ -122,6 +125,10 @@ class CUDADriver : protected CUDADriverBase {
   void (*get_error_string)(uint32, const char **);
 
   void (*driver_get_version)(int *);
+
+  void malloc_async(void **ptr, size_t size, CUstream stream);
+
+  void mem_free_async(void *ptr, CUstream stream);
 
   bool detected();
 

@@ -30,7 +30,9 @@ void view_devalloc_as_ndarray(Device *device_) {
   alloc_params.host_write = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
 
   std::vector<int> element_shape = {4};
   auto arr1 = Ndarray(devalloc_arr_, PrimitiveType::i32, {10}, element_shape);
@@ -51,11 +53,9 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
 
   // Create runtime
   gfx::GfxRuntime::Params params;
@@ -79,25 +79,40 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
   EXPECT_EQ(root_size, 40);
   gfx_runtime->add_root_buffer(root_size);
 
-  auto simple_ret_kernel = vk_module->get_kernel("simple_ret");
-  EXPECT_TRUE(simple_ret_kernel);
+  {
+    auto simple_ret_kernel = vk_module->get_kernel("simple_ret");
+    EXPECT_TRUE(simple_ret_kernel);
+    LaunchContextBuilder builder(simple_ret_kernel);
+    auto &host_ctx = builder.get_context();
+    host_ctx.result_buffer = result_buffer;
+    simple_ret_kernel->launch(builder);
+    gfx_runtime->synchronize();
+    EXPECT_FLOAT_EQ(builder.get_ret<float>(0), 0.2);
+  }
 
-  simple_ret_kernel->launch(&host_ctx);
-  gfx_runtime->synchronize();
-  EXPECT_FLOAT_EQ(host_ctx.get_ret<float>(0), 0.2);
+  {
+    auto init_kernel = vk_module->get_kernel("init");
+    EXPECT_TRUE(init_kernel);
+    LaunchContextBuilder builder(init_kernel);
+    auto &host_ctx = builder.get_context();
+    host_ctx.result_buffer = result_buffer;
+    init_kernel->launch(builder);
+  }
 
-  auto init_kernel = vk_module->get_kernel("init");
-  EXPECT_TRUE(init_kernel);
-
-  auto ret_kernel = vk_module->get_kernel("ret");
-  EXPECT_TRUE(ret_kernel);
+  {
+    auto ret_kernel = vk_module->get_kernel("ret");
+    EXPECT_TRUE(ret_kernel);
+    LaunchContextBuilder builder(ret_kernel);
+    auto &host_ctx = builder.get_context();
+    host_ctx.result_buffer = result_buffer;
+    ret_kernel->launch(builder);
+  }
 
   auto ret2_kernel = vk_module->get_kernel("ret2");
   EXPECT_FALSE(ret2_kernel);
+  // Fixme: ret2_kernel is not run for unknown reason
 
   // Run kernels
-  init_kernel->launch(&host_ctx);
-  ret_kernel->launch(&host_ctx);
   gfx_runtime->synchronize();
 
   // Retrieve data
@@ -109,11 +124,9 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
 
   // Create runtime
   gfx::GfxRuntime::Params params;
@@ -140,25 +153,29 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
 
   auto k_run = vk_module->get_kernel("run");
 
+  LaunchContextBuilder builder(k_run);
+  auto &host_ctx = builder.get_context();
+  host_ctx.result_buffer = result_buffer;
   const int size = 32;
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = false;
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
 
-  host_ctx.set_arg(/*arg_id=*/0, /*base=*/0);
-  host_ctx.set_arg_ndarray(/*arg_id=*/1, arr.get_device_allocation_ptr_as_int(),
-                           /*shape=*/arr.shape);
+  builder.set_arg(/*arg_id=*/0, /*base=*/0);
+  builder.set_arg_ndarray(/*arg_id=*/1, arr);
 
   // Hack to set vector/matrix args
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
-    host_ctx.set_arg(/*arg_id=*/i + 2, vec[i]);
+    builder.set_arg(/*arg_id=*/i + 2, vec[i]);
   }
-  k_run->launch(&host_ctx);
+  k_run->launch(builder);
   gfx_runtime->synchronize();
 
   int dst[size] = {0};
@@ -173,11 +190,9 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
 
 void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
 
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
@@ -199,56 +214,63 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
   auto root_size = vk_module->get_root_size();
   EXPECT_EQ(root_size, 0);
   gfx_runtime->add_root_buffer(root_size);
-
-  auto ker1 = vk_module->get_kernel("ker1");
-  EXPECT_TRUE(ker1);
-
+  DeviceAllocation devalloc_arr_;
   const int size = 10;
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = true;
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device->allocate_memory(alloc_params);
+  EXPECT_EQ(device->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
   Ndarray arr = Ndarray(devalloc_arr_, PrimitiveType::i32, {size});
-  host_ctx.set_arg_ndarray(0, arr.get_device_allocation_ptr_as_int(),
-                           arr.shape);
-  int src[size] = {0};
-  src[0] = 2;
-  src[2] = 40;
-  write_devalloc(devalloc_arr_, src, sizeof(src));
-  ker1->launch(&host_ctx);
-  gfx_runtime->synchronize();
+  {
+    auto ker1 = vk_module->get_kernel("ker1");
+    EXPECT_TRUE(ker1);
+    LaunchContextBuilder builder(ker1);
+    auto &host_ctx = builder.get_context();
+    host_ctx.result_buffer = result_buffer;
 
-  int dst[size] = {33};
-  load_devalloc(devalloc_arr_, dst, sizeof(dst));
-  EXPECT_EQ(dst[0], 2);
-  EXPECT_EQ(dst[1], 1);
-  EXPECT_EQ(dst[2], 42);
+    builder.set_arg_ndarray(0, arr);
+    int src[size] = {0};
+    src[0] = 2;
+    src[2] = 40;
+    write_devalloc(devalloc_arr_, src, sizeof(src));
+    ker1->launch(builder);
+    gfx_runtime->synchronize();
+  }
+  {
+    int dst[size] = {33};
+    load_devalloc(devalloc_arr_, dst, sizeof(dst));
+    EXPECT_EQ(dst[0], 2);
+    EXPECT_EQ(dst[1], 1);
+    EXPECT_EQ(dst[2], 42);
 
-  auto ker2 = vk_module->get_kernel("ker2");
-  EXPECT_TRUE(ker2);
-
-  host_ctx.set_arg(1, 3);
-  ker2->launch(&host_ctx);
-  gfx_runtime->synchronize();
-  load_devalloc(devalloc_arr_, dst, sizeof(dst));
-  EXPECT_EQ(dst[0], 2);
-  EXPECT_EQ(dst[1], 3);
-  EXPECT_EQ(dst[2], 42);
-  // Deallocate
-  device->dealloc_memory(devalloc_arr_);
+    auto ker2 = vk_module->get_kernel("ker2");
+    EXPECT_TRUE(ker2);
+    LaunchContextBuilder builder(ker2);
+    auto &host_ctx = builder.get_context();
+    host_ctx.result_buffer = result_buffer;
+    builder.set_arg_ndarray(0, arr);
+    builder.set_arg(1, 3);
+    ker2->launch(builder);
+    gfx_runtime->synchronize();
+    load_devalloc(devalloc_arr_, dst, sizeof(dst));
+    EXPECT_EQ(dst[0], 2);
+    EXPECT_EQ(dst[1], 3);
+    EXPECT_EQ(dst[2], 42);
+    // Deallocate
+    device->dealloc_memory(devalloc_arr_);
+  }
 }
 
 void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize  program
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
   // Create runtime
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
@@ -279,8 +301,12 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_0 = device_->allocate_memory(alloc_params);
-  DeviceAllocation devalloc_arr_1 = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_0;
+  DeviceAllocation devalloc_arr_1;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_0),
+            RhiResult::success);
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_1),
+            RhiResult::success);
   Ndarray arr0 = Ndarray(devalloc_arr_0, PrimitiveType::i32, {size});
   Ndarray arr1 = Ndarray(devalloc_arr_1, PrimitiveType::i32, {size}, {1});
 
@@ -319,11 +345,9 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
   // Create runtime
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
@@ -355,7 +379,9 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
   alloc_params.host_read = true;
   alloc_params.size = size * sizeof(int);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
-  DeviceAllocation devalloc_arr_ = device_->allocate_memory(alloc_params);
+  DeviceAllocation devalloc_arr_;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_arr_),
+            RhiResult::success);
 
   int src[size] = {0};
   src[0] = 2;
@@ -385,11 +411,9 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  taichi::lang::RuntimeContext host_ctx;
   auto memory_pool = std::make_unique<taichi::lang::MemoryPool>(arch, nullptr);
   result_buffer = (taichi::uint64 *)memory_pool->allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
-  host_ctx.result_buffer = result_buffer;
   // Create runtime
   gfx::GfxRuntime::Params params;
   params.host_result_buffer = result_buffer;
@@ -423,43 +447,50 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   alloc_params.size = NR_PARTICLES * 2 * sizeof(float);
   alloc_params.usage = taichi::lang::AllocUsage::Storage;
 
-  taichi::lang::DeviceAllocation devalloc_x =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_x;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_x),
+            RhiResult::success);
   auto x = taichi::lang::Ndarray(devalloc_x, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
-  taichi::lang::DeviceAllocation devalloc_v =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_v;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_v),
+            RhiResult::success);
   auto v = taichi::lang::Ndarray(devalloc_v, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2});
 
   alloc_params.size = NR_PARTICLES * 3 * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_pos =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_pos;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_pos),
+            RhiResult::success);
   auto pos = taichi::lang::Ndarray(
       devalloc_pos, taichi::lang::PrimitiveType::f32, {NR_PARTICLES}, {3});
 
   alloc_params.size = NR_PARTICLES * sizeof(float) * 2 * 2;
-  taichi::lang::DeviceAllocation devalloc_C =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_C;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_C),
+            RhiResult::success);
   auto C = taichi::lang::Ndarray(devalloc_C, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES}, {2, 2});
 
   alloc_params.size = NR_PARTICLES * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_J =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_J;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_J),
+            RhiResult::success);
   auto J = taichi::lang::Ndarray(devalloc_J, taichi::lang::PrimitiveType::f32,
                                  {NR_PARTICLES});
 
   alloc_params.size = N_GRID * N_GRID * 2 * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_grid_v =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_grid_v;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_grid_v),
+            RhiResult::success);
   auto grid_v = taichi::lang::Ndarray(
       devalloc_grid_v, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID}, {2});
 
   alloc_params.size = N_GRID * N_GRID * sizeof(float);
-  taichi::lang::DeviceAllocation devalloc_grid_m =
-      device_->allocate_memory(alloc_params);
+  taichi::lang::DeviceAllocation devalloc_grid_m;
+  EXPECT_EQ(device_->allocate_memory(alloc_params, &devalloc_grid_m),
+            RhiResult::success);
   auto grid_m = taichi::lang::Ndarray(
       devalloc_grid_m, taichi::lang::PrimitiveType::f32, {N_GRID, N_GRID});
 

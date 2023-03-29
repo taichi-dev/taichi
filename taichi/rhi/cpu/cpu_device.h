@@ -71,7 +71,8 @@ class CpuDevice : public LlvmDevice {
 
   ~CpuDevice() override{};
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
@@ -105,7 +106,7 @@ class CpuDevice : public LlvmDevice {
   void unmap(DevicePtr ptr) final{TI_NOT_IMPLEMENTED};
   void unmap(DeviceAllocation alloc) final;
 
-  DeviceAllocation import_memory(void *ptr, size_t size);
+  DeviceAllocation import_memory(void *ptr, size_t size) override;
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 

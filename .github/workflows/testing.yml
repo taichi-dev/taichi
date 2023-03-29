@@ -15,8 +15,10 @@ concurrency:
 
 env:
   TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: 'ON'
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
+  CI_IMAGE_VERSION: '202303241150'
 
 jobs:
   show_environ:
@@ -126,7 +128,7 @@ jobs:
       PY: ${{ matrix.python }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -190,7 +192,7 @@ jobs:
     runs-on: ${{ matrix.tags }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -209,11 +211,11 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
-          PY: '3.8'
+          PY: '3.11'
           PROJECT_NAME: taichi
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -229,11 +231,11 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
+          PY: '3.11'
+          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
@@ -253,6 +255,50 @@ jobs:
           path: taichi-release-tests/bad-compare/*
           retention-days: 7
 
+  build_and_test_manylinux2014:
+    name: Build and Test (manylinux2014)
+    needs: check_files
+    runs-on: [self-hosted, cuda, cn, release]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Prepare Environment
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          prepare-build-cache
+          echo CI_DOCKER_RUN_EXTRA_ARGS="-v $(pwd):/home/dev/taichi" >> $GITHUB_ENV
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/build.py
+
+        env:
+          PY: "3.8"
+          PROJECT_NAME: taichi
+          TAICHI_CMAKE_ARGS: >-
+            -DTI_WITH_OPENGL:BOOL=OFF
+            -DTI_WITH_CC:BOOL=OFF
+            -DTI_WITH_VULKAN:BOOL=OFF
+            -DTI_BUILD_TESTS:BOOL=ON
+
+      - name: Test
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu --name taichi-test \
+             registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
+             /home/dev/taichi/.github/workflows/scripts/unix_test.sh
+        env:
+          PY: "3.8"
+          TI_WANTED_ARCHS: "cuda,cpu"
+
   build_and_test_amdgpu_linux:
     name: Build and Test (AMDGPU)
     needs: check_files
@@ -260,7 +306,7 @@ jobs:
     runs-on: [self-hosted, amdgpu]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -279,7 +325,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
+            registry.botmaster.tgr/taichi-build-amdgpu:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -299,7 +345,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-amdgpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04.amdgpu:v0.0.6 \
+             registry.botmaster.tgr/taichi-test-amdgpu:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: '3.8'
@@ -333,7 +379,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: |
           git config --system core.longpaths true
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -369,7 +415,7 @@ jobs:
           .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
         env:
           PY: "3.7"
-          TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl
+          TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
           TI_SKIP_VERSION_CHECK: ON
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
@@ -398,7 +444,7 @@ jobs:
     runs-on: [self-hosted, m1]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -431,6 +477,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
+        env:
+          PY: ${{ matrix.python }}
 
       - name: Test
         id: test
@@ -466,7 +514,7 @@ jobs:
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -484,7 +532,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -504,16 +552,16 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix-test-docs.sh
         env:
           PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl'
+          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
 
   aot_build_and_test_android_apps:
-    name: AOT Build and Test Android Headless Demos
+    name: AOT Build and Test Android Apps
     # Skip this job when testing the offline cache
     if: ${{ github.event.schedule != '0 18 * * *' }}
     needs: check_files
@@ -523,11 +571,11 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -557,7 +605,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -572,22 +620,22 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
-            /home/dev/taichi/.github/workflows/scripts/android-build.sh
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py android
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_LLVM:BOOL=OFF
-            -DTI_WITH_C_API=ON
+            -DTI_WITH_C_API:BOOL=ON
 
       - name: Test For Android AOT
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run-gpu --name taichi-test-android \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-smoke-test-android-aot-demo
 
         env:
@@ -604,11 +652,11 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -638,7 +686,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -653,8 +701,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
-            /home/dev/taichi/.github/workflows/scripts/android-build.sh
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py android
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -668,7 +716,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run-gpu --name taichi-test-capi-headless-demo \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo
         env:
           TI_DEVICE_MEMORY_GB: '0.1'
@@ -684,11 +732,11 @@ jobs:
       packages: read
       contents: read
     env:
-      REDIS_HOST: 172.16.5.8
+      REDIS_HOST: 172.16.5.1
       PY: '3.9'
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         name: Checkout taichi
@@ -718,7 +766,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-build-host \
             -v $TAICHI_WHEEL_DIR:/home/dev/taichi/dist \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
         env:
           TAICHI_CMAKE_ARGS: >-
@@ -733,8 +781,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           git clean -fxd
           ci-docker-run --name taichi-build-android \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
-            /home/dev/taichi/.github/workflows/scripts/android-build.sh
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/build.py android
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
@@ -748,7 +796,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-prepare-unity-build-env \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh prepare-unity-build-env
 
       - name: Build Taichi-UnityExample
@@ -764,7 +812,7 @@ jobs:
         run: |
           . .github/workflows/scripts/common-utils.sh
           ci-docker-run --name taichi-run-unity-demo \
-            registry.taichigraphics.com/taichidev-androidsdk18.04:v0.0.6 \
+            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh smoke-test-unity-demo
 
   aot_build_and_test_gpu_linux:
@@ -780,7 +828,7 @@ jobs:
     runs-on: ${{ matrix.tags }}
     steps:
       - name: Workaround checkout Needed single revision issue
-        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
       - uses: actions/checkout@v3
         with:
@@ -799,7 +847,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -819,8 +867,11 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
+
+        env:
+          PY: '3.8'
 
       - name: Build & Run C-API Headless Demos (Desktop)
         run: |
@@ -828,7 +879,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
           chown -R 1000:1000 .
           ci-docker-run-gpu --name taichi-test-capi-headless-demo-desktop \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
         env:
           PY: '3.8'
@@ -841,7 +892,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
         env:
           PY: '3.8'

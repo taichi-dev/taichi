@@ -1,7 +1,8 @@
 import numbers
 from types import FunctionType, MethodType
-from typing import Iterable, Sequence
+from typing import Any, Iterable, Sequence
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi._snode.fields_builder import FieldsBuilder
 from taichi.lang._ndarray import ScalarNdarray
@@ -43,11 +44,7 @@ def expr_init(rhs):
     if isinstance(rhs, Matrix) and (hasattr(rhs, "_DIM")):
         return Matrix(*rhs.to_list(), ndim=rhs.ndim)
     if isinstance(rhs, Matrix):
-        if rhs.ndim == 1:
-            entries = [rhs(i) for i in range(rhs.n)]
-        else:
-            entries = [[rhs(i, j) for j in range(rhs.m)] for i in range(rhs.n)]
-        return make_matrix(entries)
+        return make_matrix(rhs.to_list())
     if isinstance(rhs, SharedArray):
         return rhs
     if isinstance(rhs, Struct):
@@ -167,8 +164,8 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
 
     flattened_indices = []
     for _index in _indices:
-        if is_taichi_class(_index):
-            ind = _index.entries
+        if isinstance(_index, Matrix):
+            ind = _index.to_list()
         elif isinstance(_index, slice):
             ind = [_index]
             has_slice = True
@@ -319,6 +316,22 @@ class PyTaichi:
         self.grad_replaced = False
         self.kernels = kernels or []
         self._signal_handler_registry = None
+        self.unfinalized_fields_builder = {}
+
+    def initialize_fields_builder(self, builder):
+        self.unfinalized_fields_builder[builder] = get_traceback(2)
+
+    def finalize_fields_builder(self, builder):
+        self.unfinalized_fields_builder.pop(builder)
+
+    def validate_fields_builder(self):
+        for builder, tb in self.unfinalized_fields_builder.items():
+            if builder == _root_fb:
+                continue
+
+            raise TaichiRuntimeError(
+                f'Field builder {builder} is not finalized. '
+                f'Please call finalize() on it. Traceback:\n{tb}')
 
     def get_num_compiled_functions(self):
         return len(self.compiled_functions)
@@ -431,6 +444,8 @@ class PyTaichi:
     def materialize(self):
         self.materialize_root_fb(not self.materialized)
         self.materialized = True
+
+        self.validate_fields_builder()
 
         self._check_field_not_placed()
         self._check_gradient_field_not_placed("grad")
@@ -810,10 +825,16 @@ def ndarray(dtype, shape, needs_grad=False):
 
 @taichi_scope
 def ti_format_list_to_content_entries(raw):
+    # return a pair of [content, format]
     def entry2content(_var):
         if isinstance(_var, str):
+            return [_var, None]
+        if isinstance(_var, list):
+            assert len(_var) == 2 and (isinstance(_var[1], str)
+                                       or _var[1] is None)
+            _var[0] = Expr(_var[0]).ptr
             return _var
-        return Expr(_var).ptr
+        return [Expr(_var).ptr, None]
 
     def list_ti_repr(_var):
         yield '['  # distinguishing tuple & list will increase maintenance cost
@@ -825,7 +846,13 @@ def ti_format_list_to_content_entries(raw):
 
     def vars2entries(_vars):
         for _var in _vars:
-            if hasattr(_var, '__ti_repr__'):
+            # If the first element is '__ti_fmt_value__', this list is an Expr and its format.
+            if isinstance(_var, list) and len(_var) == 3 and isinstance(
+                    _var[0], str) and _var[0] == '__ti_fmt_value__':
+                # yield [Expr, format] as a whole and don't pass it to vars2entries() again
+                yield _var[1:]
+                continue
+            elif hasattr(_var, '__ti_repr__'):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
                 # If the first element is '__ti_format__', this list is the result of ti_format.
@@ -854,9 +881,14 @@ def ti_format_list_to_content_entries(raw):
         if accumated:
             yield accumated
 
+    def extract_formats(entries):
+        contents, formats = zip(*entries)
+        return list(contents), list(formats)
+
     entries = vars2entries(raw)
     entries = fused_string(entries)
-    return [entry2content(entry) for entry in entries]
+    entries = [entry2content(entry) for entry in entries]
+    return extract_formats(entries)
 
 
 @taichi_scope
@@ -869,34 +901,26 @@ def ti_print(*_vars, sep=' ', end='\n'):
         yield end
 
     _vars = add_separators(_vars)
-    entries = ti_format_list_to_content_entries(_vars)
-    get_runtime().compiling_callable.ast_builder().create_print(entries)
+    contents, formats = ti_format_list_to_content_entries(_vars)
+    get_runtime().compiling_callable.ast_builder().create_print(
+        contents, formats)
 
 
 @taichi_scope
-def ti_format(*args, **kwargs):
+def ti_format(*args):
     content = args[0]
     mixed = args[1:]
     new_mixed = []
-    new_mixed_kwargs = {}
     args = []
     for x in mixed:
-        if isinstance(x, Expr):
+        # x is a (formatted) Expr
+        if isinstance(x, Expr) or (isinstance(x, list) and len(x) == 3
+                                   and x[0] == '__ti_fmt_value__'):
             new_mixed.append('{}')
             args.append(x)
         else:
             new_mixed.append(x)
-    for k, v in kwargs.items():
-        if isinstance(v, Expr):
-            new_mixed_kwargs[k] = '{}'
-            args.append(v)
-        else:
-            new_mixed_kwargs[k] = v
-    try:
-        content = content.format(*new_mixed, **new_mixed_kwargs)
-    except ValueError:
-        print('Number formatting is not supported with Taichi fields')
-        exit(1)
+    content = content.format(*new_mixed)
     res = content.split('{}')
     assert len(res) == len(
         args
@@ -999,7 +1023,7 @@ def axes(*x: Iterable[int]):
 Axis = _ti_core.Axis
 
 
-def static(x, *xs):
+def static(x, *xs) -> Any:
     """Evaluates a Taichi-scope expression at compile time.
 
     `static()` is what enables the so-called metaprogramming in Taichi. It is
@@ -1047,6 +1071,8 @@ def static(x, *xs):
     if isinstance(x,
                   (bool, int, float, range, list, tuple, enumerate,
                    GroupedNDRange, _Ndrange, zip, filter, map)) or x is None:
+        return x
+    if isinstance(x, (np.bool_, np.integer, np.floating)):
         return x
 
     if isinstance(x, AnyArray):

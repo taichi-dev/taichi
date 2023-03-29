@@ -76,7 +76,7 @@ class ProgramImpl {
   }
 
   /**
-   * Make a AotModulerBuilder, currently only supported by metal and wasm.
+   * Make a AotModulerBuilder.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) = 0;
@@ -132,10 +132,6 @@ class ProgramImpl {
     TI_ERROR("fill_ndarray() not implemented on the current backend");
   }
 
-  // TODO: Move to Runtime Object
-  virtual void prepare_runtime_context(RuntimeContext *ctx) {
-  }
-
   virtual void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) {
@@ -158,12 +154,6 @@ class ProgramImpl {
 
   virtual uint64 fetch_result_uint64(int i, uint64 *result_buffer) {
     return result_buffer[i];
-  }
-
-  virtual TypedConstant fetch_result(char *result_buffer,
-                                     int offset,
-                                     const Type *dt) {
-    TI_NOT_IMPLEMENTED;
   }
 
   virtual std::string get_kernel_return_data_layout() {

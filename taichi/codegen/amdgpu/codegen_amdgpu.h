@@ -10,9 +10,10 @@ namespace lang {
 class KernelCodeGenAMDGPU : public KernelCodeGen {
  public:
   KernelCodeGenAMDGPU(const CompileConfig &config,
-                      Kernel *kernel,
+                      const Kernel *kernel,
+                      IRNode *ir,
                       TaichiLLVMContext &tlctx)
-      : KernelCodeGen(config, kernel, tlctx) {
+      : KernelCodeGen(config, kernel, ir, tlctx) {
   }
 
 // TODO: Stop defining this macro guards in the headers
@@ -22,12 +23,6 @@ class KernelCodeGenAMDGPU : public KernelCodeGen {
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 #endif  // TI_WITH_LLVM
-
-  bool supports_offline_cache() const override {
-    return true;
-  }
-
-  FunctionType compile_to_function() override;
 };
 
 class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
@@ -39,7 +34,7 @@ class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
   using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
-                       const std::vector<LlvmLaunchArgInfo> &args,
+                       const std::vector<Callable::Parameter> &args,
                        LLVMCompiledKernel data) const override;
 };
 

@@ -1,6 +1,6 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/util/environ_config.h"
 
@@ -86,6 +86,22 @@ CUDADriver &CUDADriver::get_instance() {
   // initialize the CUDA context so that the driver APIs can be called later
   CUDAContext::get_instance();
   return get_instance_without_context();
+}
+
+void CUDADriver::malloc_async(void **dev_ptr, size_t size, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    malloc_async_impl(dev_ptr, size, stream);
+  } else {
+    malloc(dev_ptr, size);
+  }
+}
+
+void CUDADriver::mem_free_async(void *dev_ptr, CUstream stream) {
+  if (CUDAContext::get_instance().supports_mem_pool()) {
+    mem_free_async_impl(dev_ptr, stream);
+  } else {
+    mem_free(dev_ptr);
+  }
 }
 
 CUSPARSEDriver::CUSPARSEDriver() {

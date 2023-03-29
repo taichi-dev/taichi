@@ -29,10 +29,6 @@ class DemoteAtomics : public BasicStmtVisitor {
     bool demote = false;
     bool is_local = false;
     if (current_offloaded) {
-      if (arch_is_cpu(current_offloaded->device) &&
-          current_offloaded->num_cpu_threads == 1) {
-        demote = true;
-      }
       if (stmt->dest->is<ThreadLocalPtrStmt>()) {
         demote = true;
       }
@@ -92,11 +88,22 @@ class DemoteAtomics : public BasicStmtVisitor {
         }
       }
     }
-    if (stmt->dest->is<AllocaStmt>() ||
-        (stmt->dest->is<MatrixPtrStmt>() &&
-         stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>())) {
-      demote = true;
-      is_local = true;
+    if (stmt->dest->is<AllocaStmt>()) {
+      // Except shared array
+      if (!stmt->dest->as<AllocaStmt>()->is_shared) {
+        demote = true;
+        is_local = true;
+      }
+    }
+    if (stmt->dest->is<MatrixPtrStmt>() &&
+        stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>()) {
+      // Except shared array
+      if (!stmt->dest->cast<MatrixPtrStmt>()
+               ->origin->as<AllocaStmt>()
+               ->is_shared) {
+        demote = true;
+        is_local = true;
+      }
     }
 
     if (auto dest_pointer_type = stmt->dest->ret_type->cast<PointerType>()) {

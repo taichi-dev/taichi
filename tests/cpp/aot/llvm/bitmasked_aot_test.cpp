@@ -5,6 +5,7 @@
 #include "taichi/system/memory_pool.h"
 #include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
+#include "taichi/program/launch_context_builder.h"
 
 #ifdef TI_WITH_CUDA
 
@@ -35,30 +36,26 @@ static void run_bitmasked_tests(aot::Module *mod,
   /* -------- Test Case 1 ------ */
   // Kernel: activate()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate->launch(&ctx);
+    LaunchContextBuilder builder(k_activate);
+    k_activate->launch(builder);
   }
 
   // Kernel: check_value_0()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_0->launch(&ctx);
+    LaunchContextBuilder builder(k_check_value_0);
+    k_check_value_0->launch(builder);
   }
 
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate->launch(&ctx);
+    LaunchContextBuilder builder(k_deactivate);
+    k_deactivate->launch(builder);
   }
   // Kernel: check_value_1()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_value_1->launch(&ctx);
+    LaunchContextBuilder builder(k_check_value_1);
+    k_check_value_1->launch(builder);
   }
 
   // Check assertion error from ti.kernel

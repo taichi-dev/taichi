@@ -14,8 +14,10 @@ from .bootstrap import get_cache_home  # noqa
 # -- own --
 from .escapes import escape_codes
 
-
 # -- code --
+options = None
+
+
 def is_manylinux2014() -> bool:
     '''
     Are we in a manylinux2014 environment?
@@ -23,6 +25,18 @@ def is_manylinux2014() -> bool:
     '''
     return platform.system() == 'Linux' and Path(
         '/etc/centos-release').exists()
+
+
+def info(msg: str) -> None:
+    B = escape_codes['bold_blue']
+    N = escape_codes['reset']
+    print(f'{B}:: INFO {msg}{N}', file=sys.stderr, flush=True)
+
+
+def warn(msg: str) -> None:
+    B = escape_codes['bold_yellow']
+    N = escape_codes['reset']
+    print(f'{B}:: WARN {msg}{N}', file=sys.stderr, flush=True)
 
 
 def banner(msg: str) -> Callable:

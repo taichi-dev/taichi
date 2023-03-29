@@ -26,6 +26,17 @@ taichi::lang::metal::MetalDevice &MetalRuntime::get_mtl() {
   return *mtl_device_;
 }
 
+TiImage MetalRuntime::allocate_image(const taichi::lang::ImageParams &params) {
+  taichi::lang::DeviceAllocation devalloc =
+      get_gfx_runtime().create_image(params);
+  return devalloc2devimg(*this, devalloc);
+}
+void MetalRuntime::free_image(TiImage image) {
+  taichi::lang::DeviceAllocation devimg = devimg2devalloc(*this, image);
+  get_mtl().destroy_image(devimg);
+  get_gfx_runtime().untrack_image(devimg);
+}
+
 } // namespace capi
 
 // -----------------------------------------------------------------------------

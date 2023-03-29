@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "llvm/IR/Module.h"
+#include "taichi/common/serialization.h"
 
 namespace taichi::lang {
 

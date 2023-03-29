@@ -55,10 +55,6 @@ class LlvmProgramImpl : public ProgramImpl {
   // initialize_llvm_runtime_snodes It's a 2-in-1 interface
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
 
-  void cache_kernel(const std::string &kernel_key,
-                    const LLVMCompiledKernel &data,
-                    std::vector<LlvmLaunchArgInfo> &&args);
-
   void cache_field(int snode_tree_id,
                    int root_id,
                    const StructCompiler &struct_compiler);
@@ -75,8 +71,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) override;
-
-  void dump_cache_data_to_disk() override;
 
   /* -------------------------------- */
   /* ---- JIT-Runtime Interfaces ---- */
@@ -131,10 +125,6 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->fill_ndarray(alloc, size, data);
   }
 
-  void prepare_runtime_context(RuntimeContext *ctx) override {
-    runtime_exec_->prepare_runtime_context(ctx);
-  }
-
   DeviceAllocation allocate_memory_ndarray(std::size_t alloc_size,
                                            uint64 *result_buffer) override {
     return runtime_exec_->allocate_memory_ndarray(alloc_size, result_buffer);
@@ -156,48 +146,6 @@ class LlvmProgramImpl : public ProgramImpl {
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer) override {
     return runtime_exec_->fetch_result_uint64(i, result_buffer);
-  }
-
-  TypedConstant fetch_result(char *result_buffer,
-                             int offset,
-                             const Type *dt) override {
-    if (dt->is_primitive(PrimitiveTypeID::f32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<float32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<float64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int8>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<int16>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint8>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint16>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint32>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-      return TypedConstant(
-          runtime_exec_->fetch_result<uint64>(result_buffer, offset));
-    } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-      // first fetch the data as u16, and then convert it to f32
-      uint16 half = runtime_exec_->fetch_result<uint16>(result_buffer, offset);
-      return TypedConstant(bit::half_to_float(half));
-    } else {
-      TI_NOT_IMPLEMENTED
-    }
   }
 
   template <typename T, typename... Args>
@@ -262,24 +210,12 @@ class LlvmProgramImpl : public ProgramImpl {
     return runtime_exec_->get_snode_tree_device_ptr(tree_id);
   }
 
-  cuda::CudaDevice *cuda_device() {
-    return runtime_exec_->cuda_device();
-  }
-
-  cpu::CpuDevice *cpu_device() {
-    return runtime_exec_->cpu_device();
-  }
-
   LlvmDevice *llvm_device() {
     return runtime_exec_->llvm_device();
   }
 
   LlvmRuntimeExecutor *get_runtime_executor() {
     return runtime_exec_.get();
-  }
-
-  const std::unique_ptr<LlvmOfflineCacheFileReader> &get_cache_reader() {
-    return cache_reader_;
   }
 
   std::string get_kernel_return_data_layout() override {
@@ -332,24 +268,18 @@ class LlvmProgramImpl : public ProgramImpl {
     // 1. Destructs cache_data_
     cache_data_.reset();
 
-    // 2. Destructs cache_reader_
-    cache_reader_.reset();
-
-    // 3. Destructs runtime_exec_
+    // 2. Destructs runtime_exec_
     runtime_exec_.reset();
   }
   ParallelExecutor compilation_workers;  // parallel compilation
 
  protected:
-  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 
  private:
   std::size_t num_snode_trees_processed_{0};
   std::unique_ptr<LlvmRuntimeExecutor> runtime_exec_;
   std::unique_ptr<LlvmOfflineCache> cache_data_;
-  std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_;
 };
 
 LlvmProgramImpl *get_llvm_program(Program *prog);

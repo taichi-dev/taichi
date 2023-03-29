@@ -14,8 +14,17 @@ enum class PrimitiveTypeID : int {
 #undef PER_TYPE
 };
 
+enum class TypeKind : int {
+#define PER_TYPE_KIND(x) x,
+#include "taichi/inc/type_kind.inc.h"
+#undef PER_TYPE_KIND
+};
+
 class TI_DLL_EXPORT Type {
  public:
+  explicit Type(TypeKind type_kind) : type_kind(type_kind) {
+  }
+  TypeKind type_kind;
   virtual std::string to_string() const = 0;
 
   template <typename T>
@@ -48,6 +57,20 @@ class TI_DLL_EXPORT Type {
                    typeid(T).name());
     return p;
   }
+
+  template <typename S, typename T>
+  static typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+  ptr_io(const T *&ptr, S &serializer, bool writing);
+
+  using JsonValue = ::liong::json::JsonValue;
+  using JsonObject = ::liong::json::JsonObject;
+
+  template <typename T>
+  static typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+  jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing);
+
+  // For serialization
+  virtual const Type *get_type() const = 0;
 
   bool is_primitive(PrimitiveTypeID type) const;
 
@@ -117,6 +140,8 @@ class TI_DLL_EXPORT DataType {
 
   DataType get_element_type() const;
 
+  TI_IO_DEF(ptr_);
+
  private:
   Type *ptr_;
 };
@@ -132,7 +157,8 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   // TODO(type): make 'type' private and add a const getter
   PrimitiveTypeID type;
 
-  explicit PrimitiveType(PrimitiveTypeID type) : type(type) {
+  explicit PrimitiveType(PrimitiveTypeID type = PrimitiveTypeID::unknown)
+      : Type(TypeKind::Primitive), type(type) {
   }
 
   std::string to_string() const override;
@@ -142,12 +168,20 @@ class TI_DLL_EXPORT PrimitiveType : public Type {
   }
 
   static DataType get(PrimitiveTypeID type);
+
+  const Type *get_type() const override;
+
+  TI_IO_DEF(type);
 };
 
-class PointerType : public Type {
+class TI_DLL_EXPORT PointerType : public Type {
  public:
+  PointerType() : Type(TypeKind::Pointer){};
+
   PointerType(Type *pointee, bool is_bit_pointer)
-      : pointee_(pointee), is_bit_pointer_(is_bit_pointer) {
+      : Type(TypeKind::Pointer),
+        pointee_(pointee),
+        is_bit_pointer_(is_bit_pointer) {
   }
 
   Type *get_pointee_type() const {
@@ -164,16 +198,21 @@ class PointerType : public Type {
 
   std::string to_string() const override;
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(pointee_, addr_space_, is_bit_pointer_);
+
  private:
   Type *pointee_{nullptr};
   int addr_space_{0};  // TODO: make this an enum
   bool is_bit_pointer_{false};
 };
 
-class TensorType : public Type {
+class TI_DLL_EXPORT TensorType : public Type {
  public:
+  TensorType() : Type(TypeKind::Tensor){};
   TensorType(std::vector<int> shape, Type *element)
-      : shape_(std::move(shape)), element_(element) {
+      : Type(TypeKind::Tensor), shape_(std::move(shape)), element_(element) {
   }
 
   Type *get_element_type() const {
@@ -203,25 +242,31 @@ class TensorType : public Type {
 
   size_t get_element_offset(int ind) const;
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(shape_, element_);
+
  private:
   std::vector<int> shape_;
   Type *element_{nullptr};
 };
 
-struct StructMember {
+struct TI_DLL_EXPORT StructMember {
   const Type *type;
   std::string name;
   size_t offset{0};
   bool operator==(const StructMember &other) const {
     return type == other.type && name == other.name && offset == other.offset;
   }
+  TI_IO_DEF(type, name, offset)
 };
 
-class StructType : public Type {
+class TI_DLL_EXPORT StructType : public Type {
  public:
+  StructType() : Type(TypeKind::Struct){};
   explicit StructType(const std::vector<StructMember> &elements,
                       const std::string &layout = "none")
-      : elements_(elements), layout_(layout) {
+      : Type(TypeKind::Struct), elements_(elements), layout_(layout) {
   }
 
   std::string to_string() const override;
@@ -255,13 +300,18 @@ class StructType : public Type {
     return this;
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(elements_, layout_);
+
  private:
   std::vector<StructMember> elements_;
   std::string layout_;
 };
 
-class QuantIntType : public Type {
+class TI_DLL_EXPORT QuantIntType : public Type {
  public:
+  QuantIntType() : Type(TypeKind::QuantInt){};
   QuantIntType(int num_bits, bool is_signed, Type *compute_type = nullptr);
 
   std::string to_string() const override;
@@ -278,6 +328,10 @@ class QuantIntType : public Type {
     return is_signed_;
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(num_bits_, is_signed_, compute_type_);
+
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
@@ -286,8 +340,9 @@ class QuantIntType : public Type {
   bool is_signed_{true};
 };
 
-class QuantFixedType : public Type {
+class TI_DLL_EXPORT QuantFixedType : public Type {
  public:
+  QuantFixedType() : Type(TypeKind::QuantFixed){};
   QuantFixedType(Type *digits_type, Type *compute_type, float64 scale);
 
   std::string to_string() const override;
@@ -306,14 +361,20 @@ class QuantFixedType : public Type {
     return scale_;
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(digits_type_, compute_type_, scale_);
+
  private:
   Type *digits_type_{nullptr};
   Type *compute_type_{nullptr};
   float64 scale_{1.0};
 };
 
-class QuantFloatType : public Type {
+class TI_DLL_EXPORT QuantFloatType : public Type {
  public:
+  QuantFloatType() : Type(TypeKind::QuantFloat) {
+  }
   QuantFloatType(Type *digits_type, Type *exponent_type, Type *compute_type);
 
   std::string to_string() const override;
@@ -336,14 +397,19 @@ class QuantFloatType : public Type {
     return compute_type_;
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(digits_type_, exponent_type_, compute_type_);
+
  private:
   Type *digits_type_{nullptr};
   Type *exponent_type_{nullptr};
   Type *compute_type_{nullptr};
 };
 
-class BitStructType : public Type {
+class TI_DLL_EXPORT BitStructType : public Type {
  public:
+  BitStructType() : Type(TypeKind::BitStruct){};
   BitStructType(PrimitiveType *physical_type,
                 const std::vector<Type *> &member_types,
                 const std::vector<int> &member_bit_offsets,
@@ -381,6 +447,14 @@ class BitStructType : public Type {
     return member_exponent_users_[i];
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(physical_type_,
+            member_types_,
+            member_bit_offsets_,
+            member_exponents_,
+            member_exponent_users_);
+
  private:
   PrimitiveType *physical_type_;
   std::vector<Type *> member_types_;
@@ -389,12 +463,15 @@ class BitStructType : public Type {
   std::vector<std::vector<int>> member_exponent_users_;
 };
 
-class QuantArrayType : public Type {
+class TI_DLL_EXPORT QuantArrayType : public Type {
  public:
+  QuantArrayType() : Type(TypeKind::QuantArray) {
+  }
   QuantArrayType(PrimitiveType *physical_type,
                  Type *element_type_,
                  int num_elements_)
-      : physical_type_(physical_type),
+      : Type(TypeKind::QuantArray),
+        physical_type_(physical_type),
         element_type_(element_type_),
         num_elements_(num_elements_) {
     if (auto qit = element_type_->cast<QuantIntType>()) {
@@ -425,6 +502,10 @@ class QuantArrayType : public Type {
     return element_num_bits_;
   }
 
+  const Type *get_type() const override;
+
+  TI_IO_DEF(physical_type_, element_type_, num_elements_, element_num_bits_);
+
  private:
   PrimitiveType *physical_type_;
   Type *element_type_;
@@ -435,6 +516,10 @@ class QuantArrayType : public Type {
 class TypedConstant {
  public:
   DataType dt;
+
+  /*
+    Note: Float16 is represented by "float32 value" + "dt = PrimitiveType::f16".
+  */
   union {
     uint64 value_bits;
     int32 val_i32;
@@ -502,6 +587,8 @@ class TypedConstant {
       val_i64 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
       val_f64 = value;
+    } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+      val_f32 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
       val_i8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
@@ -534,6 +621,7 @@ class TypedConstant {
 
   int32 &val_int32();
   float32 &val_float32();
+  float32 &val_float16();
   int64 &val_int64();
   float64 &val_float64();
   int8 &val_int8();
@@ -548,6 +636,99 @@ class TypedConstant {
   int64 val_as_int64() const;  // unifies val_int() and val_uint()
   float64 val_cast_to_float64() const;
 };
+
+template <typename S, typename T>
+typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
+  if (writing) {
+    if (ptr == nullptr) {
+      serializer("type_kind", (TypeKind)-1);
+      return;
+    }
+    serializer("type_kind", ptr->type_kind);
+    switch (ptr->type_kind) {
+#define PER_TYPE_KIND(x)                                 \
+  case TypeKind::x: {                                    \
+    serializer("content", *ptr->template as<x##Type>()); \
+    break;                                               \
+  }
+#include "taichi/inc/type_kind.inc.h"
+#undef PER_TYPE_KIND
+      default:
+        TI_NOT_IMPLEMENTED;
+    }
+  } else {
+    TypeKind type_kind = (TypeKind)-1;
+    serializer("type_kind", type_kind);
+    if (type_kind == (TypeKind)-1) {
+      ptr = nullptr;
+      return;
+    }
+    switch (type_kind) {
+#define PER_TYPE_KIND(x)               \
+  case TypeKind::x: {                  \
+    x##Type content;                   \
+    serializer("content", content);    \
+    ptr = content.get_type()->as<T>(); \
+    break;                             \
+  }
+#include "taichi/inc/type_kind.inc.h"
+#undef PER_TYPE_KIND
+      default:
+        TI_NOT_IMPLEMENTED;
+    }
+  }
+}
+
+template <typename T>
+typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
+Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
+  if (writing) {
+    if (ptr == nullptr) {
+      value = JsonValue(nullptr);
+      return;
+    }
+    JsonObject obj;
+    obj.inner["type_kind"] = JsonValue((int)ptr->type_kind);
+    JsonValue content;
+
+    switch (ptr->type_kind) {
+#define PER_TYPE_KIND(x)                                            \
+  case TypeKind::x: {                                               \
+    content = ptr->template as<x##Type>()->json_serialize_fields(); \
+    break;                                                          \
+  }
+#include "taichi/inc/type_kind.inc.h"
+#undef PER_TYPE_KIND
+      default:
+        TI_NOT_IMPLEMENTED
+    }
+
+    obj.inner["content"] = std::move(content);
+    value = JsonValue(std::move(obj));
+  } else {
+    if (value.is_null()) {
+      ptr = nullptr;
+      return;
+    }
+    TypeKind type_kind = (TypeKind)(int)value["type_kind"];
+    switch (type_kind) {
+#define PER_TYPE_KIND(x)                              \
+  case TypeKind::x: {                                 \
+    x##Type content;                                  \
+    auto &content_val = value["content"];             \
+    TI_ASSERT(content_val.is_obj());                  \
+    content.json_deserialize_fields(content_val.obj); \
+    ptr = content.get_type()->as<T>();                \
+    break;                                            \
+  }
+#include "taichi/inc/type_kind.inc.h"
+#undef PER_TYPE_KIND
+      default:
+        TI_NOT_IMPLEMENTED
+    }
+  }
+}
 
 }  // namespace taichi::lang
 

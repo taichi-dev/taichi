@@ -6,7 +6,7 @@ from math import e, inf, nan, pi
 
 from taichi.lang import impl
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh, unary)
+                             max, min, pow, round, sin, sqrt, tan, tanh)
 
 import taichi as ti
 
@@ -671,7 +671,6 @@ def inverse(mat):  # pylint: disable=R1710
     return mat.inverse()
 
 
-@unary
 @ti.func
 def isinf(x):
     """Determines whether the parameter is positive or negative infinity, element-wise.
@@ -699,7 +698,6 @@ def isinf(x):
     return (y & 0x7fffffff) == 0x7f800000
 
 
-@unary
 @ti.func
 def isnan(x):
     """Determines whether the parameter is a number, element-wise.

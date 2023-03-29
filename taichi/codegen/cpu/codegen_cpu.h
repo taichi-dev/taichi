@@ -12,24 +12,22 @@ namespace taichi::lang {
 class KernelCodeGenCPU : public KernelCodeGen {
  public:
   explicit KernelCodeGenCPU(const CompileConfig &compile_config,
-                            Kernel *kernel,
+                            const Kernel *kernel,
+                            IRNode *ir,
                             TaichiLLVMContext &tlctx)
-      : KernelCodeGen(compile_config, kernel, tlctx) {
+      : KernelCodeGen(compile_config, kernel, ir, tlctx) {
   }
 
   // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
-  bool supports_offline_cache() const override {
-    return true;
-  }
   LLVMCompiledTask compile_task(
       const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
 
+ protected:
+  void optimize_module(llvm::Module *module) override;
 #endif  // TI_WITH_LLVM
-
-  FunctionType compile_to_function() override;
 };
 
 #ifdef TI_WITH_LLVM
@@ -44,7 +42,7 @@ class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
   using ModuleToFunctionConverter::convert;
 
   FunctionType convert(const std::string &kernel_name,
-                       const std::vector<LlvmLaunchArgInfo> &args,
+                       const std::vector<Callable::Parameter> &args,
                        LLVMCompiledKernel data) const override;
 };
 

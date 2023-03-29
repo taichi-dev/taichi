@@ -70,7 +70,7 @@ def _gen_swizzles(cls):
 
                 def prop_getter(instance):
                     checker(instance, attr)
-                    return instance._get_entry_and_read([attr_idx])
+                    return instance[attr_idx]
 
                 @python_scope
                 def prop_setter(instance, value):
@@ -96,7 +96,7 @@ def _gen_swizzles(cls):
                     checker(instance, pattern)
                     res = []
                     for ch in pattern:
-                        res.append(instance._get_entry(key_group.index(ch)))
+                        res.append(instance[key_group.index(ch)])
                     return Vector(res)
 
                 @python_scope
@@ -165,12 +165,19 @@ def make_matrix(arr, dt=None):
             shape, dt, [expr.Expr(elt).ptr for elt in arr]))
 
 
-def is_vector(x):
-    return isinstance(x, Vector) or getattr(x, "ndim", None) == 1
+def _read_host_access(x):
+    if isinstance(x, SNodeHostAccess):
+        return x.accessor.getter(*x.key)
+    assert isinstance(x, NdarrayHostAccess)
+    return x.getter()
 
 
-def is_col_vector(x):
-    return is_vector(x) and getattr(x, "m", None) == 1
+def _write_host_access(x, value):
+    if isinstance(x, SNodeHostAccess):
+        x.accessor.setter(value, *x.key)
+    else:
+        assert isinstance(x, NdarrayHostAccess)
+        x.setter(value)
 
 
 @_gen_swizzles
@@ -218,44 +225,38 @@ class Matrix(TaichiOperations):
     _is_matrix_class = True
     __array_priority__ = 1000
 
-    def __init__(self, arr, dt=None, ndim=None):
+    def __init__(self, arr, dt=None):
         if not isinstance(arr, (list, tuple, np.ndarray)):
             raise TaichiTypeError(
                 "An Matrix/Vector can only be initialized with an array-like object"
             )
         if len(arr) == 0:
-            mat = []
             self.ndim = 0
+            self.n, self.m = 0, 0
+            self.entries = np.array([])
+            self.is_host_access = False
         elif isinstance(arr[0], Matrix):
             raise Exception('cols/rows required when using list of vectors')
-        else:
-            if ndim is not None:
-                self.ndim = ndim
-                is_matrix = ndim == 2
+        elif isinstance(arr[0], Iterable):  # matrix
+            self.ndim = 2
+            self.n, self.m = len(arr), len(arr[0])
+            if isinstance(arr[0][0], (SNodeHostAccess, NdarrayHostAccess)):
+                self.entries = arr
+                self.is_host_access = True
             else:
-                is_matrix = isinstance(arr[0],
-                                       Iterable) and not is_vector(self)
-                self.ndim = 2 if is_matrix else 1
-
-            if is_matrix:
-                mat = [list(row) for row in arr]
+                self.entries = np.array(
+                    arr, None if dt is None else to_numpy_type(dt))
+                self.is_host_access = False
+        else:  # vector
+            self.ndim = 1
+            self.n, self.m = len(arr), 1
+            if isinstance(arr[0], (SNodeHostAccess, NdarrayHostAccess)):
+                self.entries = arr
+                self.is_host_access = True
             else:
-                if isinstance(arr[0], Iterable):
-                    flattened = []
-                    for row in arr:
-                        flattened += row
-                    arr = flattened
-                mat = [[x] for x in arr]
-
-        self.n, self.m = len(mat), 1
-        if len(mat) > 0:
-            self.m = len(mat[0])
-        self.entries = [x for row in mat for x in row]
-
-        if ndim is not None:
-            # override ndim after reading data from mat
-            assert ndim in (0, 1, 2)
-            self.ndim = ndim
+                self.entries = np.array(
+                    arr, None if dt is None else to_numpy_type(dt))
+                self.is_host_access = False
 
         if self.n * self.m > 32:
             warning(
@@ -275,57 +276,6 @@ class Matrix(TaichiOperations):
         if self.ndim == 2:
             return (self.n, self.m)
         return None
-
-    def _element_wise_binary(self, foo, other):
-        other = self._broadcast_copy(other)
-        if is_col_vector(self):
-            return Vector([foo(self(i), other(i)) for i in range(self.n)],
-                          ndim=self.ndim)
-        return Matrix([[foo(self(i, j), other(i, j)) for j in range(self.m)]
-                       for i in range(self.n)],
-                      ndim=self.ndim)
-
-    def _broadcast_copy(self, other):
-        if isinstance(other, (list, tuple)):
-            if is_col_vector(self):
-                other = Vector(other, ndim=self.ndim)
-            else:
-                other = Matrix(other, ndim=self.ndim)
-        if not isinstance(other, Matrix):
-            if isinstance(self, Vector):
-                other = Vector([other for _ in range(self.n)])
-            else:
-                other = Matrix([[other for _ in range(self.m)]
-                                for _ in range(self.n)],
-                               ndim=self.ndim)
-        assert self.m == other.m and self.n == other.n, f"Dimension mismatch between shapes ({self.n}, {self.m}), ({other.n}, {other.m})"
-        return other
-
-    def _element_wise_ternary(self, foo, other, extra):
-        other = self._broadcast_copy(other)
-        extra = self._broadcast_copy(extra)
-        return Matrix([[
-            foo(self(i, j), other(i, j), extra(i, j)) for j in range(self.m)
-        ] for i in range(self.n)],
-                      ndim=self.ndim)
-
-    def _element_wise_writeback_binary(self, foo, other):
-        if foo.__name__ == 'assign' and not isinstance(other,
-                                                       (list, tuple, Matrix)):
-            raise TaichiSyntaxError(
-                'cannot assign scalar expr to '
-                f'taichi class {type(self)}, maybe you want to use `a.fill(b)` instead?'
-            )
-        other = self._broadcast_copy(other)
-        entries = [[foo(self(i, j), other(i, j)) for j in range(self.m)]
-                   for i in range(self.n)]
-        return self if foo.__name__ == 'assign' else Matrix(entries,
-                                                            ndim=self.ndim)
-
-    def _element_wise_unary(self, foo):
-        return Matrix([[foo(self(i, j)) for j in range(self.m)]
-                       for i in range(self.n)],
-                      ndim=self.ndim)
 
     def __matmul__(self, other):
         """Matrix-matrix or matrix-vector multiply.
@@ -347,9 +297,9 @@ class Matrix(TaichiOperations):
         return self.n
 
     def __iter__(self):
-        if self.m == 1:
-            return (self(i) for i in range(self.n))
-        return ([self(i, j) for j in range(self.m)] for i in range(self.n))
+        if self.ndim == 1:
+            return (self[i] for i in range(self.n))
+        return ([self[i, j] for j in range(self.m)] for i in range(self.n))
 
     def __getitem__(self, indices):
         """Access to the element at the given indices in a matrix.
@@ -361,17 +311,10 @@ class Matrix(TaichiOperations):
             The value of the element at a specific position of a matrix.
 
         """
-        if not isinstance(indices, (list, tuple)):
-            indices = [indices]
-        assert len(indices) in [1, 2]
-        assert len(
-            indices
-        ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        if isinstance(i, slice) or isinstance(j, slice):
-            return self._get_slice(i, j)
-        return self._get_entry_and_read([i, j])
+        entry = self._get_entry(indices)
+        if self.is_host_access:
+            return _read_host_access(entry)
+        return entry
 
     @python_scope
     def __setitem__(self, indices, item):
@@ -381,49 +324,31 @@ class Matrix(TaichiOperations):
             indices (Sequence[Expr]): the indices of a element.
 
         """
+        if self.is_host_access:
+            entry = self._get_entry(indices)
+            _write_host_access(entry, item)
+        else:
+            if not isinstance(indices, (list, tuple)):
+                indices = [indices]
+            assert len(indices) in [1, 2]
+            assert len(
+                indices
+            ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
+            if self.ndim == 1:
+                self.entries[indices[0]] = item
+            else:
+                self.entries[indices[0]][indices[1]] = item
+
+    def _get_entry(self, indices):
         if not isinstance(indices, (list, tuple)):
             indices = [indices]
         assert len(indices) in [1, 2]
         assert len(
             indices
         ) == self.ndim, f"Expected {self.ndim} indices, got {len(indices)}"
-        i = indices[0]
-        j = 0 if len(indices) == 1 else indices[1]
-        self._set_entry(i, j, item)
-
-    def __call__(self, *args, **kwargs):
-        # TODO: It's quite hard to search for __call__, consider replacing this
-        # with a method of actual names?
-        assert kwargs == {}
-        return self._get_entry_and_read(args)
-
-    def _get_entry(self, *indices):
-        return self.entries[self._linearize_entry_id(*indices)]
-
-    def _get_entry_and_read(self, indices):
-        # Can be invoked in both Python and Taichi scope. `indices` must be
-        # compile-time constants (e.g. Python values)
-        ret = self._get_entry(*indices)
-
-        if isinstance(ret, SNodeHostAccess):
-            ret = ret.accessor.getter(*ret.key)
-        elif isinstance(ret, NdarrayHostAccess):
-            ret = ret.getter()
-        return ret
-
-    def _linearize_entry_id(self, *args):
-        assert 1 <= len(args) <= 2
-        if len(args) == 1 and isinstance(args[0], (list, tuple)):
-            args = args[0]
-        if len(args) == 1:
-            args = args + (0, )
-        for a in args:
-            assert isinstance(a, (int, np.integer))
-        assert 0 <= args[0] < self.n, \
-            f"The 0-th matrix index is out of range: 0 <= {args[0]} < {self.n}"
-        assert 0 <= args[1] < self.m, \
-            f"The 1-th matrix index is out of range: 0 <= {args[1]} < {self.m}"
-        return args[0] * self.m + args[1]
+        if self.ndim == 1:
+            return self.entries[indices[0]]
+        return self.entries[indices[0]][indices[1]]
 
     def _get_slice(self, a, b):
         if isinstance(a, slice):
@@ -438,24 +363,25 @@ class Matrix(TaichiOperations):
         return Vector([self._get_entry(a, j) for j in b])
 
     @python_scope
-    def _set_entry(self, i, j, item):
-        idx = self._linearize_entry_id(i, j)
-        if isinstance(self.entries[idx], SNodeHostAccess):
-            self.entries[idx].accessor.setter(item, *self.entries[idx].key)
-        elif isinstance(self.entries[idx], NdarrayHostAccess):
-            self.entries[idx].setter(item)
-        else:
-            self.entries[idx] = item
-
-    @python_scope
     def _set_entries(self, value):
-        if not isinstance(value, (list, tuple)):
-            value = list(value)
-        if not isinstance(value[0], (list, tuple)):
-            value = [[i] for i in value]
-        for i in range(self.n):
-            for j in range(self.m):
-                self._set_entry(i, j, value[i][j])
+        if isinstance(value, Matrix):
+            value = value.to_list()
+        if self.is_host_access:
+            if self.ndim == 1:
+                for i in range(self.n):
+                    _write_host_access(self.entries[i], value[i])
+            else:
+                for i in range(self.n):
+                    for j in range(self.m):
+                        _write_host_access(self.entries[i][j], value[i][j])
+        else:
+            if self.ndim == 1:
+                for i in range(self.n):
+                    self.entries[i] = value[i]
+            else:
+                for i in range(self.n):
+                    for j in range(self.m):
+                        self.entries[i][j] = value[i][j]
 
     @property
     def _members(self):
@@ -467,9 +393,16 @@ class Matrix(TaichiOperations):
         This is similar to `numpy.ndarray`'s `flatten` and `ravel` methods,
         the difference is that this function always returns a new list.
         """
-        if is_col_vector(self):
-            return [self(i) for i in range(self.n)]
-        return [[self(i, j) for j in range(self.m)] for i in range(self.n)]
+        if self.is_host_access:
+            if self.ndim == 1:
+                return [
+                    _read_host_access(self.entries[i]) for i in range(self.n)
+                ]
+            assert self.ndim == 2
+            return [[
+                _read_host_access(self.entries[i][j]) for j in range(self.m)
+            ] for i in range(self.n)]
+        return self.entries.tolist()
 
     @taichi_scope
     def cast(self, dtype):
@@ -489,14 +422,12 @@ class Matrix(TaichiOperations):
             >>> B
             [0.0, 1.0, 2.0]
         """
-        if is_col_vector(self):
-            # when using _IntermediateMatrix, we can only check `self.ndim`
+        if self.ndim == 1:
             return Vector(
-                [ops_mod.cast(self(i), dtype) for i in range(self.n)])
+                [ops_mod.cast(self[i], dtype) for i in range(self.n)])
         return Matrix(
-            [[ops_mod.cast(self(i, j), dtype) for j in range(self.m)]
-             for i in range(self.n)],
-            ndim=self.ndim)
+            [[ops_mod.cast(self[i, j], dtype) for j in range(self.m)]
+             for i in range(self.n)])
 
     def trace(self):
         """The sum of a matrix diagonal elements.
@@ -720,14 +651,8 @@ class Matrix(TaichiOperations):
         from taichi.lang import matrix_ops
         return matrix_ops.fill(self, val)
 
-    @python_scope
-    def to_numpy(self, keep_dims=False):
+    def to_numpy(self):
         """Converts this matrix to a numpy array.
-
-        Args:
-            keep_dims (bool, optional): Whether to keep the dimension
-                after conversion. If set to `False`, the resulting numpy array
-                will discard the axis of length one.
 
         Returns:
             numpy.ndarray: The result numpy array.
@@ -735,13 +660,13 @@ class Matrix(TaichiOperations):
         Example::
 
             >>> A = ti.Matrix([[0], [1], [2], [3]])
-            >>> A.to_numpy(keep_dims=False)
+            >>> A.to_numpy()
             >>> A
-            array([0, 1, 2, 3])
+            array([[0], [1], [2], [3]])
         """
-        as_vector = self.m == 1 and not keep_dims
-        shape_ext = (self.n, ) if as_vector else (self.n, self.m)
-        return np.array(self.to_list()).reshape(shape_ext)
+        if self.is_host_access:
+            return np.array(self.to_list())
+        return self.entries
 
     @taichi_scope
     def __ti_repr__(self):
@@ -1181,7 +1106,6 @@ class Vector(Matrix):
             n (int): Size of the vector.
             dtype (DataType): Data type of each value.
             shape (Union[int, tuple[int]]): Shape of the ndarray.
-            layout (Layout, optional): Memory layout, AOS by default.
 
         Example:
             The code below shows how a Taichi ndarray with vector elements can be declared and defined::
@@ -1411,8 +1335,7 @@ class MatrixField(Field):
         if self.ndim == 1:
             return Vector([_host_access[i] for i in range(self.n)])
         return Matrix([[_host_access[i * self.m + j] for j in range(self.m)]
-                       for i in range(self.n)],
-                      ndim=self.ndim)
+                       for i in range(self.n)])
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
@@ -1496,7 +1419,7 @@ class MatrixType(CompoundType):
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
-                entries += x.entries
+                entries += x.to_list()
             else:
                 entries.append(x)
 
@@ -1510,14 +1433,14 @@ class MatrixType(CompoundType):
             for i in range(self.m * self.n)
         ])
 
-    def from_kernel_struct_ret(self, t_kernel, ret_index=()):
-        if id(self.dtype) in primitive_types.integer_type_ids:
+    def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
+        if self.dtype in primitive_types.integer_types:
             if is_signed(cook_dtype(self.dtype)):
-                get_ret_func = t_kernel.get_struct_ret_int
+                get_ret_func = launch_ctx.get_struct_ret_int
             else:
-                get_ret_func = t_kernel.get_struct_ret_uint
-        elif id(self.dtype) in primitive_types.real_type_ids:
-            get_ret_func = t_kernel.get_struct_ret_float
+                get_ret_func = launch_ctx.get_struct_ret_uint
+        elif self.dtype in primitive_types.real_types:
+            get_ret_func = launch_ctx.get_struct_ret_float
         else:
             raise TaichiRuntimeTypeError(
                 f"Invalid return type on index={ret_index}")
@@ -1530,8 +1453,7 @@ class MatrixType(CompoundType):
         return Matrix([[
             int(entries[i][j]) if self.dtype in primitive_types.integer_types
             else float(entries[i][j]) for j in range(self.m)
-        ] for i in range(self.n)],
-                      ndim=self.ndim)
+        ] for i in range(self.n)])
 
     def _instantiate(self, entries):
         if in_python_scope():
@@ -1607,7 +1529,7 @@ class VectorType(MatrixType):
             elif isinstance(x, np.ndarray):
                 entries += list(x.ravel())
             elif isinstance(x, Matrix):
-                entries += x.entries
+                entries += x.to_list()
             else:
                 entries.append(x)
 
@@ -1739,7 +1661,6 @@ class VectorNdarray(Ndarray):
         n (int): Size of the vector.
         dtype (DataType): Data type of each value.
         shape (Tuple[int]): Shape of the ndarray.
-        layout (Layout): Memory layout.
 
     Example::
 

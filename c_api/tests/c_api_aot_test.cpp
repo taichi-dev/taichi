@@ -188,6 +188,13 @@ TEST_F(CapiTest, AotTestVulkanKernel) {
   }
 }
 
+TEST_F(CapiTest, AotTestMetalKernel) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
+    kernel_aot_test(arch);
+  }
+}
+
 TEST_F(CapiTest, AotTestOpenglKernel) {
   if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     TiArch arch = TiArch::TI_ARCH_OPENGL;
@@ -202,6 +209,13 @@ TEST_F(CapiTest, GraphTestVulkanTextureKernel) {
   }
 }
 
+TEST_F(CapiTest, GraphTestMetalTextureKernel) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
+    texture_aot_kernel_test(arch);
+  }
+}
+
 TEST_F(CapiTest, AotTestCudaSharedArray) {
   if (ti::is_arch_available(TI_ARCH_CUDA)) {
     TiArch arch = TiArch::TI_ARCH_CUDA;
@@ -212,6 +226,13 @@ TEST_F(CapiTest, AotTestCudaSharedArray) {
 TEST_F(CapiTest, AotTestVulkanSharedArray) {
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
+    shared_array_aot_test(arch);
+  }
+}
+
+TEST_F(CapiTest, AotTestMetalSharedArray) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
     shared_array_aot_test(arch);
   }
 }

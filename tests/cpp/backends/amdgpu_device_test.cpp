@@ -35,8 +35,8 @@ TEST(AMDGPU, CreateDeviceAndAlloc) {
   params.size = 400;
   params.host_read = true;
   params.host_write = true;
-  const taichi::lang::DeviceAllocation device_alloc =
-      device->allocate_memory(params);
+  taichi::lang::DeviceAllocation device_alloc;
+  EXPECT_EQ(device->allocate_memory(params, &device_alloc), RhiResult::success);
 
   // The purpose of the device_alloc_guard is to rule out double free
   const taichi::lang::DeviceAllocationGuard device_alloc_guard(device_alloc);
@@ -78,8 +78,8 @@ TEST(AMDGPU, ImportMemory) {
   params.size = 400;
   params.host_read = true;
   params.host_write = true;
-  const taichi::lang::DeviceAllocation device_dest =
-      device->allocate_memory(params);
+  taichi::lang::DeviceAllocation device_dest;
+  EXPECT_EQ(device->allocate_memory(params, &device_dest), RhiResult::success);
   const taichi::lang::DeviceAllocationGuard device_dest_guard(device_dest);
 
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);

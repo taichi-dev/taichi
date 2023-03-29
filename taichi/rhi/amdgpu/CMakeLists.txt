@@ -18,5 +18,3 @@ target_include_directories(${AMDGPU_RHI}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${LLVM_INCLUDE_DIRS}
   )
-
-target_link_libraries(${AMDGPU_RHI} PRIVATE interop_rhi)

@@ -74,7 +74,7 @@ def _test_python(args, default_dir='python'):
         )
     else:
         if int(threads) > 1:
-            pytest_args += ['-n', str(threads)]
+            pytest_args += ['-n', str(threads), '--dist=worksteal']
     import pytest  # pylint: disable=C0415
     return int(pytest.main(pytest_args))
 
@@ -228,9 +228,14 @@ def test():
 
             size = size_of_dir(tmp_cache_file_path)
             stat = {}
-            for subdir in os.listdir(tmp_cache_file_path):
-                stat[subdir] = len(
-                    os.listdir(os.path.join(tmp_cache_file_path, subdir)))
+            countof_tic = 0
+            for p in os.listdir(tmp_cache_file_path):
+                subdir_path = os.path.join(tmp_cache_file_path, p)
+                if os.path.isdir(subdir_path):
+                    stat[p] = len(os.listdir(subdir_path))
+                elif p.endswith('.tic'):
+                    countof_tic += 1
+            stat['*.tic'] = countof_tic
             shutil.rmtree(tmp_cache_file_path)
             print('Summary of testing the offline cache:')
             print(f'    Simple statistics: {stat}')
@@ -247,8 +252,11 @@ def test():
         exit(_test_python(args, 'cpp'))
 
     for _ in range(run_count):
-        if _test_python(args) != 0:
-            exit(1)
+        ret = _test_python(args)
+        if ret == 5:
+            # treat 'no tests collected' as success
+            ret = 0
+        exit(ret)
 
 
 if __name__ == '__main__':

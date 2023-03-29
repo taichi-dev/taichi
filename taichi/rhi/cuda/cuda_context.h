@@ -26,8 +26,9 @@ class CUDAContext {
   std::mutex lock_;
   KernelProfilerBase *profiler_;
   CUDADriver &driver_;
-  bool debug_;
   int max_shared_memory_bytes_;
+  bool debug_;
+  bool supports_mem_pool_;
 
  public:
   CUDAContext();
@@ -70,6 +71,10 @@ class CUDAContext {
 
   int get_compute_capability() const {
     return compute_capability_;
+  }
+
+  bool supports_mem_pool() const {
+    return supports_mem_pool_;
   }
 
   ~CUDAContext();

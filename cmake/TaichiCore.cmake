@@ -132,6 +132,24 @@ if (TI_WITH_CC)
   list(APPEND TAICHI_CORE_SOURCE ${TAICHI_CC_SOURCE})
 endif()
 
+if (TI_WITH_METAL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
+endif()
+
+if (TI_WITH_OPENGL)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
+endif()
+
+if (TI_WITH_DX11)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
+endif()
+
+if (TI_WITH_VULKAN)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
+endif ()
+
+add_subdirectory(taichi/rhi)
+
 set(CORE_LIBRARY_NAME taichi_core)
 add_library(${CORE_LIBRARY_NAME} OBJECT ${TAICHI_CORE_SOURCE})
 
@@ -142,22 +160,7 @@ target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/PicoSHA2)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/eigen)
 target_include_directories(${CORE_LIBRARY_NAME} PRIVATE external/FP16/include)
 
-# GLFW not available on Android
-if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
-  set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-  set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-
-  if (APPLE)
-    set(GLFW_VULKAN_STATIC ON CACHE BOOL "" FORCE)
-  endif()
-
-  message("Building with GLFW")
-  add_compile_definitions(TI_WITH_GLFW)
-  add_subdirectory(external/glfw)
-  target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE glfw)
-  target_include_directories(${CORE_LIBRARY_NAME} PUBLIC external/glfw/include)
-endif()
+target_link_libraries(${CORE_LIBRARY_NAME} PUBLIC ti_device_api)
 
 if(TI_WITH_LLVM)
     if(DEFINED ENV{LLVM_DIR})
@@ -205,38 +208,31 @@ if(TI_WITH_LLVM)
 
     add_subdirectory(taichi/codegen/cpu)
     add_subdirectory(taichi/runtime/cpu)
-    add_subdirectory(taichi/rhi/cpu)
 
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_runtime)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cpu_rhi)
 
     if (TI_WITH_CUDA)
         llvm_map_components_to_libnames(llvm_ptx_libs NVPTX)
         add_subdirectory(taichi/codegen/cuda)
         add_subdirectory(taichi/runtime/cuda)
-        add_subdirectory(taichi/rhi/cuda)
 
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_runtime)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE cuda_rhi)
     endif()
 
     if (TI_WITH_AMDGPU)
         llvm_map_components_to_libnames(llvm_amdgpu_libs AMDGPU)
-        add_subdirectory(taichi/rhi/amdgpu)
         add_subdirectory(taichi/codegen/amdgpu)
         add_subdirectory(taichi/runtime/amdgpu)
 
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_codegen)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_runtime)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE amdgpu_rhi)
     endif()
 
     if (TI_WITH_DX12)
         llvm_map_components_to_libnames(llvm_directx_libs DirectX)
 
-        add_subdirectory(taichi/rhi/dx12)
         add_subdirectory(taichi/runtime/dx12)
         add_subdirectory(taichi/codegen/dx12)
         add_subdirectory(taichi/runtime/program_impls/dx12)
@@ -247,7 +243,6 @@ if(TI_WITH_LLVM)
         target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx12_program_impl)
     endif()
 
-    add_subdirectory(taichi/rhi/llvm)
     add_subdirectory(taichi/codegen/llvm)
     add_subdirectory(taichi/runtime/llvm)
     add_subdirectory(taichi/runtime/program_impls/llvm)
@@ -255,12 +250,6 @@ if(TI_WITH_LLVM)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_program_impl)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_codegen)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE llvm_runtime)
-
-    add_subdirectory(taichi/codegen/wasm)
-    add_subdirectory(taichi/runtime/wasm)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_codegen)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE wasm_runtime)
 
     if (LINUX)
         # Remove symbols from llvm static libs
@@ -270,14 +259,32 @@ if(TI_WITH_LLVM)
     endif()
 endif()
 
+if (TI_WITH_METAL)
+    add_subdirectory(taichi/runtime/program_impls/metal)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
+endif()
+
+if (TI_WITH_OPENGL)
+    add_subdirectory(taichi/runtime/program_impls/opengl)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
+endif()
+
+if (TI_WITH_DX11)
+    add_subdirectory(taichi/runtime/program_impls/dx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
+endif()
+
+if (TI_WITH_VULKAN)
+    add_subdirectory(taichi/runtime/program_impls/vulkan)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
+endif ()
+
 add_subdirectory(taichi/util)
 add_subdirectory(taichi/common)
-add_subdirectory(taichi/rhi/interop)
 add_subdirectory(taichi/compilation_manager)
 
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_util)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE taichi_common)
-target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE interop_rhi)
 target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE compilation_manager)
 
 if (TI_WITH_CUDA AND TI_WITH_CUDA_TOOLKIT)
@@ -286,30 +293,6 @@ if (TI_WITH_CUDA AND TI_WITH_CUDA_TOOLKIT)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_CUDA_TOOLKIT")
     target_include_directories(${CORE_LIBRARY_NAME} PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
     target_link_libraries(${CORE_LIBRARY_NAME} PUBLIC CUDA::cupti)
-endif()
-
-if (TI_WITH_METAL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_METAL")
-
-    add_subdirectory(taichi/rhi/metal)
-    add_subdirectory(taichi/runtime/program_impls/metal)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)
-endif()
-
-if (TI_WITH_OPENGL)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_OPENGL")
-
-    add_subdirectory(taichi/rhi/opengl)
-    add_subdirectory(taichi/runtime/program_impls/opengl)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE opengl_program_impl)
-endif()
-
-if (TI_WITH_DX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_DX11")
-
-    add_subdirectory(taichi/rhi/dx)
-    add_subdirectory(taichi/runtime/program_impls/dx)
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE dx_program_impl)
 endif()
 
 # SPIR-V codegen is always there, regardless of Vulkan
@@ -330,34 +313,6 @@ if (TI_WITH_OPENGL OR TI_WITH_DX11 OR TI_WITH_METAL)
   add_subdirectory(${PROJECT_SOURCE_DIR}/external/SPIRV-Cross ${PROJECT_BINARY_DIR}/external/SPIRV-Cross)
 endif()
 
-# Vulkan Device API
-if (TI_WITH_VULKAN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_VULKAN")
-    if (APPLE)
-        # The latest Molten-vk v1.2.0 and v1.1.11 breaks GGUI: mpm3d_ggui.py
-        # So we have to manually download and install Molten-vk v1.10.0
-        #
-        # Uncomment the following lines if the mpm3d_ggui.py runs well with the latest Molten-vk
-        #find_library(MOLTEN_VK libMoltenVK.dylib PATHS $HOMEBREW_CELLAR/molten-vk $VULKAN_SDK REQUIRED)
-        #configure_file(${MOLTEN_VK} ${CMAKE_BINARY_DIR}/libMoltenVK.dylib COPYONLY)
-        #message(STATUS "MoltenVK library ${MOLTEN_VK}")
-
-        if(NOT EXISTS ${CMAKE_BINARY_DIR}/libMoltenVK.dylib)
-            execute_process(COMMAND curl -L -o ${CMAKE_BINARY_DIR}/libMoltenVK.zip https://github.com/taichi-dev/taichi_assets/files/9977436/libMoltenVK.dylib.zip)
-            execute_process(COMMAND tar -xf ${CMAKE_BINARY_DIR}/libMoltenVK.zip --directory ${CMAKE_BINARY_DIR})
-        endif()
-        install(FILES ${CMAKE_BINARY_DIR}/libMoltenVK.dylib DESTINATION ${INSTALL_LIB_DIR}/runtime)
-    endif()
-    add_subdirectory(taichi/rhi/vulkan)
-    add_subdirectory(taichi/runtime/program_impls/vulkan)
-
-    # TODO: this dependency is here because program.cpp includes vulkan_program.h
-    # Should be removed
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_rhi)
-
-    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE vulkan_program_impl)
-endif ()
-
 
 # Optional dependencies
 if (APPLE)
@@ -373,36 +328,26 @@ if (APPLE)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE ${APPLE_FRAMEWORKS})
 endif ()
 
-if (NOT WIN32)
+if (ANDROID)
     # Android has a custom toolchain so pthread is not available and should
     # link against other libraries as well for logcat and internal features.
-    if (ANDROID)
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE android log)
-    else()
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE pthread stdc++)
-    endif()
-
-    if (UNIX AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	# OS X or BSD
-    else()
-        # Linux
-        target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE stdc++fs X11)
-
-        target_link_options(${CORE_LIBRARY_NAME} PRIVATE -static-libgcc -static-libstdc++)
-        if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
-            # Avoid glibc dependencies
-            if (TI_WITH_VULKAN)
-                target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f)
-            else()
-                # Enforce compatibility with manylinux2014
-                target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
-            endif()
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE android log)
+elseif (LINUX)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE X11 pthread)
+    if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "x86_64")
+        # Avoid glibc dependencies
+        if (TI_WITH_VULKAN)
+            target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f)
+        else()
+            # Enforce compatibility with manylinux2014
+            target_link_options(${CORE_LIBRARY_NAME} PRIVATE -Wl,--wrap=log2f -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=logf -Wl,--wrap=powf -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=pow)
         endif()
     endif()
-else()
-    # windows
+elseif (WIN32)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE Winmm)
-endif ()
+endif()
+
+
 
 foreach (source IN LISTS TAICHI_CORE_SOURCE)
     file(RELATIVE_PATH source_rel ${CMAKE_CURRENT_LIST_DIR} ${source})
@@ -434,6 +379,11 @@ if(TI_WITH_PYTHON)
     # Remove symbols from static libs: https://stackoverflow.com/a/14863432/12003165
     if (LINUX)
         target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -Wl,--exclude-libs=ALL)
+        if (NOT ANDROID)
+            # Excluding Android
+            # Android defaults to static linking with libc++, no tinkering needed.
+            target_link_options(${CORE_WITH_PYBIND_LIBRARY_NAME} PUBLIC -static-libgcc -static-libstdc++)
+        endif()
     endif()
 
     if (TI_WITH_BACKTRACE)

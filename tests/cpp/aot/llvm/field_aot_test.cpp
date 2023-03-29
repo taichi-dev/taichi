@@ -45,52 +45,45 @@ static void run_field_tests(aot::Module *mod,
   /* -------- Test Case 1 ------ */
   // Kernel: init_fields(int)
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_init_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_init_fields);
+    builder.set_arg(0, base_value);
+    k_init_fields->launch(builder);
   }
 
   // Kernel: check_init_x(int)
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_check_init_x->launch(&ctx);
+    LaunchContextBuilder builder(k_check_init_x);
+    builder.set_arg(0, base_value);
+    k_check_init_x->launch(builder);
   }
   // Kernel: check_init_y()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_init_y->launch(&ctx);
+    LaunchContextBuilder builder(k_check_init_y);
+    k_check_init_y->launch(builder);
   }
 
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_deactivate_pointer_fields);
+    k_deactivate_pointer_fields->launch(builder);
   }
   // Kernel: check_deactivate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_deactivate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_check_deactivate_pointer_fields);
+    k_check_deactivate_pointer_fields->launch(builder);
   }
 
   /* -------- Test Case 3 ------ */
   // Kernel: activate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_activate_pointer_fields);
+    k_activate_pointer_fields->launch(builder);
   }
   // Kernel: check_activate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_activate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_check_activate_pointer_fields);
+    k_check_activate_pointer_fields->launch(builder);
   }
 
   // Check assertion error from ti.kernel

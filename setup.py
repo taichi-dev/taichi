@@ -33,6 +33,7 @@ classifiers = [
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
 ]
 
 
@@ -85,7 +86,8 @@ class Clean(clean):
         if os.path.exists(self.build_temp):
             remove_tree(self.build_temp, dry_run=self.dry_run)
         generated_folders = ('bin', 'dist', 'python/taichi/assets',
-                             'python/taichi/_lib/runtime', 'taichi.egg-info',
+                             'python/taichi/_lib/runtime',
+                             'python/taichi/_lib/c_api', 'taichi.egg-info',
                              'python/taichi.egg-info', 'build')
         for d in generated_folders:
             if os.path.exists(d):
@@ -159,12 +161,30 @@ def get_cmake_args():
 
 
 # Control files to be included in package data
+BLACKLISTED_FILES = [
+    'libSPIRV-Tools-shared.so',
+    'libSPIRV-Tools-shared.dll',
+    'libtaichi_c_api.so',
+    'taichi_c_api.dll',
+    'libtaichi_c_api.dylib',
+]
+
+WHITELISTED_FILES = [
+    'libMoltenVK.dylib',
+]
+
+
 def cmake_install_manifest_filter(manifest_files):
-    return [
-        f for f in manifest_files
-        if f.endswith(('.so', 'pyd', '.dll', '.bc', '.h', '.dylib', '.cmake',
-                       '.hpp')) or os.path.basename(f) == 'libMoltenVK.dylib'
-    ]
+    def should_include(f):
+        basename = os.path.basename(f)
+        if basename in WHITELISTED_FILES:
+            return True
+        if basename in BLACKLISTED_FILES:
+            return False
+        return f.endswith(
+            ('.so', 'pyd', '.dll', '.bc', '.h', '.dylib', '.cmake', '.hpp'))
+
+    return [f for f in manifest_files if should_include(f)]
 
 
 def sign_development_for_apple_m1():
@@ -176,6 +196,10 @@ def sign_development_for_apple_m1():
     if sys.platform == "darwin" and platform.machine() == "arm64":
         try:
             for path in glob.glob("python/taichi/_lib/core/*.so"):
+                print(f"signing {path}..")
+                subprocess.check_call(
+                    ['codesign', '--force', '--deep', '--sign', '-', path])
+            for path in glob.glob("python/taichi/_lib/c_api/lib/*.so"):
                 print(f"signing {path}..")
                 subprocess.check_call(
                     ['codesign', '--force', '--deep', '--sign', '-', path])
@@ -192,12 +216,14 @@ setup(name=project_name,
       author='Taichi developers',
       author_email='yuanmhu@gmail.com',
       url='https://github.com/taichi-dev/taichi',
-      python_requires=">=3.6,<3.11",
+      python_requires=">=3.6,<3.12",
       install_requires=[
           'numpy', 'colorama', 'dill', 'rich',
           'astunparse;python_version<"3.9"'
       ],
-      data_files=[(os.path.join('_lib', 'runtime'), data_files)],
+      data_files=[
+          (os.path.join('_lib', 'runtime'), data_files),
+      ],
       keywords=['graphics', 'simulation'],
       license=
       'Apache Software License (http://www.apache.org/licenses/LICENSE-2.0)',

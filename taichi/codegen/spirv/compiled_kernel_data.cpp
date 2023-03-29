@@ -1,7 +1,5 @@
 #include "taichi/codegen/spirv/compiled_kernel_data.h"
 
-#include <numeric>
-
 namespace taichi::lang {
 
 static std::unique_ptr<CompiledKernelData> new_spirv_compiled_kernel_data() {
@@ -19,16 +17,6 @@ CompiledKernelData::CompiledKernelData(Arch arch, InternalData data)
 
 Arch CompiledKernelData::arch() const {
   return arch_;
-}
-
-std::size_t CompiledKernelData::size() const {
-  return sizeof(std::uint32_t) *
-         std::accumulate(
-             data_.src.spirv_src.begin(), data_.src.spirv_src.end(),
-             (std::size_t)0,
-             [](std::size_t val, const std::vector<std::uint32_t> &c) {
-               return val + c.size();
-             });
 }
 
 std::unique_ptr<lang::CompiledKernelData> CompiledKernelData::clone() const {

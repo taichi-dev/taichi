@@ -344,7 +344,7 @@ class GUI:
 
     def contour(self, scalar_field, normalize=False):
         """Plot a contour view of a scalar field.
-        
+
         The input scalar_field will be converted to a Numpy array first, and then plotted
         by the Matplotlib colormap 'Plasma'. Notice this method will automatically perform
         a bilinear interpolation on the field if the size of the field does not match with
@@ -352,13 +352,14 @@ class GUI:
 
         Args:
             scalar_field (ti.field): The scalar field being plotted.
-            normalize (bool, Optional): Display the normalized scalar field if set to True. 
+            normalize (bool, Optional): Display the normalized scalar field if set to True.
             Default is False.
         """
         import matplotlib.cm as cm
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
-            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0]))
+            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),
+                               np.linspace(0, 1, self.res[0]))
             x_idx = x * (scalar_field_np.shape[1] - 1)
             y_idx = y * (scalar_field_np.shape[0] - 1)
             x1 = x_idx.astype(int)
@@ -739,7 +740,7 @@ class GUI:
 
         Args:
             vector_field (ti.Vector.field): The vector field being displayed.
-            arrow_spacing (int, optional): The spacing between vectors. 
+            arrow_spacing (int, optional): The spacing between vectors.
             color (Union[int, np.array], optional): The color of vectors.
 
         """
@@ -750,7 +751,7 @@ class GUI:
 
         # The largest vector should occupy 10% of the window
         scale_factor = 0.1 / (max_magnitude + 1e-16)
-        
+
         x = np.arange(0, 1, arrow_spacing / nx)
         y = np.arange(0, 1, arrow_spacing / ny)
         X, Y = np.meshgrid(x, y)
@@ -758,7 +759,7 @@ class GUI:
         incre = (v_np[::arrow_spacing,::arrow_spacing] \
                  * scale_factor).reshape(-1, 2, order='C')
         self.arrows(orig=begin, direction=incre, radius=1, color=color)
-        
+
     def show(self, file=None):
         """Shows the frame content in the gui window, or save the content to an
         image file.

@@ -138,9 +138,10 @@ class NdarrayType:
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
             )
-        
+
     def __repr__(self):
         return f"NdarrayType(dtype={self.dtype}, ndim={self.ndim}, layout={self.layout})"
+
     def __str__(self):
         return self.__repr__()
 

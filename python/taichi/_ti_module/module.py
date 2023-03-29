@@ -2,7 +2,6 @@ import argparse
 import runpy
 from pathlib import Path
 from typing import List
-import taichi
 
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot._export import _aot_kernels
@@ -11,6 +10,8 @@ from taichi.aot.module import Module
 from taichi.types.ndarray_type import NdarrayType
 from taichi.types.primitive_types import integer_type_ids, real_type_ids
 from taichi.types.texture_type import RWTextureType, TextureType
+
+import taichi
 
 
 def module_cppgen(parser: argparse.ArgumentParser):
@@ -32,9 +33,11 @@ def module_cppgen(parser: argparse.ArgumentParser):
                         type=str,
                         help="Output C++ header path.",
                         default="module.h")
-    parser.add_argument("--bin2c",
-                        help="Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
-                        action="store_true")
+    parser.add_argument(
+        "--bin2c",
+        help=
+        "Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
+        action="store_true")
     parser.set_defaults(func=module_cppgen_impl)
 
 
@@ -126,12 +129,12 @@ def module_build_impl(a):
                         )
                     value = taichi.ndarray(v.dtype, (1, ) * v.ndim)
                 elif isinstance(v, TextureType):
-                    value = taichi.Texture(taichi.Format.rgba8, (4, ) * v.num_dimensions)
+                    value = taichi.Texture(taichi.Format.rgba8,
+                                           (4, ) * v.num_dimensions)
                 elif isinstance(v, RWTextureType):
                     value = taichi.Texture(v.fmt, (4, ) * v.num_dimensions)
                 else:
-                    raise ValueError(
-                        f"Unsupported template type: {type(v)}")
+                    raise ValueError(f"Unsupported template type: {type(v)}")
                 template_args[k] = value
         m.add_kernel(record.kernel, template_args)
     print()

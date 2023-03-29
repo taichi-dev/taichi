@@ -8,7 +8,6 @@
 #endif
 #include "taichi/util/lang_util.h"
 #include "taichi/system/unified_allocator.h"
-#include "taichi/system/virtual_memory.h"
 #include "taichi/system/memory_pool.h"
 #include "taichi/system/timer.h"
 #include "taichi/rhi/cpu/cpu_device.h"

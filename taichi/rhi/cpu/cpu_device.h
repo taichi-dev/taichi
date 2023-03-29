@@ -6,7 +6,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/rhi/llvm/llvm_device.h"
-#include "taichi/system/virtual_memory.h"
 
 namespace taichi::lang {
 namespace cpu {

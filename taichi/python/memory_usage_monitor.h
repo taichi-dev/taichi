@@ -1,7 +1,5 @@
 #pragma once
 
-#include "taichi/system/virtual_memory.h"
-
 namespace taichi {
 
 class MemoryMonitor {

@@ -11,7 +11,7 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
   return allocations_[handle.alloc_id];
 }
 
-RhiResult CpuDevice::CpuDevice() {
+CpuDevice::CpuDevice() {
 #if defined TI_PLATFORM_OSX
   arch_ = Arch::arm64;
 #else

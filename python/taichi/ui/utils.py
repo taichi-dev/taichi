@@ -36,20 +36,18 @@ def get_field_info(field):
 
 def euler_to_vec(yaw, pitch):
     v = Vector([0.0, 0.0, 0.0])
-    v[0] = -sin(yaw) * cos(pitch)
+    v[0] = sin(yaw) * cos(pitch)
     v[1] = sin(pitch)
-    v[2] = -cos(yaw) * cos(pitch)
+    v[2] = cos(yaw) * cos(pitch)
     return v
 
 
-def vec_to_euler(v):
+def vec_to_euler(v, eps: float = 1e-6):
     v = v.normalized()
     pitch = asin(v[1])
 
-    sin_yaw = -v[0] / cos(pitch)
-    cos_yaw = -v[2] / cos(pitch)
-
-    eps = 1e-6
+    sin_yaw = v[0] / cos(pitch)
+    cos_yaw = v[2] / cos(pitch)
 
     if abs(sin_yaw) < eps:
         yaw = 0

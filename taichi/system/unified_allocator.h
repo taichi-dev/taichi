@@ -2,7 +2,7 @@
 #include <mutex>
 #include <vector>
 #include <memory>
-#include <unordered_set>
+#include <map>
 
 #include "taichi/rhi/arch.h"
 #include "taichi/rhi/device.h"
@@ -11,35 +11,30 @@ namespace taichi::lang {
 
 class MemoryPool;
 
-// This class can only have one instance
+// This class can only be accessed by MemoryPool
 class UnifiedAllocator {
-  std::size_t size_;
-  Arch arch_;
-
-  // put these two on the unified memory so that GPU can have access
  private:
-  bool is_exclusive;
-  uint8 *data;
-  uint8 *head;
-  uint8 *tail;
+  struct MemoryChunk {
+    bool is_exclusive;
+    uint8 *data;
+    uint8 *head;
+    uint8 *tail;
+  };
 
- public:
-  UnifiedAllocator(std::size_t size, Arch arch, bool is_exclusive = false);
+  static const std::size_t default_allocator_size;
 
-  ~UnifiedAllocator();
+  UnifiedAllocator(Arch arch);
 
-  void *allocate(std::size_t size, std::size_t alignment);
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 bool exclusive = false);
 
   void release(size_t sz, uint64_t *ptr);
-  bool is_releasable(uint64_t *ptr) const;
 
-  void memset(unsigned char val);
+  Arch arch_;
+  std::map<uint8 *, MemoryChunk> chunks;
 
-  bool initialized() const {
-    return data != nullptr;
-  }
-
-  UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
+  friend class MemoryPool;
 };
 
 }  // namespace taichi::lang

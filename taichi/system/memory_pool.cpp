@@ -1,4 +1,7 @@
 #include "memory_pool.h"
+
+#include <memory>
+
 #include "taichi/system/timer.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_device.h"
@@ -12,6 +15,8 @@
 #endif
 
 namespace taichi::lang {
+
+const size_t MemoryPool::page_size{1 << 12};  // 4 KB page size by default
 
 MemoryPool &MemoryPool::get_instance(Arch arch) {
   if (!arch_is_cuda(arch) && !arch_is_cpu(arch)) {
@@ -31,50 +36,33 @@ MemoryPool &MemoryPool::get_instance(Arch arch) {
   return *cpu_memory_pool;
 }
 
-// In the future we wish to move the MemoryPool inside each Device
-// so that the memory allocated from each Device can be used as-is.
 MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
-  TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
-           default_allocator_size / 1024 / 1024);
-  // TODO: initialize allocator according to arch
+  if (arch_is_cpu(arch)) {
+    allocator_ = std::unique_ptr<UnifiedAllocator>(new UnifiedAllocator(arch));
+
+    TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
+             UnifiedAllocator::default_allocator_size / 1024 / 1024);
+  } else {
+    TI_NOT_IMPLEMENTED;
+  }
 }
 
 void *MemoryPool::allocate(std::size_t size,
                            std::size_t alignment,
                            bool releasable) {
-  std::lock_guard<std::mutex> _(mut_allocators);
-  void *ret = nullptr;
-
-  // TODO: refactor this part to allocator->allocate(size, alignment)
-  if (arch_is_cpu(arch_)) {
-    // For UnifiedAllocator, we have to make it exclusive to make sure it's
-    // releasable
-    if (!allocators.empty() && !releasable) {
-      ret = allocators.back()->allocate(size, alignment);
-    }
-    if (!ret) {
-      // allocation have failed
-      auto new_buffer_size = std::max(size, default_allocator_size);
-      allocators.emplace_back(std::make_unique<UnifiedAllocator>(
-          new_buffer_size, arch_, releasable /*is_exclusive*/));
-      ret = allocators.back()->allocate(size, alignment);
-    }
-    TI_ASSERT(ret);
-  } else {
-    TI_NOT_IMPLEMENTED;
-  }
+  std::lock_guard<std::mutex> _(mut_allocation_);
+  void *ret = allocator_->allocate(size, alignment, releasable);
 
   return ret;
 }
 
 void MemoryPool::release(std::size_t size, void *ptr) {
-  std::lock_guard<std::mutex> _(mut_allocators);
+  std::lock_guard<std::mutex> _(mut_allocation_);
 
-  for (auto &allocator : allocators) {
-    if (allocator->is_releasable((uint64_t *)ptr)) {
-      allocator->release(size, (uint64_t *)ptr);
-      return;
-    }
+  allocator_->release(size, (uint64_t *)ptr);
+
+  if (dynamic_cast<UnifiedAllocator *>(allocator_.get())) {
+    deallocate_raw_memory(ptr);  // release raw memory as well
   }
 }
 
@@ -153,8 +141,8 @@ void MemoryPool::deallocate_raw_memory(void *ptr) {
 }
 
 void MemoryPool::reset() {
-  std::lock_guard<std::mutex> _(mut_allocators);
-  allocators.clear();
+  std::lock_guard<std::mutex> _(mut_allocation_);
+  allocator_.reset();
 
   const auto ptr_map_copied = raw_memory_chunks_;
   for (auto &ptr : ptr_map_copied) {

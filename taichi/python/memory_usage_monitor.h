@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+#include <fstream>
+#include "taichi/common/core.h"
+
 namespace taichi {
 
 class MemoryMonitor {
@@ -18,5 +22,8 @@ class MemoryMonitor {
 void start_memory_monitoring(std::string output_fn,
                              int pid = -1,
                              real interval = 1);
+
+float64 get_memory_usage_gb(int pid = -1);
+uint64 get_memory_usage(int pid = -1);
 
 }  // namespace taichi

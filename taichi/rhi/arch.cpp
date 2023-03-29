@@ -1,4 +1,5 @@
 #include "taichi/rhi/arch.h"
+#include "taichi/rhi/impl_support.h"
 
 namespace taichi {
 
@@ -12,7 +13,7 @@ std::string arch_name(Arch arch) {
 
 #undef PER_ARCH
     default:
-      TI_NOT_IMPLEMENTED
+      RHI_NOT_IMPLEMENTED
   }
 }
 
@@ -27,7 +28,11 @@ Arch arch_from_name(const std::string &arch_name) {
 #include "taichi/inc/archs.inc.h"
 
   else {
-    TI_ERROR("Unknown architecture name: {}", arch_name);
+    std::array<char, 256> buf;
+    RHI_DEBUG_SNPRINTF(buf.data(), buf.size(), "Unknown architecture name: %s",
+                       arch_name.c_str());
+    RHI_LOG_ERROR(buf.data());
+    RHI_NOT_IMPLEMENTED
   }
 
 #undef PER_ARCH
@@ -67,7 +72,7 @@ Arch host_arch() {
 #if defined(TI_ARCH_ARM)
   return Arch::arm64;
 #endif
-  TI_NOT_IMPLEMENTED
+  RHI_NOT_IMPLEMENTED
 }
 
 bool arch_use_host_memory(Arch arch) {
@@ -82,7 +87,7 @@ int default_simd_width(Arch arch) {
   } else if (arch == Arch::arm64) {
     return 4;
   } else {
-    TI_NOT_IMPLEMENTED;
+    RHI_NOT_IMPLEMENTED;
     return -1;
   }
 }

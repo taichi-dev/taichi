@@ -1,4 +1,4 @@
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 
 #ifdef WIN32
 #include "taichi/platform/windows/windows.h"

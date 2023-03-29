@@ -1,4 +1,5 @@
 #include "compiled_kernel_data.h"
+#include "taichi/common/logging.h"
 
 #include "picosha2.h"
 

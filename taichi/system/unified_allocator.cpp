@@ -53,6 +53,10 @@ void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
   }
 }
 
+bool UnifiedAllocator::is_releasable(uint64_t *ptr) const {
+  return (void *)ptr == data;
+}
+
 void UnifiedAllocator::release(size_t sz, uint64_t *ptr) {
   // UnifiedAllocator is special in that it never reuses the previously
   // allocated memory We have to release the entire memory chunk to avoid memory

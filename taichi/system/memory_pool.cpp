@@ -39,13 +39,17 @@ MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
   // TODO: initialize allocator according to arch
 }
 
-void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
+void *MemoryPool::allocate(std::size_t size,
+                           std::size_t alignment,
+                           bool releasable) {
   std::lock_guard<std::mutex> _(mut_allocators);
   void *ret = nullptr;
 
   // TODO: refactor this part to allocator->allocate(size, alignment)
   if (arch_is_cpu(arch_)) {
-    if (!allocators.empty()) {
+    // For UnifiedAllocator, we have to make it exclusive to make sure it's
+    // releasable
+    if (!allocators.empty() && !releasable) {
       ret = allocators.back()->allocate(size, alignment);
     }
     if (!ret) {
@@ -65,16 +69,28 @@ void *MemoryPool::allocate(std::size_t size, std::size_t alignment) {
 
 void MemoryPool::release(std::size_t size, void *ptr) {
   std::lock_guard<std::mutex> _(mut_allocators);
+
   for (auto &allocator : allocators) {
-    if (allocator->data == ptr) {
+    if (allocator->is_releasable((uint64_t *)ptr)) {
       allocator->release(size, (uint64_t *)ptr);
       return;
     }
   }
+
+  TI_ERROR("MemoryPool::release() failed: ptr not found");
 }
 
 void *MemoryPool::allocate_raw_memory(std::size_t size) {
-  std::lock_guard<std::mutex> _(mut_raw_alloc);
+  /*
+    Be aware that this methods is not protected by the mutex.
+
+    allocate_raw_memory() is designed to be a private method, and
+    should only be called by its Allocators friends.
+
+    The caller ensures that no other thread is accessing the memory pool
+    when calling this method.
+  */
+
   void *ptr = nullptr;
   if (arch_is_cpu(arch_)) {
 // http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf Sec 3.1
@@ -112,7 +128,15 @@ void *MemoryPool::allocate_raw_memory(std::size_t size) {
 }
 
 void MemoryPool::deallocate_raw_memory(void *ptr) {
-  std::lock_guard<std::mutex> _(mut_raw_alloc);
+  /*
+    Be aware that this methods is not protected by the mutex.
+
+    deallocate_raw_memory() is designed to be a private method, and
+    should only be called by its Allocators friends.
+
+    The caller ensures that no other thread is accessing the memory pool
+    when calling this method.
+  */
   if (!raw_memory_chunks_.count(ptr)) {
     TI_ERROR("Memory address ({:}) is not allocated", ptr);
   }

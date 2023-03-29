@@ -2,6 +2,7 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 #include "taichi/rhi/arch.h"
 #include "taichi/rhi/device.h"
@@ -16,7 +17,7 @@ class UnifiedAllocator {
   Arch arch_;
 
   // put these two on the unified memory so that GPU can have access
- public:
+ private:
   uint8 *data;
   uint8 *head;
   uint8 *tail;
@@ -29,6 +30,7 @@ class UnifiedAllocator {
   void *allocate(std::size_t size, std::size_t alignment);
 
   void release(size_t sz, uint64_t *ptr);
+  bool is_releasable(uint64_t *ptr) const;
 
   void memset(unsigned char val);
 

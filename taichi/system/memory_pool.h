@@ -25,9 +25,10 @@ class TI_DLL_EXPORT MemoryPool {
       1 << 30;                                    // 1 GB per allocator
   static constexpr size_t page_size = (1 << 12);  // 4 KB page size by default
   std::mutex mut_allocators;
-  std::mutex mut_raw_alloc;
 
-  void *allocate(std::size_t size, std::size_t alignment);
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 bool releasable = false);
   void release(std::size_t size, void *ptr);
 
   ~MemoryPool();
@@ -35,8 +36,6 @@ class TI_DLL_EXPORT MemoryPool {
 
  private:
   void *allocate_raw_memory(std::size_t size);
-
-  // Only MemoryPool can deallocate raw memory
   void deallocate_raw_memory(void *ptr);
 
   // All the raw memory allocated from OS/Driver

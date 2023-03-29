@@ -23,8 +23,8 @@ RhiResult CpuDevice::allocate_memory(const AllocParams &params,
                                      DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  info.ptr = MemoryPool::get_instance(arch_).allocate(params.size,
-                                                      MemoryPool::page_size);
+  info.ptr = MemoryPool::get_instance(arch_).allocate(
+      params.size, MemoryPool::page_size, true /*releasable*/);
   info.size = params.size;
   info.use_cached = false;
 

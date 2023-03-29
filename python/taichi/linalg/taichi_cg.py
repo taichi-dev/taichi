@@ -1,5 +1,7 @@
-import taichi as ti
 from math import sqrt
+
+import taichi as ti
+
 
 @ti.data_oriented
 class LinearOperator:
@@ -10,6 +12,7 @@ class LinearOperator:
         assert x.shape == Ax.shape, "Dimension mismatch x.shape != Ax.shape."
         self._matvec(x, Ax)
 
+
 def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     assert b.dtype == x.dtype, "Dtype mismatch b.dtype != x.dtype."
     if str(b.dtype) == 'f32':
@@ -19,10 +22,10 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     else:
         print("Not supported dtype:", b.dtype)
         exit()
-        
+
     assert b.shape == x.shape, "Dimension mismatch b.shape != x.shape."
     size = b.shape
-    
+
     vector_fields_builder = ti.FieldsBuilder()
     p = ti.field(dtype=solver_dtype)
     r = ti.field(dtype=solver_dtype)
@@ -42,7 +45,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             r[I] = b[I]
             p[I] = 0.0
             Ap[I] = 0.0
-            
+
     @ti.kernel
     def reduce(p: ti.template(), q: ti.template()) -> solver_dtype:
         result = 0.0
@@ -54,7 +57,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     def update_x():
         for I in ti.grouped(x):
             x[I] += alpha[None] * p[I]
-            
+
     @ti.kernel
     def update_r():
         for I in ti.grouped(r):
@@ -90,7 +93,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             old_rTr = new_rTr
             if not quiet:
                 print(f'>>> Iter = {i+1:4}, Residual = {(new_rTr):e}')
-        
+
     solve()
     vector_fields_snode_tree.destroy()
     scalar_snode_tree.destroy()

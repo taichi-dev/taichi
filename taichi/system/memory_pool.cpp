@@ -55,8 +55,8 @@ void *MemoryPool::allocate(std::size_t size,
     if (!ret) {
       // allocation have failed
       auto new_buffer_size = std::max(size, default_allocator_size);
-      allocators.emplace_back(
-          std::make_unique<UnifiedAllocator>(new_buffer_size, arch_));
+      allocators.emplace_back(std::make_unique<UnifiedAllocator>(
+          new_buffer_size, arch_, releasable /*is_exclusive*/));
       ret = allocators.back()->allocate(size, alignment);
     }
     TI_ASSERT(ret);

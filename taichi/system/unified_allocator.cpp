@@ -15,9 +15,11 @@
 
 namespace taichi::lang {
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch) : size_(size) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size,
+                                   Arch arch,
+                                   bool is_exclusive)
+    : size_(size), arch_(arch), is_exclusive(is_exclusive) {
   auto t = Time::get_time();
-  arch_ = arch;
 
   TI_TRACE("Allocating virtual address space of size {} MB",
            size / 1024 / 1024);
@@ -38,6 +40,9 @@ void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
 
   // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
   // transparent to user code
+  if (is_exclusive && head != data) {
+    return nullptr;
+  }
   auto ret =
       head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
   TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data, size,
@@ -54,7 +59,7 @@ void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
 }
 
 bool UnifiedAllocator::is_releasable(uint64_t *ptr) const {
-  return (void *)ptr == data;
+  return is_exclusive && (void *)ptr == data;
 }
 
 void UnifiedAllocator::release(size_t sz, uint64_t *ptr) {

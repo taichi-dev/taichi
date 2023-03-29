@@ -18,12 +18,13 @@ class UnifiedAllocator {
 
   // put these two on the unified memory so that GPU can have access
  private:
+  bool is_exclusive;
   uint8 *data;
   uint8 *head;
   uint8 *tail;
 
  public:
-  UnifiedAllocator(std::size_t size, Arch arch);
+  UnifiedAllocator(std::size_t size, Arch arch, bool is_exclusive = false);
 
   ~UnifiedAllocator();
 

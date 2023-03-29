@@ -127,7 +127,7 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (!arch_uses_llvm(kernel->arch)) {
+  if (!arch_uses_llvm(kernel_->arch)) {
     return;
   }
   int offset = args_type->get_element_offset(index);
@@ -136,7 +136,7 @@ void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (arch_uses_llvm(kernel->arch)) {
+  if (arch_uses_llvm(kernel_->arch)) {
     return get_struct_arg<T>({i});
   }
   return taichi_union_cast_with_different_sizes<T>(ctx_->args[i]);

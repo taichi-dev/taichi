@@ -553,6 +553,7 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
   // CUDA and AMDGPU backends.
   // | ==================preallocated device buffer ========================== |
   // |<- reserved for return ->|<---- usable for allocators on the device ---->|
+
   std::size_t prealloc_size = 0;
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)

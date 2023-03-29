@@ -308,6 +308,8 @@ void Program::finalize() {
   if (finalized_) {
     return;
   }
+  auto arch = compile_config().arch;
+
   synchronize();
   TI_TRACE("Program finalizing...");
 
@@ -323,6 +325,9 @@ void Program::finalize() {
   program_impl_->dump_cache_data_to_disk();
   compile_config_ = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
+
+  // Reset memory pool
+  MemoryPool::get_instance(arch).reset();
 }
 
 int Program::default_block_dim(const CompileConfig &config) {

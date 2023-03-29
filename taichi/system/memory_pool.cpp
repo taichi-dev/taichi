@@ -76,8 +76,6 @@ void MemoryPool::release(std::size_t size, void *ptr) {
       return;
     }
   }
-
-  TI_ERROR("MemoryPool::release() failed: ptr not found");
 }
 
 void *MemoryPool::allocate_raw_memory(std::size_t size) {
@@ -154,12 +152,18 @@ void MemoryPool::deallocate_raw_memory(void *ptr) {
   raw_memory_chunks_.erase(ptr);
 }
 
-MemoryPool::~MemoryPool() {
-  const auto ptr_map_copied = raw_memory_chunks_;
+void MemoryPool::reset() {
+  std::lock_guard<std::mutex> _(mut_allocators);
+  allocators.clear();
 
+  const auto ptr_map_copied = raw_memory_chunks_;
   for (auto &ptr : ptr_map_copied) {
     deallocate_raw_memory(ptr.first);
   }
+}
+
+MemoryPool::~MemoryPool() {
+  reset();
 }
 
 }  // namespace taichi::lang

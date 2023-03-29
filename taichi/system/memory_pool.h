@@ -30,6 +30,7 @@ class TI_DLL_EXPORT MemoryPool {
                  std::size_t alignment,
                  bool releasable = false);
   void release(std::size_t size, void *ptr);
+  void reset();
 
   ~MemoryPool();
   MemoryPool(Arch arch);

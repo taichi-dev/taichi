@@ -865,6 +865,8 @@ class MakeAdjoint : public ADTransform {
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
       // do nothing
+    } else if (stmt->op_type == UnaryOpType::cast_bits) {
+      // do nothing
     } else {
       TI_P(unary_op_type_name(stmt->op_type));
       TI_NOT_IMPLEMENTED;

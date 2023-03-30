@@ -299,6 +299,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
   ker.finalize_params();
+  ker.finalize_rets();
   return ker;
 }
 

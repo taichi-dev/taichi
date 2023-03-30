@@ -22,6 +22,7 @@ env:
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
 
+
 jobs:
   add_version_to_database:
     name: Add version to database

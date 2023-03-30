@@ -39,7 +39,7 @@ class ProgramImpl {
    * Codegen to specific backend
    */
   virtual FunctionType compile(const CompileConfig &compile_config,
-                               Kernel *kernel) = 0;
+                               Kernel *kernel);
 
   /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime

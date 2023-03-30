@@ -43,11 +43,6 @@ class LlvmProgramImpl : public ProgramImpl {
   /* ---- JIT-Compilation Interfaces ---- */
   /* ------------------------------------ */
 
-  // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
-  // For now, compile = codegen + convert
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
-
   void compile_snode_tree_types(SNodeTree *tree) override;
 
   // TODO(zhanlue): refactor materialize_snode_tree()

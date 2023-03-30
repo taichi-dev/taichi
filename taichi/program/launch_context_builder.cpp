@@ -59,11 +59,6 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     set_arg(arg_id, (uint64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    if (!arch_uses_llvm(kernel_->arch)) {
-      // TODO: remove this once we refactored the SPIR-V based backends
-      set_arg(arg_id, (float32)d);
-      return;
-    }
     uint16 half = fp16_ieee_from_fp32_value((float32)d);
     set_arg(arg_id, half);
   } else {

@@ -88,35 +88,26 @@ void *UnifiedAllocator::allocate(std::size_t size,
   TI_ASSERT(uint64(chunk.data) % MemoryPool::page_size == 0);
 
   chunks_.emplace_back(std::move(chunk));
-
-  // auto* chunk_data = chunks_.back().data;
-  ptr_chunk_idx_map_[ptr] = chunks_.size() - 1;
-
   return ptr;
 }
 
-bool UnifiedAllocator::is_releaseable(void *ptr) {
-  return ptr_chunk_idx_map_.find(ptr) != ptr_chunk_idx_map_.end();
-}
-
-void UnifiedAllocator::release(size_t sz, void *ptr) {
+bool UnifiedAllocator::release(size_t sz, void *ptr) {
   // UnifiedAllocator is special in that it never reuses the previously
   // allocated memory We have to release the entire memory chunk to avoid memory
   // leak
-  if (ptr_chunk_idx_map_.find(ptr) == ptr_chunk_idx_map_.end()) {
-    TI_ERROR("UnifiedAllocator::release(): ptr {} not found", (intptr_t)ptr);
+  for (size_t chunk_idx = 0; chunk_idx < chunks_.size(); chunk_idx++) {
+    auto &chunk = chunks_[chunk_idx];
+
+    if (chunk.data == ptr) {
+      TI_ASSERT(chunk.is_exclusive);
+      swap_erase_vector<MemoryChunk>(chunks_, chunk_idx);
+
+      // MemoryPool is responsible for releasing the raw memory
+      return true;
+    }
   }
 
-  auto chunk_idx = ptr_chunk_idx_map_[ptr];
-  auto &chunk = chunks_[chunk_idx];
-  TI_ASSERT(chunk.data == ptr);
-  TI_ASSERT(chunk.is_exclusive);
-
-  swap_erase_vector<MemoryChunk>(chunks_, chunk_idx);
-
-  ptr_chunk_idx_map_.erase(ptr);
-
-  // MemoryPool is responsible for releasing the raw memory
+  return false;
 }
 
 }  // namespace taichi::lang

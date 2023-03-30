@@ -29,14 +29,10 @@ class UnifiedAllocator {
                  std::size_t alignment,
                  bool exclusive = false);
 
-  bool is_releaseable(void *ptr);
-  void release(size_t sz, void *ptr);
+  bool release(size_t sz, void *ptr);
 
   Arch arch_;
   std::vector<MemoryChunk> chunks_;
-
-  // For fast lookup of the chunk index wrt an allocated pointer upon release
-  std::unordered_map<void *, size_t> ptr_chunk_idx_map_;
 
   friend class MemoryPool;
 };

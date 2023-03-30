@@ -43,7 +43,7 @@ MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
     TI_TRACE("Memory pool created. Default buffer size per allocator = {} MB",
              UnifiedAllocator::default_allocator_size / 1024 / 1024);
   } else {
-    TI_NOT_IMPLEMENTED;
+    // TODO: implement CUDA allocation
   }
 }
 
@@ -66,9 +66,7 @@ void MemoryPool::release(std::size_t size, void *ptr) {
     TI_ERROR("Memory pool is already destroyed");
   }
 
-  if (allocator_->is_releaseable(ptr)) {
-    allocator_->release(size, ptr);
-
+  if (allocator_->release(size, ptr)) {
     if (dynamic_cast<UnifiedAllocator *>(allocator_.get())) {
       deallocate_raw_memory(ptr);  // release raw memory as well
     }

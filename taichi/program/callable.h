@@ -95,6 +95,7 @@ class TI_DLL_EXPORT CallableBase {
   const StructType *args_type = nullptr;
   size_t args_size{0};
 
+  Arch arch;
   std::string name;
 };
 

@@ -17,6 +17,10 @@ class KernelImpl : public aot::Kernel {
     parameter_list = kernel_data_.args;
     args_type = kernel_data_.args_type;
     args_size = kernel_data_.args_size;
+    arch = Arch::x64;  // Only for letting the launch context builder know
+                       // the arch uses LLVM.
+                       // TODO: remove arch after the refactoring of
+                       //  SPIR-V based backends completes.
     name = kernel_data_.kernel_key;
   }
 

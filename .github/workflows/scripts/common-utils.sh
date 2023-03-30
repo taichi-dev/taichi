@@ -16,7 +16,7 @@ function set-git-caching-proxy {
     git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
 }
 
-if [ ! -z "$TI_CI" ]; then
+if [ ! -z "$TI_USE_GIT_CACHE" ]; then
     set-git-caching-proxy
 fi
 

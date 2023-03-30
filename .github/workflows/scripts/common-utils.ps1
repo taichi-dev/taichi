@@ -12,7 +12,7 @@ function SetGitCachingProxy {
     git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
 }
 
-if($env:TI_CI) {
+if($env:TI_USE_GIT_CACHE) {
     SetGitCachingProxy
 }
 

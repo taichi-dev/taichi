@@ -65,6 +65,7 @@ class Dx11ProgramImpl : public ProgramImpl {
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

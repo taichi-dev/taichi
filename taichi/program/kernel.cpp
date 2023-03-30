@@ -37,7 +37,6 @@ Kernel::Kernel(Program &program,
                const std::string &primal_name,
                AutodiffMode autodiff_mode)
     : autodiff_mode(autodiff_mode), lowered_(false) {
-  this->arch = program.compile_config().arch;
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;

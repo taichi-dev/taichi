@@ -206,6 +206,7 @@ class TaskCodegen : public IRVisitor {
           format_length.clear();
         }
         formats +=
+            "%" +
             format_precision.append(format_length).append(format_conversion);
       } else {
         auto arg_str = std::get<std::string>(content);

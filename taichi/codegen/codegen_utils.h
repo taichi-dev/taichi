@@ -14,8 +14,10 @@ inline std::array<std::string, 5> parse_printf_specifier(std::string spec) {
   // %[<flags>]+[<width>][.<precision>][<length>]<conversion>
   // Where conversion is required in C/C++, others are optional.
   // See https://en.cppreference.com/w/cpp/io/c/fprintf
-  // Note that in taichi we support omitting the conversion.
+  // Note that in taichi we support omitting the conversion, and the leading '%'
+  // is ignored.
   const std::regex re = std::regex(
+      "%?"
       "([-+ #0]+)?"
       "(\\d+|\\*)?"
       "(\\.(?:\\d+|\\*))?"

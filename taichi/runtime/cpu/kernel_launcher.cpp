@@ -11,16 +11,21 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   auto *executor = get_runtime_executor();
 
   ctx.get_context().runtime = executor->get_llvm_runtime();
-  // For taichi ndarrays, context.args saves pointer to its
+  // For taichi ndarrays, context.array_ptrs saves pointer to its
   // |DeviceAllocation|, CPU backend actually want to use the raw ptr here.
   const auto &parameters = launcher_ctx.parameters;
   for (int i = 0; i < (int)parameters.size(); i++) {
+    if (parameters[i].is_array &&
+        ctx.device_allocation_type[i] ==
+            LaunchContextBuilder::DevAllocType::kNone) {
+      ctx.set_arg(i, (uint64)ctx.array_ptrs[{i}]);
+    }
     if (parameters[i].is_array &&
         ctx.device_allocation_type[i] !=
             LaunchContextBuilder::DevAllocType::kNone &&
         ctx.array_runtime_sizes[i] > 0) {
       DeviceAllocation *ptr =
-          static_cast<DeviceAllocation *>(ctx.get_arg<void *>(i));
+          static_cast<DeviceAllocation *>(ctx.array_ptrs[{i}]);
       uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
       ctx.set_arg(i, host_ptr);
       ctx.set_array_device_allocation_type(

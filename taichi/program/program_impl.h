@@ -177,10 +177,7 @@ class ProgramImpl {
 
  protected:
   virtual std::unique_ptr<KernelCompiler> make_kernel_compiler() = 0;
-  // virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() = 0;
-  virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() {
-    TI_NOT_IMPLEMENTED;
-  }
+  virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() = 0;
 
  private:
   std::unique_ptr<KernelCompilationManager> kernel_com_mgr_;

@@ -12,10 +12,6 @@ class KernelImpl : public aot::Kernel {
     ret_size = params_.kernel_attribs.ctx_attribs.rets_bytes();
     args_type = params_.kernel_attribs.ctx_attribs.args_type();
     args_size = params_.kernel_attribs.ctx_attribs.args_bytes();
-    arch = Arch::vulkan;  // Only for letting the launch context builder know
-                          // the arch does not use LLVM.
-                          // TODO: remove arch after the refactoring of
-                          //  SPIR-V based backends completes.
   }
 
   void launch(LaunchContextBuilder &ctx) override {

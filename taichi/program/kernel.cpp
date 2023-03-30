@@ -37,7 +37,6 @@ Kernel::Kernel(Program &program,
                const std::string &primal_name,
                AutodiffMode autodiff_mode)
     : autodiff_mode(autodiff_mode), lowered_(false) {
-  this->arch = program.compile_config().arch;
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
@@ -168,7 +167,6 @@ void Kernel::init(Program &program,
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;
-  arch = program.compile_config().arch;
 
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;

@@ -16,9 +16,9 @@ class UnifiedAllocator {
  private:
   struct MemoryChunk {
     bool is_exclusive;
-    uint8 *data;
-    uint8 *head;
-    uint8 *tail;
+    void *data;
+    void *head;
+    void *tail;
   };
 
   static const std::size_t default_allocator_size;
@@ -29,10 +29,14 @@ class UnifiedAllocator {
                  std::size_t alignment,
                  bool exclusive = false);
 
-  void release(size_t sz, uint64_t *ptr);
+  bool is_releaseable(void *ptr);
+  void release(size_t sz, void *ptr);
 
   Arch arch_;
-  std::map<uint8 *, MemoryChunk> chunks;
+  std::vector<MemoryChunk> chunks_;
+
+  // For fast lookup of the chunk index wrt an allocated pointer upon release
+  std::unordered_map<void *, size_t> ptr_chunk_idx_map_;
 
   friend class MemoryPool;
 };

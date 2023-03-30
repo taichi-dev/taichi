@@ -51,18 +51,27 @@ void *MemoryPool::allocate(std::size_t size,
                            std::size_t alignment,
                            bool releasable) {
   std::lock_guard<std::mutex> _(mut_allocation_);
-  void *ret = allocator_->allocate(size, alignment, releasable);
 
+  if (!allocator_) {
+    TI_ERROR("Memory pool is already destroyed");
+  }
+  void *ret = allocator_->allocate(size, alignment, releasable);
   return ret;
 }
 
 void MemoryPool::release(std::size_t size, void *ptr) {
   std::lock_guard<std::mutex> _(mut_allocation_);
 
-  allocator_->release(size, (uint64_t *)ptr);
+  if (!allocator_) {
+    TI_ERROR("Memory pool is already destroyed");
+  }
 
-  if (dynamic_cast<UnifiedAllocator *>(allocator_.get())) {
-    deallocate_raw_memory(ptr);  // release raw memory as well
+  if (allocator_->is_releaseable(ptr)) {
+    allocator_->release(size, ptr);
+
+    if (dynamic_cast<UnifiedAllocator *>(allocator_.get())) {
+      deallocate_raw_memory(ptr);  // release raw memory as well
+    }
   }
 }
 
@@ -142,7 +151,7 @@ void MemoryPool::deallocate_raw_memory(void *ptr) {
 
 void MemoryPool::reset() {
   std::lock_guard<std::mutex> _(mut_allocation_);
-  allocator_.reset();
+  allocator_ = std::unique_ptr<UnifiedAllocator>(new UnifiedAllocator(arch_));
 
   const auto ptr_map_copied = raw_memory_chunks_;
   for (auto &ptr : ptr_map_copied) {

@@ -46,6 +46,7 @@ def test_shared_array_nested_loop():
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr)
 
+
 @test_utils.test(arch=[ti.cuda])
 def test_large_shared_array():
     block_dim = 128
@@ -87,6 +88,7 @@ def test_large_shared_array():
     calc(v_arr, d_arr, reference)
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr)
+
 
 @test_utils.test(arch=[ti.cuda])
 def test_multiple_shared_array():
@@ -138,6 +140,7 @@ def test_multiple_shared_array():
     calc(v_arr, d_arr, reference)
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr, rtol=1e-4)
+
 
 @test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])
 def test_shared_array_atomics():

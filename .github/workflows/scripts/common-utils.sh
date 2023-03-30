@@ -11,9 +11,9 @@ function unset-git-caching-proxy {
 function set-git-caching-proxy {
     trap unset-git-caching-proxy EXIT
     echo "Setting git caching proxy"
-    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
-    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+    git config --global --add url.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global --add url.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global --add url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
 }
 
 if [ ! -z "$TI_CI" ]; then

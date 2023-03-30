@@ -174,9 +174,39 @@ class TaskCodegen : public IRVisitor {
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += merge_printf_specifier(
-            format, data_type_format(arg_stmt->ret_type, Arch::vulkan),
-            Arch::vulkan);
+
+        auto &&merged_format = merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type));
+        // Vulkan doesn't support length, flags, or width specifier, except for
+        // unsigned long.
+        // https://vulkan.lunarg.com/doc/view/1.3.204.1/windows/debug_printf.html
+        auto &&[format_flags, format_width, format_precision, format_length,
+                format_conversion] = parse_printf_specifier(merged_format);
+        if (!format_flags.empty()) {
+          TI_WARN(
+              "The printf flags '{}' are not supported in Vulkan, "
+              "and will be discarded.",
+              format_flags);
+          format_flags.clear();
+        }
+        if (!format_width.empty()) {
+          TI_WARN(
+              "The printf width modifier '{}' is not supported in Vulkan, "
+              "and will be discarded.",
+              format_width);
+          format_width.clear();
+        }
+        if (!format_length.empty() &&
+            !(format_length == "l" &&
+              (format_conversion == "u" || format_conversion == "x"))) {
+          TI_WARN(
+              "The printf length modifier '{}' is not supported in Vulkan, "
+              "and will be discarded.",
+              format_length);
+          format_length.clear();
+        }
+        formats +=
+            format_precision.append(format_length).append(format_conversion);
       } else {
         auto arg_str = std::get<std::string>(content);
         formats += sanitize_format_string(arg_str);

@@ -8,22 +8,45 @@ inline bool codegen_vector_type(const CompileConfig &config) {
   return !config.real_matrix_scalarize;
 }
 
-// C-style printf format string specifiers:
-// %[<flags>]+[<width>][.<precision>][<length>]<conversion>
-// Where conversion is required, others are optional.
-// See https://en.cppreference.com/w/cpp/io/c/fprintf
+// Parses a C-style printf format string specifier into its constituent parts.
+inline std::array<std::string, 5> parse_printf_specifier(std::string spec) {
+  // The format string specifiers are of the form:
+  // %[<flags>]+[<width>][.<precision>][<length>]<conversion>
+  // Where conversion is required in C/C++, others are optional.
+  // See https://en.cppreference.com/w/cpp/io/c/fprintf
+  // Note that in taichi we support omitting the conversion.
+  const std::regex re = std::regex(
+      "([-+ #0]+)?"
+      "(\\d+|\\*)?"
+      "(\\.(?:\\d+|\\*))?"
+      "([hljztL]|hh|ll)?"
+      "([csdioxXufFeEaAgGnp])?");
+  std::smatch match;
+  bool matched = std::regex_match(spec, match, re);
+  if (matched == false) {
+    TI_ERROR("{} is not a valid printf specifier.", spec)
+  }
+  std::string flags = match[1];
+  std::string width = match[2];
+  std::string precision = match[3];
+  std::string length = match[4];
+  std::string conversion = match[5];
 
+  return {flags, width, precision, length, conversion};
+}
+
+// Merges format specifiers with respect to user specified ones and taichi
+// inferred ones.
 // For example, when printing an f64:
-// 1. user may input:
-//   a. '.2f' (the canonical way to control precesion),
-//   b. 'e' (use decimal exponent notation),
-//   c. '-+10lf' (left align, show sign explicitly, minimum field width is 10
-//      characters, print an double),
-//   d. '.2' (only specify precision, use default conversion),
-//   e. nullopt_t (default),
-// as the specifier.
-// 2. taichi will infer the specifier as '%.12f'.
-
+//   1. user may input:
+//     a. '.2f' (the canonical way to control precesion),
+//     b. 'e' (use decimal exponent notation),
+//     c. '-+10lf' (left align, show sign explicitly, minimum field width is 10
+//        characters, print an double),
+//     d. '.2' (only specify precision, use default conversion),
+//     e. nullopt_t (default),
+//   as the specifier.
+//   2. taichi will infer the specifier as '%.12f'.
 // We should merge them to:
 //   a. '%.2f',
 //   b. '%.12e',
@@ -33,93 +56,20 @@ inline bool codegen_vector_type(const CompileConfig &config) {
 // accordingly.
 inline std::string merge_printf_specifier(
     std::optional<std::string> const &from_user,
-    std::string const &from_data_type,
-    Arch arch) {
+    std::string const &from_data_type) {
   if (!from_user.has_value()) {
     return from_data_type;
   }
   std::string const &user = from_user.value();
 
-  // printf format string specifiers:
-  // %[flags]+[width][.precision][length][conversion]
-  // https://en.cppreference.com/w/cpp/io/c/fprintf
-  const std::regex user_re = std::regex(
-      "([-+ #0]+)?"
-      "(\\d+|\\*)?"
-      "(\\.(?:\\d+|\\*))?"
-      "([hljztL]|hh|ll)?"
-      "([csdioxXufFeEaAgGnp])?");
-  std::smatch user_match;
-  bool user_matched = std::regex_match(user, user_match, user_re);
-  if (user_matched == false) {
-    TI_ERROR("{} is not a valid printf specifier.", user)
-  }
-  std::string user_flags = user_match[1];
-  std::string user_width = user_match[2];
-  std::string user_precision = user_match[3];
-  std::string user_length = user_match[4];
-  std::string user_conversion = user_match[5];
-
+  auto &&[user_flags, user_width, user_precision, user_length,
+          user_conversion] = parse_printf_specifier(user);
   if (user_width == "*" || user_precision == ".*" || user_conversion == "n") {
     TI_ERROR("The {} printf specifier is not supported", user)
   }
 
-  const std::regex dt_re = std::regex(
-      "%"
-      "(\\.(?:\\d+))?"
-      "([hljztL]|hh|ll)?"
-      "([csdioxXufFeEaAgGnp])?");
-  std::smatch dt_match;
-  bool dt_matched = std::regex_match(from_data_type, dt_match, dt_re);
-  TI_ASSERT(dt_matched);
-  std::string dt_precision = dt_match[1];
-  std::string dt_length = dt_match[2];
-  std::string dt_conversion = dt_match[3];
-
-  // Constant for convensions in group.
-  constexpr std::string_view signed_group = "di";
-  constexpr std::string_view unsigned_group = "oxXu";
-  constexpr std::string_view float_group = "fFeEaAgG";
-
-  // Vulkan doesn't support length, flags, or width specifier.
-  // https://vulkan.lunarg.com/doc/view/1.2.162.1/linux/debug_printf.html
-  if (arch == Arch::vulkan) {
-    if (!user_flags.empty()) {
-      TI_WARN(
-          "The printf flags '{}' are not supported in Vulkan, "
-          "and will be discarded.",
-          user_flags);
-      user_flags.clear();
-    }
-    if (!user_width.empty()) {
-      TI_WARN(
-          "The printf width modifier '{}' is not supported in Vulkan, "
-          "and will be discarded.",
-          user_width);
-      user_width.clear();
-    }
-    // except for unsigned long
-    if (!user_length.empty() &&
-        !(user_length == "l" && !user_conversion.empty() &&
-          unsigned_group.find(user_conversion) != std::string::npos)) {
-      TI_WARN(
-          "The printf length modifier '{}' is not supported in Vulkan, "
-          "and will be discarded.",
-          user_length);
-      user_length.clear();
-    }
-    if (dt_precision == ".12" || dt_length == "ll") {
-      TI_WARN(
-          "Vulkan does not support 64-bit printing, except for unsigned long.");
-    }
-  }
-  // CUDA supports all of them but not 'F'.
-  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
-  else if (arch == Arch::cuda) {
-    if (user_conversion == "F") {
-      user_conversion = "f";
-    }
-  }
+  auto &&[_, __, dt_precision, dt_length, dt_conversion] =
+      parse_printf_specifier(from_data_type);
 
   // Replace user_precision with dt_precision if the former is empty,
   // otherwise use user specified precision.
@@ -135,6 +85,11 @@ inline std::string merge_printf_specifier(
     }
     user_length = dt_length;
   }
+
+  // Constant for convensions in group.
+  constexpr std::string_view signed_group = "di";
+  constexpr std::string_view unsigned_group = "oxXu";
+  constexpr std::string_view float_group = "fFeEaAgG";
 
   // Override user_conversion with dt_conversion.
   if (user_conversion != dt_conversion) {

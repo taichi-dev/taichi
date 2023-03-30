@@ -24,7 +24,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       const auto arr_sz = ctx.array_runtime_sizes[i];
       if (arr_sz == 0)
         continue;
-      arg_buffers[i] = ctx.get_arg<void *>(i);
+      arg_buffers[i] = ctx.array_ptrs[{i}];
       if (ctx.device_allocation_type[i] ==
           LaunchContextBuilder::DevAllocType::kNone) {
         unsigned int attr_val[8];

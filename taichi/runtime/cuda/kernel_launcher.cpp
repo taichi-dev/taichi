@@ -30,7 +30,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       if (arr_sz == 0) {
         continue;
       }
-      arg_buffers[i] = ctx.get_arg<void *>(i);
+      arg_buffers[i] = ctx.array_ptrs[{i}];
       if (ctx.device_allocation_type[i] ==
           LaunchContextBuilder::DevAllocType::kNone) {
         // Note: both numpy and PyTorch support arrays/tensors with zeros

@@ -347,6 +347,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
         emit(std::get<std::string>(c));
       }
     }
+    for (const auto &f : stmt->formats) {
+      emit(static_cast<std::uint8_t>(f.has_value()));
+      if (f.has_value()) {
+        emit(f.value());
+      } else {
+        emit(0);
+      }
+    }
   }
 
   void visit(FrontendFuncDefStmt *stmt) override {
@@ -615,7 +623,9 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   }
 
 #define DEFINE_EMIT_ENUM(EnumType) \
-  void emit(EnumType type) { emit_pod(type); }
+  void emit(EnumType type) {       \
+    emit_pod(type);                \
+  }
 
   DEFINE_EMIT_ENUM(ExprOpCode);
   DEFINE_EMIT_ENUM(StmtOpCode);

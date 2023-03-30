@@ -42,18 +42,6 @@ LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
   cache_data_ = std::make_unique<LlvmOfflineCache>();
 }
 
-FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
-                                      Kernel *kernel) {
-  // NOTE: Temporary implementation
-  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
-  auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled = mgr.load_or_compile(compile_config, {}, *kernel);
-  auto &launcher = get_kernel_launcher();
-  return [&launcher, &compiled](LaunchContextBuilder &ctx_builder) {
-    launcher.launch_kernel(compiled, ctx_builder);
-  };
-}
-
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
     SNodeTree *tree) {
   auto *const root = tree->root();

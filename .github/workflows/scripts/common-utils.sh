@@ -4,9 +4,8 @@ set -x
 
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
-    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf
-    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf
-    true
+    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf || true
+    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
 }
 
 function set-git-caching-proxy {

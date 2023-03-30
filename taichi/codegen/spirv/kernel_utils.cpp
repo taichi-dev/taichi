@@ -118,14 +118,11 @@ KernelContextAttributes::KernelContextAttributes(
   rets_type_ = kernel.ret_type;
 
   TI_TRACE("args:");
-  TI_TRACE("has_physical_storage_buffer: {}",
-           caps->get(DeviceCapability::spirv_has_physical_storage_buffer));
   args_bytes_ = arange_args(
       &arg_attribs_vec_, 0, false,
       caps->get(DeviceCapability::spirv_has_physical_storage_buffer));
   // Align to extra args
   args_bytes_ = (args_bytes_ + 4 - 1) / 4 * 4;
-  TI_TRACE("total bytes: {}", args_bytes_);
 
   TI_TRACE("rets:");
   rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true, false);

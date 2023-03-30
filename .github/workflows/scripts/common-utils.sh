@@ -4,16 +4,16 @@ set -x
 
 function unset-git-caching-proxy {
     echo "Unsetting git caching proxy"
-    git config --global --unset-all http.https://git-cdn-github.botmaster.tgr/.insteadOf
-    git config --global --unset-all http.https://git-cdn-gitlab.botmaster.tgr/.insteadOf
+    git config --global --unset-all url.https://git-cdn-github.botmaster.tgr/.insteadOf
+    git config --global --unset-all url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf
 }
 
 function set-git-caching-proxy {
     trap unset-git-caching-proxy EXIT
     echo "Setting git caching proxy"
-    git config --global http.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
-    git config --global http.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global http.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://github.com/
+    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://github.com/
 }
 
 if [ ! -z "$TI_CI" ]; then

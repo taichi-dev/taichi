@@ -1,15 +1,15 @@
 function UnsetGitCachingProxy {
     Write-Host "Unsetting git caching proxy"
-    git config --global --unset-all http.https://git-cdn-github.botmaster.tgr/.insteadOf
-    git config --global --unset-all http.https://git-cdn-gitlab.botmaster.tgr/.insteadOf
+    git config --global --unset-all url.https://git-cdn-github.botmaster.tgr/.insteadOf
+    git config --global --unset-all url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf
 }
 
 function SetGitCachingProxy {
     Write-Host "Setting up git caching proxy"
     Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action UnsetGitCachingProxy
-    git config --global http.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
-    git config --global http.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global http.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://github.com/
+    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://github.com/
 }
 
 if($env:TI_CI) {

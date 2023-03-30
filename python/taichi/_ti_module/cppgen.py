@@ -1,4 +1,4 @@
-from typing import Any, List, Set
+from typing import Any, List, Optional, Set
 
 from taichi.aot.conventions.gfxruntime140 import GfxRuntime140, sr
 
@@ -269,8 +269,8 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(m: GfxRuntime140, module_name: str,
-                    namespace: str) -> List[str]:
+def generate_header(m: GfxRuntime140, module_name: str, namespace: str,
+                    tcm: Optional[bytes]) -> List[str]:
     out = []
 
     out += [
@@ -285,6 +285,25 @@ def generate_header(m: GfxRuntime140, module_name: str,
     if namespace:
         out += [
             f"namespace {namespace} {{",
+            "",
+        ]
+
+    if tcm is not None:
+        tcm_bytes = [x for x in tcm]
+
+        out += [
+            f"static const uint8_t {module_name}_tcm[{len(tcm_bytes)}] = {{",
+        ]
+
+        out += [
+            f"  {', '.join(str(x) for x in tcm_bytes[i:i + 8])},"
+            for i in range(0, len(tcm_bytes), 8)
+        ]
+
+        out += [
+            "};",
+            "",
+            f"static const size_t {module_name}_tcm_size = {len(tcm_bytes)};",
             "",
         ]
 

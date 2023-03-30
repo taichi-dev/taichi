@@ -114,6 +114,9 @@ KernelContextAttributes::KernelContextAttributes(
     return bytes - offset;
   };
 
+  args_type_ = kernel.args_type;
+  rets_type_ = kernel.ret_type;
+
   TI_TRACE("args:");
   args_bytes_ = arange_args(
       &arg_attribs_vec_, 0, false,

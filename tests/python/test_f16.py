@@ -259,11 +259,11 @@ def test_arg_f16():
     y = ti.field(dtype, shape=())
 
     @ti.kernel
-    def foo(a: ti.f16):
-        x[None] = y[None] + a
+    def foo(a: ti.f16, b: ti.f32, c: ti.f16):
+        x[None] = y[None] + a + b + c
 
     y[None] = -0.3
-    foo(1.2)
+    foo(0.3, 0.4, 0.5)
     assert (x[None] == test_utils.approx(0.9, rel=1e-3))
 
 

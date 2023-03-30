@@ -13,7 +13,7 @@ function set-git-caching-proxy {
     echo "Setting git caching proxy"
     git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
     git config --global url.https://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
-    git config --global url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://github.com/
+    git config --global url.https://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
 }
 
 if [ ! -z "$TI_CI" ]; then

@@ -33,6 +33,11 @@ def module_cppgen(parser: argparse.ArgumentParser):
                         type=str,
                         help="Output C++ header path.",
                         default="module.h")
+    parser.add_argument(
+        "--bin2c",
+        help=
+        "Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
+        action="store_true")
     parser.set_defaults(func=module_cppgen_impl)
 
 
@@ -43,6 +48,11 @@ def module_cppgen_impl(a):
         f"Generating C++ header for Taichi module: {Path(module_path).absolute()}"
     )
 
+    tcm = None
+    if a.bin2c and module_path.endswith(".tcm"):
+        with open(module_path, "rb") as f:
+            tcm = f.read()
+
     if a.module_name:
         module_name = a.module_name
     else:
@@ -52,7 +62,7 @@ def module_cppgen_impl(a):
 
     m = GfxRuntime140.from_module(module_path)
 
-    out = generate_header(m, module_name, a.namespace)
+    out = generate_header(m, module_name, a.namespace, tcm)
 
     with open(a.output, "w") as f:
         f.write('\n'.join(out))

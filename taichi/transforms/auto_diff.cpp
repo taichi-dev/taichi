@@ -863,7 +863,7 @@ class MakeAdjoint : public ADTransform {
       if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
         accumulate(stmt->operand, adjoint(stmt));
       }
-    } else if (stmt->op_type == UnaryOpType::logic_not) {
+    } else if (stmt->op_type == UnaryOpType::logic_not || stmt->op_type == UnaryOpType::bit_not) {
       // do nothing
     } else if (stmt->op_type == UnaryOpType::cast_bits) {
       // do nothing

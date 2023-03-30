@@ -200,9 +200,9 @@ class Camera:
     def track_user_inputs(
         self,
         window,
-        movement_speed: float = 10.0,
-        yaw_speed: float = 100.0,
-        pitch_speed: float = 100.0,
+        movement_speed: float = 1.0,
+        yaw_speed: float = 2.0,
+        pitch_speed: float = 2.0,
         hold_key=None,
     ):
         """Move the camera according to user inputs.
@@ -227,7 +227,7 @@ class Camera:
         time_elapsed = (time.perf_counter_ns() - self.last_time) * 1e-9
         self.last_time = time.perf_counter_ns()
 
-        movement_speed *= time_elapsed
+        movement_speed *= time_elapsed * 60.0
         if window.is_pressed("w"):
             position_change += front * movement_speed
         if window.is_pressed("s"):
@@ -252,8 +252,8 @@ class Camera:
 
             yaw, pitch = vec_to_euler(front)
 
-            yaw_speed *= time_elapsed
-            pitch_speed *= time_elapsed
+            yaw_speed *= time_elapsed * 60.0
+            pitch_speed *= time_elapsed * 60.0
             yaw -= dx * yaw_speed
             pitch += dy * pitch_speed
 

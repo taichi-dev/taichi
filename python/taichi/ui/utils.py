@@ -53,8 +53,7 @@ def vec_to_euler(v, eps: float = 1e-6):
         yaw = 0
     else:
         # fix math domain error due to float precision loss
-        cos_yaw = min(cos_yaw, 1.0)
-        cos_yaw = max(cos_yaw, -1.0)
+        cos_yaw = max(min(cos_yaw, 1.0), -1.0)
         yaw = acos(cos_yaw)
         if sin_yaw < 0:
             yaw = -yaw

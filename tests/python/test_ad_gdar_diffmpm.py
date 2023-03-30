@@ -4,10 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-# FIXME: gdar mpm on amdgpu backend(assign gale)
-@test_utils.test(require=ti.extension.assertion,
-                 debug=True,
-                 exclude=[ti.cc, ti.amdgpu])
+@test_utils.test(require=ti.extension.assertion, debug=True, exclude=[ti.cc])
 def test_gdar_mpm():
     real = ti.f32
 

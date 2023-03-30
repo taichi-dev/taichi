@@ -22,7 +22,7 @@ from taichi.lang.exception import (TaichiCompilationError, TaichiRuntimeError,
                                    TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
-from taichi.lang.matrix import Matrix, MatrixType
+from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import (cook_dtype, has_paddle, has_pytorch,
@@ -387,11 +387,29 @@ class TaichiCallableTemplateMapper:
             # [Primitive arguments] Return the value
             return arg
         if isinstance(anno, texture_type.TextureType):
-            return arg.num_dims, arg.dtype
+            if not isinstance(arg, taichi.lang._texture.Texture):
+                raise TaichiRuntimeTypeError(
+                    f'Argument must be a texture, got {type(arg)}')
+            if arg.num_dims != anno.num_dimensions:
+                raise TaichiRuntimeTypeError(
+                    f'TextureType dimension mismatch: expected {anno.num_dimensions}, got {arg.num_dims}'
+                )
+            return (arg.num_dims, )
         if isinstance(anno, texture_type.RWTextureType):
+            if not isinstance(arg, taichi.lang._texture.Texture):
+                raise TaichiRuntimeTypeError(
+                    f'Argument must be a texture, got {type(arg)}')
+            if arg.num_dims != anno.num_dimensions:
+                raise TaichiRuntimeTypeError(
+                    f'RWTextureType dimension mismatch: expected {anno.num_dimensions}, got {arg.num_dims}'
+                )
+            if arg.fmt != anno.fmt:
+                raise TaichiRuntimeTypeError(
+                    f'RWTextureType format mismatch: expected {anno.fmt}, got {arg.fmt}'
+                )
             # (penguinliong) '0' is the assumed LOD level. We currently don't
             # support mip-mapping.
-            return arg.num_dims, arg.num_channels, arg.dtype, 0
+            return arg.num_dims, arg.fmt, 0
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
@@ -637,19 +655,25 @@ class Kernel:
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
+            max_arg_num = 64 if impl.current_cfg().arch != _ti_core.cc else 8
+            exceed_max_arg_num = False
             for i, v in enumerate(args):
                 needed = self.arguments[i].annotation
                 if isinstance(needed, template):
                     continue
+                if actual_argument_slot >= max_arg_num:
+                    exceed_max_arg_num = True
+                    break
                 provided = type(v)
                 # Note: do not use sth like "needed == f32". That would be slow.
                 if id(needed) in primitive_types.real_type_ids:
-                    if not isinstance(v, (float, int)):
+                    if not isinstance(v,
+                                      (float, int, np.floating, np.integer)):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
                 elif id(needed) in primitive_types.integer_type_ids:
-                    if not isinstance(v, int):
+                    if not isinstance(v, (int, np.integer)):
                         raise TaichiRuntimeTypeError.get(
                             i, needed.to_string(), provided)
                     if is_signed(cook_dtype(needed)):
@@ -784,8 +808,13 @@ class Kernel:
                     if needed.dtype in primitive_types.real_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
+                                if actual_argument_slot >= max_arg_num:
+                                    exceed_max_arg_num = True
+                                    break
                                 val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, (int, float)):
+                                if not isinstance(
+                                        val,
+                                    (int, float, np.integer, np.floating)):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
                                 launch_ctx.set_arg_float(
@@ -794,8 +823,11 @@ class Kernel:
                     elif needed.dtype in primitive_types.integer_types:
                         for a in range(needed.n):
                             for b in range(needed.m):
+                                if actual_argument_slot >= max_arg_num:
+                                    exceed_max_arg_num = True
+                                    break
                                 val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, int):
+                                if not isinstance(val, (int, np.integer)):
                                     raise TaichiRuntimeTypeError.get(
                                         i, needed.dtype.to_string(), type(val))
                                 if is_signed(needed.dtype):
@@ -816,16 +848,9 @@ class Kernel:
                     )
                 actual_argument_slot += 1
 
-            if actual_argument_slot > 8 and impl.current_cfg(
-            ).arch == _ti_core.cc:
+            if exceed_max_arg_num:
                 raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 8 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
-                )
-
-            if actual_argument_slot > 64 and impl.current_cfg(
-            ).arch != _ti_core.cc:
-                raise TaichiRuntimeError(
-                    f"The number of elements in kernel arguments is too big! Do not exceed 64 on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
+                    f"The number of elements in kernel arguments is too big! Do not exceed {max_arg_num} on {_ti_core.arch_name(impl.current_cfg().arch)} backend."
                 )
 
             try:
@@ -844,8 +869,8 @@ class Kernel:
             if has_ret:
                 if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
                     ret = self.construct_kernel_ret(
-                        t_kernel, ret_dt, () if isinstance(ret_dt, tuple) else
-                        (0, ))
+                        launch_ctx, ret_dt,
+                        () if isinstance(ret_dt, tuple) else (0, ))
                 else:
                     if id(ret_dt) in primitive_types.integer_type_ids:
                         if is_signed(cook_dtype(ret_dt)):
@@ -854,19 +879,20 @@ class Kernel:
                             ret = t_kernel.get_ret_uint(0)
                     elif id(ret_dt) in primitive_types.real_type_ids:
                         ret = t_kernel.get_ret_float(0)
-                    elif id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                        if is_signed(cook_dtype(ret_dt.dtype)):
-                            it = iter(t_kernel.get_ret_int_tensor(0))
-                        else:
-                            it = iter(t_kernel.get_ret_uint_tensor(0))
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                      for _ in range(ret_dt.n)],
-                                     ndim=getattr(ret_dt, 'ndim', 2))
                     else:
-                        it = iter(t_kernel.get_ret_float_tensor(0))
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)]
-                                      for _ in range(ret_dt.n)],
-                                     ndim=getattr(ret_dt, 'ndim', 2))
+                        if id(ret_dt.dtype
+                              ) in primitive_types.integer_type_ids:
+                            if is_signed(cook_dtype(ret_dt.dtype)):
+                                it = iter(t_kernel.get_ret_int_tensor(0))
+                            else:
+                                it = iter(t_kernel.get_ret_uint_tensor(0))
+                        else:
+                            it = iter(t_kernel.get_ret_float_tensor(0))
+                        if ret_dt.ndim == 1:
+                            ret = Vector([next(it) for _ in range(ret_dt.n)])
+                        else:
+                            ret = Matrix([[next(it) for _ in range(ret_dt.m)]
+                                          for _ in range(ret_dt.n)])
             if callbacks:
                 for c in callbacks:
                     c()
@@ -875,20 +901,21 @@ class Kernel:
 
         return func__
 
-    def construct_kernel_ret(self, t_kernel, ret_type, index=()):
+    def construct_kernel_ret(self, launch_ctx, ret_type, index=()):
         if isinstance(ret_type, tuple):
             return [
-                self.construct_kernel_ret(t_kernel, ret_type[i], index + (i, ))
+                self.construct_kernel_ret(launch_ctx, ret_type[i],
+                                          index + (i, ))
                 for i in range(len(ret_type))
             ]
         if isinstance(ret_type, CompoundType):
-            return ret_type.from_kernel_struct_ret(t_kernel, index)
-        if id(ret_type) in primitive_types.integer_type_ids:
+            return ret_type.from_kernel_struct_ret(launch_ctx, index)
+        if ret_type in primitive_types.integer_types:
             if is_signed(cook_dtype(ret_type)):
-                return t_kernel.get_struct_ret_int(index)
-            return t_kernel.get_struct_ret_uint(index)
-        if id(ret_type) in primitive_types.real_type_ids:
-            return t_kernel.get_struct_ret_float(index)
+                return launch_ctx.get_struct_ret_int(index)
+            return launch_ctx.get_struct_ret_uint(index)
+        if ret_type in primitive_types.real_types:
+            return launch_ctx.get_struct_ret_float(index)
         raise TaichiRuntimeTypeError(f"Invalid return type on index={index}")
 
     def ensure_compiled(self, *args):
@@ -1130,4 +1157,4 @@ def data_oriented(cls):
     return cls
 
 
-__all__ = ["data_oriented", "func", "kernel"]
+__all__ = ["data_oriented", "func", "kernel", "pyfunc"]

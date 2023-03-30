@@ -7,7 +7,6 @@
 #include "taichi/rhi/device.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
-#include "taichi/codegen/spirv/spirv_codegen.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
@@ -101,7 +100,7 @@ class TI_DLL_EXPORT GfxRuntime {
 
   KernelHandle register_taichi_kernel(RegisterParams params);
 
-  void launch_kernel(KernelHandle handle, RuntimeContext *host_ctx);
+  void launch_kernel(KernelHandle handle, LaunchContextBuilder &host_ctx);
 
   void buffer_copy(DevicePtr dst, DevicePtr src, size_t size);
   void copy_image(DeviceAllocation dst,

@@ -305,7 +305,7 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
 
 TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
                                  TaichiLLVMContext &tlctx,
-                                 Kernel *kernel,
+                                 const Kernel *kernel,
                                  IRNode *ir,
                                  std::unique_ptr<llvm::Module> &&module)
     // TODO: simplify LLVMModuleBuilder ctor input
@@ -785,7 +785,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
       TI_NOT_IMPLEMENTED
     }
     llvm_val[stmt] =
-        builder->CreateSExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -955,7 +955,10 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
                                  tlctx->get_data_type(PrimitiveType::u16));
     return to_print;
   };
-  for (auto const &content : stmt->contents) {
+  for (auto i = 0; i < stmt->contents.size(); ++i) {
+    auto const &content = stmt->contents[i];
+    auto const &format = stmt->formats[i];
+
     if (std::holds_alternative<Stmt *>(content)) {
       auto arg_stmt = std::get<Stmt *>(content);
       auto value = llvm_val[arg_stmt];
@@ -977,7 +980,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         formats += data_type_format(arg_stmt->ret_type);
       } else {
         args.push_back(value_for_printf(value, arg_stmt->ret_type));
-        formats += data_type_format(arg_stmt->ret_type);
+        formats += merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type), current_arch());
       }
     } else {
       auto arg_str = std::get<std::string>(content);
@@ -1001,7 +1005,7 @@ void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float32()));
   } else if (val.dt->is_primitive(PrimitiveTypeID::f16)) {
     llvm_val[stmt] = llvm::ConstantFP::get(llvm::Type::getHalfTy(*llvm_context),
-                                           val.val_float32());
+                                           val.val_float16());
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
@@ -1255,6 +1259,11 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
+  if (!stmt->is_grad) {
+    llvm_val[stmt] = get_struct_arg({stmt->arg_id});
+    return;
+  }
+
   auto raw_arg = stmt->is_grad
                      ? (call(builder.get(), "RuntimeContext_get_grad_args",
                              get_context(), tlctx->get_constant(stmt->arg_id)))
@@ -1278,7 +1287,8 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
   } else {
     TI_ASSERT(stmt->values.size() ==
               current_callable->ret_type->get_num_elements());
-    create_return(stmt->values);
+    auto *buffer = call("RuntimeContext_get_result_buffer", get_context());
+    set_struct_to_buffer(current_callable->ret_type, buffer, stmt->values);
   }
   builder->CreateBr(final_block);
   returned = true;
@@ -1897,14 +1907,15 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     auto address_offset = builder->CreateSExt(
         linear_index, llvm::Type::getInt64Ty(*llvm_context));
 
-    if (stmt->ret_type->is<TensorType>()) {
+    auto stmt_ret_type = stmt->ret_type.ptr_removed();
+    if (stmt_ret_type->is<TensorType>()) {
       // This case corresponds to outter indexing only
       // The stride for linear_index is num_elements() in TensorType.
       address_offset = builder->CreateMul(
           address_offset,
           tlctx->get_constant(
               get_data_type<int64>(),
-              stmt->ret_type->cast<TensorType>()->get_num_elements()));
+              stmt_ret_type->cast<TensorType>()->get_num_elements()));
     } else {
       // This case corresponds to outter + inner indexing
       // Since both outter and inner indices are linearized into linear_index,
@@ -2597,10 +2608,9 @@ void TaskCodeGenLLVM::emit_to_module() {
 LLVMCompiledTask TaskCodeGenLLVM::run_compilation() {
   // Final lowering
   auto offload_to_executable = [](IRNode *ir, const CompileConfig &config,
-                                  Kernel *kernel) {
+                                  const Kernel *kernel) {
     bool verbose = config.print_ir;
-    if ((kernel->is_accessor && !config.print_accessor_ir) ||
-        (kernel->is_evaluator && !config.print_evaluator_ir)) {
+    if (kernel->is_accessor && !config.print_accessor_ir) {
       verbose = false;
     }
     irpass::offload_to_executable(
@@ -2682,7 +2692,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     auto guard = get_function_creation_guard(
         {llvm::PointerType::get(get_runtime_type("RuntimeContext"), 0)},
         stmt->func->get_name());
-    Callable *old_callable = current_callable;
+    const Callable *old_callable = current_callable;
     current_callable = stmt->func;
     func_map.insert({stmt->func, guard.body});
     stmt->func->ir->accept(this);
@@ -2691,14 +2701,14 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   llvm::Function *llvm_func = func_map[stmt->func];
   auto *new_ctx = call("allocate_runtime_context", get_runtime());
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
-  for (int i = 0; i < stmt->args.size(); i++) {
-    auto *val =
-        bitcast_to_u64(llvm_val[stmt->args[i]], stmt->args[i]->ret_type);
-    call("RuntimeContext_set_args", new_ctx,
-         llvm::ConstantInt::get(*llvm_context, llvm::APInt(32, i, true)), val);
+  if (!stmt->func->parameter_list.empty()) {
+    auto *buffer =
+        builder->CreateAlloca(tlctx->get_data_type(stmt->func->args_type));
+    set_args_ptr(stmt->func, new_ctx, buffer);
+    set_struct_to_buffer(stmt->func->args_type, buffer, stmt->args);
   }
   llvm::Value *result_buffer = nullptr;
-  if (stmt->ret_type) {
+  if (!stmt->func->rets.empty()) {
     auto *ret_type = tlctx->get_data_type(stmt->ret_type);
     result_buffer = builder->CreateAlloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(
@@ -2724,13 +2734,19 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
   llvm_val[stmt] = val;
 }
 
-void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
-                                    llvm::Type *buffer_type,
-                                    const std::vector<Stmt *> &elements,
-                                    const Type *current_type,
-                                    int &current_element,
-                                    std::vector<llvm::Value *> &current_index) {
+void TaskCodeGenLLVM::set_struct_to_buffer(
+    llvm::Value *buffer,
+    llvm::Type *buffer_type,
+    const std::vector<Stmt *> &elements,
+    const Type *current_type,
+    int &current_element,
+    std::vector<llvm::Value *> &current_index) {
   if (auto primitive_type = current_type->cast<PrimitiveType>()) {
+    TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
+    auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
+    builder->CreateStore(llvm_val[elements[current_element]], gep);
+    current_element++;
+  } else if (auto pointer_type = current_type->cast<PointerType>()) {
     TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
     auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
     builder->CreateStore(llvm_val[elements[current_element]], gep);
@@ -2739,33 +2755,85 @@ void TaskCodeGenLLVM::create_return(llvm::Value *buffer,
     int i = 0;
     for (const auto &element : struct_type->elements()) {
       current_index.push_back(tlctx->get_constant(i++));
-      create_return(buffer, buffer_type, elements, element.type,
-                    current_element, current_index);
+      set_struct_to_buffer(buffer, buffer_type, elements, element.type,
+                           current_element, current_index);
       current_index.pop_back();
     }
-  } else {
-    auto tensor_type = current_type->as<TensorType>();
+  } else if (auto tensor_type = current_type->cast<TensorType>()) {
     int num_elements = tensor_type->get_num_elements();
     Type *element_type = tensor_type->get_element_type();
     for (int i = 0; i < num_elements; i++) {
       current_index.push_back(tlctx->get_constant(i));
-      create_return(buffer, buffer_type, elements, element_type,
-                    current_element, current_index);
+      set_struct_to_buffer(buffer, buffer_type, elements, element_type,
+                           current_element, current_index);
       current_index.pop_back();
     }
+  } else {
+    TI_INFO("{}", current_type->to_string());
+    TI_NOT_IMPLEMENTED
   }
 }
 
-void TaskCodeGenLLVM::create_return(const std::vector<Stmt *> &elements) {
-  auto buffer = call("RuntimeContext_get_result_buffer", get_context());
-  auto ret_type = current_callable->ret_type;
-  auto buffer_type = tlctx->get_data_type(ret_type);
+void TaskCodeGenLLVM::set_struct_to_buffer(
+    const StructType *struct_type,
+    llvm::Value *buffer,
+    const std::vector<Stmt *> &elements) {
+  auto buffer_type = tlctx->get_data_type(struct_type);
   buffer = builder->CreatePointerCast(buffer,
                                       llvm::PointerType::get(buffer_type, 0));
   int current_element = 0;
   std::vector<llvm::Value *> current_index = {tlctx->get_constant(0)};
-  create_return(buffer, buffer_type, elements, ret_type, current_element,
-                current_index);
+  set_struct_to_buffer(buffer, buffer_type, elements, struct_type,
+                       current_element, current_index);
+}
+
+llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
+  auto *args_ptr = get_args_ptr(current_callable, get_context());
+  auto *args_type = current_callable->args_type;
+  auto *arg_type = args_type->get_element_type(index);
+  std::vector<llvm::Value *> gep_index;
+  gep_index.reserve(index.size() + 1);
+  gep_index.push_back(tlctx->get_constant(0));
+  for (int ind : index) {
+    gep_index.push_back(tlctx->get_constant(ind));
+  }
+  auto *gep =
+      builder->CreateGEP(tlctx->get_data_type(args_type), args_ptr, gep_index);
+  return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
+}
+
+llvm::Value *TaskCodeGenLLVM::get_args_ptr(const Callable *callable,
+                                           llvm::Value *context) {
+  auto *runtime_context_type = get_runtime_type("RuntimeContext");
+  auto *args_type = tlctx->get_data_type(callable->args_type);
+  auto *zero = tlctx->get_constant(0);
+  // The address of the arg buffer is the first element of RuntimeContext
+  auto *args_ptr =
+      builder->CreateGEP(runtime_context_type, context, {zero, zero});
+  // casting from i8 ** to args_type **
+  args_ptr = builder->CreatePointerCast(
+      args_ptr,
+      llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
+  // loading the address of the arg buffer (args_type *)
+  args_ptr =
+      builder->CreateLoad(llvm::PointerType::get(args_type, 0), args_ptr);
+  return args_ptr;
+}
+void TaskCodeGenLLVM::set_args_ptr(Callable *callable,
+                                   llvm::Value *context,
+                                   llvm::Value *ptr) {
+  auto *runtime_context_type = get_runtime_type("RuntimeContext");
+  auto *args_type = tlctx->get_data_type(callable->args_type);
+  auto *zero = tlctx->get_constant(0);
+  // The address of the arg buffer is the first element of RuntimeContext
+  auto *args_ptr =
+      builder->CreateGEP(runtime_context_type, context, {zero, zero});
+  // casting from i8 ** to args_type **
+  args_ptr = builder->CreatePointerCast(
+      args_ptr,
+      llvm::PointerType::get(llvm::PointerType::get(args_type, 0), 0));
+  // storing the address of the arg buffer (args_type *)
+  builder->CreateStore(ptr, args_ptr);
 };
 
 LLVMCompiledTask LLVMCompiledTask::clone() const {

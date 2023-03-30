@@ -51,10 +51,14 @@ class Window final : public WindowBase {
   ~Window() override;
 
  private:
+  std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time_;
+
   std::unique_ptr<Canvas> canvas_;
   std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
   bool drawn_frame_{false};
+  double fps_limit_{1000.0};
+  double limiter_overshoot_{0.0};
 
  private:
   void init(lang::Program *prog, const AppConfig &config);

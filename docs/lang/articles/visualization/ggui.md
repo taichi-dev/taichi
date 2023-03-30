@@ -337,12 +337,12 @@ canvas.scene(scene)
 ### Fetching Color/Depth information
 
 ```python
-img = window.get_image_buffer()
+img = window.get_image_buffer_as_numpy()
 window.get_depth_buffer(scene_depth)
 depth = window.get_depth_buffer_as_numpy()
 ```
 
-After rendering the current scene, you can fetch the color and depth information of the current scene using `get_image_buffer()` and `get_depth_buffer_as_numpy()`, which copy the gpu data to a NumPy array(cpu).
+After rendering the current scene, you can fetch the color and depth information of the current scene using `get_image_buffer_as_numpy()` and `get_depth_buffer_as_numpy()`, which copy the gpu data to a NumPy array(cpu).
 `get_depth_buffer()` copies the GPU data to a Taichi field (depend on the `arch` you choose) or copies data from GPU to GPU.
 
 :::example
@@ -354,7 +354,7 @@ video_manager = ti.tools.VideoManager("OutputDir")
 
 while window.running:
     render_scene()
-    img = window.get_image_buffer()
+    img = window.get_image_buffer_as_numpy()
     video_manager.write_frame(img)
     window.show()
 

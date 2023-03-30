@@ -68,14 +68,20 @@ class TI_DLL_EXPORT AppContext {
   // - This function will cache the pipeline for future use
   taichi::lang::Pipeline *get_compute_pipeline(const std::string &shader_path);
 
+  VkSurfaceKHR get_native_surface() const {
+    return native_surface_;
+  }
+
  private:
   std::unique_ptr<taichi::lang::vulkan::VulkanDeviceCreator>
       embedded_vulkan_device_{nullptr};
 
-  // not owned
-  taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
+  VkSurfaceKHR native_surface_{VK_NULL_HANDLE};
 
   std::unordered_map<std::string, taichi::lang::UPipeline> pipelines_;
+
+  // not owned
+  taichi::lang::vulkan::VulkanDevice *vulkan_device_{nullptr};
 
   TaichiWindow *taichi_window_{nullptr};
 

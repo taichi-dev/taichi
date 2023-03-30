@@ -112,16 +112,19 @@ struct Error {
   }
 };
 
+namespace capi {
+class MetalRuntime;
+}  // namespace capi
+
 class Runtime {
  protected:
   // 32 is a magic number in `taichi/inc/constants.h`.
   std::array<uint64_t, 32> host_result_buffer_;
 
-  Runtime(taichi::Arch arch);
+  explicit Runtime(taichi::Arch arch);
 
  public:
   const taichi::Arch arch;
-  taichi::lang::RuntimeContext runtime_context_;
 
   virtual ~Runtime();
 
@@ -135,6 +138,7 @@ class Runtime {
     err.set_last_error();
     return aot_module;
   }
+
   virtual Error create_aot_module(const taichi::io::VirtualDir *dir,
                                   TiAotModule &out) {
     TI_NOT_IMPLEMENTED
@@ -173,7 +177,7 @@ class Runtime {
   virtual void wait() = 0;
 
   class VulkanRuntime *as_vk();
-  class MetalRuntime *as_mtl();
+  class capi::MetalRuntime *as_mtl();
 };
 
 class AotModule {

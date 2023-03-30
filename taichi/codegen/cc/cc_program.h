@@ -3,7 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_runtime.h"
@@ -74,6 +74,15 @@ class CCProgramImpl : public ProgramImpl {
 
   CCContext *update_context(RuntimeContext *ctx);
   void context_to_result_buffer();
+
+  void dump_cache_data_to_disk() override {
+    // Do nothing
+  }
+
+ protected:
+  std::unique_ptr<KernelCompiler> make_kernel_compiler() override {
+    TI_NOT_IMPLEMENTED;
+  }
 
  private:
   void add_kernel(std::unique_ptr<CCKernel> kernel);

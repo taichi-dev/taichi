@@ -59,6 +59,7 @@ KernelContextAttributes::KernelContextAttributes(
   // as well but let's leave that as a followup up PR.
   for (const auto &ka : kernel.parameter_list) {
     ArgAttributes aa;
+    aa.name = ka.name;
     aa.dtype = ka.get_element_type()->as<PrimitiveType>()->type;
     const size_t dt_bytes = ka.get_element_size();
     aa.is_array = ka.is_array;
@@ -68,6 +69,7 @@ KernelContextAttributes::KernelContextAttributes(
     }
     aa.stride = dt_bytes;
     aa.index = arg_attribs_vec_.size();
+    aa.format = ka.format;
     arg_attribs_vec_.push_back(aa);
   }
   for (const auto &kr : kernel.rets) {

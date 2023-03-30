@@ -2,7 +2,13 @@ name: Performance Monitoring
 on:
   push:
     branches:
-      - master
+    - master
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [benchmark-command]
+
+env:
+  CI_IMAGE_VERSION: '202303241150'
 
 jobs:
   gpu_backends:
@@ -12,6 +18,9 @@ jobs:
     if: github.repository_owner == 'taichi-dev'
     runs-on: [self-hosted, x64, cuda, linux, benchmark]
     steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
       - uses: actions/checkout@v2
         with:
           submodules: "recursive"
@@ -28,7 +37,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-benchmark-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-android:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
         env:
@@ -42,16 +51,37 @@ jobs:
             -DTI_BUILD_TESTS:BOOL=OFF
             -DTI_WITH_C_API=OFF
 
-      # --------------
       - name: Run taichi-benchmark
         id: run-benchmark
         run: |
           . .github/workflows/scripts/common-utils.sh
 
+          MEMFREQ=($(sudo nvidia-smi --query-supported-clocks=mem --format=csv | head -n 2 | tail -n 1))
+          GRFREQ=($(sudo nvidia-smi --query-supported-clocks=gr --format=csv | head -n 35 | tail -n 1))
+
+          function restore-freq-pinning {
+            sudo nvidia-smi -rmc
+            sudo nvidia-smi -rgc
+            sudo nvidia-smi -pm 0
+          }
+
+          trap restore-freq-pinning EXIT
+
+          sudo nvidia-smi -pm 1
+          sudo nvidia-smi -lmc ${MEMFREQ[0]}
+          sudo nvidia-smi -lgc ${GRFREQ[0]}
+          sleep 0.5
+
           ci-docker-run-gpu --name taichi-benchmark-run \
+            -e GITHUB_TOKEN \
+            -e GITHUB_EVENT_ACTION \
             -e BENCHMARK_UPLOAD_TOKEN \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
-             /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
+            -v $GITHUB_EVENT_PATH:/github-event.json \
+            registry.botmaster.tgr/taichi-test-android:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/.github/workflows/scripts/unix-perf-mon.sh
+
         env:
           PY: '3.8'
           BENCHMARK_UPLOAD_TOKEN: ${{ secrets.BENCHMARK_UPLOAD_TOKEN }}
+          GITHUB_EVENT_ACTION: ${{ github.event.action }}
+          GITHUB_TOKEN: ${{ secrets.GARDENER_PAT }}

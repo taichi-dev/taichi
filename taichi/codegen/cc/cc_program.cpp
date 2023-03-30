@@ -21,7 +21,9 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));
-  return [ker_ptr](RuntimeContext &ctx) { return ker_ptr->launch(&ctx); };
+  return [ker_ptr](LaunchContextBuilder &ctx) {
+    return ker_ptr->launch(&ctx.get_context());
+  };
 }
 
 void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
@@ -66,12 +68,11 @@ void CCProgramImpl::add_kernel(std::unique_ptr<CCKernel> kernel) {
 }
 
 void CCKernel::compile() {
-  if (!kernel_->is_evaluator)
-    ActionRecorder::get_instance().record(
-        "compile_kernel", {
-                              ActionArg("kernel_name", name_),
-                              ActionArg("kernel_source", source_),
-                          });
+  ActionRecorder::get_instance().record("compile_kernel",
+                                        {
+                                            ActionArg("kernel_name", name_),
+                                            ActionArg("kernel_source", source_),
+                                        });
 
   obj_path_ = fmt::format("{}/{}.o", runtime_tmp_dir, name_);
   src_path_ = fmt::format("{}/{}.c", runtime_tmp_dir, name_);
@@ -99,11 +100,10 @@ void CCRuntime::compile() {
 }
 
 void CCKernel::launch(RuntimeContext *ctx) {
-  if (!kernel_->is_evaluator)
-    ActionRecorder::get_instance().record("launch_kernel",
-                                          {
-                                              ActionArg("kernel_name", name_),
-                                          });
+  ActionRecorder::get_instance().record("launch_kernel",
+                                        {
+                                            ActionArg("kernel_name", name_),
+                                        });
 
   cc_program_impl_->relink();
   TI_TRACE("[cc] entering kernel [{}]", name_);

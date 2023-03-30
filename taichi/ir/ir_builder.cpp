@@ -362,6 +362,15 @@ BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
 }
 
+BinaryOpStmt *IRBuilder::create_logical_or(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::logical_or, l, r));
+}
+
+BinaryOpStmt *IRBuilder::create_logical_and(Stmt *l, Stmt *r) {
+  return insert(
+      Stmt::make_typed<BinaryOpStmt>(BinaryOpType::logical_and, l, r));
+}
+
 AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *dest, Stmt *val) {
   return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::add, dest, val));
 }

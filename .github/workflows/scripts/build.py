@@ -2,11 +2,14 @@
 
 import ci_common  # isort: skip, early initialization happens here
 
+import argparse
 import glob
 import os
 import platform
+import sys
 from pathlib import Path
 
+from ci_common import misc
 from ci_common.dep import download_dep
 from ci_common.misc import (banner, get_cache_home, is_manylinux2014,
                             path_prepend)
@@ -25,9 +28,9 @@ def setup_clang(as_compiler=True) -> None:
     if u.system == 'Linux':
         pass
     elif (u.system, u.machine) == ('Windows', 'AMD64'):
-        out = get_cache_home() / 'clang-15'
-        url = 'https://github.com/python3kgae/taichi_assets/releases/download/llvm15_vs2022_clang/clang-15.0.0-win.zip'
-        download_dep(url, out)
+        out = get_cache_home() / 'clang-15-v2'
+        url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-15.0.0-win-complete.zip'
+        download_dep(url, out, force=True)
         clang = str(out / 'bin' / 'clang++.exe').replace('\\', '\\\\')
         os.environ['TAICHI_CMAKE_ARGS'] += f' -DCLANG_EXECUTABLE={clang}'
 
@@ -77,10 +80,8 @@ def setup_llvm() -> None:
     u = platform.uname()
     if u.system == 'Linux':
         if 'AMDGPU_TEST' in os.environ:
-            # FIXME: AMDGPU bots are currently maintained separately,
-            #        we should unify them with the rest of the bots.
-            os.environ['LLVM_DIR'] = '/taichi-llvm-15'
-            return
+            out = get_cache_home() / 'llvm15-amdgpu'
+            url = 'https://github.com/GaleSeLee/assets/releases/download/v0.0.4/taichi-llvm-15.0.0-linux.zip'
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
             out = get_cache_home() / 'llvm15-manylinux2014'
@@ -104,8 +105,36 @@ def setup_llvm() -> None:
     else:
         raise RuntimeError(f'Unsupported platform: {u.system} {u.machine}')
 
-    path_prepend('PATH', out / 'bin')
+    # We should use LLVM toolchains shipped with OS.
+    # path_prepend('PATH', out / 'bin')
     os.environ['LLVM_DIR'] = str(out)
+
+
+@banner('Setup Android NDK')
+def setup_android_ndk() -> None:
+    # TODO: Auto install
+    s = platform.system()
+    if s != 'Linux':
+        raise RuntimeError(
+            f'Android NDK is only supported on Linux, but the current platform is {s}.'
+        )
+
+    ndkroot = Path(
+        os.environ.get('ANDROID_NDK_ROOT', '/android-sdk/ndk-bundle'))
+    toolchain = ndkroot / 'build/cmake/android.toolchain.cmake'
+    if not toolchain.exists():
+        raise RuntimeError(
+            f'ANDROID_NDK_ROOT is set to {ndkroot}, but the path does not exist.'
+        )
+
+    p = ndkroot.resolve()
+    os.environ['ANDROID_NDK_ROOT'] = str(p)
+    cmake_args = (f' -DCMAKE_TOOLCHAIN_FILE={toolchain}'
+                  ' -DANDROID_NATIVE_API_LEVEL=29'
+                  ' -DANDROID_ABI=arm64-v8a')
+    os.environ['ANDROID_CMAKE_ARGS'] = cmake_args.strip()
+    os.environ['TAICHI_CMAKE_ARGS'] += cmake_args
+    path_prepend('PATH', p / 'toolchains/llvm/prebuilt/linux-x86_64/bin')
 
 
 @banner('Setup Vulkan 1.3.236.0')
@@ -154,6 +183,8 @@ def build_wheel(python: Command, pip: Command) -> None:
     '''
     Build the Taichi wheel
     '''
+    pip.install('-U', 'pip')
+    pip.uninstall('-y', 'taichi', 'taichi-nightly')
     pip.install('-r', 'requirements_dev.txt')
     git.fetch('origin', 'master', '--tags')
     proj = os.environ.get('PROJECT_NAME', 'taichi')
@@ -161,7 +192,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     extra = []
 
     if proj == 'taichi-nightly':
-        proj_tags.extend(['egg_info', '--tag-date'])
+        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
         # Include C-API in nightly builds
         os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
 
@@ -171,13 +202,14 @@ def build_wheel(python: Command, pip: Command) -> None:
         else:
             extra.extend(['-p', 'manylinux_2_27_x86_64'])
 
+    python('setup.py', 'clean')
     python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
            './', '--save')
 
     python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
-def main() -> None:
+def setup_basic_build_env():
     u = platform.uname()
     if (u.system, u.machine) == ('Windows', 'AMD64'):
         # Use MSVC on Windows
@@ -194,14 +226,136 @@ def main() -> None:
     # NOTE: We use conda/venv to build wheels, which may not be the same python
     #       running this script.
     python, pip = setup_python(os.environ['PY'])
-    build_wheel(python, pip)
 
+    return sccache, python, pip
+
+
+def action_wheel():
+    sccache, python, pip = setup_basic_build_env()
+    handle_alternate_actions()
+    build_wheel(python, pip)
     sccache('-s')
 
     distfiles = glob.glob('dist/*.whl')
     if len(distfiles) != 1:
         raise RuntimeError(
             f'Failed to produce exactly one wheel file: {distfiles}')
+
+
+@banner('Build Taichi Android C-API Shared Library')
+def build_android(python: Command, pip: Command) -> None:
+    '''
+    Build the Taichi Android C-API shared library
+    '''
+    pip.install('-r', 'requirements_dev.txt')
+    python('setup.py', 'clean')
+    python('setup.py', 'build_ext')
+    sh('aarch64-linux-android-strip', 'build/libtaichi_c_api.so')
+
+
+def action_android():
+    sccache, python, pip = setup_basic_build_env()
+    setup_android_ndk()
+    os.environ['TAICHI_CMAKE_ARGS'] += (' -DTI_WITH_BACKTRACE:BOOL=OFF'
+                                        ' -DTI_WITH_LLVM:BOOL=OFF'
+                                        ' -DTI_WITH_C_API:BOOL=ON'
+                                        ' -DTI_BUILD_TESTS:BOOL=OFF')
+    handle_alternate_actions()
+    build_android(python, pip)
+    sccache('-s')
+
+
+@banner('Add AOT Demo Related Environment Variables')
+def add_aot_env():
+    os.environ['TAICHI_REPO_DIR'] = os.getcwd()
+    for p in Path(os.getcwd()).glob('**/cmake-install/c_api'):
+        if p.is_dir() and p.parent.parent.name.endswith(os.environ['PY']):
+            os.environ['TAICHI_C_API_INSTALL_DIR'] = str(p)
+            break
+    else:
+        misc.warn(
+            "Failed to find TAICHI_C_API_INSTALL_DIR (did't build C-API?), skipping"
+        )
+
+
+def enter_shell():
+    misc.info('Entering shell...')
+    import pwd
+    shell = pwd.getpwuid(os.getuid()).pw_shell
+    os.execl(shell, shell)
+
+
+def write_env(path):
+    envs = os.environ.get_changed_envs()
+    envstr = ''
+    if path.endswith('.ps1'):
+        envstr = '\n'.join([f'$env:{k}="{v}"' for k, v in envs.items()])
+    elif path.endswith('.sh'):
+        envstr = '\n'.join([f'export {k}="{v}"' for k, v in envs.items()])
+    elif path.endswith('.json'):
+        import json
+        envstr = json.dumps(envs, indent=2)
+    else:
+        raise RuntimeError(f'Unsupported format')
+
+    with open(path, 'w') as f:
+        f.write(envstr)
+
+    misc.info(f'Environment variables written to {path}')
+
+
+def handle_alternate_actions():
+    if misc.options.write_env:
+        add_aot_env()
+        write_env(misc.options.write_env)
+    elif misc.options.shell:
+        add_aot_env()
+        enter_shell()
+    else:
+        return
+
+    sys.exit(0)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    # Possible actions:
+    #   wheel: build the wheel
+    #   android: build the Android C-API shared library
+    parser.add_argument('action',
+                        type=str,
+                        nargs='?',
+                        default='wheel',
+                        help='Build target, may be "wheel" / "android"')
+    parser.add_argument(
+        '-w',
+        '--write-env',
+        type=str,
+        default=None,
+        help='Do not build, write environment variables to file instead')
+    parser.add_argument(
+        '-s',
+        '--shell',
+        action='store_true',
+        help=
+        'Do not build, start a shell with environment variables set instead')
+    options = parser.parse_args()
+    return options
+
+
+def main() -> None:
+    options = parse_args()
+    misc.options = options
+
+    def action_notimpl():
+        raise RuntimeError(f'Unknown action: {options.action}')
+
+    dispatch = {
+        'wheel': action_wheel,
+        'android': action_android,
+    }
+
+    dispatch.get(options.action, action_notimpl)()
 
 
 if __name__ == '__main__':

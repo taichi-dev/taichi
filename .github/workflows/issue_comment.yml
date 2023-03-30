@@ -16,9 +16,18 @@ jobs:
         issue-type: pull-request
         permission: triage
         commands: |
-          benchmark
           rebase
           rerun
+
+    - name: Slash Command Dispatch - Repo - Triage
+      uses: peter-evans/slash-command-dispatch@v3
+      with:
+        token: ${{ secrets.GARDENER_PAT }}
+        reaction-token: ${{ secrets.GARDENER_PAT }}
+        issue-type: pull-request
+        permission: triage
+        commands: |
+          benchmark
 
     - name: Slash Command Dispatch - Repo - Write
       uses: peter-evans/slash-command-dispatch@v3

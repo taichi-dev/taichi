@@ -41,6 +41,12 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   }
 }
 
+FrontendIfStmt::FrontendIfStmt(const FrontendIfStmt &o)
+    : condition(o.condition),
+      true_statements(o.true_statements->clone()),
+      false_statements(o.false_statements->clone()) {
+}
+
 FrontendForStmt::FrontendForStmt(const ExprGroup &loop_vars,
                                  SNode *snode,
                                  Arch arch,
@@ -79,6 +85,22 @@ FrontendForStmt::FrontendForStmt(const Expr &loop_var,
   add_loop_var(loop_var);
 }
 
+FrontendForStmt::FrontendForStmt(const FrontendForStmt &o)
+    : snode(o.snode),
+      external_tensor(o.external_tensor),
+      mesh(o.mesh),
+      element_type(o.element_type),
+      begin(o.begin),
+      end(o.end),
+      body(o.body->clone()),
+      loop_var_ids(o.loop_var_ids),
+      is_bit_vectorized(o.is_bit_vectorized),
+      num_cpu_threads(o.num_cpu_threads),
+      strictly_serialized(o.strictly_serialized),
+      mem_access_opt(o.mem_access_opt),
+      block_dim(o.block_dim) {
+}
+
 void FrontendForStmt::init_config(Arch arch, const ForLoopConfig &config) {
   is_bit_vectorized = config.is_bit_vectorized;
   strictly_serialized = config.strictly_serialized;
@@ -108,6 +130,14 @@ void FrontendForStmt::add_loop_var(const Expr &loop_var) {
   loop_var.expr->ret_type = PrimitiveType::i32;
 }
 
+FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
+    : funcid(o.funcid), body(o.body->clone()) {
+}
+
+FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
+    : cond(o.cond), body(o.body->clone()) {
+}
+
 void ArgLoadExpression::type_check(const CompileConfig *) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
                  "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
@@ -125,8 +155,8 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
-  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage,
-                                 num_channels, channel_format, lod);
+  ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
+                                 lod);
   stmt = ctx->back_stmt();
 }
 
@@ -174,6 +204,13 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_primitive_type = config->default_fp;
   } else {
     ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
+  }
+
+  if ((type == UnaryOpType::bit_not || type == UnaryOpType::logic_not) &&
+      is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
   if (operand->ret_type->is<TensorType>()) {
@@ -421,8 +458,7 @@ static std::tuple<Expr, Expr, Expr> unify_ternaryop_operands(const Expr &e1,
     return std::tuple(e1, e2, e3);
   }
 
-  return std::tuple(to_broadcast_tensor(e1, target_dtype),
-                    to_broadcast_tensor(e2, target_dtype),
+  return std::tuple(e1, to_broadcast_tensor(e2, target_dtype),
                     to_broadcast_tensor(e3, target_dtype));
 }
 
@@ -450,19 +486,22 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
                     op2->ret_type->to_string(), op3->ret_type->to_string()));
   };
 
-  if (op1_type->is<TensorType>() && op2_type->is<TensorType>() &&
-      op3_type->is<TensorType>()) {
+  if (op2_type->is<TensorType>() && op3_type->is<TensorType>()) {
     // valid
     is_tensor = true;
-    if (op1_type->cast<TensorType>()->get_shape() !=
-        op2_type->cast<TensorType>()->get_shape()) {
+    if (op1_type->is<TensorType>() &&
+        op1_type->cast<TensorType>()->get_shape() !=
+            op2_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
     if (op2_type->cast<TensorType>()->get_shape() !=
         op3_type->cast<TensorType>()->get_shape()) {
       is_valid = false;
     }
-    op1_type = op1_type->cast<TensorType>()->get_element_type();
+
+    if (op1_type->is<TensorType>()) {
+      op1_type = op1_type->cast<TensorType>()->get_element_type();
+    }
     op2_type = op2_type->cast<TensorType>()->get_element_type();
     op3_type = op3_type->cast<TensorType>()->get_element_type();
 
@@ -510,22 +549,16 @@ void TernaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 void InternalFuncCallExpression::type_check(const CompileConfig *) {
+  std::vector<DataType> arg_types;
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    // no arg type compatibility check for now due to lack of specification
+    arg_types.push_back(arg.get_ret_type());
   }
-  // internal func calls have default return type
-  ret_type = PrimitiveType::i32;
+  ret_type = op->type_check(arg_types);
 }
 
 void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
-  std::vector<Stmt *> args_stmts(args.size());
-  for (int i = 0; i < (int)args.size(); ++i) {
-    args_stmts[i] = flatten_rvalue(args[i], ctx);
-  }
-  ctx->push_back<InternalFuncStmt>(func_name, args_stmts, nullptr,
-                                   with_runtime_context);
-  stmt = ctx->back_stmt();
+  stmt = op->flatten(ctx, args, ret_type);
   stmt->tb = tb;
 }
 
@@ -933,9 +966,7 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
 }
 
 void AtomicOpExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(
-      dest.is<IdExpression>() || dest.is<IndexExpression>() ||
-      (dest.is<ArgLoadExpression>() && dest.cast<ArgLoadExpression>()->is_ptr));
+  TI_ASSERT(dest.expr->is_lvalue());
   // replace atomic sub with negative atomic add
   if (op_type == AtomicOpType::sub) {
     if (val->ret_type != ret_type) {
@@ -1298,7 +1329,7 @@ Expr ASTBuilder::insert_thread_idx_expr() {
   TI_ERROR_IF(!(loop && loop->is<FrontendForStmt>()),
               "ti.thread_idx() is only valid within loops.");
   return Expr::make<InternalFuncCallExpression>(
-      "linear_thread_idx", std::vector<Expr>{}, /*with_runtime_context=*/true);
+      Operations::get(InternalOp::linear_thread_idx), std::vector<Expr>{});
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {
@@ -1325,8 +1356,9 @@ void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
 }
 
 void ASTBuilder::create_print(
-    std::vector<std::variant<Expr, std::string>> contents) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents));
+    std::vector<std::variant<Expr, std::string>> contents,
+    std::vector<std::optional<std::string>> formats) {
+  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1378,7 +1410,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
                                                  const ExprGroup &args) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
-  if (func->ret_type) {
+  if (!func->rets.empty()) {
     auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,
@@ -1689,7 +1721,10 @@ Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr_stmt));
+  auto load_stmt = std::make_unique<GlobalLoadStmt>(ptr_stmt);
+  auto pointee_type = load_stmt->src->ret_type.ptr_removed();
+  load_stmt->ret_type = pointee_type->get_compute_type();
+  ctx->push_back(std::move(load_stmt));
   return ctx->back_stmt();
 }
 

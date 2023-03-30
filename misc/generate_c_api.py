@@ -281,7 +281,9 @@ def print_module_header(module: Module):
         ]
 
     out += [
-        "#include <taichi/taichi.h>",
+        "#ifndef TAICHI_H",
+        '#include "taichi.h"',
+        "#endif // TAICHI_H",
         "",
         "#ifdef __cplusplus",
         'extern "C" {',
@@ -322,6 +324,10 @@ if __name__ == "__main__":
         BuiltInType("int64_t", "int64_t"),
         BuiltInType("uint32_t", "uint32_t"),
         BuiltInType("int32_t", "int32_t"),
+        BuiltInType("uint16_t", "uint16_t"),
+        BuiltInType("int16_t", "int16_t"),
+        BuiltInType("uint8_t", "uint8_t"),
+        BuiltInType("int8_t", "int8_t"),
         BuiltInType("float", "float"),
         BuiltInType("const char*", "const char*"),
         BuiltInType("const char**", "const char**"),

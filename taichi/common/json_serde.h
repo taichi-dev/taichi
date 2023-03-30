@@ -76,8 +76,63 @@ struct FieldNameList {
   }
 };
 
+namespace type {
+template <typename T>
+using remove_cvref =
+    typename std::remove_cv<typename std::remove_reference<T>::type>;
+
+template <typename T>
+using remove_cvref_t = typename remove_cvref<T>::type;
+}  // namespace type
+
+template <typename T>
+struct has_ptr_serde {
+  template <typename T_>
+  static constexpr auto helper(T_ *) -> std::is_same<
+      decltype((T_::jsonserde_ptr_io(std::declval<const T_ *&>(),
+                                     std::declval<JsonValue &>(),
+                                     std::declval<bool>()))),
+      void>;
+
+  template <typename>
+  static constexpr auto helper(...) -> std::false_type;
+
+ public:
+  using T__ = typename type::remove_cvref_t<T>;
+  using type = decltype(helper<T__>(nullptr));
+  static constexpr bool value = type::value;
+};
+
 template <typename T>
 struct JsonSerde {
+  template <typename T__, typename T_ = typename type::remove_cvref_t<T__>>
+  static T_ &get_writable(T__ &&t) {
+    return *const_cast<T_ *>(&t);
+  }
+
+  // Pointer with a custom serialization function.
+  template <typename U = typename std::remove_cv<T>::type>
+  static JsonValue serialize(const typename std::enable_if_t<
+                             std::is_pointer_v<U> &&
+                                 has_ptr_serde<std::remove_pointer_t<T>>::value,
+                             T> &x) {
+    JsonValue val;
+    using T_ = std::remove_pointer_t<T>;
+    T_::jsonserde_ptr_io((const T_ *&)x, val, /*writing=*/true);
+    return val;
+  }
+
+  template <typename U = typename std::remove_cv<T>::type>
+  static void deserialize(
+      const JsonValue &j,
+      typename std::enable_if_t<
+          std::is_pointer_v<U> &&
+              has_ptr_serde<std::remove_pointer_t<U>>::value,
+          T> &x) {
+    using T_ = std::remove_pointer_t<T>;
+    T_::jsonserde_ptr_io((const T_ *&)x, get_writable(j), /*writing=*/false);
+  }
+
   // Numeric and boolean types (integers and floating-point numbers).
   template <typename U = typename std::remove_cv<T>::type>
   static JsonValue serialize(

@@ -12,7 +12,14 @@ $env:PYTHONUNBUFFERED = 1
 $env:TI_CI = 1
 $env:TI_OFFLINE_CACHE_FILE_PATH = Join-Path -Path $pwd -ChildPath ".cache\taichi"
 
-Setup-Python $libsDir $env:PY
+Invoke python .github/workflows/scripts/build.py --write-env=ti-env.ps1
+. .\ti-env.ps1
+
+Invoke python -m pip install -U pip wheel
+Invoke python -m pip uninstall taichi taichi-nightly -y
+# These have to be re-installed to avoid strange certificate issue
+# on CPU docker environment
+Invoke python -m pip install --upgrade --force-reinstall numpy cmake wheel
 
 $os = Get-CimInstance -Class Win32_OperatingSystem
 Info "Total system memory: $($os.TotalVisibleMemorySize / 1024 / 1024) GB"
@@ -28,7 +35,13 @@ Invoke pip install -r requirements_test.txt
 Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 
 # Run C++ tests
-Invoke python tests/run_tests.py --cpp
+#
+# Temporary hack before CI Pipeline Overhaul
+if (nvidia-smi -L | Select-String "Tesla P4") {
+    Invoke python tests/run_tests.py --cpp -vr2 -t4 -m "not sm70"
+} else {
+    Invoke python tests/run_tests.py --cpp -vr2 -t4
+}
 
 # Fail fast, give priority to the error-prone tests
 Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu
@@ -72,7 +85,7 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Invoke pip install PyYAML
     Invoke git clone https://github.com/taichi-dev/taichi-release-tests
     Push-Location taichi-release-tests
-    Invoke git checkout 20221230
+    Invoke git checkout 20230130
     mkdir -p repos/taichi/python/taichi
     $EXAMPLES = & python -c 'import taichi.examples as e; print(e.__path__._path[0])' | Select-Object -Last 1
     Push-Location repos

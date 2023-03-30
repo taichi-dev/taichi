@@ -523,8 +523,7 @@ void full_simplify(IRNode *root,
         modified = true;
       if (binary_op_simplify(root, config))
         modified = true;
-      if (config.constant_folding &&
-          constant_fold(root, config, {args.program}))
+      if (config.constant_folding && constant_fold(root))
         modified = true;
       if (die(root))
         modified = true;
@@ -553,7 +552,7 @@ void full_simplify(IRNode *root,
     return;
   }
   if (config.constant_folding) {
-    constant_fold(root, config, {args.program});
+    constant_fold(root);
     die(root);
   }
   simplify(root, config);

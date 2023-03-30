@@ -2,10 +2,12 @@ import ast
 import collections.abc
 import itertools
 import operator
+import re
 import warnings
 from collections import ChainMap
 from sys import version_info
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import (_ndarray, any_array, expr, impl, kernel_arguments,
                          matrix, mesh)
@@ -18,7 +20,7 @@ from taichi.lang.exception import (TaichiIndexError, TaichiSyntaxError,
                                    TaichiTypeError, handle_exception_from_cpp)
 from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field
-from taichi.lang.matrix import Matrix, MatrixType, Vector, is_vector
+from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.snode import append, deactivate, length
 from taichi.lang.struct import Struct, StructType
 from taichi.lang.util import is_taichi_class, to_taichi_type
@@ -392,13 +394,25 @@ class ASTTransformer(Builder):
         return node.ptr
 
     @staticmethod
+    def build_FormattedValue(ctx, node):
+        node.ptr = build_stmt(ctx, node.value)
+        if node.format_spec is None or len(node.format_spec.values) == 0:
+            return node.ptr
+        values = node.format_spec.values
+        assert len(values) == 1
+        format_str = values[0].s
+        assert format_str is not None
+        # distinguished from normal list
+        return ['__ti_fmt_value__', node.ptr, format_str]
+
+    @staticmethod
     def build_JoinedStr(ctx, node):
         str_spec = ''
         args = []
         for sub_node in node.values:
             if isinstance(sub_node, ast.FormattedValue):
                 str_spec += '{}'
-                args.append(build_stmt(ctx, sub_node.value))
+                args.append(build_stmt(ctx, sub_node))
             elif isinstance(sub_node, ast.Constant):
                 str_spec += sub_node.value
             elif isinstance(sub_node, ast.Str):
@@ -496,6 +510,62 @@ class ASTTransformer(Builder):
             module="taichi")
 
     @staticmethod
+    # Parses a formatted string and extracts format specifiers from it, along with positional and keyword arguments.
+    # This function produces a canonicalized formatted string that includes solely empty replacement fields, e.g. 'qwerty {} {} {} {} {}'.
+    # Note that the arguments can be used multiple times in the string.
+    # e.g.:
+    # origin input: 'qwerty {1} {} {1:.3f} {k:.4f} {k:}'.format(1.0, 2.0, k=k)
+    # raw_string: 'qwerty {1} {} {1:.3f} {k:.4f} {k:}'
+    # raw_args: [1.0, 2.0]
+    # raw_keywords: {'k': <ti.Expr>}
+    # return value: ['qwerty {} {} {} {} {}', 2.0, 1.0, ['__ti_fmt_value__', 2.0, '.3f'], ['__ti_fmt_value__', <ti.Expr>, '.4f'], <ti.Expr>]
+    def canonicalize_formatted_string(raw_string, *raw_args, **raw_keywords):
+        raw_brackets = re.findall(r'{(.*?)}', raw_string)
+        brackets = []
+        unnamed = 0
+        for bracket in raw_brackets:
+            item, spec = bracket.split(':') if ':' in bracket else (bracket,
+                                                                    None)
+            if item.isdigit():
+                item = int(item)
+            # handle unnamed positional args
+            if item == '':
+                item = unnamed
+                unnamed += 1
+            # handle empty spec
+            if spec == '':
+                spec = None
+            brackets.append((item, spec))
+
+        # check for errors in the arguments
+        max_args_index = max([t[0] for t in brackets if isinstance(t[0], int)],
+                             default=-1)
+        if max_args_index + 1 != len(raw_args):
+            raise TaichiSyntaxError(
+                f'Expected {max_args_index + 1} positional argument(s), but received {len(raw_args)} instead.'
+            )
+        brackets_keywords = [t[0] for t in brackets if isinstance(t[0], str)]
+        for item in brackets_keywords:
+            if item not in raw_keywords:
+                raise TaichiSyntaxError(f"Keyword '{item}' not found.")
+        for item in raw_keywords:
+            if item not in brackets_keywords:
+                raise TaichiSyntaxError(f"Keyword '{item}' not used.")
+
+        # reorganize the arguments based on their positions, keywords, and format specifiers
+        args = []
+        for (item, spec) in brackets:
+            new_arg = raw_args[item] if isinstance(item,
+                                                   int) else raw_keywords[item]
+            if spec is not None:
+                args.append(['__ti_fmt_value__', new_arg, spec])
+            else:
+                args.append(new_arg)
+        # put the formatted string as the first argument to make ti.format() happy
+        args.insert(0, re.sub(r'{.*?}', '{}', raw_string))
+        return args
+
+    @staticmethod
     def build_Call(ctx, node):
         if ASTTransformer.get_decorator(ctx, node) == 'static':
             with ctx.static_scope_guard():
@@ -530,8 +600,10 @@ class ASTTransformer(Builder):
 
         if isinstance(node.func, ast.Attribute) and isinstance(
                 node.func.value.ptr, str) and node.func.attr == 'format':
-            args.insert(0, node.func.value.ptr)
-            node.ptr = impl.ti_format(*args, **keywords)
+            raw_string = node.func.value.ptr
+            args = ASTTransformer.canonicalize_formatted_string(
+                raw_string, *args, **keywords)
+            node.ptr = impl.ti_format(*args)
             return node.ptr
 
         if id(func) == id(Matrix) or id(func) == id(Vector):
@@ -575,6 +647,7 @@ class ASTTransformer(Builder):
                 kernel_arguments.decl_ret(ctx.func.return_type,
                                           ctx.is_real_function)
             impl.get_runtime().compiling_callable.finalize_rets()
+
             for i, arg in enumerate(args.args):
                 if not isinstance(ctx.func.arguments[i].annotation,
                                   primitive_types.RefType):
@@ -587,7 +660,8 @@ class ASTTransformer(Builder):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_sparse_matrix(
-                            to_taichi_type(ctx.arg_features[i])))
+                            to_taichi_type(ctx.arg_features[i]),
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 ndarray_type.NdarrayType):
                     ctx.create_variable(
@@ -595,30 +669,36 @@ class ASTTransformer(Builder):
                         kernel_arguments.decl_ndarray_arg(
                             to_taichi_type(ctx.arg_features[i][0]),
                             ctx.arg_features[i][1], ctx.arg_features[i][2],
-                            ctx.arg_features[i][3]))
+                            ctx.arg_features[i][3],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.TextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_texture_arg(
-                            ctx.arg_features[i][0]))
+                            ctx.arg_features[i][0],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation,
                                 texture_type.RWTextureType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_rw_texture_arg(
                             ctx.arg_features[i][0], ctx.arg_features[i][1],
-                            ctx.arg_features[i][2], ctx.arg_features[i][3]))
+                            ctx.arg_features[i][2],
+                            ctx.func.arguments[i].name))
                 elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_matrix_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name))
                 else:
                     ctx.create_variable(
                         arg.arg,
                         kernel_arguments.decl_scalar_arg(
-                            ctx.func.arguments[i].annotation))
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name))
+            impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []
 
@@ -732,7 +812,7 @@ class ASTTransformer(Builder):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
                     values = itertools.chain.from_iterable(values.to_list()) if\
-                        not is_vector(values) else iter(values.to_list())
+                        values.ndim == 1 else iter(values.to_list())
                 else:
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
@@ -1007,7 +1087,7 @@ class ASTTransformer(Builder):
                         f'"{type(node_op).__name__}" is not supported in Taichi kernels.'
                     )
             val = ti_ops.bit_and(val, op(l, r))
-        if not isinstance(val, bool):
+        if not isinstance(val, (bool, np.bool_)):
             val = ti_ops.cast(val, primitive_types.i32)
         node.ptr = val
         return node.ptr
@@ -1465,7 +1545,8 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def ti_format_list_to_assert_msg(raw):
-        entries = impl.ti_format_list_to_content_entries([raw])
+        #TODO: ignore formats here for now
+        entries, _ = impl.ti_format_list_to_content_entries([raw])
         msg = ""
         args = []
         for entry in entries:

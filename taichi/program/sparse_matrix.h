@@ -22,6 +22,7 @@ class SparseMatrixBuilder {
                       const std::string &storage_format,
                       Program *prog);
 
+  ~SparseMatrixBuilder();
   void print_triplets_eigen();
   void print_triplets_cuda();
 
@@ -42,7 +43,7 @@ class SparseMatrixBuilder {
 
  private:
   uint64 num_triplets_{0};
-  std::unique_ptr<Ndarray> ndarray_data_base_ptr_{nullptr};
+  Ndarray *ndarray_data_base_ptr_{nullptr};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
@@ -97,14 +98,16 @@ class SparseMatrix {
 
   template <class T>
   T get_element(int row, int col) {
-    std::cout << "get_element not implemented" << std::endl;
-    return 0;
+    TI_NOT_IMPLEMENTED;
   }
 
   template <class T>
   void set_element(int row, int col, T value) {
-    std::cout << "set_element not implemented" << std::endl;
-    return;
+    TI_NOT_IMPLEMENTED;
+  }
+
+  virtual void mmwrite(const std::string &filename) {
+    TI_NOT_IMPLEMENTED;
   }
 
  protected:
@@ -136,7 +139,14 @@ class EigenSparseMatrix : public SparseMatrix {
   void build_triplets(void *triplets_adr) override;
   const std::string to_string() const override;
 
+  // Write the sparse matrix to a Matrix Market file
+  void mmwrite(const std::string &filename) override;
+
   const void *get_matrix() const override {
+    return &matrix_;
+  };
+
+  void *get_matrix() {
     return &matrix_;
   };
 
@@ -280,7 +290,9 @@ class CuSparseMatrix : public SparseMatrix {
                           void *coo_values_ptr,
                           int nnz) override;
 
-  void spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+  void nd_spmv(Program *prog, const Ndarray &x, const Ndarray &y);
+
+  void spmv(size_t x, size_t y);
 
   const void *get_matrix() const override {
     return &matrix_;
@@ -302,6 +314,8 @@ class CuSparseMatrix : public SparseMatrix {
   int get_nnz() const {
     return nnz_;
   }
+
+  void mmwrite(const std::string &filename) override;
 
  private:
   cusparseSpMatDescr_t matrix_{nullptr};

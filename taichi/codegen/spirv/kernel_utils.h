@@ -143,6 +143,7 @@ class KernelContextAttributes {
    * Attributes that are shared by the input arg and the return value.
    */
   struct AttribsBase {
+    std::string name;
     // For scalar arg, this is max(stride(dt), 4)
     // For array arg, this is #elements * max(stride(dt), 4)
     // Unit: byte
@@ -155,14 +156,19 @@ class KernelContextAttributes {
     bool is_array{false};
     std::vector<int> element_shape;
     std::size_t field_dim{0};
+    // Only used with textures. Sampled textures always have unknown format;
+    // while RW textures always have a valid format.
+    BufferFormat format{BufferFormat::unknown};
 
-    TI_IO_DEF(stride,
+    TI_IO_DEF(name,
+              stride,
               offset_in_mem,
               index,
               dtype,
               is_array,
               element_shape,
-              field_dim);
+              field_dim,
+              format);
   };
 
  public:

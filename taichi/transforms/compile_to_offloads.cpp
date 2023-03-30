@@ -7,6 +7,7 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 
@@ -31,7 +32,7 @@ make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
 
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
@@ -65,6 +66,10 @@ void compile_to_offloads(IRNode *ir,
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 
+  irpass::type_check(ir, config);
+  print("Typechecked");
+  irpass::analysis::verify(ir);
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -75,22 +80,6 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
-
-  irpass::type_check(ir, config);
-  print("Typechecked");
-  irpass::analysis::verify(ir);
-
-  if (kernel->is_evaluator) {
-    TI_ASSERT(autodiff_mode == AutodiffMode::kNone);
-
-    irpass::demote_operations(ir, config);
-    print("Operations demoted");
-
-    irpass::offload(ir, config);
-    print("Offloaded");
-    irpass::analysis::verify(ir);
-    return;
-  }
 
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
@@ -177,7 +166,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            bool verbose,
                            bool determine_ad_stack_size,
                            bool lower_global_access,
@@ -214,6 +203,13 @@ void offload_to_executable(IRNode *ir,
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir, config);
     print("Dense struct-for demoted");
+    irpass::analysis::verify(ir);
+  }
+
+  if (config.make_cpu_multithreading_loop && arch_is_cpu(config.arch)) {
+    irpass::make_cpu_multithreaded_range_for(ir, config);
+    irpass::type_check(ir, config);
+    print("Make CPU multithreaded range-for");
     irpass::analysis::verify(ir);
   }
 
@@ -303,6 +299,20 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
+  if (config.arch == Arch::cuda && config.half2_vectorization &&
+      !get_custom_cuda_library_path().empty()) {
+    irpass::vectorize_half2(ir);
+
+    irpass::type_check(ir, config);
+
+    irpass::full_simplify(
+        ir, config,
+        {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+
+    irpass::flag_access(ir);
+    print("Half2 vectorized");
+  }
+
   // Final field registration correctness & type checking
   irpass::type_check(ir, config);
   irpass::analysis::verify(ir);
@@ -310,7 +320,7 @@ void offload_to_executable(IRNode *ir,
 
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,

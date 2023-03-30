@@ -1,12 +1,15 @@
+from typing import Any
+
 from taichi.lang._ndarray import ScalarNdarray
 from taichi.lang._texture import Texture
+from taichi.lang.enums import Format
 from taichi.lang.exception import TaichiCompilationError
 from taichi.lang.matrix import (Matrix, MatrixNdarray, MatrixType,
                                 VectorNdarray, VectorType)
 from taichi.lang.util import cook_dtype
 from taichi.types.annotations import template
 from taichi.types.ndarray_type import NdarrayType
-from taichi.types.texture_type import TY_CH2FORMAT, RWTextureType, TextureType
+from taichi.types.texture_type import RWTextureType, TextureType
 
 template_types = (NdarrayType, TextureType, template)
 
@@ -97,14 +100,8 @@ def produce_injected_args(kernel, symbolic_args=None):
             fmt = anno.fmt
             injected_args.append(Texture(fmt, texture_shape))
         elif isinstance(anno, TextureType):
-            if symbolic_args is None:
-                raise RuntimeError(
-                    'Texture type annotation doesn\'t have enough information for aot. Please either specify the channel_format, shape and num_channels in the graph arg declaration.'
-                )
-            texture_shape = tuple(symbolic_args[i].texture_shape)
-            fmt = TY_CH2FORMAT[(symbolic_args[i].channel_format(),
-                                symbolic_args[i].num_channels)]
-            injected_args.append(Texture(fmt, texture_shape))
+            texture_shape = (2, ) * anno.num_dimensions
+            injected_args.append(Texture(Format.rgba8, texture_shape))
         elif isinstance(anno, MatrixType):
             if not isinstance(symbolic_args[i], list):
                 raise RuntimeError('Expected a symbolic arg with Matrix type.')
@@ -131,3 +128,33 @@ def produce_injected_args(kernel, symbolic_args=None):
             # For primitive types, we can just inject a dummy value.
             injected_args.append(0)
     return injected_args
+
+
+def json_data_model(f):
+    """
+    Decorates a JSON data model. A JSON data model MUST NOT have any member
+    functions and it MUST be constructible from a JSON object.
+
+    This is merely a marker.
+    """
+    f._is_json_data_model = True
+    return f
+
+
+def is_json_data_model(cls) -> bool:
+    return hasattr(cls, '_is_json_data_model')
+
+
+def dump_json_data_model(x: object) -> Any:
+    if isinstance(x, (int, float, str, bool, type(None))):
+        return x
+    if isinstance(x, (list, tuple)):
+        return [dump_json_data_model(e) for e in x]
+    if isinstance(x, dict):
+        return {k: dump_json_data_model(v) for k, v in x.items()}
+    if is_json_data_model(x):
+        return {
+            k: dump_json_data_model(v)
+            for k, v in x.__dict__.items() if k != '_is_json_data_model'
+        }
+    return x

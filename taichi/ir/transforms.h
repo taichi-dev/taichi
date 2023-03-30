@@ -31,6 +31,7 @@ void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void eliminate_immutable_local_vars(IRNode *root);
 void scalarize(IRNode *root);
+void vectorize_half2(IRNode *root);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
@@ -71,6 +72,8 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
+void make_cpu_multithreaded_range_for(IRNode *root,
+                                      const CompileConfig &config);
 void make_mesh_thread_local(IRNode *root,
                             const CompileConfig &config,
                             const MakeBlockLocalPass::Args &args);
@@ -103,9 +106,7 @@ void differentiation_validation_check(IRNode *root,
  * AD-stacks before this pass.
  */
 bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
-bool constant_fold(IRNode *root,
-                   const CompileConfig &config,
-                   const ConstantFoldPass::Args &args);
+bool constant_fold(IRNode *root);
 void offload(IRNode *root, const CompileConfig &config);
 bool transform_statements(
     IRNode *root,
@@ -161,7 +162,7 @@ std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
 // comment
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
-                         Kernel *kernel,
+                         const Kernel *kernel,
                          bool verbose,
                          AutodiffMode autodiff_mode,
                          bool ad_use_stack,
@@ -169,7 +170,7 @@ void compile_to_offloads(IRNode *ir,
 
 void offload_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            bool verbose,
                            bool determine_ad_stack_size,
                            bool lower_global_access,
@@ -179,7 +180,7 @@ void offload_to_executable(IRNode *ir,
 // additional optimizations so that |ir| can be directly fed into codegen.
 void compile_to_executable(IRNode *ir,
                            const CompileConfig &config,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            AutodiffMode autodiff_mode,
                            bool ad_use_stack,
                            bool verbose,
@@ -197,7 +198,7 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 
 void ast_to_ir(const CompileConfig &config,
-               Kernel &kernel,
+               const Kernel &kernel,
                bool to_executable = true);
 
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);

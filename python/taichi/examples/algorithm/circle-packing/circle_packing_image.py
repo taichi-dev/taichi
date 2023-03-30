@@ -2,11 +2,11 @@
 Given an input image, redraw it with circle packings.
 """
 try:
-    import cairocffi as cairo
+    import cairo
     import cv2
 except:
     raise ImportError(
-        "This example depends on opencv and cairocffi, please run 'pip install opencv-python cairocffi' to install."
+        "This example depends on opencv and cairo, please run 'pip install opencv-python pycairo' to install."
     )
 
 import os

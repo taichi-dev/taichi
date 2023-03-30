@@ -12,6 +12,8 @@
 
 namespace taichi::lang {
 
+std::string get_custom_cuda_library_path();
+
 real get_cpu_frequency();
 
 extern real default_measurement_time;
@@ -20,9 +22,9 @@ real measure_cpe(std::function<void()> target,
                  int64 elements_per_call,
                  real time_second = default_measurement_time);
 
-struct RuntimeContext;
+class LaunchContextBuilder;
 
-using FunctionType = std::function<void(RuntimeContext &)>;
+using FunctionType = std::function<void(LaunchContextBuilder &)>;
 
 inline std::string make_list(const std::vector<std::string> &data,
                              std::string bracket = "") {

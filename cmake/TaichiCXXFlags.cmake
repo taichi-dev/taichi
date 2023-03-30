@@ -107,6 +107,14 @@ else()
     endif()
 endif ()
 
+# (penguinliong) When building for iOS with Xcode `CMAKE_SYSTEM_PROCESSOR`
+# is empty
+if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "")
+    if ("arm64" STREQUAL CMAKE_OSX_ARCHITECTURES)
+        set(CMAKE_SYSTEM_PROCESSOR "arm64")
+    endif()
+endif()
+
 message("Building for processor ${CMAKE_SYSTEM_PROCESSOR}")
 if ("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64" OR "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "amd64")
     if (MSVC)
@@ -153,3 +161,15 @@ if (TI_USE_MPI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_USE_MPI")
     message("Using MPI")
 endif ()
+
+if (APPLE)
+    # FIXME: (penguinliong) Shift to automatic reference counting in the future?
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-objc-arc")
+
+    if (XCODE)
+        set(XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES)
+        # FIXME: (penguinliong) Workaround the overwhelming truncation errors
+        # compiling to iOS.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shorten-64-to-32")
+    endif()
+endif()

@@ -172,6 +172,8 @@ if __name__ == "__main__":
         arch = ti.x64
     elif args.arch == "vulkan":
         arch = ti.vulkan
+    elif args.arch == "metal":
+        arch = ti.metal
     elif args.arch == "opengl":
         arch = ti.opengl
     else:

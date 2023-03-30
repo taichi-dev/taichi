@@ -7,12 +7,25 @@
 #include "taichi/program/program.h"
 #include "taichi/program/compile_config.h"
 #include "taichi/system/timer.h"
+#include "taichi/util/io.h"
 
 namespace taichi::lang {
 
 CompileConfig default_compile_config;
 std::string compiled_lib_dir;
 std::string runtime_tmp_dir;
+
+std::string get_custom_cuda_library_path() {
+  std::string path = join_path(
+      runtime_lib_dir(), "cuda_runtime-cuda-nvptx64-nvidia-cuda-sm_60.bc");
+
+  // check path existance
+  if (!path_exists(path)) {
+    return "";
+  }
+
+  return path;
+}
 
 std::string runtime_lib_dir() {
   std::string folder;
@@ -85,18 +98,20 @@ real measure_cpe(std::function<void()> target,
 }
 
 bool command_exist(const std::string &command) {
-#if defined(TI_PLATFORM_UNIX)
+#if defined(TI_PLATFORM_LINUX)
   if (std::system(fmt::format("which {} > /dev/null 2>&1", command).c_str())) {
     return false;
   } else {
     return true;
   }
-#else
+#elif defined(TI_PLATFORM_WINDOWS)
   if (std::system(fmt::format("where {} >nul 2>nul", command).c_str())) {
     return false;
   } else {
     return true;
   }
+#else
+  return false;
 #endif
 }
 

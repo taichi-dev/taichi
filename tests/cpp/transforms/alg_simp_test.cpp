@@ -123,8 +123,7 @@ TEST_F(AlgebraicSimplicationTest, SimplifyMultiplyZeroFastMath) {
   irpass::type_check(block.get(), config_without_fast_math);  // insert 2 casts
   EXPECT_EQ(block->size(), 10);
 
-  irpass::constant_fold(block.get(), config_without_fast_math,
-                        {kernel->program});  // should change 2 casts into const
+  irpass::constant_fold(block.get());  // should change 2 casts into const
   irpass::alg_simp(block.get(),
                    config_without_fast_math);  // should not eliminate
   irpass::die(block.get());                    // should eliminate 2 const

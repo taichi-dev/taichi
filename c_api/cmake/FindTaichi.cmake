@@ -66,6 +66,11 @@ if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}")
     message("-- Looking for Taichi libraries via environment variable TAICHI_C_API_INSTALL_DIR")
     set(TAICHI_C_API_INSTALL_DIR $ENV{TAICHI_C_API_INSTALL_DIR})
 endif()
+# New installation location after 2022-03-11.
+if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
+    message("-- Looking for Taichi libraries via Python package installation (v2)")
+    execute_process(COMMAND ${Python_EXECUTABLE} -c "import sys; import pathlib; print([pathlib.Path(x + '/taichi/_lib/c_api').resolve() for x in sys.path if pathlib.Path(x + '/taichi/_lib/c_api').exists()][0], end='')" OUTPUT_VARIABLE TAICHI_C_API_INSTALL_DIR)
+endif()
 # If the user didn't specity the environment variable, try find the C-API
 # library in Python wheel.
 if(NOT EXISTS "${TAICHI_C_API_INSTALL_DIR}" AND EXISTS "${Python_EXECUTABLE}")
@@ -177,15 +182,15 @@ endif()
 # Handle `QUIET` and `REQUIRED` args in the recommended way in `find_package`.
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Taichi DEFAULT_MSG ${COMPONENT_VARS})
-set(Taichi_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
-set(Taichi_INCLUDE_DIRS ${Taichi_INCLUDE_DIRS} PARENT_SCOPE)
-set(Taichi_LIBRARIES ${Taichi_LIBRARIES} PARENT_SCOPE)
-set(Taichi_REDIST_LIBRARIES ${Taichi_REDIST_LIBRARIES} PARENT_SCOPE)
+set(Taichi_VERSION ${Taichi_Runtime_VERSION})
+set(Taichi_INCLUDE_DIRS ${Taichi_INCLUDE_DIRS})
+set(Taichi_LIBRARIES ${Taichi_LIBRARIES})
+set(Taichi_REDIST_LIBRARIES ${Taichi_REDIST_LIBRARIES})
 
-set(Taichi_Runtime_VERSION ${Taichi_Runtime_VERSION} PARENT_SCOPE)
-set(Taichi_Runtime_INCLUDE_DIR ${Taichi_Runtime_INCLUDE_DIR} PARENT_SCOPE)
-set(Taichi_Runtime_LIBRARY ${Taichi_Runtime_LIBRARY} PARENT_SCOPE)
-set(Taichi_Runtime_REDIST_LIBRARY ${Taichi_Runtime_REDIST_LIBRARY} PARENT_SCOPE)
+set(Taichi_Runtime_VERSION ${Taichi_Runtime_VERSION})
+set(Taichi_Runtime_INCLUDE_DIR ${Taichi_Runtime_INCLUDE_DIR})
+set(Taichi_Runtime_LIBRARY ${Taichi_Runtime_LIBRARY})
+set(Taichi_Runtime_REDIST_LIBRARY ${Taichi_Runtime_REDIST_LIBRARY})
 
 
 cmake_policy(POP)

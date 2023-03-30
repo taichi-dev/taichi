@@ -6,7 +6,6 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
 #include "taichi/codegen/cc/cc_program.h"
@@ -270,6 +269,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
+  ker.finalize_params();
   ker.finalize_rets();
   return ker;
 }
@@ -298,6 +298,7 @@ Kernel &Program::get_snode_writer(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
+  ker.finalize_params();
   return ker;
 }
 
@@ -313,7 +314,6 @@ void Program::finalize() {
   TI_TRACE("Program finalizing...");
 
   synchronize();
-  memory_pool_->terminate();
   if (arch_uses_llvm(compile_config().arch)) {
     program_impl_->finalize();
   }
@@ -388,10 +388,8 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   }
 }
 
-Texture *Program::create_texture(const DataType type,
-                                 int num_channels,
+Texture *Program::create_texture(BufferFormat buffer_format,
                                  const std::vector<int> &shape) {
-  BufferFormat buffer_format = type_channels2buffer_format(type, num_channels);
   if (shape.size() == 1) {
     textures_.push_back(
         std::make_unique<Texture>(this, buffer_format, shape[0], 1, 1));
@@ -440,34 +438,17 @@ DeviceCapabilityConfig translate_devcaps(const std::vector<std::string> &caps) {
   DeviceCapabilityConfig cfg{};
   for (const std::string &cap : caps) {
     std::string_view key;
-    std::string_view value;
+    uint32_t value;
     size_t ieq = cap.find('=');
     if (ieq == std::string::npos) {
       key = cap;
+      value = 1;
     } else {
       key = std::string_view(cap.c_str(), ieq);
-      value = std::string_view(cap.c_str() + ieq + 1);
+      value = (uint32_t)std::atol(cap.c_str() + ieq + 1);
     }
     DeviceCapability devcap = str2devcap(key);
-    switch (devcap) {
-      case DeviceCapability::spirv_version: {
-        if (value == "1.3") {
-          cfg.set(devcap, 0x10300);
-        } else if (value == "1.4") {
-          cfg.set(devcap, 0x10400);
-        } else if (value == "1.5") {
-          cfg.set(devcap, 0x10500);
-        } else {
-          TI_ERROR(
-              "'{}' is not a valid value of device capability `spirv_version`",
-              value);
-        }
-        break;
-      }
-      default:
-        cfg.set(devcap, 1);
-        break;
-    }
+    cfg.set(devcap, value);
   }
 
   // Assign default caps (that always present).
@@ -484,17 +465,6 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
-  if (arch == Arch::wasm) {
-    // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
-#ifdef TI_WITH_LLVM
-    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
-    TI_ASSERT(llvm_prog != nullptr);
-    return std::make_unique<wasm::AotModuleBuilderImpl>(
-        compile_config(), *llvm_prog->get_llvm_context());
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
   if (arch_uses_llvm(compile_config().arch) ||
       compile_config().arch == Arch::metal ||
       compile_config().arch == Arch::vulkan ||
@@ -514,11 +484,6 @@ int Program::allocate_snode_tree_id() {
     free_snode_tree_ids_.pop();
     return id;
   }
-}
-
-void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->result_buffer = result_buffer;
-  program_impl_->prepare_runtime_context(ctx);
 }
 
 void Program::enqueue_compute_op_lambda(

@@ -182,6 +182,10 @@ class ProgramImpl {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual DeviceCapabilityConfig get_device_caps() {
+    return {};
+  }
+
  private:
   std::unique_ptr<KernelCompilationManager> kernel_com_mgr_;
   std::unique_ptr<KernelLauncher> kernel_launcher_;

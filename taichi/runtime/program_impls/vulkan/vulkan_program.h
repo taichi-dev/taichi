@@ -100,6 +100,7 @@ class VulkanProgramImpl : public ProgramImpl {
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
   std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
+  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};

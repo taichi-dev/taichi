@@ -100,4 +100,9 @@ std::unique_ptr<KernelLauncher> MetalProgramImpl::make_kernel_launcher() {
   return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
 }
 
+DeviceCapabilityConfig MetalProgramImpl::get_device_caps() {
+  TI_ASSERT(gfx_runtime_);
+  return gfx_runtime_->get_ti_device()->get_caps();
+}
+
 }  // namespace taichi::lang

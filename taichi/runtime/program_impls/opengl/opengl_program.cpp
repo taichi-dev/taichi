@@ -94,4 +94,9 @@ std::unique_ptr<KernelLauncher> OpenglProgramImpl::make_kernel_launcher() {
   return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
 }
 
+DeviceCapabilityConfig OpenglProgramImpl::get_device_caps() {
+  TI_ASSERT(runtime_);
+  return runtime_->get_ti_device()->get_caps();
+}
+
 }  // namespace taichi::lang

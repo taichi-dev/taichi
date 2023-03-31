@@ -209,6 +209,11 @@ std::unique_ptr<KernelLauncher> VulkanProgramImpl::make_kernel_launcher() {
   return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
 }
 
+DeviceCapabilityConfig VulkanProgramImpl::get_device_caps() {
+  TI_ASSERT(vulkan_runtime_);
+  return vulkan_runtime_->get_ti_device()->get_caps();
+}
+
 VulkanProgramImpl::~VulkanProgramImpl() {
   vulkan_runtime_.reset();
   embedded_device_.reset();

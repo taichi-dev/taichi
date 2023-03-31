@@ -15,7 +15,8 @@ FunctionType ProgramImpl::compile(const CompileConfig &compile_config,
   // NOTE: Temporary implementation (blocked by cc backend)
   // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
   auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled = mgr.load_or_compile(compile_config, {}, *kernel);
+  const auto &compiled =
+      mgr.load_or_compile(compile_config, get_device_caps(), *kernel);
   auto &launcher = get_kernel_launcher();
   return [&launcher, &compiled](LaunchContextBuilder &ctx_builder) {
     launcher.launch_kernel(compiled, ctx_builder);

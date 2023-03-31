@@ -7,6 +7,7 @@ from pathlib import Path
 
 # -- third party --
 # -- own --
+from .cmake import cmake_args
 from .misc import banner, path_prepend
 from .python import path_prepend
 from .tinysh import Command, sh
@@ -32,11 +33,11 @@ def setup_android_ndk() -> None:
 
     p = ndkroot.resolve()
     os.environ['ANDROID_NDK_ROOT'] = str(p)
-    cmake_args = (f' -DCMAKE_TOOLCHAIN_FILE={toolchain}'
-                  ' -DANDROID_NATIVE_API_LEVEL=29'
-                  ' -DANDROID_ABI=arm64-v8a')
-    os.environ['ANDROID_CMAKE_ARGS'] = cmake_args.strip()
-    os.environ['TAICHI_CMAKE_ARGS'] += cmake_args
+    cmake_args['CMAKE_TOOLCHAIN_FILE'] = str(toolchain)
+    cmake_args['ANDROID_NATIVE_API_LEVEL'] = '26'
+    cmake_args['ANDROID_ABI'] = 'arm64-v8a'
+    os.environ.pop('CC')
+    os.environ.pop('CXX')
     path_prepend('PATH', p / 'toolchains/llvm/prebuilt/linux-x86_64/bin')
 
 
@@ -45,6 +46,11 @@ def build_android(python: Command, pip: Command) -> None:
     '''
     Build the Taichi Android C-API shared library
     '''
+    cmake_args['TI_WITH_BACKTRACE'] = False
+    cmake_args['TI_WITH_LLVM'] = False
+    cmake_args['TI_WITH_C_API'] = True
+    cmake_args['TI_BUILD_TESTS'] = False
+    cmake_args.materialize()
     pip.install('-r', 'requirements_dev.txt')
     python('setup.py', 'clean')
     python('setup.py', 'build_ext')

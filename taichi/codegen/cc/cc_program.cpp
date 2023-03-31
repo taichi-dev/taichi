@@ -22,6 +22,9 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));
   return [ker_ptr](LaunchContextBuilder &ctx) {
+    for (auto &[idx, ptr] : ctx.array_ptrs) {
+      ctx.get_context().args[idx[0]] = (uint64)ptr;
+    }
     return ker_ptr->launch(&ctx.get_context());
   };
 }

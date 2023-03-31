@@ -173,7 +173,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       if (shared_array_bytes > shared_array_threshold) {
         if (dynamic_shared_array_bytes > 0) {
           TI_ERROR(
-              "Only one single large shared array instance is allowed in current "
+              "Only one single large shared array instance is allowed in "
+              "current "
               "version.")
         }
         // Clear tensor shape for dynamic shared memory.

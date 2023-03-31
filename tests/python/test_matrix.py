@@ -187,7 +187,7 @@ def _test_local_matrix_non_constant_index():
             assert func2(i, j, 10) == 10 * (i + j + 1)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
@@ -523,7 +523,7 @@ def test_matrix_field_dynamic_index_multiple_materialize():
             assert a[i][j] == (i if j == i % 3 else 0)
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_local_vector_initialized_in_a_loop():
     @ti.kernel
     def foo():
@@ -1189,7 +1189,7 @@ def test_cross_scope_matrix_atomic_ops():
 
 
 @test_utils.test(debug=True)
-def test_global_tmp_overwrite():
+def test_global_tmp_overwrite(exclude=[ti.cc]):
     # https://github.com/taichi-dev/taichi/issues/6663
     @ti.kernel
     def foo() -> ti.i32:

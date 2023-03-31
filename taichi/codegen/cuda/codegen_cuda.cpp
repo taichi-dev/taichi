@@ -727,7 +727,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         if (arr_sz == 0) {
           continue;
         }
-        arg_buffers[i] = context.get_arg<void *>(i);
+        arg_buffers[i] = context.array_ptrs[{i}];
         if (context.device_allocation_type[i] ==
             LaunchContextBuilder::DevAllocType::kNone) {
           // Note: both numpy and PyTorch support arrays/tensors with zeros

@@ -207,7 +207,7 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
 
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  set_arg(arg_id, ptr);
+  array_ptrs[{arg_id}] = (void *)ptr;
   set_array_runtime_size(arg_id, size);
   set_array_device_allocation_type(arg_id, DevAllocType::kNone);
   for (uint64 i = 0; i < shape.size(); ++i) {
@@ -248,9 +248,7 @@ RuntimeContext &LaunchContextBuilder::get_context() {
 
 void LaunchContextBuilder::set_arg_texture_impl(int arg_id,
                                                 intptr_t alloc_ptr) {
-  set_struct_arg({arg_id}, alloc_ptr);
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
+  array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kTexture);
 }
 
@@ -258,9 +256,7 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
     int arg_id,
     intptr_t alloc_ptr,
     const std::array<int, 3> &shape) {
-  set_struct_arg({arg_id}, alloc_ptr);
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(alloc_ptr);
+  array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
   for (int i = 0; i < shape.size(); i++) {
@@ -276,10 +272,8 @@ void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
   // Set has_grad value
   has_grad[arg_id] = grad;
 
-  set_struct_arg({arg_id}, devalloc_ptr);
-  // Set args[arg_id] value
-  ctx_->args[arg_id] =
-      taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr);
+  // Set array ptr
+  array_ptrs[{arg_id}] = (void *)devalloc_ptr;
 
   // Set grad_args[arg_id] value
   if (grad) {

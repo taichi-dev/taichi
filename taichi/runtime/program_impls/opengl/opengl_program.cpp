@@ -43,11 +43,11 @@ FunctionType OpenglProgramImpl::compile(const CompileConfig &compile_config,
   return register_params_to_executable(std::move(params), runtime_.get());
 }
 
-void OpenglProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                            KernelProfilerBase *profiler,
+void OpenglProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                             uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-      sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr =
+      (uint64 *)MemoryPool::get_instance(config->arch)
+          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
 
   device_ = opengl::make_opengl_device();
 

@@ -332,7 +332,6 @@ class TI_DLL_EXPORT Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
-  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   // TODO: Move ndarrays_ and textures_ to be managed by runtime
   std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;

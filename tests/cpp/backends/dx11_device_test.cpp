@@ -126,8 +126,7 @@ TEST(Dx11StreamTest, CommandListTest) {
 TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   std::unique_ptr<directx11::Dx11Device> device =
       std::make_unique<directx11::Dx11Device>();
-  std::unique_ptr<MemoryPool> pool =
-      std::make_unique<MemoryPool>(Arch::dx11, device.get());
+
   std::unique_ptr<Dx11ProgramImpl> program =
       std::make_unique<Dx11ProgramImpl>(default_compile_config);
   /*
@@ -142,7 +141,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
         - Dx11Stream::submit_synced
   */
   uint64_t *result_buffer;
-  program->materialize_runtime(pool.get(), nullptr, &result_buffer);
+  program->materialize_runtime(nullptr, &result_buffer);
 
   TestProgram test_prog;
   test_prog.setup(Arch::dx11);

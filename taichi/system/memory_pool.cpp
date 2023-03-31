@@ -15,11 +15,7 @@ namespace taichi::lang {
 
 MemoryPool &MemoryPool::get_instance(Arch arch) {
   if (!arch_is_cuda(arch) && !arch_is_cpu(arch)) {
-#if defined TI_PLATFORM_OSX
-    arch = Arch::arm64;
-#else
-    arch = Arch::x64;
-#endif
+    arch = host_arch();
   }
 
   if (arch_is_cuda(arch)) {
@@ -98,7 +94,6 @@ void *MemoryPool::allocate_raw_memory(std::size_t size) {
 
   void *ptr = nullptr;
   if (arch_is_cpu(arch_)) {
-// http://pages.cs.wisc.edu/~sifakis/papers/SPGrid.pdf Sec 3.1
 #if defined(TI_PLATFORM_UNIX)
     ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE,
                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);

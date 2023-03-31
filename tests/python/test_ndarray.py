@@ -65,6 +65,7 @@ def test_vector_ndarray(n, dtype, shape):
 
 def _test_matrix_ndarray(n, m, dtype, shape):
     x = ti.Matrix.ndarray(n, m, dtype, shape)
+
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
@@ -76,11 +77,12 @@ def _test_matrix_ndarray(n, m, dtype, shape):
     assert x.m == m
 
 
+@pytest.mark.parametrize('n,m', matrix_dims)
+@pytest.mark.parametrize('dtype', data_types)
+@pytest.mark.parametrize('shape', ndarray_shapes)
 @test_utils.test(arch=get_host_arch_list())
-def test_matrix_ndarray():
-    print("!!!!!!!!1")
-    _test_matrix_ndarray(1, 2, ti.i32, ())
-    print("!!!!!!!!2")
+def test_matrix_ndarray(n, m, dtype, shape):
+    _test_matrix_ndarray(n, m, dtype, shape)
 
 
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])

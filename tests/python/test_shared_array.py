@@ -48,6 +48,9 @@ def test_shared_array_nested_loop():
 
 @test_utils.test(arch=[ti.cuda])
 def test_large_shared_array():
+    # Skip the GPUs prior to Volta which doesn't have dynamical shared memory.
+    if ti.lang.impl.get_cuda_compute_capability() < 70:
+        return
     block_dim = 128
     nBlocks = 64
     N = nBlocks * block_dim

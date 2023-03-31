@@ -329,7 +329,7 @@ class CCTransformer : public IRVisitor {
     if (cc_is_binary_op_infix(bin->op_type)) {
       if (is_comparison(bin->op_type)) {
         // XXX(#577): Taichi uses -1 as true due to LLVM i1...
-        emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
+        emit("{} = ({} {} {});", var, lhs_name, binop, rhs_name);
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
       } else {

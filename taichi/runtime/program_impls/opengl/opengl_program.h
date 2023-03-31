@@ -70,6 +70,24 @@ class OpenglProgramImpl : public ProgramImpl {
     return snode_tree_mgr_->get_snode_tree_device_ptr(tree_id);
   }
 
+  // TODO: These three functions are the same in Vulkan, Metal, DX and OpenGL.
+  //   We should add a GfxProgramImpl base class for these functions.
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    return gfx::GfxRuntime::get_struct_type_with_data_layout(old_ty, layout);
+  }
+
+  std::string get_kernel_return_data_layout() override {
+    return "r-";
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    auto has_buffer_ptr = runtime_->get_ti_device()->get_caps().get(
+        DeviceCapability::spirv_has_physical_storage_buffer);
+    return "a" + std::string(has_buffer_ptr ? "b" : "-");
+  };
+
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
 

@@ -246,6 +246,20 @@ class KernelContextAttributes {
     return args_bytes();
   }
 
+  /**
+   * The type of the struct that contains all the arguments.
+   */
+  inline const lang::StructType *args_type() const {
+    return args_type_;
+  }
+
+  /**
+   * The type of the struct that contains all the return values.
+   */
+  inline const lang::StructType *rets_type() const {
+    return rets_type_;
+  }
+
   std::vector<irpass::ExternalPtrAccess> arr_access;
 
   TI_IO_DEF(arg_attribs_vec_,
@@ -253,7 +267,9 @@ class KernelContextAttributes {
             args_bytes_,
             rets_bytes_,
             extra_args_bytes_,
-            arr_access);
+            arr_access,
+            args_type_,
+            rets_type_);
 
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;
@@ -262,6 +278,9 @@ class KernelContextAttributes {
   size_t args_bytes_{0};
   size_t rets_bytes_{0};
   size_t extra_args_bytes_{0};
+
+  const lang::StructType *args_type_;
+  const lang::StructType *rets_type_;
 };
 
 /**

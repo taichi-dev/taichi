@@ -11,7 +11,7 @@ import requests
 
 # -- own --
 from .misc import get_cache_home
-from .tinysh import bash, sh, start, tar
+from .tinysh import bash, sh, tar
 
 
 # -- code --

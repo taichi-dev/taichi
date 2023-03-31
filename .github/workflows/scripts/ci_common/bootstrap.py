@@ -1,11 +1,20 @@
+# -*- coding: utf-8 -*-
+
+# -- stdlib --
 import importlib
 import os
 import platform
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
+
+# -- third party --
+# -- own --
+from .escapes import escape_codes
 
 
+# -- code --
 def is_in_venv() -> bool:
     '''
     Are we in a virtual environment?
@@ -118,9 +127,22 @@ class _EnvironWrapper(_Environ):
         orig = self.get(name, None)
         _Environ.__setitem__(self, name, value)
         new = self[name]
+        self._print_diff(name, orig, new)
 
-        from .escapes import escape_codes
+    def __delitem__(self, name: str) -> None:
+        orig = self.get(name, None)
+        _Environ.__delitem__(self, name)
+        new = self.get(name, None)
+        self._print_diff(name, orig, new)
 
+    def pop(self, name: str, default: Optional[str] = None) -> Optional[str]:
+        orig = self.get(name, None)
+        value = _Environ.pop(self, name, default)
+        new = self.get(name, None)
+        self._print_diff(name, orig, new)
+        return value
+
+    def _print_diff(self, name, orig, new):
         G = escape_codes['bold_green']
         R = escape_codes['bold_red']
         N = escape_codes['reset']
@@ -130,21 +152,21 @@ class _EnvironWrapper(_Environ):
 
         _CHANGED_ENV[name] = new
 
+        p = lambda v: print(v, file=sys.stderr, flush=True)
+
         if orig == None:
-            print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
+            p(f'{G}:: ENV+ {name}={new}{N}')
+        elif new == None:
+            p(f'{R}:: ENV- {name}={orig}{N}')
         elif new.startswith(orig):
             l = len(orig)
-            print(f'{G}:: ENV{N} {name}={new[:l]}{G}{new[l:]}{N}',
-                  file=sys.stderr,
-                  flush=True)
+            p(f'{G}:: ENV{N} {name}={new[:l]}{G}{new[l:]}{N}')
         elif new.endswith(orig):
             l = len(new) - len(orig)
-            print(f'{G}:: ENV{N} {name}={G}{new[:l]}{N}{new[l:]}',
-                  file=sys.stderr,
-                  flush=True)
+            p(f'{G}:: ENV{N} {name}={G}{new[:l]}{N}{new[l:]}')
         else:
-            print(f'{R}:: ENV- {name}={orig}{N}', file=sys.stderr, flush=True)
-            print(f'{G}:: ENV+ {name}={new}{N}', file=sys.stderr, flush=True)
+            p(f'{R}:: ENV- {name}={orig}{N}')
+            p(f'{G}:: ENV+ {name}={new}{N}')
 
     def get_changed_envs(self):
         return dict(_CHANGED_ENV)

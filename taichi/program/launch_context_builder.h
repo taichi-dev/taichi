@@ -114,6 +114,10 @@ class LaunchContextBuilder {
   // otherwise it is set to DevAllocType::kNone
   DevAllocType device_allocation_type[taichi_max_num_args_total]{
       DevAllocType::kNone};
+
+  std::
+      unordered_map<std::vector<int>, void *, hashing::Hasher<std::vector<int>>>
+          array_ptrs;
 };
 
 }  // namespace taichi::lang

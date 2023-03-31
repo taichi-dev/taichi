@@ -12,11 +12,7 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
 }
 
 CpuDevice::CpuDevice() {
-#if defined TI_PLATFORM_OSX
-  arch_ = Arch::arm64;
-#else
-  arch_ = Arch::x64;
-#endif
+  arch_ = host_arch();
 }
 
 RhiResult CpuDevice::allocate_memory(const AllocParams &params,

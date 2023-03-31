@@ -112,8 +112,12 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        formats += merge_printf_specifier(
-            format, data_type_format(arg_stmt->ret_type), Arch::cuda);
+        auto &&merged_format = merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type));
+        // CUDA supports all conversions, but not 'F'.
+        // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
+        std::replace(merged_format.begin(), merged_format.end(), 'F', 'f');
+        formats += merged_format;
 
         auto value = llvm_val[arg_stmt];
         auto value_type = value->getType();
@@ -723,7 +727,7 @@ FunctionType CUDAModuleToFunctionConverter::convert(
         if (arr_sz == 0) {
           continue;
         }
-        arg_buffers[i] = context.get_arg<void *>(i);
+        arg_buffers[i] = context.array_ptrs[{i}];
         if (context.device_allocation_type[i] ==
             LaunchContextBuilder::DevAllocType::kNone) {
           // Note: both numpy and PyTorch support arrays/tensors with zeros

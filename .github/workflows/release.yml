@@ -21,6 +21,8 @@ env:
   CI_IMAGE_VERSION: '202303241150'
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
+  TI_USE_GIT_CACHE: ${{ secrets.TI_USE_GIT_CACHE }}
+
 
 jobs:
   add_version_to_database:

@@ -117,6 +117,9 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
+  if (kernel_->arch == Arch::cc) {
+    return;
+  }
   int offset = args_type->get_element_offset(index);
   TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
@@ -142,6 +145,7 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg({i}, v);
+  ctx_->args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
   set_array_device_allocation_type(i, DevAllocType::kNone);
 }
 

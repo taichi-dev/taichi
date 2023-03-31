@@ -90,7 +90,27 @@ void CompiledGraph::init_runtime_context(
                symbolic_arg.tag == aot::ArgKind::kMatrix) {
       TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
       // Matrix args are flattened so they're same as scalars.
-      ctx.set_arg(i, ival.val);
+      int type_size = data_type_size(symbolic_arg.dtype());
+      switch (type_size) {
+        case 1:
+          ctx.set_arg(i,
+                      taichi_union_cast_with_different_sizes<int8>(ival.val));
+          break;
+        case 2:
+          ctx.set_arg(i,
+                      taichi_union_cast_with_different_sizes<int16>(ival.val));
+          break;
+        case 4:
+          ctx.set_arg(i,
+                      taichi_union_cast_with_different_sizes<int32>(ival.val));
+          break;
+        case 8:
+          ctx.set_arg(i,
+                      taichi_union_cast_with_different_sizes<int64>(ival.val));
+          break;
+        default:
+          TI_ERROR("Unsupported type size {}", type_size);
+      }
     } else if (symbolic_arg.tag == aot::ArgKind::kTexture) {
       TI_ASSERT(ival.tag == aot::ArgKind::kTexture);
       Texture *tex = reinterpret_cast<Texture *>(ival.val);

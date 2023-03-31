@@ -199,11 +199,37 @@ void Program::materialize_runtime() {
   program_impl_->materialize_runtime(profiler.get(), &result_buffer);
 }
 
+static void remove_rw_accessor_cache(
+    SNode *parent_snode,
+    SNodeRwAccessorsBank *snode_rw_accessors_bank) {
+  for (int i = 0; i < (int)parent_snode->ch.size(); i++) {
+    auto child_snode = parent_snode->ch[i].get();
+    if (child_snode->type == SNodeType::place) {
+      snode_rw_accessors_bank->remove_cached_kernels(child_snode);
+    }
+  }
+}
+
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
   TI_ASSERT(arch_uses_llvm(compile_config().arch) ||
             compile_config().arch == Arch::vulkan ||
             compile_config().arch == Arch::dx11 ||
             compile_config().arch == Arch::dx12);
+
+  // When accessing a ti.field at Python scope, SNodeRwAccessorsBank creates
+  // a Taichi Kernel to read/write the field in a JIT manner, which caches the
+  // compiled JIT Kernel so as to avoid recompilation when accessing the same
+  // field.
+
+  // This cache uses the place-SNode's address (SNode*) as the key,
+  // which becomes unsafe once the SNodeTree gets destroyed and that
+  // place-SNode's address gets reused by another SNode. We have to remove all
+  // cached kernels upon SNodeTree destruction.
+  SNode *root = snode_tree->root();
+
+  // Traverse SNodeTree to remove all cached RWAccessor kernels
+  remove_rw_accessor_cache(root, &snode_rw_accessors_bank_);
+
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }

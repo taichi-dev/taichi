@@ -2,6 +2,25 @@
 
 set -x
 
+function unset-git-caching-proxy {
+    echo "Unsetting git caching proxy"
+    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf || true
+    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
+}
+
+function set-git-caching-proxy {
+    trap unset-git-caching-proxy EXIT
+    echo "Setting git caching proxy"
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+}
+
+if [ ! -z "$TI_USE_GIT_CACHE" ]; then
+    set-git-caching-proxy
+fi
+
+
 install_taichi_wheel() {
     if [ ! -z "$AMDGPU_TEST" ]; then
         sudo chmod 666 /dev/kfd

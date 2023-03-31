@@ -739,7 +739,8 @@ void ti_launch_kernel(TiRuntime runtime,
           case TI_DATA_TYPE_F16: {
             float arg_val;
             std::memcpy(&arg_val, &arg.value.scalar.value.x32, sizeof(arg_val));
-            builder.set_arg(i, arg_val);
+            // FIXME: temporary workaround for f16
+            builder.set_arg_float(i, arg_val);
             break;
           }
           default: {

@@ -805,6 +805,13 @@ def ndarray(dtype, shape, needs_grad=False):
             >>> matrix_ty = ti.types.matrix(3, 4, float)
             >>> z = ti.ndarray(matrix_ty, shape=(4, 5))  # ndarray of shape (4, 5), each element is a matrix of (3, 4) ti.float scalars.
     """
+    # primal
+    prog = get_runtime().prog
+    if prog is None:
+        raise TaichiRuntimeError(
+            "Cannont create ndarray, maybe you forgot to call `ti.init()` first?"
+        )
+
     if isinstance(shape, numbers.Number):
         shape = (shape, )
     if dtype in all_types:

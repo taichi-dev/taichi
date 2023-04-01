@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include "taichi/common/core.h"
 
 namespace taichi {
 

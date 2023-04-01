@@ -3,7 +3,7 @@
 #include "taichi/common/core.h"
 #include "taichi/program/kernel.h"
 #include "taichi/program/program.h"
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 #include "taichi/util/action_recorder.h"
 #include "struct_cc.h"
 #include "cc_runtime.h"
@@ -38,8 +38,7 @@ class CCProgramImpl : public ProgramImpl {
     return 0;  // TODO: support sparse in cc.
   }
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *,
+  void materialize_runtime(KernelProfilerBase *,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;

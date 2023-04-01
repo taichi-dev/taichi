@@ -2,7 +2,7 @@
 
 #include <mutex>
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
 
 namespace taichi {
 namespace lang {

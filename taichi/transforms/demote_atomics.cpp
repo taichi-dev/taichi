@@ -29,10 +29,6 @@ class DemoteAtomics : public BasicStmtVisitor {
     bool demote = false;
     bool is_local = false;
     if (current_offloaded) {
-      if (arch_is_cpu(current_offloaded->device) &&
-          current_offloaded->num_cpu_threads == 1) {
-        demote = true;
-      }
       if (stmt->dest->is<ThreadLocalPtrStmt>()) {
         demote = true;
       }

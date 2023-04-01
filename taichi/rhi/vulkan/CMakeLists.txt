@@ -10,6 +10,11 @@ target_sources(${VULKAN_RHI}
     vulkan_loader.cpp
     vulkan_memory_allocator.cpp
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect/spirv_reflect.c
+
+    vulkan_api.h
+    vulkan_device.h
+    vulkan_device_creator.h
+    vulkan_loader.h
   )
 
 #TODO 4832, some dependencies here should not be required as they
@@ -18,17 +23,16 @@ target_sources(${VULKAN_RHI}
 target_include_directories(${VULKAN_RHI}
   PRIVATE
     ${PROJECT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
-  PRIVATE
-    ${PROJECT_SOURCE_DIR}/external/spdlog/include
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/external/volk
-    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
   )
 
 # By specifying SYSTEM, we suppressed the warnings from third-party headers.
 # This is used to bypass unused variables in the header vk_mem_alloc.h
 target_include_directories(${VULKAN_RHI} SYSTEM
   PUBLIC
+    ${PROJECT_SOURCE_DIR}/external/volk
+    ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
     ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+  PRIVATE
+    ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
+    ${PROJECT_SOURCE_DIR}/external/spdlog/include
   )

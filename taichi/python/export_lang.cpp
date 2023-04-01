@@ -441,9 +441,12 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast_u32(ndarray,
                                             reinterpret_cast<int32_t &>(val));
            })
-      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast_u32(ndarray, val);
-      });
+      .def("fill_uint",
+           [](Program *program, Ndarray *ndarray, uint32_t val) {
+             program->fill_ndarray_fast_u32(ndarray, val);
+           })
+      .def("get_graphics_device",
+           [](Program *program) { return program->get_graphics_device(); });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)

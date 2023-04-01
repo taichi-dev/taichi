@@ -10,7 +10,6 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/rhi/vulkan/vulkan_device.h"
-#include "vk_mem_alloc.h"
 
 #include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
@@ -41,8 +40,7 @@ class VulkanProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;

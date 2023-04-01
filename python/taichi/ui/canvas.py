@@ -57,7 +57,8 @@ class Canvas:
         """
         try:
             import numpy as np  # pylint: disable=import-outside-toplevel
-            from matplotlib import cm  # pylint: disable=import-outside-toplevel
+            from matplotlib import \
+                cm  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise RuntimeError('Failed to import Numpy and Matplotlib. /\
             Please install Numpy and Matplotlib before using contour().')
@@ -66,16 +67,18 @@ class Canvas:
         field_shape = scalar_field_np.shape
         ndim = len(field_shape)
         if ndim != 2:
-            raise ValueError('contour() can only be used on a 2D scalar field.')
-        
+            raise ValueError(
+                'contour() can only be used on a 2D scalar field.')
+
         if normalize:
             scalar_max = np.max(scalar_field_np)
             scalar_min = np.min(scalar_field_np)
-            scalar_field_np = (scalar_field_np - scalar_min) / (scalar_max - scalar_min)
-            
+            scalar_field_np = (scalar_field_np - scalar_min) / (scalar_max -
+                                                                scalar_min)
+
         cmap = cm.get_cmap(cmap_name)
         output_rgba = cmap(scalar_field_np)
-        output_rgb = output_rgba.astype(np.float32)[:,:,:3]
+        output_rgb = output_rgba.astype(np.float32)[:, :, :3]
         output = np.ascontiguousarray(output_rgb)
         self.set_image(output)
 

@@ -9,6 +9,7 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 #include "taichi/analysis/offline_cache_util.h"
 
 #if defined(TI_WITH_CUDA)
@@ -120,6 +121,8 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (config->arch == Arch::x64 || config->arch == Arch::arm64 ||
       config->arch == Arch::cuda) {
+    return std::make_unique<LlvmAotModuleBuilder>(
+        get_kernel_compilation_manager(), *config, this);
   }
 
 #if defined(TI_WITH_DX12)

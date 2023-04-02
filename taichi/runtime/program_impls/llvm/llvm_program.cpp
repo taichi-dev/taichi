@@ -10,10 +10,8 @@
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/runtime/cuda/aot_module_builder_impl.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
 #endif
 
@@ -120,17 +118,10 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
 
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
-  if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
+  if (config->arch == Arch::x64 || config->arch == Arch::arm64 ||
+      config->arch == Arch::cuda) {
+        
   }
-
-#if defined(TI_WITH_CUDA)
-  if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
-  }
-#endif
 
 #if defined(TI_WITH_DX12)
   if (config->arch == Arch::dx12) {

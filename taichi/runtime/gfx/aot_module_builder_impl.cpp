@@ -4,7 +4,7 @@
 #include <type_traits>
 
 #include "taichi/aot/module_data.h"
-#include "taichi/codegen/spirv/spirv_codegen.h"
+#include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/runtime/gfx/aot_graph_data.h"
 
 namespace taichi::lang {
@@ -103,12 +103,12 @@ class AotDataConverter {
 
 }  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    const std::vector<CompiledSNodeStructs> &compiled_structs,
-    Arch device_api_backend,
+    const std::vector<spirv::CompiledSNodeStructs> &compiled_structs,
+    KernelCompilationManager &compilation_manager,
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps)
     : compiled_structs_(compiled_structs),
-      device_api_backend_(device_api_backend),
+      compilation_manager_(compilation_manager),
       config_(compile_config),
       caps_(caps) {
   for (const auto &pair : caps.to_inner()) {
@@ -163,12 +163,14 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
-                              compiled_structs_, config_);
-  compiled.kernel_attribs.name = identifier;
-  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+  const auto &ckd =
+      compilation_manager_.load_or_compile(config_, caps_, *kernel);
+  const auto &spirv_ckd = dynamic_cast<const spirv::CompiledKernelData &>(ckd);
+
+  auto compiled = spirv_ckd.get_internal_data();
+  compiled.metadata.kernel_attribs.name = identifier;
+  ti_aot_data_.kernels.push_back(compiled.metadata.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.src.spirv_src);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
@@ -205,12 +207,14 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
-                              compiled_structs_, config_);
-  compiled.kernel_attribs.name = identifier + "|" + key;
-  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+  const auto &ckd =
+      compilation_manager_.load_or_compile(config_, caps_, *kernel);
+  const auto &spirv_ckd = dynamic_cast<const spirv::CompiledKernelData &>(ckd);
+
+  auto compiled = spirv_ckd.get_internal_data();
+  compiled.metadata.kernel_attribs.name = identifier + "|" + key;
+  ti_aot_data_.kernels.push_back(compiled.metadata.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.src.spirv_src);
 }
 
 }  // namespace gfx

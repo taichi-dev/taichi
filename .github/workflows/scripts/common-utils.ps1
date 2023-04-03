@@ -1,3 +1,20 @@
+function UnsetGitCachingProxy {
+    Write-Host "Unsetting git caching proxy"
+    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf
+    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf
+}
+
+function SetGitCachingProxy {
+    Write-Host "Setting up git caching proxy"
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+}
+
+if($env:TI_USE_GIT_CACHE) {
+    SetGitCachingProxy
+}
+
 function Info($text, $prefix="BUILD") {
     Write-Host -ForegroundColor Green "[$prefix] $text"
 }

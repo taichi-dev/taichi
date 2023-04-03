@@ -22,8 +22,7 @@ class Dx11ProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;

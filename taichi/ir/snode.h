@@ -337,7 +337,8 @@ class SNode {
  private:
   int snode_tree_id_{0};
   SNodeFieldMap *snode_to_fields_{nullptr};
-  SNodeRwAccessorsBank *snode_rw_accessors_bank_{nullptr};
+  SNodeRwAccessorsBank *snode_rw_accessors_bank_{
+      nullptr};  // owned by the "Program" class
 };
 
 }  // namespace taichi::lang

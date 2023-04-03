@@ -98,7 +98,7 @@ N=$(nproc)
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
         run-it cpu    4
-        run-it cc     $N
+        run-it cc     4
         run-it vulkan 4
         run-it metal  2
 

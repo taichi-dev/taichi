@@ -15,19 +15,6 @@ namespace taichi::lang {
 Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
-FunctionType Dx11ProgramImpl::compile(const CompileConfig &compile_config,
-                                      Kernel *kernel) {
-  // NOTE: Temporary implementation
-  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
-  auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled = mgr.load_or_compile(
-      compile_config, runtime_->get_ti_device()->get_caps(), *kernel);
-  auto &launcher = get_kernel_launcher();
-  return [&launcher, &compiled](LaunchContextBuilder &ctx_builder) {
-    launcher.launch_kernel(compiled, ctx_builder);
-  };
-}
-
 void Dx11ProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                           uint64 **result_buffer_ptr) {
   *result_buffer_ptr =
@@ -92,6 +79,11 @@ std::unique_ptr<KernelLauncher> Dx11ProgramImpl::make_kernel_launcher() {
   gfx::KernelLauncher::Config cfg;
   cfg.gfx_runtime_ = runtime_.get();
   return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
+}
+
+DeviceCapabilityConfig Dx11ProgramImpl::get_device_caps() {
+  TI_ASSERT(runtime_);
+  return runtime_->get_ti_device()->get_caps();
 }
 
 }  // namespace taichi::lang

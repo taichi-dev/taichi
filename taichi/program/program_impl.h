@@ -39,7 +39,7 @@ class ProgramImpl {
    * Codegen to specific backend
    */
   virtual FunctionType compile(const CompileConfig &compile_config,
-                               Kernel *kernel) = 0;
+                               Kernel *kernel);
 
   /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
@@ -179,6 +179,10 @@ class ProgramImpl {
 
   virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() {
     TI_NOT_IMPLEMENTED;
+  }
+
+  virtual DeviceCapabilityConfig get_device_caps() {
+    return {};
   }
 
  private:

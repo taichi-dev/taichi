@@ -44,8 +44,7 @@ class ProgramImpl {
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
    * buffer, e.g. preallocated_device_buffer on CUDA.
    */
-  virtual void materialize_runtime(MemoryPool *memory_pool,
-                                   KernelProfilerBase *profiler,
+  virtual void materialize_runtime(KernelProfilerBase *profiler,
                                    uint64 **result_buffer_ptr) = 0;
 
   /**

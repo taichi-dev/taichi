@@ -6,7 +6,6 @@
 
 #include "taichi/common/core.h"
 #include "taichi/rhi/llvm/llvm_device.h"
-#include "taichi/system/virtual_memory.h"
 
 namespace taichi::lang {
 namespace cpu {
@@ -69,6 +68,7 @@ class CpuDevice : public LlvmDevice {
 
   AllocInfo get_alloc_info(const DeviceAllocation handle);
 
+  CpuDevice();
   ~CpuDevice() override{};
 
   RhiResult allocate_memory(const AllocParams &params,
@@ -115,9 +115,8 @@ class CpuDevice : public LlvmDevice {
   void wait_idle() override{TI_NOT_IMPLEMENTED};
 
  private:
+  Arch arch_;
   std::vector<AllocInfo> allocations_;
-  std::unordered_map<int, std::unique_ptr<VirtualMemoryAllocator>>
-      virtual_memories_;
 
   void validate_device_alloc(const DeviceAllocation alloc) {
     if (allocations_.size() <= alloc.alloc_id) {

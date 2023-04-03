@@ -46,11 +46,11 @@ FunctionType MetalProgramImpl::compile(const CompileConfig &compile_config,
   return register_params_to_executable(std::move(params), gfx_runtime_.get());
 }
 
-void MetalProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                           KernelProfilerBase *profiler,
+void MetalProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                            uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-      sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr =
+      (uint64 *)MemoryPool::get_instance(config->arch)
+          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
 
   embedded_device_ =
       std::unique_ptr<metal::MetalDevice>(metal::MetalDevice::create());

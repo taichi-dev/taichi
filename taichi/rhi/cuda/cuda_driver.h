@@ -111,7 +111,9 @@ class CUDADriverBase {
 
   bool check_lib_loaded(std::string lib_linux, std::string lib_windows);
 
-  bool try_load_lib_any_version(const std::string& lib_name,  const std::string& win_arch_name, const std::vector<int>& versions_to_try);
+  bool try_load_lib_any_version(const std::string &lib_name,
+                                const std::string &win_arch_name,
+                                const std::vector<int> &versions_to_try);
 
   bool disabled_by_env_{false};
 };

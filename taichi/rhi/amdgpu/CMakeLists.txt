@@ -5,7 +5,6 @@ add_library(${AMDGPU_RHI})
 target_sources(${AMDGPU_RHI}
   PRIVATE
     amdgpu_device.cpp
-    amdgpu_caching_allocator.cpp
     amdgpu_context.cpp
     amdgpu_driver.cpp
     amdgpu_profiler.cpp

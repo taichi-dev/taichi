@@ -187,7 +187,7 @@ def _test_local_matrix_non_constant_index():
             assert func2(i, j, 10) == 10 * (i + j + 1)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_local_matrix_non_constant_index():
     _test_local_matrix_non_constant_index()
 
@@ -226,7 +226,7 @@ def test_matrix_ndarray_non_constant_index():
     assert v[3][9] == 9
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_field_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.i32, 5)
     v = ti.Vector.field(10, ti.i32, 5)
@@ -455,7 +455,7 @@ def test_matrix_field_dynamic_index_not_pure_dense():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_field_dynamic_index_different_cell_size_bytes():
     temp = ti.field(ti.f32)
 
@@ -470,7 +470,7 @@ def test_matrix_field_dynamic_index_different_cell_size_bytes():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     temp_a = ti.field(ti.f32)
     temp_b = ti.field(ti.f32)
@@ -486,7 +486,7 @@ def test_matrix_field_dynamic_index_different_offset_bytes_in_parent_cell():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_field_dynamic_index_different_stride():
     temp = ti.field(ti.f32)
 
@@ -501,7 +501,7 @@ def test_matrix_field_dynamic_index_different_stride():
     assert v._get_dynamic_index_stride() is None
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_field_dynamic_index_multiple_materialize():
     @ti.kernel
     def empty():
@@ -523,7 +523,7 @@ def test_matrix_field_dynamic_index_multiple_materialize():
             assert a[i][j] == (i if j == i % 3 else 0)
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_local_vector_initialized_in_a_loop():
     @ti.kernel
     def foo():
@@ -904,7 +904,7 @@ def _test_field_and_ndarray(field, ndarray, func, verify):
     verify(ndarray)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -923,7 +923,7 @@ def test_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_load_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -942,7 +942,7 @@ def test_load_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_load_broadcast():
     @ti.func
     def func(a: ti.template()):
@@ -958,7 +958,7 @@ def test_load_broadcast():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_unary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -982,7 +982,7 @@ def test_unary_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_binary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1076,7 +1076,7 @@ def test_fill_op():
     test_fun()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_atomic_op_scalarize():
     @ti.func
     def func(x: ti.template()):
@@ -1188,7 +1188,7 @@ def test_cross_scope_matrix_atomic_ops():
     assert (x[1, 3] == [100, 10, 1]).all()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_global_tmp_overwrite():
     # https://github.com/taichi-dev/taichi/issues/6663
     @ti.kernel

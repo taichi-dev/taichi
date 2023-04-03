@@ -230,7 +230,7 @@ class TI_DLL_EXPORT TensorType : public Type {
     return shape_;
   }
 
-  void set_shape(const std::vector<int>& shape) {
+  void set_shape(const std::vector<int> &shape) {
     shape_ = shape;
   }
 

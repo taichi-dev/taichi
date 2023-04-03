@@ -8,6 +8,16 @@
 
 namespace taichi {
 
+bool DynamicLoader::check_lib_loaded(const std::string &lib_path) {
+  bool loaded = false;
+#ifdef WIN32
+  loaded = ((HMODULE)GetModuleHandle(lib_path.c_str()) != nullptr);
+#else
+  loaded = (dlopen(lib_path.c_str(), RTLD_NOLOAD) != nullptr);
+#endif
+  return loaded;
+}
+
 DynamicLoader::DynamicLoader(const std::string &dll_path) {
   load_dll(dll_path);
 }

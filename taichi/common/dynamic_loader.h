@@ -10,6 +10,10 @@
 namespace taichi {
 
 class DynamicLoader {
+
+ public:
+  static bool check_lib_loaded(const std::string &lib_path);
+
  private:
   void load_dll(const std::string &dll_path);
 

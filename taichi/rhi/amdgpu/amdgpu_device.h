@@ -6,11 +6,10 @@
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
+#include "taichi/rhi/llvm/allocator.h"
 
 namespace taichi {
 namespace lang {
-
-class CachingAllocator;
 
 namespace amdgpu {
 

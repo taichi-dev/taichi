@@ -1,5 +1,4 @@
 #include "taichi/rhi/amdgpu/amdgpu_device.h"
-#include "taichi/rhi/llvm/allocator.h"
 
 namespace taichi {
 namespace lang {

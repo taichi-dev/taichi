@@ -394,8 +394,8 @@ class CCTransformer : public IRVisitor {
 
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
-        formats += merge_printf_specifier(
-            format, data_type_format(arg_stmt->ret_type), Arch::cc);
+        formats += merge_printf_specifier(format,
+                                          data_type_format(arg_stmt->ret_type));
         values.push_back(arg_stmt->raw_name());
 
       } else {

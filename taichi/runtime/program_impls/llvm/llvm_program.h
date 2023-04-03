@@ -101,6 +101,10 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
+    // Invalid corresponding snode tree cache
+    if (cache_data_->fields.find(snode_tree->id()) != cache_data_->fields.end())
+      cache_data_->fields.erase(snode_tree->id());
+
     return runtime_exec_->destroy_snode_tree(snode_tree);
   }
 

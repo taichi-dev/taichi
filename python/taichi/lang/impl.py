@@ -321,6 +321,9 @@ class PyTaichi:
     def initialize_fields_builder(self, builder):
         self.unfinalized_fields_builder[builder] = get_traceback(2)
 
+    def clear_compiled_functions(self):
+        self.compiled_functions.clear()
+
     def finalize_fields_builder(self, builder):
         self.unfinalized_fields_builder.pop(builder)
 

@@ -279,8 +279,8 @@ class KernelContextAttributes {
   size_t rets_bytes_{0};
   size_t extra_args_bytes_{0};
 
-  const lang::StructType *args_type_;
-  const lang::StructType *rets_type_;
+  const lang::StructType *args_type_{nullptr};
+  const lang::StructType *rets_type_{nullptr};
 };
 
 /**

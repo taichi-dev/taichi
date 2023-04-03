@@ -211,7 +211,7 @@ bool CUDADriverBase::try_load_lib_any_version(
   if (!loaded) {
 #ifdef WIN32
     for (auto version : versions_to_try) {
-      std::string lib_name_windows = get_lib_name_windows(lib_name, version);
+      std::string lib_name_windows = get_lib_name_windows(lib_name, win_arch_name, version);
       loader_ = std::make_unique<DynamicLoader>(lib_name_windows);
       loaded = loader_->loaded();
       if (loaded) {

@@ -277,6 +277,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
 
  private:
   std::size_t num_snode_trees_processed_{0};

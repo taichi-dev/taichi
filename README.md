@@ -141,7 +141,7 @@ If you wish to try our our experimental features or build Taichi Lang for your o
 
 Kudos to all of our amazing contributors! Taichi Lang thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
 
-<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
+<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_18.png" width="800px"></a>
 
 *Contributor avatars are randomly shuffled.*
 

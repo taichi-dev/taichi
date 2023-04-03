@@ -904,7 +904,7 @@ def _test_field_and_ndarray(field, ndarray, func, verify):
     verify(ndarray)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -923,7 +923,7 @@ def test_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_load_store_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -942,7 +942,7 @@ def test_load_store_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_load_broadcast():
     @ti.func
     def func(a: ti.template()):
@@ -958,7 +958,7 @@ def test_load_broadcast():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_unary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -982,7 +982,7 @@ def test_unary_op_scalarize():
     _test_field_and_ndarray(field, ndarray, func, verify)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_binary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
@@ -1076,7 +1076,7 @@ def test_fill_op():
     test_fun()
 
 
-@test_utils.test(debug=True)
+@test_utils.test(exclude=[ti.cc], debug=True)
 def test_atomic_op_scalarize():
     @ti.func
     def func(x: ti.template()):

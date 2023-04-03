@@ -19,7 +19,7 @@ env:
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
   CI_IMAGE_VERSION: '202303241150'
-  TI_USE_GIT_CACHE: ${{ secrets.TI_USE_GIT_CACHE }}
+  TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
 
 jobs:
   show_environ:
@@ -380,7 +380,7 @@ jobs:
       - name: Workaround checkout Needed single revision issue
         run: |
           git config --system core.longpaths true
-          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+          git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD'  # no '|| true' here
 
       - uses: actions/checkout@v3
         with:
@@ -428,6 +428,13 @@ jobs:
           name: broken-wheel
           path: dist/*
           retention-days: 7
+
+      - name: Cleanup Git Cache Configs
+        shell: pwsh
+        if: always()
+        run: |
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
 
   build_and_test_m1:
     name: Build and Test (Apple M1)

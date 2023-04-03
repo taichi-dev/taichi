@@ -815,7 +815,7 @@ GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
   // Ported from KernelContextAttributes::KernelContextAttributes as is.
   // TODO: refactor this.
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
-  auto is_ret = layout[0] == 'r';
+  auto is_ret = layout[0] == '4';
   auto has_buffer_ptr = layout[1] == 'b';
   auto members = old_ty->elements();
   size_t bytes = 0;

@@ -21,8 +21,7 @@ class OpenglProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
@@ -79,13 +78,13 @@ class OpenglProgramImpl : public ProgramImpl {
   }
 
   std::string get_kernel_return_data_layout() override {
-    return "r-";
+    return "4-";
   };
 
   std::string get_kernel_argument_data_layout() override {
     auto has_buffer_ptr = runtime_->get_ti_device()->get_caps().get(
         DeviceCapability::spirv_has_physical_storage_buffer);
-    return "a" + std::string(has_buffer_ptr ? "b" : "-");
+    return "1" + std::string(has_buffer_ptr ? "b" : "-");
   };
 
  protected:

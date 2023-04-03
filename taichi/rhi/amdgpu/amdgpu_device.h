@@ -10,7 +10,7 @@
 namespace taichi {
 namespace lang {
 
-class CachineAllocator;
+class CachingAllocator;
 
 namespace amdgpu {
 

@@ -67,14 +67,14 @@ class Canvas:
         field_shape = scalar_field_np.shape
         ndim = len(field_shape)
         if ndim != 2:
-            raise ValueError(
+            raise ValueError(\
                 'contour() can only be used on a 2D scalar field.')
 
         if normalize:
             scalar_max = np.max(scalar_field_np)
             scalar_min = np.min(scalar_field_np)
-            scalar_field_np = (scalar_field_np - scalar_min) / (scalar_max -
-                                                                scalar_min)
+            scalar_field_np = (scalar_field_np - scalar_min) /\
+            (scalar_max - scalar_min + 1e-16)
 
         cmap = cm.get_cmap(cmap_name)
         output_rgba = cmap(scalar_field_np)
@@ -184,9 +184,8 @@ class Canvas:
             color (tuple[float]): The RGB color of arrows.
         """
         try:
-            import numpy as np
-
-            import taichi as ti
+            import numpy as np    # pylint: disable=import-outside-toplevel
+            import taichi as ti    # pylint: disable=import-outside-toplevel
         except ImportError:
             raise RuntimeError("Can't import taichi and/or numpy.")
         v_np = vector_field.to_numpy()

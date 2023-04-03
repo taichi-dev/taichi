@@ -1,3 +1,4 @@
+import time
 from math import pi
 
 from taichi._lib import core as _ti_core
@@ -38,6 +39,7 @@ class Camera:
         # used for tracking user inputs
         self.last_mouse_x = None
         self.last_mouse_y = None
+        self.last_time = None
 
     def position(self, x, y, z):
         """Set the camera position.
@@ -195,12 +197,14 @@ class Camera:
         """
         return self.ptr.get_projection_matrix(aspect)
 
-    def track_user_inputs(self,
-                          window,
-                          movement_speed=1.0,
-                          yaw_speed=2,
-                          pitch_speed=2,
-                          hold_key=None):
+    def track_user_inputs(
+        self,
+        window,
+        movement_speed: float = 1.0,
+        yaw_speed: float = 2.0,
+        pitch_speed: float = 2.0,
+        hold_key=None,
+    ):
         """Move the camera according to user inputs.
         Press `w`, `s`, `a`, `d`, `e`, `q` to move the camera
         `formard`, `back`, `left`, `right`, `head up`, `head down`, accordingly.
@@ -217,50 +221,49 @@ class Camera:
         position_change = Vector([0.0, 0.0, 0.0])
         left = self.curr_up.cross(front)
         up = self.curr_up
-        if window.is_pressed('w'):
-            position_change = front * movement_speed
-        if window.is_pressed('s'):
-            position_change = -front * movement_speed
-        if window.is_pressed('a'):
-            position_change = left * movement_speed
-        if window.is_pressed('d'):
-            position_change = -left * movement_speed
-        if window.is_pressed('e'):
-            position_change = up * movement_speed
-        if window.is_pressed('q'):
-            position_change = -up * movement_speed
+
+        if self.last_time is None:
+            self.last_time = time.perf_counter_ns()
+        time_elapsed = (time.perf_counter_ns() - self.last_time) * 1e-9
+        self.last_time = time.perf_counter_ns()
+
+        movement_speed *= time_elapsed * 60.0
+        if window.is_pressed("w"):
+            position_change += front * movement_speed
+        if window.is_pressed("s"):
+            position_change -= front * movement_speed
+        if window.is_pressed("a"):
+            position_change += left * movement_speed
+        if window.is_pressed("d"):
+            position_change -= left * movement_speed
+        if window.is_pressed("e"):
+            position_change += up * movement_speed
+        if window.is_pressed("q"):
+            position_change -= up * movement_speed
         self.position(*(self.curr_position + position_change))
         self.lookat(*(self.curr_lookat + position_change))
 
-        if hold_key is not None:
-            if not window.is_pressed(hold_key):
-                self.last_mouse_x = None
-                self.last_mouse_y = None
-                return
-
         curr_mouse_x, curr_mouse_y = window.get_cursor_pos()
-        if self.last_mouse_x is None or self.last_mouse_y is None:
-            self.last_mouse_x, self.last_mouse_y = curr_mouse_x, curr_mouse_y
-            return
+        if (hold_key is None) or window.is_pressed(hold_key):
+            if (self.last_mouse_x is None) or (self.last_mouse_y is None):
+                self.last_mouse_x, self.last_mouse_y = curr_mouse_x, curr_mouse_y
+            dx = curr_mouse_x - self.last_mouse_x
+            dy = curr_mouse_y - self.last_mouse_y
 
-        dx = curr_mouse_x - self.last_mouse_x
-        dy = curr_mouse_y - self.last_mouse_y
+            yaw, pitch = vec_to_euler(front)
 
-        yaw, pitch = vec_to_euler(front)
-        yaw_speed = 2
-        pitch_speed = 2
+            yaw_speed *= time_elapsed * 60.0
+            pitch_speed *= time_elapsed * 60.0
+            yaw -= dx * yaw_speed
+            pitch += dy * pitch_speed
 
-        yaw -= dx * yaw_speed
-        pitch += dy * pitch_speed
+            pitch_limit = pi / 2 * 0.99
+            if pitch > pitch_limit:
+                pitch = pitch_limit
+            elif pitch < -pitch_limit:
+                pitch = -pitch_limit
 
-        pitch_limit = pi / 2 * 0.99
-        if pitch > pitch_limit:
-            pitch = pitch_limit
-        elif pitch < -pitch_limit:
-            pitch = -pitch_limit
-
-        front = euler_to_vec(yaw, pitch)
-        self.lookat(*(self.curr_position + front))
-        self.up(0, 1, 0)
+            front = euler_to_vec(yaw, pitch)
+            self.lookat(*(self.curr_position + front))
 
         self.last_mouse_x, self.last_mouse_y = curr_mouse_x, curr_mouse_y

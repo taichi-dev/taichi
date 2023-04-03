@@ -216,6 +216,9 @@ def test_cli_cache():
     archs = {
         ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.gles, ti.amdgpu
     }
+    expected_archs = test_utils.expected_archs()
+    if expected_archs == [ti.cc]:
+        return
     archs = {v for v in archs if v in test_utils.expected_archs()}
     exts = ('tic', 'tcb', 'lock')
     tmp_path = tempfile.mkdtemp()

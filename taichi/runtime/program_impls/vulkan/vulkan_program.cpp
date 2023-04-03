@@ -70,11 +70,11 @@ VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                            KernelProfilerBase *profiler,
+void VulkanProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                             uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-      sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr =
+      (uint64 *)MemoryPool::get_instance(config->arch)
+          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
 
 // Android is meant to be embedded in other application only so the creation of
 // the device and other states is left to the caller/host.

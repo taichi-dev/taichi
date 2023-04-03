@@ -21,6 +21,7 @@ env:
   CI_IMAGE_VERSION: '202303241150'
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
+  TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
 
 
 jobs:
@@ -323,6 +324,14 @@ jobs:
           PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cpu,cuda,opengl,vulkan"
           TI_SKIP_VERSION_CHECK: ON
+
+      - name: Cleanup Git Cache Configs
+        shell: pwsh
+        if: always()
+        run: |
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
+          exit 0
 
   upload_to_pypi:
     name: Upload release to PyPI

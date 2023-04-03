@@ -41,7 +41,6 @@ class LlvmRuntime : public Runtime {
  private:
   std::unique_ptr<taichi::lang::CompileConfig> cfg_{nullptr};
   std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
-  std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
   taichi::uint64 *result_buffer{nullptr};
 };
 

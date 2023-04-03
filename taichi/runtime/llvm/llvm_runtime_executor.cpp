@@ -29,6 +29,7 @@ void *taichi_allocate_aligned(MemoryPool *memory_pool,
                               std::size_t alignment) {
   return memory_pool->allocate(size, alignment);
 }
+
 }  // namespace
 
 LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
@@ -83,6 +84,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   if (arch_is_cpu(config.arch)) {
     config.max_block_dim = 1024;
     device_ = std::make_shared<cpu::CpuDevice>();
+
   }
 #if defined(TI_WITH_CUDA)
   else if (config.arch == Arch::cuda) {
@@ -121,7 +123,6 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     device_ = std::make_shared<cuda::CudaDevice>();
   }
 #endif
-
 #if defined(TI_WITH_AMDGPU)
   else if (config.arch == Arch::amdgpu) {
     int num_workgroups{1};
@@ -149,7 +150,6 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
     device_ = std::make_shared<amdgpu::AmdgpuDevice>();
   }
 #endif
-
 #ifdef TI_WITH_DX12
   else if (config.arch == Arch::dx12) {
     // FIXME: add dx12 device.
@@ -545,8 +545,7 @@ LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
   }
 }
 
-void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
-                                              KernelProfilerBase *profiler,
+void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
                                               uint64 **result_buffer_ptr) {
   // The result buffer allocated here is only used for the launches of
   // runtime JIT functions. To avoid memory leak, we use the head of
@@ -554,6 +553,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
   // CUDA and AMDGPU backends.
   // | ==================preallocated device buffer ========================== |
   // |<- reserved for return ->|<---- usable for allocators on the device ---->|
+
   std::size_t prealloc_size = 0;
   if (config_.arch == Arch::cuda) {
 #if defined(TI_WITH_CUDA)
@@ -626,8 +626,9 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
+    *result_buffer_ptr =
+        (uint64 *)MemoryPool::get_instance(config_.arch)
+            .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
   }
   auto *const runtime_jit = get_runtime_jit_module();
 
@@ -653,6 +654,7 @@ void LlvmRuntimeExecutor::materialize_runtime(MemoryPool *memory_pool,
 
   TI_TRACE("Launching runtime_initialize");
 
+  auto *memory_pool = &MemoryPool::get_instance(config_.arch);
   runtime_jit
       ->call<void *, void *, std::size_t, void *, int, void *, void *, void *>(
           "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,

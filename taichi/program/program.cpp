@@ -207,6 +207,7 @@ static void remove_rw_accessor_cache(
     if (child_snode->type == SNodeType::place) {
       snode_rw_accessors_bank->remove_cached_kernels(child_snode);
     }
+    remove_rw_accessor_cache(child_snode, snode_rw_accessors_bank);
   }
 }
 

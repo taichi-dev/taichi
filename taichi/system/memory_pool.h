@@ -12,31 +12,38 @@
 
 namespace taichi::lang {
 
+class UnifiedAllocator;
+
 // A memory pool that runs on the host
 
 class TI_DLL_EXPORT MemoryPool {
  public:
-  std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
-  static constexpr std::size_t default_allocator_size =
-      1 << 30;  // 1 GB per allocator
-  std::mutex mut_allocators;
+  static const size_t page_size;
 
-  void *cuda_stream{nullptr};
-  void *amdgpu_stream{nullptr};
+  static MemoryPool &get_instance(Arch arch);
 
-  // In the future we wish to move the MemoryPool inside each Device
-  // so that the memory allocated from each Device can be used as-is.
-  MemoryPool(Arch arch, Device *device);
-
-  void *allocate(std::size_t size, std::size_t alignment);
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 bool releasable = false);
+  void release(std::size_t size, void *ptr);
+  void reset();
 
   ~MemoryPool();
 
  private:
-  static constexpr bool use_cuda_stream = false;
-  static constexpr bool use_amdgpu_stream = false;
+  MemoryPool(Arch arch);
+
+  void *allocate_raw_memory(std::size_t size);
+  void deallocate_raw_memory(void *ptr);
+
+  // All the raw memory allocated from OS/Driver
+  // We need to keep track of them to guarantee that they are freed
+  std::map<void *, std::size_t> raw_memory_chunks_;
+  std::unique_ptr<UnifiedAllocator> allocator_;
+  std::mutex mut_allocation_;
   Arch arch_;
-  Device *device_;
+
+  friend class UnifiedAllocator;
 };
 
 }  // namespace taichi::lang

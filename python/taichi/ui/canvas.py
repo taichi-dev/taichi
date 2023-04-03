@@ -184,8 +184,9 @@ class Canvas:
             color (tuple[float]): The RGB color of arrows.
         """
         try:
-            import taichi as ti
             import numpy as np
+
+            import taichi as ti
         except ImportError:
             raise RuntimeError("Can't import taichi and/or numpy.")
         v_np = vector_field.to_numpy()
@@ -204,7 +205,8 @@ class Canvas:
                                    ny // arrow_spacing + 1):
                 i = i * arrow_spacing if i < nx // arrow_spacing else nx - 1
                 j = j * arrow_spacing if j < ny // arrow_spacing else ny - 1
-                linear_id = (i + j * nx) * 6  # 6 because an arrow needs 6 end points
+                linear_id = (
+                    i + j * nx) * 6  # 6 because an arrow needs 6 end points
                 # Begin point of the arrow
                 x = i / (nx - 1)
                 y = j / (ny - 1)

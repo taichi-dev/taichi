@@ -184,8 +184,9 @@ class Canvas:
             color (tuple[float]): The RGB color of arrows.
         """
         try:
-            import numpy as np    # pylint: disable=import-outside-toplevel
-            import taichi as ti    # pylint: disable=import-outside-toplevel
+            import numpy as np  # pylint: disable=import-outside-toplevel
+
+            import taichi as ti  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise RuntimeError("Can't import taichi and/or numpy.")
         v_np = vector_field.to_numpy()

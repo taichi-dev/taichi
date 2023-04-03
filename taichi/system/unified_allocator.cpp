@@ -8,36 +8,24 @@
 #endif
 #include "taichi/util/lang_util.h"
 #include "taichi/system/unified_allocator.h"
-#include "taichi/system/virtual_memory.h"
+#include "taichi/system/memory_pool.h"
 #include "taichi/system/timer.h"
 #include "taichi/rhi/cpu/cpu_device.h"
 #include <string>
 
 namespace taichi::lang {
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
-    : size_(size), arch_(arch), device_(device) {
+UnifiedAllocator::UnifiedAllocator(std::size_t size,
+                                   Arch arch,
+                                   bool is_exclusive)
+    : size_(size), arch_(arch), is_exclusive(is_exclusive) {
   auto t = Time::get_time();
-  if (arch_ == Arch::x64) {
-#ifdef TI_WITH_LLVM
-    Device::AllocParams alloc_params;
-    alloc_params.size = size;
-    alloc_params.host_read = true;
-    alloc_params.host_write = true;
 
-    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device);
-    RhiResult res = cpu_device->allocate_memory(alloc_params, &alloc);
-    TI_ASSERT(res == RhiResult::success);
-    data = (uint8 *)cpu_device->get_alloc_info(alloc).ptr;
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    TI_TRACE("Allocating virtual address space of size {} MB",
-             size / 1024 / 1024);
-    cpu_vm_ = std::make_unique<VirtualMemoryAllocator>(size);
-    data = (uint8 *)cpu_vm_->ptr;
-  }
+  TI_TRACE("Allocating virtual address space of size {} MB",
+           size / 1024 / 1024);
+  void *ptr = MemoryPool::get_instance(arch).allocate_raw_memory(size);
+  data = (uint8 *)ptr;
+
   TI_ASSERT(data != nullptr);
   TI_ASSERT(uint64(data) % 4096 == 0);
 
@@ -46,14 +34,44 @@ UnifiedAllocator::UnifiedAllocator(std::size_t size, Arch arch, Device *device)
   TI_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
 }
 
+void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
+  // UnifiedAllocator never reuses the previously allocated memory
+  // just move the head forward util depleting all the free memory
+
+  // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
+  // transparent to user code
+  if (is_exclusive && head != data) {
+    return nullptr;
+  }
+  auto ret =
+      head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
+  TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data, size,
+           (tail - head));
+  head = ret + size;
+  if (head > tail) {
+    // allocation failed
+    return nullptr;
+  } else {
+    // success
+    TI_ASSERT((std::size_t)ret % alignment == 0);
+    return ret;
+  }
+}
+
+bool UnifiedAllocator::is_releasable(uint64_t *ptr) const {
+  return is_exclusive && (void *)ptr == data;
+}
+
+void UnifiedAllocator::release(size_t sz, uint64_t *ptr) {
+  // UnifiedAllocator is special in that it never reuses the previously
+  // allocated memory We have to release the entire memory chunk to avoid memory
+  // leak
+  MemoryPool::get_instance(arch_).deallocate_raw_memory(ptr);
+}
+
 taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
-  if (!initialized()) {
-    return;
-  }
-  if (arch_ == Arch::x64) {
-    cpu::CpuDevice *cpu_device = static_cast<cpu::CpuDevice *>(device_);
-    cpu_device->dealloc_memory(alloc);
-  }
+  // Raw memory is always fully managed by MemoryPool once allocated
+  // There's nothing to do here
 }
 
 void taichi::lang::UnifiedAllocator::memset(unsigned char val) {

@@ -1,4 +1,5 @@
 #include "taichi/rhi/amdgpu/amdgpu_device.h"
+#include "taichi/rhi/llvm/allocator.h"
 
 namespace taichi {
 namespace lang {
@@ -47,7 +48,8 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
     TI_NOT_IMPLEMENTED
   } else if (params.use_cached) {
     if (caching_allocator_ == nullptr) {
-      caching_allocator_ = std::make_unique<AmdgpuCachingAllocator>(this);
+      caching_allocator_ = std::make_unique<CachingAllocator>(
+          this, false /*merge_upon_release*/);
     }
     info.ptr = caching_allocator_->allocate(params);
     AMDGPUDriver::get_instance().memset((void *)info.ptr, 0, info.size);
@@ -75,7 +77,7 @@ void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
     if (caching_allocator_ == nullptr) {
-      TI_ERROR("the AmdgpuCachingAllocator is not initialized");
+      TI_ERROR("the CachingAllocator is not initialized");
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {

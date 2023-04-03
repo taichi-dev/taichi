@@ -4,12 +4,14 @@
 
 #include "taichi/common/core.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
-#include "taichi/rhi/amdgpu/amdgpu_caching_allocator.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
 
 namespace taichi {
 namespace lang {
+
+class CachineAllocator;
+
 namespace amdgpu {
 
 class AmdgpuCommandList : public CommandList {
@@ -109,7 +111,7 @@ class AmdgpuDevice : public LlvmDevice {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
-  std::unique_ptr<AmdgpuCachingAllocator> caching_allocator_{nullptr};
+  std::unique_ptr<CachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace amdgpu

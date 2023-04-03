@@ -95,11 +95,9 @@ class LlvmProgramImpl : public ProgramImpl {
   /**
    * Initializes the runtime system for LLVM based backends.
    */
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override {
-    runtime_exec_->materialize_runtime(memory_pool, profiler,
-                                       result_buffer_ptr);
+    runtime_exec_->materialize_runtime(profiler, result_buffer_ptr);
   }
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {

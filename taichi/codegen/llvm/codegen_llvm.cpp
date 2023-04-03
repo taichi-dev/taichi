@@ -980,8 +980,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
         formats += data_type_format(arg_stmt->ret_type);
       } else {
         args.push_back(value_for_printf(value, arg_stmt->ret_type));
-        formats += merge_printf_specifier(
-            format, data_type_format(arg_stmt->ret_type), current_arch());
+        formats += merge_printf_specifier(format,
+                                          data_type_format(arg_stmt->ret_type));
       }
     } else {
       auto arg_str = std::get<std::string>(content);

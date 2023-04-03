@@ -105,16 +105,15 @@ def test_print_matrix_string_format_with_spec(capfd):
         y[2] += 1.0
         print('hello {:.2f} world!'.format(x[None]))
         print('{:.3f} {:e} {:.2}'.format(y[2] * k, x[None] / k, y[2]))
-        print('hello {:+d} world!'.format(z[None]))
+        print('hello {:.10d} world!'.format(z[None]))
 
     func(233.3)
     ti.sync()
 
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
-    expected_out = '''hello [[-1.000000, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] world!
-[233.300003, 233.300003, 233.300003] [[-0.004286, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] [1.000000, 1.000000, 1.000000]
-hello [[0, 0, 0], [0, 0, 0]] world!
+    expected_out = '''hello [[-1.00, 0.00, 0.00], [0.00, 0.00, 0.00]] world!
+[233.300, 233.300, 233.300] [[-4.286326e-03, 0.000000e+00, 0.000000e+00], [0.000000e+00, 0.000000e+00, 0.000000e+00]] [1.00, 1.00, 1.00]
+hello [[0000000000, 0000000000, 0000000000], [0000000000, 0000000000, 0000000000]] world!
 '''
     assert out == expected_out and err == ''
 
@@ -185,16 +184,15 @@ def test_print_matrix_fstring_with_spec(capfd):
         y[2] += 1.0
         print(f'hello {x[None]:.2f} world!')
         print(f'{(y[2] * k):.3f} {(x[None] / k):e} {y[2]:.2}')
-        print(f'hello {z[None]:+d} world!')
+        print(f'hello {z[None]:.2d} world!')
 
     func(233.3)
     ti.sync()
 
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
-    expected_out = '''hello [[-1.000000, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] world!
-[233.300003, 233.300003, 233.300003] [[-0.004286, 0.000000, 0.000000], [0.000000, 0.000000, 0.000000]] [1.000000, 1.000000, 1.000000]
-hello [[0, 0, 0], [0, 0, 0]] world!
+    expected_out = '''hello [[-1.00, 0.00, 0.00], [0.00, 0.00, 0.00]] world!
+[233.300, 233.300, 233.300] [[-4.286326e-03, 0.000000e+00, 0.000000e+00], [0.000000e+00, 0.000000e+00, 0.000000e+00]] [1.00, 1.00, 1.00]
+hello [[00, 00, 00], [00, 00, 00]] world!
 '''
     assert out == expected_out and err == ''
 
@@ -335,8 +333,8 @@ def test_print_string_format_with_spec(capfd):
     def func(k: ti.f32):
         print(123)
         print("{:d} abc".format(123))
-        print("{: } {:+} {:10d}".format(1, 2, 3))
-        print("{:.2} {name:D} {value:d}".format(k, name=999, value=123))
+        print("{:i} {:.1} {:.10d}".format(1, 2, 3))
+        print("{:.2} {name:i} {value:d}".format(k, name=999, value=123))
         name = 123.4
         value = 456.7
         print("{:.2e} {name:.3G} {value:.4f}".format(k, name=name,
@@ -345,12 +343,11 @@ def test_print_string_format_with_spec(capfd):
     func(233.3)
     ti.sync()
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
     expected_out = '''123
 123 abc
-1 2 3
-233.300003 999 123
-233.300003 123.400002 456.700012
+1 2 0000000003
+233.30 999 123
+2.33e+02 123 456.7000
 '''
     assert out == expected_out and err == ''
 
@@ -397,7 +394,6 @@ def test_print_string_format_with_positional_arg(capfd):
     func(233.3)
     ti.sync()
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
     expected_out = '''1 2 3
 1 2 3
 1 3 2 233.300003 3 233.300003 3 233.300003
@@ -411,19 +407,18 @@ def test_print_string_format_with_positional_arg(capfd):
 def test_print_string_format_with_positional_arg_with_spec(capfd):
     @ti.kernel
     def func(k: ti.f32):
-        print("{0:D} {1:} {2:+i}".format(1, 2, 3))
-        print("{2:d} {1: } {:-10}".format(3, 2, 1))
+        print("{0:d} {1:} {2:i}".format(1, 2, 3))
+        print("{2:d} {1:.2} {:.10}".format(3, 2, 1))
         print(
-            "{2:.1} {:.2} {1:.3} {k:.4e} {0:.5} {k:.6f} {0:.5} {k:.4g}".format(
+            "{2:.1} {:.2} {1:.3} {k:.4e} {0:.5} {k:.5f} {0:.5} {k:.4g}".format(
                 3., 2., 1., k=k))
 
     func(233.3)
     ti.sync()
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
     expected_out = '''1 2 3
-1 2 3
-1.000000 3.000000 2.000000 233.300003 3.000000 233.300003 3.000000 233.300003
+1 02 0000000003
+1.0 3.00 2.000 2.3330e+02 3.00000 233.30000 3.00000 233.3
 '''
     assert out == expected_out and err == ''
 
@@ -498,14 +493,13 @@ def test_print_fstring_with_spec(capfd):
     @ti.kernel
     def func(i: ti.i32, f: ti.f32):
         print(
-            f'qwe {foo1(1):d} {(foo1(2) * 2 - 1):10d} {i} {f:.1f} {4} {True} {1.23}'
+            f'qwe {foo1(1):d} {(foo1(2) * 2 - 1):.10d} {i} {f:.1f} {4} {True} {1.23}'
         )
 
     func(123, 4.56)
     ti.sync()
     out, err = capfd.readouterr()
-    # TODO: format specifiers are ignored for now
-    expected_out = '''qwe 2 5 123 4.560000 4 True 1.23
+    expected_out = '''qwe 2 0000000005 123 4.6 4 True 1.23
 '''
     assert out == expected_out and err == ''
 

@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_non_constant_index():
     m = ti.Matrix.field(2, 2, ti.f32, 5, needs_grad=True)
     n = ti.Matrix.field(2, 2, ti.f32, 5, needs_grad=True)

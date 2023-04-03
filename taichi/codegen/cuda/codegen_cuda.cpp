@@ -39,7 +39,7 @@ static bool is_half2(DataType dt) {
 class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
-  int dynamic_shared_array_bytes{0};
+  size_t dynamic_shared_array_bytes{0};
 
   explicit TaskCodeGenCUDA(const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
@@ -166,16 +166,21 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     // Override shared memory codegen logic for large shared memory
     if (stmt->ret_type->is<TensorType>() && stmt->is_shared) {
       auto tensor_type = stmt->ret_type->cast<TensorType>();
-      size_t shared_array_threshold = 49152;
       size_t shared_array_bytes =
           tensor_type->get_num_elements() *
           data_type_size(tensor_type->get_element_type());
-      if (shared_array_bytes > shared_array_threshold) {
+      if (shared_array_bytes > cuda_dynamic_shared_array_threshold_bytes) {
         if (dynamic_shared_array_bytes > 0) {
+          /* Current version only allows one dynamic shared array allocation,
+           * otherwise the results could be wrong.
+           * However, we should be able to collect multiple user allocations
+           * and transparently apply a proper offset.
+           *
+           * TODO: remove the limits.
+           */
           TI_ERROR(
               "Only one single large shared array instance is allowed in "
-              "current "
-              "version.")
+              "current version.")
         }
         // Clear tensor shape for dynamic shared memory.
         tensor_type->set_shape(std::vector<int>({0}));

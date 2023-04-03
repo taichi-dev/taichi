@@ -30,4 +30,11 @@ KernelCompilationManager &ProgramImpl::get_kernel_compilation_manager() {
   return *kernel_com_mgr_;
 }
 
+KernelLauncher &ProgramImpl::get_kernel_launcher() {
+  if (kernel_launcher_) {
+    return *kernel_launcher_;
+  }
+  return *(kernel_launcher_ = make_kernel_launcher());
+}
+
 }  // namespace taichi::lang

@@ -7,6 +7,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/kernel_launcher.h"
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/codegen/kernel_compiler.h"
@@ -171,11 +172,18 @@ class ProgramImpl {
 
   KernelCompilationManager &get_kernel_compilation_manager();
 
+  KernelLauncher &get_kernel_launcher();
+
  protected:
   virtual std::unique_ptr<KernelCompiler> make_kernel_compiler() = 0;
 
+  virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() {
+    TI_NOT_IMPLEMENTED;
+  }
+
  private:
   std::unique_ptr<KernelCompilationManager> kernel_com_mgr_;
+  std::unique_ptr<KernelLauncher> kernel_launcher_;
 };
 
 }  // namespace taichi::lang

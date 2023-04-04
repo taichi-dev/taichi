@@ -803,9 +803,9 @@ def test_matrix_ndarray_oob():
 def test_mismatched_index_python_scope():
     x = ti.ndarray(dtype=ti.f32, shape=(4, 4))
     with pytest.raises(TaichiIndexError,
-                       match=r'2d ndarray indexed with 1-d indices'):
+                       match=r'2d ndarray indexed with 1d indices'):
         x[0]
 
     with pytest.raises(TaichiIndexError,
-                       match=r'2d ndarray indexed with 3-d indices'):
+                       match=r'2d ndarray indexed with 3d indices'):
         x[0, 0, 0]

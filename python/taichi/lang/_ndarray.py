@@ -215,7 +215,7 @@ class Ndarray:
             key = (key, )
         if len(key) != len(self.arr.total_shape()):
             raise TaichiIndexError(
-                f'{len(self.arr.total_shape())}d ndarray indexed with {len(key)}-d indices: {key}'
+                f'{len(self.arr.total_shape())}d ndarray indexed with {len(key)}d indices: {key}'
             )
         return key
 

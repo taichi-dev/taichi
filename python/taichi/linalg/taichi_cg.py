@@ -92,7 +92,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             update_p()
             old_rTr = new_rTr
             if not quiet:
-                print(f'>>> Iter = {i+1:4}, Residual = {(new_rTr):e}')
+                print(f'>>> Iter = {i+1:4}, Residual = {sqrt(new_rTr):e}')
 
     solve()
     vector_fields_snode_tree.destroy()

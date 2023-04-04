@@ -18,13 +18,9 @@ class UnifiedAllocator;
 
 class TI_DLL_EXPORT MemoryPool {
  public:
-  static MemoryPool &get_instance(Arch arch);
+  static const size_t page_size;
 
-  std::vector<std::unique_ptr<UnifiedAllocator>> allocators;
-  static constexpr std::size_t default_allocator_size =
-      1 << 30;                                    // 1 GB per allocator
-  static constexpr size_t page_size = (1 << 12);  // 4 KB page size by default
-  std::mutex mut_allocators;
+  static MemoryPool &get_instance(Arch arch);
 
   void *allocate(std::size_t size,
                  std::size_t alignment,
@@ -33,16 +29,18 @@ class TI_DLL_EXPORT MemoryPool {
   void reset();
 
   ~MemoryPool();
-  MemoryPool(Arch arch);
 
  private:
+  MemoryPool(Arch arch);
+
   void *allocate_raw_memory(std::size_t size);
   void deallocate_raw_memory(void *ptr);
 
   // All the raw memory allocated from OS/Driver
   // We need to keep track of them to guarantee that they are freed
   std::map<void *, std::size_t> raw_memory_chunks_;
-
+  std::unique_ptr<UnifiedAllocator> allocator_;
+  std::mutex mut_allocation_;
   Arch arch_;
 
   friend class UnifiedAllocator;

@@ -51,6 +51,11 @@ class SNodeRwAccessorsBank {
 
   Accessors get(SNode *snode);
 
+  void remove_cached_kernels(const SNode *snode) {
+    if (snode_to_kernels_.find(snode) != snode_to_kernels_.end())
+      snode_to_kernels_.erase(snode);
+  }
+
  private:
   Program *const program_;
   std::unordered_map<const SNode *, RwKernels> snode_to_kernels_;

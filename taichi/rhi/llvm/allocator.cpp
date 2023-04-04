@@ -3,7 +3,8 @@
 
 namespace taichi::lang {
 
-CachingAllocator::CachingAllocator(LlvmDevice *device) : device_(device) {
+CachingAllocator::CachingAllocator(LlvmDevice *device, bool merge_upon_release)
+    : device_(device), merge_upon_release_(merge_upon_release) {
 }
 
 void CachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
@@ -56,7 +57,11 @@ uint64_t *CachingAllocator::allocate(
 }
 
 void CachingAllocator::release(size_t sz, uint64_t *ptr) {
-  merge_and_insert(reinterpret_cast<uint8_t *>(ptr), sz);
+  if (merge_upon_release_) {
+    merge_and_insert(reinterpret_cast<uint8_t *>(ptr), sz);
+  } else {
+    mem_blocks_.insert(std::make_pair(sz, reinterpret_cast<uint8_t *>(ptr)));
+  }
 }
 
 }  // namespace taichi::lang

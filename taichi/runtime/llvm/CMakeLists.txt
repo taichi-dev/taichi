@@ -10,6 +10,7 @@ target_sources(llvm_runtime
     llvm_aot_module_builder.cpp
     launch_arg_info.cpp
     snode_tree_buffer_manager.cpp
+    kernel_launcher.cpp
   )
 
 target_include_directories(llvm_runtime

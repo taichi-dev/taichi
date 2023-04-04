@@ -17,6 +17,7 @@
 
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
+#include "fp16.h"
 
 namespace taichi::lang {
 namespace spirv {
@@ -222,6 +223,12 @@ class TaskCodegen : public IRVisitor {
       spirv::SType stype = ir_->get_primitive_type(dt);
 
       if (dt->is_primitive(PrimitiveTypeID::f32)) {
+        return ir_->float_immediate_number(
+            stype, static_cast<double>(const_val.val_f32), false);
+      } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        // Ref: See taichi::lang::TypedConstant::TypedConstant()
+        // FP16 is stored as FP32 on host side,
+        // as some CPUs does not have native FP16 (and no libc support)
         return ir_->float_immediate_number(
             stype, static_cast<double>(const_val.val_f32), false);
       } else if (dt->is_primitive(PrimitiveTypeID::i32)) {

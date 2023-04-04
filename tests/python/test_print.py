@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import taichi as ti
@@ -9,6 +11,10 @@ vk_on_mac = (ti.vulkan, 'Darwin')
 #TODO: capfd doesn't function well on CUDA backend on Windows
 cuda_on_windows = (ti.cuda, 'Windows')
 
+
+if sys.version_info >= (3, 8):
+    # Import the test case only if the Python version is >= 3.8
+    from .py38_only import test_print_docs_matrix_self_documenting_exp, test_print_docs_scalar_self_documenting_exp
 
 # Not really testable..
 # Just making sure it does not crash
@@ -250,8 +256,6 @@ def test_print_docs_scalar(capfd):
         print(f'a[0] = {a[0]:.1f}')
         # without conversion
         print(f'a[0] = {a[0]:.1}')
-        # with self-documenting expressions (Python 3.8+)
-        print(f'{a[0] = :.1f}')
 
         # formatted string via `str.format()` method
         print('a[0] = {}'.format(a[0]))
@@ -268,7 +272,6 @@ def test_print_docs_scalar(capfd):
     out, err = capfd.readouterr()
     expected_out = '''a[0] = 1.000000
 a[0] = 1.000000
-a[0] = 1.0
 a[0] = 1.0
 a[0] = 1.0
 a[0] = 1.000000
@@ -298,8 +301,6 @@ def test_print_docs_matrix(capfd):
         print(f'm = {m:.1f}')
         # can omitting conversion
         print(f'm = {m:.1}')
-        # can with self-documenting expressions
-        print(f'{m = :g}')
 
         # formatted string via `str.format()` method is supported
         print('m = {}'.format(m))
@@ -316,7 +317,6 @@ def test_print_docs_matrix(capfd):
 m = [[20.000000, 300.000000, 4000.000000], [50000.000000, 600000.000000, 7000000.000000]]
 m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]
 m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]
-m = [[20, 300, 4000], [50000, 600000, 7e+06]]
 m = [[20.000000, 300.000000, 4000.000000], [50000.000000, 600000.000000, 7000000.000000]]
 m = [[2.000000e+01, 3.000000e+02, 4.000000e+03], [5.000000e+04, 6.000000e+05, 7.000000e+06]]
 m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]

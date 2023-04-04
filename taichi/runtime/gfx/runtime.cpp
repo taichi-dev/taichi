@@ -364,14 +364,14 @@ GfxRuntime::KernelHandle GfxRuntime::register_taichi_kernel(
     params.spirv_bins.push_back(std::move(spirv_src));
   }
   KernelHandle res;
-  res.id_ = ti_kernels_.size();
+  res.set_launch_id(ti_kernels_.size());
   ti_kernels_.push_back(std::make_unique<CompiledTaichiKernel>(params));
   return res;
 }
 
 void GfxRuntime::launch_kernel(KernelHandle handle,
                                LaunchContextBuilder &host_ctx) {
-  auto *ti_kernel = ti_kernels_[handle.id_].get();
+  auto *ti_kernel = ti_kernels_[handle.get_launch_id()].get();
 
 #if defined(__APPLE__)
   if (profiler_) {

@@ -195,8 +195,11 @@ class TaskCodegen : public IRVisitor {
         return ir_->float_immediate_number(
             stype, static_cast<double>(const_val.val_f32), false);
       } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        // Ref: See taichi::lang::TypedConstant::TypedConstant()
+        // FP16 is stored as FP32 on host side,
+        // as some CPUs does not have native FP16 (and no libc support)
         return ir_->float_immediate_number(
-            stype, double(fp16_ieee_to_fp32_value(const_val.val_u16)), false);
+            stype, static_cast<double>(const_val.val_f32), false);
       } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
         return ir_->int_immediate_number(
             stype, static_cast<int64_t>(const_val.val_i32), false);

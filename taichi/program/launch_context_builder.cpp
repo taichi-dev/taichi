@@ -145,7 +145,9 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg({i}, v);
-  ctx_->args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
+  if (kernel_->arch == Arch::cc) {
+    cc_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
+  }
   set_array_device_allocation_type(i, DevAllocType::kNone);
 }
 

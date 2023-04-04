@@ -23,9 +23,9 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
   this->add_kernel(std::move(ker));
   return [ker_ptr](LaunchContextBuilder &ctx) {
     for (auto &[idx, ptr] : ctx.array_ptrs) {
-      ctx.get_context().args[idx[0]] = (uint64)ptr;
+      ctx.cc_args[idx[0]] = (uint64)ptr;
     }
-    return ker_ptr->launch(&ctx.get_context());
+    return ker_ptr->launch(ctx);
   };
 }
 
@@ -102,7 +102,7 @@ void CCRuntime::compile() {
   execute(cc_program_impl_->config->cc_compile_cmd, obj_path_, src_path_);
 }
 
-void CCKernel::launch(RuntimeContext *ctx) {
+void CCKernel::launch(LaunchContextBuilder &ctx) {
   ActionRecorder::get_instance().record("launch_kernel",
                                         {
                                             ActionArg("kernel_name", name_),
@@ -181,10 +181,11 @@ CCFuncEntryType *CCProgramImpl::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll_->load_function("Tk_" + name));
 }
 
-CCContext *CCProgramImpl::update_context(RuntimeContext *ctx) {
+CCContext *CCProgramImpl::update_context(LaunchContextBuilder &ctx) {
   // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
-  std::memcpy(context_->args, ctx->args, taichi_max_num_args * sizeof(uint64));
-  context_->earg = (int *)ctx->extra_args;
+  std::memcpy(context_->args, ctx.cc_args,
+              taichi_max_num_args * sizeof(uint64));
+  context_->earg = (int *)ctx.get_context().extra_args;
   return context_.get();
 }
 

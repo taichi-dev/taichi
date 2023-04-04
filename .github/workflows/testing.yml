@@ -186,11 +186,20 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     strategy:
       matrix:
-        tags:
-          - [self-hosted, cuda, vulkan, cn, driver470]
-          - [self-hosted, cuda, vulkan, cn, driver510]
+        extra_markers:
+        - sm70
+        - not sm70
+        driver:
+        - driver470
+        - driver510
 
-    runs-on: ${{ matrix.tags }}
+    runs-on:
+    - self-hosted
+    - cn
+    - cuda
+    - vulkan
+    - ${{ matrix.driver }}
+    - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'Linux' }}
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -239,6 +248,7 @@ jobs:
           TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
+          EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -828,6 +838,7 @@ jobs:
     name: AOT Build and Test (GPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+    # TODO(proton): do we need to test both drivers?
     strategy:
       matrix:
         tags:

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 import taichi as ti
 from tests import test_utils
@@ -8,7 +9,8 @@ from tests import test_utils
 def test_large_shared_array():
     # Skip the GPUs prior to Ampere which doesn't have large dynamical shared memory.
     if ti.lang.impl.get_cuda_compute_capability() < 86:
-        return
+        pytest.skip('Skip the GPUs prior to Ampere')
+
     block_dim = 128
     nBlocks = 64
     N = nBlocks * block_dim

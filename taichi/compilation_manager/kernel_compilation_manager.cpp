@@ -217,6 +217,8 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
     if (iter != kernels.end()) {
       auto &k = iter->second;
       if (k.compiled_kernel_data) {
+        TI_DEBUG("Create kernel '{}' from cache (key='{}')",
+                 kernel_def.get_name(), kernel_key);
         return k.compiled_kernel_data.get();
       } else if (auto loaded = load_ckd(kernel_key, arch)) {
         TI_DEBUG("Create kernel '{}' from cache (key='{}')",

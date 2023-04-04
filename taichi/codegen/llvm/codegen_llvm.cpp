@@ -2546,9 +2546,9 @@ void TaskCodeGenLLVM::initialize_context() {
     fast_flags.setNoNaNs();
     fast_flags.setNoInfs();
     fast_flags.setNoSignedZeros();
-    // Don't use approximate reciprocals for division. It's too inaccurate even for Halide.
-    // fast_flags.setAllowReciprocal();
-    // Theoretically, setAllowReassoc could be setUnsafeAlgebra for earlier versions, but that
+    // Don't use approximate reciprocals for division. It's too inaccurate even
+    // for Halide. fast_flags.setAllowReciprocal(); Theoretically,
+    // setAllowReassoc could be setUnsafeAlgebra for earlier versions, but that
     // turns on all the flags.
     fast_flags.setAllowReassoc();
     fast_flags.setAllowContract(true);

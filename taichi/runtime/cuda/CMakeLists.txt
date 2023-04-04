@@ -6,6 +6,7 @@ target_sources(cuda_runtime
     aot_module_builder_impl.cpp
     aot_module_loader_impl.cpp
     jit_cuda.cpp
+    kernel_launcher.cpp
   )
 
 target_include_directories(cuda_runtime

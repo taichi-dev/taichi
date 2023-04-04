@@ -10,8 +10,6 @@ class OpenglProgramImpl : public ProgramImpl {
  public:
   explicit OpenglProgramImpl(CompileConfig &config);
   ~OpenglProgramImpl() override;
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -89,6 +87,8 @@ class OpenglProgramImpl : public ProgramImpl {
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
+  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

@@ -43,11 +43,6 @@ class LlvmProgramImpl : public ProgramImpl {
   /* ---- JIT-Compilation Interfaces ---- */
   /* ------------------------------------ */
 
-  // TODO(zhanlue): compile-time runtime split for LLVM::CodeGen
-  // For now, compile = codegen + convert
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
-
   void compile_snode_tree_types(SNodeTree *tree) override;
 
   // TODO(zhanlue): refactor materialize_snode_tree()
@@ -101,6 +96,10 @@ class LlvmProgramImpl : public ProgramImpl {
   }
 
   void destroy_snode_tree(SNodeTree *snode_tree) override {
+    // Invalid corresponding snode tree cache
+    if (cache_data_->fields.find(snode_tree->id()) != cache_data_->fields.end())
+      cache_data_->fields.erase(snode_tree->id());
+
     return runtime_exec_->destroy_snode_tree(snode_tree);
   }
 
@@ -273,6 +272,7 @@ class LlvmProgramImpl : public ProgramImpl {
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
 
  private:
   std::size_t num_snode_trees_processed_{0};

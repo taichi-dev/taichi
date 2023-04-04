@@ -4,6 +4,7 @@ add_library(amdgpu_runtime)
 target_sources(amdgpu_runtime
   PRIVATE
     jit_amdgpu.cpp
+    kernel_launcher.cpp
   )
 
 target_include_directories(amdgpu_runtime

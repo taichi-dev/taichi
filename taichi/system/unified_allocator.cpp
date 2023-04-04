@@ -15,67 +15,99 @@
 
 namespace taichi::lang {
 
-UnifiedAllocator::UnifiedAllocator(std::size_t size,
-                                   Arch arch,
-                                   bool is_exclusive)
-    : size_(size), arch_(arch), is_exclusive(is_exclusive) {
-  auto t = Time::get_time();
+const std::size_t UnifiedAllocator::default_allocator_size =
+    1 << 30;  // 1 GB per allocator
 
-  TI_TRACE("Allocating virtual address space of size {} MB",
-           size / 1024 / 1024);
-  void *ptr = MemoryPool::get_instance(arch).allocate_raw_memory(size);
-  data = (uint8 *)ptr;
+template <typename T>
+static void swap_erase_vector(std::vector<T> &vec, size_t idx) {
+  if (idx != vec.size() - 1) {
+    std::swap(vec[idx], vec.back());
+  }
 
-  TI_ASSERT(data != nullptr);
-  TI_ASSERT(uint64(data) % 4096 == 0);
+  vec.pop_back();
 
-  head = data;
-  tail = head + size;
-  TI_TRACE("Memory allocated. Allocation time = {:.3} s", Time::get_time() - t);
+  // swap it back so it does not influence the last memory chunk to reuse
+  if (idx != vec.size() - 1) {
+    std::swap(vec[idx], vec.back());
+  }
 }
 
-void *UnifiedAllocator::allocate(std::size_t size, std::size_t alignment) {
+UnifiedAllocator::UnifiedAllocator(Arch arch) : arch_(arch) {
+}
+
+void *UnifiedAllocator::allocate(std::size_t size,
+                                 std::size_t alignment,
+                                 bool exclusive) {
   // UnifiedAllocator never reuses the previously allocated memory
   // just move the head forward util depleting all the free memory
 
   // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
   // transparent to user code
-  if (is_exclusive && head != data) {
-    return nullptr;
+  std::size_t allocation_size = size;
+  if (!chunks_.empty() && !exclusive) {
+    // Try reusing the last chunk
+    MemoryChunk &current_chunk = chunks_.back();
+
+    auto head = (std::size_t)current_chunk.head;
+    auto tail = (std::size_t)current_chunk.tail;
+    auto data = (std::size_t)current_chunk.data;
+
+    auto ret = head + alignment - 1 - (head + alignment - 1) % alignment;
+    TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
+             size, (tail - head));
+    head = ret + allocation_size;
+
+    if (head <= tail) {
+      // success
+      TI_ASSERT(ret % alignment == 0);
+      current_chunk.head = (void *)head;
+      return (void *)ret;
+    }
   }
-  auto ret =
-      head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
-  TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data, size,
-           (tail - head));
-  head = ret + size;
-  if (head > tail) {
-    // allocation failed
-    return nullptr;
-  } else {
-    // success
-    TI_ASSERT((std::size_t)ret % alignment == 0);
-    return ret;
+
+  // Allocate a new chunk
+  MemoryChunk chunk;
+
+  if (!exclusive) {
+    // Do not allocate large memory chunks for "exclusive" allocation
+    // to increate memory & performance efficiency
+    allocation_size = std::max(allocation_size, default_allocator_size);
   }
+
+  TI_TRACE("Allocating virtual address space of size {} MB",
+           allocation_size / 1024 / 1024);
+
+  void *ptr =
+      MemoryPool::get_instance(arch_).allocate_raw_memory(allocation_size);
+  chunk.data = ptr;
+  chunk.head = chunk.data;
+  chunk.tail = (void *)((std::size_t)chunk.head + allocation_size);
+  chunk.is_exclusive = exclusive;
+
+  TI_ASSERT(chunk.data != nullptr);
+  TI_ASSERT(uint64(chunk.data) % MemoryPool::page_size == 0);
+
+  chunks_.emplace_back(std::move(chunk));
+  return ptr;
 }
 
-bool UnifiedAllocator::is_releasable(uint64_t *ptr) const {
-  return is_exclusive && (void *)ptr == data;
-}
-
-void UnifiedAllocator::release(size_t sz, uint64_t *ptr) {
+bool UnifiedAllocator::release(size_t sz, void *ptr) {
   // UnifiedAllocator is special in that it never reuses the previously
   // allocated memory We have to release the entire memory chunk to avoid memory
   // leak
-  MemoryPool::get_instance(arch_).deallocate_raw_memory(ptr);
-}
+  for (size_t chunk_idx = 0; chunk_idx < chunks_.size(); chunk_idx++) {
+    auto &chunk = chunks_[chunk_idx];
 
-taichi::lang::UnifiedAllocator::~UnifiedAllocator() {
-  // Raw memory is always fully managed by MemoryPool once allocated
-  // There's nothing to do here
-}
+    if (chunk.data == ptr) {
+      TI_ASSERT(chunk.is_exclusive);
+      swap_erase_vector<MemoryChunk>(chunks_, chunk_idx);
 
-void taichi::lang::UnifiedAllocator::memset(unsigned char val) {
-  std::memset(data, val, size_);
+      // MemoryPool is responsible for releasing the raw memory
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace taichi::lang

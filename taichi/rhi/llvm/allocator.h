@@ -12,7 +12,7 @@ namespace taichi::lang {
 
 class CachingAllocator {
  public:
-  explicit CachingAllocator(LlvmDevice *device);
+  explicit CachingAllocator(LlvmDevice *device, bool merge_upon_release = true);
 
   uint64_t *allocate(const LlvmDevice::LlvmRuntimeAllocParams &params);
   void release(size_t sz, uint64_t *ptr);
@@ -23,6 +23,9 @@ class CachingAllocator {
   std::set<std::pair<std::size_t, uint8_t *>> mem_blocks_;
   std::map<uint8_t *, std::size_t> ptr_map_;
   LlvmDevice *device_{nullptr};
+
+  // Allocator options
+  bool merge_upon_release_ = true;
 };
 
 }  // namespace taichi::lang

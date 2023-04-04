@@ -26,6 +26,7 @@ class CUDAContext {
   std::mutex lock_;
   KernelProfilerBase *profiler_;
   CUDADriver &driver_;
+  int max_shared_memory_bytes_;
   bool debug_;
   bool supports_mem_pool_;
 

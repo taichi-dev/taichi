@@ -102,6 +102,8 @@ class LaunchContextBuilder {
   const StructType *args_type{nullptr};
   size_t result_buffer_size{0};
   bool has_grad[taichi_max_num_args_total];
+
+  // TODO: remove this after CC backend is removed
   uint64 cc_args[taichi_max_num_args]{0};
 
   // Note that I've tried to group `array_runtime_size` and

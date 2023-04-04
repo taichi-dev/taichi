@@ -796,7 +796,7 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
-              dest->is<MatrixOfMatrixPtrStmt>());
+              dest->is<MatrixOfMatrixPtrStmt>() || dest->is<GetElementStmt>());
     TI_STMT_REG_FIELDS;
   }
 

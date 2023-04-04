@@ -40,7 +40,6 @@ MemoryPool::MemoryPool(Arch arch) : arch_(arch) {
              UnifiedAllocator::default_allocator_size / 1024 / 1024);
   } else {
     // TODO: implement CUDA allocation
-    TI_WARN("Missing CUDA implementation");
   }
 }
 

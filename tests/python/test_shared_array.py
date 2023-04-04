@@ -4,8 +4,11 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])
-def test_shared_array_nested_loop():
+@test_utils.test(arch=[ti.cuda])
+def test_large_shared_array():
+    # Skip the GPUs prior to Volta which doesn't have dynamical shared memory.
+    if ti.lang.impl.get_cuda_compute_capability() < 70:
+        return
     block_dim = 128
     nBlocks = 64
     N = nBlocks * block_dim
@@ -31,7 +34,7 @@ def test_shared_array_nested_loop():
         ti.loop_config(block_dim=block_dim)
         for i in range(nBlocks * block_dim):
             tid = i % block_dim
-            pad = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            pad = ti.simt.block.SharedArray((65536 // 4, ), ti.f32)
             acc = 0.0
             v_val = v[i]
             for k in range(nBlocks):
@@ -45,6 +48,58 @@ def test_shared_array_nested_loop():
     calc(v_arr, d_arr, reference)
     calc_shared_array(v_arr, d_arr, a_arr)
     assert np.allclose(reference, a_arr)
+
+
+@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])
+def test_multiple_shared_array():
+    block_dim = 128
+    nBlocks = 64
+    N = nBlocks * block_dim * 4
+    v_arr = np.random.randn(N).astype(np.float32)
+    d_arr = np.random.randn(N).astype(np.float32)
+    a_arr = np.zeros(N).astype(np.float32)
+    reference = np.zeros(N).astype(np.float32)
+
+    @ti.kernel
+    def calc(v: ti.types.ndarray(ndim=1), d: ti.types.ndarray(ndim=1),
+             a: ti.types.ndarray(ndim=1)):
+        for i in range(N):
+            acc = 0.0
+            v_val = v[i]
+            for j in range(N):
+                acc += v_val * d[j]
+            a[i] = acc
+
+    @ti.kernel
+    def calc_shared_array(v: ti.types.ndarray(ndim=1),
+                          d: ti.types.ndarray(ndim=1),
+                          a: ti.types.ndarray(ndim=1)):
+        ti.loop_config(block_dim=block_dim)
+        for i in range(nBlocks * block_dim * 4):
+            tid = i % block_dim
+            pad0 = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            pad1 = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            pad2 = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            pad3 = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            acc = 0.0
+            v_val = v[i]
+            for k in range(nBlocks):
+                pad0[tid] = d[k * block_dim * 4 + tid]
+                pad1[tid] = d[k * block_dim * 4 + block_dim + tid]
+                pad2[tid] = d[k * block_dim * 4 + 2 * block_dim + tid]
+                pad3[tid] = d[k * block_dim * 4 + 3 * block_dim + tid]
+                ti.simt.block.sync()
+                for j in range(block_dim):
+                    acc += v_val * pad0[j]
+                    acc += v_val * pad1[j]
+                    acc += v_val * pad2[j]
+                    acc += v_val * pad3[j]
+                ti.simt.block.sync()
+            a[i] = acc
+
+    calc(v_arr, d_arr, reference)
+    calc_shared_array(v_arr, d_arr, a_arr)
+    assert np.allclose(reference, a_arr, rtol=1e-4)
 
 
 @test_utils.test(arch=[ti.cuda, ti.vulkan, ti.amdgpu])

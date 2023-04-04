@@ -162,6 +162,11 @@ class ASTTransformer(Builder):
             if len(values) == 1:
                 values = values[0]
 
+        if isinstance(values, impl.Expr) and values.ptr.is_struct():
+            values = ctx.ast_builder.expand_exprs([values.ptr])
+            if len(values) == 1:
+                values = values[0]
+
         if not isinstance(values, collections.abc.Sequence):
             raise TaichiSyntaxError(f'Cannot unpack type: {type(values)}')
 

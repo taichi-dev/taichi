@@ -11,6 +11,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
+#include "taichi/program/kernel_launcher.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -86,11 +87,7 @@ class TI_DLL_EXPORT GfxRuntime {
   // To make Pimpl + std::unique_ptr work
   ~GfxRuntime();
 
-  class KernelHandle {
-   private:
-    friend class GfxRuntime;
-    int id_ = -1;
-  };
+  using KernelHandle = KernelLauncher::Handle;
 
   struct RegisterParams {
     TaichiKernelAttributes kernel_attribs;

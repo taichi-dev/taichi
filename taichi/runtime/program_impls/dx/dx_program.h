@@ -11,8 +11,6 @@ namespace taichi::lang {
 class Dx11ProgramImpl : public ProgramImpl {
  public:
   Dx11ProgramImpl(CompileConfig &config);
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -82,6 +80,8 @@ class Dx11ProgramImpl : public ProgramImpl {
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
+  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

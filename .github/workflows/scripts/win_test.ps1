@@ -34,25 +34,28 @@ echo wanted arch: $env:TI_WANTED_ARCHS
 Invoke pip install -r requirements_test.txt
 Invoke pip install "paddlepaddle==2.3.0; python_version < '3.10'"
 
-# Run C++ tests
-#
-# Temporary hack before CI Pipeline Overhaul
-if (nvidia-smi -L | Select-String "Tesla P4") {
-    Invoke python tests/run_tests.py --cpp -vr2 -t4 -m "not sm70"
+if ($env:EXTRA_TEST_MARKERS) {
+    $EXTRA_TEST_MARKERS_SOLO = @("-m", $env:EXTRA_TEST_MARKERS)
+    $EXTRA_TEST_MARKERS_AND = "and $env:EXTRA_TEST_MARKERS"
 } else {
-    Invoke python tests/run_tests.py --cpp -vr2 -t4
+    $EXTRA_TEST_MARKERS_SOLO = @()
+    $EXTRA_TEST_MARKERS_AND = ""
 }
 
+# Run C++ tests
+#
+Invoke python tests/run_tests.py --cpp -vr2 -t4 @EXTRA_TEST_MARKERS_SOLO
+
 # Fail fast, give priority to the error-prone tests
-Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu
+Invoke python tests/run_tests.py -vr2 -t1 -k "paddle" -a cpu @EXTRA_TEST_MARKERS_SOLO
 
 # Disable paddle for the remaining test
 $env:TI_ENABLE_PADDLE = "0"
 
 function RunIt($arch, $parallelism) {
     if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
-        Invoke python tests/run_tests.py -vr2 -t"$parallelism" -k "not torch and not paddle" -m "not run_in_serial" -a $arch
-        Invoke python tests/run_tests.py -vr2 -t1 -k "not torch and not paddle" -m "run_in_serial" -a $arch
+        Invoke python tests/run_tests.py -vr2 -t"$parallelism" -k "not torch and not paddle" -m "not run_in_serial $EXTRA_TEST_MARKERS_AND" -a $arch
+        Invoke python tests/run_tests.py -vr2 -t1 -k "not torch and not paddle" -m "run_in_serial $EXTRA_TEST_MARKERS_AND" -a $arch
     }
 }
 

@@ -16,6 +16,10 @@ class SNodeTree:
         if self.destroyed:
             raise TaichiRuntimeError('SNode tree has been destroyed')
         self.ptr.destroy_snode_tree(impl.get_runtime().prog)
+
+        # FieldExpression holds a SNode* to the place-SNode associated with a SNodeTree
+        # Therefore, we have to recompile all the kernels after destroying a SNodeTree
+        impl.get_runtime().clear_compiled_functions()
         self.destroyed = True
 
     @property

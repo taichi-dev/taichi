@@ -1,7 +1,9 @@
-import taichi as ti
 import math
+
 import pytest
-from taichi.linalg import taichi_cg_solver, LinearOperator
+from taichi.linalg import LinearOperator, taichi_cg_solver
+
+import taichi as ti
 from tests import test_utils
 
 
@@ -28,7 +30,7 @@ def test_taichi_cg(ti_dtype):
             r = v[i + 1, j] if i + 1 <= GRID - 1 else 0.0
             t = v[i, j + 1] if j + 1 <= GRID - 1 else 0.0
             b = v[i, j - 1] if j - 1 >= 0 else 0.0
-            # Avoid ill-conditioned matrix A            
+            # Avoid ill-conditioned matrix A
             mv[i, j] = 20 * v[i, j] - l - r - t - b
 
     @ti.kernel

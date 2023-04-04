@@ -43,6 +43,9 @@ class Expr(TaichiOperations):
     def is_tensor(self):
         return self.ptr.is_tensor()
 
+    def is_struct(self):
+        return self.ptr.is_struct()
+
     def element_type(self):
         return self.ptr.get_ret_type().element_type()
 

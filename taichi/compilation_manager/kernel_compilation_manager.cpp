@@ -216,16 +216,16 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
     auto iter = kernels.find(kernel_key);
     if (iter != kernels.end()) {
       auto &k = iter->second;
-      if (!k.compiled_kernel_data) {
-        if (auto loaded = load_ckd(kernel_key, arch)) {
-          TI_DEBUG("Create kernel '{}' from cache (key='{}')",
-                   kernel_def.get_name(), kernel_key);
-          TI_ASSERT(loaded->arch() == arch);
-          k.last_used_at = std::time(nullptr);
-          k.compiled_kernel_data = std::move(loaded);
-          updated_data_.push_back(&k);
-          return k.compiled_kernel_data.get();
-        }
+      if (k.compiled_kernel_data) {
+        return k.compiled_kernel_data.get();
+      } else if (auto loaded = load_ckd(kernel_key, arch)) {
+        TI_DEBUG("Create kernel '{}' from cache (key='{}')",
+                 kernel_def.get_name(), kernel_key);
+        TI_ASSERT(loaded->arch() == arch);
+        k.last_used_at = std::time(nullptr);
+        k.compiled_kernel_data = std::move(loaded);
+        updated_data_.push_back(&k);
+        return k.compiled_kernel_data.get();
       }
     }
   }

@@ -25,6 +25,7 @@ vk_on_mac = (ti.vulkan, 'Darwin')
 #TODO: capfd doesn't function well on CUDA backend on Windows
 cuda_on_windows = (ti.cuda, 'Windows')
 
+
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
                  exclude=[vk_on_mac, cuda_on_windows],
                  debug=True)

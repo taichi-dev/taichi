@@ -11,10 +11,11 @@ vk_on_mac = (ti.vulkan, 'Darwin')
 #TODO: capfd doesn't function well on CUDA backend on Windows
 cuda_on_windows = (ti.cuda, 'Windows')
 
-
 if sys.version_info >= (3, 8):
     # Import the test case only if the Python version is >= 3.8
-    from .py38_only import test_print_docs_matrix_self_documenting_exp, test_print_docs_scalar_self_documenting_exp
+    from .py38_only import (test_print_docs_matrix_self_documenting_exp,
+                            test_print_docs_scalar_self_documenting_exp)
+
 
 # Not really testable..
 # Just making sure it does not crash
@@ -264,7 +265,8 @@ def test_print_docs_scalar(capfd):
         # without conversion
         print('a[0] = {:.1}'.format(a[0]))
         # with positional arguments
-        print('a[3] = {3:.3f}, a[2] = {2:.2f}, a[1] = {1:.1f}, a[0] = {0:.0f}'.format(a[0], a[1], a[2], a[3]))
+        print('a[3] = {3:.3f}, a[2] = {2:.2f}, a[1] = {1:.1f}, a[0] = {0:.0f}'.
+              format(a[0], a[1], a[2], a[3]))
 
     func()
     ti.sync()

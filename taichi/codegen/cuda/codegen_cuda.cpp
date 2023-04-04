@@ -217,6 +217,16 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (op == UnaryOpType::frexp) {
+      auto stype = tlctx->get_data_type(stmt->ret_type);
+      auto res = builder->CreateAlloca(stype);
+      auto frac_ptr = builder->CreateStructGEP(stype, res, 0);
+      auto exp_ptr = builder->CreateStructGEP(stype, res, 1);
+      auto double_input = builder->CreateFPExt(
+          input, llvm::Type::getDoubleTy(*tlctx->get_this_thread_context()));
+      auto frac = call("__nv_frexp", double_input, exp_ptr);
+      builder->CreateStore(frac, frac_ptr);
+      llvm_val[stmt] = res;
     }
     UNARY_STD(exp)
     UNARY_STD(log)

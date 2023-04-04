@@ -75,3 +75,20 @@ def test_logic_not_invalid():
 
     with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
         test(1.0)
+
+
+@test_utils.test(arch=ti.cuda)
+def test_frexp():
+    @ti.kernel
+    def get_frac(x: ti.f32) -> ti.f32:
+        a, b = ti.frexp(x)
+        return a
+
+    assert test_utils.allclose(get_frac(1.4), 0.7)
+
+    @ti.kernel
+    def get_exp(x: ti.f32) -> ti.i32:
+        a, b = ti.frexp(x)
+        return b
+
+    assert get_exp(1.4) == 1

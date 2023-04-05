@@ -18,9 +18,8 @@ class KernelLauncher : public LLVM::KernelLauncher {
  public:
   using Base::Base;
 
- protected:
   void launch_llvm_kernel(Handle handle, LaunchContextBuilder &ctx) override;
-  Handle register_kernel(const LLVM::CompiledKernelData &compiled) override;
+  Handle register_llvm_kernel(const LLVM::CompiledKernelData &compiled) override;
 
  private:
   std::vector<Context> contexts_;

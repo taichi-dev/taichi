@@ -9,12 +9,12 @@
 #include "taichi/program/compile_config.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
-#include "taichi/runtime/cpu/aot_module_loader_impl.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 #include "taichi/rhi/cpu/cpu_device.h"
 
 #ifdef TI_WITH_CUDA
 #include "taichi/rhi/cuda/cuda_device.h"
-#include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 #endif
 
 namespace capi {
@@ -80,18 +80,25 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
   std::unique_ptr<taichi::lang::aot::Module> aot_module{nullptr};
 
   if (taichi::arch_is_cpu(config.arch)) {
-    taichi::lang::cpu::AotModuleParams aot_params;
+    taichi::lang::cpu::KernelLauncher::Config cfg;
+    cfg.executor = executor_.get();
+    taichi::lang::LLVM::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
+    aot_params.kernel_launcher =
+        std::make_unique<taichi::lang::cpu::KernelLauncher>(std::move(cfg));
     aot_params.module_path = module_path;
-    aot_module = taichi::lang::cpu::make_aot_module(aot_params);
-
+    aot_module = taichi::lang::LLVM::make_aot_module(std::move(aot_params));
   } else {
 #ifdef TI_WITH_CUDA
     TI_ASSERT(config.arch == taichi::Arch::cuda);
-    taichi::lang::cuda::AotModuleParams aot_params;
+    taichi::lang::cuda::KernelLauncher::Config cfg;
+    cfg.executor = executor_.get();
+    taichi::lang::LLVM::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
+    aot_params.kernel_launcher =
+        std::make_unique<taichi::lang::cpu::KernelLauncher>(std::move(cfg));
     aot_params.module_path = module_path;
-    aot_module = taichi::lang::cuda::make_aot_module(aot_params);
+    aot_module = taichi::lang::LLVM::make_aot_module(std::move(aot_params));
 #else
     TI_NOT_IMPLEMENTED;
 #endif
@@ -102,12 +109,12 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
      ready yet.
   */
   auto *llvm_aot_module =
-      dynamic_cast<taichi::lang::LlvmAotModule *>(aot_module.get());
+      dynamic_cast<taichi::lang::LLVM::LlvmAotModule *>(aot_module.get());
   TI_ASSERT(llvm_aot_module != nullptr);
   for (size_t i = 0; i < llvm_aot_module->get_num_snode_trees(); i++) {
     auto *snode_tree = aot_module->get_snode_tree(std::to_string(i));
-    taichi::lang::allocate_aot_snode_tree_type(aot_module.get(), snode_tree,
-                                               this->result_buffer);
+    taichi::lang::LLVM::allocate_aot_snode_tree_type(
+        aot_module.get(), snode_tree, this->result_buffer);
   }
 
   return (TiAotModule)(new AotModule(*this, std::move(aot_module)));

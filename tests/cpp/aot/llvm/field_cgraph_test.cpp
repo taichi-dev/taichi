@@ -3,14 +3,14 @@
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 #include "taichi/system/memory_pool.h"
-#include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 
 #ifdef TI_WITH_CUDA
 
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 
 #endif
 
@@ -25,7 +25,7 @@ void run_graph_tests(aot::Module *mod,
                      uint64 *result_buffer) {
   // Initialize SNodeTree
   aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
-  allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
+  LLVM::allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
 
   /* Test with Graph */
   // Prepare & Run "init" Graph
@@ -54,14 +54,17 @@ TEST(LlvmCGraph, CpuField) {
   uint64 *result_buffer{nullptr};
   exec.materialize_runtime(kNoProfiler, &result_buffer);
 
-  cpu::AotModuleParams aot_params;
+  LLVM::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
   aot_params.executor_ = &exec;
-  std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
+  aot_params.kernel_launcher =
+      std::make_unique<cpu::KernelLauncher>(cpu::KernelLauncher::Config{&exec});
+  std::unique_ptr<aot::Module> mod =
+      LLVM::make_aot_module(std::move(aot_params));
 
   run_graph_tests(mod.get(), &exec, result_buffer);
 }
@@ -79,14 +82,16 @@ TEST(LlvmCGraph, CudaField) {
     uint64 *result_buffer{nullptr};
     exec.materialize_runtime(kNoProfiler, &result_buffer);
 
-    cuda::AotModuleParams aot_params;
+    LLVM::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
     aot_params.executor_ = &exec;
-    auto mod = cuda::make_aot_module(aot_params);
+    aot_params.kernel_launcher = std::make_unique<cpu::KernelLauncher>(
+        cpu::KernelLauncher::Config{&exec});
+    auto mod = LLVM::make_aot_module(std::move(aot_params));
 
     run_graph_tests(mod.get(), &exec, result_buffer);
   }

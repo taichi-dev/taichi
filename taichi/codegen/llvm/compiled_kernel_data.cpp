@@ -1,5 +1,6 @@
 #include "taichi/codegen/llvm/compiled_kernel_data.h"
 
+#include "llvm/IR/Verifier.h"
 #include "llvm/AsmParser/Parser.h"
 #include "llvm/Support/SourceMgr.h"
 
@@ -24,6 +25,20 @@ Arch CompiledKernelData::arch() const {
 
 std::unique_ptr<lang::CompiledKernelData> CompiledKernelData::clone() const {
   return std::make_unique<CompiledKernelData>(arch_, data_);
+}
+
+CompiledKernelData::Err CompiledKernelData::check() const {
+  const auto &compiled_data = data_.compiled_data;
+  const auto &tasks = compiled_data.tasks;
+  if (llvm::verifyModule(*compiled_data.module, &llvm::errs())) {
+    return Err::kCompiledKernelDataBroken;
+  }
+  for (const auto &t : tasks) {
+    if (compiled_data.module->getFunction(t.name) == nullptr) {
+      return Err::kCompiledKernelDataBroken;
+    }
+  }
+  return Err::kNoError;
 }
 
 CompiledKernelData::Err CompiledKernelData::load_impl(

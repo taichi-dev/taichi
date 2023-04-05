@@ -92,6 +92,7 @@ class CompiledKernelData {
     kOutOfMemory,
     kTiWithoutLLVM,
     kTiWithoutSpirv,
+    kCompiledKernelDataBroken,
     kUnknown,
   };
 

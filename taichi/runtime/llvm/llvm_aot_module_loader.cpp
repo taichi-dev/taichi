@@ -9,8 +9,7 @@ FunctionType LlvmAotModule::convert_module_to_function(
     LlvmOfflineCache::KernelCacheData &&loaded) {
   Arch arch = executor_->get_config().arch;
   auto *launcher = kernel_launcher_.get();
-  LLVM::CompiledKernelData ckd{arch,
-                               std::move(loaded.convert_to_llvm_ckd_data())};
+  LLVM::CompiledKernelData ckd{arch, loaded.convert_to_llvm_ckd_data()};
   auto handle = kernel_launcher_->register_llvm_kernel(ckd);
   return [handle, launcher](LaunchContextBuilder &ctx) {
     launcher->launch_llvm_kernel(handle, ctx);

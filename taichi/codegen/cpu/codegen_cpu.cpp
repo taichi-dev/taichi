@@ -303,10 +303,20 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   TI_ERROR_UNLESS(target, err_str);
 
   llvm::TargetOptions options;
+  if (compile_config.fast_math) {
+    options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    options.UnsafeFPMath = 1;
+    options.NoInfsFPMath = 1;
+    options.NoNaNsFPMath = 1;
+  } else {
+    options.AllowFPOpFusion = llvm::FPOpFusion::Strict;
+    options.UnsafeFPMath = 0;
+    options.NoInfsFPMath = 0;
+    options.NoNaNsFPMath = 0;
+  }
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
-
   llvm::legacy::FunctionPassManager function_pass_manager(module);
   llvm::legacy::PassManager module_pass_manager;
 

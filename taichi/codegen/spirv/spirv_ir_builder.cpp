@@ -1,5 +1,6 @@
 #include "taichi/codegen/spirv/spirv_ir_builder.h"
 #include "taichi/rhi/dx/dx_device.h"
+#include "fp16.h"
 
 namespace taichi::lang {
 
@@ -268,8 +269,7 @@ Value IRBuilder::float_immediate_number(const SType &dtype,
     return get_const(dtype, &data, cache);
   } else if (data_type_bits(dtype.dt) == 16) {
     float fvalue = static_cast<float>(value);
-    uint16_t *ptr = reinterpret_cast<uint16_t *>(&fvalue);
-    uint64_t data = ptr[0];
+    uint64_t data = fp16_ieee_from_fp32_value(fvalue);
     return get_const(dtype, &data, cache);
   } else {
     TI_ERROR("Type {} not supported.", dtype.dt->to_string());

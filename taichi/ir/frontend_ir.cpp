@@ -213,6 +213,19 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
         unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
+  if (type == UnaryOpType::frexp) {
+    std::vector<StructMember> elements;
+    elements.push_back(
+        {taichi::lang::TypeFactory::get_instance().get_primitive_real_type(64),
+         "mantissa", 0});
+    elements.push_back(
+        {taichi::lang::TypeFactory::get_instance().get_primitive_int_type(
+             32, /*is_signed=*/true),
+         "exponent", 8});
+    ret_type =
+        taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
+    return;
+  }
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);
@@ -1615,7 +1628,16 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (!expr->ret_type->is<TensorType>()) {
+    if (expr->ret_type->is<StructType>()) {
+      auto struct_type = expr->ret_type->as<StructType>();
+      auto num_elem = struct_type->get_num_elements();
+      for (int i = 0; i < num_elem; i++) {
+        std::vector<int> indices = {i};
+        auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));
+        elem.expr->ret_type = struct_type->get_element_type(indices);
+        expanded_exprs.push_back(elem);
+      }
+    } else if (!expr->ret_type->is<TensorType>()) {
       expanded_exprs.push_back(expr);
     } else {
       // Expand TensorType expr

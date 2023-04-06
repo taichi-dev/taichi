@@ -9,16 +9,19 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_aot_module_builder.h"
+#include "taichi/runtime/llvm/kernel_launcher.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/runtime/cuda/aot_module_builder_impl.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 #endif
 
 #if defined(TI_WITH_AMDGPU)
 #include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#include "taichi/runtime/amdgpu/kernel_launcher.h"
 #endif
 
 #if defined(TI_WITH_DX12)
@@ -30,59 +33,12 @@
 #include "taichi/codegen/llvm/compiled_kernel_data.h"
 
 namespace taichi::lang {
-namespace {
-FunctionType llvm_compiled_kernel_to_executable(
-    Arch arch,
-    TaichiLLVMContext *tlctx,
-    LlvmRuntimeExecutor *executor,
-    Kernel *kernel,
-    LLVMCompiledKernel llvm_compiled_kernel) {
-  TI_ASSERT(arch_uses_llvm(arch));
-
-  FunctionType func = nullptr;
-  if (arch_is_cpu(arch)) {
-    CPUModuleToFunctionConverter converter(tlctx, executor);
-    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
-  } else if (arch == Arch::cuda) {
-#if defined(TI_WITH_CUDA)
-    CUDAModuleToFunctionConverter converter(tlctx, executor);
-    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
-#endif
-  } else if (arch == Arch::amdgpu) {
-#if defined(TI_WITH_AMDGPU)
-    AMDGPUModuleToFunctionConverter converter(tlctx, executor);
-    func = converter.convert(kernel, std::move(llvm_compiled_kernel));
-#endif
-  } else if (arch == Arch::dx12) {
-    // Not implemented
-  }
-
-  if (!func) {
-    TI_NOT_IMPLEMENTED;
-  }
-  return func;
-}
-}  // namespace
-
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
     : ProgramImpl(config_),
       compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
-}
-
-FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
-                                      Kernel *kernel) {
-  // NOTE: Temporary implementation
-  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
-  auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled = mgr.load_or_compile(compile_config, {}, *kernel);
-  auto &llvm_data = dynamic_cast<const LLVM::CompiledKernelData &>(compiled);
-  return llvm_compiled_kernel_to_executable(
-      compile_config.arch, runtime_exec_->get_llvm_context(),
-      runtime_exec_.get(), kernel,
-      llvm_data.get_internal_data().compiled_data.clone());
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
@@ -120,17 +76,11 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
 
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
-  if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
+  if (config->arch == Arch::x64 || config->arch == Arch::arm64 ||
+      config->arch == Arch::cuda) {
+    return std::make_unique<LlvmAotModuleBuilder>(
+        get_kernel_compilation_manager(), *config, this);
   }
-
-#if defined(TI_WITH_CUDA)
-  if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
-  }
-#endif
 
 #if defined(TI_WITH_DX12)
   if (config->arch == Arch::dx12) {
@@ -174,6 +124,27 @@ std::unique_ptr<KernelCompiler> LlvmProgramImpl::make_kernel_compiler() {
   lang::LLVM::KernelCompiler::Config cfg;
   cfg.tlctx = runtime_exec_->get_llvm_context();
   return std::make_unique<lang::LLVM::KernelCompiler>(std::move(cfg));
+}
+
+std::unique_ptr<KernelLauncher> LlvmProgramImpl::make_kernel_launcher() {
+  LLVM::KernelLauncher::Config cfg;
+  cfg.executor = runtime_exec_.get();
+
+  if (arch_is_cpu(config->arch)) {
+    return std::make_unique<cpu::KernelLauncher>(std::move(cfg));
+  } else if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    return std::make_unique<cuda::KernelLauncher>(std::move(cfg));
+#endif
+  } else if (config->arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    return std::make_unique<amdgpu::KernelLauncher>(std::move(cfg));
+#endif
+  } else if (config->arch == Arch::dx12) {
+    // Not implemented
+  }
+
+  TI_NOT_IMPLEMENTED;
 }
 
 LlvmProgramImpl *get_llvm_program(Program *prog) {

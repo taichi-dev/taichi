@@ -3,9 +3,9 @@
 add_library(cpu_runtime)
 target_sources(cpu_runtime
   PRIVATE
-    aot_module_builder_impl.cpp
     aot_module_loader_impl.cpp
     jit_cpu.cpp
+    kernel_launcher.cpp
   )
 
 #TODO #4832, some path here should not be included as they are

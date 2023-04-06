@@ -1,7 +1,9 @@
 from math import sqrt
 
-import taichi as ti
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
+
+import taichi as ti
+
 
 @ti.data_oriented
 class LinearOperator:
@@ -25,7 +27,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         raise TaichiTypeError("Not supported dtype:", b.dtype)
     if b.shape != x.shape:
         raise TaichiRuntimeError("Dimension mismatch b.shape != x.shape.")
-    
+
     size = b.shape
     vector_fields_builder = ti.FieldsBuilder()
     p = ti.field(dtype=solver_dtype)

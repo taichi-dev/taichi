@@ -1,7 +1,7 @@
 from math import sqrt
 
 import taichi as ti
-
+from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
 
 @ti.data_oriented
 class LinearOperator:
@@ -9,23 +9,24 @@ class LinearOperator:
         self._matvec = matvec_kernel
 
     def matvec(self, x, Ax):
-        assert x.shape == Ax.shape, "Dimension mismatch x.shape != Ax.shape."
+        if x.shape != Ax.shape:
+            raise TaichiRuntimeError("Dimension mismatch x.shape != Ax.shape.")
         self._matvec(x, Ax)
 
 
 def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
-    assert b.dtype == x.dtype, "Dtype mismatch b.dtype != x.dtype."
+    if b.dtype != x.dtype:
+        raise TaichiTypeError("Dtype mismatch b.dtype != x.dtype.")
     if str(b.dtype) == 'f32':
         solver_dtype = ti.f32
     elif str(b.dtype) == 'f64':
         solver_dtype = ti.f64
     else:
-        print("Not supported dtype:", b.dtype)
-        exit()
-
-    assert b.shape == x.shape, "Dimension mismatch b.shape != x.shape."
+        raise TaichiTypeError("Not supported dtype:", b.dtype)
+    if b.shape != x.shape:
+        raise TaichiRuntimeError("Dimension mismatch b.shape != x.shape.")
+    
     size = b.shape
-
     vector_fields_builder = ti.FieldsBuilder()
     p = ti.field(dtype=solver_dtype)
     r = ti.field(dtype=solver_dtype)

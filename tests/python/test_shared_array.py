@@ -6,8 +6,8 @@ from tests import test_utils
 
 @test_utils.test(arch=[ti.cuda])
 def test_large_shared_array():
-    # Skip the GPUs prior to Volta which doesn't have dynamical shared memory.
-    if ti.lang.impl.get_cuda_compute_capability() < 70:
+    # Skip the GPUs prior to Ampere which doesn't have large dynamical shared memory.
+    if ti.lang.impl.get_cuda_compute_capability() < 86:
         return
     block_dim = 128
     nBlocks = 64

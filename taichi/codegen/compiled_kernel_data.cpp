@@ -181,6 +181,8 @@ std::string CompiledKernelData::get_err_msg(Err err) {
       return "The taichi is not built with llvm";
     case Err::kTiWithoutSpirv:
       return "The taichi is not built with spirv";
+    case Err::kCompiledKernelDataBroken:
+      return "The CompiledKernelData is broken";
     case Err::kUnknown:
       return "Unkown error";
   }

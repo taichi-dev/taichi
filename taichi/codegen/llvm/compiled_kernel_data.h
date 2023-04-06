@@ -52,6 +52,8 @@ class CompiledKernelData : public lang::CompiledKernelData {
   Arch arch() const override;
   std::unique_ptr<lang::CompiledKernelData> clone() const override;
 
+  Err check() const override;
+
   const InternalData &get_internal_data() const {
     return data_;
   }

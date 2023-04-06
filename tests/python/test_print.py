@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 import taichi as ti
@@ -8,6 +10,11 @@ vk_on_mac = (ti.vulkan, 'Darwin')
 
 #TODO: capfd doesn't function well on CUDA backend on Windows
 cuda_on_windows = (ti.cuda, 'Windows')
+
+if sys.version_info >= (3, 8):
+    # Import the test case only if the Python version is >= 3.8
+    from .py38_only import (test_print_docs_matrix_self_documenting_exp,
+                            test_print_docs_scalar_self_documenting_exp)
 
 
 # Not really testable..
@@ -229,6 +236,94 @@ def test_print_matrix_fstring_with_spec_mismatch():
                        match=r"'.2e' doesn't match 'i32'."):
         test_z()
     ti.sync()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_docs_scalar(capfd):
+    a = ti.field(ti.f32, 4)
+
+    @ti.kernel
+    def func():
+        a[0] = 1.0
+
+        # comma-separated string
+        print('a[0] =', a[0])
+
+        # f-string
+        print(f'a[0] = {a[0]}')
+        # with format specifier
+        print(f'a[0] = {a[0]:.1f}')
+        # without conversion
+        print(f'a[0] = {a[0]:.1}')
+
+        # formatted string via `str.format()` method
+        print('a[0] = {}'.format(a[0]))
+        # with format specifier
+        print('a[0] = {:.1f}'.format(a[0]))
+        # without conversion
+        print('a[0] = {:.1}'.format(a[0]))
+        # with positional arguments
+        print('a[3] = {3:.3f}, a[2] = {2:.2f}, a[1] = {1:.1f}, a[0] = {0:.0f}'.
+              format(a[0], a[1], a[2], a[3]))
+
+    func()
+    ti.sync()
+
+    out, err = capfd.readouterr()
+    expected_out = '''a[0] = 1.000000
+a[0] = 1.000000
+a[0] = 1.0
+a[0] = 1.0
+a[0] = 1.000000
+a[0] = 1.0
+a[0] = 1.0
+a[3] = 0.000, a[2] = 0.00, a[1] = 0.0, a[0] = 1
+'''
+    assert out == expected_out and err == ''
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],
+                 exclude=[vk_on_mac, cuda_on_windows],
+                 debug=True)
+def test_print_docs_matrix(capfd):
+    a = ti.field(ti.f32, 4)
+
+    @ti.kernel
+    def func():
+        m = ti.Matrix([[2e1, 3e2, 4e3], [5e4, 6e5, 7e6]], ti.f32)
+
+        # comma-seperated string is supported
+        print('m =', m)
+
+        # f-string is supported
+        print(f'm = {m}')
+        # can with format specifier
+        print(f'm = {m:.1f}')
+        # can omitting conversion
+        print(f'm = {m:.1}')
+
+        # formatted string via `str.format()` method is supported
+        print('m = {}'.format(m))
+        # can with format specifier
+        print('m = {:e}'.format(m))
+        # and can omitting conversion
+        print('m = {:.1}'.format(m))
+
+    func()
+    ti.sync()
+
+    out, err = capfd.readouterr()
+    expected_out = '''m = [[20.000000, 300.000000, 4000.000000], [50000.000000, 600000.000000, 7000000.000000]]
+m = [[20.000000, 300.000000, 4000.000000], [50000.000000, 600000.000000, 7000000.000000]]
+m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]
+m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]
+m = [[20.000000, 300.000000, 4000.000000], [50000.000000, 600000.000000, 7000000.000000]]
+m = [[2.000000e+01, 3.000000e+02, 4.000000e+03], [5.000000e+04, 6.000000e+05, 7.000000e+06]]
+m = [[20.0, 300.0, 4000.0], [50000.0, 600000.0, 7000000.0]]
+'''
+    assert out == expected_out and err == ''
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan],

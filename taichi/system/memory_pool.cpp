@@ -151,16 +151,42 @@ class CudaMemoryPool : public MemoryPool {
   CudaMemoryPool(Arch arch) {
     arch_ = arch;
     TI_ASSERT(arch_is_cuda(arch_));
+
+    // TODO(zhanlue): replace UnifiedAllocator with CachingAllocator
+    allocator_ = std::unique_ptr<UnifiedAllocator>(new UnifiedAllocator(arch));
   }
 
   void *allocate(std::size_t size,
                  std::size_t alignment,
                  bool releasable) override {
-    TI_NOT_IMPLEMENTED;
+    std::lock_guard<std::mutex> _(mut_allocation_);
+
+    // TODO(zhanlue): Replace UnifiedAllocator with Caching Allocator
+    // Here we reuse the UnifiedAllocator's allocation logic to perform
+    // pre-allocation, but ideally this preallocation logic should be fused into
+    // the Caching Allocator
+    TI_ASSERT(!releasable);
+    if (!allocator_) {
+      TI_ERROR("Memory pool is already destroyed");
+    }
+    TI_ASSERT(raw_memory_chunks_.empty());
+
+    void *ret = allocator_->allocate(size, alignment, true);
+    return ret;
   }
 
   void release(std::size_t size, void *ptr) override {
-    TI_NOT_IMPLEMENTED;
+    std::lock_guard<std::mutex> _(mut_allocation_);
+
+    if (!allocator_) {
+      TI_ERROR("Memory pool is already destroyed");
+    }
+
+    if (allocator_->release(size, ptr)) {
+      if (dynamic_cast<UnifiedAllocator *>(allocator_.get())) {
+        deallocate_raw_memory(ptr);  // release raw memory as well
+      }
+    }
   }
 
   void *allocate_raw_memory(std::size_t size) override {
@@ -181,6 +207,11 @@ class CudaMemoryPool : public MemoryPool {
       TI_ERROR("CUDA memory allocation ({} B) failed.", size);
     }
 
+    if (raw_memory_chunks_.count(ptr)) {
+      TI_ERROR("Memory address ({:}) is already allocated", ptr);
+    }
+
+    raw_memory_chunks_[ptr] = size;
     return ptr;
 #else
     TI_NOT_IMPLEMENTED;

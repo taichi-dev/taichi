@@ -10,10 +10,11 @@
 namespace taichi::lang {
 
 class HostMemoryPool;
+class CudaMemoryPool;
 
 // This class can only be accessed by MemoryPool
 class UnifiedAllocator {
- private:
+ public:
   struct MemoryChunk {
     bool is_exclusive;
     void *data;
@@ -21,6 +22,7 @@ class UnifiedAllocator {
     void *tail;
   };
 
+ private:
   static const std::size_t default_allocator_size;
 
   UnifiedAllocator(Arch arch);
@@ -35,6 +37,7 @@ class UnifiedAllocator {
   std::vector<MemoryChunk> chunks_;
 
   friend class HostMemoryPool;
+  friend class CudaMemoryPool;
 };
 
 }  // namespace taichi::lang

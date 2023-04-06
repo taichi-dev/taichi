@@ -15,8 +15,10 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
                                       DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
+  // TODO(zhanlue): replace MemoryPool::allocate_raw_memory() with
+  // MemoryPool::allocate()
   auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
-  void *ptr = mem_pool.allocate_raw_memory(params.size);
+  void *ptr = mem_pool.allocate(params.size, MemoryPool::page_size);
   if (ptr == nullptr) {
     return RhiResult::out_of_memory;
   }
@@ -73,8 +75,10 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
+    // TODO(zhanlue): replace MemoryPool::deallocate_raw_memory() with
+    // MemoryPool::release()
     auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
-    mem_pool.deallocate_raw_memory(info.ptr);
+    mem_pool.release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

@@ -18,16 +18,16 @@ namespace taichi::lang {
 const std::size_t UnifiedAllocator::default_allocator_size =
     1 << 30;  // 1 GB per allocator
 
-template <typename T>
-static void swap_erase_vector(std::vector<T> &vec, size_t idx) {
-  if (idx != vec.size() - 1) {
+static void remove_memory_chunk(std::vector<UnifiedAllocator::MemoryChunk> &vec,
+                                size_t idx) {
+  if (idx + 1 < vec.size()) {
     std::swap(vec[idx], vec.back());
   }
 
   vec.pop_back();
 
   // swap it back so it does not influence the last memory chunk to reuse
-  if (idx != vec.size() - 1) {
+  if (idx + 1 < vec.size()) {
     std::swap(vec[idx], vec.back());
   }
 }
@@ -100,7 +100,7 @@ bool UnifiedAllocator::release(size_t sz, void *ptr) {
 
     if (chunk.data == ptr) {
       TI_ASSERT(chunk.is_exclusive);
-      swap_erase_vector<MemoryChunk>(chunks_, chunk_idx);
+      remove_memory_chunk(chunks_, chunk_idx);
 
       // MemoryPool is responsible for releasing the raw memory
       return true;

@@ -45,10 +45,6 @@ class TI_DLL_EXPORT MemoryPool {
   Arch arch_;
 
   friend class UnifiedAllocator;
-
-  // TODO(zhanlue): remove this friend class once we have caching allocator
-  // fused
-  friend class cuda::CudaDevice;
 };
 
 }  // namespace taichi::lang

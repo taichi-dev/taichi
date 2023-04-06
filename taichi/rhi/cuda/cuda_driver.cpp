@@ -235,7 +235,8 @@ bool CUBLASDriver::load_cublas() {
    * it would confict with torch's cublas. When using libcublas.so.11, the
    * torch's cublas will be loaded.
    */
-  cublas_loaded_ = try_load_lib_any_version("cublas", "64_", {12, 11, 10});
+  // cublas_loaded_ = try_load_lib_any_version("cublas", "64_", {12, 11, 10});
+  cublas_loaded_ = load_lib("libcublas.so.11", "cublas64_11.dll");
   if (!cublas_loaded_) {
     return false;
   }

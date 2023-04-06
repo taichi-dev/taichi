@@ -80,7 +80,7 @@ if ("$env:TI_WANTED_ARCHS".Contains("cuda")) {
 RunIt opengl 4
 RunIt vulkan 4
 
-Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS"
+Invoke python tests/run_tests.py -vr2 -t1 -k "torch" -a "$env:TI_WANTED_ARCHS" @EXTRA_TEST_MARKERS_SOLO
 
 if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Info "Running release tests"

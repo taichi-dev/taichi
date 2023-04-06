@@ -4,6 +4,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
+#include "taichi/codegen/llvm/compiled_kernel_data.h"
 
 namespace taichi::lang {
 
@@ -63,6 +64,15 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
 
   // 3. Update AOT Cache
   cache_.fields[snode_tree_id] = std::move(field_cache);
+}
+
+LLVMCompiledKernel LlvmAotModuleBuilder::compile_kernel(Kernel *kernel) {
+  const auto &ckd =
+      compilation_manager_.load_or_compile(compile_config_, {}, *kernel);
+  TI_ASSERT(arch_uses_llvm(ckd.arch()));
+  return dynamic_cast<const LLVM::CompiledKernelData &>(ckd)
+      .get_internal_data()
+      .compiled_data.clone();
 }
 
 }  // namespace taichi::lang

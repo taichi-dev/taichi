@@ -313,10 +313,10 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(int id,
     : LLVMModuleBuilder(
           module == nullptr ? tlctx.new_module("kernel") : std::move(module),
           &tlctx),
-      task_codegen_id(id),
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
+      task_codegen_id(id),
       prog(kernel->program) {
   if (ir == nullptr)
     this->ir = kernel->ir.get();

@@ -11,14 +11,8 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()),
-      arg_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->args_size
-              : sizeof(uint64) * taichi_max_num_args_total)),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)),
+      arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
+      result_buffer_(std::make_unique<char[]>(kernel->ret_size)),
       ret_type_(kernel->ret_type),
       arg_buffer_size(kernel->args_size),
       args_type(kernel->args_type),
@@ -123,24 +117,23 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (!arch_uses_llvm(kernel_->arch)) {
+  if (kernel_->arch == Arch::cc) {
     return;
   }
   int offset = args_type->get_element_offset(index);
+  TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (arch_uses_llvm(kernel_->arch)) {
-    return get_struct_arg<T>({i});
-  }
-  return taichi_union_cast_with_different_sizes<T>(ctx_->args[i]);
+  return get_struct_arg<T>({i});
 }
 
 template <typename T>
 T LaunchContextBuilder::get_struct_arg(std::vector<int> index) {
   int offset = args_type->get_element_offset(index);
+  TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   return *(T *)(ctx_->arg_buffer + offset);
 }
 

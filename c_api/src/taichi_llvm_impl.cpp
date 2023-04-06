@@ -96,7 +96,7 @@ TiAotModule LlvmRuntime::load_aot_module(const char *module_path) {
     taichi::lang::LLVM::AotModuleParams aot_params;
     aot_params.executor_ = executor_.get();
     aot_params.kernel_launcher =
-        std::make_unique<taichi::lang::cpu::KernelLauncher>(std::move(cfg));
+        std::make_unique<taichi::lang::cuda::KernelLauncher>(std::move(cfg));
     aot_params.module_path = module_path;
     aot_module = taichi::lang::LLVM::make_aot_module(std::move(aot_params));
 #else

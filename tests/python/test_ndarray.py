@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
+from taichi.lang.exception import TaichiIndexError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 
@@ -796,3 +797,15 @@ def test_matrix_ndarray_oob():
         access_arr(input, 3, 5, 0, 1)
     with pytest.raises(AssertionError, match=r'Out of bound access'):
         access_arr(input, 2, -10, 1, 1)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_mismatched_index_python_scope():
+    x = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    with pytest.raises(TaichiIndexError,
+                       match=r'2d ndarray indexed with 1d indices'):
+        x[0]
+
+    with pytest.raises(TaichiIndexError,
+                       match=r'2d ndarray indexed with 3d indices'):
+        x[0, 0, 0]

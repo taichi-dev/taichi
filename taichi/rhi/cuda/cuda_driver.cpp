@@ -221,15 +221,14 @@ bool CUDADriverBase::try_load_lib_any_version(
     }
 #else
     for (auto version : versions_to_try) {
-      std::string lib_name_linux =
-          get_lib_name_linux(lib_name, version);
+      std::string lib_name_linux = get_lib_name_linux(lib_name, version);
       loader_ = std::make_unique<DynamicLoader>(lib_name_linux);
       loaded = loader_->loaded();
       if (loaded) {
         break;
       }
     }
-    if(!loaded) {
+    if (!loaded) {
       // Use the default version on linux.
       std::string lib_name_linux = "lib" + lib_name + ".so";
       loader_ = std::make_unique<DynamicLoader>(lib_name_linux);

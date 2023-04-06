@@ -27,11 +27,12 @@ class TaskCodeGenCPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenCPU(const CompileConfig &config,
+  TaskCodeGenCPU(int id,
+                 const CompileConfig &config,
                  TaichiLLVMContext &tlctx,
                  const Kernel *kernel,
                  IRNode *ir)
-      : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
+      : TaskCodeGenLLVM(id, config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -285,10 +286,11 @@ FunctionType CPUModuleToFunctionConverter::convert(
 }
 
 LLVMCompiledTask KernelCodeGenCPU::compile_task(
+    int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenCPU gen(config, get_taichi_llvm_context(), kernel, stmt);
+  TaskCodeGenCPU gen(task_codegen_id, config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
 }
 

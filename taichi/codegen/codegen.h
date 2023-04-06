@@ -60,6 +60,7 @@ class KernelCodeGen {
   virtual LLVMCompiledKernel compile_kernel_to_module();
 
   virtual LLVMCompiledTask compile_task(
+      int task_codegen_id,
       const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) {

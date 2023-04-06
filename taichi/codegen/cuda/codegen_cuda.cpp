@@ -41,11 +41,12 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
   using IRVisitor::visit;
   size_t dynamic_shared_array_bytes{0};
 
-  explicit TaskCodeGenCUDA(const CompileConfig &config,
+  explicit TaskCodeGenCUDA(int id,
+                           const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
                            const Kernel *kernel,
                            IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
+      : TaskCodeGenLLVM(id, config, tlctx, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -740,10 +741,12 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 };
 
 LLVMCompiledTask KernelCodeGenCUDA::compile_task(
+    int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenCUDA gen(config, get_taichi_llvm_context(), kernel, stmt);
+  TaskCodeGenCUDA gen(task_codegen_id, config, get_taichi_llvm_context(),
+                      kernel, stmt);
   return gen.run_compilation();
 }
 

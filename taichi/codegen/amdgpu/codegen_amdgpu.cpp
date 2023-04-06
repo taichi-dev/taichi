@@ -27,11 +27,12 @@ using namespace llvm;
 class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
-  TaskCodeGenAMDGPU(const CompileConfig &config,
+  TaskCodeGenAMDGPU(int id,
+                    const CompileConfig &config,
                     TaichiLLVMContext &tlctx,
                     const Kernel *kernel,
                     IRNode *ir = nullptr)
-      : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
+      : TaskCodeGenLLVM(id, config, tlctx, kernel, ir) {
   }
 
   llvm::Value *create_print(std::string tag,
@@ -483,10 +484,12 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
 };
 
 LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
+    int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenAMDGPU gen(config, get_taichi_llvm_context(), kernel, stmt);
+  TaskCodeGenAMDGPU gen(task_codegen_id, config, get_taichi_llvm_context(),
+                        kernel, stmt);
   return gen.run_compilation();
 }
 

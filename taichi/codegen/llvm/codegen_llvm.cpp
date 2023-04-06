@@ -316,8 +316,8 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(int id,
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
-      task_codegen_id(id),
-      prog(kernel->program) {
+      prog(kernel->program),
+      task_codegen_id(id) {
   if (ir == nullptr)
     this->ir = kernel->ir.get();
   initialize_context();

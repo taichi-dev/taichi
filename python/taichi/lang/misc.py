@@ -16,6 +16,7 @@ from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
 
+
 warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
 # ----------------------
@@ -766,11 +767,47 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
+"""Creates a 2D/3D sparse grid with each element is a struct. The struct is placed on a bitmasked snode.
+
+Args:
+    field_dict (dict): a dict, each item is like `name: type`.
+    shape (Tuple[int]): shape of the field.
+Returns:
+    x: the created sparse grid, which is a bitmasked `ti.Struct.field`.
+
+Examples::
+
+    
+    
+    grid[0, 0].pos = ti.math.vec3(1,2,3) #access
+    grid[0, 0].mass = 1.0
+    grid[0, 0].grid2particles[2] = 123
+    print(ti.sparse_grid_usage(grid)) # get the usage of the sparse grid, which is in [0,1]
+ 
+    # check if the element is active(is_active only works on the snode in a kernel)
+    @ti.kernel
+    def test(grid:ti.template()):
+        print(ti.is_active(grid.parent(), [1, 2])) 
+    test(grid) 
+"""
+def sparse_grid(field_dict, shape):
+    from taichi.lang import Struct, root
+    x = Struct.field(field_dict)
+    if len(shape) == 2:
+        snode = root.bitmasked(ij, shape)
+        snode.place(x)
+    elif len(shape) == 3:
+        snode = root.bitmasked(ijk, shape)
+        snode.place(x)
+    else:
+        raise Exception("Only 2D and 3D sparse grids are supported")
+    return x
+
 __all__ = [
     'i', 'ij', 'ijk', 'ijkl', 'ijl', 'ik', 'ikl', 'il', 'j', 'jk', 'jkl', 'jl',
     'k', 'kl', 'l', 'x86_64', 'x64', 'dx11', 'dx12', 'arm64', 'cc', 'cpu',
     'cuda', 'amdgpu', 'gles', 'gpu', 'metal', 'opengl', 'vulkan', 'extension',
     'loop_config', 'global_thread_idx', 'assume_in_range', 'block_local',
     'cache_read_only', 'init', 'mesh_local', 'no_activate', 'reset',
-    'mesh_patch_idx'
+    'mesh_patch_idx', 'sparse_grid'
 ]

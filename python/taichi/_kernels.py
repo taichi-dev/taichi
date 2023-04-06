@@ -9,7 +9,7 @@ from taichi.lang.impl import grouped, static, static_assert
 from taichi.lang.kernel_impl import func, kernel
 from taichi.lang.misc import loop_config
 from taichi.lang.simt import block, warp
-from taichi.lang.snode import deactivate
+from taichi.lang.snode import deactivate, is_active
 from taichi.types import ndarray_type, texture_type, vector
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f16, f32, f64, i32, u8
@@ -384,3 +384,28 @@ def blit_from_field_to_field(
         dst: template(), src: template(), offset: i32, size: i32):
     for i in range(size):
         dst[i + offset] = src[i]
+
+
+"""
+get the usage of the sparse grid, which is in [0,1]
+
+Args:
+    x(struct field): the sparse grid to be checked.
+Returns:
+    usage(f32): the usage of the sparse grid, which is in [0,1]
+    
+Examples::
+    print(ti.sparse_grid_usage(grid)) 
+"""
+@kernel
+def sparse_grid_usage(x:template())->f32:
+    cnt = 0
+    for I in grouped(x.parent()):
+        if is_active(x.parent(), I):
+            cnt+=1
+
+    total_grid = 1
+    for d in range(len(x.shape)):
+        total_grid *= x.shape[d]
+    usage =  cnt/total_grid
+    return usage

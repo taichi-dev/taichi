@@ -2551,8 +2551,6 @@ void TaskCodeGenLLVM::initialize_context() {
     // setAllowReassoc could be setUnsafeAlgebra for earlier versions, but that
     // turns on all the flags.
     fast_flags.setAllowReassoc();
-    fast_flags.setAllowContract(true);
-    fast_flags.setApproxFunc();
     builder->setFastMathFlags(fast_flags);
   }
 }

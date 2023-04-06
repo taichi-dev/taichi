@@ -220,10 +220,21 @@ bool CUDADriverBase::try_load_lib_any_version(
       }
     }
 #else
-    // Use the default version on linux.
-    std::string lib_name_linux = "lib" + lib_name + ".so";
-    loader_ = std::make_unique<DynamicLoader>(lib_name_linux);
-    loaded = loader_->loaded();
+    for (auto version : versions_to_try) {
+      std::string lib_name_linux =
+          get_lib_name_linux(lib_name, version);
+      loader_ = std::make_unique<DynamicLoader>(lib_name_linux);
+      loaded = loader_->loaded();
+      if (loaded) {
+        break;
+      }
+    }
+    if(!loaded) {
+      // Use the default version on linux.
+      std::string lib_name_linux = "lib" + lib_name + ".so";
+      loader_ = std::make_unique<DynamicLoader>(lib_name_linux);
+      loaded = loader_->loaded();
+    }
 #endif
   }
   return loaded;
@@ -235,8 +246,7 @@ bool CUBLASDriver::load_cublas() {
    * it would confict with torch's cublas. When using libcublas.so.11, the
    * torch's cublas will be loaded.
    */
-  // cublas_loaded_ = try_load_lib_any_version("cublas", "64_", {12, 11, 10});
-  cublas_loaded_ = load_lib("libcublas.so.11", "cublas64_11.dll");
+  cublas_loaded_ = try_load_lib_any_version("cublas", "64_", {12, 11, 10});
   if (!cublas_loaded_) {
     return false;
   }

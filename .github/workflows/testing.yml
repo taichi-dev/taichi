@@ -384,7 +384,18 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, windows, cuda, OpenGL]
+    strategy:
+      matrix:
+        extra_markers:
+        - sm70
+        - not sm70
+    runs-on:
+    - self-hosted
+    - cn
+    - windows
+    - cuda
+    - OpenGL
+    - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
     steps:
       - name: Workaround checkout Needed single revision issue
@@ -430,6 +441,7 @@ jobs:
           TI_SKIP_VERSION_CHECK: ON
           TI_DEVICE_MEMORY_GB: '1'
           TI_RUN_RELEASE_TESTS: '1'
+          EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

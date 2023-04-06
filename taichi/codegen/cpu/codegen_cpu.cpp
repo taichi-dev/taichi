@@ -290,7 +290,8 @@ LLVMCompiledTask KernelCodeGenCPU::compile_task(
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenCPU gen(task_codegen_id, config, get_taichi_llvm_context(), kernel, stmt);
+  TaskCodeGenCPU gen(task_codegen_id, config, get_taichi_llvm_context(), kernel,
+                     stmt);
   return gen.run_compilation();
 }
 

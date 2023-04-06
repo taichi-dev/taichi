@@ -108,11 +108,7 @@ class HostDeviceContextBlitter {
         TO_DEVICE(i64, int64)
         TO_DEVICE(u64, uint64)
         TO_DEVICE(f64, float64)
-        if (arg.dtype == PrimitiveTypeID::f16) {
-          auto d = fp16_ieee_from_fp32_value(host_ctx_.get_arg<float>(i));
-          reinterpret_cast<uint16 *>(device_ptr)[0] = d;
-          break;
-        }
+        TO_DEVICE(f16, uint16)
         TI_ERROR("Device does not support arg type={}",
                  PrimitiveType::get(arg.dtype).to_string());
       } while (false);

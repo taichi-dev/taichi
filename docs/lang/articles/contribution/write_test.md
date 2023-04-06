@@ -15,7 +15,7 @@ want to write a **test** to ensure that it functions properly.
 
 :::note
 
-Before running the test set by `pytest`, you need to install the corresponding
+Before running the test launcher `tests/run_tests.py`, you need to install the corresponding
 dependencies:
 ```bash
 pip install -r requirements_test.txt

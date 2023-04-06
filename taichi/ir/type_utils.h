@@ -161,25 +161,25 @@ inline TypedConstant get_max_value(DataType dt) {
 
 inline TypedConstant get_min_value(DataType dt) {
   if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    return {dt, std::numeric_limits<int8>::min()};
+    return {dt, std::numeric_limits<int8>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    return {dt, std::numeric_limits<int16>::min()};
+    return {dt, std::numeric_limits<int16>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    return {dt, std::numeric_limits<int32>::min()};
+    return {dt, std::numeric_limits<int32>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    return {dt, std::numeric_limits<int64>::min()};
+    return {dt, std::numeric_limits<int64>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    return {dt, std::numeric_limits<uint8>::min()};
+    return {dt, std::numeric_limits<uint8>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    return {dt, std::numeric_limits<uint16>::min()};
+    return {dt, std::numeric_limits<uint16>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    return {dt, std::numeric_limits<uint32>::min()};
+    return {dt, std::numeric_limits<uint32>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    return {dt, std::numeric_limits<uint64>::min()};
+    return {dt, std::numeric_limits<uint64>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    return {dt, std::numeric_limits<float32>::min()};
+    return {dt, std::numeric_limits<float32>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    return {dt, std::numeric_limits<float64>::min()};
+    return {dt, std::numeric_limits<float64>::lowest()};
   } else {
     TI_NOT_IMPLEMENTED;
   }

@@ -91,8 +91,8 @@ TEST(LlvmAotTest, CudaKernel) {
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
     aot_params.executor_ = &exec;
-    aot_params.kernel_launcher = std::make_unique<cpu::KernelLauncher>(
-        cpu::KernelLauncher::Config{&exec});
+    aot_params.kernel_launcher = std::make_unique<cuda::KernelLauncher>(
+        cuda::KernelLauncher::Config{&exec});
     auto mod = LLVM::make_aot_module(std::move(aot_params));
 
     auto *k_run = mod->get_kernel("run");

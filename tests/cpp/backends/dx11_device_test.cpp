@@ -151,6 +151,8 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
 
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
+  ker->finalize_rets();
+  ker->finalize_params();
   program->compile(*program->config, ker.get());
 }
 

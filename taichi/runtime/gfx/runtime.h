@@ -129,6 +129,10 @@ class TI_DLL_EXPORT GfxRuntime {
     return ndarrays_in_use_.count(id) > 0;
   }
 
+  static std::pair<const lang::StructType *, size_t>
+  get_struct_type_with_data_layout(const lang::StructType *old_ty,
+                                   const std::string &layout);
+
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;
 

@@ -175,6 +175,7 @@ std::unique_ptr<CompiledKernelData> KernelCompilationManager::compile_kernel(
   auto &compiler = *config_.kernel_compiler;
   auto ir = compiler.compile(compile_config, kernel_def);
   auto ckd = compiler.compile(compile_config, caps, kernel_def, *ir);
+  TI_ASSERT(ckd->check() == CompiledKernelData::Err::kNoError);
   return ckd;
 }
 
@@ -216,7 +217,11 @@ const CompiledKernelData *KernelCompilationManager::try_load_cached_kernel(
     auto iter = kernels.find(kernel_key);
     if (iter != kernels.end()) {
       auto &k = iter->second;
-      if (auto loaded = load_ckd(kernel_key, arch)) {
+      if (k.compiled_kernel_data) {
+        TI_DEBUG("Create kernel '{}' from cache (key='{}')",
+                 kernel_def.get_name(), kernel_key);
+        return k.compiled_kernel_data.get();
+      } else if (auto loaded = load_ckd(kernel_key, arch)) {
         TI_DEBUG("Create kernel '{}' from cache (key='{}')",
                  kernel_def.get_name(), kernel_key);
         TI_ASSERT(loaded->arch() == arch);
@@ -259,7 +264,12 @@ std::unique_ptr<CompiledKernelData> KernelCompilationManager::load_ckd(
     CompiledKernelData::Err err;
     auto ckd = CompiledKernelData::load(ifs, &err);
     if (err != CompiledKernelData::Err::kNoError) {
-      TI_DEBUG("Load cached CompiledKernelData file failed: {}",
+      TI_DEBUG("Load cache file {} failed: {}", filename,
+               CompiledKernelData::get_err_msg(err));
+      return nullptr;
+    }
+    if (auto err = ckd->check(); err != CompiledKernelData::Err::kNoError) {
+      TI_DEBUG("Check CompiledKernelData loaded from {} failed: {}", filename,
                CompiledKernelData::get_err_msg(err));
       return nullptr;
     }

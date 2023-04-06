@@ -286,7 +286,6 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 #include "taichi/program/context.h"
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
 
-STRUCT_FIELD_ARRAY(RuntimeContext, args);
 STRUCT_FIELD_ARRAY(RuntimeContext, grad_args);
 STRUCT_FIELD(RuntimeContext, runtime);
 STRUCT_FIELD(RuntimeContext, result_buffer)

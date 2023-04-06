@@ -71,7 +71,7 @@ class CCProgramImpl : public ProgramImpl {
   CCFuncEntryType *load_kernel(std::string const &name);
   void relink();
 
-  CCContext *update_context(RuntimeContext *ctx);
+  CCContext *update_context(LaunchContextBuilder &ctx);
   void context_to_result_buffer();
 
   void dump_cache_data_to_disk() override {

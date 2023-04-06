@@ -11,14 +11,8 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
     : kernel_(kernel),
       owned_ctx_(std::make_unique<RuntimeContext>()),
       ctx_(owned_ctx_.get()),
-      arg_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->args_size
-              : sizeof(uint64) * taichi_max_num_args_total)),
-      result_buffer_(std::make_unique<char[]>(
-          arch_uses_llvm(kernel->arch)
-              ? kernel->ret_size
-              : sizeof(uint64) * taichi_result_buffer_entries)),
+      arg_buffer_(std::make_unique<char[]>(kernel->args_size)),
+      result_buffer_(std::make_unique<char[]>(kernel->ret_size)),
       ret_type_(kernel->ret_type),
       arg_buffer_size(kernel->args_size),
       args_type(kernel->args_type),
@@ -28,7 +22,8 @@ LaunchContextBuilder::LaunchContextBuilder(CallableBase *kernel)
 }
 
 void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
+  auto dt = kernel_->args_type->get_element_type({arg_id});
+  TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -37,7 +32,6 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::f32)) {
     set_arg(arg_id, (float32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
@@ -59,11 +53,6 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
   } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
     set_arg(arg_id, (uint64)d);
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    if (!arch_uses_llvm(kernel_->arch)) {
-      // TODO: remove this once we refactored the SPIR-V based backends
-      set_arg(arg_id, (float32)d);
-      return;
-    }
     uint16 half = fp16_ieee_from_fp32_value((float32)d);
     set_arg(arg_id, half);
   } else {
@@ -72,7 +61,9 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 }
 
 void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
-  TI_ASSERT_INFO(!kernel_->parameter_list[arg_id].is_array,
+  auto dt = kernel_->args_type->get_element_type({arg_id});
+
+  TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
@@ -81,7 +72,6 @@ void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  auto dt = kernel_->parameter_list[arg_id].get_dtype();
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     set_arg(arg_id, (int32)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
@@ -127,27 +117,23 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
-  if (arg_buffer_size == 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends,
-    // and this function is no-op for these backends.
+  if (kernel_->arch == Arch::cc) {
     return;
   }
   int offset = args_type->get_element_offset(index);
+  TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }
 
 template <typename T>
 T LaunchContextBuilder::get_arg(int i) {
-  if (arg_buffer_size > 0) {
-    // Currently arg_buffer_size is always zero on non-LLVM-based backends
-    return get_struct_arg<T>({i});
-  }
-  return taichi_union_cast_with_different_sizes<T>(ctx_->args[i]);
+  return get_struct_arg<T>({i});
 }
 
 template <typename T>
 T LaunchContextBuilder::get_struct_arg(std::vector<int> index) {
   int offset = args_type->get_element_offset(index);
+  TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   return *(T *)(ctx_->arg_buffer + offset);
 }
 
@@ -159,7 +145,9 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg({i}, v);
-  ctx_->args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
+  if (kernel_->arch == Arch::cc) {
+    cc_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
+  }
   set_array_device_allocation_type(i, DevAllocType::kNone);
 }
 

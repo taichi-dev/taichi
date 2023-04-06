@@ -11,6 +11,7 @@
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/program_impl.h"
+#include "taichi/program/kernel_launcher.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -86,11 +87,7 @@ class TI_DLL_EXPORT GfxRuntime {
   // To make Pimpl + std::unique_ptr work
   ~GfxRuntime();
 
-  class KernelHandle {
-   private:
-    friend class GfxRuntime;
-    int id_ = -1;
-  };
+  using KernelHandle = KernelLauncher::Handle;
 
   struct RegisterParams {
     TaichiKernelAttributes kernel_attribs;
@@ -131,6 +128,10 @@ class TI_DLL_EXPORT GfxRuntime {
   bool used_in_kernel(DeviceAllocationId id) {
     return ndarrays_in_use_.count(id) > 0;
   }
+
+  static std::pair<const lang::StructType *, size_t>
+  get_struct_type_with_data_layout(const lang::StructType *old_ty,
+                                   const std::string &layout);
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;

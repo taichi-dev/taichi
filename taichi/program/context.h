@@ -16,11 +16,7 @@ struct RuntimeContext {
   char *arg_buffer{nullptr};
 
   LLVMRuntime *runtime{nullptr};
-  // args can contain:
-  // - primitive_types
-  // - raw ptrs: for external array, or torch-based ndarray
-  // - DeviceAllocation*: for taichi ndaray
-  uint64_t args[taichi_max_num_args_total];
+
   uint64_t grad_args[taichi_max_num_args_total];
   int32_t extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32_t cpu_thread_id;

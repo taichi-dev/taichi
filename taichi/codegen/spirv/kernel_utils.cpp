@@ -114,6 +114,9 @@ KernelContextAttributes::KernelContextAttributes(
     return bytes - offset;
   };
 
+  args_type_ = kernel.args_type;
+  rets_type_ = kernel.ret_type;
+
   TI_TRACE("args:");
   args_bytes_ = arange_args(
       &arg_attribs_vec_, 0, false,
@@ -123,6 +126,21 @@ KernelContextAttributes::KernelContextAttributes(
 
   TI_TRACE("rets:");
   rets_bytes_ = arange_args(&ret_attribs_vec_, 0, true, false);
+
+  TI_ASSERT(arg_attribs_vec_.size() == kernel.args_type->elements().size());
+  for (int i = 0; i < arg_attribs_vec_.size(); ++i) {
+    TI_ASSERT(arg_attribs_vec_[i].offset_in_mem ==
+              kernel.args_type->get_element_offset({i}));
+  }
+
+  TI_ASSERT(ret_attribs_vec_.size() == kernel.ret_type->elements().size());
+  for (int i = 0; i < ret_attribs_vec_.size(); ++i) {
+    TI_ASSERT(ret_attribs_vec_[i].offset_in_mem ==
+              kernel.ret_type->get_element_offset({i}));
+  }
+
+  TI_ASSERT(args_bytes_ == kernel.args_size);
+  TI_ASSERT(rets_bytes_ == kernel.ret_size);
 
   TI_TRACE("sizes: args={} rets={}", args_bytes(), rets_bytes());
   TI_ASSERT(has_rets() == (rets_bytes_ > 0));

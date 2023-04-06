@@ -29,8 +29,6 @@ class VulkanDeviceCreator;
 class VulkanProgramImpl : public ProgramImpl {
  public:
   explicit VulkanProgramImpl(CompileConfig &config);
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -96,10 +94,30 @@ class VulkanProgramImpl : public ProgramImpl {
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
 
+  // TODO: These three functions are the same in Vulkan, Metal, DX and OpenGL.
+  //   We should add a GfxProgramImpl base class for these functions.
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    return gfx::GfxRuntime::get_struct_type_with_data_layout(old_ty, layout);
+  }
+
+  std::string get_kernel_return_data_layout() override {
+    return "4-";
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    auto has_buffer_ptr = vulkan_runtime_->get_ti_device()->get_caps().get(
+        DeviceCapability::spirv_has_physical_storage_buffer);
+    return "1" + std::string(has_buffer_ptr ? "b" : "-");
+  };
+
   ~VulkanProgramImpl() override;
 
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
+  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::unique_ptr<vulkan::VulkanDeviceCreator> embedded_device_{nullptr};

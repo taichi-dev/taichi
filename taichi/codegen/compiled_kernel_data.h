@@ -2,11 +2,26 @@
 
 #include <string>
 #include <memory>
+#include <optional>
 #include <algorithm>
 
 #include "taichi/rhi/arch.h"
 
 namespace taichi::lang {
+
+class KernelLaunchHandle {
+ public:
+  void set_launch_id(int id) {
+    launch_id_ = id;
+  }
+
+  int get_launch_id() const {
+    return launch_id_;
+  }
+
+ private:
+  int launch_id_{-1};
+};
 
 class CompiledKernelDataFile {
  public:
@@ -77,6 +92,7 @@ class CompiledKernelData {
     kOutOfMemory,
     kTiWithoutLLVM,
     kTiWithoutSpirv,
+    kCompiledKernelDataBroken,
     kUnknown,
   };
 
@@ -100,6 +116,14 @@ class CompiledKernelData {
     return Err::kNoError;
   }
 
+  void set_handle(const KernelLaunchHandle &handle) const {
+    kernel_launch_handle_ = handle;
+  }
+
+  const std::optional<KernelLaunchHandle> &get_handle() const {
+    return kernel_launch_handle_;
+  }
+
   static std::unique_ptr<CompiledKernelData> load(std::istream &is, Err *p_err);
 
   static std::string get_err_msg(Err err);
@@ -114,6 +138,8 @@ class CompiledKernelData {
   static Creator *const spriv_creator;
 
   static std::unique_ptr<CompiledKernelData> create(Arch arch, Err &err);
+
+  mutable std::optional<KernelLaunchHandle> kernel_launch_handle_;
 };
 
 }  // namespace taichi::lang

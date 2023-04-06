@@ -569,16 +569,12 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     TI_TRACE("Allocating device memory {:.2f} GB",
              1.0 * prealloc_size / (1UL << 30));
 
-    Device::AllocParams preallocated_device_buffer_alloc_params;
-    preallocated_device_buffer_alloc_params.size = prealloc_size;
-    RhiResult res =
-        llvm_device()->allocate_memory(preallocated_device_buffer_alloc_params,
-                                       &preallocated_device_buffer_alloc_);
-    TI_ASSERT(res == RhiResult::success);
-    cuda::CudaDevice::AllocInfo preallocated_device_buffer_alloc_info =
-        llvm_device()->as<cuda::CudaDevice>()->get_alloc_info(
-            preallocated_device_buffer_alloc_);
-    preallocated_device_buffer_ = preallocated_device_buffer_alloc_info.ptr;
+    // TODO(zhanlue): replace MemoryPool::allocate_raw_memory() with
+    // MemoryPool::allocate()
+    auto &mem_pool = MemoryPool::get_instance(config_.arch);
+    preallocated_device_buffer_ =
+        (char *)mem_pool.allocate_raw_memory(prealloc_size);
+    TI_ASSERT(preallocated_device_buffer_ != nullptr);
 
     CUDADriver::get_instance().memset(preallocated_device_buffer_, 0,
                                       prealloc_size);

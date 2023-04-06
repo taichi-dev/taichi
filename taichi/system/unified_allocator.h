@@ -9,7 +9,7 @@
 
 namespace taichi::lang {
 
-class MemoryPool;
+class HostMemoryPool;
 
 // This class can only be accessed by MemoryPool
 class UnifiedAllocator {
@@ -34,7 +34,7 @@ class UnifiedAllocator {
   Arch arch_;
   std::vector<MemoryChunk> chunks_;
 
-  friend class MemoryPool;
+  friend class HostMemoryPool;
 };
 
 }  // namespace taichi::lang

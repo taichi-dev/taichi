@@ -22,28 +22,30 @@ class TI_DLL_EXPORT MemoryPool {
 
   static MemoryPool &get_instance(Arch arch);
 
-  void *allocate(std::size_t size,
-                 std::size_t alignment,
-                 bool releasable = false);
-  void release(std::size_t size, void *ptr);
-  void reset();
+  virtual void *allocate(std::size_t size,
+                         std::size_t alignment,
+                         bool releasable = false) = 0;
+  virtual void release(std::size_t size, void *ptr) = 0;
+  virtual void reset() = 0;
 
-  ~MemoryPool();
-
- private:
-  MemoryPool(Arch arch);
-
-  void *allocate_raw_memory(std::size_t size);
-  void deallocate_raw_memory(void *ptr);
+ protected:
+  virtual void *allocate_raw_memory(std::size_t size) = 0;
+  virtual void deallocate_raw_memory(void *ptr) = 0;
 
   // All the raw memory allocated from OS/Driver
   // We need to keep track of them to guarantee that they are freed
   std::map<void *, std::size_t> raw_memory_chunks_;
+
+  // TODO: replace with base class Allocator
   std::unique_ptr<UnifiedAllocator> allocator_;
   std::mutex mut_allocation_;
   Arch arch_;
 
   friend class UnifiedAllocator;
+
+  // TODO(zhanlue): remove this friend class once we have caching allocator
+  // fused
+  friend class LlvmRuntimeExecutor;
 };
 
 }  // namespace taichi::lang

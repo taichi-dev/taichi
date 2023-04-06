@@ -8,10 +8,12 @@ namespace taichi::lang {
 
 class LlvmAotModuleBuilder : public AotModuleBuilder {
  public:
-  explicit LlvmAotModuleBuilder(const CompileConfig &compile_config,
-                                LlvmProgramImpl *prog,
-                                TaichiLLVMContext &tlctx)
-      : compile_config_(compile_config), prog_(prog), tlctx_(tlctx) {
+  explicit LlvmAotModuleBuilder(KernelCompilationManager &compilation_manager,
+                                const CompileConfig &compile_config,
+                                LlvmProgramImpl *prog)
+      : compilation_manager_(compilation_manager),
+        compile_config_(compile_config),
+        prog_(prog) {
   }
 
   void dump(const std::string &output_dir,
@@ -19,7 +21,6 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
 
  protected:
   void add_per_backend(const std::string &identifier, Kernel *kernel) override;
-  virtual LLVMCompiledKernel compile_kernel(Kernel *kernel) = 0;
 
   void add_field_per_backend(const std::string &identifier,
                              const SNode *rep_snode,
@@ -29,23 +30,13 @@ class LlvmAotModuleBuilder : public AotModuleBuilder {
                              int row_num,
                              int column_num) override;
 
-  const LlvmOfflineCache &get_cache() {
-    return cache_;
-  }
-
-  const CompileConfig &get_compile_config() const {
-    return compile_config_;
-  }
-
-  TaichiLLVMContext &get_taichi_llvm_context() {
-    return tlctx_;
-  }
-
  private:
+  LLVMCompiledKernel compile_kernel(Kernel *kernel);
+
   mutable LlvmOfflineCache cache_;
+  KernelCompilationManager &compilation_manager_;
   const CompileConfig &compile_config_;
   LlvmProgramImpl *prog_ = nullptr;
-  TaichiLLVMContext &tlctx_;
 };
 
 }  // namespace taichi::lang

@@ -13,6 +13,9 @@
 namespace taichi::lang {
 
 class UnifiedAllocator;
+namespace cuda {
+class CudaDevice;
+}
 
 // A memory pool that runs on the host
 
@@ -45,7 +48,7 @@ class TI_DLL_EXPORT MemoryPool {
 
   // TODO(zhanlue): remove this friend class once we have caching allocator
   // fused
-  friend class LlvmRuntimeExecutor;
+  friend class cuda::CudaDevice;
 };
 
 }  // namespace taichi::lang

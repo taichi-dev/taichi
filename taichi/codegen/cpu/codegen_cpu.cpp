@@ -317,7 +317,7 @@ void KernelCodeGenCPU::optimize_module(llvm::Module *module) {
   options.HonorSignDependentRoundingFPMathOption = false;
   options.NoZerosInBSS = false;
   options.GuaranteedTailCallOpt = false;
-  
+
   llvm::legacy::FunctionPassManager function_pass_manager(module);
   llvm::legacy::PassManager module_pass_manager;
 

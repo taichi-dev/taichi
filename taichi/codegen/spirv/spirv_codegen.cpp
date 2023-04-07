@@ -602,6 +602,17 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(GetElementStmt *stmt) override {
+    auto src_val = ir_->query_value(stmt->src->raw_name());
+    auto ret_type = stmt->src->ret_type.ptr_removed()
+                        ->as<lang::StructType>()
+                        ->get_element_type(stmt->index);
+    auto ret_stype = ir_->get_primitive_type(ret_type);
+    spirv::Value val = ir_->make_value(spv::OpCompositeExtract, ret_stype,
+                                       src_val, stmt->index);
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(GlobalTemporaryStmt *stmt) override {
     spirv::Value val = ir_->int_immediate_number(ir_->i32_type(), stmt->offset,
                                                  false);  // Named Constant
@@ -713,7 +724,20 @@ class TaskCodegen : public IRVisitor {
     const auto src_dt = stmt->operand->element_type();
     const auto dst_dt = stmt->element_type();
     spirv::SType src_type = ir_->get_primitive_type(src_dt);
-    spirv::SType dst_type = ir_->get_primitive_type(dst_dt);
+    spirv::SType dst_type;
+    if (dst_dt.is_pointer()) {
+      TI_ASSERT(dst_dt.ptr_removed()->is<lang::StructType>());
+      auto stype = dst_dt.ptr_removed()->as<lang::StructType>();
+      std::vector<std::tuple<SType, std::string, size_t>> components;
+      for (int i = 0; i < stype->get_num_elements(); i++) {
+        components.push_back(
+            {ir_->get_primitive_type(stype->get_element_type({i})),
+             fmt::format("element{}", i), stype->get_element_offset({i})});
+      }
+      dst_type = ir_->create_struct_type(components);
+    } else {
+      dst_type = ir_->get_primitive_type(dst_dt);
+    }
     spirv::Value operand_val = ir_->query_value(operand_name);
     spirv::Value val = spirv::Value();
 
@@ -807,6 +831,9 @@ class TaskCodegen : public IRVisitor {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (stmt->op_type == UnaryOpType::frexp) {
+      // FrexpStruct is the same type of the first member.
+      val = ir_->call_glsl450(dst_type, 52, operand_val);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \

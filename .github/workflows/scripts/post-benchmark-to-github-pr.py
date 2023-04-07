@@ -95,7 +95,8 @@ def main():
 
     current = json.loads(Path(options.result).read_text())
     for item in current:
-        db.execute('INSERT INTO current VALUES (?, ?)', flatten_metric(item))
+        db.execute('INSERT OR IGNORE INTO current VALUES (?, ?)',
+                   flatten_metric(item))
 
     ver = requests.get(
         'https://benchmark.taichi-lang.cn/releases?order=vnum.desc&limit=1'
@@ -105,7 +106,8 @@ def main():
     ).json()
 
     for item in release:
-        db.execute('INSERT INTO release VALUES (?, ?)', flatten_metric(item))
+        db.execute('INSERT OR IGNORE INTO release VALUES (?, ?)',
+                   flatten_metric(item))
 
     rs = db.execute('''
         SELECT

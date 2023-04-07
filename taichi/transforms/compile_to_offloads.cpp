@@ -70,6 +70,16 @@ void compile_to_offloads(IRNode *ir,
   print("Typechecked");
   irpass::analysis::verify(ir);
 
+  // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
+  //       create a separate CompileConfig flag for the new pass
+  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
+      config.arch == Arch::amdgpu) {
+    irpass::bit_loop_vectorize(ir);
+    irpass::type_check(ir, config);
+    print("Bit Loop Vectorized");
+    irpass::analysis::verify(ir);
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -80,16 +90,6 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
-
-  // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
-  //       create a separate CompileConfig flag for the new pass
-  if (arch_is_cpu(config.arch) || config.arch == Arch::cuda ||
-      config.arch == Arch::amdgpu) {
-    irpass::bit_loop_vectorize(ir);
-    irpass::type_check(ir, config);
-    print("Bit Loop Vectorized");
-    irpass::analysis::verify(ir);
-  }
 
   irpass::full_simplify(
       ir, config,

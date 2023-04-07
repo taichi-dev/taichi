@@ -386,26 +386,29 @@ def blit_from_field_to_field(
         dst[i + offset] = src[i]
 
 
-"""
-get the usage of the sparse grid, which is in [0,1]
-
-Args:
-    x(struct field): the sparse grid to be checked.
-Returns:
-    usage(f32): the usage of the sparse grid, which is in [0,1]
-    
-Examples::
-    print(ti.sparse_grid_usage(grid)) 
-"""
 @kernel
 def sparse_grid_usage(x:template())->f32:
+    """
+    get the usage of the sparse grid, which is in [0,1]
+
+    Args:
+        x(struct field): the sparse grid to be checked.
+    Returns:
+        usage(f32): the usage of the sparse grid, which is in [0,1]
+        
+    Examples::
+        print(ti.sparse_grid_usage(grid)) 
+    """
     cnt = 0
     for I in grouped(x.parent()):
         if is_active(x.parent(), I):
             cnt+=1
-
-    total_grid = 1
-    for d in range(len(x.shape)):
-        total_grid *= x.shape[d]
-    usage =  cnt/total_grid
+    total = 1.0
+    if static(len(x.shape) == 2):
+        total = x.shape[0]*x.shape[1]
+    elif static(len(x.shape) == 3):
+        total = x.shape[0]*x.shape[1]*x.shape[2]
+    else:
+        raise ValueError("The dimension of the sparse grid should be 2 or 3")
+    usage =  cnt/total
     return usage

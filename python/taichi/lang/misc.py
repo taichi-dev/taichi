@@ -16,6 +16,8 @@ from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
 
+from taichi.lang.struct import Struct
+from taichi.lang.impl import root
 
 warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
@@ -767,31 +769,27 @@ def get_host_arch_list():
     return [_ti_core.host_arch()]
 
 
-"""Creates a 2D/3D sparse grid with each element is a struct. The struct is placed on a bitmasked snode.
-
-Args:
-    field_dict (dict): a dict, each item is like `name: type`.
-    shape (Tuple[int]): shape of the field.
-Returns:
-    x: the created sparse grid, which is a bitmasked `ti.Struct.field`.
-
-Examples::
-
-    
-    
-    grid[0, 0].pos = ti.math.vec3(1,2,3) #access
-    grid[0, 0].mass = 1.0
-    grid[0, 0].grid2particles[2] = 123
-    print(ti.sparse_grid_usage(grid)) # get the usage of the sparse grid, which is in [0,1]
- 
-    # check if the element is active(is_active only works on the snode in a kernel)
-    @ti.kernel
-    def test(grid:ti.template()):
-        print(ti.is_active(grid.parent(), [1, 2])) 
-    test(grid) 
-"""
 def sparse_grid(field_dict, shape):
-    from taichi.lang import Struct, root
+    """Creates a 2D/3D sparse grid with each element is a struct. The struct is placed on a bitmasked snode.
+
+    Args:
+        field_dict (dict): a dict, each item is like `name: type`.
+        shape (Tuple[int]): shape of the field.
+    Returns:
+        x: the created sparse grid, which is a bitmasked `ti.Struct.field`.
+
+    Examples::
+        # create a 2D sparse grid
+        grid = ti.sparse_grid({'pos': ti.math.vec2, 'mass': ti.f32, 'grid2particles': ti.i32}, shape=(128, 128))
+
+        # access
+        grid[0, 0].pos = ti.math.vec2(1,2)
+        grid[0, 0].mass = 1.0
+        grid[0, 0].grid2particles[2] = 123
+
+        # print the usage of the sparse grid, which is in [0,1]
+        print(ti.sparse_grid_usage(grid))
+    """
     x = Struct.field(field_dict)
     if len(shape) == 2:
         snode = root.bitmasked(ij, shape)

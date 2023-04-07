@@ -1260,7 +1260,7 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   if (!stmt->is_grad) {
-    llvm_val[stmt] = get_struct_arg({stmt->arg_id});
+    llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
     return;
   }
 
@@ -2722,7 +2722,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
-  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type);
+  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type.ptr_removed());
   std::vector<llvm::Value *> index;
   index.reserve(stmt->index.size() + 1);
   index.push_back(tlctx->get_constant(0));
@@ -2730,7 +2730,8 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
     index.push_back(tlctx->get_constant(i));
   }
   auto *gep = builder->CreateGEP(struct_type, llvm_val[stmt->src], index);
-  auto *val = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), gep);
+  auto *val = builder->CreateLoad(
+      tlctx->get_data_type(stmt->ret_type.ptr_removed()), gep);
   llvm_val[stmt] = val;
 }
 
@@ -2787,7 +2788,8 @@ void TaskCodeGenLLVM::set_struct_to_buffer(
                        current_element, current_index);
 }
 
-llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
+llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index,
+                                             bool create_load) {
   auto *args_ptr = get_args_ptr(current_callable, get_context());
   auto *args_type = current_callable->args_type;
   auto *arg_type = args_type->get_element_type(index);
@@ -2799,6 +2801,9 @@ llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
   }
   auto *gep =
       builder->CreateGEP(tlctx->get_data_type(args_type), args_ptr, gep_index);
+  if (!create_load) {
+    return gep;
+  }
   return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
 }
 

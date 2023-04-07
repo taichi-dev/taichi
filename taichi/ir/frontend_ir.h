@@ -315,9 +315,17 @@ class ArgLoadExpression : public Expression {
   int arg_id;
   DataType dt;
   bool is_ptr;
+  /* Creates a load statement if true, otherwise returns the pointer
+   * directly.
+   * TODO: Split ArgLoad into two steps: ArgAddr and GlobalLoad.
+   */
+  bool create_load;
 
-  ArgLoadExpression(int arg_id, DataType dt, bool is_ptr = false)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
+  ArgLoadExpression(int arg_id,
+                    DataType dt,
+                    bool is_ptr = false,
+                    bool create_load = true)
+      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load) {
   }
 
   void type_check(const CompileConfig *config) override;

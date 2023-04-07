@@ -707,6 +707,10 @@ void export_lang(py::module &m) {
       .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
       .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
       .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
+      .def("set_struct_arg_int", &LaunchContextBuilder::set_struct_arg<int64>)
+      .def("set_struct_arg_uint", &LaunchContextBuilder::set_struct_arg<uint64>)
+      .def("set_struct_arg_float",
+           &LaunchContextBuilder::set_struct_arg<double>)
       .def("set_arg_external_array_with_shape",
            &LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
@@ -927,7 +931,8 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+        Expr::make<ArgLoadExpression, int, const DataType &, bool, bool>,
+        "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true);
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 

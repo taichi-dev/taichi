@@ -435,14 +435,15 @@ class TypeCheck : public IRVisitor {
 
   void visit(GetElementStmt *stmt) override {
     stmt->ret_type =
-        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->index);
+        stmt->src->ret_type.ptr_removed()->as<StructType>()->get_element_type(
+            stmt->index);
   }
 
   void visit(ArgLoadStmt *stmt) override {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    stmt->ret_type.set_is_pointer(stmt->is_ptr);
+    //    stmt->ret_type.set_is_pointer(stmt->is_ptr);
   }
 
   void visit(ReturnStmt *stmt) override {

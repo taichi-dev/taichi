@@ -677,6 +677,30 @@ class StructType(CompoundType):
 
         return Struct(d)
 
+    def set_kernel_struct_args(self, struct, launch_ctx, ret_index=()):
+        # TODO: move this to class Struct after we add dtype to Struct
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            if isinstance(dtype, CompoundType):
+                dtype.set_kernel_struct_args(struct[name], launch_ctx,
+                                             ret_index + (index, ))
+            else:
+                if dtype in primitive_types.integer_types:
+                    if is_signed(cook_dtype(dtype)):
+                        launch_ctx.set_struct_arg_int(ret_index + (index, ),
+                                                      struct[name])
+                    else:
+                        launch_ctx.set_struct_arg_uint(ret_index + (index, ),
+                                                       struct[name])
+                elif dtype in primitive_types.real_types:
+                    launch_ctx.set_struct_arg_float(ret_index + (index, ),
+                                                    struct[name])
+                else:
+                    raise TaichiRuntimeTypeError(
+                        f"Invalid argument type on index={ret_index + (index, )}"
+                    )
+
     def cast(self, struct):
         # sanity check members
         if self.members.keys() != struct.entries.keys():

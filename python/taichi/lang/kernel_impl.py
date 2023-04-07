@@ -575,6 +575,8 @@ class Kernel:
                     pass
                 elif isinstance(annotation, MatrixType):
                     pass
+                elif isinstance(annotation, StructType):
+                    pass
                 else:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
@@ -842,6 +844,9 @@ class Kernel:
                             f'Matrix dtype {needed.dtype} is not integer type or real type.'
                         )
                     continue
+                elif isinstance(needed, StructType):
+                    needed.set_kernel_struct_args(v, launch_ctx,
+                                                  (actual_argument_slot, ))
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'

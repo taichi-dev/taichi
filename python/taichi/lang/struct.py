@@ -636,13 +636,13 @@ class StructType(CompoundType):
         struct = self.cast(entries)
         return struct
 
-    def from_real_func_ret(self, func_ret, ret_index=()):
+    def from_taichi_object(self, func_ret, ret_index=()):
         d = {}
         items = self.members.items()
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name] = dtype.from_real_func_ret(func_ret,
+                d[name] = dtype.from_taichi_object(func_ret,
                                                    ret_index + (index, ))
             else:
                 d[name] = expr.Expr(

@@ -312,11 +312,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ASTBuilder &builder = kernel->context->builder();
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
-    builder.insert_assignment(
-        expr,
-        Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type()),
-        expr->tb);
+    auto argload_expr = Expr::make<ArgLoadExpression>(
+        snode->num_active_indices, snode->dt->get_compute_type());
+    argload_expr->type_check(&this->compile_config());
+    builder.insert_assignment(expr, argload_expr, expr->tb);
   });
   ker.name = kernel_name;
   ker.is_accessor = true;

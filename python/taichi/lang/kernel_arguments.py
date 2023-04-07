@@ -82,7 +82,7 @@ def decl_struct_arg(structtype, name):
         _ti_core.make_arg_load_expr(arg_id,
                                     structtype.dtype,
                                     create_load=False))
-    return structtype.from_real_func_ret(arg_load)
+    return structtype.from_taichi_object(arg_load)
 
 
 def decl_sparse_matrix(dtype, name):

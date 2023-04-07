@@ -60,3 +60,12 @@ def test_bit_shr():
     for i in range(n):
         offset = 0x100000000 if i > 0 else 0
         assert shr(neg_test_num, i) == (neg_test_num + offset) >> i
+
+
+@test_utils.test()
+def test_bit_shr_uint():
+    @ti.kernel
+    def func(x: ti.u32, y: ti.i32) -> ti.u32:
+        return ti.bit_shr(x, y)
+
+    assert (func(5, 2) == 1)

@@ -5,8 +5,8 @@ import os
 import platform
 import shutil
 from typing import Optional, Tuple
-from . import misc
 
+from . import misc
 # -- third party --
 # -- own --
 from .dep import download_dep

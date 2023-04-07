@@ -82,9 +82,7 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
     size = -1
     for u in urls:
         try:
-            resp = requests.head(u,
-                                 headers={'Accept-Encoding': 'identity'},
-                                 timeout=1)
+            resp = requests.head(u, headers={'Accept-Encoding': 'identity'}, timeout=1)
             if resp.ok:
                 url = u
                 size = int(resp.headers['Content-Length'])

@@ -126,7 +126,7 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     pr()
 
     well_known_objs = []
-    well_known_objs.extend(Path('/usr/lib/system').glob('*.dylib'))
+    # well_known_objs.extend(Path('/usr/lib/system').glob('*.dylib'))
 
     pending_objects = {str(p.relative_to(build_path)) for p in root_objs}
     defined_symbols = set()

@@ -114,7 +114,7 @@ def add_aot_env():
 
 
 def action_ios():
-    sccache, python, pip = setup_basic_build_env(force_vulkan=True)
+    sccache, python, pip = setup_basic_build_env()
     setup_ios(python, pip)
     handle_alternate_actions()
     build_ios()

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# -- prioritized --
+import ci_common  # isort: skip, early initialization happens here
+
 # -- stdlib --
 import argparse
 import glob

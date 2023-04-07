@@ -140,10 +140,6 @@ FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
   ret_type = dt;
-  if (is_ptr) {
-    TI_ASSERT(dt->is<PrimitiveType>());
-    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
-  }
   if (!create_load) {
     ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
     ;

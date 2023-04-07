@@ -53,7 +53,7 @@ class CMakeArgsManager:
         return self.definitions.get(name, default)
 
     def set(self, name: str, value: Union[str, bool]) -> None:
-        assert not self.finalized, '.materialize() has been called'
+        assert not self.finalized, '.writeback() has been called'
         desc = ''
         value = self._VMAP.get(value, value)
         default = None
@@ -120,7 +120,7 @@ class CMakeArgsManager:
             p(f'    {G}{v}{N}{desc}')
         p('')
 
-    def materialize(self) -> None:
+    def writeback(self) -> None:
         rendered = self.render()
         self.print_summary(rendered)
         os.environ[self.environ_name] = ' '.join([v for _, v, _ in rendered])

@@ -149,19 +149,19 @@ class DemoteOperations : public BasicStmtVisitor {
         modifier.insert_before(stmt, std::move(new_matrix));
         modifier.erase(stmt);
       }
-    } else if (stmt->op_type == BinaryOpType::bit_shr &&
-               is_integral(lhs->element_type()) &&
-               is_integral(rhs->element_type()) &&
-               is_signed(lhs->element_type())) {
+    } else if (stmt->op_type == BinaryOpType::bit_shr) {
       // @ti.func
       // def bit_shr(a, b):
       //     unsigned_a = ti.cast(a, ti.uXX)
       //     shifted = ti.bit_sar(unsigned_a, b)
       //     ret = ti.cast(shifted, ti.iXX)
       //     return ret
+      TI_ASSERT(is_integral(lhs->element_type()) &&
+                is_integral(rhs->element_type()));
       auto unsigned_cast = Stmt::make<UnaryOpStmt>(UnaryOpType::cast_bits, lhs);
+      auto lhs_type = lhs->element_type();
       unsigned_cast->as<UnaryOpStmt>()->cast_type =
-          to_unsigned(lhs->element_type());
+          is_signed(lhs_type) ? to_unsigned(lhs_type) : lhs_type;
       auto shift = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_sar,
                                             unsigned_cast.get(), rhs);
       auto signed_cast =

@@ -635,6 +635,7 @@ Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
   for (auto &field : matrix_field.fields) {
     snodes.push_back(field.cast<FieldExpression>()->snode);
   }
+  ret_type.set_is_pointer(true);
   return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
       snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
       matrix_field.dynamic_indexable, matrix_field.dynamic_index_stride,

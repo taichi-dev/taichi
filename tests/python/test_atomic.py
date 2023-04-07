@@ -393,3 +393,16 @@ def test_atomic_min_rvalue_as_frist_op():
     assert 'atomic_min' in str(e.value)
     assert 'cannot use a non-writable target as the first operand of' in str(
         e.value)
+
+
+@test_utils.test()
+def test_atomic_max_f32():
+    @ti.kernel
+    def max_kernel() -> ti.f32:
+        x = -1000.0
+        for i in range(1, 20):
+            ti.atomic_max(x, -ti.f32(i))
+
+        return x
+
+    assert max_kernel() == -1.0

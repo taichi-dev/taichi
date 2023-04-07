@@ -127,6 +127,7 @@ function ci-docker-run {
         -e PY \
         -e PROJECT_NAME \
         -e LLVM_VERSION \
+        -e EXTRA_TEST_MARKERS \
         -e TAICHI_CMAKE_ARGS \
         -e IN_DOCKER=true \
         -e TI_CI=1 \

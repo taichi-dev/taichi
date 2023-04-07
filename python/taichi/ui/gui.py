@@ -356,9 +356,11 @@ class GUI:
             Default is False.
         """
         try:
-            from matplotlib import cm  # pylint: disable=import-outside-toplevel
+            from matplotlib import \
+                cm  # pylint: disable=import-outside-toplevel
         except ImportError:
-            raise RuntimeError('Failed to import Matplotlib. Please install it via /\
+            raise RuntimeError(
+                'Failed to import Matplotlib. Please install it via /\
             `pip install matplotlib` first. ')
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:

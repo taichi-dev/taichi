@@ -206,6 +206,26 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_primitive_type = is_cast() ? cast_type : operand_primitive_type;
   }
 
+  if ((type == UnaryOpType::bit_not || type == UnaryOpType::logic_not) &&
+      is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+  }
+
+  if (type == UnaryOpType::frexp) {
+    std::vector<StructMember> elements;
+    elements.push_back(
+        {taichi::lang::TypeFactory::get_instance().get_primitive_real_type(64),
+         "mantissa", 0});
+    elements.push_back(
+        {taichi::lang::TypeFactory::get_instance().get_primitive_int_type(
+             32, /*is_signed=*/true),
+         "exponent", 8});
+    ret_type =
+        taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
+    return;
+  }
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);
@@ -606,6 +626,7 @@ Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
   for (auto &field : matrix_field.fields) {
     snodes.push_back(field.cast<FieldExpression>()->snode);
   }
+  ret_type.set_is_pointer(true);
   return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
       snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
       matrix_field.dynamic_indexable, matrix_field.dynamic_index_stride,
@@ -1349,8 +1370,9 @@ void ASTBuilder::create_kernel_exprgroup_return(const ExprGroup &group) {
 }
 
 void ASTBuilder::create_print(
-    std::vector<std::variant<Expr, std::string>> contents) {
-  this->insert(std::make_unique<FrontendPrintStmt>(contents));
+    std::vector<std::variant<Expr, std::string>> contents,
+    std::vector<std::optional<std::string>> formats) {
+  this->insert(std::make_unique<FrontendPrintStmt>(contents, formats));
 }
 
 void ASTBuilder::begin_func(const std::string &funcid) {
@@ -1402,7 +1424,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
                                                  const ExprGroup &args) {
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
-  if (func->ret_type) {
+  if (!func->rets.empty()) {
     auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,
@@ -1607,7 +1629,16 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (!expr->ret_type->is<TensorType>()) {
+    if (expr->ret_type->is<StructType>()) {
+      auto struct_type = expr->ret_type->as<StructType>();
+      auto num_elem = struct_type->get_num_elements();
+      for (int i = 0; i < num_elem; i++) {
+        std::vector<int> indices = {i};
+        auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));
+        elem.expr->ret_type = struct_type->get_element_type(indices);
+        expanded_exprs.push_back(elem);
+      }
+    } else if (!expr->ret_type->is<TensorType>()) {
       expanded_exprs.push_back(expr);
     } else {
       // Expand TensorType expr
@@ -1713,7 +1744,10 @@ Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx) {
 }
 
 Stmt *flatten_global_load(Stmt *ptr_stmt, Expression::FlattenContext *ctx) {
-  ctx->push_back(std::make_unique<GlobalLoadStmt>(ptr_stmt));
+  auto load_stmt = std::make_unique<GlobalLoadStmt>(ptr_stmt);
+  auto pointee_type = load_stmt->src->ret_type.ptr_removed();
+  load_stmt->ret_type = pointee_type->get_compute_type();
+  ctx->push_back(std::move(load_stmt));
   return ctx->back_stmt();
 }
 

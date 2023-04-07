@@ -26,7 +26,7 @@ class KernelCompiler : public lang::KernelCompiler {
   CKDPtr compile(const CompileConfig &compile_config,
                  const DeviceCapabilityConfig &device_caps,
                  const Kernel &kernel_def,
-                 const IRNode &chi_ir) const override;
+                 IRNode &chi_ir) const override;
 
  private:
   Config config_;

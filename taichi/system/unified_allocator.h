@@ -2,62 +2,39 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+#include <map>
 
 #include "taichi/rhi/arch.h"
 #include "taichi/rhi/device.h"
 
-namespace taichi {
-class VirtualMemoryAllocator;
-}
-
 namespace taichi::lang {
 
-// This class can only have one instance
+class MemoryPool;
+
+// This class can only be accessed by MemoryPool
 class UnifiedAllocator {
-  std::unique_ptr<VirtualMemoryAllocator> cpu_vm_;
-  std::size_t size_;
-  Arch arch_;
-
-  // put these two on the unified memory so that GPU can have access
- public:
-  uint8 *data;
-  DeviceAllocation alloc{kDeviceNullAllocation};
-  uint8 *head;
-  uint8 *tail;
-  std::mutex lock;
-
- public:
-  UnifiedAllocator(std::size_t size, Arch arch, Device *device);
-
-  ~UnifiedAllocator();
-
-  void *allocate(std::size_t size, std::size_t alignment) {
-    std::lock_guard<std::mutex> _(lock);
-    auto ret =
-        head + alignment - 1 - ((std::size_t)head + alignment - 1) % alignment;
-    TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
-             size, (tail - head));
-    head = ret + size;
-    if (head > tail) {
-      // allocation failed
-      return nullptr;
-    } else {
-      // success
-      TI_ASSERT((std::size_t)ret % alignment == 0);
-      return ret;
-    }
-  }
-
-  void memset(unsigned char val);
-
-  bool initialized() const {
-    return data != nullptr;
-  }
-
-  UnifiedAllocator operator=(const UnifiedAllocator &) = delete;
-
  private:
-  Device *device_{nullptr};
+  struct MemoryChunk {
+    bool is_exclusive;
+    void *data;
+    void *head;
+    void *tail;
+  };
+
+  static const std::size_t default_allocator_size;
+
+  UnifiedAllocator(Arch arch);
+
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 bool exclusive = false);
+
+  bool release(size_t sz, void *ptr);
+
+  Arch arch_;
+  std::vector<MemoryChunk> chunks_;
+
+  friend class MemoryPool;
 };
 
 }  // namespace taichi::lang

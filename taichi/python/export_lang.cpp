@@ -144,7 +144,6 @@ void export_lang(py::module &m) {
       .def_readwrite("cfg_optimization", &CompileConfig::cfg_optimization)
       .def_readwrite("check_out_of_bound", &CompileConfig::check_out_of_bound)
       .def_readwrite("print_accessor_ir", &CompileConfig::print_accessor_ir)
-      .def_readwrite("print_evaluator_ir", &CompileConfig::print_evaluator_ir)
       .def_readwrite("use_llvm", &CompileConfig::use_llvm)
       .def_readwrite("print_struct_llvm_ir",
                      &CompileConfig::print_struct_llvm_ir)
@@ -152,7 +151,7 @@ void export_lang(py::module &m) {
                      &CompileConfig::print_kernel_llvm_ir)
       .def_readwrite("print_kernel_llvm_ir_optimized",
                      &CompileConfig::print_kernel_llvm_ir_optimized)
-      .def_readwrite("print_kernel_nvptx", &CompileConfig::print_kernel_nvptx)
+      .def_readwrite("print_kernel_asm", &CompileConfig::print_kernel_asm)
       .def_readwrite("print_kernel_amdgcn", &CompileConfig::print_kernel_amdgcn)
       .def_readwrite("simplify_before_lower_access",
                      &CompileConfig::simplify_before_lower_access)
@@ -200,6 +199,8 @@ void export_lang(py::module &m) {
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
+      .def_readwrite("make_cpu_multithreading_loop",
+                     &CompileConfig::make_cpu_multithreading_loop)
       .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
       .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
@@ -387,15 +388,6 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("create_function", &Program::create_function,
            py::return_value_policy::reference)
-      .def("create_sparse_matrix_builder",
-           [](Program *program, int n, int m, uint64 max_num_entries,
-              DataType dtype, const std::string &storage_format) {
-             TI_ERROR_IF(!arch_is_cpu(program->compile_config().arch) &&
-                             !arch_is_cuda(program->compile_config().arch),
-                         "SparseMatrix only supports CPU and CUDA for now.");
-             return SparseMatrixBuilder(n, m, max_num_entries, dtype,
-                                        storage_format, program);
-           })
       .def("create_sparse_matrix",
            [](Program *program, int n, int m, DataType dtype,
               std::string storage_format) {
@@ -449,9 +441,12 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast_u32(ndarray,
                                             reinterpret_cast<int32_t &>(val));
            })
-      .def("fill_uint", [](Program *program, Ndarray *ndarray, uint32_t val) {
-        program->fill_ndarray_fast_u32(ndarray, val);
-      });
+      .def("fill_uint",
+           [](Program *program, Ndarray *ndarray, uint32_t val) {
+             program->fill_ndarray_fast_u32(ndarray, val);
+           })
+      .def("get_graphics_device",
+           [](Program *program) { return program->get_graphics_device(); });
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -685,6 +680,7 @@ void export_lang(py::module &m) {
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
+      .def("insert_pointer_param", &Kernel::insert_pointer_param)
       .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
@@ -702,37 +698,32 @@ void export_lang(py::module &m) {
             return &self->context->builder();
           },
           py::return_value_policy::reference)
-      .def("__call__",
-           [](Kernel *kernel, Kernel::LaunchContextBuilder &launch_ctx) {
-             py::gil_scoped_release release;
-             kernel->operator()(kernel->program->compile_config(), launch_ctx);
-           });
+      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
+        py::gil_scoped_release release;
+        kernel->operator()(kernel->program->compile_config(), launch_ctx);
+      });
 
-  py::class_<Kernel::LaunchContextBuilder>(m, "KernelLaunchContext")
-      .def("set_arg_int", &Kernel::LaunchContextBuilder::set_arg_int)
-      .def("set_arg_uint", &Kernel::LaunchContextBuilder::set_arg_uint)
-      .def("set_arg_float", &Kernel::LaunchContextBuilder::set_arg_float)
+  py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
+      .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
+      .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
+      .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
       .def("set_arg_external_array_with_shape",
-           &Kernel::LaunchContextBuilder::set_arg_external_array_with_shape)
-      .def("set_arg_ndarray", &Kernel::LaunchContextBuilder::set_arg_ndarray)
+           &LaunchContextBuilder::set_arg_external_array_with_shape)
+      .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)
       .def("set_arg_ndarray_with_grad",
-           &Kernel::LaunchContextBuilder::set_arg_ndarray_with_grad)
-      .def("set_arg_texture", &Kernel::LaunchContextBuilder::set_arg_texture)
-      .def("set_arg_rw_texture",
-           &Kernel::LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int",
-           &Kernel::LaunchContextBuilder::set_extra_arg_int)
-      .def("get_struct_ret_int",
-           &Kernel::LaunchContextBuilder::get_struct_ret_int)
-      .def("get_struct_ret_uint",
-           &Kernel::LaunchContextBuilder::get_struct_ret_uint)
-      .def("get_struct_ret_float",
-           &Kernel::LaunchContextBuilder::get_struct_ret_float);
+           &LaunchContextBuilder::set_arg_ndarray_with_grad)
+      .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
+      .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
+      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
+      .def("get_struct_ret_int", &LaunchContextBuilder::get_struct_ret_int)
+      .def("get_struct_ret_uint", &LaunchContextBuilder::get_struct_ret_uint)
+      .def("get_struct_ret_float", &LaunchContextBuilder::get_struct_ret_float);
 
   py::class_<Function>(m, "Function")
       .def("insert_scalar_param", &Function::insert_scalar_param)
       .def("insert_arr_param", &Function::insert_arr_param)
       .def("insert_texture_param", &Function::insert_texture_param)
+      .def("insert_pointer_param", &Function::insert_pointer_param)
       .def("insert_rw_texture_param", &Function::insert_rw_texture_param)
       .def("insert_ret", &Function::insert_ret)
       .def("set_function_body",
@@ -794,6 +785,8 @@ void export_lang(py::module &m) {
       .def("get_ret_type", &Expr::get_ret_type)
       .def("is_tensor",
            [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+      .def("is_struct",
+           [](Expr *expr) { return expr->expr->ret_type->is<StructType>(); })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
              if (expr->expr->ret_type->is<TensorType>()) {
@@ -877,6 +870,7 @@ void export_lang(py::module &m) {
   DEFINE_EXPRESSION_OP(sqrt)
   DEFINE_EXPRESSION_OP(round)
   DEFINE_EXPRESSION_OP(floor)
+  DEFINE_EXPRESSION_OP(frexp)
   DEFINE_EXPRESSION_OP(ceil)
   DEFINE_EXPRESSION_OP(abs)
   DEFINE_EXPRESSION_OP(sin)
@@ -1185,6 +1179,10 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
+      .def(py::init<int, int, int, DataType, const std::string &, Program *>(),
+           py::arg("rows"), py::arg("cols"), py::arg("max_num_triplets"),
+           py::arg("dt") = PrimitiveType::f32,
+           py::arg("storage_format") = "col_major", py::arg("prog") = nullptr)
       .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
       .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
@@ -1200,6 +1198,7 @@ void export_lang(py::module &m) {
       .def("to_string", &SparseMatrix::to_string)
       .def("get_element", &SparseMatrix::get_element<float32>)
       .def("set_element", &SparseMatrix::set_element<float32>)
+      .def("mmwrite", &SparseMatrix::mmwrite)
       .def("num_rows", &SparseMatrix::num_rows)
       .def("num_cols", &SparseMatrix::num_cols)
       .def("get_data_type", &SparseMatrix::get_data_type);

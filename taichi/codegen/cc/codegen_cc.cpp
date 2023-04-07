@@ -8,6 +8,7 @@
 #include "taichi/util/line_appender.h"
 #include "taichi/util/str.h"
 #include "cc_utils.h"
+#include "taichi/codegen/codegen_utils.h"
 
 #define C90_COMPAT 0
 
@@ -327,8 +328,7 @@ class CCTransformer : public IRVisitor {
     const auto var = define_var(dt_name, bin_name);
     if (cc_is_binary_op_infix(bin->op_type)) {
       if (is_comparison(bin->op_type)) {
-        // XXX(#577): Taichi uses -1 as true due to LLVM i1...
-        emit("{} = -({} {} {});", var, lhs_name, binop, rhs_name);
+        emit("{} = ({} {} {});", var, lhs_name, binop, rhs_name);
       } else if (bin->op_type == BinaryOpType::truediv) {
         emit("{} = ({}) {} / {};", var, dt_name, lhs_name, rhs_name);
       } else {
@@ -385,25 +385,27 @@ class CCTransformer : public IRVisitor {
   }
 
   void visit(PrintStmt *stmt) override {
-    std::string format;
+    std::string formats;
     std::vector<std::string> values;
 
     for (int i = 0; i < stmt->contents.size(); i++) {
       auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
 
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
-        format += data_type_format(arg_stmt->ret_type);
+        formats += merge_printf_specifier(format,
+                                          data_type_format(arg_stmt->ret_type));
         values.push_back(arg_stmt->raw_name());
 
       } else {
         auto str = std::get<std::string>(content);
-        format += "%s";
+        formats += "%s";
         values.push_back(c_quoted(str));
       }
     }
 
-    values.insert(values.begin(), c_quoted(format));
+    values.insert(values.begin(), c_quoted(formats));
     emit("printf({});", fmt::join(values, ", "));
   }
 

@@ -72,6 +72,8 @@ std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,
                       const CompileConfig &config,
                       const MakeBlockLocalPass::Args &args);
+void make_cpu_multithreaded_range_for(IRNode *root,
+                                      const CompileConfig &config);
 void make_mesh_thread_local(IRNode *root,
                             const CompileConfig &config,
                             const MakeBlockLocalPass::Args &args);
@@ -104,9 +106,7 @@ void differentiation_validation_check(IRNode *root,
  * AD-stacks before this pass.
  */
 bool determine_ad_stack_size(IRNode *root, const CompileConfig &config);
-bool constant_fold(IRNode *root,
-                   const CompileConfig &config,
-                   const ConstantFoldPass::Args &args);
+bool constant_fold(IRNode *root);
 void offload(IRNode *root, const CompileConfig &config);
 bool transform_statements(
     IRNode *root,
@@ -198,7 +198,7 @@ void compile_function(IRNode *ir,
                       bool start_from_ast);
 
 void ast_to_ir(const CompileConfig &config,
-               Kernel &kernel,
+               const Kernel &kernel,
                bool to_executable = true);
 
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);

@@ -2,6 +2,19 @@
 #include "taichi/runtime/llvm/aot_graph_data.h"
 
 namespace taichi::lang {
+namespace LLVM {
+
+FunctionType LlvmAotModule::convert_module_to_function(
+    const std::string &name,
+    LlvmOfflineCache::KernelCacheData &&loaded) {
+  Arch arch = executor_->get_config().arch;
+  auto *launcher = kernel_launcher_.get();
+  LLVM::CompiledKernelData ckd{arch, loaded.convert_to_llvm_ckd_data()};
+  auto handle = kernel_launcher_->register_llvm_kernel(ckd);
+  return [handle, launcher](LaunchContextBuilder &ctx) {
+    launcher->launch_llvm_kernel(handle, ctx);
+  };
+}
 
 LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
     const std::string &name) {
@@ -16,9 +29,9 @@ LlvmOfflineCache::KernelCacheData LlvmAotModule::load_kernel_from_cache(
 
 std::unique_ptr<aot::Kernel> LlvmAotModule::make_new_kernel(
     const std::string &name) {
-  auto fn = convert_module_to_function(name, load_kernel_from_cache(name));
-  return std::make_unique<llvm_aot::KernelImpl>(
-      fn, LlvmOfflineCache::KernelCacheData());
+  auto kernel_cache = load_kernel_from_cache(name);
+  auto fn = convert_module_to_function(name, kernel_cache.clone());
+  return std::make_unique<llvm_aot::KernelImpl>(fn, std::move(kernel_cache));
 }
 
 std::unique_ptr<aot::Field> LlvmAotModule::make_new_field(
@@ -54,7 +67,6 @@ std::unique_ptr<aot::CompiledGraph> LlvmAotModule::get_graph(
   }
 
   aot::CompiledGraph graph = aot::CompiledGraph({dispatches});
-  executor_->prepare_runtime_context(&graph.ctx_);
 
   return std::make_unique<aot::CompiledGraph>(std::move(graph));
 }
@@ -79,4 +91,11 @@ void allocate_aot_snode_tree_type(aot::Module *aot_module,
   }
 }
 
+std::unique_ptr<aot::Module> make_aot_module(AotModuleParams mod_params) {
+  return std::make_unique<LlvmAotModule>(mod_params.module_path,
+                                         mod_params.executor_,
+                                         std::move(mod_params.kernel_launcher));
+}
+
+}  // namespace LLVM
 }  // namespace taichi::lang

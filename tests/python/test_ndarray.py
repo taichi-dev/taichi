@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
+from taichi.lang.exception import TaichiIndexError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 
@@ -273,7 +274,7 @@ def test_ndarray_deepcopy():
 
 
 @test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
-def test_ndarray_cuda_caching_allocator():
+def test_ndarray_caching_allocator():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)
@@ -723,7 +724,7 @@ def test_ndarray_with_fp16():
     half2 = ti.types.vector(n=2, dtype=ti.f16)
 
     @ti.kernel
-    def init(x: ti.types.ndarray(dtype=half2, field_dim=1)):
+    def init(x: ti.types.ndarray(dtype=half2, ndim=1)):
         for i in x:
             x[i] = half2(2.0)
 
@@ -796,3 +797,15 @@ def test_matrix_ndarray_oob():
         access_arr(input, 3, 5, 0, 1)
     with pytest.raises(AssertionError, match=r'Out of bound access'):
         access_arr(input, 2, -10, 1, 1)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_mismatched_index_python_scope():
+    x = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    with pytest.raises(TaichiIndexError,
+                       match=r'2d ndarray indexed with 1d indices'):
+        x[0]
+
+    with pytest.raises(TaichiIndexError,
+                       match=r'2d ndarray indexed with 3d indices'):
+        x[0, 0, 0]

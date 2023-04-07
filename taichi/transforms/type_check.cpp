@@ -85,7 +85,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
+              stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
@@ -170,7 +171,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
+    TI_ASSERT(stmt->offset->ret_type.get_element_type()->is_primitive(
+        PrimitiveTypeID::i32));
     stmt->ret_type.set_is_pointer(true);
   }
 
@@ -197,6 +199,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::frexp) {
+      // frexp returns a struct type of {double, i32} and it's set in frontend
+      // IR lowering.
+      return;
+    }
     auto operand_type = stmt->operand->ret_type;
     stmt->ret_type = operand_type;
     if (stmt->is_cast()) {
@@ -390,7 +397,8 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32));
+      TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
+          PrimitiveTypeID::i32));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;

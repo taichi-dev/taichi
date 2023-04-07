@@ -32,48 +32,6 @@
 
 namespace taichi::lang {
 
-struct JITEvaluatorId {
-  std::thread::id thread_id;
-  // Note that on certain backends (e.g. CUDA), functions created in one
-  // thread cannot be used in another. Hence the thread_id member.
-  int op;
-  DataType ret, lhs, rhs;
-  std::string tb;
-  bool is_binary;
-
-  UnaryOpType unary_op() const {
-    TI_ASSERT(!is_binary);
-    return (UnaryOpType)op;
-  }
-
-  BinaryOpType binary_op() const {
-    TI_ASSERT(is_binary);
-    return (BinaryOpType)op;
-  }
-
-  bool operator==(const JITEvaluatorId &o) const {
-    return thread_id == o.thread_id && op == o.op && ret == o.ret &&
-           lhs == o.lhs && rhs == o.rhs && is_binary == o.is_binary &&
-           tb == o.tb;
-  }
-};
-
-}  // namespace taichi::lang
-
-namespace std {
-template <>
-struct hash<taichi::lang::JITEvaluatorId> {
-  std::size_t operator()(
-      taichi::lang::JITEvaluatorId const &id) const noexcept {
-    return ((std::size_t)id.op | (id.ret.hash() << 8) | (id.lhs.hash() << 16) |
-            (id.rhs.hash() << 24) | ((std::size_t)id.is_binary << 31)) ^
-           (std::hash<std::thread::id>{}(id.thread_id) << 32);
-  }
-};
-}  // namespace std
-
-namespace taichi::lang {
-
 class StructCompiler;
 
 /**
@@ -100,10 +58,6 @@ class TI_DLL_EXPORT Program {
   std::vector<std::unique_ptr<Kernel>> kernels;
 
   std::unique_ptr<KernelProfilerBase> profiler{nullptr};
-
-  std::unordered_map<JITEvaluatorId, std::unique_ptr<Kernel>>
-      jit_evaluator_cache;
-  std::mutex jit_evaluator_cache_mut;
 
   // Note: for now we let all Programs share a single TypeFactory for smooth
   // migration. In the future each program should have its own copy.
@@ -184,10 +138,6 @@ class TI_DLL_EXPORT Program {
   Kernel &get_snode_writer(SNode *snode);
 
   uint64 fetch_result_uint64(int i);
-
-  TypedConstant fetch_result(char *result_buffer, int offset, const Type *dt) {
-    return program_impl_->fetch_result(result_buffer, offset, dt);
-  }
 
   template <typename T>
   T fetch_result(int i) {
@@ -329,8 +279,6 @@ class TI_DLL_EXPORT Program {
     return Identifier(global_id_counter_++, name);
   }
 
-  void prepare_runtime_context(RuntimeContext *ctx);
-
   /** Enqueue a custom compute op to the current program execution flow.
    *
    *  @params op The lambda that is invoked to construct the custom compute Op
@@ -384,7 +332,6 @@ class TI_DLL_EXPORT Program {
   static std::atomic<int> num_instances_;
   bool finalized_{false};
 
-  std::unique_ptr<MemoryPool> memory_pool_{nullptr};
   // TODO: Move ndarrays_ and textures_ to be managed by runtime
   std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;

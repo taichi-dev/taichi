@@ -35,13 +35,13 @@ def test_binary_op():
 def test_ternary_op():
     @ti.kernel
     def select():
-        a = 1.1
+        a = ti.math.vec2(1.0, 1.0)
         b = 3
-        c = 3.6
-        d = b if a else c
+        c = ti.math.vec3(1.0, 1.0, 2.0)
+        d = a if b else c
 
-    with pytest.raises(TypeError,
-                       match="unsupported operand type\\(s\\) for 'ifte'"):
+    with pytest.raises(ti.TaichiCompilationError,
+                       match="Cannot broadcast tensor to tensor"):
         select()
 
 

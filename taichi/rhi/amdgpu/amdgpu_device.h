@@ -4,12 +4,13 @@
 
 #include "taichi/common/core.h"
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
-#include "taichi/rhi/amdgpu/amdgpu_caching_allocator.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/rhi/llvm/llvm_device.h"
+#include "taichi/rhi/llvm/allocator.h"
 
 namespace taichi {
 namespace lang {
+
 namespace amdgpu {
 
 class AmdgpuCommandList : public CommandList {
@@ -69,7 +70,8 @@ class AmdgpuDevice : public LlvmDevice {
 
   ~AmdgpuDevice() override{};
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
@@ -95,7 +97,7 @@ class AmdgpuDevice : public LlvmDevice {
 
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
-  DeviceAllocation import_memory(void *ptr, size_t size);
+  DeviceAllocation import_memory(void *ptr, size_t size) override;
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
@@ -108,7 +110,7 @@ class AmdgpuDevice : public LlvmDevice {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
-  std::unique_ptr<AmdgpuCachingAllocator> caching_allocator_{nullptr};
+  std::unique_ptr<CachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace amdgpu

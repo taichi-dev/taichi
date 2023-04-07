@@ -1,4 +1,5 @@
 #include "compiled_kernel_data.h"
+#include "taichi/common/logging.h"
 
 #include "picosha2.h"
 
@@ -92,10 +93,9 @@ bool CompiledKernelDataFile::update_hash() {
   return true;
 }
 
-// FIXME: Uncomment after impl LLVMCompiledKernelData
-// #if !defined(TI_WITH_LLVM)
+#if !defined(TI_WITH_LLVM)
 CompiledKernelData::Creator *const CompiledKernelData::llvm_creator = nullptr;
-// #endif
+#endif
 
 #if !defined(TI_WITH_VULKAN) && !defined(TI_WITH_OPENGL) && \
     !defined(TI_WITH_DX11) && !defined(TI_WITH_METAL)
@@ -181,6 +181,8 @@ std::string CompiledKernelData::get_err_msg(Err err) {
       return "The taichi is not built with llvm";
     case Err::kTiWithoutSpirv:
       return "The taichi is not built with spirv";
+    case Err::kCompiledKernelDataBroken:
+      return "The CompiledKernelData is broken";
     case Err::kUnknown:
       return "Unkown error";
   }

@@ -4,8 +4,11 @@
 #define VK_USE_PLATFORM_WIN32_KHR 1
 #endif
 
-#include "taichi/rhi/vulkan/vulkan_common.h"
+#ifndef VK_NO_PROTOTYPES
+#define VK_NO_PROTOTYPES 1
+#endif  // VK_NO_PROTOTYPES
 
+#include <taichi/rhi/vulkan/vulkan_common.h>
 #include <taichi/rhi/device.h>
 #include <taichi/program/kernel_profiler.h>
 

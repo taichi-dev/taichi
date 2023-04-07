@@ -5,9 +5,9 @@
 
 #include "taichi/aot/module_builder.h"
 #include "taichi/runtime/gfx/aot_utils.h"
-#include "taichi/runtime/gfx/runtime.h"
 #include "taichi/codegen/spirv/snode_struct_compiler.h"
 #include "taichi/codegen/spirv/kernel_utils.h"
+#include "taichi/compilation_manager/kernel_compilation_manager.h"
 
 namespace taichi::lang {
 namespace gfx {
@@ -15,8 +15,8 @@ namespace gfx {
 class AotModuleBuilderImpl : public AotModuleBuilder {
  public:
   explicit AotModuleBuilderImpl(
-      const std::vector<CompiledSNodeStructs> &compiled_structs,
-      Arch device_api_backend,
+      const std::vector<spirv::CompiledSNodeStructs> &compiled_structs,
+      KernelCompilationManager &compilation_manager,
       const CompileConfig &compile_config,
       const DeviceCapabilityConfig &caps);
 
@@ -39,13 +39,13 @@ class AotModuleBuilderImpl : public AotModuleBuilder {
                             Kernel *kernel) override;
 
   std::string write_spv_file(const std::string &output_dir,
-                             const TaskAttributes &k,
+                             const spirv::TaskAttributes &k,
                              const std::vector<uint32_t> &source_code) const;
 
-  const std::vector<CompiledSNodeStructs> &compiled_structs_;
+  const std::vector<spirv::CompiledSNodeStructs> &compiled_structs_;
   TaichiAotData ti_aot_data_;
 
-  Arch device_api_backend_;
+  KernelCompilationManager &compilation_manager_;
   const CompileConfig &config_;
   DeviceCapabilityConfig caps_;
 };

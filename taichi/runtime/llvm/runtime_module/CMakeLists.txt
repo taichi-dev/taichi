@@ -30,13 +30,14 @@ foreach(arch IN LISTS HOST_ARCH CUDA_ARCH DX12_ARCH AMDGPU_ARCH)
   compile_llvm_runtime(${arch})
 endforeach()
 
-if(NOT WIN32)
-    # clang++ on Windows reports an internal error of "<built-in>:1:10: fatal error: '__clang_cuda_runtime_wrapper.h' file not found" when compiling for CUDA targets
-    # so we can't use hand-writen cuda libraries util this issue get resolved
-    if(CUDA_ARCH)
-        find_package(CUDAToolkit)
-        if(${CUDAToolkit_FOUND} AND ${CUDAToolkit_VERSION_MAJOR} GREATER_EQUAL 8)
-            compile_custom_cuda_library(${CUDAToolkit_TARGET_DIR})
-        endif()
-    endif()
-endif()
+# You can implement hand-written CUDA Kernels in cuda_runtime.cu and then
+# uncomment the following code to compile it into .bc files
+
+#if(CUDA_ARCH)
+#    find_package(CUDAToolkit)
+#    if(${CUDAToolkit_FOUND})
+#      if(${CUDAToolkit_VERSION_MAJOR} GREATER_EQUAL 8)
+#          compile_custom_cuda_library(${CUDAToolkit_TARGET_DIR})
+#      endif()
+#    endif()
+#endif()

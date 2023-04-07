@@ -21,15 +21,20 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
   auto ker = codegen.compile();
   auto ker_ptr = ker.get();
   this->add_kernel(std::move(ker));
-  return [ker_ptr](RuntimeContext &ctx) { return ker_ptr->launch(&ctx); };
+  return [ker_ptr](LaunchContextBuilder &ctx) {
+    for (auto &[idx, ptr] : ctx.array_ptrs) {
+      ctx.cc_args[idx[0]] = (uint64)ptr;
+    }
+    return ker_ptr->launch(ctx);
+  };
 }
 
-void CCProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                        KernelProfilerBase *,
+void CCProgramImpl::materialize_runtime(KernelProfilerBase *,
                                         uint64 **result_buffer_ptr) {
   TI_ASSERT(*result_buffer_ptr == nullptr);
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
-      sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr =
+      (uint64 *)MemoryPool::get_instance(config->arch)
+          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
   result_buffer_ = *result_buffer_ptr;
 }
 
@@ -66,12 +71,11 @@ void CCProgramImpl::add_kernel(std::unique_ptr<CCKernel> kernel) {
 }
 
 void CCKernel::compile() {
-  if (!kernel_->is_evaluator)
-    ActionRecorder::get_instance().record(
-        "compile_kernel", {
-                              ActionArg("kernel_name", name_),
-                              ActionArg("kernel_source", source_),
-                          });
+  ActionRecorder::get_instance().record("compile_kernel",
+                                        {
+                                            ActionArg("kernel_name", name_),
+                                            ActionArg("kernel_source", source_),
+                                        });
 
   obj_path_ = fmt::format("{}/{}.o", runtime_tmp_dir, name_);
   src_path_ = fmt::format("{}/{}.c", runtime_tmp_dir, name_);
@@ -98,12 +102,11 @@ void CCRuntime::compile() {
   execute(cc_program_impl_->config->cc_compile_cmd, obj_path_, src_path_);
 }
 
-void CCKernel::launch(RuntimeContext *ctx) {
-  if (!kernel_->is_evaluator)
-    ActionRecorder::get_instance().record("launch_kernel",
-                                          {
-                                              ActionArg("kernel_name", name_),
-                                          });
+void CCKernel::launch(LaunchContextBuilder &ctx) {
+  ActionRecorder::get_instance().record("launch_kernel",
+                                        {
+                                            ActionArg("kernel_name", name_),
+                                        });
 
   cc_program_impl_->relink();
   TI_TRACE("[cc] entering kernel [{}]", name_);
@@ -178,10 +181,11 @@ CCFuncEntryType *CCProgramImpl::load_kernel(std::string const &name) {
   return reinterpret_cast<CCFuncEntryType *>(dll_->load_function("Tk_" + name));
 }
 
-CCContext *CCProgramImpl::update_context(RuntimeContext *ctx) {
+CCContext *CCProgramImpl::update_context(LaunchContextBuilder &ctx) {
   // TODO(k-ye): Do you have other zero-copy ideas for arg buf?
-  std::memcpy(context_->args, ctx->args, taichi_max_num_args * sizeof(uint64));
-  context_->earg = (int *)ctx->extra_args;
+  std::memcpy(context_->args, ctx.cc_args,
+              taichi_max_num_args * sizeof(uint64));
+  context_->earg = (int *)ctx.get_context().extra_args;
   return context_.get();
 }
 

@@ -1,4 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/impl_support.h"
+#include "taichi/system/memory_pool.h"
 
 namespace taichi::lang {
 
@@ -9,26 +11,39 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
   return allocations_[handle.alloc_id];
 }
 
-DeviceAllocation CpuDevice::allocate_memory(const AllocParams &params) {
+CpuDevice::CpuDevice() {
+  arch_ = host_arch();
+}
+
+RhiResult CpuDevice::allocate_memory(const AllocParams &params,
+                                     DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  auto vm = std::make_unique<VirtualMemoryAllocator>(params.size);
-  info.ptr = vm->ptr;
-  info.size = vm->size;
+  info.ptr = MemoryPool::get_instance(arch_).allocate(
+      params.size, MemoryPool::page_size, true /*releasable*/);
+  info.size = params.size;
   info.use_cached = false;
 
-  DeviceAllocation alloc;
-  alloc.alloc_id = allocations_.size();
-  alloc.device = this;
+  if (info.ptr == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->alloc_id = allocations_.size();
+  out_devalloc->device = this;
 
   allocations_.push_back(info);
-  virtual_memories_[alloc.alloc_id] = std::move(vm);
-  return alloc;
+
+  return RhiResult::success;
 }
 
 DeviceAllocation CpuDevice::allocate_memory_runtime(
     const LlvmRuntimeAllocParams &params) {
-  return allocate_memory(params);
+  DeviceAllocation alloc;
+  RhiResult res = allocate_memory(params, &alloc);
+  RHI_ASSERT(res == RhiResult::success &&
+             "Failed to allocate memory for runtime");
+  return alloc;
 }
 
 void CpuDevice::dealloc_memory(DeviceAllocation handle) {
@@ -38,8 +53,7 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   if (!info.use_cached) {
-    // Use at() to ensure that the memory is allocated, and not imported
-    virtual_memories_.at(handle.alloc_id).reset();
+    MemoryPool::get_instance(arch_).release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

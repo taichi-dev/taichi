@@ -25,6 +25,7 @@ int opengl_max_grid_dim = 1024;
 // without this global static boolean.
 static bool kUseGles = false;
 static std::optional<bool> supported;  // std::nullopt
+static bool context_with_glfw = false;
 void *kGetOpenglProcAddr;
 
 bool initialize_opengl(bool use_gles, bool error_tolerance) {
@@ -70,6 +71,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
       if (!desc)
         desc = "Unknown Error";
       TI_DEBUG("[glsl] cannot create GLFW window: error {}: {}", status, desc);
+      window_system::glfw_context_release();
     } else {
       glfwMakeContextCurrent(window);
       get_proc_addr = (void *)&glfwGetProcAddress;
@@ -79,6 +81,7 @@ bool initialize_opengl(bool use_gles, bool error_tolerance) {
         opengl_version = gladLoadGL(glfwGetProcAddress);
       }
       TI_DEBUG("OpenGL context loaded through GLFW");
+      context_with_glfw = true;
     }
   }
 #endif  // ANDROID
@@ -212,7 +215,9 @@ void reset_opengl() {
   supported = std::nullopt;
   kUseGles = false;
 #ifndef ANDROID
-  window_system::glfw_context_release();
+  if (context_with_glfw) {
+    window_system::glfw_context_release();
+  }
 #endif
 }
 

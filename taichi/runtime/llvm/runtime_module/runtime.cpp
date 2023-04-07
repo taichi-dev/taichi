@@ -286,7 +286,6 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 #include "taichi/program/context.h"
 #include "taichi/runtime/llvm/runtime_module/mem_request.h"
 
-STRUCT_FIELD_ARRAY(RuntimeContext, args);
 STRUCT_FIELD_ARRAY(RuntimeContext, grad_args);
 STRUCT_FIELD(RuntimeContext, runtime);
 STRUCT_FIELD(RuntimeContext, result_buffer)
@@ -566,7 +565,6 @@ struct LLVMRuntime {
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
-  MemRequestQueue *mem_req_queue;
   Ptr allocate(std::size_t size);
   Ptr allocate_aligned(std::size_t size, std::size_t alignment);
   Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
@@ -586,8 +584,6 @@ struct LLVMRuntime {
   i32 num_rand_states;
 
   i64 total_requested_memory;
-
-  Ptr wasm_print_buffer = nullptr;
 
   template <typename T>
   void set_result(std::size_t i, T t) {
@@ -860,20 +856,7 @@ Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
   if (preallocated)
     return allocate_from_buffer(size, alignment);
   else {
-    auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-    taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
-                          "Too many memory allocation requests.");
-    auto volatile r = &mem_req_queue->requests[i];
-    atomic_exchange_u64((uint64 *)&r->size, size);
-    atomic_exchange_u64((uint64 *)&r->alignment, alignment);
-
-    // wait for host to allocate
-    while (r->ptr == nullptr) {
-#if defined(ARCH_cuda)
-      system_memfence();
-#endif
-    };
-    return r->ptr;
+    return (Ptr)vm_allocator(memory_pool, size, alignment);
   }
 }
 
@@ -892,11 +875,6 @@ void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
                                      uint64 *result) {
   *result = taichi_union_cast_with_different_sizes<uint64>(
       runtime->allocate_aligned(size, alignment));
-}
-
-void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
-  runtime->set_result(taichi_result_buffer_ret_value_id,
-                      runtime->mem_req_queue);
 }
 
 void runtime_initialize(
@@ -936,10 +914,6 @@ void runtime_initialize(
   runtime->memory_pool = memory_pool;
 
   runtime->total_requested_memory = 0;
-
-  // runtime->allocate ready to use
-  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
@@ -1968,99 +1942,6 @@ f64 rounding_prepare_f64(f64 f) {
                    taichi_union_cast<i64>(0.5);
   f64 delta = taichi_union_cast<f64>(delta_bits);
   return f + delta;
-}
-}
-
-namespace {
-i32 kWasmPrintBufferSize = 1024 * 1024;
-}
-
-extern "C" {
-// The input means starting address of RuntimeContext, which should be set to
-// '__heap_base' to avoid conflicts with C++ stack data which is stored in
-// memory. The function returns starting address of root buffer. The print
-// buffer locates just before RuntimeContext (8MB). Here is an illustration for
-// proper memory layout in WASM:
-// clang-format off
-// ━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//  Print ┃▄ RuntimeContext ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
-// ━━━━━━━┻│━━━━━━━━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
-//         └────────────────┘  │         └──┘              │
-//                             └───────────────────────────┘
-// clang-format on
-i32 wasm_materialize(RuntimeContext *context) {
-  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(RuntimeContext));
-  context->runtime->rand_states =
-      (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
-  // set random seed to (1, 0, 0, 0)
-  context->runtime->rand_states[0].x = 1;
-  // TODO: remove hard coding on root id 0(SNodeTree::kFirstID)
-  context->runtime->roots[0] =
-      (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
-  return (i32)(size_t)context->runtime->roots[0];
-}
-
-// Memory layout for Print section:
-// i32 total_print_character_num;
-// struct {
-//    int type;  // 0 for i32, 1 for f32, 2 for char (i8)
-//    union {
-//      i32 i;
-//      f32 f;
-//      char c[4];
-//    } data;
-//} wasm_buffer_buffer[kWasmPrintBufferSize];
-void wasm_set_print_buffer(RuntimeContext *context, Ptr buffer) {
-  context->runtime->wasm_print_buffer = buffer;
-}
-
-void wasm_print_i32(RuntimeContext *context, i32 value) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 0;  // 0 for i32
-  ((i32 *)buffer)[print_pos * 2 + 2] = value;
-}
-
-void wasm_print_f32(RuntimeContext *context, f32 value) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 1;  // 1 for f32
-  ((f32 *)buffer)[print_pos * 2 + 2] = value;
-}
-
-void wasm_print_char(RuntimeContext *context,
-                     i8 value0,
-                     i8 value1,
-                     i8 value2,
-                     i8 value3) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
-  ((i8 *)buffer)[print_pos * 8 + 8] = value0;
-  ((i8 *)buffer)[print_pos * 8 + 9] = value1;
-  ((i8 *)buffer)[print_pos * 8 + 10] = value2;
-  ((i8 *)buffer)[print_pos * 8 + 11] = value3;
-}
-
-void wasm_set_kernel_parameter_i32(RuntimeContext *context,
-                                   int index,
-                                   i32 value) {
-  *(i32 *)(&context->args[index]) = value;
-}
-
-void wasm_set_kernel_parameter_f32(RuntimeContext *context,
-                                   int index,
-                                   f32 value) {
-  *(f32 *)(&context->args[index]) = value;
 }
 }
 

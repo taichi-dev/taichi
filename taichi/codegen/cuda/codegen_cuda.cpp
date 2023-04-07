@@ -39,10 +39,11 @@ static bool is_half2(DataType dt) {
 class TaskCodeGenCUDA : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
+  size_t dynamic_shared_array_bytes{0};
 
   explicit TaskCodeGenCUDA(const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
-                           Kernel *kernel,
+                           const Kernel *kernel,
                            IRNode *ir = nullptr)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
   }
@@ -105,11 +106,19 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
     std::string formats;
     size_t num_contents = 0;
-    for (auto const &content : stmt->contents) {
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
+
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
 
-        formats += data_type_format(arg_stmt->ret_type);
+        auto &&merged_format = merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type));
+        // CUDA supports all conversions, but not 'F'.
+        // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#format-specifiers
+        std::replace(merged_format.begin(), merged_format.end(), 'F', 'f');
+        formats += merged_format;
 
         auto value = llvm_val[arg_stmt];
         auto value_type = value->getType();
@@ -155,6 +164,44 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
 
     llvm_val[stmt] = create_print(formats, types, values);
+  }
+
+  void visit(AllocaStmt *stmt) override {
+    // Override shared memory codegen logic for large shared memory
+    if (stmt->ret_type->is<TensorType>() && stmt->is_shared) {
+      auto tensor_type = stmt->ret_type->cast<TensorType>();
+      size_t shared_array_bytes =
+          tensor_type->get_num_elements() *
+          data_type_size(tensor_type->get_element_type());
+      if (shared_array_bytes > cuda_dynamic_shared_array_threshold_bytes) {
+        if (dynamic_shared_array_bytes > 0) {
+          /* Current version only allows one dynamic shared array allocation,
+           * otherwise the results could be wrong.
+           * However, we should be able to collect multiple user allocations
+           * and transparently apply a proper offset.
+           *
+           * TODO: remove the limits.
+           */
+          TI_ERROR(
+              "Only one single large shared array instance is allowed in "
+              "current version.")
+        }
+        // Clear tensor shape for dynamic shared memory.
+        tensor_type->set_shape(std::vector<int>({0}));
+        dynamic_shared_array_bytes += shared_array_bytes;
+      }
+
+      auto type = tlctx->get_data_type(tensor_type);
+      auto base = new llvm::GlobalVariable(
+          *module, type, false, llvm::GlobalValue::ExternalLinkage, nullptr,
+          fmt::format("shared_array_{}", stmt->id), nullptr,
+          llvm::GlobalVariable::NotThreadLocal, 3 /*addrspace=shared*/);
+      base->setAlignment(llvm::MaybeAlign(8));
+      auto ptr_type = llvm::PointerType::get(type, 0);
+      llvm_val[stmt] = builder->CreatePointerCast(base, ptr_type);
+    } else {
+      TaskCodeGenLLVM::visit(stmt);
+    }
   }
 
   void emit_extra_unary(UnaryOpStmt *stmt) override {
@@ -209,6 +256,16 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (op == UnaryOpType::frexp) {
+      auto stype = tlctx->get_data_type(stmt->ret_type);
+      auto res = builder->CreateAlloca(stype);
+      auto frac_ptr = builder->CreateStructGEP(stype, res, 0);
+      auto exp_ptr = builder->CreateStructGEP(stype, res, 1);
+      auto double_input = builder->CreateFPExt(
+          input, llvm::Type::getDoubleTy(*tlctx->get_this_thread_context()));
+      auto frac = call("__nv_frexp", double_input, exp_ptr);
+      builder->CreateStore(frac, frac_ptr);
+      llvm_val[stmt] = res;
     }
     UNARY_STD(exp)
     UNARY_STD(log)
@@ -305,7 +362,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
             old_val = Load(old_val_ptr)
       */
-
       // Allocate old_val_ptr to store the result of atomic_add
       auto char_type = llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
       auto half_type = llvm::Type::getHalfTy(*tlctx->get_this_thread_context());
@@ -335,12 +391,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       builder->CreateStore(value1, value_ptr1);
       llvm::Value *value_half2_ptr =
           builder->CreateBitCast(value_ptr, ptr_type);
-
       // Defined in taichi/runtime/llvm/runtime_module/cuda_runtime.cu
       call("half2_atomic_add", dest_half2_ptr, old_val_ptr, value_half2_ptr);
 
-      llvm_val[atomic_stmt] = builder->CreateLoad(
-          old_val->getType()->getPointerElementType(), old_val);
+      llvm_val[atomic_stmt] = builder->CreateLoad(half_type, old_val);
       return;
     }
 
@@ -594,6 +648,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         current_task->grid_dim = num_SMs * query_max_block_per_sm;
       }
       current_task->block_dim = stmt->block_dim;
+      current_task->dynamic_shared_array_bytes = dynamic_shared_array_bytes;
       TI_ASSERT(current_task->grid_dim != 0);
       TI_ASSERT(current_task->block_dim != 0);
       offloaded_tasks.push_back(*current_task);
@@ -690,136 +745,6 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
     OffloadedStmt *stmt) {
   TaskCodeGenCUDA gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
-}
-
-FunctionType KernelCodeGenCUDA::compile_to_function() {
-  TI_AUTO_PROF
-  CUDAModuleToFunctionConverter converter{
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor()};
-  return converter.convert(this->kernel, compile_kernel_to_module());
-}
-
-FunctionType CUDAModuleToFunctionConverter::convert(
-    const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
-    LLVMCompiledKernel data) const {
-  auto &mod = data.module;
-  auto &tasks = data.tasks;
-#ifdef TI_WITH_CUDA
-  auto jit = tlctx_->jit.get();
-  auto cuda_module =
-      jit->add_module(std::move(mod), executor_->get_config().gpu_max_reg);
-
-  return [cuda_module, kernel_name, args, offloaded_tasks = tasks,
-          executor = this->executor_](RuntimeContext &context) {
-    CUDAContext::get_instance().make_current();
-    std::vector<void *> arg_buffers(args.size(), nullptr);
-    std::vector<void *> device_buffers(args.size(), nullptr);
-    std::vector<DeviceAllocation> temporary_devallocs(args.size());
-    char *device_result_buffer{nullptr};
-    CUDADriver::get_instance().malloc_async(
-        (void **)&device_result_buffer,
-        std::max(context.result_buffer_size, sizeof(uint64)), nullptr);
-
-    bool transferred = false;
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array) {
-        const auto arr_sz = context.array_runtime_sizes[i];
-        if (arr_sz == 0) {
-          continue;
-        }
-        arg_buffers[i] = context.get_arg<void *>(i);
-        if (context.device_allocation_type[i] ==
-            RuntimeContext::DevAllocType::kNone) {
-          // Note: both numpy and PyTorch support arrays/tensors with zeros
-          // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-          // `arr_sz` zero.
-          unsigned int attr_val = 0;
-          uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
-              &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-              (void *)arg_buffers[i]);
-
-          if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-            // Copy to device buffer if arg is on host
-            // - ret_code != CUDA_SUCCESS:
-            //   arg_buffers[i] is not on device
-            // - attr_val != CU_MEMORYTYPE_DEVICE:
-            //   Cuda driver is aware of arg_buffers[i] but it might be on
-            //   host.
-            // See CUDA driver API `cuPointerGetAttribute` for more details.
-            transferred = true;
-
-            DeviceAllocation devalloc = executor->allocate_memory_ndarray(
-                arr_sz, (uint64 *)device_result_buffer);
-            device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
-            temporary_devallocs[i] = devalloc;
-
-            CUDADriver::get_instance().memcpy_host_to_device(
-                (void *)device_buffers[i], arg_buffers[i], arr_sz);
-          } else {
-            device_buffers[i] = arg_buffers[i];
-          }
-          // device_buffers[i] saves a raw ptr on CUDA device.
-          context.set_arg(i, (uint64)device_buffers[i]);
-
-        } else if (arr_sz > 0) {
-          // arg_buffers[i] is a DeviceAllocation*
-          // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
-          // since it's shared by cpu and cuda.
-          DeviceAllocation *ptr =
-              static_cast<DeviceAllocation *>(arg_buffers[i]);
-          device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
-          // We compare arg_buffers[i] and device_buffers[i] later to check
-          // if transfer happened.
-          // TODO: this logic can be improved but I'll leave it to a followup
-          // PR.
-          arg_buffers[i] = device_buffers[i];
-
-          // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-          context.set_arg(i, (uint64)device_buffers[i]);
-        }
-      }
-    }
-    if (transferred) {
-      CUDADriver::get_instance().stream_synchronize(nullptr);
-    }
-    char *host_result_buffer = (char *)context.result_buffer;
-    if (context.result_buffer_size > 0) {
-      context.result_buffer = (uint64 *)device_result_buffer;
-    }
-    CUDADriver::get_instance().context_set_limit(
-        CU_LIMIT_STACK_SIZE, executor->get_config().cuda_stack_limit);
-
-    for (auto task : offloaded_tasks) {
-      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-               task.block_dim);
-      cuda_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                          {&context}, {});
-    }
-    if (context.result_buffer_size > 0) {
-      CUDADriver::get_instance().memcpy_device_to_host_async(
-          host_result_buffer, device_result_buffer, context.result_buffer_size,
-          nullptr);
-    }
-    CUDADriver::get_instance().mem_free_async(device_result_buffer, nullptr);
-    // copy data back to host
-    if (transferred) {
-      CUDADriver::get_instance().stream_synchronize(nullptr);
-      for (int i = 0; i < (int)args.size(); i++) {
-        if (device_buffers[i] != arg_buffers[i]) {
-          CUDADriver::get_instance().memcpy_device_to_host(
-              arg_buffers[i], (void *)device_buffers[i],
-              context.array_runtime_sizes[i]);
-          executor->deallocate_memory_ndarray(temporary_devallocs[i]);
-        }
-      }
-    }
-  };
-#else
-  TI_ERROR("No CUDA");
-  return nullptr;
-#endif  // TI_WITH_CUDA
 }
 
 }  // namespace taichi::lang

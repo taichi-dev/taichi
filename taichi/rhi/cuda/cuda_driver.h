@@ -2,7 +2,8 @@
 
 #include <mutex>
 
-#include "taichi/system/dynamic_loader.h"
+#include "taichi/common/dynamic_loader.h"
+#include "taichi/common/core.h"
 #include "taichi/rhi/cuda/cuda_types.h"
 
 #if (0)
@@ -30,6 +31,7 @@ constexpr uint32 CU_STREAM_NON_BLOCKING = 0x1;
 constexpr uint32 CU_MEM_ATTACH_GLOBAL = 0x1;
 constexpr uint32 CU_MEM_ADVISE_SET_PREFERRED_LOCATION = 3;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X = 2;
+constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN = 97;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MAX_BLOCKS_PER_MULTIPROCESSOR = 106;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT = 16;
 constexpr uint32 CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR = 75;
@@ -108,6 +110,12 @@ class CUDADriverBase {
 
   bool load_lib(std::string lib_linux, std::string lib_windows);
 
+  bool check_lib_loaded(std::string lib_linux, std::string lib_windows);
+
+  bool try_load_lib_any_version(const std::string &lib_name,
+                                const std::string &win_arch_name,
+                                const std::vector<int> &versions_to_try);
+
   bool disabled_by_env_{false};
 };
 
@@ -134,12 +142,23 @@ class CUDADriver : protected CUDADriverBase {
 
   static CUDADriver &get_instance_without_context();
 
+  int get_version_major() {
+    return version_major_;
+  }
+
+  int get_version_minor() {
+    return version_minor_;
+  }
+
  private:
   CUDADriver();
 
   std::mutex lock_;
 
   bool cuda_version_valid_{false};
+
+  int version_major_{0};
+  int version_minor_{0};
 };
 
 class CUSPARSEDriver : protected CUDADriverBase {

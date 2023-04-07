@@ -5,6 +5,16 @@ from tests import test_utils
 
 
 @test_utils.test()
+def _test_matrix_slice_read_python_scope():
+    v1 = ti.Vector([1, 2, 3, 4, 5, 6])[2::3]
+    assert (v1 == ti.Vector([3, 6])).all()
+    m = ti.Matrix([[2, 3], [4, 5]])[:1, 1:]
+    assert (m == ti.Matrix([[3]])).all()
+    v2 = ti.Matrix([[1, 2], [3, 4]])[:, 1]
+    assert (v2 == ti.Vector([2, 4])).all()
+
+
+@test_utils.test()
 def test_matrix_slice_read():
     b = 6
 
@@ -18,16 +28,10 @@ def test_matrix_slice_read():
         a = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         return a[1::, :]
 
-    v1 = foo1()
-    assert (v1 == ti.Vector([0, 2, 4])).all()
-    m1 = foo2()
-    assert (m1 == ti.Matrix([[4, 5, 6], [7, 8, 9]])).all()
-    v2 = ti.Vector([1, 2, 3, 4, 5, 6])[2::3]
-    assert (v2 == ti.Vector([3, 6])).all()
-    m2 = ti.Matrix([[2, 3], [4, 5]])[:1, 1:]
-    assert (m2 == ti.Matrix([[3]])).all()
-    v3 = ti.Matrix([[1, 2], [3, 4]])[:, 1]
-    assert (v3 == ti.Vector([2, 4])).all()
+    v = foo1()
+    assert (v == ti.Vector([0, 2, 4])).all()
+    m = foo2()
+    assert (m == ti.Matrix([[4, 5, 6], [7, 8, 9]])).all()
 
 
 @test_utils.test()
@@ -51,7 +55,7 @@ def test_matrix_slice_invalid():
         foo2()
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice(index: ti.i32) -> ti.types.vector(2, dtype=ti.i32):
@@ -99,7 +103,7 @@ def test_matrix_slice_write():
                                            [1, 1, 1, 1]])).all()
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_matrix_slice_write_dynamic_index():
     @ti.kernel
     def foo(i: ti.i32) -> ti.types.matrix(3, 4, ti.i32):

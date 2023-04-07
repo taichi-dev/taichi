@@ -90,19 +90,27 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
     glm::vec4 color;
   };
 
-  vbo_translated_ = app_context_->device().allocate_memory_unique(
-      {/*size=*/uint64_t(sizeof(TransformedVertex) * 4 * lines_count_),
-       /*host_write=*/false,
-       /*host_read=*/false,
-       /*export_sharing=*/false,
-       /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
+  {
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
+        {/*size=*/uint64_t(sizeof(TransformedVertex) * 4 * lines_count_),
+         /*host_write=*/false,
+         /*host_read=*/false,
+         /*export_sharing=*/false,
+         /*usage=*/AllocUsage::Storage | AllocUsage::Vertex});
+    TI_ASSERT(res == RhiResult::success);
+    vbo_translated_ = std::move(buf);
+  }
 
-  ibo_translated_ = app_context_->device().allocate_memory_unique(
-      {/*size=*/uint64_t(sizeof(int) * 6 * lines_count_),
-       /*host_write=*/false,
-       /*host_read=*/false,
-       /*export_sharing=*/false,
-       /*usage=*/AllocUsage::Storage | AllocUsage::Index});
+  {
+    auto [buf, res] = app_context_->device().allocate_memory_unique(
+        {/*size=*/uint64_t(sizeof(int) * 6 * lines_count_),
+         /*host_write=*/false,
+         /*host_read=*/false,
+         /*export_sharing=*/false,
+         /*usage=*/AllocUsage::Storage | AllocUsage::Index});
+    TI_ASSERT(res == RhiResult::success);
+    ibo_translated_ = std::move(buf);
+  }
 
   resource_set_->rw_buffer(0, vertex_buffer_->get_ptr(0));
   if (index_buffer_) {

@@ -9,10 +9,14 @@
 
 namespace fs = std::filesystem;
 
+#include "llvm/ADT/Triple.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/Host.h"
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
 #include "taichi/rhi/arch.h"
 #include "taichi/runtime/llvm/llvm_context.h"
@@ -23,6 +27,39 @@ namespace fs = std::filesystem;
 
 namespace taichi::lang {
 namespace {
+
+static llvm::Triple get_host_target_triple() {
+  auto expected_jtmb = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!expected_jtmb) {
+    TI_ERROR("LLVM TargetMachineBuilder has failed.");
+  }
+  return expected_jtmb->getTargetTriple();
+}
+
+static std::unique_ptr<llvm::TargetMachine> get_host_target_machine() {
+  auto triple = get_host_target_triple();
+
+  std::string err_str;
+  const llvm::Target *target =
+      llvm::TargetRegistry::lookupTarget(triple.str(), err_str);
+  TI_ERROR_UNLESS(target, err_str);
+
+  llvm::TargetOptions options;
+  options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+  options.UnsafeFPMath = 1;
+  options.NoInfsFPMath = 1;
+  options.NoNaNsFPMath = 1;
+  options.HonorSignDependentRoundingFPMathOption = false;
+  options.NoZerosInBSS = false;
+  options.GuaranteedTailCallOpt = false;
+
+  llvm::StringRef mcpu = llvm::sys::getHostCPUName();
+  std::unique_ptr<llvm::TargetMachine> target_machine(
+      target->createTargetMachine(triple.str(), mcpu.str(), "", options,
+                                  llvm::Reloc::PIC_, llvm::CodeModel::Small,
+                                  llvm::CodeGenOpt::Aggressive));
+  return target_machine;
+}
 
 constexpr char kKernelName[] = "foo";
 constexpr char kTaskName[] = "my_add";
@@ -44,6 +81,8 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
 
   static std::unique_ptr<llvm::Module> make_module(
       llvm::LLVMContext &llvm_ctx) {
+    auto target_machine = get_host_target_machine();
+
     auto mod = std::make_unique<llvm::Module>("my_mod", llvm_ctx);
     auto builder = std::make_unique<llvm::IRBuilder<>>(llvm_ctx);
     auto *const int32_ty = llvm::Type::getInt32Ty(llvm_ctx);
@@ -60,6 +99,8 @@ class LlvmOfflineCacheTest : public testing::TestWithParam<Format> {
     builder->SetInsertPoint(entry_block);
     auto *ret_val = builder->CreateAdd(args[0], args[1], "add");
     builder->CreateRet(ret_val);
+
+    mod->setDataLayout(target_machine->createDataLayout());
 
     llvm::verifyFunction(*func);
     return mod;
@@ -80,10 +121,16 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
   const auto tmp_dir_str{tmp_dir.u8string()};
   const bool dir_ok = fs::create_directories(tmp_dir);
   ASSERT_TRUE(dir_ok);
-  const std::vector<LlvmLaunchArgInfo> arg_infos = {
-      LlvmLaunchArgInfo{/*is_array=*/false},
-      LlvmLaunchArgInfo{/*is_array=*/true},
+  const std::vector<Callable::Parameter> arg_infos = {
+      Callable::Parameter{DataType(PrimitiveType::i32), false},
+      Callable::Parameter{DataType(PrimitiveType::i32), false},
   };
+  auto member1 = StructMember{PrimitiveType::i32, "a"};
+  auto member2 = StructMember{PrimitiveType::i32, "b"};
+  auto struct_type =
+      TypeFactory::get_instance().get_struct_type({member1, member2});
+  auto arg_type = tlctx_->get_struct_type_with_data_layout(
+      struct_type->as<StructType>(), tlctx_->get_data_layout_string());
   {
     auto llvm_ctx = std::make_unique<llvm::LLVMContext>();
 
@@ -101,6 +148,8 @@ TEST_P(LlvmOfflineCacheTest, ReadWrite) {
     kcache.compiled_data.tasks = tasks;
     kcache.compiled_data.module = make_module(*llvm_ctx);
     kcache.args = arg_infos;
+    kcache.args_type = arg_type.first;
+    kcache.args_size = arg_type.second;
     LlvmOfflineCacheFileWriter writer1;
     writer1.add_kernel_cache(kKernelName, kcache.clone());
     writer1.set_no_mangle();

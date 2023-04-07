@@ -57,8 +57,8 @@ def test_struct_whole_access():
     @ti.kernel
     def run_taichi_scope():
         for i in x:
-            # element-wise ops only work in Taichi scope
-            y[i] = x[i] * 2 + 1
+            y[i].a = x[i].a * 2 + 1
+            y[i].b = x[i].b * 2 + 1
 
     def run_python_scope():
         for i in range(n):
@@ -99,7 +99,8 @@ def test_struct_fill():
     @ti.kernel
     def fill_elements():
         for i in x:
-            x[i].fill(i + 0.5)
+            x[i].a = i + 0.5
+            x[i].b.fill(i + 0.5)
 
     fill_each()
     for i in range(n):
@@ -311,13 +312,17 @@ def test_compound_type_implicit_cast():
         return s.a + s.b[0] + s.b[1]
 
     int_value = f2i_taichi_scope()
-    assert type(int_value) == int and int_value == 6
+    assert isinstance(int_value, (int, np.integer)) and int_value == 6
     int_value = f2i_python_scope()
-    assert type(int_value) == int and int_value == 6
+    assert isinstance(int_value, (int, np.integer)) and int_value == 6
     float_value = i2f_taichi_scope()
-    assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+    assert isinstance(float_value,
+                      (float, np.floating)) and float_value == approx(6.0,
+                                                                      rel=1e-4)
     float_value = i2f_python_scope()
-    assert type(float_value) == float and float_value == approx(6.0, rel=1e-4)
+    assert isinstance(float_value,
+                      (float, np.floating)) and float_value == approx(6.0,
+                                                                      rel=1e-4)
 
 
 @test_utils.test()

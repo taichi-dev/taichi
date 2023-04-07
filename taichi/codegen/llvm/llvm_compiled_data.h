@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "llvm/IR/Module.h"
+#include "taichi/common/serialization.h"
 
 namespace taichi::lang {
 
@@ -12,12 +13,17 @@ class OffloadedTask {
   std::string name;
   int block_dim{0};
   int grid_dim{0};
+  int dynamic_shared_array_bytes{0};
 
   explicit OffloadedTask(const std::string &name = "",
                          int block_dim = 0,
-                         int grid_dim = 0)
-      : name(name), block_dim(block_dim), grid_dim(grid_dim){};
-  TI_IO_DEF(name, block_dim, grid_dim);
+                         int grid_dim = 0,
+                         int dynamic_shared_array_bytes = 0)
+      : name(name),
+        block_dim(block_dim),
+        grid_dim(grid_dim),
+        dynamic_shared_array_bytes(dynamic_shared_array_bytes){};
+  TI_IO_DEF(name, block_dim, grid_dim, dynamic_shared_array_bytes);
 };
 
 struct LLVMCompiledTask {

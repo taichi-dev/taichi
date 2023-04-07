@@ -143,6 +143,7 @@ class KernelContextAttributes {
    * Attributes that are shared by the input arg and the return value.
    */
   struct AttribsBase {
+    std::string name;
     // For scalar arg, this is max(stride(dt), 4)
     // For array arg, this is #elements * max(stride(dt), 4)
     // Unit: byte
@@ -159,7 +160,8 @@ class KernelContextAttributes {
     // while RW textures always have a valid format.
     BufferFormat format{BufferFormat::unknown};
 
-    TI_IO_DEF(stride,
+    TI_IO_DEF(name,
+              stride,
               offset_in_mem,
               index,
               dtype,
@@ -244,6 +246,20 @@ class KernelContextAttributes {
     return args_bytes();
   }
 
+  /**
+   * The type of the struct that contains all the arguments.
+   */
+  inline const lang::StructType *args_type() const {
+    return args_type_;
+  }
+
+  /**
+   * The type of the struct that contains all the return values.
+   */
+  inline const lang::StructType *rets_type() const {
+    return rets_type_;
+  }
+
   std::vector<irpass::ExternalPtrAccess> arr_access;
 
   TI_IO_DEF(arg_attribs_vec_,
@@ -251,7 +267,9 @@ class KernelContextAttributes {
             args_bytes_,
             rets_bytes_,
             extra_args_bytes_,
-            arr_access);
+            arr_access,
+            args_type_,
+            rets_type_);
 
  private:
   std::vector<ArgAttributes> arg_attribs_vec_;
@@ -260,6 +278,9 @@ class KernelContextAttributes {
   size_t args_bytes_{0};
   size_t rets_bytes_{0};
   size_t extra_args_bytes_{0};
+
+  const lang::StructType *args_type_{nullptr};
+  const lang::StructType *rets_type_{nullptr};
 };
 
 /**

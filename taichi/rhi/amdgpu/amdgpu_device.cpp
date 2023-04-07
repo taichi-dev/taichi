@@ -11,7 +11,8 @@ AmdgpuDevice::AllocInfo AmdgpuDevice::get_alloc_info(
   return allocations_[handle.alloc_id];
 }
 
-DeviceAllocation AmdgpuDevice::allocate_memory(const AllocParams &params) {
+RhiResult AmdgpuDevice::allocate_memory(const AllocParams &params,
+                                        DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
   if (params.host_read || params.host_write) {
@@ -26,12 +27,16 @@ DeviceAllocation AmdgpuDevice::allocate_memory(const AllocParams &params) {
   info.use_cached = false;
   info.use_preallocated = false;
 
-  DeviceAllocation alloc;
-  alloc.alloc_id = allocations_.size();
-  alloc.device = this;
+  if (info.ptr == nullptr) {
+    return RhiResult::out_of_memory;
+  }
+
+  *out_devalloc = DeviceAllocation{};
+  out_devalloc->alloc_id = allocations_.size();
+  out_devalloc->device = this;
 
   allocations_.push_back(info);
-  return alloc;
+  return RhiResult::success;
 }
 
 DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
@@ -42,7 +47,8 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
     TI_NOT_IMPLEMENTED
   } else if (params.use_cached) {
     if (caching_allocator_ == nullptr) {
-      caching_allocator_ = std::make_unique<AmdgpuCachingAllocator>(this);
+      caching_allocator_ = std::make_unique<CachingAllocator>(
+          this, false /*merge_upon_release*/);
     }
     info.ptr = caching_allocator_->allocate(params);
     AMDGPUDriver::get_instance().memset((void *)info.ptr, 0, info.size);
@@ -70,7 +76,7 @@ void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
     if (caching_allocator_ == nullptr) {
-      TI_ERROR("the AmdgpuCachingAllocator is not initialized");
+      TI_ERROR("the CachingAllocator is not initialized");
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {

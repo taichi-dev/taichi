@@ -42,6 +42,9 @@ bool check_validation_layer_support() {
 static const std::unordered_set<std::string> ignored_messages = {
     "UNASSIGNED-DEBUG-PRINTF",
     "VUID_Undefined",
+    // (penguinliong): Attempting to map a non-host-visible piece of memory.
+    // `VulkanDevice::map()` returns `RhiResult::invalid_usage` in this case.
+    "VUID-vkMapMemory-memory-00682",
 };
 
 [[maybe_unused]] bool vk_ignore_validation_warning(
@@ -599,6 +602,8 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       // Tracking issue: https://github.com/KhronosGroup/MoltenVK/issues/1214
       caps.set(DeviceCapability::spirv_has_non_semantic_info, true);
       enabled_extensions.push_back(ext.extensionName);
+    } else if (name == VK_KHR_8BIT_STORAGE_EXTENSION_NAME) {
+      enabled_extensions.push_back(ext.extensionName);
     } else if (name == VK_KHR_16BIT_STORAGE_EXTENSION_NAME) {
       enabled_extensions.push_back(ext.extensionName);
     } else if (std::find(params_.additional_device_extensions.begin(),
@@ -687,6 +692,9 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
   shader_f16_i8_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR;
 
+  VkPhysicalDevice8BitStorageFeatures shader_8bit_storage_feature{};
+  shader_8bit_storage_feature.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES;
   VkPhysicalDevice16BitStorageFeatures shader_16bit_storage_feature{};
   shader_16bit_storage_feature.sType =
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES;
@@ -785,6 +793,14 @@ void VulkanDeviceCreator::create_logical_device(bool manual_create) {
       pNextEnd = &shader_f16_i8_feature.pNext;
     }
 
+    if (CHECK_VERSION(1, 1) ||
+        CHECK_EXTENSION(VK_KHR_8BIT_STORAGE_EXTENSION_NAME)) {
+      features2.pNext = &shader_8bit_storage_feature;
+      vkGetPhysicalDeviceFeatures2KHR(physical_device_, &features2);
+
+      *pNextEnd = &shader_8bit_storage_feature;
+      pNextEnd = &shader_8bit_storage_feature.pNext;
+    }
     if (CHECK_VERSION(1, 1) ||
         CHECK_EXTENSION(VK_KHR_16BIT_STORAGE_EXTENSION_NAME)) {
       features2.pNext = &shader_16bit_storage_feature;

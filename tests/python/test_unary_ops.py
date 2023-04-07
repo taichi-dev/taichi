@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from taichi.lang.exception import TaichiTypeError
 
 import taichi as ti
 from tests import test_utils
@@ -54,3 +55,40 @@ def test_trig_f32(taichi_op, np_op):
 @test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_trig_f64(taichi_op, np_op):
     _test_op(ti.f64, taichi_op, np_op)
+
+
+@test_utils.test()
+def test_bit_not_invalid():
+    @ti.kernel
+    def test(x: ti.f32) -> ti.i32:
+        return ~x
+
+    with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
+        test(1.0)
+
+
+@test_utils.test()
+def test_logic_not_invalid():
+    @ti.kernel
+    def test(x: ti.f32) -> ti.i32:
+        return not x
+
+    with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
+        test(1.0)
+
+
+@test_utils.test(arch=ti.cuda)
+def test_frexp():
+    @ti.kernel
+    def get_frac(x: ti.f32) -> ti.f32:
+        a, b = ti.frexp(x)
+        return a
+
+    assert test_utils.allclose(get_frac(1.4), 0.7)
+
+    @ti.kernel
+    def get_exp(x: ti.f32) -> ti.i32:
+        a, b = ti.frexp(x)
+        return b
+
+    assert get_exp(1.4) == 1

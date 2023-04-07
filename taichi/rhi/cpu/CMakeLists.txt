@@ -14,5 +14,3 @@ target_include_directories(${CPU_RHI}
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
     ${PROJECT_SOURCE_DIR}/external/glfw/include
   )
-
-target_link_libraries(${CPU_RHI} PRIVATE interop_rhi)

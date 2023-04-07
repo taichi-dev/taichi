@@ -2,21 +2,26 @@
 
 #include "llvm/IR/Module.h"
 
+#include "taichi/codegen/cpu/codegen_cpu.h"
+#include "taichi/codegen/llvm/llvm_compiled_data.h"
 #include "taichi/program/program.h"
 #include "taichi/codegen/codegen.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
+#include "taichi/runtime/llvm/llvm_aot_module_builder.h"
+#include "taichi/runtime/llvm/kernel_launcher.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 #include "taichi/analysis/offline_cache_util.h"
-#include "taichi/runtime/cpu/aot_module_builder_impl.h"
 
 #if defined(TI_WITH_CUDA)
-#include "taichi/runtime/cuda/aot_module_builder_impl.h"
 #include "taichi/codegen/cuda/codegen_cuda.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 #endif
 
 #if defined(TI_WITH_AMDGPU)
 #include "taichi/codegen/amdgpu/codegen_amdgpu.h"
+#include "taichi/runtime/amdgpu/kernel_launcher.h"
 #endif
 
 #if defined(TI_WITH_DX12)
@@ -24,26 +29,16 @@
 #include "taichi/codegen/dx12/codegen_dx12.h"
 #endif
 
-namespace taichi::lang {
+#include "taichi/codegen/llvm/kernel_compiler.h"
+#include "taichi/codegen/llvm/compiled_kernel_data.h"
 
+namespace taichi::lang {
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
     : ProgramImpl(config_),
       compilation_workers("compile", config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
-  if (config_.offline_cache) {
-    cache_reader_ =
-        LlvmOfflineCacheFileReader::make(offline_cache::get_cache_path_by_arch(
-            config_.offline_cache_file_path, config->arch));
-  }
-}
-
-FunctionType LlvmProgramImpl::compile(const CompileConfig &compile_config,
-                                      Kernel *kernel) {
-  auto codegen = KernelCodeGen::create(compile_config, kernel,
-                                       *runtime_exec_->get_llvm_context());
-  return codegen->compile_to_function();
 }
 
 std::unique_ptr<StructCompiler> LlvmProgramImpl::compile_snode_tree_types_impl(
@@ -81,17 +76,11 @@ void LlvmProgramImpl::materialize_snode_tree(SNodeTree *tree,
 
 std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
-  if (config->arch == Arch::x64 || config->arch == Arch::arm64) {
-    return std::make_unique<cpu::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
+  if (config->arch == Arch::x64 || config->arch == Arch::arm64 ||
+      config->arch == Arch::cuda) {
+    return std::make_unique<LlvmAotModuleBuilder>(
+        get_kernel_compilation_manager(), *config, this);
   }
-
-#if defined(TI_WITH_CUDA)
-  if (config->arch == Arch::cuda) {
-    return std::make_unique<cuda::AotModuleBuilderImpl>(
-        *config, this, *runtime_exec_->get_llvm_context());
-  }
-#endif
 
 #if defined(TI_WITH_DX12)
   if (config->arch == Arch::dx12) {
@@ -102,20 +91,6 @@ std::unique_ptr<AotModuleBuilder> LlvmProgramImpl::make_aot_module_builder(
 
   TI_NOT_IMPLEMENTED;
   return nullptr;
-}
-
-void LlvmProgramImpl::cache_kernel(const std::string &kernel_key,
-                                   const LLVMCompiledKernel &data,
-                                   std::vector<LlvmLaunchArgInfo> &&args) {
-  if (cache_data_->kernels.find(kernel_key) != cache_data_->kernels.end()) {
-    return;
-  }
-  auto &kernel_cache = cache_data_->kernels[kernel_key];
-  kernel_cache.kernel_key = kernel_key;
-  kernel_cache.compiled_data = data.clone();
-  kernel_cache.args = std::move(args);
-  kernel_cache.created_at = std::time(nullptr);
-  kernel_cache.last_used_at = std::time(nullptr);
 }
 
 void LlvmProgramImpl::cache_field(int snode_tree_id,
@@ -145,26 +120,31 @@ void LlvmProgramImpl::cache_field(int snode_tree_id,
   cache_data_->fields[snode_tree_id] = std::move(ret);
 }
 
-void LlvmProgramImpl::dump_cache_data_to_disk() {
-  if (config->offline_cache) {
-    auto policy = offline_cache::string_to_clean_cache_policy(
-        config->offline_cache_cleaning_policy);
-    LlvmOfflineCacheFileWriter::clean_cache(
-        offline_cache::get_cache_path_by_arch(config->offline_cache_file_path,
-                                              config->arch),
-        policy, config->offline_cache_max_size_of_files,
-        config->offline_cache_cleaning_factor);
-    if (!cache_data_->kernels.empty()) {
-      LlvmOfflineCacheFileWriter writer{};
-      writer.set_data(std::move(cache_data_));
+std::unique_ptr<KernelCompiler> LlvmProgramImpl::make_kernel_compiler() {
+  lang::LLVM::KernelCompiler::Config cfg;
+  cfg.tlctx = runtime_exec_->get_llvm_context();
+  return std::make_unique<lang::LLVM::KernelCompiler>(std::move(cfg));
+}
 
-      // Note: For offline-cache, new-metadata should be merged with
-      // old-metadata
-      writer.dump(offline_cache::get_cache_path_by_arch(
-                      config->offline_cache_file_path, config->arch),
-                  LlvmOfflineCache::LL, true);
-    }
+std::unique_ptr<KernelLauncher> LlvmProgramImpl::make_kernel_launcher() {
+  LLVM::KernelLauncher::Config cfg;
+  cfg.executor = runtime_exec_.get();
+
+  if (arch_is_cpu(config->arch)) {
+    return std::make_unique<cpu::KernelLauncher>(std::move(cfg));
+  } else if (config->arch == Arch::cuda) {
+#if defined(TI_WITH_CUDA)
+    return std::make_unique<cuda::KernelLauncher>(std::move(cfg));
+#endif
+  } else if (config->arch == Arch::amdgpu) {
+#if defined(TI_WITH_AMDGPU)
+    return std::make_unique<amdgpu::KernelLauncher>(std::move(cfg));
+#endif
+  } else if (config->arch == Arch::dx12) {
+    // Not implemented
   }
+
+  TI_NOT_IMPLEMENTED;
 }
 
 LlvmProgramImpl *get_llvm_program(Program *prog) {

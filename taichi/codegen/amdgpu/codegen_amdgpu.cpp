@@ -29,7 +29,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
   using IRVisitor::visit;
   TaskCodeGenAMDGPU(const CompileConfig &config,
                     TaichiLLVMContext &tlctx,
-                    Kernel *kernel,
+                    const Kernel *kernel,
                     IRNode *ir = nullptr)
       : TaskCodeGenLLVM(config, tlctx, kernel, ir) {
   }
@@ -488,105 +488,6 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
     OffloadedStmt *stmt) {
   TaskCodeGenAMDGPU gen(config, get_taichi_llvm_context(), kernel, stmt);
   return gen.run_compilation();
-}
-
-FunctionType KernelCodeGenAMDGPU::compile_to_function() {
-  AMDGPUModuleToFunctionConverter converter{
-      &get_taichi_llvm_context(),
-      get_llvm_program(prog)->get_runtime_executor()};
-
-  return converter.convert(this->kernel, compile_kernel_to_module());
-}
-
-FunctionType AMDGPUModuleToFunctionConverter::convert(
-    const std::string &kernel_name,
-    const std::vector<LlvmLaunchArgInfo> &args,
-    LLVMCompiledKernel data) const {
-  auto &mod = data.module;
-  auto &tasks = data.tasks;
-  auto jit = tlctx_->jit.get();
-  auto amdgpu_module =
-      jit->add_module(std::move(mod), executor_->get_config().gpu_max_reg);
-
-  return [amdgpu_module, kernel_name, args, offloaded_tasks = tasks,
-          executor = this->executor_](RuntimeContext &context) {
-    AMDGPUContext::get_instance().make_current();
-    std::vector<void *> arg_buffers(args.size(), nullptr);
-    std::vector<void *> device_buffers(args.size(), nullptr);
-    char *device_result_buffer{nullptr};
-    bool transferred = false;
-    for (int i = 0; i < (int)args.size(); i++) {
-      if (args[i].is_array) {
-        const auto arr_sz = context.array_runtime_sizes[i];
-        if (arr_sz == 0)
-          continue;
-        arg_buffers[i] = context.get_arg<void *>(i);
-        if (context.device_allocation_type[i] ==
-            RuntimeContext::DevAllocType::kNone) {
-          unsigned int attr_val[8];
-          uint32_t ret_code =
-              AMDGPUDriver::get_instance().mem_get_attributes.call(
-                  attr_val, (void *)arg_buffers[i]);
-          if (ret_code != HIP_SUCCESS || attr_val[0] != HIP_MEMORYTYPE_DEVICE) {
-            transferred = true;
-            AMDGPUDriver::get_instance().malloc(&device_buffers[i], arr_sz);
-            AMDGPUDriver::get_instance().memcpy_host_to_device(
-                (void *)device_buffers[i], arg_buffers[i], arr_sz);
-          } else {
-            device_buffers[i] = arg_buffers[i];
-          }
-
-          context.set_arg(i, (uint64)device_buffers[i]);
-        } else if (arr_sz > 0) {  // why use arr_sz constrain?
-          DeviceAllocation *ptr =
-              static_cast<DeviceAllocation *>(arg_buffers[i]);
-          device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
-          arg_buffers[i] = device_buffers[i];
-          context.set_arg(i, (uint64)device_buffers[i]);
-        }
-      }
-    }
-    if (transferred) {
-      AMDGPUDriver::get_instance().stream_synchronize(nullptr);
-    }
-    char *host_result_buffer = (char *)context.result_buffer;
-    if (context.result_buffer_size > 0) {
-      AMDGPUDriver::get_instance().malloc((void **)&device_result_buffer,
-                                          context.result_buffer_size);
-      context.result_buffer = (uint64 *)device_result_buffer;
-    }
-    void *context_pointer;
-    int arg_size = sizeof(RuntimeContext *);
-    AMDGPUDriver::get_instance().malloc((void **)&context_pointer,
-                                        sizeof(RuntimeContext));
-    AMDGPUDriver::get_instance().memcpy_host_to_device(
-        context_pointer, &context, sizeof(RuntimeContext));
-
-    AMDGPUContext::get_instance().push_back_kernel_arg_pointer(context_pointer);
-
-    for (auto &task : offloaded_tasks) {
-      TI_TRACE("Launching kernel {}<<<{}, {}>>>", task.name, task.grid_dim,
-               task.block_dim);
-      amdgpu_module->launch(task.name, task.grid_dim, task.block_dim, 0,
-                            {(void *)&context_pointer}, {arg_size});
-    }
-    TI_TRACE("Launching kernel");
-    if (context.result_buffer_size > 0) {
-      AMDGPUDriver::get_instance().memcpy_device_to_host(
-          host_result_buffer, device_result_buffer, context.result_buffer_size);
-      AMDGPUDriver::get_instance().mem_free(device_result_buffer);
-    }
-    if (transferred) {
-      for (int i = 0; i < args.size(); i++) {
-        if (device_buffers[i] != arg_buffers[i]) {
-          AMDGPUDriver::get_instance().memcpy_device_to_host(
-              arg_buffers[i], (void *)device_buffers[i],
-              context.array_runtime_sizes[i]);
-          AMDGPUDriver::get_instance().mem_free((void *)device_buffers[i]);
-        }
-      }
-    }
-  };
 }
 
 }  // namespace lang

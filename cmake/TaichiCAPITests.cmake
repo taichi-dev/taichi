@@ -22,6 +22,12 @@ if (WIN32)
     set_target_properties(${C_API_TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELEASE ${C_API_TESTS_OUTPUT_DIR})
     set_target_properties(${C_API_TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL ${C_API_TESTS_OUTPUT_DIR})
     set_target_properties(${C_API_TESTS_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO ${C_API_TESTS_OUTPUT_DIR})
+    if (MSVC)
+        target_compile_options(${C_API_TESTS_NAME} PRIVATE "$<$<CONFIG:Release>:/Zi>")
+        target_link_options(${C_API_TESTS_NAME} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+        target_link_options(${C_API_TESTS_NAME} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+        target_link_options(${C_API_TESTS_NAME} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
+    endif()
 endif()
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_c_api)
 target_link_libraries(${C_API_TESTS_NAME} PRIVATE taichi_common)
@@ -42,6 +48,10 @@ target_include_directories(${C_API_TESTS_NAME}
   )
 
 add_test(NAME ${C_API_TESTS_NAME} COMMAND ${C_API_TESTS_NAME})
+
+if(LINUX)
+    target_link_options(${C_API_TESTS_NAME} PUBLIC -static-libgcc -static-libstdc++)
+endif()
 
 if(TI_WITH_STATIC_C_API)
     set(C_STATIC_API_TESTS_NAME taichi_static_c_api_tests)

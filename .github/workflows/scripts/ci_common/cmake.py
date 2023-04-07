@@ -24,7 +24,6 @@ class CMakeArgsManager:
         'OFF': False,
     }
 
-    @banner("Parsing {environ_name}")
     def __init__(self, environ_name):
         self.environ_name = environ_name
         self.definitions = {}
@@ -102,7 +101,10 @@ class CMakeArgsManager:
                 v = f'-D{name}={value}'
 
             desc, _ = self.option_definitions.get(name, ('', None))
-            desc = desc and f' ({desc})'
+            if desc:
+                prefix = 'DO NOT ' if not value else ''
+                desc = f' ({prefix}{desc})'
+
             lst.append((name, v, desc))
 
         return lst

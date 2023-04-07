@@ -66,7 +66,10 @@ class LowerMatrixPtr : public BasicStmtVisitor {
       auto fused = std::make_unique<ExternalPtrStmt>(
           origin->base_ptr, indices, element_shape, element_dim);
       fused->ret_type = stmt->ret_type;
-
+      // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
+      // with flattened indices. Main goal is to keep all the hacks in a single
+      // place so that they're easier to remove
+      origin->base_ptr->as<ArgLoadStmt>()->ret_type = stmt->ret_type;
       stmt->replace_usages_with(fused.get());
       modifier_.insert_before(stmt, std::move(fused));
       modifier_.erase(stmt);

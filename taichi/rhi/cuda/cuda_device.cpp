@@ -18,7 +18,11 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
   // TODO(zhanlue): replace MemoryPool::allocate_raw_memory() with
   // MemoryPool::allocate()
   auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
-  void *ptr = mem_pool.allocate(params.size, MemoryPool::page_size);
+
+  bool managed = params.host_read || params.host_write;
+  bool exclusive = params.host_read || params.host_write;
+  void *ptr =
+      mem_pool.allocate(params.size, MemoryPool::page_size, exclusive, managed);
   if (ptr == nullptr) {
     return RhiResult::out_of_memory;
   }

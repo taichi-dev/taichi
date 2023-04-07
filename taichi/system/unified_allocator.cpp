@@ -37,7 +37,8 @@ UnifiedAllocator::UnifiedAllocator(Arch arch) : arch_(arch) {
 
 void *UnifiedAllocator::allocate(std::size_t size,
                                  std::size_t alignment,
-                                 bool exclusive) {
+                                 bool exclusive,
+                                 bool managed) {
   // UnifiedAllocator never reuses the previously allocated memory
   // just move the head forward util depleting all the free memory
 
@@ -77,8 +78,8 @@ void *UnifiedAllocator::allocate(std::size_t size,
   TI_TRACE("Allocating virtual address space of size {} MB",
            allocation_size / 1024 / 1024);
 
-  void *ptr =
-      MemoryPool::get_instance(arch_).allocate_raw_memory(allocation_size);
+  void *ptr = MemoryPool::get_instance(arch_).allocate_raw_memory(
+      allocation_size, managed);
   chunk.data = ptr;
   chunk.head = chunk.data;
   chunk.tail = (void *)((std::size_t)chunk.head + allocation_size);
@@ -99,7 +100,9 @@ bool UnifiedAllocator::release(size_t sz, void *ptr) {
     auto &chunk = chunks_[chunk_idx];
 
     if (chunk.data == ptr) {
-      TI_ASSERT(chunk.is_exclusive);
+      // TODO(zhanlue): uncomment after we migrated CudaMemoryPool to use the
+      // Caching Allocator TI_ASSERT(chunk.is_exclusive);
+
       remove_memory_chunk(chunks_, chunk_idx);
 
       // MemoryPool is responsible for releasing the raw memory

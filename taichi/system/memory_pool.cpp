@@ -33,13 +33,14 @@ class HostMemoryPool : public MemoryPool {
 
   void *allocate(std::size_t size,
                  std::size_t alignment,
-                 bool releasable) override {
+                 bool exclusive,
+                 bool managed) override {
     std::lock_guard<std::mutex> _(mut_allocation_);
 
     if (!allocator_) {
       TI_ERROR("Memory pool is already destroyed");
     }
-    void *ret = allocator_->allocate(size, alignment, releasable);
+    void *ret = allocator_->allocate(size, alignment, exclusive, managed);
     return ret;
   }
 
@@ -57,7 +58,7 @@ class HostMemoryPool : public MemoryPool {
     }
   }
 
-  void *allocate_raw_memory(std::size_t size) override {
+  void *allocate_raw_memory(std::size_t size, bool managed) override {
     /*
       Be aware that this methods is not protected by the mutex.
 
@@ -158,20 +159,19 @@ class CudaMemoryPool : public MemoryPool {
 
   void *allocate(std::size_t size,
                  std::size_t alignment,
-                 bool releasable) override {
+                 bool exclusive,
+                 bool managed) override {
     std::lock_guard<std::mutex> _(mut_allocation_);
 
     // TODO(zhanlue): Replace UnifiedAllocator with Caching Allocator
     // Here we reuse the UnifiedAllocator's allocation logic to perform
     // pre-allocation, but ideally this preallocation logic should be fused into
     // the Caching Allocator
-    TI_ASSERT(!releasable);
     if (!allocator_) {
       TI_ERROR("Memory pool is already destroyed");
     }
-    TI_ASSERT(raw_memory_chunks_.empty());
 
-    void *ret = allocator_->allocate(size, alignment, true);
+    void *ret = allocator_->allocate(size, alignment, exclusive, managed);
     return ret;
   }
 
@@ -189,7 +189,7 @@ class CudaMemoryPool : public MemoryPool {
     }
   }
 
-  void *allocate_raw_memory(std::size_t size) override {
+  void *allocate_raw_memory(std::size_t size, bool managed) override {
     /*
       Be aware that this methods is not protected by the mutex.
 
@@ -201,7 +201,13 @@ class CudaMemoryPool : public MemoryPool {
     */
 #ifdef TI_WITH_CUDA
     void *ptr = nullptr;
-    CUDADriver::get_instance().malloc(&ptr, size);
+    std::cout << managed << std::endl;
+    if (!managed) {
+      CUDADriver::get_instance().malloc(&ptr, size);
+    } else {
+      CUDADriver::get_instance().malloc_managed(&ptr, size,
+                                                CU_MEM_ATTACH_GLOBAL);
+    }
 
     if (ptr == nullptr) {
       TI_ERROR("CUDA memory allocation ({} B) failed.", size);

@@ -27,12 +27,13 @@ class TI_DLL_EXPORT MemoryPool {
 
   virtual void *allocate(std::size_t size,
                          std::size_t alignment,
-                         bool releasable = false) = 0;
+                         bool exclusive = false,
+                         bool managed = false) = 0;
   virtual void release(std::size_t size, void *ptr) = 0;
   virtual void reset() = 0;
 
  protected:
-  virtual void *allocate_raw_memory(std::size_t size) = 0;
+  virtual void *allocate_raw_memory(std::size_t size, bool managed = false) = 0;
   virtual void deallocate_raw_memory(void *ptr) = 0;
 
   // All the raw memory allocated from OS/Driver

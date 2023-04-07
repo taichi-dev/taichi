@@ -4,17 +4,15 @@ Math functions for glsl-like functions and other stuff.
 """
 from math import e, inf, nan, pi
 
+import taichi.lang.ops as ops
 from taichi.lang import impl
+from taichi.lang.impl import static, zero
+from taichi.lang.kernel_impl import func
+from taichi.lang.matrix import Matrix
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
                              max, min, pow, round, sin, sqrt, tan, tanh)
-
-from taichi.types import vector, matrix, template
-from taichi.lang.kernel_impl import func
-from taichi.lang.impl import static, zero
-from taichi.lang.matrix import Matrix
-from taichi.types.primitive_types import u32, u64, f32, f64
-import taichi.lang.ops as ops
-
+from taichi.types import matrix, template, vector
+from taichi.types.primitive_types import f32, f64, u32, u64
 
 cfg = impl.default_cfg
 

@@ -18,18 +18,19 @@ namespace taichi::lang {
 const std::size_t UnifiedAllocator::default_allocator_size =
     1 << 30;  // 1 GB per allocator
 
-static void remove_memory_chunk(std::vector<UnifiedAllocator::MemoryChunk> &vec,
-                                size_t idx) {
+template <typename T>
+static void swap_erase_vector(std::vector<T> &vec, size_t idx) {
+  bool is_last = idx == vec.size() - 1;
   TI_ASSERT(idx < vec.size());
 
-  if (idx + 1 != vec.size()) {
+  if (!is_last) {
     std::swap(vec[idx], vec.back());
   }
 
   vec.pop_back();
 
   // swap it back so it does not influence the last memory chunk to reuse
-  if (idx + 1 != vec.size()) {
+  if (!is_last) {
     std::swap(vec[idx], vec.back());
   }
 }
@@ -47,7 +48,7 @@ void *UnifiedAllocator::allocate(std::size_t size,
   // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
   // transparent to user code
   std::size_t allocation_size = size;
-  if (!chunks_.empty() && !exclusive) {
+  if (!chunks_.empty() && !exclusive && !chunks_.back().is_exclusive) {
     // Try reusing the last chunk
     MemoryChunk &current_chunk = chunks_.back();
 
@@ -98,18 +99,22 @@ bool UnifiedAllocator::release(size_t sz, void *ptr) {
   // UnifiedAllocator is special in that it never reuses the previously
   // allocated memory We have to release the entire memory chunk to avoid memory
   // leak
+  int remove_idx = -1;
   for (size_t chunk_idx = 0; chunk_idx < chunks_.size(); chunk_idx++) {
     auto &chunk = chunks_[chunk_idx];
 
     if (chunk.data == ptr) {
       // TODO(zhanlue): uncomment after we migrated CudaMemoryPool to use the
       // Caching Allocator TI_ASSERT(chunk.is_exclusive);
-
-      remove_memory_chunk(chunks_, chunk_idx);
-
-      // MemoryPool is responsible for releasing the raw memory
-      return true;
+      // TI_ASSERT(chunk.is_exclusive);
+      remove_idx = chunk_idx;
     }
+  }
+
+  if (remove_idx != -1) {
+    swap_erase_vector<MemoryChunk>(chunks_, remove_idx);
+    // MemoryPool is responsible for releasing the raw memory
+    return true;
   }
 
   return false;

@@ -1,5 +1,7 @@
 from math import sqrt
+
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
+
 import taichi as ti
 
 

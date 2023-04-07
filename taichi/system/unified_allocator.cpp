@@ -20,14 +20,16 @@ const std::size_t UnifiedAllocator::default_allocator_size =
 
 static void remove_memory_chunk(std::vector<UnifiedAllocator::MemoryChunk> &vec,
                                 size_t idx) {
-  if (idx + 1 < vec.size()) {
+  TI_ASSERT(idx < vec.size());
+
+  if (idx + 1 != vec.size()) {
     std::swap(vec[idx], vec.back());
   }
 
   vec.pop_back();
 
   // swap it back so it does not influence the last memory chunk to reuse
-  if (idx + 1 < vec.size()) {
+  if (idx + 1 != vec.size()) {
     std::swap(vec[idx], vec.back());
   }
 }

@@ -4,6 +4,7 @@
 import os
 import platform
 
+from .cmake import cmake_args
 # -- third party --
 # -- own --
 from .dep import download_dep
@@ -59,9 +60,8 @@ def setup_sccache() -> Command:
         exe.chmod(0o755)
 
     os.environ["SCCACHE_LOG"] = "error"
-    os.environ["TAICHI_CMAKE_ARGS"] += (
-        f" -DCMAKE_C_COMPILER_LAUNCHER={exe}"
-        f" -DCMAKE_CXX_COMPILER_LAUNCHER={exe}")
+    cmake_args["CMAKE_C_COMPILER_LAUNCHER"] = str(exe)
+    cmake_args["CMAKE_CXX_COMPILER_LAUNCHER"] = str(exe)
 
     # <LocalCache>
     cache = root / "cache"

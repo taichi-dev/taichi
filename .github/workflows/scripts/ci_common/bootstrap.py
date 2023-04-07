@@ -113,8 +113,6 @@ def set_common_env():
     # FIXME: Should be in GitHub Actions yaml
     os.environ['TI_CI'] = '1'
     os.environ['TI_SKIP_VERSION_CHECK'] = 'ON'
-    if 'TAICHI_CMAKE_ARGS' not in os.environ:
-        os.environ['TAICHI_CMAKE_ARGS'] = ''
 
 
 _Environ = os.environ.__class__

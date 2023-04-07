@@ -13,6 +13,7 @@ from pathlib import Path
 # -- own --
 from ci_common import misc
 from ci_common.android import build_android, setup_android_ndk
+from ci_common.cmake import cmake_args
 from ci_common.compiler import setup_clang, setup_msvc
 from ci_common.llvm import setup_llvm
 from ci_common.misc import banner, is_manylinux2014
@@ -39,7 +40,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     if proj == 'taichi-nightly':
         proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
         # Include C-API in nightly builds
-        os.environ['TAICHI_CMAKE_ARGS'] += ' -DTI_WITH_C_API=ON'
+        cmake_args['TI_WITH_C_API'] = True
 
     if platform.system() == 'Linux':
         if is_manylinux2014():
@@ -47,6 +48,7 @@ def build_wheel(python: Command, pip: Command) -> None:
         else:
             extra.extend(['-p', 'manylinux_2_27_x86_64'])
 
+    cmake_args.materialize()
     python('setup.py', 'clean')
     python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
            './', '--save')
@@ -54,7 +56,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     python('setup.py', *proj_tags, 'bdist_wheel', *extra)
 
 
-def setup_basic_build_env():
+def setup_basic_build_env(force_vulkan=False):
     u = platform.uname()
     if (u.system, u.machine) == ('Windows', 'AMD64'):
         # Use MSVC on Windows
@@ -65,7 +67,9 @@ def setup_basic_build_env():
         setup_clang()
 
     setup_llvm()
-    setup_vulkan()
+    if force_vulkan or cmake_args.get_effective('TI_WITH_VULKAN'):
+        setup_vulkan()
+
     sccache = setup_sccache()
 
     # NOTE: We use conda/venv to build wheels, which may not be the same python
@@ -88,12 +92,8 @@ def action_wheel():
 
 
 def action_android():
-    sccache, python, pip = setup_basic_build_env()
+    sccache, python, pip = setup_basic_build_env(force_vulkan=True)
     setup_android_ndk()
-    os.environ['TAICHI_CMAKE_ARGS'] += (' -DTI_WITH_BACKTRACE:BOOL=OFF'
-                                        ' -DTI_WITH_LLVM:BOOL=OFF'
-                                        ' -DTI_WITH_C_API:BOOL=ON'
-                                        ' -DTI_BUILD_TESTS:BOOL=OFF')
     handle_alternate_actions()
     build_android(python, pip)
     sccache('-s')
@@ -113,6 +113,7 @@ def add_aot_env():
 
 
 def enter_shell():
+    cmake_args.materialize()
     misc.info('Entering shell...')
     import pwd
     shell = pwd.getpwuid(os.getuid()).pw_shell
@@ -120,6 +121,7 @@ def enter_shell():
 
 
 def write_env(path):
+    cmake_args.materialize()
     envs = os.environ.get_changed_envs()
     envstr = ''
     if path.endswith('.ps1'):

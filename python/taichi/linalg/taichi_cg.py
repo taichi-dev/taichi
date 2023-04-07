@@ -1,7 +1,5 @@
 from math import sqrt
-
 from taichi.lang.exception import TaichiRuntimeError, TaichiTypeError
-
 import taichi as ti
 
 
@@ -12,21 +10,24 @@ class LinearOperator:
 
     def matvec(self, x, Ax):
         if x.shape != Ax.shape:
-            raise TaichiRuntimeError("Dimension mismatch x.shape != Ax.shape.")
+            raise TaichiRuntimeError(
+                f"Dimension mismatch x.shape{x.shape} != Ax.shape{Ax.shape}.")
         self._matvec(x, Ax)
 
 
 def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     if b.dtype != x.dtype:
-        raise TaichiTypeError("Dtype mismatch b.dtype != x.dtype.")
+        raise TaichiTypeError(
+            f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
     if str(b.dtype) == 'f32':
         solver_dtype = ti.f32
     elif str(b.dtype) == 'f64':
         solver_dtype = ti.f64
     else:
-        raise TaichiTypeError(f"Not supported dtype:{b.dtype}")
+        raise TaichiTypeError(f"Not supported dtype: {b.dtype}")
     if b.shape != x.shape:
-        raise TaichiRuntimeError("Dimension mismatch b.shape != x.shape.")
+        raise TaichiRuntimeError(
+            f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}.")
 
     size = b.shape
     vector_fields_builder = ti.FieldsBuilder()
@@ -75,7 +76,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         init()
         initial_rTr = reduce(r, r)
         if not quiet:
-            print(">>> Initial residual =", (initial_rTr))
+            print(f'>>> Initial residual = {initial_rTr:e}')
         old_rTr = initial_rTr
         update_p()
         # -- Main loop --
@@ -89,7 +90,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             if sqrt(new_rTr) < tol:
                 if not quiet:
                     print('>>> Conjugate Gradient method converged.')
-                    print('>>> #iterations', i)
+                    print(f'>>> #iterations {i}')
                 break
             beta[None] = new_rTr / old_rTr
             update_p()

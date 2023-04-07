@@ -355,7 +355,11 @@ class GUI:
             normalize (bool, Optional): Display the normalized scalar field if set to True.
             Default is False.
         """
-        from matplotlib import cm  # pylint: disable=import-outside-toplevel
+        try:
+            from matplotlib import cm  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            raise RuntimeError('Failed to import Matplotlib. Please install it via /\
+            `pip install matplotlib` first. ')
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
             x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),

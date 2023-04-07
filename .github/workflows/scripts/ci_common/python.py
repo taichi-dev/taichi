@@ -1,15 +1,19 @@
 # -*- coding: utf-8 -*-
 
+# -- stdlib --
 import os
 import platform
 import shutil
 from typing import Optional, Tuple
 
+# -- third party --
+# -- own --
 from .dep import download_dep
 from .misc import banner, get_cache_home, path_prepend
 from .tinysh import Command, sh
 
 
+# -- code --
 def setup_miniforge3(prefix):
     u = platform.uname()
     if u.system == "Linux":

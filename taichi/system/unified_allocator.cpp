@@ -48,24 +48,26 @@ void *UnifiedAllocator::allocate(std::size_t size,
   // Note: put mutex on MemoryPool instead of Allocator, since Allocators are
   // transparent to user code
   std::size_t allocation_size = size;
-  if (!chunks_.empty() && !exclusive && !chunks_.back().is_exclusive) {
-    // Try reusing the last chunk
-    MemoryChunk &current_chunk = chunks_.back();
-
-    auto head = (std::size_t)current_chunk.head;
-    auto tail = (std::size_t)current_chunk.tail;
-    auto data = (std::size_t)current_chunk.data;
-
-    auto ret = head + alignment - 1 - (head + alignment - 1) % alignment;
-    TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
-             size, (tail - head));
-    head = ret + allocation_size;
-
-    if (head <= tail) {
-      // success
-      TI_ASSERT(ret % alignment == 0);
-      current_chunk.head = (void *)head;
-      return (void *)ret;
+  if (!chunks_.empty() && !exclusive) {
+    // Search for a non-exclusive chunk that has enough space
+    for (size_t chunk_id = 0; chunk_id < chunks_.size(); chunk_id++) {
+      auto &chunk = chunks_[chunk_id];
+      if (chunk.is_exclusive) {
+        continue;
+      }
+      auto head = (std::size_t)chunk.head;
+      auto tail = (std::size_t)chunk.tail;
+      auto data = (std::size_t)chunk.data;
+      auto ret = head + alignment - 1 - (head + alignment - 1) % alignment;
+      TI_TRACE("UM [data={}] allocate() request={} remain={}", (intptr_t)data,
+               size, (tail - head));
+      head = ret + allocation_size;
+      if (head <= tail) {
+        // success
+        TI_ASSERT(ret % alignment == 0);
+        chunk.head = (void *)head;
+        return (void *)ret;
+      }
     }
   }
 

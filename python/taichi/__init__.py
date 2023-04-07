@@ -17,6 +17,8 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
 
+from taichi._kernels import sparse_grid_usage
+
 __deprecated_names__ = {
     'SOA': 'Layout.SOA',
     'AOS': 'Layout.AOS',

@@ -34,10 +34,8 @@ def setup_android_ndk() -> None:
     p = ndkroot.resolve()
     os.environ['ANDROID_NDK_ROOT'] = str(p)
     cmake_args['CMAKE_TOOLCHAIN_FILE'] = str(toolchain)
-    cmake_args['ANDROID_NATIVE_API_LEVEL'] = '26'
+    cmake_args['ANDROID_NATIVE_API_LEVEL'] = '29'
     cmake_args['ANDROID_ABI'] = 'arm64-v8a'
-    os.environ.pop('CC')
-    os.environ.pop('CXX')
     path_prepend('PATH', p / 'toolchains/llvm/prebuilt/linux-x86_64/bin')
 
 
@@ -50,7 +48,7 @@ def build_android(python: Command, pip: Command) -> None:
     cmake_args['TI_WITH_LLVM'] = False
     cmake_args['TI_WITH_C_API'] = True
     cmake_args['TI_BUILD_TESTS'] = False
-    cmake_args.materialize()
+    cmake_args.writeback()
     pip.install('-r', 'requirements_dev.txt')
     python('setup.py', 'clean')
     python('setup.py', 'build_ext')

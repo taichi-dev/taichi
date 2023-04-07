@@ -56,7 +56,7 @@ def setup_ios(python: Command, pip: Command) -> None:
     cmake_args['TI_WITH_PYTHON'] = False
     cmake_args['TI_WITH_GGUI'] = False
     cmake_args['TI_WITH_CC'] = False
-    cmake_args.materialize()
+    cmake_args.writeback()
 
 
 @banner('Build Taichi iOS C-API Static Library')

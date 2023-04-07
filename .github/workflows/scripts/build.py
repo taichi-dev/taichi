@@ -52,7 +52,7 @@ def build_wheel(python: Command, pip: Command) -> None:
         else:
             extra.extend(['-p', 'manylinux_2_27_x86_64'])
 
-    cmake_args.materialize()
+    cmake_args.writeback()
     python('setup.py', 'clean')
     python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
            './', '--save')
@@ -124,7 +124,7 @@ def action_ios():
 
 
 def enter_shell():
-    cmake_args.materialize()
+    cmake_args.writeback()
     misc.info('Entering shell...')
     import pwd
     shell = pwd.getpwuid(os.getuid()).pw_shell
@@ -132,7 +132,7 @@ def enter_shell():
 
 
 def write_env(path):
-    cmake_args.materialize()
+    cmake_args.writeback()
     envs = os.environ.get_changed_envs()
     envstr = ''
     if path.endswith('.ps1'):

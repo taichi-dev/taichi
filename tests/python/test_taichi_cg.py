@@ -8,7 +8,7 @@ from tests import test_utils
 
 
 @pytest.mark.parametrize("ti_dtype", [ti.f32, ti.f64])
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_taichi_cg(ti_dtype):
     GRID = 32
     Ax = ti.field(dtype=ti_dtype, shape=(GRID, GRID))

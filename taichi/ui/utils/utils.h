@@ -34,6 +34,7 @@
 
 #include "taichi/rhi/vulkan/vulkan_common.h"
 #include "taichi/rhi/window_system.h"
+#include "taichi/common/filesystem.hpp"
 
 #include <stdarg.h>
 
@@ -184,7 +185,8 @@ inline std::string button_id_to_name(int id) {
 #endif
 
 inline std::vector<char> read_file(const std::string &filename) {
-  std::ifstream file(filename, std::ios::ate | std::ios::binary);
+  std::ifstream file(std::filesystem::path{filename},
+                     std::ios::ate | std::ios::binary);
 
   if (!file.is_open()) {
     throw std::runtime_error(filename + " failed to open file!");

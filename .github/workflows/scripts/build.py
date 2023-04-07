@@ -19,6 +19,7 @@ from ci_common.llvm import setup_llvm
 from ci_common.misc import banner, is_manylinux2014
 from ci_common.python import setup_python
 from ci_common.sccache import setup_sccache
+from ci_common.ios import setup_ios, build_ios
 from ci_common.tinysh import Command, git
 from ci_common.vulkan import setup_vulkan
 
@@ -112,6 +113,13 @@ def add_aot_env():
         )
 
 
+def action_ios():
+    sccache, python, pip = setup_basic_build_env(force_vulkan=True)
+    setup_ios(python, pip)
+    handle_alternate_actions()
+    build_ios()
+
+
 def enter_shell():
     cmake_args.materialize()
     misc.info('Entering shell...')
@@ -189,6 +197,7 @@ def main() -> None:
     dispatch = {
         'wheel': action_wheel,
         'android': action_android,
+        'ios': action_ios,
     }
 
     dispatch.get(options.action, action_notimpl)()

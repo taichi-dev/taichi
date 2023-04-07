@@ -497,7 +497,7 @@ def _sym_eig3x3(A, dt):
     if early_ret:
         Q = Q_final
         eigenvalues = eigenvalues_final
-    
+
     if eigenvalues[1] < eigenvalues[0]:
         tmp = eigenvalues[0]
         eigenvalues[0] = eigenvalues[1]
@@ -505,7 +505,7 @@ def _sym_eig3x3(A, dt):
         tmp2 = Q[:, 0]
         Q[:, 0] = Q[:, 1]
         Q[:, 1] = tmp2
-    
+
     if eigenvalues[2] < eigenvalues[0]:
         tmp = eigenvalues[0]
         eigenvalues[0] = eigenvalues[2]
@@ -513,7 +513,7 @@ def _sym_eig3x3(A, dt):
         tmp2 = Q[:, 0]
         Q[:, 0] = Q[:, 2]
         Q[:, 2] = tmp2
-    
+
     if eigenvalues[2] < eigenvalues[1]:
         tmp = eigenvalues[1]
         eigenvalues[1] = eigenvalues[2]
@@ -521,7 +521,7 @@ def _sym_eig3x3(A, dt):
         tmp2 = Q[:, 1]
         Q[:, 1] = Q[:, 2]
         Q[:, 2] = tmp2
-    
+
     return eigenvalues, Q
 
 

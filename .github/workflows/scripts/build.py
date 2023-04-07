@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
@@ -15,11 +15,11 @@ from ci_common import misc
 from ci_common.android import build_android, setup_android_ndk
 from ci_common.cmake import cmake_args
 from ci_common.compiler import setup_clang, setup_msvc
-from ci_common.ios import build_ios, setup_ios
 from ci_common.llvm import setup_llvm
 from ci_common.misc import banner, is_manylinux2014
 from ci_common.python import setup_python
 from ci_common.sccache import setup_sccache
+from ci_common.ios import setup_ios, build_ios
 from ci_common.tinysh import Command, git
 from ci_common.vulkan import setup_vulkan
 

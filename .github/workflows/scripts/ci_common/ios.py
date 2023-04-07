@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import List, Tuple
 import platform
 import shutil
 import subprocess
 import sys
-from pathlib import Path
-from tempfile import TemporaryDirectory
-from typing import List, Tuple
 
 # -- third party --
 # -- own --
@@ -81,17 +81,16 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     capi_build_path = next(build_path.glob('**/taichi_c_api.build'))
     root_objs = list(capi_build_path.glob('**/*.o'))
 
-    pr = lambda s='': print(s, file=sys.stderr, flush=True)
+    pr = lambda s = '': print(s, file=sys.stderr, flush=True)
 
     misc.info("Found C-API root objects:")
     pr()
     for x in root_objs:
-        pr(f"  {x.relative_to(build_path)}")
+        pr(f"    {x.relative_to(build_path)}")
     pr()
 
     def dump_symbols(path: str) -> Tuple[List, List]:
-        symbols = str(subprocess.check_output(["objdump", "--syms", path]),
-                      encoding="utf8").splitlines()
+        symbols = str(subprocess.check_output(["objdump", "--syms", path]), encoding="utf8").splitlines()
         it = iter(symbols)
 
         while not next(it).startswith("SYMBOL TABLE:"):
@@ -170,10 +169,7 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     prelinked_obj = build_path / 'libtaichi_c_api_prelinked.o'
     prelinked_obj.unlink(missing_ok=True)
 
-    cmd = [
-        "clang++", "-target", "aarch64-apple-ios13.0", "-r", "-o",
-        str(prelinked_obj)
-    ]
+    cmd = ["clang++", "-target", "aarch64-apple-ios13.0", "-r", "-o", str(prelinked_obj)]
     cmd.extend(str(build_path / p) for p in dependencies)
     subprocess.check_call(cmd)
     misc.info(f"Prelinked Mach-O to: {prelinked_obj}")

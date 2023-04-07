@@ -492,8 +492,8 @@ jobs:
           submodules: 'recursive'
 
       - name: Build
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           . .github/workflows/scripts/common-utils.sh
           prepare-build-cache
           brew install molten-vk
@@ -503,16 +503,16 @@ jobs:
           CXX: clang++
 
       - name: Check C-API Export Symbols
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           . .github/workflows/scripts/common-utils.sh
 
           .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
 
       - name: Test
         id: test
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
         run: |
-          [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           .github/workflows/scripts/unix_test.sh
 
       - name: Save wheel if test failed
@@ -529,6 +529,35 @@ jobs:
         with:
           name: bad-captures
           path: taichi-release-tests/bad-compare/*
+          retention-days: 7
+
+
+  build_ios_capi:
+    name: Build iOS C-API Static Library
+    needs: check_files
+    timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 60 || 120 }}
+    runs-on: [self-hosted, m1]
+    env:
+      PY: "3.10"
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+
+      - name: Build
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        run: .github/workflows/scripts/build.py ios
+
+      - name: Save Compiled Static Library
+        if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: libtaichi_c_api.iOS.a
+          path: 'dist/C-API-iOS/*.a'
           retention-days: 7
 
   build_and_test_docs:

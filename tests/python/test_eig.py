@@ -193,9 +193,7 @@ def test_sym_eig2x2_f64():
     _test_sym_eig2x2(ti.f64)
 
 
-@test_utils.test(default_fp=ti.f32, 
-                 fast_math=False,
-                 exclude=ti.cc)
+@test_utils.test(default_fp=ti.f32, fast_math=False, exclude=ti.cc)
 def test_sym_eig3x3_identity_f32():
     _test_sym_eig3x3_identity(ti.f32)
 

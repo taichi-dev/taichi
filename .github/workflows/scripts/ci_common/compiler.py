@@ -7,6 +7,7 @@ from pathlib import Path
 
 # -- third party --
 # -- own --
+from .cmake import cmake_args
 from .dep import download_dep
 from .misc import banner, get_cache_home
 
@@ -25,12 +26,11 @@ def setup_clang(as_compiler=True) -> None:
         url = 'https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-15.0.0-win-complete.zip'
         download_dep(url, out, force=True)
         clang = str(out / 'bin' / 'clang++.exe').replace('\\', '\\\\')
-        os.environ['TAICHI_CMAKE_ARGS'] += f' -DCLANG_EXECUTABLE={clang}'
+        cmake_args['CLANG_EXECUTABLE'] = clang
 
         if as_compiler:
-            os.environ['TAICHI_CMAKE_ARGS'] += (
-                f' -DCMAKE_CXX_COMPILER={clang}'
-                f' -DCMAKE_C_COMPILER={clang}')
+            cmake_args['CMAKE_CXX_COMPILER'] = clang
+            cmake_args['CMAKE_C_COMPILER'] = clang
     else:
         # TODO: unify all
         pass

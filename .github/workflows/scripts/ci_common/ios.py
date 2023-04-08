@@ -123,8 +123,6 @@ def _ios_prelink(build_dir: str, output: str) -> None:
         for sym in defined:
             SYMBOL_DEFS[sym] = sp
 
-    pr()
-
     well_known_objs = []
     # well_known_objs.extend(Path('/usr/lib/system').glob('*.dylib'))
 
@@ -184,7 +182,6 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     cmd = ["ar", "-crv", str(output_path), str(prelinked_obj)]
     subprocess.check_call(cmd)
     misc.info(f"Archive saved to: {output_path}")
-    pr()
 
 
 def build_ios() -> None:

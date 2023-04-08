@@ -101,16 +101,5 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   return llvm_compiled_kernel;
 }
 
-ModuleToFunctionConverter::ModuleToFunctionConverter(
-    TaichiLLVMContext *tlctx,
-    LlvmRuntimeExecutor *executor)
-    : tlctx_(tlctx), executor_(executor) {
-}
-
-FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
-                                                LLVMCompiledKernel data) const {
-  return convert(kernel->name, kernel->parameter_list, std::move(data));
-}
-
 #endif
 }  // namespace taichi::lang

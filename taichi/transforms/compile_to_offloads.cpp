@@ -93,8 +93,7 @@ void compile_to_offloads(IRNode *ir,
 
   irpass::full_simplify(
       ir, config,
-      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone,
-       kernel->program});
+      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -117,12 +116,10 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ true, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ true});
     irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
     // TODO: Be carefull with the full_simplify when do high-order autodiff
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ false, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Gradient");
     irpass::analysis::verify(ir);
   }
@@ -137,8 +134,7 @@ void compile_to_offloads(IRNode *ir,
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir, config,
-                        {false, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -158,8 +154,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged II");
 
-  irpass::full_simplify(ir, config,
-                        {false, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified III");
   irpass::analysis::verify(ir);
 }
@@ -232,8 +227,7 @@ void offload_to_executable(IRNode *ir,
     if (config.make_mesh_block_local && config.arch == Arch::cuda) {
       irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
       print("Make mesh block local");
-      irpass::full_simplify(
-          ir, config, {false, /*autodiff_enabled*/ false, kernel->program});
+      irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
       print("Simplified X");
     }
   }
@@ -265,8 +259,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ false, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Simplified before lower access");
     irpass::lower_access(ir, config, {kernel->no_activate, true});
     print("Access lowered");
@@ -284,9 +277,8 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_operations(ir, config);
   print("Operations demoted");
 
-  irpass::full_simplify(
-      ir, config,
-      {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config,
+                        {lower_global_access, /*autodiff_enabled*/ false});
   print("Simplified IV");
 
   if (determine_ad_stack_size) {
@@ -305,9 +297,8 @@ void offload_to_executable(IRNode *ir,
 
     irpass::type_check(ir, config);
 
-    irpass::full_simplify(
-        ir, config,
-        {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+    irpass::full_simplify(ir, config,
+                          {lower_global_access, /*autodiff_enabled*/ false});
 
     irpass::flag_access(ir);
     print("Half2 vectorized");
@@ -388,8 +379,8 @@ void compile_function(IRNode *ir,
   irpass::demote_operations(ir, config);
   print("Operations demoted");
 
-  irpass::full_simplify(
-      ir, config, {false, autodiff_mode != AutodiffMode::kNone, func->program});
+  irpass::full_simplify(ir, config,
+                        {false, autodiff_mode != AutodiffMode::kNone});
   print("Simplified");
   irpass::analysis::verify(ir);
 }

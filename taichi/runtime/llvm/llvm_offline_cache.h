@@ -10,8 +10,13 @@
 #include "taichi/program/kernel.h"
 #include "taichi/util/offline_cache.h"
 #include "taichi/codegen/llvm/llvm_compiled_data.h"
+#include "taichi/codegen/llvm/compiled_kernel_data.h"
 
 namespace taichi::lang {
+
+// NOTE: The LlvmOfflineCache, LlvmOfflineCacheFileReader and
+// LlvmOfflineCacheFileWriter are only used by LLVM AOT now.
+// TODO(PGZXB): Rename these structs/classes.
 
 struct LlvmOfflineCache {
   using Version = uint16[3];  // {MAJOR, MINOR, PATCH}
@@ -44,6 +49,7 @@ struct LlvmOfflineCache {
     ~KernelCacheData() = default;
 
     KernelCacheData clone() const;
+    LLVM::CompiledKernelData::InternalData convert_to_llvm_ckd_data() const;
 
     TI_IO_DEF(kernel_key,
               args,

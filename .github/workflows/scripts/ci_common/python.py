@@ -5,6 +5,7 @@ import os
 import platform
 import shutil
 from typing import Optional, Tuple
+from . import misc
 
 # -- third party --
 # -- own --
@@ -46,11 +47,14 @@ def setup_miniforge3(prefix):
 
 
 @banner('Setup Python {version}')
-def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
+def setup_python(version: Optional[str] = '3.x') -> Tuple[Command, Command]:
     '''
     Find the required Python environment and return the `python` and `pip` commands.
     '''
-    assert version
+    if version == '3.x':
+        v = sys.version_info
+        version = f'{v.major}.{v.minor}'
+        misc.info(f'Using Python {version}')
 
     windows = platform.system() == "Windows"
 

@@ -25,18 +25,5 @@ class KernelCodeGenAMDGPU : public KernelCodeGen {
 #endif  // TI_WITH_LLVM
 };
 
-class AMDGPUModuleToFunctionConverter : public ModuleToFunctionConverter {
- public:
-  explicit AMDGPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                           LlvmRuntimeExecutor *executor)
-      : ModuleToFunctionConverter(tlctx, executor) {
-  }
-  using ModuleToFunctionConverter::convert;
-
-  FunctionType convert(const std::string &kernel_name,
-                       const std::vector<Callable::Parameter> &args,
-                       LLVMCompiledKernel data) const override;
-};
-
 }  // namespace lang
 }  // namespace taichi

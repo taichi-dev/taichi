@@ -5,13 +5,12 @@ import inspect
 import os
 import platform
 import sys
-from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 
-from .bootstrap import get_cache_home  # noqa
 # -- third party --
 # -- own --
+from .bootstrap import get_cache_home  # noqa, this is a re-export
 from .escapes import escape_codes
 
 # -- code --

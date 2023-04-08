@@ -30,22 +30,4 @@ class KernelCodeGenCPU : public KernelCodeGen {
 #endif  // TI_WITH_LLVM
 };
 
-#ifdef TI_WITH_LLVM
-
-class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
- public:
-  explicit CPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                        LlvmRuntimeExecutor *executor)
-      : ModuleToFunctionConverter(tlctx, executor) {
-  }
-
-  using ModuleToFunctionConverter::convert;
-
-  FunctionType convert(const std::string &kernel_name,
-                       const std::vector<Callable::Parameter> &args,
-                       LLVMCompiledKernel data) const override;
-};
-
-#endif
-
 }  // namespace taichi::lang

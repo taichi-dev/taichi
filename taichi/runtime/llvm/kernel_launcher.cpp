@@ -12,7 +12,7 @@ void KernelLauncher::launch_kernel(
   TI_ASSERT(arch_uses_llvm(compiled_kernel_data.arch()));
   const auto &llvm_ckd =
       dynamic_cast<const LLVM::CompiledKernelData &>(compiled_kernel_data);
-  auto handle = register_kernel(llvm_ckd);
+  auto handle = register_llvm_kernel(llvm_ckd);
   launch_llvm_kernel(handle, ctx);
 }
 

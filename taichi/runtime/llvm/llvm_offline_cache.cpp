@@ -419,4 +419,18 @@ LlvmOfflineCache::KernelCacheData LlvmOfflineCache::KernelCacheData::clone()
   result.args_type = args_type;
   return result;
 }
+
+LLVM::CompiledKernelData::InternalData
+LlvmOfflineCache::KernelCacheData::convert_to_llvm_ckd_data() const {
+  LLVM::CompiledKernelData::InternalData result;
+  result.args = args;
+  result.rets = rets;
+  result.compiled_data = compiled_data.clone();
+  result.ret_size = ret_size;
+  result.ret_type = ret_type;
+  result.args_size = args_size;
+  result.args_type = args_type;
+  return result;
+}
+
 }  // namespace taichi::lang

@@ -102,7 +102,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   }
 }
 
-KernelLauncher::Handle KernelLauncher::register_kernel(
+KernelLauncher::Handle KernelLauncher::register_llvm_kernel(
     const LLVM::CompiledKernelData &compiled) {
   TI_ASSERT(compiled.arch() == Arch::amdgpu);
 

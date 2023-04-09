@@ -2451,16 +2451,5 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   kernel_attribs.name = params_.ti_kernel_name;
 }
 
-void lower(const CompileConfig &config, Kernel *kernel) {
-  if (!kernel->lowered()) {
-    irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                  kernel->autodiff_mode,
-                                  /*ad_use_stack=*/false, config.print_ir,
-                                  /*lower_global_access=*/true,
-                                  /*make_thread_local=*/false);
-    kernel->set_lowered(true);
-  }
-}
-
 }  // namespace spirv
 }  // namespace taichi::lang

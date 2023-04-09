@@ -232,8 +232,6 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   const auto &config = get_compile_config();
 
-  irpass::ast_to_ir(config, *kernel, false);
-
   auto block = dynamic_cast<Block *>(ir);
   TI_ASSERT(block);
 

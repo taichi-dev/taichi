@@ -193,6 +193,7 @@ class IRBuilder {
   BinaryOpStmt *create_shl(Stmt *l, Stmt *r);
   BinaryOpStmt *create_shr(Stmt *l, Stmt *r);
   BinaryOpStmt *create_sar(Stmt *l, Stmt *r);
+  BinaryOpStmt *create_popcnt(Stmt *l, Stmt *r);
   // Comparisons.
   BinaryOpStmt *create_cmp_lt(Stmt *l, Stmt *r);
   BinaryOpStmt *create_cmp_le(Stmt *l, Stmt *r);

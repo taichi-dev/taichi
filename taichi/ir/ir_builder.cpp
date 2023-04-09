@@ -339,6 +339,10 @@ BinaryOpStmt *IRBuilder::create_sar(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::bit_sar, l, r));
 }
 
+BinaryOpStmt *IRBuilder::create_popcnt(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::min, l, r));
+}
+
 BinaryOpStmt *IRBuilder::create_cmp_lt(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_lt, l, r));
 }

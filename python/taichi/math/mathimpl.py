@@ -9,7 +9,7 @@ from taichi.lang.impl import static, zero
 from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh)
+                             max, min, pow, popcnt, round, sin, sqrt, tan, tanh)
 from taichi.types import matrix, template, vector
 from taichi.types.primitive_types import f64, u32, u64
 
@@ -746,12 +746,17 @@ def vdir(ang):
     return vec2(cos(ang), sin(ang))
 
 
+@func
+def popcnt(x):
+    return popcnt(x)
+
+
 __all__ = [
     "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
     "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
     "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
     "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
-    "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
+    "translate", "scale", "nan", "normalize", "pi", "pow", "popcnt", "radians",
     "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll", "rotation2d",
     "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
     "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"

@@ -104,7 +104,7 @@ user_api[ti.math] = [
     'distance', 'dot', 'e', 'exp', 'eye', 'floor', 'fract', 'inf', 'inverse',
     'isinf', 'isnan', 'ivec2', 'ivec3', 'ivec4', 'length', 'log', 'log2',
     'mat2', 'mat3', 'mat4', 'max', 'min', 'mix', 'mod', 'nan', 'normalize',
-    'pi', 'pow', 'radians', 'reflect', 'refract', 'rot_by_axis',
+    'pi', 'popcnt', 'pow', 'radians', 'reflect', 'refract', 'rot_by_axis',
     'rot_yaw_pitch_roll', 'rotation2d', 'rotation3d', 'round', 'scale', 'sign',
     'sin', 'smoothstep', 'sqrt', 'step', 'tan', 'tanh', 'translate', 'uvec2',
     'uvec3', 'uvec4', 'vdir', 'vec2', 'vec3', 'vec4'

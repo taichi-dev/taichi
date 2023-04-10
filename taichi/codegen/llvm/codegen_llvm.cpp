@@ -2710,7 +2710,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
   llvm::Value *result_buffer = nullptr;
   if (!stmt->func->rets.empty()) {
-    auto *ret_type = tlctx->get_data_type(stmt->ret_type);
+    auto *ret_type = tlctx->get_data_type(stmt->func->ret_type);
     result_buffer = builder->CreateAlloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(
         result_buffer,
@@ -2723,7 +2723,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
-  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type);
+  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type.ptr_removed());
   std::vector<llvm::Value *> index;
   index.reserve(stmt->index.size() + 1);
   index.push_back(tlctx->get_constant(0));

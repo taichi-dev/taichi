@@ -224,6 +224,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
          "exponent", 8});
     ret_type =
         taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
+    ret_type.set_is_pointer(true);
     return;
   }
   if (operand->ret_type->is<TensorType>()) {
@@ -1196,8 +1197,12 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
+  TI_ASSERT_INFO(src->ret_type->is<PointerType>(),
+                 "Invalid src [{}] for GetElementExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(src));
 
-  ret_type = src->ret_type->as<StructType>()->get_element_type(index);
+  ret_type =
+      src->ret_type.ptr_removed()->as<StructType>()->get_element_type(index);
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
@@ -1427,6 +1432,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
         func, expanded_args,
         std::static_pointer_cast<IdExpression>(var.expr)->id));
     var.expr->ret_type = func->ret_type;
+    var.expr->ret_type.set_is_pointer(true);
     return var;
   } else {
     this->insert(std::make_unique<FrontendFuncCallStmt>(func, expanded_args));
@@ -1626,8 +1632,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (expr->ret_type->is<StructType>()) {
-      auto struct_type = expr->ret_type->as<StructType>();
+    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
       auto num_elem = struct_type->get_num_elements();
       for (int i = 0; i < num_elem; i++) {
         std::vector<int> indices = {i};

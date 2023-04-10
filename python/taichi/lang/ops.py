@@ -532,7 +532,6 @@ def bit_not(a):
 def popcnt(a):
     def _popcnt(a):
         return bin(a).count("1")
-
     return _unary_operation(_ti_core.expr_popcnt, _popcnt, a)
 
 
@@ -1404,7 +1403,7 @@ def min(*args):  # pylint: disable=W0622
 __all__ = [
     "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
     "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
-    "bit_shr", "popcnt", "cast", "ceil", "cos", "exp", "floor", "frexp", "log",
+    "bit_shr", "cast", "ceil", "cos", "exp", "floor", "frexp", "log",
     "random", "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan",
     "tanh", "max", "min", "select", "abs", "pow"
 ]

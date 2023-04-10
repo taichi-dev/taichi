@@ -2732,8 +2732,7 @@ void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
     index.push_back(tlctx->get_constant(i));
   }
   auto *gep = builder->CreateGEP(struct_type, llvm_val[stmt->src], index);
-  auto *val = builder->CreateLoad(
-      tlctx->get_data_type(stmt->ret_type.ptr_removed()), gep);
+  auto *val = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), gep);
   llvm_val[stmt] = val;
 }
 

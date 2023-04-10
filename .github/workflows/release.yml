@@ -276,7 +276,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, windows, cuda, OpenGL]
+    # FIXME: force running on sm70 for now. Should be refactored out
+    runs-on: [self-hosted, windows, cuda, OpenGL, sm70]
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |

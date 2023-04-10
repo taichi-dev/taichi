@@ -847,7 +847,7 @@ Ptr LLVMRuntime::allocate_from_reserved_memory(std::size_t size,
     size += alignment_bytes;
     if (preallocated_head + size <= preallocated_tail) {
       ret = (Ptr)(preallocated_head + alignment_bytes);
-      preallocated_head += size;
+      preallocated_memory_chunk.preallocated_head += size;
       success = true;
     } else {
       success = false;

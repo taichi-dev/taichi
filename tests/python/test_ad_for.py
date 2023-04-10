@@ -1036,7 +1036,7 @@ def test_mutable_loop_index():
                 for k in range(j):
                     l += x[j] * x[k]
             y[i] = l
-                
+
         for i in range(NUM):
             loss[None] += y[i]
 

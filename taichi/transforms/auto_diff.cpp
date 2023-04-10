@@ -288,17 +288,17 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     execute_once_ = true;
   }
 
-  bool is_mutable_loop_index(Stmt *stmt){
-    if (stmt->is<LoopIndexStmt>()){
+  bool is_mutable_loop_index(Stmt *stmt) {
+    if (stmt->is<LoopIndexStmt>()) {
       auto loop = stmt->as<LoopIndexStmt>()->loop;
       // TODO: we assume that the loop indices of a top-level for are constants
       // Note: the StructForStmt and MeshForStmt are top-level fors
-      if (loop->parent->parent_stmt == nullptr){
+      if (loop->parent->parent_stmt == nullptr) {
         return false;
       }
-      if (loop->is<RangeForStmt>()){
+      if (loop->is<RangeForStmt>()) {
         auto range = loop->as<RangeForStmt>();
-        if (range->begin->is<ConstStmt>() && range->end->is<ConstStmt>()){
+        if (range->begin->is<ConstStmt>() && range->end->is<ConstStmt>()) {
           return false;
         }
       }
@@ -313,7 +313,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
     bool mutable_loop_index = is_mutable_loop_index(stmt);
     if (!(stmt->is<UnaryOpStmt>() || stmt->is<BinaryOpStmt>() ||
           stmt->is<TernaryOpStmt>() || stmt->is<GlobalLoadStmt>() ||
-          stmt->is<AllocaStmt>()|| mutable_loop_index)){
+          stmt->is<AllocaStmt>() || mutable_loop_index)) {
       // TODO: this list may be incomplete
       return;
     }
@@ -351,7 +351,6 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
   }
 
   void visit(RangeForStmt *stmt) override {
-
     bool mutable_loop_begin_index = is_mutable_loop_index(stmt->begin);
     // TODO: To refine this, handle the case that the begin or end of the loop
     // is read from argload
@@ -1037,7 +1036,7 @@ class MakeAdjoint : public ADTransform {
     auto new_for = for_stmt->clone();
     auto new_for_ptr = new_for->as<RangeForStmt>();
     new_for_ptr->reversed = !new_for_ptr->reversed;
-    
+
     auto new_for_stmt = insert_grad_stmt(std::move(new_for));
 
     if (new_for_ptr->begin->is<AdStackLoadTopStmt>()) {

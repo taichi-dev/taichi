@@ -36,7 +36,7 @@ Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
                AutodiffMode autodiff_mode)
-    : autodiff_mode(autodiff_mode), lowered_(false) {
+    : autodiff_mode(autodiff_mode) {
   this->arch = program.compile_config().arch;
   this->ir = std::move(ir);
   this->program = &program;
@@ -160,7 +160,6 @@ void Kernel::init(Program &program,
                   const std::string &primal_name,
                   AutodiffMode autodiff_mode) {
   this->autodiff_mode = autodiff_mode;
-  this->lowered_ = false;
   this->program = &program;
 
   is_accessor = false;

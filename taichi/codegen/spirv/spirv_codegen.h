@@ -14,8 +14,6 @@ class Kernel;
 
 namespace spirv {
 
-void lower(const CompileConfig &config, Kernel *kernel);
-
 class KernelCodegen {
  public:
   struct Params {

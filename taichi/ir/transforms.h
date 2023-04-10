@@ -197,10 +197,6 @@ void compile_function(IRNode *ir,
                       bool verbose,
                       bool start_from_ast);
 
-void ast_to_ir(const CompileConfig &config,
-               const Kernel &kernel,
-               bool to_executable = true);
-
 void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);
 }  // namespace irpass
 

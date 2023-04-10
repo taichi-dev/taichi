@@ -10,7 +10,7 @@
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/runtime/gfx/kernel_launcher.h"
 #include "taichi/util/offline_cache.h"
-#include "taichi/rhi/llvm/memory_pool.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 namespace taichi::lang {
 

@@ -108,6 +108,9 @@ endif()
 add_subdirectory(interop)
 target_link_libraries(${TAICHI_DEVICE_API} PUBLIC interop_rhi)
 
+add_subdirectory(common)
+target_link_libraries(${TAICHI_DEVICE_API} PUBLIC common_rhi)
+
 # Generate shared library
 add_library(ti_device_api_shared SHARED public_device.h)
 target_link_libraries(ti_device_api_shared PUBLIC ${TAICHI_DEVICE_API})

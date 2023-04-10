@@ -1,5 +1,5 @@
 #include "taichi/rhi/cuda/cuda_device.h"
-#include "taichi/rhi/llvm/memory_pool.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 namespace taichi::lang {
 

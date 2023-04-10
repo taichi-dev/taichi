@@ -15,7 +15,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/rhi/llvm/memory_pool.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"

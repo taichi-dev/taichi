@@ -6,8 +6,6 @@ target_sources(${LLVM_RHI}
   PRIVATE
     llvm_device.cpp
     allocator.cpp
-    unified_allocator.cpp
-    memory_pool.cpp
   )
 
 target_include_directories(${LLVM_RHI}

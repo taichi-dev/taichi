@@ -6,8 +6,8 @@
 #include "taichi/rhi/cuda/cuda_device.h"
 
 #endif
-#include "taichi/rhi/llvm/unified_allocator.h"
-#include "taichi/rhi/llvm/memory_pool.h"
+#include "taichi/rhi/common/unified_allocator.h"
+#include "taichi/rhi/common/memory_pool.h"
 #include "taichi/rhi/cpu/cpu_device.h"
 #include <string>
 

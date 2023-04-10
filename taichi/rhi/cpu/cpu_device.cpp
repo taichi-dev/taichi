@@ -1,6 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/impl_support.h"
-#include "taichi/rhi/llvm/memory_pool.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 namespace taichi::lang {
 

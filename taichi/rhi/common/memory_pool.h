@@ -1,6 +1,6 @@
 #pragma once
 #include "taichi/common/core.h"
-#include "taichi/rhi/llvm/unified_allocator.h"
+#include "taichi/rhi/common/unified_allocator.h"
 #include "taichi/rhi/device.h"
 #include <mutex>
 #include <vector>

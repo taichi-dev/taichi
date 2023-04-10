@@ -12,7 +12,7 @@ from taichi.lang.matrix import Matrix
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
                              max, min, pow, round, sin, sqrt, tan, tanh)
 from taichi.types import matrix, template, vector
-from taichi.types.primitive_types import f32, f64, u32, u64
+from taichi.types.primitive_types import f64, u32, u64
 
 cfg = impl.default_cfg
 

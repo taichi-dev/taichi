@@ -2,14 +2,12 @@
 
 #include <memory>
 
-#include "taichi/system/timer.h"
+// #include "taichi/system/timer.h"
 
 #ifdef TI_WITH_CUDA
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #endif
-
-#include "taichi/common/core.h"
 
 #if defined(TI_PLATFORM_UNIX)
 #include <sys/mman.h>

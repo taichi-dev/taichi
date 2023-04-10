@@ -1,7 +1,7 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
+#include "taichi/rhi/llvm/memory_pool.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
-#include "taichi/runtime/llvm/runtime_module/mem_request.h"
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/platform/cuda/detect_cuda.h"

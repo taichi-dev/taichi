@@ -1,9 +1,6 @@
 #pragma once
 #include "taichi/common/core.h"
-#include "taichi/system/unified_allocator.h"
-#define TI_RUNTIME_HOST
-#include "taichi/runtime/llvm/runtime_module/mem_request.h"
-#undef TI_RUNTIME_HOST
+#include "taichi/rhi/llvm/unified_allocator.h"
 #include "taichi/rhi/device.h"
 #include <mutex>
 #include <vector>

@@ -7,6 +7,7 @@
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/runtime/gfx/kernel_launcher.h"
+#include "taichi/rhi/llvm/memory_pool.h"
 
 namespace taichi::lang {
 

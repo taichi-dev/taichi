@@ -1,4 +1,5 @@
 #include "taichi/codegen/cc/cc_program.h"
+#include "taichi/rhi/llvm/memory_pool.h"
 
 using namespace taichi::lang::cccp;
 

@@ -60,6 +60,7 @@ class KernelCodeGen {
   virtual LLVMCompiledKernel compile_kernel_to_module();
 
   virtual LLVMCompiledTask compile_task(
+      int task_codegen_id,
       const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) {
@@ -84,26 +85,4 @@ class KernelCodeGen {
   TaichiLLVMContext &tlctx_;
 };
 
-#ifdef TI_WITH_LLVM
-
-class ModuleToFunctionConverter {
- public:
-  explicit ModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                     LlvmRuntimeExecutor *program);
-
-  virtual ~ModuleToFunctionConverter() = default;
-
-  virtual FunctionType convert(const std::string &kernel_name,
-                               const std::vector<Callable::Parameter> &args,
-                               LLVMCompiledKernel data) const = 0;
-
-  virtual FunctionType convert(const Kernel *kernel,
-                               LLVMCompiledKernel data) const;
-
- protected:
-  TaichiLLVMContext *tlctx_{nullptr};
-  LlvmRuntimeExecutor *executor_{nullptr};
-};
-
-#endif
 }  // namespace taichi::lang

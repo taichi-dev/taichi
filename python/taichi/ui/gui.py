@@ -342,6 +342,48 @@ class GUI:
 
         self.core.set_img(self.img.ctypes.data)
 
+    def contour(self, scalar_field, normalize=False):
+        """Plot a contour view of a scalar field.
+
+        The input scalar_field will be converted to a Numpy array first, and then plotted
+        by the Matplotlib colormap 'Plasma'. Notice this method will automatically perform
+        a bilinear interpolation on the field if the size of the field does not match with
+        the GUI window size.
+
+        Args:
+            scalar_field (ti.field): The scalar field being plotted.
+            normalize (bool, Optional): Display the normalized scalar field if set to True.
+            Default is False.
+        """
+        try:
+            from matplotlib import \
+                cm  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            raise RuntimeError(
+                'Failed to import Matplotlib. Please install it via /\
+            `pip install matplotlib` first. ')
+        scalar_field_np = scalar_field.to_numpy()
+        if self.res != scalar_field_np.shape:
+            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),
+                               np.linspace(0, 1, self.res[0]))
+            x_idx = x * (scalar_field_np.shape[1] - 1)
+            y_idx = y * (scalar_field_np.shape[0] - 1)
+            x1 = x_idx.astype(int)
+            x2 = np.minimum(x1 + 1, scalar_field_np.shape[1] - 1)
+            y1 = y_idx.astype(int)
+            y2 = np.minimum(y1 + 1, scalar_field_np.shape[0] - 1)
+            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (1 - (y_idx - y1)) +\
+                scalar_field_np[y1, x2] * (x_idx - x1) * (1 - (y_idx - y1))
+            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (y_idx - y1) + \
+                scalar_field_np[y2, x2] * (x_idx - x1) * (y_idx - y1)
+            output = array_y1 + array_y2
+        else:
+            output = scalar_field_np
+        if normalize:
+            scalar_max, scalar_min = np.max(output), np.min(output)
+            output = (output - scalar_min) / (scalar_max - scalar_min)
+        self.set_image(cm.plasma(output))
+
     def circle(self, pos, color=0xFFFFFF, radius=1):
         """Draws a circle on canvas.
 
@@ -698,6 +740,31 @@ class GUI:
         direction = direction.reshape(direction.shape[0] * direction.shape[1],
                                       2)
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
+
+    def vector_field(self, vector_field, arrow_spacing=5, color=0xFFFFFF):
+        """Display a vector field on canvas.
+
+        Args:
+            vector_field (ti.Vector.field): The vector field being displayed.
+            arrow_spacing (int, optional): The spacing between vectors.
+            color (Union[int, np.array], optional): The color of vectors.
+
+        """
+        v_np = vector_field.to_numpy()
+        v_norm = np.linalg.norm(v_np, axis=-1)
+        nx, ny, ndim = v_np.shape
+        max_magnitude = np.max(v_norm)  # Find the largest vector magnitude
+
+        # The largest vector should occupy 10% of the window
+        scale_factor = 0.1 / (max_magnitude + 1e-16)
+
+        x = np.arange(0, 1, arrow_spacing / nx)
+        y = np.arange(0, 1, arrow_spacing / ny)
+        X, Y = np.meshgrid(x, y)
+        begin = np.dstack((X, Y)).reshape(-1, 2, order='F')
+        incre = (v_np[::arrow_spacing,::arrow_spacing] \
+                 * scale_factor).reshape(-1, 2, order='C')
+        self.arrows(orig=begin, direction=incre, radius=1, color=color)
 
     def show(self, file=None):
         """Shows the frame content in the gui window, or save the content to an

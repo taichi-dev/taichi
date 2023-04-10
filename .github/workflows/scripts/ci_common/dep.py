@@ -11,7 +11,7 @@ import requests
 
 # -- own --
 from .misc import get_cache_home
-from .tinysh import bash, sh, start, tar
+from .tinysh import bash, sh, tar
 
 
 # -- code --
@@ -55,7 +55,7 @@ def escape_url(url):
     return url.replace('/', '_').replace(':', '_')
 
 
-def download_dep(url, outdir, *, strip=0, force=False, args=None):
+def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -82,7 +82,9 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None):
     size = -1
     for u in urls:
         try:
-            resp = requests.head(u, timeout=1)
+            resp = requests.head(u,
+                                 headers={'Accept-Encoding': 'identity'},
+                                 timeout=1)
             if resp.ok:
                 url = u
                 size = int(resp.headers['Content-Length'])
@@ -123,5 +125,7 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None):
         local_cached.chmod(0o755)
         sh.bake(local_cached)(*args)
         # start(local_cached, *args)
+    elif plain:
+        shutil.copy(local_cached, outdir / name)
     else:
         raise RuntimeError(f'Unknown file type: {name}')

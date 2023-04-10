@@ -21,6 +21,7 @@ class KernelCodeGenCPU : public KernelCodeGen {
   // TODO: Stop defining this macro guards in the headers
 #ifdef TI_WITH_LLVM
   LLVMCompiledTask compile_task(
+      int task_codegen_id,
       const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
       OffloadedStmt *stmt = nullptr) override;
@@ -29,23 +30,5 @@ class KernelCodeGenCPU : public KernelCodeGen {
   void optimize_module(llvm::Module *module) override;
 #endif  // TI_WITH_LLVM
 };
-
-#ifdef TI_WITH_LLVM
-
-class CPUModuleToFunctionConverter : public ModuleToFunctionConverter {
- public:
-  explicit CPUModuleToFunctionConverter(TaichiLLVMContext *tlctx,
-                                        LlvmRuntimeExecutor *executor)
-      : ModuleToFunctionConverter(tlctx, executor) {
-  }
-
-  using ModuleToFunctionConverter::convert;
-
-  FunctionType convert(const std::string &kernel_name,
-                       const std::vector<Callable::Parameter> &args,
-                       LLVMCompiledKernel data) const override;
-};
-
-#endif
 
 }  // namespace taichi::lang

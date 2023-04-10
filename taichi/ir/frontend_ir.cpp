@@ -593,9 +593,6 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
                                      /*is_grad=*/is_grad, /*create_load=*/true);
 
-  int external_dims = dim - std::abs(element_dim);
-  ptr->cast<ArgLoadStmt>()->set_extern_dims(external_dims);
-
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
@@ -1204,6 +1201,9 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
+  TI_ASSERT_INFO(src->ret_type->is<PointerType>(),
+                 "Invalid src [{}] for GetElementExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(src));
 
   ret_type =
       src->ret_type.ptr_removed()->as<StructType>()->get_element_type(index);
@@ -1436,6 +1436,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
         func, expanded_args,
         std::static_pointer_cast<IdExpression>(var.expr)->id));
     var.expr->ret_type = func->ret_type;
+    var.expr->ret_type.set_is_pointer(true);
     return var;
   } else {
     this->insert(std::make_unique<FrontendFuncCallStmt>(func, expanded_args));

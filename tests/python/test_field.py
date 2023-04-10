@@ -35,7 +35,8 @@ def test_scalar_field(dtype, shape):
 @pytest.mark.parametrize('shape', field_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_vector_field(n, dtype, shape):
-    x = ti.Vector.field(n, dtype, shape)
+    vec_type = ti.types.vector(n, dtype)
+    x = ti.field(vec_type, shape)
 
     if isinstance(shape, tuple):
         assert x.shape == shape
@@ -52,7 +53,8 @@ def test_vector_field(n, dtype, shape):
 @pytest.mark.parametrize('shape', field_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_matrix_field(n, m, dtype, shape):
-    x = ti.Matrix.field(n, m, dtype=dtype, shape=shape)
+    mat_type = ti.types.matrix(n, m, dtype)
+    x = ti.field(dtype=mat_type, shape=shape)
 
     if isinstance(shape, tuple):
         assert x.shape == shape
@@ -132,13 +134,14 @@ def test_field_needs_grad_dtype():
             match=
             r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
     ):
-        b = ti.Vector.field(3, int, shape=1, needs_grad=True)
+        b = ti.field(ti.math.ivec3, shape=1, needs_grad=True)
     with pytest.raises(
             RuntimeError,
             match=
             r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
     ):
-        c = ti.Matrix.field(2, 3, int, shape=1, needs_grad=True)
+        mat_type = ti.types.matrix(2, 3, int)
+        c = ti.field(dtype=mat_type, shape=1, needs_grad=True)
     with pytest.raises(
             RuntimeError,
             match=
@@ -168,13 +171,14 @@ def test_field_needs_dual_dtype():
             match=
             r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
     ):
-        b = ti.Vector.field(3, int, shape=1, needs_dual=True)
+        b = ti.field(ti.math.ivec3, shape=1, needs_dual=True)
     with pytest.raises(
             RuntimeError,
             match=
             r".* is not supported for field with `needs_grad=True` or `needs_dual=True`."
     ):
-        c = ti.Matrix.field(2, 3, int, shape=1, needs_dual=True)
+        mat_type = ti.types.matrix(2, 3, int)
+        c = ti.field(mat_type, shape=1, needs_dual=True)
     with pytest.raises(
             RuntimeError,
             match=
@@ -194,8 +198,9 @@ def test_field_needs_dual_dtype():
 @pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
 def test_default_fp(dtype):
     ti.init(default_fp=dtype)
+    vec_type = ti.types.vector(3, dtype)
 
-    x = ti.Vector.field(2, float, ())
+    x = ti.field(vec_type, ())
 
     assert x.dtype == impl.get_runtime().default_fp
 
@@ -204,7 +209,7 @@ def test_default_fp(dtype):
 def test_default_ip(dtype):
     ti.init(default_ip=dtype)
 
-    x = ti.Vector.field(2, int, ())
+    x = ti.field(ti.math.ivec2, ())
 
     assert x.dtype == impl.get_runtime().default_ip
 
@@ -212,8 +217,8 @@ def test_default_ip(dtype):
 @test_utils.test()
 def test_field_name():
     a = ti.field(dtype=ti.f32, shape=(2, 3), name='a')
-    b = ti.Vector.field(3, dtype=ti.f32, shape=(2, 3), name='b')
-    c = ti.Matrix.field(3, 3, dtype=ti.f32, shape=(5, 4), name='c')
+    b = ti.field(ti.math.vec3, shape=(2, 3), name='b')
+    c = ti.field(ti.math.mat3, shape=(5, 4), name='c')
     assert a._name == 'a'
     assert b._name == 'b'
     assert c._name == 'c'
@@ -292,14 +297,15 @@ def test_indexing_with_np_int():
 
 @test_utils.test()
 def test_indexing_vec_field_with_np_int():
-    val = ti.Vector.field(2, ti.i32, shape=(2))
+    val = ti.field(ti.math.ivec2, shape=(2))
     idx = np.int32(0)
     val[idx][idx]
 
 
 @test_utils.test()
 def test_indexing_mat_field_with_np_int():
-    val = ti.Matrix.field(2, 2, ti.i32, shape=(2))
+    mat_type = ti.types.matrix(2, 2, int)
+    val = ti.field(mat_type, shape=(2))
     idx = np.int32(0)
     val[idx][idx, idx]
 

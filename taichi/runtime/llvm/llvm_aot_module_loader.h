@@ -1,9 +1,11 @@
 #pragma once
 
 #include "taichi/aot/module_loader.h"
+#include "taichi/runtime/llvm/kernel_launcher.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
 namespace taichi::lang {
+namespace LLVM {
 
 /* TODO(zhanlue) refactor this interface once SNodeTreeType is available
    The "aot::Field" created by "make_new_field()" is a SNodeTree in essense.
@@ -13,11 +15,13 @@ TI_DLL_EXPORT void allocate_aot_snode_tree_type(aot::Module *aot_module,
                                                 aot::Field *aot_field,
                                                 uint64 *result_buffer);
 
-class LlvmAotModule : public aot::Module {
+class LlvmAotModule final : public aot::Module {
  public:
   explicit LlvmAotModule(const std::string &module_path,
-                         LlvmRuntimeExecutor *executor)
+                         LlvmRuntimeExecutor *executor,
+                         std::unique_ptr<LLVM::KernelLauncher> kernel_launcher)
       : executor_(executor),
+        kernel_launcher_(std::move(kernel_launcher)),
         cache_reader_(LlvmOfflineCacheFileReader::make(module_path)) {
     TI_ASSERT(executor_ != nullptr);
 
@@ -57,15 +61,20 @@ class LlvmAotModule : public aot::Module {
       const std::string &name) override;
 
  protected:
-  virtual FunctionType convert_module_to_function(
+  FunctionType convert_module_to_function(
       const std::string &name,
-      LlvmOfflineCache::KernelCacheData &&loaded) = 0;
+      LlvmOfflineCache::KernelCacheData &&loaded);
 
   LlvmOfflineCache::KernelCacheData load_kernel_from_cache(
       const std::string &name);
 
   std::unique_ptr<aot::Kernel> make_new_kernel(
       const std::string &name) override;
+
+  std::unique_ptr<aot::KernelTemplate> make_new_kernel_template(
+      const std::string &name) override {
+    TI_NOT_IMPLEMENTED;
+  }
 
   /* TODO(zhanlue): replace "make_new_field()" with "make_snode_tree()" once
      SNodeTreeType is available Field is not a standalone data structure - it is
@@ -75,10 +84,21 @@ class LlvmAotModule : public aot::Module {
   std::unique_ptr<aot::Field> make_new_field(const std::string &name) override;
 
   LlvmRuntimeExecutor *const executor_{nullptr};
+  std::unique_ptr<LLVM::KernelLauncher> kernel_launcher_{nullptr};
   std::unique_ptr<LlvmOfflineCacheFileReader> cache_reader_{nullptr};
 
   // To prevent repeated SNodeTree initialization
   std::unordered_set<int> initialized_snode_tree_ids;
 };
 
+struct TI_DLL_EXPORT AotModuleParams {
+  std::string module_path;
+  LlvmRuntimeExecutor *executor_{nullptr};
+  std::unique_ptr<LLVM::KernelLauncher> kernel_launcher{nullptr};
+};
+
+TI_DLL_EXPORT std::unique_ptr<aot::Module> make_aot_module(
+    AotModuleParams mod_params);
+
+}  // namespace LLVM
 }  // namespace taichi::lang

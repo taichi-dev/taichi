@@ -425,15 +425,18 @@ class TypeCheck : public IRVisitor {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(GetElementStmt *stmt) override {
+    TI_ASSERT(stmt->src->ret_type->is<PointerType>());
     stmt->ret_type =
         stmt->src->ret_type.ptr_removed()->as<StructType>()->get_element_type(
             stmt->index);
@@ -451,24 +454,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    /* ExternalPtrStmt may have two different semantics:
-       1. outer indexing to an argloaded external tensor
-       2. outer indexing + inner indexing to get the innermost primitive
-       element of an external tensor
-       We rely on "external_dims" and "indices" to distinguish these two cases.
-       Case #1: external_dims == indices.size(), return TensorType
-       Case #2: external_dims < indices.size(), return PrimitiveType
-    */
     TI_ASSERT(stmt->base_ptr->is<ArgLoadStmt>());
     auto arg_load_stmt = stmt->base_ptr->cast<ArgLoadStmt>();
 
-    int external_dims = arg_load_stmt->field_dims_;
     if (stmt->overrided_dtype) {
       // pass
-    } else if (external_dims == stmt->indices.size() || external_dims == -1) {
-      stmt->ret_type = arg_load_stmt->ret_type;
     } else {
-      stmt->ret_type = arg_load_stmt->ret_type.ptr_removed().get_element_type();
+      stmt->ret_type = arg_load_stmt->ret_type;
     }
 
     stmt->ret_type.set_is_pointer(true);

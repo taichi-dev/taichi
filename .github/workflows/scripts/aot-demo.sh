@@ -61,7 +61,7 @@ function prepare-unity-build-env {
     git clone --reference-if-able /var/lib/git-cache -b "$TAICHI_UNITY2_BRANCH" "$TAICHI_UNITY2_URL"
     mkdir tu2-build
     pushd tu2-build
-    cmake ../taichi-unity2 -DTAICHI_C_API_INSTALL_DIR=$TAICHI_REPO_DIR/_skbuild/linux-x86_64-3.9/cmake-install/c_api $ANDROID_CMAKE_ARGS
+    cmake ../taichi-unity2 -DTAICHI_C_API_INSTALL_DIR=$TAICHI_REPO_DIR/_skbuild/linux-x86_64-3.9/cmake-install/c_api $TAICHI_CMAKE_ARGS
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
@@ -115,7 +115,7 @@ function build-and-test-headless-demo {
     . $(pwd)/ci/test_utils.sh
 
     # Build demos
-    build_demos "$ANDROID_CMAKE_ARGS"
+    build_demos "$TAICHI_CMAKE_ARGS"
 
     export PATH=/android-sdk/platform-tools:$PATH
     grab-android-bot

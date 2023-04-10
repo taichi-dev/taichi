@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+# -- stdlib --
 import os
 import platform
 import shutil
@@ -8,8 +9,11 @@ import sys
 from contextlib import contextmanager
 from typing import Any, Mapping, Sequence
 
+# -- third party --
+# -- own --
 from .escapes import escape_codes
 
+# -- code --
 # A minimal and naive imitiation of the sh library, which can work on Windows.
 # NOT written as a general purpose library, wild assumptions are made.
 

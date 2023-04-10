@@ -97,7 +97,6 @@ file(GLOB TAICHI_CORE_SOURCE
     "taichi/platform/mac/*" "taichi/platform/windows/*"
     "taichi/codegen/*.cpp" "taichi/codegen/*.h"
     "taichi/runtime/*.h" "taichi/runtime/*.cpp"
-    "taichi/rhi/*.h" "taichi/rhi/*.cpp"
 )
 
 if(TI_WITH_LLVM)

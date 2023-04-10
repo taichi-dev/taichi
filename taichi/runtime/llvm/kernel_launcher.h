@@ -18,10 +18,11 @@ class KernelLauncher : public lang::KernelLauncher {
   void launch_kernel(const lang::CompiledKernelData &compiled_kernel_data,
                      LaunchContextBuilder &ctx) override;
 
- protected:
   virtual void launch_llvm_kernel(Handle handle, LaunchContextBuilder &ctx) = 0;
-  virtual Handle register_kernel(const LLVM::CompiledKernelData &compiled) = 0;
+  virtual Handle register_llvm_kernel(
+      const LLVM::CompiledKernelData &compiled) = 0;
 
+ protected:
   Handle make_handle() {
     Handle handle;
     handle.set_launch_id(launch_id_counter_++);

@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
 
+# -- stdlib --
 import os
 import platform
 import shutil
 from typing import Optional, Tuple
 
+# -- third party --
+# -- own --
+from . import misc
 from .dep import download_dep
 from .misc import banner, get_cache_home, path_prepend
 from .tinysh import Command, sh
 
 
+# -- code --
 def setup_miniforge3(prefix):
     u = platform.uname()
     if u.system == "Linux":
@@ -42,11 +47,14 @@ def setup_miniforge3(prefix):
 
 
 @banner('Setup Python {version}')
-def setup_python(version: Optional[str] = None) -> Tuple[Command, Command]:
+def setup_python(version: Optional[str] = '3.x') -> Tuple[Command, Command]:
     '''
     Find the required Python environment and return the `python` and `pip` commands.
     '''
-    assert version
+    if version == '3.x':
+        v = sys.version_info
+        version = f'{v.major}.{v.minor}'
+        misc.info(f'Using Python {version}')
 
     windows = platform.system() == "Windows"
 

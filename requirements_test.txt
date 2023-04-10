@@ -14,3 +14,4 @@ setproctitle
 nbmake
 marko
 PyYAML
+pyevtk

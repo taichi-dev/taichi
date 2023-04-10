@@ -88,7 +88,7 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
       tlctx_.fetch_this_thread_struct_module();
       auto offload = irpass::analysis::clone(offloads[i].get());
       irpass::re_id(offload.get());
-      auto new_data = this->compile_task(compile_config_, nullptr,
+      auto new_data = this->compile_task(i, compile_config_, nullptr,
                                          offload->as<OffloadedStmt>());
       data[i] = std::make_unique<LLVMCompiledTask>(std::move(new_data));
     };
@@ -99,17 +99,6 @@ LLVMCompiledKernel KernelCodeGen::compile_kernel_to_module() {
   auto llvm_compiled_kernel = tlctx_.link_compiled_tasks(std::move(data));
   optimize_module(llvm_compiled_kernel.module.get());
   return llvm_compiled_kernel;
-}
-
-ModuleToFunctionConverter::ModuleToFunctionConverter(
-    TaichiLLVMContext *tlctx,
-    LlvmRuntimeExecutor *executor)
-    : tlctx_(tlctx), executor_(executor) {
-}
-
-FunctionType ModuleToFunctionConverter::convert(const Kernel *kernel,
-                                                LLVMCompiledKernel data) const {
-  return convert(kernel->name, kernel->parameter_list, std::move(data));
 }
 
 #endif

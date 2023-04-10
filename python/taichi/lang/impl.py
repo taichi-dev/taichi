@@ -16,7 +16,7 @@ from taichi.lang.expr import Expr, make_expr_group
 from taichi.lang.field import Field, ScalarField
 from taichi.lang.kernel_arguments import SparseMatrixProxy
 from taichi.lang.matrix import (Matrix, MatrixField, MatrixNdarray, MatrixType,
-                                VectorNdarray, make_matrix)
+                                Vector, VectorNdarray, make_matrix)
 from taichi.lang.mesh import (ConvType, MeshElementFieldProxy, MeshInstance,
                               MeshRelationAccessProxy,
                               MeshReorderedMatrixFieldProxy,
@@ -695,48 +695,13 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
 
 
 @python_scope
-def field(dtype,
-          shape=None,
-          order=None,
-          name="",
-          offset=None,
-          needs_grad=False,
-          needs_dual=False):
-    """Defines a Taichi field.
-
-    A Taichi field can be viewed as an abstract N-dimensional array, hiding away
-    the complexity of how its underlying :class:`~taichi.lang.snode.SNode` are
-    actually defined. The data in a Taichi field can be directly accessed by
-    a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
-
-    See also https://docs.taichi-lang.org/docs/field
-
-    Args:
-        dtype (DataType): data type of the field.
-        shape (Union[int, tuple[int]], optional): shape of the field.
-        order (str, optional): order of the shape laid out in memory.
-        name (str, optional): name of the field.
-        offset (Union[int, tuple[int]], optional): offset of the field domain.
-        needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
-            and thus needs an adjoint field to store the gradients.
-        needs_dual (bool, optional): whether this field participates in autodiff (forward mode)
-            and thus needs an dual field to store the gradients.
-
-    Example::
-
-        The code below shows how a Taichi field can be declared and defined::
-
-            >>> x1 = ti.field(ti.f32, shape=(16, 8))
-            >>> # Equivalently
-            >>> x2 = ti.field(ti.f32)
-            >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
-            >>>
-            >>> x3 = ti.field(ti.f32, shape=(16, 8), order='ji')
-            >>> # Equivalently
-            >>> x4 = ti.field(ti.f32)
-            >>> ti.root.dense(ti.j, shape=8).dense(ti.i, shape=16).place(x4)
-
-    """
+def _field(dtype,
+           shape=None,
+           order=None,
+           name="",
+           offset=None,
+           needs_grad=False,
+           needs_dual=False):
     x, x_grad, x_dual = create_field_member(dtype, name, needs_grad,
                                             needs_dual)
     x = ScalarField(x)
@@ -789,6 +754,52 @@ def field(dtype,
             _create_snode(axis_seq, shape_seq, same_level).place(x_dual,
                                                                  offset=offset)
     return x
+
+
+@python_scope
+def field(dtype, *args, **kwargs):
+    """Defines a Taichi field.
+
+    A Taichi field can be viewed as an abstract N-dimensional array, hiding away
+    the complexity of how its underlying :class:`~taichi.lang.snode.SNode` are
+    actually defined. The data in a Taichi field can be directly accessed by
+    a Taichi :func:`~taichi.lang.kernel_impl.kernel`.
+
+    See also https://docs.taichi-lang.org/docs/field
+
+    Args:
+        dtype (DataType): data type of the field. Note it can be vector or matrix types as well.
+        shape (Union[int, tuple[int]], optional): shape of the field.
+        order (str, optional): order of the shape laid out in memory.
+        name (str, optional): name of the field.
+        offset (Union[int, tuple[int]], optional): offset of the field domain.
+        needs_grad (bool, optional): whether this field participates in autodiff (reverse mode)
+            and thus needs an adjoint field to store the gradients.
+        needs_dual (bool, optional): whether this field participates in autodiff (forward mode)
+            and thus needs an dual field to store the gradients.
+
+    Example::
+
+        The code below shows how a Taichi field can be declared and defined::
+
+            >>> x1 = ti.field(ti.f32, shape=(16, 8))
+            >>> # Equivalently
+            >>> x2 = ti.field(ti.f32)
+            >>> ti.root.dense(ti.ij, shape=(16, 8)).place(x2)
+            >>>
+            >>> x3 = ti.field(ti.f32, shape=(16, 8), order='ji')
+            >>> # Equivalently
+            >>> x4 = ti.field(ti.f32)
+            >>> ti.root.dense(ti.j, shape=8).dense(ti.i, shape=16).place(x4)
+            >>>
+            >>> x5 = ti.field(ti.math.vec3, shape=(16, 8))
+
+    """
+    if isinstance(dtype, MatrixType):
+        if dtype.ndim == 1:
+            return Vector.field(dtype.n, dtype.dtype, *args, **kwargs)
+        return Matrix.field(dtype.n, dtype.m, dtype.dtype, *args, **kwargs)
+    return _field(dtype, *args, **kwargs)
 
 
 @python_scope

@@ -790,7 +790,9 @@ void export_lang(py::module &m) {
       .def("is_tensor",
            [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
       .def("is_struct",
-           [](Expr *expr) { return expr->expr->ret_type->is<StructType>(); })
+           [](Expr *expr) {
+             return expr->expr->ret_type.ptr_removed()->is<StructType>();
+           })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
              if (expr->expr->ret_type->is<TensorType>()) {

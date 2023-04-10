@@ -229,6 +229,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
          "exponent", 8});
     ret_type =
         taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
+    ret_type.set_is_pointer(true);
     return;
   }
   if (operand->ret_type->is<TensorType>()) {
@@ -1636,8 +1637,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (expr->ret_type->is<StructType>()) {
-      auto struct_type = expr->ret_type->as<StructType>();
+    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
       auto num_elem = struct_type->get_num_elements();
       for (int i = 0; i < num_elem; i++) {
         std::vector<int> indices = {i};

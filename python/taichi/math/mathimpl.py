@@ -4,8 +4,7 @@ Math functions for glsl-like functions and other stuff.
 """
 from math import e, inf, nan, pi
 
-from taichi.lang import ops
-from taichi.lang import impl
+from taichi.lang import impl, ops
 from taichi.lang.impl import static, zero
 from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix

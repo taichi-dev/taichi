@@ -232,6 +232,16 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   const auto &config = get_compile_config();
 
+  bool verbose = config.print_ir;
+  if (kernel->is_accessor && !config.print_accessor_ir) {
+    verbose = false;
+  }
+
+  irpass::compile_to_offloads(ir, config, kernel, config.print_ir,
+                              /*autodiff_mode=*/kernel->autodiff_mode,
+                              /*ad_use_stack=*/true,
+                              /*start_from_ast=*/kernel->ir_is_ast());
+
   auto block = dynamic_cast<Block *>(ir);
   TI_ASSERT(block);
 

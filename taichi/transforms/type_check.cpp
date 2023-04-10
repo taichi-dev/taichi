@@ -425,17 +425,21 @@ class TypeCheck : public IRVisitor {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(GetElementStmt *stmt) override {
+    TI_ASSERT(stmt->src->ret_type->is<PointerType>());
     stmt->ret_type =
-        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->index);
+        stmt->src->ret_type.ptr_removed()->as<StructType>()->get_element_type(
+            stmt->index);
   }
 
   void visit(ArgLoadStmt *stmt) override {

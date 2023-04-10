@@ -199,7 +199,6 @@ class CudaMemoryPool : public MemoryPool {
     */
 #ifdef TI_WITH_CUDA
     void *ptr = nullptr;
-    std::cout << managed << std::endl;
     if (!managed) {
       CUDADriver::get_instance().malloc(&ptr, size);
     } else {

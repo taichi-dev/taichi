@@ -79,7 +79,7 @@ user_api[ti] = [
     'one', 'opengl', 'polar_decompose', 'pow', 'profiler', 'pyfunc', 'randn',
     'random', 'raw_div', 'raw_mod', 'ref', 'rescale_index', 'reset',
     'rgb_to_hex', 'root', 'round', 'rsqrt', 'select', 'set_logging_level',
-    'simt', 'sin', 'solve', 'sparse_matrix_builder', 'sqrt', 'static',
+    'simt', 'sin', 'solve', 'sparse', 'sparse_matrix_builder', 'sqrt', 'static',
     'static_assert', 'static_print', 'stop_grad', 'svd', 'sym_eig', 'sync',
     'tan', 'tanh', 'template', 'tools', 'types', 'u16', 'u32', 'u64', 'u8',
     'ui', 'uint16', 'uint32', 'uint64', 'uint8', 'vulkan', 'x64', 'x86_64',
@@ -140,6 +140,7 @@ user_api[ti.StructField] = [
 user_api[ti.VectorNdarray] = [
     'copy_from', 'element_shape', 'fill', 'from_numpy', 'get_type', 'to_numpy'
 ]
+user_api[ti.sparse] = [ 'grid', 'usage']
 
 
 @pytest.mark.parametrize('src', user_api.keys())

@@ -1,1 +1,1 @@
-from taichi.sparse.sparse_grid import *
+from ._sparse_grid import *

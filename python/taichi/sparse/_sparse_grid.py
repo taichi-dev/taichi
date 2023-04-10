@@ -18,15 +18,16 @@ def grid(field_dict, shape):
 
     Examples::
         # create a 2D sparse grid
-        grid = ti.sparse_grid({'pos': ti.math.vec2, 'mass': ti.f32, 'grid2particles': ti.i32}, shape=(128, 128))
+        >>> grid = ti.sparse.grid({'pos': ti.math.vec2, 'mass': ti.f32, 'grid2particles': ti.types.vector(20, ti.i32)}, shape=(10, 10))
 
         # access
-        grid[0, 0].pos = ti.math.vec2(1,2)
-        grid[0, 0].mass = 1.0
-        grid[0, 0].grid2particles[2] = 123
+        >>> grid[0, 0].pos = ti.math.vec2(1.0, 2.0)
+        >>> grid[0, 0].mass = 1.0
+        >>> grid[0, 0].grid2particles[2] = 123
 
         # print the usage of the sparse grid, which is in [0,1]
-        print(ti.sparse_grid_usage(grid))
+        >>> print(ti.sparse.usage(grid))
+        # 0.009999999776482582
     """
     x = Struct.field(field_dict)
     if len(shape) == 2:
@@ -43,7 +44,7 @@ def grid(field_dict, shape):
 @kernel
 def usage(x:template())->f32:
     """
-    get the usage of the sparse grid, which is in [0,1]
+    Get the usage of the sparse grid, which is in [0,1]
 
     Args:
         x(struct field): the sparse grid to be checked.
@@ -51,7 +52,10 @@ def usage(x:template())->f32:
         usage(f32): the usage of the sparse grid, which is in [0,1]
         
     Examples::
-        print(ti.sparse_grid_usage(grid)) 
+        >>> grid = ti.sparse.grid({'pos': ti.math.vec2, 'mass': ti.f32, 'grid2particles': ti.types.vector(20, ti.i32)}, shape=(10, 10))
+        >>> grid[0, 0].mass = 1.0
+        >>> print(ti.sparse.usage(grid)) 
+        # 0.009999999776482582
     """
     cnt = 0
     for I in grouped(x.parent()):

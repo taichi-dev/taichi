@@ -1,6 +1,5 @@
 import taichi as ti
 from tests import test_utils
-# ti.init()
 
 @test_utils.test(require=ti.extension.sparse)
 def test_sparse_grid():
@@ -17,6 +16,4 @@ def test_sparse_grid():
 
     # print the usage of the sparse grid, which is in [0,1]
     print(ti.sparse.usage(grid))
-
-# if __name__ == '__main__':
-#     test_sparse_grid()
+    assert ti.sparse.usage(grid) == test_utils.approx(0.01)

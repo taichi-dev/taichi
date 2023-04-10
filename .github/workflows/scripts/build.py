@@ -18,6 +18,7 @@ from ci_common import misc
 from ci_common.android import build_android, setup_android_ndk
 from ci_common.cmake import cmake_args
 from ci_common.compiler import setup_clang, setup_msvc
+from ci_common.ios import build_ios, setup_ios
 from ci_common.llvm import setup_llvm
 from ci_common.misc import banner, is_manylinux2014
 from ci_common.python import setup_python
@@ -115,6 +116,13 @@ def add_aot_env():
         )
 
 
+def action_ios():
+    sccache, python, pip = setup_basic_build_env()
+    setup_ios(python, pip)
+    handle_alternate_actions()
+    build_ios()
+
+
 def enter_shell():
     cmake_args.writeback()
     misc.info('Entering shell...')
@@ -192,6 +200,7 @@ def main() -> None:
     dispatch = {
         'wheel': action_wheel,
         'android': action_android,
+        'ios': action_ios,
     }
 
     dispatch.get(options.action, action_notimpl)()

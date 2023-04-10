@@ -237,7 +237,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
     verbose = false;
   }
 
-  irpass::compile_to_offloads(ir, config, kernel, config.print_ir,
+  irpass::compile_to_offloads(ir, config, kernel, verbose,
                               /*autodiff_mode=*/kernel->autodiff_mode,
                               /*ad_use_stack=*/true,
                               /*start_from_ast=*/kernel->ir_is_ast());

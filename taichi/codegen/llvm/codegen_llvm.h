@@ -63,6 +63,12 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   std::unordered_set<int> struct_for_tls_sizes;
   const Callable *current_callable{nullptr};
 
+  // The task_codegen_id and task_counter are used to generate unique task
+  // ids.The task_codegen_id represents the id of the offloaded task, and the
+  // task_counter represents the id of the task within the offloaded task.
+  int task_codegen_id{0};
+  int task_counter{0};
+
   std::unordered_map<const Stmt *, std::vector<llvm::Value *>> loop_vars_llvm;
 
   std::unordered_map<Function *, llvm::Function *> func_map;
@@ -70,7 +76,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   using IRVisitor::visit;
   using LLVMModuleBuilder::call;
 
-  explicit TaskCodeGenLLVM(const CompileConfig &config,
+  explicit TaskCodeGenLLVM(int id,
+                           const CompileConfig &config,
                            TaichiLLVMContext &tlctx,
                            const Kernel *kernel,
                            IRNode *ir,

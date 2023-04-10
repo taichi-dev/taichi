@@ -588,9 +588,6 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
                                      /*is_grad=*/is_grad);
 
-  int external_dims = dim - std::abs(element_dim);
-  ptr->cast<ArgLoadStmt>()->set_extern_dims(external_dims);
-
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
   stmt = ctx->back_stmt();
@@ -626,6 +623,7 @@ Stmt *make_matrix_field_access(Expression::FlattenContext *ctx,
   for (auto &field : matrix_field.fields) {
     snodes.push_back(field.cast<FieldExpression>()->snode);
   }
+  ret_type.set_is_pointer(true);
   return ctx->push_back(std::make_unique<MatrixOfGlobalPtrStmt>(
       snodes, make_index_stmts(ctx, indices, snodes[0]->index_offsets),
       matrix_field.dynamic_indexable, matrix_field.dynamic_index_stride,

@@ -127,6 +127,12 @@ jobs:
     - ${{ matrix.os }}
     env:
       PY: ${{ matrix.python }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_C_API=ON
+        -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -151,12 +157,6 @@ jobs:
           .github/workflows/scripts/build.py
         env:
           CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_C_API=ON
-            -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
 
       # [DEBUG] Copy this step around to enable debugging inside Github Action instances.
       #- name: Setup tmate session
@@ -186,11 +186,33 @@ jobs:
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     strategy:
       matrix:
-        tags:
-          - [self-hosted, cuda, vulkan, cn, driver470]
-          - [self-hosted, cuda, vulkan, cn, driver510]
+        extra_markers:
+        - sm70
+        - not sm70
+        driver:
+        - driver470
+        - driver510
 
-    runs-on: ${{ matrix.tags }}
+    runs-on:
+    - self-hosted
+    - cn
+    - cuda
+    - vulkan
+    - ${{ matrix.driver }}
+    - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'Linux' }}
+    env:
+      PY: '3.11'
+      PROJECT_NAME: taichi
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_CC:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+      TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
+      TI_DEVICE_MEMORY_GB: '1'
+      TI_RUN_RELEASE_TESTS: '1'
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -215,16 +237,6 @@ jobs:
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
-        env:
-          PY: '3.11'
-          PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
-
       - name: Test
         id: test
         run: |
@@ -235,10 +247,7 @@ jobs:
              registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
-          PY: '3.11'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -260,6 +269,16 @@ jobs:
     name: Build and Test (manylinux2014)
     needs: check_files
     runs-on: [self-hosted, cuda, cn, release]
+    env:
+      PY: "3.8"
+      PROJECT_NAME: taichi
+      TI_WANTED_ARCHS: "cuda,cpu"
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -280,15 +299,6 @@ jobs:
              registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/build.py
 
-        env:
-          PY: "3.8"
-          PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-
       - name: Test
         run: |
           . .github/workflows/scripts/common-utils.sh
@@ -296,15 +306,25 @@ jobs:
           ci-docker-run-gpu --name taichi-test \
              registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
-        env:
-          PY: "3.8"
-          TI_WANTED_ARCHS: "cuda,cpu"
 
   build_and_test_amdgpu_linux:
     name: Build and Test (AMDGPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, amdgpu]
+    env:
+      PY: '3.8'
+      PROJECT_NAME: taichi
+      TI_WANTED_ARCHS: 'cpu,amdgpu'
+      TI_DEVICE_MEMORY_GB: '1'
+      TI_RUN_RELEASE_TESTS: '0'
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_AMDGPU:BOOL=ON
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -329,16 +349,6 @@ jobs:
             registry.botmaster.tgr/taichi-build-amdgpu:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
-        env:
-          PY: '3.8'
-          PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_AMDGPU:BOOL=ON
-
       - name: Test
         id: test
         run: |
@@ -348,11 +358,6 @@ jobs:
           ci-docker-run-amdgpu --name taichi-test \
              registry.botmaster.tgr/taichi-test-amdgpu:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
-        env:
-          PY: '3.8'
-          TI_WANTED_ARCHS: 'cpu,amdgpu'
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '0'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -374,8 +379,35 @@ jobs:
   build_and_test_windows:
     name: Build and Test Windows
     needs: check_files
-    runs-on: [self-hosted, windows, cuda, OpenGL]
+    strategy:
+      matrix:
+        extra_markers:
+        - sm70
+        - not sm70
+    runs-on:
+    - self-hosted
+    - cn
+    - windows
+    - cuda
+    - OpenGL
+    - ${{ matrix.extra_markers == 'sm70' && 'sm70' || 'windows' }}
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 180 }}
+    env:
+      PY: "3.7"
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_DX11:BOOL=ON
+        -DTI_WITH_DX12:BOOL=ON
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_BACKTRACE=ON
+        -DTI_WITH_C_API=ON
+      TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
+      TI_SKIP_VERSION_CHECK: ON
+      TI_DEVICE_MEMORY_GB: '1'
+      TI_RUN_RELEASE_TESTS: '1'
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
@@ -396,17 +428,6 @@ jobs:
         shell: cmd
         run: |
           python .\.github\workflows\scripts\build.py
-        env:
-          PY: "3.7"
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_DX11:BOOL=ON
-            -DTI_WITH_DX12:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_BACKTRACE=ON
-            -DTI_WITH_C_API=ON
 
       - name: Test
         id: test
@@ -415,11 +436,7 @@ jobs:
         run: |
           .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
         env:
-          PY: "3.7"
-          TI_WANTED_ARCHS: cpu,cuda,vulkan,opengl,gles
-          TI_SKIP_VERSION_CHECK: ON
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
+          EXTRA_TEST_MARKERS: ${{ matrix.extra_markers }}
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -451,6 +468,20 @@ jobs:
         # https://github.com/actions/runner/issues/805#issuecomment-844426478
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
     runs-on: [self-hosted, m1]
+    env:
+      CXX: clang++
+      PY: ${{ matrix.python }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
+        -DTI_WITH_STATIC_C_API=ON
+      TI_WANTED_ARCHS: 'cpu,metal,vulkan'
+      PLATFORM: 'm1'
+      TI_RUN_RELEASE_TESTS: '1'
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -469,16 +500,7 @@ jobs:
           brew install llvm@15
           .github/workflows/scripts/build.py
         env:
-          PY: ${{ matrix.python }}
           CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_C_API=ON
-            -DTI_WITH_STATIC_C_API=ON
 
       - name: Check C-API Export Symbols
         run: |
@@ -486,19 +508,12 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           .github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
-        env:
-          PY: ${{ matrix.python }}
 
       - name: Test
         id: test
         run: |
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
           .github/workflows/scripts/unix_test.sh
-        env:
-          TI_WANTED_ARCHS: 'cpu,metal,vulkan'
-          PY: ${{ matrix.python }}
-          PLATFORM: 'm1'
-          TI_RUN_RELEASE_TESTS: '1'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'
@@ -521,6 +536,20 @@ jobs:
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
     runs-on: [self-hosted, Linux, cuda, vulkan, cn]
+    env:
+      PY: '3.8'
+      PROJECT_NAME: taichi
+      TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
+      TI_DEVICE_MEMORY_GB: '1'
+      TI_RUN_RELEASE_TESTS: '1'
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_CC:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
@@ -544,17 +573,6 @@ jobs:
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
-        env:
-          PY: '3.8'
-          PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_C_API=ON
-
       - name: Test
         id: test
         run: |
@@ -563,11 +581,6 @@ jobs:
           ci-docker-run-gpu --name taichi-test \
              registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix-test-docs.sh
-        env:
-          PY: '3.8'
-          TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
-          TI_DEVICE_MEMORY_GB: '1'
-          TI_RUN_RELEASE_TESTS: '1'
 
   aot_build_and_test_android_apps:
     name: AOT Build and Test Android Apps
@@ -828,11 +841,22 @@ jobs:
     name: AOT Build and Test (GPU)
     needs: check_files
     timeout-minutes: ${{ github.event.schedule != '0 18 * * *' && 90 || 120 }}
+    # TODO(proton): do we need to test both drivers?
     strategy:
       matrix:
         tags:
           - [self-hosted, cuda, vulkan, cn, driver470]
           - [self-hosted, cuda, vulkan, cn, driver510]
+    env:
+      PY: '3.8'
+      PROJECT_NAME: taichi
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
 
     runs-on: ${{ matrix.tags }}
     steps:
@@ -859,17 +883,6 @@ jobs:
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
 
-        env:
-          PY: '3.8'
-          PROJECT_NAME: taichi
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_BACKTRACE:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_C_API=ON
-
       - name: Check C-API Export Symbols
         run: |
           [[ ${{needs.check_files.outputs.run_job}} == false ]] && exit 0
@@ -878,9 +891,6 @@ jobs:
           ci-docker-run-gpu --name taichi-test-check-c-api-export-symbols \
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh check-c-api-export-symbols
-
-        env:
-          PY: '3.8'
 
       - name: Build & Run C-API Headless Demos (Desktop)
         run: |
@@ -891,7 +901,6 @@ jobs:
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/aot-demo.sh build-and-test-headless-demo-desktop
         env:
-          PY: '3.8'
           TI_DEVICE_MEMORY_GB: '0.1'
 
       - name: Compatibility Test
@@ -903,8 +912,6 @@ jobs:
           ci-docker-run-gpu --name taichi-test \
              registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_aot_compat_test.sh
-        env:
-          PY: '3.8'
 
       - name: Save wheel if test failed
         if: failure() && steps.test.conclusion == 'failure'

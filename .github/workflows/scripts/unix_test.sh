@@ -33,16 +33,7 @@ echo "wanted archs: $TI_WANTED_ARCHS"
 
 if [ -z "$TI_SKIP_CPP_TESTS" ]; then
     echo "Running cpp tests on platform:" "${PLATFORM}"
-    # Temporary hack before CI Pipeline Overhaul
-    if [[ "$(uname -s)" == "Linux" ]]; then
-        if nvidia-smi -L | grep "Tesla P4"; then
-            python3 tests/run_tests.py --cpp -vr2 -t4 -m "not sm70"
-        else
-            python3 tests/run_tests.py --cpp -vr2 -t4
-        fi
-    else
-        python3 tests/run_tests.py --cpp -vr2 -t4
-    fi
+    python3 tests/run_tests.py --cpp -vr2 -t4 ${EXTRA_TEST_MARKERS:+-m "$EXTRA_TEST_MARKERS"}
 fi
 
 
@@ -77,8 +68,8 @@ function run-it {
     KEYS=${3:-"not torch and not paddle"}
 
     if [[ $TI_WANTED_ARCHS == *"$1"* ]]; then
-        python3 tests/run_tests.py -vr2 -t$PARALLELISM -k "$KEYS" -m "not run_in_serial" -a $ARCH
-        python3 tests/run_tests.py -vr2 -t1 -k "$KEYS" -m "run_in_serial" -a $ARCH
+        python3 tests/run_tests.py -vr2 -t$PARALLELISM -k "$KEYS" -m "not run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
+        python3 tests/run_tests.py -vr2 -t1 -k "$KEYS" -m "run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
     fi
 }
 

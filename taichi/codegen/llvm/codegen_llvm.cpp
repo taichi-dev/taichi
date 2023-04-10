@@ -303,7 +303,8 @@ void TaskCodeGenLLVM::emit_struct_meta_base(const std::string &name,
                                    snode->get_snode_tree_id()));
 }
 
-TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
+TaskCodeGenLLVM::TaskCodeGenLLVM(int id,
+                                 const CompileConfig &compile_config,
                                  TaichiLLVMContext &tlctx,
                                  const Kernel *kernel,
                                  IRNode *ir,
@@ -315,7 +316,8 @@ TaskCodeGenLLVM::TaskCodeGenLLVM(const CompileConfig &compile_config,
       compile_config(compile_config),
       kernel(kernel),
       ir(ir),
-      prog(kernel->program) {
+      prog(kernel->program),
+      task_codegen_id(id) {
   if (ir == nullptr)
     this->ir = kernel->ir.get();
   initialize_context();
@@ -1953,7 +1955,7 @@ std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
   auto task_kernel_name =
-      fmt::format("{}_{}_{}{}", kernel_name, kernel->get_next_task_id(),
+      fmt::format("{}_{}_{}_{}{}", kernel_name, task_codegen_id, task_counter++,
                   stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,

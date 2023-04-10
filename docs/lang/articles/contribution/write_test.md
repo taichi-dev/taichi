@@ -13,6 +13,16 @@ Normally we write functional tests in Python.
 For example, you've just added a utility function `ti.log10`. Now you
 want to write a **test** to ensure that it functions properly.
 
+:::note
+
+Before running the test launcher `tests/run_tests.py`, you need to install the corresponding
+dependencies:
+```bash
+pip install -r requirements_test.txt
+```
+
+:::
+
 ## Add a new test case
 
 Look into `tests/python`, see if there is already a file suitable for your

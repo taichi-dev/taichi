@@ -112,7 +112,6 @@ def _unary_operation(taichi_op, python_op, a):
     if isinstance(a, Field):
         return NotImplemented
     if is_taichi_expr(a):
-        print(a.ptr)
         return expr.Expr(taichi_op(a.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
     if isinstance(a, Matrix):

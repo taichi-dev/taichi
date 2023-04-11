@@ -816,19 +816,11 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size,
   if (request)
     atomic_add_i64(&total_requested_memory, size);
 
-#if ARCH_cuda || ARCH_amdgpu
-  if (preallocated_memory_chunk.preallocated_size <= 0) {
-    __assertfail(
-        "CUDA and AMDGPU backends must allocate on preallocated memory \n",
-        "Taichi JIT", 0, "allocate_aligned", 1);
+  if (preallocated_memory_chunk.preallocated_size > 0) {
+    return allocate_from_reserved_memory(size, alignment);
   }
 
-  return allocate_from_reserved_memory(size, alignment);
-#else
-  // vm_allocator essentially calls MemoryPool::allocate(), which is a host-only
-  // function.
   return (Ptr)vm_allocator(memory_pool, size, alignment);
-#endif
 }
 
 // [ONLY ON DEVICE] CUDA/AMDGPU backend

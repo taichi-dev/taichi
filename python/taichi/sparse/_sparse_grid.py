@@ -1,11 +1,11 @@
-from taichi.lang.snode import  is_active
-from taichi.lang.kernel_impl import  kernel
-from taichi.types.annotations import template
-from taichi.types.primitive_types import  f32
-from taichi.lang.impl import grouped, static
-from taichi.lang.struct import Struct
-from taichi.lang.impl import root
+from taichi.lang.impl import grouped, root, static
+from taichi.lang.kernel_impl import kernel
 from taichi.lang.misc import ij, ijk
+from taichi.lang.snode import is_active
+from taichi.lang.struct import Struct
+from taichi.types.annotations import template
+from taichi.types.primitive_types import f32
+
 
 def grid(field_dict, shape):
     """Creates a 2D/3D sparse grid with each element is a struct. The struct is placed on a bitmasked snode.
@@ -42,7 +42,7 @@ def grid(field_dict, shape):
 
 
 @kernel
-def usage(x:template())->f32:
+def usage(x: template()) -> f32:
     """
     Get the usage of the sparse grid, which is in [0,1]
 
@@ -50,28 +50,26 @@ def usage(x:template())->f32:
         x(struct field): the sparse grid to be checked.
     Returns:
         usage(f32): the usage of the sparse grid, which is in [0,1]
-        
+
     Examples::
         >>> grid = ti.sparse.grid({'pos': ti.math.vec2, 'mass': ti.f32, 'grid2particles': ti.types.vector(20, ti.i32)}, shape=(10, 10))
         >>> grid[0, 0].mass = 1.0
-        >>> print(ti.sparse.usage(grid)) 
+        >>> print(ti.sparse.usage(grid))
         # 0.009999999776482582
     """
     cnt = 0
     for I in grouped(x.parent()):
         if is_active(x.parent(), I):
-            cnt+=1
+            cnt += 1
     total = 1.0
     if static(len(x.shape) == 2):
-        total = x.shape[0]*x.shape[1]
+        total = x.shape[0] * x.shape[1]
     elif static(len(x.shape) == 3):
-        total = x.shape[0]*x.shape[1]*x.shape[2]
+        total = x.shape[0] * x.shape[1] * x.shape[2]
     else:
         raise ValueError("The dimension of the sparse grid should be 2 or 3")
-    res =  cnt/total
+    res = cnt / total
     return res
 
 
-__all__ = [
-    'grid', 'usage'
-]
+__all__ = ['grid', 'usage']

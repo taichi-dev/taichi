@@ -16,7 +16,6 @@ from taichi.types.primitive_types import f32, f64, i32, i64
 
 from taichi import _logging, _snode, _version_check
 
-
 warnings.filterwarnings("once", category=DeprecationWarning, module="taichi")
 
 # ----------------------
@@ -765,8 +764,6 @@ def adaptive_arch_select(arch, enable_fallback):
 
 def get_host_arch_list():
     return [_ti_core.host_arch()]
-
-
 
 
 __all__ = [

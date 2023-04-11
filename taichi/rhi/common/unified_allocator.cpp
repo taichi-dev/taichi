@@ -27,10 +27,8 @@ static void swap_erase_vector(std::vector<T> &vec, size_t idx) {
 
   vec.pop_back();
 
-  // swap it back so it does not influence the last memory chunk to reuse
-  if (!is_last) {
-    std::swap(vec[idx], vec.back());
-  }
+  // There's no need to swap back since we'll iterate the memory chunks to
+  // search for reusable memory
 }
 
 UnifiedAllocator::UnifiedAllocator(Arch arch) : arch_(arch) {
@@ -104,9 +102,7 @@ bool UnifiedAllocator::release(size_t sz, void *ptr) {
     auto &chunk = chunks_[chunk_idx];
 
     if (chunk.data == ptr) {
-      // TODO(zhanlue): uncomment after we migrated CudaMemoryPool to use the
-      // Caching Allocator TI_ASSERT(chunk.is_exclusive);
-      // TI_ASSERT(chunk.is_exclusive);
+      TI_ASSERT(chunk.is_exclusive);
       remove_idx = chunk_idx;
     }
   }

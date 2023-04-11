@@ -20,7 +20,7 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
   auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
 
   bool managed = params.host_read || params.host_write;
-  bool exclusive = params.host_read || params.host_write;
+  bool exclusive = true;
   void *ptr =
       mem_pool.allocate(params.size, MemoryPool::page_size, exclusive, managed);
   if (ptr == nullptr) {

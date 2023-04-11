@@ -112,6 +112,7 @@ def _unary_operation(taichi_op, python_op, a):
     if isinstance(a, Field):
         return NotImplemented
     if is_taichi_expr(a):
+        print(a.ptr)
         return expr.Expr(taichi_op(a.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
     if isinstance(a, Matrix):
@@ -530,8 +531,8 @@ def bit_not(a):
 
 
 def popcnt(a):
-    def _popcnt(a):
-        return bin(a).count("1")
+    def _popcnt(x):
+        return bin(x).count("1")
     return _unary_operation(_ti_core.expr_popcnt, _popcnt, a)
 
 

@@ -231,6 +231,15 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_type.set_is_pointer(true);
     return;
   }
+
+  if (type == UnaryOpType::popcnt) {
+    TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::i32) ||
+              operand_primitive_type->is_primitive(PrimitiveTypeID::i64) ||
+              operand_primitive_type->is_primitive(PrimitiveTypeID::u32) ||
+              operand_primitive_type->is_primitive(PrimitiveTypeID::u64));
+    return;
+  }
+
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);

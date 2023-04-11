@@ -93,11 +93,13 @@ def test_frexp():
 
     assert get_exp(1.4) == 1
 
+
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
 def test_popcnt():
     @ti.kernel
     def test(x: ti.int32) -> ti.int32:
         return ti.math.popcnt(x)
+
     assert test(100) == 3
     assert test(1000) == 6
     assert test(10000) == 5

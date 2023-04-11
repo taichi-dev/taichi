@@ -142,13 +142,12 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
   ret_type = dt;
   if (!create_load) {
     ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
-    ;
   }
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load =
-      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, false, create_load);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr,
+                                                /*is_grad=*/false, create_load);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();

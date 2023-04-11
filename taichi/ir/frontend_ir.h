@@ -315,6 +315,7 @@ class ArgLoadExpression : public Expression {
   int arg_id;
   DataType dt;
   bool is_ptr;
+
   /* Creates a load statement if true, otherwise returns the pointer
    * directly.
    * TODO: Split ArgLoad into two steps: ArgAddr and GlobalLoad.

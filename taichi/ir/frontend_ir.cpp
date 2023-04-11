@@ -139,13 +139,16 @@ FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
-  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
-                 "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
+  if (!create_load) {
+    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
+  }
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr,
+                                                /*is_grad=*/false, create_load);
+  arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
 }
@@ -154,7 +157,8 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 }
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
+  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
+                              /*is_grad=*/false, /*create_load*/ true);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
   stmt = ctx->back_stmt();
@@ -587,7 +591,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 irpass::lower_access()
   auto prim_dt = dt;
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
-                                     /*is_grad=*/is_grad);
+                                     /*is_grad=*/is_grad, /*create_load=*/true);
 
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));

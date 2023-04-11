@@ -68,8 +68,8 @@ def usage(x:template())->f32:
         total = x.shape[0]*x.shape[1]*x.shape[2]
     else:
         raise ValueError("The dimension of the sparse grid should be 2 or 3")
-    usage =  cnt/total
-    return usage
+    res =  cnt/total
+    return res
 
 
 __all__ = [

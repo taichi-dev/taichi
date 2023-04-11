@@ -16,7 +16,7 @@ RhiResult AmdgpuDevice::allocate_memory(const AllocParams &params,
                                         DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  auto &mem_pool = DeviceMemoryPool::get_instance(Arch::amdgpu);
+  auto &mem_pool = DeviceMemoryPool::get_instance();
 
   bool managed = params.host_read || params.host_write;
   void *ptr =

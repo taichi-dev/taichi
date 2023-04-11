@@ -53,6 +53,7 @@ def setup_msvc() -> None:
     download_dep(
         url,
         out,
+        elevate=True,
         args=[
             '--passive',
             '--wait',

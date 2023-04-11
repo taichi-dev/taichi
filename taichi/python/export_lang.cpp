@@ -929,7 +929,8 @@ void export_lang(py::module &m) {
         Stmt::make<FrontendAssignStmt, const Expr &, const Expr &>);
 
   m.def("make_arg_load_expr",
-        Expr::make<ArgLoadExpression, int, const DataType &, bool>);
+        Expr::make<ArgLoadExpression, int, const DataType &, bool, bool>,
+        "arg_id"_a, "dt"_a, "is_ptr"_a = false, "create_load"_a = true);
 
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 

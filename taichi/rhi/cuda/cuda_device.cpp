@@ -77,7 +77,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
     auto &mem_pool = DeviceMemoryPool::get_instance();
-    mem_pool.release(info.size, info.ptr);
+    mem_pool.release(info.size, info.ptr, true /*release_raw*/);
     info.ptr = nullptr;
   }
 }

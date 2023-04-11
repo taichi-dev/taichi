@@ -30,7 +30,7 @@ void *DeviceMemoryPool::allocate(std::size_t size,
   return allocate_raw_memory(size, managed);
 }
 
-void DeviceMemoryPool::release(std::size_t size, void *ptr) {
+void DeviceMemoryPool::release(std::size_t size, void *ptr, bool release_raw) {
   std::lock_guard<std::mutex> _(mut_allocation_);
 
   deallocate_raw_memory(ptr);
@@ -46,35 +46,27 @@ void *DeviceMemoryPool::allocate_raw_memory(std::size_t size, bool managed) {
     The caller ensures that no other thread is accessing the memory pool
     when calling this method.
   */
-#if TI_WITH_CUDA
   void *ptr = nullptr;
+
+#if TI_WITH_CUDA
   if (!managed) {
     CUDADriver::get_instance().malloc(&ptr, size);
   } else {
     CUDADriver::get_instance().malloc_managed(&ptr, size, CU_MEM_ATTACH_GLOBAL);
   }
-
-  if (ptr == nullptr) {
-    TI_ERROR("CUDA memory allocation ({} B) failed.", size);
-  }
-
-  if (raw_memory_chunks_.count(ptr)) {
-    TI_ERROR("Memory address ({:}) is already allocated", ptr);
-  }
-
-  raw_memory_chunks_[ptr] = size;
-  return ptr;
 #elif TI_WITH_AMDGPU
-  void *ptr = nullptr;
   if (!managed) {
     AMDGPUDriver::get_instance().malloc(&ptr, size);
   } else {
     AMDGPUDriver::get_instance().malloc_managed(&ptr, size,
                                                 HIP_MEM_ATTACH_GLOBAL);
   }
+#else
+  TI_NOT_IMPLEMENTED;
+#endif
 
   if (ptr == nullptr) {
-    TI_ERROR("CUDA memory allocation ({} B) failed.", size);
+    TI_ERROR("Device memory allocation ({} B) failed.", size);
   }
 
   if (raw_memory_chunks_.count(ptr)) {
@@ -83,9 +75,6 @@ void *DeviceMemoryPool::allocate_raw_memory(std::size_t size, bool managed) {
 
   raw_memory_chunks_[ptr] = size;
   return ptr;
-#else
-  TI_NOT_IMPLEMENTED;
-#endif
 }
 
 void DeviceMemoryPool::deallocate_raw_memory(void *ptr) {
@@ -98,11 +87,15 @@ void DeviceMemoryPool::deallocate_raw_memory(void *ptr) {
     The caller ensures that no other thread is accessing the memory pool
     when calling this method.
   */
-#ifdef TI_WITH_CUDA
   if (!raw_memory_chunks_.count(ptr)) {
     TI_ERROR("Memory address ({:}) is not allocated", ptr);
   }
+
+#if TI_WITH_CUDA
   CUDADriver::get_instance().mem_free(ptr);
+  raw_memory_chunks_.erase(ptr);
+#elif TI_WITH_AMDGPU
+  AMDGPUDriver::get_instance().mem_free(ptr);
   raw_memory_chunks_.erase(ptr);
 #else
   TI_NOT_IMPLEMENTED;

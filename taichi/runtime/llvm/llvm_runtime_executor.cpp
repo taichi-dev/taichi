@@ -628,7 +628,6 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    TI_ASSERT(arch_is_cpu(config_.arch));
     *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
         sizeof(uint64) * taichi_result_buffer_entries, 8);
   }

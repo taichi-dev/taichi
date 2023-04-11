@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
+# -- prioritized --
 import ci_common  # isort: skip, early initialization happens here
 
+# -- stdlib --
 import os
 import re
 import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
+# -- third party --
 import requests
 import tqdm
+# -- own --
 from ci_common.bootstrap import ensure_dependencies
 from ci_common.dep import escape_url
 
-ensure_dependencies('requirements_synccache.txt')
+# -- code --
+ensure_dependencies('boto3')
 RE = re.compile(r'(https?:\/\/[A-Za-z0-9\-./_%]+\.(tar\.gz|tgz|zip|exe|sh))',
                 re.I)
 base = Path(__file__).parent

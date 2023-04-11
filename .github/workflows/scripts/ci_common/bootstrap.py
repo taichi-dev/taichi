@@ -28,9 +28,9 @@ def get_cache_home() -> Path:
     Get the cache home directory. All intermediate files should be stored here.
     '''
     if platform.system() == 'Windows':
-        return Path(os.environ['LOCALAPPDATA']) / 'build-cache'
+        return Path(os.environ['LOCALAPPDATA']) / 'ti-build-cache'
     else:
-        return Path.home() / '.cache' / 'build-cache'
+        return Path.home() / '.cache' / 'ti-build-cache'
 
 
 def run(*args, env=None):
@@ -56,7 +56,7 @@ def restart():
         os.execl(sys.executable, sys.executable, *sys.argv)
 
 
-def ensure_dependencies(fn='requirements.txt'):
+def ensure_dependencies(*deps: str):
     '''
     Automatically install dependencies if they are not installed.
     '''
@@ -65,19 +65,14 @@ def ensure_dependencies(fn='requirements.txt'):
         sys.argv.insert(0, '-S')
         restart()
 
-    p = Path(__file__).parent.parent / fn
-    if not p.exists():
-        raise RuntimeError(f'Cannot find {p}')
-
-    bootstrap_root = get_cache_home() / 'bootstrap'
+    v = sys.version_info
+    bootstrap_root = get_cache_home() / 'bootstrap' / f'{v.major}.{v.minor}'
     bootstrap_root.mkdir(parents=True, exist_ok=True)
     sys.path.insert(0, str(bootstrap_root))
 
-    with open(p) as f:
-        deps = [i.strip().split('=')[0] for i in f.read().splitlines()]
-
     try:
         for dep in deps:
+            dep = dep.split('==')[0]
             importlib.import_module(dep)
     except ModuleNotFoundError:
         print('Installing dependencies...', flush=True)
@@ -87,7 +82,7 @@ def ensure_dependencies(fn='requirements.txt'):
         ]
         if run(*pipcmd, 'pip', 'setuptools'):
             raise Exception('Unable to upgrade pip!')
-        if run(*pipcmd, '-r', p, env={'PYTHONPATH': str(bootstrap_root)}):
+        if run(*pipcmd, *deps, env={'PYTHONPATH': str(bootstrap_root)}):
             raise Exception('Unable to install dependencies!')
 
         restart()
@@ -182,7 +177,7 @@ def early_init():
     Do early initialization.
     This must be called before any other non-stdlib imports.
     '''
-    ensure_dependencies()
+    ensure_dependencies('pip', 'tqdm', 'requests', 'mslex', 'psutil')
     chdir_to_root()
     monkey_patch_environ()
     set_common_env()

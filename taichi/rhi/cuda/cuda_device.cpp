@@ -1,5 +1,5 @@
 #include "taichi/rhi/cuda/cuda_device.h"
-#include "taichi/rhi/common/memory_pool.h"
+#include "taichi/rhi/llvm/device_memory_pool.h"
 
 namespace taichi::lang {
 
@@ -15,14 +15,11 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
                                       DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  // TODO(zhanlue): replace MemoryPool::allocate_raw_memory() with
-  // MemoryPool::allocate()
-  auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
+  auto &mem_pool = DeviceMemoryPool::get_instance();
 
   bool managed = params.host_read || params.host_write;
-  bool exclusive = true;
   void *ptr =
-      mem_pool.allocate(params.size, MemoryPool::page_size, exclusive, managed);
+      mem_pool.allocate(params.size, DeviceMemoryPool::page_size, managed);
   if (ptr == nullptr) {
     return RhiResult::out_of_memory;
   }
@@ -79,9 +76,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
-    // TODO(zhanlue): replace MemoryPool::deallocate_raw_memory() with
-    // MemoryPool::release()
-    auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
+    auto &mem_pool = DeviceMemoryPool::get_instance();
     mem_pool.release(info.size, info.ptr);
     info.ptr = nullptr;
   }

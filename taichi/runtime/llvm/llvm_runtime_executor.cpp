@@ -1,11 +1,12 @@
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
 
-#include "taichi/rhi/common/memory_pool.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/cuda/cuda_device.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/rhi/cuda/cuda_driver.h"
+#include "taichi/rhi/llvm/device_memory_pool.h"
 
 #if defined(TI_WITH_CUDA)
 #include "taichi/rhi/cuda/cuda_context.h"
@@ -24,9 +25,9 @@ void assert_failed_host(const char *msg) {
   TI_ERROR("Assertion failure: {}", msg);
 }
 
-void *taichi_allocate_aligned(MemoryPool *memory_pool,
-                              std::size_t size,
-                              std::size_t alignment) {
+void *host_allocate_aligned(HostMemoryPool *memory_pool,
+                            std::size_t size,
+                            std::size_t alignment) {
   return memory_pool->allocate(size, alignment);
 }
 
@@ -534,6 +535,7 @@ void LlvmRuntimeExecutor::finalize() {
   if (preallocated_device_buffer_ != nullptr) {
     if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
       llvm_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+      DeviceMemoryPool::get_instance().reset();
     }
   }
   finalized_ = true;
@@ -626,9 +628,9 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     TI_NOT_IMPLEMENTED
 #endif
   } else {
-    *result_buffer_ptr =
-        (uint64 *)MemoryPool::get_instance(config_.arch)
-            .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
+    TI_ASSERT(arch_is_cpu(config_.arch));
+    *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
   }
   auto *const runtime_jit = get_runtime_jit_module();
 
@@ -654,12 +656,12 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 
   TI_TRACE("Launching runtime_initialize");
 
-  auto *memory_pool = &MemoryPool::get_instance(config_.arch);
+  auto *host_memory_pool = &HostMemoryPool::get_instance();
   runtime_jit
       ->call<void *, void *, std::size_t, void *, int, void *, void *, void *>(
-          "runtime_initialize", *result_buffer_ptr, memory_pool, prealloc_size,
-          preallocated_device_buffer_, num_rand_states,
-          (void *)&taichi_allocate_aligned, (void *)std::printf,
+          "runtime_initialize", *result_buffer_ptr, host_memory_pool,
+          prealloc_size, preallocated_device_buffer_, num_rand_states,
+          (void *)&host_allocate_aligned, (void *)std::printf,
           (void *)std::vsnprintf);
 
   TI_TRACE("LLVMRuntime initialized (excluding `root`)");

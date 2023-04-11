@@ -414,6 +414,8 @@ struct JsonSerdeFieldImpl<TFirst, TOthers...> {
     auto it = obj.inner.find(*name);
     if (it != obj.inner.end()) {
       JsonSerde<TFirst>::deserialize(it->second, first);
+    } else {
+      throw ::liong::json::JsonException("missing field: " + *name);
     }
     JsonSerdeFieldImpl<TOthers...>::deserialize(obj, ++name, others...);
   }
@@ -440,6 +442,9 @@ inline void json_deserialize_field_impl(
     const JsonObject &obj,
     std::vector<std::string>::const_iterator name,
     TArgs &...args) {
+  if (obj.inner.size() != sizeof...(TArgs)) {
+    throw ::liong::json::JsonException("invalid number of fields");
+  }
   JsonSerdeFieldImpl<TArgs...>::deserialize(obj, name, args...);
 }
 

@@ -707,6 +707,10 @@ void export_lang(py::module &m) {
       .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
       .def("set_arg_uint", &LaunchContextBuilder::set_arg_uint)
       .def("set_arg_float", &LaunchContextBuilder::set_arg_float)
+      .def("set_struct_arg_int", &LaunchContextBuilder::set_struct_arg<int64>)
+      .def("set_struct_arg_uint", &LaunchContextBuilder::set_struct_arg<uint64>)
+      .def("set_struct_arg_float",
+           &LaunchContextBuilder::set_struct_arg<double>)
       .def("set_arg_external_array_with_shape",
            &LaunchContextBuilder::set_arg_external_array_with_shape)
       .def("set_arg_ndarray", &LaunchContextBuilder::set_arg_ndarray)

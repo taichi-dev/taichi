@@ -272,7 +272,7 @@ class Func:
         if id(self.return_type) in primitive_types.type_ids:
             return Expr(_ti_core.make_get_element_expr(func_call.ptr, (0, )))
         if isinstance(self.return_type, StructType):
-            return self.return_type.from_real_func_ret(func_call, (0, ))
+            return self.return_type.from_taichi_object(func_call, (0, ))
         raise TaichiTypeError(f"Unsupported return type: {self.return_type}")
 
     def do_compile(self, key, args):
@@ -575,6 +575,8 @@ class Kernel:
                     pass
                 elif isinstance(annotation, MatrixType):
                     pass
+                elif isinstance(annotation, StructType):
+                    pass
                 else:
                     raise TaichiSyntaxError(
                         f'Invalid type annotation (argument {i}) of Taichi kernel: {annotation}'
@@ -842,6 +844,9 @@ class Kernel:
                             f'Matrix dtype {needed.dtype} is not integer type or real type.'
                         )
                     continue
+                elif isinstance(needed, StructType):
+                    needed.set_kernel_struct_args(v, launch_ctx,
+                                                  (actual_argument_slot, ))
                 else:
                     raise ValueError(
                         f'Argument type mismatch. Expecting {needed}, got {type(v)}.'

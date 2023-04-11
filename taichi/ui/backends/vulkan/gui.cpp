@@ -235,7 +235,9 @@ Gui::~Gui() {
 #endif
   }
   cleanup_render_resources();
-  ImGui::DestroyContext();
+  if (ImGui::GetCurrentContext() != NULL) {
+    ImGui::DestroyContext();
+  }
 }
 
 bool Gui::is_empty() {

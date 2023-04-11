@@ -9,12 +9,11 @@ import argparse
 import glob
 import os
 import platform
-import sys
-from pathlib import Path
 
 # -- third party --
 # -- own --
 from ci_common import misc
+from ci_common.alter import handle_alternate_actions
 from ci_common.android import build_android, setup_android_ndk
 from ci_common.cmake import cmake_args
 from ci_common.compiler import setup_clang, setup_msvc
@@ -103,19 +102,6 @@ def action_android():
     sccache('-s')
 
 
-@banner('Add AOT Related Environment Variables')
-def add_aot_env():
-    os.environ['TAICHI_REPO_DIR'] = os.getcwd()
-    for p in Path(os.getcwd()).glob('**/cmake-install/c_api'):
-        if p.is_dir() and p.parent.parent.name.endswith(os.environ['PY']):
-            os.environ['TAICHI_C_API_INSTALL_DIR'] = str(p)
-            break
-    else:
-        misc.warn(
-            "Failed to find TAICHI_C_API_INSTALL_DIR (did't build C-API?), skipping"
-        )
-
-
 def action_ios():
     sccache, python, pip = setup_basic_build_env()
     setup_ios(python, pip)
@@ -123,57 +109,18 @@ def action_ios():
     build_ios()
 
 
-def enter_shell():
-    cmake_args.writeback()
-    misc.info('Entering shell...')
-    import pwd
-    shell = pwd.getpwuid(os.getuid()).pw_shell
-    os.execl(shell, shell)
-
-
-def write_env(path):
-    cmake_args.writeback()
-    envs = os.environ.get_changed_envs()
-    envstr = ''
-    if path.endswith('.ps1'):
-        envstr = '\n'.join([f'$env:{k}="{v}"' for k, v in envs.items()])
-    elif path.endswith('.sh'):
-        envstr = '\n'.join([f'export {k}="{v}"' for k, v in envs.items()])
-    elif path.endswith('.json'):
-        import json
-        envstr = json.dumps(envs, indent=2)
-    else:
-        raise RuntimeError(f'Unsupported format')
-
-    with open(path, 'w') as f:
-        f.write(envstr)
-
-    misc.info(f'Environment variables written to {path}')
-
-
-def handle_alternate_actions():
-    if misc.options.write_env:
-        add_aot_env()
-        write_env(misc.options.write_env)
-    elif misc.options.shell:
-        add_aot_env()
-        enter_shell()
-    else:
-        return
-
-    sys.exit(0)
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
     # Possible actions:
     #   wheel: build the wheel
     #   android: build the Android C-API shared library
-    parser.add_argument('action',
-                        type=str,
-                        nargs='?',
-                        default='wheel',
-                        help='Build target, may be "wheel" / "android"')
+    #   ios: build the iOS C-API shared library
+    parser.add_argument(
+        'action',
+        type=str,
+        nargs='?',
+        default='wheel',
+        help='Build target, may be "wheel" / "android" / "ios"')
     parser.add_argument(
         '-w',
         '--write-env',

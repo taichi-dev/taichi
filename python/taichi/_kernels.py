@@ -384,5 +384,3 @@ def blit_from_field_to_field(
         dst: template(), src: template(), offset: i32, size: i32):
     for i in range(size):
         dst[i + offset] = src[i]
-
-

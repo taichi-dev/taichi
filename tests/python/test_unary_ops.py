@@ -100,4 +100,4 @@ def test_popcnt():
         return ti.math.popcnt(x)
     assert test(100) == 3
     assert test(1000) == 6
-    assert test(1000) == 5
+    assert test(10000) == 5

@@ -1,6 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/impl_support.h"
-#include "taichi/system/memory_pool.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 namespace taichi::lang {
 
@@ -20,7 +20,7 @@ RhiResult CpuDevice::allocate_memory(const AllocParams &params,
   AllocInfo info;
 
   info.ptr = MemoryPool::get_instance(arch_).allocate(
-      params.size, MemoryPool::page_size, true /*releasable*/);
+      params.size, MemoryPool::page_size, true /*exclusive*/);
   info.size = params.size;
   info.use_cached = false;
 

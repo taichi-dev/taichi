@@ -9,6 +9,7 @@
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/util/offline_cache.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 #include "taichi/rhi/window_system.h"
 

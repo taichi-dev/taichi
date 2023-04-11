@@ -13,7 +13,6 @@
 #include "taichi/program/compile_config.h"
 
 #include "taichi/system/threading.h"
-#include "taichi/system/memory_pool.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"

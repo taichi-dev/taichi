@@ -1,4 +1,5 @@
 #include "taichi/rhi/cuda/cuda_device.h"
+#include "taichi/rhi/common/memory_pool.h"
 
 namespace taichi::lang {
 
@@ -14,17 +15,19 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
                                       DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  if (params.host_read || params.host_write) {
-    CUDADriver::get_instance().malloc_managed(&info.ptr, params.size,
-                                              CU_MEM_ATTACH_GLOBAL);
-  } else {
-    CUDADriver::get_instance().malloc(&info.ptr, params.size);
-  }
+  // TODO(zhanlue): replace MemoryPool::allocate_raw_memory() with
+  // MemoryPool::allocate()
+  auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
 
-  if (info.ptr == nullptr) {
+  bool managed = params.host_read || params.host_write;
+  bool exclusive = true;
+  void *ptr =
+      mem_pool.allocate(params.size, MemoryPool::page_size, exclusive, managed);
+  if (ptr == nullptr) {
     return RhiResult::out_of_memory;
   }
 
+  info.ptr = ptr;
   info.size = params.size;
   info.is_imported = false;
   info.use_cached = false;
@@ -76,7 +79,10 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
-    CUDADriver::get_instance().mem_free(info.ptr);
+    // TODO(zhanlue): replace MemoryPool::deallocate_raw_memory() with
+    // MemoryPool::release()
+    auto &mem_pool = MemoryPool::get_instance(Arch::cuda);
+    mem_pool.release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

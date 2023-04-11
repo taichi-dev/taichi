@@ -2,7 +2,6 @@
 
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
-#include "taichi/system/memory_pool.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
 #include "taichi/program/launch_context_builder.h"
 #include "taichi/runtime/cpu/kernel_launcher.h"

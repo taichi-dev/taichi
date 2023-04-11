@@ -789,6 +789,15 @@ GfxRuntime::RegisterParams run_codegen(
 std::pair<const lang::StructType *, size_t>
 GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
                                              const std::string &layout) {
+  auto [new_ty, size, align] =
+      get_struct_type_with_data_layout_impl(old_ty, layout);
+  return {new_ty, size};
+}
+
+std::tuple<const lang::StructType *, size_t, size_t>
+GfxRuntime::get_struct_type_with_data_layout_impl(
+    const lang::StructType *old_ty,
+    const std::string &layout) {
   // Ported from KernelContextAttributes::KernelContextAttributes as is.
   // TODO: refactor this.
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
@@ -796,45 +805,58 @@ GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
   auto has_buffer_ptr = layout[1] == 'b';
   auto members = old_ty->elements();
   size_t bytes = 0;
+  size_t align = 0;
   for (int i = 0; i < members.size(); i++) {
     auto &member = members[i];
-    const Type *element_type;
-    size_t stride = 0;
-    bool is_array = false;
-    if (!is_ret) {
-      element_type = DataType(member.type).ptr_removed().get_element_type();
-      is_array = member.type->is<PointerType>();
-    } else if (auto tensor_type = member.type->cast<TensorType>()) {
-      element_type = tensor_type->get_element_type();
-      stride = tensor_type->get_num_elements() * data_type_size(element_type);
-      is_array = true;
+    size_t member_align;
+    size_t member_size;
+    if (auto struct_type = member.type->cast<lang::StructType>()) {
+      auto [new_ty, size, member_align_] =
+          get_struct_type_with_data_layout_impl(struct_type, layout.substr(2));
+      members[i].type = new_ty;
+      member_align = member_align_;
+      member_size = size;
+    } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
+      size_t element_size = data_type_size(tensor_type->get_element_type());
+      size_t num_elements = tensor_type->get_num_elements();
+      if (num_elements == 2) {
+        member_align = element_size * 2;
+      } else {
+        member_align = element_size * 4;
+      }
+      member_size = tensor_type->get_num_elements() * element_size;
+      if (!is_ret) {
+        // For kernel arguments, we use std140 layout.
+        member_size = align_up(member_size, sizeof(float) * 4);
+      }
+    } else if (auto pointer_type = member.type->cast<PointerType>()) {
+      if (has_buffer_ptr) {
+        member_size = sizeof(uint64_t);
+        member_align = sizeof(uint64_t);
+      } else {
+        // Use u32 as placeholder
+        member_size = sizeof(uint32_t);
+        member_align = member_size;
+      }
     } else {
-      auto primitive_type = member.type->as<PrimitiveType>();
-      element_type = primitive_type;
-      stride = data_type_size(primitive_type);
+      TI_ASSERT(member.type->is<PrimitiveType>());
+      member_size = data_type_size(member.type);
+      member_align = member_size;
     }
-
-    const size_t dt_bytes = (member.type->is<PointerType>() && has_buffer_ptr)
-                                ? sizeof(uint64_t)
-                                : data_type_size(element_type);
-    TI_TRACE("dt_bytes={} stride={} is_array={} is_ret={}", dt_bytes, stride,
-             is_array, is_ret);
-    // Align bytes to the nearest multiple of dt_bytes
-    bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
-    member.offset = bytes;
-    bytes += is_ret ? stride : dt_bytes;
-    TI_TRACE("  at={} {} offset_in_mem={} stride={}",
-             is_array ? (is_ret ? "array" : "vector ptr") : "scalar", i,
-             member.offset, stride);
+    bytes = align_up(bytes, member_align);
+    members[i].offset = bytes;
+    bytes += member_size;
+    align = std::max(align, member_align);
   }
+
   if (!is_ret) {
-    bytes = (bytes + 4 - 1) / 4 * 4;
+    bytes = align_up(bytes, 4);
   }
   TI_TRACE("  total_bytes={}", bytes);
   return {TypeFactory::get_instance()
               .get_struct_type(members, layout)
               ->as<lang::StructType>(),
-          bytes};
+          bytes, align};
 }
 
 }  // namespace gfx

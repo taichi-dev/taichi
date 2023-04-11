@@ -99,8 +99,8 @@ KernelContextAttributes::KernelContextAttributes(
     for (int i = 0; i < vec->size(); ++i) {
       auto &attribs = (*vec)[i];
       const size_t dt_bytes =
-          (attribs.is_array && !is_ret && has_buffer_ptr)
-              ? sizeof(uint64_t)
+          (attribs.is_array && !is_ret)
+              ? (has_buffer_ptr ? sizeof(uint64_t) : sizeof(uint32_t))
               : data_type_size(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;

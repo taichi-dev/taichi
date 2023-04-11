@@ -2165,9 +2165,12 @@ class TaskCodegen : public IRVisitor {
     std::vector<const tinyir::Type *> element_types;
     for (auto &arg : ctx_attribs_->args()) {
       const tinyir::Type *t;
-      if (arg.is_array &&
-          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
-        t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
+      if (arg.is_array) {
+        if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
+          t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
+        } else {
+          t = translate_ti_primitive(blk, PrimitiveType::i32);
+        }
       } else {
         t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
       }

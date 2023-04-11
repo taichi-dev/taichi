@@ -41,6 +41,12 @@ def setup_msvc() -> None:
     assert platform.system() == 'Windows'
     os.environ['TAICHI_USE_MSBUILD'] = '1'
 
+    base = Path(
+        r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools')
+    for edition in ('Enterprise', 'Professional', 'Community', 'BuildTools'):
+        if (base / edition).exists():
+            return
+
     url = 'https://aka.ms/vs/17/release/vs_BuildTools.exe'
     out = Path(
         r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools')

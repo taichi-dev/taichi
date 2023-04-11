@@ -232,12 +232,10 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     return;
   }
 
-  if (type == UnaryOpType::popcnt) {
-    TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::i32) ||
-              operand_primitive_type->is_primitive(PrimitiveTypeID::i64) ||
-              operand_primitive_type->is_primitive(PrimitiveTypeID::u32) ||
-              operand_primitive_type->is_primitive(PrimitiveTypeID::u64));
-    return;
+  if (type == UnaryOpType::popcnt && is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
   if (operand->ret_type->is<TensorType>()) {

@@ -9,8 +9,7 @@ from taichi.lang.impl import static, zero
 from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix
 from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan,
-                             tanh)
+                             max, min, pow, round, sin, sqrt, tan, tanh)
 from taichi.types import matrix, template, vector
 from taichi.types.primitive_types import f64, u32, u64
 

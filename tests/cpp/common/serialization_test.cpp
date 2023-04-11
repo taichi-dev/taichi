@@ -210,5 +210,43 @@ TEST(SERIALIZATION, Type) {
   EXPECT_EQ(deserialized3->to_string(), quant_array_type->to_string());
 }
 
+struct Foo {
+  std::string k;
+  int v{-1};
+
+  bool operator==(const Foo &other) const {
+    return k == other.k && v == other.v;
+  }
+
+  TI_IO_DEF(k, v);
+};
+
+TEST(Serialization, JsonSerde) {
+  using namespace ::liong::json;
+
+  const auto kCorrectJson = R"({"k":"hello","v":42})";
+  const auto kWrongFieldNameJson = R"({"k":"hello","value":42})";
+  const auto kWrongFieldTypeJson = R"({"k":"hello","v":"42"})";
+  const auto kMissingFieldJson = R"({"k":"hello"})";
+  const auto kExtraFieldJson = R"({"k":"hello","v":42,"extra":1})";
+
+  Foo foo, t;
+  foo.k = "hello";
+  foo.v = 42;
+
+  // Serialize
+  EXPECT_EQ(kCorrectJson, print(serialize(foo)));
+
+  // Deserialize (correct)
+  deserialize(parse(kCorrectJson), t);
+  EXPECT_EQ(foo, t);
+
+  // Deserialize (wrong)
+  EXPECT_THROW(deserialize(parse(kWrongFieldNameJson), t), JsonException);
+  EXPECT_THROW(deserialize(parse(kWrongFieldTypeJson), t), JsonException);
+  EXPECT_THROW(deserialize(parse(kMissingFieldJson), t), JsonException);
+  EXPECT_THROW(deserialize(parse(kExtraFieldJson), t), JsonException);
+}
+
 }  // namespace
 }  // namespace taichi::lang

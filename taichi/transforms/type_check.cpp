@@ -447,8 +447,7 @@ class TypeCheck : public IRVisitor {
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
     if (stmt->is_ptr) {
-      stmt->ret_type =
-          TypeFactory::get_instance().get_pointer_type(stmt->ret_type);
+      stmt->ret_type.set_is_pointer(true);
     }
   }
 

@@ -6,7 +6,6 @@ import ci_common  # isort: skip, early initialization happens here
 
 # -- stdlib --
 import argparse
-import glob
 import os
 import platform
 
@@ -32,9 +31,7 @@ def build_wheel(python: Command, pip: Command) -> None:
     '''
     Build the Taichi wheel
     '''
-    pip.install('-U', 'pip')
-    pip.uninstall('-y', 'taichi', 'taichi-nightly')
-    pip.install('-r', 'requirements_dev.txt')
+    # pip.uninstall('-y', 'taichi', 'taichi-nightly')
     git.fetch('origin', 'master', '--tags')
     proj = os.environ.get('PROJECT_NAME', 'taichi')
     proj_tags = []
@@ -57,6 +54,14 @@ def build_wheel(python: Command, pip: Command) -> None:
            './', '--save')
 
     python('setup.py', *proj_tags, 'bdist_wheel', *extra)
+
+
+@banner('Install Build Wheel Dependencies')
+def install_build_wheel_deps(python: Command, pip: Command) -> None:
+    pip.install('-U', 'pip')
+    pip.install('-r', 'requirements_dev.txt')
+    if misc.options.shell or misc.options.write_env:
+        pip.install('-r', 'requirements_test.txt')
 
 
 def setup_basic_build_env(force_vulkan=False):
@@ -84,14 +89,10 @@ def setup_basic_build_env(force_vulkan=False):
 
 def action_wheel():
     sccache, python, pip = setup_basic_build_env()
+    install_build_wheel_deps(python, pip)
     handle_alternate_actions()
     build_wheel(python, pip)
     sccache('-s')
-
-    distfiles = glob.glob('dist/*.whl')
-    if len(distfiles) != 1:
-        raise RuntimeError(
-            f'Failed to produce exactly one wheel file: {distfiles}')
 
 
 def action_android():

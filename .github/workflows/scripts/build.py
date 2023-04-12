@@ -8,6 +8,8 @@ import ci_common  # isort: skip, early initialization happens here
 import argparse
 import os
 import platform
+import subprocess
+import sys
 
 # -- third party --
 # -- own --
@@ -110,18 +112,33 @@ def action_ios():
     build_ios()
 
 
+def action_open_cache_dir():
+    d = misc.get_cache_home()
+    misc.info(f'Opening cache directory: {d}')
+
+    if sys.platform == 'win32':
+        os.startfile(d)
+    elif sys.platform == 'darwin':
+        subprocess.Popen(['open', d])
+    else:
+        subprocess.Popen(['xdg-open', d])
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     # Possible actions:
     #   wheel: build the wheel
     #   android: build the Android C-API shared library
     #   ios: build the iOS C-API shared library
+    #   cache: open the cache directory
     parser.add_argument(
         'action',
         type=str,
         nargs='?',
         default='wheel',
-        help='Build target, may be "wheel" / "android" / "ios"')
+        help=
+        'Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.'
+    )
     parser.add_argument(
         '-w',
         '--write-env',
@@ -155,6 +172,7 @@ def main() -> None:
         'wheel': action_wheel,
         'android': action_android,
         'ios': action_ios,
+        'cache': action_open_cache_dir,
     }
 
     dispatch.get(options.action, action_notimpl)()

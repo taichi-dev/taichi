@@ -581,9 +581,23 @@ class TaskCodegen : public IRVisitor {
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
           ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
+      if (!stmt->create_load) {
+        ir_->register_value(stmt->raw_name(), buffer_val);
+        return;
+      }
       spirv::Value val = ir_->load_variable(buffer_val, val_type);
       ir_->register_value(stmt->raw_name(), val);
     }
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    spirv::Value val = ir_->query_value(stmt->src->raw_name());
+    const auto val_type = ir_->get_primitive_type(stmt->element_type());
+    const auto val_type_ptr =
+        ir_->get_pointer_type(val_type, spv::StorageClassUniform);
+    val = ir_->make_access_chain(val_type_ptr, val, stmt->index);
+    val = ir_->load_variable(val, val_type);
+    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(ReturnStmt *stmt) override {
@@ -2163,18 +2177,27 @@ class TaskCodegen : public IRVisitor {
     // Generate struct IR
     tinyir::Block blk;
     std::vector<const tinyir::Type *> element_types;
-    for (auto &arg : ctx_attribs_->args()) {
-      const tinyir::Type *t;
-      if (arg.is_array) {
-        if (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
-          t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
-        } else {
-          t = translate_ti_primitive(blk, PrimitiveType::i32);
-        }
-      } else {
-        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
-      }
-      element_types.push_back(t);
+    //    for (auto &arg : ctx_attribs_->args()) {
+    //      const tinyir::Type *t;
+    //      if (arg.is_array) {
+    //        if
+    //        (caps_->get(DeviceCapability::spirv_has_physical_storage_buffer))
+    //        {
+    //          t = blk.emplace_back<IntType>(/*num_bits=*/64,
+    //          /*is_signed=*/false);
+    //        } else {
+    //          t = translate_ti_primitive(blk, PrimitiveType::i32);
+    //        }
+    //      } else {
+    //        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
+    //      }
+    //      element_types.push_back(t);
+    //    }
+    bool has_buffer_ptr =
+        caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+    for (auto &element : ctx_attribs_->args_type()->elements()) {
+      element_types.push_back(
+          translate_ti_type(blk, element.type, has_buffer_ptr));
     }
     const tinyir::Type *i32_type =
         blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);

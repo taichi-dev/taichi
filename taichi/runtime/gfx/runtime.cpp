@@ -790,18 +790,19 @@ std::pair<const lang::StructType *, size_t>
 GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
                                              const std::string &layout) {
   auto [new_ty, size, align] =
-      get_struct_type_with_data_layout_impl(old_ty, layout);
+      get_struct_type_with_data_layout_impl(old_ty, layout, true);
   return {new_ty, size};
 }
 
 std::tuple<const lang::StructType *, size_t, size_t>
 GfxRuntime::get_struct_type_with_data_layout_impl(
     const lang::StructType *old_ty,
-    const std::string &layout) {
+    const std::string &layout,
+    bool is_outmost) {
   // Ported from KernelContextAttributes::KernelContextAttributes as is.
   // TODO: refactor this.
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
-  auto is_ret = layout[0] == '4';
+  auto is_430 = layout[0] == '4';
   auto has_buffer_ptr = layout[1] == 'b';
   auto members = old_ty->elements();
   size_t bytes = 0;
@@ -812,7 +813,8 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     size_t member_size;
     if (auto struct_type = member.type->cast<lang::StructType>()) {
       auto [new_ty, size, member_align_] =
-          get_struct_type_with_data_layout_impl(struct_type, layout.substr(2));
+          get_struct_type_with_data_layout_impl(struct_type, layout.substr(2),
+                                                false);
       members[i].type = new_ty;
       member_align = member_align_;
       member_size = size;
@@ -824,15 +826,15 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       } else {
         member_align = element_size * 4;
       }
-      member_size = tensor_type->get_num_elements() * element_size;
-      if (!is_ret) {
-        // For kernel arguments, we use std140 layout.
-        member_size = align_up(member_size, sizeof(float) * 4);
+      if (!is_430) {
+        member_size = member_align;
+      } else {
+        member_size = tensor_type->get_num_elements() * element_size;
       }
     } else if (auto pointer_type = member.type->cast<PointerType>()) {
       if (has_buffer_ptr) {
         member_size = sizeof(uint64_t);
-        member_align = sizeof(uint64_t);
+        member_align = member_size;
       } else {
         // Use u32 as placeholder
         member_size = sizeof(uint32_t);
@@ -849,8 +851,9 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     align = std::max(align, member_align);
   }
 
-  if (!is_ret) {
-    bytes = align_up(bytes, 4);
+  if (!is_430) {
+    align = align_up(align, sizeof(float) * 4);
+    bytes = align_up(bytes, is_outmost ? 4 : 4 * sizeof(float));
   }
   TI_TRACE("  total_bytes={}", bytes);
   return {TypeFactory::get_instance()

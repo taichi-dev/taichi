@@ -135,7 +135,8 @@ class TI_DLL_EXPORT GfxRuntime {
 
   static std::tuple<const lang::StructType *, size_t, size_t>
   get_struct_type_with_data_layout_impl(const lang::StructType *old_ty,
-                                        const std::string &layout);
+                                        const std::string &layout,
+                                        bool is_outmost);
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;

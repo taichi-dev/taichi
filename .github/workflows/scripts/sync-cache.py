@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # -- prioritized --
-import ci_common  # isort: skip, early initialization happens here
+import ti_build  # isort: skip, early initialization happens here
 
 # -- stdlib --
 import os
@@ -15,8 +15,8 @@ from urllib.parse import urlparse
 import requests
 import tqdm
 # -- own --
-from ci_common.bootstrap import ensure_dependencies
-from ci_common.dep import escape_url
+from ti_build.bootstrap import ensure_dependencies
+from ti_build.dep import escape_url
 
 # -- code --
 ensure_dependencies('boto3')

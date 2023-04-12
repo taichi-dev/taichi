@@ -65,7 +65,7 @@ def get_clangpp():
 
 def has_clangpp():
     if _clangpp_presence is False:
-        get_clangpp()
+        return get_clangpp() is not None
     return _clangpp_presence is not None
 
 

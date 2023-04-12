@@ -19,10 +19,24 @@ bool cfg_optimization(
   bool result_modified = false;
   if (!real_matrix_enabled) {
     cfg->simplify_graph();
-    if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled))
+    std::cout << std::flush;
+    TI_INFO("");
+    irpass::print(root);
+    std::cout << std::flush;
+    if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled)) {
       result_modified = true;
-    if (cfg->dead_store_elimination(after_lower_access, lva_config_opt))
+      std::cout << std::flush;
+      TI_INFO("");
+      irpass::print(root);
+      std::cout << std::flush;
+    }
+    if (cfg->dead_store_elimination(after_lower_access, lva_config_opt)) {
       result_modified = true;
+      std::cout << std::flush;
+      TI_INFO("");
+      irpass::print(root);
+      std::cout << std::flush;
+    }
   }
   // TODO: implement cfg->dead_instruction_elimination()
   die(root);  // remove unused allocas

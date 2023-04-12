@@ -34,12 +34,6 @@ from taichi.types.utils import is_signed
 
 from taichi import _logging
 
-if has_pytorch():
-    import torch
-
-if has_paddle():
-    import paddle
-
 
 def func(fn, is_real_function=False):
     """Marks a function as callable in Taichi-scope.
@@ -646,6 +640,10 @@ class Kernel:
         self.compiled_kernels[key] = taichi_kernel
 
     def get_function_body(self, t_kernel):
+        if has_pytorch():
+            import torch  # pylint: disable=C0415
+        if has_paddle():
+            import paddle  # pylint: disable=C0415
         # The actual function body
         def func__(*args):
             assert len(args) == len(

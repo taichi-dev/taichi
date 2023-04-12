@@ -33,7 +33,6 @@ def build_wheel(python: Command, pip: Command) -> None:
     '''
     Build the Taichi wheel
     '''
-    # pip.uninstall('-y', 'taichi', 'taichi-nightly')
     git.fetch('origin', 'master', '--tags')
     proj = os.environ.get('PROJECT_NAME', 'taichi')
     proj_tags = []

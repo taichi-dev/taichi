@@ -171,11 +171,23 @@ def monkey_patch_environ():
     os.environ.__class__ = _EnvironWrapper
 
 
+def detect_crippled_python():
+    if platform.system(
+    ) == 'Windows' and 'Microsoft\\WindowsApps' in sys.executable:
+        print(
+            ':: ERROR Using Python installed from Microsoft Store to run build.py is not supported. '
+            'Please use Python from https://python.org/downloads/',
+            file=sys.stderr,
+            flush=True)
+        sys.exit(1)
+
+
 def early_init():
     '''
     Do early initialization.
     This must be called before any other non-stdlib imports.
     '''
+    detect_crippled_python()
     ensure_dependencies('pip', 'tqdm', 'requests', 'mslex', 'psutil')
     chdir_to_root()
     monkey_patch_environ()

@@ -517,94 +517,34 @@ void full_simplify(IRNode *root,
     bool first_iteration = true;
     while (true) {
       bool modified = false;
-      if (extract_constant(root, config)) {
+      if (extract_constant(root, config))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (unreachable_code_elimination(root)) {
+      if (unreachable_code_elimination(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (binary_op_simplify(root, config)) {
+      if (binary_op_simplify(root, config))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (config.constant_folding && constant_fold(root)) {
+      if (config.constant_folding && constant_fold(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (die(root)) {
+      if (die(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (alg_simp(root, config)) {
+      if (alg_simp(root, config))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (loop_invariant_code_motion(root, config)) {
+      if (loop_invariant_code_motion(root, config))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (die(root)) {
+      if (die(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (simplify(root, config)) {
+      if (simplify(root, config))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (die(root)) {
+      if (die(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
-      if (config.opt_level > 0 && whole_kernel_cse(root)) {
+      if (config.opt_level > 0 && whole_kernel_cse(root))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
       if (config.opt_level > 0 && first_iteration && config.cfg_optimization &&
           cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
-                           !config.real_matrix_scalarize)) {
+                           !config.real_matrix_scalarize))
         modified = true;
-        std::cout << std::flush;
-        TI_INFO("");
-        irpass::print(root);
-        std::cout << std::flush;
-      }
       first_iteration = false;
       if (!modified)
         break;

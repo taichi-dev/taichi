@@ -100,15 +100,6 @@ def chdir_to_root():
         p = p.parent
 
 
-def set_common_env():
-    '''
-    Set common environment variables.
-    '''
-    # FIXME: Should be in GitHub Actions yaml
-    os.environ['TI_CI'] = '1'
-    os.environ['TI_SKIP_VERSION_CHECK'] = 'ON'
-
-
 _Environ = os.environ.__class__
 
 _CHANGED_ENV = {}
@@ -191,4 +182,3 @@ def early_init():
     ensure_dependencies('pip', 'tqdm', 'requests', 'mslex', 'psutil')
     chdir_to_root()
     monkey_patch_environ()
-    set_common_env()

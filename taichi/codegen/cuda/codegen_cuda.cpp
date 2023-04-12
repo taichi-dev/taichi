@@ -281,14 +281,13 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     } else if (op == UnaryOpType::popcnt) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::u64)) {
         auto i64_input = builder->CreateBitCast(
-            input,
-            llvm::Type::getInt64PtrTy(*tlctx->get_this_thread_context()));
+          input,
+		  llvm::Type::getInt64PtrTy(*tlctx->get_this_thread_context()));
+        llvm_val[stmt] = call("__nv_popcll", i64_input);
       }
       if (input_taichi_type->is_primitive(PrimitiveTypeID::i32) ||
           input_taichi_type->is_primitive(PrimitiveTypeID::u32)) {
         llvm_val[stmt] = call("__nv_popc", input);
-      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::u64)) {
-        llvm_val[stmt] = call("__nv_popcll", i64_input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
         llvm_val[stmt] = call("__nv_popcll", input);
       } else {

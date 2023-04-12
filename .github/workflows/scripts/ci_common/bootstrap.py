@@ -51,9 +51,9 @@ def restart():
         # GitHub Actions will treat the step as completed when doing os.execl in Windows,
         # since Windows does not have real execve, its behavior is emulated by spawning a new process and
         # terminating the current process. So we do not use os.execl in Windows.
-        os._exit(run(sys.executable, *sys.argv))
+        os._exit(run(sys.executable, '-S', *sys.argv))
     else:
-        os.execl(sys.executable, sys.executable, *sys.argv)
+        os.execl(sys.executable, sys.executable, '-S', *sys.argv)
 
 
 def ensure_dependencies(*deps: str):
@@ -62,7 +62,6 @@ def ensure_dependencies(*deps: str):
     '''
 
     if 'site' in sys.modules:
-        sys.argv.insert(0, '-S')
         restart()
 
     v = sys.version_info
@@ -77,7 +76,7 @@ def ensure_dependencies(*deps: str):
     except ModuleNotFoundError:
         print('Installing dependencies...', flush=True)
         pipcmd = [
-            sys.executable, '-m', 'pip', 'install',
+            sys.executable, '-m', 'pip', 'install', '--no-user',
             f'--target={bootstrap_root}', '-U'
         ]
         if run(*pipcmd, 'pip', 'setuptools'):

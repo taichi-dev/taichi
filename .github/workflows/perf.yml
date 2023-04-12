@@ -8,6 +8,8 @@ on:
     types: [benchmark-command]
 
 env:
+  TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: "ON"
   CI_IMAGE_VERSION: '202303241150'
 
 jobs:

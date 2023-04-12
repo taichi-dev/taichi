@@ -11,7 +11,7 @@ import requests
 
 # -- own --
 from .misc import get_cache_home
-from .tinysh import bash, sh, tar
+from .tinysh import bash, sh, sudo, tar
 
 
 # -- code --
@@ -55,7 +55,14 @@ def escape_url(url):
     return url.replace('/', '_').replace(':', '_')
 
 
-def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
+def download_dep(url,
+                 outdir,
+                 *,
+                 strip=0,
+                 force=False,
+                 args=None,
+                 plain=False,
+                 elevate=False):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -123,7 +130,12 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
         sh.bake(local_cached)(*args)
     elif name.endswith('.exe') and args is not None:
         local_cached.chmod(0o755)
-        sh.bake(local_cached)(*args)
+        cmd = sh.bake(local_cached)
+        if elevate:
+            with sudo():
+                cmd(*args)
+        else:
+            cmd(*args)
         # start(local_cached, *args)
     elif plain:
         shutil.copy(local_cached, outdir / name)

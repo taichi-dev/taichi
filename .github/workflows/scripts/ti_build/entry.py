@@ -58,8 +58,6 @@ def build_wheel(python: Command, pip: Command) -> None:
 def install_build_wheel_deps(python: Command, pip: Command) -> None:
     pip.install('-U', 'pip')
     pip.install('-r', 'requirements_dev.txt')
-    if misc.options.shell or misc.options.write_env:
-        pip.install('-r', 'requirements_test.txt')
 
 
 def setup_basic_build_env(force_vulkan=False):

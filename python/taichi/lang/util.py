@@ -134,6 +134,8 @@ def to_pytorch_type(dt):
         DataType: The counterpart data type in torch.
 
     """
+    import torch  # pylint: disable=C0415
+
     # pylint: disable=E1101
     if dt == f32:
         return torch.float32
@@ -167,6 +169,7 @@ def to_paddle_type(dt):
         DataType: The counterpart data type in paddle.
 
     """
+    import paddle  # pylint: disable=C0415
     if dt == f32:
         return paddle.float32
     if dt == f64:
@@ -226,6 +229,8 @@ def to_taichi_type(dt):
         return f16
 
     if has_pytorch():
+        import torch  # pylint: disable=C0415
+
         # pylint: disable=E1101
         if dt == torch.float32:
             return f32
@@ -248,6 +253,7 @@ def to_taichi_type(dt):
                 f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
     if has_paddle():
+        import paddle  # pylint: disable=C0415
         if dt == paddle.float32:
             return f32
         if dt == paddle.float64:

@@ -4,7 +4,6 @@
 import os
 import platform
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 # -- third party --
@@ -82,10 +81,10 @@ KNOWN_SHELLS = (
 )
 
 
-@dataclass
 class Shell:
-    name: str
-    exe: str
+    def __init__(self, name: str, exe: str):
+        self.name = name
+        self.exe = exe
 
 
 def _find_shell():

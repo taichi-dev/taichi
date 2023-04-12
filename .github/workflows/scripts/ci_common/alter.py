@@ -15,6 +15,7 @@ from . import misc
 from .cmake import cmake_args
 from .compiler import get_cache_home
 from .misc import banner
+from .python import get_desired_python_version
 from .tinysh import Command
 
 
@@ -22,8 +23,9 @@ from .tinysh import Command
 @banner('Add AOT Related Environment Variables')
 def add_aot_env():
     os.environ['TAICHI_REPO_DIR'] = os.getcwd()
+    pyver = get_desired_python_version()
     for p in Path(os.getcwd()).glob('**/cmake-install/c_api'):
-        if p.is_dir() and p.parent.parent.name.endswith(os.environ['PY']):
+        if p.is_dir() and p.parent.parent.name.endswith(pyver):
             os.environ['TAICHI_C_API_INSTALL_DIR'] = str(p)
             break
     else:

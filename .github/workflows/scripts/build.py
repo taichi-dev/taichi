@@ -19,7 +19,7 @@ from ci_common.compiler import setup_clang, setup_msvc
 from ci_common.ios import build_ios, setup_ios
 from ci_common.llvm import setup_llvm
 from ci_common.misc import banner, is_manylinux2014
-from ci_common.python import setup_python
+from ci_common.python import get_desired_python_version, setup_python
 from ci_common.sccache import setup_sccache
 from ci_common.tinysh import Command, git
 from ci_common.vulkan import setup_vulkan
@@ -82,7 +82,7 @@ def setup_basic_build_env(force_vulkan=False):
 
     # NOTE: We use conda/venv to build wheels, which may not be the same python
     #       running this script.
-    python, pip = setup_python(os.environ['PY'])
+    python, pip = setup_python(get_desired_python_version())
 
     return sccache, python, pip
 
@@ -134,6 +134,12 @@ def parse_args():
         action='store_true',
         help=
         'Do not build, start a shell with environment variables set instead')
+    parser.add_argument(
+        '--python',
+        default=None,
+        help=
+        'Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter.'
+    )
     options = parser.parse_args()
     return options
 

@@ -125,6 +125,7 @@ def test_popcnt():
     assert test_u64(1000) == 6
     assert test_i64(10000) == 5
 
+
 @test_utils.test(arch=[ti.metal])
 def test_popcnt():
     @ti.kernel
@@ -141,4 +142,3 @@ def test_popcnt():
     assert test_u32(100) == 3
     assert test_u32(1000) == 6
     assert test_u32(10000) == 5
- 

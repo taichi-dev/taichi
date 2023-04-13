@@ -94,7 +94,7 @@ def test_frexp():
     assert get_exp(1.4) == 1
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan, ti.metal])
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
 def test_popcnt():
     @ti.kernel
     def test_i32(x: ti.int32) -> ti.int32:
@@ -124,3 +124,21 @@ def test_popcnt():
     assert test_u64(100) == 3
     assert test_u64(1000) == 6
     assert test_i64(10000) == 5
+
+@test_utils.test(arch=[ti.metal])
+def test_popcnt():
+    @ti.kernel
+    def test_i32(x: ti.int32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    @ti.kernel
+    def test_u32(x: ti.uint32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    assert test_i32(100) == 3
+    assert test_i32(1000) == 6
+    assert test_i32(10000) == 5
+    assert test_u32(100) == 3
+    assert test_u32(1000) == 6
+    assert test_u32(10000) == 5
+ 

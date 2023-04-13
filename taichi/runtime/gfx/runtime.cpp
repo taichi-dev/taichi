@@ -799,9 +799,8 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     const lang::StructType *old_ty,
     const std::string &layout,
     bool is_outmost) {
-  // Ported from KernelContextAttributes::KernelContextAttributes as is.
-  // TODO: refactor this.
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
+  TI_ASSERT(layout.size() == 2);
   auto is_430 = layout[0] == '4';
   auto has_buffer_ptr = layout[1] == 'b';
   auto members = old_ty->elements();
@@ -813,8 +812,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     size_t member_size;
     if (auto struct_type = member.type->cast<lang::StructType>()) {
       auto [new_ty, size, member_align_] =
-          get_struct_type_with_data_layout_impl(struct_type, layout.substr(2),
-                                                false);
+          get_struct_type_with_data_layout_impl(struct_type, layout, false);
       members[i].type = new_ty;
       member_align = member_align_;
       member_size = size;

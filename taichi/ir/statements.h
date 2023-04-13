@@ -11,8 +11,6 @@
 
 namespace taichi::lang {
 
-stmt_refs get_aliased_stmts(Stmt *dest);
-
 class Function;
 
 /**
@@ -321,7 +319,7 @@ class AtomicOpStmt : public Stmt,
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return get_aliased_stmts(dest);
+    return dest;
   }
 
   Stmt *get_store_data() const override {
@@ -330,7 +328,7 @@ class AtomicOpStmt : public Stmt,
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return get_aliased_stmts(dest);
+    return dest;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
@@ -719,7 +717,7 @@ class GlobalLoadStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return get_aliased_stmts(src);
+    return src;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, src);
@@ -745,7 +743,7 @@ class GlobalStoreStmt : public Stmt, public ir_traits::Store {
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return get_aliased_stmts(dest);
+    return dest;
   }
 
   Stmt *get_store_data() const override {
@@ -777,7 +775,7 @@ class LocalLoadStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return get_aliased_stmts(src);
+    return src;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, src);
@@ -812,7 +810,7 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return get_aliased_stmts(dest);
+    return dest;
   }
 
   Stmt *get_store_data() const override {
@@ -1082,7 +1080,7 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return get_aliased_stmts(var);
+    return var;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, var);
@@ -1983,7 +1981,6 @@ class MatrixInitStmt : public Stmt {
   bool has_global_side_effect() const override {
     return false;
   }
-
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

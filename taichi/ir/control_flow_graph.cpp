@@ -142,6 +142,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     return false;
   };
+
   if (last_def_position != -1) {
     // The UD-chain is inside this node.
     Stmt *result = irpass::analysis::get_store_data(
@@ -202,6 +203,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     return true;  // continue the following loops
   };
+  std::cout << (result == nullptr) << std::endl;
   for (auto stmt : reach_in) {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
@@ -210,6 +212,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return nullptr;
     }
   }
+  std::cout << (result == nullptr) << std::endl;
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
         stmt->parent->locate(stmt) < position) {
@@ -217,17 +220,20 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return nullptr;
     }
   }
+  std::cout << (result == nullptr) << std::endl;
   if (!result) {
     // The UD-chain is empty.
     TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
             block->statements[position]->id);
     return nullptr;
   }
+  std::cout << (result == nullptr) << std::endl;
   if (!result_visible) {
     // The data is store-to-load forwardable but not visible at the place we
     // are going to forward. We cannot forward it in this case.
     return nullptr;
   }
+  std::cout << (result == nullptr) << std::endl;
   return result;
 }
 
@@ -352,7 +358,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   live_kill.clear();
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
-    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    auto load_ptrs =
+        irpass::analysis::get_load_pointers(stmt, true /*get_alias*/);
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
@@ -362,7 +369,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
         }
       }
     }
-    auto store_ptrs = irpass::analysis::get_store_destination(stmt);
+    auto store_ptrs =
+        irpass::analysis::get_store_destination(stmt, true /*get_alias*/);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
     // TODO: SNode deactivation is also a definite store
@@ -395,7 +403,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       killed_in_this_node.clear();
       live_load_in_this_node.clear();
     }
-    auto store_ptrs = irpass::analysis::get_store_destination(stmt);
+    auto store_ptrs =
+        irpass::analysis::get_store_destination(stmt, true /*get_alias*/);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
     if (auto stack_pop = stmt->cast<AdStackPopStmt>()) {
@@ -469,7 +478,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
         }
       }
     }
-    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
+    auto load_ptrs =
+        irpass::analysis::get_load_pointers(stmt, true /*get_alias*/);
     if (load_ptrs.size() == 1 && store_ptrs.empty()) {
       // Identical load elimination
       auto load_ptr = load_ptrs.begin()[0];
@@ -605,7 +615,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
             stmt->is<BlockLocalPtrStmt>() || stmt->is<ThreadLocalPtrStmt>() ||
             stmt->is<GlobalTemporaryStmt>() || stmt->is<MatrixPtrStmt>() ||
-            stmt->is<GetChStmt>()))) {
+            stmt->is<GetChStmt>() || stmt->is<MatrixOfGlobalPtrStmt>() ||
+            stmt->is<MatrixOfMatrixPtrStmt>()))) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);
@@ -696,7 +707,8 @@ void ControlFlowGraph::live_variable_analysis(
     for (int i = 0; i < num_nodes; i++) {
       for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
         auto stmt = nodes[i]->block->statements[j].get();
-        for (auto store_ptr : irpass::analysis::get_store_destination(stmt)) {
+        for (auto store_ptr : irpass::analysis::get_store_destination(
+                 stmt, true /*get_alias*/)) {
           if (in_final_node_live_gen(store_ptr)) {
             nodes[final_node]->live_gen.insert(store_ptr);
           }

@@ -4,14 +4,6 @@
 
 namespace taichi::lang {
 
-stmt_refs get_aliased_stmts(Stmt *dest) {
-  if (dest->is<MatrixPtrStmt>()) {
-    std::vector<Stmt *> rets = {dest, dest->as<MatrixPtrStmt>()->origin};
-    return rets;
-  }
-  return dest;
-}
-
 UnaryOpStmt::UnaryOpStmt(UnaryOpType op_type, Stmt *operand)
     : op_type(op_type), operand(operand) {
   TI_ASSERT(!operand->is<AllocaStmt>());

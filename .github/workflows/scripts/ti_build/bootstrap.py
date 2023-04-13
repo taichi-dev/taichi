@@ -79,8 +79,10 @@ def ensure_dependencies(*deps: str):
             sys.executable, '-m', 'pip', 'install', '--no-user',
             f'--target={bootstrap_root}', '-U'
         ]
+        if run([sys.executable, '-m', 'ensurepip']):
+            raise Exception('Unable to run ensurepip!')
         if run(*pipcmd, 'pip', 'setuptools'):
-            raise Exception('Unable to upgrade pip!')
+            raise Exception('Unable to install pip!')
         if run(*pipcmd, *deps, env={'PYTHONPATH': str(bootstrap_root)}):
             raise Exception('Unable to install dependencies!')
 

@@ -11,6 +11,8 @@
 
 namespace taichi::lang {
 
+stmt_refs get_aliased_stmts(Stmt *dest);
+
 class Function;
 
 /**
@@ -42,13 +44,13 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
     // The statement itself provides a data source (const [0]).
-    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
+    return (Stmt *)this;
   }
 
   Stmt *get_store_data() const override {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
-    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
+    return (Stmt *)this;
   }
 
   bool is_shared;
@@ -319,7 +321,7 @@ class AtomicOpStmt : public Stmt,
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return dest;
+    return get_aliased_stmts(dest);
   }
 
   Stmt *get_store_data() const override {
@@ -328,7 +330,7 @@ class AtomicOpStmt : public Stmt,
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return dest;
+    return get_aliased_stmts(dest);
   }
 
   TI_STMT_DEF_FIELDS(ret_type, op_type, dest, val);
@@ -717,7 +719,7 @@ class GlobalLoadStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return src;
+    return get_aliased_stmts(src);
   }
 
   TI_STMT_DEF_FIELDS(ret_type, src);
@@ -743,7 +745,7 @@ class GlobalStoreStmt : public Stmt, public ir_traits::Store {
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return dest;
+    return get_aliased_stmts(dest);
   }
 
   Stmt *get_store_data() const override {
@@ -775,7 +777,7 @@ class LocalLoadStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return src;
+    return get_aliased_stmts(src);
   }
 
   TI_STMT_DEF_FIELDS(ret_type, src);
@@ -810,7 +812,7 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
 
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
-    return dest;
+    return get_aliased_stmts(dest);
   }
 
   Stmt *get_store_data() const override {
@@ -1080,7 +1082,7 @@ class ReferenceStmt : public Stmt, public ir_traits::Load {
 
   // IR Trait: Load
   stmt_refs get_load_pointers() const override {
-    return var;
+    return get_aliased_stmts(var);
   }
 
   TI_STMT_DEF_FIELDS(ret_type, var);

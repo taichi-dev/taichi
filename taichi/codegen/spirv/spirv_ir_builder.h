@@ -340,7 +340,7 @@ class IRBuilder {
   // Get the spirv type for a given Taichi primitive data type
   SType get_primitive_type(const DataType &dt) const;
   // Get the spirv type for a given Taichi data type
-  SType from_taichi_type(const DataType &dt);
+  SType from_taichi_type(const DataType &dt, bool has_buffer_ptr);
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
   // Get the spirv uint type with the same size of a given Taichi data type

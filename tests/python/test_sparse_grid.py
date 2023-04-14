@@ -19,5 +19,4 @@ def test_sparse_grid():
     grid[0, 0].grid2particles[2] = 123
 
     # print the usage of the sparse grid, which is in [0,1]
-    print(ti.sparse.usage(grid))
     assert ti.sparse.usage(grid) == test_utils.approx(0.01)

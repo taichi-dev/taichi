@@ -75,6 +75,16 @@ def decl_matrix_arg(matrixtype, name):
     ] for j in range(matrixtype.n)])
 
 
+def decl_struct_arg(structtype, name):
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
+        structtype.dtype, name)
+    arg_load = Expr(
+        _ti_core.make_arg_load_expr(arg_id,
+                                    structtype.dtype,
+                                    create_load=False))
+    return structtype.from_taichi_object(arg_load)
+
+
 def decl_sparse_matrix(dtype, name):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)

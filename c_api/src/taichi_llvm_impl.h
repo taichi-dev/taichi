@@ -9,7 +9,6 @@
 
 namespace taichi::lang {
 class LlvmRuntimeExecutor;
-class MemoryPool;
 struct CompileConfig;
 }  // namespace taichi::lang
 

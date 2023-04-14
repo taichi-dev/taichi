@@ -39,7 +39,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::size_t,
                                     const char *,
                                     std::va_list);
-using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
+using host_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
 using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
@@ -549,7 +549,7 @@ struct PreallocatedMemoryChunk {
 struct LLVMRuntime {
   PreallocatedMemoryChunk preallocated_memory_chunk;
 
-  vm_allocator_type vm_allocator;
+  host_allocator_type host_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
@@ -819,7 +819,7 @@ Ptr LLVMRuntime::allocate_aligned(std::size_t size,
     return allocate_from_reserved_memory(size, alignment);
   }
 
-  return (Ptr)vm_allocator(memory_pool, size, alignment);
+  return (Ptr)host_allocator(memory_pool, size, alignment);
 }
 
 // [ONLY ON DEVICE] CUDA/AMDGPU backend
@@ -891,11 +891,11 @@ void runtime_initialize(
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
     i32 num_rand_states,
-    void *_vm_allocator,
+    void *_host_allocator,
     void *_host_printf,
     void *_host_vsnprintf) {
   // bootstrap
-  auto vm_allocator = (vm_allocator_type)_vm_allocator;
+  auto host_allocator = (host_allocator_type)_host_allocator;
   auto host_printf = (host_printf_type)_host_printf;
   auto host_vsnprintf = (host_vsnprintf_type)_host_vsnprintf;
   LLVMRuntime *runtime = nullptr;
@@ -906,7 +906,7 @@ void runtime_initialize(
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
     runtime =
-        (LLVMRuntime *)vm_allocator(memory_pool, sizeof(LLVMRuntime), 128);
+        (LLVMRuntime *)host_allocator(memory_pool, sizeof(LLVMRuntime), 128);
   }
 
   PreallocatedMemoryChunk preallocated_memory_chunk;
@@ -918,7 +918,7 @@ void runtime_initialize(
 
   runtime->result_buffer = result_buffer;
   runtime->set_result(taichi_result_buffer_ret_value_id, runtime);
-  runtime->vm_allocator = vm_allocator;
+  runtime->host_allocator = host_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
   runtime->memory_pool = memory_pool;

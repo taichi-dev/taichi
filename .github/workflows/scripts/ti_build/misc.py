@@ -33,9 +33,15 @@ def info(msg: str) -> None:
 
 
 def warn(msg: str) -> None:
-    B = escape_codes['bold_yellow']
+    Y = escape_codes['bold_yellow']
     N = escape_codes['reset']
-    print(f'{B}:: WARN {msg}{N}', file=sys.stderr, flush=True)
+    print(f'{Y}:: WARN {msg}{N}', file=sys.stderr, flush=True)
+
+
+def error(msg: str) -> None:
+    R = escape_codes['bold_red']
+    N = escape_codes['reset']
+    print(f'{R}:: ERROR {msg}{N}', file=sys.stderr, flush=True)
 
 
 def banner(msg: str) -> Callable:

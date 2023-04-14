@@ -77,7 +77,7 @@ def test_logic_not_invalid():
         test(1.0)
 
 
-@test_utils.test(arch=ti.cuda)
+@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.opengl, ti.metal])
 def test_frexp():
     @ti.kernel
     def get_frac(x: ti.f32) -> ti.f32:

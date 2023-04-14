@@ -60,8 +60,9 @@ def setup_sccache() -> Command:
         exe.chmod(0o755)
 
     os.environ["SCCACHE_LOG"] = "error"
-    cmake_args["CMAKE_C_COMPILER_LAUNCHER"] = str(exe)
-    cmake_args["CMAKE_CXX_COMPILER_LAUNCHER"] = str(exe)
+    exepath = str(exe).replace("\\", "\\\\")
+    cmake_args["CMAKE_C_COMPILER_LAUNCHER"] = exepath
+    cmake_args["CMAKE_CXX_COMPILER_LAUNCHER"] = exepath
 
     # <LocalCache>
     cache = root / "cache"

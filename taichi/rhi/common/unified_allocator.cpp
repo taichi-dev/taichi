@@ -1,14 +1,7 @@
 // Virtual memory allocator for CPU/GPU
 
-#if defined(TI_WITH_CUDA)
-#include "taichi/rhi/cuda/cuda_driver.h"
-#include "taichi/rhi/cuda/cuda_context.h"
-#include "taichi/rhi/cuda/cuda_device.h"
-
-#endif
 #include "taichi/rhi/common/unified_allocator.h"
-#include "taichi/rhi/common/memory_pool.h"
-#include "taichi/rhi/cpu/cpu_device.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 #include <string>
 
 namespace taichi::lang {
@@ -31,13 +24,12 @@ static void swap_erase_vector(std::vector<T> &vec, size_t idx) {
   // search for reusable memory
 }
 
-UnifiedAllocator::UnifiedAllocator(Arch arch) : arch_(arch) {
+UnifiedAllocator::UnifiedAllocator() {
 }
 
 void *UnifiedAllocator::allocate(std::size_t size,
                                  std::size_t alignment,
-                                 bool exclusive,
-                                 bool managed) {
+                                 bool exclusive) {
   // UnifiedAllocator never reuses the previously allocated memory
   // just move the head forward util depleting all the free memory
 
@@ -79,15 +71,15 @@ void *UnifiedAllocator::allocate(std::size_t size,
   TI_TRACE("Allocating virtual address space of size {} MB",
            allocation_size / 1024 / 1024);
 
-  void *ptr = MemoryPool::get_instance(arch_).allocate_raw_memory(
-      allocation_size, managed);
+  void *ptr =
+      HostMemoryPool::get_instance().allocate_raw_memory(allocation_size);
   chunk.data = ptr;
   chunk.head = chunk.data;
   chunk.tail = (void *)((std::size_t)chunk.head + allocation_size);
   chunk.is_exclusive = exclusive;
 
   TI_ASSERT(chunk.data != nullptr);
-  TI_ASSERT(uint64(chunk.data) % MemoryPool::page_size == 0);
+  TI_ASSERT(uint64(chunk.data) % HostMemoryPool::page_size == 0);
 
   chunks_.emplace_back(std::move(chunk));
   return ptr;

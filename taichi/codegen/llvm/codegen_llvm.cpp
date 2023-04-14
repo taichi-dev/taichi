@@ -2542,6 +2542,13 @@ void TaskCodeGenLLVM::initialize_context() {
   TI_ASSERT(tlctx != nullptr);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
+  if (compile_config.fast_math) {
+    llvm::FastMathFlags fast_flags;
+    fast_flags.setNoInfs();
+    fast_flags.setNoSignedZeros();
+    fast_flags.setAllowReassoc();
+    builder->setFastMathFlags(fast_flags);
+  }
 }
 
 llvm::Value *TaskCodeGenLLVM::get_arg(int i) {

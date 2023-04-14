@@ -14,6 +14,7 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
 . /tmp/ti-env.sh
 
+python3 -m pip uninstall -y taichi taichi-nightly || true
 python3 -m pip install dist/*.whl
 
 export PATH=$PATH:$HOME/.local/bin

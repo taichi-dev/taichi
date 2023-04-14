@@ -49,6 +49,7 @@ def build_android(python: Command, pip: Command) -> None:
     cmake_args['TI_WITH_C_API'] = True
     cmake_args['TI_BUILD_TESTS'] = False
     cmake_args.writeback()
+    os.environ['TAICHI_FORCE_PLAT_NAME'] = 'android-arm64'  # affects setup.py
     pip.install('-r', 'requirements_dev.txt')
     python('setup.py', 'clean')
     python('setup.py', 'build_ext')

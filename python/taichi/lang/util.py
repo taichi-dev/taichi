@@ -11,25 +11,6 @@ from taichi.lang import impl
 from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
                                           u16, u32, u64)
 
-_has_pytorch = False
-_has_paddle = False
-
-_env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
-if not _env_torch or int(_env_torch):
-    try:
-        import torch
-        _has_pytorch = True
-    except:
-        pass
-
-_env_paddle = os.environ.get('TI_ENABLE_PADDLE', '1')
-if not _env_paddle or int(_env_paddle):
-    try:
-        import paddle
-        _has_paddle = True
-    except:
-        pass
-
 
 def has_pytorch():
     """Whether has pytorch in the current Python environment.
@@ -38,6 +19,14 @@ def has_pytorch():
         bool: True if has pytorch else False.
 
     """
+    _has_pytorch = False
+    _env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
+    if not _env_torch or int(_env_torch):
+        try:
+            import torch  # pylint: disable=C0415
+            _has_pytorch = True
+        except:
+            pass
     return _has_pytorch
 
 
@@ -47,26 +36,32 @@ def has_paddle():
     Returns:
         bool: True if has paddle else False.
     """
+    _has_paddle = False
+    _env_paddle = os.environ.get('TI_ENABLE_PADDLE', '1')
+    if not _env_paddle or int(_env_paddle):
+        try:
+            import paddle  # pylint: disable=C0415
+            _has_paddle = True
+        except:
+            pass
     return _has_paddle
 
 
-from distutils.spawn import find_executable
+def get_clangpp():
+    from distutils.spawn import find_executable  # pylint: disable=C0415
 
-# Taichi itself uses llvm-10.0.0 to compile.
-# There will be some issues compiling CUDA with other clang++ version.
-_clangpp_candidates = ['clang++-10']
-_clangpp_presence = None
-for c in _clangpp_candidates:
-    if find_executable(c) is not None:
-        _clangpp_presence = find_executable(c)
+    # Taichi itself uses llvm-10.0.0 to compile.
+    # There will be some issues compiling CUDA with other clang++ version.
+    _clangpp_candidates = ['clang++-10']
+    for c in _clangpp_candidates:
+        if find_executable(c) is not None:
+            _clangpp_presence = find_executable(c)
+            return _clangpp_presence
+    return None
 
 
 def has_clangpp():
-    return _clangpp_presence is not None
-
-
-def get_clangpp():
-    return _clangpp_presence
+    return get_clangpp() is not None
 
 
 def is_matrix_class(rhs):
@@ -134,6 +129,8 @@ def to_pytorch_type(dt):
         DataType: The counterpart data type in torch.
 
     """
+    import torch  # pylint: disable=C0415
+
     # pylint: disable=E1101
     if dt == f32:
         return torch.float32
@@ -167,6 +164,7 @@ def to_paddle_type(dt):
         DataType: The counterpart data type in paddle.
 
     """
+    import paddle  # pylint: disable=C0415
     if dt == f32:
         return paddle.float32
     if dt == f64:
@@ -226,6 +224,8 @@ def to_taichi_type(dt):
         return f16
 
     if has_pytorch():
+        import torch  # pylint: disable=C0415
+
         # pylint: disable=E1101
         if dt == torch.float32:
             return f32
@@ -248,6 +248,7 @@ def to_taichi_type(dt):
                 f'PyTorch doesn\'t support {dt.to_string()} data type.')
 
     if has_paddle():
+        import paddle  # pylint: disable=C0415
         if dt == paddle.float32:
             return f32
         if dt == paddle.float64:

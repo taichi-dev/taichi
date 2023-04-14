@@ -27,38 +27,62 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
 
+  PrimitiveTypeID typeId = dt->as<PrimitiveType>()->type;
+
   ActionRecorder::get_instance().record(
       "set_kernel_arg_float64",
       {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
        ActionArg("val", d)});
 
-  if (dt->is_primitive(PrimitiveTypeID::f32)) {
-    set_arg(arg_id, (float32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
-    set_arg(arg_id, (float64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
-    set_arg(arg_id, (int32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
-    set_arg(arg_id, (int64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
-    set_arg(arg_id, (int8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
-    set_arg(arg_id, (int16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
-    set_arg(arg_id, (uint8)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
-    set_arg(arg_id, (uint16)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u32)) {
-    set_arg(arg_id, (uint32)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::u64)) {
-    set_arg(arg_id, (uint64)d);
-  } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
-    uint16 half = fp16_ieee_from_fp32_value((float32)d);
-    set_arg(arg_id, half);
-  } else {
-    TI_NOT_IMPLEMENTED
+  switch (typeId) {
+#define PER_C_TYPE(tp, ctype)  \
+  case PrimitiveTypeID::tp:    \
+    set_arg(arg_id, (ctype)d); \
+    break;
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+    case PrimitiveTypeID::f16: {
+      uint16 half = fp16_ieee_from_fp32_value((float32)d);
+      set_arg(arg_id, half);
+      break;
+    }
+    default:
+      TI_NOT_IMPLEMENTED
   }
 }
+
+template <typename T>
+void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices, T d) {
+  auto dt = kernel_->args_type->get_element_type(arg_indices);
+  TI_ASSERT_INFO(dt->is<PrimitiveType>(),
+                 "Assigning scalar value to external (numpy) array argument is "
+                 "not allowed.");
+
+  PrimitiveTypeID typeId = dt->as<PrimitiveType>()->type;
+
+  switch (typeId) {
+#define PER_C_TYPE(tp, ctype)                   \
+  case PrimitiveTypeID::tp:                     \
+    set_struct_arg_impl(arg_indices, (ctype)d); \
+    break;
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+    case PrimitiveTypeID::f16: {
+      uint16 half = fp16_ieee_from_fp32_value((float32)d);
+      set_struct_arg_impl(arg_indices, half);
+      break;
+    }
+    default:
+      TI_NOT_IMPLEMENTED
+  }
+}
+
+template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
+                                                   uint64 v);
+template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
+                                                   int64 v);
+template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
+                                                   float64 v);
 
 void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
   auto dt = kernel_->args_type->get_element_type({arg_id});
@@ -116,11 +140,12 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 }
 
 template <typename T>
-void LaunchContextBuilder::set_struct_arg(std::vector<int> index, T v) {
+void LaunchContextBuilder::set_struct_arg_impl(std::vector<int> arg_indices,
+                                               T v) {
   if (kernel_->arch == Arch::cc) {
     return;
   }
-  int offset = args_type->get_element_offset(index);
+  int offset = args_type->get_element_offset(arg_indices);
   TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }
@@ -131,8 +156,8 @@ T LaunchContextBuilder::get_arg(int i) {
 }
 
 template <typename T>
-T LaunchContextBuilder::get_struct_arg(std::vector<int> index) {
-  int offset = args_type->get_element_offset(index);
+T LaunchContextBuilder::get_struct_arg(std::vector<int> arg_indices) {
+  int offset = args_type->get_element_offset(arg_indices);
   TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   return *(T *)(ctx_->arg_buffer + offset);
 }
@@ -144,7 +169,7 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
-  set_struct_arg({i}, v);
+  set_struct_arg_impl({i}, v);
   if (kernel_->arch == Arch::cc) {
     cc_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
   }
@@ -161,14 +186,15 @@ T LaunchContextBuilder::get_ret(int i) {
   return taichi_union_cast_with_different_sizes<T>(ctx_->result_buffer[i]);
 }
 
-#define PER_C_TYPE(type, ctype)                                                \
-  template void LaunchContextBuilder::set_struct_arg(std::vector<int> index,   \
-                                                     ctype v);                 \
-  template ctype LaunchContextBuilder::get_arg(int i);                         \
-  template ctype LaunchContextBuilder::get_struct_arg(std::vector<int> index); \
-  template ctype LaunchContextBuilder::get_grad_arg(int i);                    \
-  template void LaunchContextBuilder::set_arg(int i, ctype v);                 \
-  template void LaunchContextBuilder::set_grad_arg(int i, ctype v);            \
+#define PER_C_TYPE(type, ctype)                                     \
+  template void LaunchContextBuilder::set_struct_arg_impl(          \
+      std::vector<int> arg_indices, ctype v);                       \
+  template ctype LaunchContextBuilder::get_arg(int i);              \
+  template ctype LaunchContextBuilder::get_struct_arg(              \
+      std::vector<int> arg_indices);                                \
+  template ctype LaunchContextBuilder::get_grad_arg(int i);         \
+  template void LaunchContextBuilder::set_arg(int i, ctype v);      \
+  template void LaunchContextBuilder::set_grad_arg(int i, ctype v); \
   template ctype LaunchContextBuilder::get_ret(int i);
 #include "taichi/inc/data_type_with_c_type.inc.h"
 PER_C_TYPE(gen, void *)  // Register void* as a valid type

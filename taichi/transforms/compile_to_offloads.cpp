@@ -80,6 +80,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::lower_matrix_ptr(ir);
+  print("Matrix ptr lowered");
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 

@@ -237,7 +237,7 @@ Returning to the explanation of the `chunk_size` parameter: the implementation o
 
 ![](https://github.com/taichi-dev/public_files/blob/master/taichi/doc/dynamic_snode_1d.png?raw=true)
 
-Thus, the actual number of chunks allocated is `ceil(x.length() / chunk_size)`. 
+Thus, the actual number of chunks allocated is `ceil(x.length() / chunk_size)`.
 
 We can also define more complex variable-length lists. For example, the following code defines an array `x` of length `n = 10`, where each element of `x` is a one-dimensional variable-length list:
 
@@ -260,7 +260,7 @@ def add_data():
         for j in range(i):
             x[i].append(j)
         print(x[i].length())  # will print i
-        
+
     for i in range(10):
         x[i].deactivate()
         print(x[i].length())  # will print 0

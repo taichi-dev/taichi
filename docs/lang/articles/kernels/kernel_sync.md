@@ -62,4 +62,3 @@ Most of the time, Taichi automatically handles data synchronization. For example
 On the CPU backend, all kernel calls are blocking, which means that the program waits for the current kernel to finish before executing the next statement. Therefore, users do not need to worry about data dependencies or use `ti.sync()` on the CPU backend.
 
 :::
-

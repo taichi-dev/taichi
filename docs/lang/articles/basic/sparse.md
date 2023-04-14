@@ -269,7 +269,7 @@ All of the above discussion applies to using Dynamic SNode with other numeric ty
 
 ```python
 S = ti.root.dynamic(ti.i, 1024, chunk_size=32)
-SphereType = ti.types.struct(center=vec3, radius=float)
+SphereType = ti.types.struct(center=ti.math.vec3, radius=float)
 x = SphereType.field()
 S.place(x)
 ```

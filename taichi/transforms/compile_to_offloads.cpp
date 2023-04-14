@@ -91,9 +91,6 @@ void compile_to_offloads(IRNode *ir,
     print("Scalarized");
   }
 
-  irpass::lower_matrix_ptr(ir);
-  print("Matrix ptr lowered");
-
   irpass::full_simplify(
       ir, config,
       {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});

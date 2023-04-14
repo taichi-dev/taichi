@@ -477,7 +477,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     if (!stmt->is_grad) {
-      print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+      print("{}{} = arg{}[{}]", stmt->type_hint(), stmt->name(),
+            stmt->create_load ? "load" : "addr", stmt->arg_id);
     } else {
       print("{}{} = grad_arg[{}]", stmt->type_hint(), stmt->name(),
             stmt->arg_id);

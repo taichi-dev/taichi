@@ -25,6 +25,8 @@ namespace taichi {
 
 namespace py = pybind11;
 
+using py::literals::operator""_a;
+
 void export_lang(py::module &m);
 
 void export_math(py::module &m);

@@ -10,8 +10,8 @@ from urllib.parse import urlparse
 import requests
 
 # -- own --
-from .misc import get_cache_home
-from .tinysh import bash, sh, tar
+from .misc import get_cache_home, info
+from .tinysh import bash, sh, sudo, tar
 
 
 # -- code --
@@ -55,7 +55,48 @@ def escape_url(url):
     return url.replace('/', '_').replace(':', '_')
 
 
-def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
+SHOULD_USE_MIRROR = {
+    'ci': False,
+    'aliyun': False,
+    '_probed': False,
+}
+
+
+def probe_mirrors():
+    if SHOULD_USE_MIRROR['_probed']:
+        return
+
+    try:
+        resp = requests.get('http://botmaster.tgr:9000/misc/canary.txt',
+                            timeout=0.5)
+        if resp.ok and resp.text.strip() == 'in-taichi-ci-environment':
+            info('Enabling Taichi CI cluster mirror')
+            SHOULD_USE_MIRROR['ci'] = True
+    except Exception:
+        pass
+
+    google_ok = True
+    try:
+        resp = requests.head('https://google.com', timeout=2)
+        google_ok = resp.ok
+    except Exception:
+        google_ok = False
+
+    if not google_ok:
+        info('Enabling Aliyun mirror')
+        SHOULD_USE_MIRROR['aliyun'] = True
+
+    SHOULD_USE_MIRROR['_probed'] = True
+
+
+def download_dep(url,
+                 outdir,
+                 *,
+                 strip=0,
+                 force=False,
+                 args=None,
+                 plain=False,
+                 elevate=False):
     '''
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -73,14 +114,21 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
-    urls = [
-        f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}',
-        f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}',
-        url,
-    ]
+    probe_mirrors()
+
+    urls = [url]
+
+    if SHOULD_USE_MIRROR['aliyun']:
+        urls.append(
+            f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+        )
+
+    if SHOULD_USE_MIRROR['ci']:
+        urls.append(
+            f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}')
 
     size = -1
-    for u in urls:
+    for u in reversed(urls):
         try:
             resp = requests.head(u,
                                  headers={'Accept-Encoding': 'identity'},
@@ -123,7 +171,12 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False):
         sh.bake(local_cached)(*args)
     elif name.endswith('.exe') and args is not None:
         local_cached.chmod(0o755)
-        sh.bake(local_cached)(*args)
+        cmd = sh.bake(local_cached)
+        if elevate:
+            with sudo():
+                cmd(*args)
+        else:
+            cmd(*args)
         # start(local_cached, *args)
     elif plain:
         shutil.copy(local_cached, outdir / name)

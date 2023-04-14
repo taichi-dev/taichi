@@ -3,8 +3,10 @@
 # -- stdlib --
 import os
 import platform
+import re
 import shutil
-from typing import Optional, Tuple
+import sys
+from typing import Tuple
 
 # -- third party --
 # -- own --
@@ -46,16 +48,26 @@ def setup_miniforge3(prefix):
         raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
 
 
+def get_desired_python_version() -> str:
+    version = misc.options.python
+    version = version or os.environ.get('PY', None)
+    v = sys.version_info
+    this_version = f'{v.major}.{v.minor}'
+
+    if version in ('3.x', '3', None):
+        assert v.major == 3
+        return this_version
+    elif version and re.match(r'^3\.\d+$', version):
+        return version
+    else:
+        raise RuntimeError(f'Unsupported Python version: {version}')
+
+
 @banner('Setup Python {version}')
-def setup_python(version: Optional[str] = '3.x') -> Tuple[Command, Command]:
+def setup_python(version: str) -> Tuple[Command, Command]:
     '''
     Find the required Python environment and return the `python` and `pip` commands.
     '''
-    if version == '3.x':
-        v = sys.version_info
-        version = f'{v.major}.{v.minor}'
-        misc.info(f'Using Python {version}')
-
     windows = platform.system() == "Windows"
 
     prefix = get_cache_home() / 'miniforge3'

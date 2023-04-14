@@ -14,6 +14,7 @@ python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
 # TODO: hard code Android NDK path in Docker image, should be handled by build.py
 export ANDROID_NDK_ROOT=/android-sdk/ndk-bundle
 
+python -m pip uninstall -y taichi taichi-nightly || true
 python -m pip install dist/*.whl
 
 git clone --depth=1 https://github.com/taichi-dev/taichi_benchmark

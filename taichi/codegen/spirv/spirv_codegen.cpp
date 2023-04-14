@@ -726,7 +726,6 @@ class TaskCodegen : public IRVisitor {
     spirv::SType src_type = ir_->get_primitive_type(src_dt);
     spirv::SType dst_type;
     if (dst_dt.is_pointer()) {
-      TI_ASSERT(dst_dt.ptr_removed()->is<lang::StructType>());
       auto stype = dst_dt.ptr_removed()->as<lang::StructType>();
       std::vector<std::tuple<SType, std::string, size_t>> components;
       for (int i = 0; i < stype->get_num_elements(); i++) {

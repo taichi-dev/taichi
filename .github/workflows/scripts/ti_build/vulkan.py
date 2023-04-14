@@ -33,6 +33,7 @@ def setup_vulkan():
         download_dep(
             url,
             prefix,
+            elevate=True,
             args=[
                 '--accept-licenses',
                 '--default-answer',

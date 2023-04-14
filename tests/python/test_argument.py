@@ -232,3 +232,16 @@ def test_args_with_many_ndarrays():
                            outClusterIndices, particle_pos, particle_prev_pos,
                            particle_rest_pos, cluster_rest_mass_center,
                            cluster_begin, particle_index)
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_struct_arg():
+    s0 = ti.types.struct(a=ti.i16, b=ti.f64)
+    s1 = ti.types.struct(a=ti.f32, b=s0)
+
+    @ti.kernel
+    def foo(a: s1) -> ti.f32:
+        return a.a + a.b.a + a.b.b
+
+    ret = foo(s1(a=1, b=s0(a=65537, b=123)))
+    assert ret == pytest.approx(125)

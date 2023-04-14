@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+# -- stdlib --
 import linecache
 import sys
 import uuid
@@ -7,11 +10,17 @@ from functools import wraps
 from itertools import count
 from typing import List, Optional
 
+# -- third party --
 import marko
 import pytest
 from pytest import ExceptionInfo
 
 import taichi as ti
+
+# -- own --
+
+# -- code --
+warnings.filterwarnings('error', category=DeprecationWarning)
 
 SANE_LANGUAGE_TAGS = {
     'python',
@@ -196,6 +205,7 @@ class MarkdownItem(pytest.Item):
 
         if spec.known_error:
             warnings.warn('Known Error, please fix it')
+            print(f'::warning:: Known Error: {spec.name}')
             pytest.skip('KnownError')
 
         preludes = list(spec.preludes)

@@ -258,7 +258,7 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::frexp) {
-      auto stype = tlctx->get_data_type(stmt->ret_type);
+      auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());
       auto res = builder->CreateAlloca(stype);
       auto frac_ptr = builder->CreateStructGEP(stype, res, 0);
       auto exp_ptr = builder->CreateStructGEP(stype, res, 1);

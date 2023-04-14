@@ -33,6 +33,7 @@ install_taichi_wheel() {
         conda install -n $PY -y scipy
     fi
 
+    python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install dist/*.whl
     if [ -z "$GPU_TEST" ]; then
         python3 -m pip install -r requirements_test.txt

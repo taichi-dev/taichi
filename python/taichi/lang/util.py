@@ -47,9 +47,6 @@ def has_paddle():
     return _has_paddle
 
 
-_clangpp_presence = False
-
-
 def get_clangpp():
     from distutils.spawn import find_executable  # pylint: disable=C0415
 
@@ -64,9 +61,7 @@ def get_clangpp():
 
 
 def has_clangpp():
-    if _clangpp_presence is False:
-        return get_clangpp() is not None
-    return _clangpp_presence is not None
+    return get_clangpp() is not None
 
 
 def is_matrix_class(rhs):

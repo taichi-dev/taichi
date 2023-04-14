@@ -530,7 +530,6 @@ namespace irpass {
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
 
-  auto print = make_pass_printer(true, "", root);
   ScalarizeMatrixPtr scalarize_matrix_ptr_pass(root);
   LowerMatrixPtr::run(root);
   RemoveMatrixOfPtr::run(root);

@@ -82,6 +82,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dt);
     emit(expr->arg_id);
     emit(expr->is_ptr);
+    emit(expr->create_load);
   }
 
   void visit(TexturePtrExpression *expr) override {
@@ -141,6 +142,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dim);
     emit(expr->arg_id);
     emit(expr->element_dim);
+    emit(expr->is_grad);
   }
 
   void visit(FieldExpression *expr) override {

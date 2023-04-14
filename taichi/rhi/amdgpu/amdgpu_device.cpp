@@ -1,4 +1,5 @@
 #include "taichi/rhi/amdgpu/amdgpu_device.h"
+#include "taichi/rhi/llvm/device_memory_pool.h"
 
 namespace taichi {
 namespace lang {
@@ -15,13 +16,16 @@ RhiResult AmdgpuDevice::allocate_memory(const AllocParams &params,
                                         DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  if (params.host_read || params.host_write) {
-    AMDGPUDriver::get_instance().malloc_managed(&info.ptr, params.size,
-                                                HIP_MEM_ATTACH_GLOBAL);
-  } else {
-    AMDGPUDriver::get_instance().malloc(&info.ptr, params.size);
+  auto &mem_pool = DeviceMemoryPool::get_instance();
+
+  bool managed = params.host_read || params.host_write;
+  void *ptr =
+      mem_pool.allocate(params.size, DeviceMemoryPool::page_size, managed);
+  if (ptr == nullptr) {
+    return RhiResult::out_of_memory;
   }
 
+  info.ptr = ptr;
   info.size = params.size;
   info.is_imported = false;
   info.use_cached = false;
@@ -80,7 +84,7 @@ void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
-    AMDGPUDriver::get_instance().mem_free(info.ptr);
+    DeviceMemoryPool::get_instance().release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

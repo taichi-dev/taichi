@@ -115,7 +115,6 @@ class CpuDevice : public LlvmDevice {
   void wait_idle() override{TI_NOT_IMPLEMENTED};
 
  private:
-  Arch arch_;
   std::vector<AllocInfo> allocations_;
 
   void validate_device_alloc(const DeviceAllocation alloc) {

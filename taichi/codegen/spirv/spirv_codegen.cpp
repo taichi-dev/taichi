@@ -573,7 +573,9 @@ class TaskCodegen : public IRVisitor {
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      const auto val_type = ir_->from_taichi_type(arg_type);
+      bool has_buffer_ptr =
+          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+      const auto val_type = ir_->from_taichi_type(arg_type, has_buffer_ptr);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(val_type, spv::StorageClassUniform),
@@ -701,7 +703,8 @@ class TaskCodegen : public IRVisitor {
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), arg_id));
+          ir_->int_immediate_number(ir_->i32_type(), arg_id),
+          ir_->int_immediate_number(ir_->i32_type(), 0));
       spirv::Value addr = ir_->load_variable(addr_ptr, ir_->u64_type());
       addr = ir_->add(addr, ir_->make_value(spv::OpSConvert, ir_->u64_type(),
                                             linear_offset));

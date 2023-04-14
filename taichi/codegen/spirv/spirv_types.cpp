@@ -482,7 +482,7 @@ const tinyir::Type *translate_ti_type(tinyir::Block &ir_module,
                                              /*is_signed=*/false);
     } else {
       return ir_module.emplace_back<IntType>(/*num_bits=*/32,
-                                             /*is_signed=*/true);
+                                             /*is_signed=*/false);
     }
   }
   if (auto struct_type = t->cast<lang::StructType>()) {

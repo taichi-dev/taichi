@@ -328,14 +328,20 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::from_taichi_type(const DataType &dt) {
+SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
   if (dt->is<PrimitiveType>()) {
     return get_primitive_type(dt);
+  } else if (dt->is<PointerType>()) {
+    if (has_buffer_ptr) {
+      return t_uint64_;
+    } else {
+      return t_uint32_;
+    }
   } else if (auto struct_type = dt->cast<lang::StructType>()) {
     std::vector<std::tuple<SType, std::string, size_t>> components;
     for (const auto &[type, name, offset] : struct_type->elements()) {
-      components.push_back(
-          std::make_tuple(from_taichi_type(type), name, offset));
+      components.push_back(std::make_tuple(
+          from_taichi_type(type, has_buffer_ptr), name, offset));
     }
     return create_struct_type(components);
   } else {
@@ -1612,6 +1618,7 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 
   init_rand_ = true;
 }
+
 Value IRBuilder::make_access_chain(const SType &out_type,
                                    Value base,
                                    const std::vector<int> &indices) {

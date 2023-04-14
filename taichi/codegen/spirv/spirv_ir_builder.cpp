@@ -333,7 +333,7 @@ SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
     return get_primitive_type(dt);
   } else if (dt->is<PointerType>()) {
     if (has_buffer_ptr) {
-      return t_int64_;
+      return t_uint64_;
     } else {
       return t_uint32_;
     }
@@ -1618,6 +1618,7 @@ void IRBuilder::init_random_function(Value global_tmp_) {
 
   init_rand_ = true;
 }
+
 Value IRBuilder::make_access_chain(const SType &out_type,
                                    Value base,
                                    const std::vector<int> &indices) {

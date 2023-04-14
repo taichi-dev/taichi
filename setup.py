@@ -208,6 +208,12 @@ def sign_development_for_apple_m1():
 
 
 copy_assets()
+
+force_plat_name = os.getenv('TAICHI_FORCE_PLAT_NAME', '').strip()
+if force_plat_name:
+    from skbuild.constants import set_skbuild_plat_name
+    set_skbuild_plat_name(force_plat_name)
+
 setup(name=project_name,
       packages=packages,
       package_dir={"": package_dir},

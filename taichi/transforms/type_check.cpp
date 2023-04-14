@@ -425,24 +425,30 @@ class TypeCheck : public IRVisitor {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(GetElementStmt *stmt) override {
+    TI_ASSERT(stmt->src->ret_type->is<PointerType>());
     stmt->ret_type =
-        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->index);
+        stmt->src->ret_type.ptr_removed()->as<StructType>()->get_element_type(
+            stmt->index);
   }
 
   void visit(ArgLoadStmt *stmt) override {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    stmt->ret_type.set_is_pointer(stmt->is_ptr);
+    if (stmt->is_ptr) {
+      stmt->ret_type.set_is_pointer(true);
+    }
   }
 
   void visit(ReturnStmt *stmt) override {

@@ -39,14 +39,22 @@ class LaunchContextBuilder {
   template <typename T>
   void set_grad_arg(int i, T v);
 
+  // The following two functions can be used to set struct args and primitive
+  // args. The first element of `arg_indices` is the index of the argument. The
+  // rest of the elements are the index of the field in each depth of the nested
+  // struct.
+
   template <typename T>
-  void set_struct_arg(std::vector<int> index, T v);
+  void set_struct_arg_impl(std::vector<int> arg_indices, T v);
+
+  template <typename T>
+  void set_struct_arg(std::vector<int> arg_indices, T v);
 
   template <typename T>
   T get_arg(int i);
 
   template <typename T>
-  T get_struct_arg(std::vector<int> index);
+  T get_struct_arg(std::vector<int> arg_indices);
 
   template <typename T>
   T get_grad_arg(int i);

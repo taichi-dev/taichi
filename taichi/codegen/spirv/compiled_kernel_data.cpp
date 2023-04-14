@@ -31,7 +31,7 @@ CompiledKernelData::Err CompiledKernelData::load_impl(
   }
   try {
     liong::json::deserialize(liong::json::parse(file.metadata()),
-                             data_.metadata);
+                             data_.metadata, true);
   } catch (const liong::json::JsonException &) {
     return Err::kParseMetadataFailed;
   }

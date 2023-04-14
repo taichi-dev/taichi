@@ -48,7 +48,7 @@ CompiledKernelData::Err CompiledKernelData::load_impl(
     return Err::kArchNotMatched;
   }
   try {
-    liong::json::deserialize(liong::json::parse(file.metadata()), data_);
+    liong::json::deserialize(liong::json::parse(file.metadata()), data_, true);
   } catch (const liong::json::JsonException &) {
     return Err::kParseMetadataFailed;
   }

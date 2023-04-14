@@ -39,7 +39,6 @@ In Taichi, you can compose data structures similar to VDB and SPGrid with SNodes
 - Automatic memory access optimization.
 
 
-
 :::note
 **Backend compatibility**: The LLVM-based backends (CPU/CUDA) offer the full functionality for performing computations on spatially sparse data structures.
 Using sparse data structures on the Metal backend is now deprecated. The support for Dynamic SNode has been removed in v1.3.0,
@@ -214,7 +213,7 @@ Let's explain the meaning of these three lines of code:
 
 For example, we can use the `append` method to add data to `x`, and call the `length` function to get the actual length of `x`. Both functions must be called inside the kernel:
 
-```python
+```python cont
 @ti.kernel
 def add_data():
     for i in range(1000):
@@ -226,7 +225,7 @@ add_data()
 
 We can also call the `deactivate` method of `x` to clear the entire list, which is equivalent to restoring `x` to its uninitialized state:
 
-```python
+```python cont
 @ti.kernel
 def clear_data():
     x.deactivate()
@@ -253,7 +252,7 @@ Here, `ti.root.dense(ti.i, 10)` is a Dense SNode that represents a dense array o
 
 As with the one-dimensional case, you can dynamically add elements to the i-th list using `x[i].append()`, get the current length of the i-th list using `x[i].length()`, and clear the ith list using `x[i].deactivate()`.
 
-```python
+```python cont
 @ti.kernel
 def add_data():
     for i in range(10):

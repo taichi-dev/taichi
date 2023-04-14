@@ -238,14 +238,29 @@ TEST(Serialization, JsonSerde) {
   EXPECT_EQ(kCorrectJson, print(serialize(foo)));
 
   // Deserialize (correct)
-  deserialize(parse(kCorrectJson), t);
+  deserialize(parse(kCorrectJson), t, true);
   EXPECT_EQ(foo, t);
 
-  // Deserialize (wrong)
-  EXPECT_THROW(deserialize(parse(kWrongFieldNameJson), t), JsonException);
-  EXPECT_THROW(deserialize(parse(kWrongFieldTypeJson), t), JsonException);
-  EXPECT_THROW(deserialize(parse(kMissingFieldJson), t), JsonException);
-  EXPECT_THROW(deserialize(parse(kExtraFieldJson), t), JsonException);
+  // Deserialize (wrong, on strict mode)
+  EXPECT_THROW(deserialize(parse(kWrongFieldNameJson), t, true), JsonException);
+  EXPECT_THROW(deserialize(parse(kWrongFieldTypeJson), t, true), JsonException);
+  EXPECT_THROW(deserialize(parse(kMissingFieldJson), t, true), JsonException);
+  EXPECT_THROW(deserialize(parse(kExtraFieldJson), t, true), JsonException);
+
+  // Deserialize (wrong, but on non-strict mode)
+  t = Foo{};
+  deserialize(parse(kWrongFieldNameJson), t, false);  // no exception
+  EXPECT_EQ(foo.k, t.k);
+  EXPECT_EQ(-1, t.v);  // default value
+
+  t = Foo{};
+  deserialize(parse(kMissingFieldJson), t, false);  // no exception
+  EXPECT_EQ(foo.k, t.k);
+  EXPECT_EQ(-1, t.v);  // default value
+
+  t = Foo{};
+  deserialize(parse(kExtraFieldJson), t, false);  // no exception
+  EXPECT_EQ(foo, t);
 }
 
 }  // namespace

@@ -1425,7 +1425,7 @@ class MatrixType(CompoundType):
 
         return self._instantiate(entries)
 
-    def from_real_func_ret(self, func_ret, ret_index=()):
+    def from_taichi_object(self, func_ret, ret_index=()):
         return self([
             expr.Expr(
                 ti_python_core.make_get_element_expr(func_ret.ptr,

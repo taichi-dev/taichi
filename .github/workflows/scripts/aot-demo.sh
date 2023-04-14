@@ -30,6 +30,7 @@ function build-and-smoke-test-android-aot-demo {
     git clone --recursive --jobs=4 --depth=1 -b "$TAICHI_AOT_DEMO_BRANCH" "$TAICHI_AOT_DEMO_URL"
 
     # Install taichi-python
+    pip uninstall -y taichi taichi-nightly || true
     pip install /taichi-wheel/*.whl
 
     # Build Android Apps
@@ -57,16 +58,16 @@ function prepare-unity-build-env {
 
     export TAICHI_REPO_DIR=$(pwd)
 
-    setup-android-ndk-env
     git clone --reference-if-able /var/lib/git-cache -b "$TAICHI_UNITY2_BRANCH" "$TAICHI_UNITY2_URL"
     mkdir tu2-build
     pushd tu2-build
-    cmake ../taichi-unity2 -DTAICHI_C_API_INSTALL_DIR=$TAICHI_REPO_DIR/_skbuild/linux-x86_64-3.9/cmake-install/c_api $TAICHI_CMAKE_ARGS
+    cmake ../taichi-unity2 $TAICHI_CMAKE_ARGS
     cmake --build .
     popd
     cp tu2-build/bin/libtaichi_unity.so Taichi-UnityExample/Assets/Plugins/Android
 
     pushd Taichi-UnityExample
+    python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install /taichi-wheel/*.whl
     python3 scripts/implicit_fem.cgraph.py --aot
     popd
@@ -104,6 +105,7 @@ function build-and-test-headless-demo {
     pushd taichi
     python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
+    pip uninstall -y taichi taichi-nightly || true
     pip install /taichi-wheel/*.whl
     sudo chmod 0777 $HOME/.cache
     popd
@@ -151,6 +153,7 @@ function build-and-test-headless-demo-desktop {
     pushd taichi
     python3 .github/workflows/scripts/build.py wheel --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
+    python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install dist/*.whl
     popd
 

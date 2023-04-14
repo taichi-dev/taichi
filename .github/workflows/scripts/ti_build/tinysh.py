@@ -20,8 +20,53 @@ from .escapes import escape_codes
 IS_WINDOWS = platform.system() == 'Windows'
 
 if IS_WINDOWS:
+    import ctypes
+
     import mslex
     quote = mslex.quote
+
+    SW_SHOWNORMAL = 1
+    SEE_MASK_NOCLOSEPROCESS = 0x00000040
+    INFINITE = -1
+
+    class SHELLEXECUTEINFOW(ctypes.Structure):
+        _fields_ = [("cbSize", ctypes.c_uint32), ("fMask", ctypes.c_ulong),
+                    ("hwnd", ctypes.c_void_p), ("lpVerb", ctypes.c_wchar_p),
+                    ("lpFile", ctypes.c_wchar_p),
+                    ("lpParameters", ctypes.c_wchar_p),
+                    ("lpDirectory", ctypes.c_wchar_p), ("nShow", ctypes.c_int),
+                    ("hInstApp", ctypes.c_void_p),
+                    ("lpIDList", ctypes.c_void_p),
+                    ("lpClass", ctypes.c_wchar_p),
+                    ("hkeyClass", ctypes.c_void_p),
+                    ("dwHotKey", ctypes.c_uint32),
+                    ("DUMMYUNIONNAME", ctypes.c_void_p),
+                    ("hProcess", ctypes.c_void_p)]
+
+    def win32_is_user_admin():
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+    def win32_run_elevated(exe: str, params: str):
+        kernel32 = ctypes.windll.kernel32
+        shell32 = ctypes.windll.shell32
+
+        sei = SHELLEXECUTEINFOW()
+        sei.cbSize = ctypes.sizeof(SHELLEXECUTEINFOW)
+        sei.lpVerb = 'runas'
+        sei.lpFile = exe
+        sei.lpParameters = params
+        sei.nShow = SW_SHOWNORMAL
+        sei.fMask = SEE_MASK_NOCLOSEPROCESS
+
+        if not shell32.ShellExecuteExW(ctypes.byref(sei)):
+            raise ctypes.WinError()
+
+        hProcess = sei.hProcess
+        kernel32.WaitForSingleObject(hProcess, -1)
+        rc = ctypes.c_uint(-1)
+        kernel32.GetExitCodeProcess(hProcess, ctypes.byref(rc))
+        kernel32.CloseHandle(hProcess)
+        return rc.value
 else:
     import shlex
     quote = shlex.quote
@@ -38,9 +83,12 @@ class CommandFailed(Exception):
 
 ENVIRON_STACK = []
 PREFIX_STACK = []
+OPTIONS_STACK = []
 
 P = escape_codes['bold_purple']
 N = escape_codes['reset']
+
+pr = lambda *args: print(*args, file=sys.stderr, flush=True)
 
 
 class Command:
@@ -73,23 +121,38 @@ class Command:
         args = prefixes + args
         cmd = ' '.join([quote(v) for v in args])
 
-        print(f'{P}:: RUN {cmd}{N}', file=sys.stderr, flush=True)
+        pr(f'{P}:: RUN {cmd}{N}')
         if overlay:
-            print(f'{P}>> WITH ADDITIONAL ENVS:{N}',
-                  file=sys.stderr,
-                  flush=True)
+            pr(f'{P}>> WITH ADDITIONAL ENVS:{N}')
             for k, v in overlay.items():
-                print(f'{P}       {k}={v}{N}', file=sys.stderr, flush=True)
+                pr(f'{P}       {k}={v}{N}')
 
         env = os.environ.copy()
         env.update(overlay)
 
+        options = {}
+        for o in OPTIONS_STACK:
+            options.update(o)
+
         exe = shutil.which(args[0])
-        proc = subprocess.Popen(args, executable=exe, env=env)
-        code = proc.wait()
-        if code:
-            cmd = ' '.join([quote(v) for v in args])
-            raise CommandFailed(cmd, code)
+        assert exe, f'Cannot find executable {args[0]}'
+
+        runas = IS_WINDOWS and options.get('runas')
+        assert not (
+            runas and overlay
+        ), 'Cannot run with both elevated privileges and additional envs'
+
+        if runas and not win32_is_user_admin():
+            pr(f'{P}>> !! WITH ELEVATED PRIVILEGES !!{N}')
+            code = win32_run_elevated(exe,
+                                      ' '.join([quote(v) for v in args[1:]]))
+            if code:
+                raise CommandFailed(cmd, code)
+        else:
+            proc = subprocess.Popen(args, executable=exe, env=env)
+            code = proc.wait()
+            if code:
+                raise CommandFailed(cmd, code)
 
     def __repr__(self) -> str:
         return f"<Command '{shlex.join(self.args)}'>"
@@ -132,8 +195,12 @@ def prefix(*args: str):
 
 
 @contextmanager
-def _nop_contextmanager():
-    yield
+def with_options(options: Mapping[str, Any]):
+    try:
+        OPTIONS_STACK.append(options)
+        yield
+    finally:
+        OPTIONS_STACK.pop()
 
 
 def sudo():
@@ -141,7 +208,7 @@ def sudo():
     Wrap a command with sudo.
     '''
     if IS_WINDOWS:
-        return _nop_contextmanager()
+        return with_options({'runas': True})
     else:
         return prefix('sudo')
 

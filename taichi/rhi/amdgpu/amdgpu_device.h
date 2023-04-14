@@ -68,6 +68,7 @@ class AmdgpuDevice : public LlvmDevice {
 
   AllocInfo get_alloc_info(const DeviceAllocation handle);
 
+  AmdgpuDevice();
   ~AmdgpuDevice() override{};
 
   RhiResult allocate_memory(const AllocParams &params,
@@ -110,7 +111,6 @@ class AmdgpuDevice : public LlvmDevice {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
-  std::unique_ptr<CachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace amdgpu

@@ -24,61 +24,61 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   ctx.get_context().runtime = executor->get_llvm_runtime();
 
   bool transferred = false;
-  for (int i = 0; i < (int)parameters.size(); i++) {
-    if (parameters[i].is_array) {
-      const auto arr_sz = ctx.array_runtime_sizes[i];
-      if (arr_sz == 0) {
-        continue;
+  for (auto &[v_arg_id, arg_ptr] : ctx.array_ptrs) {
+    int arg_id = v_arg_id[0];
+    const auto arr_sz = ctx.array_runtime_sizes[arg_id];
+    if (arr_sz == 0) {
+      continue;
+    }
+    arg_buffers[arg_id] = arg_ptr;
+    if (ctx.device_allocation_type[arg_id] ==
+        LaunchContextBuilder::DevAllocType::kNone) {
+      // Note: both numpy and PyTorch support arrays/tensors with zeros
+      // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+      // `arr_sz` zero.
+      unsigned int attr_val = 0;
+      uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
+          &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+          (void *)arg_buffers[arg_id]);
+
+      if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
+        // Copy to device buffer if arg is on host
+        // - ret_code != CUDA_SUCCESS:
+        //   arg_buffers[i] is not on device
+        // - attr_val != CU_MEMORYTYPE_DEVICE:
+        //   Cuda driver is aware of arg_buffers[i] but it might be on
+        //   host.
+        // See CUDA driver API `cuPointerGetAttribute` for more details.
+        transferred = true;
+
+        DeviceAllocation devalloc = executor->allocate_memory_ndarray(
+            arr_sz, (uint64 *)device_result_buffer);
+        device_buffers[arg_id] = executor->get_ndarray_alloc_info_ptr(devalloc);
+        temporary_devallocs[arg_id] = devalloc;
+
+        CUDADriver::get_instance().memcpy_host_to_device(
+            (void *)device_buffers[arg_id], arg_buffers[arg_id], arr_sz);
+      } else {
+        device_buffers[arg_id] = arg_buffers[arg_id];
       }
-      arg_buffers[i] = ctx.array_ptrs[{i}];
-      if (ctx.device_allocation_type[i] ==
-          LaunchContextBuilder::DevAllocType::kNone) {
-        // Note: both numpy and PyTorch support arrays/tensors with zeros
-        // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-        // `arr_sz` zero.
-        unsigned int attr_val = 0;
-        uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
-            &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-            (void *)arg_buffers[i]);
+      // device_buffers[i] saves a raw ptr on CUDA device.
+      ctx.set_struct_arg({arg_id, 0}, (uint64)device_buffers[arg_id]);
 
-        if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-          // Copy to device buffer if arg is on host
-          // - ret_code != CUDA_SUCCESS:
-          //   arg_buffers[i] is not on device
-          // - attr_val != CU_MEMORYTYPE_DEVICE:
-          //   Cuda driver is aware of arg_buffers[i] but it might be on
-          //   host.
-          // See CUDA driver API `cuPointerGetAttribute` for more details.
-          transferred = true;
+    } else if (arr_sz > 0) {
+      // arg_buffers[i] is a DeviceAllocation*
+      // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
+      // since it's shared by cpu and cuda.
+      DeviceAllocation *ptr =
+          static_cast<DeviceAllocation *>(arg_buffers[arg_id]);
+      device_buffers[arg_id] = executor->get_ndarray_alloc_info_ptr(*ptr);
+      // We compare arg_buffers[i] and device_buffers[i] later to check
+      // if transfer happened.
+      // TODO: this logic can be improved but I'll leave it to a followup
+      // PR.
+      arg_buffers[arg_id] = device_buffers[arg_id];
 
-          DeviceAllocation devalloc = executor->allocate_memory_ndarray(
-              arr_sz, (uint64 *)device_result_buffer);
-          device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
-          temporary_devallocs[i] = devalloc;
-
-          CUDADriver::get_instance().memcpy_host_to_device(
-              (void *)device_buffers[i], arg_buffers[i], arr_sz);
-        } else {
-          device_buffers[i] = arg_buffers[i];
-        }
-        // device_buffers[i] saves a raw ptr on CUDA device.
-        ctx.set_arg(i, (uint64)device_buffers[i]);
-
-      } else if (arr_sz > 0) {
-        // arg_buffers[i] is a DeviceAllocation*
-        // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
-        // since it's shared by cpu and cuda.
-        DeviceAllocation *ptr = static_cast<DeviceAllocation *>(arg_buffers[i]);
-        device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
-        // We compare arg_buffers[i] and device_buffers[i] later to check
-        // if transfer happened.
-        // TODO: this logic can be improved but I'll leave it to a followup
-        // PR.
-        arg_buffers[i] = device_buffers[i];
-
-        // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-        ctx.set_arg(i, (uint64)device_buffers[i]);
-      }
+      // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
+      ctx.set_struct_arg({arg_id, 0}, (uint64)device_buffers[arg_id]);
     }
   }
   if (transferred) {

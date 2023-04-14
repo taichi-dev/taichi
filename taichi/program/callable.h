@@ -113,6 +113,10 @@ class TI_DLL_EXPORT Callable : public CallableBase {
                        int total_dim,
                        std::vector<int> element_shape,
                        const std::string &name = "");
+  int insert_ndarray_param(const DataType &dt,
+                           int total_dim,
+                           std::vector<int> element_shape,
+                           const std::string &name = "");
   int insert_texture_param(int total_dim, const std::string &name = "");
   int insert_pointer_param(const DataType &dt, const std::string &name = "");
   int insert_rw_texture_param(int total_dim,

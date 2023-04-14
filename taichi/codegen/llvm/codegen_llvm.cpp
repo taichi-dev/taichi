@@ -1839,6 +1839,13 @@ void TaskCodeGenLLVM::visit(MatrixPtrStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
+  // Index into ndarray struct
+  auto *struct_type =
+      tlctx->get_data_type(stmt->base_ptr->ret_type.ptr_removed());
+  std::vector<llvm::Value *> index(2, tlctx->get_constant(0));
+  auto *gep = builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr], index);
+  auto *val = builder->CreateLoad(tlctx->get_data_type(stmt->ret_type), gep);
+
   auto argload = stmt->base_ptr->as<ArgLoadStmt>();
   auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
@@ -1898,13 +1905,14 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     However, this does not fit with Taichi's Ndarray semantics. We will have to
     do pointer arithmetics to manually calculate the offset.
   */
-  DataType operand_dtype = argload->ret_type.ptr_removed();
+  DataType operand_dtype = stmt->base_ptr->ret_type.ptr_removed()
+                               ->as<StructType>()
+                               ->get_element_type({0});
   if (operand_dtype->is<TensorType>()) {
     // Access PtrOffset via: base_ptr + offset * sizeof(element)
     auto primitive_type = operand_dtype.get_element_type();
     auto primitive_ptr = builder->CreateBitCast(
-        llvm_val[stmt->base_ptr],
-        llvm::PointerType::get(tlctx->get_data_type(primitive_type), 0));
+        val, llvm::PointerType::get(tlctx->get_data_type(primitive_type), 0));
 
     auto address_offset = builder->CreateSExt(
         linear_index, llvm::Type::getInt64Ty(*llvm_context));
@@ -1931,8 +1939,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 
   } else {
     auto base_ty = tlctx->get_data_type(dt);
-    auto base = builder->CreateBitCast(llvm_val[stmt->base_ptr],
-                                       llvm::PointerType::get(base_ty, 0));
+    auto base = builder->CreateBitCast(val, llvm::PointerType::get(base_ty, 0));
 
     llvm_val[stmt] = builder->CreateGEP(base_ty, base, linear_index);
   }

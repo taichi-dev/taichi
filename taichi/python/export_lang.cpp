@@ -679,6 +679,7 @@ void export_lang(py::module &m) {
            })
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
+      .def("insert_ndarray_param", &Kernel::insert_ndarray_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_pointer_param", &Kernel::insert_pointer_param)
       .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)

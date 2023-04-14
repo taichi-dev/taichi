@@ -18,7 +18,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
     if (parameters[i].is_array &&
         ctx.device_allocation_type[i] ==
             LaunchContextBuilder::DevAllocType::kNone) {
-      ctx.set_arg(i, (uint64)ctx.array_ptrs[{i}]);
+      ctx.set_struct_arg({i, 0}, (uint64)ctx.array_ptrs[{i}]);
     }
     if (parameters[i].is_array &&
         ctx.device_allocation_type[i] !=
@@ -27,7 +27,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       DeviceAllocation *ptr =
           static_cast<DeviceAllocation *>(ctx.array_ptrs[{i}]);
       uint64 host_ptr = (uint64)executor->get_ndarray_alloc_info_ptr(*ptr);
-      ctx.set_arg(i, host_ptr);
+      ctx.set_struct_arg({i, 0}, host_ptr);
       ctx.set_array_device_allocation_type(
           i, LaunchContextBuilder::DevAllocType::kNone);
 

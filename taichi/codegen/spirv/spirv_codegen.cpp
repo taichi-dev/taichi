@@ -589,6 +589,16 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(GetElementStmt *stmt) override {
+    spirv::Value val = ir_->query_value(stmt->src->raw_name());
+    const auto val_type = ir_->get_primitive_type(stmt->element_type());
+    const auto val_type_ptr =
+        ir_->get_pointer_type(val_type, spv::StorageClassUniform);
+    val = ir_->make_access_chain(val_type_ptr, val, stmt->index);
+    val = ir_->load_variable(val, val_type);
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(ReturnStmt *stmt) override {
     // Now we only support one ret
     auto dt = stmt->element_types()[0];
@@ -603,17 +613,6 @@ class TaskCodegen : public IRVisitor {
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
       ir_->store_variable(buffer_val, val);
     }
-  }
-
-  void visit(GetElementStmt *stmt) override {
-    auto src_val = ir_->query_value(stmt->src->raw_name());
-    auto ret_type = stmt->src->ret_type.ptr_removed()
-                        ->as<lang::StructType>()
-                        ->get_element_type(stmt->index);
-    auto ret_stype = ir_->get_primitive_type(ret_type);
-    spirv::Value val = ir_->make_value(spv::OpCompositeExtract, ret_stype,
-                                       src_val, stmt->index);
-    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {

@@ -76,6 +76,11 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
 }
 
 void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
+  // After reset, all allocations are invalid
+  if (allocations_.empty()) {
+    return;
+  }
+
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
   if (info.ptr == nullptr) {

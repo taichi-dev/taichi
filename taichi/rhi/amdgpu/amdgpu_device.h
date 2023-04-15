@@ -104,6 +104,10 @@ class AmdgpuDevice : public LlvmDevice {
 
   void wait_idle() override{TI_NOT_IMPLEMENTED};
 
+  void clear() override {
+    allocations_.clear();
+  }
+
  private:
   std::vector<AllocInfo> allocations_;
   void validate_device_alloc(const DeviceAllocation alloc) {

@@ -53,15 +53,17 @@ class SharedArray:
 
     def __init__(self, shape, dtype):
         if isinstance(shape, int):
-            self.shape = (shape,)
-        elif isinstance(shape, tuple) or isinstance(shape, list):
+            self.shape = (shape, )
+        elif (isinstance(shape, tuple) or isinstance(shape, list)) and all(
+                isinstance(s, int) for s in shape):
             self.shape = shape
         else:
             raise ValueError(
-                    f'ti.simt.block.shared_array shape must be an integer or a tuple of integers, but got {shape}'
+                f'ti.simt.block.shared_array shape must be an integer or a tuple of integers, but got {shape}'
             )
         self.dtype = dtype
-        self.shared_array_proxy = impl.expr_init_shared_array(self.shape, dtype)
+        self.shared_array_proxy = impl.expr_init_shared_array(
+            self.shape, dtype)
 
     @taichi_scope
     def subscript(self, *indices):

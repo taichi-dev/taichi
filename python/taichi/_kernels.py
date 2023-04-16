@@ -43,17 +43,18 @@ def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
 
 
 @kernel
-def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(),
-                       arr: ndarray_type.ndarray()):
+def ndarray_to_ext_arr(ndarray: ndarray_type.ndarray(), arr: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         arr[I] = ndarray[I]
 
 
 @kernel
-def ndarray_matrix_to_ext_arr(ndarray: ndarray_type.ndarray(),
-                              arr: ndarray_type.ndarray(),
-                              layout_is_aos: template(),
-                              as_vector: template()):
+def ndarray_matrix_to_ext_arr(
+    ndarray: ndarray_type.ndarray(),
+    arr: ndarray_type.ndarray(),
+    layout_is_aos: template(),
+    as_vector: template(),
+):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             if static(as_vector):
@@ -83,7 +84,7 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
 
         idx = j * img.shape[0] + i
         # We use i32 for |out| since OpenGL and Metal doesn't support u8 types
-        if static(get_os_name() != 'osx'):
+        if static(get_os_name() != "osx"):
             out[idx] = (r << 16) + (g << 8) + b
         else:
             # What's -16777216?
@@ -127,24 +128,24 @@ def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
 
 
 @kernel
-def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(),
-                       other: ndarray_type.ndarray()):
+def ndarray_to_ndarray(ndarray: ndarray_type.ndarray(), other: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = other[I]
 
 
 @kernel
-def ext_arr_to_ndarray(arr: ndarray_type.ndarray(),
-                       ndarray: ndarray_type.ndarray()):
+def ext_arr_to_ndarray(arr: ndarray_type.ndarray(), ndarray: ndarray_type.ndarray()):
     for I in grouped(ndarray):
         ndarray[I] = arr[I]
 
 
 @kernel
-def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
-                              ndarray: ndarray_type.ndarray(),
-                              layout_is_aos: template(),
-                              as_vector: template()):
+def ext_arr_to_ndarray_matrix(
+    arr: ndarray_type.ndarray(),
+    ndarray: ndarray_type.ndarray(),
+    layout_is_aos: template(),
+    as_vector: template(),
+):
     for I in grouped(ndarray):
         for p in static(range(ndarray[I].n)):
             if static(as_vector):
@@ -161,8 +162,9 @@ def ext_arr_to_ndarray_matrix(arr: ndarray_type.ndarray(),
 
 
 @kernel
-def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
-                      as_vector: template()):
+def matrix_to_ext_arr(
+    mat: template(), arr: ndarray_type.ndarray(), as_vector: template()
+):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
@@ -179,8 +181,9 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(),
 
 
 @kernel
-def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
-                      as_vector: template()):
+def ext_arr_to_matrix(
+    arr: ndarray_type.ndarray(), mat: template(), as_vector: template()
+):
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
@@ -202,8 +205,9 @@ def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(),
 #  h]). And the height-order of vulkan layout is flip up-down.(So take
 # [size = (h - 1 - j) * w + i] to get the index)
 @kernel
-def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(),
-                                           normal_arr: ndarray_type.ndarray()):
+def arr_vulkan_layout_to_arr_normal_layout(
+    vk_arr: ndarray_type.ndarray(), normal_arr: ndarray_type.ndarray()
+):
     static_assert(len(normal_arr.shape) == 2)
     w = normal_arr.shape[0]
     h = normal_arr.shape[1]
@@ -214,8 +218,9 @@ def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(),
 # extract ndarray of raw vulkan memory layout into a taichi-field data
 # structure with normal memory layout.
 @kernel
-def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(),
-                                             normal_field: template()):
+def arr_vulkan_layout_to_field_normal_layout(
+    vk_arr: ndarray_type.ndarray(), normal_field: template()
+):
     static_assert(len(normal_field.shape) == 2)
     w = normal_field.shape[0]
     h = normal_field.shape[1]
@@ -256,30 +261,37 @@ def snode_deactivate_dynamic(b: template()):
 
 
 @kernel
-def load_texture_from_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                         fmt=Format.rgba8,
-                                                         lod=0),
-                            img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
+def load_texture_from_numpy(
+    tex: texture_type.rw_texture(num_dimensions=2, fmt=Format.rgba8, lod=0),
+    img: ndarray_type.ndarray(dtype=vec3, ndim=2),
+):
     for i, j in img:
         tex.store(
             vector(2, i32)([i, j]),
-            vector(4, f32)([img[i, j][0], img[i, j][1], img[i, j][2], 0]) /
-            255.)
+            vector(4, f32)([img[i, j][0], img[i, j][1], img[i, j][2], 0]) / 255.0,
+        )
 
 
 @kernel
-def save_texture_to_numpy(tex: texture_type.rw_texture(num_dimensions=2,
-                                                       fmt=Format.rgba8,
-                                                       lod=0),
-                          img: ndarray_type.ndarray(dtype=vec3, ndim=2)):
+def save_texture_to_numpy(
+    tex: texture_type.rw_texture(num_dimensions=2, fmt=Format.rgba8, lod=0),
+    img: ndarray_type.ndarray(dtype=vec3, ndim=2),
+):
     for i, j in img:
         img[i, j] = ops.round(tex.load(vector(2, i32)([i, j])).rgb * 255)
 
 
 # Odd-even merge sort
 @kernel
-def sort_stage(keys: template(), use_values: int, values: template(), N: int,
-               p: int, k: int, invocations: int):
+def sort_stage(
+    keys: template(),
+    use_values: int,
+    values: template(),
+    N: int,
+    p: int,
+    k: int,
+    invocations: int,
+):
     for inv in range(invocations):
         j = k % p + inv * 2 * k
         for i in range(0, ops.min(k, N - j - k)):
@@ -328,8 +340,13 @@ def warp_shfl_up_i32(val: template()):
 
 
 @kernel
-def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
-                       single_block: template(), inclusive_add: template()):
+def scan_add_inclusive(
+    arr_in: template(),
+    in_beg: i32,
+    in_end: i32,
+    single_block: template(),
+    inclusive_add: template(),
+):
     WARP_SZ = 32
     BLOCK_SZ = 64
     loop_config(block_dim=64)
@@ -341,7 +358,7 @@ def scan_add_inclusive(arr_in: template(), in_beg: i32, in_end: i32,
         lane_id = thread_id % WARP_SZ
         warp_id = thread_id // WARP_SZ
 
-        pad_shared = block.SharedArray((65, ), i32)
+        pad_shared = block.SharedArray((65,), i32)
 
         val = inclusive_add(val)
         block.sync()
@@ -380,7 +397,6 @@ def uniform_add(arr_in: template(), in_beg: i32, in_end: i32):
 
 
 @kernel
-def blit_from_field_to_field(
-        dst: template(), src: template(), offset: i32, size: i32):
+def blit_from_field_to_field(dst: template(), src: template(), offset: i32, size: i32):
     for i in range(size):
         dst[i + offset] = src[i]

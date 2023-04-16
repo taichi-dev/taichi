@@ -19,13 +19,11 @@ v = ti.Vector.field(2, dtype=ti.f32, shape=max_num_particles)
 f = ti.Vector.field(2, dtype=ti.f32, shape=max_num_particles)
 fixed = ti.field(dtype=ti.i32, shape=max_num_particles)
 
-indices = ti.field(dtype=ti.i32,
-                   shape=max_num_particles * max_num_particles * 2)
+indices = ti.field(dtype=ti.i32, shape=max_num_particles * max_num_particles * 2)
 per_vertex_color = ti.Vector.field(3, ti.f32, shape=max_num_particles)
 
 # rest_length[i, j] == 0 means i and j are NOT connected
-rest_length = ti.field(dtype=ti.f32,
-                       shape=(max_num_particles, max_num_particles))
+rest_length = ti.field(dtype=ti.f32, shape=(max_num_particles, max_num_particles))
 
 
 @ti.kernel
@@ -42,8 +40,7 @@ def substep():
                 d = x_ij.normalized()
 
                 # Spring force
-                f[i] += -spring_Y[None] * (x_ij.norm() / rest_length[i, j] -
-                                           1) * d
+                f[i] += -spring_Y[None] * (x_ij.norm() / rest_length[i, j] - 1) * d
 
                 # Dashpot damping
                 v_rel = (v[i] - v[j]).dot(d)
@@ -120,8 +117,7 @@ def render():
 
 
 def main():
-    window = ti.ui.Window('Explicit Mass Spring System', (768, 768),
-                          vsync=True)
+    window = ti.ui.Window("Explicit Mass Spring System", (768, 768), vsync=True)
     canvas = window.get_canvas()
     gui = window.get_gui()
 
@@ -141,9 +137,8 @@ def main():
                 paused[None] = not paused[None]
             elif e.key == ti.ui.LMB:
                 pos = window.get_cursor_pos()
-                new_particle(pos[0], pos[1],
-                             int(window.is_pressed(ti.ui.SHIFT)))
-            elif e.key == 'c':
+                new_particle(pos[0], pos[1], int(window.is_pressed(ti.ui.SHIFT)))
+            elif e.key == "c":
                 num_particles[None] = 0
                 rest_length.fill(0)
 
@@ -165,16 +160,18 @@ def main():
                 "Left click: add mass point (with shift to fix); Right click: attract"
             )
             w.text("C: clear all; Space: pause")
-            spring_Y[None] = w.slider_float("Spring Young's modulus",
-                                            spring_Y[None], 100, 10000)
-            drag_damping[None] = w.slider_float("Drag damping",
-                                                drag_damping[None], 0.0, 10)
-            dashpot_damping[None] = w.slider_float("Dashpot damping",
-                                                   dashpot_damping[None], 10,
-                                                   1000)
+            spring_Y[None] = w.slider_float(
+                "Spring Young's modulus", spring_Y[None], 100, 10000
+            )
+            drag_damping[None] = w.slider_float(
+                "Drag damping", drag_damping[None], 0.0, 10
+            )
+            dashpot_damping[None] = w.slider_float(
+                "Dashpot damping", dashpot_damping[None], 10, 1000
+            )
 
         window.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

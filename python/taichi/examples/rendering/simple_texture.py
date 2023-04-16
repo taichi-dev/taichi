@@ -12,8 +12,9 @@ texture = ti.Texture(ti.Format.r32f, (k, k))
 
 
 @ti.kernel
-def make_texture(tex: ti.types.rw_texture(
-    num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
+def make_texture(
+    tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32
+):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
@@ -23,9 +24,7 @@ def make_texture(tex: ti.types.rw_texture(
 def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2), n: ti.i32):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
-        warp_uv = uv + ti.Vector(
-            [ti.cos(t + uv.x * 5.0),
-             ti.sin(t + uv.y * 5.0)]) * 0.1
+        warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
         c = ti.math.vec4(0.0)
         if uv.x > 0.5:
             c = tex.sample_lod(warp_uv, 0.0)
@@ -35,7 +34,7 @@ def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2), n: ti.i32):
 
 
 def main():
-    window = ti.ui.Window('UV', res)
+    window = ti.ui.Window("UV", res)
     canvas = window.get_canvas()
 
     t = 0.0
@@ -47,5 +46,5 @@ def main():
         t += 0.03
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -7,7 +7,7 @@ dt = 1e-4
 dx = 1 / N
 rho = 4e1
 NF = 2 * N**2  # number of faces
-NV = (N + 1)**2  # number of vertices
+NV = (N + 1) ** 2  # number of vertices
 E, nu = 4e4, 0.2  # Young's modulus and Poisson's ratio
 mu, lam = E / 2 / (1 + nu), E * nu / (1 + nu) / (1 - 2 * nu)  # Lame parameters
 ball_pos, ball_radius = ti.Vector([0.5, 0.0]), 0.32
@@ -92,21 +92,21 @@ def init_mesh():
 def main():
     init_mesh()
     init_pos()
-    gui = ti.GUI('FEM99')
+    gui = ti.GUI("FEM99")
     while gui.running:
         for e in gui.get_events():
             if e.key == gui.ESCAPE:
                 gui.running = False
-            elif e.key == 'r':
+            elif e.key == "r":
                 init_pos()
         for i in range(30):
             with ti.ad.Tape(loss=U):
                 update_U()
             advance()
-        gui.circles(pos.to_numpy(), radius=2, color=0xffaa33)
+        gui.circles(pos.to_numpy(), radius=2, color=0xFFAA33)
         gui.circle(ball_pos, radius=ball_radius * 512, color=0x666666)
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

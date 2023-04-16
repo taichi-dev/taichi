@@ -33,6 +33,7 @@ def grad_test(tifunc, npfunc=None):
 
 def test_unary():
     import time
+
     t = time.time()
     grad_test(lambda x: ti.sqrt(x), lambda x: np.sqrt(x))
     grad_test(lambda x: ti.exp(x), lambda x: np.exp(x))

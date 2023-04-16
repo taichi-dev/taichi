@@ -36,10 +36,9 @@ def test_ad_sum_fwd():
         assert p.dual[i] == b[i]
         assert a.dual[i] == 0
 
-    with ti.ad.FwdMode(loss=p,
-                       param=a,
-                       seed=[1.0 for _ in range(N)],
-                       clear_gradients=False):
+    with ti.ad.FwdMode(
+        loss=p, param=a, seed=[1.0 for _ in range(N)], clear_gradients=False
+    ):
         pass
 
     for i in range(N):
@@ -100,10 +99,10 @@ def test_ad_power_fwd():
         power()
 
     for i in range(N):
-        assert p[i] == 3**b[i]
+        assert p[i] == 3 ** b[i]
 
     for i in range(N):
-        assert p.dual[i] == b[i] * 3**(b[i] - 1)
+        assert p.dual[i] == b[i] * 3 ** (b[i] - 1)
 
 
 @test_utils.test(exclude=archs_excluded_fwd)
@@ -207,7 +206,7 @@ def test_double_for_loops():
         double_for()
 
     for i in range(N):
-        assert f.dual[i] == 2 * i * i * 2**(i - 1)
+        assert f.dual[i] == 2 * i * i * 2 ** (i - 1)
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
         double_for()
@@ -247,7 +246,7 @@ def test_double_for_loops_more_nests():
 
     for i in range(N):
         for k in range(N // 2):
-            assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
+            assert f[i, k] == 2 * (i + k) * (1 + 2 ** (i + k))
 
     with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         double_for()
@@ -255,7 +254,7 @@ def test_double_for_loops_more_nests():
     for i in range(N):
         total_grad_a = 0
         for k in range(N // 2):
-            total_grad_a = 2 * (i + k)**2 * 2**(i + k - 1)
+            total_grad_a = 2 * (i + k) ** 2 * 2 ** (i + k - 1)
             assert f.dual[i, k] == total_grad_a
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
@@ -345,7 +344,7 @@ def test_triple_for_loops_bls():
 
     for i in range(N - M):
         for k in range(N):
-            assert f.dual[i, k] == 2 * M * M * 2**(M - 1)
+            assert f.dual[i, k] == 2 * M * M * 2 ** (M - 1)
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(2 * N)]):
         triple_for()

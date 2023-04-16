@@ -4,8 +4,7 @@ import os
 
 import numpy as np
 import taichi.lang
-from taichi._kernels import (tensor_to_image, vector_to_fast_image,
-                             vector_to_image)
+from taichi._kernels import tensor_to_image, vector_to_fast_image, vector_to_image
 from taichi._lib import core as _ti_core
 from taichi.lang.field import Field, ScalarField
 
@@ -33,6 +32,7 @@ class GUI:
         :class:`~taichi.misc.gui.GUI` :The created taichi GUI object.
 
     """
+
     class Event:
         """Class for holding a gui event.
 
@@ -44,6 +44,7 @@ class GUI:
         + key (event key)
         + delta (for holding mouse wheel)
         """
+
         def __init__(self):
             self.type = None
             self.modifier = None
@@ -52,41 +53,43 @@ class GUI:
             self.delta = None
 
     # Event keys
-    SHIFT = 'Shift'
-    ALT = 'Alt'
-    CTRL = 'Control'
-    ESCAPE = 'Escape'
-    RETURN = 'Return'
-    TAB = 'Tab'
-    BACKSPACE = 'BackSpace'
-    SPACE = ' '
-    UP = 'Up'
-    DOWN = 'Down'
-    LEFT = 'Left'
-    RIGHT = 'Right'
-    CAPSLOCK = 'Caps_Lock'
-    LMB = 'LMB'
-    MMB = 'MMB'
-    RMB = 'RMB'
-    EXIT = 'WMClose'
-    WHEEL = 'Wheel'
-    MOVE = 'Motion'
+    SHIFT = "Shift"
+    ALT = "Alt"
+    CTRL = "Control"
+    ESCAPE = "Escape"
+    RETURN = "Return"
+    TAB = "Tab"
+    BACKSPACE = "BackSpace"
+    SPACE = " "
+    UP = "Up"
+    DOWN = "Down"
+    LEFT = "Left"
+    RIGHT = "Right"
+    CAPSLOCK = "Caps_Lock"
+    LMB = "LMB"
+    MMB = "MMB"
+    RMB = "RMB"
+    EXIT = "WMClose"
+    WHEEL = "Wheel"
+    MOVE = "Motion"
 
     # Event types
     MOTION = _ti_core.KeyEvent.EType.Move
     PRESS = _ti_core.KeyEvent.EType.Press
     RELEASE = _ti_core.KeyEvent.EType.Release
 
-    def __init__(self,
-                 name='Taichi',
-                 res=512,
-                 background_color=0x0,
-                 show_gui=True,
-                 fullscreen=False,
-                 fast_gui=False):
-        show_gui = self.get_bool_environ('TI_GUI_SHOW', show_gui)
-        fullscreen = self.get_bool_environ('TI_GUI_FULLSCREEN', fullscreen)
-        fast_gui = self.get_bool_environ('TI_GUI_FAST', fast_gui)
+    def __init__(
+        self,
+        name="Taichi",
+        res=512,
+        background_color=0x0,
+        show_gui=True,
+        fullscreen=False,
+        fast_gui=False,
+    ):
+        show_gui = self.get_bool_environ("TI_GUI_SHOW", show_gui)
+        fullscreen = self.get_bool_environ("TI_GUI_FULLSCREEN", fullscreen)
+        fast_gui = self.get_bool_environ("TI_GUI_FAST", fast_gui)
 
         self.name = name
         if isinstance(res, numbers.Number):
@@ -95,15 +98,16 @@ class GUI:
         self.fast_gui = fast_gui
         if fast_gui:
             self.img = np.ascontiguousarray(
-                np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
+                np.zeros(self.res[0] * self.res[1], dtype=np.uint32)
+            )
             fast_buf = self.img.ctypes.data
         else:
             # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
-            self.img = np.ascontiguousarray(
-                np.zeros(self.res + (4, ), np.float32))
+            self.img = np.ascontiguousarray(np.zeros(self.res + (4,), np.float32))
             fast_buf = 0
-        self.core = _ti_core.GUI(name, core_veci(*res), show_gui, fullscreen,
-                                 fast_gui, fast_buf)
+        self.core = _ti_core.GUI(
+            name, core_veci(*res), show_gui, fullscreen, fast_gui, fast_buf
+        )
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -135,8 +139,8 @@ class GUI:
     # Widget system
 
     class WidgetValue:
-        """Class for maintaining id of gui widgets.
-        """
+        """Class for maintaining id of gui widgets."""
+
         def __init__(self, gui, wid):
             self.gui = gui
             self.wid = wid
@@ -204,7 +208,7 @@ class GUI:
             The event name associated with created button.
 
         """
-        event_name = event_name or f'WidgetButton_{text}'
+        event_name = event_name or f"WidgetButton_{text}"
         self.core.make_button(text, event_name)
         return event_name
 
@@ -234,8 +238,7 @@ class GUI:
         elif img.dtype in [np.float16, np.float32, np.float64]:
             img = img.astype(np.float32)
         else:
-            raise ValueError(
-                f'Data type {img.dtype} not supported in GUI.set_image')
+            raise ValueError(f"Data type {img.dtype} not supported in GUI.set_image")
 
         if len(img.shape) == 2:
             img = img[..., None]
@@ -296,14 +299,20 @@ class GUI:
         """
 
         if self.fast_gui:
-            assert isinstance(img, taichi.lang.matrix.MatrixField), \
-                "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
-            assert img.shape == self.res, \
-                "Image resolution does not match GUI resolution"
-            assert img.n in [3, 4] and img.m == 1, \
-                "Only RGB images are supported in GUI.set_image when fast_gui=True"
-            assert img.dtype in [ti.f32, ti.f64, ti.u8], \
-                "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
+            assert isinstance(
+                img, taichi.lang.matrix.MatrixField
+            ), "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
+            assert (
+                img.shape == self.res
+            ), "Image resolution does not match GUI resolution"
+            assert (
+                img.n in [3, 4] and img.m == 1
+            ), "Only RGB images are supported in GUI.set_image when fast_gui=True"
+            assert img.dtype in [
+                ti.f32,
+                ti.f64,
+                ti.u8,
+            ], "Only f32, f64, u8 are supported in GUI.set_image when fast_gui=True"
 
             vector_to_fast_image(img, self.img)
             return
@@ -314,8 +323,9 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape \
-                    == self.res, "Image resolution does not match GUI resolution"
+                assert (
+                    img.shape == self.res
+                ), "Image resolution does not match GUI resolution"
                 tensor_to_image(img, self.img)
                 ti.sync()
 
@@ -324,10 +334,12 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert img.shape == self.res, \
-                    "Image resolution does not match GUI resolution"
-                assert img.n in [2, 3, 4] and img.m == 1, \
-                    "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
+                assert (
+                    img.shape == self.res
+                ), "Image resolution does not match GUI resolution"
+                assert (
+                    img.n in [2, 3, 4] and img.m == 1
+                ), "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
 
                 vector_to_image(img, self.img)
                 ti.sync()
@@ -356,26 +368,29 @@ class GUI:
             Default is False.
         """
         try:
-            from matplotlib import \
-                cm  # pylint: disable=import-outside-toplevel
+            from matplotlib import cm  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise RuntimeError(
-                'Failed to import Matplotlib. Please install it via /\
-            `pip install matplotlib` first. ')
+                "Failed to import Matplotlib. Please install it via /\
+            `pip install matplotlib` first. "
+            )
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
-            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]),
-                               np.linspace(0, 1, self.res[0]))
+            x, y = np.meshgrid(
+                np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0])
+            )
             x_idx = x * (scalar_field_np.shape[1] - 1)
             y_idx = y * (scalar_field_np.shape[0] - 1)
             x1 = x_idx.astype(int)
             x2 = np.minimum(x1 + 1, scalar_field_np.shape[1] - 1)
             y1 = y_idx.astype(int)
             y2 = np.minimum(y1 + 1, scalar_field_np.shape[0] - 1)
-            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (1 - (y_idx - y1)) +\
-                scalar_field_np[y1, x2] * (x_idx - x1) * (1 - (y_idx - y1))
-            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (y_idx - y1) + \
-                scalar_field_np[y2, x2] * (x_idx - x1) * (y_idx - y1)
+            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (
+                1 - (y_idx - y1)
+            ) + scalar_field_np[y1, x2] * (x_idx - x1) * (1 - (y_idx - y1))
+            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (
+                y_idx - y1
+            ) + scalar_field_np[y2, x2] * (x_idx - x1) * (y_idx - y1)
             output = array_y1 + array_y2
         else:
             output = scalar_field_np
@@ -394,12 +409,9 @@ class GUI:
         """
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
-    def circles(self,
-                pos,
-                radius=1,
-                color=0xFFFFFF,
-                palette=None,
-                palette_indices=None):
+    def circles(
+        self, pos, radius=1, color=0xFFFFFF, palette=None, palette_indices=None
+    ):
         """Draws a list of circles on canvas.
 
         Args:
@@ -428,7 +440,7 @@ class GUI:
         pos_ptr = int(pos.ctypes.data)
 
         if isinstance(color, np.ndarray):
-            assert color.shape == (n, )
+            assert color.shape == (n,)
             color = np.ascontiguousarray(color.astype(np.uint32))
             color_array = int(color.ctypes.data)
             color_single = 0
@@ -436,43 +448,45 @@ class GUI:
             color_array = 0
             color_single = color
         else:
-            raise ValueError(
-                'Color must be an ndarray or int (e.g., 0x956333)')
+            raise ValueError("Color must be an ndarray or int (e.g., 0x956333)")
 
         if palette is not None:
-            assert palette_indices is not None, 'palette must be used together with palette_indices'
+            assert (
+                palette_indices is not None
+            ), "palette must be used together with palette_indices"
 
             if isinstance(palette_indices, Field):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
             elif isinstance(palette_indices, list) or isinstance(
-                    palette_indices, np.ndarray):
+                palette_indices, np.ndarray
+            ):
                 ind_int = np.array(palette_indices).astype(np.uint32)
             else:
                 try:
                     ind_int = np.array(palette_indices)
                 except:
                     raise TypeError(
-                        'palette_indices must be a type that can be converted to numpy.ndarray'
+                        "palette_indices must be a type that can be converted to numpy.ndarray"
                     )
 
             assert issubclass(
-                ind_int.dtype.type,
-                np.integer), 'palette_indices must be an integer array'
+                ind_int.dtype.type, np.integer
+            ), "palette_indices must be an integer array"
             assert ind_int.shape == (
                 n,
-            ), 'palette_indices must be in 1-d shape with shape (num_particles, )'
-            assert min(
-                ind_int
-            ) >= 0, 'the min of palette_indices must not be less than zero'
+            ), "palette_indices must be in 1-d shape with shape (num_particles, )"
+            assert (
+                min(ind_int) >= 0
+            ), "the min of palette_indices must not be less than zero"
             assert max(ind_int) < len(
                 palette
-            ), 'the max of palette_indices must not exceed the length of palette'
+            ), "the max of palette_indices must not exceed the length of palette"
             color_array = np.array(palette, dtype=np.uint32)[ind_int]
             color_array = np.ascontiguousarray(color_array)
             color_array = color_array.ctypes.data
 
         if isinstance(radius, np.ndarray):
-            assert radius.shape == (n, )
+            assert radius.shape == (n,)
             radius = np.ascontiguousarray(radius.astype(np.float32))
             radius_array = int(radius.ctypes.data)
             radius_single = 0
@@ -480,10 +494,11 @@ class GUI:
             radius_array = 0
             radius_single = radius
         else:
-            raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
+            raise ValueError("Radius must be an ndarray or float (e.g., 0.4)")
 
-        self.canvas.circles_batched(n, pos_ptr, color_single, color_array,
-                                    radius_single, radius_array)
+        self.canvas.circles_batched(
+            n, pos_ptr, color_single, color_array, radius_single, radius_array
+        )
 
     def triangles(self, a, b, c, color=0xFFFFFF):
         """Draws a list of triangles on canvas.
@@ -518,7 +533,7 @@ class GUI:
         c_ptr = int(c.ctypes.data)
 
         if isinstance(color, np.ndarray):
-            assert color.shape == (n, )
+            assert color.shape == (n,)
             color = np.ascontiguousarray(color.astype(np.uint32))
             color_array = int(color.ctypes.data)
             color_single = 0
@@ -526,11 +541,9 @@ class GUI:
             color_array = 0
             color_single = color
         else:
-            raise ValueError(
-                '"color" must be an ndarray or int (e.g., 0x956333)')
+            raise ValueError('"color" must be an ndarray or int (e.g., 0x956333)')
 
-        self.canvas.triangles_batched(n, a_ptr, b_ptr, c_ptr, color_single,
-                                      color_array)
+        self.canvas.triangles_batched(n, a_ptr, b_ptr, c_ptr, color_single, color_array)
 
     def triangle(self, a, b, c, color=0xFFFFFF):
         """Draws a single triangle on canvas.
@@ -574,7 +587,7 @@ class GUI:
         end_ptr = int(end.ctypes.data)
 
         if isinstance(color, np.ndarray):
-            assert color.shape == (n, )
+            assert color.shape == (n,)
             color = np.ascontiguousarray(color.astype(np.uint32))
             color_array = int(color.ctypes.data)
             color_single = 0
@@ -582,11 +595,10 @@ class GUI:
             color_array = 0
             color_single = color
         else:
-            raise ValueError(
-                'Color must be an ndarray or int (e.g., 0x956333)')
+            raise ValueError("Color must be an ndarray or int (e.g., 0x956333)")
 
         if isinstance(radius, np.ndarray):
-            assert radius.shape == (n, )
+            assert radius.shape == (n,)
             radius = np.ascontiguousarray(radius.astype(np.float32))
             radius_array = int(radius.ctypes.data)
             radius_single = 0
@@ -594,10 +606,17 @@ class GUI:
             radius_array = 0
             radius_single = radius
         else:
-            raise ValueError('Radius must be an ndarray or float (e.g., 0.4)')
+            raise ValueError("Radius must be an ndarray or float (e.g., 0.4)")
 
-        self.canvas.paths_batched(n, begin_ptr, end_ptr, color_single,
-                                  color_array, radius_single, radius_array)
+        self.canvas.paths_batched(
+            n,
+            begin_ptr,
+            end_ptr,
+            color_single,
+            color_array,
+            radius_single,
+            radius_array,
+        )
 
     def line(self, begin, end, radius=1, color=0xFFFFFF):
         """Draws a single line on canvas.
@@ -609,26 +628,26 @@ class GUI:
             color (int, optional): The color of line. Default is 0xFFFFFF.
 
         """
-        self.canvas.path_single(begin[0], begin[1], end[0], end[1], color,
-                                radius)
+        self.canvas.path_single(begin[0], begin[1], end[0], end[1], color, radius)
 
     @staticmethod
     def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
-        minor1 = np.array([
-            major[:, 0] * c - major[:, 1] * s,
-            major[:, 0] * s + major[:, 1] * c
-        ]).swapaxes(0, 1)
-        minor2 = np.array([
-            major[:, 0] * c + major[:, 1] * s,
-            -major[:, 0] * s + major[:, 1] * c
-        ]).swapaxes(0, 1)
+        minor1 = np.array(
+            [major[:, 0] * c - major[:, 1] * s, major[:, 0] * s + major[:, 1] * c]
+        ).swapaxes(0, 1)
+        minor2 = np.array(
+            [major[:, 0] * c + major[:, 1] * s, -major[:, 0] * s + major[:, 1] * c]
+        ).swapaxes(0, 1)
         end = orig + major
-        return [(orig, end), (end, end + minor1 * tip_scale),
-                (end, end + minor2 * tip_scale)]
+        return [
+            (orig, end),
+            (end, end + minor1 * tip_scale),
+            (end, end + minor2 * tip_scale),
+        ]
 
-    def arrows(self, orig, direction, radius=1, color=0xffffff, **kwargs):
+    def arrows(self, orig, direction, radius=1, color=0xFFFFFF, **kwargs):
         """Draw a list arrows on canvas.
 
         Args:
@@ -641,7 +660,7 @@ class GUI:
         for begin, end in self._arrow_to_lines(orig, direction, **kwargs):
             self.lines(begin, end, radius, color)
 
-    def arrow(self, orig, direction, radius=1, color=0xffffff, **kwargs):
+    def arrow(self, orig, direction, radius=1, color=0xFFFFFF, **kwargs):
         """Draws a single arrow on canvas.
 
         Args:
@@ -703,7 +722,7 @@ class GUI:
         base = base.swapaxes(0, 1).swapaxes(1, 2).swapaxes(0, 1)
         return base.reshape(w * h, 2)
 
-    def point_field(self, radius, color=0xffffff, bound=0.5):
+    def point_field(self, radius, color=0xFFFFFF, bound=0.5):
         """Draws a field of points on canvas.
 
         Args:
@@ -718,12 +737,7 @@ class GUI:
         radius = radius.reshape(radius.shape[0] * radius.shape[1])
         self.circles(base, radius=radius, color=color)
 
-    def arrow_field(self,
-                    direction,
-                    radius=1,
-                    color=0xffffff,
-                    bound=0.5,
-                    **kwargs):
+    def arrow_field(self, direction, radius=1, color=0xFFFFFF, bound=0.5, **kwargs):
         """Draw a field of arrows on canvas.
 
         Args:
@@ -735,10 +749,8 @@ class GUI:
         """
         assert len(direction.shape) == 3
         assert direction.shape[2] == 2
-        base = self._make_field_base(direction.shape[0], direction.shape[1],
-                                     bound)
-        direction = direction.reshape(direction.shape[0] * direction.shape[1],
-                                      2)
+        base = self._make_field_base(direction.shape[0], direction.shape[1], bound)
+        direction = direction.reshape(direction.shape[0] * direction.shape[1], 2)
         self.arrows(base, direction, radius=radius, color=color, **kwargs)
 
     def vector_field(self, vector_field, arrow_spacing=5, color=0xFFFFFF):
@@ -761,9 +773,10 @@ class GUI:
         x = np.arange(0, 1, arrow_spacing / nx)
         y = np.arange(0, 1, arrow_spacing / ny)
         X, Y = np.meshgrid(x, y)
-        begin = np.dstack((X, Y)).reshape(-1, 2, order='F')
-        incre = (v_np[::arrow_spacing,::arrow_spacing] \
-                 * scale_factor).reshape(-1, 2, order='C')
+        begin = np.dstack((X, Y)).reshape(-1, 2, order="F")
+        incre = (v_np[::arrow_spacing, ::arrow_spacing] * scale_factor).reshape(
+            -1, 2, order="C"
+        )
         self.arrows(orig=begin, direction=incre, radius=1, color=color)
 
     def show(self, file=None):
@@ -784,8 +797,8 @@ class GUI:
     # Event system
 
     class EventFilter:
-        """A set to store detected user events.
-        """
+        """A set to store detected user events."""
+
         def __init__(self, *e_filter):
             self.filter = set()
             for ent in e_filter:
@@ -795,8 +808,7 @@ class GUI:
                 self.filter.add(ent)
 
         def match(self, e):
-            """Check if a specified event `e` is among the detected events.
-            """
+            """Check if a specified event `e` is among the detected events."""
             if (e.type, e.key) in self.filter:
                 return True
             if e.type in self.filter:
@@ -868,7 +880,7 @@ class GUI:
         else:
             e.delta = (0, 0)
 
-        for mod in ['Shift', 'Alt', 'Control']:
+        for mod in ["Shift", "Alt", "Control"]:
             if self.is_pressed(mod):
                 e.modifier.append(mod)
 
@@ -890,8 +902,8 @@ class GUI:
             bool: whether or not any key among the specified keys is pressed.
         """
         for key in keys:
-            if key in ['Shift', 'Alt', 'Control']:
-                if key + '_L' in self.key_pressed or key + '_R' in self.key_pressed:
+            if key in ["Shift", "Alt", "Control"]:
+                if key + "_L" in self.key_pressed or key + "_R" in self.key_pressed:
                     return True
             if key in self.key_pressed:
                 return True
@@ -968,6 +980,7 @@ def rgb_to_hex(c):
     Returns:
         The hex representation of color.
     """
+
     def to255(x):
         return np.clip(np.int32(x * 255), 0, 255)
 
@@ -983,7 +996,7 @@ def hex_to_rgb(color):
     Returns:
         The rgb representation of color.
     """
-    r, g, b = (color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff
+    r, g, b = (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF
     return r / 255, g / 255, b / 255
 
 
@@ -999,8 +1012,7 @@ def core_veci(*args):
     if len(args) == 3:
         return _ti_core.Vector3i(int(args[0]), int(args[1]), int(args[2]))
     if len(args) == 4:
-        return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]),
-                                 int(args[3]))
+        return _ti_core.Vector4i(int(args[0]), int(args[1]), int(args[2]), int(args[3]))
     assert False, type(args[0])
 
 
@@ -1023,26 +1035,26 @@ def core_vec(*args):
         if len(args) == 2:
             return _ti_core.Vector2f(float(args[0]), float(args[1]))
         if len(args) == 3:
-            return _ti_core.Vector3f(float(args[0]), float(args[1]),
-                                     float(args[2]))
+            return _ti_core.Vector3f(float(args[0]), float(args[1]), float(args[2]))
         if len(args) == 4:
-            return _ti_core.Vector4f(float(args[0]), float(args[1]),
-                                     float(args[2]), float(args[3]))
+            return _ti_core.Vector4f(
+                float(args[0]), float(args[1]), float(args[2]), float(args[3])
+            )
         assert False, type(args[0])
     else:
         if len(args) == 2:
             return _ti_core.Vector2d(float(args[0]), float(args[1]))
         if len(args) == 3:
-            return _ti_core.Vector3d(float(args[0]), float(args[1]),
-                                     float(args[2]))
+            return _ti_core.Vector3d(float(args[0]), float(args[1]), float(args[2]))
         if len(args) == 4:
-            return _ti_core.Vector4d(float(args[0]), float(args[1]),
-                                     float(args[2]), float(args[3]))
+            return _ti_core.Vector4d(
+                float(args[0]), float(args[1]), float(args[2]), float(args[3])
+            )
         assert False, type(args[0])
 
 
 __all__ = [
-    'GUI',
-    'rgb_to_hex',
-    'hex_to_rgb',
+    "GUI",
+    "rgb_to_hex",
+    "hex_to_rgb",
 ]

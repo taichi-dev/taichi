@@ -13,7 +13,7 @@ L = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
 @ti.kernel
 def reduce():
     for i in range(n):
-        L[None] += 0.5 * (x[i] - y[i])**2
+        L[None] += 0.5 * (x[i] - y[i]) ** 2
 
 
 @ti.kernel
@@ -32,7 +32,7 @@ def main():
     for k in range(100):
         with ti.ad.Tape(loss=L):
             reduce()
-        print('Loss =', L[None])
+        print("Loss =", L[None])
         gradient_descent()
 
     for i in range(n):
@@ -40,5 +40,5 @@ def main():
         print(x[i], y[i])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

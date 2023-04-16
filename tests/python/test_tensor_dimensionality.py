@@ -7,7 +7,7 @@ from tests import test_utils
 @pytest.mark.parametrize("d", range(2, ti._lib.core.get_max_num_indices() + 1))
 @test_utils.test()
 def test_dimensionality(d):
-    x = ti.Vector.field(2, dtype=ti.i32, shape=(2, ) * d)
+    x = ti.Vector.field(2, dtype=ti.i32, shape=(2,) * d)
 
     @ti.kernel
     def fill():

@@ -27,5 +27,5 @@ def main():
             assert x[i, j] == (j * j if j < i else 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -2,7 +2,6 @@
 
 #include "taichi/aot/module_builder.h"
 #include "taichi/ir/statements.h"
-#include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"

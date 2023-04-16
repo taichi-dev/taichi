@@ -1262,7 +1262,7 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
   if (!stmt->is_grad) {
-    llvm_val[stmt] = get_struct_arg({stmt->arg_id});
+    llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
     return;
   }
 
@@ -1954,9 +1954,8 @@ std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
       llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                               {llvm::PointerType::get(context_ty, 0)}, false);
 
-  auto task_kernel_name =
-      fmt::format("{}_{}_{}_{}{}", kernel_name, task_codegen_id, task_counter++,
-                  stmt->task_name(), suffix);
+  auto task_kernel_name = fmt::format(
+      "{}_{}_{}{}", kernel_name, task_codegen_id, stmt->task_name(), suffix);
   func = llvm::Function::Create(task_function_type,
                                 llvm::Function::ExternalLinkage,
                                 task_kernel_name, module.get());
@@ -2543,6 +2542,13 @@ void TaskCodeGenLLVM::initialize_context() {
   TI_ASSERT(tlctx != nullptr);
   llvm_context = tlctx->get_this_thread_context();
   builder = std::make_unique<llvm::IRBuilder<>>(*llvm_context);
+  if (compile_config.fast_math) {
+    llvm::FastMathFlags fast_flags;
+    fast_flags.setNoInfs();
+    fast_flags.setNoSignedZeros();
+    fast_flags.setAllowReassoc();
+    builder->setFastMathFlags(fast_flags);
+  }
 }
 
 llvm::Value *TaskCodeGenLLVM::get_arg(int i) {
@@ -2711,7 +2717,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
   llvm::Value *result_buffer = nullptr;
   if (!stmt->func->rets.empty()) {
-    auto *ret_type = tlctx->get_data_type(stmt->ret_type);
+    auto *ret_type = tlctx->get_data_type(stmt->func->ret_type);
     result_buffer = builder->CreateAlloca(ret_type);
     auto *result_buffer_u64 = builder->CreatePointerCast(
         result_buffer,
@@ -2724,7 +2730,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {
-  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type);
+  auto *struct_type = tlctx->get_data_type(stmt->src->ret_type.ptr_removed());
   std::vector<llvm::Value *> index;
   index.reserve(stmt->index.size() + 1);
   index.push_back(tlctx->get_constant(0));
@@ -2789,7 +2795,8 @@ void TaskCodeGenLLVM::set_struct_to_buffer(
                        current_element, current_index);
 }
 
-llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
+llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index,
+                                             bool create_load) {
   auto *args_ptr = get_args_ptr(current_callable, get_context());
   auto *args_type = current_callable->args_type;
   auto *arg_type = args_type->get_element_type(index);
@@ -2801,6 +2808,9 @@ llvm::Value *TaskCodeGenLLVM::get_struct_arg(std::vector<int> index) {
   }
   auto *gep =
       builder->CreateGEP(tlctx->get_data_type(args_type), args_ptr, gep_index);
+  if (!create_load) {
+    return gep;
+  }
   return builder->CreateLoad(tlctx->get_data_type(arg_type), gep);
 }
 

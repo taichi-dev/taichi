@@ -10,6 +10,7 @@
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/runtime/gfx/kernel_launcher.h"
 #include "taichi/util/offline_cache.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 namespace taichi::lang {
 
@@ -19,9 +20,8 @@ MetalProgramImpl::MetalProgramImpl(CompileConfig &config)
 
 void MetalProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                            uint64 **result_buffer_ptr) {
-  *result_buffer_ptr =
-      (uint64 *)MemoryPool::get_instance(config->arch)
-          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
+      sizeof(uint64) * taichi_result_buffer_entries, 8);
 
   embedded_device_ =
       std::unique_ptr<metal::MetalDevice>(metal::MetalDevice::create());

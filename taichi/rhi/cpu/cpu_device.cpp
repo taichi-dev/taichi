@@ -1,6 +1,6 @@
 #include "taichi/rhi/cpu/cpu_device.h"
 #include "taichi/rhi/impl_support.h"
-#include "taichi/system/memory_pool.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 namespace taichi::lang {
 
@@ -12,15 +12,14 @@ CpuDevice::AllocInfo CpuDevice::get_alloc_info(const DeviceAllocation handle) {
 }
 
 CpuDevice::CpuDevice() {
-  arch_ = host_arch();
 }
 
 RhiResult CpuDevice::allocate_memory(const AllocParams &params,
                                      DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  info.ptr = MemoryPool::get_instance(arch_).allocate(
-      params.size, MemoryPool::page_size, true /*releasable*/);
+  info.ptr = HostMemoryPool::get_instance().allocate(
+      params.size, HostMemoryPool::page_size, true /*exclusive*/);
   info.size = params.size;
   info.use_cached = false;
 
@@ -53,7 +52,7 @@ void CpuDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   if (!info.use_cached) {
-    MemoryPool::get_instance(arch_).release(info.size, info.ptr);
+    HostMemoryPool::get_instance().release(info.size, info.ptr);
     info.ptr = nullptr;
   }
 }

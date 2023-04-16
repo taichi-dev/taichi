@@ -1,6 +1,7 @@
 #include "tests/cpp/aot/gfx_utils.h"
 
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 namespace taichi::lang {
 namespace aot_test_utils {
@@ -53,7 +54,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
 
   // Create runtime
@@ -123,7 +124,7 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
 
   // Create runtime
@@ -188,7 +189,7 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
 
 void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
 
   gfx::GfxRuntime::Params params;
@@ -265,7 +266,7 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize  program
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;
@@ -341,7 +342,7 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;
@@ -406,7 +407,7 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
   // API based on proposal https://github.com/taichi-dev/taichi/issues/3642
   // Initialize program
   taichi::uint64 *result_buffer{nullptr};
-  result_buffer = (taichi::uint64 *)MemoryPool::get_instance(arch).allocate(
+  result_buffer = (taichi::uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;

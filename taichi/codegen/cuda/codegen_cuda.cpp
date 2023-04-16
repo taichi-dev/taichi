@@ -258,14 +258,25 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         TI_NOT_IMPLEMENTED
       }
     } else if (op == UnaryOpType::frexp) {
-      auto stype = tlctx->get_data_type(stmt->ret_type);
+      auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());
       auto res = builder->CreateAlloca(stype);
       auto frac_ptr = builder->CreateStructGEP(stype, res, 0);
       auto exp_ptr = builder->CreateStructGEP(stype, res, 1);
-      auto double_input = builder->CreateFPExt(
-          input, llvm::Type::getDoubleTy(*tlctx->get_this_thread_context()));
+      // __nv_frexp onlys takes in double
+      auto double_input =
+          input_taichi_type->is_primitive(PrimitiveTypeID::f32)
+              ? builder->CreateFPExt(
+                    input,
+                    llvm::Type::getDoubleTy(*tlctx->get_this_thread_context()))
+              : input;
       auto frac = call("__nv_frexp", double_input, exp_ptr);
-      builder->CreateStore(frac, frac_ptr);
+      auto output =
+          input_taichi_type->is_primitive(PrimitiveTypeID::f32)
+              ? builder->CreateFPTrunc(
+                    frac,
+                    llvm::Type::getFloatTy(*tlctx->get_this_thread_context()))
+              : frac;
+      builder->CreateStore(output, frac_ptr);
       llvm_val[stmt] = res;
     }
     UNARY_STD(exp)

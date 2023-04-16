@@ -139,13 +139,16 @@ FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
 }
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
-  TI_ASSERT_INFO(dt->is<PrimitiveType>() && dt != PrimitiveType::unknown,
-                 "Invalid dt [{}] for ArgLoadExpression", dt->to_string());
   ret_type = dt;
+  if (!create_load) {
+    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
+  }
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr);
+  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr,
+                                                /*is_grad=*/false, create_load);
+  arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
 }
@@ -154,7 +157,8 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 }
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
-  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, true);
+  ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
+                              /*is_grad=*/false, /*create_load*/ true);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
   stmt = ctx->back_stmt();
@@ -215,15 +219,16 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
 
   if (type == UnaryOpType::frexp) {
     std::vector<StructMember> elements;
-    elements.push_back(
-        {taichi::lang::TypeFactory::get_instance().get_primitive_real_type(64),
-         "mantissa", 0});
+    TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
+              operand_primitive_type->is_primitive(PrimitiveTypeID::f64));
+    elements.push_back({operand_primitive_type, "mantissa", 0});
     elements.push_back(
         {taichi::lang::TypeFactory::get_instance().get_primitive_int_type(
              32, /*is_signed=*/true),
-         "exponent", 8});
+         "exponent", (size_t)data_type_size(operand_primitive_type)});
     ret_type =
         taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
+    ret_type.set_is_pointer(true);
     return;
   }
   if (operand->ret_type->is<TensorType>()) {
@@ -586,7 +591,7 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 irpass::lower_access()
   auto prim_dt = dt;
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
-                                     /*is_grad=*/is_grad);
+                                     /*is_grad=*/is_grad, /*create_load=*/true);
 
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));
@@ -1196,8 +1201,12 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
+  TI_ASSERT_INFO(src->ret_type->is<PointerType>(),
+                 "Invalid src [{}] for GetElementExpression",
+                 ExpressionHumanFriendlyPrinter::expr_to_string(src));
 
-  ret_type = src->ret_type->as<StructType>()->get_element_type(index);
+  ret_type =
+      src->ret_type.ptr_removed()->as<StructType>()->get_element_type(index);
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
@@ -1427,6 +1436,7 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
         func, expanded_args,
         std::static_pointer_cast<IdExpression>(var.expr)->id));
     var.expr->ret_type = func->ret_type;
+    var.expr->ret_type.set_is_pointer(true);
     return var;
   } else {
     this->insert(std::make_unique<FrontendFuncCallStmt>(func, expanded_args));
@@ -1626,8 +1636,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   std::vector<Expr> expanded_exprs;
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
-    if (expr->ret_type->is<StructType>()) {
-      auto struct_type = expr->ret_type->as<StructType>();
+    if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
       auto num_elem = struct_type->get_num_elements();
       for (int i = 0; i < num_elem; i++) {
         std::vector<int> indices = {i};

@@ -1,4 +1,0 @@
-pip
-tqdm
-requests
-mslex

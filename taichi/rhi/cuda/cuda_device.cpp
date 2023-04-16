@@ -1,4 +1,5 @@
 #include "taichi/rhi/cuda/cuda_device.h"
+#include "taichi/rhi/llvm/device_memory_pool.h"
 
 namespace taichi::lang {
 
@@ -14,17 +15,16 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
                                       DeviceAllocation *out_devalloc) {
   AllocInfo info;
 
-  if (params.host_read || params.host_write) {
-    CUDADriver::get_instance().malloc_managed(&info.ptr, params.size,
-                                              CU_MEM_ATTACH_GLOBAL);
-  } else {
-    CUDADriver::get_instance().malloc(&info.ptr, params.size);
-  }
+  auto &mem_pool = DeviceMemoryPool::get_instance();
 
-  if (info.ptr == nullptr) {
+  bool managed = params.host_read || params.host_write;
+  void *ptr =
+      mem_pool.allocate(params.size, DeviceMemoryPool::page_size, managed);
+  if (ptr == nullptr) {
     return RhiResult::out_of_memory;
   }
 
+  info.ptr = ptr;
   info.size = params.size;
   info.is_imported = false;
   info.use_cached = false;
@@ -76,7 +76,8 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     }
     caching_allocator_->release(info.size, (uint64_t *)info.ptr);
   } else if (!info.use_preallocated) {
-    CUDADriver::get_instance().mem_free(info.ptr);
+    auto &mem_pool = DeviceMemoryPool::get_instance();
+    mem_pool.release(info.size, info.ptr, true /*release_raw*/);
     info.ptr = nullptr;
   }
 }

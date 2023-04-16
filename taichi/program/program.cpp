@@ -10,12 +10,12 @@
 #include "taichi/runtime/program_impls/metal/metal_program.h"
 #include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -312,11 +312,10 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ASTBuilder &builder = kernel->context->builder();
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
-    builder.insert_assignment(
-        expr,
-        Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type()),
-        expr->tb);
+    auto argload_expr = Expr::make<ArgLoadExpression>(
+        snode->num_active_indices, snode->dt->get_compute_type());
+    argload_expr->type_check(&this->compile_config());
+    builder.insert_assignment(expr, argload_expr, expr->tb);
   });
   ker.name = kernel_name;
   ker.is_accessor = true;
@@ -336,7 +335,6 @@ void Program::finalize() {
   if (finalized_) {
     return;
   }
-  auto arch = compile_config().arch;
 
   synchronize();
   TI_TRACE("Program finalizing...");
@@ -355,7 +353,7 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 
   // Reset memory pool
-  MemoryPool::get_instance(arch).reset();
+  HostMemoryPool::get_instance().reset();
 }
 
 int Program::default_block_dim(const CompileConfig &config) {

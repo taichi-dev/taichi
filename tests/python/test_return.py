@@ -30,11 +30,15 @@ def test_const_func_ret():
     assert func2() == 3
 
 
-@pytest.mark.parametrize("dt1,dt2,dt3,castor",
-                         [(ti.i32, ti.f32, ti.f32, float),
-                          (ti.f32, ti.i32, ti.f32, float),
-                          (ti.i32, ti.f32, ti.i32, int),
-                          (ti.f32, ti.i32, ti.i32, int)])
+@pytest.mark.parametrize(
+    "dt1,dt2,dt3,castor",
+    [
+        (ti.i32, ti.f32, ti.f32, float),
+        (ti.f32, ti.i32, ti.f32, float),
+        (ti.i32, ti.f32, ti.i32, int),
+        (ti.f32, ti.i32, ti.i32, int),
+    ],
+)
 @test_utils.test()
 def test_binary_func_ret(dt1, dt2, dt3, castor):
     @ti.kernel
@@ -84,8 +88,9 @@ def test_func_multiple_return():
         print(safe_sqrt(a))
 
     with pytest.raises(
-            ti.TaichiCompilationError,
-            match='Return inside non-static if/for is not supported'):
+        ti.TaichiCompilationError,
+        match="Return inside non-static if/for is not supported",
+    ):
         kern(-233)
 
 
@@ -105,8 +110,9 @@ def test_return_inside_static_for():
 @test_utils.test()
 def test_return_inside_non_static_for():
     with pytest.raises(
-            ti.TaichiCompilationError,
-            match='Return inside non-static if/for is not supported'):
+        ti.TaichiCompilationError,
+        match="Return inside non-static if/for is not supported",
+    ):
 
         @ti.kernel
         def foo() -> ti.i32:
@@ -119,9 +125,9 @@ def test_return_inside_non_static_for():
 @test_utils.test()
 def test_kernel_no_return():
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match=
-            "Kernel has a return type but does not have a return statement"):
+        ti.TaichiSyntaxError,
+        match="Kernel has a return type but does not have a return statement",
+    ):
 
         @ti.kernel
         def foo() -> ti.i32:
@@ -133,9 +139,9 @@ def test_kernel_no_return():
 @test_utils.test()
 def test_func_no_return():
     with pytest.raises(
-            ti.TaichiCompilationError,
-            match=
-            "Function has a return type but does not have a return statement"):
+        ti.TaichiCompilationError,
+        match="Function has a return type but does not have a return statement",
+    ):
 
         @ti.func
         def bar() -> ti.i32:
@@ -172,7 +178,7 @@ def test_return_uint64():
     def foo() -> ti.u64:
         return ti.u64(2**64 - 1)
 
-    assert (foo() == 2**64 - 1)
+    assert foo() == 2**64 - 1
 
 
 @test_utils.test(exclude=[ti.metal, ti.vulkan, ti.gles])
@@ -181,7 +187,7 @@ def test_return_uint64_vec():
     def foo() -> ti.types.vector(2, ti.u64):
         return ti.Vector([ti.u64(2**64 - 1), ti.u64(2**64 - 1)])
 
-    assert (foo()[0] == 2**64 - 1)
+    assert foo()[0] == 2**64 - 1
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -194,8 +200,8 @@ def test_struct_ret_with_matrix():
         return s1(a=1, b=s0(a=ti.math.vec3([100, 0.2, 3]), b=65537))
 
     ret = foo()
-    assert (ret.a == approx(1))
-    assert (ret.b.a[0] == approx(100))
-    assert (ret.b.a[1] == approx(0.2))
-    assert (ret.b.a[2] == approx(3))
-    assert (ret.b.b == 1)
+    assert ret.a == approx(1)
+    assert ret.b.a[0] == approx(100)
+    assert ret.b.a[1] == approx(0.2)
+    assert ret.b.a[2] == approx(3)
+    assert ret.b.b == 1

@@ -5,8 +5,9 @@ from microbenchmarks._plan import BenchmarkPlan
 import taichi as ti
 
 
-def matrix_operations_default(arch, repeat, matrix_op, block_mn, element_num,
-                              dtype, get_metric):
+def matrix_operations_default(
+    arch, repeat, matrix_op, block_mn, element_num, dtype, get_metric
+):
     m, n = block_mn
     global_matrixA = ti.Matrix.field(m, n, dtype, shape=element_num)
     global_matrixB = ti.Matrix.field(m, n, dtype, shape=element_num)
@@ -27,19 +28,19 @@ def matrix_operations_default(arch, repeat, matrix_op, block_mn, element_num,
     @ti.kernel
     def op_throughput():
         for e in range(element_num):
-            #prelogue
+            # prelogue
             A = global_matrixA[e]
             B = global_matrixB[e]
             C = ti.Matrix.zero(dtype, m, n)
-            C = matrix_op(C, A, B)  #C += A@B
-            #loop
+            C = matrix_op(C, A, B)  # C += A@B
+            # loop
             for i in range(2048):
-                for j in ti.static(range(4)):  #16*4*4=256
-                    A = matrix_op(A, C, B)  #A += C@B
-                    C = matrix_op(C, A, B)  #C += A@B
-                    B = matrix_op(B, A, C)  #B += A@C
-                    C = matrix_op(C, A, B)  #C += A@B
-            #epilogue
+                for j in ti.static(range(4)):  # 16*4*4=256
+                    A = matrix_op(A, C, B)  # A += C@B
+                    C = matrix_op(C, A, B)  # C += A@B
+                    B = matrix_op(B, A, C)  # B += A@C
+                    C = matrix_op(C, A, B)  # C += A@B
+            # epilogue
             global_matrixC[e] = C
 
     fill_matrixA()
@@ -67,43 +68,42 @@ def matrix_mma(C, A, B):
 
 
 class MatrixOps(BenchmarkItem):
-    name = 'matrix_op'
+    name = "matrix_op"
 
     def __init__(self):
         self._items = {
-            'mat_add': matrix_add,
-            'mat_mul': matrix_mul,
-            'mat_mma': matrix_mma,
+            "mat_add": matrix_add,
+            "mat_mul": matrix_mul,
+            "mat_mma": matrix_mma,
         }
 
 
 class BlockMN(BenchmarkItem):
-    name = 'block_mn'
+    name = "block_mn"
 
     def __init__(self):
         self._items = {
-            'block_mn11': (1, 1),
-            'block_mn22': (2, 2),
-            'block_mn33': (3, 3),
-            'block_mn44': (4, 4),
+            "block_mn11": (1, 1),
+            "block_mn22": (2, 2),
+            "block_mn33": (3, 3),
+            "block_mn44": (4, 4),
         }
 
 
 class ElementNum(BenchmarkItem):
-    name = 'element_num'
+    name = "element_num"
 
     def __init__(self):
         self._items = {
-            'element16384': 16384,
-            #enough threads for filling CUDA cores
+            "element16384": 16384,
+            # enough threads for filling CUDA cores
         }
 
 
 class MatrixOpsPlan(BenchmarkPlan):
     def __init__(self, arch: str):
-        super().__init__('matrix_ops', arch, basic_repeat_times=10)
+        super().__init__("matrix_ops", arch, basic_repeat_times=10)
         dtype = DataType()
-        dtype.remove(['i64', 'f64'])
-        self.create_plan(MatrixOps(), BlockMN(), ElementNum(), dtype,
-                         MetricType())
-        self.add_func(['element16384'], matrix_operations_default)
+        dtype.remove(["i64", "f64"])
+        self.create_plan(MatrixOps(), BlockMN(), ElementNum(), dtype, MetricType())
+        self.add_func(["element16384"], matrix_operations_default)

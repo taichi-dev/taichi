@@ -10,7 +10,7 @@ if has_paddle():
     import paddle
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_devices():
     n = 32
@@ -47,7 +47,7 @@ def test_io_devices():
             assert y[i] == (11 + i) * 2
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io():
     n = 32
@@ -63,7 +63,7 @@ def test_io():
         assert x_zero[i] == i * i
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_2d():
     n = 32
@@ -81,7 +81,7 @@ def test_io_2d():
             assert x_zero[i, j] == i * j
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_3d():
     n = 32
@@ -101,7 +101,7 @@ def test_io_3d():
                 assert x_zero[i, j, k] == i * j * k
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_simple():
     n = 32
@@ -128,7 +128,7 @@ def test_io_simple():
     assert (p2 == p3).all()
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_zeros():
     mat = ti.Matrix.field(2, 6, dtype=ti.f32, shape=(), needs_grad=True)
@@ -142,11 +142,11 @@ def test_io_zeros():
     assert zeros[1, 2] == 4
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_io_struct():
     n = 16
-    x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+    x1 = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n,))
     p1 = {
         "a": paddle.Tensor(2 * np.ones(n, dtype=np.int32)),
         "b": paddle.Tensor(3 * np.ones(n, dtype=np.float32)),
@@ -162,7 +162,7 @@ def test_io_struct():
         assert (p1[k] == p2[k]).all()
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_fused_kernels():
     n = 12
@@ -174,7 +174,7 @@ def test_fused_kernels():
     assert impl.get_runtime().get_num_compiled_functions() == s + 2
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_devices():
     n = 12
@@ -185,7 +185,7 @@ def test_devices():
         assert X.to_paddle(place=paddle.CUDAPlace(0)).place.is_gpu_place()
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_shape_matrix():
     n = 12
@@ -205,7 +205,7 @@ def test_shape_matrix():
     assert (X == X1).all()
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_shape_vector():
     n = 12
@@ -224,7 +224,7 @@ def test_shape_vector():
     assert (X == X1).all()
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_paddle_zero():
     @ti.kernel
@@ -236,7 +236,7 @@ def test_paddle_zero():
     test_paddle(paddle.zeros([5, 0, 5], dtype=paddle.int32))
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_paddle_view():
     @ti.kernel

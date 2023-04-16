@@ -22,48 +22,50 @@ from .tinysh import Command, sh
 
 
 # -- code --
-@banner('Setup iOS Build Environment')
+@banner("Setup iOS Build Environment")
 def setup_ios(python: Command, pip: Command) -> None:
     s = platform.system()
-    if s != 'Darwin':
+    if s != "Darwin":
         raise RuntimeError(
-            f'Can only build iOS binaries on macOS, but the current system is {s}.'
+            f"Can only build iOS binaries on macOS, but the current system is {s}."
         )
 
     setup_clang()
     setup_sccache()
-    pip.install('cmake')
+    pip.install("cmake")
 
-    out = get_cache_home() / 'ios-cmake'
-    url = 'https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake'
+    out = get_cache_home() / "ios-cmake"
+    url = (
+        "https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake"
+    )
     download_dep(url, out, force=True, plain=True)
 
-    cmake_args['CMAKE_CONFIGURATION_TYPES'] = 'Release'
-    cmake_args['CMAKE_TOOLCHAIN_FILE'] = str(out / 'ios.toolchain.cmake')
-    cmake_args['CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED'] = False
-    cmake_args['CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED'] = False
-    cmake_args['ENABLE_BITCODE'] = True
-    cmake_args['ENABLE_ARC'] = False
-    cmake_args['DEPLOYMENT_TARGET'] = '13.0'
-    cmake_args['PLATFORM'] = 'OS64'
-    cmake_args['USE_STDCPP'] = True
-    cmake_args['TI_WITH_C_API'] = True
-    cmake_args['TI_WITH_METAL'] = True
-    cmake_args['TI_WITH_VULKAN'] = False
-    cmake_args['TI_WITH_OPENGL'] = False
-    cmake_args['TI_WITH_LLVM'] = False
-    cmake_args['TI_WITH_CUDA'] = False
-    cmake_args['TI_WITH_PYTHON'] = False
-    cmake_args['TI_WITH_GGUI'] = False
-    cmake_args['TI_WITH_CC'] = False
+    cmake_args["CMAKE_CONFIGURATION_TYPES"] = "Release"
+    cmake_args["CMAKE_TOOLCHAIN_FILE"] = str(out / "ios.toolchain.cmake")
+    cmake_args["CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED"] = False
+    cmake_args["CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED"] = False
+    cmake_args["ENABLE_BITCODE"] = True
+    cmake_args["ENABLE_ARC"] = False
+    cmake_args["DEPLOYMENT_TARGET"] = "13.0"
+    cmake_args["PLATFORM"] = "OS64"
+    cmake_args["USE_STDCPP"] = True
+    cmake_args["TI_WITH_C_API"] = True
+    cmake_args["TI_WITH_METAL"] = True
+    cmake_args["TI_WITH_VULKAN"] = False
+    cmake_args["TI_WITH_OPENGL"] = False
+    cmake_args["TI_WITH_LLVM"] = False
+    cmake_args["TI_WITH_CUDA"] = False
+    cmake_args["TI_WITH_PYTHON"] = False
+    cmake_args["TI_WITH_GGUI"] = False
+    cmake_args["TI_WITH_CC"] = False
     cmake_args.writeback()
 
 
-@banner('Build Taichi iOS C-API Static Library')
+@banner("Build Taichi iOS C-API Static Library")
 def _ios_compile(build_dir: str) -> None:
-    '''
+    """
     Build the Taichi iOS C-API Static Library
-    '''
+    """
     rendered = cmake_args.render()
     defines = [i[1] for i in rendered]
     cmake = sh.cmake
@@ -71,17 +73,17 @@ def _ios_compile(build_dir: str) -> None:
     shutil.rmtree(build_path, ignore_errors=True)
     build_path.mkdir(parents=True, exist_ok=True)
 
-    cmake('-G', 'Xcode', '-B', build_path, *defines, '.')
-    cmake('--build', build_path, '-t', 'taichi_c_api')
+    cmake("-G", "Xcode", "-B", build_path, *defines, ".")
+    cmake("--build", build_path, "-t", "taichi_c_api")
 
 
-@banner('Prelink Taichi iOS C-API Static Library')
+@banner("Prelink Taichi iOS C-API Static Library")
 def _ios_prelink(build_dir: str, output: str) -> None:
     build_path = Path(build_dir)
-    capi_build_path = next(build_path.glob('**/taichi_c_api.build'))
-    root_objs = list(capi_build_path.glob('**/*.o'))
+    capi_build_path = next(build_path.glob("**/taichi_c_api.build"))
+    root_objs = list(capi_build_path.glob("**/*.o"))
 
-    pr = lambda s='': print(s, file=sys.stderr, flush=True)
+    pr = lambda s="": print(s, file=sys.stderr, flush=True)
 
     misc.info("Found C-API root objects:")
     pr()
@@ -90,8 +92,9 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     pr()
 
     def dump_symbols(path: str) -> Tuple[List, List]:
-        symbols = str(subprocess.check_output(["objdump", "--syms", path]),
-                      encoding="utf8").splitlines()
+        symbols = str(
+            subprocess.check_output(["objdump", "--syms", path]), encoding="utf8"
+        ).splitlines()
         it = iter(symbols)
 
         while not next(it).startswith("SYMBOL TABLE:"):
@@ -100,7 +103,7 @@ def _ios_prelink(build_dir: str, output: str) -> None:
         defined, undefined = [], []
         for line in it:
             *_, section, sym = line.rsplit()
-            col = undefined if section == '*UND*' else defined
+            col = undefined if section == "*UND*" else defined
             col.append(sym)
 
         return defined, undefined
@@ -109,7 +112,7 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     SYMBOL_DEFS = {}
     # obj file path -> (defined, undefined)
     OBJECT_SYMBOLS = {}
-    for p in build_path.glob('build/**/*.o'):
+    for p in build_path.glob("build/**/*.o"):
         sp = str(p.relative_to(build_path))
 
         # (penguinliong) Ignore shared SPIR-V Tools. We cannot opt out shared
@@ -165,12 +168,16 @@ def _ios_prelink(build_dir: str, output: str) -> None:
             pr(f"    {sym}")
         pr()
 
-    prelinked_obj = build_path / 'libtaichi_c_api_prelinked.o'
+    prelinked_obj = build_path / "libtaichi_c_api_prelinked.o"
     prelinked_obj.unlink(missing_ok=True)
 
     cmd = [
-        "clang++", "-target", "aarch64-apple-ios13.0", "-r", "-o",
-        str(prelinked_obj)
+        "clang++",
+        "-target",
+        "aarch64-apple-ios13.0",
+        "-r",
+        "-o",
+        str(prelinked_obj),
     ]
     cmd.extend(str(build_path / p) for p in dependencies)
     subprocess.check_call(cmd)
@@ -187,4 +194,4 @@ def _ios_prelink(build_dir: str, output: str) -> None:
 def build_ios() -> None:
     with TemporaryDirectory() as tmpdir:
         _ios_compile(tmpdir)
-        _ios_prelink(tmpdir, 'dist/C-API-iOS/libtaichi_c_api.a')
+        _ios_prelink(tmpdir, "dist/C-API-iOS/libtaichi_c_api.a")

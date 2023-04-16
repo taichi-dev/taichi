@@ -13,7 +13,7 @@ def test_ad_if_simple_fwd():
 
     @ti.kernel
     def func():
-        if x[None] > 0.:
+        if x[None] > 0.0:
             y[None] = x[None]
 
     x[None] = 1

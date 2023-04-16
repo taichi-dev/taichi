@@ -40,7 +40,7 @@ def test_non_dfs_snode_order():
     ptr = grid1.pointer(ti.i, 1)
     ptr.place(x)
     grid2.place(y)
-    '''
+    """
     This SNode tree has node ids that do not follow DFS order:
     S0root
       S1dense
@@ -48,7 +48,8 @@ def test_non_dfs_snode_order():
           S4place<i32>
       S2dense
         S5place<i32>
-    '''
+    """
+
     @ti.kernel
     def foo():
         ti.activate(ptr, [0])

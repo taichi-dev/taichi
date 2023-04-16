@@ -10,4 +10,4 @@ def print_memory_profiler_info():
     get_runtime().prog.print_memory_profiler_info()
 
 
-__all__ = ['print_memory_profiler_info']
+__all__ = ["print_memory_profiler_info"]

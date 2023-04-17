@@ -6,6 +6,7 @@ target_sources(${COMMON_RHI}
   PRIVATE
     host_memory_pool.cpp
     unified_allocator.cpp
+    window_system.cpp
   )
 
 target_include_directories(${COMMON_RHI}

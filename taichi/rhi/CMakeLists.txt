@@ -7,7 +7,6 @@ target_sources(${TAICHI_DEVICE_API}
     arch.cpp
     device.cpp
     device_capability.cpp
-    window_system.cpp
   )
 
 target_include_directories(${TAICHI_DEVICE_API}

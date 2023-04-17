@@ -36,3 +36,5 @@ target_include_directories(${VULKAN_RHI} SYSTEM
     ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
   )
+
+target_link_libraries(opengl_rhi PRIVATE common_rhi)

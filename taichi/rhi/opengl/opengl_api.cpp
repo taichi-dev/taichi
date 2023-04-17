@@ -6,7 +6,7 @@
 #include "glad/egl.h"
 #include "taichi/rhi/opengl/opengl_device.h"
 
-#include "taichi/rhi/window_system.h"
+#include "taichi/rhi/common/window_system.h"
 
 namespace taichi::lang {
 namespace opengl {

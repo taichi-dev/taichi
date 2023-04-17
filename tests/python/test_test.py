@@ -1,8 +1,8 @@
-'''
+"""
 This file tests if Taichi's testing utilities are functional.
 
 TODO: Skips these tests after all tests are using @ti.test
-'''
+"""
 import os
 
 import pytest
@@ -64,8 +64,9 @@ def test_require_extensions_2():
     assert ti.lang.impl.current_cfg().arch in [ti.cpu]
 
 
-@test_utils.test(arch=[ti.cpu, ti.opengl],
-                 require=[ti.extension.sparse, ti.extension.bls])
+@test_utils.test(
+    arch=[ti.cpu, ti.opengl], require=[ti.extension.sparse, ti.extension.bls]
+)
 def test_require_extensions_2():
     assert ti.lang.impl.current_cfg().arch in [ti.cuda]
 
@@ -73,9 +74,10 @@ def test_require_extensions_2():
 ### `test_utils.approx` and `test_utils.allclose`
 
 
-@pytest.mark.parametrize('x', [0.1, 3])
+@pytest.mark.parametrize("x", [0.1, 3])
 @pytest.mark.parametrize(
-    'allclose', [test_utils.allclose, lambda x, y: x == test_utils.approx(y)])
+    "allclose", [test_utils.allclose, lambda x, y: x == test_utils.approx(y)]
+)
 @test_utils.test()
 def test_allclose_rel(x, allclose):
     rel = test_utils.get_rel_eps()
@@ -90,9 +92,10 @@ def test_allclose_rel(x, allclose):
     assert not allclose(x - x * rel * 3.0, x)
 
 
-@pytest.mark.parametrize('x', [0.1, 3])
+@pytest.mark.parametrize("x", [0.1, 3])
 @pytest.mark.parametrize(
-    'allclose', [test_utils.allclose, lambda x, y: x == test_utils.approx(y)])
+    "allclose", [test_utils.allclose, lambda x, y: x == test_utils.approx(y)]
+)
 @test_utils.test()
 def test_allclose_rel_reordered1(x, allclose):
     rel = test_utils.get_rel_eps()
@@ -107,9 +110,10 @@ def test_allclose_rel_reordered1(x, allclose):
     assert not allclose(x - x * rel * 3.0, x)
 
 
-@pytest.mark.parametrize('x', [0.1, 3])
+@pytest.mark.parametrize("x", [0.1, 3])
 @pytest.mark.parametrize(
-    'allclose', [test_utils.allclose, lambda x, y: x == test_utils.approx(y)])
+    "allclose", [test_utils.allclose, lambda x, y: x == test_utils.approx(y)]
+)
 @test_utils.test()
 def test_allclose_rel_reordered2(x, allclose):
     rel = test_utils.get_rel_eps()
@@ -124,10 +128,10 @@ def test_allclose_rel_reordered2(x, allclose):
     assert not allclose(x - x * rel * 3.0, x)
 
 
-@pytest.mark.skipif(ti._lib.core.with_metal(),
-                    reason="Skip metal because metal is used as the example")
+@pytest.mark.skipif(
+    ti._lib.core.with_metal(), reason="Skip metal because metal is used as the example"
+)
 def test_disable_fallback():
-
     with pytest.raises(RuntimeError):
         ti.init(arch=ti.metal, enable_fallback=False)
         ti.reset()

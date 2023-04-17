@@ -11,16 +11,16 @@ def test_cg(ti_dtype):
     n = 10
     A = np.random.rand(n, n)
     A_psd = np.dot(A, A.transpose())
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=300,
-                                             dtype=ti_dtype)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300, dtype=ti_dtype)
     b = ti.ndarray(dtype=ti_dtype, shape=n)
     x0 = ti.ndarray(dtype=ti_dtype, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             InputArray: ti.types.ndarray(), b: ti.types.ndarray()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        InputArray: ti.types.ndarray(),
+        b: ti.types.ndarray(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += InputArray[i, j]
         for i in range(n):
@@ -42,16 +42,16 @@ def test_cg_cuda(ti_dtype):
     n = 10
     A = np.random.rand(n, n)
     A_psd = np.dot(A, A.transpose())
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=300,
-                                             dtype=ti_dtype)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300, dtype=ti_dtype)
     b = ti.ndarray(dtype=ti_dtype, shape=n)
     x0 = ti.ndarray(dtype=ti_dtype, shape=n)
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             InputArray: ti.types.ndarray(), b: ti.types.ndarray()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        InputArray: ti.types.ndarray(),
+        b: ti.types.ndarray(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += InputArray[i, j]
         for i in range(n):

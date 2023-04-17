@@ -17,12 +17,13 @@ from .escapes import escape_codes
 # A minimal and naive imitiation of the sh library, which can work on Windows.
 # NOT written as a general purpose library, wild assumptions are made.
 
-IS_WINDOWS = platform.system() == 'Windows'
+IS_WINDOWS = platform.system() == "Windows"
 
 if IS_WINDOWS:
     import ctypes
 
     import mslex
+
     quote = mslex.quote
 
     SW_SHOWNORMAL = 1
@@ -30,18 +31,23 @@ if IS_WINDOWS:
     INFINITE = -1
 
     class SHELLEXECUTEINFOW(ctypes.Structure):
-        _fields_ = [("cbSize", ctypes.c_uint32), ("fMask", ctypes.c_ulong),
-                    ("hwnd", ctypes.c_void_p), ("lpVerb", ctypes.c_wchar_p),
-                    ("lpFile", ctypes.c_wchar_p),
-                    ("lpParameters", ctypes.c_wchar_p),
-                    ("lpDirectory", ctypes.c_wchar_p), ("nShow", ctypes.c_int),
-                    ("hInstApp", ctypes.c_void_p),
-                    ("lpIDList", ctypes.c_void_p),
-                    ("lpClass", ctypes.c_wchar_p),
-                    ("hkeyClass", ctypes.c_void_p),
-                    ("dwHotKey", ctypes.c_uint32),
-                    ("DUMMYUNIONNAME", ctypes.c_void_p),
-                    ("hProcess", ctypes.c_void_p)]
+        _fields_ = [
+            ("cbSize", ctypes.c_uint32),
+            ("fMask", ctypes.c_ulong),
+            ("hwnd", ctypes.c_void_p),
+            ("lpVerb", ctypes.c_wchar_p),
+            ("lpFile", ctypes.c_wchar_p),
+            ("lpParameters", ctypes.c_wchar_p),
+            ("lpDirectory", ctypes.c_wchar_p),
+            ("nShow", ctypes.c_int),
+            ("hInstApp", ctypes.c_void_p),
+            ("lpIDList", ctypes.c_void_p),
+            ("lpClass", ctypes.c_wchar_p),
+            ("hkeyClass", ctypes.c_void_p),
+            ("dwHotKey", ctypes.c_uint32),
+            ("DUMMYUNIONNAME", ctypes.c_void_p),
+            ("hProcess", ctypes.c_void_p),
+        ]
 
     def win32_is_user_admin():
         return ctypes.windll.shell32.IsUserAnAdmin() != 0
@@ -52,7 +58,7 @@ if IS_WINDOWS:
 
         sei = SHELLEXECUTEINFOW()
         sei.cbSize = ctypes.sizeof(SHELLEXECUTEINFOW)
-        sei.lpVerb = 'runas'
+        sei.lpVerb = "runas"
         sei.lpFile = exe
         sei.lpParameters = params
         sei.nShow = SW_SHOWNORMAL
@@ -67,8 +73,10 @@ if IS_WINDOWS:
         kernel32.GetExitCodeProcess(hProcess, ctypes.byref(rc))
         kernel32.CloseHandle(hProcess)
         return rc.value
+
 else:
     import shlex
+
     quote = shlex.quote
 
 
@@ -78,15 +86,15 @@ class CommandFailed(Exception):
         self.code = code
 
     def __str__(self):
-        return f'Command {self.cmd} failed with code {self.code}'
+        return f"Command {self.cmd} failed with code {self.code}"
 
 
 ENVIRON_STACK = []
 PREFIX_STACK = []
 OPTIONS_STACK = []
 
-P = escape_codes['bold_purple']
-N = escape_codes['reset']
+P = escape_codes["bold_purple"]
+N = escape_codes["reset"]
 
 pr = lambda *args: print(*args, file=sys.stderr, flush=True)
 
@@ -96,18 +104,18 @@ class Command:
         self.args = list((map(str, args)))
 
     def __getattribute__(self, name: str) -> Any:
-        if name in ('args', 'bake') or name.startswith('__'):
+        if name in ("args", "bake") or name.startswith("__"):
             return object.__getattribute__(self, name)
 
         return self.bake(name)
 
-    def bake(self, *moreargs: Sequence[str]) -> 'Command':
-        args = object.__getattribute__(self, 'args')
-        cls = object.__getattribute__(self, '__class__')
+    def bake(self, *moreargs: Sequence[str]) -> "Command":
+        args = object.__getattribute__(self, "args")
+        cls = object.__getattribute__(self, "__class__")
         return cls(*args, *moreargs)
 
     def __call__(self, *moreargs: Sequence[str]) -> None:
-        args = object.__getattribute__(self, 'args')
+        args = object.__getattribute__(self, "args")
         args = args + list(map(str, moreargs))
 
         prefixes = []
@@ -119,13 +127,13 @@ class Command:
             overlay.update(v)
 
         args = prefixes + args
-        cmd = ' '.join([quote(v) for v in args])
+        cmd = " ".join([quote(v) for v in args])
 
-        pr(f'{P}:: RUN {cmd}{N}')
+        pr(f"{P}:: RUN {cmd}{N}")
         if overlay:
-            pr(f'{P}>> WITH ADDITIONAL ENVS:{N}')
+            pr(f"{P}>> WITH ADDITIONAL ENVS:{N}")
             for k, v in overlay.items():
-                pr(f'{P}       {k}={v}{N}')
+                pr(f"{P}       {k}={v}{N}")
 
         env = os.environ.copy()
         env.update(overlay)
@@ -135,17 +143,16 @@ class Command:
             options.update(o)
 
         exe = shutil.which(args[0])
-        assert exe, f'Cannot find executable {args[0]}'
+        assert exe, f"Cannot find executable {args[0]}"
 
-        runas = IS_WINDOWS and options.get('runas')
+        runas = IS_WINDOWS and options.get("runas")
         assert not (
             runas and overlay
-        ), 'Cannot run with both elevated privileges and additional envs'
+        ), "Cannot run with both elevated privileges and additional envs"
 
         if runas and not win32_is_user_admin():
-            pr(f'{P}>> !! WITH ELEVATED PRIVILEGES !!{N}')
-            code = win32_run_elevated(exe,
-                                      ' '.join([quote(v) for v in args[1:]]))
+            pr(f"{P}>> !! WITH ELEVATED PRIVILEGES !!{N}")
+            code = win32_run_elevated(exe, " ".join([quote(v) for v in args[1:]]))
             if code:
                 raise CommandFailed(cmd, code)
         else:
@@ -160,9 +167,9 @@ class Command:
 
 @contextmanager
 def environ(*envs: Mapping[str, str]):
-    '''
+    """
     Set command environment variables.
-    '''
+    """
     global ENVIRON_STACK
 
     this = {}
@@ -179,9 +186,9 @@ def environ(*envs: Mapping[str, str]):
 
 @contextmanager
 def prefix(*args: str):
-    '''
+    """
     Set command prefixes.
-    '''
+    """
     global PREFIX_STACK
 
     l = list(map(str, args))
@@ -204,13 +211,13 @@ def with_options(options: Mapping[str, Any]):
 
 
 def sudo():
-    '''
+    """
     Wrap a command with sudo.
-    '''
+    """
     if IS_WINDOWS:
-        return with_options({'runas': True})
+        return with_options({"runas": True})
     else:
-        return prefix('sudo')
+        return prefix("sudo")
 
 
 sh = Command()
@@ -221,4 +228,4 @@ git = sh.git
 sccache = sh.sccache
 tar = sh.tar
 bash = sh.bash
-start = sh.start.bake('/wait')
+start = sh.start.bake("/wait")

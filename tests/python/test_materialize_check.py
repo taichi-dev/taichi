@@ -12,8 +12,7 @@ def test_check_field_not_placed():
     def foo():
         pass
 
-    with pytest.raises(RuntimeError,
-                       match=r"These field\(s\) are not placed.*"):
+    with pytest.raises(RuntimeError, match=r"These field\(s\) are not placed.*"):
         foo()
 
 
@@ -27,9 +26,8 @@ def test_check_grad_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*",
     ):
         foo()
 
@@ -44,9 +42,8 @@ def test_check_grad_vector_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*",
     ):
         foo()
 
@@ -61,9 +58,8 @@ def test_check_grad_matrix_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*",
     ):
         foo()
 
@@ -77,7 +73,8 @@ def test_check_grad_struct_field_not_placed():
             "acc": ti.types.vector(3, float),
             "mass": ti.f32,
         },
-        needs_grad=True)
+        needs_grad=True,
+    )
     ti.root.dense(ti.i, 1).place(d)
 
     @ti.kernel
@@ -85,9 +82,8 @@ def test_check_grad_struct_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_grad=True`, however their grad field\(s\) are not placed.*",
     ):
         foo()
 
@@ -102,9 +98,8 @@ def test_check_dual_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*",
     ):
         foo()
 
@@ -119,9 +114,8 @@ def test_check_dual_vector_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*",
     ):
         foo()
 
@@ -136,9 +130,8 @@ def test_check_dual_matrix_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*",
     ):
         foo()
 
@@ -152,7 +145,8 @@ def test_check_dual_struct_field_not_placed():
             "acc": ti.types.vector(3, float),
             "mass": ti.f32,
         },
-        needs_dual=True)
+        needs_dual=True,
+    )
     ti.root.dense(ti.i, 1).place(d)
 
     @ti.kernel
@@ -160,9 +154,8 @@ def test_check_dual_struct_field_not_placed():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=
-            r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*"
+        RuntimeError,
+        match=r"These field\(s\) requrie `needs_dual=True`, however their dual field\(s\) are not placed.*",
     ):
         foo()
 
@@ -180,6 +173,6 @@ def test_check_matrix_field_member_shape():
         pass
 
     with pytest.raises(
-            RuntimeError,
-            match=r"Members of the following field have different shapes.*"):
+        RuntimeError, match=r"Members of the following field have different shapes.*"
+    ):
         foo()

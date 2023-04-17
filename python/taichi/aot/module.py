@@ -6,8 +6,7 @@ from shutil import rmtree
 from tempfile import mkdtemp
 from zipfile import ZipFile
 
-from taichi.aot.utils import (produce_injected_args,
-                              produce_injected_args_from_template)
+from taichi.aot.utils import produce_injected_args, produce_injected_args_from_template
 from taichi.lang import impl, kernel_impl
 from taichi.lang.field import ScalarField
 from taichi.lang.matrix import MatrixField
@@ -24,22 +23,24 @@ class KernelTemplate:
     @staticmethod
     def keygen(v, key_p, fields):
         if isinstance(v, (int, float, bool)):
-            key_p += '=' + str(v) + ','
+            key_p += "=" + str(v) + ","
             return key_p
         for ky, val in fields:
             if val is v:
-                key_p += '=' + ky + ','
+                key_p += "=" + ky + ","
                 return key_p
-        raise RuntimeError('Arg type must be of type int/float/boolean'
-                           f' or taichi field. Type {str(type(v))}'
-                           ' is not supported')
+        raise RuntimeError(
+            "Arg type must be of type int/float/boolean"
+            f" or taichi field. Type {str(type(v))}"
+            " is not supported"
+        )
 
     def instantiate(self, **kwargs):
         name = self._kernel_fn.__name__
         kernel = self._kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         injected_args = []
-        key_p = ''
+        key_p = ""
         anno_index = 0
         template_args = {}
 
@@ -57,7 +58,8 @@ class KernelTemplate:
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
         self._aot_module._aot_builder.add_kernel_template(
-            name, key_p, kernel.kernel_cpp)
+            name, key_p, kernel.kernel_cpp
+        )
 
         # kernel AOT
         self._aot_module._kernels.append(kernel)
@@ -82,6 +84,7 @@ class Module:
         # Now the module file '/path/to/module' contains the Metal kernels
         # for running ``foo`` and ``bar``.
     """
+
     def __init__(self, arch=None, caps=None):
         """Creates a new AOT module instance
 
@@ -136,9 +139,15 @@ class Module:
             column_num = field.n
         else:
             assert isinstance(field, ScalarField)
-        self._aot_builder.add_field(name, field.snode.ptr, is_scalar,
-                                    field.dtype, field.snode.shape, row_num,
-                                    column_num)
+        self._aot_builder.add_field(
+            name,
+            field.snode.ptr,
+            is_scalar,
+            field.dtype,
+            field.snode.shape,
+            row_num,
+            column_num,
+        )
 
     def add_kernel(self, kernel_fn, template_args=None, name=None):
         """Add a taichi kernel to the AOT module.
@@ -157,8 +166,7 @@ class Module:
         kernel = kernel_fn._primal
         assert isinstance(kernel, kernel_impl.Kernel)
         if template_args is not None:
-            injected_args = produce_injected_args_from_template(
-                kernel, template_args)
+            injected_args = produce_injected_args_from_template(kernel, template_args)
         else:
             injected_args = produce_injected_args(kernel)
         kernel.ensure_compiled(*injected_args)
@@ -216,9 +224,9 @@ class Module:
         filepath = str(PurePosixPath(Path(filepath)))
         self._aot_builder.dump(filepath, "")
         with open(f"{filepath}/__content__", "w") as f:
-            f.write('\n'.join(self._content))
+            f.write("\n".join(self._content))
         with open(f"{filepath}/__version__", "w") as f:
-            f.write('.'.join(str(x) for x in taichi.__version__))
+            f.write(".".join(str(x) for x in taichi.__version__))
 
     def archive(self, filepath: str):
         """
@@ -226,8 +234,9 @@ class Module:
           filepath (str): path to the stored archive of aot artifacts, MUST
             end with `.tcm`.
         """
-        assert filepath.endswith(".tcm"), \
-            "AOT module artifact archive must ends with .tcm"
+        assert filepath.endswith(
+            ".tcm"
+        ), "AOT module artifact archive must ends with .tcm"
         tcm_path = Path(filepath).absolute()
         assert tcm_path.parent.exists(), "Output directory doesn't exist"
 

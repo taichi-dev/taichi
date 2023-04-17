@@ -3,8 +3,13 @@ from taichi._lib import core as _ti_core
 from taichi._logging import warn
 from taichi.lang import impl
 from taichi.lang.exception import TaichiSyntaxError
-from taichi.lang.util import (in_python_scope, python_scope, to_numpy_type,
-                              to_paddle_type, to_pytorch_type)
+from taichi.lang.util import (
+    in_python_scope,
+    python_scope,
+    to_numpy_type,
+    to_paddle_type,
+    to_pytorch_type,
+)
 
 
 class Field:
@@ -17,6 +22,7 @@ class Field:
     Args:
         vars (List[Expr]): Field members.
     """
+
     def __init__(self, _vars):
         assert all(_vars)
         self.vars = _vars
@@ -203,11 +209,14 @@ class Field:
             other (Field): The source field.
         """
         if not isinstance(other, Field):
-            raise TypeError('Cannot copy from a non-field object')
+            raise TypeError("Cannot copy from a non-field object")
         if self.shape != other.shape:
-            raise ValueError(f"ti.field shape {self.shape} does not match"
-                             f" the source field shape {other.shape}")
+            raise ValueError(
+                f"ti.field shape {self.shape} does not match"
+                f" the source field shape {other.shape}"
+            )
         from taichi._kernels import tensor_to_tensor  # pylint: disable=C0415
+
         tensor_to_tensor(self, other)
 
     @python_scope
@@ -236,34 +245,31 @@ class Field:
         if taichi.lang.impl.inside_kernel():
             return self.__repr__()  # make pybind11 happy, see Matrix.__str__
         if self._snode.ptr is None:
-            return '<Field: Definition of this field is incomplete>'
+            return "<Field: Definition of this field is incomplete>"
         return str(self.to_numpy())
 
     def _pad_key(self, key):
         if key is None:
             key = ()
         if not isinstance(key, (tuple, list)):
-            key = (key, )
+            key = (key,)
 
         if len(key) != len(self.shape):
             raise AssertionError("Slicing is not supported on ti.field")
 
-        return key + ((0, ) * (_ti_core.get_max_num_indices() - len(key)))
+        return key + ((0,) * (_ti_core.get_max_num_indices() - len(key)))
 
     def _initialize_host_accessors(self):
         if self.host_accessors:
             return
         taichi.lang.impl.get_runtime().materialize()
-        self.host_accessors = [
-            SNodeHostAccessor(e.ptr.snode()) for e in self.vars
-        ]
+        self.host_accessors = [SNodeHostAccessor(e.ptr.snode()) for e in self.vars]
 
     def _host_access(self, key):
         return [SNodeHostAccess(e, key) for e in self.host_accessors]
 
     def __iter__(self):
-        raise NotImplementedError(
-            "Struct for is only available in Taichi scope.")
+        raise NotImplementedError("Struct for is only available in Taichi scope.")
 
 
 class ScalarField(Field):
@@ -272,24 +278,24 @@ class ScalarField(Field):
     Args:
         var (Expr): Field member.
     """
+
     def __init__(self, var):
         super().__init__([var])
 
     def fill(self, val):
-        """Fills this scalar field with a specified value.
-        """
+        """Fills this scalar field with a specified value."""
         if in_python_scope():
             from taichi._kernels import fill_tensor  # pylint: disable=C0415
+
             fill_tensor(self, val)
         else:
-            from taichi._funcs import \
-                field_fill_taichi_scope  # pylint: disable=C0415
+            from taichi._funcs import field_fill_taichi_scope  # pylint: disable=C0415
+
             field_fill_taichi_scope(self, val)
 
     @python_scope
     def to_numpy(self, dtype=None):
-        """Converts this field to a `numpy.ndarray`.
-        """
+        """Converts this field to a `numpy.ndarray`."""
         if self.parent()._snode.ptr.type == _ti_core.SNodeType.dynamic:
             warn(
                 "You are trying to convert a dynamic snode to a numpy array, be aware that inactive items in the snode will be converted to zeros in the resulting array."
@@ -297,39 +303,41 @@ class ScalarField(Field):
         if dtype is None:
             dtype = to_numpy_type(self.dtype)
         import numpy as np  # pylint: disable=C0415
+
         arr = np.zeros(shape=self.shape, dtype=dtype)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
     def to_torch(self, device=None):
-        """Converts this field to a `torch.tensor`.
-        """
+        """Converts this field to a `torch.tensor`."""
         import torch  # pylint: disable=C0415
 
         # pylint: disable=E1101
-        arr = torch.zeros(size=self.shape,
-                          dtype=to_pytorch_type(self.dtype),
-                          device=device)
+        arr = torch.zeros(
+            size=self.shape, dtype=to_pytorch_type(self.dtype), device=device
+        )
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
 
     @python_scope
     def to_paddle(self, place=None):
-        """Converts this field to a `paddle.Tensor`.
-        """
+        """Converts this field to a `paddle.Tensor`."""
         import paddle  # pylint: disable=C0415
 
         # pylint: disable=E1101
         # paddle.empty() doesn't support argument `place``
-        arr = paddle.to_tensor(paddle.zeros(self.shape,
-                                            to_paddle_type(self.dtype)),
-                               place=place)
+        arr = paddle.to_tensor(
+            paddle.zeros(self.shape, to_paddle_type(self.dtype)), place=place
+        )
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
+
         tensor_to_ext_arr(self, arr)
         taichi.lang.runtime_ops.sync()
         return arr
@@ -337,22 +345,27 @@ class ScalarField(Field):
     @python_scope
     def _from_external_arr(self, arr):
         if len(self.shape) != len(arr.shape):
-            raise ValueError(f"ti.field shape {self.shape} does not match"
-                             f" the numpy array shape {arr.shape}")
+            raise ValueError(
+                f"ti.field shape {self.shape} does not match"
+                f" the numpy array shape {arr.shape}"
+            )
         for i, _ in enumerate(self.shape):
             if self.shape[i] != arr.shape[i]:
-                raise ValueError(f"ti.field shape {self.shape} does not match"
-                                 f" the numpy array shape {arr.shape}")
+                raise ValueError(
+                    f"ti.field shape {self.shape} does not match"
+                    f" the numpy array shape {arr.shape}"
+                )
         from taichi._kernels import ext_arr_to_tensor  # pylint: disable=C0415
+
         ext_arr_to_tensor(arr, self)
         taichi.lang.runtime_ops.sync()
 
     @python_scope
     def from_numpy(self, arr):
-        """Copies the data from a `numpy.ndarray` into this field.
-        """
+        """Copies the data from a `numpy.ndarray` into this field."""
         if not arr.flags.c_contiguous:
             import numpy as np  # pylint: disable=C0415
+
             arr = np.ascontiguousarray(arr)
         self._from_external_arr(arr)
 
@@ -368,6 +381,7 @@ class ScalarField(Field):
         # for instance: x[0, :]
         padded_key = self._pad_key(key)
         import numpy as np  # pylint: disable=C0415
+
         for key in padded_key:
             if not isinstance(key, (int, np.integer)):
                 raise TypeError(
@@ -378,7 +392,7 @@ class ScalarField(Field):
 
     def __repr__(self):
         # make interactive shell happy, prevent materialization
-        return '<ti.field>'
+        return "<ti.field>"
 
 
 class SNodeHostAccessor:
@@ -407,11 +421,15 @@ class SNodeHostAccessor:
             assert len(key) == _ti_core.get_max_num_indices()
             write_func(key, value)
             # same as above
-            if impl.get_runtime().target_tape and impl.get_runtime(
-            ).target_tape.grad_checker and not impl.get_runtime(
-            ).grad_replaced:
+            if (
+                impl.get_runtime().target_tape
+                and impl.get_runtime().target_tape.grad_checker
+                and not impl.get_runtime().grad_replaced
+            ):
                 for x in impl.get_runtime().target_tape.grad_checker.to_check:
-                    assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
+                    assert (
+                        snode != x.snode.ptr
+                    ), "Overwritten is prohibitive when doing grad check."
                 impl.get_runtime().target_tape.insert(write_func, (key, value))
 
         self.getter = getter
@@ -430,10 +448,10 @@ class BitpackedFields:
     Args:
         max_num_bits (int): Maximum number of bits all fields inside can occupy in total. Only 32 or 64 is allowed.
     """
+
     def __init__(self, max_num_bits):
         self.fields = []
-        self.bit_struct_type_builder = _ti_core.BitStructTypeBuilder(
-            max_num_bits)
+        self.bit_struct_type_builder = _ti_core.BitStructTypeBuilder(max_num_bits)
 
     def place(self, *args, shared_exponent=False):
         """Places a list of fields with quantized types inside.
@@ -448,9 +466,9 @@ class BitpackedFields:
         for arg in args:
             assert isinstance(arg, Field)
             for var in arg._get_field_members():
-                self.fields.append((var.ptr,
-                                    self.bit_struct_type_builder.add_member(
-                                        var.ptr.get_dt())))
+                self.fields.append(
+                    (var.ptr, self.bit_struct_type_builder.add_member(var.ptr.get_dt()))
+                )
                 count += 1
         if shared_exponent:
             self.bit_struct_type_builder.end_placing_shared_exponent()

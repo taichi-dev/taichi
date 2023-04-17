@@ -19,11 +19,11 @@ def sparse_struct_for():
     x[5, 6] = 3
 
     for i, j in x:
-        print(f'field x[i, j]={x[i, j]}')
+        print(f"field x[i, j]={x[i, j]}")
 
     for i, j in block:
-        print(f'Active block: [{i}, {j}]')
+        print(f"Active block: [{i}, {j}]")
 
 
-print(f'use_bitmask={use_bitmask}')
+print(f"use_bitmask={use_bitmask}")
 sparse_struct_for()

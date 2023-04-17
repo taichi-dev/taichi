@@ -6,8 +6,12 @@ from taichi.lang.ops import atomic_add
 from taichi.types.annotations import template
 from taichi.types.primitive_types import f32
 
-from .staging_buffer import (copy_all_to_vbo, get_indices_field,
-                             get_transforms_field, get_vbo_field)
+from .staging_buffer import (
+    copy_all_to_vbo,
+    get_indices_field,
+    get_transforms_field,
+    get_vbo_field,
+)
 from .utils import check_ggui_availability, get_field_info
 
 normals_field_cache = {}
@@ -16,8 +20,8 @@ normals_field_cache = {}
 def get_normals_field(vertices):
     if vertices not in normals_field_cache:
         N = vertices.shape[0]
-        normals = Vector.field(3, f32, shape=(N, ))
-        normal_weights = field(f32, shape=(N, ))
+        normals = Vector.field(3, f32, shape=(N,))
+        normal_weights = field(f32, shape=(N,))
         normals_field_cache[vertices] = (normals, normal_weights)
         return (normals, normal_weights)
     return normals_field_cache[vertices]
@@ -37,8 +41,9 @@ def gen_normals_kernel(vertices: template(), normals: template()):
 
 
 @kernel
-def gen_normals_kernel_indexed(vertices: template(), indices: template(),
-                               normals: template(), weights: template()):
+def gen_normals_kernel_indexed(
+    vertices: template(), indices: template(), normals: template(), weights: template()
+):
     num_triangles = indices.shape[0] // 3
     num_vertices = vertices.shape[0]
     for i in range(num_vertices):
@@ -76,6 +81,7 @@ class Scene:
     """The 3D scene class, which can contain meshes and particles,
     and can be rendered on a canvas.
     """
+
     def __init__(self):
         check_ggui_availability()
         self.scene = _ti_core.PyScene()
@@ -88,16 +94,18 @@ class Scene:
         """
         self.scene.set_camera(camera.ptr)
 
-    def lines(self,
-              vertices,
-              width,
-              indices=None,
-              color=(0.5, 0.5, 0.5),
-              per_vertex_color=None,
-              vertex_offset: int = 0,
-              vertex_count: int = None,
-              index_offset: int = 0,
-              index_count: int = None):
+    def lines(
+        self,
+        vertices,
+        width,
+        indices=None,
+        color=(0.5, 0.5, 0.5),
+        per_vertex_color=None,
+        vertex_offset: int = 0,
+        vertex_count: int = None,
+        index_offset: int = 0,
+        index_count: int = None,
+    ):
         """Declare multi-lines inside the scene.
 
         Note that under current situation, for example, there you have 4 vertices,
@@ -142,8 +150,7 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         if vertex_count % 2:
-            print(
-                "Warning! Odd drawing count will be cut to neast even number")
+            print("Warning! Odd drawing count will be cut to neast even number")
             vertex_count -= 1
         if vertex_count + vertex_offset > vertices.shape[0]:
             print("Warning! Drawing count greater than shape will be cut")
@@ -151,28 +158,38 @@ class Scene:
             vertex_count -= vertex_count % 2
         has_per_vertex_color = per_vertex_color is not None
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(vbo, vertices, 0, 0,
-                        per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo(
+            vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
+        )
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(
-            indices) if indices is not None else None
+        indices_ndarray = get_indices_field(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
-        self.scene.lines(vbo_info, indices_info, has_per_vertex_color, color,
-                         width, index_count, index_offset, vertex_count,
-                         vertex_offset)
+        self.scene.lines(
+            vbo_info,
+            indices_info,
+            has_per_vertex_color,
+            color,
+            width,
+            index_count,
+            index_offset,
+            vertex_count,
+            vertex_offset,
+        )
 
-    def mesh(self,
-             vertices,
-             indices=None,
-             normals=None,
-             color=(0.5, 0.5, 0.5),
-             per_vertex_color=None,
-             two_sided=False,
-             vertex_offset: int = 0,
-             vertex_count: int = None,
-             index_offset: int = 0,
-             index_count: int = None,
-             show_wireframe: bool = False):
+    def mesh(
+        self,
+        vertices,
+        indices=None,
+        normals=None,
+        color=(0.5, 0.5, 0.5),
+        per_vertex_color=None,
+        two_sided=False,
+        vertex_offset: int = 0,
+        vertex_count: int = None,
+        index_offset: int = 0,
+        index_count: int = None,
+        show_wireframe: bool = False,
+    ):
         """Declare a mesh inside the scene.
 
         if you indicate the index_offset and index_count, the normals will also
@@ -221,32 +238,43 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(vbo, vertices, normals, 0,
-                        per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo(
+            vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0
+        )
         vbo_info = get_field_info(vbo)
-        indices_ndarray = get_indices_field(
-            indices) if indices is not None else None
+        indices_ndarray = get_indices_field(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
 
-        self.scene.mesh(vbo_info, has_per_vertex_color, indices_info, color,
-                        two_sided, index_count, index_offset, vertex_count,
-                        vertex_offset, show_wireframe)
+        self.scene.mesh(
+            vbo_info,
+            has_per_vertex_color,
+            indices_info,
+            color,
+            two_sided,
+            index_count,
+            index_offset,
+            vertex_count,
+            vertex_offset,
+            show_wireframe,
+        )
 
-    def mesh_instance(self,
-                      vertices,
-                      indices=None,
-                      normals=None,
-                      color=(0.5, 0.5, 0.5),
-                      per_vertex_color=None,
-                      two_sided=False,
-                      transforms=None,
-                      instance_offset: int = 0,
-                      instance_count: int = None,
-                      vertex_offset: int = 0,
-                      vertex_count: int = None,
-                      index_offset: int = 0,
-                      index_count: int = None,
-                      show_wireframe: bool = False):
+    def mesh_instance(
+        self,
+        vertices,
+        indices=None,
+        normals=None,
+        color=(0.5, 0.5, 0.5),
+        per_vertex_color=None,
+        two_sided=False,
+        transforms=None,
+        instance_offset: int = 0,
+        instance_count: int = None,
+        vertex_offset: int = 0,
+        vertex_count: int = None,
+        index_offset: int = 0,
+        index_count: int = None,
+        show_wireframe: bool = False,
+    ):
         """Declare mesh instances inside the scene.
 
         If transforms is given, then according to the shape of transforms, it will
@@ -305,7 +333,7 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         if transforms:
-            if (transforms.m != 4 or transforms.n != 4):
+            if transforms.m != 4 or transforms.n != 4:
                 raise Exception("Error! Transform matrix must be 4x4 shape")
             if instance_count is None:
                 instance_count = transforms.shape[0]
@@ -313,27 +341,39 @@ class Scene:
             instance_count = 1
 
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(vbo, vertices, normals, 0,
-                        per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo(
+            vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0
+        )
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field(indices) if indices else None
         indices_info = get_field_info(indices_ndarray)
-        transforms_ndarray = get_transforms_field(
-            transforms) if transforms else None
+        transforms_ndarray = get_transforms_field(transforms) if transforms else None
         transform_info = get_field_info(transforms_ndarray)
-        self.scene.mesh_instance(vbo_info, has_per_vertex_color, indices_info,
-                                 color, two_sided, transform_info,
-                                 instance_count, instance_offset, index_count,
-                                 index_offset, vertex_count, vertex_offset,
-                                 show_wireframe)
+        self.scene.mesh_instance(
+            vbo_info,
+            has_per_vertex_color,
+            indices_info,
+            color,
+            two_sided,
+            transform_info,
+            instance_count,
+            instance_offset,
+            index_count,
+            index_offset,
+            vertex_count,
+            vertex_offset,
+            show_wireframe,
+        )
 
-    def particles(self,
-                  centers,
-                  radius,
-                  color=(0.5, 0.5, 0.5),
-                  per_vertex_color=None,
-                  index_offset: int = 0,
-                  index_count: int = None):
+    def particles(
+        self,
+        centers,
+        radius,
+        color=(0.5, 0.5, 0.5),
+        per_vertex_color=None,
+        index_offset: int = 0,
+        index_count: int = None,
+    ):
         """Declare a set of particles within the scene.
 
         Args:
@@ -352,11 +392,13 @@ class Scene:
         if index_count is None:
             index_count = centers.shape[0]
         vbo = get_vbo_field(centers)
-        copy_all_to_vbo(vbo, centers, 0, 0,
-                        per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo(
+            vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0
+        )
         vbo_info = get_field_info(vbo)
-        self.scene.particles(vbo_info, has_per_vertex_color, color, radius,
-                             index_count, index_offset)
+        self.scene.particles(
+            vbo_info, has_per_vertex_color, color, radius, index_count, index_offset
+        )
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

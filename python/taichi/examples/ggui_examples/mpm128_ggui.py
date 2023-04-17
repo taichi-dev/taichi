@@ -7,22 +7,22 @@ quality = 1  # Use a larger value for higher-res simulations
 n_particles, n_grid = 9000 * quality**2, 128 * quality
 dx, inv_dx = 1 / n_grid, float(n_grid)
 dt = 1e-4 / quality
-p_vol, p_rho = (dx * 0.5)**2, 1
+p_vol, p_rho = (dx * 0.5) ** 2, 1
 p_mass = p_vol * p_rho
 E, nu = 5e3, 0.2  # Young's modulus and Poisson's ratio
 mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
-    (1 + nu) * (1 - 2 * nu))  # Lame parameters
+    (1 + nu) * (1 - 2 * nu)
+)  # Lame parameters
 
 x = ti.Vector.field(2, dtype=float, shape=n_particles)  # position
 v = ti.Vector.field(2, dtype=float, shape=n_particles)  # velocity
-C = ti.Matrix.field(2, 2, dtype=float,
-                    shape=n_particles)  # affine velocity field
-F = ti.Matrix.field(2, 2, dtype=float,
-                    shape=n_particles)  # deformation gradient
+C = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # affine velocity field
+F = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # deformation gradient
 material = ti.field(dtype=int, shape=n_particles)  # material id
 Jp = ti.field(dtype=float, shape=n_particles)  # plastic deformation
-grid_v = ti.Vector.field(2, dtype=float,
-                         shape=(n_grid, n_grid))  # grid node momentum/velocity
+grid_v = ti.Vector.field(
+    2, dtype=float, shape=(n_grid, n_grid)
+)  # grid node momentum/velocity
 grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))  # grid node mass
 gravity = ti.Vector.field(2, dtype=float, shape=())
 attractor_strength = ti.field(dtype=float, shape=())
@@ -32,7 +32,7 @@ group_size = n_particles // 3
 water = ti.Vector.field(2, dtype=float, shape=group_size)  # position
 jelly = ti.Vector.field(2, dtype=float, shape=group_size)  # position
 snow = ti.Vector.field(2, dtype=float, shape=group_size)  # position
-mouse_circle = ti.Vector.field(2, dtype=float, shape=(1, ))
+mouse_circle = ti.Vector.field(2, dtype=float, shape=(1,))
 
 
 @ti.kernel
@@ -44,7 +44,7 @@ def substep():
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - base.cast(float)
         # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
-        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+        w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
         # deformation gradient update
         F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p]
         # Hardening coefficient: snow gets harder when compressed
@@ -59,8 +59,7 @@ def substep():
         for d in ti.static(range(2)):
             new_sig = sig[d, d]
             if material[p] == 2:  # Snow
-                new_sig = min(max(sig[d, d], 1 - 2.5e-2),
-                              1 + 4.5e-3)  # Plasticity
+                new_sig = min(max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3)  # Plasticity
             Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
@@ -70,8 +69,9 @@ def substep():
         elif material[p] == 2:
             # Reconstruct elastic deformation gradient after plasticity
             F[p] = U @ sig @ V.transpose()
-        stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose(
-        ) + ti.Matrix.identity(float, 2) * la * J * (J - 1)
+        stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[
+            p
+        ].transpose() + ti.Matrix.identity(float, 2) * la * J * (J - 1)
         stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
         affine = stress + p_mass * C[p]
         # Loop over 3x3 grid node neighborhood
@@ -83,13 +83,12 @@ def substep():
             grid_m[base + offset] += weight * p_mass
     for i, j in grid_m:
         if grid_m[i, j] > 0:  # No need for epsilon here
-            grid_v[i,
-                   j] = (1 / grid_m[i, j]) * grid_v[i,
-                                                    j]  # Momentum to velocity
+            grid_v[i, j] = (1 / grid_m[i, j]) * grid_v[i, j]  # Momentum to velocity
             grid_v[i, j] += dt * gravity[None] * 30  # gravity
             dist = attractor_pos[None] - dx * ti.Vector([i, j])
-            grid_v[i, j] += dist / (
-                0.01 + dist.norm()) * attractor_strength[None] * dt * 100
+            grid_v[i, j] += (
+                dist / (0.01 + dist.norm()) * attractor_strength[None] * dt * 100
+            )
             if i < 3 and grid_v[i, j][0] < 0:
                 grid_v[i, j][0] = 0  # Boundary conditions
             if i > n_grid - 3 and grid_v[i, j][0] > 0:
@@ -101,7 +100,7 @@ def substep():
     for p in x:  # grid to particle (G2P)
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - base.cast(float)
-        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
+        w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
         new_v = ti.Vector.zero(float, 2)
         new_C = ti.Matrix.zero(float, 2, 2)
         # loop over 3x3 grid node neighborhood
@@ -120,7 +119,7 @@ def reset():
     for i in range(n_particles):
         x[i] = [
             ti.random() * 0.2 + 0.3 + 0.10 * (i // group_size),
-            ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size)
+            ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size),
         ]
         material[i] = i // group_size  # 0: fluid 1: jelly 2: snow
         v[i] = [0, 0]
@@ -152,19 +151,19 @@ def main():
 
     while window.running:
         if window.get_event(ti.ui.PRESS):
-            if window.event.key == 'r':
+            if window.event.key == "r":
                 reset()
             elif window.event.key in [ti.ui.ESCAPE]:
                 break
         if window.event is not None:
             gravity[None] = [0, 0]  # if had any event
-        if window.is_pressed(ti.ui.LEFT, 'a'):
+        if window.is_pressed(ti.ui.LEFT, "a"):
             gravity[None][0] = -1
-        if window.is_pressed(ti.ui.RIGHT, 'd'):
+        if window.is_pressed(ti.ui.RIGHT, "d"):
             gravity[None][0] = 1
-        if window.is_pressed(ti.ui.UP, 'w'):
+        if window.is_pressed(ti.ui.UP, "w"):
             gravity[None][1] = 1
-        if window.is_pressed(ti.ui.DOWN, 's'):
+        if window.is_pressed(ti.ui.DOWN, "s"):
             gravity[None][1] = -1
         mouse = window.get_cursor_pos()
         mouse_circle[0] = ti.Vector([mouse[0], mouse[1]])
@@ -186,5 +185,5 @@ def main():
         window.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

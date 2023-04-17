@@ -253,8 +253,13 @@ def test_append_struct():
         for i in range(10):
             for j in range(20):
                 x[i].append(
-                    struct(i * j * 10, i * j * 10000, i * j * 100000000,
-                           i * j * ti.u64(10000000000)))
+                    struct(
+                        i * j * 10,
+                        i * j * 10000,
+                        i * j * 100000000,
+                        i * j * ti.u64(10000000000),
+                    )
+                )
 
     make_list()
 
@@ -278,8 +283,8 @@ def test_append_matrix():
         for i in range(10):
             for j in range(20):
                 f[i].append(
-                    ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
-                              dt=ti.u8))
+                    ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]], dt=ti.u8)
+                )
 
     make_list()
 
@@ -304,8 +309,12 @@ def test_append_matrix_in_struct():
                 f[i].append(
                     struct(
                         i * j * ti.u64(10**10),
-                        ti.Matrix([[i * j, i * j * 2], [i * j * 3, i * j * 4]],
-                                  dt=ti.u8), i * j * 5000))
+                        ti.Matrix(
+                            [[i * j, i * j * 2], [i * j * 3, i * j * 4]], dt=ti.u8
+                        ),
+                        i * j * 5000,
+                    )
+                )
 
     make_list()
 

@@ -129,21 +129,21 @@ class TaskAttributes:
         advisory_total_num_threads = j["advisory_total_num_threads"]
         buffer_binds = j["buffer_binds"]
         name = j["name"]
-        range_for_attribs = j[
-            "range_for_attribs"] if "range_for_attribs" in j else None
+        range_for_attribs = j["range_for_attribs"] if "range_for_attribs" in j else None
         task_type = j["task_type"]
         texture_binds = j["texture_binds"]
 
-        self.advisory_num_threads_per_group: int = int(
-            advisory_num_threads_per_group)
+        self.advisory_num_threads_per_group: int = int(advisory_num_threads_per_group)
         self.advisory_total_num_threads: int = int(advisory_total_num_threads)
         self.buffer_binds: List[BufferBinding] = [
             BufferBinding(x) for x in buffer_binds
         ]
         self.name: str = str(name)
-        self.range_for_attribs: Optional[
-            RangeForAttributes] = RangeForAttributes(
-                range_for_attribs) if range_for_attribs is not None else None
+        self.range_for_attribs: Optional[RangeForAttributes] = (
+            RangeForAttributes(range_for_attribs)
+            if range_for_attribs is not None
+            else None
+        )
         self.task_type: int = int(task_type)
         self.texture_binds: List[TextureBinding] = [
             TextureBinding(x) for x in texture_binds
@@ -184,12 +184,8 @@ class Metadata:
         required_caps = j["required_caps"]
         root_buffer_size = j["root_buffer_size"]
 
-        self.fields: List[FieldAttributes] = [
-            FieldAttributes(x) for x in fields
-        ]
-        self.kernels: List[KernelAttributes] = [
-            KernelAttributes(x) for x in kernels
-        ]
+        self.fields: List[FieldAttributes] = [FieldAttributes(x) for x in fields]
+        self.kernels: List[KernelAttributes] = [KernelAttributes(x) for x in kernels]
         self.required_caps: List[DeviceCapabilityLevel] = [
             DeviceCapabilityLevel(x) for x in required_caps
         ]

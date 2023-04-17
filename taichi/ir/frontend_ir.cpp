@@ -219,13 +219,13 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
 
   if (type == UnaryOpType::frexp) {
     std::vector<StructMember> elements;
-    elements.push_back(
-        {taichi::lang::TypeFactory::get_instance().get_primitive_real_type(64),
-         "mantissa", 0});
+    TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
+              operand_primitive_type->is_primitive(PrimitiveTypeID::f64));
+    elements.push_back({operand_primitive_type, "mantissa", 0});
     elements.push_back(
         {taichi::lang::TypeFactory::get_instance().get_primitive_int_type(
              32, /*is_signed=*/true),
-         "exponent", 8});
+         "exponent", (size_t)data_type_size(operand_primitive_type)});
     ret_type =
         taichi::lang::TypeFactory::get_instance().get_struct_type(elements);
     ret_type.set_is_pointer(true);

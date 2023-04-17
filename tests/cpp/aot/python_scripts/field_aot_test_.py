@@ -33,31 +33,31 @@ def compile_field_aot(arch, compile_for_cgraph=False):
     def check_init_x(base: int):
         # Check numerical accuracy for Dense SNodes
         for i in range(4 * 8):
-            assert (x[i] == base + i)
+            assert x[i] == base + i
 
     @ti.kernel
     def check_init_y():
         # Check sparsity for Pointer SNodes
         for i in range(8):
             if i == 1 or i == 4:
-                assert (ti.is_active(p, [i]))
+                assert ti.is_active(p, [i])
             else:
-                assert (not ti.is_active(p, [i]))
+                assert not ti.is_active(p, [i])
 
         # Check numerical accuracy for Pointer SNodes
         for i in range(8, 8 + 8):
             if i == 9:
-                assert (y[i] == 10)
+                assert y[i] == 10
             else:
-                assert (y[i] == 0)
+                assert y[i] == 0
 
         for i in range(32, 32 + 8):
             if i == 32:
-                assert (y[i] == 4)
+                assert y[i] == 4
             elif i == 33:
-                assert (y[i] == 5)
+                assert y[i] == 5
             else:
-                assert (y[i] == 0)
+                assert y[i] == 0
 
     @ti.kernel
     def deactivate_pointer_fields():
@@ -71,19 +71,19 @@ def compile_field_aot(arch, compile_for_cgraph=False):
 
     @ti.kernel
     def check_deactivate_pointer_fields():
-        assert (not ti.is_active(p, [1]))
-        assert (not ti.is_active(p, [4]))
+        assert not ti.is_active(p, [1])
+        assert not ti.is_active(p, [4])
 
     @ti.kernel
     def check_activate_pointer_fields():
-        assert (ti.is_active(p, [7]))
-        assert (ti.is_active(p, [3]))
+        assert ti.is_active(p, [7])
+        assert ti.is_active(p, [3])
 
         for i in range(7 * 8, 7 * 8 + 8):
-            assert (y[i] == 0)
+            assert y[i] == 0
 
         for i in range(3 * 8, 3 * 8 + 8):
-            assert (y[i] == 0)
+            assert y[i] == 0
 
     assert "TAICHI_AOT_FOLDER_PATH" in os.environ.keys()
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
@@ -91,8 +91,8 @@ def compile_field_aot(arch, compile_for_cgraph=False):
     if compile_for_cgraph:
         g_builder = ti.graph.GraphBuilder()
 
-        base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base0', dtype=ti.i32)
-        base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'base1', dtype=ti.i32)
+        base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "base0", dtype=ti.i32)
+        base1 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "base1", dtype=ti.i32)
 
         g_builder.dispatch(init_fields, base0)
         g_builder.dispatch(check_init_x, base1)
@@ -109,7 +109,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
         m.add_field("x", x)
         m.add_field("y", y)
 
-        m.add_graph('run_graph', run_graph)
+        m.add_graph("run_graph", run_graph)
         m.save(dir_name)
     else:
         m = ti.aot.Module()
@@ -133,7 +133,7 @@ def compile_field_aot(arch, compile_for_cgraph=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--arch", type=str)
-    parser.add_argument("--cgraph", action='store_true', default=False)
+    parser.add_argument("--cgraph", action="store_true", default=False)
     args = parser.parse_args()
 
     compile_for_cgraph = args.cgraph

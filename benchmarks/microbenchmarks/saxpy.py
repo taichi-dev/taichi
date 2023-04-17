@@ -7,9 +7,8 @@ import taichi as ti
 
 
 def saxpy_default(arch, repeat, container, dtype, dsize, get_metric):
-
     repeat = scaled_repeat_times(arch, dsize, repeat)
-    num_elements = dsize // dtype_size(dtype) // 3  #z=x+y
+    num_elements = dsize // dtype_size(dtype) // 3  # z=x+y
 
     x = container(dtype, num_elements)
     y = container(dtype, num_elements)
@@ -21,8 +20,9 @@ def saxpy_default(arch, repeat, container, dtype, dsize, get_metric):
             z[i] = 17 * x[i] + y[i]
 
     @ti.kernel
-    def saxpy_array(z: ti.types.ndarray(), x: ti.types.ndarray(),
-                    y: ti.types.ndarray()):
+    def saxpy_array(
+        z: ti.types.ndarray(), x: ti.types.ndarray(), y: ti.types.ndarray()
+    ):
         for i in z:
             z[i] = 17 * x[i] + y[i]
 
@@ -34,7 +34,7 @@ def saxpy_default(arch, repeat, container, dtype, dsize, get_metric):
 
 class SaxpyPlan(BenchmarkPlan):
     def __init__(self, arch: str):
-        super().__init__('saxpy', arch, basic_repeat_times=10)
+        super().__init__("saxpy", arch, basic_repeat_times=10)
         self.create_plan(Container(), DataType(), DataSize(), MetricType())
-        self.add_func(['field'], saxpy_default)
-        self.add_func(['ndarray'], saxpy_default)
+        self.add_func(["field"], saxpy_default)
+        self.add_func(["ndarray"], saxpy_default)

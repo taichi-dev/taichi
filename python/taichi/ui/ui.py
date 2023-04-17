@@ -21,7 +21,9 @@ def make_camera():
     """
     warnings.warn(
         "`ti.ui.make_camera()` is deprecated, and will be removed in Taichi v1.6.0. "
-        "Please use `ti.ui.Camera()` instead", DeprecationWarning)
+        "Please use `ti.ui.Camera()` instead",
+        DeprecationWarning,
+    )
     return Camera()
 
 

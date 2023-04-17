@@ -20,11 +20,12 @@ class TaichiOperations:
         if item in TaichiOperations.__deprecated_atomic_ops__:
             warnings.warn(
                 f"a.{item}(b) is deprecated, and it will be removed in Taichi v1.6.0. Please use ti.{item}(a, b) instead.",
-                DeprecationWarning)
-            return getattr(self,
-                           TaichiOperations.__deprecated_atomic_ops__[item])
+                DeprecationWarning,
+            )
+            return getattr(self, TaichiOperations.__deprecated_atomic_ops__[item])
         raise AttributeError(
-            f"'{type(self).__name__}' object has no attribute '{item}'")
+            f"'{type(self).__name__}' object has no attribute '{item}'"
+        )
 
     def __neg__(self):
         return ops.neg(self)
@@ -269,29 +270,29 @@ class TaichiOperations:
         Args:
             x (Any): Given operand.
             op (str): The name of operator."""
-        if op == 'Add':
+        if op == "Add":
             self += x
-        elif op == 'Sub':
+        elif op == "Sub":
             self -= x
-        elif op == 'Mult':
+        elif op == "Mult":
             self *= x
-        elif op == 'Div':
+        elif op == "Div":
             self /= x
-        elif op == 'FloorDiv':
+        elif op == "FloorDiv":
             self //= x
-        elif op == 'Mod':
+        elif op == "Mod":
             self %= x
-        elif op == 'BitAnd':
+        elif op == "BitAnd":
             self &= x
-        elif op == 'BitOr':
+        elif op == "BitOr":
             self |= x
-        elif op == 'BitXor':
+        elif op == "BitXor":
             self ^= x
-        elif op == 'RShift':
+        elif op == "RShift":
             self >>= x
-        elif op == 'LShift':
+        elif op == "LShift":
             self <<= x
-        elif op == 'Pow':
+        elif op == "Pow":
             self **= x
         else:
             assert False, op
@@ -301,7 +302,8 @@ class TaichiOperations:
 
     def __ti_bool__(self):
         return ops.cast(
-            self, primitive_types.i32)  # TODO[Xiaoyan]: Use i1 in the future
+            self, primitive_types.i32
+        )  # TODO[Xiaoyan]: Use i1 in the future
 
     def __ti_float__(self):
         return ops.cast(self, float)

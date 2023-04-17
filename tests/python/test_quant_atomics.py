@@ -5,9 +5,7 @@ from tests import test_utils
 
 
 # TODO: remove excluding of ti.metal.
-@test_utils.test(require=ti.extension.quant_basic,
-                 exclude=[ti.metal],
-                 debug=True)
+@test_utils.test(require=ti.extension.quant_basic, exclude=[ti.metal], debug=True)
 def test_quant_int_atomics():
     qi13 = ti.types.quant.int(13, True)
     qi5 = ti.types.quant.int(5, True)
@@ -43,8 +41,7 @@ def test_quant_int_atomics():
     assert z[None] == 3
 
 
-@test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64],
-                 debug=True)
+@test_utils.test(require=[ti.extension.quant_basic, ti.extension.data64], debug=True)
 def test_quant_int_atomics_b64():
     qi13 = ti.types.quant.int(13, True)
 

@@ -8,23 +8,24 @@ class MCISO:
     et2 = np.array(
         [
             [[-1, -1], [-1, -1]],  #
-            [[0, 1], [-1, -1]],  #a
-            [[0, 2], [-1, -1]],  #b
-            [[1, 2], [-1, -1]],  #ab
-            [[1, 3], [-1, -1]],  #c
-            [[0, 3], [-1, -1]],  #ca
-            [[2, 3], [0, 1]],  #cb
-            [[2, 3], [-1, -1]],  #cab
-            [[2, 3], [-1, -1]],  #d
-            [[2, 3], [0, 1]],  #da
-            [[0, 3], [-1, -1]],  #db
-            [[1, 3], [-1, -1]],  #dab
-            [[1, 2], [-1, -1]],  #dc
-            [[0, 2], [-1, -1]],  #dca
-            [[0, 1], [-1, -1]],  #dcb
-            [[-1, -1], [-1, -1]],  #dcab
+            [[0, 1], [-1, -1]],  # a
+            [[0, 2], [-1, -1]],  # b
+            [[1, 2], [-1, -1]],  # ab
+            [[1, 3], [-1, -1]],  # c
+            [[0, 3], [-1, -1]],  # ca
+            [[2, 3], [0, 1]],  # cb
+            [[2, 3], [-1, -1]],  # cab
+            [[2, 3], [-1, -1]],  # d
+            [[2, 3], [0, 1]],  # da
+            [[0, 3], [-1, -1]],  # db
+            [[1, 3], [-1, -1]],  # dab
+            [[1, 2], [-1, -1]],  # dc
+            [[0, 2], [-1, -1]],  # dca
+            [[0, 1], [-1, -1]],  # dcb
+            [[-1, -1], [-1, -1]],  # dcab
         ],
-        np.int32)
+        np.int32,
+    )
     et3 = np.array(
         [  # {{{
             # https://www.cnblogs.com/shushen/p/5542131.html
@@ -285,10 +286,12 @@ class MCISO:
             [0, 3, 8, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
             [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
         ],
-        np.int32)[:, :15].reshape(256, 5, 3)  # }}}
+        np.int32,
+    )[:, :15].reshape(
+        256, 5, 3
+    )  # }}}
 
     def __init__(self, N=64, dim=3, blk_size=None):
-
         self.N = N
         self.dim = dim
         self.use_sparse = blk_size is not None
@@ -299,15 +302,16 @@ class MCISO:
         indices = [ti.ij, ti.ijk][dim - 2]
         if self.use_sparse:
             ti.root.pointer(indices, self.N // self.blk_size).dense(
-                indices, self.blk_size).place(self.m)
+                indices, self.blk_size
+            ).place(self.m)
             ti.root.dense(indices, self.N).place(self.g)
         else:
             ti.root.dense(indices, self.N).place(self.m)
             ti.root.dense(indices, self.N).place(self.g)
 
         self.r = ti.Vector.field(
-            dim, float,
-            (self.N**self.dim, self.dim))  # result buffer, TODO: optimize this
+            dim, float, (self.N**self.dim, self.dim)
+        )  # result buffer, TODO: optimize this
 
         et = [self.et2, self.et3][dim - 2]
         self.et = ti.Vector.field(dim, int, et.shape[:2])
@@ -370,20 +374,20 @@ class MCISO:
                         i, j = I
                         # (.5, 0), (0, .5), (1, .5), (.5, 1)
                         if e == 0:
-                            p = (1 - self.m[i, j]) / (self.m[i + 1, j] -
-                                                      self.m[i, j])
+                            p = (1 - self.m[i, j]) / (self.m[i + 1, j] - self.m[i, j])
                             R = [i + p, j]
                         elif e == 1:
-                            p = (1 - self.m[i, j]) / (self.m[i, j + 1] -
-                                                      self.m[i, j])
+                            p = (1 - self.m[i, j]) / (self.m[i, j + 1] - self.m[i, j])
                             R = [i, j + p]
                         elif e == 2:
                             p = (1 - self.m[i + 1, j]) / (
-                                self.m[i + 1, j + 1] - self.m[i + 1, j])
+                                self.m[i + 1, j + 1] - self.m[i + 1, j]
+                            )
                             R = [i + 1, j + p]
                         elif e == 3:
                             p = (1 - self.m[i, j + 1]) / (
-                                self.m[i + 1, j + 1] - self.m[i, j + 1])
+                                self.m[i + 1, j + 1] - self.m[i, j + 1]
+                            )
                             R = [i + p, j + 1]
                     else:
                         i, j, k = I
@@ -391,55 +395,64 @@ class MCISO:
                         # (.5, 0, 1), (1, .5, 1), (.5, 1, 1), (0, .5, 1)
                         # (0, 0, .5), (1, 0, .5), (1, 1, .5), (0, 1, .5)
                         if e == 0:
-                            p = (1 - self.m[i, j, k]) / (self.m[i + 1, j, k] -
-                                                         self.m[i, j, k])
+                            p = (1 - self.m[i, j, k]) / (
+                                self.m[i + 1, j, k] - self.m[i, j, k]
+                            )
                             R = [i + p, j, k]
                         elif e == 1:
                             p = (1 - self.m[i + 1, j, k]) / (
-                                self.m[i + 1, j + 1, k] - self.m[i + 1, j, k])
+                                self.m[i + 1, j + 1, k] - self.m[i + 1, j, k]
+                            )
                             R = [i + 1, j + p, k]
                         elif e == 2:
                             p = (1 - self.m[i, j + 1, k]) / (
-                                self.m[i + 1, j + 1, k] - self.m[i, j + 1, k])
+                                self.m[i + 1, j + 1, k] - self.m[i, j + 1, k]
+                            )
                             R = [i + p, j + 1, k]
                         elif e == 3:
-                            p = (1 - self.m[i, j, k]) / (self.m[i, j + 1, k] -
-                                                         self.m[i, j, k])
+                            p = (1 - self.m[i, j, k]) / (
+                                self.m[i, j + 1, k] - self.m[i, j, k]
+                            )
                             R = [i, j + p, k]
                         elif e == 4:
                             p = (1 - self.m[i, j, k + 1]) / (
-                                self.m[i + 1, j, k + 1] - self.m[i, j, k + 1])
+                                self.m[i + 1, j, k + 1] - self.m[i, j, k + 1]
+                            )
                             R = [i + p, j, k + 1]
                         elif e == 5:
                             p = (1 - self.m[i + 1, j, k + 1]) / (
-                                self.m[i + 1, j + 1, k + 1] -
-                                self.m[i + 1, j, k + 1])
+                                self.m[i + 1, j + 1, k + 1] - self.m[i + 1, j, k + 1]
+                            )
                             R = [i + 1, j + p, k + 1]
                         elif e == 6:
                             p = (1 - self.m[i, j + 1, k + 1]) / (
-                                self.m[i + 1, j + 1, k + 1] -
-                                self.m[i, j + 1, k + 1])
+                                self.m[i + 1, j + 1, k + 1] - self.m[i, j + 1, k + 1]
+                            )
                             R = [i + p, j + 1, k + 1]
                         elif e == 7:
                             p = (1 - self.m[i, j, k + 1]) / (
-                                self.m[i, j + 1, k + 1] - self.m[i, j, k + 1])
+                                self.m[i, j + 1, k + 1] - self.m[i, j, k + 1]
+                            )
                             R = [i, j + p, k + 1]
                         elif e == 8:
-                            p = (1 - self.m[i, j, k]) / (self.m[i, j, k + 1] -
-                                                         self.m[i, j, k])
+                            p = (1 - self.m[i, j, k]) / (
+                                self.m[i, j, k + 1] - self.m[i, j, k]
+                            )
                             R = [i, j, k + p]
                         elif e == 9:
                             p = (1 - self.m[i + 1, j, k]) / (
-                                self.m[i + 1, j, k + 1] - self.m[i + 1, j, k])
+                                self.m[i + 1, j, k + 1] - self.m[i + 1, j, k]
+                            )
                             R = [i + 1, j, k + p]
                         elif e == 10:
                             p = (1 - self.m[i + 1, j + 1, k]) / (
-                                self.m[i + 1, j + 1, k + 1] -
-                                self.m[i + 1, j + 1, k])
+                                self.m[i + 1, j + 1, k + 1] - self.m[i + 1, j + 1, k]
+                            )
                             R = [i + 1, j + 1, k + p]
                         elif e == 11:
                             p = (1 - self.m[i, j + 1, k]) / (
-                                self.m[i, j + 1, k + 1] - self.m[i, j + 1, k])
+                                self.m[i, j + 1, k + 1] - self.m[i, j + 1, k]
+                            )
                             R = [i, j + 1, k + p]
                     self.r[n, l] = R
 
@@ -468,7 +481,7 @@ class MCISO_Example(MCISO):
             self.m[o] = r * 3
 
     def main(self):
-        gui = ti.GUI('Marching cube')
+        gui = ti.GUI("Marching cube")
         while gui.running and not gui.get_event(gui.ESCAPE):
             if self.use_sparse:
                 ti.deactivate_all_snodes()
@@ -480,41 +493,30 @@ class MCISO_Example(MCISO):
             if self.dim == 2:
                 self.compute_grad()
                 gui.set_image(ti.tools.imresize(self.g, *gui.res) * 0.5 + 0.5)
-                gui.lines(ret[:, 0], ret[:, 1], color=0xff66cc, radius=1.5)
+                gui.lines(ret[:, 0], ret[:, 1], color=0xFF66CC, radius=1.5)
             else:
-                gui.triangles(ret[:, 0, 0:2],
-                              ret[:, 1, 0:2],
-                              ret[:, 2, 0:2],
-                              color=0xffcc66)
-                gui.lines(ret[:, 0, 0:2],
-                          ret[:, 1, 0:2],
-                          color=0xff66cc,
-                          radius=0.5)
-                gui.lines(ret[:, 1, 0:2],
-                          ret[:, 2, 0:2],
-                          color=0xff66cc,
-                          radius=0.5)
-                gui.lines(ret[:, 2, 0:2],
-                          ret[:, 0, 0:2],
-                          color=0xff66cc,
-                          radius=0.5)
-                gui.text(f'Press space to save mesh to PLY ({len(ret)} faces)',
-                         (0, 1))
+                gui.triangles(
+                    ret[:, 0, 0:2], ret[:, 1, 0:2], ret[:, 2, 0:2], color=0xFFCC66
+                )
+                gui.lines(ret[:, 0, 0:2], ret[:, 1, 0:2], color=0xFF66CC, radius=0.5)
+                gui.lines(ret[:, 1, 0:2], ret[:, 2, 0:2], color=0xFF66CC, radius=0.5)
+                gui.lines(ret[:, 2, 0:2], ret[:, 0, 0:2], color=0xFF66CC, radius=0.5)
+                gui.text(f"Press space to save mesh to PLY ({len(ret)} faces)", (0, 1))
                 if gui.is_pressed(gui.SPACE):
                     num = ret.shape[0]
-                    writer = ti.tools.PLYWriter(num_vertices=num * 3,
-                                                num_faces=num)
+                    writer = ti.tools.PLYWriter(num_vertices=num * 3, num_faces=num)
                     vertices = ret.reshape(num * 3, 3) * 2 - 1
-                    writer.add_vertex_pos(vertices[:, 0], vertices[:, 1],
-                                          vertices[:, 2])
+                    writer.add_vertex_pos(
+                        vertices[:, 0], vertices[:, 1], vertices[:, 2]
+                    )
                     indices = np.arange(0, num * 3)
                     writer.add_faces(indices)
-                    writer.export('mciso_output.ply')
-                    print('Mesh saved to mciso_output.ply')
+                    writer.export("mciso_output.ply")
+                    print("Mesh saved to mciso_output.ply")
             gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ti.init(arch=ti.cuda)
     main = MCISO_Example(dim=3)
     main.main()

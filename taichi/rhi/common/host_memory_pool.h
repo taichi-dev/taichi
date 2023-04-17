@@ -9,38 +9,32 @@
 
 namespace taichi::lang {
 
-class UnifiedAllocator;
-namespace cuda {
-class CudaDevice;
-}
-
 // A memory pool that runs on the host
 
-class TI_DLL_EXPORT MemoryPool {
+class TI_DLL_EXPORT HostMemoryPool {
  public:
   static const size_t page_size;
 
-  static MemoryPool &get_instance(Arch arch);
+  static HostMemoryPool &get_instance();
 
-  virtual void *allocate(std::size_t size,
-                         std::size_t alignment,
-                         bool exclusive = false,
-                         bool managed = false) = 0;
-  virtual void release(std::size_t size, void *ptr) = 0;
-  virtual void reset() = 0;
+  void *allocate(std::size_t size,
+                 std::size_t alignment,
+                 bool exclusive = false);
+  void release(std::size_t size, void *ptr);
+  void reset();
+  HostMemoryPool();
+  ~HostMemoryPool();
 
  protected:
-  virtual void *allocate_raw_memory(std::size_t size, bool managed = false) = 0;
-  virtual void deallocate_raw_memory(void *ptr) = 0;
+  void *allocate_raw_memory(std::size_t size);
+  void deallocate_raw_memory(void *ptr);
 
   // All the raw memory allocated from OS/Driver
   // We need to keep track of them to guarantee that they are freed
   std::map<void *, std::size_t> raw_memory_chunks_;
 
-  // TODO: replace with base class Allocator
   std::unique_ptr<UnifiedAllocator> allocator_;
   std::mutex mut_allocation_;
-  Arch arch_;
 
   friend class UnifiedAllocator;
 };

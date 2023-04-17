@@ -8,9 +8,9 @@ def template_fuse_dense_x2y2z(
     repeat=10,
     first_n=100,
 ):
-    x = ti.field(ti.i32, shape=(size, ))
-    y = ti.field(ti.i32, shape=(size, ))
-    z = ti.field(ti.i32, shape=(size, ))
+    x = ti.field(ti.i32, shape=(size,))
+    y = ti.field(ti.i32, shape=(size,))
+    z = ti.field(ti.i32, shape=(size,))
     first_n = min(first_n, size)
 
     @ti.kernel
@@ -35,19 +35,19 @@ def template_fuse_dense_x2y2z(
         t = time.time()
         x_to_y()
         ti.sync()
-        print('x_to_y', time.time() - t)
+        print("x_to_y", time.time() - t)
 
     for _ in range(repeat):
         t = time.time()
         y_to_z()
         ti.sync()
-        print('y_to_z', time.time() - t)
+        print("y_to_z", time.time() - t)
 
     for _ in range(repeat):
         t = time.time()
         x_to_y_to_z()
         ti.sync()
-        print('fused x->y->z', time.time() - t)
+        print("fused x->y->z", time.time() - t)
 
     for i in range(first_n):
         assert x[i] == i * 10
@@ -56,7 +56,7 @@ def template_fuse_dense_x2y2z(
 
 
 def template_fuse_reduction(size=1024**3, repeat=10, first_n=100):
-    x = ti.field(ti.i32, shape=(size, ))
+    x = ti.field(ti.i32, shape=(size,))
     first_n = min(first_n, size)
 
     @ti.kernel
@@ -76,7 +76,7 @@ def template_fuse_reduction(size=1024**3, repeat=10, first_n=100):
         t = time.time()
         inc()
         ti.sync()
-        print('single inc', time.time() - t)
+        print("single inc", time.time() - t)
 
     reset()
     ti.sync()
@@ -85,7 +85,7 @@ def template_fuse_reduction(size=1024**3, repeat=10, first_n=100):
         inc()
     ti.sync()
     duration = time.time() - t
-    print(f'fused {repeat} inc: total={duration} average={duration / repeat}')
+    print(f"fused {repeat} inc: total={duration} average={duration / repeat}")
 
     for i in range(first_n):
         assert x[i] == i * 10 + repeat

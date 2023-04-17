@@ -27,9 +27,7 @@ def test_primitives():
 
     assert n1._offset_bytes_in_parent_cell == 0
     assert n2._offset_bytes_in_parent_cell == 2 * 32
-    assert n3._offset_bytes_in_parent_cell in [
-        2 * 32 + 12 * 32, 2 * 32 + 16 * 32
-    ]
+    assert n3._offset_bytes_in_parent_cell in [2 * 32 + 12 * 32, 2 * 32 + 16 * 32]
 
     assert x.snode._offset_bytes_in_parent_cell == 0
     assert y.snode._offset_bytes_in_parent_cell == 0

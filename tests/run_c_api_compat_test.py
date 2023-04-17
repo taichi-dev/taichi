@@ -9,14 +9,14 @@ from pathlib import Path
 
 import yaml
 
-BASE = (Path(__file__).parent / 'cpp').resolve()
+BASE = (Path(__file__).parent / "cpp").resolve()
 
 run_dict = {}
 
 
 def init_dict(run_dict, aot_files):
-    test_config_path = BASE / 'cpptests.yaml'
-    with open(test_config_path, 'r') as f:
+    test_config_path = BASE / "cpptests.yaml"
+    with open(test_config_path, "r") as f:
         test_config = yaml.safe_load(f.read())
 
     for x in aot_files:
@@ -24,27 +24,28 @@ def init_dict(run_dict, aot_files):
         run_dict[path_name] = []
 
     for binary in test_config:
-        binpath = Path(BASE / binary['binary']).resolve()
+        binpath = Path(BASE / binary["binary"]).resolve()
         if not binpath.exists():
             continue
-        for test in binary['tests']:
-            if '--arch=vulkan' not in test.get('args', ''):
+        for test in binary["tests"]:
+            if "--arch=vulkan" not in test.get("args", ""):
                 continue
-            run_dict[Path(test['script']).stem].append([
-                str(binpath),
-                f"--gtest_filter={test['test']}",
-            ])
+            run_dict[Path(test["script"]).stem].append(
+                [
+                    str(binpath),
+                    f"--gtest_filter={test['test']}",
+                ]
+            )
 
 
 def run():
-    aot_files = glob.glob(f'{BASE}/aot/python_scripts/*.py')
+    aot_files = glob.glob(f"{BASE}/aot/python_scripts/*.py")
     init_dict(run_dict, aot_files)
     print(run_dict)
     for x in aot_files:
         path_name = Path(x).stem
-        os.environ[
-            "TAICHI_AOT_FOLDER_PATH"] = f'{BASE}/aot/python_scripts/{path_name}'
-        if len(os.listdir(f'{BASE}/aot/python_scripts/' + path_name)) == 0:
+        os.environ["TAICHI_AOT_FOLDER_PATH"] = f"{BASE}/aot/python_scripts/{path_name}"
+        if len(os.listdir(f"{BASE}/aot/python_scripts/" + path_name)) == 0:
             continue
         for i in run_dict[path_name]:
             print(i)

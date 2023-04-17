@@ -16,9 +16,9 @@ from .tinysh import bash, sh, sudo, tar
 
 # -- code --
 def unzip(filename, extract_dir, strip=0):
-    '''
+    """
     Unpack zip `filename` to `extract_dir`, optionally stripping `strip` components.
-    '''
+    """
     if not zipfile.is_zipfile(filename):
         raise Exception(f"{filename} is not a zip file")
 
@@ -30,18 +30,18 @@ def unzip(filename, extract_dir, strip=0):
             name = info.filename
 
             # don't extract absolute paths or ones with .. in them
-            if name.startswith('/') or '..' in name:
+            if name.startswith("/") or ".." in name:
                 continue
 
-            target = extract_dir.joinpath(*name.split('/')[strip:]).resolve()
+            target = extract_dir.joinpath(*name.split("/")[strip:]).resolve()
             if not target:
                 continue
 
             target.parent.mkdir(parents=True, exist_ok=True)
-            if not name.endswith('/'):
+            if not name.endswith("/"):
                 # file
                 data = ar.read(info.filename)
-                f = open(target, 'wb')
+                f = open(target, "wb")
                 try:
                     f.write(data)
                 finally:
@@ -52,57 +52,51 @@ def unzip(filename, extract_dir, strip=0):
 
 
 def escape_url(url):
-    return url.replace('/', '_').replace(':', '_')
+    return url.replace("/", "_").replace(":", "_")
 
 
 SHOULD_USE_MIRROR = {
-    'ci': False,
-    'aliyun': False,
-    '_probed': False,
+    "ci": False,
+    "aliyun": False,
+    "_probed": False,
 }
 
 
 def probe_mirrors():
-    if SHOULD_USE_MIRROR['_probed']:
+    if SHOULD_USE_MIRROR["_probed"]:
         return
 
     try:
-        resp = requests.get('http://botmaster.tgr:9000/misc/canary.txt',
-                            timeout=0.5)
-        if resp.ok and resp.text.strip() == 'in-taichi-ci-environment':
-            info('Enabling Taichi CI cluster mirror')
-            SHOULD_USE_MIRROR['ci'] = True
+        resp = requests.get("http://botmaster.tgr:9000/misc/canary.txt", timeout=0.5)
+        if resp.ok and resp.text.strip() == "in-taichi-ci-environment":
+            info("Enabling Taichi CI cluster mirror")
+            SHOULD_USE_MIRROR["ci"] = True
     except Exception:
         pass
 
     google_ok = True
     try:
-        resp = requests.head('https://google.com', timeout=2)
+        resp = requests.head("https://google.com", timeout=2)
         google_ok = resp.ok
     except Exception:
         google_ok = False
 
     if not google_ok:
-        info('Enabling Aliyun mirror')
-        SHOULD_USE_MIRROR['aliyun'] = True
+        info("Enabling Aliyun mirror")
+        SHOULD_USE_MIRROR["aliyun"] = True
 
-    SHOULD_USE_MIRROR['_probed'] = True
+    SHOULD_USE_MIRROR["_probed"] = True
 
 
-def download_dep(url,
-                 outdir,
-                 *,
-                 strip=0,
-                 force=False,
-                 args=None,
-                 plain=False,
-                 elevate=False):
-    '''
+def download_dep(
+    url, outdir, *, strip=0, force=False, args=None, plain=False, elevate=False
+):
+    """
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
-    '''
+    """
     outdir = Path(outdir)
-    if outdir.exists() and len(list(outdir.glob('*'))) > 0 and not force:
+    if outdir.exists() and len(list(outdir.glob("*"))) > 0 and not force:
         return
 
     shutil.rmtree(outdir, ignore_errors=True)
@@ -110,7 +104,7 @@ def download_dep(url,
     parsed = urlparse(url)
     name = Path(parsed.path).name
     escaped = escape_url(url)
-    depcache = get_cache_home() / 'deps'
+    depcache = get_cache_home() / "deps"
     depcache.mkdir(parents=True, exist_ok=True)
     local_cached = depcache / escaped
 
@@ -118,24 +112,21 @@ def download_dep(url,
 
     urls = [url]
 
-    if SHOULD_USE_MIRROR['aliyun']:
+    if SHOULD_USE_MIRROR["aliyun"]:
         urls.append(
-            f'https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}'
+            f"https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}"
         )
 
-    if SHOULD_USE_MIRROR['ci']:
-        urls.append(
-            f'http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}')
+    if SHOULD_USE_MIRROR["ci"]:
+        urls.append(f"http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}")
 
     size = -1
     for u in reversed(urls):
         try:
-            resp = requests.head(u,
-                                 headers={'Accept-Encoding': 'identity'},
-                                 timeout=1)
+            resp = requests.head(u, headers={"Accept-Encoding": "identity"}, timeout=1)
             if resp.ok:
                 url = u
-                size = int(resp.headers['Content-Length'])
+                size = int(resp.headers["Content-Length"])
                 break
         except Exception:
             pass
@@ -145,31 +136,33 @@ def download_dep(url,
 
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
-            total_size = int(r.headers.get('content-length', 0))
-            prog = tqdm.tqdm(unit="B",
-                             unit_scale=True,
-                             unit_divisor=1024,
-                             total=total_size,
-                             desc=name)
-            with prog, open(str(local_cached) + '.download', 'wb') as f:
+            total_size = int(r.headers.get("content-length", 0))
+            prog = tqdm.tqdm(
+                unit="B",
+                unit_scale=True,
+                unit_divisor=1024,
+                total=total_size,
+                desc=name,
+            )
+            with prog, open(str(local_cached) + ".download", "wb") as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     sz = f.write(chunk)
                     prog.update(sz)
 
-        shutil.move(str(local_cached) + '.download', local_cached)
+        shutil.move(str(local_cached) + ".download", local_cached)
 
     outdir.mkdir(parents=True, exist_ok=True)
 
-    if name.endswith('.zip'):
+    if name.endswith(".zip"):
         unzip(local_cached, outdir, strip=strip)
-    elif name.endswith('.tar.gz') or name.endswith('.tgz'):
-        tar('-xzf', local_cached, '-C', outdir, f'--strip-components={strip}')
-    elif name.endswith('.sh'):
+    elif name.endswith(".tar.gz") or name.endswith(".tgz"):
+        tar("-xzf", local_cached, "-C", outdir, f"--strip-components={strip}")
+    elif name.endswith(".sh"):
         bash(local_cached, *args)
-    elif '.' not in name and args is not None:
+    elif "." not in name and args is not None:
         local_cached.chmod(0o755)
         sh.bake(local_cached)(*args)
-    elif name.endswith('.exe') and args is not None:
+    elif name.endswith(".exe") and args is not None:
         local_cached.chmod(0o755)
         cmd = sh.bake(local_cached)
         if elevate:
@@ -181,4 +174,4 @@ def download_dep(url,
     elif plain:
         shutil.copy(local_cached, outdir / name)
     else:
-        raise RuntimeError(f'Unknown file type: {name}')
+        raise RuntimeError(f"Unknown file type: {name}")

@@ -6,7 +6,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('dtype', [ti.u8, ti.f32])
+@pytest.mark.parametrize("dtype", [ti.u8, ti.f32])
 @test_utils.test(arch=get_host_arch_list())
 def test_save_image_without_window(dtype):
     n = 255
@@ -24,9 +24,10 @@ def test_save_image_without_window(dtype):
         else:
             paint(i * 1.0 / n)
         gui.set_image(pixels)
-        image_path = test_utils.make_temp_file(suffix='.png')
+        image_path = test_utils.make_temp_file(suffix=".png")
         gui.show(image_path)
         image = ti.tools.imread(image_path)
         delta = (image - i).sum()
-        assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(
-            delta)
+        assert (
+            delta == 0
+        ), "Expected image difference to be 0 but got {} instead.".format(delta)

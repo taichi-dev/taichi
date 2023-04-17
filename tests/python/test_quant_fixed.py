@@ -48,8 +48,8 @@ def test_quant_fixed_matrix_rotation():
     def rotate_18_degrees():
         angle = math.pi / 10
         x[None] = x[None] @ ti.Matrix(
-            [[ti.cos(angle), ti.sin(angle)], [-ti.sin(angle),
-                                              ti.cos(angle)]])
+            [[ti.cos(angle), ti.sin(angle)], [-ti.sin(angle), ti.cos(angle)]]
+        )
 
     for i in range(5):
         rotate_18_degrees()

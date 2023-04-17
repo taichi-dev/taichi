@@ -4,7 +4,7 @@ set(COMMON_RHI common_rhi)
 add_library(${COMMON_RHI})
 target_sources(${COMMON_RHI}
   PRIVATE
-    memory_pool.cpp
+    host_memory_pool.cpp
     unified_allocator.cpp
   )
 

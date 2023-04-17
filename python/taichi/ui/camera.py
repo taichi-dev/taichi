@@ -28,6 +28,7 @@ class Camera:
         >>> window = ti.ui.Window("GGUI Camera", res=(640, 480), vsync=True)
         >>> camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
     """
+
     def __init__(self):
         check_ggui_availability()
         self.ptr = _ti_core.PyCamera()
@@ -81,8 +82,7 @@ class Camera:
         self.ptr.up(x, y, z)
 
     def projection_mode(self, mode):
-        """Camera projection mode, 0 for perspective and 1 for orthogonal.
-        """
+        """Camera projection mode, 0 for perspective and 1 for orthogonal."""
         self.ptr.projection_mode(mode)
 
     def fov(self, fov):

@@ -24,6 +24,7 @@ if(TI_WITH_VULKAN)
         ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
         ${PROJECT_SOURCE_DIR}/external/spdlog/include
       )
+    target_link_libraries(${COMMON_RHI} PRIVATE rhi_vulkan)
 endif()
 
 target_link_libraries(${COMMON_RHI} PRIVATE taichi_util)

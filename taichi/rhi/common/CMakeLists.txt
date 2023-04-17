@@ -14,4 +14,13 @@ target_include_directories(${COMMON_RHI}
     ${PROJECT_SOURCE_DIR}
   )
 
+#if(TI_WITH_VULKAN)
+#
+#  target_include_directories(${COMMON_RHI} SYSTEM
+#  PUBLIC
+#    ${PROJECT_SOURCE_DIR}/external/volk
+#  )
+#
+#endif()
+
 target_link_libraries(${COMMON_RHI} PRIVATE taichi_util)

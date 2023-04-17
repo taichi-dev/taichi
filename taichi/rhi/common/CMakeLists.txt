@@ -15,12 +15,15 @@ target_include_directories(${COMMON_RHI}
   )
 
 if(TI_WITH_VULKAN)
-
-  target_include_directories(${COMMON_RHI} SYSTEM
-  PUBLIC
-    ${PROJECT_SOURCE_DIR}/external/volk
-  )
-
+    target_include_directories(${COMMON_RHI} SYSTEM
+      PUBLIC
+        ${PROJECT_SOURCE_DIR}/external/volk
+        ${PROJECT_SOURCE_DIR}/external/Vulkan-Headers/include
+        ${PROJECT_SOURCE_DIR}/external/VulkanMemoryAllocator/include
+      PRIVATE
+        ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
+        ${PROJECT_SOURCE_DIR}/external/spdlog/include
+      )
 endif()
 
 target_link_libraries(${COMMON_RHI} PRIVATE taichi_util)

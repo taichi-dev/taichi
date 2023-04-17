@@ -15,6 +15,8 @@ target_include_directories(${COMMON_RHI}
   )
 
 if(TI_WITH_VULKAN)
+    target_link_libraries(${COMMON_RHI} PUBLIC vulkan_rhi)
+
     target_include_directories(${COMMON_RHI} SYSTEM
       PUBLIC
         ${PROJECT_SOURCE_DIR}/external/volk
@@ -24,7 +26,6 @@ if(TI_WITH_VULKAN)
         ${PROJECT_SOURCE_DIR}/external/SPIRV-Reflect
         ${PROJECT_SOURCE_DIR}/external/spdlog/include
       )
-    target_link_libraries(${COMMON_RHI} PRIVATE vulkan_rhi)
 endif()
 
 target_link_libraries(${COMMON_RHI} PRIVATE taichi_util)

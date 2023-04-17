@@ -48,6 +48,8 @@ However, multi-dimensional fields of large size can still be declared as long as
 x = ti.field(int, shape=(10**4, 10**4, 10**2))  # OK!
 ```
 
+However, we do not recommend doing so, as this approach can also bring about some issues. For example, the field  `x` created above does not support *struct-for loop*, the compiler will throw a warning message in this case.
+
 
 ### How do I declare a field with a **dynamic length**?
 

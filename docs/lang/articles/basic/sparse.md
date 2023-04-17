@@ -173,13 +173,13 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 
 Taichi officially supports dynamic data structure *Dynamic SNode* since version v1.4.0. You can think of a dynamic SNode as a `List` that can only store data of a fixed type. The element types it supports include scalars, vectors/matrices, and structs. It also supports the following three APIs:
 
-1. `append`: Dynamically adds an element, equivalent to the `append` operation of a Python list.
-2. `deactivate`: Clears all stored elements, equivalent to the `clear` operation of a Python list.
-3. `length`: Gets the actual number of elements currently stored, equivalent to the `len` method of a Python list.
+1. `append`: Dynamically adds an element, equivalent to the `append` method of a Python list.
+2. `deactivate`: Clears all stored elements, equivalent to the `clear` method of a Python list.
+3. `length`: Gets the actual number of elements currently stored, equivalent to the `__len__` method of a Python list.
 
-All three methods must be called inside the kernel.
+All three methods must be called inside the Taichi scope.
 
-Unfortunately, Dynamic SNode does not support dynamic deletion of elements like `pop` and `remove`. This is because it is difficult to implement these operations with high performance in parallel computing.
+Unfortunately, Dynamic SNode does not support dynamically deleting elements like `pop` and `remove`. This is because it is difficult to implement these operations with high performance in parallel computing.
 
 :::note
 

@@ -14,7 +14,7 @@ def paint():
         pixels[i, j] = [u, v, 0]
 
 
-gui = ti.GUI('UV', res)
+gui = ti.GUI("UV", res)
 while not gui.get_event(ti.GUI.ESCAPE):
     paint()
     gui.set_image(pixels)

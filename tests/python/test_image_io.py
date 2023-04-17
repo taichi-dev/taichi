@@ -10,11 +10,10 @@ from tests import test_utils
 
 
 # jpg is also supported but hard to test here since it's lossy:
-@pytest.mark.parametrize('comp,ext', [(3, 'bmp'), (1, 'png'), (3, 'png'),
-                                      (4, 'png')])
-@pytest.mark.parametrize('resx,resy', [(201, 173)])
-@pytest.mark.parametrize('is_field', [False, True])
-@pytest.mark.parametrize('dt', [ti.u8])
+@pytest.mark.parametrize("comp,ext", [(3, "bmp"), (1, "png"), (3, "png"), (4, "png")])
+@pytest.mark.parametrize("resx,resy", [(201, 173)])
+@pytest.mark.parametrize("is_field", [False, True])
+@pytest.mark.parametrize("dt", [ti.u8])
 @test_utils.test(arch=get_host_arch_list())
 def test_image_io(resx, resy, comp, ext, is_field, dt):
     if comp != 1:
@@ -26,7 +25,7 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
     pixel = np.random.randint(256, size=shape, dtype=to_numpy_type(dt))
     if is_field:
         pixel_t.from_numpy(pixel)
-    fn = test_utils.make_temp_file(suffix='.' + ext)
+    fn = test_utils.make_temp_file(suffix="." + ext)
     if is_field:
         ti.tools.imwrite(pixel_t, fn)
     else:
@@ -39,25 +38,25 @@ def test_image_io(resx, resy, comp, ext, is_field, dt):
     os.remove(fn)
 
 
-@pytest.mark.parametrize('comp,ext', [(3, 'png'), (4, 'png')])
-@pytest.mark.parametrize('resx,resy', [(91, 81)])
-@pytest.mark.parametrize('dt', [ti.f32, ti.f64])
+@pytest.mark.parametrize("comp,ext", [(3, "png"), (4, "png")])
+@pytest.mark.parametrize("resx,resy", [(91, 81)])
+@pytest.mark.parametrize("dt", [ti.f32, ti.f64])
 @test_utils.test(arch=get_host_arch_list())
 def test_image_io_vector(resx, resy, comp, ext, dt):
     shape = (resx, resy)
     pixel = np.random.rand(*shape, comp).astype(to_numpy_type(dt))
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = test_utils.make_temp_file(suffix='.' + ext)
+    fn = test_utils.make_temp_file(suffix="." + ext)
     ti.tools.imwrite(pixel_t, fn)
     pixel_r = (ti.tools.imread(fn).astype(to_numpy_type(dt)) + 0.5) / 256.0
     assert np.allclose(pixel_r, pixel, atol=2e-2)
     os.remove(fn)
 
 
-@pytest.mark.parametrize('comp,ext', [(3, 'png')])
-@pytest.mark.parametrize('resx,resy', [(91, 81)])
-@pytest.mark.parametrize('dt', [ti.u16, ti.u32, ti.u64])
+@pytest.mark.parametrize("comp,ext", [(3, "png")])
+@pytest.mark.parametrize("resx,resy", [(91, 81)])
+@pytest.mark.parametrize("dt", [ti.u16, ti.u32, ti.u64])
 @test_utils.test(arch=get_host_arch_list())
 def test_image_io_uint(resx, resy, comp, ext, dt):
     shape = (resx, resy)
@@ -68,21 +67,21 @@ def test_image_io_uint(resx, resy, comp, ext, dt):
     pixel = np.random.randint(256, size=(*shape, comp), dtype=np_type) * np_max
     pixel_t = ti.Vector.field(comp, dt, shape)
     pixel_t.from_numpy(pixel)
-    fn = test_utils.make_temp_file(suffix='.' + ext)
+    fn = test_utils.make_temp_file(suffix="." + ext)
     ti.tools.imwrite(pixel_t, fn)
     pixel_r = ti.tools.imread(fn).astype(np_type) * np_max
     assert (pixel_r == pixel).all()
     os.remove(fn)
 
 
-@pytest.mark.parametrize('comp', [1, 3])
-@pytest.mark.parametrize('resx,resy', [(91, 81)])
-@pytest.mark.parametrize('scale', [1, 2, 3])
+@pytest.mark.parametrize("comp", [1, 3])
+@pytest.mark.parametrize("resx,resy", [(91, 81)])
+@pytest.mark.parametrize("scale", [1, 2, 3])
 @test_utils.test(arch=get_host_arch_list())
 def test_image_resize_sum(resx, resy, comp, scale):
     shape = (resx, resy)
     if comp != 1:
-        shape = shape + (comp, )
+        shape = shape + (comp,)
     old_img = np.random.rand(*shape).astype(np.float32)
     if resx == resy:
         new_img = ti.tools.imresize(old_img, resx * scale)

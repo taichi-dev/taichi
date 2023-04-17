@@ -18,17 +18,14 @@ def cook_image_to_bytes(img):
     elif img.dtype in [np.float32, np.float64]:
         img = (np.clip(img, 0, 1) * 255.0 + 0.5).astype(np.uint8)
     elif img.dtype != np.uint8:
-        raise ValueError(
-            f'Data type {img.dtype} not supported in ti.tools.imwrite')
+        raise ValueError(f"Data type {img.dtype} not supported in ti.tools.imwrite")
 
-    assert len(img.shape) in [2,
-                              3], "Image must be either RGB/RGBA or greyscale"
+    assert len(img.shape) in [2, 3], "Image must be either RGB/RGBA or greyscale"
 
     if len(img.shape) == 2:
         img = img.reshape(*img.shape, 1)
 
-    assert img.shape[2] in [1, 3,
-                            4], "Image must be either RGB/RGBA or greyscale"
+    assert img.shape[2] in [1, 3, 4], "Image must be either RGB/RGBA or greyscale"
 
     return img.swapaxes(0, 1)[::-1, :]
 
@@ -92,7 +89,7 @@ def imread(filename, channels=0):
     return img.swapaxes(0, 1)[:, ::-1, :]
 
 
-def imshow(img, title='imshow'):
+def imshow(img, title="imshow"):
     """Display a taichi.field or a numpy.ndarray in a Taichi GUI window or an interactive Ipython notebook.
     For an interactive Ipython environment, the image will be shown in the notebook.
 
@@ -105,9 +102,10 @@ def imshow(img, title='imshow'):
     except:
         if not isinstance(img, np.ndarray):
             img = img.to_numpy()
-            assert len(
-                img.shape) in [2,
-                               3], "Image must be either RGB/RGBA or greyscale"
+            assert len(img.shape) in [
+                2,
+                3,
+            ], "Image must be either RGB/RGBA or greyscale"
 
         with ti.GUI(title, res=img.shape[:2]) as gui:
             img = gui.cook_image(img)
@@ -120,8 +118,9 @@ def imshow(img, title='imshow'):
     else:
         import IPython.display  # pylint: disable=C0415
         import PIL.Image  # pylint: disable=C0415
+
         img = cook_image_to_bytes(img)
         IPython.display.display(PIL.Image.fromarray(img))
 
 
-__all__ = ['imread', 'imresize', 'imshow', 'imwrite']
+__all__ = ["imread", "imresize", "imshow", "imwrite"]

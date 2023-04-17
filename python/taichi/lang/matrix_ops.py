@@ -2,12 +2,20 @@ import taichi.lang.ops as ops_mod
 from taichi.lang.impl import static
 from taichi.lang.kernel_impl import func, pyfunc
 from taichi.lang.matrix import Matrix, Vector
-from taichi.lang.matrix_ops_utils import (arg_at, arg_foreach_check,
-                                          assert_list, assert_tensor,
-                                          assert_vector, check_matmul,
-                                          check_transpose, dim_lt,
-                                          is_int_const, preconditions,
-                                          same_shapes, square_matrix)
+from taichi.lang.matrix_ops_utils import (
+    arg_at,
+    arg_foreach_check,
+    assert_list,
+    assert_tensor,
+    assert_vector,
+    check_matmul,
+    check_transpose,
+    dim_lt,
+    is_int_const,
+    preconditions,
+    same_shapes,
+    square_matrix,
+)
 from taichi.types.annotations import template
 
 
@@ -34,10 +42,8 @@ def _filled_vector(n: template(), dtype: template(), val: template()):
 
 
 @pyfunc
-def _filled_matrix(n: template(), m: template(), dtype: template(),
-                   val: template()):
-    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))],
-                  dtype)
+def _filled_matrix(n: template(), m: template(), dtype: template(), val: template()):
+    return Matrix([[val for _ in static(range(m))] for _ in static(range(n))], dtype)
 
 
 @pyfunc
@@ -47,8 +53,7 @@ def _unit_vector(n: template(), i: template(), dtype: template()):
 
 @pyfunc
 def _identity_matrix(n: template(), dtype: template()):
-    return Matrix([[i == j for j in static(range(n))]
-                   for i in static(range(n))], dtype)
+    return Matrix([[i == j for j in static(range(n))] for i in static(range(n))], dtype)
 
 
 @preconditions(
@@ -56,8 +61,10 @@ def _identity_matrix(n: template(), dtype: template()):
     arg_foreach_check(
         0,
         fns=[assert_vector(), assert_list],
-        logic='or',
-        msg="Cols/rows must be a list of lists, or a list of vectors"))
+        logic="or",
+        msg="Cols/rows must be a list of lists, or a list of vectors",
+    ),
+)
 @pyfunc
 def rows(rows):  # pylint: disable=W0621
     return Matrix([[x for x in row] for row in rows])
@@ -82,23 +89,34 @@ def determinant(mat):
     if static(shape[0] == 2):
         return mat[0, 0] * mat[1, 1] - mat[0, 1] * mat[1, 0]
     if static(shape[0] == 3):
-        return mat[0, 0] * (
-            mat[1, 1] * mat[2, 2] - mat[2, 1] * mat[1, 2]) - mat[1, 0] * (
-                mat[0, 1] * mat[2, 2] - mat[2, 1] * mat[0, 2]) + mat[2, 0] * (
-                    mat[0, 1] * mat[1, 2] - mat[1, 1] * mat[0, 2])
+        return (
+            mat[0, 0] * (mat[1, 1] * mat[2, 2] - mat[2, 1] * mat[1, 2])
+            - mat[1, 0] * (mat[0, 1] * mat[2, 2] - mat[2, 1] * mat[0, 2])
+            + mat[2, 0] * (mat[0, 1] * mat[1, 2] - mat[1, 1] * mat[0, 2])
+        )
     if static(shape[0] == 4):
         det = mat[0, 0] * 0  # keep type
         for i in static(range(4)):
-            det = det + (-1)**i * (
-                mat[i, 0] * (E(mat, i + 1, 1, 4) *
-                             (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) -
-                              E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)) -
-                             E(mat, i + 2, 1, 4) *
-                             (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) -
-                              E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)) +
-                             E(mat, i + 3, 1, 4) *
-                             (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) -
-                              E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))))
+            det = det + (-1) ** i * (
+                mat[i, 0]
+                * (
+                    E(mat, i + 1, 1, 4)
+                    * (
+                        E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4)
+                        - E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)
+                    )
+                    - E(mat, i + 2, 1, 4)
+                    * (
+                        E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4)
+                        - E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)
+                    )
+                    + E(mat, i + 3, 1, 4)
+                    * (
+                        E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4)
+                        - E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4)
+                    )
+                )
+            )
         return det
     # unreachable
     return None
@@ -112,27 +130,49 @@ def inverse(mat):
         return Matrix([[1.0 / mat[0, 0]]])
     inv_determinant = 1.0 / determinant(mat)
     if static(shape[0] == 2):
-        return inv_determinant * Matrix([[mat[1, 1], -mat[0, 1]],
-                                         [-mat[1, 0], mat[0, 0]]])
+        return inv_determinant * Matrix(
+            [[mat[1, 1], -mat[0, 1]], [-mat[1, 0], mat[0, 0]]]
+        )
     if static(shape[0] == 3):
-        return inv_determinant * Matrix([[
-            E(mat, i + 1, j + 1, 3) * E(mat, i + 2, j + 2, 3) -
-            E(mat, i + 2, j + 1, 3) * E(mat, i + 1, j + 2, 3)
-            for i in static(range(3))
-        ] for j in static(range(3))])
+        return inv_determinant * Matrix(
+            [
+                [
+                    E(mat, i + 1, j + 1, 3) * E(mat, i + 2, j + 2, 3)
+                    - E(mat, i + 2, j + 1, 3) * E(mat, i + 1, j + 2, 3)
+                    for i in static(range(3))
+                ]
+                for j in static(range(3))
+            ]
+        )
     if static(shape[0] == 4):
-        return inv_determinant * Matrix([[(-1)**(i + j) * (
-            (E(mat, i + 1, j + 1, 4) *
-             (E(mat, i + 2, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
-              E(mat, i + 3, j + 2, 4) * E(mat, i + 2, j + 3, 4)) -
-             E(mat, i + 2, j + 1, 4) *
-             (E(mat, i + 1, j + 2, 4) * E(mat, i + 3, j + 3, 4) -
-              E(mat, i + 3, j + 2, 4) * E(mat, i + 1, j + 3, 4)) +
-             E(mat, i + 3, j + 1, 4) *
-             (E(mat, i + 1, j + 2, 4) * E(mat, i + 2, j + 3, 4) -
-              E(mat, i + 2, j + 2, 4) * E(mat, i + 1, j + 3, 4))))
-                                          for i in static(range(4))]
-                                         for j in static(range(4))])
+        return inv_determinant * Matrix(
+            [
+                [
+                    (-1) ** (i + j)
+                    * (
+                        (
+                            E(mat, i + 1, j + 1, 4)
+                            * (
+                                E(mat, i + 2, j + 2, 4) * E(mat, i + 3, j + 3, 4)
+                                - E(mat, i + 3, j + 2, 4) * E(mat, i + 2, j + 3, 4)
+                            )
+                            - E(mat, i + 2, j + 1, 4)
+                            * (
+                                E(mat, i + 1, j + 2, 4) * E(mat, i + 3, j + 3, 4)
+                                - E(mat, i + 3, j + 2, 4) * E(mat, i + 1, j + 3, 4)
+                            )
+                            + E(mat, i + 3, j + 1, 4)
+                            * (
+                                E(mat, i + 1, j + 2, 4) * E(mat, i + 2, j + 3, 4)
+                                - E(mat, i + 2, j + 2, 4) * E(mat, i + 1, j + 3, 4)
+                            )
+                        )
+                    )
+                    for i in static(range(4))
+                ]
+                for j in static(range(4))
+            ]
+        )
     # unreachable
     return None
 
@@ -141,15 +181,17 @@ def inverse(mat):
 @pyfunc
 def transpose(mat):
     shape = static(mat.get_shape())
-    return Matrix([[mat[i, j] for i in static(range(shape[0]))]
-                   for j in static(range(shape[1]))])
+    return Matrix(
+        [[mat[i, j] for i in static(range(shape[0]))] for j in static(range(shape[1]))]
+    )
 
 
 @preconditions(arg_at(0, is_int_const))
 @pyfunc
 def diag(dim: template(), val: template()):
-    return Matrix([[val if i == j else 0 for j in static(range(dim))]
-                   for i in static(range(dim))])
+    return Matrix(
+        [[val if i == j else 0 for j in static(range(dim))] for i in static(range(dim))]
+    )
 
 
 @preconditions(assert_tensor)
@@ -264,39 +306,51 @@ def matmul(mat_x, mat_y):
     return _matmul_helper(mat_x, mat_y)
 
 
-@preconditions(arg_at(0, assert_vector("lhs for dot is not a vector")),
-               arg_at(1, assert_vector("rhs for dot is not a vector")))
+@preconditions(
+    arg_at(0, assert_vector("lhs for dot is not a vector")),
+    arg_at(1, assert_vector("rhs for dot is not a vector")),
+)
 @pyfunc
 def dot(vec_x, vec_y):
     return sum(vec_x * vec_y)
 
 
-@preconditions(arg_at(0, assert_vector("lhs for cross is not a vector")),
-               arg_at(1, assert_vector("rhs for cross is not a vector")),
-               same_shapes, arg_at(0, dim_lt(0, 4)))
+@preconditions(
+    arg_at(0, assert_vector("lhs for cross is not a vector")),
+    arg_at(1, assert_vector("rhs for cross is not a vector")),
+    same_shapes,
+    arg_at(0, dim_lt(0, 4)),
+)
 @pyfunc
 def cross(vec_x, vec_y):
     shape = static(vec_x.get_shape())
     if static(shape[0] == 2):
         return vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
     if static(shape[0] == 3):
-        return Vector([
-            vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
-            vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
-            vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0]
-        ])
+        return Vector(
+            [
+                vec_x[1] * vec_y[2] - vec_x[2] * vec_y[1],
+                vec_x[2] * vec_y[0] - vec_x[0] * vec_y[2],
+                vec_x[0] * vec_y[1] - vec_x[1] * vec_y[0],
+            ]
+        )
     return None
 
 
 @preconditions(
     arg_at(0, assert_vector("lhs for outer_product is not a vector")),
-    arg_at(1, assert_vector("rhs for outer_product is not a vector")))
+    arg_at(1, assert_vector("rhs for outer_product is not a vector")),
+)
 @pyfunc
 def outer_product(vec_x, vec_y):
     shape_x = static(vec_x.get_shape())
     shape_y = static(vec_y.get_shape())
-    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
-                   for i in static(range(shape_x[0]))])
+    return Matrix(
+        [
+            [vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
+            for i in static(range(shape_x[0]))
+        ]
+    )
 
 
 @preconditions(assert_tensor)

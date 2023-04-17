@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@pytest.mark.parametrize("exponent_bits", [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponents(exponent_bits):
     qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
@@ -70,7 +70,7 @@ def test_shared_exponents(exponent_bits):
         assert b[None] == 0
 
 
-@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@pytest.mark.parametrize("exponent_bits", [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_add(exponent_bits):
     qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
@@ -105,7 +105,7 @@ def test_shared_exponent_add(exponent_bits):
         assert b[None] == 4 + (i + 1)
 
 
-@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@pytest.mark.parametrize("exponent_bits", [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_borrow(exponent_bits):
     qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)
@@ -133,7 +133,7 @@ def test_shared_exponent_borrow(exponent_bits):
         inc()
 
 
-@pytest.mark.parametrize('exponent_bits', [5, 6, 7, 8])
+@pytest.mark.parametrize("exponent_bits", [5, 6, 7, 8])
 @test_utils.test(require=ti.extension.quant)
 def test_shared_exponent_negative(exponent_bits):
     qflt1 = ti.types.quant.float(exp=exponent_bits, frac=10, signed=False)

@@ -4,7 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
+@pytest.mark.parametrize("dtype", [ti.u8, ti.u16, ti.u32])
 @test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_cast_uint_to_float(dtype):
     @ti.kernel
@@ -18,7 +18,7 @@ def test_cast_uint_to_float(dtype):
     assert func(255) == func_sugar(255) == 255
 
 
-@pytest.mark.parametrize('dtype', [ti.u8, ti.u16, ti.u32])
+@pytest.mark.parametrize("dtype", [ti.u8, ti.u16, ti.u32])
 @test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_cast_float_to_uint(dtype):
     @ti.kernel
@@ -56,7 +56,7 @@ def test_cast_f64():
     assert z[None] == 1000
 
 
-@pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
+@pytest.mark.parametrize("dtype", [ti.f32, ti.f64])
 def test_cast_default_fp(dtype):
     ti.init(default_fp=dtype)
 
@@ -67,7 +67,7 @@ def test_cast_default_fp(dtype):
     assert func(23, 4) == pytest.approx(23.0 * 4.0)
 
 
-@pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
+@pytest.mark.parametrize("dtype", [ti.i32, ti.i64])
 def test_cast_default_ip(dtype):
     ti.init(default_ip=dtype)
 

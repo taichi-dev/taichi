@@ -65,8 +65,10 @@ def test_adjoint_checkbit_needs_grad():
 
     warn_raised = False
     for warn in record:
-        if 'Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.' in warn.message.args[
-                0]:
+        if (
+            "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check."
+            in warn.message.args[0]
+        ):
             warn_raised = True
     assert warn_raised
 

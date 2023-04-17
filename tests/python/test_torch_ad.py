@@ -11,17 +11,17 @@ if has_pytorch():
     import torch
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=ti.cuda)
 def test_torch_cuda_context():
     device = torch.device("cuda:0")
-    x = torch.tensor([2.], requires_grad=True, device=device)
+    x = torch.tensor([2.0], requires_grad=True, device=device)
     assert torch._C._cuda_hasPrimaryContext(0)
     loss = x**2
     loss.backward()
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test()
 def test_torch_ad():
     n = 32
@@ -53,23 +53,22 @@ def test_torch_ad():
 
     sqr = Sqr.apply
     for i in range(10):
-        X = torch.tensor(2 * np.ones((n, ), dtype=np.float32),
-                         requires_grad=True)
+        X = torch.tensor(2 * np.ones((n,), dtype=np.float32), requires_grad=True)
         sqr(X).sum().backward()
         ret = X.grad.cpu().numpy()
         for j in range(n):
             assert ret[j] == 4
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@pytest.mark.skipif(sys.platform == 'win32', reason='not working on Windows.')
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
+@pytest.mark.skipif(sys.platform == "win32", reason="not working on Windows.")
 # FIXME: crashes at glCreateShader when arch=ti.opengl
 @test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_torch_ad_gpu():
     if not torch.cuda.is_available():
         return
 
-    device = torch.device('cuda:0')
+    device = torch.device("cuda:0")
     n = 32
 
     x = ti.field(ti.f32, shape=n, needs_grad=True)
@@ -99,9 +98,9 @@ def test_torch_ad_gpu():
 
     sqr = Sqr.apply
     for i in range(10):
-        X = torch.tensor(2 * np.ones((n, ), dtype=np.float32),
-                         requires_grad=True,
-                         device=device)
+        X = torch.tensor(
+            2 * np.ones((n,), dtype=np.float32), requires_grad=True, device=device
+        )
         sqr(X).sum().backward()
         ret = X.grad.cpu().numpy()
         for j in range(n):

@@ -8,7 +8,7 @@ pixels = ti.field(dtype=float, shape=(n * 2, n))
 
 @ti.func
 def complex_sqr(z):
-    return ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2])
+    return ti.Vector([z[0] ** 2 - z[1] ** 2, z[1] * z[0] * 2])
 
 
 @ti.kernel
@@ -33,5 +33,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -73,8 +73,11 @@ def backtrace(vf: ti.template(), p, dt_: ti.template()):
 
 
 @ti.kernel
-def advect(vf: ti.types.ndarray(ndim=2), qf: ti.types.ndarray(ndim=2),
-           new_qf: ti.types.ndarray(ndim=2)):
+def advect(
+    vf: ti.types.ndarray(ndim=2),
+    qf: ti.types.ndarray(ndim=2),
+    new_qf: ti.types.ndarray(ndim=2),
+):
     for i, j in vf:
         p = ti.Vector([i, j]) + 0.5
         p = backtrace(vf, p, dt)
@@ -82,8 +85,11 @@ def advect(vf: ti.types.ndarray(ndim=2), qf: ti.types.ndarray(ndim=2),
 
 
 @ti.kernel
-def apply_impulse(vf: ti.types.ndarray(ndim=2), dyef: ti.types.ndarray(ndim=2),
-                  imp_data: ti.types.ndarray(ndim=1)):
+def apply_impulse(
+    vf: ti.types.ndarray(ndim=2),
+    dyef: ti.types.ndarray(ndim=2),
+    imp_data: ti.types.ndarray(ndim=1),
+):
     g_dir = -ti.Vector([0, 9.8]) * 300
     for i, j in vf:
         omx, omy = imp_data[2], imp_data[3]
@@ -102,15 +108,15 @@ def apply_impulse(vf: ti.types.ndarray(ndim=2), dyef: ti.types.ndarray(ndim=2),
         vf[i, j] = v + momentum
         # add dye
         if mdir.norm() > 0.5:
-            dc += ti.exp(-d2 * (4 / (res / 15)**2)) * ti.Vector(
-                [imp_data[4], imp_data[5], imp_data[6]])
+            dc += ti.exp(-d2 * (4 / (res / 15) ** 2)) * ti.Vector(
+                [imp_data[4], imp_data[5], imp_data[6]]
+            )
 
         dyef[i, j] = dc
 
 
 @ti.kernel
-def divergence(vf: ti.types.ndarray(ndim=2),
-               velocity_divs: ti.types.ndarray(ndim=2)):
+def divergence(vf: ti.types.ndarray(ndim=2), velocity_divs: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         vl = sample(vf, i - 1, j)
         vr = sample(vf, i + 1, j)
@@ -129,9 +135,11 @@ def divergence(vf: ti.types.ndarray(ndim=2),
 
 
 @ti.kernel
-def pressure_jacobi(pf: ti.types.ndarray(ndim=2),
-                    new_pf: ti.types.ndarray(ndim=2),
-                    velocity_divs: ti.types.ndarray(ndim=2)):
+def pressure_jacobi(
+    pf: ti.types.ndarray(ndim=2),
+    new_pf: ti.types.ndarray(ndim=2),
+    velocity_divs: ti.types.ndarray(ndim=2),
+):
     for i, j in pf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -142,8 +150,7 @@ def pressure_jacobi(pf: ti.types.ndarray(ndim=2),
 
 
 @ti.kernel
-def subtract_gradient(vf: ti.types.ndarray(ndim=2),
-                      pf: ti.types.ndarray(ndim=2)):
+def subtract_gradient(vf: ti.types.ndarray(ndim=2), pf: ti.types.ndarray(ndim=2)):
     for i, j in vf:
         pl = sample(pf, i - 1, j)
         pr = sample(pf, i + 1, j)
@@ -173,7 +180,7 @@ def step_orig(mouse_data):
     subtract_gradient(velocities_pair.cur, pressures_pair.cur)
 
 
-mouse_data_ti = ti.ndarray(ti.f32, shape=(8, ))
+mouse_data_ti = ti.ndarray(ti.f32, shape=(8,))
 
 
 class MouseDataGen:
@@ -218,10 +225,10 @@ def main():
     paused = False
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--baseline', action='store_true')
+    parser.add_argument("--baseline", action="store_true")
     args, _ = parser.parse_known_args()
 
-    gui = ti.GUI('Stable Fluid', (res, res))
+    gui = ti.GUI("Stable Fluid", (res, res))
     md_gen = MouseDataGen()
 
     _velocities = ti.Vector.ndarray(2, float, shape=(res, res))
@@ -237,73 +244,69 @@ def main():
         pressures_pair = TexPair(_pressures, _new_pressures)
         dyes_pair = TexPair(_dye_buffer, _new_dye_buffer)
     else:
-        print('running in graph mode')
-        velocities_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                           'velocities_pair_cur',
-                                           dtype=ti.math.vec2,
-                                           ndim=2)
-        velocities_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                           'velocities_pair_nxt',
-                                           dtype=ti.math.vec2,
-                                           ndim=2)
-        dyes_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                     'dyes_pair_cur',
-                                     dtype=ti.math.vec3,
-                                     ndim=2)
-        dyes_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                     'dyes_pair_nxt',
-                                     dtype=ti.math.vec3,
-                                     ndim=2)
-        pressures_pair_cur = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                          'pressures_pair_cur',
-                                          dtype=ti.f32,
-                                          ndim=2)
-        pressures_pair_nxt = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                          'pressures_pair_nxt',
-                                          dtype=ti.f32,
-                                          ndim=2)
-        velocity_divs = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                     'velocity_divs',
-                                     dtype=ti.f32,
-                                     ndim=2)
-        mouse_data = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                  'mouse_data',
-                                  dtype=ti.f32,
-                                  ndim=1)
+        print("running in graph mode")
+        velocities_pair_cur = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "velocities_pair_cur", dtype=ti.math.vec2, ndim=2
+        )
+        velocities_pair_nxt = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "velocities_pair_nxt", dtype=ti.math.vec2, ndim=2
+        )
+        dyes_pair_cur = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "dyes_pair_cur", dtype=ti.math.vec3, ndim=2
+        )
+        dyes_pair_nxt = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "dyes_pair_nxt", dtype=ti.math.vec3, ndim=2
+        )
+        pressures_pair_cur = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "pressures_pair_cur", dtype=ti.f32, ndim=2
+        )
+        pressures_pair_nxt = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "pressures_pair_nxt", dtype=ti.f32, ndim=2
+        )
+        velocity_divs = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "velocity_divs", dtype=ti.f32, ndim=2
+        )
+        mouse_data = ti.graph.Arg(
+            ti.graph.ArgKind.NDARRAY, "mouse_data", dtype=ti.f32, ndim=1
+        )
 
         g1_builder = ti.graph.GraphBuilder()
-        g1_builder.dispatch(advect, velocities_pair_cur, velocities_pair_cur,
-                            velocities_pair_nxt)
-        g1_builder.dispatch(advect, velocities_pair_cur, dyes_pair_cur,
-                            dyes_pair_nxt)
-        g1_builder.dispatch(apply_impulse, velocities_pair_nxt, dyes_pair_nxt,
-                            mouse_data)
+        g1_builder.dispatch(
+            advect, velocities_pair_cur, velocities_pair_cur, velocities_pair_nxt
+        )
+        g1_builder.dispatch(advect, velocities_pair_cur, dyes_pair_cur, dyes_pair_nxt)
+        g1_builder.dispatch(
+            apply_impulse, velocities_pair_nxt, dyes_pair_nxt, mouse_data
+        )
         g1_builder.dispatch(divergence, velocities_pair_nxt, velocity_divs)
         # swap is unrolled in the loop so we only need p_jacobi_iters // 2 iterations.
         for _ in range(p_jacobi_iters // 2):
-            g1_builder.dispatch(pressure_jacobi, pressures_pair_cur,
-                                pressures_pair_nxt, velocity_divs)
-            g1_builder.dispatch(pressure_jacobi, pressures_pair_nxt,
-                                pressures_pair_cur, velocity_divs)
-        g1_builder.dispatch(subtract_gradient, velocities_pair_nxt,
-                            pressures_pair_cur)
+            g1_builder.dispatch(
+                pressure_jacobi, pressures_pair_cur, pressures_pair_nxt, velocity_divs
+            )
+            g1_builder.dispatch(
+                pressure_jacobi, pressures_pair_nxt, pressures_pair_cur, velocity_divs
+            )
+        g1_builder.dispatch(subtract_gradient, velocities_pair_nxt, pressures_pair_cur)
         g1 = g1_builder.compile()
 
         g2_builder = ti.graph.GraphBuilder()
-        g2_builder.dispatch(advect, velocities_pair_nxt, velocities_pair_nxt,
-                            velocities_pair_cur)
-        g2_builder.dispatch(advect, velocities_pair_nxt, dyes_pair_nxt,
-                            dyes_pair_cur)
-        g2_builder.dispatch(apply_impulse, velocities_pair_cur, dyes_pair_cur,
-                            mouse_data)
+        g2_builder.dispatch(
+            advect, velocities_pair_nxt, velocities_pair_nxt, velocities_pair_cur
+        )
+        g2_builder.dispatch(advect, velocities_pair_nxt, dyes_pair_nxt, dyes_pair_cur)
+        g2_builder.dispatch(
+            apply_impulse, velocities_pair_cur, dyes_pair_cur, mouse_data
+        )
         g2_builder.dispatch(divergence, velocities_pair_cur, velocity_divs)
         for _ in range(p_jacobi_iters // 2):
-            g2_builder.dispatch(pressure_jacobi, pressures_pair_cur,
-                                pressures_pair_nxt, velocity_divs)
-            g2_builder.dispatch(pressure_jacobi, pressures_pair_nxt,
-                                pressures_pair_cur, velocity_divs)
-        g2_builder.dispatch(subtract_gradient, velocities_pair_cur,
-                            pressures_pair_cur)
+            g2_builder.dispatch(
+                pressure_jacobi, pressures_pair_cur, pressures_pair_nxt, velocity_divs
+            )
+            g2_builder.dispatch(
+                pressure_jacobi, pressures_pair_nxt, pressures_pair_cur, velocity_divs
+            )
+        g2_builder.dispatch(subtract_gradient, velocities_pair_cur, pressures_pair_cur)
         g2 = g2_builder.compile()
 
     swap = True
@@ -313,15 +316,15 @@ def main():
             e = gui.event
             if e.key == ti.GUI.ESCAPE:
                 break
-            elif e.key == 'r':
+            elif e.key == "r":
                 paused = False
                 reset()
-            elif e.key == 's':
+            elif e.key == "s":
                 if curl_strength:
                     curl_strength = 0
                 else:
                     curl_strength = 7
-            elif e.key == 'p':
+            elif e.key == "p":
                 paused = not paused
 
         if not paused:
@@ -331,25 +334,29 @@ def main():
                 gui.set_image(dyes_pair.cur.to_numpy())
             else:
                 invoke_args = {
-                    'mouse_data': _mouse_data,
-                    'velocities_pair_cur': _velocities,
-                    'velocities_pair_nxt': _new_velocities,
-                    'dyes_pair_cur': _dye_buffer,
-                    'dyes_pair_nxt': _new_dye_buffer,
-                    'pressures_pair_cur': _pressures,
-                    'pressures_pair_nxt': _new_pressures,
-                    'velocity_divs': _velocity_divs
+                    "mouse_data": _mouse_data,
+                    "velocities_pair_cur": _velocities,
+                    "velocities_pair_nxt": _new_velocities,
+                    "dyes_pair_cur": _dye_buffer,
+                    "dyes_pair_nxt": _new_dye_buffer,
+                    "pressures_pair_cur": _pressures,
+                    "pressures_pair_nxt": _new_pressures,
+                    "velocity_divs": _velocity_divs,
                 }
                 if swap:
                     g1.run(invoke_args)
-                    gui.set_image(_dye_buffer.to_numpy())  # false+, pylint: disable=no-member
+                    gui.set_image(
+                        _dye_buffer.to_numpy()  # false+, pylint: disable=no-member
+                    )
                     swap = False
                 else:
                     g2.run(invoke_args)
-                    gui.set_image(_new_dye_buffer.to_numpy())  # false+, pylint: disable=no-member
+                    gui.set_image(
+                        _new_dye_buffer.to_numpy()  # false+, pylint: disable=no-member
+                    )
                     swap = True
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

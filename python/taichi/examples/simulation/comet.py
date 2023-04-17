@@ -45,7 +45,7 @@ def substep():
     ti.no_activate(x)
     for i in x:
         r = x[i] - sun
-        r_sq_inverse = r / r.norm(1e-3)**3
+        r_sq_inverse = r / r.norm(1e-3) ** 3
         acceleration = (pressure * inv_m[i] - gravity) * r_sq_inverse
         v[i] += acceleration * dt
         x[i] += v[i] * dt
@@ -58,7 +58,7 @@ def substep():
 @ti.kernel
 def generate():
     r = x[0] - sun
-    n_tail_paticles = int(tail_paticle_scale / r.norm(1e-3)**2)
+    n_tail_paticles = int(tail_paticle_scale / r.norm(1e-3) ** 2)
     for _ in range(n_tail_paticles):
         r = x[0]
         if ti.static(dim == 3):
@@ -75,7 +75,7 @@ def generate():
 @ti.kernel
 def render():
     for p in ti.grouped(img):
-        img[p] = 1e-6 / (p / res - ti.Vector([sun.x, sun.y])).norm(1e-4)**3
+        img[p] = 1e-6 / (p / res - ti.Vector([sun.x, sun.y])).norm(1e-4) ** 3
     for i in x:
         p = int(ti.Vector([x[i].x, x[i].y]) * res)
         if 0 <= p[0] < res and 0 <= p[1] < res:
@@ -90,7 +90,7 @@ def main():
     v[0].y = +0.4
     color[0] = 1
 
-    gui = ti.GUI('Comet', res)
+    gui = ti.GUI("Comet", res)
     while gui.running:
         gui.running = not gui.get_event(gui.ESCAPE)
         generate()
@@ -101,5 +101,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -14,12 +14,12 @@ class GfxRuntime140:
         self.graphs = [sr.from_dr_graph(self.metadata, x) for x in graphs]
 
     @staticmethod
-    def from_module(module_path: str) -> 'GfxRuntime140':
+    def from_module(module_path: str) -> "GfxRuntime140":
         if Path(module_path).is_file():
             with zipfile.ZipFile(module_path) as z:
-                with z.open('metadata.json') as f:
+                with z.open("metadata.json") as f:
                     metadata_json = json.load(f)
-                with z.open('graphs.json') as f:
+                with z.open("graphs.json") as f:
                     graphs_json = json.load(f)
         else:
             with open(f"{module_path}/metadata.json") as f:

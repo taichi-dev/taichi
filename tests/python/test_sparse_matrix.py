@@ -4,18 +4,21 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder_deprecated_anno(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -29,18 +32,21 @@ def test_sparse_matrix_builder_deprecated_anno(dtype, storage_format):
             assert A[i, j] == i + j
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_builder(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -54,18 +60,20 @@ def test_sparse_matrix_builder(dtype, storage_format):
             assert A[i, j] == i + j
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
     n = 8
     triplets = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=n)
-    A = ti.linalg.SparseMatrix(n=10,
-                               m=10,
-                               dtype=ti.f32,
-                               storage_format=storage_format)
+    A = ti.linalg.SparseMatrix(n=10, m=10, dtype=ti.f32, storage_format=storage_format)
 
     @ti.kernel
     def fill(triplets: ti.types.ndarray()):
@@ -80,18 +88,21 @@ def test_build_sparse_matrix_frome_ndarray(dtype, storage_format):
         assert A[i, i] == i
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_shape(dtype, storage_format):
     n, m = 8, 9
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             m,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, m, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -103,18 +114,21 @@ def test_sparse_matrix_shape(dtype, storage_format):
     assert A.shape == (n, m)
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_access(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -127,18 +141,21 @@ def test_sparse_matrix_element_access(dtype, storage_format):
         assert A[i, i] == i
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_element_modify(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -151,27 +168,30 @@ def test_sparse_matrix_element_modify(dtype, storage_format):
     assert A[0, 0] == 1024.0
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_addition(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    Bbuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
+    Bbuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             Bbuilder: ti.types.sparse_matrix_builder()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        Bbuilder: ti.types.sparse_matrix_builder(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -185,27 +205,30 @@ def test_sparse_matrix_addition(dtype, storage_format):
             assert C[i, j] == 2 * i
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_subtraction(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    Bbuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
+    Bbuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             Bbuilder: ti.types.sparse_matrix_builder()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        Bbuilder: ti.types.sparse_matrix_builder(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -219,18 +242,21 @@ def test_sparse_matrix_subtraction(dtype, storage_format):
             assert C[i, j] == 2 * j
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_scalar_multiplication(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -245,18 +271,21 @@ def test_sparse_matrix_scalar_multiplication(dtype, storage_format):
             assert B[i, j] == 3 * (i + j)
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_transpose(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
     def fill(Abuilder: ti.types.sparse_matrix_builder()):
@@ -271,27 +300,30 @@ def test_sparse_matrix_transpose(dtype, storage_format):
             assert B[i, j] == A[j, i]
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_elementwise_multiplication(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    Bbuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
+    Bbuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             Bbuilder: ti.types.sparse_matrix_builder()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        Bbuilder: ti.types.sparse_matrix_builder(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -305,27 +337,30 @@ def test_sparse_matrix_elementwise_multiplication(dtype, storage_format):
             assert C[i, j] == (i + j) * (i - j)
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_multiplication(dtype, storage_format):
     n = 2
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    Bbuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
+    Bbuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             Bbuilder: ti.types.sparse_matrix_builder()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        Bbuilder: ti.types.sparse_matrix_builder(),
+    ):
         for i, j in ti.ndrange(n, n):
             Abuilder[i, j] += i + j
             Bbuilder[i, j] += i - j
@@ -340,27 +375,30 @@ def test_sparse_matrix_multiplication(dtype, storage_format):
     assert C[1, 1] == -1.0
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
     n, k, m = 2, 3, 4
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             k,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
-    Bbuilder = ti.linalg.SparseMatrixBuilder(k,
-                                             m,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, k, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
+    Bbuilder = ti.linalg.SparseMatrixBuilder(
+        k, m, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
 
     @ti.kernel
-    def fill(Abuilder: ti.types.sparse_matrix_builder(),
-             Bbuilder: ti.types.sparse_matrix_builder()):
+    def fill(
+        Abuilder: ti.types.sparse_matrix_builder(),
+        Bbuilder: ti.types.sparse_matrix_builder(),
+    ):
         for i, j in ti.ndrange(n, k):
             Abuilder[i, j] += i + j
         for i, j in ti.ndrange(k, m):
@@ -376,18 +414,21 @@ def test_sparse_matrix_nonsymmetric_multiplication(dtype, storage_format):
             assert C[i, j] == GT[i][j]
 
 
-@pytest.mark.parametrize('dtype, storage_format', [(ti.f32, 'col_major'),
-                                                   (ti.f32, 'row_major'),
-                                                   (ti.f64, 'col_major'),
-                                                   (ti.f64, 'row_major')])
+@pytest.mark.parametrize(
+    "dtype, storage_format",
+    [
+        (ti.f32, "col_major"),
+        (ti.f32, "row_major"),
+        (ti.f64, "col_major"),
+        (ti.f64, "row_major"),
+    ],
+)
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_ndarray_vector_multiplication(dtype, storage_format):
     n = 2
-    Abuilder = ti.linalg.SparseMatrixBuilder(n,
-                                             n,
-                                             max_num_triplets=100,
-                                             dtype=dtype,
-                                             storage_format=storage_format)
+    Abuilder = ti.linalg.SparseMatrixBuilder(
+        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
+    )
     x = ti.ndarray(dtype, n)
 
     @ti.kernel
@@ -407,12 +448,12 @@ def test_sparse_matrix_ndarray_vector_multiplication(dtype, storage_format):
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix():
     import numpy as np
+
     num_triplets, num_rows, num_cols = 9, 4, 4
     np_idx_dtype, np_val_dtype = np.int32, np.float32
     coo_row = np.asarray([0, 0, 0, 1, 2, 2, 2, 3, 3], dtype=np_idx_dtype)
     coo_col = np.asarray([0, 2, 3, 1, 0, 2, 3, 1, 3], dtype=np_idx_dtype)
-    coo_val = np.asarray([i + 1.0 for i in range(num_triplets)],
-                         dtype=np_val_dtype)
+    coo_val = np.asarray([i + 1.0 for i in range(num_triplets)], dtype=np_val_dtype)
     h_X = np.asarray([1.0, 2.0, 3.0, 4.0], dtype=np_val_dtype)
     h_Y = np.asarray([19.0, 8.0, 51.0, 52.0], dtype=np_val_dtype)
 
@@ -423,14 +464,17 @@ def test_gpu_sparse_matrix():
     X.from_numpy(h_X)
     Y.fill(0.0)
 
-    A_builder = ti.linalg.SparseMatrixBuilder(num_rows=4,
-                                              num_cols=4,
-                                              dtype=ti_dtype,
-                                              max_num_triplets=50)
+    A_builder = ti.linalg.SparseMatrixBuilder(
+        num_rows=4, num_cols=4, dtype=ti_dtype, max_num_triplets=50
+    )
 
     @ti.kernel
-    def fill(A: ti.types.sparse_matrix_builder(), coo_row: ti.types.ndarray(),
-             coo_col: ti.types.ndarray(), coo_val: ti.types.ndarray()):
+    def fill(
+        A: ti.types.sparse_matrix_builder(),
+        coo_row: ti.types.ndarray(),
+        coo_col: ti.types.ndarray(),
+        coo_val: ti.types.ndarray(),
+    ):
         for i in range(num_triplets):
             A[coo_row[i], coo_col[i]] += coo_val[i]
 
@@ -443,7 +487,7 @@ def test_gpu_sparse_matrix():
         assert Y[i] == h_Y[i]
 
 
-@pytest.mark.parametrize('N', [5])
+@pytest.mark.parametrize("N", [5])
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_matrix_ops(N):
     import numpy as np
@@ -452,9 +496,13 @@ def test_gpu_sparse_matrix_ops(N):
     from scipy.sparse import coo_matrix, random
 
     @ti.kernel
-    def fill(A: ti.types.sparse_matrix_builder(), coo_row: ti.types.ndarray(),
-             coo_col: ti.types.ndarray(), coo_val: ti.types.ndarray(),
-             nnz: ti.i32):
+    def fill(
+        A: ti.types.sparse_matrix_builder(),
+        coo_row: ti.types.ndarray(),
+        coo_col: ti.types.ndarray(),
+        coo_val: ti.types.ndarray(),
+        nnz: ti.i32,
+    ):
         for i in range(nnz):
             A[coo_row[i], coo_col[i]] += coo_val[i]
 
@@ -468,22 +516,26 @@ def test_gpu_sparse_matrix_ops(N):
     n_rows = N
     n_cols = N - 1
 
-    S1 = random(n_rows, n_cols, density=0.5, random_state=rng,
-                data_rvs=rvs).astype(np_dtype).tocoo()
-    S2 = random(n_rows, n_cols, density=0.5, random_state=rng,
-                data_rvs=rvs).astype(np_dtype).tocoo()
+    S1 = (
+        random(n_rows, n_cols, density=0.5, random_state=rng, data_rvs=rvs)
+        .astype(np_dtype)
+        .tocoo()
+    )
+    S2 = (
+        random(n_rows, n_cols, density=0.5, random_state=rng, data_rvs=rvs)
+        .astype(np_dtype)
+        .tocoo()
+    )
 
     nnz_A = S1.nnz
     nnz_B = S2.nnz
 
-    A_builder = ti.linalg.SparseMatrixBuilder(num_rows=n_rows,
-                                              num_cols=n_cols,
-                                              dtype=val_dt,
-                                              max_num_triplets=nnz_A)
-    B_builder = ti.linalg.SparseMatrixBuilder(num_rows=n_rows,
-                                              num_cols=n_cols,
-                                              dtype=val_dt,
-                                              max_num_triplets=nnz_B)
+    A_builder = ti.linalg.SparseMatrixBuilder(
+        num_rows=n_rows, num_cols=n_cols, dtype=val_dt, max_num_triplets=nnz_A
+    )
+    B_builder = ti.linalg.SparseMatrixBuilder(
+        num_rows=n_rows, num_cols=n_cols, dtype=val_dt, max_num_triplets=nnz_B
+    )
     fill(A_builder, S1.row, S1.col, S1.data, nnz_A)
     fill(B_builder, S2.row, S2.col, S2.data, nnz_B)
     A = A_builder.build()

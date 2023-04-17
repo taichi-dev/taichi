@@ -14,7 +14,7 @@ dashpot_damping = 1e4
 drag_damping = 1
 
 ball_radius = 0.3
-ball_center = ti.Vector.field(3, dtype=float, shape=(1, ))
+ball_center = ti.Vector.field(3, dtype=float, shape=(1,))
 ball_center[0] = [0, 0, 0]
 
 x = ti.Vector.field(3, dtype=float, shape=(n, n))
@@ -34,8 +34,9 @@ def initialize_mass_points():
 
     for i, j in x:
         x[i, j] = [
-            i * quad_size - 0.5 + random_offset[0], 0.6,
-            j * quad_size - 0.5 + random_offset[1]
+            i * quad_size - 0.5 + random_offset[0],
+            0.6,
+            j * quad_size - 0.5 + random_offset[1],
         ]
         v[i, j] = [0, 0, 0]
 
@@ -96,7 +97,9 @@ def substep():
                 v_ij = v[i] - v[j]
                 d = x_ij.normalized()
                 current_dist = x_ij.norm()
-                original_dist = quad_size * float(i - j).norm()  # pylint: disable=no-member
+                original_dist = (
+                    quad_size * float(i - j).norm()  # pylint: disable=no-member
+                )
                 # Spring force
                 force += -spring_Y * d * (current_dist / original_dist - 1)
                 # Dashpot damping
@@ -121,8 +124,7 @@ def update_vertices():
 
 
 def main():
-    window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (768, 768),
-                          vsync=True)
+    window = ti.ui.Window("Taichi Cloth Simulation on GGUI", (768, 768), vsync=True)
     canvas = window.get_canvas()
     canvas.set_background_color((1, 1, 1))
     scene = ti.ui.Scene()
@@ -148,20 +150,15 @@ def main():
 
         scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
         scene.ambient_light((0.5, 0.5, 0.5))
-        scene.mesh(vertices,
-                   indices=indices,
-                   per_vertex_color=colors,
-                   two_sided=True)
+        scene.mesh(vertices, indices=indices, per_vertex_color=colors, two_sided=True)
 
         # Draw a smaller ball to avoid visual penetration
-        scene.particles(ball_center,
-                        radius=ball_radius * 0.95,
-                        color=(0.5, 0.42, 0.8))
+        scene.particles(ball_center, radius=ball_radius * 0.95, color=(0.5, 0.42, 0.8))
         canvas.scene(scene)
         window.show()
 
-    #TODO: include self-collision handling
+    # TODO: include self-collision handling
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

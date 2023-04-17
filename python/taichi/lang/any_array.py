@@ -14,6 +14,7 @@ class AnyArray:
         element_shape (Tuple[Int]): () if scalar elements (default), (n) if vector elements, and (n, m) if matrix elements.
         layout (Layout): Memory layout.
     """
+
     def __init__(self, ptr):
         assert ptr.is_external_tensor_expr()
         self.ptr = ptr
@@ -32,8 +33,7 @@ class AnyArray:
 
     def get_type(self):
         return NdarrayTypeMetadata(
-            self.ptr.get_ret_type(),
-            None  # AnyArray can take any shape
+            self.ptr.get_ret_type(), None  # AnyArray can take any shape
         )
 
     @property
@@ -58,8 +58,7 @@ class AnyArray:
         element_dim = len(self.element_shape())
         if element_dim == 0:
             return ret
-        return ret[element_dim:] if self.layout(
-        ) == Layout.SOA else ret[:-element_dim]
+        return ret[element_dim:] if self.layout() == Layout.SOA else ret[:-element_dim]
 
     @taichi_scope
     def _loop_range(self):
@@ -78,6 +77,7 @@ class AnyArrayAccess:
         arr (AnyArray): See above.
         indices_first (Tuple[Int]): Indices of first-level access.
     """
+
     def __init__(self, arr, indices_first):
         self.arr = arr
         self.indices_first = indices_first
@@ -86,16 +86,18 @@ class AnyArrayAccess:
     def subscript(self, i, j):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
 
-        indices_second = (i, ) if len(self.arr.element_shape()) == 1 else (i,
-                                                                           j)
+        indices_second = (i,) if len(self.arr.element_shape()) == 1 else (i, j)
         if self.arr.layout() == Layout.SOA:
             indices = indices_second + self.indices_first
         else:
             indices = self.indices_first + indices_second
         return Expr(
             ast_builder.expr_subscript(
-                self.arr.ptr, make_expr_group(*indices),
-                impl.get_runtime().get_current_src_info()))
+                self.arr.ptr,
+                make_expr_group(*indices),
+                impl.get_runtime().get_current_src_info(),
+            )
+        )
 
 
 __all__ = []

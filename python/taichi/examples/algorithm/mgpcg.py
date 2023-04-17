@@ -16,7 +16,9 @@ bottom_smoothing = 50
 
 use_multigrid = True
 
-N_ext = N // 2  # number of ext cells set so that that total grid size is still power of 2
+N_ext = (
+    N // 2
+)  # number of ext cells set so that that total grid size is still power of 2
 N_tot = 2 * N
 
 # setup sparse simulation data arrays
@@ -33,23 +35,27 @@ pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
 for lvl in range(n_mg_levels):
-    ti.root.pointer(ti.ijk,
-                    [N_tot // (4 * 2**lvl)]).dense(ti.ijk,
-                                                   4).place(r[lvl], z[lvl])
+    ti.root.pointer(ti.ijk, [N_tot // (4 * 2**lvl)]).dense(ti.ijk, 4).place(
+        r[lvl], z[lvl]
+    )
 
 ti.root.place(alpha, beta, sum_)
 
 
 @ti.kernel
 def init():
-    for i, j, k in ti.ndrange((N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext),
-                              (N_ext, N_tot - N_ext)):
+    for i, j, k in ti.ndrange(
+        (N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext)
+    ):
         xl = (i - N_ext) * 2.0 / N_tot
         yl = (j - N_ext) * 2.0 / N_tot
         zl = (k - N_ext) * 2.0 / N_tot
         # r[0] = b - Ax, where x = 0; therefore r[0] = b
-        r[0][i, j, k] = ti.sin(2.0 * np.pi * xl) * ti.sin(
-            2.0 * np.pi * yl) * ti.sin(2.0 * np.pi * zl)
+        r[0][i, j, k] = (
+            ti.sin(2.0 * np.pi * xl)
+            * ti.sin(2.0 * np.pi * yl)
+            * ti.sin(2.0 * np.pi * zl)
+        )
         z[0][i, j, k] = 0.0
         Ap[i, j, k] = 0.0
         p[i, j, k] = 0.0
@@ -60,9 +66,15 @@ def init():
 def compute_Ap():
     for i, j, k in Ap:
         # A is implicitly expressed as a 3-D laplace operator
-        Ap[i,j,k] = 6.0 * p[i,j,k] - p[i+1,j,k] - p[i-1,j,k] \
-                                   - p[i,j+1,k] - p[i,j-1,k] \
-                                   - p[i,j,k+1] - p[i,j,k-1]
+        Ap[i, j, k] = (
+            6.0 * p[i, j, k]
+            - p[i + 1, j, k]
+            - p[i - 1, j, k]
+            - p[i, j + 1, k]
+            - p[i, j - 1, k]
+            - p[i, j, k + 1]
+            - p[i, j, k - 1]
+        )
 
 
 @ti.kernel
@@ -92,10 +104,15 @@ def update_p():
 @ti.kernel
 def restrict(l: ti.template()):
     for i, j, k in r[l]:
-        res = r[l][i, j, k] - (6.0 * z[l][i, j, k] - z[l][i + 1, j, k] -
-                               z[l][i - 1, j, k] - z[l][i, j + 1, k] -
-                               z[l][i, j - 1, k] - z[l][i, j, k + 1] -
-                               z[l][i, j, k - 1])
+        res = r[l][i, j, k] - (
+            6.0 * z[l][i, j, k]
+            - z[l][i + 1, j, k]
+            - z[l][i - 1, j, k]
+            - z[l][i, j + 1, k]
+            - z[l][i, j - 1, k]
+            - z[l][i, j, k + 1]
+            - z[l][i, j, k - 1]
+        )
         r[l + 1][i // 2, j // 2, k // 2] += res * 0.5
 
 
@@ -110,9 +127,15 @@ def smooth(l: ti.template(), phase: ti.template()):
     # phase = red/black Gauss-Seidel phase
     for i, j, k in r[l]:
         if (i + j + k) & 1 == phase:
-            z[l][i,j,k] = (r[l][i,j,k] + z[l][i+1,j,k] + z[l][i-1,j,k] \
-                                       + z[l][i,j+1,k] + z[l][i,j-1,k] \
-                                       + z[l][i,j,k+1] + z[l][i,j,k-1])/6.0
+            z[l][i, j, k] = (
+                r[l][i, j, k]
+                + z[l][i + 1, j, k]
+                + z[l][i - 1, j, k]
+                + z[l][i, j + 1, k]
+                + z[l][i, j - 1, k]
+                + z[l][i, j, k + 1]
+                + z[l][i, j, k - 1]
+            ) / 6.0
 
 
 def apply_preconditioner():
@@ -205,8 +228,8 @@ def main():
         update_p()
         old_zTr = new_zTr
 
-        print(' ')
-        print(f'Iter = {i:4}, Residual = {rTr:e}')
+        print(" ")
+        print(f"Iter = {i:4}, Residual = {rTr:e}")
         paint()
         gui.set_image(pixels)
         gui.show()
@@ -214,5 +237,5 @@ def main():
     ti.profiler.print_kernel_profiler_info()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

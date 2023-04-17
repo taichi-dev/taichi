@@ -23,7 +23,7 @@ class GradChecker:
     def __init__(self, loss, to_check):
         self.to_check = to_check
         self.loss = loss
-        self.eps_range = 2.**np.arange(-3, -30, -2).astype(np.float64)
+        self.eps_range = 2.0 ** np.arange(-3, -30, -2).astype(np.float64)
         self.result = [None] * len(to_check)
         self.all_fields = get_all_fields()
         self.backups = save_all_fields(self.all_fields)
@@ -53,8 +53,7 @@ class GradChecker:
 
             re_range = []
             for eps in self.eps_range:
-                tangent_np = np.array(np.random.rand(*x.shape)).astype(
-                    np.float64)
+                tangent_np = np.array(np.random.rand(*x.shape)).astype(np.float64)
 
                 restore_all_fields(self.all_fields, self.backups)
                 x_pos(x, tangent_np, eps)
@@ -91,13 +90,17 @@ class GradChecker:
             self.result[i] = check_pass
 
             if not check_pass:
-                print("variable", i, "has relative error", min(re_range),
-                      ", expected relative error 0.01")
+                print(
+                    "variable",
+                    i,
+                    "has relative error",
+                    min(re_range),
+                    ", expected relative error 0.01",
+                )
             else:
                 print("variable", i, "passes grad check")
 
-        assert all(self.result
-                   ), "Grad check failed: Not all variables pass grad check"
+        assert all(self.result), "Grad check failed: Not all variables pass grad check"
 
         restore_all_fields(self.all_fields, self.backups)
         for func, args in self.calls:
@@ -132,11 +135,9 @@ def restore_all_fields(all_fields, backups):
 
 
 class Tape:
-    def __init__(self,
-                 loss=None,
-                 clear_gradients=True,
-                 validation=False,
-                 grad_check=None):
+    def __init__(
+        self, loss=None, clear_gradients=True, validation=False, grad_check=None
+    ):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -174,7 +175,8 @@ class Tape:
         if not self.runtime.prog.config().debug and self.validation:
             warnings.warn(
                 "Debug mode is disabled, autodiff valid check will not work. Please specify `ti.init(debug=True)` to enable the check.",
-                Warning)
+                Warning,
+            )
         self.eval_on_exit = loss is not None
         self.loss = loss
         self.grad_checker = None
@@ -190,18 +192,19 @@ class Tape:
 
         impl.get_runtime().materialize()
         if len(self.loss.shape) != 0:
-            raise RuntimeError(
-                'The loss of `Tape` must be a 0-D field, i.e. scalar')
+            raise RuntimeError("The loss of `Tape` must be a 0-D field, i.e. scalar")
         if not self.loss.snode.ptr.has_adjoint():
             raise RuntimeError(
-                'Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)'
-                ' for all fields that are required by autodiff.')
+                "Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)"
+                " for all fields that are required by autodiff."
+            )
         if self.clear_gradients:
             clear_all_gradients()
         if self.validation:
             clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
 
         from taichi._kernels import clear_loss  # pylint: disable=C0415
+
         clear_loss(self.loss)
 
         # Attach the context manager to runtime
@@ -219,7 +222,8 @@ class Tape:
         # Kernels with mode `AutodiffMode.NONE` and `AutodiffMode.VALIDATION` are all forward kernels.
         # The difference is there are `assert` for global data access rule check in VALIDATION kernels.
         assert func.autodiff_mode in (
-            AutodiffMode.NONE, AutodiffMode.VALIDATION
+            AutodiffMode.NONE,
+            AutodiffMode.VALIDATION,
         ), "Inserted funcs should be forward kernels."
         self.modes.append(func.autodiff_mode)
         if self.validation:
@@ -228,13 +232,15 @@ class Tape:
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
-        assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
+        assert (
+            not self.gradient_evaluated
+        ), "Gradients of grad can be evaluated only once."
 
         for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
-            if hasattr(func, 'grad'):
+            if hasattr(func, "grad"):
                 self.loss.grad.fill(1.0)
                 func.grad(*args)
 
@@ -245,8 +251,7 @@ class Tape:
 
 
 def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):
-    """Sets the gradients of all fields to zero.
-    """
+    """Sets the gradients of all fields to zero."""
     impl.get_runtime().materialize()
 
     def visit(node):
@@ -261,8 +266,8 @@ def clear_all_gradients(gradient_type=SNodeGradType.ADJOINT):
 
         places = tuple(places)
         if places:
-            from taichi._kernels import \
-                clear_gradients  # pylint: disable=C0415
+            from taichi._kernels import clear_gradients  # pylint: disable=C0415
+
             clear_gradients(places)
 
     for root_fb in _snode.FieldsBuilder._finalized_roots():
@@ -302,6 +307,7 @@ def grad_replaced(func):
         >>> @ti.ad.grad_for(foo)
         >>> def foo_grad(a):
         >>>     multiply_grad(a)"""
+
     def decorated(*args, **kwargs):
         # TODO [#3025]: get rid of circular imports and move this to the top.
         impl.get_runtime().grad_replaced = True
@@ -327,17 +333,18 @@ def grad_for(primal):
 
     Returns:
         Callable: The decorator used to decorate customized gradient function."""
+
     def decorator(func):
         def decorated(*args, **kwargs):
             func(*args, **kwargs)
 
-        if not hasattr(primal, 'grad'):
+        if not hasattr(primal, "grad"):
             raise RuntimeError(
-                f'Primal function `{primal.__name__}` must be decorated by ti.ad.grad_replaced'
+                f"Primal function `{primal.__name__}` must be decorated by ti.ad.grad_replaced"
             )
         if primal.grad is not None:
             raise RuntimeError(
-                'Primal function must be a **python** function instead of a taichi kernel. Please wrap the taichi kernel in a @ti.ad.grad_replaced decorated python function instead.'
+                "Primal function must be a **python** function instead of a taichi kernel. Please wrap the taichi kernel in a @ti.ad.grad_replaced decorated python function instead."
             )
         primal.grad = decorated
         return decorated
@@ -367,6 +374,7 @@ def no_grad(func):
         >>> @ti.no_grad
         >>> def foo(a):
         >>>     multiply(a)"""
+
     def decorated(*args, **kwargs):
         impl.get_runtime().grad_replaced = True
         if impl.get_runtime().target_tape:
@@ -428,11 +436,11 @@ class FwdMode:
                 self.seed = [1.0]
             else:
                 raise RuntimeError(
-                    '`seed` is not set for non 0-D field, please specify.'
-                    ' `seed` is a list to specify which parameters the computed derivatives respect to. The length of the `seed` should be same to that of the `parameters`'
-                    ' E.g. Given a loss `loss = ti.field(float, shape=3)`, parameter `x = ti.field(float, shape=3)`'
-                    '      seed = [0, 0, 1] indicates compute derivative respect to the third element of `x`.'
-                    '      seed = [1, 1, 1] indicates compute the sum of derivatives respect to all three element of `x`, i.e., Jacobian-vector product(Jvp) for each element in `loss`'
+                    "`seed` is not set for non 0-D field, please specify."
+                    " `seed` is a list to specify which parameters the computed derivatives respect to. The length of the `seed` should be same to that of the `parameters`"
+                    " E.g. Given a loss `loss = ti.field(float, shape=3)`, parameter `x = ti.field(float, shape=3)`"
+                    "      seed = [0, 0, 1] indicates compute derivative respect to the third element of `x`."
+                    "      seed = [1, 1, 1] indicates compute the sum of derivatives respect to all three element of `x`, i.e., Jacobian-vector product(Jvp) for each element in `loss`"
                 )
         else:
             assert parameters_shape_flatten == len(self.seed)
@@ -461,13 +469,18 @@ class FwdMode:
         self.recover_kernels()
 
     def insert(self, func):
-        assert func.autodiff_mode == AutodiffMode.NONE or func.autodiff_mode == AutodiffMode.FORWARD, "Inserted funcs should be forward or grad kernels (forward mode)."
+        assert (
+            func.autodiff_mode == AutodiffMode.NONE
+            or func.autodiff_mode == AutodiffMode.FORWARD
+        ), "Inserted funcs should be forward or grad kernels (forward mode)."
         self.modes.append(func.autodiff_mode)
         func.autodiff_mode = AutodiffMode.FORWARD
         self.calls.append((func))
 
     def recover_kernels(self):
-        assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
+        assert (
+            self.entered
+        ), "Before recover the kernels, fwd mode manager must be entered."
         for calls, mode in zip(self.calls, self.modes):
             calls.autodiff_mode = mode
         self.kernels_recovered = True
@@ -486,6 +499,10 @@ class FwdMode:
 
 
 __all__ = [
-    'FwdMode', 'Tape', 'clear_all_gradients', 'grad_for', 'grad_replaced',
-    'no_grad'
+    "FwdMode",
+    "Tape",
+    "clear_all_gradients",
+    "grad_for",
+    "grad_replaced",
+    "no_grad",
 ]

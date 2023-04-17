@@ -66,18 +66,27 @@ def _polar_decompose2d(A, dt):
     P = ops.cast(A, dt)
     zero = ops.cast(0.0, dt)
     # if A is a zero matrix we simply return the pair (I, A)
-    if (A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero
-            and A[1, 1] == zero):
+    if A[0, 0] == zero and A[0, 1] == zero and A[1, 0] == zero and A[1, 1] == zero:
         pass
     else:
         detA = A[0, 0] * A[1, 1] - A[1, 0] * A[0, 1]
         adetA = abs(detA)
-        B = Matrix([[A[0, 0] + A[1, 1], A[0, 1] - A[1, 0]],
-                    [A[1, 0] - A[0, 1], A[1, 1] + A[0, 0]]], dt)
+        B = Matrix(
+            [
+                [A[0, 0] + A[1, 1], A[0, 1] - A[1, 0]],
+                [A[1, 0] - A[0, 1], A[1, 1] + A[0, 0]],
+            ],
+            dt,
+        )
 
         if detA < zero:
-            B = Matrix([[A[0, 0] - A[1, 1], A[0, 1] + A[1, 0]],
-                        [A[1, 0] + A[0, 1], A[1, 1] - A[0, 0]]], dt)
+            B = Matrix(
+                [
+                    [A[0, 0] - A[1, 1], A[0, 1] + A[1, 0]],
+                    [A[1, 0] + A[0, 1], A[1, 1] - A[0, 0]],
+                ],
+                dt,
+            )
         # here det(B) != 0 if A is not the zero matrix
         adetB = abs(B[0, 0] * B[1, 1] - B[1, 0] * B[0, 1])
         k = ops.cast(1.0, dt) / ops.sqrt(adetB)
@@ -126,7 +135,7 @@ def _svd2d(A, dt):
         s1, s2 = S[0, 0], S[1, 1]
     else:
         tao = ops.cast(0.5, dt) * (S[0, 0] - S[1, 1])
-        w = ops.sqrt(tao**2 + S[0, 1]**2)
+        w = ops.sqrt(tao**2 + S[0, 1] ** 2)
         t = ops.cast(0.0, dt)
         if tao > 0:
             t = S[0, 1] / (tao + w)
@@ -169,11 +178,13 @@ def _svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == f32:
-        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(
-            A.ptr, iters)
+        rets = (
+            get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(A.ptr, iters)
+        )
     else:
-        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(
-            A.ptr, iters)
+        rets = (
+            get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(A.ptr, iters)
+        )
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]
@@ -220,8 +231,7 @@ def _eig2x2(A, dt):
         lambda2 = Vector([tr - ops.sqrt(gap), 0.0], dt=dt) * 0.5
         A1 = A - lambda1[0] * Matrix.identity(dt, 2)
         A2 = A - lambda2[0] * Matrix.identity(dt, 2)
-        if all(A1 == Matrix.zero(dt, 2, 2)) and all(
-                A1 == Matrix.zero(dt, 2, 2)):
+        if all(A1 == Matrix.zero(dt, 2, 2)) and all(A1 == Matrix.zero(dt, 2, 2)):
             v1 = Vector([0.0, 0.0, 1.0, 0.0]).cast(dt)
             v2 = Vector([1.0, 0.0, 0.0, 0.0]).cast(dt)
         else:
@@ -234,10 +244,8 @@ def _eig2x2(A, dt):
         A1i = -lambda1[1] * Matrix.identity(dt, 2)
         A2r = A - lambda2[0] * Matrix.identity(dt, 2)
         A2i = -lambda2[1] * Matrix.identity(dt, 2)
-        v1 = Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0], A2i[1, 0]],
-                    dt=dt).normalized()
-        v2 = Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0], A1i[1, 0]],
-                    dt=dt).normalized()
+        v1 = Vector([A2r[0, 0], A2i[0, 0], A2r[1, 0], A2i[1, 0]], dt=dt).normalized()
+        v2 = Vector([A1r[0, 0], A1i[0, 0], A1r[1, 0], A1i[1, 0]], dt=dt).normalized()
     eigenvalues = Matrix.rows([lambda1, lambda2])
     eigenvectors = Matrix.cols([v1, v2])
 
@@ -289,7 +297,7 @@ def dsytrd3(A, Q, dt):
     u = Vector([0.0, 0.0, 0.0], dt=dt)
     q = Vector([0.0, 0.0, 0.0], dt=dt)
     d = Vector([0.0, 0.0, 0.0], dt=dt)
-    h = A[0, 1]**2 + A[0, 2]**2
+    h = A[0, 1] ** 2 + A[0, 2] ** 2
     g = 0.0
     if A[0, 1] > 0:
         g = -ops.sqrt(h)
@@ -353,7 +361,7 @@ def dsyevq3(A, Q, w, dt):
                 break
 
             nIter += 1
-            assert (nIter <= 30), "Timeout"
+            assert nIter <= 30, "Timeout"
 
             # Calculate g = d_m - k
             g = (w[l + 1] - w[l]) / (e[l] + e[l])
@@ -421,10 +429,14 @@ def _sym_eig3x3(A, dt):
     dd = A[0, 1] * A[0, 1]
     ee = A[1, 2] * A[1, 2]
     ff = A[0, 2] * A[0, 2]
-    c1 = A[0, 0] * A[1, 1] + A[0, 0] * A[2, 2] + A[1, 1] * A[2, 2] - (dd + ee +
-                                                                      ff)
-    c0 = A[2, 2] * dd + A[0, 0] * ee + A[1, 1] * ff - A[0, 0] * A[1, 1] * A[
-        2, 2] - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
+    c1 = A[0, 0] * A[1, 1] + A[0, 0] * A[2, 2] + A[1, 1] * A[2, 2] - (dd + ee + ff)
+    c0 = (
+        A[2, 2] * dd
+        + A[0, 0] * ee
+        + A[1, 1] * ff
+        - A[0, 0] * A[1, 1] * A[2, 2]
+        - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
+    )
 
     p = m * m - 3.0 * c1
     q = m * (p - 1.5 * c1) - 13.5 * c0
@@ -474,12 +486,9 @@ def _sym_eig3x3(A, dt):
         Q[2, 0] *= norm
 
     if not early_ret:
-
         Q[0, 1] = Q[0, 1] + A[0, 2] * eigenvalues[1]
         Q[1, 1] = Q[1, 1] + A[1, 2] * eigenvalues[1]
-        Q[2,
-          1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2,
-                                                                           1]
+        Q[2, 1] = (A[0, 0] - eigenvalues[1]) * (A[1, 1] - eigenvalues[1]) - Q[2, 1]
         norm = Q[0, 1] * Q[0, 1] + Q[1, 1] * Q[1, 1] + Q[2, 1] * Q[2, 1]
         if norm <= error:
             Q_final, eigenvalues_final = dsyevq3(A, Q, eigenvalues, dt)
@@ -702,4 +711,4 @@ def field_fill_taichi_scope(F: template(), val: template()):
         F[I] = val
 
 
-__all__ = ['randn', 'polar_decompose', 'eig', 'sym_eig', 'svd', 'solve']
+__all__ = ["randn", "polar_decompose", "eig", "sym_eig", "svd", "solve"]

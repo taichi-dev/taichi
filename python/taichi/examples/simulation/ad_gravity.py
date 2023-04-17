@@ -5,8 +5,7 @@ ti.init()
 N = 8
 dt = 1e-5
 
-x = ti.Vector.field(2, dtype=ti.f32, shape=N,
-                    needs_grad=True)  # particle positions
+x = ti.Vector.field(2, dtype=ti.f32, shape=N, needs_grad=True)  # particle positions
 v = ti.Vector.field(2, dtype=ti.f32, shape=N)  # particle velocities
 U = ti.field(dtype=ti.f32, shape=(), needs_grad=True)  # potential energy
 
@@ -32,8 +31,7 @@ def substep():
     with ti.ad.Tape(loss=U):
         # Kernel invocations in this scope will later contribute to partial derivatives of
         # U with respect to input variables such as x.
-        compute_U(
-        )  # The tape will automatically compute dU/dx and save the results in x.grad
+        compute_U()  # The tape will automatically compute dU/dx and save the results in x.grad
     advance()
 
 
@@ -45,7 +43,7 @@ def init():
 
 def main():
     init()
-    gui = ti.GUI('Autodiff gravity')
+    gui = ti.GUI("Autodiff gravity")
     while gui.running:
         for i in range(50):
             substep()

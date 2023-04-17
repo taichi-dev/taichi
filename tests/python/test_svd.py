@@ -17,7 +17,7 @@ def test_precision():
         w[None] = ti.cast(u[None] + 7, ti.f64) / ti.cast(u[None] + 3, ti.f64)
 
     forward()
-    assert v[None]**2 == test_utils.approx(3.25, abs=1e-12)
+    assert v[None] ** 2 == test_utils.approx(3.25, abs=1e-12)
     assert w[None] * 3 == test_utils.approx(7, abs=1e-12)
 
 
@@ -27,7 +27,7 @@ def mat_equal(A, B, tol=1e-6):
 
 def _test_svd(dt, n):
     print(
-        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp} fast_math={ti.lang.impl.current_cfg().fast_math} dim={n}'
+        f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp} fast_math={ti.lang.impl.current_cfg().fast_math} dim={n}"
     )
     A = ti.Matrix.field(n, n, dtype=dt, shape=())
     A_reconstructed = ti.Matrix.field(n, n, dtype=dt, shape=())
@@ -69,9 +69,7 @@ def test_svd_f32(dim):
 
 
 @pytest.mark.parametrize("dim", [2, 3])
-@test_utils.test(require=ti.extension.data64,
-                 default_fp=ti.f64,
-                 fast_math=False)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, fast_math=False)
 def test_svd_f64(dim):
     _test_svd(ti.f64, dim)
 

@@ -18,13 +18,15 @@ import pytest
 
 # Modified from pytest-timeout
 tle_cffi = cffi.FFI()
-tle_cffi.cdef("""
+tle_cffi.cdef(
+    """
     void init(void);
     void set(int seconds, char *message);
     void cancel(void);
-""")
+"""
+)
 
-TLE_WIN32 = r'''
+TLE_WIN32 = r"""
 #include <string.h>
 #include <windows.h>
 
@@ -75,9 +77,9 @@ static void cancel(void) {
     }
     current_message = NULL;
 }
-'''
+"""
 
-TLE_POSIX = r'''
+TLE_POSIX = r"""
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
@@ -111,9 +113,9 @@ static void cancel(void) {
     alarm(0);
     signal(SIGALRM, SIG_DFL);
 }
-'''
+"""
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     tle_cffi.set_source("_hard_tle", TLE_WIN32)
 else:
     tle_cffi.set_source("_hard_tle", TLE_POSIX)
@@ -123,7 +125,7 @@ else:
 libdir = pathlib.Path(tempfile.mkdtemp())
 tle_cffi.compile(tmpdir=str(libdir))
 sys.path.append(str(libdir))
-tle = importlib.import_module('_hard_tle')
+tle = importlib.import_module("_hard_tle")
 
 tle.lib.init()
 
@@ -154,6 +156,7 @@ def pytest_addoption(parser):
 
 class TimeoutHooks:
     """Timeout specific hooks."""
+
     @pytest.hookspec(firstresult=True)
     def pytest_timeout_set_timer(item, settings):
         """Called at timeout setup.
@@ -238,7 +241,8 @@ def pytest_report_header(config):
     """Add timeout config to pytest header."""
     if config._env_timeout:
         return [
-            "timeout: %ss\ntimeout func_only: %s" % (
+            "timeout: %ss\ntimeout func_only: %s"
+            % (
                 config._env_timeout,
                 config._env_timeout_func_only,
             )
@@ -255,7 +259,7 @@ def pytest_exception_interact(node):
 @pytest.hookimpl(trylast=True)
 def pytest_timeout_set_timer(item, settings):
     """Setup up a timeout trigger and handler."""
-    tle.lib.set(int(settings.timeout), str(item).encode('utf-8'))
+    tle.lib.set(int(settings.timeout), str(item).encode("utf-8"))
     return True
 
 
@@ -308,6 +312,7 @@ def _parse_marker(marker):
     Either could be None.  The values are not interpreted, so
     could still be bogus and even the wrong type.
     """
+
     def get_settings(timeout=None, method=None):
         if (timeout, method) == (None, None):
             raise TypeError("Timeout marker must have at least one argument")

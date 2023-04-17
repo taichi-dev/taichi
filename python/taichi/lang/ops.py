@@ -8,8 +8,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field
-from taichi.lang.util import (cook_dtype, is_matrix_class, is_taichi_class,
-                              taichi_scope)
+from taichi.lang.util import cook_dtype, is_matrix_class, is_taichi_class, taichi_scope
 
 
 def stack_info():
@@ -37,7 +36,7 @@ def writeback_binary(foo):
             return NotImplemented
         if not (is_taichi_expr(a) and a.ptr.is_lvalue()):
             raise TaichiSyntaxError(
-                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\''
+                f"cannot use a non-writable target as the first operand of '{foo.__name__}'"
             )
         return foo(a, wrap_if_not_expr(b))
 
@@ -103,7 +102,7 @@ def bit_cast(obj, dtype):
     """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
-        raise ValueError('Cannot apply bit_cast on Taichi classes')
+        raise ValueError("Cannot apply bit_cast on Taichi classes")
     else:
         return expr.Expr(_ti_core.bits_cast(expr.Expr(obj).ptr, dtype))
 
@@ -114,6 +113,7 @@ def _unary_operation(taichi_op, python_op, a):
     if is_taichi_expr(a):
         return expr.Expr(taichi_op(a.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
     if isinstance(a, Matrix):
         return Matrix(python_op(a.to_numpy()))
     return python_op(a)
@@ -126,9 +126,9 @@ def _binary_operation(taichi_op, python_op, a, b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
     if isinstance(a, Matrix) or isinstance(b, Matrix):
-        return Matrix(
-            python_op(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
+        return Matrix(python_op(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
     return python_op(a, b)
 
 
@@ -139,10 +139,15 @@ def _ternary_operation(taichi_op, python_op, a, b, c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
         return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
     from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
     if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(c, Matrix):
         return Matrix(
-            python_op(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b),
-                      _read_matrix_or_scalar(c)))
+            python_op(
+                _read_matrix_or_scalar(a),
+                _read_matrix_or_scalar(b),
+                _read_matrix_or_scalar(c),
+            )
+        )
     return python_op(a, b, c)
 
 
@@ -286,6 +291,7 @@ def rsqrt(x):
     Returns:
         The reciprocal of `sqrt(x)`.
     """
+
     def _rsqrt(x):
         return 1 / np.sqrt(x)
 
@@ -651,6 +657,7 @@ def mod(x1, x2):
         >>> test()
         [1.0, 0.0, 4.0]
     """
+
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
         quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
@@ -697,8 +704,7 @@ def pow(base, exponent):  # pylint: disable=W0622
         >>> test()
         [-0.125000, 0.125000]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base,
-                             exponent)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base, exponent)
 
 
 def floordiv(a, b):
@@ -711,8 +717,7 @@ def floordiv(a, b):
     Returns:
         The floor function of `a` divided by `b`.
     """
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
-                             b)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
 
 
 def truediv(a, b):
@@ -803,6 +808,7 @@ def raw_div(x1, x2):
         >>>     z = 4.0
         >>>     print(raw_div(x, z))  # 1.25
     """
+
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -831,6 +837,7 @@ def raw_mod(x1, x2):
         >>>     print(ti.mod(-4, 3))  # 2
         >>>     print(ti.raw_mod(-4, 3))  # -1
     """
+
     def c_mod(x, y):
         return x - y * int(float(x) / y)
 
@@ -1030,8 +1037,7 @@ def logical_and(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-and RHS (with short-circuit semantics)
 
     """
-    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b,
-                             a, b)
+    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b, a, b)
 
 
 def logical_or(a, b):
@@ -1045,8 +1051,7 @@ def logical_or(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-or RHS (with short-circuit semantics)
 
     """
-    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a,
-                             b)
+    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a, b)
 
 
 def select(cond, x1, x2):
@@ -1134,7 +1139,8 @@ def atomic_add(x, y):
         >>>     ti.atomic_add(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1165,7 +1171,8 @@ def atomic_sub(x, y):
         >>>     ti.atomic_sub(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1196,7 +1203,8 @@ def atomic_min(x, y):
         >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1227,7 +1235,8 @@ def atomic_max(x, y):
         >>>     ti.atomic_max(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1258,7 +1267,8 @@ def atomic_and(x, y):
         >>>     ti.atomic_and(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1289,7 +1299,8 @@ def atomic_or(x, y):
         >>>     ti.atomic_or(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
@@ -1320,13 +1331,15 @@ def atomic_xor(x, y):
         >>>     ti.atomic_xor(1, x)  # will raise TaichiSyntaxError
     """
     return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
+        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info())
+    )
 
 
 @writeback_binary
 def assign(a, b):
     impl.get_runtime().compiling_callable.ast_builder().expr_assign(
-        a.ptr, b.ptr, stack_info())
+        a.ptr, b.ptr, stack_info()
+    )
     return a
 
 
@@ -1395,9 +1408,37 @@ def min(*args):  # pylint: disable=W0622
 
 
 __all__ = [
-    "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
-    "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
-    "bit_shr", "cast", "ceil", "cos", "exp", "floor", "frexp", "log", "random",
-    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
-    "max", "min", "select", "abs", "pow"
+    "acos",
+    "asin",
+    "atan2",
+    "atomic_and",
+    "atomic_or",
+    "atomic_xor",
+    "atomic_max",
+    "atomic_sub",
+    "atomic_min",
+    "atomic_add",
+    "bit_cast",
+    "bit_shr",
+    "cast",
+    "ceil",
+    "cos",
+    "exp",
+    "floor",
+    "frexp",
+    "log",
+    "random",
+    "raw_mod",
+    "raw_div",
+    "round",
+    "rsqrt",
+    "sin",
+    "sqrt",
+    "tan",
+    "tanh",
+    "max",
+    "min",
+    "select",
+    "abs",
+    "pow",
 ]

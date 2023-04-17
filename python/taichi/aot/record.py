@@ -9,12 +9,12 @@ def record_action_entry(name, contents):
 
 def record_action_hint(name, content=None):
     if content is None:
-        name, content = 'hint', name
-    record_action_entry(name, {'content': content})
+        name, content = "hint", name
+    record_action_entry(name, {"content": content})
 
 
 def record_action_config(key, value):
-    record_action_entry('config', {'key': key, 'value': value})
+    record_action_entry("config", {"key": key, "value": value})
 
 
 def start_recording(filename):
@@ -65,21 +65,21 @@ class RecordKernelGroup:
 
     def __enter__(self):
         if self.name is not None:
-            record_action_hint('group_begin', self.name)
+            record_action_hint("group_begin", self.name)
         return self
 
     def __exit__(self, *args):
         if self.name is not None:
-            record_action_hint('group_end', self.name)
+            record_action_hint("group_end", self.name)
 
     recorded = set()
 
 
-record_file = os.environ.get('TI_ACTION_RECORD')
+record_file = os.environ.get("TI_ACTION_RECORD")
 if record_file:
     start_recording(record_file)
 
 __all__ = [
-    'start_recording',
-    'stop_recording',
+    "start_recording",
+    "stop_recording",
 ]

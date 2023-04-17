@@ -9,8 +9,7 @@ b = ti.field(ti.f32, shape=n)
 
 
 @ti.kernel
-def fill(A: ti.types.sparse_matrix_builder(), b: ti.template(),
-         interval: ti.i32):
+def fill(A: ti.types.sparse_matrix_builder(), b: ti.template(), interval: ti.i32):
     for i in range(n):
         A[i, i] += 2.0
 

@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('val', [0, 1])
+@pytest.mark.parametrize("val", [0, 1])
 @test_utils.test(ti.cpu)
 def test_static_if(val):
     x = ti.field(ti.i32)
@@ -36,8 +36,9 @@ def test_static_if_error():
         else:
             x[0] = 0
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='must be compile-time constants'):
+    with pytest.raises(
+        ti.TaichiCompilationError, match="must be compile-time constants"
+    ):
         static(42)
 
 

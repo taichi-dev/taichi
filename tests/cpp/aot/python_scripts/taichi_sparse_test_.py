@@ -89,5 +89,5 @@ def save_kernels(arch):
     m.save(dir_name)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     save_kernels(arch=ti.cuda)

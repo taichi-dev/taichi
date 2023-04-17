@@ -19,15 +19,16 @@ def _test_type_assign_argument(dt):
     assert x[None] == 3
 
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize("dt", _TI_TYPES)
 @test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11])
 def test_type_assign_argument(dt):
     _test_type_assign_argument(dt)
 
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11],
-                 require=ti.extension.data64)
+@pytest.mark.parametrize("dt", _TI_64_TYPES)
+@test_utils.test(
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11], require=ti.extension.data64
+)
 def test_type_assign_argument64(dt):
     _test_type_assign_argument(dt)
 
@@ -52,15 +53,16 @@ def _test_type_operator(dt):
             assert mul[None] == x[None] * y[None]
 
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize("dt", _TI_TYPES)
 @test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11])
 def test_type_operator(dt):
     _test_type_operator(dt)
 
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11],
-                 require=ti.extension.data64)
+@pytest.mark.parametrize("dt", _TI_64_TYPES)
+@test_utils.test(
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11], require=ti.extension.data64
+)
 def test_type_operator64(dt):
     _test_type_operator(dt)
 
@@ -78,15 +80,16 @@ def _test_type_field(dt):
             assert x[i, j] == 3
 
 
-@pytest.mark.parametrize('dt', _TI_TYPES)
+@pytest.mark.parametrize("dt", _TI_TYPES)
 @test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11])
 def test_type_field(dt):
     _test_type_field(dt)
 
 
-@pytest.mark.parametrize('dt', _TI_64_TYPES)
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11],
-                 require=ti.extension.data64)
+@pytest.mark.parametrize("dt", _TI_64_TYPES)
+@test_utils.test(
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11], require=ti.extension.data64
+)
 def test_type_field64(dt):
     _test_type_field(dt)
 
@@ -114,33 +117,43 @@ def _test_overflow(dt, n):
         assert c[None] == 2**n // 3 * 2  # does not overflow
 
 
-@pytest.mark.parametrize('dt,n', [
-    (ti.i8, 8),
-    (ti.u8, 8),
-    (ti.i16, 16),
-    (ti.u16, 16),
-    (ti.i32, 32),
-    (ti.u32, 32),
-])
+@pytest.mark.parametrize(
+    "dt,n",
+    [
+        (ti.i8, 8),
+        (ti.u8, 8),
+        (ti.i16, 16),
+        (ti.u16, 16),
+        (ti.i32, 32),
+        (ti.u32, 32),
+    ],
+)
 @test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11])
 def test_overflow(dt, n):
     _test_overflow(dt, n)
 
 
-@pytest.mark.parametrize('dt,n', [
-    (ti.i64, 64),
-    (ti.u64, 64),
-])
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11],
-                 require=ti.extension.data64)
+@pytest.mark.parametrize(
+    "dt,n",
+    [
+        (ti.i64, 64),
+        (ti.u64, 64),
+    ],
+)
+@test_utils.test(
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.dx11], require=ti.extension.data64
+)
 def test_overflow64(dt, n):
     _test_overflow(dt, n)
 
 
-@pytest.mark.parametrize('dt,val', [
-    (ti.u32, 0xffffffff),
-    (ti.u64, 0xffffffffffffffff),
-])
+@pytest.mark.parametrize(
+    "dt,val",
+    [
+        (ti.u32, 0xFFFFFFFF),
+        (ti.u64, 0xFFFFFFFFFFFFFFFF),
+    ],
+)
 @test_utils.test(require=ti.extension.data64)
 def test_uint_max(dt, val):
     # https://github.com/taichi-dev/taichi/issues/2060

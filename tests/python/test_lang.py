@@ -138,9 +138,9 @@ def test_loop_var_life_double_iters():
         test()
 
 
-@pytest.mark.parametrize('dtype', [ti.i32, ti.f32, ti.i64, ti.f64])
-@pytest.mark.parametrize('ti_zero,zero', [(ti.zero, 0), (ti.one, 1)])
-@pytest.mark.parametrize('is_mat', [False, True])
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize("ti_zero,zero", [(ti.zero, 0), (ti.one, 1)])
+@pytest.mark.parametrize("is_mat", [False, True])
 @test_utils.test(arch=ti.cpu)
 def test_meta_zero_one(dtype, ti_zero, zero, is_mat):
     if is_mat:

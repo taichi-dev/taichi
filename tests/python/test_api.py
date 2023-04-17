@@ -429,7 +429,7 @@ user_api[ti.VectorNdarray] = [
     "get_type",
     "to_numpy",
 ]
-user_api[ti.sparse] = ['grid', 'usage']
+user_api[ti.sparse] = ["grid", "usage"]
 
 
 @pytest.mark.parametrize("src", user_api.keys())

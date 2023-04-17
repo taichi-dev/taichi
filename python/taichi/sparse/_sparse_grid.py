@@ -72,4 +72,4 @@ def usage(x: template()) -> f32:
     return res
 
 
-__all__ = ['grid', 'usage']
+__all__ = ["grid", "usage"]

@@ -16,10 +16,12 @@ See the [Get Started](https://docs.taichi-lang.org/) for more information on qui
 
 :::
 
+
 ## Introduction
 
   This installation guide covers the following:
 
+  - [The simplified workflow leveraging build.py](#the-simplified-workflow-leveraging-build.py)
   - [Prerequisites for building Taichi from source](#prerequisites)
   - [Installing optional dependencies](#install-optional-dependencies)
   - [Building Taichi from source](#build-taichi-from-source)
@@ -32,42 +34,59 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 :::
 
+## The simplified workflow leveraging build.py
+
+Starting from Taichi v1.6.0, a comprehensive build environment preparing script (aka. build.py or ti-build) is introduced, which can greatly reduce
+the complexity of setting-up a proper build/development environment.
+
+This guide will focus on the build.py approach. If you prefer to use the conventional method, you can refer to the previous Developer Installation document.
+
+
 ## Prerequisites
 
 ````mdx-code-block
 <Tabs
-  defaultValue="unix"
+  defaultValue="linux"
   values={[
-    {label: 'Linux/Mac', value: 'unix'},
+    {label: 'Linux', value: 'linux'},
+    {label: 'Mac', value: 'mac'},
     {label: 'Windows', value: 'windows'}
   ]}>
 
-<TabItem value="unix">
+<TabItem value="linux">
 
-| Category                     | Prerequisites                                                                                                                                                                            |
-|:----------------------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| OS                           | macOS / Ubuntu / Arch Linux / Other Linux distributions                                                                                                       |
-| Python                       | 3.7/3.8/3.9/3.10 We recommend installing Python from [Miniforge](https://github.com/conda-forge/miniforge/#download) conda if you are on a MacBook with M1 chip. |
-| Clang++                      | Clang++ &gt;8                            |
-| LLVM                         | 15.0.4 (Taichi customized version)                                                                                                                                                       |
-| Command line tools for Xcode | For macOS users only: `xcode-select --install `                                                                                                                                          |
+| Category                      | Prerequisites                                              |
+| :---------------------------- | :--------------------------------------------------------- |
+| Linux                         | Anything recent enough, e.g. Ubuntu 20.04                  |
+| Python                        | 3.6+, with a usable pip (`python3-pip` package on Ubuntu)  |
+| Clang++                       | Clang++ &gt;= 8, Clang++ 15 is recommended.               |
+| libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`. |
+
+</TabItem>
+
+<TabItem value="mac">
+
+| Category                       | Prerequisites                            |
+| :----------------------------: | ---------------------------------------- |
+| OS                             | macOS Big Sur or later                   |
+| Python                         | 3.6+ (should be readily available)       |
+| Command line tools for Xcode   | Run `xcode-select --install` to install  |
 
 </TabItem>
 
 <TabItem value="windows">
 
-| Category      | Prerequisites                                                                                                                                                                            |
-|:-------------:|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| OS            | Windows 7/8/10/11                                                                                                       |
-| Python        | 3.7/3.8/3.9/3.10  |
-| Clang++       | Clang++ &gt;8                           |
-| LLVM          | 15.0.4 (Taichi customized version)                                                                                                                                                       |
-| Visual Studio | Visual Studio 2019/2022 with "Desktop Development with C++" component. If you want to use Clang++ as the compiler, also install "C++ Clang Compiler for Windows" component  |
+| Category        | Prerequisites                                                                   |
+| :-------------: | ------------------------------------------------------------------------------- |
+| OS              | Windows 7/8/10/11                                                               |
+| Python          | 3.6+                                                                            |
+| Visual Studio   | Visual Studio 2022 (any edition) with "Desktop Development with C++" component. |
 
 </TabItem>
 
 </Tabs>
 ````
+
 ### Install Clang
 
 <blockquote>

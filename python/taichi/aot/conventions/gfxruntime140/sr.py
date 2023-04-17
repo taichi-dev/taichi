@@ -55,8 +55,14 @@ class NdArrayAccess(Enum):
 
 
 class ArgumentNdArray(Argument):
-    def __init__(self, name: Optional[str], dtype: DataType,
-                 element_shape: List[int], ndim: int, access: NdArrayAccess):
+    def __init__(
+        self,
+        name: Optional[str],
+        dtype: DataType,
+        element_shape: List[int],
+        ndim: int,
+        access: NdArrayAccess,
+    ):
         super().__init__(name)
         self.dtype: DataType = dtype
         self.element_shape: List[int] = element_shape
@@ -98,8 +104,7 @@ class BufferBindingType(Enum):
 
 
 class BufferBinding:
-    def __init__(self, binding: int, iarg: int,
-                 buffer_bind_ty: BufferBindingType):
+    def __init__(self, binding: int, iarg: int, buffer_bind_ty: BufferBindingType):
         self.binding: int = binding
         self.iarg: int = iarg
         self.buffer_bind_ty: BufferBindingType = buffer_bind_ty
@@ -111,8 +116,7 @@ class TextureBindingType(Enum):
 
 
 class TextureBinding:
-    def __init__(self, binding: int, iarg: int,
-                 texture_bind_ty: TextureBindingType):
+    def __init__(self, binding: int, iarg: int, texture_bind_ty: TextureBindingType):
         self.binding: int = binding
         self.iarg: int = iarg
         self.texture_bind_ty: TextureBindingType = texture_bind_ty
@@ -135,9 +139,14 @@ class LaunchGrid:
 
 
 class Task:
-    def __init__(self, name: str, task_ty: TaskType,
-                 buffer_binds: List[BufferBinding],
-                 texture_binds: List[TextureBinding], launch_grid: LaunchGrid):
+    def __init__(
+        self,
+        name: str,
+        task_ty: TaskType,
+        buffer_binds: List[BufferBinding],
+        texture_binds: List[TextureBinding],
+        launch_grid: LaunchGrid,
+    ):
         self.name: str = name
         self.task_ty: TaskType = task_ty
         self.buffer_binds: List[BufferBinding] = buffer_binds
@@ -146,8 +155,14 @@ class Task:
 
 
 class Field:
-    def __init__(self, name: str, dtype: DataType, element_shape: List[int],
-                 shape: List[int], offset: int):
+    def __init__(
+        self,
+        name: str,
+        dtype: DataType,
+        element_shape: List[int],
+        shape: List[int],
+        offset: int,
+    ):
         self.name: str = name
         self.dtype: DataType = dtype
         self.element_shape: List[int] = element_shape
@@ -163,9 +178,13 @@ class Kernel:
 
 
 class Metadata:
-    def __init__(self, fields: List[Field], kernels: List[Kernel],
-                 required_caps: List[ti.DeviceCapability],
-                 root_buffer_size: int):
+    def __init__(
+        self,
+        fields: List[Field],
+        kernels: List[Kernel],
+        required_caps: List[ti.DeviceCapability],
+        root_buffer_size: int,
+    ):
         self.fields: Dict[str, Field] = {x.name: x for x in fields}
         self.kernels: Dict[str, Kernel] = {x.name: x for x in kernels}
         self.required_caps: List[ti.DeviceCapability] = required_caps
@@ -173,8 +192,13 @@ class Metadata:
 
 
 def from_dr_field(d: dr.FieldAttributes) -> Field:
-    return Field(d.field_name, DataType(d.dtype), d.element_shape, d.shape,
-                 d.mem_offset_in_parent)
+    return Field(
+        d.field_name,
+        DataType(d.dtype),
+        d.element_shape,
+        d.shape,
+        d.mem_offset_in_parent,
+    )
 
 
 def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
@@ -198,8 +222,7 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
             buffer_ty = BufferBindingType(buffer_bind.buffer.type)
             buffer_binds += [BufferBinding(binding, iarg, buffer_ty)]
             if buffer_ty == BufferBindingType.ExtArr:
-                iarg2arg_ty[
-                    buffer_bind.buffer.root_id] = OpaqueArgumentType.NdArray
+                iarg2arg_ty[buffer_bind.buffer.root_id] = OpaqueArgumentType.NdArray
             elif buffer_ty == BufferBindingType.Root:
                 pass
             elif buffer_ty == BufferBindingType.Args:
@@ -219,22 +242,22 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
             binding = texture_bind.binding
             iarg = texture_bind.arg_id
             if texture_bind.is_storage:
-                texture_binds += [
-                    TextureBinding(binding, iarg, TextureBindingType.RwTexture)
-                ]
+                texture_binds += [TextureBinding(binding, iarg, TextureBindingType.RwTexture)]
                 iarg2arg_ty[iarg] = OpaqueArgumentType.RwTexture
             else:
-                texture_binds += [
-                    TextureBinding(binding, iarg, TextureBindingType.Texture)
-                ]
+                texture_binds += [TextureBinding(binding, iarg, TextureBindingType.Texture)]
                 iarg2arg_ty[iarg] = OpaqueArgumentType.Texture
 
-        launch_grid = LaunchGrid(task.advisory_num_threads_per_group,
-                                 task.advisory_total_num_threads)
+        launch_grid = LaunchGrid(task.advisory_num_threads_per_group, task.advisory_total_num_threads)
 
         tasks += [
-            Task(task.name, TaskType(task.task_type), buffer_binds,
-                 texture_binds, launch_grid)
+            Task(
+                task.name,
+                TaskType(task.task_type),
+                buffer_binds,
+                texture_binds,
+                launch_grid,
+            )
         ]
 
     args = []
@@ -247,17 +270,17 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                 if binding_ty == OpaqueArgumentType.NdArray:
                     args += [
                         ArgumentNdArray(
-                            arg.name, DataType(arg.dtype), arg.element_shape,
+                            arg.name,
+                            DataType(arg.dtype),
+                            arg.element_shape,
                             arg.field_dim,
-                            NdArrayAccess(d.ctx_attribs.arr_access[i]))
+                            NdArrayAccess(d.ctx_attribs.arr_access[i]),
+                        )
                     ]
                 elif binding_ty == OpaqueArgumentType.Texture:
                     args += [ArgumentTexture(arg.name, arg.field_dim)]
                 elif binding_ty == OpaqueArgumentType.RwTexture:
-                    args += [
-                        ArgumentRwTexture(arg.name, ti.Format(arg.format),
-                                          arg.field_dim)
-                    ]
+                    args += [ArgumentRwTexture(arg.name, ti.Format(arg.format), arg.field_dim)]
                 else:
                     assert False
         else:
@@ -303,19 +326,16 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
                 "buffer": {
                     "root_id": buffer_bind.iarg,
                     "type": buffer_bind.buffer_bind_ty.value,
-                }
+                },
             }
             buffer_binds += [j]
 
         texture_binds = []
         for texture_bind in task.texture_binds:
             j = {
-                "arg_id":
-                texture_bind.iarg,
-                "binding":
-                texture_bind.binding,
-                "is_storage":
-                texture_bind.texture_bind_ty == TextureBindingType.RwTexture,
+                "arg_id": texture_bind.iarg,
+                "binding": texture_bind.binding,
+                "is_storage": texture_bind.texture_bind_ty == TextureBindingType.RwTexture,
             }
             texture_binds += [j]
 
@@ -483,9 +503,7 @@ class Graph:
         self.name = name
         self.dispatches = dispatches
         args = {y.name: y.arg for x in dispatches for y in x.args}
-        self.args: List[NamedArgument] = [
-            NamedArgument(k, v) for k, v in args.items()
-        ]
+        self.args: List[NamedArgument] = [NamedArgument(k, v) for k, v in args.items()]
 
 
 def from_dr_graph(meta: Metadata, j: dr.Graph) -> Graph:

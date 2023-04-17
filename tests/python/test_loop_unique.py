@@ -117,7 +117,7 @@ def test_loop_unique_2d():
         (5, 3): 1,
         (6, 6): 8,
         (6, 7): 1,
-        (7, 4): 1
+        (7, 4): 1,
     }
     expected_result_z = {(1, 1): 6, (2, 2): 7}
     for i in range(N):

@@ -12,24 +12,21 @@ class LinearOperator:
 
     def matvec(self, x, Ax):
         if x.shape != Ax.shape:
-            raise TaichiRuntimeError(
-                f"Dimension mismatch x.shape{x.shape} != Ax.shape{Ax.shape}.")
+            raise TaichiRuntimeError(f"Dimension mismatch x.shape{x.shape} != Ax.shape{Ax.shape}.")
         self._matvec(x, Ax)
 
 
 def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     if b.dtype != x.dtype:
-        raise TaichiTypeError(
-            f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
-    if str(b.dtype) == 'f32':
+        raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
+    if str(b.dtype) == "f32":
         solver_dtype = ti.f32
-    elif str(b.dtype) == 'f64':
+    elif str(b.dtype) == "f64":
         solver_dtype = ti.f64
     else:
         raise TaichiTypeError(f"Not supported dtype: {b.dtype}")
     if b.shape != x.shape:
-        raise TaichiRuntimeError(
-            f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}.")
+        raise TaichiRuntimeError(f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}.")
 
     size = b.shape
     vector_fields_builder = ti.FieldsBuilder()
@@ -78,7 +75,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         init()
         initial_rTr = reduce(r, r)
         if not quiet:
-            print(f'>>> Initial residual = {initial_rTr:e}')
+            print(f">>> Initial residual = {initial_rTr:e}")
         old_rTr = initial_rTr
         update_p()
         # -- Main loop --
@@ -91,14 +88,14 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
             new_rTr = reduce(r, r)
             if sqrt(new_rTr) < tol:
                 if not quiet:
-                    print('>>> Conjugate Gradient method converged.')
-                    print(f'>>> #iterations {i}')
+                    print(">>> Conjugate Gradient method converged.")
+                    print(f">>> #iterations {i}")
                 break
             beta[None] = new_rTr / old_rTr
             update_p()
             old_rTr = new_rTr
             if not quiet:
-                print(f'>>> Iter = {i+1:4}, Residual = {sqrt(new_rTr):e}')
+                print(f">>> Iter = {i+1:4}, Residual = {sqrt(new_rTr):e}")
 
     solve()
     vector_fields_snode_tree.destroy()

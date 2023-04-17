@@ -7,20 +7,22 @@ from textwrap import TextWrapper
 from typing import List
 
 from taichi.lang import impl
-from taichi.lang.exception import (TaichiCompilationError, TaichiNameError,
-                                   TaichiSyntaxError,
-                                   handle_exception_from_cpp)
+from taichi.lang.exception import (
+    TaichiCompilationError,
+    TaichiNameError,
+    TaichiSyntaxError,
+    handle_exception_from_cpp,
+)
 
 
 class Builder:
     def __call__(self, ctx, node):
-        method = getattr(self, 'build_' + node.__class__.__name__, None)
+        method = getattr(self, "build_" + node.__class__.__name__, None)
         try:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            info = ctx.get_pos_info(node) if isinstance(
-                node, (ast.stmt, ast.expr)) else ""
+            info = ctx.get_pos_info(node) if isinstance(node, (ast.stmt, ast.expr)) else ""
             with impl.get_runtime().src_info_guard(info):
                 return method(ctx, node)
         except Exception as e:
@@ -110,8 +112,12 @@ class LoopScopeGuard:
 
 
 class NonStaticIfGuard:
-    def __init__(self, if_node: ast.If, loop_attribute: LoopScopeAttribute,
-                 non_static_status: NonStaticControlFlowStatus):
+    def __init__(
+        self,
+        if_node: ast.If,
+        loop_attribute: LoopScopeAttribute,
+        non_static_status: NonStaticControlFlowStatus,
+    ):
         self.loop_attribute = loop_attribute
         self.if_node = if_node
         self.non_static_guard = NonStaticControlFlowGuard(non_static_status)
@@ -135,18 +141,20 @@ class ReturnStatus(Enum):
 
 
 class ASTTransformerContext:
-    def __init__(self,
-                 excluded_parameters=(),
-                 is_kernel=True,
-                 func=None,
-                 arg_features=None,
-                 global_vars=None,
-                 argument_data=None,
-                 file=None,
-                 src=None,
-                 start_lineno=None,
-                 ast_builder=None,
-                 is_real_function=False):
+    def __init__(
+        self,
+        excluded_parameters=(),
+        is_kernel=True,
+        func=None,
+        arg_features=None,
+        global_vars=None,
+        argument_data=None,
+        file=None,
+        src=None,
+        start_lineno=None,
+        ast_builder=None,
+        is_real_function=False,
+    ):
         self.func = func
         self.local_scopes = []
         self.loop_scopes: List[LoopScopeAttribute] = []
@@ -161,7 +169,7 @@ class ASTTransformerContext:
         self.src = src
         self.indent = 0
         for c in self.src[0]:
-            if c == ' ':
+            if c == " ":
                 self.indent += 1
             else:
                 break
@@ -183,14 +191,14 @@ class ASTTransformerContext:
     def loop_scope_guard(self, is_static=False):
         if is_static:
             return LoopScopeGuard(self.loop_scopes)
-        return LoopScopeGuard(self.loop_scopes,
-                              self.non_static_control_flow_guard())
+        return LoopScopeGuard(self.loop_scopes, self.non_static_control_flow_guard())
 
     def non_static_if_guard(self, if_node: ast.If):
         return NonStaticIfGuard(
             if_node,
             self.current_loop_scope() if self.loop_scopes else None,
-            self.non_static_control_flow_status)
+            self.non_static_control_flow_status,
+        )
 
     def non_static_control_flow_guard(self):
         return NonStaticControlFlowGuard(self.non_static_control_flow_status)
@@ -262,15 +270,15 @@ class ASTTransformerContext:
         wrapper = TextWrapper(width=80)
 
         def gen_line(code, hint):
-            hint += ' ' * (len(code) - len(hint))
+            hint += " " * (len(code) - len(hint))
             code = wrapper.wrap(code)
             hint = wrapper.wrap(hint)
             if not len(code):
                 return "\n\n"
-            return "".join([c + '\n' + h + '\n' for c, h in zip(code, hint)])
+            return "".join([c + "\n" + h + "\n" for c, h in zip(code, hint)])
 
         if node.lineno == node.end_lineno:
-            hint = ' ' * col_offset + '^' * (end_col_offset - col_offset)
+            hint = " " * col_offset + "^" * (end_col_offset - col_offset)
             msg += gen_line(self.src[node.lineno - 1], hint)
         else:
             node_type = node.__class__.__name__
@@ -282,21 +290,20 @@ class ASTTransformerContext:
 
             for i in range(node.lineno - 1, end_lineno):
                 last = len(self.src[i])
-                while last > 0 and (self.src[i][last - 1].isspace() or
-                                    not self.src[i][last - 1].isprintable()):
+                while last > 0 and (self.src[i][last - 1].isspace() or not self.src[i][last - 1].isprintable()):
                     last -= 1
                 first = 0
                 while first < len(self.src[i]) and (
-                        self.src[i][first].isspace()
-                        or not self.src[i][first].isprintable()):
+                    self.src[i][first].isspace() or not self.src[i][first].isprintable()
+                ):
                     first += 1
                 if i == node.lineno - 1:
-                    hint = ' ' * col_offset + '^' * (last - col_offset)
+                    hint = " " * col_offset + "^" * (last - col_offset)
                 elif i == node.end_lineno - 1:
-                    hint = ' ' * first + '^' * (end_col_offset - first)
+                    hint = " " * first + "^" * (end_col_offset - first)
                 elif first < last:
-                    hint = ' ' * first + '^' * (last - first)
+                    hint = " " * first + "^" * (last - first)
                 else:
-                    hint = ''
+                    hint = ""
                 msg += gen_line(self.src[i], hint)
         return msg

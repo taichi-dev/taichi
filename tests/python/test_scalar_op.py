@@ -7,30 +7,30 @@ import taichi as ti
 from tests import test_utils
 
 binary_func_table = [
-    (ops.add, ) * 2,
-    (ops.sub, ) * 2,
-    (ops.mul, ) * 2,
-    (ops.truediv, ) * 2,
-    (ops.floordiv, ) * 2,
-    (ops.mod, ) * 2,
-    (ops.pow, ) * 2,
-    (ops.and_, ) * 2,
-    (ops.or_, ) * 2,
-    (ops.xor, ) * 2,
-    (ops.eq, ) * 2,
-    (ops.ne, ) * 2,
-    (ops.lt, ) * 2,
-    (ops.le, ) * 2,
-    (ops.gt, ) * 2,
-    (ops.ge, ) * 2,
+    (ops.add,) * 2,
+    (ops.sub,) * 2,
+    (ops.mul,) * 2,
+    (ops.truediv,) * 2,
+    (ops.floordiv,) * 2,
+    (ops.mod,) * 2,
+    (ops.pow,) * 2,
+    (ops.and_,) * 2,
+    (ops.or_,) * 2,
+    (ops.xor,) * 2,
+    (ops.eq,) * 2,
+    (ops.ne,) * 2,
+    (ops.lt,) * 2,
+    (ops.le,) * 2,
+    (ops.gt,) * 2,
+    (ops.ge,) * 2,
     (ti.max, np.maximum),
     (ti.min, np.minimum),
     (ti.atan2, np.arctan2),
 ]
 
 unary_func_table = [
-    (ops.neg, ) * 2,
-    (ops.invert, ) * 2,
+    (ops.neg,) * 2,
+    (ops.invert,) * 2,
     (ti.lang.ops.logical_not, np.logical_not),
     (ti.lang.ops.abs, np.abs),
     (ti.exp, np.exp),
@@ -47,7 +47,7 @@ unary_func_table = [
 ]
 
 
-@pytest.mark.parametrize('ti_func,np_func', binary_func_table)
+@pytest.mark.parametrize("ti_func,np_func", binary_func_table)
 def test_python_scope_vector_binary(ti_func, np_func):
     ti.init()
     x = ti.Vector([2, 3])
@@ -60,11 +60,10 @@ def test_python_scope_vector_binary(ti_func, np_func):
     assert test_utils.allclose(result, expected)
 
 
-@pytest.mark.parametrize('ti_func,np_func', unary_func_table)
+@pytest.mark.parametrize("ti_func,np_func", unary_func_table)
 def test_python_scope_vector_unary(ti_func, np_func):
     ti.init()
-    x = ti.Vector([2, 3] if ti_func in
-                  [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3])
+    x = ti.Vector([2, 3] if ti_func in [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
     if ti_func in [ti.lang.ops.logical_not]:
@@ -94,8 +93,7 @@ def test_python_scope_linalg():
 
     assert test_utils.allclose(x.dot(y), np.dot(a, b))
     assert test_utils.allclose(x.norm(), np.sqrt(np.dot(a, a)))
-    assert test_utils.allclose(x.normalized().to_numpy(),
-                               a / np.sqrt(np.dot(a, a)))
+    assert test_utils.allclose(x.normalized().to_numpy(), a / np.sqrt(np.dot(a, a)))
     assert x.any() == 1  # To match that of Taichi IR, we return -1 for True
     assert y.all() == 0
 

@@ -26,8 +26,7 @@ ti.root.dynamic(ti.j, 1024, chunk_size=64).place(spheres)
 
 ColorWithDepth = ti.types.struct(color=vec4, depth=float)
 colors_in_pixel = ColorWithDepth.field()
-ti.root.dense(ti.ij, res).dynamic(ti.k, 2048,
-                                  chunk_size=64).place(colors_in_pixel)
+ti.root.dense(ti.ij, res).dynamic(ti.k, 2048, chunk_size=64).place(colors_in_pixel)
 
 
 @ti.func
@@ -54,7 +53,7 @@ def intersect_sphere(line: ti.template(), sphere: ti.template()):
     l2 = l.dot(l)
     r2 = sphere.radius * sphere.radius
     tp = l.dot(line.dir)
-    out_of_sphere = (l2 > r2)
+    out_of_sphere = l2 > r2
     may_have_intersection = True
     if -eps < l2 - r2 < eps:
         if -eps < tp < eps:
@@ -78,14 +77,16 @@ def intersect_sphere(line: ti.template(), sphere: ti.template()):
                 dist2 = t2
                 normal2 = normalize(hit_pos2 - sphere.center)
                 color2 = shading(sphere.color, normal2)
-    return ColorWithDepth(color=color1, depth=dist1), \
-           ColorWithDepth(color=color2, depth=dist2)
+    return ColorWithDepth(color=color1, depth=dist1), ColorWithDepth(color=color2, depth=dist2)
 
 
 @ti.func
 def get_line_of_vision(u, v):
-    ray_dir = vec3((2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
-                   (2 * (v + 0.5) / res[1] - 1), -1.0 / fov)
+    ray_dir = vec3(
+        (2 * (u + 0.5) / res[0] - 1) * aspect_ratio,
+        (2 * (v + 0.5) / res[1] - 1),
+        -1.0 / fov,
+    )
     ray_dir = normalize(ray_dir)
     return Line(pos=camera_pos, dir=ray_dir)
 
@@ -107,8 +108,7 @@ def bubble_sort(u, v):
     l = colors_in_pixel[u, v].length()
     for i in range(l - 1):
         for j in range(l - 1 - i):
-            if colors_in_pixel[u, v, j].depth > colors_in_pixel[u, v,
-                                                                j + 1].depth:
+            if colors_in_pixel[u, v, j].depth > colors_in_pixel[u, v, j + 1].depth:
                 tmp = colors_in_pixel[u, v, j]
                 colors_in_pixel[u, v, j] = colors_in_pixel[u, v, j + 1]
                 colors_in_pixel[u, v, j + 1] = tmp
@@ -139,11 +139,11 @@ def generate_sphere(n: ti.i32):
     for i in range(n):
         spheres.append(
             Sphere(
-                vec3(ti.random() * 3 - 1.5,
-                     ti.random() * 3 - 1.5,
-                     ti.random() * 3 - 1.5),
+                vec3(ti.random() * 3 - 1.5, ti.random() * 3 - 1.5, ti.random() * 3 - 1.5),
                 ti.random() * 0.2 + 0.1,
-                (ti.random(), ti.random(), ti.random(), ti.random())))
+                (ti.random(), ti.random(), ti.random(), ti.random()),
+            )
+        )
 
 
 @ti.kernel
@@ -162,7 +162,7 @@ def init():
 
 
 def main():
-    gui = ti.GUI('OIT', res, fast_gui=True)
+    gui = ti.GUI("OIT", res, fast_gui=True)
     init()
     generate_sphere(256)
     render()
@@ -171,5 +171,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -19,11 +19,11 @@ def paint():
 def main():
     paint()
 
-    gui = ti.GUI('Logo', (n, n))
+    gui = ti.GUI("Logo", (n, n))
     while gui.running:
         gui.set_image(x)
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

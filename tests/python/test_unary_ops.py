@@ -7,9 +7,7 @@ from tests import test_utils
 
 
 def _test_op(dt, taichi_op, np_op):
-    print('arch={} default_fp={}'.format(
-        ti.lang.impl.current_cfg().arch,
-        ti.lang.impl.current_cfg().default_fp))
+    print("arch={} default_fp={}".format(ti.lang.impl.current_cfg().arch, ti.lang.impl.current_cfg().default_fp))
     n = 4
     val = ti.field(dt, shape=n)
 
@@ -28,9 +26,11 @@ def _test_op(dt, taichi_op, np_op):
         if dt == ti.f64:
             assert abs(np_op(float(f(i))) - val[i]) < 1e-15
         else:
-            assert abs(np_op(float(f(i))) -
-                       val[i]) < 1e-6 if ti.lang.impl.current_cfg(
-                       ).arch not in (ti.opengl, ti.gles, ti.vulkan) else 1e-5
+            assert (
+                abs(np_op(float(f(i))) - val[i]) < 1e-6
+                if ti.lang.impl.current_cfg().arch not in (ti.opengl, ti.gles, ti.vulkan)
+                else 1e-5
+            )
 
 
 op_pairs = [
@@ -63,7 +63,7 @@ def test_bit_not_invalid():
     def test(x: ti.f32) -> ti.i32:
         return ~x
 
-    with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
+    with pytest.raises(TaichiTypeError, match=r"takes integral inputs only"):
         test(1.0)
 
 
@@ -73,7 +73,7 @@ def test_logic_not_invalid():
     def test(x: ti.f32) -> ti.i32:
         return not x
 
-    with pytest.raises(TaichiTypeError, match=r'takes integral inputs only'):
+    with pytest.raises(TaichiTypeError, match=r"takes integral inputs only"):
         test(1.0)
 
 

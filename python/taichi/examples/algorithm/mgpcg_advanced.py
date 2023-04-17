@@ -6,20 +6,21 @@ import taichi as ti
 
 @ti.data_oriented
 class MGPCG:
-    '''
-Grid-based MGPCG solver for the possion equation.
+    """
+    Grid-based MGPCG solver for the possion equation.
 
-.. note::
+    .. note::
 
-    This solver only runs on CPU and CUDA backends since it requires the
-    ``pointer`` SNode.
-    '''
+        This solver only runs on CPU and CUDA backends since it requires the
+        ``pointer`` SNode.
+    """
+
     def __init__(self, dim=2, N=512, n_mg_levels=6, real=float):
-        '''
+        """
         :parameter dim: Dimensionality of the fields.
         :parameter N: Grid resolution.
         :parameter n_mg_levels: Number of multigrid levels.
-        '''
+        """
 
         # grid parameters
         self.use_multigrid = True
@@ -35,10 +36,8 @@ Grid-based MGPCG solver for the possion equation.
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [ti.field(dtype=self.real)
-                  for _ in range(self.n_mg_levels)]  # residual
-        self.z = [ti.field(dtype=self.real)
-                  for _ in range(self.n_mg_levels)]  # M^-1 self.r
+        self.r = [ti.field(dtype=self.real) for _ in range(self.n_mg_levels)]  # residual
+        self.z = [ti.field(dtype=self.real) for _ in range(self.n_mg_levels)]  # M^-1 self.r
         self.x = ti.field(dtype=self.real)  # solution
         self.p = ti.field(dtype=self.real)  # conjugate gradient
         self.Ap = ti.field(dtype=self.real)  # matrix-vector product
@@ -47,14 +46,12 @@ Grid-based MGPCG solver for the possion equation.
         self.sum = ti.field(dtype=self.real)  # storage for reductions
 
         indices = ti.ijk if self.dim == 3 else ti.ij
-        self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(
-            indices, 4).place(self.x, self.p, self.Ap)
+        self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(indices, 4).place(self.x, self.p, self.Ap)
 
         for l in range(self.n_mg_levels):
-            self.grid = ti.root.pointer(indices,
-                                        [self.N_tot // (4 * 2**l)]).dense(
-                                            indices,
-                                            4).place(self.r[l], self.z[l])
+            self.grid = (
+                ti.root.pointer(indices, [self.N_tot // (4 * 2**l)]).dense(indices, 4).place(self.r[l], self.z[l])
+            )
 
         ti.root.place(self.alpha, self.beta, self.sum)
 
@@ -69,11 +66,11 @@ Grid-based MGPCG solver for the possion equation.
 
     @ti.kernel
     def init(self, r: ti.template(), k: ti.template()):
-        '''
+        """
         Set up the solver for $\nabla^2 x = k r$, a scaled Poisson problem.
         :parameter k: (scalar) A scaling factor of the right-hand side.
         :parameter r: (ti.field) Unscaled right-hand side.
-        '''
+        """
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             self.init_r(I, r[I] * k)
 
@@ -84,11 +81,11 @@ Grid-based MGPCG solver for the possion equation.
 
     @ti.kernel
     def get_result(self, x: ti.template()):
-        '''
+        """
         Get the solution field.
 
         :parameter x: (ti.field) The field to store the solution
-        '''
+        """
         for I in ti.grouped(ti.ndrange(*[self.N] * self.dim)):
             x[I] = self.get_x(I)
 
@@ -103,8 +100,7 @@ Grid-based MGPCG solver for the possion equation.
     @ti.kernel
     def compute_Ap(self):
         for I in ti.grouped(self.Ap):
-            self.Ap[I] = 2 * self.dim * self.p[I] - self.neighbor_sum(
-                self.p, I)
+            self.Ap[I] = 2 * self.dim * self.p[I] - self.neighbor_sum(self.p, I)
 
     @ti.kernel
     def reduce(self, p: ti.template(), q: ti.template()):
@@ -130,8 +126,7 @@ Grid-based MGPCG solver for the possion equation.
     @ti.kernel
     def restrict(self, l: ti.template()):
         for I in ti.grouped(self.r[l]):
-            res = self.r[l][I] - (2 * self.dim * self.z[l][I] -
-                                  self.neighbor_sum(self.z[l], I))
+            res = self.r[l][I] - (2 * self.dim * self.z[l][I] - self.neighbor_sum(self.z[l], I))
             self.r[l + 1][I // 2] += res * 0.5
 
     @ti.kernel
@@ -144,8 +139,7 @@ Grid-based MGPCG solver for the possion equation.
         # phase = red/black Gauss-Seidel phase
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
-                self.z[l][I] = (self.r[l][I] + self.neighbor_sum(
-                    self.z[l], I)) / (2 * self.dim)
+                self.z[l][I] = (self.r[l][I] + self.neighbor_sum(self.z[l], I)) / (2 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)
@@ -167,20 +161,15 @@ Grid-based MGPCG solver for the possion equation.
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(self,
-              max_iters=-1,
-              eps=1e-12,
-              abs_tol=1e-12,
-              rel_tol=1e-12,
-              verbose=False):
-        '''
+    def solve(self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12, verbose=False):
+        """
         Solve a Poisson problem.
 
         :parameter max_iters: Specify the maximal iterations. -1 for no limit.
         :parameter eps: Specify a non-zero value to prevent ZeroDivisionError.
         :parameter abs_tol: Specify the absolute tolerance of loss.
         :parameter rel_tol: Specify the tolerance of loss relative to initial loss.
-        '''
+        """
 
         self.reduce(self.r[0], self.r[0])
         initial_rTr = self.sum[None]
@@ -219,7 +208,7 @@ Grid-based MGPCG solver for the possion equation.
             rTr = self.sum[None]
 
             if verbose:
-                print(f'iter {it}, |residual|_2={math.sqrt(rTr)}')
+                print(f"iter {it}, |residual|_2={math.sqrt(rTr)}")
 
             if rTr < tol:
                 break
@@ -248,8 +237,7 @@ class MGPCG_Example(MGPCG):
 
         self.N_gui = 512  # gui resolution
 
-        self.pixels = ti.field(dtype=float,
-                               shape=(self.N_gui, self.N_gui))  # image buffer
+        self.pixels = ti.field(dtype=float, shape=(self.N_gui, self.N_gui))  # image buffer
 
     @ti.kernel
     def init(self):
@@ -276,9 +264,9 @@ class MGPCG_Example(MGPCG):
         ti.profiler.print_kernel_profiler_info()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     ti.init(kernel_profiler=True)
     solver = MGPCG_Example()
     t = time.time()
     solver.run(verbose=True)
-    print(f'Solver time: {time.time() - t:.3f} s')
+    print(f"Solver time: {time.time() - t:.3f} s")

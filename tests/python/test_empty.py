@@ -18,4 +18,5 @@ def test_empty_args():
         pass
 
     import numpy as np
+
     func(42, np.arange(10, dtype=np.float32))

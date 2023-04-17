@@ -21,7 +21,7 @@ def compile_kernel_aot_test1(arch):
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
     m = ti.aot.Module()
-    m.add_kernel(run, template_args={'arr': arr})
+    m.add_kernel(run, template_args={"arr": arr})
     m.save(dir_name)
 
 

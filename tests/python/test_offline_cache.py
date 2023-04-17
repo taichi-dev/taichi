@@ -18,14 +18,11 @@ atexit.register(lambda: rmdir(OFFLINE_CACHE_TEMP_DIR))
 supported_llvm_archs = {ti.cpu, ti.cuda, ti.amdgpu}
 supported_gfx_archs = {ti.opengl, ti.vulkan, ti.metal, ti.dx11}
 supported_archs_offline_cache = supported_llvm_archs | supported_gfx_archs
-supported_archs_offline_cache = {
-    v
-    for v in supported_archs_offline_cache if v in test_utils.expected_archs()
-}
+supported_archs_offline_cache = {v for v in supported_archs_offline_cache if v in test_utils.expected_archs()}
 
 
 def is_offline_cache_file(filename):
-    suffixes = ('.tic', )
+    suffixes = (".tic",)
     return filename.endswith(suffixes)
 
 
@@ -39,7 +36,8 @@ def cache_files_size(path):
 
 
 def expected_num_cache_files(num_kernels: int = 0) -> int:
-    if num_kernels == 0: return 0
+    if num_kernels == 0:
+        return 0
     # code files(*.tic) + metadata files(ticache.tcb)
     return num_kernels + 1
 
@@ -50,10 +48,10 @@ def tmp_offline_cache_file_path():
 
 def current_thread_ext_options():
     return {
-        'offline_cache': True,
-        'offline_cache_file_path': tmp_offline_cache_file_path(),
-        'cuda_stack_limit': 1024,
-        'device_memory_GB': 0.2,
+        "offline_cache": True,
+        "offline_cache_file_path": tmp_offline_cache_file_path(),
+        "cuda_stack_limit": 1024,
+        "device_memory_GB": 0.2,
     }
 
 
@@ -159,14 +157,14 @@ def python_kernel5(lo: ti.i32, hi: ti.i32, n: ti.i32):
 simple_kernels_to_test = [
     (kernel0, (), python_kernel0),
     (kernel1, (100, 200, 10.2), python_kernel1),
-    (kernel2, (1024, ), python_kernel2),
+    (kernel2, (1024,), python_kernel2),
     # FIXME: add this kernel back once we have a better way to compare matrices
     #  with test_utils.approx()
     # (kernel3, (10, ti.Matrix([[1, 2], [256, 1024]],
     #                          ti.i32)), python_kernel3),
     # FIXME: add this kernel back once #6221 is fixed
     #   (kernel4, (1, 10, 2), python_kernel4),
-    (kernel5, (1, 2, 2), python_kernel5)
+    (kernel5, (1, 2, 2), python_kernel5),
 ]
 
 
@@ -194,19 +192,14 @@ def _test_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
     def added_files():
         return cache_files_cnt() - count_of_cache_file
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     res1 = kernel(*args)
     assert added_files() == expected_num_cache_files()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(1)
     res2 = kernel(*args)
-    assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
-        res2)
+    assert res1 == test_utils.approx(result) and res1 == test_utils.approx(res2)
 
     ti.reset()
     assert added_files() == expected_num_cache_files(1)
@@ -220,12 +213,14 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
         return cache_files_cnt() - count_of_cache_file
 
     def my_init():
-        ti.init(arch=curr_arch,
-                enable_fallback=False,
-                offline_cache=False,
-                offline_cache_file_path=tmp_offline_cache_file_path(),
-                cuda_stack_limit=1024,
-                device_memory_GB=0.1)
+        ti.init(
+            arch=curr_arch,
+            enable_fallback=False,
+            offline_cache=False,
+            offline_cache_file_path=tmp_offline_cache_file_path(),
+            cuda_stack_limit=1024,
+            device_memory_GB=0.1,
+        )
 
     my_init()
     res1 = kernel(*args)
@@ -235,32 +230,25 @@ def _test_closing_offline_cache_for_a_kernel(curr_arch, kernel, args, result):
     assert added_files() == expected_num_cache_files()
     res2 = kernel(*args)
 
-    assert res1 == test_utils.approx(result) and res1 == test_utils.approx(
-        res2)
+    assert res1 == test_utils.approx(result) and res1 == test_utils.approx(res2)
 
     ti.reset()
     assert added_files() == expected_num_cache_files()
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 def test_closing_offline_cache(curr_arch):
     for kernel, args, get_res in simple_kernels_to_test:
-        _test_closing_offline_cache_for_a_kernel(curr_arch=curr_arch,
-                                                 kernel=kernel,
-                                                 args=args,
-                                                 result=get_res(*args))
+        _test_closing_offline_cache_for_a_kernel(curr_arch=curr_arch, kernel=kernel, args=args, result=get_res(*args))
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 def test_offline_cache_per_kernel(curr_arch):
     for kernel, args, get_res in simple_kernels_to_test:
-        _test_offline_cache_for_a_kernel(curr_arch=curr_arch,
-                                         kernel=kernel,
-                                         args=args,
-                                         result=get_res(*args))
+        _test_offline_cache_for_a_kernel(curr_arch=curr_arch, kernel=kernel, args=args, result=get_res(*args))
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_multiple_ib_with_offline_cache(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -287,15 +275,11 @@ def test_multiple_ib_with_offline_cache(curr_arch):
         assert y[None] == 12.0
         assert x.grad[None] == 12.0
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
     assert added_files() == expected_num_cache_files()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(9)
     helper()
 
@@ -303,7 +287,7 @@ def test_multiple_ib_with_offline_cache(curr_arch):
     assert added_files() == expected_num_cache_files(9)
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_calling_a_kernel_with_different_param_list(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -328,14 +312,10 @@ def test_calling_a_kernel_with_different_param_list(curr_arch):
     np_mat3 = mat3.to_numpy()
 
     assert added_files() == expected_num_cache_files()
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert (kernel(mat1, mat1).to_numpy() == np_kernel(np_mat1, np_mat1)).all()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(1)
 
     assert (kernel(mat1, mat1).to_numpy() == np_kernel(np_mat1, np_mat1)).all()
@@ -347,7 +327,7 @@ def test_calling_a_kernel_with_different_param_list(curr_arch):
     assert added_files() == expected_num_cache_files(1)
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_snode_reader_and_writer_with_offline_cache(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -370,14 +350,10 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
         assert y[None] == test_utils.approx(7.28)
 
     assert added_files() == expected_num_cache_files()
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(4)
     helper()
 
@@ -385,7 +361,7 @@ def test_snode_reader_and_writer_with_offline_cache(curr_arch):
     assert added_files() == expected_num_cache_files(4)
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_calling_many_kernels(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -395,26 +371,20 @@ def test_calling_many_kernels(curr_arch):
 
     def helper():
         for kernel, args, get_res in simple_kernels_to_test:
-            assert (kernel(*args) == test_utils.approx(get_res(*args)))
+            assert kernel(*args) == test_utils.approx(get_res(*args))
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
     helper()
     assert added_files() == expected_num_cache_files()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            **current_thread_ext_options())
-    assert added_files() == expected_num_cache_files(
-        len(simple_kernels_to_test))
+    ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
+    assert added_files() == expected_num_cache_files(len(simple_kernels_to_test))
     helper()
     ti.reset()
-    assert added_files() == expected_num_cache_files(
-        len(simple_kernels_to_test))
+    assert added_files() == expected_num_cache_files(len(simple_kernels_to_test))
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_offline_cache_with_changing_compile_config(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -430,35 +400,31 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
             c += i
 
     assert added_files() == expected_num_cache_files()
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            opt_level=0,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, opt_level=0, **current_thread_ext_options())
     helper()
 
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            opt_level=1,
-            **current_thread_ext_options())
+    ti.init(arch=curr_arch, enable_fallback=False, opt_level=1, **current_thread_ext_options())
     assert added_files() == expected_num_cache_files(1)
     helper()
 
     ti.reset()
     assert added_files() == expected_num_cache_files(2)
-    ti.init(arch=curr_arch,
-            enable_fallback=False,
-            default_fp=ti.f32,
-            cc_compile_cmd='gcc -Wc99-c11-compat -c -o \'{}\' \'{}\' -O0',
-            **current_thread_ext_options())
+    ti.init(
+        arch=curr_arch,
+        enable_fallback=False,
+        default_fp=ti.f32,
+        cc_compile_cmd="gcc -Wc99-c11-compat -c -o '{}' '{}' -O0",
+        **current_thread_ext_options()
+    )
     helper()
 
     ti.reset()
     assert added_files() == expected_num_cache_files(2)
 
 
-@pytest.mark.parametrize('curr_arch', supported_archs_offline_cache)
-@pytest.mark.parametrize('factor', [0.0, 0.25, 0.85, 1.0])
-@pytest.mark.parametrize('policy', ['never', 'version', 'lru', 'fifo'])
+@pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)
+@pytest.mark.parametrize("factor", [0.0, 0.25, 0.85, 1.0])
+@pytest.mark.parametrize("policy", ["never", "version", "lru", "fifo"])
 @_test_offline_cache_dec
 def test_offline_cache_cleaning(curr_arch, factor, policy):
     def only_init(max_size):
@@ -468,7 +434,8 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
             offline_cache_cleaning_policy=policy,
             offline_cache_max_size_of_files=max_size,  # bytes
             offline_cache_cleaning_factor=factor,
-            **current_thread_ext_options())
+            **current_thread_ext_options()
+        )
 
     def run_simple_kernels(max_size):
         only_init(max_size)
@@ -495,7 +462,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
     only_init(1)  # 1B (<< size_of_cache_files)
     ti.reset()
     rem = []
-    if policy in ['never', 'version']:
+    if policy in ["never", "version"]:
         rem = kernel_count
     else:
         lo = -min(kernel_count - int(factor * kernel_count), kernel_count)
@@ -506,8 +473,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 
 # FIXME: Change to `supported_archs_offline_cache` after fixing bugs of real-function on gpu
 @pytest.mark.run_in_serial
-@pytest.mark.parametrize('curr_arch',
-                         {ti.cpu, ti.cuda} & supported_archs_offline_cache)
+@pytest.mark.parametrize("curr_arch", {ti.cpu, ti.cuda} & supported_archs_offline_cache)
 @_test_offline_cache_dec
 def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     count_of_cache_file = cache_files_cnt()
@@ -546,11 +512,7 @@ def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     assert added_files() == expected_num_cache_files()
 
     def my_init():
-        ti.init(arch=curr_arch,
-                enable_fallback=False,
-                **{
-                    **current_thread_ext_options(), 'cuda_stack_limit': 4096
-                })
+        ti.init(arch=curr_arch, enable_fallback=False, **{**current_thread_ext_options(), "cuda_stack_limit": 4096})
 
     my_init()
     helper1()

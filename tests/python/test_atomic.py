@@ -31,7 +31,7 @@ def run_atomic_add_global_case(vartype, step, valproc=lambda x: x):
     x_actual = sorted(x.to_numpy())
     y_actual = sorted(y.to_numpy())
     expect = [i * step for i in range(n)]
-    for (xa, ya, e) in zip(x_actual, y_actual, expect):
+    for xa, ya, e in zip(x_actual, y_actual, expect):
         print(xa, ya, e)
         assert valproc(xa) == e
         assert valproc(ya) == e
@@ -44,8 +44,7 @@ def test_atomic_add_global_i32():
 
 @test_utils.test()
 def test_atomic_add_global_f32():
-    run_atomic_add_global_case(
-        ti.f32, 4.2, valproc=lambda x: test_utils.approx(x, rel=1e-5))
+    run_atomic_add_global_case(ti.f32, 4.2, valproc=lambda x: test_utils.approx(x, rel=1e-5))
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
@@ -390,9 +389,8 @@ def test_atomic_min_rvalue_as_frist_op():
     with pytest.raises(ti.TaichiSyntaxError) as e:
         func()
 
-    assert 'atomic_min' in str(e.value)
-    assert 'cannot use a non-writable target as the first operand of' in str(
-        e.value)
+    assert "atomic_min" in str(e.value)
+    assert "cannot use a non-writable target as the first operand of" in str(e.value)
 
 
 @test_utils.test()

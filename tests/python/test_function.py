@@ -178,7 +178,7 @@ def test_experimental_templates():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_missing_arg_annotation():
-    with pytest.raises(ti.TaichiSyntaxError, match='must be type annotated'):
+    with pytest.raises(ti.TaichiSyntaxError, match="must be type annotated"):
 
         @ti.experimental.real_func
         def add(a, b: ti.i32) -> ti.i32:
@@ -187,8 +187,7 @@ def test_missing_arg_annotation():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_missing_return_annotation():
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='return value must be annotated'):
+    with pytest.raises(ti.TaichiCompilationError, match="return value must be annotated"):
 
         @ti.experimental.real_func
         def add(a: ti.i32, b: ti.i32):
@@ -240,7 +239,7 @@ def test_recursion():
 def test_deep_recursion():
     @ti.experimental.real_func
     def sum_func(n: ti.i32) -> ti.i32:
-        if (n == 0):
+        if n == 0:
             return 0
         return sum_func(n - 1) + n
 
@@ -331,7 +330,7 @@ def test_ref():
 
     @ti.kernel
     def bar():
-        a = 5.
+        a = 5.0
         foo(a)
         assert a == 7
 
@@ -345,7 +344,7 @@ def test_ref_atomic():
     cur_arch = ti.lang.impl.get_runtime().prog.config().arch
     if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
         pytest.skip(
-            'Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information'
+            "Skip this test on Pascal (and potentially older) architecture, ask turbo0628/Proton for more information"
         )
 
     @ti.experimental.real_func
@@ -354,9 +353,9 @@ def test_ref_atomic():
 
     @ti.kernel
     def bar():
-        a = 5.
+        a = 5.0
         foo(a)
-        assert a == 10.
+        assert a == 10.0
 
     bar()
 
@@ -385,10 +384,9 @@ def test_func_ndarray_arg():
     arr[0] = [20, 20, 20]
     test_k(arr)
 
-    assert (arr[0] == [20, 20, 20])
+    assert arr[0] == [20, 20, 20]
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match=r"Invalid argument into ti.types.ndarray()"):
+    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid argument into ti.types.ndarray()"):
         test_error(arr)
 
 
@@ -424,9 +422,7 @@ def test_func_matrix_arg_with_error():
         x = ti.Matrix([3, 4])
         test(x)
 
-    with pytest.raises(
-            ti.TaichiSyntaxError,
-            match=r"is expected to be a Matrix with n 3, but got 2"):
+    with pytest.raises(ti.TaichiSyntaxError, match=r"is expected to be a Matrix with n 3, but got 2"):
         test_error()
 
 

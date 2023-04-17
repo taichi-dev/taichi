@@ -648,12 +648,6 @@ class TaskCodegen : public IRVisitor {
     // device.
     spirv::Value linear_offset = ir_->int_immediate_number(ir_->i32_type(), 0);
     const auto *argload = stmt->base_ptr->as<ArgLoadStmt>();
-    const auto *struct_type = argload->ret_type->as<PointerType>()
-                                  ->get_pointee_type()
-                                  ->as<lang::StructType>();
-    const auto *element_type = struct_type->get_element_type({0})
-                                   ->as<PointerType>()
-                                   ->get_pointee_type();
     const int arg_id = argload->arg_id;
     {
       const int num_indices = stmt->indices.size();
@@ -696,9 +690,9 @@ class TaskCodegen : public IRVisitor {
       }
       linear_offset = ir_->make_value(
           spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
-          ir_->int_immediate_number(
-              ir_->i32_type(),
-              log2int(ir_->get_primitive_type_size(element_type))));
+          ir_->int_immediate_number(ir_->i32_type(),
+                                    log2int(ir_->get_primitive_type_size(
+                                        stmt->ret_type.ptr_removed()))));
       if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
         ir_->decorate(spv::OpDecorate, linear_offset,
                       spv::DecorationNoSignedWrap);

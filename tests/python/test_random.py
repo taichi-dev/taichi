@@ -106,6 +106,7 @@ def test_random_seed_per_launch():
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.metal])
 def test_random_seed_per_program():
     import numpy as np
+
     n = 10
     result = []
     for s in [0, 1]:
@@ -126,11 +127,12 @@ def test_random_seed_per_program():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_random_f64():
-    '''
+    """
     Tests the granularity of float64 random numbers.
     See https://github.com/taichi-dev/taichi/issues/2251 for an explanation.
-    '''
+    """
     import numpy as np
+
     n = int(2**23)
     x = ti.field(ti.f64, shape=n)
 
@@ -146,9 +148,9 @@ def test_random_f64():
 
 @test_utils.test()
 def test_randn():
-    '''
+    """
     Tests the generation of Gaussian random numbers.
-    '''
+    """
     for precision in [ti.f32, ti.f64]:
         ti.init()
         n = 1024
@@ -166,5 +168,4 @@ def test_randn():
         # https://en.wikipedia.org/wiki/Normal_distribution#Moments
         moments = [0.0, 1.0, 0.0, 3.0]
         for i in range(4):
-            assert (X**(i + 1)).mean() == test_utils.approx(moments[i],
-                                                            abs=3e-2)
+            assert (X ** (i + 1)).mean() == test_utils.approx(moments[i], abs=3e-2)

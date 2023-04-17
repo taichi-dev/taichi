@@ -66,17 +66,16 @@ class GGUINotAvailableException(Exception):
 
 
 def check_ggui_availability():
-    """Checks if the `GGUI` environment is available.
-    """
+    """Checks if the `GGUI` environment is available."""
     if _ti_core.GGUI_AVAILABLE:
         return
 
     try:
         # Try identifying the reason
         import taichi  # pylint: disable=import-outside-toplevel
+
         wheel_tag = try_get_wheel_tag(taichi)
-        if platform.system(
-        ) == "Linux" and wheel_tag and 'manylinux2014' in wheel_tag:
+        if platform.system() == "Linux" and wheel_tag and "manylinux2014" in wheel_tag:
             raise GGUINotAvailableException(
                 "GGUI is not available since you have installed a restricted version of taichi. "
                 "Please see yellow warning messages printed during startup for details."

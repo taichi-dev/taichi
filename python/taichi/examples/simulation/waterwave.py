@@ -31,22 +31,31 @@ def reset():
 
 @ti.func
 def laplacian(i, j):
-    return (-4 * height[i, j] + height[i, j - 1] + height[i, j + 1] +
-            height[i + 1, j] + height[i - 1, j]) / (4 * dx**2)
+    return (
+        -4 * height[i, j]
+        + height[i, j - 1]
+        + height[i, j + 1]
+        + height[i + 1, j]
+        + height[i - 1, j]
+    ) / (4 * dx**2)
 
 
 @ti.func
 def gradient(i, j):
-    return ti.Vector([(height[i + 1, j] if i < shape[0] - 1 else 0) -
-                      (height[i - 1, j] if i > 1 else 0),
-                      (height[i, j + 1] if j < shape[1] - 1 else 0) -
-                      (height[i, j - 1] if j > 1 else 0)]) * (0.5 / dx)
+    return ti.Vector(
+        [
+            (height[i + 1, j] if i < shape[0] - 1 else 0)
+            - (height[i - 1, j] if i > 1 else 0),
+            (height[i, j + 1] if j < shape[1] - 1 else 0)
+            - (height[i, j - 1] if j > 1 else 0),
+        ]
+    ) * (0.5 / dx)
 
 
 @ti.kernel
 def create_wave(amplitude: ti.f32, x: ti.f32, y: ti.f32):
     for i, j in ti.ndrange((1, shape[0] - 1), (1, shape[1] - 1)):
-        r2 = (i - x)**2 + (j - y)**2
+        r2 = (i - x) ** 2 + (j - y) ** 2
         height[i, j] = height[i, j] + amplitude * ti.exp(-0.02 * r2)
 
 
@@ -77,12 +86,12 @@ def main():
     print("[Hint] click on the window to create waves")
 
     reset()
-    gui = ti.GUI('Water Wave', shape)
+    gui = ti.GUI("Water Wave", shape)
     while gui.running:
         for e in gui.get_events(ti.GUI.PRESS):
             if e.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
                 gui.running = False
-            elif e.key == 'r':
+            elif e.key == "r":
                 reset()
             elif e.key == ti.GUI.LMB:
                 x, y = e.pos
@@ -93,5 +102,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

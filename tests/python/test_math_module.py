@@ -36,7 +36,7 @@ def check_epsilon_equal(mat_cal, mat_ref, epsilon) -> int:
     return err
 
 
-@pytest.mark.parametrize('dt', [ti.f32, ti.f64])
+@pytest.mark.parametrize("dt", [ti.f32, ti.f64])
 @test_utils.test()
 def test_inf_nan_f32(dt):
     _test_inf_nan(dt)
@@ -55,7 +55,6 @@ def test_vdir():
 def test_vector_types_f32():
     @ti.dataclass
     class Ray:
-
         pos: ti.math.vec3
         uv: ti.math.vec2
         mat: ti.math.mat3
@@ -68,14 +67,12 @@ def test_vector_types_f32():
     test()
 
 
-@test_utils.test(require=ti.extension.data64,
-                 default_fp=ti.f64,
-                 default_ip=ti.i64,
-                 debug=True)
+@test_utils.test(
+    require=ti.extension.data64, default_fp=ti.f64, default_ip=ti.i64, debug=True
+)
 def test_vector_types_f64():
     @ti.dataclass
     class Ray:
-
         pos: ti.math.vec3
         uv: ti.math.vec2
         mat: ti.math.mat3
@@ -97,11 +94,18 @@ def test_vector_types_f64():
 @ti.kernel
 def test_translate():
     error = 0
-    translate_vec = ti.math.vec3(1., 2., 3.)
-    translate_mat = ti.math.translate(translate_vec[0], translate_vec[1],
-                                      translate_vec[2])
-    translate_ref = ti.math.mat4([[1., 0., 0., 1.], [0., 1., 0., 2.],
-                                  [0., 0., 1., 3.], [0., 0., 0., 1.]])
+    translate_vec = ti.math.vec3(1.0, 2.0, 3.0)
+    translate_mat = ti.math.translate(
+        translate_vec[0], translate_vec[1], translate_vec[2]
+    )
+    translate_ref = ti.math.mat4(
+        [
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 2.0],
+            [0.0, 0.0, 1.0, 3.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
     error += check_epsilon_equal(translate_mat, translate_ref, 0.00001)
     assert error == 0
 
@@ -110,10 +114,16 @@ def test_translate():
 @ti.kernel
 def test_scale():
     error = 0
-    scale_vec = ti.math.vec3(1., 2., 3.)
+    scale_vec = ti.math.vec3(1.0, 2.0, 3.0)
     scale_mat = ti.math.scale(scale_vec[0], scale_vec[1], scale_vec[2])
-    scale_ref = ti.math.mat4([[1., 0., 0., 0.], [0., 2., 0., 0.],
-                              [0., 0., 3., 0.], [0., 0., 0., 1.]])
+    scale_ref = ti.math.mat4(
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 2.0, 0.0, 0.0],
+            [0.0, 0.0, 3.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
     error += check_epsilon_equal(scale_mat, scale_ref, 0.00001)
     assert error == 0
 
@@ -141,9 +151,11 @@ def test_rotation3d():
     axisZ = ti.math.vec3(0.0, 0.0, 1.0)
 
     rotationEuler = ti.math.rot_yaw_pitch_roll(first, second, third)
-    rotationInvertedY = ti.math.rot_by_axis(
-        axisZ, third) @ ti.math.rot_by_axis(
-            axisX, second) @ ti.math.rot_by_axis(axisY, -first)
+    rotationInvertedY = (
+        ti.math.rot_by_axis(axisZ, third)
+        @ ti.math.rot_by_axis(axisX, second)
+        @ ti.math.rot_by_axis(axisY, -first)
+    )
     rotationDumb = ti.Matrix.zero(ti.f32, 4, 4)
     rotationDumb = ti.math.rot_by_axis(axisY, first) @ rotationDumb
     rotationDumb = ti.math.rot_by_axis(axisX, second) @ rotationDumb
@@ -153,13 +165,22 @@ def test_rotation3d():
     dif0 = rotationEuler - rotationDumb
     dif1 = rotationEuler - rotationInvertedY
 
-    difRef0 = ti.math.mat4([[0.05048351, -0.61339645, -0.78816002, 0.],
-                            [0.65833154, 0.61388511, -0.4355969, 0.],
-                            [0.75103329, -0.49688014, 0.4348093, 0.],
-                            [0., 0., 0., 1.]])
-    difRef1 = ti.math.mat4([[-0.60788802, 0., -1.22438441, 0.],
-                            [0.60837229, 0., -1.22340979, 0.],
-                            [1.50206658, 0., 0., 0.], [0., 0., 0., 0.]])
+    difRef0 = ti.math.mat4(
+        [
+            [0.05048351, -0.61339645, -0.78816002, 0.0],
+            [0.65833154, 0.61388511, -0.4355969, 0.0],
+            [0.75103329, -0.49688014, 0.4348093, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
+    difRef1 = ti.math.mat4(
+        [
+            [-0.60788802, 0.0, -1.22438441, 0.0],
+            [0.60837229, 0.0, -1.22340979, 0.0],
+            [1.50206658, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ]
+    )
 
     error += check_epsilon_equal(dif0, difRef0, 0.00001)
     error += check_epsilon_equal(dif1, difRef1, 0.00001)

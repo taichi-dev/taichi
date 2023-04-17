@@ -18,19 +18,24 @@ class SparseSolver:
         solver_type (str): The factorization type.
         ordering (str): The method for matrices re-ordering.
     """
+
     def __init__(self, dtype=f32, solver_type="LLT", ordering="AMD"):
         self.matrix = None
         solver_type_list = ["LLT", "LDLT", "LU"]
-        solver_ordering = ['AMD', 'COLAMD']
+        solver_ordering = ["AMD", "COLAMD"]
         if solver_type in solver_type_list and ordering in solver_ordering:
             taichi_arch = taichi.lang.impl.get_runtime().prog.config().arch
-            assert taichi_arch == _ti_core.Arch.x64 or taichi_arch == _ti_core.Arch.arm64 or taichi_arch == _ti_core.Arch.cuda, "SparseSolver only supports CPU and CUDA for now."
+            assert (
+                taichi_arch == _ti_core.Arch.x64
+                or taichi_arch == _ti_core.Arch.arm64
+                or taichi_arch == _ti_core.Arch.cuda
+            ), "SparseSolver only supports CPU and CUDA for now."
             if taichi_arch == _ti_core.Arch.cuda:
                 self.solver = _ti_core.make_cusparse_solver(
-                    dtype, solver_type, ordering)
+                    dtype, solver_type, ordering
+                )
             else:
-                self.solver = _ti_core.make_sparse_solver(
-                    dtype, solver_type, ordering)
+                self.solver = _ti_core.make_sparse_solver(dtype, solver_type, ordering)
         else:
             raise TaichiRuntimeError(
                 f"The solver type {solver_type} with {ordering} is not supported for now. Only {solver_type_list} with {solver_ordering} are supported."
@@ -92,16 +97,14 @@ class SparseSolver:
             numpy.array: The solution of linear systems.
         """
         if self.matrix is None:
-            raise TaichiRuntimeError(
-                "Please call compute() before calling solve().")
+            raise TaichiRuntimeError("Please call compute() before calling solve().")
         if isinstance(b, Field):
             return self.solver.solve(b.to_numpy())
         if isinstance(b, np.ndarray):
             return self.solver.solve(b)
         if isinstance(b, Ndarray):
             x = ScalarNdarray(b.dtype, [self.matrix.m])
-            self.solver.solve_rf(get_runtime().prog, self.matrix.matrix, b.arr,
-                                 x.arr)
+            self.solver.solve_rf(get_runtime().prog, self.matrix.matrix, b.arr, x.arr)
             return x
         raise TaichiRuntimeError(
             f"The parameter type: {type(b)} is not supported in linear solvers for now."

@@ -61,8 +61,7 @@ def test_raise():
     def foo():
         raise Exception()
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match='Unsupported node "Raise"') as e:
+    with pytest.raises(ti.TaichiSyntaxError, match='Unsupported node "Raise"') as e:
         foo()
 
 
@@ -148,19 +147,19 @@ def test_func_def_in_func():
 
 @test_utils.test(arch=ti.cpu)
 def test_kernel_bad_argument_annotation():
-    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match="annotation"):
 
         @ti.kernel
-        def kernel(x: 'bar'):
+        def kernel(x: "bar"):
             print(x)
 
 
 @test_utils.test(arch=ti.cpu)
 def test_func_bad_argument_annotation():
-    with pytest.raises(ti.TaichiSyntaxError, match='annotation'):
+    with pytest.raises(ti.TaichiSyntaxError, match="annotation"):
 
         @ti.func
-        def func(x: 'foo'):
+        def func(x: "foo"):
             print(x)
 
 
@@ -281,8 +280,8 @@ def test_redefining_template_args():
         a = 5
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match="Kernel argument \"a\" is immutable in the kernel"):
+        ti.TaichiSyntaxError, match='Kernel argument "a" is immutable in the kernel'
+    ):
         foo(1)
 
 
@@ -293,8 +292,9 @@ def test_break_in_outermost_for():
         for i in range(10):
             break
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match="Cannot break in the outermost loop"):
+    with pytest.raises(
+        ti.TaichiSyntaxError, match="Cannot break in the outermost loop"
+    ):
         foo()
 
 
@@ -306,8 +306,8 @@ def test_funcdef_in_kernel():
             pass
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match="Function definition is not allowed in 'ti.kernel'"):
+        ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.kernel'"
+    ):
         foo()
 
 
@@ -323,8 +323,8 @@ def test_funcdef_in_func():
         foo()
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match="Function definition is not allowed in 'ti.func'"):
+        ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.func'"
+    ):
         baz()
 
 
@@ -338,8 +338,8 @@ def test_continue_in_static_for_in_non_static_if():
                 continue
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match="You are trying to `continue` a static `for` loop"):
+        ti.TaichiSyntaxError, match="You are trying to `continue` a static `for` loop"
+    ):
         test_static_loop()
 
 
@@ -352,6 +352,7 @@ def test_break_in_static_for_in_non_static_if():
             if x == 0.0:
                 break
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match="You are trying to `break` a static `for` loop"):
+    with pytest.raises(
+        ti.TaichiSyntaxError, match="You are trying to `break` a static `for` loop"
+    ):
         test_static_loop()

@@ -14,6 +14,7 @@ def _get_logging(name):
     Returns:
         Callabe: The decorated function.
     """
+
     def logger(msg, *args, **kwargs):
         # Python inspection takes time (~0.1ms) so avoid it as much as possible
         if ti_python_core.logging_effective(name):
@@ -22,7 +23,7 @@ def _get_logging(name):
             frame = inspect.currentframe().f_back
             file_name, lineno, func_name, _, _ = inspect.getframeinfo(frame)
             file_name = os.path.basename(file_name)
-            msg = f'[{file_name}:{func_name}@{lineno}] {msg_formatted}'
+            msg = f"[{file_name}:{func_name}@{lineno}] {msg_formatted}"
             func(msg)
 
     return logger
@@ -77,32 +78,32 @@ def is_logging_effective(level):
 
 # ------------------------
 
-DEBUG = 'debug'
+DEBUG = "debug"
 """The `str` 'debug', used for the `debug` logging level.
 """
 # ------------------------
 
-TRACE = 'trace'
+TRACE = "trace"
 """The `str` 'trace', used for the `debug` logging level.
 """
 # ------------------------
 
-INFO = 'info'
+INFO = "info"
 """The `str` 'info', used for the `info` logging level.
 """
 # ------------------------
 
-WARN = 'warn'
+WARN = "warn"
 """The `str` 'warn', used for the `warn` logging level.
 """
 # ------------------------
 
-ERROR = 'error'
+ERROR = "error"
 """The `str` 'error', used for the `error` logging level.
 """
 # ------------------------
 
-CRITICAL = 'critical'
+CRITICAL = "critical"
 """The `str` 'critical', used for the `critical` logging level.
 """
 # ------------------------
@@ -117,6 +118,12 @@ error = _get_logging(ERROR)
 critical = _get_logging(CRITICAL)
 
 __all__ = [
-    'DEBUG', 'TRACE', 'INFO', 'WARN', 'ERROR', 'CRITICAL', 'set_logging_level',
-    'is_logging_effective'
+    "DEBUG",
+    "TRACE",
+    "INFO",
+    "WARN",
+    "ERROR",
+    "CRITICAL",
+    "set_logging_level",
+    "is_logging_effective",
 ]

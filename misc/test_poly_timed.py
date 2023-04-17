@@ -11,7 +11,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
     @ti.test(default_fp=default_fp)
     def impl():
-        print(f'arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}')
+        print(f"arch={ti.cfg.arch} default_fp={ti.cfg.default_fp}")
         x = ti.field(default_fp)
         y = ti.field(default_fp)
 
@@ -37,6 +37,7 @@ def grad_test(tifunc, npfunc=None, default_fp=ti.f32):
 
 def test_poly():
     import time
+
     t = time.time()
     grad_test(lambda x: x)
     grad_test(lambda x: -x)
@@ -48,7 +49,7 @@ def test_poly():
     grad_test(lambda x: (x - 3) * (x - 1))
     grad_test(lambda x: (x - 3) * (x - 1) + x * x)
     ti.core.print_profile_info()
-    print('total_time', time.time() - t)
+    print("total_time", time.time() - t)
 
 
 test_poly()

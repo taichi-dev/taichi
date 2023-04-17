@@ -29,36 +29,26 @@ def test_gdar_mpm():
     vec = lambda: ti.Vector.field(dim, dtype=real)
     mat = lambda: ti.Matrix.field(dim, dim, dtype=real)
 
-    x = ti.Vector.field(dim,
-                        dtype=real,
-                        shape=(max_steps, n_particles),
-                        needs_grad=True)
+    x = ti.Vector.field(
+        dim, dtype=real, shape=(max_steps, n_particles), needs_grad=True
+    )
     x_avg = ti.Vector.field(dim, dtype=real, shape=(), needs_grad=True)
-    v = ti.Vector.field(dim,
-                        dtype=real,
-                        shape=(max_steps, n_particles),
-                        needs_grad=True)
-    grid_v_in = ti.Vector.field(dim,
-                                dtype=real,
-                                shape=(max_steps, n_grid, n_grid),
-                                needs_grad=True)
-    grid_v_out = ti.Vector.field(dim,
-                                 dtype=real,
-                                 shape=(max_steps, n_grid, n_grid),
-                                 needs_grad=True)
-    grid_m_in = ti.field(dtype=real,
-                         shape=(max_steps, n_grid, n_grid),
-                         needs_grad=True)
-    C = ti.Matrix.field(dim,
-                        dim,
-                        dtype=real,
-                        shape=(max_steps, n_particles),
-                        needs_grad=True)
-    F = ti.Matrix.field(dim,
-                        dim,
-                        dtype=real,
-                        shape=(max_steps, n_particles),
-                        needs_grad=True)
+    v = ti.Vector.field(
+        dim, dtype=real, shape=(max_steps, n_particles), needs_grad=True
+    )
+    grid_v_in = ti.Vector.field(
+        dim, dtype=real, shape=(max_steps, n_grid, n_grid), needs_grad=True
+    )
+    grid_v_out = ti.Vector.field(
+        dim, dtype=real, shape=(max_steps, n_grid, n_grid), needs_grad=True
+    )
+    grid_m_in = ti.field(dtype=real, shape=(max_steps, n_grid, n_grid), needs_grad=True)
+    C = ti.Matrix.field(
+        dim, dim, dtype=real, shape=(max_steps, n_particles), needs_grad=True
+    )
+    F = ti.Matrix.field(
+        dim, dim, dtype=real, shape=(max_steps, n_particles), needs_grad=True
+    )
     init_v = ti.Vector.field(dim, dtype=real, shape=(), needs_grad=True)
     loss = ti.field(dtype=real, shape=(), needs_grad=True)
 
@@ -72,13 +62,14 @@ def test_gdar_mpm():
         for p in range(n_particles):
             base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
             fx = x[f, p] * inv_dx - ti.cast(base, ti.i32)
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_F = (ti.Matrix.diag(dim=2, val=1) + dt * C[f, p]) @ F[f, p]
             F[f + 1, p] = new_F
             J = (new_F).determinant()
             r, s = ti.polar_decompose(new_F)
-            cauchy = 2 * mu * (new_F - r) @ new_F.transpose() + \
-                    ti.Matrix.diag(2, la * (J - 1) * J)
+            cauchy = 2 * mu * (new_F - r) @ new_F.transpose() + ti.Matrix.diag(
+                2, la * (J - 1) * J
+            )
             stress = -(dt * p_vol * 4 * inv_dx * inv_dx) * cauchy
             affine = stress + p_mass * C[f, p]
             for i in ti.static(range(3)):
@@ -86,8 +77,9 @@ def test_gdar_mpm():
                     offset = ti.Vector([i, j])
                     dpos = (ti.cast(ti.Vector([i, j]), real) - fx) * dx
                     weight = w[i][0] * w[j][1]
-                    grid_v_in[f, base + offset] += weight * (p_mass * v[f, p] +
-                                                             affine @ dpos)
+                    grid_v_in[f, base + offset] += weight * (
+                        p_mass * v[f, p] + affine @ dpos
+                    )
                     grid_m_in[f, base + offset] += weight * p_mass
 
     bound = 3
@@ -113,9 +105,7 @@ def test_gdar_mpm():
         for p in range(n_particles):
             base = ti.cast(x[f, p] * inv_dx - 0.5, ti.i32)
             fx = x[f, p] * inv_dx - ti.cast(base, real)
-            w = [
-                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
-            ]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_v = ti.Vector([0.0, 0.0])
             new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 
@@ -139,7 +129,7 @@ def test_gdar_mpm():
 
     @ti.kernel
     def compute_loss():
-        dist = (x_avg[None] - ti.Vector(target))**2
+        dist = (x_avg[None] - ti.Vector(target)) ** 2
         loss[None] = 0.5 * (dist(0) + dist(1))
 
     def substep(s):
@@ -179,7 +169,7 @@ def test_gdar_mpm():
         l = loss[None]
         losses.append(l)
         grad = init_v.grad[None]
-        print('loss=', l, '   grad=', (grad[0], grad[1]))
+        print("loss=", l, "   grad=", (grad[0], grad[1]))
         learning_rate = 10
         init_v[None][0] -= learning_rate * grad[0]
         init_v[None][1] -= learning_rate * grad[1]

@@ -73,8 +73,8 @@ def test_tensor_based_3d():
         lower = ti.Vector([0, 1, 2])
         upper = ti.Vector([3, 4, 5])
         for I in ti.grouped(
-                ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]),
-                           (lower[2], upper[2]))):
+            ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]), (lower[2], upper[2]))
+        ):
             x[I] = I[0] + I[1] + I[2]
         for i in range(0, 3):
             for j in range(1, 4):
@@ -241,9 +241,8 @@ def test_ndrange_three_arguments():
             pass
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match=
-            r"Every argument of ndrange should be a scalar or a tuple/list like \(begin, end\)"
+        ti.TaichiSyntaxError,
+        match=r"Every argument of ndrange should be a scalar or a tuple/list like \(begin, end\)",
     ):
         foo()
 
@@ -271,9 +270,8 @@ def test_ndrange_non_integer_arguments():
             pass
 
     with pytest.raises(
-            ti.TaichiTypeError,
-            match=
-            r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)"
+        ti.TaichiTypeError,
+        match=r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)",
     ):
         example()
 
@@ -298,9 +296,8 @@ def test_static_ndrange_non_integer_arguments():
             pass
 
     with pytest.raises(
-            ti.TaichiTypeError,
-            match=
-            r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)"
+        ti.TaichiTypeError,
+        match=r"Every argument of ndrange should be an integer scalar or a tuple/list of \(int, int\)",
     ):
         example()
 
@@ -325,9 +322,9 @@ def test_n_loop_var_neq_dimension():
             print(i)
 
     with pytest.warns(
-            DeprecationWarning,
-            match=
-            "Ndrange for loop with number of the loop variables not equal to"):
+        DeprecationWarning,
+        match="Ndrange for loop with number of the loop variables not equal to",
+    ):
         iter()
 
 
@@ -339,5 +336,5 @@ def test_2d_loop_over_ndarray():
         for i, j in ti.ndrange(M, M):
             verts = ti.math.vec4(arr[i], arr[i + 1], arr[j], arr[j + 1])
 
-    array = ti.ndarray(ti.i32, shape=(16, ))
+    array = ti.ndarray(ti.i32, shape=(16,))
     foo(array)

@@ -15,7 +15,7 @@
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
-#include "taichi/rhi/common/memory_pool.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -335,7 +335,6 @@ void Program::finalize() {
   if (finalized_) {
     return;
   }
-  auto arch = compile_config().arch;
 
   synchronize();
   TI_TRACE("Program finalizing...");
@@ -354,7 +353,7 @@ void Program::finalize() {
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
 
   // Reset memory pool
-  MemoryPool::get_instance(arch).reset();
+  HostMemoryPool::get_instance().reset();
 }
 
 int Program::default_block_dim(const CompileConfig &config) {

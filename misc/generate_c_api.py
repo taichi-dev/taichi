@@ -1,9 +1,21 @@
 import re
 from os import system
 
-from taichi_json import (Alias, BitField, BuiltInType, Callback, Definition,
-                         EntryBase, Enumeration, Field, Function, Handle,
-                         Module, Structure, Union)
+from taichi_json import (
+    Alias,
+    BitField,
+    BuiltInType,
+    Callback,
+    Definition,
+    EntryBase,
+    Enumeration,
+    Field,
+    Function,
+    Handle,
+    Module,
+    Structure,
+    Union,
+)
 
 
 def get_type_name(x: EntryBase):
@@ -13,7 +25,7 @@ def get_type_name(x: EntryBase):
     elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
         return x.name.upper_camel_case
     elif ty in [BitField]:
-        return x.name.extend('flags').upper_camel_case
+        return x.name.extend("flags").upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
 
@@ -78,13 +90,11 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
                 out += get_api_field_ref(module, x, name)
             name = x.name.extend(name).screaming_snake_case
             out += [f"  {name} = {value},"]
-        out += [
-            f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"
-        ]
+        out += [f"  {x.name.extend('max_enum').screaming_snake_case} = 0xffffffff,"]
         out += ["} " + get_type_name(x) + ";"]
 
     elif ty is BitField:
-        bit_type_name = x.name.extend('flag_bits').upper_camel_case
+        bit_type_name = x.name.extend("flag_bits").upper_camel_case
         out += ["typedef enum " + bit_type_name + " {"]
         for name, value in x.bits.items():
             if with_docs:
@@ -111,11 +121,12 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += ["} " + get_type_name(x) + ";"]
 
     elif ty is Callback:
-        return_value_type = "void" if x.return_value_type == None else get_type_name(
-            x.return_value_type)
-        out += [
-            f"typedef {return_value_type} (TI_API_CALL *{get_type_name(x)})("
-        ]
+        return_value_type = (
+            "void"
+            if x.return_value_type == None
+            else get_type_name(x.return_value_type)
+        )
+        out += [f"typedef {return_value_type} (TI_API_CALL *{get_type_name(x)})("]
         if x.params:
             for i, param in enumerate(x.params):
                 if i != 0:
@@ -126,11 +137,17 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += [");"]
 
     elif ty is Function:
-        return_value_type = "void" if x.return_value_type == None else get_type_name(
-            x.return_value_type)
+        return_value_type = (
+            "void"
+            if x.return_value_type == None
+            else get_type_name(x.return_value_type)
+        )
         out += [
-            "TI_DLL_EXPORT " + return_value_type + " TI_API_CALL " +
-            x.name.snake_case + "("
+            "TI_DLL_EXPORT "
+            + return_value_type
+            + " TI_API_CALL "
+            + x.name.snake_case
+            + "("
         ]
         if x.params:
             for i, param in enumerate(x.params):
@@ -144,7 +161,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
     else:
         raise RuntimeError(f"'{x.id}' doesn't need declaration")
 
-    return '\n'.join(out)
+    return "\n".join(out)
 
 
 def get_human_readable_name(x: EntryBase):
@@ -158,8 +175,7 @@ def get_human_readable_name(x: EntryBase):
     elif ty is Definition:
         return f"{x.name.screaming_snake_case}"
 
-    elif isinstance(
-            x, (Handle, Enumeration, BitField, Structure, Union, Callback)):
+    elif isinstance(x, (Handle, Enumeration, BitField, Structure, Union, Callback)):
         return f"{get_type_name(x)}"
 
     elif ty is Function:
@@ -177,8 +193,20 @@ def get_title(x: EntryBase):
     if isinstance(x, Function) and x.is_device_command:
         extra += " (Device Command)"
 
-    if isinstance(x, (Alias, Definition, Handle, Enumeration, BitField,
-                      Structure, Union, Callback, Function)):
+    if isinstance(
+        x,
+        (
+            Alias,
+            Definition,
+            Handle,
+            Enumeration,
+            BitField,
+            Structure,
+            Union,
+            Callback,
+            Function,
+        ),
+    ):
         return f"{type(x).__name__} `{get_human_readable_name(x)}`" + extra
     else:
         raise RuntimeError(f"'{x.id}' doesn't need title")
@@ -187,14 +215,14 @@ def get_title(x: EntryBase):
 def resolve_symbol_to_name(module: Module, id: str):
     """Returns the resolved symbol and its hyperlink (if available)"""
     try:
-        ifirst_dot = id.index('.')
+        ifirst_dot = id.index(".")
     except ValueError:
         return None
 
     field_name = ""
     try:
-        isecond_dot = id.index('.', ifirst_dot + 1)
-        field_name = id[isecond_dot + 1:]
+        isecond_dot = id.index(".", ifirst_dot + 1)
+        field_name = id[isecond_dot + 1 :]
         id = id[:isecond_dot]
     except ValueError:
         pass
@@ -206,8 +234,9 @@ def resolve_symbol_to_name(module: Module, id: str):
         if field_name:
             out = get_human_readable_field_name(out, field_name)
         else:
-            href = "#" + get_title(out).lower().replace(' ', '-').replace(
-                '`', '').replace('(', '').replace(')', '')
+            href = "#" + get_title(out).lower().replace(" ", "-").replace(
+                "`", ""
+            ).replace("(", "").replace(")", "")
             out = get_human_readable_name(out)
     except:
         print(f"WARNING: Unable to resolve symbol {id}")
@@ -242,7 +271,7 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
     if isinstance(x, Enumeration):
         out = x.name.extend(field_name).screaming_snake_case
     elif isinstance(x, BitField):
-        out = x.name.extend(field_name).extend('bit').screaming_snake_case
+        out = x.name.extend(field_name).extend("bit").screaming_snake_case
     elif isinstance(x, Structure):
         for field in x.fields:
             if str(field.name) == field_name:
@@ -272,7 +301,7 @@ def print_module_header(module: Module):
         del out[-1]
     out += ["#pragma once", ""]
 
-    for (name, value) in module.default_definitions:
+    for name, value in module.default_definitions:
         out += [
             f"#ifndef {name}",
             f"#define {name} {value}",
@@ -303,7 +332,7 @@ def print_module_header(module: Module):
         "",
     ]
 
-    return '\n'.join(out)
+    return "\n".join(out)
 
 
 def generate_module_header(module):

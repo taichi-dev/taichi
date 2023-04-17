@@ -8,11 +8,11 @@ from typing import List
 
 class Version:
     def __init__(self, ver: str) -> None:
-        if ver.startswith('v'):
+        if ver.startswith("v"):
             ver = ver[1:]
-        xs = [int(x) for x in ver.split('.')]
+        xs = [int(x) for x in ver.split(".")]
         assert len(xs) <= 3
-        xs += ['0'] * (3 - len(xs))
+        xs += ["0"] * (3 - len(xs))
 
         self.major = xs[0]
         self.minor = xs[1]
@@ -33,18 +33,17 @@ class Version:
 
 class Name:
     def __init__(self, name: str, prefix=[], suffix=[]):
-        assert re.match('^[@a-z0-9_]+$', name)
+        assert re.match("^[@a-z0-9_]+$", name)
         self._segs = name.split("_")
         self._prefix = prefix
         self._suffix = suffix
 
-    def extend(self, subname) -> 'Name':
+    def extend(self, subname) -> "Name":
         if isinstance(subname, str):
             subname = Name(subname)
         assert isinstance(subname, Name)
         assert len(subname._prefix) == 0 and len(subname._suffix) == 0
-        return Name('_'.join(self._segs + subname._segs), self._prefix,
-                    self._suffix)
+        return Name("_".join(self._segs + subname._segs), self._prefix, self._suffix)
 
     @property
     def segs(self):
@@ -52,18 +51,18 @@ class Name:
 
     @property
     def snake_case(self) -> str:
-        return '_'.join(self.segs)
+        return "_".join(self.segs)
 
     @property
     def screaming_snake_case(self) -> str:
-        return '_'.join(x.upper() for x in self.segs)
+        return "_".join(x.upper() for x in self.segs)
 
     @property
     def upper_camel_case(self) -> str:
-        return ''.join(x.title() for x in self.segs)
+        return "".join(x.title() for x in self.segs)
 
     def __repr__(self) -> str:
-        return '_'.join(self._segs)
+        return "_".join(self._segs)
 
 
 class DeclarationRegistry:
@@ -75,7 +74,7 @@ class DeclarationRegistry:
         self._imported = {}
         self._builtin_tys = dict((x.id, x) for x in builtin_tys)
 
-    def resolve(self, id: str) -> 'EntryBase':
+    def resolve(self, id: str) -> "EntryBase":
         if id in self._builtin_tys:
             return self._builtin_tys[id]
         elif id in self._inner:
@@ -183,8 +182,7 @@ class Enumeration(EntryBase):
         if "inc_cases" in j:
             self.cases = load_inc_enums()[j["inc_cases"]]
         else:
-            self.cases = dict(
-                (Name(name), value) for name, value in j["cases"].items())
+            self.cases = dict((Name(name), value) for name, value in j["cases"].items())
 
 
 class BitField(EntryBase):
@@ -193,8 +191,7 @@ class BitField(EntryBase):
         if "inc_cases" in j:
             self.bits = load_inc_enums()[j["inc_bits"]]
         else:
-            self.bits = dict(
-                (Name(name), value) for name, value in j["bits"].items())
+            self.bits = dict((Name(name), value) for name, value in j["bits"].items())
 
 
 class Field:
@@ -307,8 +304,7 @@ class Documentation:
                 m = re.match(SYM_PATTERN, line)
                 if m:
                     # Remove trailing empty lines.
-                    while api_refs[cur_sym] and len(
-                            api_refs[cur_sym][-1]) == 0:
+                    while api_refs[cur_sym] and len(api_refs[cur_sym][-1]) == 0:
                         del api_refs[cur_sym][-1]
 
                     # Enter parsing for the next symbol.
@@ -338,8 +334,7 @@ class Documentation:
 class Module:
     all_modules = {}
 
-    def __init__(self, version: Version, j: dict,
-                 builtin_tys: List[BuiltInType]):
+    def __init__(self, version: Version, j: dict, builtin_tys: List[BuiltInType]):
         self.name = j["name"]
         self.is_built_in = False
         self.declr_reg = DeclarationRegistry(builtin_tys)

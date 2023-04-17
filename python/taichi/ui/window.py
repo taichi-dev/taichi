@@ -2,8 +2,10 @@ import pathlib
 import warnings
 
 import numpy
-from taichi._kernels import (arr_vulkan_layout_to_arr_normal_layout,
-                             arr_vulkan_layout_to_field_normal_layout)
+from taichi._kernels import (
+    arr_vulkan_layout_to_arr_normal_layout,
+    arr_vulkan_layout_to_field_normal_layout,
+)
 from taichi._lib import core as _ti_core
 from taichi.lang._ndarray import Ndarray
 from taichi.lang.impl import Field, default_cfg, get_runtime
@@ -27,19 +29,24 @@ class Window:
         show_window (bool): where or not display the window after initialization.
         pos (tuple[int]): position (left to right, up to bottom) of the window which origins from the left-top of your main screen, in pixels.
     """
-    def __init__(self,
-                 name,
-                 res,
-                 vsync=False,
-                 show_window=True,
-                 fps_limit=1000,
-                 pos=(100, 100)):
+
+    def __init__(
+        self, name, res, vsync=False, show_window=True, fps_limit=1000, pos=(100, 100)
+    ):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
         ti_arch = default_cfg().arch
-        self.window = _ti_core.PyWindow(get_runtime().prog, name, res, pos,
-                                        vsync, show_window, fps_limit,
-                                        package_path, ti_arch)
+        self.window = _ti_core.PyWindow(
+            get_runtime().prog,
+            name,
+            res,
+            pos,
+            vsync,
+            show_window,
+            fps_limit,
+            package_path,
+            ti_arch,
+        )
 
     @property
     def running(self):
@@ -58,14 +65,12 @@ class Window:
 
     @property
     def event(self):
-        """Get the current unprocessed event.
-        """
+        """Get the current unprocessed event."""
         return self.window.get_current_event()
 
     @event.setter
     def event(self, value):
-        """Set the current unprocessed event.
-        """
+        """Set the current unprocessed event."""
         self.window.set_current_event(value)
 
     def get_events(self, tag=None):
@@ -113,7 +118,7 @@ class Window:
         return False
 
     def get_canvas(self):
-        """Returns a canvas handle. See :class`~taichi.ui.canvas.Canvas` """
+        """Returns a canvas handle. See :class`~taichi.ui.canvas.Canvas`"""
         return Canvas(self.window.get_canvas())
 
     @property
@@ -128,13 +133,11 @@ class Window:
         return Gui(self.window.GUI())
 
     def get_cursor_pos(self):
-        """Get current cursor position, in the range `[0, 1] x [0, 1]`.
-        """
+        """Get current cursor position, in the range `[0, 1] x [0, 1]`."""
         return self.window.get_cursor_pos()
 
     def show(self):
-        """Display this window.
-        """
+        """Display this window."""
         return self.window.show()
 
     def get_window_shape(self):
@@ -153,7 +156,9 @@ class Window:
         """
         warnings.warn(
             "`Window.write_image()` is deprecated, and it will be removed in Taichi v1.6.0. "
-            "Please use `Window.save_image()` instead.", DeprecationWarning)
+            "Please use `Window.save_image()` instead.",
+            DeprecationWarning,
+        )
         return self.save_image(filename)
 
     def save_image(self, filename):
@@ -189,8 +194,7 @@ class Window:
         """
         tmp_depth = get_depth_ndarray(self.window)
         self.window.copy_depth_buffer_to_ndarray(tmp_depth.arr)
-        depth_numpy_arr = numpy.zeros(self.get_window_shape(),
-                                      dtype=numpy.float32)
+        depth_numpy_arr = numpy.zeros(self.get_window_shape(), dtype=numpy.float32)
         arr_vulkan_layout_to_arr_normal_layout(tmp_depth, depth_numpy_arr)
         return depth_numpy_arr
 
@@ -203,6 +207,5 @@ class Window:
         return self.window.get_image_buffer_as_numpy()
 
     def destroy(self):
-        """Destroy this window. The window will be unavailable then.
-        """
+        """Destroy this window. The window will be unavailable then."""
         return self.window.destroy()

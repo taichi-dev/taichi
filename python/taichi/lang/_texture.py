@@ -23,20 +23,13 @@ class TextureSampler:
     def sample_lod(self, uv, lod):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(uv), lod)
-        v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kSampleLod,
-                                             self.ptr_expr, args_group)
-        r = impl.call_internal("composite_extract_0",
-                               v,
-                               with_runtime_context=False)
-        g = impl.call_internal("composite_extract_1",
-                               v,
-                               with_runtime_context=False)
-        b = impl.call_internal("composite_extract_2",
-                               v,
-                               with_runtime_context=False)
-        a = impl.call_internal("composite_extract_3",
-                               v,
-                               with_runtime_context=False)
+        v = ast_builder.make_texture_op_expr(
+            _ti_core.TextureOpType.kSampleLod, self.ptr_expr, args_group
+        )
+        r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
+        g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
+        b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
+        a = impl.call_internal("composite_extract_3", v, with_runtime_context=False)
         return vector(4, f32)([r, g, b, a])
 
     @taichi_scope
@@ -44,19 +37,12 @@ class TextureSampler:
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index), lod)
         v = ast_builder.make_texture_op_expr(
-            _ti_core.TextureOpType.kFetchTexel, self.ptr_expr, args_group)
-        r = impl.call_internal("composite_extract_0",
-                               v,
-                               with_runtime_context=False)
-        g = impl.call_internal("composite_extract_1",
-                               v,
-                               with_runtime_context=False)
-        b = impl.call_internal("composite_extract_2",
-                               v,
-                               with_runtime_context=False)
-        a = impl.call_internal("composite_extract_3",
-                               v,
-                               with_runtime_context=False)
+            _ti_core.TextureOpType.kFetchTexel, self.ptr_expr, args_group
+        )
+        r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
+        g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
+        b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
+        a = impl.call_internal("composite_extract_3", v, with_runtime_context=False)
         return vector(4, f32)([r, g, b, a])
 
 
@@ -70,30 +56,24 @@ class RWTextureAccessor:
     def load(self, index):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index))
-        v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kLoad,
-                                             self.ptr_expr, args_group)
-        r = impl.call_internal("composite_extract_0",
-                               v,
-                               with_runtime_context=False)
-        g = impl.call_internal("composite_extract_1",
-                               v,
-                               with_runtime_context=False)
-        b = impl.call_internal("composite_extract_2",
-                               v,
-                               with_runtime_context=False)
-        a = impl.call_internal("composite_extract_3",
-                               v,
-                               with_runtime_context=False)
+        v = ast_builder.make_texture_op_expr(
+            _ti_core.TextureOpType.kLoad, self.ptr_expr, args_group
+        )
+        r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
+        g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
+        b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
+        a = impl.call_internal("composite_extract_3", v, with_runtime_context=False)
         return vector(4, f32)([r, g, b, a])
 
     @taichi_scope
     def store(self, index, value):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
-        args_group = make_expr_group(*_get_entries(index),
-                                     *_get_entries(value))
+        args_group = make_expr_group(*_get_entries(index), *_get_entries(value))
         impl.expr_init(
-            ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kStore,
-                                             self.ptr_expr, args_group))
+            ast_builder.make_texture_op_expr(
+                _ti_core.TextureOpType.kStore, self.ptr_expr, args_group
+            )
+        )
 
     @property
     @taichi_scope
@@ -105,9 +85,8 @@ class RWTextureAccessor:
         """
         dim = _ti_core.get_external_tensor_dim(self.ptr_expr)
         ret = [
-            Expr(
-                _ti_core.get_external_tensor_shape_along_axis(
-                    self.ptr_expr, i)) for i in range(dim)
+            Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr_expr, i))
+            for i in range(dim)
         ]
         return ret
 
@@ -128,6 +107,7 @@ class Texture:
         fmt (ti.Format): Color format of the texture.
         shape (Tuple[int]): Shape of the Texture.
     """
+
     def __init__(self, fmt, arr_shape):
         self.tex = impl.get_runtime().prog.create_texture(fmt, arr_shape)
         self.fmt = fmt
@@ -161,17 +141,20 @@ class Texture:
 
         """
         from PIL import Image  # pylint: disable=import-outside-toplevel
+
         assert isinstance(image, Image.Image)
-        if image.mode != 'RGB':
-            image = image.convert('RGB')
+        if image.mode != "RGB":
+            image = image.convert("RGB")
         assert image.size == tuple(self.shape)
 
         assert self.num_dims == 2
         # Don't use transpose method since its enums are too new
         image = image.rotate(90, expand=True)
         arr = np.asarray(image)
-        from taichi._kernels import \
-            load_texture_from_numpy  # pylint: disable=import-outside-toplevel
+        from taichi._kernels import (  # pylint: disable=import-outside-toplevel
+            load_texture_from_numpy,
+        )
+
         load_texture_from_numpy(self, arr)
 
     def to_image(self):
@@ -182,8 +165,11 @@ class Texture:
         """
         assert self.num_dims == 2
         from PIL import Image  # pylint: disable=import-outside-toplevel
-        res = np.zeros(self.shape + (3, ), np.uint8)
-        from taichi._kernels import \
-            save_texture_to_numpy  # pylint: disable=import-outside-toplevel
+
+        res = np.zeros(self.shape + (3,), np.uint8)
+        from taichi._kernels import (  # pylint: disable=import-outside-toplevel
+            save_texture_to_numpy,
+        )
+
         save_texture_to_numpy(self, res)
         return Image.fromarray(res).rotate(270, expand=True)

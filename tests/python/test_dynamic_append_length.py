@@ -14,16 +14,15 @@ def _test_dynamic_append_length(dt):
             for j in range(i):
                 x[i].append(j)
         for i in range(10):
-            assert (x[i].length() == i)
+            assert x[i].length() == i
             for j in range(i):
-                assert (x[i, j] == j)
+                assert x[i, j] == j
 
     test()
 
 
-@test_utils.test(require=ti.extension.sparse,
-                 exclude=[ti.metal],
-                 default_fp=ti.f32,
-                 debug=True)
+@test_utils.test(
+    require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True
+)
 def test_dynamic_append_length_f32():
     _test_dynamic_append_length(ti.f32)

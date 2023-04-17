@@ -67,10 +67,7 @@ class Ndarray:
         Args:
             val (Union[int, float]): Value to fill.
         """
-        if (
-            impl.current_cfg().arch != _ti_core.Arch.cuda
-            and impl.current_cfg().arch != _ti_core.Arch.x64
-        ):
+        if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             impl.get_runtime().prog.fill_float(self.arr, val)
@@ -120,9 +117,7 @@ class Ndarray:
         if not isinstance(arr, np.ndarray):
             raise TypeError(f"{np.ndarray} expected, but {type(arr)} provided")
         if tuple(self.arr.total_shape()) != tuple(arr.shape):
-            raise ValueError(
-                f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided"
-            )
+            raise ValueError(f"Mismatch shape: {tuple(self.arr.shape)} expected, but {tuple(arr.shape)} provided")
         if not arr.flags.c_contiguous:
             arr = np.ascontiguousarray(arr)
 
@@ -218,9 +213,7 @@ class Ndarray:
         if not isinstance(key, (tuple, list)):
             key = (key,)
         if len(key) != len(self.arr.total_shape()):
-            raise TaichiIndexError(
-                f"{len(self.arr.total_shape())}d ndarray indexed with {len(key)}d indices: {key}"
-            )
+            raise TaichiIndexError(f"{len(self.arr.total_shape())}d ndarray indexed with {len(key)}d indices: {key}")
         return key
 
     @python_scope
@@ -242,18 +235,12 @@ class ScalarNdarray(Ndarray):
     def __init__(self, dtype, arr_shape):
         super().__init__()
         self.dtype = cook_dtype(dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(
-            self.dtype, arr_shape, layout=Layout.NULL, zero_fill=True
-        )
+        self.arr = impl.get_runtime().prog.create_ndarray(self.dtype, arr_shape, layout=Layout.NULL, zero_fill=True)
         self.shape = tuple(self.arr.shape)
         self.element_type = dtype
 
     def __del__(self):
-        if (
-            impl is not None
-            and impl.get_runtime() is not None
-            and impl.get_runtime().prog is not None
-        ):
+        if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
             impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property

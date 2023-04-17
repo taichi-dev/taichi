@@ -28,6 +28,4 @@ def test_save_image_without_window(dtype):
         gui.show(image_path)
         image = ti.tools.imread(image_path)
         delta = (image - i).sum()
-        assert (
-            delta == 0
-        ), "Expected image difference to be 0 but got {} instead.".format(delta)
+        assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(delta)

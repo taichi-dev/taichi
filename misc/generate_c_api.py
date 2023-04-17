@@ -51,10 +51,7 @@ def get_api_ref(module: Module, x: EntryBase) -> list:
     if x.since is not None:
         out[-1] += f" ({x.since})"
     if module.doc and x.id in module.doc.api_refs:
-        out += [
-            f"// {resolve_inline_symbols_to_names(module, y)}"
-            for y in module.doc.api_refs[x.id]
-        ]
+        out += [f"// {resolve_inline_symbols_to_names(module, y)}" for y in module.doc.api_refs[x.id]]
     return out
 
 
@@ -121,11 +118,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += ["} " + get_type_name(x) + ";"]
 
     elif ty is Callback:
-        return_value_type = (
-            "void"
-            if x.return_value_type == None
-            else get_type_name(x.return_value_type)
-        )
+        return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
         out += [f"typedef {return_value_type} (TI_API_CALL *{get_type_name(x)})("]
         if x.params:
             for i, param in enumerate(x.params):
@@ -137,18 +130,8 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += [");"]
 
     elif ty is Function:
-        return_value_type = (
-            "void"
-            if x.return_value_type == None
-            else get_type_name(x.return_value_type)
-        )
-        out += [
-            "TI_DLL_EXPORT "
-            + return_value_type
-            + " TI_API_CALL "
-            + x.name.snake_case
-            + "("
-        ]
+        return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
+        out += ["TI_DLL_EXPORT " + return_value_type + " TI_API_CALL " + x.name.snake_case + "("]
         if x.params:
             for i, param in enumerate(x.params):
                 if i != 0:
@@ -234,9 +217,7 @@ def resolve_symbol_to_name(module: Module, id: str):
         if field_name:
             out = get_human_readable_field_name(out, field_name)
         else:
-            href = "#" + get_title(out).lower().replace(" ", "-").replace(
-                "`", ""
-            ).replace("(", "").replace(")", "")
+            href = "#" + get_title(out).lower().replace(" ", "-").replace("`", "").replace("(", "").replace(")", "")
             out = get_human_readable_name(out)
     except:
         print(f"WARNING: Unable to resolve symbol {id}")
@@ -293,10 +274,7 @@ def get_human_readable_field_name(x: EntryBase, field_name: str):
 def print_module_header(module: Module):
     out = []
     if module.doc is not None:
-        out += [
-            f"// {resolve_inline_symbols_to_names(module, x)}"
-            for x in module.doc.module_doc
-        ]
+        out += [f"// {resolve_inline_symbols_to_names(module, x)}" for x in module.doc.module_doc]
         # Remove the trailing `## API References`.
         del out[-1]
     out += ["#pragma once", ""]

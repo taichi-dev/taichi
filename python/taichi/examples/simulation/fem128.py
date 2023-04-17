@@ -49,9 +49,7 @@ def update_U():
 def advance():
     for i in range(NV):
         acc = -pos.grad[i] / (rho * dx**2)
-        g = gravity[None] * 0.8 + attractor_strength[None] * (
-            attractor_pos[None] - pos[i]
-        ).normalized(1e-5)
+        g = gravity[None] * 0.8 + attractor_strength[None] * (attractor_pos[None] - pos[i]).normalized(1e-5)
         vel[i] += dt * (acc + g * 40)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):

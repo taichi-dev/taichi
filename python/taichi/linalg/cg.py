@@ -16,13 +16,9 @@ class CG:
             self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol, True)
         elif self.ti_arch == _ti_core.Arch.x64 or self.ti_arch == _ti_core.Arch.arm64:
             if self.dtype == f32:
-                self.cg_solver = _ti_core.make_float_cg_solver(
-                    A.matrix, max_iter, atol, True
-                )
+                self.cg_solver = _ti_core.make_float_cg_solver(A.matrix, max_iter, atol, True)
             elif self.dtype == f64:
-                self.cg_solver = _ti_core.make_double_cg_solver(
-                    A.matrix, max_iter, atol, True
-                )
+                self.cg_solver = _ti_core.make_double_cg_solver(A.matrix, max_iter, atol, True)
             else:
                 raise TaichiRuntimeError(f"Unsupported CG dtype: {self.dtype}")
             if isinstance(b, Ndarray):

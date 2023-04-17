@@ -55,19 +55,13 @@ NEAR_DISTANCE = 0.01
 SQRT3 = 1.7320508075688772
 SQRT3_MAX_SAMPLES = SQRT3 / 1024
 SQRT3_2 = 1.7320508075688772 * 2
-PRETRAINED_MODEL_URL = (
-    "https://github.com/Linyou/taichi-ngp-renderer/releases/download/v0.1-models/{}.npy"
-)
+PRETRAINED_MODEL_URL = "https://github.com/Linyou/taichi-ngp-renderer/releases/download/v0.1-models/{}.npy"
 
 
 # <----------------- hash table util code ----------------->
 @ti.func
 def calc_dt(t, exp_step_factor, grid_size, scale):
-    return data_type(
-        ti.math.clamp(
-            t * exp_step_factor, SQRT3_MAX_SAMPLES, SQRT3_2 * scale / grid_size
-        )
-    )
+    return data_type(ti.math.clamp(t * exp_step_factor, SQRT3_MAX_SAMPLES, SQRT3_2 * scale / grid_size))
 
 
 @ti.func
@@ -168,9 +162,7 @@ def dir_encode_func(dir_):
 
 @ti.data_oriented
 class NGP_fw:
-    def __init__(
-        self, scale, cascades, grid_size, base_res, log2_T, res, level, exp_step_factor
-    ):
+    def __init__(self, scale, cascades, grid_size, base_res, log2_T, res, level, exp_step_factor):
         self.res = res
         self.N_rays = res[0] * res[1]
         self.grid_size = grid_size
@@ -193,15 +185,11 @@ class NGP_fw:
         self.rays_d = ti.Vector.field(n=3, dtype=data_type, shape=(self.N_rays))
 
         # use the pre-compute direction and scene pose
-        self.directions = ti.Matrix.field(
-            n=1, m=3, dtype=data_type, shape=(self.N_rays,)
-        )
+        self.directions = ti.Matrix.field(n=1, m=3, dtype=data_type, shape=(self.N_rays,))
         self.pose = ti.Matrix.field(n=3, m=4, dtype=data_type, shape=())
 
         # density_bitfield is used for point sampling
-        self.density_bitfield = ti.field(
-            ti.uint32, shape=(cascades * grid_size**3 // 32)
-        )
+        self.density_bitfield = ti.field(ti.uint32, shape=(cascades * grid_size**3 // 32))
 
         # count the number of rays that still alive
         self.counter = ti.field(ti.i32, shape=())
@@ -222,9 +210,7 @@ class NGP_fw:
 
         # hash table variables
         self.min_samples = 1 if exp_step_factor == 0 else 4
-        self.per_level_scales = (
-            1.3195079565048218  # hard coded, otherwise it will be have lower percision
-        )
+        self.per_level_scales = 1.3195079565048218  # hard coded, otherwise it will be have lower percision
         self.base_res = base_res
         self.max_params = 2**log2_T
         self.level = level
@@ -285,19 +271,10 @@ class NGP_fw:
         )
         offset = 0
         for i in range(self.level):
-            resolution = (
-                int(
-                    np.ceil(
-                        self.base_res * np.exp(i * np.log(self.per_level_scales)) - 1.0
-                    )
-                )
-                + 1
-            )
+            resolution = int(np.ceil(self.base_res * np.exp(i * np.log(self.per_level_scales)) - 1.0)) + 1
             params_in_level = resolution**3
             params_in_level = (
-                int(resolution**3)
-                if params_in_level % 8 == 0
-                else int((params_in_level + 8 - 1) / 8) * 8
+                int(resolution**3) if params_in_level % 8 == 0 else int((params_in_level + 8 - 1) / 8) * 8
             )
             params_in_level = min(self.max_params, params_in_level)
             self.offsets[i] = offset
@@ -325,9 +302,7 @@ class NGP_fw:
         print(f"Loading model from {model_path}")
         model = np.load(model_path, allow_pickle=True).item()
         # model = torch.load(model_path, map_location='cpu')['state_dict']
-        self.hash_embedding.from_numpy(
-            model["model.xyz_encoder.params"].astype(np_type)
-        )
+        self.hash_embedding.from_numpy(model["model.xyz_encoder.params"].astype(np_type))
         self.sigma_weights.from_numpy(model["model.xyz_sigmas.params"].astype(np_type))
         self.rgb_weights.from_numpy(model["model.rgb_net.params"].astype(np_type))
 
@@ -335,9 +310,7 @@ class NGP_fw:
 
         self.pose.from_numpy(model["poses"][20].astype(np_type))
         if self.res[0] != 800 or self.res[1] != 800:
-            directions = self.get_direction(model["camera_angle_x"])[:, None, :].astype(
-                np_type
-            )
+            directions = self.get_direction(model["camera_angle_x"])[:, None, :].astype(np_type)
         else:
             directions = model["directions"][:, None, :].astype(np_type)
 
@@ -474,9 +447,7 @@ class NGP_fw:
 
                 idx = __morton3D(ti.cast(nxyz, ti.u32))
                 # occ = density_grid_taichi[idx] > 5.912066756501768
-                occ = self.density_bitfield[ti.int32(idx // 32)] & (
-                    1 << ti.u32(idx % 32)
-                )
+                occ = self.density_bitfield[ti.int32(idx // 32)] & (1 << ti.u32(idx % 32))
 
                 if occ:
                     sn = start_idx + s
@@ -492,20 +463,13 @@ class NGP_fw:
 
                 else:
                     txyz = (
-                        (
-                            (nxyz + 0.5 + 0.5 * ti.math.sign(ray_d)) * grid_size_inv * 2
-                            - 1
-                        )
-                        * mip_bound
-                        - xyz
+                        ((nxyz + 0.5 + 0.5 * ti.math.sign(ray_d)) * grid_size_inv * 2 - 1) * mip_bound - xyz
                     ) * d_inv
 
                     t_target = t + ti.max(0, txyz.min())
                     t += calc_dt(t, self.exp_step_factor, self.grid_size, self.scale)
                     while t < t_target:
-                        t += calc_dt(
-                            t, self.exp_step_factor, self.grid_size, self.scale
-                        )
+                        t += calc_dt(t, self.exp_step_factor, self.grid_size, self.scale)
 
             self.N_eff_samples[n] = s
             if s == 0:
@@ -521,9 +485,7 @@ class NGP_fw:
                 self.temp_hit[index] = i
 
         self.model_launch[None] += 1
-        self.padd_block_network[None] = (
-            (self.model_launch[None] + block_dim - 1) // block_dim
-        ) * block_dim
+        self.padd_block_network[None] = ((self.model_launch[None] + block_dim - 1) // block_dim) * block_dim
         # self.padd_block_composite[None] = ((self.counter[None]+ 128 - 1)// 128) *128
 
     @ti.kernel
@@ -568,9 +530,7 @@ class NGP_fw:
                         pos_grid_local[d] = pos_grid_uint[d] + 1
                         w *= data_type(pos[d])
 
-                index = ti.int32(
-                    grid_pos2hash_index(indicator, pos_grid_local, resolution, map_size)
-                )
+                index = ti.int32(grid_pos2hash_index(indicator, pos_grid_local, resolution, map_size))
                 index_temp[idx] = offset + index * 2
                 w_temp[idx] = w
 
@@ -616,10 +576,7 @@ class NGP_fw:
                 for i in range(16):
                     temp = init_val[0]
                     for j in ti.static(range(64)):
-                        temp += (
-                            data_type(ti.max(0.0, hid1[j, tid]))
-                            * weight[64 * 32 + i * 64 + j]
-                        )
+                        temp += data_type(ti.max(0.0, hid1[j, tid])) * weight[64 * 32 + i * 64 + j]
                     hid2[i, tid] = temp
                 ti.simt.block.sync()
 
@@ -663,10 +620,7 @@ class NGP_fw:
                 for i in range(64):
                     temp = init_val[0]
                     for j in ti.static(range(64)):
-                        temp += (
-                            data_type(ti.max(0.0, hid1[j, tid]))
-                            * weight[64 * 32 + i * 64 + j]
-                        )
+                        temp += data_type(ti.max(0.0, hid1[j, tid])) * weight[64 * 32 + i * 64 + j]
 
                     hid2[i, tid] = temp
                 ti.simt.block.sync()
@@ -674,18 +628,13 @@ class NGP_fw:
                 for i in ti.static(range(3)):
                     temp = init_val[0]
                     for j in ti.static(range(64)):
-                        temp += (
-                            data_type(ti.max(0.0, hid2[j, tid]))
-                            * weight[64 * 32 + 64 * 64 + i * 64 + j]
-                        )
+                        temp += data_type(ti.max(0.0, hid2[j, tid])) * weight[64 * 32 + 64 * 64 + i * 64 + j]
 
                     hid1[i, tid] = temp
                 ti.simt.block.sync()
 
                 for i in ti.static(range(3)):
-                    self.out_3[self.temp_hit[sn], i] = data_type(
-                        1 / (1 + ti.exp(-hid1[i, tid]))
-                    )
+                    self.out_3[self.temp_hit[sn], i] = data_type(1 / (1 + ti.exp(-hid1[i, tid])))
                 ti.simt.block.sync()
 
     @ti.kernel
@@ -725,10 +674,7 @@ class NGP_fw:
                 for i in range(16):
                     temp = init_val[0]
                     for j in ti.static(range(64)):
-                        temp += (
-                            data_type(ti.max(0.0, hid1[j * block_dim + tid]))
-                            * hid2_1[64 * 32 + i * 64 + j]
-                        )
+                        temp += data_type(ti.max(0.0, hid1[j * block_dim + tid])) * hid2_1[64 * 32 + i * 64 + j]
                     hid2_2[i * block_dim + tid] = temp
                 ti.simt.block.sync()
 
@@ -748,14 +694,8 @@ class NGP_fw:
                     temp1 = init_val[0]
                     temp2 = init_val[0]
                     for j in ti.static(range(64)):
-                        temp1 += (
-                            data_type(ti.max(0.0, hid1[j * block_dim + tid]))
-                            * weight[64 * 32 + i * 64 + j]
-                        )
-                        temp2 += (
-                            data_type(ti.max(0.0, hid1[j * block_dim + tid]))
-                            * weight[64 * 32 + (i + 32) * 64 + j]
-                        )
+                        temp1 += data_type(ti.max(0.0, hid1[j * block_dim + tid])) * weight[64 * 32 + i * 64 + j]
+                        temp2 += data_type(ti.max(0.0, hid1[j * block_dim + tid])) * weight[64 * 32 + (i + 32) * 64 + j]
                     hid2_1[i * block_dim + tid] = temp1
                     hid2_2[i * block_dim + tid] = temp2
                 ti.simt.block.sync()
@@ -764,8 +704,7 @@ class NGP_fw:
                     temp = init_val[0]
                     for j in ti.static(range(32)):
                         temp += (
-                            data_type(ti.max(0.0, hid2_1[j * block_dim + tid]))
-                            * weight[64 * 32 + 64 * 64 + i * 64 + j]
+                            data_type(ti.max(0.0, hid2_1[j * block_dim + tid])) * weight[64 * 32 + 64 * 64 + i * 64 + j]
                         )
                         # ti.simt.block.sync()
                         temp += (
@@ -777,9 +716,7 @@ class NGP_fw:
 
                 self.out_1[self.temp_hit[sn]] = out1
                 for i in ti.static(range(3)):
-                    self.out_3[self.temp_hit[sn], i] = data_type(
-                        1 / (1 + ti.exp(-hid1[i * block_dim + tid]))
-                    )
+                    self.out_3[self.temp_hit[sn], i] = data_type(1 / (1 + ti.exp(-hid1[i * block_dim + tid])))
                 ti.simt.block.sync()
 
     @ti.kernel
@@ -840,9 +777,7 @@ class NGP_fw:
         plt.imsave("taichi_ngp.png", (rgb_np * 255).astype(np.uint8))
         plt.imsave("taichi_ngp_depth.png", depth2img(depth_np))
 
-    def render(
-        self, max_samples, T_threshold, use_dof=False, dist_to_focus=0.8, len_dis=0.0
-    ) -> Tuple[float, int, int]:
+    def render(self, max_samples, T_threshold, use_dof=False, dist_to_focus=0.8, len_dis=0.0) -> Tuple[float, int, int]:
         samples = 0
         self.reset()
         self.gen_noise_buffer()
@@ -958,11 +893,7 @@ class NGP_fw:
                     dy = curr_mouse_y - last_mouse_y
                     rotvec_x = pose[:, 1] * np.radians(rotate_speed * dx)
                     rotvec_y = pose[:, 0] * np.radians(rotate_speed * dy)
-                    pose = (
-                        R.from_rotvec(rotvec_x).as_matrix()
-                        @ R.from_rotvec(rotvec_y).as_matrix()
-                        @ pose
-                    )
+                    pose = R.from_rotvec(rotvec_x).as_matrix() @ R.from_rotvec(rotvec_y).as_matrix() @ pose
                     last_mouse_x, last_mouse_y = curr_mouse_x, curr_mouse_y
                     correct_dir = 1.0 if pose[2, 3] < 0.0 else -1.0
                     self.lookat = np.array([0.0, 0.0, correct_dir]) @ pose[:, :3].T
@@ -994,26 +925,16 @@ class NGP_fw:
 
             with gui.sub_window("Options", 0.05, 0.05, 0.68, 0.3) as w:
                 w.text("General")
-                T_threshold = w.slider_float(
-                    "transparency threshold", T_threshold, 0.0, 1.0
-                )
-                max_samples_for_rendering = w.slider_float(
-                    "max samples", max_samples_for_rendering, 1, 100
-                )
+                T_threshold = w.slider_float("transparency threshold", T_threshold, 0.0, 1.0)
+                max_samples_for_rendering = w.slider_float("max samples", max_samples_for_rendering, 1, 100)
                 show_depth = w.checkbox("show depth", show_depth)
                 # white_bg = w.checkbox("white background", white_bg)
 
                 w.text("Camera")
                 use_dof = w.checkbox("apply depth of field", use_dof)
-                dist_to_focus = w.slider_float(
-                    "focus distance", dist_to_focus, 0.8, 3.0
-                )
+                dist_to_focus = w.slider_float("focus distance", dist_to_focus, 0.8, 3.0)
                 len_dis = w.slider_float("lens size", len_dis, 0.0, 0.1)
-                if (
-                    last_dist_to_focus != dist_to_focus
-                    or last_len_dis != len_dis
-                    or last_use_dof != use_dof
-                ):
+                if last_dist_to_focus != dist_to_focus or last_len_dis != len_dis or last_use_dof != use_dof:
                     last_dist_to_focus = dist_to_focus
                     last_len_dis = len_dis
                     last_use_dof = use_dof
@@ -1024,9 +945,7 @@ class NGP_fw:
 
             with gui.sub_window("Export", 0.75, 0.05, 0.2, 0.1) as w:
                 if gui.button("snapshot "):
-                    ti.tools.imwrite(
-                        self.render_buffer.to_numpy(), export_dir + "snap_shot.png"
-                    )
+                    ti.tools.imwrite(self.render_buffer.to_numpy(), export_dir + "snap_shot.png")
                     print("save snapshot in export folder")
                 if gui.button("recording"):
                     frame = 0

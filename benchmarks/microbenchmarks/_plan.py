@@ -49,9 +49,7 @@ class BenchmarkPlan:
         for case, plan in self.plan.items():
             tag_list = plan["tags"]
             MetricType.init_taichi(self.arch, tag_list)
-            _ms = self.funcs.get_func(tag_list)(
-                self.arch, self.basic_repeat_times, **self._get_kwargs(tag_list)
-            )
+            _ms = self.funcs.get_func(tag_list)(self.arch, self.basic_repeat_times, **self._get_kwargs(tag_list))
             plan["result"] = _ms
             print(f"{tag_list}={_ms}")
             ti.reset()

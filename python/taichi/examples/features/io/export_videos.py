@@ -13,9 +13,7 @@ def paint():
 
 def main():
     result_dir = "./results"
-    video_manager = ti.tools.VideoManager(
-        output_dir=result_dir, framerate=24, automatic_build=False
-    )
+    video_manager = ti.tools.VideoManager(output_dir=result_dir, framerate=24, automatic_build=False)
 
     for i in range(50):
         paint()

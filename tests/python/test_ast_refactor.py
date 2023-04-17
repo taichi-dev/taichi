@@ -166,9 +166,7 @@ def test_boolop():
 
 @test_utils.test()
 def test_compare_fail():
-    with pytest.raises(
-        ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def foo():
@@ -402,9 +400,7 @@ def test_range_for_two_arguments():
 def test_range_for_three_arguments():
     a = ti.field(ti.i32, shape=(10,))
 
-    with pytest.raises(
-        ti.TaichiCompilationError, match="Range should have 1 or 2 arguments, found 3"
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match="Range should have 1 or 2 arguments, found 3"):
 
         @ti.kernel
         def foo(x: ti.i32):
@@ -443,9 +439,7 @@ def test_grouped_ndrange_for():
     def func():
         lower = ti.Vector([0, 1, 2])
         upper = ti.Vector([3, 4, 5])
-        for I in ti.grouped(
-            ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]), (lower[2], upper[2]))
-        ):
+        for I in ti.grouped(ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]), (lower[2], upper[2]))):
             x[I] = I[0] + I[1] + I[2]
         for i in range(0, 3):
             for j in range(1, 4):
@@ -764,9 +758,7 @@ def test_static_assign_element():
 
 @test_utils.test()
 def test_recreate_variable():
-    with pytest.raises(
-        ti.TaichiCompilationError, match="Recreating variables is not allowed"
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match="Recreating variables is not allowed"):
 
         @ti.kernel
         def foo():
@@ -860,9 +852,7 @@ def test_dict():
 def test_single_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
-        return ti.Matrix(
-            [[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)]
-        )
+        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)])
 
     @ti.kernel
     def foo(n: ti.template()) -> ti.i32:
@@ -880,9 +870,7 @@ def test_single_listcomp():
 def test_listcomp():
     @ti.func
     def identity(dt, n: ti.template()):
-        return ti.Matrix(
-            [[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)]
-        )
+        return ti.Matrix([[ti.cast(int(i == j), dt) for j in range(n)] for i in range(n)])
 
     @ti.kernel
     def foo(n: ti.template()) -> ti.i32:
@@ -933,9 +921,7 @@ def test_ndarray():
     m = 7
 
     @ti.kernel
-    def run(
-        x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)), y: ti.types.ndarray()
-    ):
+    def run(x: ti.types.ndarray(dtype=ti.types.matrix(1, 1, ti.i32)), y: ti.types.ndarray()):
         for i in ti.static(range(n)):
             for j in ti.static(range(m)):
                 x[i, j][0, 0] += i + j + y[i, j]

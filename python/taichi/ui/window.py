@@ -30,9 +30,7 @@ class Window:
         pos (tuple[int]): position (left to right, up to bottom) of the window which origins from the left-top of your main screen, in pixels.
     """
 
-    def __init__(
-        self, name, res, vsync=False, show_window=True, fps_limit=1000, pos=(100, 100)
-    ):
+    def __init__(self, name, res, vsync=False, show_window=True, fps_limit=1000, pos=(100, 100)):
         check_ggui_availability()
         package_path = str(pathlib.Path(__file__).parent.parent)
         ti_arch = default_cfg().arch

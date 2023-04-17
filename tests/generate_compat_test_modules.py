@@ -23,9 +23,7 @@ def generate():
     for x in aot_files:
         path_name = pathlib.Path(x).name[:-3]
         os.mkdir("tests/cpp/aot/python_scripts/" + path_name)
-        os.environ["TAICHI_AOT_FOLDER_PATH"] = (
-            curr_dir + "/tests/cpp/aot/python_scripts/" + path_name
-        )
+        os.environ["TAICHI_AOT_FOLDER_PATH"] = curr_dir + "/tests/cpp/aot/python_scripts/" + path_name
         try:
             subprocess.check_call([sys.executable, x, "--arch=vulkan"])
         except subprocess.CalledProcessError:

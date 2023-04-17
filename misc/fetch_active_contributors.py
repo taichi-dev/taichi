@@ -9,9 +9,7 @@ def print_active_contributors():
 
     page = 1
     while True:
-        contributors_json = requests.get(
-            f"{api_prefix}/contributors?per_page={per_page}&page={page}"
-        ).json()
+        contributors_json = requests.get(f"{api_prefix}/contributors?per_page={per_page}&page={page}").json()
 
         for c in contributors_json:
             contributors.append(c["login"])
@@ -30,9 +28,7 @@ def print_active_contributors():
     eof = False
     while not eof:
         # Note: for some reason the 'page' argument is 1-based
-        commits_json = requests.get(
-            f"{api_prefix}/commits?per_page={per_page}&page={page}"
-        ).json()
+        commits_json = requests.get(f"{api_prefix}/commits?per_page={per_page}&page={page}").json()
         for c in commits_json:
             date = c["commit"]["committer"]["date"]
             try:

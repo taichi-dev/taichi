@@ -9,9 +9,7 @@ def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
-@pytest.mark.parametrize(
-    "lhs_is_mat,rhs_is_mat", [(True, True), (True, False), (False, True)]
-)
+@pytest.mark.parametrize("lhs_is_mat,rhs_is_mat", [(True, True), (True, False), (False, True)])
 @test_utils.test(fast_math=False, exclude=[ti.vulkan, ti.dx11])
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 16)
@@ -349,6 +347,4 @@ def test_ternary_i(is_mat):
     y = y.to_numpy()
     z = z.to_numpy()
     w = w.to_numpy()
-    assert test_utils.allclose(
-        x[0], np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w
-    )
+    assert test_utils.allclose(x[0], np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)

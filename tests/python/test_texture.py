@@ -45,27 +45,21 @@ def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
 
 
 @ti.kernel
-def make_texture_2d_r32f(
-    tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32
-):
+def make_texture_2d_r32f(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
 @ti.kernel
-def make_texture_2d_rgba8(
-    tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba8, lod=0), n: ti.i32
-):
+def make_texture_2d_rgba8(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba8, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
 @ti.kernel
-def make_texture_3d(
-    tex: ti.types.rw_texture(num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32
-):
+def make_texture_3d(tex: ti.types.rw_texture(num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j, k in ti.ndrange(n, n, n):
         div = ti.cast(i / n, ti.f32)
         if div > 0.5:
@@ -83,9 +77,7 @@ def test_texture_compiled_functions():
     def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2), n: ti.i32):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])
-            warp_uv = (
-                uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
-            )
+            warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
             c = ti.math.vec4(0.0)
             if uv.x > 0.5:
                 c = tex.sample_lod(warp_uv, 0.0)

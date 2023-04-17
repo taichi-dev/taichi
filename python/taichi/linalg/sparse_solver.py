@@ -31,9 +31,7 @@ class SparseSolver:
                 or taichi_arch == _ti_core.Arch.cuda
             ), "SparseSolver only supports CPU and CUDA for now."
             if taichi_arch == _ti_core.Arch.cuda:
-                self.solver = _ti_core.make_cusparse_solver(
-                    dtype, solver_type, ordering
-                )
+                self.solver = _ti_core.make_cusparse_solver(dtype, solver_type, ordering)
             else:
                 self.solver = _ti_core.make_sparse_solver(dtype, solver_type, ordering)
         else:
@@ -106,9 +104,7 @@ class SparseSolver:
             x = ScalarNdarray(b.dtype, [self.matrix.m])
             self.solver.solve_rf(get_runtime().prog, self.matrix.matrix, b.arr, x.arr)
             return x
-        raise TaichiRuntimeError(
-            f"The parameter type: {type(b)} is not supported in linear solvers for now."
-        )
+        raise TaichiRuntimeError(f"The parameter type: {type(b)} is not supported in linear solvers for now.")
 
     def info(self):
         """Check if the linear systems are solved successfully.

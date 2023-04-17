@@ -71,9 +71,7 @@ def _blender_findsource(obj):
     # Now we have found the lines of code.
     # We first check if they are already cached, to avoid file io in each query.
     try:
-        filename = _blender_findsource._saved_inspect_cache[
-            lines
-        ]  # pylint: disable=no-member
+        filename = _blender_findsource._saved_inspect_cache[lines]  # pylint: disable=no-member
     except KeyError:
         # Save the code to a valid path.
         fd, filename = tempfile.mkstemp(prefix="_Blender_", suffix=f"_{text_name}.py")
@@ -82,9 +80,7 @@ def _blender_findsource(obj):
         with open(filename, "w") as f:
             f.write(lines)
 
-        _blender_findsource._saved_inspect_cache[
-            lines
-        ] = filename  # pylint: disable=no-member
+        _blender_findsource._saved_inspect_cache[lines] = filename  # pylint: disable=no-member
         atexit.register(os.unlink, filename)  # Remove file when program exits
 
     # Our custom getfile function
@@ -115,9 +111,7 @@ def _Python_IPython_findsource(obj):
                 if ip is not None:
                     # So we are in IPython's cell magic
                     session_id = ip.history_manager.get_last_session_id()
-                    fd, filename = tempfile.mkstemp(
-                        prefix="_IPython_", suffix=f"_{session_id}.py"
-                    )
+                    fd, filename = tempfile.mkstemp(prefix="_IPython_", suffix=f"_{session_id}.py")
                     os.close(fd)
                     # The latest lines of code can be retrived from here
                     lines = ip.history_manager._i00
@@ -133,9 +127,7 @@ def _Python_IPython_findsource(obj):
                     with open(filename, "w") as f:
                         f.write(lines_stripped)
 
-                    atexit.register(
-                        os.unlink, filename
-                    )  # Remove the file after the program exits
+                    atexit.register(os.unlink, filename)  # Remove the file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 

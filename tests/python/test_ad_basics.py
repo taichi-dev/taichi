@@ -31,9 +31,7 @@ def if_has_autograd(func):
 def grad_test(tifunc, npfunc=None):
     npfunc = npfunc or tifunc
 
-    print(
-        f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}"
-    )
+    print(f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}")
     x = ti.field(ti.lang.impl.current_cfg().default_fp)
     y = ti.field(ti.lang.impl.current_cfg().default_fp)
 
@@ -58,9 +56,7 @@ def grad_test(tifunc, npfunc=None):
 def grad_test_fwd(tifunc, npfunc=None):
     npfunc = npfunc or tifunc
 
-    print(
-        f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}"
-    )
+    print(f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}")
     x = ti.field(ti.lang.impl.current_cfg().default_fp)
     y = ti.field(ti.lang.impl.current_cfg().default_fp)
 

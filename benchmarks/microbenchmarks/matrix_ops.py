@@ -5,9 +5,7 @@ from microbenchmarks._plan import BenchmarkPlan
 import taichi as ti
 
 
-def matrix_operations_default(
-    arch, repeat, matrix_op, block_mn, element_num, dtype, get_metric
-):
+def matrix_operations_default(arch, repeat, matrix_op, block_mn, element_num, dtype, get_metric):
     m, n = block_mn
     global_matrixA = ti.Matrix.field(m, n, dtype, shape=element_num)
     global_matrixB = ti.Matrix.field(m, n, dtype, shape=element_num)

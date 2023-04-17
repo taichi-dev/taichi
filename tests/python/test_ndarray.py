@@ -549,9 +549,7 @@ def _test_arg_not_match():
         pass
 
     x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
-    with pytest.raises(
-        TypeError, match=r"Expect element type .* for Ndarray, but get .*"
-    ):
+    with pytest.raises(TypeError, match=r"Expect element type .* for Ndarray, but get .*"):
         func8(x)
 
 
@@ -635,9 +633,7 @@ def test_ndarray_as_template():
 
     arr_0 = ti.ndarray(ti.f32, shape=(5, 10))
     arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
-    with pytest.raises(
-        ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"
-    ):
+    with pytest.raises(ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
 
 
@@ -780,9 +776,7 @@ def test_scalar_ndarray_oob():
 )
 def test_matrix_ndarray_oob():
     @ti.kernel
-    def access_arr(
-        input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32
-    ) -> ti.f32:
+    def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32) -> ti.f32:
         return input[p, q][x, y]
 
     input = ti.ndarray(dtype=ti.math.mat2, shape=(4, 5))

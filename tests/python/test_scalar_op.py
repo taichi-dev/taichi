@@ -63,9 +63,7 @@ def test_python_scope_vector_binary(ti_func, np_func):
 @pytest.mark.parametrize("ti_func,np_func", unary_func_table)
 def test_python_scope_vector_unary(ti_func, np_func):
     ti.init()
-    x = ti.Vector(
-        [2, 3] if ti_func in [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3]
-    )
+    x = ti.Vector([2, 3] if ti_func in [ops.invert, ti.lang.ops.logical_not] else [0.2, 0.3])
 
     result = ti_func(x).to_numpy()
     if ti_func in [ti.lang.ops.logical_not]:

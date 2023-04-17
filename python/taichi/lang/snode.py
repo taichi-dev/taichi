@@ -47,9 +47,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
             raise TaichiRuntimeError("Pointer SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
@@ -75,9 +73,7 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
             raise TaichiRuntimeError("Dynamic SNode is not supported on this backend.")
         assert len(axis) == 1
         if chunk_size is None:
@@ -94,12 +90,8 @@ class SNode:
         Returns:
             The added :class:`~taichi.lang.SNode` instance.
         """
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
-            raise TaichiRuntimeError(
-                "Bitmasked SNode is not supported on this backend."
-            )
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+            raise TaichiRuntimeError("Bitmasked SNode is not supported on this backend.")
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
         return SNode(self.ptr.bitmasked(axes, dimensions, get_traceback()))
@@ -117,9 +109,7 @@ class SNode:
         """
         if isinstance(dimensions, numbers.Number):
             dimensions = [dimensions] * len(axes)
-        return SNode(
-            self.ptr.quant_array(axes, dimensions, max_num_bits, get_traceback())
-        )
+        return SNode(self.ptr.quant_array(axes, dimensions, max_num_bits, get_traceback()))
 
     def place(self, *args, offset=None):
         """Places a list of Taichi fields under the `self` container.
@@ -349,12 +339,8 @@ def rescale_index(a, b, I):
         Ib (:class:`~taichi.Vector`): rescaled grouped loop index
     """
 
-    assert isinstance(
-        a, (Field, SNode)
-    ), "The first argument must be a field or an SNode"
-    assert isinstance(
-        b, (Field, SNode)
-    ), "The second argument must be a field or an SNode"
+    assert isinstance(a, (Field, SNode)), "The first argument must be a field or an SNode"
+    assert isinstance(b, (Field, SNode)), "The second argument must be a field or an SNode"
     if isinstance(I, list):
         n = len(I)
     else:
@@ -422,9 +408,7 @@ def activate(node, indices):
         node (:class:`~taichi.SNode`): Must be a pointer, hash or bitmasked node.
         indices (Union[int, :class:`~taichi.Vector`]): the indices to activate.
     """
-    impl.get_runtime().compiling_callable.ast_builder().insert_activate(
-        node._snode.ptr, expr.make_expr_group(indices)
-    )
+    impl.get_runtime().compiling_callable.ast_builder().insert_activate(node._snode.ptr, expr.make_expr_group(indices))
 
 
 def deactivate(node, indices):

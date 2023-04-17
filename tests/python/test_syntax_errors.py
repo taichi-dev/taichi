@@ -279,9 +279,7 @@ def test_redefining_template_args():
     def foo(a: ti.template()):
         a = 5
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match='Kernel argument "a" is immutable in the kernel'
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match='Kernel argument "a" is immutable in the kernel'):
         foo(1)
 
 
@@ -292,9 +290,7 @@ def test_break_in_outermost_for():
         for i in range(10):
             break
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match="Cannot break in the outermost loop"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match="Cannot break in the outermost loop"):
         foo()
 
 
@@ -305,9 +301,7 @@ def test_funcdef_in_kernel():
         def bar():
             pass
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.kernel'"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.kernel'"):
         foo()
 
 
@@ -322,9 +316,7 @@ def test_funcdef_in_func():
     def baz():
         foo()
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.func'"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match="Function definition is not allowed in 'ti.func'"):
         baz()
 
 
@@ -337,9 +329,7 @@ def test_continue_in_static_for_in_non_static_if():
             if x == 0.0:
                 continue
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match="You are trying to `continue` a static `for` loop"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match="You are trying to `continue` a static `for` loop"):
         test_static_loop()
 
 
@@ -352,7 +342,5 @@ def test_break_in_static_for_in_non_static_if():
             if x == 0.0:
                 break
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match="You are trying to `break` a static `for` loop"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match="You are trying to `break` a static `for` loop"):
         test_static_loop()

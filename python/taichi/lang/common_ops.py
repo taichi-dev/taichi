@@ -23,9 +23,7 @@ class TaichiOperations:
                 DeprecationWarning,
             )
             return getattr(self, TaichiOperations.__deprecated_atomic_ops__[item])
-        raise AttributeError(
-            f"'{type(self).__name__}' object has no attribute '{item}'"
-        )
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{item}'")
 
     def __neg__(self):
         return ops.neg(self)
@@ -301,9 +299,7 @@ class TaichiOperations:
         return ops.cast(self, int)
 
     def __ti_bool__(self):
-        return ops.cast(
-            self, primitive_types.i32
-        )  # TODO[Xiaoyan]: Use i1 in the future
+        return ops.cast(self, primitive_types.i32)  # TODO[Xiaoyan]: Use i1 in the future
 
     def __ti_float__(self):
         return ops.cast(self, float)

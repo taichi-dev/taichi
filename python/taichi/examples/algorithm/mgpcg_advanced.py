@@ -32,18 +32,12 @@ class MGPCG:
         self.dim = dim
         self.real = real
 
-        self.N_ext = (
-            self.N // 2
-        )  # number of ext cells set so that that total grid size is still power of 2
+        self.N_ext = self.N // 2  # number of ext cells set so that that total grid size is still power of 2
         self.N_tot = 2 * self.N
 
         # setup sparse simulation data arrays
-        self.r = [
-            ti.field(dtype=self.real) for _ in range(self.n_mg_levels)
-        ]  # residual
-        self.z = [
-            ti.field(dtype=self.real) for _ in range(self.n_mg_levels)
-        ]  # M^-1 self.r
+        self.r = [ti.field(dtype=self.real) for _ in range(self.n_mg_levels)]  # residual
+        self.z = [ti.field(dtype=self.real) for _ in range(self.n_mg_levels)]  # M^-1 self.r
         self.x = ti.field(dtype=self.real)  # solution
         self.p = ti.field(dtype=self.real)  # conjugate gradient
         self.Ap = ti.field(dtype=self.real)  # matrix-vector product
@@ -52,17 +46,11 @@ class MGPCG:
         self.sum = ti.field(dtype=self.real)  # storage for reductions
 
         indices = ti.ijk if self.dim == 3 else ti.ij
-        self.grid = (
-            ti.root.pointer(indices, [self.N_tot // 4])
-            .dense(indices, 4)
-            .place(self.x, self.p, self.Ap)
-        )
+        self.grid = ti.root.pointer(indices, [self.N_tot // 4]).dense(indices, 4).place(self.x, self.p, self.Ap)
 
         for l in range(self.n_mg_levels):
             self.grid = (
-                ti.root.pointer(indices, [self.N_tot // (4 * 2**l)])
-                .dense(indices, 4)
-                .place(self.r[l], self.z[l])
+                ti.root.pointer(indices, [self.N_tot // (4 * 2**l)]).dense(indices, 4).place(self.r[l], self.z[l])
             )
 
         ti.root.place(self.alpha, self.beta, self.sum)
@@ -138,9 +126,7 @@ class MGPCG:
     @ti.kernel
     def restrict(self, l: ti.template()):
         for I in ti.grouped(self.r[l]):
-            res = self.r[l][I] - (
-                2 * self.dim * self.z[l][I] - self.neighbor_sum(self.z[l], I)
-            )
+            res = self.r[l][I] - (2 * self.dim * self.z[l][I] - self.neighbor_sum(self.z[l], I))
             self.r[l + 1][I // 2] += res * 0.5
 
     @ti.kernel
@@ -153,9 +139,7 @@ class MGPCG:
         # phase = red/black Gauss-Seidel phase
         for I in ti.grouped(self.r[l]):
             if (I.sum()) & 1 == phase:
-                self.z[l][I] = (self.r[l][I] + self.neighbor_sum(self.z[l], I)) / (
-                    2 * self.dim
-                )
+                self.z[l][I] = (self.r[l][I] + self.neighbor_sum(self.z[l], I)) / (2 * self.dim)
 
     def apply_preconditioner(self):
         self.z[0].fill(0)
@@ -177,9 +161,7 @@ class MGPCG:
                 self.smooth(l, 1)
                 self.smooth(l, 0)
 
-    def solve(
-        self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12, verbose=False
-    ):
+    def solve(self, max_iters=-1, eps=1e-12, abs_tol=1e-12, rel_tol=1e-12, verbose=False):
         """
         Solve a Poisson problem.
 
@@ -255,9 +237,7 @@ class MGPCG_Example(MGPCG):
 
         self.N_gui = 512  # gui resolution
 
-        self.pixels = ti.field(
-            dtype=float, shape=(self.N_gui, self.N_gui)
-        )  # image buffer
+        self.pixels = ti.field(dtype=float, shape=(self.N_gui, self.N_gui))  # image buffer
 
     @ti.kernel
     def init(self):

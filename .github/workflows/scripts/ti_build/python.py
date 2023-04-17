@@ -29,7 +29,9 @@ def setup_miniforge3(prefix):
         url = "https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-MacOSX-x86_64.sh"
         download_dep(url, prefix, args=["-bfp", str(prefix)])
     elif u.system == "Windows":
-        url = "https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe"
+        url = (
+            "https://github.com/conda-forge/miniforge/releases/download/22.9.0-2/Miniforge3-22.9.0-2-Windows-x86_64.exe"
+        )
         download_dep(
             url,
             prefix,

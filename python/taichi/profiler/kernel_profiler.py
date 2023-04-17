@@ -65,9 +65,7 @@ class KernelProfiler:
         if type(mode) is bool:
             self._profiling_mode = mode
         else:
-            raise TypeError(
-                f"Arg `mode` must be of type boolean. Type {type(mode)} is not supported."
-            )
+            raise TypeError(f"Arg `mode` must be of type boolean. Type {type(mode)} is not supported.")
 
     def get_kernel_profiler_mode(self):
         """Get status of :class:`~taichi.profiler.kernel_profiler.KernelProfiler`."""
@@ -148,9 +146,7 @@ class KernelProfiler:
         return None
 
     # mode of print_info
-    COUNT = (
-        "count"  # print the statistical results (min,max,avg time) of Taichi kernels.
-    )
+    COUNT = "count"  # print the statistical results (min,max,avg time) of Taichi kernels.
     TRACE = "trace"  # print the records of launched Taichi kernels with specific profiling metrics (time, memory load/store and core utilization etc.)
 
     def print_info(self, mode=COUNT):
@@ -173,18 +169,14 @@ class KernelProfiler:
         elif mode == self.TRACE:
             self._print_kernel_info()
         else:
-            raise ValueError(
-                "Arg `mode` must be of type 'str', and has the value 'count' or 'trace'."
-            )
+            raise ValueError("Arg `mode` must be of type 'str', and has the value 'count' or 'trace'.")
 
         return None
 
     # private methods
     def _check_not_turned_on_with_warning_message(self):
         if self._profiling_mode is False:
-            _ti_core.warn(
-                "use 'ti.init(kernel_profiler = True)' to turn on KernelProfiler."
-            )
+            _ti_core.warn("use 'ti.init(kernel_profiler = True)' to turn on KernelProfiler.")
             return True
         return False
 
@@ -237,9 +229,7 @@ class KernelProfiler:
 
         # headers
         table_header = table_header = self._make_table_header("count")
-        column_header = (
-            "[      %     total   count |      min       avg       max   ] Kernel name"
-        )
+        column_header = "[      %     total   count |      min       avg       max   ] Kernel name"
         # partition line
         line_length = max(len(column_header), len(table_header))
         outer_partition_line = "=" * line_length
@@ -251,9 +241,7 @@ class KernelProfiler:
         for key in self._statistical_results:
             result = self._statistical_results[key]
             fraction = result.total_time / self._total_time_ms * 100.0
-            string_list.append(
-                "[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}"
-            )
+            string_list.append("[{:6.2f}% {:7.3f} s {:6d}x |{:9.3f} {:9.3f} {:9.3f} ms] {}")
             values_list.append(
                 [
                     fraction,
@@ -316,9 +304,7 @@ class KernelProfiler:
             formatted_str = "[{:9.3f} ms |{:9.3f} ms |"  # default
             values = [fake_timestamp, record.kernel_time]  # default
             if kernel_attribute_state:
-                formatted_str += (
-                    "    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |"
-                )
+                formatted_str += "    {:4d} | {:6d} bytes |    {:6d} |     {:6d} | {:2d} blocks |"
                 values += [
                     record.register_per_thread,
                     record.shared_mem_per_block,

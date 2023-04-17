@@ -22,9 +22,7 @@ class ResultsBuilder:
                 self._suites_result[suite_name] = {}
                 for arch in attrs["archs"]:
                     self._suites_result[suite_name][arch] = {}
-                    suite_info_path = os.path.join(
-                        self._file_path, suite_name, arch, "_info.json"
-                    )
+                    suite_info_path = os.path.join(self._file_path, suite_name, arch, "_info.json")
                     with open(suite_info_path, "r") as f:
                         suite_info_dict = json.load(f)
                     # case info
@@ -32,16 +30,12 @@ class ResultsBuilder:
                         items = suite_info_dict[case_name]
                         items.pop("name")
                         items["metrics"] = items.pop("get_metric")
-                        self._suites_result[suite_name][arch][case_name] = {
-                            "items": items
-                        }
+                        self._suites_result[suite_name][arch][case_name] = {"items": items}
         # cases result
         for suite_name in self._suites_result:
             for arch in self._suites_result[suite_name]:
                 for case_name in self._suites_result[suite_name][arch]:
-                    case_info_path = os.path.join(
-                        self._file_path, suite_name, arch, case_name + ".json"
-                    )
+                    case_info_path = os.path.join(self._file_path, suite_name, arch, case_name + ".json")
                     with open(case_info_path, "r") as f:
                         case_results = json.load(f)
                         remove_none_list = []
@@ -52,9 +46,7 @@ class ResultsBuilder:
                                 remove_none_list.append(name)
                         for name in remove_none_list:
                             case_results.pop(name)
-                        self._suites_result[suite_name][arch][case_name][
-                            "results"
-                        ] = case_results
+                        self._suites_result[suite_name][arch][case_name]["results"] = case_results
 
     def get_suites_result(self):
         return self._suites_result

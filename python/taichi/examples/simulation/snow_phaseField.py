@@ -25,12 +25,8 @@ class Dendrite:
         self.phi_old = ti.field(dtype=dtype, shape=(n, n))
         self.temperature_old = ti.field(dtype=dtype, shape=(n, n))
         self.dEnergy_dGrad_term1 = ti.Vector.field(2, dtype, shape=(n, n))
-        self.epsilons = ti.field(
-            dtype=dtype, shape=(n, n)
-        )  # anisotropic gradient energy coefficient
-        self.phiRate = ti.Vector.field(
-            4, dtype=dtype, shape=(n, n)
-        )  # rate of phi, with RK4 method
+        self.epsilons = ti.field(dtype=dtype, shape=(n, n))  # anisotropic gradient energy coefficient
+        self.phiRate = ti.Vector.field(4, dtype=dtype, shape=(n, n))  # rate of phi, with RK4 method
         self.temperatureRate = ti.Vector.field(4, dtype=dtype, shape=(n, n))
 
         self.dx = dx
@@ -40,9 +36,7 @@ class Dendrite:
         self.grad_energy_coef = 0.006  # magnitude of gradient energy coefficient
         self.latent_heat_coef = 1.5  # latent heat coefficient
         self.aniso_magnitude = 0.12  # the magnitude of anisotropy
-        self.n_fold_symmetry = (
-            n_fold_symmetry  # n-fold rotational symmetry of the crystalline structure
-        )
+        self.n_fold_symmetry = n_fold_symmetry  # n-fold rotational symmetry of the crystalline structure
         self.angle0 = angle0 / 180.0 * np.pi  # initial tilt angle of the crystal
 
         ### m(T) = (α / π) * arctan[γ(Te - T)], m determines the relative potential between water vapor and crystal
@@ -54,9 +48,7 @@ class Dendrite:
         self.dtRatio_rk4 = ti.field(ti.f64, shape=(4))
         self.dtRatio_rk4.from_numpy(np.array([0.0, 0.5, 0.5, 1.0]))
         self.weights_rk4 = ti.field(ti.f64, shape=(4))
-        self.weights_rk4.from_numpy(
-            np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0])
-        )
+        self.weights_rk4.from_numpy(np.array([1.0 / 6.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 6.0]))
 
         self.showFrameFrequency = int(4 * 1.0e-4 / self.dt)
 
@@ -92,14 +84,8 @@ class Dendrite:
             self.phi, self.phi_old, self.temperature, self.temperature_old, self.dt
         )
         for I in ti.grouped(phi):
-            phi[I] = (
-                phi_old[I]
-                + self.dtRatio_rk4[rk_loop] * dt * self.phiRate[I][rk_loop - 1]
-            )
-            temperature[I] = (
-                temperature_old[I]
-                + self.dtRatio_rk4[rk_loop] * dt * self.temperatureRate[I][rk_loop - 1]
-            )
+            phi[I] = phi_old[I] + self.dtRatio_rk4[rk_loop] * dt * self.phiRate[I][rk_loop - 1]
+            temperature[I] = temperature_old[I] + self.dtRatio_rk4[rk_loop] * dt * self.temperatureRate[I][rk_loop - 1]
 
     @ti.kernel
     def get_rate(self, rk_loop: int):
@@ -138,23 +124,14 @@ class Dendrite:
             if gradNorm < 1.0e-8:
                 self.dEnergy_dGrad_term1[i, j] = ti.Vector([0.0, 0.0])
                 angle = ti.atan2(grad[1], grad[0])
-                epsilons[i, j] = grad_energy_coef * (
-                    1.0 + aniso_magnitude * ti.cos(n_fold_symmetry * (angle - angle0))
-                )
+                epsilons[i, j] = grad_energy_coef * (1.0 + aniso_magnitude * ti.cos(n_fold_symmetry * (angle - angle0)))
             else:
                 angle = ti.atan2(grad[1], grad[0])
-                epsilon = grad_energy_coef * (
-                    1.0 + aniso_magnitude * ti.cos(n_fold_symmetry * (angle - angle0))
-                )
+                epsilon = grad_energy_coef * (1.0 + aniso_magnitude * ti.cos(n_fold_symmetry * (angle - angle0)))
                 epsilons[i, j] = epsilon
                 dAngle_dGradX = -grad[1] / gradNorm
                 dAngle_dGradY = grad[0] / gradNorm
-                tmp = (
-                    grad_energy_coef
-                    * aniso_magnitude
-                    * -ti.sin(n_fold_symmetry * (angle - angle0))
-                    * n_fold_symmetry
-                )
+                tmp = grad_energy_coef * aniso_magnitude * -ti.sin(n_fold_symmetry * (angle - angle0)) * n_fold_symmetry
                 depsilon_dGrad = tmp * ti.Vector([dAngle_dGradX, dAngle_dGradY])
                 self.dEnergy_dGrad_term1[i, j] = epsilon * depsilon_dGrad * gradNorm
 
@@ -168,25 +145,12 @@ class Dendrite:
                 - 12 * phi[i, j]
             ) / (3.0 * dx * dx)
             lapla_tp = (  # laplacian of temperature
-                2
-                * (
-                    temperature[im, j]
-                    + temperature[i, jm]
-                    + temperature[ip, j]
-                    + temperature[i, jp]
-                )
-                + (
-                    temperature[im, jm]
-                    + temperature[im, jp]
-                    + temperature[ip, jm]
-                    + temperature[ip, jp]
-                )
+                2 * (temperature[im, j] + temperature[i, jm] + temperature[ip, j] + temperature[i, jp])
+                + (temperature[im, jm] + temperature[im, jp] + temperature[ip, jm] + temperature[ip, jp])
                 - 12 * temperature[i, j]
             ) / (3.0 * dx * dx)
 
-            m_chem = self.alpha * ti.atan2(
-                self.gamma * (self.temperature_equi - temperature[i, j]), 1.0
-            )
+            m_chem = self.alpha * ti.atan2(self.gamma * (self.temperature_equi - temperature[i, j]), 1.0)
             chemicalForce = phi[i, j] * (1.0 - phi[i, j]) * (phi[i, j] - 0.5 + m_chem)
             gradForce_term1 = self.divergence_dEnergy_dGrad_term1(i, j)
             grad_epsilon2 = ti.Vector(
@@ -202,17 +166,11 @@ class Dendrite:
                 ]
             )
             gradForce_term2 = (
-                grad_epsilon2[0] * grad_phi[0]
-                + grad_epsilon2[1] * grad_phi[1]
-                + epsilons[i, j] ** 2 * lapla_phi
+                grad_epsilon2[0] * grad_phi[0] + grad_epsilon2[1] * grad_phi[1] + epsilons[i, j] ** 2 * lapla_phi
             )
 
-            self.phiRate[i, j][rk_loop] = mobility * (
-                chemicalForce + gradForce_term1 + gradForce_term2
-            )
-            self.temperatureRate[i, j][rk_loop] = (
-                lapla_tp + self.latent_heat_coef * self.phiRate[i, j][rk_loop]
-            )
+            self.phiRate[i, j][rk_loop] = mobility * (chemicalForce + gradForce_term1 + gradForce_term2)
+            self.temperatureRate[i, j][rk_loop] = lapla_tp + self.latent_heat_coef * self.phiRate[i, j][rk_loop]
 
     @ti.kernel
     def rk4_total_update(
@@ -239,10 +197,7 @@ class Dendrite:
         for I in ti.grouped(phi):
             for k in ti.static(range(4)):
                 phi_old[I] = phi_old[I] + self.weights_rk4[k] * dt * phiRate[I][k]
-                temperature_old[I] = (
-                    temperature_old[I]
-                    + self.weights_rk4[k] * dt * temperatureRate[I][k]
-                )
+                temperature_old[I] = temperature_old[I] + self.weights_rk4[k] * dt * temperatureRate[I][k]
         for I in ti.grouped(phi):
             phi[I] = phi_old[I]
             temperature[I] = temperature_old[I]
@@ -250,13 +205,9 @@ class Dendrite:
     @ti.func
     def divergence_dEnergy_dGrad_term1(self, i, j):
         im, jm, ip, jp = self.neighbor_index(i, j)
-        return (
-            self.dEnergy_dGrad_term1[ip, j][0] - self.dEnergy_dGrad_term1[im, j][0]
-        ) / (2.0 * self.dx) + (
+        return (self.dEnergy_dGrad_term1[ip, j][0] - self.dEnergy_dGrad_term1[im, j][0]) / (2.0 * self.dx) + (
             self.dEnergy_dGrad_term1[i, jp][1] - self.dEnergy_dGrad_term1[i, jm][1]
-        ) / (
-            2.0 * self.dx
-        )
+        ) / (2.0 * self.dx)
 
     def advance(
         self,

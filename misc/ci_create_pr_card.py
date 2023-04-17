@@ -38,15 +38,10 @@ def get_project(repo: Repository, name: str) -> Project:
 
 
 def _create_pr_card(pr: dict, project: Project) -> None:
-    dest_column = next(
-        (c for c in project.get_columns() if c.name == "In progress"), None
-    )
+    dest_column = next((c for c in project.get_columns() if c.name == "In progress"), None)
     if dest_column is None:
         dest_column = next(iter(project.get_columns()))
-    print(
-        f"Creating card for PR #{pr['number']} in column {dest_column.name} "
-        f"of project {project.name}"
-    )
+    print(f"Creating card for PR #{pr['number']} in column {dest_column.name} " f"of project {project.name}")
     dest_column.create_card(content_id=pr["id"], content_type="PullRequest")
 
 
@@ -59,17 +54,11 @@ def _remove_pr_card(pr: dict, project: Project) -> None:
             print(f"Deleting PR #{pr['number']} from project {project.name}")
             card.delete()
             return
-    print(
-        f"PR #{pr['number']} doesn't exist in the To-do column of project {project.name}"
-    )
+    print(f"PR #{pr['number']} doesn't exist in the To-do column of project {project.name}")
 
 
 def create_pr_card(event: Mapping[str, Any]) -> None:
-    new_projects = {
-        PROJECT_MAP[tag]
-        for tag in extract_tags(event["pull_request"]["title"])
-        if tag in PROJECT_MAP
-    }
+    new_projects = {PROJECT_MAP[tag] for tag in extract_tags(event["pull_request"]["title"]) if tag in PROJECT_MAP}
     gh = Github(os.environ["GITHUB_TOKEN"])
     repo = gh.get_repo(event["repository"]["full_name"])
     pr = event["pull_request"]
@@ -81,9 +70,7 @@ def create_pr_card(event: Mapping[str, Any]) -> None:
         if not old_title:
             print("PR title isn't changed, nothing to do")
             return
-        old_projects = {
-            PROJECT_MAP[tag] for tag in extract_tags(old_title) if tag in PROJECT_MAP
-        }
+        old_projects = {PROJECT_MAP[tag] for tag in extract_tags(old_title) if tag in PROJECT_MAP}
         to_remove = old_projects - new_projects
         to_add = new_projects - old_projects
         for project_name in to_remove:

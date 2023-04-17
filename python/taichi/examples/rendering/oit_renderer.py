@@ -77,9 +77,7 @@ def intersect_sphere(line: ti.template(), sphere: ti.template()):
                 dist2 = t2
                 normal2 = normalize(hit_pos2 - sphere.center)
                 color2 = shading(sphere.color, normal2)
-    return ColorWithDepth(color=color1, depth=dist1), ColorWithDepth(
-        color=color2, depth=dist2
-    )
+    return ColorWithDepth(color=color1, depth=dist1), ColorWithDepth(color=color2, depth=dist2)
 
 
 @ti.func
@@ -141,9 +139,7 @@ def generate_sphere(n: ti.i32):
     for i in range(n):
         spheres.append(
             Sphere(
-                vec3(
-                    ti.random() * 3 - 1.5, ti.random() * 3 - 1.5, ti.random() * 3 - 1.5
-                ),
+                vec3(ti.random() * 3 - 1.5, ti.random() * 3 - 1.5, ti.random() * 3 - 1.5),
                 ti.random() * 0.2 + 0.1,
                 (ti.random(), ti.random(), ti.random(), ti.random()),
             )

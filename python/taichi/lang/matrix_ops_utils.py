@@ -143,9 +143,7 @@ def dim_lt(dim, limit):
     def check(x):
         assert_tensor(x)
         shape = x.get_shape()
-        return shape[dim] < limit, (
-            f"only dimension < {limit} is supported, got shape {shape}"
-        )
+        return shape[dim] < limit, (f"only dimension < {limit} is supported, got shape {shape}")
 
     return check
 

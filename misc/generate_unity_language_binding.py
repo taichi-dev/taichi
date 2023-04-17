@@ -176,36 +176,20 @@ def get_declr(x: EntryBase):
     elif ty is Function:
         out = []
 
-        return_value_type = (
-            "void"
-            if x.return_value_type == None
-            else get_type_name(x.return_value_type)
-        )
+        return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
 
         n = 1
         c_function_param_perm = []
         function_param_perm = []
         for param in x.params:
-            if (
-                isinstance(param.type, BuiltInType)
-                and (param.type.id == "char")
-                and (param.count is not None)
-            ):
+            if isinstance(param.type, BuiltInType) and (param.type.id == "char") and (param.count is not None):
                 if param.by_mut:
-                    c_function_param_perm += [
-                        [
-                            f"  [MarshalAs(UnmanagedType.LPArray)] [In, Out] byte[] {param.name}"
-                        ]
-                    ]
+                    c_function_param_perm += [[f"  [MarshalAs(UnmanagedType.LPArray)] [In, Out] byte[] {param.name}"]]
                     function_param_perm += [[f"  byte[] {param.name}"]]
                 else:
-                    c_function_param_perm += [
-                        [f"  [MarshalAs(UnmanagedType.LPArray)] byte[] {param.name}"]
-                    ]
+                    c_function_param_perm += [[f"  [MarshalAs(UnmanagedType.LPArray)] byte[] {param.name}"]]
                     function_param_perm += [[f"  byte[] {param.name}"]]
-            elif isinstance(param.type, BuiltInType) and (
-                param.type.id == "const void*" or param.type.id == "void*"
-            ):
+            elif isinstance(param.type, BuiltInType) and (param.type.id == "const void*" or param.type.id == "void*"):
                 perm = [
                     "byte",
                     "sbyte",
@@ -220,10 +204,7 @@ def get_declr(x: EntryBase):
                     "double",
                 ]
                 c_function_param_perm += [
-                    [
-                        f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {_T(param.name)}"
-                        for x in perm
-                    ]
+                    [f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {_T(param.name)}" for x in perm]
                 ]
                 function_param_perm += [[f"  {x}[] {_T(param.name)}" for x in perm]]
                 n *= len(perm)
@@ -246,32 +227,19 @@ def get_declr(x: EntryBase):
                 "#if (UNITY_IOS || UNITY_TVOS || UNITY_WEBGL) && !UNITY_EDITOR",
                 '    [DllImport ("__Internal")]',
                 "#else",
-                '    [DllImport("taichi_unity")]'
-                if x.vendor == "unity"
-                else '    [DllImport("taichi_c_api")]',
+                '    [DllImport("taichi_unity")]' if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
                 "#endif",
-                "private static extern "
-                + return_value_type
-                + " "
-                + _T(x.name.snake_case)
-                + "(",
+                "private static extern " + return_value_type + " " + _T(x.name.snake_case) + "(",
                 ",\n".join(c_function_params),
                 ");",
-                "public static "
-                + return_value_type
-                + " "
-                + _T(x.name.upper_camel_case)
-                + "(",
+                "public static " + return_value_type + " " + _T(x.name.upper_camel_case) + "(",
                 ",\n".join(function_params),
                 ") {",
             ]
 
             for param in x.params:
                 is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
-                if (
-                    isinstance(param.type, (Structure, Union, BuiltInType))
-                    and is_single_ref
-                ):
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
                         f"  var arr_{_T(param.name)} = new {get_type_name(param.type)}[1];",
                         f"  arr_{_T(param.name)}[0] = {_T(param.name)};",
@@ -282,24 +250,14 @@ def get_declr(x: EntryBase):
                 out += [f"  {_T(x.name.snake_case)}("]
             for i, param in enumerate(x.params):
                 is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
-                if (
-                    isinstance(param.type, (Structure, Union, BuiltInType))
-                    and is_single_ref
-                ):
-                    out += [
-                        f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"
-                    ]
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
+                    out += [f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"]
                 else:
-                    out += [
-                        f"    {_T(param.name)}{','if i + 1 != len(x.params) else ''}"
-                    ]
+                    out += [f"    {_T(param.name)}{','if i + 1 != len(x.params) else ''}"]
             out += ["  );"]
             for param in x.params:
                 is_single_ref = param.by_mut and (not param.count)
-                if (
-                    isinstance(param.type, (Structure, Union, BuiltInType))
-                    and is_single_ref
-                ):
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [f"  {_T(param.name)} = arr_{_T(param.name)}[0];"]
             if x.return_value_type:
                 out += [f"  return rv;"]

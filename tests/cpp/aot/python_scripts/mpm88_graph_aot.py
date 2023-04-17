@@ -5,7 +5,7 @@ import taichi as ti
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--arch", type=str)
-parser.add_argument("--cgraph", action='store_true', default=False)
+parser.add_argument("--cgraph", action="store_true", default=False)
 args = parser.parse_args()
 
 
@@ -27,37 +27,39 @@ def compile_mpm88(arch, save_compute_graph):
     ti.init(arch=arch)
 
     @ti.kernel
-    def substep_reset_grid(grid_v: ti.any_arr(ndim=2),
-                           grid_m: ti.any_arr(ndim=2)):
+    def substep_reset_grid(grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
         for i, j in grid_m:
             grid_v[i, j] = [0, 0]
             grid_m[i, j] = 0
 
     @ti.kernel
-    def substep_p2g(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1),
-                    C: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1),
-                    grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
+    def substep_p2g(
+        x: ti.any_arr(ndim=1),
+        v: ti.any_arr(ndim=1),
+        C: ti.any_arr(ndim=1),
+        J: ti.any_arr(ndim=1),
+        grid_v: ti.any_arr(ndim=2),
+        grid_m: ti.any_arr(ndim=2),
+    ):
         for p in x:
             dx = 1 / grid_v.shape[0]
-            p_vol = (dx * 0.5)**2
+            p_vol = (dx * 0.5) ** 2
             p_mass = p_vol * p_rho
             Xp = x[p] / dx
             base = int(Xp - 0.5)
             fx = Xp - base
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             stress = -dt * 4 * E * p_vol * (J[p] - 1) / dx**2
             affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
             for i, j in ti.static(ti.ndrange(3, 3)):
                 offset = ti.Vector([i, j])
                 dpos = (offset - fx) * dx
                 weight = w[i].x * w[j].y
-                grid_v[base +
-                       offset] += weight * (p_mass * v[p] + affine @ dpos)
+                grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
                 grid_m[base + offset] += weight * p_mass
 
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.any_arr(ndim=2),
-                              grid_m: ti.any_arr(ndim=2)):
+    def substep_update_grid_v(grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
         for i, j in grid_m:
             num_grid = grid_v.shape[0]
             if grid_m[i, j] > 0:
@@ -73,15 +75,20 @@ def compile_mpm88(arch, save_compute_graph):
                 grid_v[i, j].y = 0
 
     @ti.kernel
-    def substep_g2p(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1),
-                    C: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1),
-                    grid_v: ti.any_arr(ndim=2), pos: ti.any_arr(ndim=1)):
+    def substep_g2p(
+        x: ti.any_arr(ndim=1),
+        v: ti.any_arr(ndim=1),
+        C: ti.any_arr(ndim=1),
+        J: ti.any_arr(ndim=1),
+        grid_v: ti.any_arr(ndim=2),
+        pos: ti.any_arr(ndim=1),
+    ):
         for p in x:
             dx = 1 / grid_v.shape[0]
             Xp = x[p] / dx
             base = int(Xp - 0.5)
             fx = Xp - base
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_v = ti.Vector.zero(float, 2)
             new_C = ti.Matrix.zero(float, 2, 2)
             for i, j in ti.static(ti.ndrange(3, 3)):
@@ -98,8 +105,7 @@ def compile_mpm88(arch, save_compute_graph):
             C[p] = new_C
 
     @ti.kernel
-    def init_particles(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1),
-                       J: ti.any_arr(ndim=1)):
+    def init_particles(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1)):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * 0.4 + 0.2, ti.random() * 0.4 + 0.2]
             v[i] = [0, -1]
@@ -111,31 +117,13 @@ def compile_mpm88(arch, save_compute_graph):
     if save_compute_graph:
         N_ITER = 50
 
-        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'x',
-                             dtype=ti.math.vec2,
-                             ndim=1)
-        sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'v',
-                             dtype=ti.math.vec2,
-                             ndim=1)
-        sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                             'C',
-                             dtype=ti.math.mat2,
-                             ndim=1)
-        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'J', ti.f32, ndim=1)
-        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                  'grid_v',
-                                  dtype=ti.math.vec2,
-                                  ndim=2)
-        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                                  'grid_m',
-                                  dtype=ti.f32,
-                                  ndim=2)
-        sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                               'pos',
-                               dtype=ti.math.vec3,
-                               ndim=1)
+        sym_x = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "x", dtype=ti.math.vec2, ndim=1)
+        sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "v", dtype=ti.math.vec2, ndim=1)
+        sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "C", dtype=ti.math.mat2, ndim=1)
+        sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "J", ti.f32, ndim=1)
+        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_v", dtype=ti.math.vec2, ndim=2)
+        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_m", dtype=ti.f32, ndim=2)
+        sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pos", dtype=ti.math.vec3, ndim=1)
 
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
@@ -144,11 +132,9 @@ def compile_mpm88(arch, save_compute_graph):
         substep = g_update_builder.create_sequential()
 
         substep.dispatch(substep_reset_grid, sym_grid_v, sym_grid_m)
-        substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
-                         sym_grid_m)
+        substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_grid_m)
         substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m)
-        substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v,
-                         sym_pos)
+        substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_pos)
 
         for i in range(N_ITER):
             g_update_builder.append(substep)
@@ -170,8 +156,8 @@ def compile_mpm88(arch, save_compute_graph):
         grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 
         mod = ti.aot.Module()
-        mod.add_graph('init', g_init)
-        mod.add_graph('update', g_update)
+        mod.add_graph("init", g_init)
+        mod.add_graph("update", g_update)
         mod.save(tmpdir)
     else:
         pos = ti.Vector.ndarray(3, ti.f32, n_particles)
@@ -184,35 +170,31 @@ def compile_mpm88(arch, save_compute_graph):
         grid_m = ti.ndarray(ti.f32, shape=(n_grid, n_grid))
 
         mod = ti.aot.Module()
-        mod.add_kernel(init_particles, template_args={'x': x, 'v': v, 'J': J})
-        mod.add_kernel(substep_reset_grid,
-                       template_args={
-                           'grid_v': grid_v,
-                           'grid_m': grid_m
-                       })
-        mod.add_kernel(substep_p2g,
-                       template_args={
-                           'x': x,
-                           'v': v,
-                           'C': C,
-                           'J': J,
-                           'grid_v': grid_v,
-                           'grid_m': grid_m
-                       })
-        mod.add_kernel(substep_update_grid_v,
-                       template_args={
-                           'grid_v': grid_v,
-                           'grid_m': grid_m
-                       })
-        mod.add_kernel(substep_g2p,
-                       template_args={
-                           'x': x,
-                           'v': v,
-                           'C': C,
-                           'J': J,
-                           'grid_v': grid_v,
-                           'pos': pos
-                       })
+        mod.add_kernel(init_particles, template_args={"x": x, "v": v, "J": J})
+        mod.add_kernel(substep_reset_grid, template_args={"grid_v": grid_v, "grid_m": grid_m})
+        mod.add_kernel(
+            substep_p2g,
+            template_args={
+                "x": x,
+                "v": v,
+                "C": C,
+                "J": J,
+                "grid_v": grid_v,
+                "grid_m": grid_m,
+            },
+        )
+        mod.add_kernel(substep_update_grid_v, template_args={"grid_v": grid_v, "grid_m": grid_m})
+        mod.add_kernel(
+            substep_g2p,
+            template_args={
+                "x": x,
+                "v": v,
+                "C": C,
+                "J": J,
+                "grid_v": grid_v,
+                "pos": pos,
+            },
+        )
 
         mod.save(tmpdir)
 

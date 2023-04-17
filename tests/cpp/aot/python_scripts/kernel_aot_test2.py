@@ -24,38 +24,33 @@ def compile_kernel_aot_test2(arch, save_compute_graph):
 
     m = ti.aot.Module()
     if save_compute_graph:
-        sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY,
-                               'arr',
-                               dtype=ti.i32,
-                               ndim=1)
-        sym_n = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'x', dtype=ti.i32)
+        sym_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "arr", dtype=ti.i32, ndim=1)
+        sym_n = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "x", dtype=ti.i32)
 
         graph_builder = ti.graph.GraphBuilder()
         graph_builder.dispatch(ker1, sym_arr)
         graph_builder.dispatch(ker2, sym_arr, sym_n)
         graph = graph_builder.compile()
-        m.add_graph('test', graph)
+        m.add_graph("test", graph)
     else:
-        arr = ti.ndarray(ti.i32, shape=(10, ))
-        m.add_kernel(ker1, template_args={'arr': arr})
-        m.add_kernel(ker2, template_args={'arr': arr})
+        arr = ti.ndarray(ti.i32, shape=(10,))
+        m.add_kernel(ker1, template_args={"arr": arr})
+        m.add_kernel(ker2, template_args={"arr": arr})
     m.save(dir_name)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--arch", type=str)
-    parser.add_argument("--cgraph", action='store_true', default=False)
+    parser.add_argument("--cgraph", action="store_true", default=False)
 
     args = parser.parse_args()
     # TODO: add test agaist cpu and cuda as well
     if args.arch == "vulkan":
-        compile_kernel_aot_test2(arch=ti.vulkan,
-                                 save_compute_graph=args.cgraph)
+        compile_kernel_aot_test2(arch=ti.vulkan, save_compute_graph=args.cgraph)
     elif args.arch == "metal":
         compile_kernel_aot_test2(arch=ti.metal, save_compute_graph=args.cgraph)
     elif args.arch == "opengl":
-        compile_kernel_aot_test2(arch=ti.opengl,
-                                 save_compute_graph=args.cgraph)
+        compile_kernel_aot_test2(arch=ti.opengl, save_compute_graph=args.cgraph)
     else:
         assert False

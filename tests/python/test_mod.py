@@ -4,12 +4,15 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize("a,b", [
-    (10, 3),
-    (-10, 3),
-    (10, -3),
-    (-10, -3),
-])
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        (10, 3),
+        (-10, 3),
+        (10, -3),
+        (-10, -3),
+    ],
+)
 @test_utils.test()
 def test_py_style_mod(a, b):
     z = ti.field(ti.i32, shape=())
@@ -22,12 +25,15 @@ def test_py_style_mod(a, b):
     assert z[None] == a % b
 
 
-@pytest.mark.parametrize("a,b", [
-    (10, 3),
-    (-10, 3),
-    (10, -3),
-    (-10, -3),
-])
+@pytest.mark.parametrize(
+    "a,b",
+    [
+        (10, 3),
+        (-10, 3),
+        (10, -3),
+        (-10, -3),
+    ],
+)
 @test_utils.test()
 def test_c_style_mod(a, b):
     z = ti.field(ti.i32, shape=())

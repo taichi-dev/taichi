@@ -8,4 +8,4 @@ def sync():
     impl.get_runtime().sync()
 
 
-__all__ = ['sync']
+__all__ = ["sync"]

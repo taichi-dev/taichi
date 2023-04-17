@@ -14,15 +14,11 @@ matrix_operation_types = [operator.add, operator.sub, operator.matmul]
 test_matrix_arrays = [
     np.array([[1, 2], [3, 4]]),
     np.array([[5, 6], [7, 8]]),
-    np.array([[2, 8], [-1, 3]])
+    np.array([[2, 8], [-1, 3]]),
 ]
 
 vector_operation_types = [operator.add, operator.sub]
-test_vector_arrays = [
-    np.array([42, 42]),
-    np.array([24, 24]),
-    np.array([83, 12])
-]
+test_vector_arrays = [np.array([42, 42]), np.array([24, 24]), np.array([83, 12])]
 
 
 @test_utils.test(arch=get_host_arch_list())
@@ -48,7 +44,7 @@ def test_python_scope_matrix_operations():
 # or Python-scope field accesses.
 # ideally we should use pytest.fixture to parameterize the tests
 # over explicit loops
-@pytest.mark.parametrize('ops', vector_operation_types)
+@pytest.mark.parametrize("ops", vector_operation_types)
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_vector_field(ops):
     t1 = ti.Vector.field(2, dtype=ti.i32, shape=())
@@ -60,7 +56,7 @@ def test_python_scope_vector_field(ops):
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@pytest.mark.parametrize('ops', matrix_operation_types)
+@pytest.mark.parametrize("ops", matrix_operation_types)
 @test_utils.test(arch=get_host_arch_list())
 def test_python_scope_matrix_field(ops):
     t1 = ti.Matrix.field(2, 2, dtype=ti.i32, shape=())
@@ -79,16 +75,14 @@ def test_python_scope_matrix_field(ops):
 def test_constant_matrices():
     assert ti.cos(math.pi / 3) == test_utils.approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
-    assert ti.cos(ti.Vector([2, 3])).to_numpy() == test_utils.approx(
-        np.cos(np.array([2, 3])))
+    assert ti.cos(ti.Vector([2, 3])).to_numpy() == test_utils.approx(np.cos(np.array([2, 3])))
     assert ti.max(2, 3) == 3
     res = ti.max(4, ti.Vector([3, 4, 5]))
     assert np.allclose(res.to_numpy(), np.array([4, 4, 5]))
     res = ti.Vector([2, 3]) + ti.Vector([3, 4])
     assert np.allclose(res.to_numpy(), np.array([5, 7]))
     res = ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4]))
-    assert res.to_numpy() == test_utils.approx(
-        np.arctan2(np.array([2, 3]), np.array([3, 4])))
+    assert res.to_numpy() == test_utils.approx(np.arctan2(np.array([2, 3]), np.array([3, 4])))
     res = ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3])
     assert np.allclose(res.to_numpy(), np.array([13, 23]))
     v = ti.Vector([3, 4])
@@ -103,8 +97,7 @@ def test_constant_matrices():
     r.z = r.w
     r.w = r.x
     assert np.allclose(w.to_numpy(), np.array([5, 15]))
-    assert ti.select(ti.Vector([1, 0]), ti.Vector([2, 3]),
-                     ti.Vector([4, 5])) == ti.Vector([2, 5])
+    assert ti.select(ti.Vector([1, 0]), ti.Vector([2, 3]), ti.Vector([4, 5])) == ti.Vector([2, 5])
     s[0, 1] = 2
     assert s[0, 1] == 2
 
@@ -410,10 +403,8 @@ def test_matrix_field_dynamic_index_stride():
     @ti.kernel
     def check_stride():
         for i in range(128):
-            assert ti.get_addr(y, i) - ti.get_addr(
-                x, i) == v._get_dynamic_index_stride()
-            assert ti.get_addr(z, i) - ti.get_addr(
-                y, i) == v._get_dynamic_index_stride()
+            assert ti.get_addr(y, i) - ti.get_addr(x, i) == v._get_dynamic_index_stride()
+            assert ti.get_addr(z, i) - ti.get_addr(y, i) == v._get_dynamic_index_stride()
 
     check_stride()
 
@@ -541,7 +532,7 @@ def test_vector_dtype():
     def foo():
         a = ti.Vector([1, 2, 3], ti.f32)
         a /= 2
-        assert all(abs(a - (0.5, 1., 1.5)) < 1e-6)
+        assert all(abs(a - (0.5, 1.0, 1.5)) < 1e-6)
         b = ti.Vector([1.5, 2.5, 3.5], ti.i32)
         assert all(b == (1, 2, 3))
 
@@ -554,7 +545,7 @@ def test_matrix_dtype():
     def foo():
         a = ti.Matrix([[1, 2], [3, 4]], ti.f32)
         a /= 2
-        assert all(abs(a - ((0.5, 1.), (1.5, 2.))) < 1e-6)
+        assert all(abs(a - ((0.5, 1.0), (1.5, 2.0))) < 1e-6)
         b = ti.Matrix([[1.5, 2.5], [3.5, 4.5]], ti.i32)
         assert all(b == ((1, 2), (3, 4)))
 
@@ -562,9 +553,16 @@ def test_matrix_dtype():
 
 
 inplace_operation_types = [
-    operator.iadd, operator.isub, operator.imul, operator.ifloordiv,
-    operator.imod, operator.ilshift, operator.irshift, operator.ior,
-    operator.ixor, operator.iand
+    operator.iadd,
+    operator.isub,
+    operator.imul,
+    operator.ifloordiv,
+    operator.imod,
+    operator.ilshift,
+    operator.irshift,
+    operator.ior,
+    operator.ixor,
+    operator.iand,
 ]
 
 
@@ -581,11 +579,10 @@ def test_python_scope_inplace_operator():
 def test_indexing():
     @ti.kernel
     def foo():
-        m = ti.Matrix([[0., 0., 0., 0.] for _ in range(4)])
+        m = ti.Matrix([[0.0, 0.0, 0.0, 0.0] for _ in range(4)])
         print(m[0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 2 indices, got 1"):
         foo()
 
     @ti.kernel
@@ -593,8 +590,7 @@ def test_indexing():
         vec = ti.Vector([1, 2, 3, 4])
         print(vec[0, 0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 1 indices, got 2"):
         bar()
 
 
@@ -607,8 +603,7 @@ def test_indexing_in_fields():
         f[None][0, 0] = 1.0
         print(f[None][0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 2 indices, got 1"):
         foo()
 
     g = ti.Vector.field(3, ti.f32, shape=())
@@ -618,8 +613,7 @@ def test_indexing_in_fields():
         g[None][0] = 1.0
         print(g[None][0, 0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 1 indices, got 2"):
         bar()
 
 
@@ -630,8 +624,7 @@ def test_indexing_in_struct():
         s = ti.Struct(a=ti.Vector([0, 0, 0]), b=2)
         print(s.a[0, 0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 1 indices, got 2"):
         foo()
 
     @ti.kernel
@@ -639,35 +632,26 @@ def test_indexing_in_struct():
         s = ti.Struct(m=ti.Matrix([[0, 0, 0], [0, 0, 0]]), n=2)
         print(s.m[0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 2 indices, got 1"):
         bar()
 
 
 @test_utils.test()
 def test_indexing_in_struct_field():
-
-    s = ti.Struct.field(
-        {
-            'v': ti.types.vector(3, ti.f32),
-            'm': ti.types.matrix(3, 3, ti.f32)
-        },
-        shape=())
+    s = ti.Struct.field({"v": ti.types.vector(3, ti.f32), "m": ti.types.matrix(3, 3, ti.f32)}, shape=())
 
     @ti.kernel
     def foo():
         print(s[None].v[0, 0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 1 indices, got 2"):
         foo()
 
     @ti.kernel
     def bar():
         print(s[None].m[0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 2 indices, got 1"):
         bar()
 
 
@@ -691,7 +675,6 @@ def test_matrix_vector_multiplication():
 
 @test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False)
 def test_local_matrix_read():
-
     s = ti.field(ti.i32, shape=())
 
     @ti.kernel
@@ -774,8 +757,7 @@ def test_local_matrix_index_check():
         mat = ti.Matrix([[1, 2, 3], [4, 5, 6]])
         print(mat[0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 2 indices, got 1'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 2 indices, got 1"):
         foo()
 
     @ti.kernel
@@ -783,14 +765,11 @@ def test_local_matrix_index_check():
         vec = ti.Vector([1, 2, 3, 4])
         print(vec[0, 0])
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r'Expected 1 indices, got 2'):
+    with pytest.raises(TaichiCompilationError, match=r"Expected 1 indices, got 2"):
         bar()
 
 
-@test_utils.test(arch=[ti.cuda, ti.cpu],
-                 real_matrix_scalarize=False,
-                 debug=True)
+@test_utils.test(arch=[ti.cuda, ti.cpu], real_matrix_scalarize=False, debug=True)
 def test_elementwise_ops():
     @ti.kernel
     def test():
@@ -858,7 +837,7 @@ def test_local_matrix_scalarize():
         x = ti.Matrix([[1, 2], [3, 4]], ti.f32)
 
         # Store
-        x[0, 0] = 100.
+        x[0, 0] = 100.0
 
         # Load + Store
         x[0, 1] = x[0, 0]
@@ -869,11 +848,11 @@ def test_local_matrix_scalarize():
         # Unary
         x[1, 1] = ti.sqrt(x[1, 0])
 
-        assert (x[0, 0] == 100.)
-        assert (x[0, 1] == 100.)
-        assert (x[1, 0] == 200.)
-        assert (x[1, 1] < 14.14214)
-        assert (x[1, 1] > 14.14213)
+        assert x[0, 0] == 100.0
+        assert x[0, 1] == 100.0
+        assert x[1, 0] == 200.0
+        assert x[1, 1] < 14.14214
+        assert x[1, 1] > 14.14213
 
     func()
 
@@ -969,9 +948,9 @@ def test_unary_op_scalarize():
         a[4] = ti.sqrt(a[3])
 
     def verify(x):
-        assert (x[0] == [[0., 1.], [2., 3.]]).all()
-        assert (x[1] == [[3., 4.], [5., 6.]]).all()
-        assert (x[2] == [[-0., -1.], [-2., -3.]]).all()
+        assert (x[0] == [[0.0, 1.0], [2.0, 3.0]]).all()
+        assert (x[1] == [[3.0, 4.0], [5.0, 6.0]]).all()
+        assert (x[2] == [[-0.0, -1.0], [-2.0, -3.0]]).all()
         assert (x[3] < [[20.086, 54.60], [148.42, 403.43]]).all()
         assert (x[3] > [[20.085, 54.59], [148.41, 403.42]]).all()
         assert (x[4] < [[4.49, 7.39], [12.19, 20.09]]).all()
@@ -986,16 +965,16 @@ def test_unary_op_scalarize():
 def test_binary_op_scalarize():
     @ti.func
     def func(a: ti.template()):
-        a[0] = [[0., 1.], [2., 3.]]
-        a[1] = [[3., 4.], [5., 6.]]
+        a[0] = [[0.0, 1.0], [2.0, 3.0]]
+        a[1] = [[3.0, 4.0], [5.0, 6.0]]
         a[2] = a[0] + a[0]
         a[3] = a[1] * a[1]
         a[4] = ti.max(a[2], a[3])
 
     def verify(x):
-        assert (x[2] == [[0., 2.], [4., 6.]]).all()
-        assert (x[3] == [[9., 16.], [25., 36.]]).all()
-        assert (x[4] == [[9., 16.], [25., 36.]]).all()
+        assert (x[2] == [[0.0, 2.0], [4.0, 6.0]]).all()
+        assert (x[3] == [[9.0, 16.0], [25.0, 36.0]]).all()
+        assert (x[4] == [[9.0, 16.0], [25.0, 36.0]]).all()
 
     field = ti.Matrix.field(2, 2, ti.f32, shape=5)
     ndarray = ti.Matrix.ndarray(2, 2, ti.f32, shape=5)
@@ -1006,26 +985,24 @@ def test_binary_op_scalarize():
 def test_trace_op():
     @ti.kernel
     def test_fun() -> ti.f32:
-        x = ti.Matrix([[.1, 3.], [5., 7.]])
+        x = ti.Matrix([[0.1, 3.0], [5.0, 7.0]])
         return x.trace()
 
     assert np.abs(test_fun() - 7.1) < 1e-6
 
-    x = ti.Matrix([[.1, 3.], [5., 7.]])
+    x = ti.Matrix([[0.1, 3.0], [5.0, 7.0]])
     assert np.abs(x.trace() - 7.1) < 1e-6
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r"expected a square matrix, got shape \(3, 2\)"):
-        x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
+    with pytest.raises(TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"):
+        x = ti.Matrix([[0.1, 3.0], [5.0, 7.0], [1.0, 2.0]])
         print(x.trace())
 
     @ti.kernel
     def failed_func():
-        x = ti.Matrix([[.1, 3.], [5., 7.], [1., 2.]])
+        x = ti.Matrix([[0.1, 3.0], [5.0, 7.0], [1.0, 2.0]])
         print(x.trace())
 
-    with pytest.raises(TaichiCompilationError,
-                       match=r"expected a square matrix, got shape \(3, 2\)"):
+    with pytest.raises(TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"):
         failed_func()
 
 
@@ -1080,23 +1057,23 @@ def test_fill_op():
 def test_atomic_op_scalarize():
     @ti.func
     def func(x: ti.template()):
-        x[0] = [1., 2., 3.]
+        x[0] = [1.0, 2.0, 3.0]
         tmp = ti.Vector([3, 2, 1])
         z = ti.atomic_sub(x[0], tmp)
-        assert z[0] == 1.
-        assert z[1] == 2.
-        assert z[2] == 3.
+        assert z[0] == 1.0
+        assert z[1] == 2.0
+        assert z[2] == 3.0
 
         # Broadcasting
-        x[1] = [1., 1., 1.]
+        x[1] = [1.0, 1.0, 1.0]
         g = ti.atomic_add(x[1], 2)
-        assert g[0] == 1.
-        assert g[1] == 1.
-        assert g[2] == 1.
+        assert g[0] == 1.0
+        assert g[1] == 1.0
+        assert g[2] == 1.0
 
     def verify(x):
-        assert (x[0] == [-2., 0., 2.]).all()
-        assert (x[1] == [3., 3., 3.]).all()
+        assert (x[0] == [-2.0, 0.0, 2.0]).all()
+        assert (x[1] == [3.0, 3.0, 3.0]).all()
 
     field = ti.Vector.field(n=3, dtype=ti.f32, shape=10)
     ndarray = ti.Vector.ndarray(n=3, dtype=ti.f32, shape=(10))
@@ -1112,8 +1089,7 @@ def test_unsupported_logical_operations():
 
         z = x and y
 
-    with pytest.raises(TaichiTypeError,
-                       match=r"unsupported operand type\(s\) for "):
+    with pytest.raises(TaichiTypeError, match=r"unsupported operand type\(s\) for "):
         test()
 
 
@@ -1126,9 +1102,8 @@ def test_vector_transpose():
         z = x @ y.transpose()
 
     with pytest.raises(
-            TaichiCompilationError,
-            match=
-            r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead."
+        TaichiCompilationError,
+        match=r"`transpose\(\)` cannot apply to a vector. If you want something like `a @ b.transpose\(\)`, write `a.outer_product\(b\)` instead.",
     ):
         foo()
 
@@ -1271,6 +1246,14 @@ def test_matrix_arithmatics():
     fill(f)
     vec_test(f)
 
-    assert (f.to_numpy() == np.array([[2., 5., 10., 17.], [6., 11., 18., 27.],
-                                      [4., 8., 14., 22.], [4., 5., 6.,
-                                                           7.]])).all()
+    assert (
+        f.to_numpy()
+        == np.array(
+            [
+                [2.0, 5.0, 10.0, 17.0],
+                [6.0, 11.0, 18.0, 27.0],
+                [4.0, 8.0, 14.0, 22.0],
+                [4.0, 5.0, 6.0, 7.0],
+            ]
+        )
+    ).all()

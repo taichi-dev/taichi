@@ -47,11 +47,15 @@ def test_matrix_slice_invalid():
         a = ti.Matrix([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
         b = a[:i:, :i]
 
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Taichi does not support variables in slice now'):
+    with pytest.raises(
+        ti.TaichiCompilationError,
+        match="Taichi does not support variables in slice now",
+    ):
         foo1(1)
-    with pytest.raises(ti.TaichiCompilationError,
-                       match='Taichi does not support variables in slice now'):
+    with pytest.raises(
+        ti.TaichiCompilationError,
+        match="Taichi does not support variables in slice now",
+    ):
         foo2()
 
 
@@ -95,12 +99,9 @@ def test_matrix_slice_write():
         mat[:2, :] += rows
         return mat
 
-    assert (assign_col() == ti.Matrix([[1, 0, 0, 0], [2, 0, 0, 0],
-                                       [3, 0, 0, 0]])).all()
-    assert (assign_partial_row() == ti.Matrix([[0, 0, 0, 0], [0, 1, 2, 0],
-                                               [0, 0, 0, 0]])).all()
-    assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5],
-                                           [1, 1, 1, 1]])).all()
+    assert (assign_col() == ti.Matrix([[1, 0, 0, 0], [2, 0, 0, 0], [3, 0, 0, 0]])).all()
+    assert (assign_partial_row() == ti.Matrix([[0, 0, 0, 0], [0, 1, 2, 0], [0, 0, 0, 0]])).all()
+    assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5], [1, 1, 1, 1]])).all()
 
 
 @test_utils.test(exclude=[ti.cc])
@@ -112,5 +113,4 @@ def test_matrix_slice_write_dynamic_index():
         return mat
 
     for i in range(3):
-        assert (foo(i) == ti.Matrix([[1, 2, 3, 4] if j == i else [0, 0, 0, 0]
-                                     for j in range(3)])).all()
+        assert (foo(i) == ti.Matrix([[1, 2, 3, 4] if j == i else [0, 0, 0, 0] for j in range(3)])).all()

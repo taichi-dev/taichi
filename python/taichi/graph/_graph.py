@@ -93,17 +93,17 @@ class Graph:
                 flattened[k] = v
             else:
                 raise TaichiRuntimeError(
-                    f'Only python int, float, ti.Matrix and ti.Ndarray are supported as runtime arguments but got {type(v)}'
+                    f"Only python int, float, ti.Matrix and ti.Ndarray are supported as runtime arguments but got {type(v)}"
                 )
-        self._compiled_graph.jit_run(impl.get_runtime().prog.config(),
-                                     flattened)
+        self._compiled_graph.jit_run(impl.get_runtime().prog.config(), flattened)
 
 
 def _deprecate_arg_args(kwargs: Dict[str, Any]):
     if "field_dim" in kwargs:
         warnings.warn(
             "The field_dim argument for ndarray will be deprecated in v1.6.0, use ndim instead.",
-            DeprecationWarning)
+            DeprecationWarning,
+        )
         if "ndim" in kwargs:
             raise TaichiRuntimeError(
                 "field_dim is deprecated, please do not specify field_dim and ndim at the same time."
@@ -116,7 +116,8 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
         if "element_shape" in kwargs:
             warnings.warn(
                 "The element_shape argument for scalar will be deprecated in v1.6.0. You can remove them safely.",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
             del kwargs["element_shape"]
 
     if tag == ArgKind.NDARRAY:
@@ -131,25 +132,26 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
         else:
             warnings.warn(
                 "The element_shape argument for ndarray will be deprecated in v1.6.0, use vector or matrix data type instead.",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
             if "dtype" not in kwargs:
                 dtype = kwargs["dtype"]
                 if isinstance(dtype, MatrixType):
-                    raise TaichiRuntimeError(
-                        "Please do not specify element_shape when dtype is a matrix type."
-                    )
+                    raise TaichiRuntimeError("Please do not specify element_shape when dtype is a matrix type.")
 
     if tag == ArgKind.RWTEXTURE or tag == ArgKind.TEXTURE:
         if "dtype" in kwargs:
             warnings.warn(
                 "The dtype argument for texture will be deprecated in v1.6.0, use format instead.",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
             del kwargs["dtype"]
 
         if "shape" in kwargs:
             warnings.warn(
                 "The shape argument for texture will be deprecated in v1.6.0, use ndim instead. (Note that you no longer need the exact texture size.)",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
             kwargs["ndim"] = len(kwargs["shape"])
             del kwargs["shape"]
 
@@ -159,16 +161,17 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
                     "channel_format and num_channels are deprecated, please do not specify channel_format/num_channels and fmt at the same time."
                 )
             if tag == ArgKind.RWTEXTURE:
-                fmt = TY_CH2FORMAT[(kwargs["channel_format"],
-                                    kwargs["num_channels"])]
+                fmt = TY_CH2FORMAT[(kwargs["channel_format"], kwargs["num_channels"])]
                 kwargs["fmt"] = fmt
                 warnings.warn(
                     "The channel_format and num_channels arguments for texture will be deprecated in v1.6.0, use fmt instead.",
-                    DeprecationWarning)
+                    DeprecationWarning,
+                )
             else:
                 warnings.warn(
                     "The channel_format and num_channels arguments are no longer required for non-RW textures since v1.6.0, you can remove them safely.",
-                    DeprecationWarning)
+                    DeprecationWarning,
+                )
             if "channel_format" in kwargs:
                 del kwargs["channel_format"]
             if "num_channels" in kwargs:
@@ -179,16 +182,14 @@ def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):
     for k, v in kwargs.items():
         if k not in allowed_kwargs:
             raise TaichiRuntimeError(
-                f'Invalid argument: {k}, you can only create a graph argument with: {allowed_kwargs}'
+                f"Invalid argument: {k}, you can only create a graph argument with: {allowed_kwargs}"
             )
         if k == "tag":
             if not isinstance(v, ArgKind):
-                raise TaichiRuntimeError(
-                    f'tag must be a ArgKind variant, but found {type(v)}.')
+                raise TaichiRuntimeError(f"tag must be a ArgKind variant, but found {type(v)}.")
         if k == "name":
             if not isinstance(v, str):
-                raise TaichiRuntimeError(
-                    f'name must be a string, but found {type(v)}.')
+                raise TaichiRuntimeError(f"name must be a string, but found {type(v)}.")
 
 
 def _make_arg_scalar(kwargs: Dict[str, Any]):
@@ -201,9 +202,7 @@ def _make_arg_scalar(kwargs: Dict[str, Any]):
     name = kwargs["name"]
     dtype = kwargs["dtype"]
     if isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f'Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.'
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.")
     return _ti_core.Arg(ArgKind.SCALAR, name, dtype, 0, [])
 
 
@@ -221,9 +220,7 @@ def _make_arg_ndarray(kwargs: Dict[str, Any]):
     dtype = kwargs["dtype"]
     element_shape = kwargs["element_shape"]
     if isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f'Tag ArgKind.NDARRAY must specify a scalar type, but found {dtype}.'
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.NDARRAY must specify a scalar type, but found {dtype}.")
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
 
 
@@ -237,16 +234,13 @@ def _make_arg_matrix(kwargs: Dict[str, Any]):
     name = kwargs["name"]
     dtype = kwargs["dtype"]
     if not isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f'Tag ArgKind.MATRIX must specify matrix type, but got {dtype}.')
+        raise TaichiRuntimeError(f"Tag ArgKind.MATRIX must specify matrix type, but got {dtype}.")
     arg_list = []
     i = 0
     for _ in range(dtype.n):
         arg_sublist = []
         for _ in range(dtype.m):
-            arg_sublist.append(
-                _ti_core.Arg(ArgKind.MATRIX, f'{name}_mat_arg_{i}',
-                             dtype.dtype, 0, []))
+            arg_sublist.append(_ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg_{i}", dtype.dtype, 0, []))
             i += 1
         arg_list.append(arg_sublist)
     return arg_list
@@ -276,12 +270,9 @@ def _make_arg_rwtexture(kwargs: Dict[str, Any]):
     ndim = kwargs["ndim"]
     fmt = kwargs["fmt"]
     if fmt == enums.Format.unknown:
-        raise TaichiRuntimeError(
-            f'Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}.'
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}.")
     channel_format, num_channels = FORMAT2TY_CH[fmt]
-    return _ti_core.Arg(ArgKind.RWTEXTURE, name, channel_format, num_channels,
-                        [2] * ndim)
+    return _ti_core.Arg(ArgKind.RWTEXTURE, name, channel_format, num_channels, [2] * ndim)
 
 
 def _make_arg(kwargs: Dict[str, Any]):
@@ -322,4 +313,4 @@ def Arg(*args, **kwargs):
     return _make_arg(kwargs)
 
 
-__all__ = ['GraphBuilder', 'Graph', 'Arg', 'ArgKind']
+__all__ = ["GraphBuilder", "Graph", "Arg", "ArgKind"]

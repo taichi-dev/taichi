@@ -165,6 +165,13 @@ class InstrBuilder {
     return *this;
   }
 
+  InstrBuilder &add(const std::vector<int> &v) {
+    for (const auto &v0 : v) {
+      add(v0);
+    }
+    return *this;
+  }
+
   InstrBuilder &add(const std::string &v) {
     const uint32_t word_size = sizeof(uint32_t);
     const auto nwords =

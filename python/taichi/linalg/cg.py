@@ -13,17 +13,14 @@ class CG:
         self.matrix = A
         self.b = b
         if self.ti_arch == _ti_core.Arch.cuda:
-            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter,
-                                                       atol, True)
+            self.cg_solver = _ti_core.make_cucg_solver(A.matrix, max_iter, atol, True)
         elif self.ti_arch == _ti_core.Arch.x64 or self.ti_arch == _ti_core.Arch.arm64:
             if self.dtype == f32:
-                self.cg_solver = _ti_core.make_float_cg_solver(
-                    A.matrix, max_iter, atol, True)
+                self.cg_solver = _ti_core.make_float_cg_solver(A.matrix, max_iter, atol, True)
             elif self.dtype == f64:
-                self.cg_solver = _ti_core.make_double_cg_solver(
-                    A.matrix, max_iter, atol, True)
+                self.cg_solver = _ti_core.make_double_cg_solver(A.matrix, max_iter, atol, True)
             else:
-                raise TaichiRuntimeError(f'Unsupported CG dtype: {self.dtype}')
+                raise TaichiRuntimeError(f"Unsupported CG dtype: {self.dtype}")
             if isinstance(b, Ndarray):
                 self.cg_solver.set_b_ndarray(get_runtime().prog, b.arr)
             elif isinstance(b, np.ndarray):
@@ -33,7 +30,7 @@ class CG:
             elif isinstance(x0, np.ndarray):
                 self.cg_solver.set_x(x0)
         else:
-            raise TaichiRuntimeError(f'Unsupported CG arch: {self.ti_arch}')
+            raise TaichiRuntimeError(f"Unsupported CG arch: {self.ti_arch}")
 
     def solve(self):
         if self.ti_arch == _ti_core.Arch.cuda:
@@ -41,8 +38,7 @@ class CG:
                 x = ScalarNdarray(self.b.dtype, [self.matrix.m])
                 self.cg_solver.solve(get_runtime().prog, x.arr, self.b.arr)
                 return x, True
-            raise TaichiRuntimeError(
-                f'Unsupported CG RHS type: {type(self.b)}')
+            raise TaichiRuntimeError(f"Unsupported CG RHS type: {type(self.b)}")
         else:
             self.cg_solver.solve()
             return self.cg_solver.get_x(), self.cg_solver.is_success()

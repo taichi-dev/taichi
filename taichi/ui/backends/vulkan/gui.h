@@ -62,8 +62,9 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
 
  private:
   bool is_empty_;
-  AppContext *app_context_;
-  SwapChain *swap_chain_;
+  AppContext *app_context_{nullptr};
+  SwapChain *swap_chain_{nullptr};
+  ImGuiContext *imgui_context_{nullptr};
 
   VkRenderPass render_pass_{VK_NULL_HANDLE};
 

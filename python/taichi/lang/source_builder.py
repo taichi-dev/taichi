@@ -40,11 +40,7 @@ class SourceBuilder:
                 def compile_fn_impl(filename):
                     if impl.current_cfg().arch == _ti_core.Arch.x64:
                         subprocess.call(
-                            get_clangpp()
-                            + " -flto -c "
-                            + filename
-                            + " -o "
-                            + os.path.join(self.td, "source.bc"),
+                            get_clangpp() + " -flto -c " + filename + " -o " + os.path.join(self.td, "source.bc"),
                             shell=True,
                         )
                     else:
@@ -78,9 +74,7 @@ class SourceBuilder:
                         cwd=self.td,
                         shell=True,
                     )
-                    return os.path.join(
-                        self.td, "source-cuda-nvptx64-nvidia-cuda-sm_50.bc"
-                    )
+                    return os.path.join(self.td, "source-cuda-nvptx64-nvidia-cuda-sm_50.bc")
 
                 compile_fn = compile_fn_impl
             self.bc = compile_fn(filename)

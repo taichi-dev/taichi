@@ -19,9 +19,7 @@ def is_in_venv() -> bool:
     """
     Are we in a virtual environment?
     """
-    return hasattr(sys, "real_prefix") or (
-        hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
-    )
+    return hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
 
 
 def get_cache_home() -> Path:

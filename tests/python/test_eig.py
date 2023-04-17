@@ -193,9 +193,7 @@ def test_sym_eig3x3_identity_f32():
     _test_sym_eig3x3_identity(ti.f32)
 
 
-@test_utils.test(
-    require=ti.extension.data64, default_fp=ti.f64, fast_math=False, exclude=ti.cc
-)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, fast_math=False, exclude=ti.cc)
 def test_sym_eig3x3_identity_f64():
     _test_sym_eig3x3_identity(ti.f64)
 
@@ -207,8 +205,6 @@ def test_sym_eig3x3_f32(a00):
 
 
 @pytest.mark.parametrize("a00", [i for i in range(10)])
-@test_utils.test(
-    require=ti.extension.data64, default_fp=ti.f64, fast_math=False, exclude=ti.cc
-)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, fast_math=False, exclude=ti.cc)
 def test_sym_eig3x3_f64(a00):
     _test_sym_eig3x3(ti.f64, a00)

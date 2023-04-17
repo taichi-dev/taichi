@@ -18,9 +18,7 @@ def print_module_doc(module: Module):
         if declr.since is None:
             continue
         else:
-            assert (
-                x in module.doc.api_full_refs
-            ), f"undocumented public api is not allowed: {x}"
+            assert x in module.doc.api_full_refs, f"undocumented public api is not allowed: {x}"
 
         if is_first:
             is_first = False

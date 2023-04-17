@@ -41,9 +41,7 @@ def gen_normals_kernel(vertices: template(), normals: template()):
 
 
 @kernel
-def gen_normals_kernel_indexed(
-    vertices: template(), indices: template(), normals: template(), weights: template()
-):
+def gen_normals_kernel_indexed(vertices: template(), indices: template(), normals: template(), weights: template()):
     num_triangles = indices.shape[0] // 3
     num_vertices = vertices.shape[0]
     for i in range(num_vertices):
@@ -158,9 +156,7 @@ class Scene:
             vertex_count -= vertex_count % 2
         has_per_vertex_color = per_vertex_color is not None
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(
-            vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
@@ -238,9 +234,7 @@ class Scene:
             else:
                 index_count = indices.shape[0]
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(
-            vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field(indices) if indices is not None else None
         indices_info = get_field_info(indices_ndarray)
@@ -341,9 +335,7 @@ class Scene:
             instance_count = 1
 
         vbo = get_vbo_field(vertices)
-        copy_all_to_vbo(
-            vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, vertices, normals, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = get_indices_field(indices) if indices else None
         indices_info = get_field_info(indices_ndarray)
@@ -392,13 +384,9 @@ class Scene:
         if index_count is None:
             index_count = centers.shape[0]
         vbo = get_vbo_field(centers)
-        copy_all_to_vbo(
-            vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        self.scene.particles(
-            vbo_info, has_per_vertex_color, color, radius, index_count, index_offset
-        )
+        self.scene.particles(vbo_info, has_per_vertex_color, color, radius, index_count, index_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

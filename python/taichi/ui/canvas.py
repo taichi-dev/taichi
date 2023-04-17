@@ -73,9 +73,7 @@ class Canvas:
         if normalize:
             scalar_max = np.max(scalar_field_np)
             scalar_min = np.min(scalar_field_np)
-            scalar_field_np = (scalar_field_np - scalar_min) / (
-                scalar_max - scalar_min + 1e-16
-            )
+            scalar_field_np = (scalar_field_np - scalar_min) / (scalar_max - scalar_min + 1e-16)
 
         cmap = cm.get_cmap(cmap_name)
         output_rgba = cmap(scalar_field_np)
@@ -83,9 +81,7 @@ class Canvas:
         output = np.ascontiguousarray(output_rgb)
         self.set_image(output)
 
-    def triangles(
-        self, vertices, color=(0.5, 0.5, 0.5), indices=None, per_vertex_color=None
-    ):
+    def triangles(self, vertices, color=(0.5, 0.5, 0.5), indices=None, per_vertex_color=None):
         """Draw a set of 2D triangles on this canvas.
 
         Args:
@@ -102,9 +98,7 @@ class Canvas:
         """
         vbo = get_vbo_field(vertices)
         has_per_vertex_color = per_vertex_color is not None
-        copy_all_to_vbo(
-            vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = None
         if indices:
@@ -136,9 +130,7 @@ class Canvas:
         """
         vbo = get_vbo_field(vertices)
         has_per_vertex_color = per_vertex_color is not None
-        copy_all_to_vbo(
-            vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, vertices, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         indices_ndarray = None
         if indices:
@@ -160,15 +152,11 @@ class Canvas:
         """
         vbo = get_vbo_field(centers)
         has_per_vertex_color = per_vertex_color is not None
-        copy_all_to_vbo(
-            vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0
-        )
+        copy_all_to_vbo(vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
         self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
 
-    def vector_field(
-        self, vector_field, arrow_spacing=5, scale=0.1, width=0.002, color=(0, 0, 0)
-    ):
+    def vector_field(self, vector_field, arrow_spacing=5, scale=0.1, width=0.002, color=(0, 0, 0)):
         """Draw a vector field on this canvas.
 
         Args:

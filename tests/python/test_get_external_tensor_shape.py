@@ -22,9 +22,7 @@ def test_get_external_tensor_shape_access_numpy(size):
     x_hat = np.ones(size, dtype=np.int32)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
-            idx, y_ref, y_hat
-        )
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(idx, y_ref, y_hat)
 
 
 @pytest.mark.parametrize("size", [[1, 1], [2, 2]])
@@ -56,9 +54,7 @@ def test_get_external_tensor_shape_access_torch(size):
     x_hat = torch.ones(size, dtype=torch.int32, device="cpu")
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
-            idx, y_ref, y_hat
-        )
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(idx, y_ref, y_hat)
 
 
 @pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
@@ -72,9 +68,7 @@ def test_get_external_tensor_shape_access_ndarray(size):
     x_hat = ti.ndarray(ti.i32, shape=size)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
-            idx, y_ref, y_hat
-        )
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(idx, y_ref, y_hat)
 
 
 @pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
@@ -88,6 +82,4 @@ def test_get_external_tensor_shape_access_paddle(size):
     x_hat = paddle.ones(shape=size, dtype=paddle.int32)
     for idx, y_ref in enumerate(size):
         y_hat = func(x_hat, idx)
-        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(
-            idx, y_ref, y_hat
-        )
+        assert y_ref == y_hat, "Size of axis {} should equal {} and not {}.".format(idx, y_ref, y_hat)

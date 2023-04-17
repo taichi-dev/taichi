@@ -62,9 +62,7 @@ for x in title.split("] ")[:-1]:
         upper_tag_list.append(x[1:])
 
 if len(upper_tag_list) > 1:
-    exit(
-        f'At most 1 uppercase tag expected, got {len(upper_tag_list)}: {" ".join(upper_tag_list)}'
-    )
+    exit(f'At most 1 uppercase tag expected, got {len(upper_tag_list)}: {" ".join(upper_tag_list)}')
 
 is_release = False
 for x in title.split("] ")[:-1]:

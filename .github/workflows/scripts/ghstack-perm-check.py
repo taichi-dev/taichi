@@ -59,9 +59,7 @@ def main():
         out.decode("utf-8"),
     )
     pr_numbers = list(map(int, pr_numbers))
-    must(
-        pr_numbers and pr_numbers[0] == NUMBER, "Extracted PR numbers not seems right!"
-    )
+    must(pr_numbers and pr_numbers[0] == NUMBER, "Extracted PR numbers not seems right!")
 
     for n in pr_numbers:
         print(f":: Checking PR status #{n}... ", end="")
@@ -88,9 +86,7 @@ def main():
 
         must(approved, f"PR #{n} is not approved yet!")
 
-        resp = gh.get(
-            f'https://api.github.com/repos/{REPO}/commits/{pr_obj["head"]["sha"]}/check-runs'
-        )
+        resp = gh.get(f'https://api.github.com/repos/{REPO}/commits/{pr_obj["head"]["sha"]}/check-runs')
         must(resp.ok, "Error getting check runs status!")
         checkruns = resp.json()
         for cr in checkruns["check_runs"]:

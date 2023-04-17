@@ -44,9 +44,7 @@ def test_atomic_add_global_i32():
 
 @test_utils.test()
 def test_atomic_add_global_f32():
-    run_atomic_add_global_case(
-        ti.f32, 4.2, valproc=lambda x: test_utils.approx(x, rel=1e-5)
-    )
+    run_atomic_add_global_case(ti.f32, 4.2, valproc=lambda x: test_utils.approx(x, rel=1e-5))
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])

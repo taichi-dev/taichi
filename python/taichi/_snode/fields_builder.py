@@ -62,9 +62,7 @@ class FieldsBuilder:
         if self.finalized:
             self.root.deactivate_all()
         else:
-            warning(
-                """'deactivate_all()' would do nothing if FieldsBuilder is not finalized"""
-            )
+            warning("""'deactivate_all()' would do nothing if FieldsBuilder is not finalized""")
 
     def dense(
         self,
@@ -82,9 +80,7 @@ class FieldsBuilder:
         dimensions: Union[Sequence[int], int],
     ):
         """Same as :func:`taichi.lang.snode.SNode.pointer`"""
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
             raise TaichiRuntimeError("Pointer SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False
@@ -101,9 +97,7 @@ class FieldsBuilder:
         chunk_size: Optional[int] = None,
     ):
         """Same as :func:`taichi.lang.snode.SNode.dynamic`"""
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
             raise TaichiRuntimeError("Dynamic SNode is not supported on this backend.")
 
         if dimension >= 2**31:
@@ -125,12 +119,8 @@ class FieldsBuilder:
         dimensions: Union[Sequence[int], int],
     ):
         """Same as :func:`taichi.lang.snode.SNode.bitmasked`"""
-        if not _ti_core.is_extension_supported(
-            impl.current_cfg().arch, _ti_core.Extension.sparse
-        ):
-            raise TaichiRuntimeError(
-                "Bitmasked SNode is not supported on this backend."
-            )
+        if not _ti_core.is_extension_supported(impl.current_cfg().arch, _ti_core.Extension.sparse):
+            raise TaichiRuntimeError("Bitmasked SNode is not supported on this backend.")
         self._check_not_finalized()
         self.empty = False
         return self.root.bitmasked(indices, dimensions)
@@ -189,11 +179,7 @@ class FieldsBuilder:
             warning("Finalizing an empty FieldsBuilder!")
         self.finalized = True
         impl.get_runtime().finalize_fields_builder(self)
-        return SNodeTree(
-            _ti_core.finalize_snode_tree(
-                _snode_registry, self.ptr, impl.get_runtime().prog, compile_only
-            )
-        )
+        return SNodeTree(_ti_core.finalize_snode_tree(_snode_registry, self.ptr, impl.get_runtime().prog, compile_only))
 
     def _check_not_finalized(self):
         if self.finalized:

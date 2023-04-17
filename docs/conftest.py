@@ -145,7 +145,7 @@ class MarkdownFile(pytest.File):
                     yield MarkdownItem.from_parent(self, name=spec.name, spec=spec)
                 preludes = extra.get("preludes")
                 if preludes is None:
-                    preludes = ["init"]
+                    preludes = []
                 else:
                     preludes = preludes.split(",")
                 spec = PythonSnippet(

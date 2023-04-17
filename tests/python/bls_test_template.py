@@ -5,9 +5,7 @@ import numpy as np
 import taichi as ti
 
 
-def bls_test_template(
-    dim, N, bs, stencil, block_dim=None, scatter=False, benchmark=0, dense=False
-):
+def bls_test_template(dim, N, bs, stencil, block_dim=None, scatter=False, benchmark=0, dense=False):
     x, y, y2 = ti.field(ti.i32), ti.field(ti.i32), ti.field(ti.i32)
 
     index = ti.axes(*range(dim))
@@ -147,9 +145,9 @@ def bls_particle_grid(
     block.dense(ti.ij, block_size).place(m2, offset=grid_offset)
     block.dense(ti.ij, block_size).place(m3, offset=grid_offset)
 
-    block.dynamic(
-        ti.l, max_num_particles_per_block, chunk_size=block_size**2 * ppc * 4
-    ).place(pid, offset=grid_offset_block + (0,))
+    block.dynamic(ti.l, max_num_particles_per_block, chunk_size=block_size**2 * ppc * 4).place(
+        pid, offset=grid_offset_block + (0,)
+    )
 
     bound = 0.1
 
@@ -163,9 +161,7 @@ def bls_particle_grid(
         for _ in range(M)
     ]
     if sort_points:
-        x_.sort(
-            key=lambda q: int(q[0] * N) // block_size * N + int(q[1] * N) // block_size
-        )
+        x_.sort(key=lambda q: int(q[0] * N) // block_size * N + int(q[1] * N) // block_size)
 
     x.from_numpy(np.array(x_, dtype=np.float32))
 

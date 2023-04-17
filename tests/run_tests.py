@@ -72,9 +72,7 @@ def _test_python(args, default_dir="python"):
     print(f"Starting {threads} testing thread(s)...")
     if args.show_output:
         pytest_args += ["-s"]
-        print(
-            f"Due to how pytest-xdist is implemented, the -s option does not work with multiple thread..."
-        )
+        print(f"Due to how pytest-xdist is implemented, the -s option does not work with multiple thread...")
     else:
         if int(threads) > 1:
             pytest_args += ["-n", str(threads), "--dist=worksteal"]
@@ -247,9 +245,7 @@ def test():
             def size_of_dir(dir):
                 size = 0
                 for root, dirs, files in os.walk(dir):
-                    size += sum(
-                        [os.path.getsize(os.path.join(root, name)) for name in files]
-                    )
+                    size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
                 return size
 
             size = size_of_dir(tmp_cache_file_path)

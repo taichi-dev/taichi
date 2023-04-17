@@ -178,13 +178,9 @@ def _svd3d(A, dt, iters=None):
         else:
             iters = 8
     if dt == f32:
-        rets = (
-            get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(A.ptr, iters)
-        )
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f32(A.ptr, iters)
     else:
-        rets = (
-            get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(A.ptr, iters)
-        )
+        rets = get_runtime().compiling_callable.ast_builder().sifakis_svd_f64(A.ptr, iters)
     assert len(rets) == 21
     U_entries = rets[:9]
     V_entries = rets[9:18]
@@ -430,13 +426,7 @@ def _sym_eig3x3(A, dt):
     ee = A[1, 2] * A[1, 2]
     ff = A[0, 2] * A[0, 2]
     c1 = A[0, 0] * A[1, 1] + A[0, 0] * A[2, 2] + A[1, 1] * A[2, 2] - (dd + ee + ff)
-    c0 = (
-        A[2, 2] * dd
-        + A[0, 0] * ee
-        + A[1, 1] * ff
-        - A[0, 0] * A[1, 1] * A[2, 2]
-        - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
-    )
+    c0 = A[2, 2] * dd + A[0, 0] * ee + A[1, 1] * ff - A[0, 0] * A[1, 1] * A[2, 2] - 2.0 * A[0, 2] * A[0, 1] * A[1, 2]
 
     p = m * m - 3.0 * c1
     q = m * (p - 1.5 * c1) - 13.5 * c0

@@ -18,9 +18,7 @@ N_ITER = 500  # Use 500 to make speed diff more obvious
 
 
 @ti.kernel
-def substep_reset_grid(
-    grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)
-):
+def substep_reset_grid(grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)):
     for i, j in grid_m:
         grid_v[i, j] = [0, 0]
         grid_m[i, j] = 0
@@ -51,9 +49,7 @@ def substep_p2g(
 
 
 @ti.kernel
-def substep_update_grid_v(
-    grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)
-):
+def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)):
     for i, j in grid_m:
         if grid_m[i, j] > 0:
             grid_v[i, j] /= grid_m[i, j]
@@ -129,12 +125,8 @@ def main():
         sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "v", dtype=ti.math.vec2, ndim=1)
         sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "C", dtype=ti.math.mat2, ndim=1)
         sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "J", ti.f32, ndim=1)
-        sym_grid_v = ti.graph.Arg(
-            ti.graph.ArgKind.NDARRAY, "grid_v", dtype=ti.math.vec2, ndim=2
-        )
-        sym_grid_m = ti.graph.Arg(
-            ti.graph.ArgKind.NDARRAY, "grid_m", dtype=ti.f32, ndim=2
-        )
+        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_v", dtype=ti.math.vec2, ndim=2)
+        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_m", dtype=ti.f32, ndim=2)
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
 
@@ -142,9 +134,7 @@ def main():
         substep = g_update_builder.create_sequential()
 
         substep.dispatch(substep_reset_grid, sym_grid_v, sym_grid_m)
-        substep.dispatch(
-            substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_grid_m
-        )
+        substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_grid_m)
         substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m)
         substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v)
 

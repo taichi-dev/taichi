@@ -59,9 +59,7 @@ def compute_force():
     for i in range(N):
         p = pos[i]
         for j in range(N):
-            if (
-                i != j
-            ):  # double the computation for a better memory footprint and load balance
+            if i != j:  # double the computation for a better memory footprint and load balance
                 diff = p - pos[j]
                 r = diff.norm(1e-5)
 

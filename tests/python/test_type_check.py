@@ -25,9 +25,7 @@ def test_binary_op():
         b = 3.1
         c = a & b
 
-    with pytest.raises(
-        ti.TaichiTypeError, match=r"unsupported operand type\(s\) for '&'"
-    ):
+    with pytest.raises(ti.TaichiTypeError, match=r"unsupported operand type\(s\) for '&'"):
         bitwise_float()
 
 
@@ -40,9 +38,7 @@ def test_ternary_op():
         c = ti.math.vec3(1.0, 1.0, 2.0)
         d = a if b else c
 
-    with pytest.raises(
-        ti.TaichiCompilationError, match="Cannot broadcast tensor to tensor"
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match="Cannot broadcast tensor to tensor"):
         select()
 
 

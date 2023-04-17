@@ -105,9 +105,7 @@ class Struct:
         cls = self.__class__
         new_cls_name = cls.__name__ + str(cls._instance_count)
         cls._instance_count += 1
-        properties = {
-            k: property(cls._make_getter(k), cls._make_setter(k)) for k in self.keys
-        }
+        properties = {k: property(cls._make_getter(k), cls._make_setter(k)) for k in self.keys}
         self.__class__ = type(new_cls_name, (cls,), properties)
 
     def _register_methods(self):
@@ -126,17 +124,13 @@ class Struct:
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
             if in_python_scope():
-                if isinstance(self.entries[key], Struct) or isinstance(
-                    self.entries[key], Matrix
-                ):
+                if isinstance(self.entries[key], Struct) or isinstance(self.entries[key], Matrix):
                     self.entries[key]._set_entries(value)
                 else:
                     if isinstance(value, numbers.Number):
                         self.entries[key] = value
                     else:
-                        raise TypeError(
-                            "A number is expected when assigning struct members"
-                        )
+                        raise TypeError("A number is expected when assigning struct members")
             else:
                 self.entries[key] = value
 
@@ -169,9 +163,7 @@ class Struct:
         if isinstance(other, dict):
             other = Struct(other)
         if self.entries.keys() != other.entries.keys():
-            raise TaichiTypeError(
-                f"Member mismatch between structs {self.keys}, {other.keys}"
-            )
+            raise TaichiTypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         for k, v in self.items:
             v._assign(other.entries[k])
         return self
@@ -204,11 +196,7 @@ class Struct:
             Dict: The result dictionary.
         """
         res_dict = {
-            k: v.to_dict()
-            if isinstance(v, Struct)
-            else v.to_list()
-            if isinstance(v, Matrix)
-            else v
+            k: v.to_dict() if isinstance(v, Struct) else v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
         if include_methods:
@@ -321,29 +309,19 @@ class Struct:
                     impl.root.dense(impl.index_nd(dim), shape).place(e, offset=offset)
                 if needs_grad:
                     for e in field_dict.values():
-                        impl.root.dense(impl.index_nd(dim), shape).place(
-                            e.grad, offset=offset
-                        )
+                        impl.root.dense(impl.index_nd(dim), shape).place(e.grad, offset=offset)
                 if needs_dual:
                     for e in field_dict.values():
-                        impl.root.dense(impl.index_nd(dim), shape).place(
-                            e.dual, offset=offset
-                        )
+                        impl.root.dense(impl.index_nd(dim), shape).place(e.dual, offset=offset)
             else:
-                impl.root.dense(impl.index_nd(dim), shape).place(
-                    *tuple(field_dict.values()), offset=offset
-                )
+                impl.root.dense(impl.index_nd(dim), shape).place(*tuple(field_dict.values()), offset=offset)
                 if needs_grad:
                     grads = tuple(e.grad for e in field_dict.values())
-                    impl.root.dense(impl.index_nd(dim), shape).place(
-                        *grads, offset=offset
-                    )
+                    impl.root.dense(impl.index_nd(dim), shape).place(*grads, offset=offset)
 
                 if needs_dual:
                     duals = tuple(e.dual for e in field_dict.values())
-                    impl.root.dense(impl.index_nd(dim), shape).place(
-                        *duals, offset=offset
-                    )
+                    impl.root.dense(impl.index_nd(dim), shape).place(*duals, offset=offset)
 
         return StructField(field_dict, methods, name=name)
 
@@ -389,16 +367,12 @@ class StructField(Field):
             grad_field_dict = {}
             for k, v in self.field_dict.items():
                 grad_field_dict[k] = v.grad
-            self.grad = StructField(
-                grad_field_dict, struct_methods, name + ".grad", is_primal=False
-            )
+            self.grad = StructField(grad_field_dict, struct_methods, name + ".grad", is_primal=False)
 
             dual_field_dict = {}
             for k, v in self.field_dict.items():
                 dual_field_dict[k] = v.dual
-            self.dual = StructField(
-                dual_field_dict, struct_methods, name + ".dual", is_primal=False
-            )
+            self.dual = StructField(dual_field_dict, struct_methods, name + ".dual", is_primal=False)
         self._register_fields()
 
     @property
@@ -597,9 +571,7 @@ class StructField(Field):
         self._initialize_host_accessors()
         # scalar fields does not instantiate SNodeHostAccess by default
         entries = {
-            k: v._host_access(self._pad_key(indices))[0]
-            if isinstance(v, ScalarField)
-            else v[indices]
+            k: v._host_access(self._pad_key(indices))[0] if isinstance(v, ScalarField) else v[indices]
             for k, v in self._items
         }
         entries["__struct_methods"] = self.struct_methods
@@ -657,9 +629,7 @@ class StructType(CompoundType):
             if isinstance(dtype, CompoundType):
                 d[name] = dtype.from_taichi_object(func_ret, ret_index + (index,))
             else:
-                d[name] = expr.Expr(
-                    _ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,))
-                )
+                d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
 
         return Struct(d)
 
@@ -679,9 +649,7 @@ class StructType(CompoundType):
                 elif dtype in primitive_types.real_types:
                     d[name] = launch_ctx.get_struct_ret_float(ret_index + (index,))
                 else:
-                    raise TaichiRuntimeTypeError(
-                        f"Invalid return type on index={ret_index + (index, )}"
-                    )
+                    raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
 
         return Struct(d)
 
@@ -691,25 +659,17 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                dtype.set_kernel_struct_args(
-                    struct[name], launch_ctx, ret_index + (index,)
-                )
+                dtype.set_kernel_struct_args(struct[name], launch_ctx, ret_index + (index,))
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        launch_ctx.set_struct_arg_int(
-                            ret_index + (index,), struct[name]
-                        )
+                        launch_ctx.set_struct_arg_int(ret_index + (index,), struct[name])
                     else:
-                        launch_ctx.set_struct_arg_uint(
-                            ret_index + (index,), struct[name]
-                        )
+                        launch_ctx.set_struct_arg_uint(ret_index + (index,), struct[name])
                 elif dtype in primitive_types.real_types:
                     launch_ctx.set_struct_arg_float(ret_index + (index,), struct[name])
                 else:
-                    raise TaichiRuntimeTypeError(
-                        f"Invalid argument type on index={ret_index + (index, )}"
-                    )
+                    raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
 
     def cast(self, struct):
         # sanity check members
@@ -724,9 +684,7 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = (
-                        int(v) if dtype in primitive_types.integer_types else float(v)
-                    )
+                    entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
         entries["__struct_methods"] = self.methods

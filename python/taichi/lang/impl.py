@@ -63,11 +63,7 @@ from taichi.types.primitive_types import (
 
 @taichi_scope
 def expr_init_shared_array(shape, element_type):
-    return (
-        get_runtime()
-        .compiling_callable.ast_builder()
-        .expr_alloca_shared_array(shape, element_type)
-    )
+    return get_runtime().compiling_callable.ast_builder().expr_alloca_shared_array(shape, element_type)
 
 
 @taichi_scope
@@ -101,9 +97,7 @@ def expr_init(rhs):
     if hasattr(rhs, "_data_oriented"):
         return rhs
     return Expr(
-        get_runtime()
-        .compiling_callable.ast_builder()
-        .expr_var(Expr(rhs).ptr, get_runtime().get_current_src_info())
+        get_runtime().compiling_callable.ast_builder().expr_var(Expr(rhs).ptr, get_runtime().get_current_src_info())
     )
 
 
@@ -126,9 +120,7 @@ def begin_frontend_struct_for(ast_builder, group, loop_range):
             'use "for I in ti.grouped(x)" to group all indices into a single vector I?'
         )
     if isinstance(loop_range, (AnyArray, RWTextureAccessor)):
-        ast_builder.begin_frontend_struct_for_on_external_tensor(
-            group, loop_range._loop_range()
-        )
+        ast_builder.begin_frontend_struct_for_on_external_tensor(group, loop_range._loop_range())
     else:
         ast_builder.begin_frontend_struct_for_on_snode(group, loop_range._loop_range())
 
@@ -221,9 +213,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
 
     if has_slice:
         if not (isinstance(value, Expr) and value.is_tensor()):
-            raise TaichiSyntaxError(
-                f"The type {type(value)} do not support index of slice type"
-            )
+            raise TaichiSyntaxError(f"The type {type(value)} do not support index of slice type")
     else:
         indices_expr_group = make_expr_group(*indices)
 
@@ -233,12 +223,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         return value.subscript(*indices)
     if isinstance(value, MeshRelationAccessProxy):
         return value.subscript(*indices)
-    if (
-        isinstance(
-            value, (MeshReorderedScalarFieldProxy, MeshReorderedMatrixFieldProxy)
-        )
-        and not skip_reordered
-    ):
+    if isinstance(value, (MeshReorderedScalarFieldProxy, MeshReorderedMatrixFieldProxy)) and not skip_reordered:
         reordered_index = tuple(
             [
                 Expr(
@@ -266,26 +251,14 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 )
 
         if isinstance(value, MatrixField):
-            return Expr(
-                ast_builder.expr_subscript(
-                    value.ptr, indices_expr_group, get_runtime().get_current_src_info()
-                )
-            )
+            return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
         if isinstance(value, StructField):
             entries = {k: subscript(ast_builder, v, *indices) for k, v in value._items}
             entries["__struct_methods"] = value.struct_methods
             return _IntermediateStruct(entries)
-        return Expr(
-            ast_builder.expr_subscript(
-                _var, indices_expr_group, get_runtime().get_current_src_info()
-            )
-        )
+        return Expr(ast_builder.expr_subscript(_var, indices_expr_group, get_runtime().get_current_src_info()))
     if isinstance(value, AnyArray):
-        return Expr(
-            ast_builder.expr_subscript(
-                value.ptr, indices_expr_group, get_runtime().get_current_src_info()
-            )
-        )
+        return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
     assert isinstance(value, Expr)
     # Index into TensorType
     # value: IndexExpression with ret_type = TensorType
@@ -296,8 +269,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         dim = len(shape)
         assert dim == len(indices)
         indices = [
-            _calc_slice(index, shape[i]) if isinstance(index, slice) else index
-            for i, index in enumerate(indices)
+            _calc_slice(index, shape[i]) if isinstance(index, slice) else index for i, index in enumerate(indices)
         ]
         if dim == 1:
             assert isinstance(indices[0], list)
@@ -306,9 +278,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
         else:
             assert dim == 2
             if isinstance(indices[0], list) and isinstance(indices[1], list):
-                multiple_indices = [
-                    make_expr_group(i, j) for i in indices[0] for j in indices[1]
-                ]
+                multiple_indices = [make_expr_group(i, j) for i in indices[0] for j in indices[1]]
                 return_shape = (len(indices[0]), len(indices[1]))
             elif isinstance(indices[0], list):  # indices[1] is not list
                 multiple_indices = [make_expr_group(i, indices[1]) for i in indices[0]]
@@ -324,11 +294,7 @@ def subscript(ast_builder, value, *_indices, skip_reordered=False):
                 get_runtime().get_current_src_info(),
             )
         )
-    return Expr(
-        ast_builder.expr_subscript(
-            value.ptr, indices_expr_group, get_runtime().get_current_src_info()
-        )
-    )
+    return Expr(ast_builder.expr_subscript(value.ptr, indices_expr_group, get_runtime().get_current_src_info()))
 
 
 class SrcInfoGuard:
@@ -381,8 +347,7 @@ class PyTaichi:
                 continue
 
             raise TaichiRuntimeError(
-                f"Field builder {builder} is not finalized. "
-                f"Please call finalize() on it. Traceback:\n{tb}"
+                f"Field builder {builder} is not finalized. " f"Please call finalize() on it. Traceback:\n{tb}"
             )
 
     def get_num_compiled_functions(self):
@@ -479,11 +444,7 @@ class PyTaichi:
 
     def _check_matrix_field_member_shape(self):
         for _field in self.matrix_fields:
-            shapes = [
-                _field.get_scalar_field(i, j).shape
-                for i in range(_field.n)
-                for j in range(_field.m)
-            ]
+            shapes = [_field.get_scalar_field(i, j).shape for i in range(_field.n) for j in range(_field.m)]
             if any(shape != shapes[0] for shape in shapes):
                 raise RuntimeError(
                     "Members of the following field have different shapes "
@@ -668,9 +629,7 @@ Example::
 """
 
 
-def _create_snode(
-    axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number], same_level: bool
-):
+def _create_snode(axis_seq: Sequence[int], shape_seq: Sequence[numbers.Number], same_level: bool):
     dim = len(axis_seq)
     assert dim == len(shape_seq)
     snode = root
@@ -689,9 +648,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
     # primal
     prog = get_runtime().prog
     if prog is None:
-        raise TaichiRuntimeError(
-            "Cannont create field, maybe you forgot to call `ti.init()` first?"
-        )
+        raise TaichiRuntimeError("Cannont create field, maybe you forgot to call `ti.init()` first?")
 
     x = Expr(prog.make_id_expr(""))
     x.declaration_tb = get_traceback(stacklevel=4)
@@ -721,9 +678,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
             dtype = u8
             if prog.config().arch in (_ti_core.opengl, _ti_core.vulkan, _ti_core.gles):
                 dtype = i32
-            x_grad_checkbit.ptr = _ti_core.expr_field(
-                x_grad_checkbit.ptr, cook_dtype(dtype)
-            )
+            x_grad_checkbit.ptr = _ti_core.expr_field(x_grad_checkbit.ptr, cook_dtype(dtype))
             x_grad_checkbit.ptr.set_name(name + ".grad_checkbit")
             x_grad_checkbit.ptr.set_grad_type(SNodeGradType.ADJOINT_CHECKBIT)
             x.ptr.set_adjoint_checkbit(x_grad_checkbit.ptr)
@@ -737,9 +692,7 @@ def create_field_member(dtype, name, needs_grad, needs_dual):
         if needs_dual:
             pytaichi.dual_vars.append(x_dual)
     elif needs_grad or needs_dual:
-        raise TaichiRuntimeError(
-            f"{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`."
-        )
+        raise TaichiRuntimeError(f"{dtype} is not supported for field with `needs_grad=True` or `needs_dual=True`.")
 
     return x, x_grad, x_dual
 
@@ -775,9 +728,7 @@ def _field(
             offset = (offset,)
         dim = len(shape)
         if offset is not None and dim != len(offset):
-            raise TaichiSyntaxError(
-                f"The dimensionality of shape and offset must be the same ({dim} != {len(offset)})"
-            )
+            raise TaichiSyntaxError(f"The dimensionality of shape and offset must be the same ({dim} != {len(offset)})")
         axis_seq = []
         shape_seq = []
         if order is not None:
@@ -871,9 +822,7 @@ def ndarray(dtype, shape, needs_grad=False):
     # primal
     prog = get_runtime().prog
     if prog is None:
-        raise TaichiRuntimeError(
-            "Cannont create ndarray, maybe you forgot to call `ti.init()` first?"
-        )
+        raise TaichiRuntimeError("Cannont create ndarray, maybe you forgot to call `ti.init()` first?")
 
     if isinstance(shape, numbers.Number):
         shape = (shape,)
@@ -915,12 +864,7 @@ def ti_format_list_to_content_entries(raw):
     def vars2entries(_vars):
         for _var in _vars:
             # If the first element is '__ti_fmt_value__', this list is an Expr and its format.
-            if (
-                isinstance(_var, list)
-                and len(_var) == 3
-                and isinstance(_var[0], str)
-                and _var[0] == "__ti_fmt_value__"
-            ):
+            if isinstance(_var, list) and len(_var) == 3 and isinstance(_var[0], str) and _var[0] == "__ti_fmt_value__":
                 # yield [Expr, format] as a whole and don't pass it to vars2entries() again
                 yield _var[1:]
                 continue
@@ -928,11 +872,7 @@ def ti_format_list_to_content_entries(raw):
                 res = _var.__ti_repr__()
             elif isinstance(_var, (list, tuple)):
                 # If the first element is '__ti_format__', this list is the result of ti_format.
-                if (
-                    len(_var) > 0
-                    and isinstance(_var[0], str)
-                    and _var[0] == "__ti_format__"
-                ):
+                if len(_var) > 0 and isinstance(_var[0], str) and _var[0] == "__ti_format__":
                     res = _var[1:]
                 else:
                     res = list_ti_repr(_var)
@@ -988,18 +928,14 @@ def ti_format(*args):
     args = []
     for x in mixed:
         # x is a (formatted) Expr
-        if isinstance(x, Expr) or (
-            isinstance(x, list) and len(x) == 3 and x[0] == "__ti_fmt_value__"
-        ):
+        if isinstance(x, Expr) or (isinstance(x, list) and len(x) == 3 and x[0] == "__ti_fmt_value__"):
             new_mixed.append("{}")
             args.append(x)
         else:
             new_mixed.append(x)
     content = content.format(*new_mixed)
     res = content.split("{}")
-    assert (
-        len(res) == len(args) + 1
-    ), "Number of args is different from number of positions provided in string"
+    assert len(res) == len(args) + 1, "Number of args is different from number of positions provided in string"
 
     for i, arg in enumerate(args):
         res.insert(i * 2 + 1, arg)
@@ -1011,9 +947,7 @@ def ti_format(*args):
 def ti_assert(cond, msg, extra_args):
     # Mostly a wrapper to help us convert from Expr (defined in Python) to
     # _ti_core.Expr (defined in C++)
-    get_runtime().compiling_callable.ast_builder().create_assert_stmt(
-        Expr(cond).ptr, msg, extra_args
-    )
+    get_runtime().compiling_callable.ast_builder().create_assert_stmt(Expr(cond).ptr, msg, extra_args)
 
 
 @taichi_scope
@@ -1174,9 +1108,7 @@ def static(x, *xs) -> Any:
         return x
     if isinstance(x, (FunctionType, MethodType)):
         return x
-    raise ValueError(
-        f"Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}"
-    )
+    raise ValueError(f"Input to ti.static must be compile-time constants or global pointers, instead of {type(x)}")
 
 
 @taichi_scope
@@ -1223,11 +1155,7 @@ def default_cfg():
 
 
 def call_internal(name, *args, with_runtime_context=True):
-    return expr_init(
-        _ti_core.insert_internal_func_call(
-            getattr(_ti_core.InternalOp, name), make_expr_group(args)
-        )
-    )
+    return expr_init(_ti_core.insert_internal_func_call(getattr(_ti_core.InternalOp, name), make_expr_group(args)))
 
 
 def get_cuda_compute_capability():

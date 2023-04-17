@@ -12,17 +12,13 @@ class LinearOperator:
 
     def matvec(self, x, Ax):
         if x.shape != Ax.shape:
-            raise TaichiRuntimeError(
-                f"Dimension mismatch x.shape{x.shape} != Ax.shape{Ax.shape}."
-            )
+            raise TaichiRuntimeError(f"Dimension mismatch x.shape{x.shape} != Ax.shape{Ax.shape}.")
         self._matvec(x, Ax)
 
 
 def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     if b.dtype != x.dtype:
-        raise TaichiTypeError(
-            f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype})."
-        )
+        raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
     if str(b.dtype) == "f32":
         solver_dtype = ti.f32
     elif str(b.dtype) == "f64":
@@ -30,9 +26,7 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     else:
         raise TaichiTypeError(f"Not supported dtype: {b.dtype}")
     if b.shape != x.shape:
-        raise TaichiRuntimeError(
-            f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}."
-        )
+        raise TaichiRuntimeError(f"Dimension mismatch b.shape{b.shape} != x.shape{x.shape}.")
 
     size = b.shape
     vector_fields_builder = ti.FieldsBuilder()

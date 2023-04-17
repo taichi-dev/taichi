@@ -22,7 +22,7 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   create_descriptor_pool();
 
   IMGUI_CHECKVERSION();
-  ImGui::CreateContext();
+  imgui_context_ = ImGui::CreateContext();
   [[maybe_unused]] ImGuiIO &io = ImGui::GetIO();
 
   ImGui::StyleColorsDark();
@@ -235,7 +235,7 @@ Gui::~Gui() {
 #endif
   }
   cleanup_render_resources();
-  ImGui::DestroyContext();
+  ImGui::DestroyContext(imgui_context_);
 }
 
 bool Gui::is_empty() {

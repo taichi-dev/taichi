@@ -10,9 +10,7 @@ dt = 1e-4 / quality
 p_vol, p_rho = (dx * 0.5) ** 2, 1
 p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2  # Young's modulus and Poisson's ratio
-mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
-    (1 + nu) * (1 - 2 * nu)
-)  # Lame parameters
+mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
 x = ti.Vector.field(2, ti.f32, shape=n_particles)  # position
 v = ti.Vector.field(2, ti.f32, shape=n_particles)  # velocity
 # affine velocity field
@@ -21,9 +19,7 @@ C = ti.Matrix.field(2, 2, ti.f32, shape=n_particles)
 F = ti.Matrix.field(2, 2, ti.f32, shape=n_particles)
 material = ti.field(dtype=int, shape=n_particles)  # material id
 Jp = ti.field(ti.f32, shape=n_particles)  # plastic deformation
-grid_v = ti.Vector.field(
-    2, ti.f32, shape=(n_grid, n_grid)
-)  # grid node momentum/velocity
+grid_v = ti.Vector.field(2, ti.f32, shape=(n_grid, n_grid))  # grid node momentum/velocity
 grid_m = ti.field(ti.f32, shape=(n_grid, n_grid))  # grid node mass
 
 
@@ -54,9 +50,7 @@ def substep():
                 F[p] = ti.Matrix.identity(ti.f32, 2) * ti.sqrt(J)
             elif material[p] == 2:
                 F[p] = U @ sig @ V.T()
-            stress = 2 * mu * (F[p] - U @ V.T()) @ F[p].T() + ti.Matrix.identity(
-                ti.f32, 2
-            ) * la * J * (J - 1)
+            stress = 2 * mu * (F[p] - U @ V.T()) @ F[p].T() + ti.Matrix.identity(ti.f32, 2) * la * J * (J - 1)
             stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
             affine = stress + p_mass * C[p]
             for i, j in ti.static(ti.ndrange(3, 3)):

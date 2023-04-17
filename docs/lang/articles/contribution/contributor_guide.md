@@ -115,7 +115,7 @@ We highly recommend that you complete code style checks and integration tests on
 Taichi enforces code style via [pre-commit](https://pre-commit.com/) hooks, which includes the following checks:
 
 1. C++ codes are formatted by `clang-format-10`.
-2. Python codes are formatted by `yapf v0.31.0` based on PEP 8 rules.
+2. Python codes are formatted by `black v23.3.0`.
 3. Python codes are statically checked by [`pylint`](https://pylint.org/).
 
 You will need to install `pre-commit` first:
@@ -130,7 +130,7 @@ and run the code checkers:
 pre-commit run -a
 ```
 
-With this command, `yapf` will format your Python codes automatically.
+With this command, `black` will format your Python codes automatically.
 You can install it as a pre-commit hook so that it is run before you commit the changes to git:
 
 ```

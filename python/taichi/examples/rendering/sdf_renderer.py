@@ -67,14 +67,11 @@ def sdf(o):
     sphere = (o - ti.Vector([0.0, 0.35, 0.0])).norm() - 0.36
 
     q = ti.abs(o - ti.Vector([0.8, 0.3, 0])) - ti.Vector([0.3, 0.3, 0.3])
-    box = ti.Vector([ti.max(0, q[0]),
-                     ti.max(0, q[1]),
-                     ti.max(0, q[2])]).norm() + ti.min(q.max(), 0)
+    box = ti.Vector([ti.max(0, q[0]), ti.max(0, q[1]), ti.max(0, q[2])]).norm() + ti.min(q.max(), 0)
 
     O = o - ti.Vector([-0.8, 0.3, 0])
     d = ti.Vector([ti.Vector([O[0], O[2]]).norm() - 0.3, abs(O[1]) - 0.3])
-    cylinder = ti.min(d.max(), 0.0) + ti.Vector(
-        [ti.max(0, d[0]), ti.max(0, d[1])]).norm()
+    cylinder = ti.min(d.max(), 0.0) + ti.Vector([ti.max(0, d[0]), ti.max(0, d[1])]).norm()
 
     geometry = make_nested(ti.min(sphere, box, cylinder))
     geometry = ti.max(geometry, -(0.32 - (o[1] * 0.6 + o[2] * 0.8)))
@@ -105,16 +102,14 @@ def sdf_normal(p):
 
 @ti.func
 def next_hit(pos, d):
-    closest, normal, c = inf, ti.Vector.zero(ti.f32,
-                                             3), ti.Vector.zero(ti.f32, 3)
+    closest, normal, c = inf, ti.Vector.zero(ti.f32, 3), ti.Vector.zero(ti.f32, 3)
     ray_march_dist = ray_march(pos, d)
     if ray_march_dist < dist_limit and ray_march_dist < closest:
         closest = ray_march_dist
         normal = sdf_normal(pos + d * closest)
         hit_pos = pos + d * closest
         t = int((hit_pos[0] + 10) * 1.1 + 0.5) % 3
-        c = ti.Vector(
-            [0.4 + 0.3 * (t == 0), 0.4 + 0.2 * (t == 1), 0.4 + 0.3 * (t == 2)])
+        c = ti.Vector([0.4 + 0.3 * (t == 0), 0.4 + 0.2 * (t == 1), 0.4 + 0.3 * (t == 2)])
     return closest, normal, c
 
 
@@ -123,10 +118,13 @@ def render():
     for u, v in color_buffer:
         aspect_ratio = res[0] / res[1]
         pos = camera_pos
-        d = ti.Vector([
-            (2 * fov * (u + ti.random()) / res[1] - fov * aspect_ratio - 1e-5),
-            2 * fov * (v + ti.random()) / res[1] - fov - 1e-5, -1.0
-        ])
+        d = ti.Vector(
+            [
+                (2 * fov * (u + ti.random()) / res[1] - fov * aspect_ratio - 1e-5),
+                2 * fov * (v + ti.random()) / res[1] - fov - 1e-5,
+                -1.0,
+            ]
+        )
         d = d.normalized()
 
         throughput = ti.Vector([1.0, 1.0, 1.0])
@@ -153,7 +151,7 @@ def render():
 
 
 def main():
-    gui = ti.GUI('SDF Path Tracer', res)
+    gui = ti.GUI("SDF Path Tracer", res)
     last_t = 0
     for i in range(50000):
         render()
@@ -167,5 +165,5 @@ def main():
             gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

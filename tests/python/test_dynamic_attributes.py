@@ -21,9 +21,9 @@ def _test_dynamic_attributes(dt):
                 x[i].append(j)
 
         for i in range(n):
-            assert (x[i].length() == i)
+            assert x[i].length() == i
             for j in range(i):
-                assert (x[i, j] == j)
+                assert x[i, j] == j
 
         # test deactivate for depth 2 snode
         for i in range(n):
@@ -55,9 +55,6 @@ def _test_dynamic_attributes(dt):
     test()
 
 
-@test_utils.test(require=ti.extension.sparse,
-                 exclude=[ti.metal],
-                 default_fp=ti.f32,
-                 debug=True)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True)
 def test_dynamic_attributes_f32():
     _test_dynamic_attributes(ti.f32)

@@ -96,8 +96,7 @@ def advect(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
 
 
 @ti.kernel
-def apply_impulse(vf: ti.template(), dyef: ti.template(),
-                  imp_data: ti.types.ndarray()):
+def apply_impulse(vf: ti.template(), dyef: ti.template(), imp_data: ti.types.ndarray()):
     g_mag = 9.8 if gravity else 0.0
     g_dir = -ti.Vector([0, g_mag]) * 300
     for i, j in vf:
@@ -117,8 +116,7 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(),
         vf[i, j] = v + momentum
         # add dye
         if mdir.norm() > 0.5:
-            dc += ti.exp(-d2 * (4 / (res / 15)**2)) * ti.Vector(
-                [imp_data[4], imp_data[5], imp_data[6]])
+            dc += ti.exp(-d2 * (4 / (res / 15) ** 2)) * ti.Vector([imp_data[4], imp_data[5], imp_data[6]])
 
         dyef[i, j] = dc
 
@@ -182,8 +180,7 @@ def enhance_vorticity(vf: ti.template(), cf: ti.template()):
         cb = sample(cf, i, j - 1)
         ct = sample(cf, i, j + 1)
         cc = sample(cf, i, j)
-        force = ti.Vector([abs(ct) - abs(cb),
-                           abs(cl) - abs(cr)]).normalized(1e-3)
+        force = ti.Vector([abs(ct) - abs(cb), abs(cl) - abs(cr)]).normalized(1e-3)
         force *= curl_strength * cc
         vf[i, j] = min(max(vf[i, j] + force * dt, -1e3), 1e3)
 
@@ -211,7 +208,7 @@ def step(mouse_data):
     if debug:
         divergence(velocities_pair.cur)
         div_s = np.sum(velocity_divs.to_numpy())
-        print(f'divergence={div_s}')
+        print(f"divergence={div_s}")
 
 
 class MouseDataGen:
@@ -253,7 +250,7 @@ def main():
     global curl_strength, debug
 
     paused = False
-    window = ti.ui.Window('Stable Fluid', (res, res), vsync=True)
+    window = ti.ui.Window("Stable Fluid", (res, res), vsync=True)
     canvas = window.get_canvas()
     md_gen = MouseDataGen()
 
@@ -262,17 +259,17 @@ def main():
             e = window.event
             if e.key == ti.ui.ESCAPE:
                 break
-            elif e.key == 'r':
+            elif e.key == "r":
                 paused = False
                 reset()
-            elif e.key == 's':
+            elif e.key == "s":
                 if curl_strength:
                     curl_strength = 0
                 else:
                     curl_strength = 7
-            elif e.key == 'p':
+            elif e.key == "p":
                 paused = not paused
-            elif e.key == 'd':
+            elif e.key == "d":
                 debug = not debug
 
         # Debug divergence:
@@ -285,5 +282,5 @@ def main():
         window.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

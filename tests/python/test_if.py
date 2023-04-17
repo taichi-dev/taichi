@@ -17,8 +17,7 @@ def test_ifexpr_vector():
             cond = (I < 3) & (g_v[I] < 0) | (I > n_grids - 3) & (g_v[I] > 0)
             g_v[I] = 0 if cond else g_v[I]
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match='Please use "ti.select" instead.'):
+    with pytest.raises(ti.TaichiSyntaxError, match='Please use "ti.select" instead.'):
         func()
 
 
@@ -32,8 +31,7 @@ def test_ifexpr_scalar():
     @ti.kernel
     def func():
         for I in ti.grouped(g_m):
-            cond = (I[0] < 3) and (g_v[I][0] < 0) or (I[0] > n_grids - 3) and (
-                g_v[I][0] > 0)
+            cond = (I[0] < 3) and (g_v[I][0] < 0) or (I[0] > n_grids - 3) and (g_v[I][0] > 0)
             g_v[I] = 0 if cond else g_v[I]
 
     func()

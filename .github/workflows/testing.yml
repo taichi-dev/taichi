@@ -588,6 +588,25 @@ jobs:
           submodules: 'recursive'
           fetch-depth: '0'
 
+      - name: Check if there is anything Markdown modified but not covered by CI
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          set +e
+          sort docs/cover-in-ci.lst > /tmp/sorted-cover-list
+          git diff --name-only $BASE_SHA $HEAD_SHA | grep '\.md$' | sort > /tmp/sorted-modified-list
+          diff -u /tmp/sorted-cover-list /tmp/sorted-modified-list | grep '^\+docs' > /tmp/uncovered-list
+          if [ -s /tmp/uncovered-list ]; then
+            echo Please add modified docs to docs/cover-in-ci.lst!
+            echo
+            cat /tmp/uncovered-list
+            exit 1
+          else
+            echo No modified docs, or modified docs are all covered in the list
+          fi
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
       - name: Prepare Environment
         run: |
           . .github/workflows/scripts/common-utils.sh

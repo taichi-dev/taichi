@@ -33,116 +33,104 @@ class SourceBuilder:
             self.td = tempfile.mkdtemp()
 
         if filename.endswith((".cpp", ".c", ".cc")):
-            if impl.current_cfg().arch not in [
-                    _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]:
-                raise TaichiSyntaxError(
-                    "Unsupported arch for external function call")
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             if compile_fn is None:
 
                 def compile_fn_impl(filename):
                     if impl.current_cfg().arch == _ti_core.Arch.x64:
-                        subprocess.call(get_clangpp() + ' -flto -c ' +
-                                        filename + ' -o ' +
-                                        os.path.join(self.td, 'source.bc'),
-                                        shell=True)
+                        subprocess.call(
+                            get_clangpp() + " -flto -c " + filename + " -o " + os.path.join(self.td, "source.bc"),
+                            shell=True,
+                        )
                     else:
-                        subprocess.call(get_clangpp() + ' -flto -c ' +
-                                        filename + ' -o ' +
-                                        os.path.join(self.td, 'source.bc') +
-                                        ' -target nvptx64-nvidia-cuda',
-                                        shell=True)
-                    return os.path.join(self.td, 'source.bc')
+                        subprocess.call(
+                            get_clangpp()
+                            + " -flto -c "
+                            + filename
+                            + " -o "
+                            + os.path.join(self.td, "source.bc")
+                            + " -target nvptx64-nvidia-cuda",
+                            shell=True,
+                        )
+                    return os.path.join(self.td, "source.bc")
 
                 compile_fn = compile_fn_impl
             self.bc = compile_fn(filename)
-            self.mode = 'bc'
+            self.mode = "bc"
         elif filename.endswith(".cu"):
             if impl.current_cfg().arch not in [_ti_core.Arch.cuda]:
-                raise TaichiSyntaxError(
-                    "Unsupported arch for external function call")
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             if compile_fn is None:
-                shutil.copy(filename, os.path.join(self.td, 'source.cu'))
+                shutil.copy(filename, os.path.join(self.td, "source.cu"))
 
                 def compile_fn_impl(filename):
                     # Cannot use -o to specify multiple output files
                     subprocess.call(
-                        get_clangpp() + ' ' +
-                        os.path.join(self.td, 'source.cu') +
-                        ' -c -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib',
+                        get_clangpp()
+                        + " "
+                        + os.path.join(self.td, "source.cu")
+                        + " -c -emit-llvm -std=c++17 --cuda-gpu-arch=sm_50 -nocudalib",
                         cwd=self.td,
-                        shell=True)
-                    return os.path.join(
-                        self.td, 'source-cuda-nvptx64-nvidia-cuda-sm_50.bc')
+                        shell=True,
+                    )
+                    return os.path.join(self.td, "source-cuda-nvptx64-nvidia-cuda-sm_50.bc")
 
                 compile_fn = compile_fn_impl
             self.bc = compile_fn(filename)
-            self.mode = 'bc'
+            self.mode = "bc"
         elif filename.endswith((".so", ".dylib", ".dll")):
             if impl.current_cfg().arch not in [_ti_core.Arch.x64]:
-                raise TaichiSyntaxError(
-                    "Unsupported arch for external function call")
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             self.so = ctypes.CDLL(filename)
-            self.mode = 'so'
+            self.mode = "so"
         elif filename.endswith(".ll"):
-            if impl.current_cfg().arch not in [
-                    _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]:
-                raise TaichiSyntaxError(
-                    "Unsupported arch for external function call")
-            subprocess.call('llvm-as ' + filename + ' -o ' +
-                            os.path.join(self.td, 'source.bc'),
-                            shell=True)
-            self.bc = os.path.join(self.td, 'source.bc')
-            self.mode = 'bc'
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
+            subprocess.call(
+                "llvm-as " + filename + " -o " + os.path.join(self.td, "source.bc"),
+                shell=True,
+            )
+            self.bc = os.path.join(self.td, "source.bc")
+            self.mode = "bc"
         elif filename.endswith(".bc"):
-            if impl.current_cfg().arch not in [
-                    _ti_core.Arch.x64, _ti_core.Arch.cuda
-            ]:
-                raise TaichiSyntaxError(
-                    "Unsupported arch for external function call")
+            if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+                raise TaichiSyntaxError("Unsupported arch for external function call")
             self.bc = filename
-            self.mode = 'bc'
+            self.mode = "bc"
         else:
-            raise TaichiSyntaxError(
-                'Unsupported file type for external function call.')
+            raise TaichiSyntaxError("Unsupported file type for external function call.")
         return self
 
     @classmethod
     def from_source(cls, source_code, compile_fn=None):
-        if impl.current_cfg().arch not in [
-                _ti_core.Arch.x64, _ti_core.Arch.cuda
-        ]:
-            raise TaichiSyntaxError(
-                "Unsupported arch for external function call")
+        if impl.current_cfg().arch not in [_ti_core.Arch.x64, _ti_core.Arch.cuda]:
+            raise TaichiSyntaxError("Unsupported arch for external function call")
         _temp_dir = tempfile.mkdtemp()
-        _temp_source = os.path.join(_temp_dir, '_temp_source.cpp')
-        with open(_temp_source, 'w') as f:
+        _temp_source = os.path.join(_temp_dir, "_temp_source.cpp")
+        with open(_temp_source, "w") as f:
             f.write(source_code)
         return SourceBuilder.from_file(_temp_source, compile_fn, _temp_dir)
 
     def __getattr__(self, item):
         def bitcode_func_call_wrapper(*args):
-            impl.get_runtime().compiling_callable.ast_builder(
-            ).insert_external_func_call(0, '', self.bc, item,
-                                        make_expr_group(args),
-                                        make_expr_group([]))
+            impl.get_runtime().compiling_callable.ast_builder().insert_external_func_call(
+                0, "", self.bc, item, make_expr_group(args), make_expr_group([])
+            )
 
-        if self.mode == 'bc':
+        if self.mode == "bc":
             return bitcode_func_call_wrapper
 
         def external_func_call_wrapper(args=[], outputs=[]):
-            func_addr = ctypes.cast(self.so.__getattr__(item),
-                                    ctypes.c_void_p).value
-            impl.get_runtime().compiling_callable.ast_builder(
-            ).insert_external_func_call(func_addr, '', '', '',
-                                        make_expr_group(args),
-                                        make_expr_group(outputs))
+            func_addr = ctypes.cast(self.so.__getattr__(item), ctypes.c_void_p).value
+            impl.get_runtime().compiling_callable.ast_builder().insert_external_func_call(
+                func_addr, "", "", "", make_expr_group(args), make_expr_group(outputs)
+            )
 
-        if self.mode == 'so':
+        if self.mode == "so":
             return external_func_call_wrapper
 
-        raise TaichiSyntaxError('Error occurs when calling external function.')
+        raise TaichiSyntaxError("Error occurs when calling external function.")
 
 
 __all__ = []

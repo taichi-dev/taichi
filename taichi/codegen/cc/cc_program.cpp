@@ -1,5 +1,5 @@
 #include "taichi/codegen/cc/cc_program.h"
-#include "taichi/rhi/common/memory_pool.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 using namespace taichi::lang::cccp;
 
@@ -33,9 +33,8 @@ FunctionType CCProgramImpl::compile(const CompileConfig &compile_config,
 void CCProgramImpl::materialize_runtime(KernelProfilerBase *,
                                         uint64 **result_buffer_ptr) {
   TI_ASSERT(*result_buffer_ptr == nullptr);
-  *result_buffer_ptr =
-      (uint64 *)MemoryPool::get_instance(config->arch)
-          .allocate(sizeof(uint64) * taichi_result_buffer_entries, 8);
+  *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
+      sizeof(uint64) * taichi_result_buffer_entries, 8);
   result_buffer_ = *result_buffer_ptr;
 }
 

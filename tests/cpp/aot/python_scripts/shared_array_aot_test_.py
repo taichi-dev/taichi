@@ -19,8 +19,11 @@ def shared_array_aot_test(arch):
     a_arr = np.zeros(N).astype(np.float32)
 
     @ti.kernel
-    def run(v: ti.types.ndarray(ndim=1), d: ti.types.ndarray(ndim=1),
-            a: ti.types.ndarray(ndim=1)):
+    def run(
+        v: ti.types.ndarray(ndim=1),
+        d: ti.types.ndarray(ndim=1),
+        a: ti.types.ndarray(ndim=1),
+    ):
         for i in range(nBlocks * block_dim):
             v[i] = 1.0
             d[i] = 1.0
@@ -28,7 +31,7 @@ def shared_array_aot_test(arch):
         ti.loop_config(block_dim=block_dim)
         for i in range(nBlocks * block_dim):
             tid = i % block_dim
-            pad = ti.simt.block.SharedArray((block_dim, ), ti.f32)
+            pad = ti.simt.block.SharedArray((block_dim,), ti.f32)
             acc = 0.0
             v_val = v[i]
             for k in range(nBlocks):
@@ -43,7 +46,7 @@ def shared_array_aot_test(arch):
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
     m = ti.aot.Module()
-    m.add_kernel(run, template_args={'v': v_arr, 'd': d_arr, 'a': a_arr})
+    m.add_kernel(run, template_args={"v": v_arr, "d": d_arr, "a": a_arr})
     m.save(dir_name)
 
 

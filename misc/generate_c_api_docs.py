@@ -1,5 +1,4 @@
-from generate_c_api import (get_declr, get_title,
-                            resolve_inline_symbols_to_names)
+from generate_c_api import get_declr, get_title, resolve_inline_symbols_to_names
 from taichi_json import BuiltInType, Module
 
 
@@ -47,7 +46,7 @@ def print_module_doc(module: Module):
     if out[-1]:
         out += [""]
 
-    return '\n'.join(out)
+    return "\n".join(out)
 
 
 def generate_module_header(module):
@@ -59,7 +58,7 @@ def generate_module_header(module):
     with open(path, "w") as f:
         f.write(print_module_doc(module))
 
-    #system(f"clang-format {path} -i")
+    # system(f"clang-format {path} -i")
 
 
 if __name__ == "__main__":

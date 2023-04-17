@@ -6,11 +6,11 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
-if os.name == 'nt':
+if os.name == "nt":
     pytest.skip(
-        "Skipping on windows because fflush issues, "
-        "see https://github.com/taichi-dev/taichi/issues/6179",
-        allow_module_level=True)
+        "Skipping on windows because fflush issues, " "see https://github.com/taichi-dev/taichi/issues/6179",
+        allow_module_level=True,
+    )
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
@@ -31,8 +31,7 @@ def test_no_debug(capfd):
 
 
 def supports_overflow(arch):
-    return arch != ti.vulkan or platform.system(
-    ) != "Darwin"  # Vulkan on macOS do not have the validation layer.
+    return arch != ti.vulkan or platform.system() != "Darwin"  # Vulkan on macOS do not have the validation layer.
 
 
 add_table = [
@@ -195,7 +194,8 @@ def test_mul_overflow(capfd, ty, num1, num2):
     # 64-bit Multiplication overflow detection does not function correctly on old drivers.
     # See https://github.com/taichi-dev/taichi/issues/6303
     if ti.lang.impl.current_cfg().arch == ti.vulkan and id(ty) in [
-            id(ti.i64), id(ti.u64)
+        id(ti.i64),
+        id(ti.u64),
     ]:
         return
     capfd.readouterr()

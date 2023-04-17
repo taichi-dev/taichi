@@ -46,7 +46,7 @@ def paint():
 def main():
     img.fill(0.05)
 
-    gui = ti.GUI('Sparse Grids', (res, res))
+    gui = ti.GUI("Sparse Grids", (res, res))
 
     for i in range(100000):
         block1.deactivate_all()
@@ -56,5 +56,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

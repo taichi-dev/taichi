@@ -41,22 +41,22 @@ def initialize():
         ys.append(y[i])
 
     poly.grad()
-    print('grad_x')
+    print("grad_x")
     for i in range(N):
         grad_xs.append(x.grad[i])
 
 
 def draw():
-    plt.title('Auto Diff')
+    plt.title("Auto Diff")
     ax = plt.gca()
-    ax.plot(xs, ys, label='f(x)')
-    ax.plot(xs, grad_xs, label='f\'(x)')
+    ax.plot(xs, ys, label="f(x)")
+    ax.plot(xs, grad_xs, label="f'(x)")
     ax.legend()
     ax.grid(True)
-    ax.spines['left'].set_position('zero')
-    ax.spines['right'].set_color('none')
-    ax.spines['bottom'].set_position('zero')
-    ax.spines['top'].set_color('none')
+    ax.spines["left"].set_position("zero")
+    ax.spines["right"].set_color("none")
+    ax.spines["bottom"].set_position("zero")
+    ax.spines["top"].set_color("none")
     plt.show()
 
 
@@ -65,5 +65,5 @@ def main():
     draw()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

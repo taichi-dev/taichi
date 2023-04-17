@@ -37,4 +37,4 @@ target_include_directories(${VULKAN_RHI} SYSTEM
     ${PROJECT_SOURCE_DIR}/external/spdlog/include
   )
 
-target_link_libraries(opengl_rhi PRIVATE common_rhi)
+target_link_libraries(vulkan_rhi PRIVATE common_rhi)

@@ -146,9 +146,7 @@ class Command:
         assert exe, f"Cannot find executable {args[0]}"
 
         runas = IS_WINDOWS and options.get("runas")
-        assert not (
-            runas and overlay
-        ), "Cannot run with both elevated privileges and additional envs"
+        assert not (runas and overlay), "Cannot run with both elevated privileges and additional envs"
 
         if runas and not win32_is_user_admin():
             pr(f"{P}>> !! WITH ELEVATED PRIVILEGES !!{N}")

@@ -21,9 +21,7 @@ def verify_image(image, image_name, tolerance=0.1, regerate_groundtruth_images=F
         ground_truth_name = f"tests/python/expected/{image_name}.png"
         ti.tools.imwrite(image, ground_truth_name)
     else:
-        ground_truth_name = (
-            str(pathlib.Path(__file__).parent) + f"/python/expected/{image_name}.png"
-        )
+        ground_truth_name = str(pathlib.Path(__file__).parent) + f"/python/expected/{image_name}.png"
         ground_truth_np = ti.tools.imread(ground_truth_name)
 
         # TODO:Fix this on Windows
@@ -256,26 +254,21 @@ def test(arch=None, exclude=None, require=None, **options):
                 value = param.value
                 required_extensions = param.required_extensions
                 if current_options.setdefault(feature, value) != value or any(
-                    not _ti_core.is_extension_supported(req_arch, e)
-                    for e in required_extensions
+                    not _ti_core.is_extension_supported(req_arch, e) for e in required_extensions
                 ):
                     break
             else:  # no break occurs, required extensions are supported
                 parameters.append((req_arch, current_options))
 
         if not parameters:
-            marks.append(
-                pytest.mark.skip(reason="No all required extensions are supported")
-            )
+            marks.append(pytest.mark.skip(reason="No all required extensions are supported"))
         else:
             marks.append(
                 pytest.mark.parametrize(
                     "req_arch,req_options",
                     parameters,
                     ids=[
-                        f"arch={arch.name}-{i}"
-                        if len(parameters) > 1
-                        else f"arch={arch.name}"
+                        f"arch={arch.name}-{i}" if len(parameters) > 1 else f"arch={arch.name}"
                         for i, (arch, _) in enumerate(parameters)
                     ],
                 )

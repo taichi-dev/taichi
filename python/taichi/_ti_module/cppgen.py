@@ -37,9 +37,7 @@ def get_arg_dst(i: int, is_named: bool) -> str:
     return f"args_[{i}]"
 
 
-def generate_scalar_assign(
-    cls_name: str, i: int, arg_name: str, arg: sr.ArgumentScalar, is_named: bool
-) -> List[str]:
+def generate_scalar_assign(cls_name: str, i: int, arg_name: str, arg: sr.ArgumentScalar, is_named: bool) -> List[str]:
     ctype = dtype2ctype[arg.dtype]
 
     out = []
@@ -77,9 +75,7 @@ def generate_scalar_assign(
     return out
 
 
-def generate_ndarray_assign(
-    cls_name: str, i: int, arg_name: str, arg: sr.ArgumentNdArray, is_named: bool
-) -> List[str]:
+def generate_ndarray_assign(cls_name: str, i: int, arg_name: str, arg: sr.ArgumentNdArray, is_named: bool) -> List[str]:
     out = []
 
     out += [
@@ -201,9 +197,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
     return out
 
 
-def generate_module_content_repr(
-    m: GfxRuntime140, module_name: str, cgraph_kernel_names: Set[str]
-) -> List[str]:
+def generate_module_content_repr(m: GfxRuntime140, module_name: str, cgraph_kernel_names: Set[str]) -> List[str]:
     out = []
 
     if module_name:
@@ -255,9 +249,7 @@ def generate_module_content_repr(
 
 def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     # This has all kernels including all the ones launched by compute graphs.
-    cgraph_kernel_names = set(
-        dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches
-    )
+    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches)
 
     out = []
     for kernel in m.metadata.kernels.values():
@@ -273,9 +265,7 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(
-    m: GfxRuntime140, module_name: str, namespace: str, tcm: Optional[bytes]
-) -> List[str]:
+def generate_header(m: GfxRuntime140, module_name: str, namespace: str, tcm: Optional[bytes]) -> List[str]:
     out = []
 
     out += [
@@ -300,10 +290,7 @@ def generate_header(
             f"static const uint8_t {module_name}_tcm[{len(tcm_bytes)}] = {{",
         ]
 
-        out += [
-            f"  {', '.join(str(x) for x in tcm_bytes[i:i + 8])},"
-            for i in range(0, len(tcm_bytes), 8)
-        ]
+        out += [f"  {', '.join(str(x) for x in tcm_bytes[i:i + 8])}," for i in range(0, len(tcm_bytes), 8)]
 
         out += [
             "};",

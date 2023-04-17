@@ -159,8 +159,7 @@ def check_clang_apply_replacements_binary(args):
         subprocess.check_call([args.clang_apply_replacements_binary, "--version"])
     except:
         print(
-            "Unable to run clang-apply-replacements. Is clang-apply-replacements "
-            "binary correctly specified?",
+            "Unable to run clang-apply-replacements. Is clang-apply-replacements " "binary correctly specified?",
             file=sys.stderr,
         )
         traceback.print_exc()
@@ -195,9 +194,7 @@ def run_tidy(args, tmpdir, build_path, queue, lock, failed_files):
             args.config,
         )
 
-        proc = subprocess.Popen(
-            invocation, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
+        proc = subprocess.Popen(invocation, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         output, err = proc.communicate()
         if proc.returncode != 0:
             failed_files.append(name)
@@ -266,21 +263,15 @@ def main():
         default=0,
         help="number of tidy instances to be run in parallel.",
     )
-    parser.add_argument(
-        "files", nargs="*", default=[".*"], help="files to be processed (regex on path)"
-    )
+    parser.add_argument("files", nargs="*", default=[".*"], help="files to be processed (regex on path)")
     parser.add_argument("-fix", action="store_true", help="apply fix-its")
-    parser.add_argument(
-        "-format", action="store_true", help="Reformat code " "after applying fixes"
-    )
+    parser.add_argument("-format", action="store_true", help="Reformat code " "after applying fixes")
     parser.add_argument(
         "-style",
         default="file",
         help="The style of reformat " "code after applying fixes",
     )
-    parser.add_argument(
-        "-p", dest="build_path", help="Path used to read a compile command database."
-    )
+    parser.add_argument("-p", dest="build_path", help="Path used to read a compile command database.")
     parser.add_argument(
         "-extra-arg",
         dest="extra_arg",
@@ -295,9 +286,7 @@ def main():
         default=[],
         help="Additional argument to prepend to the compiler " "command line.",
     )
-    parser.add_argument(
-        "-quiet", action="store_true", help="Run clang-tidy in quiet mode"
-    )
+    parser.add_argument("-quiet", action="store_true", help="Run clang-tidy in quiet mode")
     args = parser.parse_args()
 
     db_path = "compile_commands.json"

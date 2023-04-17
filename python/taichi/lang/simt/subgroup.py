@@ -34,9 +34,7 @@ def broadcast_first(value):
 
 
 def broadcast(value, index):
-    return impl.call_internal(
-        "subgroupBroadcast", value, index, with_runtime_context=False
-    )
+    return impl.call_internal("subgroupBroadcast", value, index, with_runtime_context=False)
 
 
 def group_size():
@@ -139,9 +137,7 @@ def exclusive_xor(value):
 
 
 def shuffle(value, index):
-    return impl.call_internal(
-        "subgroupShuffle", value, index, with_runtime_context=False
-    )
+    return impl.call_internal("subgroupShuffle", value, index, with_runtime_context=False)
 
 
 def shuffle_xor(value, mask):
@@ -150,15 +146,11 @@ def shuffle_xor(value, mask):
 
 
 def shuffle_up(value, offset):
-    return impl.call_internal(
-        "subgroupShuffleUp", value, offset, with_runtime_context=False
-    )
+    return impl.call_internal("subgroupShuffleUp", value, offset, with_runtime_context=False)
 
 
 def shuffle_down(value, offset):
-    return impl.call_internal(
-        "subgroupShuffleDown", value, offset, with_runtime_context=False
-    )
+    return impl.call_internal("subgroupShuffleDown", value, offset, with_runtime_context=False)
 
 
 __all__ = [

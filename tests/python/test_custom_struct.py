@@ -214,9 +214,7 @@ def test_dataclass():
             return 4 * 3.14 * self.radius * self.radius
 
     # test function usage from python scope
-    assert np.isclose(
-        Sphere(center=vec3f(0.0), radius=2.0).py_scope_area(), 4.0 * 3.14 * 4.0
-    )
+    assert np.isclose(Sphere(center=vec3f(0.0), radius=2.0).py_scope_area(), 4.0 * 3.14 * 4.0)
 
     # test function usage from taichi scope
     @ti.kernel
@@ -306,13 +304,9 @@ def test_compound_type_implicit_cast():
     int_value = f2i_python_scope()
     assert isinstance(int_value, (int, np.integer)) and int_value == 6
     float_value = i2f_taichi_scope()
-    assert isinstance(float_value, (float, np.floating)) and float_value == approx(
-        6.0, rel=1e-4
-    )
+    assert isinstance(float_value, (float, np.floating)) and float_value == approx(6.0, rel=1e-4)
     float_value = i2f_python_scope()
-    assert isinstance(float_value, (float, np.floating)) and float_value == approx(
-        6.0, rel=1e-4
-    )
+    assert isinstance(float_value, (float, np.floating)) and float_value == approx(6.0, rel=1e-4)
 
 
 @test_utils.test()

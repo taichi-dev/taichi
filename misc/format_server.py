@@ -30,12 +30,8 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         return p
 
     def render_index(self):
-        pulls = requests.get(
-            f"https://api.github.com/repos/taichi-dev/taichi/pulls?state=open"
-        ).json()
-        self.writeln(
-            f"Click to auto-format PR. <b>[Please do not click if the PR is not owned/reviewed by you.]</b>"
-        )
+        pulls = requests.get(f"https://api.github.com/repos/taichi-dev/taichi/pulls?state=open").json()
+        self.writeln(f"Click to auto-format PR. <b>[Please do not click if the PR is not owned/reviewed by you.]</b>")
         print(pulls)
         for pr in pulls:
             print("pr", pr)
@@ -57,18 +53,14 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
             return
         pr_id = int(path)
 
-        ret = requests.get(
-            f"https://api.github.com/repos/taichi-dev/taichi/pulls/{pr_id}"
-        )
+        ret = requests.get(f"https://api.github.com/repos/taichi-dev/taichi/pulls/{pr_id}")
         if ret.status_code == 404:
             self.writeln(f"Error: PR {pr_id} not found!")
             return
         ret = ret.json()
         url = ret["url"]
 
-        self.writeln(
-            f"Processing <a href='https://github.com/taichi-dev/taichi/pull/{pr_id}'>PR {pr_id}</a>"
-        )
+        self.writeln(f"Processing <a href='https://github.com/taichi-dev/taichi/pull/{pr_id}'>PR {pr_id}</a>")
         self.writeln(f"[<a href='{url}'>Metadata</a>]")
         head = ret["head"]
         repo_url = head["repo"]["html_url"]

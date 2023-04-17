@@ -5,12 +5,7 @@ from taichi.lang.util import taichi_scope
 
 
 def arch_uses_spv(arch):
-    return (
-        arch == _ti_core.vulkan
-        or arch == _ti_core.metal
-        or arch == _ti_core.opengl
-        or arch == _ti_core.dx11
-    )
+    return arch == _ti_core.vulkan or arch == _ti_core.metal or arch == _ti_core.opengl or arch == _ti_core.dx11
 
 
 def sync():
@@ -41,9 +36,7 @@ def thread_idx():
 def global_thread_idx():
     arch = impl.get_runtime().prog.config().arch
     if arch == _ti_core.cuda or _ti_core.amdgpu:
-        return (
-            impl.get_runtime().compiling_callable.ast_builder().insert_thread_idx_expr()
-        )
+        return impl.get_runtime().compiling_callable.ast_builder().insert_thread_idx_expr()
     if arch_uses_spv(arch):
         return impl.call_internal("globalInvocationId", with_runtime_context=False)
     raise ValueError(f"ti.block.global_thread_idx is not supported for arch {arch}")
@@ -55,9 +48,7 @@ class SharedArray:
     def __init__(self, shape, dtype):
         if isinstance(shape, int):
             self.shape = (shape,)
-        elif (isinstance(shape, tuple) or isinstance(shape, list)) and all(
-            isinstance(s, int) for s in shape
-        ):
+        elif (isinstance(shape, tuple) or isinstance(shape, list)) and all(isinstance(s, int) for s in shape):
             self.shape = shape
         else:
             raise ValueError(

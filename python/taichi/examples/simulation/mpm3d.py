@@ -57,9 +57,7 @@ def substep():
         if F_grid_m[I] > 0:
             F_grid_v[I] /= F_grid_m[I]
         F_grid_v[I][1] -= dt * gravity
-        cond = (I < bound) & (F_grid_v[I] < 0) | (I > n_grid - bound) & (
-            F_grid_v[I] > 0
-        )
+        cond = (I < bound) & (F_grid_v[I] < 0) | (I > n_grid - bound) & (F_grid_v[I] > 0)
         F_grid_v[I] = ti.select(cond, 0, F_grid_v[I])
     ti.loop_config(block_dim=n_grid)
     for p in F_x:

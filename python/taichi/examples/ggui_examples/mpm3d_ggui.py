@@ -24,9 +24,7 @@ GRAVITY = [0, -9.8, 0]
 bound = 3
 E = 1000  # Young's modulus
 nu = 0.2  #  Poisson's ratio
-mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
-    (1 + nu) * (1 - 2 * nu)
-)  # Lame parameters
+mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
 
 F_x = ti.Vector.field(dim, float, n_particles)
 F_v = ti.Vector.field(dim, float, n_particles)
@@ -62,9 +60,7 @@ def substep(g_x: float, g_y: float, g_z: float):
         fx = Xp - base
         w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
 
-        F_dg[p] = (ti.Matrix.identity(float, 3) + dt * F_C[p]) @ F_dg[
-            p
-        ]  # deformation gradient update
+        F_dg[p] = (ti.Matrix.identity(float, 3) + dt * F_C[p]) @ F_dg[p]  # deformation gradient update
         # Hardening coefficient: snow gets harder when compressed
         h = ti.exp(10 * (1.0 - F_Jp[p]))
         if F_materials[p] == JELLY:  # jelly, make it softer
@@ -78,9 +74,7 @@ def substep(g_x: float, g_y: float, g_z: float):
         for d in ti.static(range(3)):
             new_sig = sig[d, d]
             if F_materials[p] == SNOW:  # Snow
-                new_sig = ti.min(
-                    ti.max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3
-                )  # Plasticity
+                new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3)  # Plasticity
             F_Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
@@ -92,9 +86,9 @@ def substep(g_x: float, g_y: float, g_z: float):
         elif F_materials[p] == SNOW:
             # Reconstruct elastic deformation gradient after plasticity
             F_dg[p] = U @ sig @ V.transpose()
-        stress = 2 * mu * (F_dg[p] - U @ V.transpose()) @ F_dg[
-            p
-        ].transpose() + ti.Matrix.identity(float, 3) * la * J * (J - 1)
+        stress = 2 * mu * (F_dg[p] - U @ V.transpose()) @ F_dg[p].transpose() + ti.Matrix.identity(
+            float, 3
+        ) * la * J * (J - 1)
         stress = (-dt * p_vol * 4) * stress / dx**2
         affine = stress + p_mass * F_C[p]
 
@@ -109,9 +103,7 @@ def substep(g_x: float, g_y: float, g_z: float):
         if F_grid_m[I] > 0:
             F_grid_v[I] /= F_grid_m[I]
         F_grid_v[I] += dt * ti.Vector([g_x, g_y, g_z])
-        cond = (I < bound) & (F_grid_v[I] < 0) | (I > n_grid - bound) & (
-            F_grid_v[I] > 0
-        )
+        cond = (I < bound) & (F_grid_v[I] < 0) | (I > n_grid - bound) & (F_grid_v[I] > 0)
         F_grid_v[I] = ti.select(cond, 0, F_grid_v[I])
     ti.loop_config(block_dim=n_grid)
     for p in F_x:
@@ -157,16 +149,14 @@ def init_cube_vol(
     material: int,
 ):
     for i in range(first_par, last_par):
-        F_x[i] = ti.Vector([ti.random() for i in range(dim)]) * ti.Vector(
-            [x_size, y_size, z_size]
-        ) + ti.Vector([x_begin, y_begin, z_begin])
+        F_x[i] = ti.Vector([ti.random() for i in range(dim)]) * ti.Vector([x_size, y_size, z_size]) + ti.Vector(
+            [x_begin, y_begin, z_begin]
+        )
         F_Jp[i] = 1
         F_dg[i] = ti.Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
         F_v[i] = ti.Vector([0.0, 0.0, 0.0])
         F_materials[i] = material
-        F_colors_random[i] = ti.Vector(
-            [ti.random(), ti.random(), ti.random(), ti.random()]
-        )
+        F_colors_random[i] = ti.Vector([ti.random(), ti.random(), ti.random(), ti.random()])
         F_used[i] = 1
 
 
@@ -193,9 +183,7 @@ def init_vols(vols):
         v = vols[i]
         if isinstance(v, CubeVolume):
             par_count = int(v.volume / total_vol * n_particles)
-            if (
-                i == len(vols) - 1
-            ):  # this is the last volume, so use all remaining particles
+            if i == len(vols) - 1:  # this is the last volume, so use all remaining particles
                 par_count = n_particles - next_p
             init_cube_vol(next_p, next_p + par_count, *v.minimum, *v.size, v.material)
             next_p += par_count
@@ -207,9 +195,7 @@ def init_vols(vols):
 def set_color_by_material(mat_color: ti.types.ndarray()):
     for i in range(n_particles):
         mat = F_materials[i]
-        F_colors[i] = ti.Vector(
-            [mat_color[mat, 0], mat_color[mat, 1], mat_color[mat, 2], 1.0]
-        )
+        F_colors[i] = ti.Vector([mat_color[mat, 0], mat_color[mat, 1], mat_color[mat, 2], 1.0])
 
 
 print("Loading presets...this might take a minute")
@@ -286,13 +272,9 @@ def show_options():
     with gui.sub_window("Options", 0.05, 0.45, 0.2, 0.4) as w:
         use_random_colors = w.checkbox("use_random_colors", use_random_colors)
         if not use_random_colors:
-            material_colors[WATER] = w.color_edit_3(
-                "water color", material_colors[WATER]
-            )
+            material_colors[WATER] = w.color_edit_3("water color", material_colors[WATER])
             material_colors[SNOW] = w.color_edit_3("snow color", material_colors[SNOW])
-            material_colors[JELLY] = w.color_edit_3(
-                "jelly color", material_colors[JELLY]
-            )
+            material_colors[JELLY] = w.color_edit_3("jelly color", material_colors[JELLY])
             set_color_by_material(np.array(material_colors, dtype=np.float32))
         particles_radius = w.slider_float("particles radius ", particles_radius, 0, 0.1)
         if w.button("restart"):

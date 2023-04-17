@@ -172,7 +172,5 @@ def test_check_matrix_field_member_shape():
     def foo():
         pass
 
-    with pytest.raises(
-        RuntimeError, match=r"Members of the following field have different shapes.*"
-    ):
+    with pytest.raises(RuntimeError, match=r"Members of the following field have different shapes.*"):
         foo()

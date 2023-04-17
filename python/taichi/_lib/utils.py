@@ -82,9 +82,7 @@ def is_ci():
     return os.environ.get("TI_CI", "") == "1"
 
 
-package_root = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-)
+package_root = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 
 def get_core_shared_object():
@@ -106,9 +104,7 @@ def print_yellow_bold(*args, **kwargs):
 
 def check_exists(src):
     if not os.path.exists(src):
-        raise FileNotFoundError(
-            f'File "{src}" not exist. Installation corrupted or build incomplete?'
-        )
+        raise FileNotFoundError(f'File "{src}" not exist. Installation corrupted or build incomplete?')
 
 
 ti_python_core = import_ti_python_core()
@@ -240,9 +236,7 @@ def warn_restricted_version():
                     )
                     print()
                     print_yellow_bold("    $ python3 -m pip install --upgrade pip")
-                    print_yellow_bold(
-                        "    $ python3 -m pip install --force-reinstall taichi"
-                    )
+                    print_yellow_bold("    $ python3 -m pip install --force-reinstall taichi")
                     print()
 
                 print_yellow_bold(

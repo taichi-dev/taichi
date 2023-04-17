@@ -40,9 +40,7 @@ def check_version(cur_uuid):
     try:
         payload = json.dumps(payload)
         payload = payload.encode()
-        req = request.Request(
-            "https://metadata.taichi.graphics/check_version", method="POST"
-        )
+        req = request.Request("https://metadata.taichi.graphics/check_version", method="POST")
         req.add_header("Content-Type", "application/json")
         with request.urlopen(req, data=payload, timeout=5) as response:
             response = json.loads(response.read().decode("utf-8"))

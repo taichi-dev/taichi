@@ -91,18 +91,12 @@ def initialize_particle(
 ):
     gravity[None] = ti.Vector([0.0, -9.8, 0.0])
     for i in range(particle_num):
-        pos[i] = (
-            ti.Vector([i % N[0], i // N[0] % N[1], i // N[0] // N[1] % N[2]])
-            * particle_diameter
-            + spawn_box[0]
-        )
+        pos[i] = ti.Vector([i % N[0], i // N[0] % N[1], i // N[0] // N[1] % N[2]]) * particle_diameter + spawn_box[0]
         # print(i, pos[i], spawn_box[0], N[0], N[1], N[2])
 
 
 @ti.kernel
-def update_density(
-    pos: ti.any_arr(ndim=1), den: ti.any_arr(ndim=1), pre: ti.any_arr(ndim=1)
-):
+def update_density(pos: ti.any_arr(ndim=1), den: ti.any_arr(ndim=1), pre: ti.any_arr(ndim=1)):
     for i in range(particle_num):
         den[i] = 0.0
         for j in range(particle_num):
@@ -125,11 +119,7 @@ def update_force(
         for j in range(particle_num):
             R = pos[i] - pos[j]
 
-            acc[i] += (
-                -mass
-                * (pre[i] / (den[i] * den[i]) + pre[j] / (den[j] * den[j]))
-                * W_gradient(R, h)
-            )
+            acc[i] += -mass * (pre[i] / (den[i] * den[i]) + pre[j] / (den[j] * den[j])) * W_gradient(R, h)
 
             acc[i] += (
                 viscosity_scale
@@ -145,11 +135,7 @@ def update_force(
             if R2 > D2:
                 acc[i] += -tension_scale * R * W(R, h)
             else:
-                acc[i] += (
-                    -tension_scale
-                    * R
-                    * W(ti.Vector([0.0, 1.0, 0.0]) * particle_diameter, h)
-                )
+                acc[i] += -tension_scale * R * W(ti.Vector([0.0, 1.0, 0.0]) * particle_diameter, h)
 
 
 @ti.kernel
@@ -160,9 +146,7 @@ def advance(pos: ti.any_arr(ndim=1), vel: ti.any_arr(ndim=1), acc: ti.any_arr(nd
 
 
 @ti.kernel
-def boundary_handle(
-    pos: ti.any_arr(ndim=1), vel: ti.any_arr(ndim=1), boundary_box: ti.any_arr(ndim=1)
-):
+def boundary_handle(pos: ti.any_arr(ndim=1), vel: ti.any_arr(ndim=1), boundary_box: ti.any_arr(ndim=1)):
     for i in range(particle_num):
         collision_normal = ti.Vector([0.0, 0.0, 0.0])
         for j in ti.static(range(3)):
@@ -206,9 +190,7 @@ if __name__ == "__main__":
     ti.init(arch=arch)
 
     # Initialize arrays
-    N = ti.ndarray(
-        ti.i32, shape=3
-    )  # Potential bug: modify ti.f32 to ti.i32 leads to [all components of N are zeros].
+    N = ti.ndarray(ti.i32, shape=3)  # Potential bug: modify ti.f32 to ti.i32 leads to [all components of N are zeros].
     N.from_numpy(N_np)
     boundary_box = ti.Vector.ndarray(3, ti.f32, shape=2)
     boundary_box.from_numpy(boundary_box_np)

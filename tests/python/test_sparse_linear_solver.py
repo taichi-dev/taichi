@@ -29,9 +29,7 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    solver = ti.linalg.SparseSolver(
-        dtype=dtype, solver_type=solver_type, ordering=ordering
-    )
+    solver = ti.linalg.SparseSolver(dtype=dtype, solver_type=solver_type, ordering=ordering)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)
@@ -65,9 +63,7 @@ def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build()
-    solver = ti.linalg.SparseSolver(
-        dtype=dtype, solver_type=solver_type, ordering=ordering
-    )
+    solver = ti.linalg.SparseSolver(dtype=dtype, solver_type=solver_type, ordering=ordering)
     solver.analyze_pattern(A)
     solver.factorize(A)
     x = solver.solve(b)
@@ -104,9 +100,7 @@ def test_gpu_sparse_solver():
 
     # solve Ax = b using cusolver
     A_coo = A_csr.tocoo()
-    A_builder = ti.linalg.SparseMatrixBuilder(
-        num_rows=nrows, num_cols=ncols, dtype=ti.f32, max_num_triplets=nnz
-    )
+    A_builder = ti.linalg.SparseMatrixBuilder(num_rows=nrows, num_cols=ncols, dtype=ti.f32, max_num_triplets=nnz)
 
     @ti.kernel
     def fill(

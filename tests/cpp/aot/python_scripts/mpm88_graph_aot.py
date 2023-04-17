@@ -105,9 +105,7 @@ def compile_mpm88(arch, save_compute_graph):
             C[p] = new_C
 
     @ti.kernel
-    def init_particles(
-        x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1)
-    ):
+    def init_particles(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1)):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * 0.4 + 0.2, ti.random() * 0.4 + 0.2]
             v[i] = [0, -1]
@@ -123,15 +121,9 @@ def compile_mpm88(arch, save_compute_graph):
         sym_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "v", dtype=ti.math.vec2, ndim=1)
         sym_C = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "C", dtype=ti.math.mat2, ndim=1)
         sym_J = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "J", ti.f32, ndim=1)
-        sym_grid_v = ti.graph.Arg(
-            ti.graph.ArgKind.NDARRAY, "grid_v", dtype=ti.math.vec2, ndim=2
-        )
-        sym_grid_m = ti.graph.Arg(
-            ti.graph.ArgKind.NDARRAY, "grid_m", dtype=ti.f32, ndim=2
-        )
-        sym_pos = ti.graph.Arg(
-            ti.graph.ArgKind.NDARRAY, "pos", dtype=ti.math.vec3, ndim=1
-        )
+        sym_grid_v = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_v", dtype=ti.math.vec2, ndim=2)
+        sym_grid_m = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "grid_m", dtype=ti.f32, ndim=2)
+        sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pos", dtype=ti.math.vec3, ndim=1)
 
         g_init_builder = ti.graph.GraphBuilder()
         g_init_builder.dispatch(init_particles, sym_x, sym_v, sym_J)
@@ -140,9 +132,7 @@ def compile_mpm88(arch, save_compute_graph):
         substep = g_update_builder.create_sequential()
 
         substep.dispatch(substep_reset_grid, sym_grid_v, sym_grid_m)
-        substep.dispatch(
-            substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_grid_m
-        )
+        substep.dispatch(substep_p2g, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_grid_m)
         substep.dispatch(substep_update_grid_v, sym_grid_v, sym_grid_m)
         substep.dispatch(substep_g2p, sym_x, sym_v, sym_C, sym_J, sym_grid_v, sym_pos)
 
@@ -181,9 +171,7 @@ def compile_mpm88(arch, save_compute_graph):
 
         mod = ti.aot.Module()
         mod.add_kernel(init_particles, template_args={"x": x, "v": v, "J": J})
-        mod.add_kernel(
-            substep_reset_grid, template_args={"grid_v": grid_v, "grid_m": grid_m}
-        )
+        mod.add_kernel(substep_reset_grid, template_args={"grid_v": grid_v, "grid_m": grid_m})
         mod.add_kernel(
             substep_p2g,
             template_args={
@@ -195,9 +183,7 @@ def compile_mpm88(arch, save_compute_graph):
                 "grid_m": grid_m,
             },
         )
-        mod.add_kernel(
-            substep_update_grid_v, template_args={"grid_v": grid_v, "grid_m": grid_m}
-        )
+        mod.add_kernel(substep_update_grid_v, template_args={"grid_v": grid_v, "grid_m": grid_m})
         mod.add_kernel(
             substep_g2p,
             template_args={

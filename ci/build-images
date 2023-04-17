@@ -89,9 +89,7 @@ def build_targets(processed, targets, push):
         f.write("\n".join(processed))
 
     for stage, image_name in targets:
-        cmd = "sudo docker build --target {} -t {} -f .generated-dockerfile .".format(
-            stage, image_name
-        )
+        cmd = "sudo docker build --target {} -t {} -f .generated-dockerfile .".format(stage, image_name)
         print(f":: RUN {cmd}")
         if os.system(cmd):
             print("!! Failed")

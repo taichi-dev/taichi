@@ -11,6 +11,7 @@ from taichi.types.annotations import *
 # Provide a shortcut to types since they're commonly used.
 from taichi.types.primitive_types import *
 
+
 from taichi import ad, algorithms, experimental, graph, linalg, math, tools, types
 from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 

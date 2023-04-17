@@ -262,9 +262,7 @@ def test_numpy_view():
         img[0] = 1
 
     a = np.zeros(shape=(2, 2))[:, 0]
-    with pytest.raises(
-        ValueError, match="Non contiguous numpy arrays are not supported"
-    ):
+    with pytest.raises(ValueError, match="Non contiguous numpy arrays are not supported"):
         fill(a)
 
 

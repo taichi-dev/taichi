@@ -35,15 +35,11 @@ objects[4] = SDFObject(
     material=Material(vec3(0, 1, 0) * 0.5, vec3(1)),
 )
 objects[5] = SDFObject(
-    transform=Transform(
-        vec3(-0.275, -0.3, -0.2), vec3(0, 112, 0), vec3(0.25, 0.5, 0.25)
-    ),
+    transform=Transform(vec3(-0.275, -0.3, -0.2), vec3(0, 112, 0), vec3(0.25, 0.5, 0.25)),
     material=Material(vec3(1, 1, 1) * 0.4, vec3(1)),
 )
 objects[6] = SDFObject(
-    transform=Transform(
-        vec3(0.275, -0.55, 0.2), vec3(0, -197, 0), vec3(0.25, 0.25, 0.25)
-    ),
+    transform=Transform(vec3(0.275, -0.55, 0.2), vec3(0, -197, 0), vec3(0.25, 0.25, 0.25)),
     material=Material(vec3(1, 1, 1) * 0.4, vec3(1)),
 )
 objects[7] = SDFObject(
@@ -190,9 +186,7 @@ def render(camera_position: vec3, camera_lookat: vec3, camera_up: vec3):
             )
             @ color
         )
-        color = (color * (color + 0.024578) - 0.0000905) / (
-            color * (0.983729 * color + 0.4329510) + 0.238081
-        )
+        color = (color * (color + 0.024578) - 0.0000905) / (color * (0.983729 * color + 0.4329510) + 0.238081)
         color = (
             mat3(
                 1.60475,

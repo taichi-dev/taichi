@@ -99,9 +99,7 @@ def test_pow_int_base_int_exp_32():
     _test_pow_int_base_int_exp(ti.i32, ti.i32)
 
 
-@pytest.mark.parametrize(
-    "dt_base, dt_exp", [(ti.i32, ti.i64), (ti.i64, ti.i64), (ti.i64, ti.i32)]
-)
+@pytest.mark.parametrize("dt_base, dt_exp", [(ti.i32, ti.i64), (ti.i64, ti.i64), (ti.i64, ti.i32)])
 @test_utils.test(require=ti.extension.data64)
 def test_pow_int_base_int_exp_64(dt_base, dt_exp):
     _test_pow_int_base_int_exp(dt_base, dt_exp)
@@ -125,9 +123,7 @@ def test_pow_float_base_int_exp_32():
     _test_pow_float_base_int_exp(ti.f32, ti.i32)
 
 
-@pytest.mark.parametrize(
-    "dt_base, dt_exp", [(ti.f64, ti.i32), (ti.f32, ti.i64), (ti.f64, ti.i64)]
-)
+@pytest.mark.parametrize("dt_base, dt_exp", [(ti.f64, ti.i32), (ti.f32, ti.i64), (ti.f64, ti.i64)])
 @test_utils.test(require=ti.extension.data64)
 def test_pow_float_base_int_exp_64(dt_base, dt_exp):
     _test_pow_float_base_int_exp(dt_base, dt_exp)

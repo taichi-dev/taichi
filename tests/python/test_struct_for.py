@@ -173,9 +173,7 @@ def test_nested_2d_more_nests():
 
     n = 64
 
-    ti.root.dense(ti.ij, n // 16).dense(ti.ij, 2).dense(ti.ij, 4).dense(ti.ij, 2).place(
-        x, y
-    )
+    ti.root.dense(ti.ij, n // 16).dense(ti.ij, 2).dense(ti.ij, 4).dense(ti.ij, 2).place(x, y)
 
     @ti.kernel
     def fill():

@@ -139,9 +139,7 @@ class MeshElementField:
             if isinstance(dtype, CompoundType):
                 self.field_dict[key] = dtype.field(shape=None, needs_grad=needs_grad)
             else:
-                self.field_dict[key] = impl.field(
-                    dtype, shape=None, needs_grad=needs_grad
-                )
+                self.field_dict[key] = impl.field(dtype, shape=None, needs_grad=needs_grad)
 
         size = _ti_core.get_num_elements(self.mesh.mesh_ptr, self._type)
         if layout == Layout.SOA:
@@ -163,9 +161,7 @@ class MeshElementField:
 
         for key, dtype in members.items():
             # expose interface
-            setattr(
-                MeshElementField, key, property(fget=MeshElementField._make_getter(key))
-            )
+            setattr(MeshElementField, key, property(fget=MeshElementField._make_getter(key)))
 
     @property
     def keys(self):
@@ -208,9 +204,7 @@ class MeshElementField:
     def _register_fields(self):
         self.getter_dict = {}
         for k in self.keys:
-            setattr(
-                MeshElementField, k, property(fget=MeshElementField._make_getter(k))
-            )
+            setattr(MeshElementField, k, property(fget=MeshElementField._make_getter(k)))
 
     def _get_field_members(self):
         field_members = []
@@ -283,13 +277,9 @@ class MeshElement:
 
         for key, attr in self.attr_dict.items():
             if isinstance(attr.dtype, CompoundType):
-                field_dict[key] = attr.dtype.field(
-                    shape=None, needs_grad=attr.needs_grad
-                )
+                field_dict[key] = attr.dtype.field(shape=None, needs_grad=attr.needs_grad)
             else:
-                field_dict[key] = impl.field(
-                    attr.dtype, shape=None, needs_grad=attr.needs_grad
-                )
+                field_dict[key] = impl.field(attr.dtype, shape=None, needs_grad=attr.needs_grad)
 
         if self.layout == Layout.SOA:
             for key, field in field_dict.items():
@@ -305,9 +295,7 @@ class MeshElement:
             if len(grads) > 0:
                 impl.root.dense(impl.axes(0), size).place(*grads)
 
-        return MeshElementField(
-            mesh_instance, self._type, self.attr_dict, field_dict, g2r_field
-        )
+        return MeshElementField(mesh_instance, self._type, self.attr_dict, field_dict, g2r_field)
 
 
 # Define the instance of the Mesh Type, stores the field (type and data) info
@@ -330,33 +318,19 @@ class MeshInstance:
             return self._vert_position
         raise TaichiSyntaxError("Position info is not in the file.")
 
-    def set_owned_offset(
-        self, element_type: MeshElementType, owned_offset: ScalarField
-    ):
-        _ti_core.set_owned_offset(
-            self.mesh_ptr, element_type, owned_offset.vars[0].ptr.snode()
-        )
+    def set_owned_offset(self, element_type: MeshElementType, owned_offset: ScalarField):
+        _ti_core.set_owned_offset(self.mesh_ptr, element_type, owned_offset.vars[0].ptr.snode())
 
-    def set_total_offset(
-        self, element_type: MeshElementType, total_offset: ScalarField
-    ):
-        _ti_core.set_total_offset(
-            self.mesh_ptr, element_type, total_offset.vars[0].ptr.snode()
-        )
+    def set_total_offset(self, element_type: MeshElementType, total_offset: ScalarField):
+        _ti_core.set_total_offset(self.mesh_ptr, element_type, total_offset.vars[0].ptr.snode())
 
-    def set_index_mapping(
-        self, element_type: MeshElementType, conv_type: ConvType, mapping: ScalarField
-    ):
-        _ti_core.set_index_mapping(
-            self.mesh_ptr, element_type, conv_type, mapping.vars[0].ptr.snode()
-        )
+    def set_index_mapping(self, element_type: MeshElementType, conv_type: ConvType, mapping: ScalarField):
+        _ti_core.set_index_mapping(self.mesh_ptr, element_type, conv_type, mapping.vars[0].ptr.snode())
 
     def set_num_patches(self, num_patches: int):
         _ti_core.set_num_patches(self.mesh_ptr, num_patches)
 
-    def set_patch_max_element_num(
-        self, element_type: MeshElementType, max_element_num: int
-    ):
+    def set_patch_max_element_num(self, element_type: MeshElementType, max_element_num: int):
         _ti_core.set_patch_max_element_num(self.mesh_ptr, element_type, max_element_num)
 
     def set_relation_fixed(self, rel_type: MeshRelationType, value: ScalarField):
@@ -383,14 +357,10 @@ class MeshInstance:
         _ti_core.add_mesh_attribute(self.mesh_ptr, element_type, snode, reorder_type)
 
     def get_relation_size(self, from_index, to_element_type):
-        return _ti_core.get_relation_size(
-            self.mesh_ptr, from_index.ptr, to_element_type
-        )
+        return _ti_core.get_relation_size(self.mesh_ptr, from_index.ptr, to_element_type)
 
     def get_relation_access(self, from_index, to_element_type, neighbor_idx_ptr):
-        return _ti_core.get_relation_access(
-            self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr
-        )
+        return _ti_core.get_relation_access(self.mesh_ptr, from_index.ptr, to_element_type, neighbor_idx_ptr)
 
 
 class MeshMetadata:
@@ -411,34 +381,20 @@ class MeshMetadata:
             element["l2r_mapping"] = np.array(element["l2r_mapping"])
             element["g2r_mapping"] = np.array(element["g2r_mapping"])
             self.element_fields[element_type] = {}
-            self.element_fields[element_type]["owned"] = impl.field(
-                dtype=u32, shape=self.num_patches + 1
-            )
-            self.element_fields[element_type]["total"] = impl.field(
-                dtype=u32, shape=self.num_patches + 1
-            )
-            self.element_fields[element_type]["l2g"] = impl.field(
-                dtype=u32, shape=element["l2g_mapping"].shape[0]
-            )
-            self.element_fields[element_type]["l2r"] = impl.field(
-                dtype=u32, shape=element["l2r_mapping"].shape[0]
-            )
-            self.element_fields[element_type]["g2r"] = impl.field(
-                dtype=u32, shape=element["g2r_mapping"].shape[0]
-            )
+            self.element_fields[element_type]["owned"] = impl.field(dtype=u32, shape=self.num_patches + 1)
+            self.element_fields[element_type]["total"] = impl.field(dtype=u32, shape=self.num_patches + 1)
+            self.element_fields[element_type]["l2g"] = impl.field(dtype=u32, shape=element["l2g_mapping"].shape[0])
+            self.element_fields[element_type]["l2r"] = impl.field(dtype=u32, shape=element["l2r_mapping"].shape[0])
+            self.element_fields[element_type]["g2r"] = impl.field(dtype=u32, shape=element["g2r_mapping"].shape[0])
 
         for relation in data["relations"]:
             from_order = relation["from_order"]
             to_order = relation["to_order"]
             rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
             self.relation_fields[rel_type] = {}
-            self.relation_fields[rel_type]["value"] = impl.field(
-                dtype=u16, shape=len(relation["value"])
-            )
+            self.relation_fields[rel_type]["value"] = impl.field(dtype=u16, shape=len(relation["value"]))
             if from_order <= to_order:
-                self.relation_fields[rel_type]["offset"] = impl.field(
-                    dtype=u16, shape=len(relation["offset"])
-                )
+                self.relation_fields[rel_type]["offset"] = impl.field(dtype=u16, shape=len(relation["offset"]))
                 self.relation_fields[rel_type]["patch_offset"] = impl.field(
                     dtype=u32, shape=len(relation["patch_offset"])
                 )
@@ -447,12 +403,8 @@ class MeshMetadata:
 
         for element in data["elements"]:
             element_type = MeshElementType(element["order"])
-            self.element_fields[element_type]["owned"].from_numpy(
-                np.array(element["owned_offsets"])
-            )
-            self.element_fields[element_type]["total"].from_numpy(
-                np.array(element["total_offsets"])
-            )
+            self.element_fields[element_type]["owned"].from_numpy(np.array(element["owned_offsets"]))
+            self.element_fields[element_type]["total"].from_numpy(np.array(element["total_offsets"]))
             self.element_fields[element_type]["l2g"].from_numpy(element["l2g_mapping"])
             self.element_fields[element_type]["l2r"].from_numpy(element["l2r_mapping"])
             self.element_fields[element_type]["g2r"].from_numpy(element["g2r_mapping"])
@@ -461,16 +413,10 @@ class MeshMetadata:
             from_order = relation["from_order"]
             to_order = relation["to_order"]
             rel_type = MeshRelationType(relation_by_orders(from_order, to_order))
-            self.relation_fields[rel_type]["value"].from_numpy(
-                np.array(relation["value"])
-            )
+            self.relation_fields[rel_type]["value"].from_numpy(np.array(relation["value"]))
             if from_order <= to_order:
-                self.relation_fields[rel_type]["patch_offset"].from_numpy(
-                    np.array(relation["patch_offset"])
-                )
-                self.relation_fields[rel_type]["offset"].from_numpy(
-                    np.array(relation["offset"])
-                )
+                self.relation_fields[rel_type]["patch_offset"].from_numpy(np.array(relation["patch_offset"]))
+                self.relation_fields[rel_type]["offset"].from_numpy(np.array(relation["offset"]))
 
         self.attrs = {}
         self.attrs["x"] = np.array(data["attrs"]["x"]).reshape(-1, 3)
@@ -483,14 +429,8 @@ class MeshMetadata:
 # Define the Mesh Type, stores the field type info
 class MeshBuilder:
     def __init__(self):
-        if not lang.misc.is_extension_supported(
-            impl.current_cfg().arch, lang.extension.mesh
-        ):
-            raise Exception(
-                "Backend "
-                + str(impl.current_cfg().arch)
-                + " doesn't support MeshTaichi extension"
-            )
+        if not lang.misc.is_extension_supported(impl.current_cfg().arch, lang.extension.mesh):
+            raise Exception("Backend " + str(impl.current_cfg().arch) + " doesn't support MeshTaichi extension")
 
         self.verts = MeshElement(MeshElementType.Vertex, self)
         self.edges = MeshElement(MeshElementType.Edge, self)
@@ -504,12 +444,8 @@ class MeshBuilder:
         instance.set_num_patches(metadata.num_patches)
 
         for element in metadata.element_fields:
-            _ti_core.set_num_elements(
-                instance.mesh_ptr, element, metadata.num_elements[element]
-            )
-            instance.set_patch_max_element_num(
-                element, metadata.max_num_per_patch[element]
-            )
+            _ti_core.set_num_elements(instance.mesh_ptr, element, metadata.num_elements[element])
+            instance.set_patch_max_element_num(element, metadata.max_num_per_patch[element])
 
             element_name = element_type_name(element)
             setattr(
@@ -523,21 +459,11 @@ class MeshBuilder:
             )
             instance.fields[element] = getattr(instance, element_name)
 
-            instance.set_owned_offset(
-                element, metadata.element_fields[element]["owned"]
-            )
-            instance.set_total_offset(
-                element, metadata.element_fields[element]["total"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.l2g, metadata.element_fields[element]["l2g"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.l2r, metadata.element_fields[element]["l2r"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.g2r, metadata.element_fields[element]["g2r"]
-            )
+            instance.set_owned_offset(element, metadata.element_fields[element]["owned"])
+            instance.set_total_offset(element, metadata.element_fields[element]["total"])
+            instance.set_index_mapping(element, ConvType.l2g, metadata.element_fields[element]["l2g"])
+            instance.set_index_mapping(element, ConvType.l2r, metadata.element_fields[element]["l2r"])
+            instance.set_index_mapping(element, ConvType.g2r, metadata.element_fields[element]["g2r"])
 
         for rel_type in metadata.relation_fields:
             from_order = metadata.relation_fields[rel_type]["from_order"]
@@ -550,9 +476,7 @@ class MeshBuilder:
                     metadata.relation_fields[rel_type]["offset"],
                 )
             else:
-                instance.set_relation_fixed(
-                    rel_type, metadata.relation_fields[rel_type]["value"]
-                )
+                instance.set_relation_fixed(rel_type, metadata.relation_fields[rel_type]["value"])
 
         instance._vert_position = metadata.attrs["x"]
         instance.patcher = metadata.patcher
@@ -582,38 +506,22 @@ class Mesh:
         instance.set_num_patches(metadata.num_patches)
 
         for element in metadata.element_fields:
-            _ti_core.set_num_elements(
-                instance.mesh_ptr, element, metadata.num_elements[element]
-            )
-            instance.set_patch_max_element_num(
-                element, metadata.max_num_per_patch[element]
-            )
+            _ti_core.set_num_elements(instance.mesh_ptr, element, metadata.num_elements[element])
+            instance.set_patch_max_element_num(element, metadata.max_num_per_patch[element])
 
             element_name = element_type_name(element)
             setattr(
                 instance,
                 element_name,
-                MeshElementField(
-                    instance, element, {}, {}, metadata.element_fields[element]["g2r"]
-                ),
+                MeshElementField(instance, element, {}, {}, metadata.element_fields[element]["g2r"]),
             )
             instance.fields[element] = getattr(instance, element_name)
 
-            instance.set_owned_offset(
-                element, metadata.element_fields[element]["owned"]
-            )
-            instance.set_total_offset(
-                element, metadata.element_fields[element]["total"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.l2g, metadata.element_fields[element]["l2g"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.l2r, metadata.element_fields[element]["l2r"]
-            )
-            instance.set_index_mapping(
-                element, ConvType.g2r, metadata.element_fields[element]["g2r"]
-            )
+            instance.set_owned_offset(element, metadata.element_fields[element]["owned"])
+            instance.set_total_offset(element, metadata.element_fields[element]["total"])
+            instance.set_index_mapping(element, ConvType.l2g, metadata.element_fields[element]["l2g"])
+            instance.set_index_mapping(element, ConvType.l2r, metadata.element_fields[element]["l2r"])
+            instance.set_index_mapping(element, ConvType.g2r, metadata.element_fields[element]["g2r"])
 
         for rel_type in metadata.relation_fields:
             from_order = metadata.relation_fields[rel_type]["from_order"]
@@ -626,9 +534,7 @@ class Mesh:
                     metadata.relation_fields[rel_type]["offset"],
                 )
             else:
-                instance.set_relation_fixed(
-                    rel_type, metadata.relation_fields[rel_type]["value"]
-                )
+                instance.set_relation_fixed(rel_type, metadata.relation_fields[rel_type]["value"])
 
         instance._vert_position = metadata.attrs["x"]
         instance.patcher = metadata.patcher
@@ -665,9 +571,7 @@ def _TetMesh():
 
 
 class MeshElementFieldProxy:
-    def __init__(
-        self, mesh: MeshInstance, element_type: MeshElementType, entry_expr: impl.Expr
-    ):
+    def __init__(self, mesh: MeshInstance, element_type: MeshElementType, entry_expr: impl.Expr):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
 
         self.mesh = mesh
@@ -681,9 +585,7 @@ class MeshElementFieldProxy:
                     self.mesh.mesh_ptr,
                     element_type,
                     entry_expr,
-                    ConvType.l2r
-                    if element_field.attr_dict[key].reorder
-                    else ConvType.l2g,
+                    ConvType.l2r if element_field.attr_dict[key].reorder else ConvType.l2g,
                 )
             )  # transform index space
             global_entry_expr_group = impl.make_expr_group(*tuple([global_entry_expr]))
@@ -735,9 +637,7 @@ class MeshElementFieldProxy:
     def id(self):  # return the global non-reordered index
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         l2g_expr = impl.Expr(
-            ast_builder.mesh_index_conversion(
-                self.mesh.mesh_ptr, self.element_type, self.entry_expr, ConvType.l2g
-            )
+            ast_builder.mesh_index_conversion(self.mesh.mesh_ptr, self.element_type, self.entry_expr, ConvType.l2g)
         )
         return l2g_expr
 
@@ -755,15 +655,11 @@ class MeshRelationAccessProxy:
 
     @property
     def size(self):
-        return impl.Expr(
-            self.mesh.get_relation_size(self.from_index, self.to_element_type)
-        )
+        return impl.Expr(self.mesh.get_relation_size(self.from_index, self.to_element_type))
 
     def subscript(self, *indices):
         assert len(indices) == 1
-        entry_expr = self.mesh.get_relation_access(
-            self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr
-        )
+        entry_expr = self.mesh.get_relation_access(self.from_index, self.to_element_type, impl.Expr(indices[0]).ptr)
         entry_expr.type_check(impl.get_runtime().prog.config())
         return MeshElementFieldProxy(self.mesh, self.to_element_type, entry_expr)
 

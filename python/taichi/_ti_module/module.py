@@ -25,9 +25,7 @@ def module_cppgen(parser: argparse.ArgumentParser):
         help="Module name to be a part of the module class. By default, it's the directory name.",
         default=None,
     )
-    parser.add_argument(
-        "-o", "--output", type=str, help="Output C++ header path.", default="module.h"
-    )
+    parser.add_argument("-o", "--output", type=str, help="Output C++ header path.", default="module.h")
     parser.add_argument(
         "--bin2c",
         help="Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
@@ -65,12 +63,8 @@ def module_cppgen_impl(a):
 
 def module_build(parser: argparse.ArgumentParser):
     """Build Taichi modules from python scripts."""
-    parser.add_argument(
-        "SOURCE", help="Path to the Taichi program source (Python script)."
-    )
-    parser.add_argument(
-        "-o", "--output", type=str, help="Output module path.", default=None
-    )
+    parser.add_argument("SOURCE", help="Path to the Taichi program source (Python script).")
+    parser.add_argument("-o", "--output", type=str, help="Output module path.", default=None)
     parser.set_defaults(func=module_build_impl)
 
 
@@ -116,9 +110,7 @@ def module_build_impl(a):
                     value = 0.0
                 elif isinstance(v, NdarrayType):
                     if v.ndim is None or v.ndim <= 0:
-                        raise ValueError(
-                            "Ndarray template type must specify a non-zero dimension."
-                        )
+                        raise ValueError("Ndarray template type must specify a non-zero dimension.")
                     value = taichi.ndarray(v.dtype, (1,) * v.ndim)
                 elif isinstance(v, TextureType):
                     value = taichi.Texture(taichi.Format.rgba8, (4,) * v.num_dimensions)
@@ -142,9 +134,7 @@ def module_build_impl(a):
 def _main(arguments: List[str]):
     """Taichi module tools."""
     parser = argparse.ArgumentParser(prog="ti module", description=_main.__doc__)
-    subparsers = parser.add_subparsers(
-        title="Taichi module manager commands", required=True
-    )
+    subparsers = parser.add_subparsers(title="Taichi module manager commands", required=True)
 
     cppgen_parser = subparsers.add_parser("cppgen", help=module_cppgen.__doc__)
     build_parser = subparsers.add_parser("build", help=module_build.__doc__)

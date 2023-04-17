@@ -50,9 +50,7 @@ def update_U():
 def advance():
     for i in range(NV):
         acc = -pos.grad[i] / (rho * dx**2)
-        g = gravity[None] * 0.8 + attractor_strength[None] * (
-            attractor_pos[None] - pos[i]
-        ).normalized(1e-5)
+        g = gravity[None] * 0.8 + attractor_strength[None] * (attractor_pos[None] - pos[i]).normalized(1e-5)
         vel[i] += dt * (acc + g * 40)
         vel[i] *= ti.exp(-dt * damping)
     for i in range(NV):
@@ -139,9 +137,7 @@ def render():
     canvas.circles(mouse_circle, color=(0.2, 0.4, 0.6), radius=0.02)
     canvas.circles(ball_circle, color=(0.4, 0.4, 0.4), radius=ball_radius)
 
-    canvas.triangles(
-        vertexPositions, indices=triangleIndices, per_vertex_color=vertexColors
-    )
+    canvas.triangles(vertexPositions, indices=triangleIndices, per_vertex_color=vertexColors)
     canvas.circles(vertexPositions, radius=0.003, color=(1, 0.6, 0.2))
 
 
@@ -170,9 +166,7 @@ def main():
 
         mouse_pos = window.get_cursor_pos()
         attractor_pos[None] = mouse_pos
-        attractor_strength[None] = window.is_pressed(ti.ui.LMB) - window.is_pressed(
-            ti.ui.RMB
-        )
+        attractor_strength[None] = window.is_pressed(ti.ui.LMB) - window.is_pressed(ti.ui.RMB)
         for i in range(50):
             with ti.ad.Tape(loss=U):
                 update_U()

@@ -137,9 +137,7 @@ def main():
             f = f or download(url)
             upload(mastercli, "Near Cache", "misc", f"depcache/{escaped}/{name}", f)
 
-        if not probe(
-            f"https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}"
-        ):
+        if not probe(f"https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}"):
             f = f or download(url)
             upload(osscli, "Aliyun OSS", "taichi-bots", f"depcache/{escaped}/{name}", f)
 

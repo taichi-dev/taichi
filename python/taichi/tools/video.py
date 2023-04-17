@@ -11,9 +11,7 @@ FRAME_DIR = "frames"
 
 
 def scale_video(input_fn, output_fn, ratiow, ratioh):
-    os.system(
-        f'ffmpeg -i {input_fn}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output_fn}'
-    )
+    os.system(f'ffmpeg -i {input_fn}  -vf "scale=iw*{ratiow:.4f}:ih*{ratioh:.4f}" {output_fn}')
 
 
 def crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end):
@@ -23,9 +21,7 @@ def crop_video(input_fn, output_fn, x_begin, x_end, y_begin, y_end):
 
 
 def accelerate_video(input_fn, output_fn, speed):
-    os.system(
-        f'ffmpeg -i {input_fn} -filter:v "setpts={1 / speed:.4f}*PTS" {output_fn}'
-    )
+    os.system(f'ffmpeg -i {input_fn} -filter:v "setpts={1 / speed:.4f}*PTS" {output_fn}')
 
 
 def get_ffmpeg_path():
@@ -36,10 +32,7 @@ def mp4_to_gif(input_fn, output_fn, framerate):
     # Generate the palette
     palette_name = "palette.png"
     if get_os_name() == "win":
-        command = (
-            get_ffmpeg_path()
-            + f" -loglevel panic -i {input_fn} -vf 'palettegen' -y {palette_name}"
-        )
+        command = get_ffmpeg_path() + f" -loglevel panic -i {input_fn} -vf 'palettegen' -y {palette_name}"
     else:
         command = (
             get_ffmpeg_path() + f" -loglevel panic -i {input_fn} -vf 'fps={framerate},"
@@ -49,10 +42,7 @@ def mp4_to_gif(input_fn, output_fn, framerate):
     os.system(command)
 
     # Generate the GIF
-    command = (
-        get_ffmpeg_path()
-        + f" -loglevel panic -i {input_fn} -i {palette_name} -lavfi paletteuse -y {output_fn}"
-    )
+    command = get_ffmpeg_path() + f" -loglevel panic -i {input_fn} -i {palette_name} -lavfi paletteuse -y {output_fn}"
     # print command
     os.system(command)
     os.remove(palette_name)
@@ -221,9 +211,7 @@ def ffmpeg_common_args(frame_rate, input_fn, width, height, crf, output_path):
     )
 
 
-def make_video(
-    input_files, width=0, height=0, frame_rate=24, crf=20, output_path="video.mp4"
-):
+def make_video(input_files, width=0, height=0, frame_rate=24, crf=20, output_path="video.mp4"):
     """Convert a list of image files to a `gif` or `mp4` animation.
 
     Args:
@@ -251,9 +239,7 @@ def make_video(
         for i, inp in enumerate(input_files):
             shutil.copy(inp, os.path.join(tmp_dir, f"{i:06d}.png"))
         inputs = f"{tmp_dir}/%06d.png"
-        command = ffmpeg_common_args(
-            frame_rate, inputs, width, height, crf, output_path
-        )
+        command = ffmpeg_common_args(frame_rate, inputs, width, height, crf, output_path)
         ret = os.system(command)
         assert ret == 0, "ffmpeg failed to generate video file."
         for i in range(len(input_files)):
@@ -261,9 +247,7 @@ def make_video(
         os.rmdir(tmp_dir)
     elif isinstance(input_files, str):
         assert width != 0 and height != 0
-        command = ffmpeg_common_args(
-            frame_rate, input_files, width, height, crf, output_path
-        )
+        command = ffmpeg_common_args(frame_rate, input_files, width, height, crf, output_path)
         ret = os.system(command)
         assert ret == 0, "ffmpeg failed to generate video file."
     else:

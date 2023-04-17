@@ -19,9 +19,7 @@ def make_texture(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, 
 
 
 @ti.kernel
-def paint(
-    t: ti.f32, pixels: ti.types.ndarray(ndim=2), tex: ti.types.texture(num_dimensions=2)
-):
+def paint(t: ti.f32, pixels: ti.types.ndarray(ndim=2), tex: ti.types.texture(num_dimensions=2)):
     for i, j in pixels:
         uv = ti.Vector([i / res[0], j / res[1]])
         warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
@@ -41,13 +39,9 @@ def copy_to_field(pixels: ti.types.ndarray(ndim=2)):
 
 def main():
     _t = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "t", ti.f32)
-    _pixels_arr = ti.graph.Arg(
-        ti.graph.ArgKind.NDARRAY, "pixels_arr", dtype=ti.math.vec4, ndim=2
-    )
+    _pixels_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pixels_arr", dtype=ti.math.vec4, ndim=2)
 
-    _rw_tex = ti.graph.Arg(
-        ti.graph.ArgKind.RWTEXTURE, "rw_tex", fmt=ti.Format.r32f, ndim=2
-    )
+    _rw_tex = ti.graph.Arg(ti.graph.ArgKind.RWTEXTURE, "rw_tex", fmt=ti.Format.r32f, ndim=2)
     g_init_builder = ti.graph.GraphBuilder()
     g_init_builder.dispatch(make_texture, _rw_tex)
     g_init = g_init_builder.compile()

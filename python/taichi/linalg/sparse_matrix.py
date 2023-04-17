@@ -26,9 +26,7 @@ class SparseMatrix:
         if sm is None:
             self.n = n
             self.m = m if m else n
-            self.matrix = get_runtime().prog.create_sparse_matrix(
-                n, m, dtype, storage_format
-            )
+            self.matrix = get_runtime().prog.create_sparse_matrix(n, m, dtype, storage_format)
         else:
             self.n = sm.num_rows()
             self.m = sm.num_cols()
@@ -206,13 +204,9 @@ class SparseMatrix:
             [5, 0, 0, 0, 0]
         """
         if isinstance(ndarray, Ndarray):
-            num_scalars = reduce(
-                lambda x, y: x * y, ndarray.shape + ndarray.element_shape
-            )
+            num_scalars = reduce(lambda x, y: x * y, ndarray.shape + ndarray.element_shape)
             if num_scalars % 3 != 0:
-                raise TaichiRuntimeError(
-                    "The number of ndarray elements must have a length that is divisible by 3."
-                )
+                raise TaichiRuntimeError("The number of ndarray elements must have a length that is divisible by 3.")
             get_runtime().prog.make_sparse_matrix_from_ndarray(self.matrix, ndarray.arr)
         else:
             raise TaichiRuntimeError(
@@ -268,9 +262,7 @@ class SparseMatrixBuilder:
                     get_runtime().prog,
                 )
             else:
-                raise TaichiRuntimeError(
-                    "SparseMatrix only supports CPU and CUDA for now."
-                )
+                raise TaichiRuntimeError("SparseMatrix only supports CPU and CUDA for now.")
 
     def _get_addr(self):
         """Get the address of the sparse matrix"""

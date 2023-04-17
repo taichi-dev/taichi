@@ -101,20 +101,11 @@ def determinant(mat):
                 mat[i, 0]
                 * (
                     E(mat, i + 1, 1, 4)
-                    * (
-                        E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4)
-                        - E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4)
-                    )
+                    * (E(mat, i + 2, 2, 4) * E(mat, i + 3, 3, 4) - E(mat, i + 3, 2, 4) * E(mat, i + 2, 3, 4))
                     - E(mat, i + 2, 1, 4)
-                    * (
-                        E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4)
-                        - E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4)
-                    )
+                    * (E(mat, i + 1, 2, 4) * E(mat, i + 3, 3, 4) - E(mat, i + 3, 2, 4) * E(mat, i + 1, 3, 4))
                     + E(mat, i + 3, 1, 4)
-                    * (
-                        E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4)
-                        - E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4)
-                    )
+                    * (E(mat, i + 1, 2, 4) * E(mat, i + 2, 3, 4) - E(mat, i + 2, 2, 4) * E(mat, i + 1, 3, 4))
                 )
             )
         return det
@@ -130,9 +121,7 @@ def inverse(mat):
         return Matrix([[1.0 / mat[0, 0]]])
     inv_determinant = 1.0 / determinant(mat)
     if static(shape[0] == 2):
-        return inv_determinant * Matrix(
-            [[mat[1, 1], -mat[0, 1]], [-mat[1, 0], mat[0, 0]]]
-        )
+        return inv_determinant * Matrix([[mat[1, 1], -mat[0, 1]], [-mat[1, 0], mat[0, 0]]])
     if static(shape[0] == 3):
         return inv_determinant * Matrix(
             [
@@ -181,17 +170,13 @@ def inverse(mat):
 @pyfunc
 def transpose(mat):
     shape = static(mat.get_shape())
-    return Matrix(
-        [[mat[i, j] for i in static(range(shape[0]))] for j in static(range(shape[1]))]
-    )
+    return Matrix([[mat[i, j] for i in static(range(shape[0]))] for j in static(range(shape[1]))])
 
 
 @preconditions(arg_at(0, is_int_const))
 @pyfunc
 def diag(dim: template(), val: template()):
-    return Matrix(
-        [[val if i == j else 0 for j in static(range(dim))] for i in static(range(dim))]
-    )
+    return Matrix([[val if i == j else 0 for j in static(range(dim))] for i in static(range(dim))])
 
 
 @preconditions(assert_tensor)
@@ -345,12 +330,7 @@ def cross(vec_x, vec_y):
 def outer_product(vec_x, vec_y):
     shape_x = static(vec_x.get_shape())
     shape_y = static(vec_y.get_shape())
-    return Matrix(
-        [
-            [vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))]
-            for i in static(range(shape_x[0]))
-        ]
-    )
+    return Matrix([[vec_x[i] * vec_y[j] for j in static(range(shape_y[0]))] for i in static(range(shape_x[0]))])
 
 
 @preconditions(assert_tensor)

@@ -145,9 +145,7 @@ def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=["TI_ARCH"]):
         ti.init(arch=arch)
         assert ti.lang.impl.current_cfg().arch == arch
-    with patch_os_environ_helper(
-        {"TI_ARCH": ti._lib.core.arch_name(arch)}, excludes=["TI_ARCH"]
-    ):
+    with patch_os_environ_helper({"TI_ARCH": ti._lib.core.arch_name(arch)}, excludes=["TI_ARCH"]):
         ti.init(arch=ti.cc)
         assert ti.lang.impl.current_cfg().arch == arch
 
@@ -181,18 +179,14 @@ def test_init_bad_require_version():
         ti.init(_test_mode=True, debug=True, require_version=bad_require_version)
 
 
-@pytest.mark.parametrize(
-    "level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL]
-)
+@pytest.mark.parametrize("level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
 
 
-@pytest.mark.parametrize(
-    "level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL]
-)
+@pytest.mark.parametrize("level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)

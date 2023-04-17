@@ -21,11 +21,7 @@ template_types = (NdarrayType, TextureType, template)
 
 def check_type_match(lhs, rhs):
     if isinstance(lhs, MatrixType) and isinstance(rhs, MatrixType):
-        return (
-            lhs.n == rhs.n
-            and lhs.m == rhs.m
-            and (lhs.dtype == rhs.dtype or lhs.dtype is None or rhs.dtype is None)
-        )
+        return lhs.n == rhs.n and lhs.m == rhs.m and (lhs.dtype == rhs.dtype or lhs.dtype is None or rhs.dtype is None)
     if isinstance(lhs, MatrixType) or isinstance(rhs, MatrixType):
         return False
 
@@ -34,13 +30,7 @@ def check_type_match(lhs, rhs):
 
 def produce_injected_args_from_template(kernel, template_args):
     injected_args = []
-    num_template_args = len(
-        [
-            arg.annotation
-            for arg in kernel.arguments
-            if isinstance(arg.annotation, template_types)
-        ]
-    )
+    num_template_args = len([arg.annotation for arg in kernel.arguments if isinstance(arg.annotation, template_types)])
     assert num_template_args == len(
         template_args
     ), f"Need {num_template_args} inputs to instantiate the template parameters, got {len(template_args)}"
@@ -68,9 +58,7 @@ def produce_injected_args(kernel, symbolic_args=None):
                 if element_dim == 0 or symbolic_args[i].element_shape == (1,):
                     dtype = symbolic_args[i].dtype()
                 elif element_dim == 1:
-                    dtype = VectorType(
-                        symbolic_args[i].element_shape[0], symbolic_args[i].dtype()
-                    )
+                    dtype = VectorType(symbolic_args[i].element_shape[0], symbolic_args[i].dtype())
                 elif element_dim == 2:
                     dtype = MatrixType(
                         symbolic_args[i].element_shape[0],
@@ -96,15 +84,9 @@ def produce_injected_args(kernel, symbolic_args=None):
                 )
 
             if isinstance(dtype, VectorType):
-                injected_args.append(
-                    VectorNdarray(dtype.n, dtype=dtype.dtype, shape=(2,) * ndim)
-                )
+                injected_args.append(VectorNdarray(dtype.n, dtype=dtype.dtype, shape=(2,) * ndim))
             elif isinstance(dtype, MatrixType):
-                injected_args.append(
-                    MatrixNdarray(
-                        dtype.n, dtype.m, dtype=dtype.dtype, shape=(2,) * ndim
-                    )
-                )
+                injected_args.append(MatrixNdarray(dtype.n, dtype.m, dtype=dtype.dtype, shape=(2,) * ndim))
             else:
                 injected_args.append(ScalarNdarray(dtype, (2,) * ndim))
         elif isinstance(anno, RWTextureType):
@@ -165,9 +147,5 @@ def dump_json_data_model(x: object) -> Any:
     if isinstance(x, dict):
         return {k: dump_json_data_model(v) for k, v in x.items()}
     if is_json_data_model(x):
-        return {
-            k: dump_json_data_model(v)
-            for k, v in x.__dict__.items()
-            if k != "_is_json_data_model"
-        }
+        return {k: dump_json_data_model(v) for k, v in x.__dict__.items() if k != "_is_json_data_model"}
     return x

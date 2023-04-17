@@ -97,17 +97,13 @@ class GUI:
         self.res = res
         self.fast_gui = fast_gui
         if fast_gui:
-            self.img = np.ascontiguousarray(
-                np.zeros(self.res[0] * self.res[1], dtype=np.uint32)
-            )
+            self.img = np.ascontiguousarray(np.zeros(self.res[0] * self.res[1], dtype=np.uint32))
             fast_buf = self.img.ctypes.data
         else:
             # The GUI canvas uses RGBA for storage, therefore we need NxMx4 for an image.
             self.img = np.ascontiguousarray(np.zeros(self.res + (4,), np.float32))
             fast_buf = 0
-        self.core = _ti_core.GUI(
-            name, core_veci(*res), show_gui, fullscreen, fast_gui, fast_buf
-        )
+        self.core = _ti_core.GUI(name, core_veci(*res), show_gui, fullscreen, fast_gui, fast_buf)
         self.canvas = self.core.get_canvas()
         self.background_color = background_color
         self.key_pressed = set()
@@ -302,12 +298,8 @@ class GUI:
             assert isinstance(
                 img, taichi.lang.matrix.MatrixField
             ), "Only ti.Vector.field is supported in GUI.set_image when fast_gui=True"
-            assert (
-                img.shape == self.res
-            ), "Image resolution does not match GUI resolution"
-            assert (
-                img.n in [3, 4] and img.m == 1
-            ), "Only RGB images are supported in GUI.set_image when fast_gui=True"
+            assert img.shape == self.res, "Image resolution does not match GUI resolution"
+            assert img.n in [3, 4] and img.m == 1, "Only RGB images are supported in GUI.set_image when fast_gui=True"
             assert img.dtype in [
                 ti.f32,
                 ti.f64,
@@ -323,9 +315,7 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert (
-                    img.shape == self.res
-                ), "Image resolution does not match GUI resolution"
+                assert img.shape == self.res, "Image resolution does not match GUI resolution"
                 tensor_to_image(img, self.img)
                 ti.sync()
 
@@ -334,9 +324,7 @@ class GUI:
                 self.img = self.cook_image(img.to_numpy())
             else:
                 # Type matched! We can use an optimized copy kernel.
-                assert (
-                    img.shape == self.res
-                ), "Image resolution does not match GUI resolution"
+                assert img.shape == self.res, "Image resolution does not match GUI resolution"
                 assert (
                     img.n in [2, 3, 4] and img.m == 1
                 ), "Only greyscale, RG, RGB or RGBA images are supported in GUI.set_image"
@@ -348,9 +336,7 @@ class GUI:
             self.img = self.cook_image(img)
 
         else:
-            raise ValueError(
-                f"GUI.set_image only takes a Taichi field or NumPy array, not {type(img)}"
-            )
+            raise ValueError(f"GUI.set_image only takes a Taichi field or NumPy array, not {type(img)}")
 
         self.core.set_img(self.img.ctypes.data)
 
@@ -376,21 +362,19 @@ class GUI:
             )
         scalar_field_np = scalar_field.to_numpy()
         if self.res != scalar_field_np.shape:
-            x, y = np.meshgrid(
-                np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0])
-            )
+            x, y = np.meshgrid(np.linspace(0, 1, self.res[1]), np.linspace(0, 1, self.res[0]))
             x_idx = x * (scalar_field_np.shape[1] - 1)
             y_idx = y * (scalar_field_np.shape[0] - 1)
             x1 = x_idx.astype(int)
             x2 = np.minimum(x1 + 1, scalar_field_np.shape[1] - 1)
             y1 = y_idx.astype(int)
             y2 = np.minimum(y1 + 1, scalar_field_np.shape[0] - 1)
-            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (
-                1 - (y_idx - y1)
-            ) + scalar_field_np[y1, x2] * (x_idx - x1) * (1 - (y_idx - y1))
-            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (
-                y_idx - y1
-            ) + scalar_field_np[y2, x2] * (x_idx - x1) * (y_idx - y1)
+            array_y1 = scalar_field_np[y1, x1] * (1 - (x_idx - x1)) * (1 - (y_idx - y1)) + scalar_field_np[y1, x2] * (
+                x_idx - x1
+            ) * (1 - (y_idx - y1))
+            array_y2 = scalar_field_np[y2, x1] * (1 - (x_idx - x1)) * (y_idx - y1) + scalar_field_np[y2, x2] * (
+                x_idx - x1
+            ) * (y_idx - y1)
             output = array_y1 + array_y2
         else:
             output = scalar_field_np
@@ -409,9 +393,7 @@ class GUI:
         """
         self.canvas.circle_single(pos[0], pos[1], color, radius)
 
-    def circles(
-        self, pos, radius=1, color=0xFFFFFF, palette=None, palette_indices=None
-    ):
+    def circles(self, pos, radius=1, color=0xFFFFFF, palette=None, palette_indices=None):
         """Draws a list of circles on canvas.
 
         Args:
@@ -451,36 +433,22 @@ class GUI:
             raise ValueError("Color must be an ndarray or int (e.g., 0x956333)")
 
         if palette is not None:
-            assert (
-                palette_indices is not None
-            ), "palette must be used together with palette_indices"
+            assert palette_indices is not None, "palette must be used together with palette_indices"
 
             if isinstance(palette_indices, Field):
                 ind_int = palette_indices.to_numpy().astype(np.uint32)
-            elif isinstance(palette_indices, list) or isinstance(
-                palette_indices, np.ndarray
-            ):
+            elif isinstance(palette_indices, list) or isinstance(palette_indices, np.ndarray):
                 ind_int = np.array(palette_indices).astype(np.uint32)
             else:
                 try:
                     ind_int = np.array(palette_indices)
                 except:
-                    raise TypeError(
-                        "palette_indices must be a type that can be converted to numpy.ndarray"
-                    )
+                    raise TypeError("palette_indices must be a type that can be converted to numpy.ndarray")
 
-            assert issubclass(
-                ind_int.dtype.type, np.integer
-            ), "palette_indices must be an integer array"
-            assert ind_int.shape == (
-                n,
-            ), "palette_indices must be in 1-d shape with shape (num_particles, )"
-            assert (
-                min(ind_int) >= 0
-            ), "the min of palette_indices must not be less than zero"
-            assert max(ind_int) < len(
-                palette
-            ), "the max of palette_indices must not exceed the length of palette"
+            assert issubclass(ind_int.dtype.type, np.integer), "palette_indices must be an integer array"
+            assert ind_int.shape == (n,), "palette_indices must be in 1-d shape with shape (num_particles, )"
+            assert min(ind_int) >= 0, "the min of palette_indices must not be less than zero"
+            assert max(ind_int) < len(palette), "the max of palette_indices must not exceed the length of palette"
             color_array = np.array(palette, dtype=np.uint32)[ind_int]
             color_array = np.ascontiguousarray(color_array)
             color_array = color_array.ctypes.data
@@ -496,9 +464,7 @@ class GUI:
         else:
             raise ValueError("Radius must be an ndarray or float (e.g., 0.4)")
 
-        self.canvas.circles_batched(
-            n, pos_ptr, color_single, color_array, radius_single, radius_array
-        )
+        self.canvas.circles_batched(n, pos_ptr, color_single, color_array, radius_single, radius_array)
 
     def triangles(self, a, b, c, color=0xFFFFFF):
         """Draws a list of triangles on canvas.
@@ -634,12 +600,8 @@ class GUI:
     def _arrow_to_lines(orig, major, tip_scale=0.2, angle=45):
         angle = math.radians(180 - angle)
         c, s = math.cos(angle), math.sin(angle)
-        minor1 = np.array(
-            [major[:, 0] * c - major[:, 1] * s, major[:, 0] * s + major[:, 1] * c]
-        ).swapaxes(0, 1)
-        minor2 = np.array(
-            [major[:, 0] * c + major[:, 1] * s, -major[:, 0] * s + major[:, 1] * c]
-        ).swapaxes(0, 1)
+        minor1 = np.array([major[:, 0] * c - major[:, 1] * s, major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
+        minor2 = np.array([major[:, 0] * c + major[:, 1] * s, -major[:, 0] * s + major[:, 1] * c]).swapaxes(0, 1)
         end = orig + major
         return [
             (orig, end),
@@ -774,9 +736,7 @@ class GUI:
         y = np.arange(0, 1, arrow_spacing / ny)
         X, Y = np.meshgrid(x, y)
         begin = np.dstack((X, Y)).reshape(-1, 2, order="F")
-        incre = (v_np[::arrow_spacing, ::arrow_spacing] * scale_factor).reshape(
-            -1, 2, order="C"
-        )
+        incre = (v_np[::arrow_spacing, ::arrow_spacing] * scale_factor).reshape(-1, 2, order="C")
         self.arrows(orig=begin, direction=incre, radius=1, color=color)
 
     def show(self, file=None):
@@ -1037,9 +997,7 @@ def core_vec(*args):
         if len(args) == 3:
             return _ti_core.Vector3f(float(args[0]), float(args[1]), float(args[2]))
         if len(args) == 4:
-            return _ti_core.Vector4f(
-                float(args[0]), float(args[1]), float(args[2]), float(args[3])
-            )
+            return _ti_core.Vector4f(float(args[0]), float(args[1]), float(args[2]), float(args[3]))
         assert False, type(args[0])
     else:
         if len(args) == 2:
@@ -1047,9 +1005,7 @@ def core_vec(*args):
         if len(args) == 3:
             return _ti_core.Vector3d(float(args[0]), float(args[1]), float(args[2]))
         if len(args) == 4:
-            return _ti_core.Vector4d(
-                float(args[0]), float(args[1]), float(args[2]), float(args[3])
-            )
+            return _ti_core.Vector4d(float(args[0]), float(args[1]), float(args[2]), float(args[3]))
         assert False, type(args[0])
 
 

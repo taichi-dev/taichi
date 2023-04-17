@@ -30,9 +30,7 @@ class KernelTemplate:
                 key_p += "=" + ky + ","
                 return key_p
         raise RuntimeError(
-            "Arg type must be of type int/float/boolean"
-            f" or taichi field. Type {str(type(v))}"
-            " is not supported"
+            "Arg type must be of type int/float/boolean" f" or taichi field. Type {str(type(v))}" " is not supported"
         )
 
     def instantiate(self, **kwargs):
@@ -57,9 +55,7 @@ class KernelTemplate:
             else:
                 injected_args.append(0)
         kernel.ensure_compiled(*injected_args)
-        self._aot_module._aot_builder.add_kernel_template(
-            name, key_p, kernel.kernel_cpp
-        )
+        self._aot_module._aot_builder.add_kernel_template(name, key_p, kernel.kernel_cpp)
 
         # kernel AOT
         self._aot_module._kernels.append(kernel)
@@ -234,9 +230,7 @@ class Module:
           filepath (str): path to the stored archive of aot artifacts, MUST
             end with `.tcm`.
         """
-        assert filepath.endswith(
-            ".tcm"
-        ), "AOT module artifact archive must ends with .tcm"
+        assert filepath.endswith(".tcm"), "AOT module artifact archive must ends with .tcm"
         tcm_path = Path(filepath).absolute()
         assert tcm_path.parent.exists(), "Output directory doesn't exist"
 

@@ -31,12 +31,7 @@ def test_ifexpr_scalar():
     @ti.kernel
     def func():
         for I in ti.grouped(g_m):
-            cond = (
-                (I[0] < 3)
-                and (g_v[I][0] < 0)
-                or (I[0] > n_grids - 3)
-                and (g_v[I][0] > 0)
-            )
+            cond = (I[0] < 3) and (g_v[I][0] < 0) or (I[0] > n_grids - 3) and (g_v[I][0] > 0)
             g_v[I] = 0 if cond else g_v[I]
 
     func()

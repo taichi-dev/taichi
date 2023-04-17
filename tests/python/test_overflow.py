@@ -8,8 +8,7 @@ from tests import test_utils
 
 if os.name == "nt":
     pytest.skip(
-        "Skipping on windows because fflush issues, "
-        "see https://github.com/taichi-dev/taichi/issues/6179",
+        "Skipping on windows because fflush issues, " "see https://github.com/taichi-dev/taichi/issues/6179",
         allow_module_level=True,
     )
 
@@ -32,9 +31,7 @@ def test_no_debug(capfd):
 
 
 def supports_overflow(arch):
-    return (
-        arch != ti.vulkan or platform.system() != "Darwin"
-    )  # Vulkan on macOS do not have the validation layer.
+    return arch != ti.vulkan or platform.system() != "Darwin"  # Vulkan on macOS do not have the validation layer.
 
 
 add_table = [

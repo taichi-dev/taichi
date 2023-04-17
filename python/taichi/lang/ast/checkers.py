@@ -70,9 +70,7 @@ class KernelSimplicityASTChecker(ast.NodeVisitor):
             return
 
         if not (self.top_level or self.current_scope.allows_more_stmt):
-            raise TaichiSyntaxError(
-                f"No more statements allowed, at {self.get_error_location(node)}"
-            )
+            raise TaichiSyntaxError(f"No more statements allowed, at {self.get_error_location(node)}")
         old_top_level = self.top_level
         if old_top_level:
             self._scope_guards.append(self.new_scope())

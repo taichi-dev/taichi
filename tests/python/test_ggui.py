@@ -85,9 +85,7 @@ def test_geometry_2d():
     def render():
         canvas.circles(circle_positions_0, radius=0.05, color=(1, 0, 0))
 
-        canvas.circles(
-            circle_positions_1, radius=0.05, per_vertex_color=circle_colors_1
-        )
+        canvas.circles(circle_positions_1, radius=0.05, per_vertex_color=circle_colors_1)
 
         canvas.triangles(triangles_positions_0, color=(0, 0, 1))
 
@@ -137,10 +135,7 @@ def test_geometry_3d():
         for x, y, z in ti.ndrange(num_per_dim, num_per_dim, num_per_dim):
             i = x * (num_per_dim**2) + y * num_per_dim + z
             gap = 0.01
-            particles_positions_0[i] = (
-                ti.Vector([-0.4, 0, 0.0], dt=ti.f32)
-                + ti.Vector([x, y, z], dt=ti.f32) * gap
-            )
+            particles_positions_0[i] = ti.Vector([-0.4, 0, 0.0], dt=ti.f32) + ti.Vector([x, y, z], dt=ti.f32) * gap
 
     init_particles_0()
 
@@ -155,10 +150,7 @@ def test_geometry_3d():
         for x, y, z in ti.ndrange(num_per_dim, num_per_dim, num_per_dim):
             i = x * (num_per_dim**2) + y * num_per_dim + z
             gap = 0.01
-            particles_positions_1[i] = (
-                ti.Vector([0.2, 0, 0.0], dt=ti.f32)
-                + ti.Vector([x, y, z], dt=ti.f32) * gap
-            )
+            particles_positions_1[i] = ti.Vector([0.2, 0, 0.0], dt=ti.f32) + ti.Vector([x, y, z], dt=ti.f32) * gap
             particles_colors_1[i] = ti.Vector([x, y, z], dt=ti.f32) / num_per_dim
 
     init_particles_1()
@@ -171,10 +163,7 @@ def test_geometry_3d():
     def init_mesh():
         for i, j, k in ti.ndrange(2, 2, 2):
             index = i * 4 + j * 2 + k
-            vertices[index] = (
-                ti.Vector([-0.1, -0.3, 0.0], dt=ti.f32)
-                + ti.Vector([i, j, k], dt=ti.f32) * 0.25
-            )
+            vertices[index] = ti.Vector([-0.1, -0.3, 0.0], dt=ti.f32) + ti.Vector([i, j, k], dt=ti.f32) * 0.25
             colors[index] = ti.Vector([i, j, k], dt=ti.f32)
 
     init_mesh()
@@ -227,9 +216,7 @@ def test_geometry_3d():
 
         scene.particles(particles_positions_0, radius=0.01, color=(0.5, 0, 0))
 
-        scene.particles(
-            particles_positions_1, radius=0.01, per_vertex_color=particles_colors_1
-        )
+        scene.particles(particles_positions_1, radius=0.01, per_vertex_color=particles_colors_1)
 
         scene.mesh(vertices, per_vertex_color=colors, indices=indices, two_sided=True)
 
@@ -267,9 +254,7 @@ def test_draw_3d_lines():
 
     @ti.func
     def decode_morton(code: ti.u32):
-        return ti.Vector(
-            [compact_1by2(code >> 0), compact_1by2(code >> 1), compact_1by2(code >> 2)]
-        )
+        return ti.Vector([compact_1by2(code >> 0), compact_1by2(code >> 1), compact_1by2(code >> 2)])
 
     @ti.kernel
     def init_coordinates(coor_idx: ti.types.ndarray()):
@@ -277,9 +262,7 @@ def test_draw_3d_lines():
             idx = i * N * N + j * N + k
             coor_pos[idx] = ti.Vector([i, j, k])
             fpos = ti.cast(ti.Vector([i, j, k]), ti.f32) + 0.01
-            colors[idx] = fpos.normalized() * (
-                0.1 + 2.0 / (ti.math.distance(fpos, CAMERA_POS) - 3.0)
-            )
+            colors[idx] = fpos.normalized() * (0.1 + 2.0 / (ti.math.distance(fpos, CAMERA_POS) - 3.0))
         for i in ti.ndrange(N * N * N - 1):
             ipos0 = decode_morton(i)
             lindex0 = ipos0.x * N * N + ipos0.y * N + ipos0.z
@@ -376,9 +359,7 @@ def test_set_image_with_texture():
     img = ti.Texture(ti.Format.rgba32f, (512, 512))
 
     @ti.kernel
-    def init_img(
-        img: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba32f, lod=0)
-    ):
+    def init_img(img: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba32f, lod=0)):
         for i, j in ti.ndrange(512, 512):
             img.store(ti.Vector([i, j]), ti.Vector([i, j, 0, 512], dt=ti.f32) / 512)
 
@@ -759,9 +740,7 @@ def test_draw_mesh_instances():
                 index = i * NInstanceCols + j
                 instances_transforms[index] = identity
                 translate_matrix = ti.math.translate(1.2 * j, 0, -1.2 * i)
-                instances_transforms[index] = (
-                    translate_matrix @ instances_transforms[index]
-                )
+                instances_transforms[index] = translate_matrix @ instances_transforms[index]
 
     @ti.kernel
     def init_pos():
@@ -812,9 +791,7 @@ def test_draw_mesh_instances():
     @ti.kernel
     def update_transform(t: ti.f32):
         for i in range(NInstance):
-            rotation_matrix = ti.math.rot_by_axis(
-                ti.math.vec3(0, 1, 0), 0.01 * ti.math.sin(t)
-            )
+            rotation_matrix = ti.math.rot_by_axis(ti.math.vec3(0, 1, 0), 0.01 * ti.math.sin(t))
             instances_transforms[i] = instances_transforms[i] @ rotation_matrix
 
     init_transforms_of_instances()
@@ -879,9 +856,7 @@ def test_draw_part_of_mesh_instances():
                 index = i * NInstanceCols + j
                 instances_transforms[index] = identity
                 translate_matrix = ti.math.translate(1.2 * j, 0, -1.2 * i)
-                instances_transforms[index] = (
-                    translate_matrix @ instances_transforms[index]
-                )
+                instances_transforms[index] = translate_matrix @ instances_transforms[index]
 
     @ti.kernel
     def init_pos():

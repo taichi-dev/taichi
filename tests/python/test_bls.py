@@ -146,9 +146,7 @@ def test_multiple_inputs():
         if ti.static(bls):
             ti.block_local(x, y, z)
         for i, j in x:
-            w[i, j] = (
-                x[i, j - 2] + y[i + 2, j - 1] + y[i - 1, j] + z[i - 1, j] + z[i + 1, j]
-            )
+            w[i, j] = x[i, j - 2] + y[i + 2, j - 1] + y[i - 1, j] + z[i - 1, j] + z[i + 1, j]
 
     populate()
     copy(False, w2)

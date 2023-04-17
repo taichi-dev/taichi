@@ -179,11 +179,7 @@ def prologue():
             if is_in_grid(cell_to_check):
                 for j in range(grid_num_particles[cell_to_check]):
                     p_j = grid2particles[cell_to_check, j]
-                    if (
-                        nb_i < max_num_neighbors
-                        and p_j != p_i
-                        and (pos_i - positions[p_j]).norm() < neighbor_radius
-                    ):
+                    if nb_i < max_num_neighbors and p_j != p_i and (pos_i - positions[p_j]).norm() < neighbor_radius:
                         particle_neighbors[p_i, nb_i] = p_j
                         nb_i += 1
         particle_num_neighbors[p_i] = nb_i
@@ -277,12 +273,8 @@ def render(gui):
 def init_particles():
     for i in range(num_particles):
         delta = h_ * 0.8
-        offs = ti.Vector(
-            [(boundary[0] - delta * num_particles_x) * 0.5, boundary[1] * 0.02]
-        )
-        positions[i] = (
-            ti.Vector([i % num_particles_x, i // num_particles_x]) * delta + offs
-        )
+        offs = ti.Vector([(boundary[0] - delta * num_particles_x) * 0.5, boundary[1] * 0.02])
+        positions[i] = ti.Vector([i % num_particles_x, i // num_particles_x]) * delta + offs
         for c in ti.static(range(dim)):
             velocities[i][c] = (ti.random() - 0.5) * 4
     board_states[None] = ti.Vector([boundary[0] - epsilon, -0.0])

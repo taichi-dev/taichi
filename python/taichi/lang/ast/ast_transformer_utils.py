@@ -22,9 +22,7 @@ class Builder:
             if method is None:
                 error_msg = f'Unsupported node "{node.__class__.__name__}"'
                 raise TaichiSyntaxError(error_msg)
-            info = (
-                ctx.get_pos_info(node) if isinstance(node, (ast.stmt, ast.expr)) else ""
-            )
+            info = ctx.get_pos_info(node) if isinstance(node, (ast.stmt, ast.expr)) else ""
             with impl.get_runtime().src_info_guard(info):
                 return method(ctx, node)
         except Exception as e:
@@ -292,10 +290,7 @@ class ASTTransformerContext:
 
             for i in range(node.lineno - 1, end_lineno):
                 last = len(self.src[i])
-                while last > 0 and (
-                    self.src[i][last - 1].isspace()
-                    or not self.src[i][last - 1].isprintable()
-                ):
+                while last > 0 and (self.src[i][last - 1].isspace() or not self.src[i][last - 1].isprintable()):
                     last -= 1
                 first = 0
                 while first < len(self.src[i]) and (

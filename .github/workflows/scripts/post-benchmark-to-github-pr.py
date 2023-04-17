@@ -82,9 +82,7 @@ def render_result(baseline, sha, rs):
 
         rate = f'{" +"[rate > 0]}{rate:.2f}'
 
-        _(
-            rf"| {name} | {fmt(rv)} | {fmt(cv)} | $\textcolor{{{color}}}{{\textsf{{{rate}\\%}}}}$ |"
-        )
+        _(rf"| {name} | {fmt(rv)} | {fmt(cv)} | $\textcolor{{{color}}}{{\textsf{{{rate}\\%}}}}$ |")
 
     return "\n".join(texts)
 
@@ -101,9 +99,7 @@ def main():
     for item in current:
         db.execute("INSERT OR IGNORE INTO current VALUES (?, ?)", flatten_metric(item))
 
-    ver = requests.get(
-        "https://benchmark.taichi-lang.cn/releases?order=vnum.desc&limit=1"
-    ).json()[0]["version"]
+    ver = requests.get("https://benchmark.taichi-lang.cn/releases?order=vnum.desc&limit=1").json()[0]["version"]
     release = requests.get(
         f"https://benchmark.taichi-lang.cn/taichi_benchmark?tags->>type=eq.release&tags->>release=eq.{ver}"
     ).json()

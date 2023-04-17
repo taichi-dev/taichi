@@ -130,9 +130,7 @@ def process(imgfile, scale):
 
 def main(imgfile=None, scale=2):
     if imgfile is None:
-        imgfile = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)), "taichi_logo.png"
-        )
+        imgfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "taichi_logo.png")
     process(imgfile, scale)
 
 

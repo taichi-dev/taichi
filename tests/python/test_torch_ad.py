@@ -98,9 +98,7 @@ def test_torch_ad_gpu():
 
     sqr = Sqr.apply
     for i in range(10):
-        X = torch.tensor(
-            2 * np.ones((n,), dtype=np.float32), requires_grad=True, device=device
-        )
+        X = torch.tensor(2 * np.ones((n,), dtype=np.float32), requires_grad=True, device=device)
         sqr(X).sum().backward()
         ret = X.grad.cpu().numpy()
         for j in range(n):

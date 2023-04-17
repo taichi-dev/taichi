@@ -265,9 +265,7 @@ def test_matrix_factories():
 
     sqrt3o2 = math.sqrt(3) / 2
     assert b[0].to_numpy() == test_utils.approx(np.eye(2))
-    assert b[1].to_numpy() == test_utils.approx(
-        np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]])
-    )
+    assert b[1].to_numpy() == test_utils.approx(np.array([[0.5, -sqrt3o2], [sqrt3o2, 0.5]]))
     assert c[0].to_numpy() == test_utils.approx(np.zeros((2, 3)))
     assert c[1].to_numpy() == test_utils.approx(np.ones((2, 3)))
 

@@ -88,9 +88,7 @@ def probe_mirrors():
     SHOULD_USE_MIRROR["_probed"] = True
 
 
-def download_dep(
-    url, outdir, *, strip=0, force=False, args=None, plain=False, elevate=False
-):
+def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False, elevate=False):
     """
     Download a dependency archive from `url` and expand it to `outdir`,
     optionally stripping `strip` components.
@@ -113,9 +111,7 @@ def download_dep(
     urls = [url]
 
     if SHOULD_USE_MIRROR["aliyun"]:
-        urls.append(
-            f"https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}"
-        )
+        urls.append(f"https://taichi-bots.oss-cn-beijing.aliyuncs.com/depcache/{escaped}/{name}")
 
     if SHOULD_USE_MIRROR["ci"]:
         urls.append(f"http://botmaster.tgr:9000/misc/depcache/{escaped}/{name}")

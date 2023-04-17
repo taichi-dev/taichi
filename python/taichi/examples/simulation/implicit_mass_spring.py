@@ -24,12 +24,8 @@ class Cloth:
 
         self.spring = ti.Vector.field(2, ti.i32, self.NE)
         self.indices = ti.field(ti.i32, 2 * self.NE)
-        self.Jx = ti.Matrix.field(
-            2, 2, ti.f32, self.NE
-        )  # Jacobian with respect to position
-        self.Jv = ti.Matrix.field(
-            2, 2, ti.f32, self.NE
-        )  # Jacobian with respect to velocity
+        self.Jx = ti.Matrix.field(2, 2, ti.f32, self.NE)  # Jacobian with respect to position
+        self.Jv = ti.Matrix.field(2, 2, ti.f32, self.NE)  # Jacobian with respect to velocity
         self.rest_len = ti.field(ti.f32, self.NE)
         self.ks = 1000.0  # spring stiffness
         self.kd = 0.5  # damping constant
@@ -38,21 +34,13 @@ class Cloth:
         self.gravity = ti.Vector([0.0, -2.0])
         self.init_pos()
         self.init_edges()
-        self.MassBuilder = ti.linalg.SparseMatrixBuilder(
-            2 * self.NV, 2 * self.NV, max_num_triplets=10000
-        )
-        self.DBuilder = ti.linalg.SparseMatrixBuilder(
-            2 * self.NV, 2 * self.NV, max_num_triplets=10000
-        )
-        self.KBuilder = ti.linalg.SparseMatrixBuilder(
-            2 * self.NV, 2 * self.NV, max_num_triplets=10000
-        )
+        self.MassBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+        self.DBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV, 2 * self.NV, max_num_triplets=10000)
+        self.KBuilder = ti.linalg.SparseMatrixBuilder(2 * self.NV, 2 * self.NV, max_num_triplets=10000)
         self.init_mass_sp(self.MassBuilder)
         self.M = self.MassBuilder.build()
         self.fix_vertex = [self.N, self.NV - 1]
-        self.Jf = ti.Matrix.field(
-            2, 2, ti.f32, len(self.fix_vertex)
-        )  # fix constraint hessian
+        self.Jf = ti.Matrix.field(2, 2, ti.f32, len(self.fix_vertex))  # fix constraint hessian
 
     @ti.kernel
     def init_pos(self):
@@ -65,9 +53,7 @@ class Cloth:
 
     @ti.kernel
     def init_edges(self):
-        pos, spring, N, rest_len = ti.static(
-            self.pos, self.spring, self.N, self.rest_len
-        )
+        pos, spring, N, rest_len = ti.static(self.pos, self.spring, self.N, self.rest_len)
         for i, j in ti.ndrange(N + 1, N):
             idx, idx1 = i * N + j, i * (N + 1) + j
             spring[idx] = ti.Vector([idx1, idx1 + 1])
@@ -127,9 +113,7 @@ class Cloth:
             self.force[idx2] -= force
         # fix constraint gradient
         self.force[self.N] += self.kf * (self.initPos[self.N] - self.pos[self.N])
-        self.force[self.NV - 1] += self.kf * (
-            self.initPos[self.NV - 1] - self.pos[self.NV - 1]
-        )
+        self.force[self.NV - 1] += self.kf * (self.initPos[self.NV - 1] - self.pos[self.NV - 1])
 
     @ti.kernel
     def compute_Jacobians(self):
@@ -138,9 +122,7 @@ class Cloth:
             pos1, pos2 = self.pos[idx1], self.pos[idx2]
             dx = pos1 - pos2
             I = ti.Matrix([[1.0, 0.0], [0.0, 1.0]])
-            dxtdx = ti.Matrix(
-                [[dx[0] * dx[0], dx[0] * dx[1]], [dx[1] * dx[0], dx[1] * dx[1]]]
-            )
+            dxtdx = ti.Matrix([[dx[0] * dx[0], dx[0] * dx[1]], [dx[1] * dx[0], dx[1] * dx[1]]])
             l = dx.norm()
             if l != 0.0:
                 l = 1.0 / l
@@ -252,9 +234,7 @@ class Cloth:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-g", "--use-ggui", action="store_true", help="Display with GGUI"
-    )
+    parser.add_argument("-g", "--use-ggui", action="store_true", help="Display with GGUI")
     parser.add_argument(
         "-a",
         "--arch",

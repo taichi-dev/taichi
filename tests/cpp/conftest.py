@@ -70,9 +70,7 @@ class CPPTestsFile(pytest.File):
                     )
 
     def list_all_tests(self, binary):
-        proc = subprocess.Popen(
-            [str(binary), "--gtest_list_tests"], stdout=subprocess.PIPE
-        )
+        proc = subprocess.Popen([str(binary), "--gtest_list_tests"], stdout=subprocess.PIPE)
         out, _ = proc.communicate()
 
         lst = []
@@ -133,9 +131,7 @@ class CPPTestItem(pytest.Item):
                         env=env,
                     )
 
-                    retcode and pytest.fail(
-                        f"{self.script} {self.args} reported failure, exit code {retcode}"
-                    )
+                    retcode and pytest.fail(f"{self.script} {self.args} reported failure, exit code {retcode}")
 
                 retcode = subprocess.call(
                     f"{self.binary} --gtest_filter={self.test}",
@@ -144,9 +140,7 @@ class CPPTestItem(pytest.Item):
                     env=env,
                 )
 
-                retcode and pytest.fail(
-                    f"C++ part reported failure, exit code {retcode}"
-                )
+                retcode and pytest.fail(f"C++ part reported failure, exit code {retcode}")
 
             except Exception:
                 excinfo = sys.exc_info()

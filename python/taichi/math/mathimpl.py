@@ -736,9 +736,7 @@ def isinf(x):
     fx = ops.cast(x, ftype)
     if static(ftype == f64):
         y = ops.bit_cast(fx, u64)
-        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) == 0x7FF00000 and (
-            ops.cast(y, u32) == 0
-        )
+        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) == 0x7FF00000 and (ops.cast(y, u32) == 0)
 
     y = ops.bit_cast(fx, u32)
     return (y & 0x7FFFFFFF) == 0x7F800000
@@ -764,9 +762,7 @@ def isnan(x):
     fx = ops.cast(x, ftype)
     if static(ftype == f64):
         y = ops.bit_cast(fx, u64)
-        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) + (
-            ops.cast(y, u32) != 0
-        ) > 0x7FF00000
+        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) + (ops.cast(y, u32) != 0) > 0x7FF00000
 
     y = ops.bit_cast(fx, u32)
     return (y & 0x7FFFFFFF) > 0x7F800000

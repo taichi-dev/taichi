@@ -13,9 +13,7 @@ import taichi as ti
 stencil_common = [(0, 0), (0, -1), (0, 1), (1, 0)]
 
 
-def stencil_2d_default(
-    arch, repeat, scatter, bls, container, dtype, dsize_2d, get_metric
-):
+def stencil_2d_default(arch, repeat, scatter, bls, container, dtype, dsize_2d, get_metric):
     dsize = dsize_2d[0] * dsize_2d[1]
     repeat = scaled_repeat_times(arch, dsize, repeat)
     num_elements_2d = (dsize_2d[0] // dtype_size(dtype), dsize_2d[1] // 2)
@@ -52,17 +50,11 @@ def stencil_2d_default(
     return get_metric(repeat, func, y, x)
 
 
-def stencil_2d_sparse_bls(
-    arch, repeat, scatter, bls, container, dtype, dsize_2d, get_metric
-):
+def stencil_2d_sparse_bls(arch, repeat, scatter, bls, container, dtype, dsize_2d, get_metric):
     dsize = dsize_2d[0] * dsize_2d[1]
-    if (
-        dsize <= 4096 or dsize > 67108864
-    ):  # 16KB <= dsize <= 64 MB: Sparse-specific parameters
+    if dsize <= 4096 or dsize > 67108864:  # 16KB <= dsize <= 64 MB: Sparse-specific parameters
         return None
-    repeat = scaled_repeat_times(
-        arch, dsize, 1
-    )  # basic_repeat_time = 1: Sparse-specific parameters
+    repeat = scaled_repeat_times(arch, dsize, 1)  # basic_repeat_time = 1: Sparse-specific parameters
     block_elements_2d = (dsize_2d[0] // dtype_size(dtype) // 8, dsize_2d[1] // 2 // 8)
 
     block = ti.root.pointer(ti.ij, block_elements_2d)

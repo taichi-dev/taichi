@@ -5,9 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(
-    default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal]
-)
+@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
 def test_general():
     x1 = ti.field(dtype=float, shape=(2, 2), needs_grad=True)
     y1 = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -38,9 +36,7 @@ def test_general():
 
 
 def grad_test(tifunc):
-    print(
-        f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}"
-    )
+    print(f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}")
     x = ti.field(ti.lang.impl.current_cfg().default_fp)
     y = ti.field(ti.lang.impl.current_cfg().default_fp)
 
@@ -95,8 +91,6 @@ def grad_test(tifunc):
         lambda x: x**0.4,
     ],
 )
-@test_utils.test(
-    default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal]
-)
+@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
 def test_basics(tifunc):
     grad_test(tifunc)

@@ -6,9 +6,7 @@ from microbenchmarks._utils import dtype_size, scaled_repeat_times
 import taichi as ti
 
 
-def unary_ops_throughput_default(
-    arch, repeat, math_op, dtype, element_num, thread_for_loop, get_metric
-):
+def unary_ops_throughput_default(arch, repeat, math_op, dtype, element_num, thread_for_loop, get_metric):
     local_data_num = 16  # enough data to fill the instruction pipeline
     global_vector = ti.Vector.field(local_data_num, dtype, element_num)
 
@@ -58,7 +56,5 @@ class MathOpsPlan(BenchmarkPlan):
         super().__init__("math_ops", arch, basic_repeat_times=10)
         math_dtype = DataType()
         math_dtype.remove_integer()
-        self.create_plan(
-            MathOps(), math_dtype, ElementNum(), ForLoopCycle(), MetricType()
-        )
+        self.create_plan(MathOps(), math_dtype, ElementNum(), ForLoopCycle(), MetricType())
         self.add_func(["element16384"], unary_ops_throughput_default)

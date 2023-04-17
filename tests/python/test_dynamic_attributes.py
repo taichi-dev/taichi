@@ -55,8 +55,6 @@ def _test_dynamic_attributes(dt):
     test()
 
 
-@test_utils.test(
-    require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True
-)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True)
 def test_dynamic_attributes_f32():
     _test_dynamic_attributes(ti.f32)

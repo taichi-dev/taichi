@@ -211,10 +211,7 @@ class Field:
         if not isinstance(other, Field):
             raise TypeError("Cannot copy from a non-field object")
         if self.shape != other.shape:
-            raise ValueError(
-                f"ti.field shape {self.shape} does not match"
-                f" the source field shape {other.shape}"
-            )
+            raise ValueError(f"ti.field shape {self.shape} does not match" f" the source field shape {other.shape}")
         from taichi._kernels import tensor_to_tensor  # pylint: disable=C0415
 
         tensor_to_tensor(self, other)
@@ -317,9 +314,7 @@ class ScalarField(Field):
         import torch  # pylint: disable=C0415
 
         # pylint: disable=E1101
-        arr = torch.zeros(
-            size=self.shape, dtype=to_pytorch_type(self.dtype), device=device
-        )
+        arr = torch.zeros(size=self.shape, dtype=to_pytorch_type(self.dtype), device=device)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
 
         tensor_to_ext_arr(self, arr)
@@ -333,9 +328,7 @@ class ScalarField(Field):
 
         # pylint: disable=E1101
         # paddle.empty() doesn't support argument `place``
-        arr = paddle.to_tensor(
-            paddle.zeros(self.shape, to_paddle_type(self.dtype)), place=place
-        )
+        arr = paddle.to_tensor(paddle.zeros(self.shape, to_paddle_type(self.dtype)), place=place)
         from taichi._kernels import tensor_to_ext_arr  # pylint: disable=C0415
 
         tensor_to_ext_arr(self, arr)
@@ -345,16 +338,10 @@ class ScalarField(Field):
     @python_scope
     def _from_external_arr(self, arr):
         if len(self.shape) != len(arr.shape):
-            raise ValueError(
-                f"ti.field shape {self.shape} does not match"
-                f" the numpy array shape {arr.shape}"
-            )
+            raise ValueError(f"ti.field shape {self.shape} does not match" f" the numpy array shape {arr.shape}")
         for i, _ in enumerate(self.shape):
             if self.shape[i] != arr.shape[i]:
-                raise ValueError(
-                    f"ti.field shape {self.shape} does not match"
-                    f" the numpy array shape {arr.shape}"
-                )
+                raise ValueError(f"ti.field shape {self.shape} does not match" f" the numpy array shape {arr.shape}")
         from taichi._kernels import ext_arr_to_tensor  # pylint: disable=C0415
 
         ext_arr_to_tensor(arr, self)
@@ -427,9 +414,7 @@ class SNodeHostAccessor:
                 and not impl.get_runtime().grad_replaced
             ):
                 for x in impl.get_runtime().target_tape.grad_checker.to_check:
-                    assert (
-                        snode != x.snode.ptr
-                    ), "Overwritten is prohibitive when doing grad check."
+                    assert snode != x.snode.ptr, "Overwritten is prohibitive when doing grad check."
                 impl.get_runtime().target_tape.insert(write_func, (key, value))
 
         self.getter = getter
@@ -466,16 +451,12 @@ class BitpackedFields:
         for arg in args:
             assert isinstance(arg, Field)
             for var in arg._get_field_members():
-                self.fields.append(
-                    (var.ptr, self.bit_struct_type_builder.add_member(var.ptr.get_dt()))
-                )
+                self.fields.append((var.ptr, self.bit_struct_type_builder.add_member(var.ptr.get_dt())))
                 count += 1
         if shared_exponent:
             self.bit_struct_type_builder.end_placing_shared_exponent()
             if count <= 1:
-                raise TaichiSyntaxError(
-                    "At least 2 fields need to be placed when shared_exponent=True"
-                )
+                raise TaichiSyntaxError("At least 2 fields need to be placed when shared_exponent=True")
 
 
 __all__ = ["BitpackedFields", "Field", "ScalarField"]

@@ -72,9 +72,7 @@ def test_tensor_based_3d():
     def func():
         lower = ti.Vector([0, 1, 2])
         upper = ti.Vector([3, 4, 5])
-        for I in ti.grouped(
-            ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]), (lower[2], upper[2]))
-        ):
+        for I in ti.grouped(ti.ndrange((lower[0], upper[0]), (lower[1], upper[1]), (lower[2], upper[2]))):
             x[I] = I[0] + I[1] + I[2]
         for i in range(0, 3):
             for j in range(1, 4):

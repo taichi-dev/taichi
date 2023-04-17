@@ -13,9 +13,7 @@ import numpy as np
 import taichi as ti
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--train", action="store_true", help="whether train model, default false"
-)
+parser.add_argument("--train", action="store_true", help="whether train model, default false")
 parser.add_argument("place_holder", nargs="*")
 args = parser.parse_args()
 
@@ -82,12 +80,8 @@ class Linear:
         self.n_hidden_node = self.batch_node.dense(ti.j, self.n_hidden)
         self.weights1_node = self.n_hidden_node.dense(ti.k, self.n_input)
 
-        self.batch_node.dense(
-            ti.axes(1, 2, 3), (self.n_steps, self.batch_size, self.n_hidden)
-        ).place(self.hidden)
-        self.batch_node.dense(
-            ti.axes(1, 2, 3), (self.n_steps, self.batch_size, self.n_output)
-        ).place(self.output)
+        self.batch_node.dense(ti.axes(1, 2, 3), (self.n_steps, self.batch_size, self.n_hidden)).place(self.hidden)
+        self.batch_node.dense(ti.axes(1, 2, 3), (self.n_steps, self.batch_size, self.n_output)).place(self.output)
 
         self.weights1 = scalar()
         self.bias1 = scalar()
@@ -109,26 +103,14 @@ class Linear:
 
     @ti.kernel
     def _forward(self, t: ti.i32, nn_input: ti.template()):
-        for model_id, k, i, j in ti.ndrange(
-            self.n_models, self.batch_size, self.n_hidden, self.n_input
-        ):
-            self.hidden[model_id, t, k, i] += (
-                self.weights1[model_id, i, j] * nn_input[model_id, t, k, j]
-            )
+        for model_id, k, i, j in ti.ndrange(self.n_models, self.batch_size, self.n_hidden, self.n_input):
+            self.hidden[model_id, t, k, i] += self.weights1[model_id, i, j] * nn_input[model_id, t, k, j]
         if ti.static(self.activation):
-            for model_id, k, i in ti.ndrange(
-                self.n_models, self.batch_size, self.n_hidden
-            ):
-                self.output[model_id, t, k, i] = ti.tanh(
-                    self.hidden[model_id, t, k, i] + self.bias1[model_id, i]
-                )
+            for model_id, k, i in ti.ndrange(self.n_models, self.batch_size, self.n_hidden):
+                self.output[model_id, t, k, i] = ti.tanh(self.hidden[model_id, t, k, i] + self.bias1[model_id, i])
         else:
-            for model_id, k, i in ti.ndrange(
-                self.n_models, self.batch_size, self.n_hidden
-            ):
-                self.output[model_id, t, k, i] = (
-                    self.hidden[model_id, t, k, i] + self.bias1[model_id, i]
-                )
+            for model_id, k, i in ti.ndrange(self.n_models, self.batch_size, self.n_hidden):
+                self.output[model_id, t, k, i] = self.hidden[model_id, t, k, i] + self.bias1[model_id, i]
 
     @ti.kernel
     def clear(self):
@@ -182,9 +164,7 @@ def init_nn_model():
 
     if TRAIN:
         BATCH_SIZE = 16
-        input_states = ti.field(
-            float, shape=(model_num, steps, BATCH_SIZE, n_input), needs_grad=True
-        )
+        input_states = ti.field(float, shape=(model_num, steps, BATCH_SIZE, n_input), needs_grad=True)
         fc1 = Linear(
             n_models=model_num,
             batch_size=BATCH_SIZE,
@@ -232,9 +212,7 @@ def init_nn_model():
         print("training data ", training_data.shape, "test data ", test_data.shape)
     else:
         BATCH_SIZE = 1
-        input_states = ti.field(
-            float, shape=(model_num, steps, BATCH_SIZE, n_input), needs_grad=False
-        )
+        input_states = ti.field(float, shape=(model_num, steps, BATCH_SIZE, n_input), needs_grad=False)
         fc1 = Linear(
             n_models=model_num,
             batch_size=BATCH_SIZE,
@@ -280,9 +258,7 @@ jet_force_max = ti.Vector([9.81 * 3, 9.81 * 10, 9.81 * 3])
 particle_radius = 0.01
 particle_diameter = particle_radius * 2
 N_np = ((spawn_box_np[1] - spawn_box_np[0]) / particle_diameter + 1).astype(int)
-N_target_np = ((target_box_np[1] - target_box_np[0]) / particle_diameter + 1).astype(
-    int
-)
+N_target_np = ((target_box_np[1] - target_box_np[0]) / particle_diameter + 1).astype(int)
 
 H = 4.0 * particle_radius
 fluid_particle_num = N_np[0] * N_np[1] * N_np[2]
@@ -302,9 +278,7 @@ pre = ti.field(float)
 
 pos_vis_buffer = ti.Vector.field(3, float, shape=particle_num)
 pos_output_buffer = ti.Vector.field(3, float, shape=(steps, particle_num))
-ti.root.dense(ti.ijk, (BATCH_SIZE, steps, int(particle_num))).place(
-    F_pos, F_vel, F_acc, den, pre
-)
+ti.root.dense(ti.ijk, (BATCH_SIZE, steps, int(particle_num))).place(F_pos, F_vel, F_acc, den, pre)
 ti.root.dense(ti.i, int(particle_num)).place(material, col)
 ti.root.lazy_grad()
 
@@ -401,13 +375,9 @@ def initialize_dists():
 
 
 @ti.kernel
-def initialize_target_particle(
-    t: ti.int32, pos: ti.template(), N_target_: ti.template(), current_pos: ti.int32
-):
+def initialize_target_particle(t: ti.int32, pos: ti.template(), N_target_: ti.template(), current_pos: ti.int32):
     # Allocate target cube
-    for bs, i in ti.ndrange(
-        BATCH_SIZE, (fluid_particle_num, fluid_particle_num + target_particle_num)
-    ):
+    for bs, i in ti.ndrange(BATCH_SIZE, (fluid_particle_num, fluid_particle_num + target_particle_num)):
         pos[bs, t, i] = (
             ti.Vector(
                 [
@@ -444,9 +414,7 @@ def update_density(t: ti.int32):
 @ti.kernel
 def update_pressure(t: ti.int32):
     for bs, i in ti.ndrange(BATCH_SIZE, particle_num):
-        pre[bs, t, i] = pressure_scale * ti.max(
-            pow(den[bs, t, i] / rest_density, gamma) - 1, 0
-        )
+        pre[bs, t, i] = pressure_scale * ti.max(pow(den[bs, t, i] / rest_density, gamma) - 1, 0)
 
 
 @ti.kernel
@@ -470,9 +438,7 @@ def apply_force(t: ti.int32):
                 and F_pos[bs, t, i][2] < 0.3
             ):
                 indicator = (steps - t) // (steps // 2)
-                F_acc[bs, t, i] = (
-                    F_jet_force[t, bs] + gravity + indicator * (-gravity) * 0.1
-                )
+                F_acc[bs, t, i] = F_jet_force[t, bs] + gravity + indicator * (-gravity) * 0.1
             else:
                 F_acc[bs, t, i] = gravity
 
@@ -485,10 +451,7 @@ def update_force(t: ti.int32):
             # Pressure forces
             F_acc[bs, t, i] += (
                 -mass
-                * (
-                    pre[bs, t, i] / (den[bs, t, i] * den[bs, t, i])
-                    + pre[bs, t, j] / (den[bs, t, j] * den[bs, t, j])
-                )
+                * (pre[bs, t, i] / (den[bs, t, i] * den[bs, t, i]) + pre[bs, t, j] / (den[bs, t, j] * den[bs, t, j]))
                 * W_gradient(R, H)
             )
 
@@ -526,11 +489,7 @@ def boundary_handle(t: ti.int32):
         collision_normal_length = collision_normal.norm()
         if collision_normal_length > eps:
             collision_normal /= collision_normal_length
-            F_vel[bs, t, i] -= (
-                (1.0 + damping)
-                * collision_normal.dot(F_vel[bs, t, i])
-                * collision_normal
-            )
+            F_vel[bs, t, i] -= (1.0 + damping) * collision_normal.dot(F_vel[bs, t, i]) * collision_normal
 
 
 @ti.kernel
@@ -667,9 +626,7 @@ def main():
                             copy_from_output_to_vis(i)
                         scene.set_camera(camera)
                         scene.point_light((2.0, 2.0, 2.0), color=(1.0, 1.0, 1.0))
-                        scene.particles(
-                            pos_vis_buffer, radius=particle_radius, per_vertex_color=col
-                        )
+                        scene.particles(pos_vis_buffer, radius=particle_radius, per_vertex_color=col)
                         canvas.scene(scene)
                         if TRAIN_OUTPUT_IMG:
                             if i % substeps == 0:
@@ -683,10 +640,7 @@ def main():
 
         plt.plot([i for i in range(len(losses))], losses, label="loss per iteration")
         plt.plot(
-            [
-                i * (training_sample_num // BATCH_SIZE)
-                for i in range(len(losses_epoch_avg))
-            ],
+            [i * (training_sample_num // BATCH_SIZE) for i in range(len(losses_epoch_avg))],
             losses_epoch_avg,
             label="loss epoch avg.",
         )
@@ -753,15 +707,11 @@ def main():
                     paused[None] = not paused[None]
             camera.position(*(camera.curr_position + position_change))
             camera.lookat(*(camera.curr_lookat + position_change))
-            camera.track_user_inputs(
-                window, movement_speed=movement_speed, hold_key=ti.ui.RMB
-            )
+            camera.track_user_inputs(window, movement_speed=movement_speed, hold_key=ti.ui.RMB)
 
             scene.set_camera(camera)
             scene.point_light((2.0, 2.0, 2.0), color=(1.0, 1.0, 1.0))
-            scene.particles(
-                pos_vis_buffer, radius=particle_radius, per_vertex_color=col
-            )
+            scene.particles(pos_vis_buffer, radius=particle_radius, per_vertex_color=col)
             canvas.scene(scene)
             if INFER_OUTPUT_IMG:
                 if cnt % 2 == 0:

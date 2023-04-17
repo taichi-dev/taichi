@@ -167,9 +167,7 @@ F_p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 # ndarray version of F_b
 F_b_ndarr = ti.ndarray(dtype=ti.f32, shape=3 * n_verts)
 # stiffness matrix
-A_builder = ti.linalg.SparseMatrixBuilder(
-    3 * n_verts, 3 * n_verts, max_num_triplets=50000
-)
+A_builder = ti.linalg.SparseMatrixBuilder(3 * n_verts, 3 * n_verts, max_num_triplets=50000)
 solver = ti.linalg.SparseSolver(ti.f32, "LLT")
 
 
@@ -236,9 +234,7 @@ def compute_A(A: ti.types.sparse_matrix_builder()):
                     for j in range(3):
                         A[3 * verts[u] + d, 3 * verts[i] + j] += -(dt**2) * dH[j, i]
                 for i in range(3):
-                    A[3 * verts[u] + d, 3 * verts[3] + i] += -(dt**2) * (
-                        -dH[i, 0] - dH[i, 1] - dH[i, 2]
-                    )
+                    A[3 * verts[u] + d, 3 * verts[3] + i] += -(dt**2) * (-dH[i, 0] - dH[i, 1] - dH[i, 2])
 
 
 @ti.kernel
@@ -341,9 +337,7 @@ def get_indices():
                 sum_ = check(verts[0]) & check(verts[1]) & check(verts[2])
                 if sum_:
                     m = ti.atomic_add(cnt, 1)
-                    det = ti.Matrix.rows(
-                        [F_x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)]
-                    ).determinant()
+                    det = ti.Matrix.rows([F_x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)]).determinant()
                     if det < 0:
                         tmp = verts[1]
                         verts[1] = verts[2]

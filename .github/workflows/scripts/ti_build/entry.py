@@ -48,9 +48,7 @@ def build_wheel(python: Command, pip: Command) -> None:
 
     cmake_args.writeback()
     python("setup.py", "clean")
-    python(
-        "misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save"
-    )
+    python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 
     python("setup.py", *proj_tags, "bdist_wheel", *extra)
 

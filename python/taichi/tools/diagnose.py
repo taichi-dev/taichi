@@ -86,36 +86,28 @@ def main():
         print(f"{ti_header.decode()}")
 
     try:
-        ti_init_test = subprocess.check_output(
-            [executable, "-c", "import taichi as ti; ti.init()"]
-        )
+        ti_init_test = subprocess.check_output([executable, "-c", "import taichi as ti; ti.init()"])
     except Exception as e:
         print(f"`ti.init()` failed: {e}")
     else:
         print(f"{ti_init_test.decode()}")
 
     try:
-        ti_opengl_test = subprocess.check_output(
-            [executable, "-c", "import taichi as ti; ti.init(arch=ti.opengl)"]
-        )
+        ti_opengl_test = subprocess.check_output([executable, "-c", "import taichi as ti; ti.init(arch=ti.opengl)"])
     except Exception as e:
         print(f"Taichi OpenGL test failed: {e}")
     else:
         print(f"{ti_opengl_test.decode()}")
 
     try:
-        ti_cuda_test = subprocess.check_output(
-            [executable, "-c", "import taichi as ti; ti.init(arch=ti.cuda)"]
-        )
+        ti_cuda_test = subprocess.check_output([executable, "-c", "import taichi as ti; ti.init(arch=ti.cuda)"])
     except Exception as e:
         print(f"Taichi CUDA test failed: {e}")
     else:
         print(f"{ti_cuda_test.decode()}")
 
     try:
-        ti_laplace = subprocess.check_output(
-            [executable, "-m", "taichi", "example", "minimal"]
-        )
+        ti_laplace = subprocess.check_output([executable, "-m", "taichi", "example", "minimal"])
     except Exception as e:
         print(f"`python/taichi/examples/algorithm/laplace.py` failed: {e}")
     else:

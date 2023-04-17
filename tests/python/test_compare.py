@@ -159,9 +159,7 @@ def test_static_in():
 
 @test_utils.test()
 def test_non_static_in():
-    with pytest.raises(
-        ti.TaichiCompilationError, match='"In" is only supported inside `ti.static`.'
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match='"In" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def foo(a: ti.template()) -> ti.i32:
@@ -191,9 +189,7 @@ def test_static_is():
 
 @test_utils.test()
 def test_non_static_is():
-    with pytest.raises(
-        ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'):
 
         @ti.kernel
         def is_f32(tp: ti.template()) -> ti.i32:

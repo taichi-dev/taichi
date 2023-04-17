@@ -201,16 +201,9 @@ def to_rgba8(image):
     is_texture = isinstance(image, Texture)
     is_grayscale = not hasattr(image, "n") and len(image.shape) == 2
     is_numpy = isinstance(image, np.ndarray)
-    is_non_grayscale_field = (hasattr(image, "n") and image.m == 1) or len(
-        image.shape
-    ) == 3
+    is_non_grayscale_field = (hasattr(image, "n") and image.m == 1) or len(image.shape) == 3
 
-    if (
-        not is_texture
-        and not is_grayscale
-        and not is_numpy
-        and not is_non_grayscale_field
-    ):
+    if not is_texture and not is_grayscale and not is_numpy and not is_non_grayscale_field:
         raise Exception(
             "the input image needs to be either:\n"
             "a Vector field (matrix with 1 column)\n"
@@ -226,9 +219,7 @@ def to_rgba8(image):
         elif len(image.shape) == 3:
             channels = image.shape[2]
         else:
-            raise Exception(
-                "the shape of the image must be of the form (width,height) or (width,height,channels)"
-            )
+            raise Exception("the shape of the image must be of the form (width,height) or (width,height,channels)")
 
     staging_key = image.shape[0:2] if is_numpy else image
 

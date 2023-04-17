@@ -83,9 +83,7 @@ class PrefixSumExecutor:
         elif current_cfg().arch == vulkan:
             inclusive_add = subgroup.inclusive_add
         else:
-            raise RuntimeError(
-                f"{str(current_cfg().arch)} is not supported for prefix sum."
-            )
+            raise RuntimeError(f"{str(current_cfg().arch)} is not supported for prefix sum.")
 
         blit_from_field_to_field(self.large_arr, input_arr, 0, length)
 

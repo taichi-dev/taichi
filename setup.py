@@ -185,9 +185,7 @@ def cmake_install_manifest_filter(manifest_files):
             return True
         if basename in BLACKLISTED_FILES:
             return False
-        return f.endswith(
-            (".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp")
-        )
+        return f.endswith((".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp"))
 
     return [f for f in manifest_files if should_include(f)]
 
@@ -202,14 +200,10 @@ def sign_development_for_apple_m1():
         try:
             for path in glob.glob("python/taichi/_lib/core/*.so"):
                 print(f"signing {path}..")
-                subprocess.check_call(
-                    ["codesign", "--force", "--deep", "--sign", "-", path]
-                )
+                subprocess.check_call(["codesign", "--force", "--deep", "--sign", "-", path])
             for path in glob.glob("python/taichi/_lib/c_api/lib/*.so"):
                 print(f"signing {path}..")
-                subprocess.check_call(
-                    ["codesign", "--force", "--deep", "--sign", "-", path]
-                )
+                subprocess.check_call(["codesign", "--force", "--deep", "--sign", "-", path])
         except:
             print("cannot sign python shared library for macos arm64 build")
 

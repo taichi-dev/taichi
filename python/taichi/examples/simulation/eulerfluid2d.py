@@ -84,9 +84,7 @@ def init_field():
     # init pressure and velocity fieldfield
     pressField.fill(0)
     velocityField.fill(0)
-    for i, j in ti.ndrange(
-        eulerSimParam["shape"][0] * 4, eulerSimParam["shape"][1] * 4
-    ):
+    for i, j in ti.ndrange(eulerSimParam["shape"][0] * 4, eulerSimParam["shape"][1] * 4):
         # 4x4 super sampling:
         ret = taichi_logo(ti.Vector([i, j]) / (eulerSimParam["shape"][0] * 4))
         colorField[i // 4, j // 4] += ret / 16
@@ -105,9 +103,7 @@ def advection(vf: ti.template(), qf: ti.template(), new_qf: ti.template()):
 @ti.kernel
 def curl(vf: ti.template(), cf: ti.template()):
     for i, j in vf:
-        cf[i, j] = 0.5 * (
-            (vf[i + 1, j][1] - vf[i - 1, j][1]) - (vf[i, j + 1][0] - vf[i, j - 1][0])
-        )
+        cf[i, j] = 0.5 * ((vf[i + 1, j][1] - vf[i - 1, j][1]) - (vf[i, j + 1][0] - vf[i, j - 1][0]))
 
 
 @ti.kernel
@@ -122,26 +118,20 @@ def vorticity_projection(cf: ti.template(), vf: ti.template(), vf_new: ti.templa
         )
         GradCurlLength = tm.length(gradcurl)
         if GradCurlLength > 1e-5:
-            force = eulerSimParam["curl_param"] * tm.cross(
-                gradcurl / GradCurlLength, ti.Vector([0, 0, 1])
-            )
+            force = eulerSimParam["curl_param"] * tm.cross(gradcurl / GradCurlLength, ti.Vector([0, 0, 1]))
             vf_new[i, j] = vf[i, j] + eulerSimParam["dt"] * force[:2]
 
 
 @ti.kernel
 def divergence(vf: ti.template(), divf: ti.template()):
     for i, j in vf:
-        divf[i, j] = 0.5 * (
-            vf[i + 1, j][0] - vf[i - 1, j][0] + vf[i, j + 1][1] - vf[i, j - 1][1]
-        )
+        divf[i, j] = 0.5 * (vf[i + 1, j][0] - vf[i - 1, j][0] + vf[i, j + 1][1] - vf[i, j - 1][1])
 
 
 @ti.kernel
 def pressure_iteration(divf: ti.template(), pf: ti.template(), new_pf: ti.template()):
     for i, j in pf:
-        new_pf[i, j] = (
-            pf[i + 1, j] + pf[i - 1, j] + pf[i, j - 1] + pf[i, j + 1] - divf[i, j]
-        ) / 4
+        new_pf[i, j] = (pf[i + 1, j] + pf[i - 1, j] + pf[i, j - 1] + pf[i, j + 1] - divf[i, j]) / 4
 
 
 def pressure_solve(presspair: TexPair, divf: ti.template()):
@@ -232,9 +222,7 @@ def mouse_interaction(prev_posx: int, prev_posy: int):
     if prev_posx == 0 and prev_posy == 0:
         prev_posx = mousePos_x
         prev_posy = mousePos_y
-    mouseRadius = eulerSimParam["mouse_radius"] * min(
-        eulerSimParam["shape"][0], eulerSimParam["shape"][1]
-    )
+    mouseRadius = eulerSimParam["mouse_radius"] * min(eulerSimParam["shape"][0], eulerSimParam["shape"][1])
 
     mouse_addspeed(
         mousePos_x,
@@ -305,9 +293,7 @@ def pressure_step():
 #####################
 init_field()
 apply_vel_bc(velocities_pair.cur)
-window = ti.GUI(
-    "Euler 2D Simulation", res=(eulerSimParam["shape"][0], eulerSimParam["shape"][1])
-)
+window = ti.GUI("Euler 2D Simulation", res=(eulerSimParam["shape"][0], eulerSimParam["shape"][1]))
 
 mouse_prevposx, mouse_prevposy = 0, 0
 while window.running:

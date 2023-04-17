@@ -16,9 +16,7 @@ from tests import test_utils
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication1(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(
-        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
-    )
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format)
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
@@ -48,9 +46,7 @@ def test_sparse_matrix_vector_multiplication1(dtype, storage_format):
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication2(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(
-        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
-    )
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format)
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel
@@ -84,9 +80,7 @@ def test_sparse_matrix_vector_multiplication2(dtype, storage_format):
 @test_utils.test(arch=ti.cpu)
 def test_sparse_matrix_vector_multiplication3(dtype, storage_format):
     n = 8
-    Abuilder = ti.linalg.SparseMatrixBuilder(
-        n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format
-    )
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100, dtype=dtype, storage_format=storage_format)
     b = ti.field(ti.f32, shape=n)
 
     @ti.kernel

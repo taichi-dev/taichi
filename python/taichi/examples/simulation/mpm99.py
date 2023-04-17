@@ -8,18 +8,14 @@ dt = 1e-4 / quality
 p_vol, p_rho = (dx * 0.5) ** 2, 1
 p_mass = p_vol * p_rho
 E, nu = 0.1e4, 0.2  # Young's modulus and Poisson's ratio
-mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
-    (1 + nu) * (1 - 2 * nu)
-)  # Lame parameters
+mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
 x = ti.Vector.field(2, dtype=float, shape=n_particles)  # position
 v = ti.Vector.field(2, dtype=float, shape=n_particles)  # velocity
 C = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # affine velocity field
 F = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # deformation gradient
 material = ti.field(dtype=int, shape=n_particles)  # material id
 Jp = ti.field(dtype=float, shape=n_particles)  # plastic deformation
-grid_v = ti.Vector.field(
-    2, dtype=float, shape=(n_grid, n_grid)
-)  # grid node momentum/velocity
+grid_v = ti.Vector.field(2, dtype=float, shape=(n_grid, n_grid))  # grid node momentum/velocity
 grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))  # grid node mass
 
 
@@ -47,9 +43,7 @@ def substep():
         for d in ti.static(range(2)):
             new_sig = sig[d, d]
             if material[p] == 2:  # Snow
-                new_sig = ti.min(
-                    ti.max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3
-                )  # Plasticity
+                new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3)  # Plasticity
             Jp[p] *= sig[d, d] / new_sig
             sig[d, d] = new_sig
             J *= new_sig
@@ -59,9 +53,9 @@ def substep():
         elif material[p] == 2:
             # Reconstruct elastic deformation gradient after plasticity
             F[p] = U @ sig @ V.transpose()
-        stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[
-            p
-        ].transpose() + ti.Matrix.identity(float, 2) * la * J * (J - 1)
+        stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose() + ti.Matrix.identity(float, 2) * la * J * (
+            J - 1
+        )
         stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
         affine = stress + p_mass * C[p]
         # Loop over 3x3 grid node neighborhood

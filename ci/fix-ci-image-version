@@ -10,12 +10,8 @@ import re
 # -- own --
 
 # -- code --
-parser = argparse.ArgumentParser(
-    description="Replace CI_IMAGE_VERSION in .github/workflows/*.yml files."
-)
-parser.add_argument(
-    "version", help="The version number to replace with (12-digit number).", type=str
-)
+parser = argparse.ArgumentParser(description="Replace CI_IMAGE_VERSION in .github/workflows/*.yml files.")
+parser.add_argument("version", help="The version number to replace with (12-digit number).", type=str)
 options = parser.parse_args()
 
 if not re.fullmatch(r"\d{12}", options.version):

@@ -16,17 +16,13 @@ def compile_graph_aot(arch):
             arr[i] += base + i
 
     @ti.kernel
-    def run1(
-        base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.types.vector(1, ti.i32))
-    ):
+    def run1(base: int, arr: ti.types.ndarray(ndim=1, dtype=ti.types.vector(1, ti.i32))):
         for i in arr:
             arr[i] += base + i
 
     arr0 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "arr0", dtype=ti.i32, ndim=1)
 
-    arr1 = ti.graph.Arg(
-        ti.graph.ArgKind.NDARRAY, "arr1", ti.types.vector(1, ti.i32), ndim=1
-    )
+    arr1 = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "arr1", ti.types.vector(1, ti.i32), ndim=1)
 
     base0 = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "base0", dtype=ti.i32)
 

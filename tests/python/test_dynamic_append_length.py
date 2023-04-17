@@ -21,8 +21,6 @@ def _test_dynamic_append_length(dt):
     test()
 
 
-@test_utils.test(
-    require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True
-)
+@test_utils.test(require=ti.extension.sparse, exclude=[ti.metal], default_fp=ti.f32, debug=True)
 def test_dynamic_append_length_f32():
     _test_dynamic_append_length(ti.f32)

@@ -109,14 +109,8 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
         line_start = "//"
     elif comment_style == CommentStyle.PY_STYLE:
         line_start = "#"
-    lines.append(
-        "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".format(
-            line_start, ctime_year
-        )
-    )
-    lines.append(
-        "{0} Use of this software is governed by the LICENSE file.\n".format(line_start)
-    )
+    lines.append("{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".format(line_start, ctime_year))
+    lines.append("{0} Use of this software is governed by the LICENSE file.\n".format(line_start))
     if comment_style == CommentStyle.C_STYLE:
         lines.append("*" * 78 + "*/\n")
     lines.append("\n")
@@ -128,9 +122,7 @@ COPYRIGHT_NOTICE_REGEX = re.compile(r"copyright.+taichi")
 COPYRIGHT_INCORRECT_REGEX = re.compile(r"copyright.+taichi.+(20\d\d)- ")
 
 
-def check_and_modify(
-    filepath: str, comment_style: CommentStyle, check_only: bool
-) -> FileActionResult:
+def check_and_modify(filepath: str, comment_style: CommentStyle, check_only: bool) -> FileActionResult:
     """
     Effects: see DOC_STRING
     """
@@ -173,10 +165,8 @@ def check_and_modify(
             # This is how cs.chromium.org writes the notice, and I think the lawyers
             # should be confident :)
             correct_line = (
-                (" " * notice_match_start)
-                + "Copyright (c) %s The Taichi Authors. All rights reserved.\n"
-                % year_1st
-            )
+                " " * notice_match_start
+            ) + "Copyright (c) %s The Taichi Authors. All rights reserved.\n" % year_1st
             body_lines[to_replace_line_index] = correct_line
         return_state = FileActionResult.MODIFIED_NOTICE
     if not check_only:
@@ -282,12 +272,8 @@ def main():
     """
     Returns 0 on success, 1 otherwise.
     """
-    argparser = argparse.ArgumentParser(
-        description="Copyright notice checker and rewriter."
-    )
-    argparser.add_argument(
-        "paths", type=str, nargs="*", help="non-overlapping directories or files"
-    )
+    argparser = argparse.ArgumentParser(description="Copyright notice checker and rewriter.")
+    argparser.add_argument("paths", type=str, nargs="*", help="non-overlapping directories or files")
     argparser.add_argument(
         "-e",
         "--exts",
@@ -302,9 +288,7 @@ def main():
         action="store_true",
         help="check only; returns 1 if some files will be rewritten",
     )
-    argparser.add_argument(
-        "--docs", action="store_true", help="print long documentation"
-    )
+    argparser.add_argument("--docs", action="store_true", help="print long documentation")
     args = argparser.parse_args()
     if args.docs:
         print(DOC_STRING)
@@ -318,13 +302,7 @@ def main():
         sys.exit("[Error] path not found: %s" % " ".join(missing_dirs))
 
     unhandled_exts = (
-        None
-        if not args.exts
-        else [
-            e
-            for e in args.exts.split(",")
-            if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES
-        ]
+        None if not args.exts else [e for e in args.exts.split(",") if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES]
     )
     if unhandled_exts:
         sys.exit("[Error] unhandled extension names: %s" % " ".join(unhandled_exts))

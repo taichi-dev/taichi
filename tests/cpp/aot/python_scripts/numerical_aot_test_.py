@@ -11,16 +11,12 @@ def compile_numerical_aot_test(arch):
         return
 
     @ti.kernel
-    def fill_scalar_array_with_fp32(
-        arr: ti.types.ndarray(dtype=ti.f16, ndim=1), val: ti.f32
-    ):
+    def fill_scalar_array_with_fp32(arr: ti.types.ndarray(dtype=ti.f16, ndim=1), val: ti.f32):
         for i in arr:
             arr[i] = ti.cast(val, ti.f16)
 
     @ti.kernel
-    def fill_scalar_array_with_fp16(
-        arr: ti.types.ndarray(dtype=ti.f16, ndim=1), val: ti.f16
-    ):
+    def fill_scalar_array_with_fp16(arr: ti.types.ndarray(dtype=ti.f16, ndim=1), val: ti.f16):
         for i in arr:
             arr[i] = val
 

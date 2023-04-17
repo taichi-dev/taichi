@@ -7,9 +7,7 @@ from taichi.lang.exception import TaichiCompilationError
 import taichi as ti
 from tests import test_utils
 
-supported_floating_types = (
-    [ti.f32] if platform.system() == "Darwin" else [ti.f32, ti.f64]
-)
+supported_floating_types = [ti.f32] if platform.system() == "Darwin" else [ti.f32, ti.f64]
 
 supported_archs_cgraph = [ti.vulkan, ti.opengl]
 
@@ -40,9 +38,7 @@ def test_ndarray_1dim_scalar():
         arr[0] = 0
 
     debug_arr = ti.ndarray(ti.i32, shape=5)
-    sym_debug_arr = ti.graph.Arg(
-        ti.graph.ArgKind.NDARRAY, "debug_arr", ti.types.vector(1, ti.f32), ndim=1
-    )
+    sym_debug_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "debug_arr", ti.types.vector(1, ti.f32), ndim=1)
 
     g_builder = ti.graph.GraphBuilder()
     g_builder.dispatch(ti_test_debug, sym_debug_arr)
@@ -94,9 +90,7 @@ def test_arg_mismatched_ndim():
 
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pos", ti.f32, ndim=2)
     g_init = ti.graph.GraphBuilder()
-    with pytest.raises(
-        TaichiCompilationError, match="doesn't match kernel's annotated ndim"
-    ):
+    with pytest.raises(TaichiCompilationError, match="doesn't match kernel's annotated ndim"):
         g_init.dispatch(test, sym_pos)
 
 
@@ -154,9 +148,7 @@ def test_arg_mismatched_scalar_dtype():
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pos", ti.f32, 1)
     sym_val = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "val", ti.i32)
     g_init = ti.graph.GraphBuilder()
-    with pytest.raises(
-        TaichiCompilationError, match="doesn't match kernel's annotated dtype"
-    ):
+    with pytest.raises(TaichiCompilationError, match="doesn't match kernel's annotated dtype"):
         g_init.dispatch(test, sym_pos, sym_val)
 
 
@@ -171,9 +163,7 @@ def test_arg_mismatched_ndarray_dtype():
 
     sym_pos = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pos", ti.i32, 1)
     g_init = ti.graph.GraphBuilder()
-    with pytest.raises(
-        TaichiCompilationError, match="doesn't match kernel's annotated dtype"
-    ):
+    with pytest.raises(TaichiCompilationError, match="doesn't match kernel's annotated dtype"):
         g_init.dispatch(test, sym_pos)
 
 
@@ -198,9 +188,7 @@ def test_ndarray_dtype_mismatch_runtime():
 
 def build_graph_vector(N, dtype):
     @ti.kernel
-    def vector_sum(
-        mat: ti.types.vector(N, dtype), res: ti.types.ndarray(dtype=dtype, ndim=1)
-    ):
+    def vector_sum(mat: ti.types.vector(N, dtype), res: ti.types.ndarray(dtype=dtype, ndim=1)):
         res[0] = mat.sum() + mat[2]
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, "mat", ti.types.vector(N, dtype))
@@ -213,9 +201,7 @@ def build_graph_vector(N, dtype):
 
 def build_graph_matrix(N, dtype):
     @ti.kernel
-    def matrix_sum(
-        mat: ti.types.matrix(N, 2, dtype), res: ti.types.ndarray(dtype=dtype, ndim=1)
-    ):
+    def matrix_sum(mat: ti.types.matrix(N, 2, dtype), res: ti.types.ndarray(dtype=dtype, ndim=1)):
         res[0] = mat.sum()
 
     sym_A = ti.graph.Arg(ti.graph.ArgKind.MATRIX, "mat", ti.types.matrix(N, 2, dtype))
@@ -325,9 +311,7 @@ def test_texture():
     res = (256, 256)
 
     @ti.kernel
-    def make_texture(
-        tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)
-    ):
+    def make_texture(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)):
         for i, j in ti.ndrange(128, 128):
             tex.store(ti.Vector([i, j]), ti.Vector([0.1, 0.0, 0.0, 0.0]))
 
@@ -339,9 +323,7 @@ def test_texture():
     ):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])
-            warp_uv = (
-                uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
-            )
+            warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
             c = ti.math.vec4(0.0)
             if uv.x > 0.5:
                 c = tex.sample_lod(warp_uv, 0.0)
@@ -350,9 +332,7 @@ def test_texture():
             pixels[i, j] = [c.r, c.r, c.r, 1.0]
 
     _t = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "t", ti.f32)
-    _pixels_arr = ti.graph.Arg(
-        ti.graph.ArgKind.NDARRAY, "pixels_arr", ti.math.vec4, ndim=2
-    )
+    _pixels_arr = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "pixels_arr", ti.math.vec4, ndim=2)
 
     _rw_tex = ti.graph.Arg(
         ti.graph.ArgKind.RWTEXTURE,

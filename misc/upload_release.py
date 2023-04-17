@@ -26,9 +26,7 @@ def upload_taichi_version():
         except requests.exceptions.HTTPError as err:
             print("Updating latest version failed: Server error,", err)
         except requests.exceptions.Timeout as err:
-            print(
-                "Updating latest version failed: Time out when connecting server,", err
-            )
+            print("Updating latest version failed: Time out when connecting server,", err)
         except requests.exceptions.RequestException as err:
             print("Updating latest version failed:", err)
         else:

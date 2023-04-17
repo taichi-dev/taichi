@@ -116,9 +116,7 @@ def apply_impulse(vf: ti.template(), dyef: ti.template(), imp_data: ti.types.nda
         vf[i, j] = v + momentum
         # add dye
         if mdir.norm() > 0.5:
-            dc += ti.exp(-d2 * (4 / (res / 15) ** 2)) * ti.Vector(
-                [imp_data[4], imp_data[5], imp_data[6]]
-            )
+            dc += ti.exp(-d2 * (4 / (res / 15) ** 2)) * ti.Vector([imp_data[4], imp_data[5], imp_data[6]])
 
         dyef[i, j] = dc
 

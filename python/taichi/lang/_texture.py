@@ -23,9 +23,7 @@ class TextureSampler:
     def sample_lod(self, uv, lod):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(uv), lod)
-        v = ast_builder.make_texture_op_expr(
-            _ti_core.TextureOpType.kSampleLod, self.ptr_expr, args_group
-        )
+        v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kSampleLod, self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
         g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
         b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
@@ -36,9 +34,7 @@ class TextureSampler:
     def fetch(self, index, lod):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index), lod)
-        v = ast_builder.make_texture_op_expr(
-            _ti_core.TextureOpType.kFetchTexel, self.ptr_expr, args_group
-        )
+        v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kFetchTexel, self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
         g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
         b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
@@ -56,9 +52,7 @@ class RWTextureAccessor:
     def load(self, index):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index))
-        v = ast_builder.make_texture_op_expr(
-            _ti_core.TextureOpType.kLoad, self.ptr_expr, args_group
-        )
+        v = ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kLoad, self.ptr_expr, args_group)
         r = impl.call_internal("composite_extract_0", v, with_runtime_context=False)
         g = impl.call_internal("composite_extract_1", v, with_runtime_context=False)
         b = impl.call_internal("composite_extract_2", v, with_runtime_context=False)
@@ -69,11 +63,7 @@ class RWTextureAccessor:
     def store(self, index, value):
         ast_builder = impl.get_runtime().compiling_callable.ast_builder()
         args_group = make_expr_group(*_get_entries(index), *_get_entries(value))
-        impl.expr_init(
-            ast_builder.make_texture_op_expr(
-                _ti_core.TextureOpType.kStore, self.ptr_expr, args_group
-            )
-        )
+        impl.expr_init(ast_builder.make_texture_op_expr(_ti_core.TextureOpType.kStore, self.ptr_expr, args_group))
 
     @property
     @taichi_scope
@@ -84,10 +74,7 @@ class RWTextureAccessor:
             List[Int]: The result list.
         """
         dim = _ti_core.get_external_tensor_dim(self.ptr_expr)
-        ret = [
-            Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr_expr, i))
-            for i in range(dim)
-        ]
+        ret = [Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr_expr, i)) for i in range(dim)]
         return ret
 
     @taichi_scope

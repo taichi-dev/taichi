@@ -28,9 +28,7 @@ def add_aot_env():
             os.environ["TAICHI_C_API_INSTALL_DIR"] = str(p)
             break
     else:
-        misc.warn(
-            "Failed to find TAICHI_C_API_INSTALL_DIR (did't build C-API?), skipping"
-        )
+        misc.warn("Failed to find TAICHI_C_API_INSTALL_DIR (did't build C-API?), skipping")
 
 
 def _write_ti_bashrc():

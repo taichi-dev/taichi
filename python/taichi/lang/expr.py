@@ -52,27 +52,21 @@ class Expr(TaichiOperations):
 
     def get_shape(self):
         if not self.is_tensor():
-            raise TaichiCompilationError(
-                f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}"
-            )
+            raise TaichiCompilationError(f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
         return tuple(self.ptr.get_shape())
 
     @property
     def n(self):
         shape = self.get_shape()
         if len(shape) < 1:
-            raise TaichiCompilationError(
-                f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}"
-            )
+            raise TaichiCompilationError(f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}")
         return shape[0]
 
     @property
     def m(self):
         shape = self.get_shape()
         if len(shape) < 2:
-            raise TaichiCompilationError(
-                f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}"
-            )
+            raise TaichiCompilationError(f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}")
         return shape[1]
 
     def __hash__(self):
@@ -121,19 +115,13 @@ def make_constant_expr(val, dtype):
                 "Integer literals must be annotated with a integer type. For type casting, use `ti.cast`."
             )
         if _check_in_range(to_numpy_type(constant_dtype), val):
-            return Expr(
-                _ti_core.make_const_expr_int(
-                    constant_dtype, _clamp_unsigned_to_range(np.int64, val)
-                )
-            )
+            return Expr(_ti_core.make_const_expr_int(constant_dtype, _clamp_unsigned_to_range(np.int64, val)))
         if dtype is None:
             raise TaichiTypeError(
                 f"Integer literal {val} exceeded the range of default_ip: {impl.get_runtime().default_ip}, please specify the dtype via e.g. `ti.u64({val})` or set a different `default_ip` in `ti.init()`"
             )
         else:
-            raise TaichiTypeError(
-                f"Integer literal {val} exceeded the range of specified dtype: {dtype}"
-            )
+            raise TaichiTypeError(f"Integer literal {val} exceeded the range of specified dtype: {dtype}")
 
     raise TaichiTypeError(f"Invalid constant scalar data type: {type(val)}")
 

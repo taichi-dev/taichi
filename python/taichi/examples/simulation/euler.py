@@ -22,9 +22,7 @@ cmap_name = "magma_r"  # python colormap
 use_fixed_caxis = 0  # 1: use fixed caxis limits, 0: automatic caxis limits
 fixed_caxis = [0.0, 5.0]  # fixed caxis limits
 
-Q = ti.Vector.field(
-    4, dtype=real, shape=(N, N)
-)  # [rho, rho*u, rho*v, rho*e] consv vars
+Q = ti.Vector.field(4, dtype=real, shape=(N, N))  # [rho, rho*u, rho*v, rho*e] consv vars
 Q_old = ti.Vector.field(4, dtype=real, shape=(N, N))
 W = ti.Vector.field(4, dtype=real, shape=(N, N))  # [rho, u, v, p] cell avg
 W_xl = ti.Vector.field(4, dtype=real, shape=(N, N, 3))  # left side of x-face
@@ -187,12 +185,8 @@ def HLLC_flux(qL, qR, n):
     HR = (qR[3] + pR) / rR
 
     # Left and Right fluxes
-    fL = ti.Vector(
-        [rL * vnL, rL * vnL * uL + pL * nx, rL * vnL * vL + pL * ny, rL * vnL * HL]
-    )
-    fR = ti.Vector(
-        [rR * vnR, rR * vnR * uR + pR * nx, rR * vnR * vR + pR * ny, rR * vnR * HR]
-    )
+    fL = ti.Vector([rL * vnL, rL * vnL * uL + pL * nx, rL * vnL * vL + pL * ny, rL * vnL * HL])
+    fR = ti.Vector([rR * vnR, rR * vnR * uR + pR * nx, rR * vnR * vR + pR * ny, rR * vnR * HR])
 
     # Roe Averages
     rt = ti.sqrt(rR / rL)
@@ -205,9 +199,7 @@ def HLLC_flux(qL, qR, n):
     # wavespeeds
     sL = min(vnL - aL, vn - a)
     sR = max(vnR + aR, vn + a)
-    sM = (pL - pR + rR * vnR * (sR - vnR) - rL * vnL * (sL - vnL)) / (
-        rR * (sR - vnR) - rL * (sL - vnL)
-    )
+    sM = (pL - pR + rR * vnR * (sR - vnR) - rL * vnL * (sL - vnL)) / (rR * (sR - vnR) - rL * (sL - vnL))
 
     # HLLC flux.
     HLLC = ti.Vector([0.0, 0.0, 0.0, 0.0])
@@ -257,16 +249,10 @@ def compute_F_muscl():
             wL = ti.Vector([0.0, 0.0, 0.0, 0.0])
             wR = ti.Vector([0.0, 0.0, 0.0, 0.0])
             for f in ti.static(range(4)):
-                ratio_l = (W[i, j][f] - W[i - 1, j][f]) / (
-                    W[i - 1, j][f] - W[i - 2, j][f]
-                )
+                ratio_l = (W[i, j][f] - W[i - 1, j][f]) / (W[i - 1, j][f] - W[i - 2, j][f])
                 ratio_r = (W[i, j][f] - W[i - 1, j][f]) / (W[i + 1, j][f] - W[i, j][f])
-                wL[f] = W[i - 1, j][f] + 0.5 * mc_lim(ratio_l) * (
-                    W[i - 1, j][f] - W[i - 2, j][f]
-                )
-                wR[f] = W[i, j][f] - 0.5 * mc_lim(ratio_r) * (
-                    W[i + 1, j][f] - W[i, j][f]
-                )
+                wL[f] = W[i - 1, j][f] + 0.5 * mc_lim(ratio_l) * (W[i - 1, j][f] - W[i - 2, j][f])
+                wR[f] = W[i, j][f] - 0.5 * mc_lim(ratio_r) * (W[i + 1, j][f] - W[i, j][f])
             F_x[i, j] = HLLC_flux(w_to_q(wL), w_to_q(wR), ti.Vector([1.0, 0.0]))
 
         elif is_boundary_x_face(i, j):
@@ -277,16 +263,10 @@ def compute_F_muscl():
             wL = ti.Vector([0.0, 0.0, 0.0, 0.0])
             wR = ti.Vector([0.0, 0.0, 0.0, 0.0])
             for f in ti.static(range(4)):
-                ratio_l = (W[i, j][f] - W[i, j - 1][f]) / (
-                    W[i, j - 1][f] - W[i, j - 2][f]
-                )
+                ratio_l = (W[i, j][f] - W[i, j - 1][f]) / (W[i, j - 1][f] - W[i, j - 2][f])
                 ratio_r = (W[i, j][f] - W[i, j - 1][f]) / (W[i, j + 1][f] - W[i, j][f])
-                wL[f] = W[i, j - 1][f] + 0.5 * mc_lim(ratio_l) * (
-                    W[i, j - 1][f] - W[i, j - 2][f]
-                )
-                wR[f] = W[i, j][f] - 0.5 * mc_lim(ratio_r) * (
-                    W[i, j + 1][f] - W[i, j][f]
-                )
+                wL[f] = W[i, j - 1][f] + 0.5 * mc_lim(ratio_l) * (W[i, j - 1][f] - W[i, j - 2][f])
+                wR[f] = W[i, j][f] - 0.5 * mc_lim(ratio_r) * (W[i, j + 1][f] - W[i, j][f])
             F_y[i, j] = HLLC_flux(w_to_q(wL), w_to_q(wR), ti.Vector([0.0, 1.0]))
 
         elif is_boundary_y_face(i, j):
@@ -327,9 +307,7 @@ def thinc(wl, wc, wr, beta):
         w0 = wmin + wdelta / 2.0 * (1.0 + theta * A)
 
         # reconstructed value on left side of right face
-        w1 = wmin + wdelta / 2.0 * (
-            1.0 + theta * (ti.tanh(beta) + A) / (1.0 + A * ti.tanh(beta))
-        )
+        w1 = wmin + wdelta / 2.0 * (1.0 + theta * (ti.tanh(beta) + A) / (1.0 + A * ti.tanh(beta)))
 
     return w0, w1
 
@@ -366,12 +344,8 @@ def compute_F_thinc():
         if is_interior_cell(i, j):
             for f in ti.static(range(4)):
                 # x-dir
-                TBV_smooth = abs(W_xl[i, j, 0][f] - W_xr[i, j, 0][f]) + abs(
-                    W_xl[i + 1, j, 0][f] - W_xr[i + 1, j, 0][f]
-                )
-                TBV_sharp = abs(W_xl[i, j, 1][f] - W_xr[i, j, 1][f]) + abs(
-                    W_xl[i + 1, j, 1][f] - W_xr[i + 1, j, 1][f]
-                )
+                TBV_smooth = abs(W_xl[i, j, 0][f] - W_xr[i, j, 0][f]) + abs(W_xl[i + 1, j, 0][f] - W_xr[i + 1, j, 0][f])
+                TBV_sharp = abs(W_xl[i, j, 1][f] - W_xr[i, j, 1][f]) + abs(W_xl[i + 1, j, 1][f] - W_xr[i + 1, j, 1][f])
 
                 if TBV_smooth < TBV_sharp:
                     W_xr[i, j, 2][f] = W_xr[i, j, 0][f]
@@ -381,12 +355,8 @@ def compute_F_thinc():
                     W_xl[i + 1, j, 2][f] = W_xl[i + 1, j, 1][f]
 
                 # y-dir
-                TBV_smooth = abs(W_yl[i, j, 0][f] - W_yr[i, j, 0][f]) + abs(
-                    W_yl[i, j + 1, 0][f] - W_yr[i, j + 1, 0][f]
-                )
-                TBV_sharp = abs(W_yl[i, j, 1][f] - W_yr[i, j, 1][f]) + abs(
-                    W_yl[i, j + 1, 1][f] - W_yr[i, j + 1, 1][f]
-                )
+                TBV_smooth = abs(W_yl[i, j, 0][f] - W_yr[i, j, 0][f]) + abs(W_yl[i, j + 1, 0][f] - W_yr[i, j + 1, 0][f])
+                TBV_sharp = abs(W_yl[i, j, 1][f] - W_yr[i, j, 1][f]) + abs(W_yl[i, j + 1, 1][f] - W_yr[i, j + 1, 1][f])
 
                 if TBV_smooth < TBV_sharp:
                     W_yr[i, j, 2][f] = W_yr[i, j, 0][f]
@@ -399,16 +369,12 @@ def compute_F_thinc():
         # compute numerical fluxes of with Riemann solver
         if is_interior_x_face(i, j):
             # muscl reconstrucion of left and right states with HLLC flux
-            F_x[i, j] = HLLC_flux(
-                w_to_q(W_xl[i, j, 2]), w_to_q(W_xr[i, j, 2]), ti.Vector([1.0, 0.0])
-            )
+            F_x[i, j] = HLLC_flux(w_to_q(W_xl[i, j, 2]), w_to_q(W_xr[i, j, 2]), ti.Vector([1.0, 0.0]))
         elif is_boundary_x_face(i, j):
             F_x[i, j] = HLLC_flux(Q[i - 1, j], Q[i, j], ti.Vector([1.0, 0.0]))
 
         if is_interior_y_face(i, j):
-            F_y[i, j] = HLLC_flux(
-                w_to_q(W_yl[i, j, 2]), w_to_q(W_yr[i, j, 2]), ti.Vector([0.0, 1.0])
-            )
+            F_y[i, j] = HLLC_flux(w_to_q(W_yl[i, j, 2]), w_to_q(W_yr[i, j, 2]), ti.Vector([0.0, 1.0]))
         elif is_boundary_y_face(i, j):
             F_y[i, j] = HLLC_flux(Q[i, j - 1], Q[i, j], ti.Vector([0.0, 1.0]))
 
@@ -429,12 +395,7 @@ def update_Q(rk_step: ti.template()):
     for i, j in Q:
         if is_interior_cell(i, j):
             if ti.static(rk_step == 0):
-                Q[i, j] = (
-                    Q[i, j]
-                    + dt[None]
-                    * (F_x[i, j] - F_x[i + 1, j] + F_y[i, j] - F_y[i, j + 1])
-                    / h
-                )
+                Q[i, j] = Q[i, j] + dt[None] * (F_x[i, j] - F_x[i + 1, j] + F_y[i, j] - F_y[i, j + 1]) / h
             if ti.static(rk_step == 1):
                 Q[i, j] = (Q[i, j] + Q_old[i, j]) / 2.0 + dt[None] * (
                     F_x[i, j] - F_x[i + 1, j] + F_y[i, j] - F_y[i, j + 1]
@@ -450,13 +411,10 @@ def paint():
             img[i, j] = Q[ii, jj][0]
         elif img_field == 1:  # numerical schlieren
             img[i, j] = ti.sqrt(
-                ((Q[ii + 1, jj][0] - Q[ii - 1, jj][0]) / h) ** 2
-                + ((Q[ii, jj + 1][0] - Q[ii, jj - 1][0]) / h) ** 2
+                ((Q[ii + 1, jj][0] - Q[ii - 1, jj][0]) / h) ** 2 + ((Q[ii, jj + 1][0] - Q[ii, jj - 1][0]) / h) ** 2
             )
         elif img_field == 2:  # vorticity
-            img[i, j] = (Q[ii + 1, jj][2] - Q[ii - 1, jj][2]) / h - (
-                Q[ii, jj + 1][1] - Q[ii, jj - 1][1]
-            ) / h
+            img[i, j] = (Q[ii + 1, jj][2] - Q[ii - 1, jj][2]) / h - (Q[ii, jj + 1][1] - Q[ii, jj - 1][1]) / h
         elif img_field == 3:  # velocity magnitude
             img[i, j] = ti.sqrt(Q[ii, jj][1] ** 2 + Q[ii, jj][2] ** 2)
 

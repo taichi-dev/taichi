@@ -64,10 +64,7 @@ def test_unordered():
     impl.get_runtime().materialize_root_fb(False)
     assert blk1 in ti.FieldsBuilder._finalized_roots()[0]._get_children()
 
-    expected_str = (
-        f"ti.root => dense {[n]} => dense {[m, n]}"
-        f" => dense {[m, p, n]} => place {[m, p, n]}"
-    )
+    expected_str = f"ti.root => dense {[n]} => dense {[m, n]}" f" => dense {[m, p, n]} => place {[m, p, n]}"
     assert str(val.snode) == expected_str
 
 

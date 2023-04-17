@@ -9,6 +9,17 @@ namespace irpass::analysis {
 stmt_refs get_aliased_stmts(stmt_refs dest) {
   if (dest.size() == 1) {
     Stmt *dest_stmt = dest.begin()[0];
+    if (dest_stmt->is<MatrixOfMatrixPtrStmt>()) {
+      std::vector<Stmt *> rets = {dest_stmt};
+      for (auto stmt : dest_stmt->as<MatrixOfMatrixPtrStmt>()->stmts) {
+        if (stmt->is<MatrixPtrStmt>()) {
+          rets.push_back(stmt);
+          rets.push_back(stmt->as<MatrixPtrStmt>()->origin);
+        }
+      }
+      return rets;
+    }
+
     if (dest_stmt->is<MatrixPtrStmt>()) {
       std::vector<Stmt *> rets = {dest_stmt,
                                   dest_stmt->as<MatrixPtrStmt>()->origin};

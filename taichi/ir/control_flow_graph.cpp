@@ -125,6 +125,20 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
+      /*
+        Special case: when store-load-forwarding a LoadStmt(TensorType* src),
+        it's important to verify that there's no StoreStmt(MatrixPtrStmt(src,
+        {...})) in between. Otherwise, store-load-forwarding may lead to wrong
+        data.
+      */
+      if (var->ret_type->is<TensorType>() && store_ptr->is<MatrixPtrStmt>()) {
+        // Check if the origin of MatrixPtrStmt share the same address as var
+        if (irpass::analysis::maybe_same_address(
+                var, store_ptr->as<MatrixPtrStmt>()->origin)) {
+          return nullptr;  // we can't do store-load-forwarding in this case
+        }
+      }
+
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
         last_def_position = i;
         break;
@@ -203,7 +217,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     return true;  // continue the following loops
   };
-  std::cout << (result == nullptr) << std::endl;
   for (auto stmt : reach_in) {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
@@ -212,7 +225,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return nullptr;
     }
   }
-  std::cout << (result == nullptr) << std::endl;
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
         stmt->parent->locate(stmt) < position) {
@@ -220,20 +232,17 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return nullptr;
     }
   }
-  std::cout << (result == nullptr) << std::endl;
   if (!result) {
     // The UD-chain is empty.
     TI_WARN("stmt {} loaded in stmt {} before storing.", var->id,
             block->statements[position]->id);
     return nullptr;
   }
-  std::cout << (result == nullptr) << std::endl;
   if (!result_visible) {
     // The data is store-to-load forwardable but not visible at the place we
     // are going to forward. We cannot forward it in this case.
     return nullptr;
   }
-  std::cout << (result == nullptr) << std::endl;
   return result;
 }
 
@@ -273,6 +282,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
         result = get_store_forwarding_data(global_load->src, i);
       }
     }
+
     if (result) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {

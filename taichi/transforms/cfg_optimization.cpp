@@ -45,10 +45,10 @@ bool cfg_optimization(
       result_modified = true;
     }
     print("After store-to-load forwarding");
-
     if (cfg->dead_store_elimination(after_lower_access, lva_config_opt)) {
       result_modified = true;
     }
+    print("After dead store elimination");
   }
   // TODO: implement cfg->dead_instruction_elimination()
   die(root);  // remove unused allocas

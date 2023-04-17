@@ -47,9 +47,7 @@ class CuptiMetric:
         For details about using CUPTI in Taichi, please visit https://docs.taichi-lang.org/docs/profiler#advanced-mode.
     """
 
-    def __init__(
-        self, name="", header="unnamed_header", val_format="     {:8.0f} ", scale=1.0
-    ):
+    def __init__(self, name="", header="unnamed_header", val_format="     {:8.0f} ", scale=1.0):
         self.name = name
         self.header = header
         self.val_format = val_format
@@ -175,13 +173,9 @@ l2_throughput = CuptiMetric(
 )
 
 # Misc Metrics
-l1_hit_rate = CuptiMetric(
-    name="l1tex__t_sector_hit_rate.pct", header="   L1.hit ", val_format=" {:6.2f} % "
-)
+l1_hit_rate = CuptiMetric(name="l1tex__t_sector_hit_rate.pct", header="   L1.hit ", val_format=" {:6.2f} % ")
 
-l2_hit_rate = CuptiMetric(
-    name="lts__t_sector_hit_rate.pct", header="   L2.hit ", val_format=" {:6.2f} % "
-)
+l2_hit_rate = CuptiMetric(name="lts__t_sector_hit_rate.pct", header="   L2.hit ", val_format=" {:6.2f} % ")
 
 achieved_occupancy = CuptiMetric(
     name="sm__warps_active.avg.pct_of_peak_sustained_active",

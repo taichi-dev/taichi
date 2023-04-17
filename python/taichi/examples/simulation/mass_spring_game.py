@@ -97,9 +97,7 @@ def attract(pos_x: ti.f32, pos_y: ti.f32):
 
 
 def main():
-    gui = ti.GUI(
-        "Explicit Mass Spring System", res=(512, 512), background_color=0xDDDDDD
-    )
+    gui = ti.GUI("Explicit Mass Spring System", res=(512, 512), background_color=0xDDDDDD)
 
     spring_Y[None] = 1000
     drag_damping[None] = 1

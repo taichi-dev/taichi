@@ -67,9 +67,7 @@ def test_vector_types_f32():
     test()
 
 
-@test_utils.test(
-    require=ti.extension.data64, default_fp=ti.f64, default_ip=ti.i64, debug=True
-)
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, default_ip=ti.i64, debug=True)
 def test_vector_types_f64():
     @ti.dataclass
     class Ray:
@@ -95,9 +93,7 @@ def test_vector_types_f64():
 def test_translate():
     error = 0
     translate_vec = ti.math.vec3(1.0, 2.0, 3.0)
-    translate_mat = ti.math.translate(
-        translate_vec[0], translate_vec[1], translate_vec[2]
-    )
+    translate_mat = ti.math.translate(translate_vec[0], translate_vec[1], translate_vec[2])
     translate_ref = ti.math.mat4(
         [
             [1.0, 0.0, 0.0, 1.0],
@@ -152,9 +148,7 @@ def test_rotation3d():
 
     rotationEuler = ti.math.rot_yaw_pitch_roll(first, second, third)
     rotationInvertedY = (
-        ti.math.rot_by_axis(axisZ, third)
-        @ ti.math.rot_by_axis(axisX, second)
-        @ ti.math.rot_by_axis(axisY, -first)
+        ti.math.rot_by_axis(axisZ, third) @ ti.math.rot_by_axis(axisX, second) @ ti.math.rot_by_axis(axisY, -first)
     )
     rotationDumb = ti.Matrix.zero(ti.f32, 4, 4)
     rotationDumb = ti.math.rot_by_axis(axisY, first) @ rotationDumb

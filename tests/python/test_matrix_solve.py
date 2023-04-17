@@ -29,9 +29,7 @@ def _test_solve_2x2(dt, a00):
 
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64
-    x_np = np.linalg.solve(
-        A[None].to_numpy().astype(dtype), b[None].to_numpy().astype(dtype)
-    )
+    x_np = np.linalg.solve(A[None].to_numpy().astype(dtype), b[None].to_numpy().astype(dtype))
     x_ti = x[None].to_numpy().astype(dtype)
 
     idx_np = np.argsort(x_np)
@@ -55,9 +53,7 @@ def _test_solve_3x3(dt, a00):
 
     tol = 1e-5 if dt == ti.f32 else 1e-12
     dtype = np.float32 if dt == ti.f32 else np.float64
-    x_np = np.linalg.solve(
-        A[None].to_numpy().astype(dtype), b[None].to_numpy().astype(dtype)
-    )
+    x_np = np.linalg.solve(A[None].to_numpy().astype(dtype), b[None].to_numpy().astype(dtype))
     x_ti = x[None].to_numpy().astype(dtype)
 
     idx_np = np.argsort(x_np)

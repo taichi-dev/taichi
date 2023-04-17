@@ -36,9 +36,7 @@ def test_ad_sum_fwd():
         assert p.dual[i] == b[i]
         assert a.dual[i] == 0
 
-    with ti.ad.FwdMode(
-        loss=p, param=a, seed=[1.0 for _ in range(N)], clear_gradients=False
-    ):
+    with ti.ad.FwdMode(loss=p, param=a, seed=[1.0 for _ in range(N)], clear_gradients=False):
         pass
 
     for i in range(N):

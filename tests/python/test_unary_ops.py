@@ -7,11 +7,7 @@ from tests import test_utils
 
 
 def _test_op(dt, taichi_op, np_op):
-    print(
-        "arch={} default_fp={}".format(
-            ti.lang.impl.current_cfg().arch, ti.lang.impl.current_cfg().default_fp
-        )
-    )
+    print("arch={} default_fp={}".format(ti.lang.impl.current_cfg().arch, ti.lang.impl.current_cfg().default_fp))
     n = 4
     val = ti.field(dt, shape=n)
 
@@ -32,8 +28,7 @@ def _test_op(dt, taichi_op, np_op):
         else:
             assert (
                 abs(np_op(float(f(i))) - val[i]) < 1e-6
-                if ti.lang.impl.current_cfg().arch
-                not in (ti.opengl, ti.gles, ti.vulkan)
+                if ti.lang.impl.current_cfg().arch not in (ti.opengl, ti.gles, ti.vulkan)
                 else 1e-5
             )
 

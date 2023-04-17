@@ -75,9 +75,7 @@ def compute_normal(z, c):
         z_curr = quat_mul(z_curr, z_curr) + c
         iterations += 1
 
-    return tm.normalize(
-        tm.vec3(tm.dot(z_curr, J0), tm.dot(z_curr, J1), tm.dot(z_curr, J2))
-    )
+    return tm.normalize(tm.vec3(tm.dot(z_curr, J0), tm.dot(z_curr, J1), tm.dot(z_curr, J2)))
 
 
 image_res = (1280, 720)
@@ -99,9 +97,7 @@ class Julia:
     @ti.kernel
     def march(self, time_arg: float):
         time = time_arg * 0.15
-        c = 0.45 * ti.cos(
-            vec4(0.5, 3.9, 1.4, 1.1) + time * vec4(1.2, 1.7, 1.3, 2.5)
-        ) - vec4(0.3, 0, 0, 0)
+        c = 0.45 * ti.cos(vec4(0.5, 3.9, 1.4, 1.1) + time * vec4(1.2, 1.7, 1.3, 2.5)) - vec4(0.3, 0, 0, 0)
 
         r = 1.8
         o3 = (

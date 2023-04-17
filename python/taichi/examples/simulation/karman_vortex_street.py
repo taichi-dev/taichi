@@ -38,9 +38,7 @@ class lbm_solver:
         self.f_old = ti.Vector.field(9, float, shape=(nx, ny))
         self.f_new = ti.Vector.field(9, float, shape=(nx, ny))
         self.w = vec9(4, 1, 1, 1, 1, 1 / 4, 1 / 4, 1 / 4, 1 / 4) / 9.0
-        self.e = imat9x2(
-            [0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1]
-        )
+        self.e = imat9x2([0, 0], [1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [-1, -1], [1, -1])
         self.bc_type = ti.field(int, 4)
         self.bc_type.from_numpy(np.array(bc_type, dtype=np.int32))
         self.bc_value = ti.Vector.field(2, float, shape=4)
@@ -62,9 +60,7 @@ class lbm_solver:
         for i, j in self.rho:
             self.f_old[i, j] = self.f_new[i, j] = self.f_eq(i, j)
             if self.cy == 1:
-                if (i - self.cy_para[0]) ** 2 + (
-                    j - self.cy_para[1]
-                ) ** 2 <= self.cy_para[2] ** 2:
+                if (i - self.cy_para[0]) ** 2 + (j - self.cy_para[1]) ** 2 <= self.cy_para[2] ** 2:
                     self.mask[i, j] = 1.0
 
     @ti.kernel
@@ -74,9 +70,7 @@ class lbm_solver:
                 ip = i - self.e[k, 0]
                 jp = j - self.e[k, 1]
                 feq = self.f_eq(ip, jp)
-                self.f_new[i, j][k] = (1 - self.inv_tau) * self.f_old[ip, jp][k] + feq[
-                    k
-                ] * self.inv_tau
+                self.f_new[i, j][k] = (1 - self.inv_tau) * self.f_old[ip, jp][k] + feq[k] * self.inv_tau
 
     @ti.kernel
     def update_macro_var(self):  # compute rho u v
@@ -86,9 +80,7 @@ class lbm_solver:
             for k in ti.static(range(9)):
                 self.f_old[i, j][k] = self.f_new[i, j][k]
                 self.rho[i, j] += self.f_new[i, j][k]
-                self.vel[i, j] += (
-                    tm.vec2(self.e[k, 0], self.e[k, 1]) * self.f_new[i, j][k]
-                )
+                self.vel[i, j] += tm.vec2(self.e[k, 0], self.e[k, 1]) * self.f_new[i, j][k]
 
             self.vel[i, j] /= self.rho[i, j]
 
@@ -137,9 +129,7 @@ class lbm_solver:
                 self.vel[ibc, jbc] = self.vel[inb, jnb]
 
         self.rho[ibc, jbc] = self.rho[inb, jnb]
-        self.f_old[ibc, jbc] = (
-            self.f_eq(ibc, jbc) - self.f_eq(inb, jnb) + self.f_old[inb, jnb]
-        )
+        self.f_old[ibc, jbc] = self.f_eq(ibc, jbc) - self.f_eq(inb, jnb) + self.f_old[inb, jnb]
 
     def solve(self):
         gui = ti.GUI("Karman Vortex Street", (self.nx, 2 * self.ny))
@@ -164,12 +154,10 @@ class lbm_solver:
                 (0.176, 0.976, 0.529),
                 (0, 1, 1),
             ]
-            my_cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-                "my_cmap", colors
+            my_cmap = matplotlib.colors.LinearSegmentedColormap.from_list("my_cmap", colors)
+            vor_img = cm.ScalarMappable(norm=matplotlib.colors.Normalize(vmin=-0.02, vmax=0.02), cmap=my_cmap).to_rgba(
+                vor
             )
-            vor_img = cm.ScalarMappable(
-                norm=matplotlib.colors.Normalize(vmin=-0.02, vmax=0.02), cmap=my_cmap
-            ).to_rgba(vor)
             vel_img = cm.plasma(vel_mag / 0.15)
             img = np.concatenate((vor_img, vel_img), axis=1)
             gui.set_image(img)

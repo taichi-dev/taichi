@@ -21,7 +21,9 @@ arrowField = [int(it / 2) for it in screen]  # number of arrow in window
 meshSpace = 20  # screen * meshSpace = windowSize
 maxElements = 20  # the max number of each element(source/sink, vortex, dipole)
 refillFrame = 20  # frame interval for each refill points
-refillVelThresh = 0.2  # points will be refilled when the absolute value of the velocity on boundary is greater than this value
+refillVelThresh = (
+    0.2  # points will be refilled when the absolute value of the velocity on boundary is greater than this value
+)
 V = vec2(1.0, 0)  # the velocity of uniform stream
 dt = 0.002
 fadeMax = 10  # frames of fade in/out
@@ -88,13 +90,9 @@ def refillPointsOnOneBoundary(boundary, index):
                 elif boundary == 1:
                     points[index] = vec2((i + 0.5) / screen[0], -dt * refillVelThresh)
                 elif boundary == 2:
-                    points[index] = vec2(
-                        1 + dt * refillVelThresh, (i + 0.5) / screen[1]
-                    )
+                    points[index] = vec2(1 + dt * refillVelThresh, (i + 0.5) / screen[1])
                 elif boundary == 3:
-                    points[index] = vec2(
-                        (i + 0.5) / screen[0], 1 + dt * refillVelThresh
-                    )
+                    points[index] = vec2((i + 0.5) / screen[0], 1 + dt * refillVelThresh)
                 break
             index += 1
             if index >= maxPoints:
@@ -212,27 +210,13 @@ def drawMark(_gui, _frame):
 def processGuiEvent(_gui):
     global fade
     while _gui.get_event((ti.GUI.PRESS, ti.GUI.LMB), (ti.GUI.PRESS, ti.GUI.RMB)):
-        if _gui.is_pressed(ti.GUI.LMB) and _gui.is_pressed(
-            ti.GUI.RMB
-        ):  # process delete event
+        if _gui.is_pressed(ti.GUI.LMB) and _gui.is_pressed(ti.GUI.RMB):  # process delete event
             for i in range(maxElements):
-                if (
-                    sources[i].q != 0
-                    and (sources[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                    < 5 / guiHeight
-                ):
+                if sources[i].q != 0 and (sources[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     sources[i].q = 0
-                if (
-                    vortexes[i].q != 0
-                    and (vortexes[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                    < 5 / guiHeight
-                ):
+                if vortexes[i].q != 0 and (vortexes[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     vortexes[i].q = 0
-                if (
-                    dipoles[i].m != 0
-                    and (dipoles[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                    < 5 / guiHeight
-                ):
+                if dipoles[i].m != 0 and (dipoles[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                     dipoles[i].m = 0
         else:
             if _gui.is_pressed("s"):  # process add source/sink event
@@ -264,45 +248,21 @@ def processGuiEvent(_gui):
                         break
             else:
                 for i in range(maxElements):  # process increase/decrease event
-                    if (
-                        sources[i].q != 0
-                        and (sources[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                        < 5 / guiHeight
-                    ):
+                    if sources[i].q != 0 and (sources[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            sources[i].q -= 0.5 * int(
-                                (sources[i].q >= 0.0) - (sources[i].q <= 0.0)
-                            )
+                            sources[i].q -= 0.5 * int((sources[i].q >= 0.0) - (sources[i].q <= 0.0))
                         else:
-                            sources[i].q += 0.5 * int(
-                                (sources[i].q >= 0.0) - (sources[i].q <= 0.0)
-                            )
-                    if (
-                        vortexes[i].q != 0
-                        and (vortexes[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                        < 5 / guiHeight
-                    ):
+                            sources[i].q += 0.5 * int((sources[i].q >= 0.0) - (sources[i].q <= 0.0))
+                    if vortexes[i].q != 0 and (vortexes[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            vortexes[i].q -= 0.1 * int(
-                                (vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
-                            )
+                            vortexes[i].q -= 0.1 * int((vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
                         else:
-                            vortexes[i].q += 0.1 * int(
-                                (vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0)
-                            )
-                    if (
-                        dipoles[i].m != 0
-                        and (dipoles[i].pos - vec2(*_gui.get_cursor_pos())).norm()
-                        < 5 / guiHeight
-                    ):
+                            vortexes[i].q += 0.1 * int((vortexes[i].q >= 0.0) - (vortexes[i].q <= 0.0))
+                    if dipoles[i].m != 0 and (dipoles[i].pos - vec2(*_gui.get_cursor_pos())).norm() < 5 / guiHeight:
                         if _gui.is_pressed(ti.GUI.RMB):
-                            dipoles[i].m -= 0.001 * int(
-                                (dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
-                            )
+                            dipoles[i].m -= 0.001 * int((dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
                         else:
-                            dipoles[i].m += 0.001 * int(
-                                (dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0)
-                            )
+                            dipoles[i].m += 0.001 * int((dipoles[i].m >= 0.0) - (dipoles[i].m <= 0.0))
         fade = -abs(fade)  # fade out arrow field
 
 

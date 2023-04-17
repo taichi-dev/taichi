@@ -137,9 +137,7 @@ def _deprecate_arg_args(kwargs: Dict[str, Any]):
             if "dtype" not in kwargs:
                 dtype = kwargs["dtype"]
                 if isinstance(dtype, MatrixType):
-                    raise TaichiRuntimeError(
-                        "Please do not specify element_shape when dtype is a matrix type."
-                    )
+                    raise TaichiRuntimeError("Please do not specify element_shape when dtype is a matrix type.")
 
     if tag == ArgKind.RWTEXTURE or tag == ArgKind.TEXTURE:
         if "dtype" in kwargs:
@@ -188,9 +186,7 @@ def _check_args(kwargs: Dict[str, Any], allowed_kwargs: List[str]):
             )
         if k == "tag":
             if not isinstance(v, ArgKind):
-                raise TaichiRuntimeError(
-                    f"tag must be a ArgKind variant, but found {type(v)}."
-                )
+                raise TaichiRuntimeError(f"tag must be a ArgKind variant, but found {type(v)}.")
         if k == "name":
             if not isinstance(v, str):
                 raise TaichiRuntimeError(f"name must be a string, but found {type(v)}.")
@@ -206,9 +202,7 @@ def _make_arg_scalar(kwargs: Dict[str, Any]):
     name = kwargs["name"]
     dtype = kwargs["dtype"]
     if isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f"Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}."
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.SCALAR must specify a scalar type, but found {type(dtype)}.")
     return _ti_core.Arg(ArgKind.SCALAR, name, dtype, 0, [])
 
 
@@ -226,9 +220,7 @@ def _make_arg_ndarray(kwargs: Dict[str, Any]):
     dtype = kwargs["dtype"]
     element_shape = kwargs["element_shape"]
     if isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f"Tag ArgKind.NDARRAY must specify a scalar type, but found {dtype}."
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.NDARRAY must specify a scalar type, but found {dtype}.")
     return _ti_core.Arg(ArgKind.NDARRAY, name, dtype, ndim, element_shape)
 
 
@@ -242,17 +234,13 @@ def _make_arg_matrix(kwargs: Dict[str, Any]):
     name = kwargs["name"]
     dtype = kwargs["dtype"]
     if not isinstance(dtype, MatrixType):
-        raise TaichiRuntimeError(
-            f"Tag ArgKind.MATRIX must specify matrix type, but got {dtype}."
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.MATRIX must specify matrix type, but got {dtype}.")
     arg_list = []
     i = 0
     for _ in range(dtype.n):
         arg_sublist = []
         for _ in range(dtype.m):
-            arg_sublist.append(
-                _ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg_{i}", dtype.dtype, 0, [])
-            )
+            arg_sublist.append(_ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg_{i}", dtype.dtype, 0, []))
             i += 1
         arg_list.append(arg_sublist)
     return arg_list
@@ -282,13 +270,9 @@ def _make_arg_rwtexture(kwargs: Dict[str, Any]):
     ndim = kwargs["ndim"]
     fmt = kwargs["fmt"]
     if fmt == enums.Format.unknown:
-        raise TaichiRuntimeError(
-            f"Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}."
-        )
+        raise TaichiRuntimeError(f"Tag ArgKind.RWTEXTURE must specify a valid color format, but found {fmt}.")
     channel_format, num_channels = FORMAT2TY_CH[fmt]
-    return _ti_core.Arg(
-        ArgKind.RWTEXTURE, name, channel_format, num_channels, [2] * ndim
-    )
+    return _ti_core.Arg(ArgKind.RWTEXTURE, name, channel_format, num_channels, [2] * ndim)
 
 
 def _make_arg(kwargs: Dict[str, Any]):

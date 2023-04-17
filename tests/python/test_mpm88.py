@@ -42,9 +42,7 @@ def test_mpm88():
                     offset = ti.Vector([i, j])
                     dpos = (offset.cast(float) - fx) * dx
                     weight = w[i][0] * w[j][1]
-                    ti.atomic_add(
-                        grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos)
-                    )
+                    ti.atomic_add(grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos))
                     ti.atomic_add(grid_m[base + offset], weight * p_mass)
 
         for i, j in grid_m:
@@ -147,9 +145,7 @@ def test_mpm88_numpy_and_ndarray():
                     offset = ti.Vector([i, j])
                     dpos = (offset.cast(float) - fx) * dx
                     weight = w[i][0] * w[j][1]
-                    ti.atomic_add(
-                        grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos)
-                    )
+                    ti.atomic_add(grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos))
                     ti.atomic_add(grid_m[base + offset], weight * p_mass)
 
         for i, j in grid_m:

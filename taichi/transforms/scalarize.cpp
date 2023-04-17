@@ -1,4 +1,7 @@
 #include <variant>
+#include <iostream>
+#include <vector>
+#include <numeric>
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/statements.h"
@@ -804,6 +807,49 @@ class ExtractLocalPointers : public BasicStmtVisitor {
   using BasicStmtVisitor::visit;
 };
 
+class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
+ private:
+  using BasicStmtVisitor::visit;
+  DelayedIRModifier modifier_;
+
+ public:
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<ExternalPtrStmt>()) {
+      auto origin = stmt->origin->as<ExternalPtrStmt>();
+      TI_ASSERT(stmt->origin->ret_type.ptr_removed()->is<TensorType>());
+
+      std::vector<Stmt *> indices = origin->indices;
+      indices.push_back(stmt->offset);
+
+      // MatrixPtrStmt has flattened indices, linearization of which is done
+      // during IndexExpression::flatten() Here we need to modify the
+      // element_dim and element_shape a little bit.
+      int element_dim = -1;  // AOS Vector
+      std::vector<int> element_shape = {
+          std::accumulate(begin(origin->element_shape),
+                          end(origin->element_shape), 1, std::multiplies<>())};
+
+      auto fused = std::make_unique<ExternalPtrStmt>(
+          origin->base_ptr, indices, element_shape, element_dim);
+      fused->ret_type = stmt->ret_type;
+      // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
+      // with flattened indices. Main goal is to keep all the hacks in a single
+      // place so that they're easier to remove
+      origin->base_ptr->as<ArgLoadStmt>()->ret_type = stmt->ret_type;
+      stmt->replace_usages_with(fused.get());
+      modifier_.insert_before(stmt, std::move(fused));
+      modifier_.erase(stmt);
+      return;
+    }
+  }
+
+  static void run(IRNode *node) {
+    MergeExternalAndMatrixPtr pass;
+    node->accept(&pass);
+    pass.modifier_.modify_ir();
+  }
+};
+
 namespace irpass {
 
 void scalarize(IRNode *root) {
@@ -812,6 +858,7 @@ void scalarize(IRNode *root) {
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
   ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_allocas);
   ExtractLocalPointers extract_pointers_pass(root);
+  MergeExternalAndMatrixPtr::run(root);
 }
 
 }  // namespace irpass

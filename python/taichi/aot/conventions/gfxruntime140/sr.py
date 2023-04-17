@@ -242,19 +242,13 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
             binding = texture_bind.binding
             iarg = texture_bind.arg_id
             if texture_bind.is_storage:
-                texture_binds += [
-                    TextureBinding(binding, iarg, TextureBindingType.RwTexture)
-                ]
+                texture_binds += [TextureBinding(binding, iarg, TextureBindingType.RwTexture)]
                 iarg2arg_ty[iarg] = OpaqueArgumentType.RwTexture
             else:
-                texture_binds += [
-                    TextureBinding(binding, iarg, TextureBindingType.Texture)
-                ]
+                texture_binds += [TextureBinding(binding, iarg, TextureBindingType.Texture)]
                 iarg2arg_ty[iarg] = OpaqueArgumentType.Texture
 
-        launch_grid = LaunchGrid(
-            task.advisory_num_threads_per_group, task.advisory_total_num_threads
-        )
+        launch_grid = LaunchGrid(task.advisory_num_threads_per_group, task.advisory_total_num_threads)
 
         tasks += [
             Task(
@@ -286,11 +280,7 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                 elif binding_ty == OpaqueArgumentType.Texture:
                     args += [ArgumentTexture(arg.name, arg.field_dim)]
                 elif binding_ty == OpaqueArgumentType.RwTexture:
-                    args += [
-                        ArgumentRwTexture(
-                            arg.name, ti.Format(arg.format), arg.field_dim
-                        )
-                    ]
+                    args += [ArgumentRwTexture(arg.name, ti.Format(arg.format), arg.field_dim)]
                 else:
                     assert False
         else:
@@ -345,8 +335,7 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
             j = {
                 "arg_id": texture_bind.iarg,
                 "binding": texture_bind.binding,
-                "is_storage": texture_bind.texture_bind_ty
-                == TextureBindingType.RwTexture,
+                "is_storage": texture_bind.texture_bind_ty == TextureBindingType.RwTexture,
             }
             texture_binds += [j]
 

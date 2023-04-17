@@ -16,9 +16,7 @@ bottom_smoothing = 50
 
 use_multigrid = True
 
-N_ext = (
-    N // 2
-)  # number of ext cells set so that that total grid size is still power of 2
+N_ext = N // 2  # number of ext cells set so that that total grid size is still power of 2
 N_tot = 2 * N
 
 # setup sparse simulation data arrays
@@ -35,27 +33,19 @@ pixels = ti.field(dtype=real, shape=(N_gui, N_gui))  # image buffer
 ti.root.pointer(ti.ijk, [N_tot // 4]).dense(ti.ijk, 4).place(x, p, Ap)
 
 for lvl in range(n_mg_levels):
-    ti.root.pointer(ti.ijk, [N_tot // (4 * 2**lvl)]).dense(ti.ijk, 4).place(
-        r[lvl], z[lvl]
-    )
+    ti.root.pointer(ti.ijk, [N_tot // (4 * 2**lvl)]).dense(ti.ijk, 4).place(r[lvl], z[lvl])
 
 ti.root.place(alpha, beta, sum_)
 
 
 @ti.kernel
 def init():
-    for i, j, k in ti.ndrange(
-        (N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext)
-    ):
+    for i, j, k in ti.ndrange((N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext), (N_ext, N_tot - N_ext)):
         xl = (i - N_ext) * 2.0 / N_tot
         yl = (j - N_ext) * 2.0 / N_tot
         zl = (k - N_ext) * 2.0 / N_tot
         # r[0] = b - Ax, where x = 0; therefore r[0] = b
-        r[0][i, j, k] = (
-            ti.sin(2.0 * np.pi * xl)
-            * ti.sin(2.0 * np.pi * yl)
-            * ti.sin(2.0 * np.pi * zl)
-        )
+        r[0][i, j, k] = ti.sin(2.0 * np.pi * xl) * ti.sin(2.0 * np.pi * yl) * ti.sin(2.0 * np.pi * zl)
         z[0][i, j, k] = 0.0
         Ap[i, j, k] = 0.0
         p[i, j, k] = 0.0

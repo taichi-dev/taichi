@@ -13,9 +13,7 @@ build_type = "default"
 
 import struct
 
-assert (
-    struct.calcsize("P") * 8 == 64
-), "Only 64-bit platforms are supported. Current platform: {}".format(
+assert struct.calcsize("P") * 8 == 64, "Only 64-bit platforms are supported. Current platform: {}".format(
     struct.calcsize("P") * 8
 )
 
@@ -104,9 +102,7 @@ def append_to_shell_rc(line):
     if get_os_name() != "win":
         execute_command('echo "{}" >> {}'.format(line, get_shell_rc_name()))
     else:
-        print(
-            "Warning: Windows environment variable persistent edits are not supported"
-        )
+        print("Warning: Windows environment variable persistent edits are not supported")
 
 
 def set_env(key, val, val_now=None):
@@ -126,12 +122,7 @@ def get_path_separator():
 
 
 def test_installation():
-    return (
-        subprocess.run(
-            [get_python_executable(), "-c", "import taichi as tc"]
-        ).returncode
-        == 0
-    )
+    return subprocess.run([get_python_executable(), "-c", "import taichi as tc"]).returncode == 0
 
 
 # (Stateful) Installer class
@@ -154,9 +145,7 @@ class Installer:
             "linux",
             "osx",
             "win",
-        ], "Platform {} is not currently supported by this script. Please install manually.".format(
-            get_os_name()
-        )
+        ], "Platform {} is not currently supported by this script. Please install manually.".format(get_os_name())
         if len(sys.argv) > 1:
             self.build_type = sys.argv[1]
             print("Build type: ", self.build_type)
@@ -228,9 +217,7 @@ class Installer:
                 if self.build_type != "ci":  # Currently the CI machines have no sudo
                     execute_command("sudo apt-get update")
                     if self.build_type == "ci":
-                        execute_command(
-                            "sudo apt-get install -y python3-dev libx11-dev"
-                        )
+                        execute_command("sudo apt-get install -y python3-dev libx11-dev")
                     else:
                         execute_command(
                             "sudo apt-get install -y python3-dev git build-essential cmake make g++ libx11-dev"
@@ -242,9 +229,7 @@ class Installer:
             else:
                 print("Unsupported Linux distribution.")
 
-        subprocess.run(
-            [get_python_executable(), "-m", "pip", "install", "--user", "psutil"]
-        )
+        subprocess.run([get_python_executable(), "-m", "pip", "install", "--user", "psutil"])
 
         self.setup_repo()
 
@@ -256,16 +241,12 @@ class Installer:
             set_env(
                 "PYTHONPATH",
                 "\$TAICHI_REPO_DIR/python/" + get_path_separator() + "\$PYTHONPATH",
-                "{}/python/".format(self.repo_dir)
-                + get_path_separator()
-                + os.environ.get("PYTHONPATH", ""),
+                "{}/python/".format(self.repo_dir) + get_path_separator() + os.environ.get("PYTHONPATH", ""),
             )
             set_env(
                 "PATH",
                 "\$TAICHI_REPO_DIR/bin/" + get_path_separator() + "\$PATH",
-                os.path.join(self.repo_dir, "bin")
-                + get_path_separator()
-                + os.environ.get("PATH", ""),
+                os.path.join(self.repo_dir, "bin") + get_path_separator() + os.environ.get("PATH", ""),
             )
 
             os.environ["PYTHONIOENCODING"] = "utf-8"

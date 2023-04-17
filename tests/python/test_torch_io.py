@@ -58,9 +58,7 @@ def test_io():
             o[i] = t[i] * t[i]
 
     @ti.kernel
-    def torch_kernel_2(
-        t_grad: ti.types.ndarray(), t: ti.types.ndarray(), o_grad: ti.types.ndarray()
-    ):
+    def torch_kernel_2(t_grad: ti.types.ndarray(), t: ti.types.ndarray(), o_grad: ti.types.ndarray()):
         for i in range(n):
             t_grad[i] = 2 * t[i] * o_grad[i]
 

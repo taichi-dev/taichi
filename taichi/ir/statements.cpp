@@ -91,6 +91,7 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
   origin = origin_input;
   offset = offset_input;
   this->tb = tb;
+
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
       origin->is<MatrixOfMatrixPtrStmt>()) {

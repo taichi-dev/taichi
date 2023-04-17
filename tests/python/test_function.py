@@ -187,9 +187,7 @@ def test_missing_arg_annotation():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_missing_return_annotation():
-    with pytest.raises(
-        ti.TaichiCompilationError, match="return value must be annotated"
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match="return value must be annotated"):
 
         @ti.experimental.real_func
         def add(a: ti.i32, b: ti.i32):
@@ -388,9 +386,7 @@ def test_func_ndarray_arg():
 
     assert arr[0] == [20, 20, 20]
 
-    with pytest.raises(
-        ti.TaichiCompilationError, match=r"Invalid argument into ti.types.ndarray()"
-    ):
+    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid argument into ti.types.ndarray()"):
         test_error(arr)
 
 
@@ -426,9 +422,7 @@ def test_func_matrix_arg_with_error():
         x = ti.Matrix([3, 4])
         test(x)
 
-    with pytest.raises(
-        ti.TaichiSyntaxError, match=r"is expected to be a Matrix with n 3, but got 2"
-    ):
+    with pytest.raises(ti.TaichiSyntaxError, match=r"is expected to be a Matrix with n 3, but got 2"):
         test_error()
 
 

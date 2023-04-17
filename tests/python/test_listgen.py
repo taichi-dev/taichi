@@ -9,9 +9,7 @@ def test_listgen():
     x = ti.field(ti.i32)
     n = 1024
 
-    ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(
-        ti.ij, 4
-    ).place(x)
+    ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).place(x)
 
     @ti.kernel
     def fill(c: ti.i32):

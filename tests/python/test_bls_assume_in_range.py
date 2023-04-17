@@ -16,9 +16,7 @@ def test_scattering_offset():
 
 @test_utils.test(require=ti.extension.bls)
 def test_scattering_two_pointer_levels():
-    bls_particle_grid(
-        N=128, ppc=10, block_size=8, scatter=True, pointer_level=2, use_offset=False
-    )
+    bls_particle_grid(N=128, ppc=10, block_size=8, scatter=True, pointer_level=2, use_offset=False)
 
 
 @test_utils.test(require=ti.extension.bls)

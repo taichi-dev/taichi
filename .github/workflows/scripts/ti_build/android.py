@@ -19,16 +19,12 @@ def setup_android_ndk() -> None:
     # TODO: Auto install
     s = platform.system()
     if s != "Linux":
-        raise RuntimeError(
-            f"Android NDK is only supported on Linux, but the current platform is {s}."
-        )
+        raise RuntimeError(f"Android NDK is only supported on Linux, but the current platform is {s}.")
 
     ndkroot = Path(os.environ.get("ANDROID_NDK_ROOT", "/android-sdk/ndk-bundle"))
     toolchain = ndkroot / "build/cmake/android.toolchain.cmake"
     if not toolchain.exists():
-        raise RuntimeError(
-            f"ANDROID_NDK_ROOT is set to {ndkroot}, but the path does not exist."
-        )
+        raise RuntimeError(f"ANDROID_NDK_ROOT is set to {ndkroot}, but the path does not exist.")
 
     p = ndkroot.resolve()
     os.environ["ANDROID_NDK_ROOT"] = str(p)

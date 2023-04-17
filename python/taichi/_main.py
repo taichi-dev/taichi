@@ -57,9 +57,7 @@ def register(func):
 @registerableCLI
 class TaichiMain:
     def __init__(self, test_mode: bool = False):
-        self.banner = (
-            f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
-        )
+        self.banner = f"\n{'*' * 43}\n**      Taichi Programming Language      **\n{'*' * 43}"
         print(self.banner)
 
         print(self._get_friend_links())
@@ -266,13 +264,9 @@ class TaichiMain:
             nrows += 1
         names = sorted(choices.keys())
         for k in range(nrows):
-            table.add_row(
-                *[colormap(j, names[j]) for j in range(k, len(choices), nrows)]
-            )
+            table.add_row(*[colormap(j, names[j]) for j in range(k, len(choices), nrows)])
 
-        parser = argparse.ArgumentParser(
-            prog="ti example", description=f"{self.example.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti example", description=f"{self.example.__doc__}")
         parser.add_argument(
             "name",
             type=TaichiMain._example_choices_type(choices.keys()),
@@ -315,13 +309,9 @@ class TaichiMain:
         if example_name is None:
             index = int(input("Please input the number of the example: "))
             while not 0 <= index < len(names):
-                index = int(
-                    input(f"Example [{index}] does not exist. Please try again: ")
-                )
+                index = int(input(f"Example [{index}] does not exist. Please try again: "))
             example_name = names[index]
-        target = str(
-            (examples_dir / choices[example_name] / f"{example_name}.py").resolve()
-        )
+        target = str((examples_dir / choices[example_name] / f"{example_name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str((examples_dir / choices[example_name]).resolve()))
 
@@ -372,9 +362,7 @@ class TaichiMain:
     @register
     def gif(self, arguments: list = sys.argv[2:]):
         """Convert mp4 file to gif in the same directory"""
-        parser = argparse.ArgumentParser(
-            prog="ti gif", description=f"{self.gif.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti gif", description=f"{self.gif.__doc__}")
         parser.add_argument(
             "-i",
             "--input",
@@ -407,9 +395,7 @@ class TaichiMain:
     @register
     def video_speed(self, arguments: list = sys.argv[2:]):
         """Speed up video in the same directory"""
-        parser = argparse.ArgumentParser(
-            prog="ti video_speed", description=f"{self.video_speed.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti video_speed", description=f"{self.video_speed.__doc__}")
         parser.add_argument(
             "-i",
             "--input",
@@ -429,9 +415,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         args.output_file = str(
-            Path(args.input_file).with_name(
-                f"{Path(args.input_file).stem}-sped{Path(args.input_file).suffix}"
-            )
+            Path(args.input_file).with_name(f"{Path(args.input_file).stem}-sped{Path(args.input_file).suffix}")
         )
 
         # Short circuit for testing
@@ -444,9 +428,7 @@ class TaichiMain:
     @register
     def video_crop(self, arguments: list = sys.argv[2:]):
         """Crop video in the same directory"""
-        parser = argparse.ArgumentParser(
-            prog="ti video_crop", description=f"{self.video_crop.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti video_crop", description=f"{self.video_crop.__doc__}")
         parser.add_argument(
             "-i",
             "--input",
@@ -486,9 +468,7 @@ class TaichiMain:
         args = parser.parse_args(arguments)
 
         args.output_file = str(
-            Path(args.input_file).with_name(
-                f"{Path(args.input_file).stem}-cropped{Path(args.input_file).suffix}"
-            )
+            Path(args.input_file).with_name(f"{Path(args.input_file).stem}-cropped{Path(args.input_file).suffix}")
         )
 
         # Short circuit for testing
@@ -508,9 +488,7 @@ class TaichiMain:
     @register
     def video_scale(self, arguments: list = sys.argv[2:]):
         """Scale video resolution in the same directory"""
-        parser = argparse.ArgumentParser(
-            prog="ti video_scale", description=f"{self.video_scale.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti video_scale", description=f"{self.video_scale.__doc__}")
         parser.add_argument(
             "-i",
             "--input",
@@ -540,26 +518,20 @@ class TaichiMain:
         if not args.ratio_height:
             args.ratio_height = args.ratio_width
         args.output_file = str(
-            Path(args.input_file).with_name(
-                f"{Path(args.input_file).stem}-scaled{Path(args.input_file).suffix}"
-            )
+            Path(args.input_file).with_name(f"{Path(args.input_file).stem}-scaled{Path(args.input_file).suffix}")
         )
 
         # Short circuit for testing
         if self.test_mode:
             return args
-        video.scale_video(
-            args.input_file, args.output_file, args.ratio_width, args.ratio_height
-        )
+        video.scale_video(args.input_file, args.output_file, args.ratio_width, args.ratio_height)
 
         return None
 
     @register
     def video(self, arguments: list = sys.argv[2:]):
         """Make a video using *.png files in the current directory"""
-        parser = argparse.ArgumentParser(
-            prog="ti video", description=f"{self.video.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti video", description=f"{self.video.__doc__}")
         parser.add_argument("inputs", nargs="*", help="PNG file(s) as inputs")
         parser.add_argument(
             "-o",
@@ -670,9 +642,7 @@ class TaichiMain:
             gui = ti.GUI("Regression Test", (640, 480), 0x001122)
             print("[Hint] press SPACE to go for next display")
             for key, data in scatter.items():
-                data = np.array(
-                    [((i + 0.5) / len(data), x / 2) for i, x in enumerate(data)]
-                )
+                data = np.array([((i + 0.5) / len(data), x / 2) for i, x in enumerate(data)])
                 while not gui.get_event((ti.GUI.PRESS, ti.GUI.SPACE)):
                     gui.core.title = key
                     gui.line((0, 0.5), (1, 0.5), 1.8, 0x66CCFF)
@@ -741,12 +711,8 @@ class TaichiMain:
     @register
     def regression(self, arguments: list = sys.argv[2:]):
         """Display benchmark regression test result"""
-        parser = argparse.ArgumentParser(
-            prog="ti regression", description=f"{self.regression.__doc__}"
-        )
-        parser.add_argument(
-            "files", nargs="*", help="Test file(s) to be run for benchmarking"
-        )
+        parser = argparse.ArgumentParser(prog="ti regression", description=f"{self.regression.__doc__}")
+        parser.add_argument("files", nargs="*", help="Test file(s) to be run for benchmarking")
         parser.add_argument(
             "-g",
             "--gui",
@@ -769,9 +735,7 @@ class TaichiMain:
     @register
     def baseline(self, arguments: list = sys.argv[2:]):
         """Archive current benchmark result as baseline"""
-        parser = argparse.ArgumentParser(
-            prog="ti baseline", description=f"{self.baseline.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti baseline", description=f"{self.baseline.__doc__}")
         args = parser.parse_args(arguments)
 
         # Short circuit for testing
@@ -789,16 +753,12 @@ class TaichiMain:
     @staticmethod
     @register
     def test(self, arguments: list = sys.argv[2:]):
-        raise RuntimeError(
-            "ti test is deprecated. Please run `python tests/run_tests.py` instead."
-        )
+        raise RuntimeError("ti test is deprecated. Please run `python tests/run_tests.py` instead.")
 
     @register
     def run(self, arguments: list = sys.argv[2:]):
         """Run a single script"""
-        parser = argparse.ArgumentParser(
-            prog="ti run", description=f"{self.run.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti run", description=f"{self.run.__doc__}")
         parser.add_argument(
             "filename",
             help="A single (Python) script to run with Taichi, e.g. render.py",
@@ -816,9 +776,7 @@ class TaichiMain:
     @register
     def debug(self, arguments: list = sys.argv[2:]):
         """Debug a single script"""
-        parser = argparse.ArgumentParser(
-            prog="ti debug", description=f"{self.debug.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti debug", description=f"{self.debug.__doc__}")
         parser.add_argument(
             "filename",
             help="A single (Python) script to run with debugger, e.g. render.py",
@@ -845,19 +803,13 @@ class TaichiMain:
     @register
     def cc_compose(self, arguments: list = sys.argv[2:]):
         """Compose C backend action record into a complete C file"""
-        parser = argparse.ArgumentParser(
-            prog="ti cc_compose", description=f"{self.cc_compose.__doc__}"
-        )
+        parser = argparse.ArgumentParser(prog="ti cc_compose", description=f"{self.cc_compose.__doc__}")
         parser.add_argument(
             "fin_name",
             help="Action record YAML file name from C backend, e.g. program.yml",
         )
-        parser.add_argument(
-            "fout_name", help="The output C source file name, e.g. program.c"
-        )
-        parser.add_argument(
-            "hdrout_name", help="The output C header file name, e.g. program.h"
-        )
+        parser.add_argument("fout_name", help="The output C source file name, e.g. program.c")
+        parser.add_argument("hdrout_name", help="The output C header file name, e.g. program.h")
         args = parser.parse_args(arguments)
 
         cc_compose.main(args.fin_name, args.fout_name, args.hdrout_name)
@@ -945,9 +897,7 @@ class TaichiMain:
             return
 
         func, description = subcmds_map[subcmd]
-        parser = argparse.ArgumentParser(
-            prog=f"ti cache {subcmd}", description=description
-        )
+        parser = argparse.ArgumentParser(prog=f"ti cache {subcmd}", description=description)
         func(cmd_args=arguments[1:], parser=parser)
 
 

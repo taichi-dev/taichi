@@ -247,9 +247,7 @@ class _EnvironmentConfigurator:
         if key in self.kwargs:
             self[key] = self.kwargs[key]
             if value:
-                _ti_core.warn(
-                    f'Environment variable {name}={value} overridden by ti.init argument "{key}"'
-                )
+                _ti_core.warn(f'Environment variable {name}={value} overridden by ti.init argument "{key}"')
             del self.kwargs[key]  # mark as recognized
         elif value:
             self[key] = _cast(value)
@@ -318,9 +316,7 @@ def check_require_version(require_version):
         int(_ti_core.get_version_patch()),
     ]
     # Match installed version and required version.
-    match = major == versions[0] and (
-        minor < versions[1] or minor == versions[1] and patch <= versions[2]
-    )
+    match = major == versions[0] and (minor < versions[1] or minor == versions[1] and patch <= versions[2])
 
     if not match:
         raise Exception(
@@ -371,9 +367,7 @@ def init(
         check_require_version(require_version)
 
     if "default_up" in kwargs:
-        raise KeyError(
-            "'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead."
-        )
+        raise KeyError("'default_up' is always the unsigned type of 'default_ip'. Please set 'default_ip' instead.")
     # Make a deepcopy in case these args reference to items from ti.cfg, which are
     # actually references. If no copy is made and the args are indeed references,
     # ti.reset() could override the args to their default values.
@@ -402,9 +396,7 @@ def init(
         elif env_default_fp == "64":
             default_fp = f64
         elif env_default_fp is not None:
-            raise ValueError(
-                f"Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64"
-            )
+            raise ValueError(f"Invalid TI_DEFAULT_FP={env_default_fp}, should be 32 or 64")
 
     env_default_ip = os.environ.get("TI_DEFAULT_IP")
     if env_default_ip:
@@ -417,9 +409,7 @@ def init(
         elif env_default_ip == "64":
             default_ip = i64
         elif env_default_ip is not None:
-            raise ValueError(
-                f"Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64"
-            )
+            raise ValueError(f"Invalid TI_DEFAULT_IP={env_default_ip}, should be 32 or 64")
 
     if default_fp is not None:
         impl.get_runtime().set_default_fp(default_fp)
@@ -443,9 +433,7 @@ def init(
     unexpected_keys = kwargs.keys()
 
     if len(unexpected_keys):
-        raise KeyError(
-            f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}'
-        )
+        raise KeyError(f'Unrecognized keyword argument(s) for ti.init: {", ".join(unexpected_keys)}')
 
     # dispatch configurations that are not in ti.cfg:
     if not _test_mode:

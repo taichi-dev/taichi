@@ -26,9 +26,7 @@ vk_on_mac = (ti.vulkan, "Darwin")
 cuda_on_windows = (ti.cuda, "Windows")
 
 
-@test_utils.test(
-    arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True
-)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)
 def test_print_docs_scalar_self_documenting_exp(capfd):
     a = ti.field(ti.f32, 4)
 
@@ -48,9 +46,7 @@ def test_print_docs_scalar_self_documenting_exp(capfd):
     assert out == expected_out and err == ""
 
 
-@test_utils.test(
-    arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True
-)
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)
 def test_print_docs_matrix_self_documenting_exp(capfd):
     @ti.kernel
     def func():

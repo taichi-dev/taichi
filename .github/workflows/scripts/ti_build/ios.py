@@ -26,18 +26,14 @@ from .tinysh import Command, sh
 def setup_ios(python: Command, pip: Command) -> None:
     s = platform.system()
     if s != "Darwin":
-        raise RuntimeError(
-            f"Can only build iOS binaries on macOS, but the current system is {s}."
-        )
+        raise RuntimeError(f"Can only build iOS binaries on macOS, but the current system is {s}.")
 
     setup_clang()
     setup_sccache()
     pip.install("cmake")
 
     out = get_cache_home() / "ios-cmake"
-    url = (
-        "https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake"
-    )
+    url = "https://raw.githubusercontent.com/leetal/ios-cmake/master/ios.toolchain.cmake"
     download_dep(url, out, force=True, plain=True)
 
     cmake_args["CMAKE_CONFIGURATION_TYPES"] = "Release"
@@ -92,9 +88,7 @@ def _ios_prelink(build_dir: str, output: str) -> None:
     pr()
 
     def dump_symbols(path: str) -> Tuple[List, List]:
-        symbols = str(
-            subprocess.check_output(["objdump", "--syms", path]), encoding="utf8"
-        ).splitlines()
+        symbols = str(subprocess.check_output(["objdump", "--syms", path]), encoding="utf8").splitlines()
         it = iter(symbols)
 
         while not next(it).startswith("SYMBOL TABLE:"):

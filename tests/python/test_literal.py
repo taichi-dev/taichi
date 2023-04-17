@@ -9,9 +9,7 @@ def test_literal_u32():
     @ti.kernel
     def pcg_hash(inp: ti.u32) -> ti.u32:
         state: ti.u32 = inp * ti.u32(747796405) + ti.u32(2891336453)
-        word: ti.u32 = (
-            (state >> ((state >> ti.u32(28)) + ti.u32(4))) ^ state
-        ) * ti.u32(277803737)
+        word: ti.u32 = ((state >> ((state >> ti.u32(28)) + ti.u32(4))) ^ state) * ti.u32(277803737)
         return (word >> ti.u32(22)) ^ word
 
     assert pcg_hash(12345678) == 119515934
@@ -100,7 +98,5 @@ def test_literal_exceed_specified_dtype():
     def func():
         b = ti.u16(-1)
 
-    with pytest.raises(
-        ti.TaichiTypeError, match="exceeded the range of specified dtype"
-    ):
+    with pytest.raises(ti.TaichiTypeError, match="exceeded the range of specified dtype"):
         func()

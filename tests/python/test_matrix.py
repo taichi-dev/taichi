@@ -75,18 +75,14 @@ def test_python_scope_matrix_field(ops):
 def test_constant_matrices():
     assert ti.cos(math.pi / 3) == test_utils.approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))
-    assert ti.cos(ti.Vector([2, 3])).to_numpy() == test_utils.approx(
-        np.cos(np.array([2, 3]))
-    )
+    assert ti.cos(ti.Vector([2, 3])).to_numpy() == test_utils.approx(np.cos(np.array([2, 3])))
     assert ti.max(2, 3) == 3
     res = ti.max(4, ti.Vector([3, 4, 5]))
     assert np.allclose(res.to_numpy(), np.array([4, 4, 5]))
     res = ti.Vector([2, 3]) + ti.Vector([3, 4])
     assert np.allclose(res.to_numpy(), np.array([5, 7]))
     res = ti.atan2(ti.Vector([2, 3]), ti.Vector([3, 4]))
-    assert res.to_numpy() == test_utils.approx(
-        np.arctan2(np.array([2, 3]), np.array([3, 4]))
-    )
+    assert res.to_numpy() == test_utils.approx(np.arctan2(np.array([2, 3]), np.array([3, 4])))
     res = ti.Matrix([[2, 3], [4, 5]]) @ ti.Vector([2, 3])
     assert np.allclose(res.to_numpy(), np.array([13, 23]))
     v = ti.Vector([3, 4])
@@ -101,9 +97,7 @@ def test_constant_matrices():
     r.z = r.w
     r.w = r.x
     assert np.allclose(w.to_numpy(), np.array([5, 15]))
-    assert ti.select(
-        ti.Vector([1, 0]), ti.Vector([2, 3]), ti.Vector([4, 5])
-    ) == ti.Vector([2, 5])
+    assert ti.select(ti.Vector([1, 0]), ti.Vector([2, 3]), ti.Vector([4, 5])) == ti.Vector([2, 5])
     s[0, 1] = 2
     assert s[0, 1] == 2
 
@@ -409,12 +403,8 @@ def test_matrix_field_dynamic_index_stride():
     @ti.kernel
     def check_stride():
         for i in range(128):
-            assert (
-                ti.get_addr(y, i) - ti.get_addr(x, i) == v._get_dynamic_index_stride()
-            )
-            assert (
-                ti.get_addr(z, i) - ti.get_addr(y, i) == v._get_dynamic_index_stride()
-            )
+            assert ti.get_addr(y, i) - ti.get_addr(x, i) == v._get_dynamic_index_stride()
+            assert ti.get_addr(z, i) - ti.get_addr(y, i) == v._get_dynamic_index_stride()
 
     check_stride()
 
@@ -648,9 +638,7 @@ def test_indexing_in_struct():
 
 @test_utils.test()
 def test_indexing_in_struct_field():
-    s = ti.Struct.field(
-        {"v": ti.types.vector(3, ti.f32), "m": ti.types.matrix(3, 3, ti.f32)}, shape=()
-    )
+    s = ti.Struct.field({"v": ti.types.vector(3, ti.f32), "m": ti.types.matrix(3, 3, ti.f32)}, shape=())
 
     @ti.kernel
     def foo():
@@ -1005,9 +993,7 @@ def test_trace_op():
     x = ti.Matrix([[0.1, 3.0], [5.0, 7.0]])
     assert np.abs(x.trace() - 7.1) < 1e-6
 
-    with pytest.raises(
-        TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"
-    ):
+    with pytest.raises(TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"):
         x = ti.Matrix([[0.1, 3.0], [5.0, 7.0], [1.0, 2.0]])
         print(x.trace())
 
@@ -1016,9 +1002,7 @@ def test_trace_op():
         x = ti.Matrix([[0.1, 3.0], [5.0, 7.0], [1.0, 2.0]])
         print(x.trace())
 
-    with pytest.raises(
-        TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"
-    ):
+    with pytest.raises(TaichiCompilationError, match=r"expected a square matrix, got shape \(3, 2\)"):
         failed_func()
 
 

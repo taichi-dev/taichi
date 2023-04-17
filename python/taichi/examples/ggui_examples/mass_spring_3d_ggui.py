@@ -97,9 +97,7 @@ def substep():
                 v_ij = v[i] - v[j]
                 d = x_ij.normalized()
                 current_dist = x_ij.norm()
-                original_dist = (
-                    quad_size * float(i - j).norm()  # pylint: disable=no-member
-                )
+                original_dist = quad_size * float(i - j).norm()  # pylint: disable=no-member
                 # Spring force
                 force += -spring_Y * d * (current_dist / original_dist - 1)
                 # Dashpot damping

@@ -119,9 +119,7 @@ def test_mesh_reorder():
     def foo():
         for v in model.verts:
             assert v.s == v.id**2
-            assert (
-                v.s3[0] == v.id**1 and v.s3[1] == v.id**2 and v.s3[2] == v.id**3
-            )
+            assert v.s3[0] == v.id**1 and v.s3[1] == v.id**2 and v.s3[2] == v.id**3
             v.s = v.id**3
             v.s3 *= v.id
 
@@ -277,9 +275,7 @@ def test_nested_mesh_for():
 @test_utils.test(require=ti.extension.mesh)
 def test_multiple_mesh_major_relations():
     mesh = ti.TetMesh()
-    mesh.verts.place(
-        {"s": ti.i32, "s_": ti.i32, "s1": ti.i32, "a": ti.i32, "b": ti.i32, "c": ti.i32}
-    )
+    mesh.verts.place({"s": ti.i32, "s_": ti.i32, "s1": ti.i32, "a": ti.i32, "b": ti.i32, "c": ti.i32})
     mesh.edges.place({"s2": ti.i32})
     mesh.cells.place({"s3": ti.i32})
 

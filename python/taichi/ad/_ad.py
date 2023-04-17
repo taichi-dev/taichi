@@ -135,9 +135,7 @@ def restore_all_fields(all_fields, backups):
 
 
 class Tape:
-    def __init__(
-        self, loss=None, clear_gradients=True, validation=False, grad_check=None
-    ):
+    def __init__(self, loss=None, clear_gradients=True, validation=False, grad_check=None):
         """A context manager for reverse mode autodiff :class:`~taichi.ad.Tape`. The
         context manager would catching all of the callings of functions that
         decorated by :func:`~taichi.lang.kernel_impl.kernel` or
@@ -181,9 +179,7 @@ class Tape:
         self.loss = loss
         self.grad_checker = None
         if grad_check:
-            assert isinstance(
-                grad_check, list
-            ), "grad_check should be a list of fields that need to check gradients."
+            assert isinstance(grad_check, list), "grad_check should be a list of fields that need to check gradients."
             self.grad_checker = GradChecker(loss, grad_check)
 
     def __enter__(self):
@@ -232,9 +228,7 @@ class Tape:
 
     def grad(self):
         assert self.entered, "Before evaluating gradients tape must be entered."
-        assert (
-            not self.gradient_evaluated
-        ), "Gradients of grad can be evaluated only once."
+        assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
         for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
@@ -339,9 +333,7 @@ def grad_for(primal):
             func(*args, **kwargs)
 
         if not hasattr(primal, "grad"):
-            raise RuntimeError(
-                f"Primal function `{primal.__name__}` must be decorated by ti.ad.grad_replaced"
-            )
+            raise RuntimeError(f"Primal function `{primal.__name__}` must be decorated by ti.ad.grad_replaced")
         if primal.grad is not None:
             raise RuntimeError(
                 "Primal function must be a **python** function instead of a taichi kernel. Please wrap the taichi kernel in a @ti.ad.grad_replaced decorated python function instead."
@@ -470,17 +462,14 @@ class FwdMode:
 
     def insert(self, func):
         assert (
-            func.autodiff_mode == AutodiffMode.NONE
-            or func.autodiff_mode == AutodiffMode.FORWARD
+            func.autodiff_mode == AutodiffMode.NONE or func.autodiff_mode == AutodiffMode.FORWARD
         ), "Inserted funcs should be forward or grad kernels (forward mode)."
         self.modes.append(func.autodiff_mode)
         func.autodiff_mode = AutodiffMode.FORWARD
         self.calls.append((func))
 
     def recover_kernels(self):
-        assert (
-            self.entered
-        ), "Before recover the kernels, fwd mode manager must be entered."
+        assert self.entered, "Before recover the kernels, fwd mode manager must be entered."
         for calls, mode in zip(self.calls, self.modes):
             calls.autodiff_mode = mode
         self.kernels_recovered = True

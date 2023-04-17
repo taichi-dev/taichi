@@ -13,9 +13,7 @@ num_samples_per_pixel = 4  # Number of samples per pixel
 
 num_spp_sqrt = int(math.sqrt(num_samples_per_pixel))
 
-samples = ti.Vector.field(
-    3, dtype=ti.f32, shape=(width, height, num_spp_sqrt, num_spp_sqrt)
-)
+samples = ti.Vector.field(3, dtype=ti.f32, shape=(width, height, num_spp_sqrt, num_spp_sqrt))
 pixels = ti.Vector.field(3, dtype=ti.f32, shape=(width, height))
 
 
@@ -59,13 +57,7 @@ class TriangleRasterizer:
         beta = -(P.x - C.x) * (A.y - C.y) + (P.y - C.y) * (A.x - C.x)
         beta /= -(B.x - C.x) * (A.y - C.y) + (B.y - C.y) * (A.x - C.x)
         gamma = 1.0 - alpha - beta
-        result = (
-            alpha >= 0.0
-            and alpha <= 1.0
-            and beta >= 0.0
-            and beta <= 1.0
-            and gamma >= 0.0
-        )
+        result = alpha >= 0.0 and alpha <= 1.0 and beta >= 0.0 and beta <= 1.0 and gamma >= 0.0
         return result, alpha, beta, gamma
 
     @staticmethod

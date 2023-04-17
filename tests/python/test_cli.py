@@ -74,18 +74,14 @@ def test_cli_example():
 
 
 def test_cli_gif():
-    with patch_sys_argv_helper(
-        ["ti", "gif", "-i", "video.mp4", "-f", "30"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp4", "-f", "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.input_file == "video.mp4"
         assert args.framerate == 30
         assert args.output_file == "video.gif"
 
-    with patch_sys_argv_helper(
-        ["ti", "gif", "-i", "video.mp3", "-f", "30"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "gif", "-i", "video.mp3", "-f", "30"]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli()
@@ -93,18 +89,14 @@ def test_cli_gif():
 
 
 def test_cli_video_speed():
-    with patch_sys_argv_helper(
-        ["ti", "video_speed", "-i", "video.mp4", "-s", "2.0"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video_speed", "-i", "video.mp4", "-s", "2.0"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.input_file == "video.mp4"
         assert args.speed == 2.0
         assert args.output_file == "video-sped.mp4"
 
-    with patch_sys_argv_helper(
-        ["ti", "video_speed", "-i", "video.mp3", "-s", "2.0"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video_speed", "-i", "video.mp3", "-s", "2.0"]) as custom_argv:
         with pytest.raises(SystemExit) as pytest_wrapped_err:
             cli = TaichiMain(test_mode=True)
             args = cli()
@@ -160,9 +152,7 @@ def test_cli_video_crop():
 
 
 def test_cli_video_scale():
-    with patch_sys_argv_helper(
-        ["ti", "video_scale", "-i", "video.mp4", "-w", "1.2"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video_scale", "-i", "video.mp4", "-w", "1.2"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.input_file == "video.mp4"
@@ -190,9 +180,7 @@ def test_cli_video_scale():
 
 
 def test_cli_video():
-    with patch_sys_argv_helper(
-        ["ti", "video", "image.gif", "-o", "video.mp4", "-f", "30"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video", "image.gif", "-o", "video.mp4", "-f", "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.inputs == ["image.gif"]
@@ -200,9 +188,7 @@ def test_cli_video():
         assert isinstance(args.output_file, Path)
         assert args.output_file.name == "video.mp4"
 
-    with patch_sys_argv_helper(
-        ["ti", "video", "-o", "video.mp4", "-f", "30"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "video", "-o", "video.mp4", "-f", "30"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert isinstance(args.inputs, list)
@@ -212,9 +198,7 @@ def test_cli_video():
 
 
 def test_cli_regression():
-    with patch_sys_argv_helper(
-        ["ti", "regression", "a.py", "b.py", "-g"]
-    ) as custom_argv:
+    with patch_sys_argv_helper(["ti", "regression", "a.py", "b.py", "-g"]) as custom_argv:
         cli = TaichiMain(test_mode=True)
         args = cli()
         assert args.files == ["a.py", "b.py"]

@@ -996,6 +996,11 @@ Value IRBuilder::get_subgroup_size() {
   return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);
 }
 
+Value IRBuilder::popcnt(Value x) {
+  TI_ASSERT(is_integral(x.stype.dt));
+  return make_value(spv::OpBitCount, x.stype, x);
+}
+
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \
   Value IRBuilder::_OpName(Value a, Value b) {         \
     TI_ASSERT(a.stype.id == b.stype.id);               \

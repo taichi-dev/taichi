@@ -317,6 +317,7 @@ user_api[ti.math] = [
     "nan",
     "normalize",
     "pi",
+    "popcnt",
     "pow",
     "radians",
     "reflect",

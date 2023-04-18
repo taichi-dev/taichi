@@ -170,6 +170,7 @@ class IRBuilder {
   UnaryOpStmt *create_tanh(Stmt *value);
   UnaryOpStmt *create_exp(Stmt *value);
   UnaryOpStmt *create_log(Stmt *value);
+  UnaryOpStmt *create_popcnt(Stmt *value);
 
   // Binary operations. Returns the result.
   BinaryOpStmt *create_add(Stmt *l, Stmt *r);

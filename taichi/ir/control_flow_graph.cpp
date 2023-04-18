@@ -283,7 +283,9 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       }
     }
 
-    if (result) {
+    // TODO(zhanlue): Improve aliasing analysis before enabling TensorType
+    // forwarding
+    if (result && !result->ret_type->is<TensorType>()) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)

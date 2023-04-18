@@ -12,6 +12,14 @@
 
 namespace taichi::lang {
 
+static void insert_string(
+    const std::string str,
+    std::vector<std::variant<Stmt *, std::string>> &contents,
+    std::vector<std::optional<std::string>> &new_formats) {
+  contents.push_back(str);
+  new_formats.push_back(std::nullopt);
+}
+
 class Scalarize : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
@@ -270,12 +278,12 @@ class Scalarize : public BasicStmtVisitor {
     auto const &formats = stmt->formats;
     std::vector<std::variant<Stmt *, std::string>> new_contents;
     // Sparse mapping between formatted expr and its specifier
-    std::map<Stmt *, std::string> new_formats;
+    std::vector<std::optional<std::string>> new_formats;
     for (size_t i = 0; i < contents.size(); i++) {
       auto const &content = contents[i];
       auto const &format = formats[i];
       if (auto string_ptr = std::get_if<std::string>(&content)) {
-        new_contents.push_back(*string_ptr);
+        insert_string(*string_ptr, new_contents, new_formats);
       } else {
         Stmt *print_stmt = std::get<Stmt *>(content);
         if (print_stmt->is<MatrixInitStmt>()) {
@@ -286,41 +294,37 @@ class Scalarize : public BasicStmtVisitor {
           bool is_matrix = tensor_shape.size() == 2;
           int m = tensor_shape[0];
 
-          new_contents.push_back("[");
+          insert_string("[", new_contents, new_formats);
           if (is_matrix) {
             int n = tensor_shape[1];
             for (size_t i = 0; i < m; i++) {
-              new_contents.push_back("[");
+              insert_string("[", new_contents, new_formats);
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
+
                 new_contents.push_back(matrix_init_stmt->values[index]);
-                if (format.has_value()) {
-                  new_formats[matrix_init_stmt->values[index]] = format.value();
-                }
+                new_formats.push_back(format);
+
                 if (j != n - 1)
-                  new_contents.push_back(", ");
+                  insert_string(", ", new_contents, new_formats);
               }
-              new_contents.push_back("]");
+              insert_string("]", new_contents, new_formats);
 
               if (i != m - 1)
-                new_contents.push_back(", ");
+                insert_string(", ", new_contents, new_formats);
             }
           } else {
             for (size_t i = 0; i < m; i++) {
               new_contents.push_back(matrix_init_stmt->values[i]);
-              if (format.has_value()) {
-                new_formats[matrix_init_stmt->values[i]] = format.value();
-              }
+              new_formats.push_back(format);
               if (i != m - 1)
-                new_contents.push_back(", ");
+                insert_string(", ", new_contents, new_formats);
             }
           }
-          new_contents.push_back("]");
+          insert_string("]", new_contents, new_formats);
         } else {
           new_contents.push_back(print_stmt);
-          if (format.has_value()) {
-            new_formats[print_stmt] = format.value();
-          }
+          new_formats.push_back(format);
         }
       }
     }
@@ -329,27 +333,21 @@ class Scalarize : public BasicStmtVisitor {
     std::vector<std::variant<Stmt *, std::string>> merged_contents;
     std::vector<std::optional<std::string>> merged_formats;
     std::string merged_string = "";
-    for (const auto &content : new_contents) {
+    for (size_t i = 0; i < new_contents.size(); i++) {
+      const auto &content = new_contents[i];
       if (auto string_content = std::get_if<std::string>(&content)) {
         merged_string += *string_content;
       } else {
         if (!merged_string.empty()) {
-          merged_contents.push_back(merged_string);
-          merged_formats.push_back(std::nullopt);
+          insert_string(merged_string, merged_contents, merged_formats);
           merged_string = "";
         }
         merged_contents.push_back(content);
-        const auto format = new_formats.find(std::get<Stmt *>(content));
-        if (format != new_formats.end()) {
-          merged_formats.push_back(format->second);
-        } else {
-          merged_formats.push_back(std::nullopt);
-        }
+        merged_formats.push_back(new_formats[i]);
       }
     }
     if (!merged_string.empty()) {
-      merged_contents.push_back(merged_string);
-      merged_formats.push_back(std::nullopt);
+      insert_string(merged_string, merged_contents, merged_formats);
     }
 
     assert(merged_contents.size() == merged_formats.size());

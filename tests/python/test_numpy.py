@@ -266,7 +266,7 @@ def test_numpy_view():
         fill(a)
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_numpy_ndarray_dim_check():
     @ti.kernel
     def add_one_mat(arr: ti.types.ndarray(dtype=ti.math.mat3, ndim=2)):

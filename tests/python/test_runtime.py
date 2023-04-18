@@ -145,9 +145,6 @@ def test_init_arch(arch):
     with patch_os_environ_helper({}, excludes=["TI_ARCH"]):
         ti.init(arch=arch)
         assert ti.lang.impl.current_cfg().arch == arch
-    with patch_os_environ_helper({"TI_ARCH": ti._lib.core.arch_name(arch)}, excludes=["TI_ARCH"]):
-        ti.init(arch=ti.cc)
-        assert ti.lang.impl.current_cfg().arch == arch
 
 
 @test_utils.test(arch=ti.cpu)

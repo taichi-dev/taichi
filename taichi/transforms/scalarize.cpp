@@ -350,7 +350,7 @@ class Scalarize : public BasicStmtVisitor {
           push_content_and_format(merged_pair, merged_string);
           merged_string = "";
         }
-        push_content_and_format(merged_pair, merged_string, format);
+        push_content_and_format(merged_pair, content, format);
       }
     }
     if (!merged_string.empty()) {

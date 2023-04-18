@@ -24,7 +24,7 @@ if (TI_WITH_OPENGL OR TI_WITH_VULKAN AND NOT ANDROID)
   endif()
 
   message("Building with GLFW")
-  # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_GLFW")
+  #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DTI_WITH_GLFW")
   target_compile_definitions(${TAICHI_DEVICE_API} PUBLIC TI_WITH_GLFW)
   add_subdirectory(${PROJECT_SOURCE_DIR}/external/glfw ${PROJECT_BINARY_DIR}/external/glfw)
   target_link_libraries(${TAICHI_DEVICE_API} PRIVATE glfw)

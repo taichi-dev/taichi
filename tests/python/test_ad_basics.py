@@ -104,7 +104,7 @@ def test_size1():
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_poly(tifunc):
     grad_test(tifunc)
     grad_test_fwd(tifunc)
@@ -121,7 +121,7 @@ def test_poly(tifunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_trigonometric(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -136,7 +136,7 @@ def test_trigonometric(tifunc, npfunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_frac(tifunc):
     grad_test(tifunc)
     grad_test_fwd(tifunc)
@@ -152,7 +152,7 @@ def test_frac(tifunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_unary(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -172,7 +172,7 @@ def test_unary(tifunc, npfunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_minmax(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -232,7 +232,7 @@ def test_mod_fwd():
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_atan2(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -246,7 +246,7 @@ def test_atan2(tifunc, npfunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, exclude=[ti.cc])
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_atan2_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -260,7 +260,7 @@ def test_atan2_f64(tifunc, npfunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_pow(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -274,7 +274,7 @@ def test_pow(tifunc, npfunc):
     ],
 )
 @if_has_autograd
-@test_utils.test(require=ti.extension.data64, default_fp=ti.f64, exclude=[ti.cc])
+@test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_pow_f64(tifunc, npfunc):
     grad_test(tifunc, npfunc)
     grad_test_fwd(tifunc, npfunc)
@@ -469,7 +469,7 @@ def test_ad_rand():
     assert "RandStmt not supported" in e.value.args[0]
 
 
-@test_utils.test(exclude=[ti.cc, ti.vulkan, ti.opengl, ti.dx11])
+@test_utils.test(exclude=[ti.vulkan, ti.opengl, ti.dx11])
 def test_ad_frac():
     @ti.func
     def frac(x):

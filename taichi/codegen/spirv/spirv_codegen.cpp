@@ -567,7 +567,10 @@ class TaskCodegen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto arg_type = ctx_attribs_->args_type()->get_element_type({arg_id});
-    if (arg_type->is<PointerType>()) {
+    if (arg_type->is<PointerType>() ||
+        (arg_type->is<lang::StructType>() && arg_type->as<lang::StructType>()
+                                                 ->get_element_type({0})
+                                                 ->is<PointerType>())) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);

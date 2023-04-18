@@ -37,7 +37,7 @@ def test_abs():
         assert y.grad[i] == sgn(y[i])
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_abs_fwd():
     x = ti.field(ti.f32)
     y = ti.field(ti.f32)

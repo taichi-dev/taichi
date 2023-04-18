@@ -8,8 +8,24 @@ from taichi.lang import impl, ops
 from taichi.lang.impl import static, zero
 from taichi.lang.kernel_impl import func
 from taichi.lang.matrix import Matrix
-from taichi.lang.ops import (acos, asin, atan2, ceil, cos, exp, floor, log,
-                             max, min, pow, round, sin, sqrt, tan, tanh)
+from taichi.lang.ops import (
+    acos,
+    asin,
+    atan2,
+    ceil,
+    cos,
+    exp,
+    floor,
+    log,
+    max,
+    min,
+    pow,
+    round,
+    sin,
+    sqrt,
+    tan,
+    tanh,
+)
 from taichi.types import matrix, template, vector
 from taichi.types.primitive_types import f64, u32, u64
 
@@ -491,8 +507,14 @@ def translate(dx, dy, dz):
          [ 0. 0. 1. 3.]
          [ 0. 0. 0. 1.]]
     """
-    return mat4([[1., 0., 0., dx], [0., 1., 0., dy], [0., 0., 1., dz],
-                 [0., 0., 0., 1.]])
+    return mat4(
+        [
+            [1.0, 0.0, 0.0, dx],
+            [0.0, 1.0, 0.0, dy],
+            [0.0, 0.0, 1.0, dz],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
 
 @func
@@ -515,8 +537,14 @@ def scale(sx, sy, sz):
          [ 0. 0. 3. 0.]
          [ 0. 0. 0. 1.]]
     """
-    return mat4([[sx, 0., 0., 0.], [0., sy, 0., 0.], [0., 0., sz, 0.],
-                 [0., 0., 0., 1.]])
+    return mat4(
+        [
+            [sx, 0.0, 0.0, 0.0],
+            [0.0, sy, 0.0, 0.0],
+            [0.0, 0.0, sz, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
 
 @func
@@ -535,18 +563,29 @@ def rot_by_axis(axis, ang):
 
     axis = normalize(axis)
     temp = (1 - c) * axis
-    return mat4([[
-        c + temp[0] * axis[0], temp[0] * axis[1] + s * axis[2],
-        temp[0] * axis[2] - s * axis[1], 0.
-    ],
-                 [
-                     temp[1] * axis[0] - s * axis[2], c + temp[1] * axis[1],
-                     temp[1] * axis[2] + s * axis[0], 0.
-                 ],
-                 [
-                     temp[2] * axis[0] + s * axis[1],
-                     temp[2] * axis[1] - s * axis[0], c + temp[2] * axis[2], 0.
-                 ], [0., 0., 0., 1.]])
+    return mat4(
+        [
+            [
+                c + temp[0] * axis[0],
+                temp[0] * axis[1] + s * axis[2],
+                temp[0] * axis[2] - s * axis[1],
+                0.0,
+            ],
+            [
+                temp[1] * axis[0] - s * axis[2],
+                c + temp[1] * axis[1],
+                temp[1] * axis[2] + s * axis[0],
+                0.0,
+            ],
+            [
+                temp[2] * axis[0] + s * axis[1],
+                temp[2] * axis[1] - s * axis[0],
+                c + temp[2] * axis[2],
+                0.0,
+            ],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
 
 @func
@@ -569,9 +608,13 @@ def rot_yaw_pitch_roll(yaw, pitch, roll):
     sb = ops.sin(roll)
 
     return mat4(
-        [[ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.],
-         [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.],
-         [sh * cp, -sp, ch * cp, 0.], [0., 0., 0., 1.]])
+        [
+            [ch * cb + sh * sp * sb, sb * cp, -sh * cb + ch * sp * sb, 0.0],
+            [-ch * sb + sh * sp * cb, cb * cp, sb * sh + ch * sp * cb, 0.0],
+            [sh * cp, -sp, ch * cp, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    )
 
 
 @func
@@ -646,8 +689,7 @@ def length(x):
 
 @func
 def determinant(m):
-    """Alias for :func:`taichi.Matrix.determinant`.
-    """
+    """Alias for :func:`taichi.Matrix.determinant`."""
     return m.determinant()
 
 
@@ -694,11 +736,10 @@ def isinf(x):
     fx = ops.cast(x, ftype)
     if static(ftype == f64):
         y = ops.bit_cast(fx, u64)
-        return (ops.cast(y >> 32, u32)
-                & 0x7fffffff) == 0x7ff00000 and (ops.cast(y, u32) == 0)
+        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) == 0x7FF00000 and (ops.cast(y, u32) == 0)
 
     y = ops.bit_cast(fx, u32)
-    return (y & 0x7fffffff) == 0x7f800000
+    return (y & 0x7FFFFFFF) == 0x7F800000
 
 
 @func
@@ -721,11 +762,10 @@ def isnan(x):
     fx = ops.cast(x, ftype)
     if static(ftype == f64):
         y = ops.bit_cast(fx, u64)
-        return (ops.cast(y >> 32, u32)
-                & 0x7fffffff) + (ops.cast(y, u32) != 0) > 0x7ff00000
+        return (ops.cast(y >> 32, u32) & 0x7FFFFFFF) + (ops.cast(y, u32) != 0) > 0x7FF00000
 
     y = ops.bit_cast(fx, u32)
-    return (y & 0x7fffffff) > 0x7f800000
+    return (y & 0x7FFFFFFF) > 0x7F800000
 
 
 @func
@@ -747,12 +787,65 @@ def vdir(ang):
 
 
 __all__ = [
-    "acos", "asin", "atan2", "ceil", "clamp", "cos", "cross", "degrees",
-    "determinant", "distance", "dot", "e", "exp", "eye", "floor", "fract",
-    "inf", "inverse", "isinf", "isnan", "ivec2", "ivec3", "ivec4", "length",
-    "log", "log2", "mat2", "mat3", "mat4", "max", "min", "mix", "mod",
-    "translate", "scale", "nan", "normalize", "pi", "pow", "radians",
-    "reflect", "refract", "rot_by_axis", "rot_yaw_pitch_roll", "rotation2d",
-    "rotation3d", "round", "sign", "sin", "smoothstep", "sqrt", "step", "tan",
-    "tanh", "uvec2", "uvec3", "uvec4", "vdir", "vec2", "vec3", "vec4"
+    "acos",
+    "asin",
+    "atan2",
+    "ceil",
+    "clamp",
+    "cos",
+    "cross",
+    "degrees",
+    "determinant",
+    "distance",
+    "dot",
+    "e",
+    "exp",
+    "eye",
+    "floor",
+    "fract",
+    "inf",
+    "inverse",
+    "isinf",
+    "isnan",
+    "ivec2",
+    "ivec3",
+    "ivec4",
+    "length",
+    "log",
+    "log2",
+    "mat2",
+    "mat3",
+    "mat4",
+    "max",
+    "min",
+    "mix",
+    "mod",
+    "translate",
+    "scale",
+    "nan",
+    "normalize",
+    "pi",
+    "pow",
+    "radians",
+    "reflect",
+    "refract",
+    "rot_by_axis",
+    "rot_yaw_pitch_roll",
+    "rotation2d",
+    "rotation3d",
+    "round",
+    "sign",
+    "sin",
+    "smoothstep",
+    "sqrt",
+    "step",
+    "tan",
+    "tanh",
+    "uvec2",
+    "uvec3",
+    "uvec4",
+    "vdir",
+    "vec2",
+    "vec3",
+    "vec4",
 ]

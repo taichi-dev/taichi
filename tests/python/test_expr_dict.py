@@ -6,20 +6,20 @@ from tests import test_utils
 def test_expr_dict_basic():
     @ti.kernel
     def func(u: int, v: float) -> float:
-        x = {'foo': 2 + u, 'bar': 3 + v}
-        return x['foo'] * 100 + x['bar']
+        x = {"foo": 2 + u, "bar": 3 + v}
+        return x["foo"] * 100 + x["bar"]
 
     assert func(2, 0.1) == test_utils.approx(403.1)
 
 
 @test_utils.test(ti.cpu)
 def test_expr_dict_field():
-    a = ti.field(ti.f32, shape=(4, ))
+    a = ti.field(ti.f32, shape=(4,))
 
     @ti.kernel
     def func() -> float:
-        x = {'foo': 2 + a[0], 'bar': 3 + a[1]}
-        return x['foo'] * 100 + x['bar']
+        x = {"foo": 2 + a[0], "bar": 3 + a[1]}
+        return x["foo"] * 100 + x["bar"]
 
     a[0] = 2
     a[1] = 0.1
@@ -29,7 +29,7 @@ def test_expr_dict_field():
 @test_utils.test(ti.cpu)
 def test_dictcomp_multiple_ifs():
     n = 8
-    x = ti.field(ti.i32, shape=(n, ))
+    x = ti.field(ti.i32, shape=(n,))
 
     @ti.kernel
     def test() -> ti.i32:

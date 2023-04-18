@@ -52,7 +52,7 @@ def test_indices_i64():
 
     prefix_sum()
     for i in range(n):
-        assert (val[i] == i + 1)
+        assert val[i] == i + 1
 
 
 @test_utils.test()
@@ -80,6 +80,7 @@ def test_negative_valued_indices():
         print(x[:-1])
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match='Negative indices are not supported in Taichi kernels.'):
+        ti.TaichiSyntaxError,
+        match="Negative indices are not supported in Taichi kernels.",
+    ):
         foo(0)

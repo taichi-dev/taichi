@@ -13,7 +13,7 @@ def render(t: float):
         img[i, j] = ti.cos(a + t) * 0.5 + 0.5
 
 
-gui = ti.GUI('UV', res, fullscreen=True, fast_gui=True)
+gui = ti.GUI("UV", res, fullscreen=True, fast_gui=True)
 while not gui.get_event(ti.GUI.ESCAPE):
     render(gui.frame * 0.04)
     gui.set_image(img)

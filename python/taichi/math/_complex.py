@@ -95,7 +95,7 @@ def csqrt(z):
     Returns:
         :class:`~taichi.math.vec2`: The complex square root.
     """
-    result = vec2(0.)
+    result = vec2(0.0)
     if any(z):
         r = ops.sqrt(z.norm())
         a = ops.atan2(z[1], z[0])
@@ -142,7 +142,7 @@ def cpow(z, n):
     Returns:
         :class:`~taichi.math.vec2`: The power :math:`z^a`.
     """
-    result = vec2(0.)
+    result = vec2(0.0)
     if any(z):
         r2 = dot(z, z)
         a = ops.atan2(z[1], z[0]) * n
@@ -197,7 +197,7 @@ def clog(z):
     """
     ang = ops.atan2(z[1], z[0])
     r2 = dot(z, z)
-    return vec2(ops.log(r2) / 2., ang)
+    return vec2(ops.log(r2) / 2.0, ang)
 
 
 __all__ = ["cconj", "cdiv", "cexp", "cinv", "clog", "cmul", "cpow", "csqrt"]

@@ -160,7 +160,7 @@ def test_oop_inherit_ok():
             self.val = ti.field(ti.f32)
             self.total = ti.field(ti.f32)
             self.mul = mul
-            ti.root.dense(ti.ij, (self.n, )).place(self.val)
+            ti.root.dense(ti.ij, (self.n,)).place(self.val)
             ti.root.place(self.total)
 
         @ti.kernel
@@ -187,7 +187,7 @@ def test_oop_class_must_be_data_oriented():
             self.val = ti.field(ti.f32)
             self.total = ti.field(ti.f32)
             self.mul = mul
-            ti.root.dense(ti.ij, (self.n, )).place(self.val)
+            ti.root.dense(ti.ij, (self.n,)).place(self.val)
             ti.root.place(self.total)
 
         @ti.kernel
@@ -225,7 +225,7 @@ def test_hook():
 
     for i in range(32):
         for j in range(32):
-            assert (solver.val[i, j] == 1.0)
+            assert solver.val[i, j] == 1.0
 
 
 @test_utils.test()

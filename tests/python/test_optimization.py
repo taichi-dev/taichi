@@ -72,7 +72,7 @@ def test_local_store_in_nested_for_and_if():
     for i in range(3):
         for j in range(3):
             for k in range(3):
-                assert (val[i, j, k] == 1)
+                assert val[i, j, k] == 1
 
 
 @test_utils.test()

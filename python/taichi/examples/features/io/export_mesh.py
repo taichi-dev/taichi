@@ -27,7 +27,8 @@ writer.add_vertex_pos(x, y, z)
 
 # For faces (if any), the only required channel is the list of vertex indices that each face contains.
 indices = np.array([0, 1, 5, 4] * 12) + np.repeat(
-    np.array(list(np.arange(0, 3)) * 4) + 4 * np.repeat(np.arange(4), 3), 4)
+    np.array(list(np.arange(0, 3)) * 4) + 4 * np.repeat(np.arange(4), 3), 4
+)
 writer.add_faces(indices)
 
 # Add custom vertex channel, the input should include a key, a supported datatype and, the data np.array
@@ -90,9 +91,7 @@ for frame in range(10):
     b = np.random.rand(20)
     alpha = np.random.rand(20)
     # re-fill
-    writer = ti.tools.PLYWriter(num_vertices=20,
-                                num_faces=12,
-                                face_type="quad")
+    writer = ti.tools.PLYWriter(num_vertices=20, num_faces=12, face_type="quad")
     writer.add_vertex_pos(x, y, z)
     writer.add_faces(indices)
     writer.add_vertex_channel("vdata1", "double", vdata)

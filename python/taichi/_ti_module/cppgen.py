@@ -23,7 +23,7 @@ def check_arg(actual: str, expect: Any) -> List[str]:
     expect = str(expect)
     out += [
         f"    if (value.{actual} != {expect}) {{",
-        f"      ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, \"value.{actual} != {expect}\");",
+        f'      ti_set_last_error(TI_ERROR_INVALID_ARGUMENT, "value.{actual} != {expect}");',
         "      return *this;",
         "    }",
     ]
@@ -37,9 +37,7 @@ def get_arg_dst(i: int, is_named: bool) -> str:
     return f"args_[{i}]"
 
 
-def generate_scalar_assign(cls_name: str, i: int, arg_name: str,
-                           arg: sr.ArgumentScalar,
-                           is_named: bool) -> List[str]:
+def generate_scalar_assign(cls_name: str, i: int, arg_name: str, arg: sr.ArgumentScalar, is_named: bool) -> List[str]:
     ctype = dtype2ctype[arg.dtype]
 
     out = []
@@ -50,7 +48,7 @@ def generate_scalar_assign(cls_name: str, i: int, arg_name: str,
 
     if is_named:
         out += [
-            f"    args_[{i}].name = \"{arg_name}\";",
+            f'    args_[{i}].name = "{arg_name}";',
         ]
     if ctype == "float":
         out += [
@@ -77,9 +75,7 @@ def generate_scalar_assign(cls_name: str, i: int, arg_name: str,
     return out
 
 
-def generate_ndarray_assign(cls_name: str, i: int, arg_name: str,
-                            arg: sr.ArgumentNdArray,
-                            is_named: bool) -> List[str]:
+def generate_ndarray_assign(cls_name: str, i: int, arg_name: str, arg: sr.ArgumentNdArray, is_named: bool) -> List[str]:
     out = []
 
     out += [
@@ -95,7 +91,7 @@ def generate_ndarray_assign(cls_name: str, i: int, arg_name: str,
 
     if is_named:
         out += [
-            f"    args_[{i}].name = \"{arg_name}\";",
+            f'    args_[{i}].name = "{arg_name}";',
         ]
     out += [
         f"    {get_arg_dst(i, is_named)}.type = TI_ARGUMENT_TYPE_NDARRAY;",
@@ -106,9 +102,13 @@ def generate_ndarray_assign(cls_name: str, i: int, arg_name: str,
     return out
 
 
-def generate_texture_assign(cls_name: str, i: int, arg_name: str,
-                            arg: sr.ArgumentTexture | sr.ArgumentRwTexture,
-                            is_named: bool) -> List[str]:
+def generate_texture_assign(
+    cls_name: str,
+    i: int,
+    arg_name: str,
+    arg: sr.ArgumentTexture | sr.ArgumentRwTexture,
+    is_named: bool,
+) -> List[str]:
     out = []
 
     out += [
@@ -122,7 +122,7 @@ def generate_texture_assign(cls_name: str, i: int, arg_name: str,
 
     if is_named:
         out += [
-            f"    args_[{i}].name = \"{arg_name}\";",
+            f'    args_[{i}].name = "{arg_name}";',
         ]
     out += [
         f"    {get_arg_dst(i, is_named)}.type = TI_ARGUMENT_TYPE_TEXTURE;",
@@ -183,11 +183,9 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
         if isinstance(arg.arg, sr.ArgumentScalar):
             out += generate_scalar_assign(cls_name, i, arg_name, arg.arg, True)
         elif isinstance(arg.arg, sr.ArgumentNdArray):
-            out += generate_ndarray_assign(cls_name, i, arg_name, arg.arg,
-                                           True)
+            out += generate_ndarray_assign(cls_name, i, arg_name, arg.arg, True)
         elif isinstance(arg.arg, (sr.ArgumentTexture, sr.ArgumentRwTexture)):
-            out += generate_texture_assign(cls_name, i, arg_name, arg.arg,
-                                           True)
+            out += generate_texture_assign(cls_name, i, arg_name, arg.arg, True)
         else:
             assert False
         out += [""]
@@ -199,8 +197,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
     return out
 
 
-def generate_module_content_repr(m: GfxRuntime140, module_name: str,
-                                 cgraph_kernel_names: Set[str]) -> List[str]:
+def generate_module_content_repr(m: GfxRuntime140, module_name: str, cgraph_kernel_names: Set[str]) -> List[str]:
     out = []
 
     if module_name:
@@ -252,8 +249,7 @@ def generate_module_content_repr(m: GfxRuntime140, module_name: str,
 
 def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     # This has all kernels including all the ones launched by compute graphs.
-    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs
-                              for dispatch in graph.dispatches)
+    cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches)
 
     out = []
     for kernel in m.metadata.kernels.values():
@@ -269,8 +265,7 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(m: GfxRuntime140, module_name: str, namespace: str,
-                    tcm: Optional[bytes]) -> List[str]:
+def generate_header(m: GfxRuntime140, module_name: str, namespace: str, tcm: Optional[bytes]) -> List[str]:
     out = []
 
     out += [
@@ -295,10 +290,7 @@ def generate_header(m: GfxRuntime140, module_name: str, namespace: str,
             f"static const uint8_t {module_name}_tcm[{len(tcm_bytes)}] = {{",
         ]
 
-        out += [
-            f"  {', '.join(str(x) for x in tcm_bytes[i:i + 8])},"
-            for i in range(0, len(tcm_bytes), 8)
-        ]
+        out += [f"  {', '.join(str(x) for x in tcm_bytes[i:i + 8])}," for i in range(0, len(tcm_bytes), 8)]
 
         out += [
             "};",

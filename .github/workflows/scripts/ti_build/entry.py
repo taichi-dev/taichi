@@ -25,44 +25,43 @@ from .vulkan import setup_vulkan
 
 
 # -- code --
-@banner('Build Taichi Wheel')
+@banner("Build Taichi Wheel")
 def build_wheel(python: Command, pip: Command) -> None:
-    '''
+    """
     Build the Taichi wheel
-    '''
-    git.fetch('origin', 'master', '--tags')
-    proj = os.environ.get('PROJECT_NAME', 'taichi')
+    """
+    git.fetch("origin", "master", "--tags")
+    proj = os.environ.get("PROJECT_NAME", "taichi")
     proj_tags = []
     extra = []
 
-    if proj == 'taichi-nightly':
-        proj_tags.extend(['egg_info', '--tag-date', '--tag-build=.post'])
+    if proj == "taichi-nightly":
+        proj_tags.extend(["egg_info", "--tag-date", "--tag-build=.post"])
         # Include C-API in nightly builds
-        cmake_args['TI_WITH_C_API'] = True
+        cmake_args["TI_WITH_C_API"] = True
 
-    if platform.system() == 'Linux':
+    if platform.system() == "Linux":
         if is_manylinux2014():
-            extra.extend(['-p', 'manylinux2014_x86_64'])
+            extra.extend(["-p", "manylinux2014_x86_64"])
         else:
-            extra.extend(['-p', 'manylinux_2_27_x86_64'])
+            extra.extend(["-p", "manylinux_2_27_x86_64"])
 
     cmake_args.writeback()
-    python('setup.py', 'clean')
-    python('misc/make_changelog.py', '--ver', 'origin/master', '--repo_dir',
-           './', '--save')
+    python("setup.py", "clean")
+    python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 
-    python('setup.py', *proj_tags, 'bdist_wheel', *extra)
+    python("setup.py", *proj_tags, "bdist_wheel", *extra)
 
 
-@banner('Install Build Wheel Dependencies')
+@banner("Install Build Wheel Dependencies")
 def install_build_wheel_deps(python: Command, pip: Command) -> None:
-    pip.install('-U', 'pip')
-    pip.install('-r', 'requirements_dev.txt')
+    pip.install("-U", "pip")
+    pip.install("-r", "requirements_dev.txt")
 
 
 def setup_basic_build_env(force_vulkan=False):
     u = platform.uname()
-    if (u.system, u.machine) == ('Windows', 'AMD64'):
+    if (u.system, u.machine) == ("Windows", "AMD64"):
         # Use MSVC on Windows
         setup_clang(as_compiler=False)
         setup_msvc()
@@ -71,7 +70,7 @@ def setup_basic_build_env(force_vulkan=False):
         setup_clang()
 
     setup_llvm()
-    if force_vulkan or cmake_args.get_effective('TI_WITH_VULKAN'):
+    if force_vulkan or cmake_args.get_effective("TI_WITH_VULKAN"):
         setup_vulkan()
 
     sccache = setup_sccache()
@@ -88,7 +87,7 @@ def action_wheel():
     install_build_wheel_deps(python, pip)
     handle_alternate_actions()
     build_wheel(python, pip)
-    sccache('-s')
+    sccache("-s")
 
 
 def action_android():
@@ -96,7 +95,7 @@ def action_android():
     setup_android_ndk()
     handle_alternate_actions()
     build_android(python, pip)
-    sccache('-s')
+    sccache("-s")
 
 
 def action_ios():
@@ -108,14 +107,14 @@ def action_ios():
 
 def action_open_cache_dir():
     d = misc.get_cache_home()
-    misc.info(f'Opening cache directory: {d}')
+    misc.info(f"Opening cache directory: {d}")
 
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         os.startfile(d)
-    elif sys.platform == 'darwin':
-        subprocess.Popen(['open', d])
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", d])
     else:
-        subprocess.Popen(['xdg-open', d])
+        subprocess.Popen(["xdg-open", d])
 
 
 def parse_args():
@@ -126,30 +125,29 @@ def parse_args():
     #   ios: build the iOS C-API shared library
     #   cache: open the cache directory
     parser.add_argument(
-        'action',
+        "action",
         type=str,
-        nargs='?',
-        default='wheel',
-        help=
-        'Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.'
+        nargs="?",
+        default="wheel",
+        help='Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.',
     )
     parser.add_argument(
-        '-w',
-        '--write-env',
+        "-w",
+        "--write-env",
         type=str,
         default=None,
-        help='Do not build, write environment variables to file instead')
+        help="Do not build, write environment variables to file instead",
+    )
     parser.add_argument(
-        '-s',
-        '--shell',
-        action='store_true',
-        help=
-        'Do not build, start a shell with environment variables set instead')
+        "-s",
+        "--shell",
+        action="store_true",
+        help="Do not build, start a shell with environment variables set instead",
+    )
     parser.add_argument(
-        '--python',
+        "--python",
         default=None,
-        help=
-        'Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter.'
+        help="Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter.",
     )
     options = parser.parse_args()
     return options
@@ -160,13 +158,13 @@ def main() -> int:
     misc.options = options
 
     def action_notimpl():
-        raise RuntimeError(f'Unknown action: {options.action}')
+        raise RuntimeError(f"Unknown action: {options.action}")
 
     dispatch = {
-        'wheel': action_wheel,
-        'android': action_android,
-        'ios': action_ios,
-        'cache': action_open_cache_dir,
+        "wheel": action_wheel,
+        "android": action_android,
+        "ios": action_ios,
+        "cache": action_open_cache_dir,
     }
 
     dispatch.get(options.action, action_notimpl)()

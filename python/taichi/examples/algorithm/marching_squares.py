@@ -18,25 +18,27 @@ level = 0.15  # Draw contour of isofunc=level
 pixels = ti.Vector.field(3, float, shape=resolution)
 
 # Cases 0-15 in the wikipedia page
-_edges_np = np.array([
-    [[-1, -1], [-1, -1]],
-    [[3, 0], [-1, -1]],
-    [[0, 1], [-1, -1]],
-    [[1, 3], [-1, -1]],
-    [[1, 2], [-1, -1]],
-    [[0, 1], [2, 3]],
-    [[0, 2], [-1, -1]],
-    [[2, 3], [-1, -1]],
-    [[2, 3], [-1, -1]],
-    [[0, 2], [-1, -1]],
-    [[0, 3], [1, 2]],
-    [[1, 2], [-1, -1]],
-    [[1, 3], [-1, -1]],
-    [[0, 1], [-1, -1]],
-    [[3, 0], [-1, -1]],
-    [[-1, -1], [-1, -1]],
-],
-                     dtype=np.int32)
+_edges_np = np.array(
+    [
+        [[-1, -1], [-1, -1]],
+        [[3, 0], [-1, -1]],
+        [[0, 1], [-1, -1]],
+        [[1, 3], [-1, -1]],
+        [[1, 2], [-1, -1]],
+        [[0, 1], [2, 3]],
+        [[0, 2], [-1, -1]],
+        [[2, 3], [-1, -1]],
+        [[2, 3], [-1, -1]],
+        [[0, 2], [-1, -1]],
+        [[0, 3], [1, 2]],
+        [[1, 2], [-1, -1]],
+        [[1, 3], [-1, -1]],
+        [[0, 1], [-1, -1]],
+        [[3, 0], [-1, -1]],
+        [[-1, -1], [-1, -1]],
+    ],
+    dtype=np.int32,
+)
 edge_table = ti.Matrix.field(2, 2, int, 16)
 edge_table.from_numpy(_edges_np)
 
@@ -57,10 +59,12 @@ def hash22(p):
 def noise(p):
     ip = tm.floor(p)
     p -= ip
-    v = tm.vec4(tm.dot(hash22(ip), p),
-                tm.dot(hash22(ip + tm.vec2(1, 0)), p - tm.vec2(1, 0)),
-                tm.dot(hash22(ip + tm.vec2(0, 1)), p - tm.vec2(0, 1)),
-                tm.dot(hash22(ip + tm.vec2(1, 1)), p - tm.vec2(1, 1)))
+    v = tm.vec4(
+        tm.dot(hash22(ip), p),
+        tm.dot(hash22(ip + tm.vec2(1, 0)), p - tm.vec2(1, 0)),
+        tm.dot(hash22(ip + tm.vec2(0, 1)), p - tm.vec2(0, 1)),
+        tm.dot(hash22(ip + tm.vec2(1, 1)), p - tm.vec2(1, 1)),
+    )
     p = p * p * p * (p * (p * 6 - 15) + 10)
     return tm.mix(tm.mix(v.x, v.y, p.x), tm.mix(v.z, v.w, p.x), p.y)
 
@@ -71,8 +75,7 @@ def isofunc(p):
 
 
 @ti.func
-def interp(p1: tm.vec2, p2: tm.vec2, v1: float, v2: float,
-           isovalue: float) -> tm.vec2:
+def interp(p1: tm.vec2, p2: tm.vec2, v1: float, v2: float, isovalue: float) -> tm.vec2:
     return tm.mix(p1, p2, (isovalue - v1) / (v2 - v1))
 
 
@@ -98,9 +101,12 @@ def march_squares() -> int:
     y_range = grid_size
     for i, j in ti.ndrange((-x_range, x_range + 1), (-y_range, y_range + 1)):
         case_id = 0
-        values = tm.vec4(isofunc(tm.vec2(i, j)), isofunc(tm.vec2(i + 1, j)),
-                         isofunc(tm.vec2(i + 1, j + 1)),
-                         isofunc(tm.vec2(i, j + 1)))
+        values = tm.vec4(
+            isofunc(tm.vec2(i, j)),
+            isofunc(tm.vec2(i + 1, j)),
+            isofunc(tm.vec2(i + 1, j + 1)),
+            isofunc(tm.vec2(i, j + 1)),
+        )
         if values.x > level:
             case_id |= 1
         if values.y > level:
@@ -159,8 +165,7 @@ def render():
         # Draw background grid
         col = tm.mix(col, tm.vec3(0), 1 - tm.smoothstep(0, 0.04, dgrid - 0.02))
         # Draw edges
-        col = tm.mix(col, tm.vec3(1, 0, 0),
-                     1 - tm.smoothstep(0, 0.05, dedge - 0.02))
+        col = tm.mix(col, tm.vec3(1, 0, 0), 1 - tm.smoothstep(0, 0.05, dedge - 0.02))
         # Draw small circles at the vertices
         col = tm.mix(col, tm.vec3(0), 1 - tm.smoothstep(0, 0.05, dv - 0.1))
         col = tm.mix(col, tm.vec3(1), 1 - tm.smoothstep(0, 0.05, dv - 0.08))
@@ -168,7 +173,7 @@ def render():
 
 
 t0 = time.perf_counter()
-gui = ti.GUI('2D Marching Squares', res=resolution, fast_gui=True)
+gui = ti.GUI("2D Marching Squares", res=resolution, fast_gui=True)
 while gui.running and not gui.get_event(gui.ESCAPE):
     iTime[None] = time.perf_counter() - t0
     march_squares()

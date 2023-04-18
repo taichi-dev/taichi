@@ -1,8 +1,8 @@
-'''
+"""
 SSA violation edge-case regression test.
 1. Ensure working well when computation result is assigned to self.
 2. Prevent duplicate-evaluation on expression with side-effect like random.
-'''
+"""
 import math
 
 import numpy as np

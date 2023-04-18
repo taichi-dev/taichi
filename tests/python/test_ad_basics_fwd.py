@@ -57,8 +57,8 @@ def test_multiple_calls():
 
     @ti.kernel
     def multiple_calls():
-        loss_1[None] += 3 * b[1]**2 + 5 * a[3]**2
-        loss_2[None] += 4 * b[2]**2 + 6 * a[4]**2
+        loss_1[None] += 3 * b[1] ** 2 + 5 * a[3] ** 2
+        loss_2[None] += 4 * b[2] ** 2 + 6 * a[4] ** 2
 
     with ti.ad.FwdMode(loss=loss_1, param=a, seed=[1.0 for _ in range(N)]):
         multiple_calls()
@@ -116,7 +116,7 @@ def test_clear_all_dual_field():
 
     @ti.kernel
     def clear_dual_test():
-        y[None] = x[None]**2
+        y[None] = x[None] ** 2
         loss[None] += y[None]
 
     for _ in range(5):

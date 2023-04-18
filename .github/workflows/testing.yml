@@ -108,7 +108,7 @@ jobs:
           docker exec --user dev check_clang_tidy /home/dev/taichi/.github/workflows/scripts/check_clang_tidy.sh "$CI_SETUP_CMAKE_ARGS"
         env:
           CR_PAT: ${{ secrets.GITHUB_TOKEN }}
-          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_CC:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
+          CI_SETUP_CMAKE_ARGS: -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DTI_WITH_OPENGL:BOOL=ON -DTI_WITH_VULKAN:BOOL=ON -DTI_BUILD_TESTS:BOOL=ON -DTI_WITH_BACKTRACE:BOOL=ON
 
   build_and_test_cpu_mac:
     name: Build and Test macos (CPU)
@@ -119,7 +119,6 @@ jobs:
         include:
           - os: macos-10.15
             python: 3.7
-            with_cc: OFF
             with_cpp_tests: ON
             wanted_archs: 'cpu,vulkan'
     runs-on:
@@ -129,7 +128,6 @@ jobs:
       PY: ${{ matrix.python }}
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_WITH_CC:BOOL=${{ matrix.with_cc }}
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_C_API=ON
         -DTI_BUILD_TESTS:BOOL=${{ matrix.with_cpp_tests }}
@@ -205,11 +203,10 @@ jobs:
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
-        -DTI_WITH_CC:BOOL=ON
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
-      TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
 
@@ -275,7 +272,6 @@ jobs:
       TI_WANTED_ARCHS: "cuda,cpu"
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
 
@@ -399,7 +395,6 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_BACKTRACE=ON
         -DTI_WITH_C_API=ON
@@ -474,7 +469,6 @@ jobs:
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_CUDA:BOOL=OFF
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_C_API=ON
@@ -568,12 +562,11 @@ jobs:
     env:
       PY: '3.8'
       PROJECT_NAME: taichi
-      TI_WANTED_ARCHS: 'cc,cpu,cuda,vulkan,opengl,gles'
+      TI_WANTED_ARCHS: 'cpu,cuda,vulkan,opengl,gles'
       TI_DEVICE_MEMORY_GB: '1'
       TI_RUN_RELEASE_TESTS: '1'
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
-        -DTI_WITH_CC:BOOL=ON
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
@@ -680,7 +673,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=OFF
 
@@ -695,7 +687,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_LLVM:BOOL=OFF
             -DTI_WITH_C_API:BOOL=ON
@@ -761,7 +752,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=OFF
 
@@ -776,7 +766,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_LLVM:BOOL=OFF
             -DTI_WITH_C_API=ON
@@ -841,7 +830,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_C_API=OFF
 
@@ -856,7 +844,6 @@ jobs:
         env:
           TAICHI_CMAKE_ARGS: >-
             -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_WITH_VULKAN:BOOL=ON
             -DTI_WITH_LLVM:BOOL=OFF
             -DTI_WITH_C_API=ON
@@ -900,7 +887,6 @@ jobs:
       PROJECT_NAME: taichi
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_BACKTRACE:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON

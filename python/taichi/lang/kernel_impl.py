@@ -616,7 +616,7 @@ class Kernel:
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
-            max_arg_num = 64 if impl.current_cfg().arch != _ti_core.cc else 8
+            max_arg_num = 64
             exceed_max_arg_num = False
             for i, v in enumerate(args):
                 needed = self.arguments[i].annotation

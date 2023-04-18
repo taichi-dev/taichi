@@ -7,7 +7,6 @@ import warnings
 from copy import deepcopy as _deepcopy
 
 from taichi._lib import core as _ti_core
-from taichi._lib.utils import locale_encode
 from taichi.lang import impl
 from taichi.lang.expr import Expr
 from taichi.lang.impl import axes, get_runtime
@@ -139,11 +138,6 @@ gles = _ti_core.gles
 """
 # ----------------------
 
-# Skip annotating this one because it is barely maintained.
-cc = _ti_core.cc
-
-# ----------------------
-
 vulkan = _ti_core.vulkan
 """The Vulkan backend.
 """
@@ -170,7 +164,7 @@ GPU is detected, Taichi falls back to the CPU backend.
 
 cpu = _ti_core.host_arch()
 """A list of CPU backends supported on the current system.
-Currently contains 'x64', 'x86_64', 'arm64', 'cc'.
+Currently contains 'x64', 'x86_64', 'arm64'.
 
 When this is used, Taichi automatically picks the matching CPU backend.
 """
@@ -447,8 +441,6 @@ def init(
         _logging.info(f"Following TI_ARCH setting up for arch={env_arch}")
         arch = _ti_core.arch_from_name(env_arch)
     cfg.arch = adaptive_arch_select(arch, enable_fallback)
-    if cfg.arch == cc:
-        _ti_core.set_tmp_dir(locale_encode(prepare_sandbox()))
     print(f"[Taichi] Starting on arch={_ti_core.arch_name(cfg.arch)}")
 
     if _test_mode:
@@ -721,7 +713,6 @@ def is_arch_supported(arch):
         metal: _ti_core.with_metal,
         opengl: functools.partial(_ti_core.with_opengl, False),
         gles: functools.partial(_ti_core.with_opengl, True),
-        cc: _ti_core.with_cc,
         vulkan: _ti_core.with_vulkan,
         dx11: _ti_core.with_dx11,
         dx12: _ti_core.with_dx12,
@@ -779,7 +770,6 @@ __all__ = [
     "dx11",
     "dx12",
     "arm64",
-    "cc",
     "cpu",
     "cuda",
     "amdgpu",

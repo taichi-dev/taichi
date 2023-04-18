@@ -13,7 +13,6 @@
 #include "taichi/rhi/amdgpu/amdgpu_driver.h"
 #include "taichi/rhi/amdgpu/amdgpu_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/util/action_recorder.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"

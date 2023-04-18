@@ -833,6 +833,8 @@ class TaskCodegen : public IRVisitor {
     } else if (stmt->op_type == UnaryOpType::frexp) {
       // FrexpStruct is the same type of the first member.
       val = ir_->call_glsl450(dst_type, 52, operand_val);
+    } else if (stmt->op_type == UnaryOpType::popcnt) {
+      val = ir_->popcnt(operand_val);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \

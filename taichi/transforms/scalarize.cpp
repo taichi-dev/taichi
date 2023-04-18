@@ -274,15 +274,15 @@ class Scalarize : public BasicStmtVisitor {
     using PairType = std::pair<std::vector<EntryType>, std::vector<FormatType>>;
     auto push_content_and_format = [](PairType &pair, EntryType content,
                                       FormatType format = std::nullopt) {
-      pair.first.emplace_back(std::move(content));
-      pair.second.emplace_back(std::move(format));
+      pair.first.push_back(content);
+      pair.second.push_back(format);
     };
-    auto get_size = [](PairType const &pair) -> size_t {
-      assert(pair.first.size() == pair.second.size());
+    auto get_num_pairs = [](PairType const &pair) -> size_t {
+      TI_ASSERT(pair.first.size() == pair.second.size());
       return pair.first.size();
     };
-    auto get_at = [](PairType const &pair,
-                     size_t index) -> std::pair<EntryType, FormatType> {
+    auto get_pair_at = [](PairType const &pair,
+                          size_t index) -> std::pair<EntryType, FormatType> {
       return {pair.first[index], pair.second[index]};
     };
 
@@ -340,11 +340,11 @@ class Scalarize : public BasicStmtVisitor {
     // Merge string contents
     PairType merged_pair;
     std::string merged_string = "";
-    for (size_t i = 0; i < get_size(new_pair); ++i) {
-      auto const &[content, format] = get_at(new_pair, i);
+    for (size_t i = 0; i < get_num_pairs(new_pair); ++i) {
+      auto const &[content, format] = get_pair_at(new_pair, i);
       if (auto string_content = std::get_if<std::string>(&content)) {
         merged_string += *string_content;
-        assert(!format.has_value());
+        TI_ASSERT(!format.has_value());
       } else {
         if (!merged_string.empty()) {
           push_content_and_format(merged_pair, merged_string);

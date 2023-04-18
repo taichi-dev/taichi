@@ -24,9 +24,7 @@ def move_particles():
 @ti.kernel
 def fill_rgba():
     for i, j, k in rgba:
-        rgba[i, j, k] = ti.Vector(
-            [ti.random(), ti.random(),
-             ti.random(), ti.random()])
+        rgba[i, j, k] = ti.Vector([ti.random(), ti.random(), ti.random(), ti.random()])
 
 
 place_pos()
@@ -42,6 +40,5 @@ for frame in range(10):
     # create a PLYWriter
     writer = ti.tools.PLYWriter(num_vertices=num_vertices)
     writer.add_vertex_pos(np_pos[:, 0], np_pos[:, 1], np_pos[:, 2])
-    writer.add_vertex_rgba(np_rgba[:, 0], np_rgba[:, 1], np_rgba[:, 2],
-                           np_rgba[:, 3])
+    writer.add_vertex_rgba(np_rgba[:, 0], np_rgba[:, 1], np_rgba[:, 2], np_rgba[:, 3])
     writer.export_frame(frame, series_prefix)

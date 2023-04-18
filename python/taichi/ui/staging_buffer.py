@@ -53,9 +53,13 @@ def get_transforms_field(transforms):
 
 
 @kernel
-def copy_all_to_vbo(vbo: ti.types.ndarray(element_dim=1), vertex: template(),
-                    normal: template(), texcoords: template(),
-                    color: template()):
+def copy_all_to_vbo(
+    vbo: ti.types.ndarray(element_dim=1),
+    vertex: template(),
+    normal: template(),
+    texcoords: template(),
+    color: template(),
+):
     for i in vertex:
         if ti.static(vertex.n == 3):
             vbo[i][0:3] = vertex[i]
@@ -75,22 +79,29 @@ def copy_all_to_vbo(vbo: ti.types.ndarray(element_dim=1), vertex: template(),
 
 
 @ti.kernel
-def copy_texture_to_rgba8(src: ti.types.texture(num_dimensions=2),
-                          dst: ti.types.ndarray(), w: ti.i32, h: ti.i32):
-    for (i, j) in ti.ndrange(w, h):
+def copy_texture_to_rgba8(
+    src: ti.types.texture(num_dimensions=2),
+    dst: ti.types.ndarray(),
+    w: ti.i32,
+    h: ti.i32,
+):
+    for i, j in ti.ndrange(w, h):
         c = src.fetch(ti.Vector([i, j]), 0)
         c = ops.max(0.0, ops.min(1.0, c))
         c = c * 255
         px = ti.cast(c, u32)
-        dst[i, j] = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        dst[i, j] = px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24
 
 
 @ti.kernel
-def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
-                            num_components: ti.template(),
-                            gray_scale: ti.template()):
+def copy_image_f32_to_rgba8(
+    src: ti.template(),
+    dst: ti.types.ndarray(),
+    num_components: ti.template(),
+    gray_scale: ti.template(),
+):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
-        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        px = ti.Vector([0, 0, 0, 0xFF], dt=u32)
         if ti.static(gray_scale):
             c = 0.0
             c = src[i, j]
@@ -109,18 +120,20 @@ def copy_image_f32_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
                 c = ops.max(0.0, ops.min(1.0, c))
                 c = c * 255
                 px[k] = ti.cast(c, u32)
-        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        pack = px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24
         dst[i, j] = pack
 
 
 @ti.kernel
-def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(),
-                               dst: ti.types.ndarray(),
-                               num_components: ti.template(),
-                               gray_scale: ti.template()):
+def copy_image_f32_to_rgba8_np(
+    src: ti.types.ndarray(),
+    dst: ti.types.ndarray(),
+    num_components: ti.template(),
+    gray_scale: ti.template(),
+):
     for I in ti.grouped(src):
         i, j = I[0], I[1]
-        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        px = ti.Vector([0, 0, 0, 0xFF], dt=u32)
         if ti.static(gray_scale):
             c = 0.0
             c = src[i, j]
@@ -133,16 +146,19 @@ def copy_image_f32_to_rgba8_np(src: ti.types.ndarray(),
                 c = ops.max(0.0, ops.min(1.0, c))
                 c = c * 255
                 px[k] = ti.cast(c, u32)
-        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        pack = px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24
         dst[i, j] = pack
 
 
 @ti.kernel
-def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
-                           num_components: ti.template(),
-                           gray_scale: ti.template()):
+def copy_image_u8_to_rgba8(
+    src: ti.template(),
+    dst: ti.types.ndarray(),
+    num_components: ti.template(),
+    gray_scale: ti.template(),
+):
     for i, j in ti.ndrange(src.shape[0], src.shape[1]):
-        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        px = ti.Vector([0, 0, 0, 0xFF], dt=u32)
         if ti.static(gray_scale):
             px[0] = px[1] = px[2] = ti.cast(src[i, j], u32)
         else:
@@ -153,23 +169,26 @@ def copy_image_u8_to_rgba8(src: ti.template(), dst: ti.types.ndarray(),
                 else:
                     # 2D vector field source image
                     px[k] = ti.cast(src[i, j][k], u32)
-        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        pack = px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24
         dst[i, j] = pack
 
 
 @ti.kernel
-def copy_image_u8_to_rgba8_np(src: ti.types.ndarray(), dst: ti.types.ndarray(),
-                              num_components: ti.template(),
-                              gray_scale: ti.template()):
+def copy_image_u8_to_rgba8_np(
+    src: ti.types.ndarray(),
+    dst: ti.types.ndarray(),
+    num_components: ti.template(),
+    gray_scale: ti.template(),
+):
     for I in ti.grouped(src):
         i, j = I[0], I[1]
-        px = ti.Vector([0, 0, 0, 0xff], dt=u32)
+        px = ti.Vector([0, 0, 0, 0xFF], dt=u32)
         if ti.static(gray_scale):
             px[0] = px[1] = px[2] = ti.cast(src[i, j], u32)
         else:
             for k in ti.static(range(num_components)):
                 px[k] = ti.cast(src[i, j, k], u32)
-        pack = (px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24)
+        pack = px[0] << 0 | px[1] << 8 | px[2] << 16 | px[3] << 24
         dst[i, j] = pack
 
 
@@ -180,17 +199,18 @@ image_field_cache = {}
 
 def to_rgba8(image):
     is_texture = isinstance(image, Texture)
-    is_grayscale = not hasattr(image, 'n') and len(image.shape) == 2
+    is_grayscale = not hasattr(image, "n") and len(image.shape) == 2
     is_numpy = isinstance(image, np.ndarray)
-    is_non_grayscale_field = (hasattr(image, 'n') and image.m == 1) or len(
-        image.shape) == 3
+    is_non_grayscale_field = (hasattr(image, "n") and image.m == 1) or len(image.shape) == 3
 
     if not is_texture and not is_grayscale and not is_numpy and not is_non_grayscale_field:
-        raise Exception('the input image needs to be either:\n'
-                        'a Vector field (matrix with 1 column)\n'
-                        'a 2D(grayscale)/3D field\n'
-                        'a 2D(grayscale)/3D numpy ndarray\n'
-                        'a texture')
+        raise Exception(
+            "the input image needs to be either:\n"
+            "a Vector field (matrix with 1 column)\n"
+            "a 2D(grayscale)/3D field\n"
+            "a 2D(grayscale)/3D numpy ndarray\n"
+            "a texture"
+        )
     channels = 3
 
     if not is_grayscale:
@@ -199,9 +219,7 @@ def to_rgba8(image):
         elif len(image.shape) == 3:
             channels = image.shape[2]
         else:
-            raise Exception(
-                "the shape of the image must be of the form (width,height) or (width,height,channels)"
-            )
+            raise Exception("the shape of the image must be of the form (width,height) or (width,height,channels)")
 
     staging_key = image.shape[0:2] if is_numpy else image
 
@@ -215,11 +233,9 @@ def to_rgba8(image):
         copy_texture_to_rgba8(image, staging_img, *image.shape[0:2])
     elif is_numpy:
         if image.dtype == np.uint8:
-            copy_image_u8_to_rgba8_np(image, staging_img, channels,
-                                      is_grayscale)
+            copy_image_u8_to_rgba8_np(image, staging_img, channels, is_grayscale)
         elif image.dtype == np.float32:
-            copy_image_f32_to_rgba8_np(image, staging_img, channels,
-                                       is_grayscale)
+            copy_image_f32_to_rgba8_np(image, staging_img, channels, is_grayscale)
         else:
             raise Exception("dtype of input image must either be u8 or f32")
     else:

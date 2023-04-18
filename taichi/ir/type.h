@@ -67,7 +67,7 @@ class TI_DLL_EXPORT Type {
 
   template <typename T>
   static typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
-  jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing);
+  jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing, bool strict);
 
   // For serialization
   virtual const Type *get_type() const = 0;
@@ -682,7 +682,10 @@ Type::ptr_io(const T *&ptr, S &serializer, bool writing) {
 
 template <typename T>
 typename std::enable_if<std::is_base_of_v<Type, T>, void>::type
-Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
+Type::jsonserde_ptr_io(const T *&ptr,
+                       JsonValue &value,
+                       bool writing,
+                       bool strict) {
   if (writing) {
     if (ptr == nullptr) {
       value = JsonValue(nullptr);
@@ -713,14 +716,14 @@ Type::jsonserde_ptr_io(const T *&ptr, JsonValue &value, bool writing) {
     }
     TypeKind type_kind = (TypeKind)(int)value["type_kind"];
     switch (type_kind) {
-#define PER_TYPE_KIND(x)                              \
-  case TypeKind::x: {                                 \
-    x##Type content;                                  \
-    auto &content_val = value["content"];             \
-    TI_ASSERT(content_val.is_obj());                  \
-    content.json_deserialize_fields(content_val.obj); \
-    ptr = content.get_type()->as<T>();                \
-    break;                                            \
+#define PER_TYPE_KIND(x)                                      \
+  case TypeKind::x: {                                         \
+    x##Type content;                                          \
+    auto &content_val = value["content"];                     \
+    TI_ASSERT(content_val.is_obj());                          \
+    content.json_deserialize_fields(content_val.obj, strict); \
+    ptr = content.get_type()->as<T>();                        \
+    break;                                                    \
   }
 #include "taichi/inc/type_kind.inc.h"
 #undef PER_TYPE_KIND

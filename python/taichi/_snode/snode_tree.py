@@ -14,7 +14,7 @@ class SNodeTree:
 
     def destroy(self):
         if self.destroyed:
-            raise TaichiRuntimeError('SNode tree has been destroyed')
+            raise TaichiRuntimeError("SNode tree has been destroyed")
         self.ptr.destroy_snode_tree(impl.get_runtime().prog)
 
         # FieldExpression holds a SNode* to the place-SNode associated with a SNodeTree
@@ -25,5 +25,5 @@ class SNodeTree:
     @property
     def id(self):
         if self.destroyed:
-            raise TaichiRuntimeError('SNode tree has been destroyed')
+            raise TaichiRuntimeError("SNode tree has been destroyed")
         return self.ptr.id()

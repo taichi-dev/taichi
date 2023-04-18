@@ -39,7 +39,6 @@ In Taichi, you can compose data structures similar to VDB and SPGrid with SNodes
 - Automatic memory access optimization.
 
 
-
 :::note
 **Backend compatibility**: The LLVM-based backends (CPU/CUDA) offer the full functionality for performing computations on spatially sparse data structures.
 Using sparse data structures on the Metal backend is now deprecated. The support for Dynamic SNode has been removed in v1.3.0,
@@ -172,55 +171,111 @@ The bitmasked SNodes are like dense SNodes with auxiliary activity values.
 
 ### Dynamic SNode
 
-To support variable-length fields, Taichi provides dynamic SNodes.
+Taichi officially supports dynamic data structure *Dynamic SNode* since version v1.4.0. You can think of a dynamic SNode as a `List` that can only store data of a fixed type. The element types it supports include scalars, vectors/matrices, and structs. It also supports the following three APIs:
 
-The first argument of `dynamic` is the axis, the second argument is the maximum length,
-and the third argument (optional) is the `chunk_size`.
+1. `append`: Dynamically adds an element, equivalent to the `append` method of a Python list.
+2. `deactivate`: Clears all stored elements, equivalent to the `clear` method of a Python list.
+3. `length`: Gets the actual number of elements currently stored, equivalent to the `__len__` method of a Python list.
 
-The `chunk_size` specifies how much space the dynamic SNode allocates when the previously-allocated space runs out.
-For example, with `chunk_size=4`, the dynamic SNode allocates the space for four elements when the first element is appended, and
-allocates space for another four when the 5th (, 9th, 13th...) element is appended.
+All three methods must be called inside the Taichi scope.
 
-You can use `x[i].append(...)` to append an element,
-use `x[i].length()` to get the length, and use `x[i].deactivate()` to clear the list.
-
-The code snippet below creates a struct field that stores pairs of `(i16, i64)`.
-The `i` axis is a dense SNode, and the `j` axis is a dynamic SNode.
-
-```python {5,13,15,20} title=dynamic.py
-pair = ti.types.struct(a=ti.i16, b=ti.i64)
-pair_field = pair.field()
-
-block = ti.root.dense(ti.i, 4)
-pixel = block.dynamic(ti.j, 100, chunk_size=4)
-pixel.place(pair_field)
-l = ti.field(ti.i32)
-ti.root.dense(ti.i, 5).place(l)
-
-@ti.kernel
-def dynamic_pair():
-    for i in range(4):
-        pair_field[i].deactivate()
-        for j in range(i * i):
-            pair_field[i].append(pair(i, j + 1))
-        # pair_field = [[],
-        #              [(1, 1)],
-        #              [(2, 1), (2, 2), (2, 3), (2, 4)],
-        #              [(3, 1), (3, 2), ... , (3, 8), (3, 9)]]
-        l[i] = pair_field[i].length()  # l = [0, 1, 4, 9]
-```
-
-<center>
-
-![Dynamic](https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/doc/dynamic.png)
-
-</center>
+Unfortunately, Dynamic SNode does not support dynamically deleting elements like `pop` and `remove`. This is because it is difficult to implement these operations with high performance in parallel computing.
 
 :::note
-A dynamic SNode must have one axis only, and the axis must be the last axis.
-No other SNodes can be placed under a dynamic SNode. In other words, a dynamic SNode must be directly placed with a field.
-Along the path from a dynamic SNode to the root of the SNode tree, other SNodes *must not* have the same axis as the dynamic SNode.
+
+Here are a few rules you must obey when using Dynamic Snode:
+
++ Dynamic SNode can only be used in the CPU and CUDA backends.
+
++ A dynamic SNode must have one axis only, and the axis must be the last axis.
+
++ No other SNodes can be placed under a dynamic SNode. In other words, a dynamic SNode must be directly placed with a field.
+
++ Along the path from a dynamic SNode to the root of the SNode tree, other SNodes *must not* have the same axis as the dynamic SNode.
+
 :::
+
+For example, to declare a one-dimensional dynamic list `x` that stores integers, we can write:
+
+```python
+S = ti.root.dynamic(ti.i, 1024, chunk_size=32)
+x = ti.field(int)
+S.place(x)
+```
+
+Let's explain the meaning of these three lines of code:
+
+1. In the first line of code, `ti.root.dynamic` means that the direct parent node of `S` is `ti.root`. Generally, calling `S = P.dynamic()` for an SNode `P` means the direct parent node of `S` in the Snode tree is `P`. Hence this operation specifies the position of `S` in the SNode tree system.
+2. The first parameter of the `dynamic` function is the axis on which `S` is located. This axis must be one-dimensional and cannot have been used by any parent node of `S`. Here we use the axis `ti.i` (equivalent to `axis=0` in NumPy).
+3. The second parameter of the dynamic function is the maximum length of `S`. Since Dynamic SNode dynamically allocates memory as needed, it does not occupy space when there is no data. However, this maximum length also has an upper limit (the maximum value of 32-bit int type), so it is not possible to assign an astronomical number to it at will. It is also possible to add elements beyond this maximum length, and elements outside the range can also be accessed normally using subscripts, but we recommend keeping the size of the list within the maximum length range.
+4. The third parameter `chunk_size` will be explained later in this article.
+5. After obtaining the Dynamic SNode `S` in this way, we declare an integer field variable `x = ti.field(int)`, and then call `S.place(x)` to convert `x` into a data structure described by `S`. Before calling `place`, `x` cannot be used to store data; after calling `place`, `x` can be used as a mutable list of type `int`.
+
+For example, we can use the `append` method to add data to `x`, and call the `length` function to get the actual length of `x`. Both functions must be called inside the kernel:
+
+```python cont
+@ti.kernel
+def add_data():
+    for i in range(1000):
+        x.append(i)
+        print(x.length())
+
+add_data()
+```
+
+We can also call the `deactivate` method of `x` to clear the entire list, which is equivalent to restoring `x` to its uninitialized state:
+
+```python cont
+@ti.kernel
+def clear_data():
+    x.deactivate()
+    print(x.length())  # will print 0
+```
+
+Returning to the explanation of the `chunk_size` parameter: the implementation of Dynamic SNode internally uses linked lists, where multiple elements are densely packed into a node (or "chunk") of the linked list, with each chunk containing `chunk_size` elements. Element allocation and deallocation are performed in units of chunks. The following diagram illustrates how `x` is laid out in memory (with `k = 32`):
+
+![](https://github.com/taichi-dev/public_files/blob/master/taichi/doc/dynamic_snode_1d.png?raw=true)
+
+Thus, the actual number of chunks allocated is `ceil(x.length() / chunk_size)`.
+
+We can also define more complex variable-length lists. For example, the following code defines an array `x` of length `n = 10`, where each element of `x` is a one-dimensional variable-length list:
+
+```python
+S = ti.root.dense(ti.i, 10).dynamic(ti.j, 1024, chunk_size=32)
+x = ti.field(int)
+S.place(x)
+```
+
+Here, `ti.root.dense(ti.i, 10)` is a Dense SNode that represents a dense array of length 10 along the `ti.i` axis. `S = ti.root.dense(ti.i, 10).dynamic(ti.j, ...)` represents a child node of this Dense SNode, occupying the `ti.j` axis (which is different from the parent node!). The layout of `x` in memory is illustrated in the following diagram:
+
+![](https://github.com/taichi-dev/public_files/blob/master/taichi/doc/dynamic_snode_2d.png?raw=true)
+
+As with the one-dimensional case, you can dynamically add elements to the i-th list using `x[i].append()`, get the current length of the i-th list using `x[i].length()`, and clear the ith list using `x[i].deactivate()`.
+
+```python cont
+@ti.kernel
+def add_data():
+    for i in range(10):
+        for j in range(i):
+            x[i].append(j)
+        print(x[i].length())  # will print i
+
+    for i in range(10):
+        x[i].deactivate()
+        print(x[i].length())  # will print 0
+```
+
+All of the above discussion applies to using Dynamic SNode with other numeric types. For vector/matrix and struct types, the steps are identical. For example, consider the following code using struct types:
+
+```python
+S = ti.root.dynamic(ti.i, 1024, chunk_size=32)
+SphereType = ti.types.struct(center=ti.math.vec3, radius=float)
+x = SphereType.field()
+S.place(x)
+```
+
+Here, `x` is a one-dimensional variable-length list that can store values of type `SphereType`.
+
 
 ## Computation on spatially sparse data structures
 

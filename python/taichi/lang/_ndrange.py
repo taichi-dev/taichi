@@ -23,8 +23,8 @@ class _Ndrange:
         for arg in args:
             for bound in arg:
                 if not isinstance(bound, (int, np.integer)) and not (
-                        isinstance(bound, Expr)
-                        and is_integral(bound.ptr.get_ret_type())):
+                    isinstance(bound, Expr) and is_integral(bound.ptr.get_ret_type())
+                ):
                     raise TaichiTypeError(
                         "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"
                     )
@@ -36,10 +36,8 @@ class _Ndrange:
 
         self.acc_dimensions = self.dimensions.copy()
         for i in reversed(range(len(self.bounds) - 1)):
-            self.acc_dimensions[
-                i] = self.acc_dimensions[i] * self.acc_dimensions[i + 1]
-        if len(self.acc_dimensions
-               ) == 0:  # for the empty case, e.g. ti.ndrange()
+            self.acc_dimensions[i] = self.acc_dimensions[i] * self.acc_dimensions[i + 1]
+        if len(self.acc_dimensions) == 0:  # for the empty case, e.g. ti.ndrange()
             self.acc_dimensions = [1]
 
     def __iter__(self):
@@ -48,7 +46,7 @@ class _Ndrange:
                 yield prefix
             else:
                 for t in range(self.bounds[d][0], self.bounds[d][1]):
-                    yield from gen(d + 1, prefix + (t, ))
+                    yield from gen(d + 1, prefix + (t,))
 
         yield from gen(0, ())
 
@@ -148,4 +146,4 @@ class GroupedNDRange:
             yield Matrix(list(ind))
 
 
-__all__ = ['ndrange']
+__all__ = ["ndrange"]

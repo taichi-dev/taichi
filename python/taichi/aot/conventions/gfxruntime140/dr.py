@@ -64,15 +64,11 @@ class ContextAttributes:
         ret_attribs_vec_ = j["ret_attribs_vec_"]
         rets_bytes_ = j["rets_bytes_"]
 
-        self.arg_attribs_vec_: List[ArgumentAttributes] = [
-            ArgumentAttributes(x) for x in arg_attribs_vec_
-        ]
+        self.arg_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in arg_attribs_vec_]
         self.args_bytes_: int = int(args_bytes_)
         self.arr_access: List[int] = [int(x) for x in arr_access]
         self.extra_args_bytes_: int = int(extra_args_bytes_)
-        self.ret_attribs_vec_: List[ArgumentAttributes] = [
-            ArgumentAttributes(x) for x in ret_attribs_vec_
-        ]
+        self.ret_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in ret_attribs_vec_]
         self.rets_bytes_: int = int(rets_bytes_)
 
 
@@ -129,25 +125,19 @@ class TaskAttributes:
         advisory_total_num_threads = j["advisory_total_num_threads"]
         buffer_binds = j["buffer_binds"]
         name = j["name"]
-        range_for_attribs = j[
-            "range_for_attribs"] if "range_for_attribs" in j else None
+        range_for_attribs = j["range_for_attribs"] if "range_for_attribs" in j else None
         task_type = j["task_type"]
         texture_binds = j["texture_binds"]
 
-        self.advisory_num_threads_per_group: int = int(
-            advisory_num_threads_per_group)
+        self.advisory_num_threads_per_group: int = int(advisory_num_threads_per_group)
         self.advisory_total_num_threads: int = int(advisory_total_num_threads)
-        self.buffer_binds: List[BufferBinding] = [
-            BufferBinding(x) for x in buffer_binds
-        ]
+        self.buffer_binds: List[BufferBinding] = [BufferBinding(x) for x in buffer_binds]
         self.name: str = str(name)
-        self.range_for_attribs: Optional[
-            RangeForAttributes] = RangeForAttributes(
-                range_for_attribs) if range_for_attribs is not None else None
+        self.range_for_attribs: Optional[RangeForAttributes] = (
+            RangeForAttributes(range_for_attribs) if range_for_attribs is not None else None
+        )
         self.task_type: int = int(task_type)
-        self.texture_binds: List[TextureBinding] = [
-            TextureBinding(x) for x in texture_binds
-        ]
+        self.texture_binds: List[TextureBinding] = [TextureBinding(x) for x in texture_binds]
 
 
 @json_data_model
@@ -171,9 +161,7 @@ class KernelAttributes:
         self.ctx_attribs: ContextAttributes = ContextAttributes(ctx_attribs)
         self.is_jit_evaluator: bool = bool(is_jit_evaluator)
         self.name: str = str(name)
-        self.tasks_attribs: List[TaskAttributes] = [
-            TaskAttributes(x) for x in tasks_attribs
-        ]
+        self.tasks_attribs: List[TaskAttributes] = [TaskAttributes(x) for x in tasks_attribs]
 
 
 @json_data_model
@@ -184,15 +172,9 @@ class Metadata:
         required_caps = j["required_caps"]
         root_buffer_size = j["root_buffer_size"]
 
-        self.fields: List[FieldAttributes] = [
-            FieldAttributes(x) for x in fields
-        ]
-        self.kernels: List[KernelAttributes] = [
-            KernelAttributes(x) for x in kernels
-        ]
-        self.required_caps: List[DeviceCapabilityLevel] = [
-            DeviceCapabilityLevel(x) for x in required_caps
-        ]
+        self.fields: List[FieldAttributes] = [FieldAttributes(x) for x in fields]
+        self.kernels: List[KernelAttributes] = [KernelAttributes(x) for x in kernels]
+        self.required_caps: List[DeviceCapabilityLevel] = [DeviceCapabilityLevel(x) for x in required_caps]
         self.root_buffer_size: int = int(root_buffer_size)
 
 
@@ -229,9 +211,7 @@ class Dispatch:
         symbolic_args = j["symbolic_args"]
 
         self.kernel_name: str = str(kernel_name)
-        self.symbolic_args: List[SymbolicArgument] = [
-            SymbolicArgument(x) for x in symbolic_args
-        ]
+        self.symbolic_args: List[SymbolicArgument] = [SymbolicArgument(x) for x in symbolic_args]
 
 
 @json_data_model

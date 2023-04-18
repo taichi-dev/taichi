@@ -79,8 +79,7 @@ def compute_total_energy():
         # NeoHookean
         I1 = (F @ F.transpose()).trace()
         J = F.determinant()
-        element_energy = 0.5 * mu * (
-            I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J)**2
+        element_energy = 0.5 * mu * (I1 - 2) - mu * ti.log(J) + 0.5 * la * ti.log(J) ** 2
         total_energy[None] += E * element_energy * dx * dx
 
 
@@ -89,15 +88,14 @@ def p2g():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - ti.cast(base, float)
-        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+        w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
         affine = p_mass * C[p]
         for i in ti.static(range(3)):
             for j in ti.static(range(3)):
                 I = ti.Vector([i, j])
                 dpos = (float(I) - fx) * dx
                 weight = w[i].x * w[j].y
-                grid_v[base + I] += weight * (p_mass * v[p] - dt * x.grad[p] +
-                                              affine @ dpos)
+                grid_v[base + I] += weight * (p_mass * v[p] - dt * x.grad[p] + affine @ dpos)
                 grid_m[base + I] += weight * p_mass
 
 
@@ -134,7 +132,7 @@ def g2p():
     for p in x:
         base = ti.cast(x[p] * inv_dx - 0.5, ti.i32)
         fx = x[p] * inv_dx - float(base)
-        w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2]
+        w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
         new_v = ti.Vector([0.0, 0.0])
         new_C = ti.Matrix([[0.0, 0.0], [0.0, 0.0]])
 
@@ -180,11 +178,9 @@ def main():
         b = np.roll(vertices_, shift=1, axis=1).reshape(n_elements * 3)
         gui.lines(particle_pos[a], particle_pos[b], radius=1, color=0x4FB99F)
         gui.circles(particle_pos, radius=1.5, color=0xF2B134)
-        gui.line((0.00, 0.03 / quality), (1.0, 0.03 / quality),
-                 color=0xFFFFFF,
-                 radius=3)
+        gui.line((0.00, 0.03 / quality), (1.0, 0.03 / quality), color=0xFFFFFF, radius=3)
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

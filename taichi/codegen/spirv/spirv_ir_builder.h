@@ -472,6 +472,7 @@ class IRBuilder {
   Value ge(Value a, Value b);
   Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
+  Value popcnt(Value x);
 
   // Create a cast that cast value to dst_type
   Value cast(const SType &dst_type, Value value);

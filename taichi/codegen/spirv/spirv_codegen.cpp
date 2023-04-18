@@ -834,6 +834,8 @@ class TaskCodegen : public IRVisitor {
       val = ir_->alloca_variable(dst_type);
       auto v = ir_->call_glsl450(dst_type, 52, operand_val);
       ir_->store_variable(val, v);
+    } else if (stmt->op_type == UnaryOpType::popcnt) {
+      val = ir_->popcnt(operand_val);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \

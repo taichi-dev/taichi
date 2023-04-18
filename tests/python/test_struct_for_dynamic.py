@@ -4,7 +4,7 @@ from tests import test_utils
 
 @test_utils.test(
     require=ti.extension.sparse,
-    exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal],
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.metal],
 )
 def test_dynamic():
     x = ti.field(ti.i32)
@@ -28,7 +28,7 @@ def test_dynamic():
 
 @test_utils.test(
     require=ti.extension.sparse,
-    exclude=[ti.opengl, ti.gles, ti.cc, ti.vulkan, ti.metal],
+    exclude=[ti.opengl, ti.gles, ti.vulkan, ti.metal],
 )
 def test_dense_dynamic():
     n = 128

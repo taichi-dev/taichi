@@ -8,7 +8,6 @@
 #include "taichi/struct/struct.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
-#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
@@ -22,9 +21,6 @@
 #include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
-#if defined(TI_WITH_CC)
-#include "taichi/codegen/cc/cc_program.h"
-#endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
@@ -131,12 +127,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
     program_impl_ = std::make_unique<OpenglProgramImpl>(config);
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
-#endif
-  } else if (config.arch == Arch::cc) {
-#ifdef TI_WITH_CC
-    program_impl_ = std::make_unique<CCProgramImpl>(config);
-#else
-    TI_ERROR("No C backend detected.");
 #endif
   } else {
     TI_NOT_IMPLEMENTED

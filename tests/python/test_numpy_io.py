@@ -162,7 +162,7 @@ def test_numpy_io_example():
     # For PyTorch tensors, use to_torch/from_torch instead
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_from_numpy_non_contiguous():
     n = 9
     m = 7

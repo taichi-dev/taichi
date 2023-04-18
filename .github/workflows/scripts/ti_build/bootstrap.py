@@ -58,7 +58,7 @@ def restart():
 
 def fetch_pip(to):
     v = sys.version_info
-    if v > (3, 6):
+    if v[:2] >= (3, 7):
         url = f"https://bootstrap.pypa.io/pip/get-pip.py"
     else:
         url = f"https://bootstrap.pypa.io/pip/{v.major}.{v.minor}/get-pip.py"

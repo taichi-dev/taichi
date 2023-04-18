@@ -357,7 +357,8 @@ class Scalarize : public BasicStmtVisitor {
       push_content_and_format(merged_pair, merged_string);
     }
 
-    delayed_modifier_.insert_before(stmt, Stmt::make<PrintStmt>(merged_pair));
+    delayed_modifier_.insert_before(
+        stmt, Stmt::make<PrintStmt>(merged_pair.first, merged_pair.second));
     delayed_modifier_.erase(stmt);
   }
 

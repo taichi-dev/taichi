@@ -72,7 +72,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, cuda, vulkan, cn, release]
+    runs-on: [self-hosted, cuda, vulkan, cn, release, sm70]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -92,14 +101,6 @@ jobs:
           ci-docker-run-gpu --name taichi-build \
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -125,6 +126,15 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, cuda, cn, release]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -144,15 +154,6 @@ jobs:
           ci-docker-run-gpu --name taichi-test \
              registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/build.py
-
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -181,6 +182,12 @@ jobs:
     runs-on: [self-hosted, macos-10.15]
     env:
       PY: ${{ matrix.python }}
+      CXX: clang++
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
     steps:
       - uses: actions/checkout@v3
         with:
@@ -199,12 +206,6 @@ jobs:
           .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -229,6 +230,17 @@ jobs:
     defaults:
       run:
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
+    env:
+      PY: ${{ matrix.python }}
+      CXX: clang++
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -244,16 +256,6 @@ jobs:
         run: |
           brew install molten-vk
           .github/workflows/scripts/build.py
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PY: ${{ matrix.python }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -278,6 +280,18 @@ jobs:
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     # FIXME: force running on sm70 for now. Should be refactored out
     runs-on: [self-hosted, windows, cuda, OpenGL, sm70]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_DX11:BOOL=ON
+        -DTI_WITH_DX12:BOOL=ON
+        -DTI_WITH_CC:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
@@ -298,17 +312,6 @@ jobs:
         shell: cmd
         run: |
           python .\.github\workflows\scripts\build.py
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_DX11:BOOL=ON
-            -DTI_WITH_DX12:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
-            -DTI_WITH_C_API=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3

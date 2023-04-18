@@ -16,8 +16,7 @@ def test_to_numpy():
     with pytest.raises(RuntimeError) as e:
         with ti.ad.Tape(loss):
             func()
-    assert 'Exporting data to external array (such as numpy array) not supported in AutoDiff for now' in e.value.args[
-        0]
+    assert "Exporting data to external array (such as numpy array) not supported in AutoDiff for now" in e.value.args[0]
 
 
 @test_utils.test(exclude=[ti.metal])
@@ -31,5 +30,6 @@ def test_from_numpy():
     with pytest.raises(RuntimeError) as e:
         with ti.ad.Tape(loss):
             func()
-    assert 'Importing data from external array (such as numpy array) not supported in AutoDiff for now' in e.value.args[
-        0]
+    assert (
+        "Importing data from external array (such as numpy array) not supported in AutoDiff for now" in e.value.args[0]
+    )

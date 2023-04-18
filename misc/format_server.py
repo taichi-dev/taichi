@@ -19,36 +19,32 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         return content.encode("utf8")
 
     def writeln(self, f):
-        self.wfile.write(self._html(f + '<br>'))
+        self.wfile.write(self._html(f + "<br>"))
 
     def exec(self, cmd):
         self.writeln(f">>> {cmd}")
         p = subprocess.getoutput(cmd)
-        for l in p.split('\n'):
+        for l in p.split("\n"):
             self.writeln(l)
 
         return p
 
     def render_index(self):
-        pulls = requests.get(
-            f'https://api.github.com/repos/taichi-dev/taichi/pulls?state=open'
-        ).json()
-        self.writeln(
-            f'Click to auto-format PR. <b>[Please do not click if the PR is not owned/reviewed by you.]</b>'
-        )
+        pulls = requests.get(f"https://api.github.com/repos/taichi-dev/taichi/pulls?state=open").json()
+        self.writeln(f"Click to auto-format PR. <b>[Please do not click if the PR is not owned/reviewed by you.]</b>")
         print(pulls)
         for pr in pulls:
-            print('pr', pr)
+            print("pr", pr)
             pr_id = pr["number"]
             title = f'#{pr_id}, {pr["title"]}, by {pr["user"]["login"]}'
-            link = f'http://{server_addr}:{server_port}/{pr_id}'
+            link = f"http://{server_addr}:{server_port}/{pr_id}"
             self.writeln(f'<a href="{link}">{title}</a>')
 
     def do_GET(self):
-        print('GET ', self.path)
+        print("GET ", self.path)
         self._set_headers()
         path = self.path[1:]
-        if path == '':
+        if path == "":
             return self.render_index()
         if not path.isdigit():
             self.writeln(
@@ -57,17 +53,14 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
             return
         pr_id = int(path)
 
-        ret = requests.get(
-            f'https://api.github.com/repos/taichi-dev/taichi/pulls/{pr_id}')
+        ret = requests.get(f"https://api.github.com/repos/taichi-dev/taichi/pulls/{pr_id}")
         if ret.status_code == 404:
             self.writeln(f"Error: PR {pr_id} not found!")
             return
         ret = ret.json()
-        url = ret['url']
+        url = ret["url"]
 
-        self.writeln(
-            f"Processing <a href='https://github.com/taichi-dev/taichi/pull/{pr_id}'>PR {pr_id}</a>"
-        )
+        self.writeln(f"Processing <a href='https://github.com/taichi-dev/taichi/pull/{pr_id}'>PR {pr_id}</a>")
         self.writeln(f"[<a href='{url}'>Metadata</a>]")
         head = ret["head"]
         repo_url = head["repo"]["html_url"]
@@ -77,23 +70,21 @@ class TaichiFormatServer(BaseHTTPRequestHandler):
         num_commits = int(ret["commits"])
         self.writeln(f"#commits id {num_commits}")
 
-        user_id = ret['user']['login']
-        branch_name = head['ref']
-        ssh_url = head['repo']['ssh_url']
-        self.exec(f'git remote add {user_id} {ssh_url}')
-        self.exec(f'git fetch {user_id} {branch_name}')
-        self.exec(f'git branch -D {user_id}-{branch_name}')
-        self.exec(
-            f'git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}')
-        commits = self.exec(
-            f'git log -n {num_commits + 1} --format="%H"').split('\n')
+        user_id = ret["user"]["login"]
+        branch_name = head["ref"]
+        ssh_url = head["repo"]["ssh_url"]
+        self.exec(f"git remote add {user_id} {ssh_url}")
+        self.exec(f"git fetch {user_id} {branch_name}")
+        self.exec(f"git branch -D {user_id}-{branch_name}")
+        self.exec(f"git checkout -b {user_id}-{branch_name} {user_id}/{branch_name}")
+        commits = self.exec(f'git log -n {num_commits + 1} --format="%H"').split("\n")
         fork_commit = commits[num_commits]
-        self.exec(f'ti format {fork_commit}')
-        self.exec('git add --all')
+        self.exec(f"ti format {fork_commit}")
+        self.exec("git add --all")
         self.exec(f'git commit -m "[skip ci] enforce code format"')
-        self.exec(f'git push {user_id} {user_id}-{branch_name}:{branch_name}')
+        self.exec(f"git push {user_id} {user_id}-{branch_name}:{branch_name}")
 
-        self.exec(f'git checkout master')
+        self.exec(f"git checkout master")
 
 
 def run(addr, port):
@@ -107,8 +98,7 @@ def run(addr, port):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Run the Taichi format server")
+    parser = argparse.ArgumentParser(description="Run the Taichi format server")
     parser.add_argument(
         "-l",
         "--listen",

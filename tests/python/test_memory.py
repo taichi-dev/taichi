@@ -13,7 +13,7 @@ from tests import test_utils
 @test_utils.test(arch=ti.cuda)
 def test_memory_allocate():
     HUGE_SIZE = 1024**2 * 128
-    x = ti.field(ti.i32, shape=(HUGE_SIZE, ))
+    x = ti.field(ti.i32, shape=(HUGE_SIZE,))
     for i in range(10):
         x[i] = i
 
@@ -23,9 +23,7 @@ def test_oop_memory_leak():
     @ti.data_oriented
     class X:
         def __init__(self):
-            self.py_l = [
-                0
-            ] * 5242880  # a list containing 5M integers (5 * 2^20)
+            self.py_l = [0] * 5242880  # a list containing 5M integers (5 * 2^20)
 
         @ti.kernel
         def run(self):
@@ -47,5 +45,4 @@ def test_oop_memory_leak():
         X().run()
         gc.collect()
         curr_mem = get_process_memory()
-        assert (curr_mem - ref_mem < 5
-                )  # shouldn't increase more than 5.0 MB each loop
+        assert curr_mem - ref_mem < 5  # shouldn't increase more than 5.0 MB each loop

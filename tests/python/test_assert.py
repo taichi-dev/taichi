@@ -37,9 +37,9 @@ def test_assert_message():
     @ti.kernel
     def func():
         x = 20
-        assert 10 <= x < 20, 'Foo bar'
+        assert 10 <= x < 20, "Foo bar"
 
-    with pytest.raises(AssertionError, match='Foo bar'):
+    with pytest.raises(AssertionError, match="Foo bar"):
         func()
 
 
@@ -51,18 +51,18 @@ def test_assert_message_formatted():
     @ti.kernel
     def assert_formatted():
         for i in x:
-            assert x[i] == 0, 'x[%d] expect=%d got=%d' % (i, 0, x[i])
+            assert x[i] == 0, "x[%d] expect=%d got=%d" % (i, 0, x[i])
 
     @ti.kernel
     def assert_float():
         y = 0.5
-        assert y < 0, 'y = %f' % y
+        assert y < 0, "y = %f" % y
 
-    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
+    with pytest.raises(AssertionError, match=r"x\[10\] expect=0 got=42"):
         assert_formatted()
     # TODO: note that we are not fully polished to be able to recover from
     # assertion failures...
-    with pytest.raises(AssertionError, match=r'y = 0.5'):
+    with pytest.raises(AssertionError, match=r"y = 0.5"):
         assert_float()
 
     # success case
@@ -78,18 +78,18 @@ def test_assert_message_formatted_fstring():
     @ti.kernel
     def assert_formatted():
         for i in x:
-            assert x[i] == 0, f'x[{i}] expect={0} got={x[i]}'
+            assert x[i] == 0, f"x[{i}] expect={0} got={x[i]}"
 
     @ti.kernel
     def assert_float():
         y = 0.5
-        assert y < 0, f'y = {y}'
+        assert y < 0, f"y = {y}"
 
-    with pytest.raises(AssertionError, match=r'x\[10\] expect=0 got=42'):
+    with pytest.raises(AssertionError, match=r"x\[10\] expect=0 got=42"):
         assert_formatted()
     # TODO: note that we are not fully polished to be able to recover from
     # assertion failures...
-    with pytest.raises(AssertionError, match=r'y = 0.5'):
+    with pytest.raises(AssertionError, match=r"y = 0.5"):
         assert_float()
 
     # success case
@@ -107,10 +107,12 @@ def test_assert_ok():
     func()
 
 
-@test_utils.test(require=ti.extension.assertion,
-                 debug=True,
-                 check_out_of_bound=True,
-                 gdb_trigger=False)
+@test_utils.test(
+    require=ti.extension.assertion,
+    debug=True,
+    check_out_of_bound=True,
+    gdb_trigger=False,
+)
 def test_assert_with_check_oob():
     @ti.kernel
     def func():
@@ -161,6 +163,5 @@ def test_static_assert_nonstatic_condition():
         value = False
         ti.static_assert(value, "Oh, no!")
 
-    with pytest.raises(ti.TaichiTypeError,
-                       match="Static assert with non-static condition"):
+    with pytest.raises(ti.TaichiTypeError, match="Static assert with non-static condition"):
         foo()

@@ -121,10 +121,7 @@ def test_while_global_load():
 
 @test_utils.test()
 def test_datatype_string():
-    for ty in [
-            ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.f32,
-            ti.f64
-    ]:
+    for ty in [ti.u8, ti.u16, ti.u32, ti.u64, ti.i8, ti.i16, ti.i32, ti.f32, ti.f64]:
         assert ty.to_string() == str(ty)
 
 

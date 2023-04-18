@@ -32,7 +32,7 @@ v_x_pos2 = ti.Vector.field(2, ti.f32, int(np / 2))
 def initialize():
     for p in x:
         x[p].x = (p + 1) * L / np
-        v[p].x = vt * ti.randn() + (-1)**p * vb  # two streams
+        v[p].x = vt * ti.randn() + (-1) ** p * vb  # two streams
 
 
 @ti.kernel
@@ -62,7 +62,7 @@ def substep():
         s += e[i].x
     for i in e:
         e[i] += -s / ng
-    for p in v:  #G2P
+    for p in v:  # G2P
         base = (x[p] * inv_dx - 0.5).cast(int)
         fx = x[p] * inv_dx - 0.5 - base.cast(float)
         a = e[base] * (1.0 - fx) * qm
@@ -89,10 +89,10 @@ def main():
         for s in range(substepping):
             substep()
         vx_pos()
-        gui.circles(v_x_pos1.to_numpy(), color=0x0000ff, radius=2)
-        gui.circles(v_x_pos2.to_numpy(), color=0xff0000, radius=2)
+        gui.circles(v_x_pos1.to_numpy(), color=0x0000FF, radius=2)
+        gui.circles(v_x_pos2.to_numpy(), color=0xFF0000, radius=2)
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

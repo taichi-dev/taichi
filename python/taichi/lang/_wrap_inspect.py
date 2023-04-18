@@ -45,9 +45,9 @@ def _blender_get_text_name(filename: str):
     # Saved text files are named like `some-path/xxx.blend/Text` or
     # `some-path/xxx.blend/test.py`
     # We drop the path and extract the filename with extension.
-    index = filename.rfind('.blend' + os.path.sep)
+    index = filename.rfind(".blend" + os.path.sep)
     if index != -1:
-        return filename[index + 7:]  # "xxx.blend/test.py" --> "test.py"
+        return filename[index + 7 :]  # "xxx.blend/test.py" --> "test.py"
 
     return None
 
@@ -56,7 +56,7 @@ def _blender_findsource(obj):
     try:
         import bpy  # pylint: disable=import-outside-toplevel
     except:
-        raise ImportError('Not in Blender environment!')
+        raise ImportError("Not in Blender environment!")
 
     # Inspect's built-in `getfile` returns the filename like
     # `/Text`, `/Text.001`, `some-path/xxx.blend/test.py`
@@ -65,8 +65,7 @@ def _blender_findsource(obj):
     # Extract the text name without path
     text_name = _blender_get_text_name(filename)
     if text_name is None:
-        raise IOError(
-            'Object `{obj.__name__}` is not defined in a .blend file!')
+        raise IOError("Object `{obj.__name__}` is not defined in a .blend file!")
     # Get the lines of code via text_name
     lines = bpy.data.texts[text_name].as_string()
     # Now we have found the lines of code.
@@ -75,11 +74,10 @@ def _blender_findsource(obj):
         filename = _blender_findsource._saved_inspect_cache[lines]  # pylint: disable=no-member
     except KeyError:
         # Save the code to a valid path.
-        fd, filename = tempfile.mkstemp(prefix='_Blender_',
-                                        suffix=f'_{text_name}.py')
+        fd, filename = tempfile.mkstemp(prefix="_Blender_", suffix=f"_{text_name}.py")
         os.close(fd)
 
-        with open(filename, 'w') as f:
+        with open(filename, "w") as f:
             f.write(lines)
 
         _blender_findsource._saved_inspect_cache[lines] = filename  # pylint: disable=no-member
@@ -107,14 +105,13 @@ def _Python_IPython_findsource(obj):
         # In this case the filename returned by the built-in's getfile is wrong,
         # it becomes something like `<timed exec>` or `<magic-timeit>`.
         filename = _builtin_getfile(obj)
-        if (filename in {"<timed exec>", "<magic-timeit>"}):
+        if filename in {"<timed exec>", "<magic-timeit>"}:
             try:
                 ip = get_ipython()
                 if ip is not None:
                     # So we are in IPython's cell magic
                     session_id = ip.history_manager.get_last_session_id()
-                    fd, filename = tempfile.mkstemp(prefix='_IPython_',
-                                                    suffix=f'_{session_id}.py')
+                    fd, filename = tempfile.mkstemp(prefix="_IPython_", suffix=f"_{session_id}.py")
                     os.close(fd)
                     # The latest lines of code can be retrived from here
                     lines = ip.history_manager._i00
@@ -127,12 +124,10 @@ def _Python_IPython_findsource(obj):
                     lines_stripped = lines[index:]
                     lines_stripped = lines_stripped.split(maxsplit=1)[1]
 
-                    with open(filename, 'w') as f:
+                    with open(filename, "w") as f:
                         f.write(lines_stripped)
 
-                    atexit.register(
-                        os.unlink,
-                        filename)  # Remove the file after the program exits
+                    atexit.register(os.unlink, filename)  # Remove the file after the program exits
                     func = lambda obj: filename
                     return _find_source_with_custom_getfile_func(func, obj)
 
@@ -140,7 +135,8 @@ def _Python_IPython_findsource(obj):
                 pass
         raise IOError(
             f"Cannot find source code for Object: {obj}, it's likely \
-you are not running Taichi from command line or IPython.")
+you are not running Taichi from command line or IPython."
+        )
 
 
 def _REPL_findsource(obj):
@@ -162,7 +158,8 @@ def _custom_findsource(obj):
                     f"Cannot find source code for Object: {obj}, this \
 is possibly because of you are running Taichi in an environment that Taichi's own \
 inspect module cannot find the source. Please report an issue to help us fix: \
-https://github.com/taichi-dev/taichi/issues")
+https://github.com/taichi-dev/taichi/issues"
+                )
 
 
 class _InspectContextManager:
@@ -187,4 +184,4 @@ def getsourcefile(obj):
         return ret
 
 
-__all__ = ['getsourcelines', 'getsourcefile']
+__all__ = ["getsourcelines", "getsourcefile"]

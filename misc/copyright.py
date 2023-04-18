@@ -49,7 +49,8 @@ Examples:
 {file} --check taichi/common/core.cpp taichi/ir/transforms.h
 {file} benchmarks cmake docs examples misc python taichi tests
 {file} --exts "cpp,py" benchmarks cmake docs examples misc python taichi tests""".format(
-    file=os.path.relpath(__file__))
+    file=os.path.relpath(__file__)
+)
 
 
 class CommentStyle(Enum):
@@ -85,15 +86,14 @@ def get_ctime_year(filepath: str) -> str:
     using git-log.
     """
     # %aI: author date as an YYYY-MM-DDTHH:MM:SS-HH:MM string (git 2.21).
-    command = "git --no-pager log --reverse --format=\"%aI\" {}".format(
-        filepath)
+    command = 'git --no-pager log --reverse --format="%aI" {}'.format(filepath)
     try:
         out = subprocess.check_output(command.split())
     except subprocess.CalledProcessError as e:
         sys.exit("%s error: %s" % (command, e))
-    assert (type(out) == bytes)
-    initial_commit_time = out.decode().strip('"').strip("'").split('\n', 1)[0]
-    return initial_commit_time.split('-')[0]  # str
+    assert type(out) == bytes
+    initial_commit_time = out.decode().strip('"').strip("'").split("\n", 1)[0]
+    return initial_commit_time.split("-")[0]  # str
 
 
 def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
@@ -109,12 +109,8 @@ def make_notice(comment_style: CommentStyle, ctime_year: str) -> List[str]:
         line_start = "//"
     elif comment_style == CommentStyle.PY_STYLE:
         line_start = "#"
-    lines.append(
-        "{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".
-        format(line_start, ctime_year))
-    lines.append(
-        "{0} Use of this software is governed by the LICENSE file.\n".format(
-            line_start))
+    lines.append("{0} Copyright (c) {1} The Taichi Authors. All rights reserved.\n".format(line_start, ctime_year))
+    lines.append("{0} Use of this software is governed by the LICENSE file.\n".format(line_start))
     if comment_style == CommentStyle.C_STYLE:
         lines.append("*" * 78 + "*/\n")
     lines.append("\n")
@@ -126,13 +122,12 @@ COPYRIGHT_NOTICE_REGEX = re.compile(r"copyright.+taichi")
 COPYRIGHT_INCORRECT_REGEX = re.compile(r"copyright.+taichi.+(20\d\d)- ")
 
 
-def check_and_modify(filepath: str, comment_style: CommentStyle,
-                     check_only: bool) -> FileActionResult:
+def check_and_modify(filepath: str, comment_style: CommentStyle, check_only: bool) -> FileActionResult:
     """
     Effects: see DOC_STRING
     """
     new_header_lines, body_lines = [], []
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         body_lines = f.readlines()
     existent_notice_match, incorrect_notice_match = None, None
     sharp_bang_line = None
@@ -140,43 +135,42 @@ def check_and_modify(filepath: str, comment_style: CommentStyle,
         if i >= len(body_lines):
             continue
         line = body_lines[i]
-        if i == 0 and line.startswith('#!'):
+        if i == 0 and line.startswith("#!"):
             sharp_bang_line = line
         line_lower = line.lower()
         existent_notice_match = COPYRIGHT_NOTICE_REGEX.search(line_lower)
         if existent_notice_match:  # Notice exists...
-            incorrect_notice_match = COPYRIGHT_INCORRECT_REGEX.search(
-                line_lower)
+            incorrect_notice_match = COPYRIGHT_INCORRECT_REGEX.search(line_lower)
             if not incorrect_notice_match:  # ...and is not caught by the format checker
                 return FileActionResult.INTACT
             else:  # ...but is caught by the format checker
                 to_replace_line_index = i
                 break
     if not existent_notice_match:
-        assert (not incorrect_notice_match)
+        assert not incorrect_notice_match
         # Notice missing; now we need to insert a notice.
         if not check_only:
-            new_header_lines = make_notice(comment_style,
-                                           get_ctime_year(filepath))
+            new_header_lines = make_notice(comment_style, get_ctime_year(filepath))
             if sharp_bang_line:
                 new_header_lines = [sharp_bang_line] + new_header_lines
                 body_lines = body_lines[1:]  # Remove the original #! line
         return_state = FileActionResult.INSERTED_NOTICE
     else:
-        assert (incorrect_notice_match)
+        assert incorrect_notice_match
         # Notice exists but format is wrong; now we need to modify that notice.
         if not check_only:
             notice_match_start = existent_notice_match.start()
             year_1st = incorrect_notice_match.group(1)
-            assert (year_1st)
+            assert year_1st
             # This is how cs.chromium.org writes the notice, and I think the lawyers
             # should be confident :)
-            correct_line = (" " * notice_match_start) \
-                + "Copyright (c) %s The Taichi Authors. All rights reserved.\n" % year_1st
+            correct_line = (
+                " " * notice_match_start
+            ) + "Copyright (c) %s The Taichi Authors. All rights reserved.\n" % year_1st
             body_lines[to_replace_line_index] = correct_line
         return_state = FileActionResult.MODIFIED_NOTICE
     if not check_only:
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             if new_header_lines:
                 f.writelines(new_header_lines)
             f.writelines(body_lines)
@@ -207,16 +201,15 @@ def print_progress(stats: WorkStats, check_only: bool):
         tense="will" if check_only else "did",
         insert=stats.inserted_notice_file_num,
         modify=stats.modified_notice_file_num,
-        dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)])
+        dots=PLAYFUL_BRAILLE[stats.opened_file_num % len(PLAYFUL_BRAILLE)],
+    )
     # 1A, 2K: move cursor one line up and clear the entire line.
-    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content +
-                     "\n")
+    sys.stdout.write(("\x1b[1A\x1b[2K" if LINE_ELIDING else "") + content + "\n")
 
 
 def work_on_file(filepath: str, ext: str, stats: WorkStats, check_only: bool):
     stats.opened_file_num += 1
-    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext],
-                              check_only)
+    status = check_and_modify(filepath, FILE_EXT_TO_COMMENT_STYLES[ext], check_only)
     if check_only and status != FileActionResult.INTACT:
         stats.problematic_files.append(filepath)
     if status == FileActionResult.INSERTED_NOTICE:
@@ -232,8 +225,9 @@ def is_interested_ext(ext: str, selected_stripped_exts: List[str]) -> bool:
     NOTE ext contains a dot, e.g. ".cpp", ".sh", while selected_stripped_exts elements
          do not, e.g. [ "cpp", "sh" ]
     """
-    return (ext in FILE_EXT_TO_COMMENT_STYLES) \
-        and ((not selected_stripped_exts) or (ext.lstrip(".") in selected_stripped_exts))
+    return (ext in FILE_EXT_TO_COMMENT_STYLES) and (
+        (not selected_stripped_exts) or (ext.lstrip(".") in selected_stripped_exts)
+    )
 
 
 def work(args) -> bool:
@@ -247,13 +241,12 @@ def work(args) -> bool:
     print("Starting.")
     for path in args.paths:
         if os.path.isdir(path):
-            for (dirpath, dirnames, filenames) in os.walk(path):
+            for dirpath, dirnames, filenames in os.walk(path):
                 for f in filenames:
                     ext = os.path.splitext(f)[-1]
                     if not is_interested_ext(ext, picked_exts):
                         continue
-                    work_on_file(os.path.join(dirpath, f), ext, stats,
-                                 args.check)
+                    work_on_file(os.path.join(dirpath, f), ext, stats, args.check)
         elif os.path.isfile(path):
             ext = os.path.splitext(path)[-1]
             if not is_interested_ext(ext, picked_exts):
@@ -266,8 +259,10 @@ def work(args) -> bool:
     if problematic_num > 0:
         print("\t{}".format("\n\t".join(sorted(stats.problematic_files))))
         print(
-            "{} out of {} files do not have correctly-formatted copyright notices."
-            .format(problematic_num, stats.opened_file_num))
+            "{} out of {} files do not have correctly-formatted copyright notices.".format(
+                problematic_num, stats.opened_file_num
+            )
+        )
     else:
         print("Copyright notices in the given paths are ok.")
     return problematic_num == 0
@@ -277,27 +272,23 @@ def main():
     """
     Returns 0 on success, 1 otherwise.
     """
-    argparser = argparse.ArgumentParser(
-        description="Copyright notice checker and rewriter.")
-    argparser.add_argument("paths",
-                           type=str,
-                           nargs='*',
-                           help="non-overlapping directories or files")
+    argparser = argparse.ArgumentParser(description="Copyright notice checker and rewriter.")
+    argparser.add_argument("paths", type=str, nargs="*", help="non-overlapping directories or files")
     argparser.add_argument(
         "-e",
         "--exts",
         metavar="E,..",
         type=str,
         default="",
-        help="comma-separated file extensions; all if absent")
+        help="comma-separated file extensions; all if absent",
+    )
     argparser.add_argument(
         "-c",
         "--check",
         action="store_true",
-        help="check only; returns 1 if some files will be rewritten")
-    argparser.add_argument("--docs",
-                           action="store_true",
-                           help="print long documentation")
+        help="check only; returns 1 if some files will be rewritten",
+    )
+    argparser.add_argument("--docs", action="store_true", help="print long documentation")
     args = argparser.parse_args()
     if args.docs:
         print(DOC_STRING)
@@ -310,13 +301,11 @@ def main():
     if missing_dirs:
         sys.exit("[Error] path not found: %s" % " ".join(missing_dirs))
 
-    unhandled_exts = None if not args.exts else [
-        e for e in args.exts.split(",")
-        if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES
-    ]
+    unhandled_exts = (
+        None if not args.exts else [e for e in args.exts.split(",") if ("." + e) not in FILE_EXT_TO_COMMENT_STYLES]
+    )
     if unhandled_exts:
-        sys.exit("[Error] unhandled extension names: %s" %
-                 " ".join(unhandled_exts))
+        sys.exit("[Error] unhandled extension names: %s" % " ".join(unhandled_exts))
     return 0 if work(args) else 1
 
 

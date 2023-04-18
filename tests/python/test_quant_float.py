@@ -6,7 +6,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('max_num_bits', [32, 64])
+@pytest.mark.parametrize("max_num_bits", [32, 64])
 @test_utils.test(require=ti.extension.quant)
 def test_quant_float_unsigned(max_num_bits):
     qflt = ti.types.quant.float(exp=6, frac=13, signed=False)
@@ -17,8 +17,23 @@ def test_quant_float_unsigned(max_num_bits):
     ti.root.place(bitpack)
 
     tests = [
-        0, 1 / 1024, 1.75 / 1024, 0.25, 0.5, 0.75, 1, 2, 3, 4, 5, 6, 7, 128,
-        256, 512, 1024
+        0,
+        1 / 1024,
+        1.75 / 1024,
+        0.25,
+        0.5,
+        0.75,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        128,
+        256,
+        512,
+        1024,
     ]
 
     assert x[None] == 0
@@ -57,7 +72,7 @@ def test_quant_float_signed():
         assert x[None] == approx(-v, abs=1e-5)
 
 
-@pytest.mark.parametrize('digits_bits', [23, 24])
+@pytest.mark.parametrize("digits_bits", [23, 24])
 @test_utils.test(require=ti.extension.quant)
 def test_quant_float_precision(digits_bits):
     qflt = ti.types.quant.float(exp=8, frac=digits_bits)
@@ -80,7 +95,7 @@ def test_quant_float_precision(digits_bits):
             assert x[None] == pytest.approx(v, rel=3e-7)
 
 
-@pytest.mark.parametrize('signed', [True, False])
+@pytest.mark.parametrize("signed", [True, False])
 @test_utils.test(require=ti.extension.quant)
 def test_quant_float_truncation(signed):
     qflt = ti.types.quant.float(exp=5, frac=2, signed=signed)

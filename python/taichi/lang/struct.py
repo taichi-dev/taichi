@@ -4,12 +4,14 @@ from types import MethodType
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
-from taichi.lang.exception import (TaichiRuntimeTypeError, TaichiSyntaxError,
-                                   TaichiTypeError)
+from taichi.lang.exception import (
+    TaichiRuntimeTypeError,
+    TaichiSyntaxError,
+    TaichiTypeError,
+)
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
-from taichi.lang.util import (cook_dtype, in_python_scope, python_scope,
-                              taichi_scope)
+from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
 from taichi.types import primitive_types
 from taichi.types.compound_types import CompoundType
 from taichi.types.utils import is_signed
@@ -42,6 +44,7 @@ class Struct:
         >>> print(B.items)
         dict_items([('v', [0. 0. 0.]), ('t', 1.0), ('A', {'v': [[0.], [0.], [0.]], 't': 1.0})])
     """
+
     _is_taichi_class = True
     _instance_count = 0
 
@@ -102,11 +105,8 @@ class Struct:
         cls = self.__class__
         new_cls_name = cls.__name__ + str(cls._instance_count)
         cls._instance_count += 1
-        properties = {
-            k: property(cls._make_getter(k), cls._make_setter(k))
-            for k in self.keys
-        }
-        self.__class__ = type(new_cls_name, (cls, ), properties)
+        properties = {k: property(cls._make_getter(k), cls._make_setter(k)) for k in self.keys}
+        self.__class__ = type(new_cls_name, (cls,), properties)
 
     def _register_methods(self):
         for name, method in self.methods.items():
@@ -124,16 +124,13 @@ class Struct:
             self.entries[key].accessor.setter(value, *self.entries[key].key)
         else:
             if in_python_scope():
-                if isinstance(self.entries[key], Struct) or isinstance(
-                        self.entries[key], Matrix):
+                if isinstance(self.entries[key], Struct) or isinstance(self.entries[key], Matrix):
                     self.entries[key]._set_entries(value)
                 else:
                     if isinstance(value, numbers.Number):
                         self.entries[key] = value
                     else:
-                        raise TypeError(
-                            "A number is expected when assigning struct members"
-                        )
+                        raise TypeError("A number is expected when assigning struct members")
             else:
                 self.entries[key] = value
 
@@ -162,13 +159,11 @@ class Struct:
     @taichi_scope
     def _assign(self, other):
         if not isinstance(other, (dict, Struct)):
-            raise TaichiTypeError(
-                "Only dict or Struct can be assigned to a Struct")
+            raise TaichiTypeError("Only dict or Struct can be assigned to a Struct")
         if isinstance(other, dict):
             other = Struct(other)
         if self.entries.keys() != other.entries.keys():
-            raise TaichiTypeError(
-                f"Member mismatch between structs {self.keys}, {other.keys}")
+            raise TaichiTypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         for k, v in self.items:
             v._assign(other.entries[k])
         return self
@@ -183,9 +178,8 @@ class Struct:
     def __str__(self):
         """Python scope struct array print support."""
         if impl.inside_kernel():
-            item_str = ", ".join(
-                [str(k) + "=" + str(v) for k, v in self.items])
-            return f'<ti.Struct {item_str}>'
+            item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
+            return f"<ti.Struct {item_str}>"
         return str(self.to_dict())
 
     def __repr__(self):
@@ -202,30 +196,31 @@ class Struct:
             Dict: The result dictionary.
         """
         res_dict = {
-            k: v.to_dict() if isinstance(v, Struct) else
-            v.to_list() if isinstance(v, Matrix) else v
+            k: v.to_dict() if isinstance(v, Struct) else v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
         if include_methods:
-            res_dict['__struct_methods'] = self.methods
+            res_dict["__struct_methods"] = self.methods
         if include_ndim:
-            res_dict['__matrix_ndim'] = dict()
+            res_dict["__matrix_ndim"] = dict()
             for k, v in self.entries.items():
                 if isinstance(v, Matrix):
-                    res_dict['__matrix_ndim'][k] = v.ndim
+                    res_dict["__matrix_ndim"][k] = v.ndim
         return res_dict
 
     @classmethod
     @python_scope
-    def field(cls,
-              members,
-              methods={},
-              shape=None,
-              name="<Struct>",
-              offset=None,
-              needs_grad=False,
-              needs_dual=False,
-              layout=Layout.AOS):
+    def field(
+        cls,
+        members,
+        methods={},
+        shape=None,
+        name="<Struct>",
+        offset=None,
+        needs_grad=False,
+        needs_dual=False,
+        layout=Layout.AOS,
+    ):
         """Creates a :class:`~taichi.StructField` with each element
         has this struct as its type.
 
@@ -264,72 +259,69 @@ class Struct:
         """
 
         if shape is None and offset is not None:
-            raise TaichiSyntaxError(
-                "shape cannot be None when offset is being set")
+            raise TaichiSyntaxError("shape cannot be None when offset is being set")
 
         field_dict = {}
 
         for key, dtype in members.items():
-            field_name = name + '.' + key
+            field_name = name + "." + key
             if isinstance(dtype, CompoundType):
                 if isinstance(dtype, StructType):
-                    field_dict[key] = dtype.field(shape=None,
-                                                  name=field_name,
-                                                  offset=offset,
-                                                  needs_grad=needs_grad,
-                                                  needs_dual=needs_dual)
+                    field_dict[key] = dtype.field(
+                        shape=None,
+                        name=field_name,
+                        offset=offset,
+                        needs_grad=needs_grad,
+                        needs_dual=needs_dual,
+                    )
                 else:
-                    field_dict[key] = dtype.field(shape=None,
-                                                  name=field_name,
-                                                  offset=offset,
-                                                  needs_grad=needs_grad,
-                                                  needs_dual=needs_dual,
-                                                  ndim=getattr(
-                                                      dtype, 'ndim', 2))
+                    field_dict[key] = dtype.field(
+                        shape=None,
+                        name=field_name,
+                        offset=offset,
+                        needs_grad=needs_grad,
+                        needs_dual=needs_dual,
+                        ndim=getattr(dtype, "ndim", 2),
+                    )
             else:
-                field_dict[key] = impl.field(dtype,
-                                             shape=None,
-                                             name=field_name,
-                                             offset=offset,
-                                             needs_grad=needs_grad,
-                                             needs_dual=needs_dual)
+                field_dict[key] = impl.field(
+                    dtype,
+                    shape=None,
+                    name=field_name,
+                    offset=offset,
+                    needs_grad=needs_grad,
+                    needs_dual=needs_dual,
+                )
 
         if shape is not None:
             if isinstance(shape, numbers.Number):
-                shape = (shape, )
+                shape = (shape,)
             if isinstance(offset, numbers.Number):
-                offset = (offset, )
+                offset = (offset,)
 
             if offset is not None and len(shape) != len(offset):
                 raise TaichiSyntaxError(
-                    f'The dimensionality of shape and offset must be the same ({len(shape)} != {len(offset)})'
+                    f"The dimensionality of shape and offset must be the same ({len(shape)} != {len(offset)})"
                 )
             dim = len(shape)
             if layout == Layout.SOA:
                 for e in field_dict.values():
-                    impl.root.dense(impl.index_nd(dim),
-                                    shape).place(e, offset=offset)
+                    impl.root.dense(impl.index_nd(dim), shape).place(e, offset=offset)
                 if needs_grad:
                     for e in field_dict.values():
-                        impl.root.dense(impl.index_nd(dim),
-                                        shape).place(e.grad, offset=offset)
+                        impl.root.dense(impl.index_nd(dim), shape).place(e.grad, offset=offset)
                 if needs_dual:
                     for e in field_dict.values():
-                        impl.root.dense(impl.index_nd(dim),
-                                        shape).place(e.dual, offset=offset)
+                        impl.root.dense(impl.index_nd(dim), shape).place(e.dual, offset=offset)
             else:
-                impl.root.dense(impl.index_nd(dim),
-                                shape).place(*tuple(field_dict.values()),
-                                             offset=offset)
+                impl.root.dense(impl.index_nd(dim), shape).place(*tuple(field_dict.values()), offset=offset)
                 if needs_grad:
                     grads = tuple(e.grad for e in field_dict.values())
-                    impl.root.dense(impl.index_nd(dim),
-                                    shape).place(*grads, offset=offset)
+                    impl.root.dense(impl.index_nd(dim), shape).place(*grads, offset=offset)
 
                 if needs_dual:
                     duals = tuple(e.dual for e in field_dict.values())
-                    impl.root.dense(impl.index_nd(dim),
-                                    shape).place(*duals, offset=offset)
+                    impl.root.dense(impl.index_nd(dim), shape).place(*duals, offset=offset)
 
         return StructField(field_dict, methods, name=name)
 
@@ -342,9 +334,10 @@ class _IntermediateStruct(Struct):
             Any methods included under the key '__struct_methods' will be applied to each
             struct instance.
     """
+
     def __init__(self, entries):
         assert isinstance(entries, dict)
-        self.methods = entries.pop('__struct_methods', {})
+        self.methods = entries.pop("__struct_methods", {})
         self._register_methods()
         self.entries = entries
         self._register_members()
@@ -362,6 +355,7 @@ class StructField(Field):
             to each struct instance in the field.
         name (string, optional): The custom name of the field.
     """
+
     def __init__(self, field_dict, struct_methods, name=None, is_primal=True):
         # will not call Field initializer
         self.field_dict = field_dict
@@ -373,18 +367,12 @@ class StructField(Field):
             grad_field_dict = {}
             for k, v in self.field_dict.items():
                 grad_field_dict[k] = v.grad
-            self.grad = StructField(grad_field_dict,
-                                    struct_methods,
-                                    name + ".grad",
-                                    is_primal=False)
+            self.grad = StructField(grad_field_dict, struct_methods, name + ".grad", is_primal=False)
 
             dual_field_dict = {}
             for k, v in self.field_dict.items():
                 dual_field_dict[k] = v.dual
-            self.dual = StructField(dual_field_dict,
-                                    struct_methods,
-                                    name + ".dual",
-                                    is_primal=False)
+            self.dual = StructField(dual_field_dict, struct_methods, name + ".dual", is_primal=False)
         self._register_fields()
 
     @property
@@ -583,11 +571,10 @@ class StructField(Field):
         self._initialize_host_accessors()
         # scalar fields does not instantiate SNodeHostAccess by default
         entries = {
-            k: v._host_access(self._pad_key(indices))[0] if isinstance(
-                v, ScalarField) else v[indices]
+            k: v._host_access(self._pad_key(indices))[0] if isinstance(v, ScalarField) else v[indices]
             for k, v in self._items
         }
-        entries['__struct_methods'] = self.struct_methods
+        entries["__struct_methods"] = self.struct_methods
         return Struct(entries)
 
 
@@ -597,7 +584,7 @@ class StructType(CompoundType):
         self.methods = {}
         elements = []
         for k, dtype in kwargs.items():
-            if k == '__struct_methods':
+            if k == "__struct_methods":
                 self.methods = dtype
             elif isinstance(dtype, StructType):
                 self.members[k] = dtype
@@ -609,8 +596,7 @@ class StructType(CompoundType):
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
                 elements.append([dtype, k])
-        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(
-            elements)
+        self.dtype = _ti_core.get_type_factory_instance().get_struct_type(elements)
 
     def __call__(self, *args, **kwargs):
         """Create an instance of this struct type."""
@@ -626,8 +612,7 @@ class StructType(CompoundType):
 
             # If dtype is CompoundType and data is a scalar, it cannot be
             # casted in the self.cast call later. We need an initialization here.
-            if isinstance(dtype, CompoundType) and not isinstance(
-                    data, (dict, Struct)):
+            if isinstance(dtype, CompoundType) and not isinstance(data, (dict, Struct)):
                 data = dtype(data)
 
             d[name] = data
@@ -642,12 +627,9 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name] = dtype.from_taichi_object(func_ret,
-                                                   ret_index + (index, ))
+                d[name] = dtype.from_taichi_object(func_ret, ret_index + (index,))
             else:
-                d[name] = expr.Expr(
-                    _ti_core.make_get_element_expr(func_ret.ptr,
-                                                   ret_index + (index, )))
+                d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
 
         return Struct(d)
 
@@ -657,23 +639,17 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                d[name] = dtype.from_kernel_struct_ret(launch_ctx,
-                                                       ret_index + (index, ))
+                d[name] = dtype.from_kernel_struct_ret(launch_ctx, ret_index + (index,))
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        d[name] = launch_ctx.get_struct_ret_int(ret_index +
-                                                                (index, ))
+                        d[name] = launch_ctx.get_struct_ret_int(ret_index + (index,))
                     else:
-                        d[name] = launch_ctx.get_struct_ret_uint(ret_index +
-                                                                 (index, ))
+                        d[name] = launch_ctx.get_struct_ret_uint(ret_index + (index,))
                 elif dtype in primitive_types.real_types:
-                    d[name] = launch_ctx.get_struct_ret_float(ret_index +
-                                                              (index, ))
+                    d[name] = launch_ctx.get_struct_ret_float(ret_index + (index,))
                 else:
-                    raise TaichiRuntimeTypeError(
-                        f"Invalid return type on index={ret_index + (index, )}"
-                    )
+                    raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
 
         return Struct(d)
 
@@ -683,29 +659,22 @@ class StructType(CompoundType):
         for index, pair in enumerate(items):
             name, dtype = pair
             if isinstance(dtype, CompoundType):
-                dtype.set_kernel_struct_args(struct[name], launch_ctx,
-                                             ret_index + (index, ))
+                dtype.set_kernel_struct_args(struct[name], launch_ctx, ret_index + (index,))
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        launch_ctx.set_struct_arg_int(ret_index + (index, ),
-                                                      struct[name])
+                        launch_ctx.set_struct_arg_int(ret_index + (index,), struct[name])
                     else:
-                        launch_ctx.set_struct_arg_uint(ret_index + (index, ),
-                                                       struct[name])
+                        launch_ctx.set_struct_arg_uint(ret_index + (index,), struct[name])
                 elif dtype in primitive_types.real_types:
-                    launch_ctx.set_struct_arg_float(ret_index + (index, ),
-                                                    struct[name])
+                    launch_ctx.set_struct_arg_float(ret_index + (index,), struct[name])
                 else:
-                    raise TaichiRuntimeTypeError(
-                        f"Invalid argument type on index={ret_index + (index, )}"
-                    )
+                    raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
 
     def cast(self, struct):
         # sanity check members
         if self.members.keys() != struct.entries.keys():
-            raise TaichiSyntaxError(
-                "Incompatible arguments for custom struct members!")
+            raise TaichiSyntaxError("Incompatible arguments for custom struct members!")
         entries = {}
         for k, dtype in self.members.items():
             if isinstance(dtype, MatrixType):
@@ -715,12 +684,10 @@ class StructType(CompoundType):
             else:
                 if in_python_scope():
                     v = struct.entries[k]
-                    entries[k] = int(
-                        v
-                    ) if dtype in primitive_types.integer_types else float(v)
+                    entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
                     entries[k] = ops.cast(struct.entries[k], dtype)
-        entries['__struct_methods'] = self.methods
+        entries["__struct_methods"] = self.methods
         return Struct(entries)
 
     def filled_with_scalar(self, value):
@@ -732,7 +699,7 @@ class StructType(CompoundType):
                 entries[k] = dtype.filled_with_scalar(value)
             else:
                 entries[k] = value
-        entries['__struct_methods'] = self.methods
+        entries["__struct_methods"] = self.methods
         return Struct(entries)
 
     def field(self, **kwargs):
@@ -772,12 +739,12 @@ def dataclass(cls):
             and methods from the class attached.
     """
     # save the annotation fields for the struct
-    fields = getattr(cls, '__annotations__', {})
+    fields = getattr(cls, "__annotations__", {})
     # get the class methods to be attached to the struct types
-    fields['__struct_methods'] = {
+    fields["__struct_methods"] = {
         attribute: getattr(cls, attribute)
         for attribute in dir(cls)
-        if callable(getattr(cls, attribute)) and not attribute.startswith('__')
+        if callable(getattr(cls, attribute)) and not attribute.startswith("__")
     }
     return StructType(**fields)
 

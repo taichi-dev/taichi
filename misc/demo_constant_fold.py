@@ -2,7 +2,7 @@
 import taichi as ti
 
 ti.init(print_ir=True)
-#ti.core.toggle_advanced_optimization(False)
+# ti.core.toggle_advanced_optimization(False)
 
 
 @ti.kernel

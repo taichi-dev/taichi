@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile, mkstemp
 import numpy as np
 import pytest
 from taichi._lib import core as _ti_core
-from taichi.lang import cc, cpu, cuda, dx11, gles, gpu, metal, opengl, vulkan
+from taichi.lang import cpu, cuda, dx11, gles, gpu, metal, opengl, vulkan
 from taichi.lang.misc import is_arch_supported
 
 import taichi as ti
@@ -141,7 +141,7 @@ def expected_archs():
     """
 
     def get_archs():
-        archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
+        archs = set([cpu, cuda, metal, vulkan, opengl, gles])
         # TODO: now expected_archs is not called per test so we cannot test it
         archs = set(filter(is_arch_supported, archs))
         return archs

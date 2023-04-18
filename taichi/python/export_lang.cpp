@@ -21,7 +21,6 @@
 #include "taichi/program/ndarray.h"
 #include "taichi/python/export.h"
 #include "taichi/math/svd.h"
-#include "taichi/util/action_recorder.h"
 #include "taichi/system/timeline.h"
 #include "taichi/python/snode_registry.h"
 #include "taichi/program/sparse_matrix.h"
@@ -201,8 +200,6 @@ void export_lang(py::module &m) {
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
       .def_readwrite("make_cpu_multithreading_loop",
                      &CompileConfig::make_cpu_multithreading_loop)
-      .def_readwrite("cc_compile_cmd", &CompileConfig::cc_compile_cmd)
-      .def_readwrite("cc_link_cmd", &CompileConfig::cc_link_cmd)
       .def_readwrite("quant_opt_store_fusion",
                      &CompileConfig::quant_opt_store_fusion)
       .def_readwrite("quant_opt_atomic_demotion",
@@ -1082,30 +1079,6 @@ void export_lang(py::module &m) {
   m.def("get_max_num_args", [] { return taichi_max_num_args; });
   m.def("test_threading", test_threading);
   m.def("is_extension_supported", is_extension_supported);
-
-  m.def("record_action_entry",
-        [](std::string name,
-           std::vector<std::pair<std::string,
-                                 std::variant<std::string, int, float>>> args) {
-          std::vector<ActionArg> acts;
-          for (auto const &[k, v] : args) {
-            if (std::holds_alternative<int>(v)) {
-              acts.push_back(ActionArg(k, std::get<int>(v)));
-            } else if (std::holds_alternative<float>(v)) {
-              acts.push_back(ActionArg(k, std::get<float>(v)));
-            } else {
-              acts.push_back(ActionArg(k, std::get<std::string>(v)));
-            }
-          }
-          ActionRecorder::get_instance().record(name, acts);
-        });
-
-  m.def("start_recording", [](const std::string &fn) {
-    ActionRecorder::get_instance().start_recording(fn);
-  });
-
-  m.def("stop_recording",
-        []() { ActionRecorder::get_instance().stop_recording(); });
 
   m.def("query_int64", [](const std::string &key) {
     if (key == "cuda_compute_capability") {

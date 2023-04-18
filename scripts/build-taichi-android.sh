@@ -28,7 +28,6 @@ cmake $TAICHI_REPO_DIR \
     -DANDROID_ABI="arm64-v8a" \
     -DANDROID_PLATFORM=android-26 \
     -G "Ninja" \
-    -DTI_WITH_CC=OFF \
     -DTI_WITH_CUDA=OFF \
     -DTI_WITH_CUDA_TOOLKIT=OFF \
     -DTI_WITH_C_API=ON \

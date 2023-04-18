@@ -78,7 +78,6 @@ jobs:
       PROJECT_NAME: ${{ matrix.name }}
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=ON
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
 
@@ -131,7 +130,6 @@ jobs:
       PROJECT_NAME: ${{ matrix.name }}
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
 
@@ -186,7 +184,6 @@ jobs:
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_OPENGL:BOOL=OFF
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
     steps:
       - uses: actions/checkout@v3
@@ -237,7 +234,6 @@ jobs:
       TAICHI_CMAKE_ARGS: >-
         -DTI_WITH_OPENGL:BOOL=OFF
         -DTI_WITH_CUDA:BOOL=OFF
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_BUILD_TESTS:BOOL=ON
 
@@ -288,7 +284,6 @@ jobs:
         -DTI_WITH_VULKAN:BOOL=ON
         -DTI_WITH_DX11:BOOL=ON
         -DTI_WITH_DX12:BOOL=ON
-        -DTI_WITH_CC:BOOL=OFF
         -DTI_BUILD_TESTS:BOOL=ON
         -DTI_WITH_C_API=ON
 

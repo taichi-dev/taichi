@@ -222,7 +222,7 @@ def test_args_with_many_ndarrays():
     )
 
 
-@test_utils.test()
+@test_utils.test(arch=[ti.cpu, ti.cuda])
 def test_struct_arg():
     s0 = ti.types.struct(a=ti.i16, b=ti.f64)
     s1 = ti.types.struct(a=ti.f32, b=s0)

@@ -5,5 +5,5 @@ import sys
 
 import ti_build.entry
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(ti_build.entry.main())

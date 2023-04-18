@@ -265,7 +265,7 @@ The layout of `f`:
             └  └──────┴──────┴──────┘  ┘
 ```
 
-The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 3:
+The following code snippet declares a `300x300x300` vector field `volumetric_field`, whose vector dimension is 4:
 
 ```python
 box_size = (300, 300, 300)  # A 300x300x300 grid in a 3D space

@@ -26,6 +26,7 @@ class Template:
         >>> test(a)  # will still print 1
         >>> test_template(a)  # will print 2
     """
+
     def __init__(self, tensor=None, dim=None):
         self.tensor = tensor
         self.dim = dim
@@ -40,4 +41,4 @@ class sparse_matrix_builder:
     pass
 
 
-__all__ = ['template', 'sparse_matrix_builder']
+__all__ = ["template", "sparse_matrix_builder"]

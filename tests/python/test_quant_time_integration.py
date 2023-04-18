@@ -7,9 +7,15 @@ import taichi as ti
 from tests import test_utils
 
 
-@pytest.mark.parametrize('use_quant,use_exponent,use_shared_exp',
-                         [(False, False, False), (True, False, False),
-                          (True, True, False), (True, True, True)])
+@pytest.mark.parametrize(
+    "use_quant,use_exponent,use_shared_exp",
+    [
+        (False, False, False),
+        (True, False, False),
+        (True, True, False),
+        (True, True, True),
+    ],
+)
 @test_utils.test(require=ti.extension.quant)
 def test_quant_time_integration(use_quant, use_exponent, use_shared_exp):
     if use_quant:

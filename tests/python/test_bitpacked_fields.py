@@ -22,13 +22,13 @@ def test_simple_array():
     @ti.kernel
     def set_val():
         for i in range(N):
-            x[i] = -2**i
+            x[i] = -(2**i)
             y[i] = 2**i - 1
 
     @ti.kernel
     def verify_val():
         for i in range(N):
-            assert x[i] == -2**i
+            assert x[i] == -(2**i)
             assert y[i] == 2**i - 1
 
     set_val()
@@ -40,9 +40,7 @@ def test_simple_array():
 
 
 # TODO: remove excluding of ti.metal
-@test_utils.test(require=ti.extension.quant_basic,
-                 exclude=[ti.metal],
-                 debug=True)
+@test_utils.test(require=ti.extension.quant_basic, exclude=[ti.metal], debug=True)
 def test_quant_int_load_and_store():
     qi13 = ti.types.quant.int(13, True)
     qu14 = ti.types.quant.int(14, False)
@@ -53,9 +51,15 @@ def test_quant_int_load_and_store():
     z = ti.field(dtype=qi5)
 
     test_case_np = np.array(
-        [[2**12 - 1, 2**14 - 1, -(2**3)], [2**11 - 1, 2**13 - 1, -(2**2)],
-         [0, 0, 0], [123, 4567, 8], [10, 31, 11]],
-        dtype=np.int32)
+        [
+            [2**12 - 1, 2**14 - 1, -(2**3)],
+            [2**11 - 1, 2**13 - 1, -(2**2)],
+            [0, 0, 0],
+            [123, 4567, 8],
+            [10, 31, 11],
+        ],
+        dtype=np.int32,
+    )
 
     bitpack = ti.BitpackedFields(max_num_bits=32)
     bitpack.place(x, y, z)
@@ -101,8 +105,7 @@ def test_quant_int_full_struct():
 
 
 def test_bitpacked_fields():
-    def test_single_bitpacked_fields(physical_type, compute_type, quant_bits,
-                                     test_case):
+    def test_single_bitpacked_fields(physical_type, compute_type, quant_bits, test_case):
         ti.init(arch=ti.cpu, debug=True)
 
         qit1 = ti.types.quant.int(quant_bits[0], True, compute_type)
@@ -133,26 +136,18 @@ def test_bitpacked_fields():
 
         ti.reset()
 
-    test_single_bitpacked_fields(8, ti.i8, [3, 3, 2],
-                                 np.array([2**2 - 1, 2**3 - 1, -2**1]))
-    test_single_bitpacked_fields(16, ti.i16, [4, 7, 5],
-                                 np.array([2**3 - 1, 2**7 - 1, -2**4]))
-    test_single_bitpacked_fields(32, ti.i32, [17, 11, 4],
-                                 np.array([2**16 - 1, 2**10 - 1, -2**3]))
-    test_single_bitpacked_fields(64, ti.i64, [32, 23, 9],
-                                 np.array([2**31 - 1, 2**23 - 1, -2**8]))
-    test_single_bitpacked_fields(32, ti.i16, [7, 12, 13],
-                                 np.array([2**6 - 1, 2**12 - 1, -2**12]))
-    test_single_bitpacked_fields(64, ti.i32, [18, 22, 24],
-                                 np.array([2**17 - 1, 2**22 - 1, -2**23]))
+    test_single_bitpacked_fields(8, ti.i8, [3, 3, 2], np.array([2**2 - 1, 2**3 - 1, -(2**1)]))
+    test_single_bitpacked_fields(16, ti.i16, [4, 7, 5], np.array([2**3 - 1, 2**7 - 1, -(2**4)]))
+    test_single_bitpacked_fields(32, ti.i32, [17, 11, 4], np.array([2**16 - 1, 2**10 - 1, -(2**3)]))
+    test_single_bitpacked_fields(64, ti.i64, [32, 23, 9], np.array([2**31 - 1, 2**23 - 1, -(2**8)]))
+    test_single_bitpacked_fields(32, ti.i16, [7, 12, 13], np.array([2**6 - 1, 2**12 - 1, -(2**12)]))
+    test_single_bitpacked_fields(64, ti.i32, [18, 22, 24], np.array([2**17 - 1, 2**22 - 1, -(2**23)]))
 
     test_single_bitpacked_fields(16, ti.i16, [5, 5, 6], np.array([15, 5, 20]))
-    test_single_bitpacked_fields(32, ti.i32, [10, 10, 12],
-                                 np.array([11, 19, 2020]))
+    test_single_bitpacked_fields(32, ti.i32, [10, 10, 12], np.array([11, 19, 2020]))
 
 
-@test_utils.test(require=[ti.extension.quant_basic, ti.extension.sparse],
-                 debug=True)
+@test_utils.test(require=[ti.extension.quant_basic, ti.extension.sparse], debug=True)
 def test_bitpacked_fields_struct_for():
     block_size = 16
     N = 64
@@ -221,7 +216,7 @@ def test_invalid_place():
     p = ti.field(dtype=f15)
     bitpack = ti.BitpackedFields(max_num_bits=32)
     with pytest.raises(
-            ti.TaichiCompilationError,
-            match=
-            'At least 2 fields need to be placed when shared_exponent=True'):
+        ti.TaichiCompilationError,
+        match="At least 2 fields need to be placed when shared_exponent=True",
+    ):
         bitpack.place(p, shared_exponent=True)

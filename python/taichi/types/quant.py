@@ -21,8 +21,7 @@ def int(bits, signed=True, compute=None):  # pylint: disable=W0622
         DataType: The specified type.
     """
     if compute is None:
-        compute = impl.get_runtime(
-        ).default_ip if signed else impl.get_runtime().default_up
+        compute = impl.get_runtime().default_ip if signed else impl.get_runtime().default_up
     if isinstance(compute, _ti_python_core.DataType):
         compute = compute.get_ptr()
     return _type_factory.get_quant_int_type(bits, signed, compute)
@@ -49,7 +48,7 @@ def fixed(bits, signed=True, max_value=1.0, compute=None, scale=None):
     underlying_type = int(bits=bits, signed=signed, compute=i32)
     if scale is None:
         if signed:
-            scale = max_value / 2**(bits - 1)
+            scale = max_value / 2 ** (bits - 1)
         else:
             scale = max_value / 2**bits
     return _type_factory.get_quant_fixed_type(underlying_type, compute, scale)
@@ -78,4 +77,4 @@ def float(exp, frac, signed=True, compute=None):  # pylint: disable=W0622
     return _type_factory.get_quant_float_type(frac_type, exp_type, compute)
 
 
-__all__ = ['int', 'fixed', 'float']
+__all__ = ["int", "fixed", "float"]

@@ -13,5 +13,5 @@ def p():
 
 p()
 
-print(f'{time.time() - t:.3f} s')
+print(f"{time.time() - t:.3f} s")
 ti.core.print_profile_info()

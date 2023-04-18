@@ -6,7 +6,7 @@ from taichi.linalg import LinearOperator, taichi_cg_solver
 import taichi as ti
 from tests import test_utils
 
-vk_on_mac = (ti.vulkan, 'Darwin')
+vk_on_mac = (ti.vulkan, "Darwin")
 
 
 @pytest.mark.parametrize("ti_dtype", [ti.f32, ti.f64])
@@ -36,8 +36,7 @@ def test_taichi_cg(ti_dtype):
             mv[i, j] = 20 * v[i, j] - l - r - t - b
 
     @ti.kernel
-    def check_solution(sol: ti.template(), ans: ti.template(),
-                       tol: ti_dtype) -> bool:
+    def check_solution(sol: ti.template(), ans: ti.template(), tol: ti_dtype) -> bool:
         exit_code = True
         for i, j in ti.ndrange(GRID, GRID):
             if ti.abs(ans[i, j] - sol[i, j]) < tol:

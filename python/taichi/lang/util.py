@@ -8,8 +8,19 @@ from colorama import Fore, Style
 from taichi._lib import core as _ti_core
 from taichi._logging import is_logging_effective
 from taichi.lang import impl
-from taichi.types.primitive_types import (f16, f32, f64, i8, i16, i32, i64, u8,
-                                          u16, u32, u64)
+from taichi.types.primitive_types import (
+    f16,
+    f32,
+    f64,
+    i8,
+    i16,
+    i32,
+    i64,
+    u8,
+    u16,
+    u32,
+    u64,
+)
 
 
 def has_pytorch():
@@ -20,10 +31,11 @@ def has_pytorch():
 
     """
     _has_pytorch = False
-    _env_torch = os.environ.get('TI_ENABLE_TORCH', '1')
+    _env_torch = os.environ.get("TI_ENABLE_TORCH", "1")
     if not _env_torch or int(_env_torch):
         try:
             import torch  # pylint: disable=C0415
+
             _has_pytorch = True
         except:
             pass
@@ -37,10 +49,11 @@ def has_paddle():
         bool: True if has paddle else False.
     """
     _has_paddle = False
-    _env_paddle = os.environ.get('TI_ENABLE_PADDLE', '1')
+    _env_paddle = os.environ.get("TI_ENABLE_PADDLE", "1")
     if not _env_paddle or int(_env_paddle):
         try:
             import paddle  # pylint: disable=C0415
+
             _has_paddle = True
         except:
             pass
@@ -52,7 +65,7 @@ def get_clangpp():
 
     # Taichi itself uses llvm-10.0.0 to compile.
     # There will be some issues compiling CUDA with other clang++ version.
-    _clangpp_candidates = ['clang++-10']
+    _clangpp_candidates = ["clang++-10"]
     for c in _clangpp_candidates:
         if find_executable(c) is not None:
             _clangpp_presence = find_executable(c)
@@ -149,8 +162,7 @@ def to_pytorch_type(dt):
     if dt == f16:
         return torch.float16
     if dt in (u16, u32, u64):
-        raise RuntimeError(
-            f'PyTorch doesn\'t support {dt.to_string()} data type.')
+        raise RuntimeError(f"PyTorch doesn't support {dt.to_string()} data type.")
     assert False
 
 
@@ -165,6 +177,7 @@ def to_paddle_type(dt):
 
     """
     import paddle  # pylint: disable=C0415
+
     if dt == f32:
         return paddle.float32
     if dt == f64:
@@ -182,8 +195,7 @@ def to_paddle_type(dt):
     if dt == f16:
         return paddle.float16
     if dt in (u16, u32, u64):
-        raise RuntimeError(
-            f'Paddle doesn\'t support {dt.to_string()} data type.')
+        raise RuntimeError(f"Paddle doesn't support {dt.to_string()} data type.")
     assert False
 
 
@@ -244,11 +256,11 @@ def to_taichi_type(dt):
         if dt == torch.float16:
             return f16
         if dt in (u16, u32, u64):
-            raise RuntimeError(
-                f'PyTorch doesn\'t support {dt.to_string()} data type.')
+            raise RuntimeError(f"PyTorch doesn't support {dt.to_string()} data type.")
 
     if has_paddle():
         import paddle  # pylint: disable=C0415
+
         if dt == paddle.float32:
             return f32
         if dt == paddle.float64:
@@ -266,8 +278,7 @@ def to_taichi_type(dt):
         if dt == paddle.float16:
             return f16
         if dt in (u16, u32, u64):
-            raise RuntimeError(
-                f'Paddle doesn\'t support {dt.to_string()} data type.')
+            raise RuntimeError(f"Paddle doesn't support {dt.to_string()} data type.")
 
     raise AssertionError(f"Unknown type {dt}")
 
@@ -283,7 +294,7 @@ def cook_dtype(dtype):
         return impl.get_runtime().default_ip
     if dtype is bool:
         return i32  # TODO[Xiaoyan]: Use i1 in the future
-    raise ValueError(f'Invalid data type {dtype}')
+    raise ValueError(f"Invalid data type {dtype}")
 
 
 def in_taichi_scope():
@@ -297,8 +308,7 @@ def in_python_scope():
 def taichi_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        assert in_taichi_scope(), \
-                f'{func.__name__} cannot be called in Python-scope'
+        assert in_taichi_scope(), f"{func.__name__} cannot be called in Python-scope"
         return func(*args, **kwargs)
 
     return wrapped
@@ -307,8 +317,7 @@ def taichi_scope(func):
 def python_scope(func):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        assert in_python_scope(), \
-                f'{func.__name__} cannot be called in Taichi-scope'
+        assert in_python_scope(), f"{func.__name__} cannot be called in Taichi-scope"
         return func(*args, **kwargs)
 
     return wrapped
@@ -324,17 +333,16 @@ def warning(msg, warning_type=UserWarning, stacklevel=1, print_stack=True):
         stacklevel (int): warning stack level from the caller.
         print_stack (bool): whether to print the stack
     """
-    if not is_logging_effective('warn'):
+    if not is_logging_effective("warn"):
         return
     if print_stack:
-        msg += f'\n{get_traceback(stacklevel)}'
-    warnings.warn(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL,
-                  warning_type)
+        msg += f"\n{get_traceback(stacklevel)}"
+    warnings.warn(Fore.YELLOW + Style.BRIGHT + msg + Style.RESET_ALL, warning_type)
 
 
 def get_traceback(stacklevel=1):
-    s = traceback.extract_stack()[:-1 - stacklevel]
-    return ''.join(traceback.format_list(s))
+    s = traceback.extract_stack()[: -1 - stacklevel]
+    return "".join(traceback.format_list(s))
 
 
 __all__ = []

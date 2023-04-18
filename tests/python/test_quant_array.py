@@ -101,8 +101,7 @@ def test_quant_array_struct_for():
     qi7 = ti.types.quant.int(7)
 
     x = ti.field(dtype=qi7)
-    cell.dense(ti.i, block_size // 4).quant_array(ti.i, 4,
-                                                  max_num_bits=32).place(x)
+    cell.dense(ti.i, block_size // 4).quant_array(ti.i, 4, max_num_bits=32).place(x)
 
     @ti.kernel
     def activate():

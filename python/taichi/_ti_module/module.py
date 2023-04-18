@@ -17,36 +17,27 @@ import taichi
 def module_cppgen(parser: argparse.ArgumentParser):
     """Generate C++ headers for Taichi modules."""
     parser.add_argument("MODOLE", help="Path to the module directory.")
-    parser.add_argument("-n",
-                        "--namespace",
-                        type=str,
-                        help="C++ namespace if wanted.")
+    parser.add_argument("-n", "--namespace", type=str, help="C++ namespace if wanted.")
     parser.add_argument(
         "-m",
         "--module-name",
         type=str,
-        help=
-        "Module name to be a part of the module class. By default, it's the directory name.",
-        default=None)
-    parser.add_argument("-o",
-                        "--output",
-                        type=str,
-                        help="Output C++ header path.",
-                        default="module.h")
+        help="Module name to be a part of the module class. By default, it's the directory name.",
+        default=None,
+    )
+    parser.add_argument("-o", "--output", type=str, help="Output C++ header path.", default="module.h")
     parser.add_argument(
         "--bin2c",
-        help=
-        "Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
-        action="store_true")
+        help="Save the entire TCM archive to an in-memory buffer. This flag is ignored if the module is not a TCM archive",
+        action="store_true",
+    )
     parser.set_defaults(func=module_cppgen_impl)
 
 
 def module_cppgen_impl(a):
     module_path = a.MODOLE
 
-    print(
-        f"Generating C++ header for Taichi module: {Path(module_path).absolute()}"
-    )
+    print(f"Generating C++ header for Taichi module: {Path(module_path).absolute()}")
 
     tcm = None
     if a.bin2c and module_path.endswith(".tcm"):
@@ -65,20 +56,15 @@ def module_cppgen_impl(a):
     out = generate_header(m, module_name, a.namespace, tcm)
 
     with open(a.output, "w") as f:
-        f.write('\n'.join(out))
+        f.write("\n".join(out))
 
     print(f"Module header is saved to: {Path(a.output).absolute()}")
 
 
 def module_build(parser: argparse.ArgumentParser):
     """Build Taichi modules from python scripts."""
-    parser.add_argument(
-        "SOURCE", help="Path to the Taichi program source (Python script).")
-    parser.add_argument("-o",
-                        "--output",
-                        type=str,
-                        help="Output module path.",
-                        default=None)
+    parser.add_argument("SOURCE", help="Path to the Taichi program source (Python script).")
+    parser.add_argument("-o", "--output", type=str, help="Output module path.", default=None)
     parser.set_defaults(func=module_build_impl)
 
 
@@ -124,15 +110,12 @@ def module_build_impl(a):
                     value = 0.0
                 elif isinstance(v, NdarrayType):
                     if v.ndim is None or v.ndim <= 0:
-                        raise ValueError(
-                            "Ndarray template type must specify a non-zero dimension."
-                        )
-                    value = taichi.ndarray(v.dtype, (1, ) * v.ndim)
+                        raise ValueError("Ndarray template type must specify a non-zero dimension.")
+                    value = taichi.ndarray(v.dtype, (1,) * v.ndim)
                 elif isinstance(v, TextureType):
-                    value = taichi.Texture(taichi.Format.rgba8,
-                                           (4, ) * v.num_dimensions)
+                    value = taichi.Texture(taichi.Format.rgba8, (4,) * v.num_dimensions)
                 elif isinstance(v, RWTextureType):
-                    value = taichi.Texture(v.fmt, (4, ) * v.num_dimensions)
+                    value = taichi.Texture(v.fmt, (4,) * v.num_dimensions)
                 else:
                     raise ValueError(f"Unsupported template type: {type(v)}")
                 template_args[k] = value
@@ -150,13 +133,11 @@ def module_build_impl(a):
 
 def _main(arguments: List[str]):
     """Taichi module tools."""
-    parser = argparse.ArgumentParser(prog='ti module',
-                                     description=_main.__doc__)
-    subparsers = parser.add_subparsers(title="Taichi module manager commands",
-                                       required=True)
+    parser = argparse.ArgumentParser(prog="ti module", description=_main.__doc__)
+    subparsers = parser.add_subparsers(title="Taichi module manager commands", required=True)
 
-    cppgen_parser = subparsers.add_parser('cppgen', help=module_cppgen.__doc__)
-    build_parser = subparsers.add_parser('build', help=module_build.__doc__)
+    cppgen_parser = subparsers.add_parser("cppgen", help=module_cppgen.__doc__)
+    build_parser = subparsers.add_parser("build", help=module_build.__doc__)
     module_cppgen(cppgen_parser)
     module_build(build_parser)
     args = parser.parse_args(arguments)

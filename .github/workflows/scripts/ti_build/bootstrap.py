@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+from pathlib import Path
+from typing import Optional
+from urllib.request import urlretrieve
 import importlib
 import os
 import platform
 import subprocess
 import sys
-from pathlib import Path
-from typing import Optional
 
 # -- third party --
 # -- own --
@@ -55,6 +56,18 @@ def restart():
         os.execl(sys.executable, sys.executable, "-S", *sys.argv)
 
 
+def fetch_pip(to):
+    v = sys.version_info
+    if v > (3, 6):
+        url = f"https://bootstrap.pypa.io/pip/get-pip.py"
+    else:
+        url = f"https://bootstrap.pypa.io/pip/{v.major}.{v.minor}/get-pip.py"
+
+    report = lambda n, bs, sz: print(f"Fetching pip ({n*bs}/{sz}) bytes) ...", end="\r", flush=True)
+    urlretrieve(url, to, report)
+    print(f'Fetched pip!{" " * 40}')
+
+
 def ensure_dependencies(*deps: str):
     """
     Automatically install dependencies if they are not installed.
@@ -72,25 +85,22 @@ def ensure_dependencies(*deps: str):
         for dep in deps:
             dep = dep.split("==")[0]
             importlib.import_module(dep)
+        return
     except ModuleNotFoundError:
-        print("Installing dependencies...", flush=True)
-        pipcmd = [
-            sys.executable,
-            "-m",
-            "pip",
-            "install",
-            "--no-user",
-            f"--target={bootstrap_root}",
-            "-U",
-        ]
-        if run(sys.executable, "-m", "ensurepip"):
-            raise Exception("Unable to run ensurepip!")
-        if run(*pipcmd, "pip", "setuptools"):
-            raise Exception("Unable to install pip!")
-        if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
-            raise Exception("Unable to install dependencies!")
+        pass
 
-        restart()
+    print("Installing dependencies...", flush=True)
+    pip = str(bootstrap_root / "get-pip.py")
+    fetch_pip(pip)
+    py = sys.executable
+    if run(py, "-S", pip, "--no-user", f"--target={bootstrap_root}"):
+        raise Exception("Unable to install pip!")
+
+    pipcmd = [py, "-S", "-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
+    if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
+        raise Exception("Unable to install dependencies!")
+
+    restart()
 
 
 def chdir_to_root():
@@ -185,6 +195,6 @@ def early_init():
     This must be called before any other non-stdlib imports.
     """
     detect_crippled_python()
-    ensure_dependencies("pip", "tqdm", "requests", "mslex", "psutil")
+    ensure_dependencies("tqdm", "requests", "mslex", "psutil")
     chdir_to_root()
     monkey_patch_environ()

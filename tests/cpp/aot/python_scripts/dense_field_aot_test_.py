@@ -11,7 +11,7 @@ def compile_dense_field_aot_test(arch):
         return
 
     n = 10
-    place = ti.field(ti.i32, shape=(n, ))
+    place = ti.field(ti.i32, shape=(n,))
 
     @ti.kernel
     def simple_return() -> ti.f32:
@@ -25,7 +25,7 @@ def compile_dense_field_aot_test(arch):
 
     @ti.kernel
     def ret() -> ti.f32:
-        sum = 0.
+        sum = 0.0
         for index in place:
             sum += place[index]
         return sum

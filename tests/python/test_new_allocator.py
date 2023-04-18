@@ -6,8 +6,8 @@ from tests import test_utils
 def test_1d():
     N = 16
 
-    x = ti.field(ti.f32, shape=(N, ))
-    y = ti.field(ti.f32, shape=(N, ))
+    x = ti.field(ti.f32, shape=(N,))
+    y = ti.field(ti.f32, shape=(N,))
 
     @ti.kernel
     def func():
@@ -51,7 +51,7 @@ def test_3d():
 def test_matrix():
     N = 16
 
-    x = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(N, ), layout=ti.Layout.AOS)
+    x = ti.Matrix.field(2, 2, dtype=ti.f32, shape=(N,), layout=ti.Layout.AOS)
 
     @ti.kernel
     def func():

@@ -82,6 +82,7 @@ class CudaDevice : public LlvmDevice {
 
   AllocInfo get_alloc_info(const DeviceAllocation handle);
 
+  CudaDevice();
   ~CudaDevice() override{};
 
   RhiResult allocate_memory(const AllocParams &params,
@@ -129,6 +130,10 @@ class CudaDevice : public LlvmDevice {
 
   void wait_idle() override{TI_NOT_IMPLEMENTED};
 
+  void clear() override {
+    allocations_.clear();
+  }
+
  private:
   std::vector<AllocInfo> allocations_;
   void validate_device_alloc(const DeviceAllocation alloc) {
@@ -136,7 +141,6 @@ class CudaDevice : public LlvmDevice {
       TI_ERROR("invalid DeviceAllocation");
     }
   }
-  std::unique_ptr<CachingAllocator> caching_allocator_{nullptr};
 };
 
 }  // namespace cuda

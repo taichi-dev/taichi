@@ -118,7 +118,7 @@ def test_offload_with_cross_nested_for():
         b = a + 1
         for x in range(1):
             for i in range(b):
-                print('OK')
+                print("OK")
 
     run(2)
 
@@ -130,6 +130,6 @@ def test_offload_with_cross_if_inside_for():
         b = a > 2
         for x in range(1):
             if b:
-                print('OK')
+                print("OK")
 
     run(2)

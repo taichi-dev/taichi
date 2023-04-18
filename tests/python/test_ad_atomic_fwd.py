@@ -13,7 +13,7 @@ def test_ad_reduce_fwd():
     @ti.kernel
     def func():
         for i in x:
-            loss[None] += x[i]**2
+            loss[None] += x[i] ** 2
 
     total_loss = 0
     for i in range(N):

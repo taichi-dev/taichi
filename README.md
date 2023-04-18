@@ -153,9 +153,8 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 
 ## Community
 
-### Event
+For more information about the events or community, please refer to [this page](https://github.com/taichi-dev/community)
 
-Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/voxel-challenge/issues/11) until 18th May. Find out more [here](https://github.com/taichi-dev/community/tree/main/events/voxel-challenge).
 
 ### Join our discussions
 
@@ -171,7 +170,7 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 ### Contact us
 
 - [Discord](https://discord.gg/f25GRdXRfg)
-- WeChat: Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
+- [WeChat](https://forum.taichi-lang.cn/t/topic/2884)
 
 ## Reference
 

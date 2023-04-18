@@ -76,5 +76,5 @@ def test_abs_i64():
     def foo(x: ti.i64) -> ti.i64:
         return abs(x)
 
-    for x in [-2**40, 0, 2**40]:
+    for x in [-(2**40), 0, 2**40]:
         assert foo(x) == abs(x)

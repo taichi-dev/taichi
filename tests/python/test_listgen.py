@@ -9,10 +9,7 @@ def test_listgen():
     x = ti.field(ti.i32)
     n = 1024
 
-    ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij,
-                                                  4).dense(ti.ij,
-                                                           4).dense(ti.ij,
-                                                                    4).place(x)
+    ti.root.dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).dense(ti.ij, 4).place(x)
 
     @ti.kernel
     def fill(c: ti.i32):
@@ -20,7 +17,7 @@ def test_listgen():
             x[i, j] = i * 10 + j + c
 
     for c in range(2):
-        print('Testing c=%d' % c)
+        print("Testing c=%d" % c)
         fill(c)
         # read it out once to avoid launching too many operator[] kernels
         xnp = x.to_numpy()
@@ -39,9 +36,7 @@ def test_nested_3d():
     x = ti.field(ti.i32)
     n = 128
 
-    ti.root.dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk,
-                                                    4).dense(ti.ijk,
-                                                             2).place(x)
+    ti.root.dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk, 4).dense(ti.ijk, 2).place(x)
 
     @ti.kernel
     def fill():

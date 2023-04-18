@@ -36,6 +36,10 @@ class LlvmDevice : public Device {
     TI_NOT_IMPLEMENTED;
   }
 
+  virtual void clear() {
+    TI_NOT_IMPLEMENTED;
+  }
+
   uint64_t *allocate_llvm_runtime_memory_jit(
       const LlvmRuntimeAllocParams &params);
 };

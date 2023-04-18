@@ -26,4 +26,4 @@ def test_pointer():
 
     b_np = b.to_numpy()
     for i in range(512):
-        assert (b_np[i] == i)
+        assert b_np[i] == i

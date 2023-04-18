@@ -5,8 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(default_fp=ti.f64,
-                 exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
+@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
 def test_general():
     x1 = ti.field(dtype=float, shape=(2, 2), needs_grad=True)
     y1 = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -37,9 +36,7 @@ def test_general():
 
 
 def grad_test(tifunc):
-    print(
-        f'arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}'
-    )
+    print(f"arch={ti.lang.impl.current_cfg().arch} default_fp={ti.lang.impl.current_cfg().default_fp}")
     x = ti.field(ti.lang.impl.current_cfg().default_fp)
     y = ti.field(ti.lang.impl.current_cfg().default_fp)
 
@@ -56,21 +53,44 @@ def grad_test(tifunc):
         func()
 
 
-@pytest.mark.parametrize('tifunc', [
-    lambda x: x, lambda x: ti.abs(-x), lambda x: -x, lambda x: x * x,
-    lambda x: x**2, lambda x: x * x * x, lambda x: x * x * x * x,
-    lambda x: 0.4 * x * x - 3, lambda x: (x - 3) * (x - 1), lambda x: (x - 3) *
-    (x - 1) + x * x, lambda x: ti.tanh(x), lambda x: ti.sin(x),
-    lambda x: ti.cos(x), lambda x: ti.acos(x), lambda x: ti.asin(x),
-    lambda x: 1 / x, lambda x: (x + 1) / (x - 1), lambda x: (x + 1) * (x + 2) /
-    ((x - 1) *
-     (x + 3)), lambda x: ti.sqrt(x), lambda x: ti.exp(x), lambda x: ti.log(x),
-    lambda x: ti.min(x, 0), lambda x: ti.min(x, 1), lambda x: ti.min(0, x),
-    lambda x: ti.min(1, x), lambda x: ti.max(x, 0), lambda x: ti.max(x, 1),
-    lambda x: ti.max(0, x), lambda x: ti.max(1, x), lambda x: ti.atan2(0.4, x),
-    lambda x: ti.atan2(x, 0.4), lambda x: 0.4**x, lambda x: x**0.4
-])
-@test_utils.test(default_fp=ti.f64,
-                 exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
+@pytest.mark.parametrize(
+    "tifunc",
+    [
+        lambda x: x,
+        lambda x: ti.abs(-x),
+        lambda x: -x,
+        lambda x: x * x,
+        lambda x: x**2,
+        lambda x: x * x * x,
+        lambda x: x * x * x * x,
+        lambda x: 0.4 * x * x - 3,
+        lambda x: (x - 3) * (x - 1),
+        lambda x: (x - 3) * (x - 1) + x * x,
+        lambda x: ti.tanh(x),
+        lambda x: ti.sin(x),
+        lambda x: ti.cos(x),
+        lambda x: ti.acos(x),
+        lambda x: ti.asin(x),
+        lambda x: 1 / x,
+        lambda x: (x + 1) / (x - 1),
+        lambda x: (x + 1) * (x + 2) / ((x - 1) * (x + 3)),
+        lambda x: ti.sqrt(x),
+        lambda x: ti.exp(x),
+        lambda x: ti.log(x),
+        lambda x: ti.min(x, 0),
+        lambda x: ti.min(x, 1),
+        lambda x: ti.min(0, x),
+        lambda x: ti.min(1, x),
+        lambda x: ti.max(x, 0),
+        lambda x: ti.max(x, 1),
+        lambda x: ti.max(0, x),
+        lambda x: ti.max(1, x),
+        lambda x: ti.atan2(0.4, x),
+        lambda x: ti.atan2(x, 0.4),
+        lambda x: 0.4**x,
+        lambda x: x**0.4,
+    ],
+)
+@test_utils.test(default_fp=ti.f64, exclude=[ti.cc, ti.vulkan, ti.opengl, ti.gles, ti.metal])
 def test_basics(tifunc):
     grad_test(tifunc)

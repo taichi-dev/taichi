@@ -23,8 +23,7 @@ f = ti.Vector.field(2, dtype=ti.f32, shape=max_num_particles)
 fixed = ti.field(dtype=ti.i32, shape=max_num_particles)
 
 # rest_length[i, j] == 0 means i and j are NOT connected
-rest_length = ti.field(dtype=ti.f32,
-                       shape=(max_num_particles, max_num_particles))
+rest_length = ti.field(dtype=ti.f32, shape=(max_num_particles, max_num_particles))
 
 
 @ti.kernel
@@ -41,8 +40,7 @@ def substep():
                 d = x_ij.normalized()
 
                 # Spring force
-                f[i] += -spring_Y[None] * (x_ij.norm() / rest_length[i, j] -
-                                           1) * d
+                f[i] += -spring_Y[None] * (x_ij.norm() / rest_length[i, j] - 1) * d
 
                 # Dashpot damping
                 v_rel = (v[i] - v[j]).dot(d)
@@ -99,9 +97,7 @@ def attract(pos_x: ti.f32, pos_y: ti.f32):
 
 
 def main():
-    gui = ti.GUI('Explicit Mass Spring System',
-                 res=(512, 512),
-                 background_color=0xDDDDDD)
+    gui = ti.GUI("Explicit Mass Spring System", res=(512, 512), background_color=0xDDDDDD)
 
     spring_Y[None] = 1000
     drag_damping[None] = 1
@@ -118,23 +114,22 @@ def main():
             elif e.key == gui.SPACE:
                 paused[None] = not paused[None]
             elif e.key == ti.GUI.LMB:
-                new_particle(e.pos[0], e.pos[1],
-                             int(gui.is_pressed(ti.GUI.SHIFT)))
-            elif e.key == 'c':
+                new_particle(e.pos[0], e.pos[1], int(gui.is_pressed(ti.GUI.SHIFT)))
+            elif e.key == "c":
                 num_particles[None] = 0
                 rest_length.fill(0)
-            elif e.key == 'y':
-                if gui.is_pressed('Shift'):
+            elif e.key == "y":
+                if gui.is_pressed("Shift"):
                     spring_Y[None] /= 1.1
                 else:
                     spring_Y[None] *= 1.1
-            elif e.key == 'd':
-                if gui.is_pressed('Shift'):
+            elif e.key == "d":
+                if gui.is_pressed("Shift"):
                     drag_damping[None] /= 1.1
                 else:
                     drag_damping[None] *= 1.1
-            elif e.key == 'x':
-                if gui.is_pressed('Shift'):
+            elif e.key == "x":
+                if gui.is_pressed("Shift"):
                     dashpot_damping[None] /= 1.1
                 else:
                     dashpot_damping[None] *= 1.1
@@ -162,24 +157,28 @@ def main():
             gui.circle(pos=X[i], color=c, radius=5)
 
         gui.text(
-            content=
-            'Left click: add mass point (with shift to fix); Right click: attract',
+            content="Left click: add mass point (with shift to fix); Right click: attract",
             pos=(0, 0.99),
-            color=0x0)
-        gui.text(content='C: clear all; Space: pause',
-                 pos=(0, 0.95),
-                 color=0x0)
-        gui.text(content=f'Y: Spring Young\'s modulus {spring_Y[None]:.1f}',
-                 pos=(0, 0.9),
-                 color=0x0)
-        gui.text(content=f'D: Drag damping {drag_damping[None]:.2f}',
-                 pos=(0, 0.85),
-                 color=0x0)
-        gui.text(content=f'X: Dashpot damping {dashpot_damping[None]:.2f}',
-                 pos=(0, 0.8),
-                 color=0x0)
+            color=0x0,
+        )
+        gui.text(content="C: clear all; Space: pause", pos=(0, 0.95), color=0x0)
+        gui.text(
+            content=f"Y: Spring Young's modulus {spring_Y[None]:.1f}",
+            pos=(0, 0.9),
+            color=0x0,
+        )
+        gui.text(
+            content=f"D: Drag damping {drag_damping[None]:.2f}",
+            pos=(0, 0.85),
+            color=0x0,
+        )
+        gui.text(
+            content=f"X: Dashpot damping {dashpot_damping[None]:.2f}",
+            pos=(0, 0.8),
+            color=0x0,
+        )
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -9,8 +9,7 @@ def _c_mod(a, b):
     return a - b * int(float(a) / b)
 
 
-@pytest.mark.parametrize('lhs_is_mat,rhs_is_mat', [(True, True), (True, False),
-                                                   (False, True)])
+@pytest.mark.parametrize("lhs_is_mat,rhs_is_mat", [(True, True), (True, False), (False, True)])
 @test_utils.test(fast_math=False, exclude=[ti.vulkan, ti.dx11])
 def test_binary_f(lhs_is_mat, rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 16)
@@ -40,7 +39,7 @@ def test_binary_f(lhs_is_mat, rhs_is_mat):
         x[3] = y[None] / z[None]
         x[4] = y[None] // z[None]
         x[5] = y[None] % z[None]
-        x[6] = y[None]**z[None]
+        x[6] = y[None] ** z[None]
         x[7] = y[None] == z[None]
         x[8] = y[None] != z[None]
         x[9] = y[None] > z[None]
@@ -73,8 +72,7 @@ def test_binary_f(lhs_is_mat, rhs_is_mat):
     assert test_utils.allclose(x[15], np.maximum(y, z))
 
 
-@pytest.mark.parametrize('is_mat', [(True, True), (True, False),
-                                    (False, True)])
+@pytest.mark.parametrize("is_mat", [(True, True), (True, False), (False, True)])
 @test_utils.test()
 def test_binary_i(is_mat):
     lhs_is_mat, rhs_is_mat = is_mat
@@ -107,7 +105,7 @@ def test_binary_i(is_mat):
         x[4] = ti.raw_div(y[None], z[None])
         x[5] = y[None] % z[None]
         x[6] = ti.raw_mod(y[None], z[None])
-        x[7] = y[None]**z[None]
+        x[7] = y[None] ** z[None]
         x[8] = y[None] == z[None]
         x[9] = y[None] != z[None]
         x[10] = y[None] > z[None]
@@ -147,7 +145,7 @@ def test_binary_i(is_mat):
     assert test_utils.allclose(x[19], y << z)
 
 
-@pytest.mark.parametrize('rhs_is_mat', [True, False])
+@pytest.mark.parametrize("rhs_is_mat", [True, False])
 @test_utils.test(fast_math=False)
 def test_writeback_binary_f(rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.f32, 9)
@@ -194,7 +192,7 @@ def test_writeback_binary_f(rhs_is_mat):
     assert test_utils.allclose(x[8], np.maximum(y, z))
 
 
-@pytest.mark.parametrize('rhs_is_mat', [(True, True), (True, False)])
+@pytest.mark.parametrize("rhs_is_mat", [(True, True), (True, False)])
 @test_utils.test()
 def test_writeback_binary_i(rhs_is_mat):
     x = ti.Matrix.field(3, 2, ti.i32, 12)
@@ -300,9 +298,16 @@ def test_unary():
     assert test_utils.allclose(xf[14], np.round(yf), rel=1e-5)
 
 
-@pytest.mark.parametrize('is_mat', [(True, True, True), (True, False, False),
-                                    (False, True, False), (False, False, True),
-                                    (False, True, True)])
+@pytest.mark.parametrize(
+    "is_mat",
+    [
+        (True, True, True),
+        (True, False, False),
+        (False, True, False),
+        (False, False, True),
+        (False, True, True),
+    ],
+)
 @test_utils.test()
 def test_ternary_i(is_mat):
     cond_is_mat, lhs_is_mat, rhs_is_mat = is_mat
@@ -342,6 +347,4 @@ def test_ternary_i(is_mat):
     y = y.to_numpy()
     z = z.to_numpy()
     w = w.to_numpy()
-    assert test_utils.allclose(
-        x[0],
-        np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)
+    assert test_utils.allclose(x[0], np.int32(np.bool_(y)) * z + np.int32(1 - np.bool_(y)) * w)

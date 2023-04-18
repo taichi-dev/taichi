@@ -30,7 +30,7 @@ def paint(t: float):
         y = locations[i, 1]
         dirs[i, 0] = ti.sin((t * x - y))
         dirs[i, 1] = ti.cos(t * y - x)
-        l = (dirs[i, 0]**2 + dirs[i, 1]**2)**0.5
+        l = (dirs[i, 0] ** 2 + dirs[i, 1] ** 2) ** 0.5
         dirs[i, 0] /= l * 40
         dirs[i, 1] /= l * 40
 
@@ -46,5 +46,5 @@ def main():
         gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

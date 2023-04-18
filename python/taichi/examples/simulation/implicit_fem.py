@@ -6,32 +6,32 @@ from taichi._lib import core as _ti_core
 import taichi as ti
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--exp',
-                    choices=['implicit', 'explicit'],
-                    default='implicit')
-parser.add_argument('--dim', type=int, default=3)
-parser.add_argument('--gui', choices=['auto', 'ggui', 'cpu'], default='auto')
-parser.add_argument('-s',
-                    '--use_sparse',
-                    action='store_true',
-                    help='Use sparse matrix and sparse solver')
-parser.add_argument('place_holder', nargs='*')
+parser.add_argument("--exp", choices=["implicit", "explicit"], default="implicit")
+parser.add_argument("--dim", type=int, default=3)
+parser.add_argument("--gui", choices=["auto", "ggui", "cpu"], default="auto")
+parser.add_argument(
+    "-s",
+    "--use_sparse",
+    action="store_true",
+    help="Use sparse matrix and sparse solver",
+)
+parser.add_argument("place_holder", nargs="*")
 args = parser.parse_args()
 
 ti.init(arch=ti.cuda)
 
-if args.gui == 'auto':
+if args.gui == "auto":
     if _ti_core.GGUI_AVAILABLE and ti.lang.impl.current_cfg().arch == ti.cuda:
-        args.gui = 'ggui'
+        args.gui = "ggui"
     else:
-        args.gui = 'cpu'
+        args.gui = "cpu"
 
 E, nu = 5e4, 0.0
 mu, la = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # lambda = 0
 density = 1000.0
 dt = 2e-4
 
-if args.exp == 'implicit':
+if args.exp == "implicit":
     dt = 1e-2
 
 use_sparse = args.use_sparse
@@ -63,16 +63,15 @@ def i2p(I):
 @ti.func
 def set_element(e, I, verts):
     for i in ti.static(range(args.dim + 1)):
-        F_vertices[e][i] = i2p(I + (([verts[i] >> k
-                                      for k in range(3)] ^ I) & 1))
+        F_vertices[e][i] = i2p(I + (([verts[i] >> k for k in range(3)] ^ I) & 1))
 
 
 @ti.kernel
 def get_vertices():
-    '''
+    """
     This kernel partitions the cube into tetrahedrons.
     Each unit cube is divided into 5 tetrahedrons.
-    '''
+    """
     for I in ti.grouped(ti.ndrange(*(n_cube - 1))):
         e = ((I.x * (n_cube[1] - 1) + I.y) * (n_cube[2] - 1) + I.z) * 5
         for i, j in ti.static(enumerate([0, 3, 5, 6])):
@@ -143,8 +142,8 @@ def matmul_cell(ret: ti.template(), vel: ti.template()):
                 dH = -W_c * dP @ B_c.transpose()
                 for i in range(3):
                     for j in range(3):
-                        tmp = (vel[verts[i]][j] - vel[verts[3]][j])
-                        ret[verts[u]][d] += -dt**2 * dH[j, i] * tmp
+                        tmp = vel[verts[i]][j] - vel[verts[3]][j]
+                        ret[verts[u]][d] += -(dt**2) * dH[j, i] * tmp
 
 
 @ti.kernel
@@ -168,9 +167,7 @@ F_p0 = ti.Vector.field(3, dtype=ti.f32, shape=n_verts)
 # ndarray version of F_b
 F_b_ndarr = ti.ndarray(dtype=ti.f32, shape=3 * n_verts)
 # stiffness matrix
-A_builder = ti.linalg.SparseMatrixBuilder(3 * n_verts,
-                                          3 * n_verts,
-                                          max_num_triplets=50000)
+A_builder = ti.linalg.SparseMatrixBuilder(3 * n_verts, 3 * n_verts, max_num_triplets=50000)
 solver = ti.linalg.SparseSolver(ti.f32, "LLT")
 
 
@@ -235,11 +232,9 @@ def compute_A(A: ti.types.sparse_matrix_builder()):
                 dH = -W_c * dP @ B_c.transpose()
                 for i in range(3):
                     for j in range(3):
-                        A[3 * verts[u] + d,
-                          3 * verts[i] + j] += -dt**2 * dH[j, i]
+                        A[3 * verts[u] + d, 3 * verts[i] + j] += -(dt**2) * dH[j, i]
                 for i in range(3):
-                    A[3 * verts[u] + d, 3 * verts[3] +
-                      i] += -dt**2 * (-dH[i, 0] - dH[i, 1] - dH[i, 2])
+                    A[3 * verts[u] + d, 3 * verts[3] + i] += -(dt**2) * (-dH[i, 0] - dH[i, 1] - dH[i, 2])
 
 
 @ti.kernel
@@ -315,9 +310,9 @@ def check(u):
         k = rest % n_cube[2 - i]
         rest = rest // n_cube[2 - i]
         if k == 0:
-            ans |= (1 << (i * 2))
+            ans |= 1 << (i * 2)
         if k == n_cube[2 - i] - 1:
-            ans |= (1 << (i * 2 + 1))
+            ans |= 1 << (i * 2 + 1)
     return ans
 
 
@@ -342,9 +337,7 @@ def get_indices():
                 sum_ = check(verts[0]) & check(verts[1]) & check(verts[2])
                 if sum_:
                     m = ti.atomic_add(cnt, 1)
-                    det = ti.Matrix.rows([
-                        F_x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)
-                    ]).determinant()
+                    det = ti.Matrix.rows([F_x[verts[i]] - [0.5, 1.5, 0.5] for i in range(3)]).determinant()
                     if det < 0:
                         tmp = verts[1]
                         verts[1] = verts[2]
@@ -355,7 +348,7 @@ def get_indices():
 
 
 def substep():
-    if args.exp == 'explicit':
+    if args.exp == "explicit":
         for i in range(10):
             get_force()
             advect()
@@ -375,7 +368,7 @@ def main():
     if use_sparse:
         init_A()
 
-    if args.gui == 'ggui':
+    if args.gui == "ggui":
         res = (800, 600)
         window = ti.ui.Window("Implicit FEM", res, vsync=True)
 
@@ -388,12 +381,10 @@ def main():
         camera.fov(55)
 
         def render():
-            camera.track_user_inputs(window,
-                                     movement_speed=0.03,
-                                     hold_key=ti.ui.RMB)
+            camera.track_user_inputs(window, movement_speed=0.03, hold_key=ti.ui.RMB)
             scene.set_camera(camera)
 
-            scene.ambient_light((0.1, ) * 3)
+            scene.ambient_light((0.1,) * 3)
 
             scene.point_light(pos=(0.5, 10.0, 0.5), color=(0.5, 0.5, 0.5))
             scene.point_light(pos=(10.0, 10.0, 10.0), color=(0.5, 0.5, 0.5))
@@ -406,7 +397,7 @@ def main():
             frame_id += 1
             frame_id = frame_id % 256
             substep()
-            if window.is_pressed('r'):
+            if window.is_pressed("r"):
                 init()
             if window.is_pressed(ti.GUI.ESCAPE):
                 break
@@ -418,7 +409,6 @@ def main():
     else:
 
         def T(a):
-
             phi, theta = np.radians(28), np.radians(32)
 
             a = a - 0.2
@@ -429,18 +419,18 @@ def main():
             u, v = x, y * C + z * S
             return np.array([u, v]).swapaxes(0, 1) + 0.5
 
-        gui = ti.GUI('Implicit FEM')
+        gui = ti.GUI("Implicit FEM")
         while gui.running:
             substep()
             if gui.get_event(ti.GUI.PRESS):
                 if gui.event.key in [ti.GUI.ESCAPE, ti.GUI.EXIT]:
                     break
-            if gui.is_pressed('r'):
+            if gui.is_pressed("r"):
                 init()
             gui.clear(0x000000)
-            gui.circles(T(F_x.to_numpy() / 3), radius=1.5, color=0xba543a)
+            gui.circles(T(F_x.to_numpy() / 3), radius=1.5, color=0xBA543A)
             gui.show()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

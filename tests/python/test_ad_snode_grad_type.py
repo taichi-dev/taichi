@@ -31,7 +31,7 @@ def test_snode_clear_gradient():
 
     @ti.kernel
     def compute():
-        y[None] += x[None]**2
+        y[None] += x[None] ** 2
 
     with ti.ad.Tape(loss=y):
         compute()
@@ -47,4 +47,4 @@ def test_snode_clear_gradient():
     assert y.dual[None] == 2.0
 
 
-#TODO: Add test for `adjoint_checkbit` after #5801 merged.
+# TODO: Add test for `adjoint_checkbit` after #5801 merged.

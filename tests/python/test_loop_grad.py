@@ -30,7 +30,7 @@ def test_loop_grad():
         # The grad of fields on left-hand sides of assignments (GlobalStoreStmt) need to be reset to zero after the corresponding adjoint assignments.
         # Therefore, only the grad of the element with index 0 at second dimension is preserved here.
         assert x[k, 0] == 2**0 * k
-        assert x.grad[k, 0] == 2**(m - 1 - 0)
+        assert x.grad[k, 0] == 2 ** (m - 1 - 0)
 
 
 @test_utils.test(exclude=[ti.vulkan, ti.dx11])
@@ -63,4 +63,4 @@ def test_loop_grad_complex():
     for k in range(n):
         for i in range(m):
             assert x[k, i] == i**2 + 2 * k**2
-            assert x.grad[k, i] == 2**(m - 1 - i)
+            assert x.grad[k, i] == 2 ** (m - 1 - i)

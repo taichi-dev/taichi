@@ -29,12 +29,10 @@ class SparseMatrixEntry:
 
     def _augassign(self, value, op):
         call_func = f"insert_triplet_{self.dtype}"
-        if op == 'Add':
-            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j,
-                                           ops.cast(value, self.dtype))
-        elif op == 'Sub':
-            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j,
-                                           -ops.cast(value, self.dtype))
+        if op == "Add":
+            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j, ops.cast(value, self.dtype))
+        elif op == "Sub":
+            taichi.lang.impl.call_internal(call_func, self.ptr, self.i, self.j, -ops.cast(value, self.dtype))
         else:
             assert False, "Only operations '+=' and '-=' are supported on sparse matrices."
 
@@ -55,33 +53,26 @@ def decl_scalar_arg(dtype, name):
         dtype = dtype.tp
     dtype = cook_dtype(dtype)
     if is_ref:
-        arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(
-            dtype, name)
+        arg_id = impl.get_runtime().compiling_callable.insert_pointer_param(dtype, name)
     else:
-        arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
-            dtype, name)
+        arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(dtype, name)
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
 def decl_matrix_arg(matrixtype, name):
     if isinstance(matrixtype, VectorType):
-        return make_matrix([
-            decl_scalar_arg(matrixtype.dtype, f"{name}_{i}")
-            for i in range(matrixtype.n)
-        ])
-    return make_matrix([[
-        decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}")
-        for i in range(matrixtype.m)
-    ] for j in range(matrixtype.n)])
+        return make_matrix([decl_scalar_arg(matrixtype.dtype, f"{name}_{i}") for i in range(matrixtype.n)])
+    return make_matrix(
+        [
+            [decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}") for i in range(matrixtype.m)]
+            for j in range(matrixtype.n)
+        ]
+    )
 
 
 def decl_struct_arg(structtype, name):
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
-        structtype.dtype, name)
-    arg_load = Expr(
-        _ti_core.make_arg_load_expr(arg_id,
-                                    structtype.dtype,
-                                    create_load=False))
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(structtype.dtype, name)
+    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, structtype.dtype, create_load=False))
     return structtype.from_taichi_object(arg_load)
 
 
@@ -89,39 +80,32 @@ def decl_sparse_matrix(dtype, name):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)
     # Treat the sparse matrix argument as a scalar since we only need to pass in the base pointer
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(
-        ptr_type, name)
-    return SparseMatrixProxy(
-        _ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(ptr_type, name)
+    return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
 def decl_ndarray_arg(dtype, dim, element_shape, layout, name):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(
-        dtype, dim, element_shape, name)
+    arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(dtype, dim, element_shape, name)
     if layout == Layout.AOS:
         element_dim = -element_dim
-    return AnyArray(
-        _ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim,
-                                           element_shape))
+    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim, element_shape))
 
 
 def decl_texture_arg(num_dimensions, name):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_texture_param(
-        num_dimensions, name)
-    return TextureSampler(
-        _ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
+    arg_id = impl.get_runtime().compiling_callable.insert_texture_param(num_dimensions, name)
+    return TextureSampler(_ti_core.make_texture_ptr_expr(arg_id, num_dimensions), num_dimensions)
 
 
 def decl_rw_texture_arg(num_dimensions, buffer_format, lod, name):
     # FIXME: texture_arg doesn't have element_shape so better separate them
-    arg_id = impl.get_runtime().compiling_callable.insert_rw_texture_param(
-        num_dimensions, buffer_format, name)
+    arg_id = impl.get_runtime().compiling_callable.insert_rw_texture_param(num_dimensions, buffer_format, name)
     return RWTextureAccessor(
-        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions,
-                                          buffer_format, lod), num_dimensions)
+        _ti_core.make_rw_texture_ptr_expr(arg_id, num_dimensions, buffer_format, lod),
+        num_dimensions,
+    )
 
 
 def decl_ret(dtype, real_func=False):
@@ -132,8 +116,7 @@ def decl_ret(dtype, real_func=False):
             for i in range(dtype.n * dtype.m):
                 decl_ret(dtype.dtype)
             return
-        dtype = _ti_core.get_type_factory_instance().get_tensor_type(
-            [dtype.n, dtype.m], dtype.dtype)
+        dtype = _ti_core.get_type_factory_instance().get_tensor_type([dtype.n, dtype.m], dtype.dtype)
     else:
         dtype = cook_dtype(dtype)
     impl.get_runtime().compiling_callable.insert_ret(dtype)

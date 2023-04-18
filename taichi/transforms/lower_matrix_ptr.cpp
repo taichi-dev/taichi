@@ -8,6 +8,418 @@
 
 namespace taichi::lang {
 
+class ScalarizeMatrixPtr : public BasicStmtVisitor {
+ public:
+  ImmediateIRModifier immediate_modifier_;
+  DelayedIRModifier delayed_modifier_;
+
+  explicit ScalarizeMatrixPtr(IRNode *node) : immediate_modifier_(node) {
+    node->accept(this);
+
+    delayed_modifier_.modify_ir();
+  }
+
+  /*
+    [MatrixOfGlobalPtrStmt]
+    Before:
+      StoreStmt(TensorType<4 x i32>* MatrixOfGlobalPtrStmt, TensorType<4 x i32>
+    val)
+
+    After:
+      AllocaStmt alloca = AllocaStmt(TensorType<4 x i32>)
+      StoreStmt(alloca, val)
+
+      matrix_ptr0 = MatrixPtrStmt(i32* alloca, 0)
+      matrix_ptr1 = MatrixPtrStmt(i32* alloca, 1)
+      matrix_ptr2 = MatrixPtrStmt(i32* alloca, 2)
+      matrix_ptr3 = MatrixPtrStmt(i32* alloca, 3)
+
+      val0 = LoadStmt(matrix_ptr0)
+      val1 = LoadStmt(matrix_ptr1)
+      val2 = LoadStmt(matrix_ptr2)
+      val3 = LoadStmt(matrix_ptr3)
+
+      GlobalPtrStmt* ptr0 = MatrixOfGlobalPtrStmt->snodes[0]
+      GlobalPtrStmt* ptr1 = MatrixOfGlobalPtrStmt->snodes[1]
+      GlobalPtrStmt* ptr2 = MatrixOfGlobalPtrStmt->snodes[2]
+      GlobalPtrStmt* ptr3 = MatrixOfGlobalPtrStmt->snodes[3]
+      StoreStmt(i32* ptr0, i32 val0)
+      StoreStmt(i32* ptr1, i32 val1)
+      StoreStmt(i32* ptr2, i32 val2)
+      StoreStmt(i32* ptr3, i32 val3)
+
+    [MatrixOfMatrixPtrStmt]
+    Before:
+      StoreStmt(TensorType<4 x i32>* MatrixOfMatrixPtrStmt, TensorType<4 x i32>
+    val)
+
+    After:
+      stmt0 = MatrixOfMatrixPtrStmt->stmts[0]
+      stmt1 = MatrixOfMatrixPtrStmt->stmts[1]
+      stmt2 = MatrixOfMatrixPtrStmt->stmts[2]
+      stmt3 = MatrixOfMatrixPtrStmt->stmts[3]
+
+      AllocaStmt alloca = AllocaStmt(TensorType<4 x i32>)
+      LocalStoreStmt(alloca, val)
+
+      matrix_ptr0 = MatrixPtrStmt(i32* alloca, 0)
+      matrix_ptr1 = MatrixPtrStmt(i32* alloca, 1)
+      matrix_ptr2 = MatrixPtrStmt(i32* alloca, 2)
+      matrix_ptr3 = MatrixPtrStmt(i32* alloca, 3)
+
+      val0 = LoadStmt(matrix_ptr0)
+      val1 = LoadStmt(matrix_ptr1)
+      val2 = LoadStmt(matrix_ptr2)
+      val3 = LoadStmt(matrix_ptr3)
+
+      StoreStmt(i32* stmt0, i32 val0)
+      StoreStmt(i32* stmt1, i32 val1)
+      StoreStmt(i32* stmt2, i32 val2)
+      StoreStmt(i32* stmt3, i32 val3)
+  */
+  template <typename T>
+  void scalarize_store_stmt(T *stmt) {
+    if (stmt->dest->template is<MatrixOfGlobalPtrStmt>()) {
+      auto matrix_of_global_ptr_stmt =
+          stmt->dest->template as<MatrixOfGlobalPtrStmt>();
+      auto val = stmt->val;
+      auto val_tensor_type = val->ret_type->template as<TensorType>();
+      int num_elements = val_tensor_type->get_num_elements();
+      auto primitive_type = val_tensor_type->get_element_type();
+
+      auto alloca_stmt = std::make_unique<AllocaStmt>(val->ret_type);
+      Stmt *alloca_stmt_ptr = alloca_stmt.get();
+
+      auto store_stmt = std::make_unique<LocalStoreStmt>(alloca_stmt_ptr, val);
+
+      delayed_modifier_.insert_before(stmt, std::move(alloca_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      for (int i = 0; i < num_elements; i++) {
+        auto const_stmt = std::make_unique<ConstStmt>(TypedConstant(i));
+
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(alloca_stmt_ptr, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto load_stmt = std::make_unique<LocalLoadStmt>(matrix_ptr_stmt.get());
+        load_stmt->ret_type = primitive_type;
+
+        auto global_ptr_stmt = std::make_unique<GlobalPtrStmt>(
+            matrix_of_global_ptr_stmt->snodes[i],
+            matrix_of_global_ptr_stmt->indices);
+        global_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto store_stmt =
+            std::make_unique<T>(global_ptr_stmt.get(), load_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(global_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      }
+
+      delayed_modifier_.erase(stmt);
+
+    } else if (stmt->dest->template is<MatrixOfMatrixPtrStmt>()) {
+      auto matrix_of_matrix_ptr_stmt =
+          stmt->dest->template as<MatrixOfMatrixPtrStmt>();
+      auto val = stmt->val;
+      auto val_tensor_type = val->ret_type->template as<TensorType>();
+      int num_elements = val_tensor_type->get_num_elements();
+      auto primitive_type = val_tensor_type->get_element_type();
+
+      auto alloca_stmt = std::make_unique<AllocaStmt>(val->ret_type);
+      Stmt *alloca_stmt_ptr = alloca_stmt.get();
+
+      auto store_stmt = std::make_unique<LocalStoreStmt>(alloca_stmt_ptr, val);
+
+      delayed_modifier_.insert_before(stmt, std::move(alloca_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      for (int i = 0; i < num_elements; i++) {
+        auto const_stmt = std::make_unique<ConstStmt>(TypedConstant(i));
+
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(alloca_stmt_ptr, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto load_stmt = std::make_unique<LocalLoadStmt>(matrix_ptr_stmt.get());
+        load_stmt->ret_type = primitive_type;
+
+        auto store_stmt = std::make_unique<T>(
+            matrix_of_matrix_ptr_stmt->stmts[i], load_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      }
+
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    [MatrixOfGlobalPtrStmt]
+    Before:
+      TensorType<4 x i32> val = LoadStmt(TensorType<4 x i32>*
+    MatrixOfGlobalPtrStmt)
+
+    After:
+      GlobalPtrStmt* ptr0 = MatrixOfGlobalPtrStmt->snodes[0]
+      GlobalPtrStmt* ptr1 = MatrixOfGlobalPtrStmt->snodes[1]
+      GlobalPtrStmt* ptr2 = MatrixOfGlobalPtrStmt->snodes[2]
+      GlobalPtrStmt* ptr3 = MatrixOfGlobalPtrStmt->snodes[3]
+
+      i32 val0 = LoadStmt(ptr0)
+      i32 val1 = LoadStmt(ptr1)
+      i32 val2 = LoadStmt(ptr2)
+      i32 val3 = LoadStmt(ptr3)
+
+      tmp = MatrixInitStmt(val0, val1, val2, val3)
+      stmt->replace_all_usages_with(tmp)
+
+    [MatrixOfMatrixPtrStmt]
+    Before:
+      TensorType<4 x i32> val = LoadStmt(TensorType<4 x i32>*
+    MatrixOfMatrixPtrStmt)
+
+    After:
+      i32* ptr0 = MatrixOfMatrixPtr->stmts[0] // usually it's a MatrixPtrStmt
+      i32* ptr1 = MatrixOfMatrixPtr->stmts[1] // usually it's a MatrixPtrStmt
+      i32* ptr2 = MatrixOfMatrixPtr->stmts[2] // usually it's a MatrixPtrStmt
+      i32* ptr3 = MatrixOfMatrixPtr->stmts[3] // usually it's a MatrixPtrStmt
+
+      i32 val0 = LoadStmt(ptr0)
+      i32 val1 = LoadStmt(ptr1)
+      i32 val2 = LoadStmt(ptr2)
+      i32 val3 = LoadStmt(ptr3)
+
+      tmp = MatrixInitStmt(val0, val1, val2, val3)
+      stmt->replace_all_usages_with(tmp)
+  */
+  template <typename T>
+  void scalarize_load_stmt(T *stmt) {
+    if (stmt->src->template is<MatrixOfGlobalPtrStmt>()) {
+      auto matrix_of_global_ptr_stmt =
+          stmt->src->template as<MatrixOfGlobalPtrStmt>();
+      auto dest_tensor_type = stmt->ret_type->template as<TensorType>();
+
+      std::vector<Stmt *> matrix_init_values;
+      int num_elements = dest_tensor_type->get_num_elements();
+
+      auto primitive_type = dest_tensor_type->get_element_type();
+      for (size_t i = 0; i < num_elements; i++) {
+        auto global_ptr_stmt = std::make_unique<GlobalPtrStmt>(
+            matrix_of_global_ptr_stmt->snodes[i],
+            matrix_of_global_ptr_stmt->indices);
+        global_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto load_stmt = std::make_unique<T>(global_ptr_stmt.get());
+        load_stmt->ret_type = primitive_type;
+
+        matrix_init_values.push_back(load_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(global_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+
+    } else if (stmt->src->template is<MatrixOfMatrixPtrStmt>()) {
+      auto matrix_of_matrix_ptr_stmt =
+          stmt->src->template as<MatrixOfMatrixPtrStmt>();
+      auto dest_tensor_type = stmt->ret_type->template as<TensorType>();
+
+      std::vector<Stmt *> matrix_init_values;
+      int num_elements = dest_tensor_type->get_num_elements();
+
+      auto primitive_type = dest_tensor_type->get_element_type();
+      for (size_t i = 0; i < num_elements; i++) {
+        Stmt *matrix_ptr_stmt = matrix_of_matrix_ptr_stmt->stmts[i];
+
+        auto load_stmt = std::make_unique<T>(matrix_ptr_stmt);
+        load_stmt->ret_type = primitive_type;
+
+        matrix_init_values.push_back(load_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    scalarize_store_stmt<GlobalStoreStmt>(stmt);
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    scalarize_store_stmt<LocalStoreStmt>(stmt);
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    scalarize_load_stmt<GlobalLoadStmt>(stmt);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    scalarize_load_stmt<LocalLoadStmt>(stmt);
+  }
+
+  /*
+    [MatrixOfGlobalPtrStmt]
+    Before:
+      StoreStmt(TensorType<4 x i32>* MatrixOfGlobalPtrStmt, TensorType<4 x i32>
+    val)
+
+    After:
+      AllocaStmt alloca = AllocaStmt(TensorType<4 x i32>)
+      StoreStmt(alloca, val)
+
+      matrix_ptr0 = MatrixPtrStmt(i32* alloca, 0)
+      matrix_ptr1 = MatrixPtrStmt(i32* alloca, 1)
+      matrix_ptr2 = MatrixPtrStmt(i32* alloca, 2)
+      matrix_ptr3 = MatrixPtrStmt(i32* alloca, 3)
+
+      val0 = LoadStmt(matrix_ptr0)
+      val1 = LoadStmt(matrix_ptr1)
+      val2 = LoadStmt(matrix_ptr2)
+      val3 = LoadStmt(matrix_ptr3)
+
+      GlobalPtrStmt* ptr0 = MatrixOfGlobalPtrStmt->snodes[0]
+      GlobalPtrStmt* ptr1 = MatrixOfGlobalPtrStmt->snodes[1]
+      GlobalPtrStmt* ptr2 = MatrixOfGlobalPtrStmt->snodes[2]
+      GlobalPtrStmt* ptr3 = MatrixOfGlobalPtrStmt->snodes[3]
+      i32 val_o0 = AtomicStmt(i32* ptr0, i32 val0)
+      i32 val_o1 = AtomicStmt(i32* ptr1, i32 val1)
+      i32 val_o2 = AtomicStmt(i32* ptr2, i32 val2)
+      i32 val_o3 = AtomicStmt(i32* ptr3, i32 val3)
+
+      tmp = MatrixInitStmt(val_o0, val_o1, val_o2, val_o3)
+      stmt->replace_all_usages_with(tmp)
+  */
+  void visit(AtomicOpStmt *stmt) override {
+    if (stmt->dest->is<MatrixOfGlobalPtrStmt>()) {
+      auto matrix_of_global_ptr_stmt = stmt->dest->as<MatrixOfGlobalPtrStmt>();
+      auto val = stmt->val;
+      auto val_tensor_type = val->ret_type->as<TensorType>();
+      int num_elements = val_tensor_type->get_num_elements();
+      auto primitive_type = val_tensor_type->get_element_type();
+
+      std::vector<Stmt *> matrix_init_values;
+
+      auto alloca_stmt = std::make_unique<AllocaStmt>(val->ret_type);
+      Stmt *alloca_stmt_ptr = alloca_stmt.get();
+
+      auto store_stmt = std::make_unique<LocalStoreStmt>(alloca_stmt_ptr, val);
+
+      delayed_modifier_.insert_before(stmt, std::move(alloca_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      for (int i = 0; i < num_elements; i++) {
+        auto const_stmt = std::make_unique<ConstStmt>(TypedConstant(i));
+
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(alloca_stmt_ptr, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto load_stmt = std::make_unique<LocalLoadStmt>(matrix_ptr_stmt.get());
+        load_stmt->ret_type = primitive_type;
+
+        auto global_ptr_stmt = std::make_unique<GlobalPtrStmt>(
+            matrix_of_global_ptr_stmt->snodes[i],
+            matrix_of_global_ptr_stmt->indices);
+        global_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto atomic_stmt = std::make_unique<AtomicOpStmt>(
+            stmt->op_type, global_ptr_stmt.get(), load_stmt.get());
+        atomic_stmt->ret_type = primitive_type;
+
+        matrix_init_values.push_back(atomic_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(global_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(atomic_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+
+    } else if (stmt->dest->is<MatrixOfMatrixPtrStmt>()) {
+      auto matrix_of_matrix_ptr_stmt = stmt->dest->as<MatrixOfMatrixPtrStmt>();
+      auto val = stmt->val;
+      auto val_tensor_type = val->ret_type->as<TensorType>();
+      int num_elements = val_tensor_type->get_num_elements();
+      auto primitive_type = val_tensor_type->get_element_type();
+
+      std::vector<Stmt *> matrix_init_values;
+
+      auto alloca_stmt = std::make_unique<AllocaStmt>(val->ret_type);
+      Stmt *alloca_stmt_ptr = alloca_stmt.get();
+
+      auto store_stmt = std::make_unique<LocalStoreStmt>(alloca_stmt_ptr, val);
+
+      delayed_modifier_.insert_before(stmt, std::move(alloca_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(store_stmt));
+      for (int i = 0; i < num_elements; i++) {
+        auto const_stmt = std::make_unique<ConstStmt>(TypedConstant(i));
+
+        auto matrix_ptr_stmt =
+            std::make_unique<MatrixPtrStmt>(alloca_stmt_ptr, const_stmt.get());
+        matrix_ptr_stmt->ret_type = primitive_type;
+        matrix_ptr_stmt->ret_type.set_is_pointer(true);
+
+        auto load_stmt = std::make_unique<LocalLoadStmt>(matrix_ptr_stmt.get());
+        load_stmt->ret_type = primitive_type;
+
+        auto atomic_stmt = std::make_unique<AtomicOpStmt>(
+            stmt->op_type, matrix_of_matrix_ptr_stmt->stmts[i],
+            load_stmt.get());
+        atomic_stmt->ret_type = primitive_type;
+
+        matrix_init_values.push_back(atomic_stmt.get());
+
+        delayed_modifier_.insert_before(stmt, std::move(const_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(load_stmt));
+        delayed_modifier_.insert_before(stmt, std::move(atomic_stmt));
+      }
+
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(matrix_init_values);
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+ private:
+  using BasicStmtVisitor::visit;
+};
+
 class LowerMatrixPtr : public BasicStmtVisitor {
  private:
   using BasicStmtVisitor::visit;
@@ -46,36 +458,6 @@ class LowerMatrixPtr : public BasicStmtVisitor {
         modifier_.insert_before(stmt, std::move(lowered));
         modifier_.erase(stmt);
       }
-      return;
-    }
-    if (stmt->origin->is<ExternalPtrStmt>()) {
-      auto origin = stmt->origin->as<ExternalPtrStmt>();
-      TI_ASSERT(stmt->origin->ret_type.ptr_removed()->is<TensorType>());
-
-      std::vector<Stmt *> indices = origin->indices;
-      indices.push_back(stmt->offset);
-
-      // MatrixPtrStmt has flattened indices, linearization of which is done
-      // during IndexExpression::flatten() Here we need to modify the
-      // element_dim and element_shape a little bit.
-      int element_dim = -1;  // AOS Vector
-      std::vector<int> element_shape = {
-          std::accumulate(begin(origin->element_shape),
-                          end(origin->element_shape), 1, std::multiplies<>())};
-
-      auto fused = std::make_unique<ExternalPtrStmt>(
-          origin->base_ptr, indices, element_shape, element_dim);
-      fused->ret_type = stmt->ret_type;
-      // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
-      // with flattened indices. Main goal is to keep all the hacks in a single
-      // place so that they're easier to remove
-      std::vector<StructMember> members;
-      members.push_back({stmt->ret_type, "data_ptr"});
-      auto type = TypeFactory::get_instance().get_struct_type(members);
-      origin->base_ptr->as<ArgLoadStmt>()->ret_type = type;
-      stmt->replace_usages_with(fused.get());
-      modifier_.insert_before(stmt, std::move(fused));
-      modifier_.erase(stmt);
       return;
     }
     if (stmt->origin->is<MatrixOfMatrixPtrStmt>()) {
@@ -120,6 +502,8 @@ namespace irpass {
 
 void lower_matrix_ptr(IRNode *root) {
   TI_AUTO_PROF;
+
+  ScalarizeMatrixPtr scalarize_matrix_ptr_pass(root);
   LowerMatrixPtr::run(root);
   RemoveMatrixOfPtr::run(root);
 }

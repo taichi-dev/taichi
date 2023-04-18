@@ -209,8 +209,7 @@ user_api[ti] = [
     "simt",
     "sin",
     "solve",
-    "sparse"
-    "sparse_matrix_builder",
+    "sparse" "sparse_matrix_builder",
     "sqrt",
     "static",
     "static_assert",

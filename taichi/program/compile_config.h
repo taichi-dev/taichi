@@ -70,10 +70,6 @@ struct CompileConfig {
   float64 device_memory_GB;
   float64 device_memory_fraction;
 
-  // C backend options:
-  std::string cc_compile_cmd;
-  std::string cc_link_cmd;
-
   // Opengl backend options:
   bool allow_nv_shader_extension{true};
 

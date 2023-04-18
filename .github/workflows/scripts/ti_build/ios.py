@@ -53,7 +53,6 @@ def setup_ios(python: Command, pip: Command) -> None:
     cmake_args["TI_WITH_CUDA"] = False
     cmake_args["TI_WITH_PYTHON"] = False
     cmake_args["TI_WITH_GGUI"] = False
-    cmake_args["TI_WITH_CC"] = False
     cmake_args.writeback()
 
 

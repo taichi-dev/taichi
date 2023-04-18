@@ -48,10 +48,7 @@ static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
   serializer(config.ad_stack_size);
   serializer(config.default_ad_stack_size);
   serializer(config.random_seed);
-  if (config.arch == Arch::cc) {
-    serializer(config.cc_compile_cmd);
-    serializer(config.cc_link_cmd);
-  } else if (config.arch == Arch::opengl || config.arch == Arch::gles) {
+  if (config.arch == Arch::opengl || config.arch == Arch::gles) {
     serializer(config.allow_nv_shader_extension);
   }
   serializer(config.make_mesh_block_local);

@@ -94,14 +94,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
   if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
     // Check whether the kernel obeys the autodiff limitation e.g., gloabl data
     // access rule
@@ -110,6 +102,14 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir, config);
     irpass::differentiation_validation_check(ir, config, kernel->get_name());
     irpass::analysis::verify(ir);
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   if (autodiff_mode == AutodiffMode::kReverse ||

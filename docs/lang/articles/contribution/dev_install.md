@@ -59,7 +59,7 @@ This guide will focus on the build.py approach. If you prefer to use the convent
 | :---------------------------- | :--------------------------------------------------------- |
 | Linux                         | Anything recent enough, e.g. Ubuntu 20.04                  |
 | Python                        | 3.6+, with a usable pip (`python3-pip` package on Ubuntu)  |
-| Clang++                       | Clang++ &gt;= 8, Clang++ 15 is recommended.               |
+| Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.               |
 | libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`. |
 
 </TabItem>
@@ -87,11 +87,17 @@ This guide will focus on the build.py approach. If you prefer to use the convent
 </Tabs>
 ````
 
-### Install Clang
+### Install Compiler
 
 <blockquote>
 
-Taichi supports building from source with any clang compiler greater than version 8.0. Install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu, `brew` on macOS, and so on.
+Taichi supports building from source with Clang++ >= 10.0 and MSVC from VS2022.
+Install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu.
+For macOS developers, it is recommended to use AppleClang shipped with Command line tools for Xcode which can be installed with `xcode-select --install`, or a complete Xcode.app install.
+For
+
+For now, `build.py` will start a VS2022 BuildTools installer for you if none of the VS2022 editions are installed.
+
 </blockquote>
 
 

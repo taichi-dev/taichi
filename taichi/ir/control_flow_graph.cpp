@@ -125,20 +125,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
-      /*
-        Special case: when store-load-forwarding a LoadStmt(TensorType* src),
-        it's important to verify that there's no StoreStmt(MatrixPtrStmt(src,
-        {...})) in between. Otherwise, store-load-forwarding may lead to wrong
-        data.
-      */
-      if (var->ret_type->is<TensorType>() && store_ptr->is<MatrixPtrStmt>()) {
-        // Check if the origin of MatrixPtrStmt share the same address as var
-        if (irpass::analysis::maybe_same_address(
-                var, store_ptr->as<MatrixPtrStmt>()->origin)) {
-          return nullptr;  // we can't do store-load-forwarding in this case
-        }
-      }
-
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
         last_def_position = i;
         break;
@@ -287,25 +273,31 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     TODO(zhanlue): Improve aliasing analysis to enable TensorType forwarding
                    Be careful about the case where MatrixPtrStmt is involved:
 
-                   [Example]
-                   TensorType* $1 = AllocaStmt(TensorType)
-                   TensorType $2 = MatrixInitStmt([...])
+      [Example]
+      TensorType* $1 = AllocaStmt(TensorType)
+      TensorType $2 = MatrixInitStmt([...])
 
-                   // --------- Unable to forward (Tensor-store -->
-    Element-store --> Tensor-Load) --------- // $3: StoreStmt($1, $2) // can't
-    forward this store int32* $4 = MatrixPtrStmt($1, 0) $5: StoreStmt($4,
-    ConstStmt(100)) // can't forward this store of course TensorType $6 =
-    LoadStmt($1)
+      // --------- Unable to forward --------- //
+      (Tensor-store --> Element-store --> Tensor-Load)
 
-                   // --------- Unable to forward (Element-store -->
-    Tensor-store --> Element-Load) --------- // int32* $3 = MatrixPtrStmt($1, 0)
-                   $4: StoreStmt($3, ConstStmt(100)) // can't forward this store
-                   $5: StoreStmt($1, $2) // can't forward this store
-                   $6 = LoadStmt($3)
+      $3: StoreStmt($1, $2) // can't forward this store int32*
+      $4 = MatrixPtrStmt($1, 0)
+      $5: StoreStmt($4, ConstStmt(100)) // can't forward this store of course
+      TensorType $6 =LoadStmt($1)
 
-                   // --------- Able to forward (Tensor-store --> Tensor-Load)
-    --------- // int32* $3 = MatrixPtrStmt($1, 0) $5: StoreStmt($1, $2) // can
-    forward this store $6 = LoadStmt($1)
+      // --------- Unable to forward --------- //
+      (Element-store --> Tensor-store --> Element-Load)
+
+      int32* $3 = MatrixPtrStmt($1, 0)
+      $4: StoreStmt($3, ConstStmt(100)) // can't forward this store
+      $5: StoreStmt($1, $2) // can't forward this store
+      $6 = LoadStmt($3)
+
+      // --------- Able to forward --------- /
+      (Tensor-store --> Tensor-Load)
+      int32* $3 = MatrixPtrStmt($1, 0)
+      $5: StoreStmt($1, $2) // can forward this store
+      $6 = LoadStmt($1)
     */
 
     if (result && !result->ret_type->is<TensorType>()) {
@@ -445,32 +437,37 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     TODO(zhanlue): Improve aliasing analysis to enable dead store elimination
     for tensors. Be careful about the case where MatrixPtrStmt is involved:
 
-                   [Example]
-                   TensorType* $1 = ExternalPtrStmt(arg_load, ...)
-                   TensorType $2 = MatrixInitStmt([...])
+    [Example]
+    TensorType* $1 = ExternalPtrStmt(arg_load, ...)
+    TensorType $2 = MatrixInitStmt([...])
 
-                   // --------- Unable to eliminate (Tensor-store -->
-    Element-store) --------- // $3: StoreStmt($1, $2) // can't eliminate this
-    store int32* $4 = MatrixPtrStmt($1, 0) $5: StoreStmt($4, ConstStmt(100))
+    // --------- Unable to eliminate --------- //
+    (Tensor-store --> Element-store) --------- //
+    $3: StoreStmt($1, $2) // can't eliminate this store
+    int32* $4 = MatrixPtrStmt($1, 0)
+    $5: StoreStmt($4, ConstStmt(100))
 
-                   // --------- Able to eliminate (Element-store -->
-    Tensor-store) --------- // int32* $3 = MatrixPtrStmt($1, 0) $4:
-    StoreStmt($3, ConstStmt(100)) // can eliminate this store $5: StoreStmt($1,
-    $2)
+    // --------- Able to eliminate --------- //
+    (Element-store --> Tensor-store)
+    int32* $3 = MatrixPtrStmt($1, 0)
+    $4: StoreStmt($3, ConstStmt(100)) // can eliminate this store
+    $5: StoreStmt($1, $2)
 
-                   // --------- Unable to eliminate (Element-store -->
-    Tensor-load --> Tensor-store) --------- // int32* $3 = MatrixPtrStmt($1, 0)
-                   $4: StoreStmt($3, ConstStmt(100)) // can't eliminate this
-    store TensorType $5 = LoadStmt($1) | or int32 $5 = LoadStmt($3) $6:
-    StoreStmt($1, $2)
+    // --------- Unable to eliminate --------- //
+    (Element-store --> Tensor-load --> Tensor-store)
+    int32* $3 = MatrixPtrStmt($1, 0)
+    $4: StoreStmt($3, ConstStmt(100)) // can't eliminate this store
+    TensorType $5 = LoadStmt($1) | or int32 $5 = LoadStmt($3)
+    $6: StoreStmt($1, $2)
 
-                   // --------- Able to eliminate (Element-store -->
-    Alternative-Element-load --> Tensor-store) --------- // int32* $3 =
-    MatrixPtrStmt($1, 0) int32* $4 = MatrixPtrStmt($1, 1)
+    // --------- Able to eliminate --------- //
+    (Element-store --> Alternative-Element-load --> Tensor-store)
+    int32* $3 = MatrixPtrStmt($1, 0) int32*
+    $4 = MatrixPtrStmt($1, 1)
 
-                   $5: StoreStmt($3, ConstStmt(100)) // can eliminate this store
-                   int32 $6 = LoadStmt($4)
-                   $6: StoreStmt($1, $2)
+    $5: StoreStmt($3, ConstStmt(100)) // can eliminate this store
+    int32 $6 = LoadStmt($4)
+    $6: StoreStmt($1, $2)
     */
 
     bool is_tensor_involved = stmt->ret_type->is<TensorType>();

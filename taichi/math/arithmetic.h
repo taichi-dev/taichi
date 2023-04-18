@@ -13,7 +13,7 @@ template <typename T,
 T iroundup(T a, U b) {
   static_assert(std::is_integral_v<T>, "LHS must be integral type");
   static_assert(std::is_integral_v<U>, "RHS must be integral type");
-  return ((a + b + 1) / b) * b;
+  return ((a + b - 1) / b) * b;
 }
 
 template <typename T>

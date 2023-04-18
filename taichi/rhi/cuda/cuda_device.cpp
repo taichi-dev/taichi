@@ -47,7 +47,9 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
     const LlvmRuntimeAllocParams &params) {
   AllocInfo info;
   info.size = taichi::iroundup(params.size, taichi_page_size);
-  if (params.use_cached) {
+  if (info.size == 0) {
+    info.ptr = nullptr;
+  } else if (params.use_cached) {
     info.ptr =
         DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
 
@@ -76,6 +78,9 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
 
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
+  if (info.size == 0) {
+    return;
+  }
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }

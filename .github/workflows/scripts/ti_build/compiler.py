@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+from pathlib import Path
 import os
 import platform
-from pathlib import Path
+import shutil
 
 # -- third party --
 # -- own --
@@ -19,21 +20,27 @@ def setup_clang(as_compiler=True) -> None:
     Setup Clang.
     """
     u = platform.uname()
-    if u.system == "Linux":
-        pass
+    if u.system in ("Linux", "Darwin"):
+        for v in ["", "-15", "-14", "-13", "-12", "-11", "-10"]:
+            clang = shutil.which(f"clang{v}")
+            if clang is not None:
+                break
+        else:
+            raise RuntimeError("Cannot find clang, please install clang-10 or higher.")
+
     elif (u.system, u.machine) == ("Windows", "AMD64"):
         out = get_cache_home() / "clang-15-v2"
         url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/clang-15.0.0-win-complete.zip"
         download_dep(url, out, force=True)
         clang = str(out / "bin" / "clang++.exe").replace("\\", "\\\\")
-        cmake_args["CLANG_EXECUTABLE"] = clang
-
-        if as_compiler:
-            cmake_args["CMAKE_CXX_COMPILER"] = clang
-            cmake_args["CMAKE_C_COMPILER"] = clang
     else:
-        # TODO: unify all
-        pass
+        raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
+
+    cmake_args["CLANG_EXECUTABLE"] = clang
+
+    if as_compiler:
+        cmake_args["CMAKE_CXX_COMPILER"] = clang
+        cmake_args["CMAKE_C_COMPILER"] = clang
 
 
 @banner("Setup MSVC")

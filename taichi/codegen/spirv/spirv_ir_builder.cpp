@@ -328,27 +328,6 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
-SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
-  if (dt->is<PrimitiveType>()) {
-    return get_primitive_type(dt);
-  } else if (dt->is<PointerType>()) {
-    if (has_buffer_ptr) {
-      return t_uint64_;
-    } else {
-      return t_uint32_;
-    }
-  } else if (auto struct_type = dt->cast<lang::StructType>()) {
-    std::vector<std::tuple<SType, std::string, size_t>> components;
-    for (const auto &[type, name, offset] : struct_type->elements()) {
-      components.push_back(std::make_tuple(
-          from_taichi_type(type, has_buffer_ptr), name, offset));
-    }
-    return create_struct_type(components);
-  } else {
-    TI_ERROR("Type {} not supported.", dt->to_string());
-  }
-}
-
 size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
   if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
       dt == PrimitiveType::f64) {

@@ -34,12 +34,11 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 :::
 
-## The simplified workflow leveraging build.py
+## The simplified workflow leveraging `build.py`
 
-Starting from Taichi v1.6.0, a comprehensive build environment preparing script (aka. build.py or ti-build) is introduced, which can greatly reduce
-the complexity of setting-up a proper build/development environment.
+With the release of Taichi, a comprehensive build environment preparation script (aka. `build.py` or `ti-build`) has been introduced. This script significantly simplifies the process of configuring a suitable build or development environment.
 
-This guide will focus on the build.py approach. If you prefer to use the conventional method, you can refer to the previous Developer Installation document.
+This guide will focus on the `build.py` approach. If you prefer to use the conventional method, you can refer to the previous Developer Installation document.
 
 
 ## Prerequisites
@@ -55,12 +54,12 @@ This guide will focus on the build.py approach. If you prefer to use the convent
 
 <TabItem value="linux">
 
-| Category                      | Prerequisites                                              |
-| :---------------------------- | :--------------------------------------------------------- |
-| Linux                         | Anything recent enough, e.g. Ubuntu 20.04                  |
-| Python                        | 3.6+, with a usable pip (`python3-pip` package on Ubuntu)  |
-| Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.               |
-| libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`. |
+| Category                      | Prerequisites                                                        |
+| :---------------------------- | :------------------------------------------------------------------- |
+| Linux                         | Anything recent enough, e.g. Ubuntu 20.04                            |
+| Python                        | 3.6+, with a usable distutils(`python3-distutils` package on Ubuntu) |
+| Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.                         |
+| libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`.           |
 
 </TabItem>
 

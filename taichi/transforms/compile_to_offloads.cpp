@@ -80,8 +80,15 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
+
+  irpass::full_simplify(
+      ir, config,
+      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});
+  print("Simplified I");
+  irpass::analysis::verify(ir);
 
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
@@ -90,12 +97,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::die(ir);
     print("Scalarized");
   }
-
-  irpass::full_simplify(
-      ir, config,
-      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});
-  print("Simplified I");
-  irpass::analysis::verify(ir);
 
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);

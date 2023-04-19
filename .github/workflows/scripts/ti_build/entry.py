@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
@@ -22,6 +21,7 @@ from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
 from .tinysh import Command, git
 from .vulkan import setup_vulkan
+from .ospkg import setup_os_pkgs
 
 
 # -- code --
@@ -83,6 +83,7 @@ def setup_basic_build_env(force_vulkan=False):
 
 
 def action_wheel():
+    setup_os_pkgs()
     sccache, python, pip = setup_basic_build_env()
     install_build_wheel_deps(python, pip)
     handle_alternate_actions()

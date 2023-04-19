@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_sort():
     def test_sort_for_dtype(dtype, N):
         keys = ti.field(dtype, N)

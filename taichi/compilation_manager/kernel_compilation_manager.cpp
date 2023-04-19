@@ -125,18 +125,16 @@ void KernelCompilationManager::dump() {
   for (auto &[_, k] : kernels) {
     if (k.compiled_kernel_data) {
       auto cache_filename = make_filename(k.kernel_key);
-      if (try_lock_with_file(cache_filename)) {
-        std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
-        TI_ASSERT(fs.is_open());
-        auto err = k.compiled_kernel_data->dump(fs);
-        if (err == CompiledKernelData::Err::kNoError) {
-          TI_ASSERT(!!fs);
-          k.size = fs.tellp();
-          data.size += k.size;
-        } else {
-          TI_DEBUG("Dump cached CompiledKernelData(kernel_key={}) failed: {}",
-                   k.kernel_key, CompiledKernelData::get_err_msg(err));
-        }
+      std::ofstream fs{cache_filename, std::ios::out | std::ios::binary};
+      TI_ASSERT(fs.is_open());
+      auto err = k.compiled_kernel_data->dump(fs);
+      if (err == CompiledKernelData::Err::kNoError) {
+        TI_ASSERT(!!fs);
+        k.size = fs.tellp();
+        data.size += k.size;
+      } else {
+        TI_DEBUG("Dump cached CompiledKernelData(kernel_key={}) failed: {}",
+                 k.kernel_key, CompiledKernelData::get_err_msg(err));
       }
     }
   }

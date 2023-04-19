@@ -4,7 +4,7 @@
 #include "taichi/rhi/vulkan/vulkan_loader.h"
 #endif
 
-#include "window_system.h"
+#include "taichi/rhi/common/window_system.h"
 #include "taichi/rhi/impl_support.h"
 
 #include <mutex>

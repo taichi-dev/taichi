@@ -33,7 +33,7 @@
 #endif
 
 #include "taichi/rhi/vulkan/vulkan_common.h"
-#include "taichi/rhi/window_system.h"
+#include "taichi/rhi/common/window_system.h"
 #include "taichi/common/filesystem.hpp"
 
 #include <stdarg.h>

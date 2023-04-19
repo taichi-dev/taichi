@@ -20,7 +20,7 @@ export TAICHI_UNITY_EXAMPLE_BRANCH=main
 function build-and-smoke-test-android-aot-demo {
     pushd taichi
     GIT_COMMIT=$(git rev-parse HEAD | cut -c1-7)
-    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    python3 .github/workflows/scripts/build.py android --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
     popd
 
@@ -46,7 +46,7 @@ function build-and-smoke-test-android-aot-demo {
 
 function prepare-unity-build-env {
     cd taichi
-    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    python3 .github/workflows/scripts/build.py android --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
 
     # Dependencies
@@ -103,7 +103,7 @@ function smoke-test-unity-demo {
 
 function build-and-test-headless-demo {
     pushd taichi
-    python3 .github/workflows/scripts/build.py android --write-env=/tmp/ti-aot-env.sh
+    python3 .github/workflows/scripts/build.py android --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
     pip uninstall -y taichi taichi-nightly || true
     pip install /taichi-wheel/*.whl
@@ -151,7 +151,7 @@ function build-and-test-headless-demo {
 
 function build-and-test-headless-demo-desktop {
     pushd taichi
-    python3 .github/workflows/scripts/build.py wheel --write-env=/tmp/ti-aot-env.sh
+    python3 .github/workflows/scripts/build.py wheel --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
     python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install dist/*.whl
@@ -170,7 +170,7 @@ function build-and-test-headless-demo-desktop {
 function check-c-api-export-symbols {
     [ ! -z $IN_DOCKER ] && cd taichi
 
-    python3 .github/workflows/scripts/build.py wheel --write-env=/tmp/ti-aot-env.sh
+    python3 .github/workflows/scripts/build.py wheel --permissive --write-env=/tmp/ti-aot-env.sh
     . /tmp/ti-aot-env.sh
 
     LIBTAICHI_C_API=$TAICHI_C_API_INSTALL_DIR/lib/libtaichi_c_api.so

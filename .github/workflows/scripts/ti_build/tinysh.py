@@ -227,3 +227,4 @@ sccache = sh.sccache
 tar = sh.tar
 bash = sh.bash
 start = sh.start.bake("/wait")
+apt = sh.sudo.apt

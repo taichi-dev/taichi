@@ -22,6 +22,7 @@ docs/lang/articles/contribution/windows_debug.md
 docs/lang/articles/contribution/writing_cpp_tests.md
 docs/lang/articles/glossary/glossary.md
 docs/lang/articles/kernels/kernel_function.md
+docs/lang/articles/kernels/kernel_sync.md
 docs/lang/articles/performance_tuning/performance.md
 docs/lang/articles/performance_tuning/profiler.md
 docs/lang/articles/reference/global_settings.md

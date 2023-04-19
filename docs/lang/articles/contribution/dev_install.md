@@ -95,12 +95,11 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 
 Taichi supports building from source with Clang++ >= 10.0 and MSVC from VS2022.
 
-For macOS developers, it is recommended to use AppleClang shipped with Command line tools for Xcode (install by `xcode-select --install`), or a complete Xcode.app install.
+For macOS developers, it is recommended to use AppleClang, which comes with the Command Line Tools for Xcode. You can install them by running `xcode-select --install`. Alternatively, a complete installation of Xcode.app is also an option.
 
-For Linux developers, install Clang from the package manager for your operating system.
-On Ubuntu 22.04, `sudo apt install clang-15` would suffice. For older Ubuntu distributions to use newer Clang, please follow instructions on [official LLVM Debian/Ubuntu Nightly Packages](https://apt.llvm.org/)
+For Linux developers, it is recommended to install Clang using the package manager specific to your operating system. On Ubuntu 22.04, running `sudo apt install clang-15` should be sufficient. For older Ubuntu distributions to use a newer version of Clang, please follow the instructions on [official LLVM Debian/Ubuntu Nightly Packages](https://apt.llvm.org/).
 
-For Windows developers, `build.py` will start a VS2022 BuildTools installer for you if none of the VS2022 editions are installed.
+For Windows developers, if none of the VS2022 editions are installed, `build.py` will automatically start a VS2022 BuildTools installer for you.
 
 </blockquote>
 

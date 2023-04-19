@@ -90,16 +90,16 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
+  if (is_extension_supported(config.arch, Extension::mesh)) {
+    irpass::analysis::gather_meshfor_relation_types(ir);
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
     print("Scalarized");
-  }
-
-  if (is_extension_supported(config.arch, Extension::mesh)) {
-    irpass::analysis::gather_meshfor_relation_types(ir);
   }
 
   if (config.debug && autodiff_mode == AutodiffMode::kCheckAutodiffValid) {

@@ -19,7 +19,17 @@
 
 namespace taichi::lang {
 
-DeviceMemoryPool::DeviceMemoryPool() {
+DeviceMemoryPool::DeviceMemoryPool(bool merge_upon_release)
+    : merge_upon_release_(merge_upon_release) {
+  allocator_ = std::make_unique<CachingAllocator>(merge_upon_release);
+}
+
+void *DeviceMemoryPool::allocate_with_cache(
+    LlvmDevice *device,
+    const LlvmDevice::LlvmRuntimeAllocParams &params) {
+  std::lock_guard<std::mutex> _(mut_allocation_);
+
+  return allocator_->allocate(device, params);
 }
 
 void *DeviceMemoryPool::allocate(std::size_t size,
@@ -33,7 +43,11 @@ void *DeviceMemoryPool::allocate(std::size_t size,
 void DeviceMemoryPool::release(std::size_t size, void *ptr, bool release_raw) {
   std::lock_guard<std::mutex> _(mut_allocation_);
 
-  deallocate_raw_memory(ptr);
+  if (release_raw) {
+    deallocate_raw_memory(ptr);
+  } else {
+    allocator_->release(size, (uint64_t *)ptr);
+  }
 }
 
 void *DeviceMemoryPool::allocate_raw_memory(std::size_t size, bool managed) {
@@ -109,6 +123,7 @@ void DeviceMemoryPool::reset() {
   for (auto &ptr : ptr_map_copied) {
     deallocate_raw_memory(ptr.first);
   }
+  allocator_ = std::make_unique<CachingAllocator>(merge_upon_release_);
 }
 
 DeviceMemoryPool::~DeviceMemoryPool() {
@@ -117,8 +132,9 @@ DeviceMemoryPool::~DeviceMemoryPool() {
 
 const size_t DeviceMemoryPool::page_size{1 << 12};  // 4 KB page size by default
 
-DeviceMemoryPool &DeviceMemoryPool::get_instance() {
-  static DeviceMemoryPool *cuda_memory_pool = new DeviceMemoryPool();
+DeviceMemoryPool &DeviceMemoryPool::get_instance(bool merge_upon_release) {
+  static DeviceMemoryPool *cuda_memory_pool =
+      new DeviceMemoryPool(merge_upon_release);
   return *cuda_memory_pool;
 }
 

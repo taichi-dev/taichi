@@ -297,6 +297,11 @@ class IRBuilder {
     return val;
   }
 
+  // Make an AccessChain
+  Value make_access_chain(const SType &out_type,
+                          Value base,
+                          const std::vector<int> &indices);
+
   // Make a phi value
   PhiValue make_phi(const SType &out_type, uint32_t num_incoming);
 
@@ -467,6 +472,7 @@ class IRBuilder {
   Value ge(Value a, Value b);
   Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
+  Value popcnt(Value x);
 
   // Create a cast that cast value to dst_type
   Value cast(const SType &dst_type, Value value);

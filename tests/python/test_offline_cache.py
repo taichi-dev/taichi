@@ -409,13 +409,7 @@ def test_offline_cache_with_changing_compile_config(curr_arch):
 
     ti.reset()
     assert added_files() == expected_num_cache_files(2)
-    ti.init(
-        arch=curr_arch,
-        enable_fallback=False,
-        default_fp=ti.f32,
-        cc_compile_cmd="gcc -Wc99-c11-compat -c -o '{}' '{}' -O0",
-        **current_thread_ext_options()
-    )
+    ti.init(arch=curr_arch, enable_fallback=False, default_fp=ti.f32, **current_thread_ext_options())
     helper()
 
     ti.reset()

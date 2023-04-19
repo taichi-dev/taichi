@@ -786,6 +786,11 @@ def vdir(ang):
     return vec2(cos(ang), sin(ang))
 
 
+@func
+def popcnt(x):
+    return ops.popcnt(x)
+
+
 __all__ = [
     "acos",
     "asin",
@@ -826,6 +831,7 @@ __all__ = [
     "normalize",
     "pi",
     "pow",
+    "popcnt",
     "radians",
     "reflect",
     "refract",

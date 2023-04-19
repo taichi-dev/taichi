@@ -535,6 +535,7 @@ void LlvmRuntimeExecutor::finalize() {
   if (preallocated_device_buffer_ != nullptr) {
     if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
       llvm_device()->dealloc_memory(preallocated_device_buffer_alloc_);
+      llvm_device()->clear();
       DeviceMemoryPool::get_instance().reset();
     }
   }

@@ -135,17 +135,14 @@ void run_snode() {
                                             n, {n});
 
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_init),
+      program.compile_kernel(config, program.get_device_caps(), *kernel_init),
       ctx_init);
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_ret),
+      program.compile_kernel(config, program.get_device_caps(), *kernel_ret),
       ctx_ret);
   std::cout << program.fetch_result<int>(0) << std::endl;
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_ext),
+      program.compile_kernel(config, program.get_device_caps(), *kernel_ext),
       ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_arr[i] << " ";

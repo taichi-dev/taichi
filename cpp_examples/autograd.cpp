@@ -196,20 +196,17 @@ void autograd() {
                                             {n});
 
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_init),
+      program.compile_kernel(config, program.get_device_caps(), *kernel_init),
       ctx_init);
+  program.launch_kernel(program.compile_kernel(
+                            config, program.get_device_caps(), *kernel_forward),
+                        ctx_forward);
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_forward),
-      ctx_forward);
-  program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_backward),
+      program.compile_kernel(config, program.get_device_caps(),
+                             *kernel_backward),
       ctx_backward);
   program.launch_kernel(
-      program.compile_kernel(program.compile_config(),
-                             program.get_device_caps(), *kernel_ext),
+      program.compile_kernel(config, program.get_device_caps(), *kernel_ext),
       ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_a[i] << " ";

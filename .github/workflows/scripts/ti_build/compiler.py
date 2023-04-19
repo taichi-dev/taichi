@@ -28,8 +28,7 @@ def setup_clang(as_compiler=True) -> None:
                 assert clangpp
                 break
         else:
-            warn("Cannot find clang, compiling with system default compiler (or $CC/$CXX if set).")
-            return
+            raise Exception("Could not find clang of any version")
 
     elif (u.system, u.machine) == ("Windows", "AMD64"):
         out = get_cache_home() / "clang-15-v2"
@@ -43,17 +42,15 @@ def setup_clang(as_compiler=True) -> None:
     cmake_args["CLANG_EXECUTABLE"] = clang
 
     if as_compiler:
-        if os.environ.get("CC"):
-            warn(
-                f"Explicitly specified compiler via environment variable CC={os.environ['CC']}, not configuring clang."
-            )
+        cc = os.environ.get("CC")
+        cxx = os.environ.get("CXX")
+        if cc:
+            warn(f"Explicitly specified compiler via environment variable CC={cc}, not configuring clang.")
         else:
             cmake_args["CMAKE_C_COMPILER"] = clang
 
-        if os.environ.get("CXX"):
-            warn(
-                f"Explicitly specified compiler via environment variable CXX={os.environ['CXX']}, not configuring clang++."
-            )
+        if cxx:
+            warn(f"Explicitly specified compiler via environment variable CXX={cxx}, not configuring clang++.")
         else:
             cmake_args["CMAKE_CXX_COMPILER"] = clangpp
 

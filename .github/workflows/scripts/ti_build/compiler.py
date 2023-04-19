@@ -43,8 +43,19 @@ def setup_clang(as_compiler=True) -> None:
     cmake_args["CLANG_EXECUTABLE"] = clang
 
     if as_compiler:
-        cmake_args["CMAKE_CXX_COMPILER"] = clangpp
-        cmake_args["CMAKE_C_COMPILER"] = clang
+        if os.environ.get("CC"):
+            warn(
+                f"Explicitly specified compiler via environment variable CC={os.environ['CC']}, not configuring clang."
+            )
+        else:
+            cmake_args["CMAKE_C_COMPILER"] = clang
+
+        if os.environ.get("CXX"):
+            warn(
+                f"Explicitly specified compiler via environment variable CXX={os.environ['CXX']}, not configuring clang++."
+            )
+        else:
+            cmake_args["CMAKE_CXX_COMPILER"] = clangpp
 
 
 @banner("Setup MSVC")

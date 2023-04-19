@@ -4,10 +4,12 @@
 from pathlib import Path
 import platform
 import re
+import os
+import sys
 
 # -- third party --
 # -- own --
-from .misc import banner
+from .misc import banner, info
 from .tinysh import apt
 
 
@@ -49,8 +51,16 @@ def get_installed_apt_pkgs() -> set:
 def install_ubuntu_pkgs():
     installed = get_installed_apt_pkgs()
     to_install = UBUNTU_PACKAGES - installed
-    if to_install:
-        apt.install("-y", *sorted(to_install))
+    if not to_install:
+        return
+
+    if os.isatty(sys.stdin.fileno()):
+        apt.install(*sorted(to_install))
+    else:
+        info("Please install the following packages:")
+        p = lambda s: print(s, file=sys.stderr, flush=True)
+        for v in sorted(to_install):
+            p(f"    {v}")
 
 
 @banner("Install required OS packages")

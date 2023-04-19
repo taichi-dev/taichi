@@ -15,6 +15,7 @@ from .tinysh import apt
 
 # -- code --
 UBUNTU_PACKAGES = {
+    "git",
     "freeglut3-dev",
     "libglfw3-dev",
     "libglm-dev",

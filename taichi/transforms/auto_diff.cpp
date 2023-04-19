@@ -10,6 +10,17 @@
 
 namespace taichi::lang {
 
+template <typename T>
+Stmt *insert_const(const DataType &dtype, Stmt *stmt, const T &value) {
+  auto zero = stmt->insert_after_me(
+      Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+  if (auto t_dtype = dtype->as<TensorType>()) {
+    std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
+    zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
+  }
+  return zero;
+}
+
 class IndependentBlockMetaData {
  public:
   bool is_ib = true;
@@ -311,8 +322,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       // and it will be replaced by a AdStackPushStmt in the following
       // ReplaceLocalVarWithStacks pass
       auto dtype = stmt->ret_type;
-      auto zero =
-          stmt->insert_after_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+
+      auto zero = insert_const(dtype, stmt, 0);
       zero->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, zero));
       // Remove the old stmt
       stmt->parent->erase(stmt);
@@ -474,8 +485,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
       // Note that unlike AllocaStmt, AdStackAllocaStmt does NOT have an 0 as
       // initial value. Therefore here we push an initial 0 value.
-      auto zero = stack_alloca_ptr->insert_after_me(
-          Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+      auto zero = insert_const(dtype, stack_alloca_ptr, 0);
       zero->insert_after_me(
           Stmt::make<AdStackPushStmt>(stack_alloca_ptr, zero));
     }
@@ -607,6 +617,16 @@ class ADTransform : public IRVisitor {
   template <typename T, typename... Args>
   Stmt *insert(Args &&...args) {
     return insert_grad_stmt(Stmt::make<T>(args...));
+  }
+
+  template <typename T>
+  Stmt *insert_const_for_grad(const DataType &dtype, Stmt *stmt, const T &val) {
+    auto zero = insert<ConstStmt>(TypedConstant(dtype.get_element_type(), val));
+    if (auto t_dtype = dtype->as<TensorType>()) {
+      std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
+      zero = insert<MatrixInitStmt>(values);
+    }
+    return zero;
   }
 
   void visit(AllocaStmt *alloca) override {
@@ -753,7 +773,7 @@ class MakeAdjoint : public ADTransform {
       return;  // primal may be int variable
     if (alloca_->is<AdStackAllocaStmt>()) {
       auto alloca = alloca_->cast<AdStackAllocaStmt>();
-      if (is_real(alloca->ret_type)) {
+      if (is_real(alloca->ret_type.get_element_type())) {
         insert<AdStackAccAdjointStmt>(alloca, load(value));
       }
     } else {
@@ -765,7 +785,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
+    if (!is_real(stmt->ret_type.get_element_type()) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
@@ -860,7 +880,8 @@ class MakeAdjoint : public ADTransform {
           mul(adjoint(stmt),
               mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3)))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
-      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+      if (is_real(stmt->cast_type.get_element_type()) &&
+          is_real(stmt->operand->ret_type.get_element_type())) {
         accumulate(stmt->operand, adjoint(stmt));
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
@@ -903,7 +924,7 @@ class MakeAdjoint : public ADTransform {
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
                                                    : cmp_lt(bin->rhs, bin->lhs);
-      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+      auto zero = insert_const_for_grad(bin->ret_type, bin, 0);
       accumulate(bin->lhs, sel(cmp, adjoint(bin), zero));
       accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::floordiv) {
@@ -919,7 +940,7 @@ class MakeAdjoint : public ADTransform {
 
   void visit(TernaryOpStmt *stmt) override {
     TI_ASSERT(stmt->op_type == TernaryOpType::select);
-    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
+    auto zero = insert_const_for_grad(stmt->ret_type, stmt, 0);
     accumulate(stmt->op2,
                insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
                                      load(adjoint(stmt)), zero));
@@ -1007,7 +1028,7 @@ class MakeAdjoint : public ADTransform {
   // Equivalent to AdStackLoadTopStmt when no stack is needed
   void visit(LocalLoadStmt *stmt) override {
     // TI_ASSERT(!needs_grad(stmt->ret_type));
-    if (is_real(stmt->ret_type))
+    if (is_real(stmt->ret_type.get_element_type()))
       accumulate(stmt->src, load(adjoint(stmt)));
   }
 
@@ -1021,15 +1042,15 @@ class MakeAdjoint : public ADTransform {
     // iteration should be cleared after this iteration has been done
     // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of
-    if (is_real(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type.get_element_type())) {
       auto dtype = stmt->dest->ret_type;
-      auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+      auto zero = insert_const_for_grad(dtype, stmt, 0);
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
     }
   }
 
   void visit(AdStackLoadTopStmt *stmt) override {
-    if (is_real(stmt->ret_type))
+    if (is_real(stmt->ret_type.get_element_type()))
       insert<AdStackAccAdjointStmt>(stmt->stack, load(adjoint(stmt)));
   }
 
@@ -1106,8 +1127,8 @@ class MakeAdjoint : public ADTransform {
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
     // Clear the gradient after accumulation finished.
-    auto zero = insert<ConstStmt>(
-        TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
+    auto zero =
+        insert_const_for_grad(adjoint_ptr->ret_type.ptr_removed(), stmt, 0);
     insert<GlobalStoreStmt>(adjoint_ptr, zero);
 
     stmt->parent->erase(stmt);
@@ -1193,7 +1214,7 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
+    if (!is_real(stmt->ret_type.get_element_type()) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1250,7 +1271,8 @@ class MakeDual : public ADTransform {
                                pow(rsqrt(stmt->operand), constant(3))),
                            dual(stmt->operand)));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
-      if (is_real(stmt->cast_type) && is_real(stmt->operand->ret_type)) {
+      if (is_real(stmt->cast_type.get_element_type()) &&
+          is_real(stmt->operand->ret_type.get_element_type())) {
         accumulate(stmt, dual(stmt->operand));
       }
     } else if (stmt->op_type == UnaryOpType::logic_not) {
@@ -1293,7 +1315,7 @@ class MakeDual : public ADTransform {
                bin->op_type == BinaryOpType::max) {
       auto cmp = bin->op_type == BinaryOpType::min ? cmp_lt(bin->lhs, bin->rhs)
                                                    : cmp_lt(bin->rhs, bin->lhs);
-      auto zero = insert<ConstStmt>(TypedConstant(bin->ret_type));
+      auto zero = insert_const_for_grad(bin->ret_type, bin, 0);
       accumulate(bin, sel(cmp, dual(bin->lhs), zero));
       accumulate(bin, sel(cmp, zero, dual(bin->rhs)));
     } else if (bin->op_type == BinaryOpType::floordiv) {
@@ -1309,7 +1331,7 @@ class MakeDual : public ADTransform {
 
   void visit(TernaryOpStmt *stmt) override {
     TI_ASSERT(stmt->op_type == TernaryOpType::select);
-    auto zero = insert<ConstStmt>(TypedConstant(stmt->ret_type));
+    auto zero = insert_const_for_grad(stmt->ret_type, stmt, 0);
     accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
                                            load(dual(stmt->op2)), zero));
     accumulate(stmt, insert<TernaryOpStmt>(TernaryOpType::select, stmt->op1,
@@ -1372,9 +1394,9 @@ class MakeDual : public ADTransform {
     // If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of, i.e, its history should
     // be cleared
-    if (is_real(stmt->dest->ret_type)) {
+    if (is_real(stmt->dest->ret_type.get_element_type())) {
       auto dtype = stmt->dest->ret_type;
-      auto zero = insert<ConstStmt>(TypedConstant(dtype, 0));
+      auto zero = insert_const_for_grad(dtype, stmt, 0);
       insert<LocalStoreStmt>(dual(stmt->dest), zero);
     }
 
@@ -1624,8 +1646,8 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto dtype = global_ptr->ret_type;
-    auto one = global_ptr->insert_after_me(
-        Stmt::make<ConstStmt>(TypedConstant(dtype, 1)));
+    auto one = insert_const(dtype, global_ptr, 1);
+
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(global_ptr, one));
   }
 
@@ -1641,8 +1663,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto dtype = global_ptr->ret_type;
-    auto zero =
-        stmt->insert_before_me(Stmt::make<ConstStmt>(TypedConstant(dtype, 0)));
+    auto zero = insert_const(dtype, stmt, 0);
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
     std::string msg = fmt::format(

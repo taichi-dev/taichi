@@ -19,7 +19,7 @@ export TI_OFFLINE_CACHE_FILE_PATH=$PWD/.cache/taichi
 # python3 tests/generate_compat_test_modules.py
 # python3 -m pip uninstall taichi-nightly -y
 
-python3 .github/workflows/scripts/build.py --write-env=/tmp/ti-env.sh
+python3 .github/workflows/scripts/build.py --permissive --write-env=/tmp/ti-env.sh
 . /tmp/ti-env.sh
 
 install_taichi_wheel

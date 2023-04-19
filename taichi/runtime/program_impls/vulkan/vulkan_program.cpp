@@ -11,7 +11,7 @@
 #include "taichi/util/offline_cache.h"
 #include "taichi/rhi/common/host_memory_pool.h"
 
-#include "taichi/rhi/window_system.h"
+#include "taichi/rhi/common/window_system.h"
 
 using namespace taichi::lang::vulkan;
 

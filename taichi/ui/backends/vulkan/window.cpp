@@ -3,7 +3,7 @@
 
 #include "taichi/program/program.h"
 #include "taichi/ui/utils/utils.h"
-#include "taichi/rhi/window_system.h"
+#include "taichi/rhi/common/window_system.h"
 
 using taichi::lang::Program;
 

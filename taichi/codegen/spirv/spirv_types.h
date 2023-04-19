@@ -226,6 +226,10 @@ class TypeVisitor : public tinyir::Visitor {
 const tinyir::Type *translate_ti_primitive(tinyir::Block &ir_module,
                                            const DataType t);
 
+const tinyir::Type *translate_ti_type(tinyir::Block &ir_module,
+                                      const DataType t,
+                                      bool has_buffer_ptr);
+
 std::string ir_print_types(const tinyir::Block *block);
 
 std::unique_ptr<tinyir::Block> ir_reduce_types(

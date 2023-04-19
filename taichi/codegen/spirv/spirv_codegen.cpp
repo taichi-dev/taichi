@@ -566,21 +566,26 @@ class TaskCodegen : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
-    const auto &arg_attribs = ctx_attribs_->args()[arg_id];
-    if (stmt->is_ptr) {
+    const auto arg_type = ctx_attribs_->args_type()->get_element_type({arg_id});
+    if (arg_type->is<PointerType>()) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      const auto dt = PrimitiveType::get(arg_attribs.dtype);
-      const auto val_type = ir_->get_primitive_type(dt);
+      bool has_buffer_ptr =
+          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+      const auto val_type = ir_->from_taichi_type(arg_type, has_buffer_ptr);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(val_type, spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
           ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
+      if (!stmt->create_load) {
+        ir_->register_value(stmt->raw_name(), buffer_val);
+        return;
+      }
       spirv::Value val = ir_->load_variable(buffer_val, val_type);
       ir_->register_value(stmt->raw_name(), val);
     }
@@ -2192,15 +2197,11 @@ class TaskCodegen : public IRVisitor {
     // Generate struct IR
     tinyir::Block blk;
     std::vector<const tinyir::Type *> element_types;
-    for (auto &arg : ctx_attribs_->args()) {
-      const tinyir::Type *t;
-      if (arg.is_array &&
-          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
-        t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
-      } else {
-        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
-      }
-      element_types.push_back(t);
+    bool has_buffer_ptr =
+        caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+    for (auto &element : ctx_attribs_->args_type()->elements()) {
+      element_types.push_back(
+          translate_ti_type(blk, element.type, has_buffer_ptr));
     }
     const tinyir::Type *i32_type =
         blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);

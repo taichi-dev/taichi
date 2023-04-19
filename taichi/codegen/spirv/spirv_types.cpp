@@ -470,6 +470,32 @@ std::unordered_map<const tinyir::Node *, uint32_t> ir_translate_to_spirv(
   translator.visit(blk);
   return std::move(translator.ir_node_2_spv_value);
 }
+const tinyir::Type *translate_ti_type(tinyir::Block &ir_module,
+                                      const DataType t,
+                                      bool has_buffer_ptr) {
+  if (t->is<PrimitiveType>()) {
+    return translate_ti_primitive(ir_module, t);
+  }
+  if (t->is<PointerType>()) {
+    if (has_buffer_ptr) {
+      return ir_module.emplace_back<IntType>(/*num_bits=*/64,
+                                             /*is_signed=*/false);
+    } else {
+      return ir_module.emplace_back<IntType>(/*num_bits=*/32,
+                                             /*is_signed=*/false);
+    }
+  }
+  if (auto struct_type = t->cast<lang::StructType>()) {
+    std::vector<const tinyir::Type *> element_types;
+    auto &elements = struct_type->elements();
+    for (auto &element : elements) {
+      element_types.push_back(
+          translate_ti_type(ir_module, element.type, has_buffer_ptr));
+    }
+    return ir_module.emplace_back<StructType>(element_types);
+  }
+  TI_NOT_IMPLEMENTED
+}
 
 }  // namespace spirv
 }  // namespace taichi::lang

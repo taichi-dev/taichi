@@ -133,22 +133,21 @@ def parse_args():
         help='Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.',
     )
     parser.add_argument(
-        "-w",
-        "--write-env",
-        type=str,
-        default=None,
-        help="Do not build, write environment variables to file instead",
+        "-w", "--write-env", type=str, default=None, help="Do not build, write environment variables to file instead"
     )
     parser.add_argument(
-        "-s",
-        "--shell",
-        action="store_true",
-        help="Do not build, start a shell with environment variables set instead",
+        "-s", "--shell", action="store_true", help="Do not build, start a shell with environment variables set instead"
     )
     parser.add_argument(
         "--python",
         default=None,
         help="Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter.",
+    )
+    parser.add_argument(
+        "--permissive",
+        actiion="store_true",
+        default=False,
+        help="Continue when encounters error.",
     )
     options = parser.parse_args()
     return options

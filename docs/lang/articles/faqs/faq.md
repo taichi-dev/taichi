@@ -216,7 +216,7 @@ A Taichi kernel **cannot** take a Python list directly. You need to use NumPy ar
 
 For example, the following code snippet does not work:
 
-```python
+```python skip-ci:Error
 import taichi as ti
 import numpy as np
 ti.init()
@@ -230,7 +230,7 @@ def test(arr: list):
 test(array)
 ```
 
-You need to import NumPy:
+You can use a NumPy array instead:
 
 ```python
 import taichi as ti
@@ -275,7 +275,7 @@ The problem does not lie with inheritance. All Taichi fields must be allocated/p
 
 For example, the following code snippet cannot run properly:
 
-```python
+```python skip-ci:Error
 @ti.data_oriented
 class MyClass1():
 

@@ -10,7 +10,7 @@ import shutil
 # -- own --
 from .cmake import cmake_args
 from .dep import download_dep
-from .misc import banner, get_cache_home, warn
+from .misc import banner, error, get_cache_home, warn
 
 
 # -- code --
@@ -28,7 +28,8 @@ def setup_clang(as_compiler=True) -> None:
                 assert clangpp
                 break
         else:
-            raise Exception("Could not find clang of any version")
+            error("Could not find clang of any version")
+            return
 
     elif (u.system, u.machine) == ("Windows", "AMD64"):
         out = get_cache_home() / "clang-15-v2"

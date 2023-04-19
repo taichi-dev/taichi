@@ -9,7 +9,7 @@ import sys
 
 # -- third party --
 # -- own --
-from .misc import banner, warn
+from .misc import banner, error, info
 from .tinysh import apt
 
 
@@ -58,12 +58,13 @@ def install_ubuntu_pkgs():
     if os.isatty(sys.stdin.fileno()):
         apt.install(*sorted(to_install))
     else:
-        warn("The following packages are required for build and not installed:")
+        info("The necessary packages for the build process are missing and need to be installed:")
         p = lambda s: print(s, file=sys.stderr, flush=True)
         p("")
         for v in sorted(to_install):
             p(f"    {v}")
         p("")
+        error("Please install them manually.")
 
 
 @banner("Install Required OS Packages")

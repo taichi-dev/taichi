@@ -60,11 +60,14 @@ def install_ubuntu_pkgs():
     else:
         info("Please install the following packages:")
         p = lambda s: print(s, file=sys.stderr, flush=True)
+        p("")
         for v in sorted(to_install):
             p(f"    {v}")
+        p("")
+        sys.exit(1)
 
 
-@banner("Install required OS packages")
+@banner("Install Required OS Packages")
 def setup_os_pkgs() -> None:
     u = platform.uname()
     if u.system == "Linux":

@@ -41,14 +41,20 @@ void SNodeRwAccessorsBank::Accessors::write_float(const std::vector<int> &I,
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_float(snode_->num_active_indices, val);
   prog_->synchronize();
-  (*writer_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *writer_),
+      launch_ctx);
 }
 
 float64 SNodeRwAccessorsBank::Accessors::read_float(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  (*reader_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *reader_),
+      launch_ctx);
   prog_->synchronize();
   if (arch_uses_llvm(prog_->compile_config().arch)) {
     return launch_ctx.get_struct_ret_float({0});
@@ -64,7 +70,10 @@ void SNodeRwAccessorsBank::Accessors::write_int(const std::vector<int> &I,
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_int(snode_->num_active_indices, val);
   prog_->synchronize();
-  (*writer_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *writer_),
+      launch_ctx);
 }
 
 // for int32 and int64
@@ -74,14 +83,20 @@ void SNodeRwAccessorsBank::Accessors::write_uint(const std::vector<int> &I,
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
   launch_ctx.set_arg_uint(snode_->num_active_indices, val);
   prog_->synchronize();
-  (*writer_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *writer_),
+      launch_ctx);
 }
 
 int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  (*reader_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *reader_),
+      launch_ctx);
   prog_->synchronize();
   if (arch_uses_llvm(prog_->compile_config().arch)) {
     return launch_ctx.get_struct_ret_int({0});
@@ -94,7 +109,10 @@ uint64 SNodeRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
   prog_->synchronize();
   auto launch_ctx = reader_->make_launch_context();
   set_kernel_args(I, snode_->num_active_indices, &launch_ctx);
-  (*reader_)(prog_->compile_config(), launch_ctx);
+  prog_->launch_kernel(
+      prog_->compile_kernel(prog_->compile_config(), prog_->get_device_caps(),
+                            *reader_),
+      launch_ctx);
   prog_->synchronize();
   if (arch_uses_llvm(prog_->compile_config().arch)) {
     return launch_ctx.get_struct_ret_uint({0});

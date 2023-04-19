@@ -811,7 +811,11 @@ class Kernel:
                 )
 
             try:
-                t_kernel(launch_ctx)
+                prog = impl.get_runtime().prog
+                # Compile kernel (& Online Cache & Offline Cache)
+                compiled_kernel_data = prog.compile_kernel(prog.config(), prog.get_device_caps(), t_kernel)
+                # Launch kernel
+                prog.launch_kernel(compiled_kernel_data, launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)
                 raise e from None

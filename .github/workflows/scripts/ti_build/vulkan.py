@@ -49,6 +49,7 @@ def setup_vulkan():
         )
         os.environ["VULKAN_SDK"] = str(prefix)
         os.environ["VK_SDK_PATH"] = str(prefix)
+        os.environ["VK_LAYER_PATH"] = str(prefix / "Bin")
         path_prepend("PATH", prefix / "Bin")
     else:
         return

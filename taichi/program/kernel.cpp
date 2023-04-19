@@ -6,7 +6,6 @@
 #include "taichi/common/task.h"
 #include "taichi/ir/statements.h"
 #include "taichi/program/program.h"
-#include "taichi/util/action_recorder.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -50,6 +49,10 @@ Kernel::Kernel(Program &program,
     name = primal_name + "_forward_grad";
   } else if (autodiff_mode == AutodiffMode::kReverse) {
     name = primal_name + "_reverse_grad";
+  } else if (autodiff_mode == AutodiffMode::kCheckAutodiffValid) {
+    name = primal_name + "_validate_grad";
+  } else {
+    TI_ERROR("Unsupported autodiff mode");
   }
 }
 

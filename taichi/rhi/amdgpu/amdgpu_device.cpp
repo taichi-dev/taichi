@@ -6,6 +6,11 @@ namespace lang {
 
 namespace amdgpu {
 
+AmdgpuDevice::AmdgpuDevice() {
+  // Initialize the device memory pool
+  DeviceMemoryPool::get_instance(false /*merge_upon_release*/);
+}
+
 AmdgpuDevice::AllocInfo AmdgpuDevice::get_alloc_info(
     const DeviceAllocation handle) {
   validate_device_alloc(handle);
@@ -50,11 +55,10 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
   if (params.host_read || params.host_write) {
     TI_NOT_IMPLEMENTED
   } else if (params.use_cached) {
-    if (caching_allocator_ == nullptr) {
-      caching_allocator_ = std::make_unique<CachingAllocator>(
-          this, false /*merge_upon_release*/);
-    }
-    info.ptr = caching_allocator_->allocate(params);
+    info.ptr =
+        DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
+    TI_ASSERT(info.ptr != nullptr);
+
     AMDGPUDriver::get_instance().memset((void *)info.ptr, 0, info.size);
   } else {
     info.ptr = allocate_llvm_runtime_memory_jit(params);
@@ -72,6 +76,11 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
 }
 
 void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
+  // After reset, all allocations are invalid
+  if (allocations_.empty()) {
+    return;
+  }
+
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
   if (info.ptr == nullptr) {
@@ -79,10 +88,8 @@ void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
   }
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
-    if (caching_allocator_ == nullptr) {
-      TI_ERROR("the CachingAllocator is not initialized");
-    }
-    caching_allocator_->release(info.size, (uint64_t *)info.ptr);
+    DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
+                                             false);
   } else if (!info.use_preallocated) {
     DeviceMemoryPool::get_instance().release(info.size, info.ptr);
     info.ptr = nullptr;

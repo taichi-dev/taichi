@@ -1035,5 +1035,5 @@ def test_wireframe_mode():
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_multi_windows():
-    window = ti.ui.Window('x', (128, 128), vsync=True, show_window=False)
-    window2 = ti.ui.Window('x2', (128, 128), vsync=True, show_window=False)
+    window = ti.ui.Window("x", (128, 128), vsync=True, show_window=False)
+    window2 = ti.ui.Window("x2", (128, 128), vsync=True, show_window=False)

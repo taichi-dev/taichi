@@ -17,11 +17,11 @@ from .compiler import setup_clang, setup_msvc
 from .ios import build_ios, setup_ios
 from .llvm import setup_llvm
 from .misc import banner, is_manylinux2014
+from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
 from .tinysh import Command, git
 from .vulkan import setup_vulkan
-from .ospkg import setup_os_pkgs
 
 
 # -- code --

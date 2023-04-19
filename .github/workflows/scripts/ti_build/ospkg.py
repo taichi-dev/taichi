@@ -2,9 +2,9 @@
 
 # -- stdlib --
 from pathlib import Path
+import os
 import platform
 import re
-import os
 import sys
 
 # -- third party --

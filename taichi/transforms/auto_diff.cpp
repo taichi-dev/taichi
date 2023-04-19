@@ -11,13 +11,25 @@
 namespace taichi::lang {
 
 template <typename T>
-Stmt *insert_const(const DataType &dtype, Stmt *stmt, const T &value) {
-  auto zero = stmt->insert_after_me(
-      Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+Stmt *insert_const(const DataType &dtype,
+                   Stmt *stmt,
+                   const T &value,
+                   bool insert_before_me = false) {
+  Stmt *zero = nullptr;
+  if (insert_before_me)
+    zero = stmt->insert_before_me(
+        Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+  else
+    zero = stmt->insert_after_me(
+        Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+
   if (dtype->is<TensorType>()) {
     auto t_dtype = dtype->as<TensorType>();
     std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
-    zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
+    if (insert_before_me)
+      zero = zero->insert_before_me(Stmt::make<MatrixInitStmt>(values));
+    else
+      zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
   }
   return zero;
 }
@@ -1648,8 +1660,9 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto dtype = global_ptr->ret_type;
-    auto one = insert_const(dtype, global_ptr, 1);
-
+    // auto one = insert_const(dtype, global_ptr, 1);
+    auto one = global_ptr->insert_after_me(
+        Stmt::make<ConstStmt>(TypedConstant(dtype, 1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(global_ptr, one));
   }
 
@@ -1665,7 +1678,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_load =
         stmt->insert_before_me(Stmt::make<GlobalLoadStmt>(global_ptr));
     auto dtype = global_ptr->ret_type;
-    auto zero = insert_const(dtype, stmt, 0);
+    auto zero = insert_const(dtype, stmt, 0, /*insert_before_me=*/true);
     auto check_equal = stmt->insert_before_me(
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_eq, global_load, zero));
     std::string msg = fmt::format(

@@ -22,7 +22,8 @@ const Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   return primitive_types_[id].get();
 }
 
-const Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
+const Type *TypeFactory::get_tensor_type(std::vector<int> shape,
+                                         Type *element) {
   std::lock_guard<std::mutex> _(tensor_mut_);
 
   auto encode = [](const std::vector<int> &shape) -> std::string {
@@ -57,7 +58,8 @@ const Type *TypeFactory::get_struct_type(
   return struct_types_[key].get();
 }
 
-const Type *TypeFactory::get_pointer_type(const Type *element, bool is_bit_pointer) {
+const Type *TypeFactory::get_pointer_type(const Type *element,
+                                          bool is_bit_pointer) {
   std::lock_guard<std::mutex> _(pointer_mut_);
 
   auto key = std::make_pair(element, is_bit_pointer);
@@ -69,8 +71,8 @@ const Type *TypeFactory::get_pointer_type(const Type *element, bool is_bit_point
 }
 
 const Type *TypeFactory::get_quant_int_type(int num_bits,
-                                      bool is_signed,
-                                      const Type *compute_type) {
+                                            bool is_signed,
+                                            const Type *compute_type) {
   std::lock_guard<std::mutex> _(quant_int_mut_);
 
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
@@ -82,8 +84,8 @@ const Type *TypeFactory::get_quant_int_type(int num_bits,
 }
 
 const Type *TypeFactory::get_quant_fixed_type(const Type *digits_type,
-                                        const Type *compute_type,
-                                        float64 scale) {
+                                              const Type *compute_type,
+                                              float64 scale) {
   std::lock_guard<std::mutex> _(quant_fixed_mut_);
 
   auto key = std::make_tuple(digits_type, compute_type, scale);
@@ -95,8 +97,8 @@ const Type *TypeFactory::get_quant_fixed_type(const Type *digits_type,
 }
 
 const Type *TypeFactory::get_quant_float_type(const Type *digits_type,
-                                        const Type *exponent_type,
-                                        const Type *compute_type) {
+                                              const Type *exponent_type,
+                                              const Type *compute_type) {
   std::lock_guard<std::mutex> _(quant_float_mut_);
 
   auto key = std::make_tuple(digits_type, exponent_type, compute_type);
@@ -121,9 +123,10 @@ BitStructType *TypeFactory::get_bit_struct_type(
   return bit_struct_types_.back().get();
 }
 
-const Type *TypeFactory::get_quant_array_type(const PrimitiveType *physical_type,
-                                        const Type *element_type,
-                                        int num_elements) {
+const Type *TypeFactory::get_quant_array_type(
+    const PrimitiveType *physical_type,
+    const Type *element_type,
+    int num_elements) {
   std::lock_guard<std::mutex> _(quant_array_mut_);
 
   quant_array_types_.push_back(std::make_unique<QuantArrayType>(
@@ -131,7 +134,8 @@ const Type *TypeFactory::get_quant_array_type(const PrimitiveType *physical_type
   return quant_array_types_.back().get();
 }
 
-const PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
+const PrimitiveType *TypeFactory::get_primitive_int_type(int bits,
+                                                         bool is_signed) {
   const Type *int_type;
   if (bits == 8) {
     int_type = get_primitive_type(PrimitiveTypeID::i8);

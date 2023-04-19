@@ -14,28 +14,31 @@ class TypeFactory {
   // TODO(type): maybe it makes sense to let each get_X function return X*
   // instead of generic Type*
 
- const Type *get_primitive_type(PrimitiveTypeID id);
+  const Type *get_primitive_type(PrimitiveTypeID id);
 
-const  PrimitiveType *get_primitive_int_type(int bits, bool is_signed = true);
+  const PrimitiveType *get_primitive_int_type(int bits, bool is_signed = true);
 
-const  PrimitiveType *get_primitive_real_type(int bits);
+  const PrimitiveType *get_primitive_real_type(int bits);
 
-const Type *get_tensor_type(std::vector<int> shape, Type *element);
+  const Type *get_tensor_type(std::vector<int> shape, Type *element);
 
-const Type *get_struct_type(const std::vector<StructMember> &elements,
+  const Type *get_struct_type(const std::vector<StructMember> &elements,
                               const std::string &layout = "none");
 
-const  Type *get_pointer_type(const Type *element, bool is_bit_pointer = false);
+  const Type *get_pointer_type(const Type *element,
+                               bool is_bit_pointer = false);
 
-const  Type *get_quant_int_type(int num_bits, bool is_signed, const Type *compute_type);
+  const Type *get_quant_int_type(int num_bits,
+                                 bool is_signed,
+                                 const Type *compute_type);
 
-const  Type *get_quant_fixed_type(const Type *digits_type,
-                             const Type *compute_type,
-                             float64 scale);
+  const Type *get_quant_fixed_type(const Type *digits_type,
+                                   const Type *compute_type,
+                                   float64 scale);
 
-const  Type *get_quant_float_type(const Type *digits_type,
-                             const Type *exponent_type,
-                             const Type *compute_type);
+  const Type *get_quant_float_type(const Type *digits_type,
+                                   const Type *exponent_type,
+                                   const Type *compute_type);
 
   BitStructType *get_bit_struct_type(
       const PrimitiveType *physical_type,
@@ -44,9 +47,9 @@ const  Type *get_quant_float_type(const Type *digits_type,
       const std::vector<int> &member_exponents,
       const std::vector<std::vector<int>> &member_exponent_users);
 
-const  Type *get_quant_array_type(const PrimitiveType *physical_type,
-                             const Type *element_type,
-                             int num_elements);
+  const Type *get_quant_array_type(const PrimitiveType *physical_type,
+                                   const Type *element_type,
+                                   int num_elements);
 
   static DataType create_tensor_type(std::vector<int> shape, DataType element);
 
@@ -82,15 +85,17 @@ const  Type *get_quant_array_type(const PrimitiveType *physical_type,
       quant_int_types_;
   std::mutex quant_int_mut_;
 
-  std::unordered_map<std::tuple<const Type *, const Type *, float64>,
-                     std::unique_ptr<Type>,
-                     hashing::Hasher<std::tuple<const Type *, const Type *, float64>>>
+  std::unordered_map<
+      std::tuple<const Type *, const Type *, float64>,
+      std::unique_ptr<Type>,
+      hashing::Hasher<std::tuple<const Type *, const Type *, float64>>>
       quant_fixed_types_;
   std::mutex quant_fixed_mut_;
 
-  std::unordered_map<std::tuple<const Type *, const Type *, const Type *>,
-                     std::unique_ptr<Type>,
-                     hashing::Hasher<std::tuple<const Type *, const Type *, const Type *>>>
+  std::unordered_map<
+      std::tuple<const Type *, const Type *, const Type *>,
+      std::unique_ptr<Type>,
+      hashing::Hasher<std::tuple<const Type *, const Type *, const Type *>>>
       quant_float_types_;
   std::mutex quant_float_mut_;
 

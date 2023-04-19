@@ -59,7 +59,7 @@ def test_matrix_slice_invalid():
         foo2()
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_matrix_slice_with_variable():
     @ti.kernel
     def test_one_row_slice(index: ti.i32) -> ti.types.vector(2, dtype=ti.i32):
@@ -104,7 +104,7 @@ def test_matrix_slice_write():
     assert (augassign_rows() == ti.Matrix([[2, 3, 4, 5], [2, 3, 4, 5], [1, 1, 1, 1]])).all()
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_matrix_slice_write_dynamic_index():
     @ti.kernel
     def foo(i: ti.i32) -> ti.types.matrix(3, 4, ti.i32):

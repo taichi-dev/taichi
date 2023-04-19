@@ -326,7 +326,7 @@ def test_n_loop_var_neq_dimension():
         iter()
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_2d_loop_over_ndarray():
     @ti.kernel
     def foo(arr: ti.types.ndarray(dtype=ti.i32, ndim=1)):

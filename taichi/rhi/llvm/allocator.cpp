@@ -3,8 +3,8 @@
 
 namespace taichi::lang {
 
-CachingAllocator::CachingAllocator(LlvmDevice *device, bool merge_upon_release)
-    : device_(device), merge_upon_release_(merge_upon_release) {
+CachingAllocator::CachingAllocator(bool merge_upon_release)
+    : merge_upon_release_(merge_upon_release) {
 }
 
 void CachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
@@ -31,6 +31,7 @@ void CachingAllocator::merge_and_insert(uint8_t *ptr, std::size_t size) {
 }
 
 uint64_t *CachingAllocator::allocate(
+    LlvmDevice *device,
     const LlvmDevice::LlvmRuntimeAllocParams &params) {
   uint64_t *ret{nullptr};
   auto size_aligned = taichi::iroundup(params.size, taichi_page_size);
@@ -51,7 +52,7 @@ uint64_t *CachingAllocator::allocate(
 
   } else {
     ret = reinterpret_cast<uint64_t *>(
-        device_->allocate_llvm_runtime_memory_jit(params));
+        device->allocate_llvm_runtime_memory_jit(params));
   }
   return ret;
 }

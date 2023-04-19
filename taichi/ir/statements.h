@@ -42,13 +42,13 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
   // IR Trait: Store
   stmt_refs get_store_destination() const override {
     // The statement itself provides a data source (const [0]).
-    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
+    return (Stmt *)this;
   }
 
   Stmt *get_store_data() const override {
     // For convenience, return store_stmt instead of the const [0] it actually
     // stores.
-    return ret_type->is<TensorType>() ? nullptr : (Stmt *)this;
+    return (Stmt *)this;
   }
 
   bool is_shared;
@@ -1981,7 +1981,6 @@ class MatrixInitStmt : public Stmt {
   bool has_global_side_effect() const override {
     return false;
   }
-
   TI_STMT_DEF_FIELDS(ret_type, values);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

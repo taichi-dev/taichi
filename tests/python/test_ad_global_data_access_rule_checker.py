@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True)
 def test_adjoint_checkbit_needs_grad():
     x = ti.field(float, shape=(), needs_grad=True)
 
@@ -19,7 +19,7 @@ def test_adjoint_checkbit_needs_grad():
     assert x.snode.ptr.has_adjoint_checkbit()
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True)
 def test_adjoint_checkbit_lazy_grad():
     x = ti.field(float, shape=())
     ti.root.lazy_grad()
@@ -34,7 +34,7 @@ def test_adjoint_checkbit_lazy_grad():
     assert x.snode.ptr.has_adjoint_checkbit()
 
 
-@test_utils.test(debug=True, exclude=[ti.cc])
+@test_utils.test(debug=True)
 def test_adjoint_checkbit_place_grad():
     x = ti.field(float)
     y = ti.field(float)
@@ -73,7 +73,7 @@ def test_adjoint_checkbit_needs_grad():
     assert warn_raised
 
 
-@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+@test_utils.test(require=ti.extension.assertion, debug=True)
 def test_break_gdar_rule_1():
     N = 16
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
@@ -96,7 +96,7 @@ def test_break_gdar_rule_1():
             func_broke_rule_1()
 
 
-@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+@test_utils.test(require=ti.extension.assertion, debug=True)
 def test_skip_grad_replaced():
     N = 16
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
@@ -133,7 +133,7 @@ def test_skip_grad_replaced():
         kernel_2()
 
 
-@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+@test_utils.test(require=ti.extension.assertion, debug=True)
 def test_autodiff_mode_recovered():
     N = 16
     x = ti.field(dtype=ti.f32, shape=N, needs_grad=True)
@@ -165,7 +165,7 @@ def test_autodiff_mode_recovered():
         assert f.autodiff_mode == AutodiffMode.NONE
 
 
-@test_utils.test(require=ti.extension.assertion, exclude=[ti.cc], debug=True)
+@test_utils.test(require=ti.extension.assertion, debug=True)
 def test_validation_kernel_capture():
     N = 16
     T = 8

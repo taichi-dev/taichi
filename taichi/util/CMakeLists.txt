@@ -3,7 +3,6 @@
 add_library(taichi_util)
 target_sources(taichi_util
   PRIVATE
-    action_recorder.cpp
     bit.cpp
     file_sequence_writer.cpp
     image_buffer.cpp

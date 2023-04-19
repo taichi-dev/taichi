@@ -1,7 +1,8 @@
 #pragma once
 #include "taichi/common/core.h"
-#include "taichi/rhi/common/unified_allocator.h"
 #include "taichi/rhi/device.h"
+#include "taichi/rhi/llvm/llvm_device.h"
+#include "taichi/rhi/llvm/allocator.h"
 #include <mutex>
 #include <vector>
 #include <memory>
@@ -13,14 +14,17 @@ namespace taichi::lang {
 
 class TI_DLL_EXPORT DeviceMemoryPool {
  public:
+  std::unique_ptr<CachingAllocator> allocator_{nullptr};
   static const size_t page_size;
 
-  static DeviceMemoryPool &get_instance();
+  static DeviceMemoryPool &get_instance(bool merge_upon_release = true);
 
+  void *allocate_with_cache(LlvmDevice *device,
+                            const LlvmDevice::LlvmRuntimeAllocParams &params);
   void *allocate(std::size_t size, std::size_t alignment, bool managed = false);
   void release(std::size_t size, void *ptr, bool release_raw = false);
   void reset();
-  DeviceMemoryPool();
+  DeviceMemoryPool(bool merge_upon_release);
   ~DeviceMemoryPool();
 
  protected:
@@ -32,6 +36,7 @@ class TI_DLL_EXPORT DeviceMemoryPool {
   std::map<void *, std::size_t> raw_memory_chunks_;
 
   std::mutex mut_allocation_;
+  bool merge_upon_release_ = true;
 };
 
 }  // namespace taichi::lang

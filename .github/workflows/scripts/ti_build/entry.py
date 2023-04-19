@@ -127,13 +127,7 @@ def parse_args():
     #   ios: build the iOS C-API shared library
     #   cache: open the cache directory
     help = 'Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.'
-    parser.add_argument(
-        "action",
-        type=str,
-        nargs="?",
-        default="wheel",
-        help=help,
-    )
+    parser.add_argument("action", type=str, nargs="?", default="wheel", help=help)
 
     help = "Do not build, write environment variables to file instead"
     parser.add_argument("-w", "--write-env", type=str, default=None, help=help)

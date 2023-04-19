@@ -562,7 +562,7 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack, ad_stack_size=0, exclude=[ti.cc])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
 def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -589,7 +589,7 @@ def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack, ad_stack_size=32, exclude=[ti.cc])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
 def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)

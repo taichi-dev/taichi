@@ -89,12 +89,10 @@ N=$(nproc)
 if [ -z "$GPU_TEST" ]; then
     if [[ $PLATFORM == *"m1"* ]]; then
         run-it cpu    4
-        run-it cc     4
         run-it vulkan 4
         run-it metal  2
 
         run-it cpu    1 "torch"
-        run-it cc     1 "torch"
         run-it vulkan 1 "torch"
         run-it metal  1 "torch"
     else
@@ -105,12 +103,9 @@ if [ -z "$GPU_TEST" ]; then
         fi
         run-it cpu $N
         run-it cpu 1 "torch"
-        run-it cc  $N
-        run-it cc  1 "torch"
     fi
 else
     run-it cpu    $N
-    run-it cc     $N
     run-it cuda   8
     run-it vulkan 8
     run-it opengl 4
@@ -118,7 +113,6 @@ else
     run-it amdgpu 8
 
     run-it cpu    1 "torch"
-    run-it cc     1 "torch"
     run-it cuda   1 "torch"
     run-it vulkan 1 "torch"
     run-it opengl 1 "torch"

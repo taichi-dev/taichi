@@ -562,15 +562,8 @@ class Kernel:
         if key in self.runtime.compiled_functions:
             return
 
-        grad_suffix = ""
-        if self.autodiff_mode == AutodiffMode.FORWARD:
-            grad_suffix = "_forward_grad"
-        elif self.autodiff_mode == AutodiffMode.REVERSE:
-            grad_suffix = "_reverse_grad"
-        elif self.autodiff_mode == AutodiffMode.VALIDATION:
-            grad_suffix = "_validate_grad"
-        kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}{grad_suffix}"
-        _logging.trace(f"Compiling kernel {kernel_name}...")
+        kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}"
+        _logging.trace(f"Compiling kernel {kernel_name} in {self.autodiff_mode}...")
 
         tree, ctx = _get_tree_and_ctx(
             self,
@@ -623,7 +616,7 @@ class Kernel:
 
             actual_argument_slot = 0
             launch_ctx = t_kernel.make_launch_context()
-            max_arg_num = 64 if impl.current_cfg().arch != _ti_core.cc else 8
+            max_arg_num = 64
             exceed_max_arg_num = False
             for i, v in enumerate(args):
                 needed = self.arguments[i].annotation

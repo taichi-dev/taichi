@@ -62,10 +62,6 @@ CompileConfig::CompileConfig() {
   // CUDA/AMDGPU backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
-
-  // C backend options:
-  cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
-  cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
 }
 
 void CompileConfig::fit() {
@@ -73,7 +69,7 @@ void CompileConfig::fit() {
     // TODO: allow users to run in debug mode without out-of-bound checks
     check_out_of_bound = true;
   }
-  if (arch == Arch::cc || arch_uses_spirv(arch)) {
+  if (arch_uses_spirv(arch)) {
     demote_dense_struct_fors = true;
   }
   offline_cache::disable_offline_cache_if_needed(this);

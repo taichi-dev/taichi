@@ -996,6 +996,11 @@ Value IRBuilder::get_subgroup_size() {
   return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);
 }
 
+Value IRBuilder::popcnt(Value x) {
+  TI_ASSERT(is_integral(x.stype.dt));
+  return make_value(spv::OpBitCount, x.stype, x);
+}
+
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \
   Value IRBuilder::_OpName(Value a, Value b) {         \
     TI_ASSERT(a.stype.id == b.stype.id);               \
@@ -1596,6 +1601,18 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   }
 
   init_rand_ = true;
+}
+
+Value IRBuilder::make_access_chain(const SType &out_type,
+                                   Value base,
+                                   const std::vector<int> &indices) {
+  Value ret = new_value(out_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  for (auto &ind : indices) {
+    ib_.add(int_immediate_number(t_int32_, ind));
+  }
+  ib_.commit(&func_header_);
+  return ret;
 }
 
 }  // namespace spirv

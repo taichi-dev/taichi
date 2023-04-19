@@ -14,7 +14,8 @@ template <typename T>
 Stmt *insert_const(const DataType &dtype, Stmt *stmt, const T &value) {
   auto zero = stmt->insert_after_me(
       Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
-  if (auto t_dtype = dtype->as<TensorType>()) {
+  if (dtype->is<TensorType>()) {
+    auto t_dtype = dtype->as<TensorType>();
     std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
     zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
   }
@@ -622,7 +623,8 @@ class ADTransform : public IRVisitor {
   template <typename T>
   Stmt *insert_const_for_grad(const DataType &dtype, Stmt *stmt, const T &val) {
     auto zero = insert<ConstStmt>(TypedConstant(dtype.get_element_type(), val));
-    if (auto t_dtype = dtype->as<TensorType>()) {
+    if (dtype->is<TensorType>()) {
+      auto t_dtype = dtype->as<TensorType>();
       std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
       zero = insert<MatrixInitStmt>(values);
     }

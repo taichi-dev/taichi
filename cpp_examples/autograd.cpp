@@ -195,10 +195,22 @@ void autograd() {
   ctx_ext.set_arg_external_array_with_shape(2, taichi::uint64(ext_c.data()), n,
                                             {n});
 
-  (*kernel_init)(config, ctx_init);
-  (*kernel_forward)(config, ctx_forward);
-  (*kernel_backward)(config, ctx_backward);
-  (*kernel_ext)(config, ctx_ext);
+  program.launch_kernel(
+      program.compile_kernel(program.compile_config(),
+                             program.get_device_caps(), *kernel_init),
+      ctx_init);
+  program.launch_kernel(
+      program.compile_kernel(program.compile_config(),
+                             program.get_device_caps(), *kernel_forward),
+      ctx_forward);
+  program.launch_kernel(
+      program.compile_kernel(program.compile_config(),
+                             program.get_device_caps(), *kernel_backward),
+      ctx_backward);
+  program.launch_kernel(
+      program.compile_kernel(program.compile_config(),
+                             program.get_device_caps(), *kernel_ext),
+      ctx_ext);
   for (int i = 0; i < n; i++)
     std::cout << ext_a[i] << " ";
   std::cout << std::endl;

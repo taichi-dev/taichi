@@ -21,10 +21,11 @@ See the [Get Started](https://docs.taichi-lang.org/) for more information on qui
 
   This installation guide covers the following:
 
-  - [The simplified workflow leveraging build.py](#the-simplified-workflow-leveraging-build.py)
   - [Prerequisites for building Taichi from source](#prerequisites)
   - [Installing optional dependencies](#install-optional-dependencies)
   - [Building Taichi from source](#build-taichi-from-source)
+  - [List of TAICHI_CMAKE_ARGS](#list-of-taichi_cmake_args)
+  - [Usage and behavior of `build.py`](#usage-and-behavior-of-buildpy)
   - [Troubleshooting and debugging](#troubleshooting-and-debugging)
   - [Frequently asked questions](#frequently-asked-questions)
 
@@ -34,11 +35,13 @@ Installation instructions vary depending on which operating system (OS) you are 
 
 :::
 
-## The simplified workflow leveraging `build.py`
+:::note
 
-With the release of Taichi, a comprehensive build environment preparation script (aka. `build.py` or `ti-build`) has been introduced. This script significantly simplifies the process of configuring a suitable build or development environment.
+With the release of Taichi v1.6.0, a comprehensive build environment preparation script (aka. `build.py` or `ti-build`) has been introduced. This script significantly simplifies the process of configuring a suitable build or development environment.
 
 This guide will focus on the `build.py` approach. If you prefer to use the conventional method, you can refer to the previous Developer Installation document.
+
+:::
 
 
 ## Prerequisites
@@ -56,7 +59,7 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 
 | Category                      | Prerequisites                                                        |
 | :---------------------------- | :------------------------------------------------------------------- |
-| Linux                         | Anything recent enough, e.g. Ubuntu 20.04                            |
+| Linux distribution            | Anything recent enough, e.g. Ubuntu 20.04                            |
 | Python                        | 3.6+, with a usable distutils(`python3-distutils` package on Ubuntu) |
 | Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.                         |
 | libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`.           |
@@ -66,8 +69,8 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 <TabItem value="mac">
 
 | Category                       | Prerequisites                            |
-| :----------------------------: | ---------------------------------------- |
-| OS                             | macOS Big Sur or later                   |
+| :----------------------------- | ---------------------------------------- |
+| macOS                          | macOS Big Sur or later                   |
 | Python                         | 3.6+ (should be readily available)       |
 | Command line tools for Xcode   | Run `xcode-select --install` to install  |
 
@@ -76,8 +79,8 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 <TabItem value="windows">
 
 | Category        | Prerequisites                                                                   |
-| :-------------: | ------------------------------------------------------------------------------- |
-| OS              | Windows 7/8/10/11                                                               |
+| :-------------- | ------------------------------------------------------------------------------- |
+| Windows         | Windows 7/8/10/11                                                               |
 | Python          | 3.6+                                                                            |
 | Visual Studio   | Visual Studio 2022 (any edition) with "Desktop Development with C++" component. |
 
@@ -91,11 +94,13 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 <blockquote>
 
 Taichi supports building from source with Clang++ >= 10.0 and MSVC from VS2022.
-Install one from your favorite package tool for the operating system. For example, you can use `apt` on Ubuntu.
-For macOS developers, it is recommended to use AppleClang shipped with Command line tools for Xcode which can be installed with `xcode-select --install`, or a complete Xcode.app install.
-For
 
-For now, `build.py` will start a VS2022 BuildTools installer for you if none of the VS2022 editions are installed.
+For macOS developers, it is recommended to use AppleClang shipped with Command line tools for Xcode (install by `xcode-select --install`), or a complete Xcode.app install.
+
+For Linux developers, install Clang from the package manager for your operating system.
+On Ubuntu 22.04, `sudo apt install clang-15` would suffice. For older Ubuntu distributions to use newer Clang, please follow instructions on [official LLVM Debian/Ubuntu Nightly Packages](https://apt.llvm.org/)
+
+For Windows developers, `build.py` will start a VS2022 BuildTools installer for you if none of the VS2022 editions are installed.
 
 </blockquote>
 
@@ -104,69 +109,9 @@ For now, `build.py` will start a VS2022 BuildTools installer for you if none of 
 
 #### Install pre-built, customized LLVM binaries
 
-We provide pre-built, customized LLVM 15 binaries.
+`build.py` will automatically download and setup a suitable version of pre-built LLVM binaries.
 
-1. Download and install customized binaries from the following list per your system environment:
-
-````mdx-code-block
-<Tabs
-  defaultValue="llvm_linux"
-  values={[
-    {label: 'LLVM 15 for Linux', value: 'llvm_linux'},
-    {label: 'LLVM 15 for macOS (without M1 chip)', value: 'llvm_macos_sans_m1'},
-    {label: 'LLVM 15 for macOS (with M1 chip)', value: 'llvm_macos_m1'},
-    {label: 'LLVM 15 for Windows', value: 'llvm_windows'},
-  ]}>
-
-<TabItem value="llvm_linux">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip">LLVM 15.0.0 for Linux</a>
-</TabItem>
-<TabItem value="llvm_macos_sans_m1">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/llvm-15-mac10.15.zip">LLVM 15.0.0 for macOS (without M1 chip)</a>
-</TabItem>
-<TabItem value="llvm_macos_m1">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip">LLVM 15.0.0 for macOS (with M1 chip)</a>
-</TabItem>
-<TabItem value="llvm_windows">
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15.0.0-msvc2019.zip">LLVM 15.0.0 for Windows MSVC 2019</a>
-    <a href="https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15.0.3-msvc2022.zip">LLVM 15.0.0 for Windows MSVC 2022</a>
-</TabItem>
-</Tabs>
-
-````
-
-2. Configure environment variable:
-
-````mdx-code-block
-<Tabs
-  defaultValue="linux"
-  values={[
-    {label: 'Linux & macOS', value: 'linux'},
-    {label: 'Windows', value: 'windows'},
-  ]}>
-
-<TabItem value="linux">
-
-1. Set `LLVM_DIR` environment variable:
-   ```
-   echo "export LLVM_DIR=<PATH_TO_LLVM_FOLDER>" >>  ~/.bashrc
-   ```
-2. Update your path for the remainder of the session:
-
-   ```shell
-   source ~/.bashrc
-   ```
-
-</TabItem>
-
-<TabItem value="windows">
-
-Add an environment variable `LLVM_DIR` with value `<Path to the extracted LLVM binary>`
-
-</TabItem>
-
-</Tabs>
-````
+#### Alternatively, build LLVM from source
 
 <details>
 <summary><font color="#006284">Build LLVM 15.0.0 from source</font></summary>
@@ -233,6 +178,7 @@ cmake --build . --target=INSTALL --config=Release
 
 </Tabs>
 
+To actually use the compiled LLVM binaries, replace the LLVM folder in the cache directory of `build.py` (open with `./build.py cache`) with your own version.
 ````
 
 </details>
@@ -303,10 +249,13 @@ import TabItem from '@theme/TabItem';
 
 </details>
 
-<details>
-<summary><font color="#006284">Install Vulkan</font></summary>
+Vulkan SDK is required to debug Taichi's Vulkan backend.
+`build.py` will automatically download and setup a suitable version of Vulkan SDK.
 
-You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To proceed:
+On Windows, Vulkan SDK requires elevated privileges to install (the installer would set several machine scope environement variables).
+
+<details>
+<summary><font color="#006284">Ensure a working Vulkan SDK</font></summary>
 
 ````mdx-code-block
 <Tabs
@@ -318,34 +267,40 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
 <TabItem value="linux">
 
-1. Go to [Vulkan's SDK download page](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
-2. Check if environment variables `VULKAN_SDK`, `PATH`, `LD_LIBRARY_PATH`, and `VK_LAYER_PATH` are updated.
-
-  > The SDK for Ubuntu provides a `setup-env.sh` for updating these variables.
-
-3. Ensure that you have a Vulkan driver from a GPU vendor properly installed.
+1. Ensure that you have a Vulkan driver from a GPU vendor properly installed.
 
   > On Ubuntu, check if a JSON file with a name corresponding to your GPU vendor is in: `/etc/vulkan/icd.d/` or `/usr/share/vulkan/icd.d/`.
 
-4. Check if the SDK is properly installed: `vulkaninfo`.
-
-5. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disabled by default when compiling from source.)
+2. Add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disabled by default when compiling from source, and `build.py` won't setup Vulkan SDK for you).
 
   ```shell
   export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DTI_WITH_VULKAN:BOOL=ON"
   ```
 
+3. Check if the SDK is properly installed: Run `vulkaninfo` in the build shell:
+
+    ```shell
+    ./build.py --shell
+    vulkaninfo
+    ```
+
 </TabItem>
 
 <TabItem value="windows">
 
-1. Go to [Vulkan's SDK download page](https://vulkan.lunarg.com/sdk/home) and follow the instructions for your OS.
-2. Set the environment variable `VULKAN_SDK` to `C:/VulkanSDK/${YOUR_VULKAN_VERSION}`.
-3. If the SDK is properly installed, add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend:
+1. Add an environment variable `TAICHI_CMAKE_ARGS` with the value `-DTI_WITH_VULKAN:BOOL=ON` to enable the Vulkan backend: (Otherwise Vulkan backend is disabled by default when compiling from source, and `build.py` won't setup Vulkan SDK for you).
 
-  ```shell
-  $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
-  ```
+    ```pwsh
+    $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON"
+    ```
+
+2. Check if the SDK is properly installed: Run `vulkaninfo` in the build shell:
+
+    ```pwsh
+    python ./build.py --shell
+    vulkaninfo
+    ```
+
 
 </TabItem>
 
@@ -354,6 +309,8 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 </details>
 
 ## Build Taichi from source
+
+1. Clone the Taichi repo *recursively* and build[^1]:
 
 ````mdx-code-block
 <Tabs
@@ -365,21 +322,55 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
 <TabItem value="linux">
 
-1. Clone the Taichi repo *recursively* and build[^1]:
+  ```shell
+  git clone --recursive https://github.com/taichi-dev/taichi
+
+  cd taichi
+
+  # Customize with your own needs
+  export TAICHI_CMAKE_ARGS="-DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON"
+
+  # Uncomment if you want to use a different compiler
+  # export CC=/path/to/clang
+  # export CXX=/path/to/clang++
+
+  # export DEBUG=1 # Uncomment it if you wish to keep debug information.
+
+  # This would build a wheel file in `dist/` folder
+  ./build.py
+
+  # Alternatively, this would drop into a shell with complete build environment,
+  ./build.py --shell
+  # and then you could install Taichi in development mode
+  python3 setup.py develop
+  ```
+</TabItem>
+
+<TabItem value="windows">
 
   ```shell
   git clone --recursive https://github.com/taichi-dev/taichi
 
   cd taichi
 
-  python3 -m pip install --user -r requirements_dev.txt
+  # Customize with your own needs
+  $env:TAICHI_CMAKE_ARGS += " -DTI_WITH_VULKAN:BOOL=ON -DTI_WITH_CUDA:BOOL=ON"
 
-  # export CXX=/path/to/clang++  # Uncomment if clang++ is not default compiler of the system. Note that clang is not acceptable due to requirements of some submodules.
+  # $env:DEBUG = 1 # Uncomment it if you wish to keep debug information.
 
-  # export DEBUG=1 #Uncomment it if you wish to keep debug information.
+  # This would build a wheel file in `dist/` folder
+  ./build.py
 
-  python3 setup.py develop --user
+  # Alternatively, this would drop into a shell with complete build environment,
+  ./build.py --shell
+  # and then you could install Taichi in development mode
+  python3 setup.py develop
   ```
+
+</TabItem>
+
+</Tabs>
+````
 
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
 
@@ -389,55 +380,97 @@ You must install the Vulkan SDK in order to debug Taichi's Vulkan backend. To pr
 
 :::note
 
-[^1]Although the two commands work similarly, `python setup.py develop` is recommended for you as a developer and `python setup.py install`more for end users. The difference is:
+[^1]Although the two commands work similarly, `./build.py --shell` and `python setup.py develop` is recommended for you as a developer and `./build.py` is more for end users. The difference is:
 
-- The `develop` command does not actually install anything but only symbolically links the source code to the deployment directory.
-- The `install` command deep copies the source code so that end users need to rerun the command every time they modify the source code.
-
-The `develop` command serves the developers' needs better because edits to the Python files take effect immediately without the need to rerun the command. A rerun is needed only if you have modified the project's C extension or compiled files. See the [Development Mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more information.
-
-:::
-
-</TabItem>
-
-<TabItem value="windows">
-
-1. Set-up the environment variable `TAICHI_CMAKE_ARGS` with value `-DCLANG_EXECUTABLE=<Path to Clang>/bin/clang.exe -DLLVM_AS_EXECUTABLE=<Path to LLVM 15>/bin/llvm-as.exe`
-2. Open the "x64 Native Tools Command Prompt" for VS2019 or VS2022. Please make sure you opened the x64 version. (Or load the Visual Studio environment yourself)
-3. Clone the Taichi repo *recursively* & install python dependencies
-
-
-   ```shell
-   git clone --recursive https://github.com/taichi-dev/taichi
-
-   cd taichi
-
-   python -m pip install --user -r requirements_dev.txt
-   ```
-
-4. Build taichi by using `python setup.py develop`
-
-:::note
-
-[^1]Although the two commands work similarly, `python setup.py develop` is recommended for you as a developer and `python setup.py install`more for end users. The difference is:
-
-- The `develop` command does not actually install anything but only symbolically links the source code to the deployment directory.
-- The `install` command deep copies the source code so that end users need to rerun the command every time they modify the source code.
+- The `python setup.py develop` command does not actually install anything but only symbolically links the source code to the deployment directory.
+- The `./build.py` command builds a wheel suitable for shipping so that you need to rerun the command and install the wheel every time the source code is modified.
 
 The `develop` command serves the developers' needs better because edits to the Python files take effect immediately without the need to rerun the command. A rerun is needed only if you have modified the project's C extension or compiled files. See the [Development Mode](https://setuptools.pypa.io/en/stable/userguide/development_mode.html) for more information.
 
 :::
 
+## List of TAICHI_CMAKE_ARGS
+
+| Flag                         | Description                                                | Default |
+| ---------------------------- | ---------------------------------------------------------- | ------- |
+| BUILD_WITH_ADDRESS_SANITIZER | Build with clang address sanitizer                         | OFF     |
+| TI_BUILD_EXAMPLES            | Build the C++ examples                                     | ON      |
+| TI_BUILD_RHI_EXAMPLES        | Build the Unified Device API examples                      | OFF     |
+| TI_BUILD_TESTS               | Build the C++ tests                                        | OFF     |
+| TI_WITH_AMDGPU               | Build with the AMDGPU backend                              | OFF     |
+| TI_WITH_BACKTRACE            | Use backward-cpp to print out C++ stack trace upon failure | OFF     |
+| TI_WITH_CUDA                 | Build with the CUDA backend                                | ON      |
+| TI_WITH_CUDA_TOOLKIT         | Build with the CUDA toolkit                                | OFF     |
+| TI_WITH_C_API                | Build Taichi runtime C-API library                         | ON      |
+| TI_WITH_DX11                 | Build with the DX11 backend                                | OFF     |
+| TI_WITH_DX12                 | Build with the DX12 backend                                | OFF     |
+| TI_WITH_GGUI                 | Build with GGUI                                            | OFF     |
+| TI_WITH_GRAPHVIZ             | Generate dependency graphs between targets                 | OFF     |
+| TI_WITH_LLVM                 | Build with LLVM backends                                   | ON      |
+| TI_WITH_METAL                | Build with the Metal backend                               | ON      |
+| TI_WITH_OPENGL               | Build with the OpenGL backend                              | ON      |
+| TI_WITH_PYTHON               | Build with Python language binding                         | ON      |
+| TI_WITH_STATIC_C_API         | Build static Taichi runtime C-API library                  | OFF     |
+| TI_WITH_VULKAN               | Build with the Vulkan backend                              | OFF     |
+| USE_LLD                      | Use lld (from llvm) linker                                 | OFF     |
+| USE_MOLD                     | Use mold (A Modern Linker)                                 | OFF     |
+| USE_STDCPP                   | Use -stdlib=libc++                                         | OFF     |
+
+
+## Design goals, behaviors and usage of `build.py`
+
+### Created to be dead simple
+
+Setting up an appropriate development environment for an unfamiliar project can be quite challenging.
+Therefore, `build.py` has been created to eliminate this friction. If you find any aspect of the environment configuration process to be
+'too manual' or suffered to progress, it is considered a bug. Please report such issues on GitHub.
+
+### Designed to be minimally intrusive
+
+Nearly all the dependencies of `build.py` and Taichi are explicitly placed at the cache folder, which can be opened by:
+
+```shell
+./build.py cache
+```
+
+Or you can find it at:
+
+| OS             | Cache Folder Location           |
+| -------------- | ------------------------------- |
+| Linux && macOS | `~/.cache/ti-build-cache`       |
+| Windows        | `%LocalAppData%\ti-build-cache` |
+
+A typical cache dir will contain sub folders below:
+
+| Sub Folder       | Purpose                                                  |
+| ---------------- | -------------------------------------------------------- |
+| bootstrap        | Contains Python packages used by `build.py` itself       |
+| deps             | Downloaded external dependencies, before extract/install |
+| llvm15           | Managed pre-built LLVM binaries                          |
+| miniforge3       | Conda environment dedicated to build / develop Taichi    |
+| sccache          | Compile cache                                            |
+| vulkan-1.x.xxx.x | Vulkan SDK location                                      |
+
+The whole cache folder can be safely removed.
+
+`build.py` operates without the need for any third-party libraries to be installed, the requirements will be handled by its bootstrapping process.
+
 :::note
-
-If you want to build Taichi with Clang or maybe utilize `ccache` to cache and speed-up builds, add the following to the end of environment variable `TAICHI_CMAKE_ARGS`: ` -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang`.
-
+On Debian/Ubuntu systems, `apt install python3-distutils` is required due to packaging quirks.
 :::
 
-</TabItem>
+### Build / develop for a different Python interpreter version
 
-</Tabs>
-````
+By default, `build.py` assumes that the same Python version used to invoke it will also be used for building Taichi.
+To use a different version, please specify the desired version via `--python` option:
+
+```shell
+# Build a wheel
+./build.py --python=3.10
+
+# Or enter development shell
+./build.py --python=3.10 --shell
+```
 
 ## Troubleshooting and debugging
 
@@ -474,16 +507,14 @@ Run `git submodule update --init --recursive --depth=1`.
 
 **Description**
 
-`which python` still returns the system's Python location after Conda is installed.
+`which python` still returns the system's Python location.
 
 **Workaround**
 
-Run the following commands to activate Conda:
+Run the following commands to enter development shell:
 
 ```shell
-source <PATH_TO_CONDA>/bin/activate
-
-conda init
+./build.py --shell
 ```
 
 ## Frequently asked questions

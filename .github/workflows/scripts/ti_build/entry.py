@@ -139,7 +139,7 @@ def parse_args():
     parser.add_argument("--python", default=None, help=help)
 
     help = "Continue when encounters error."
-    parser.add_argument("--permissive", actiion="store_true", default=False, help=help)
+    parser.add_argument("--permissive", action="store_true", default=False, help=help)
 
     options = parser.parse_args()
     return options

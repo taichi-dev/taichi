@@ -143,7 +143,7 @@ class TI_DLL_EXPORT DataType {
   TI_IO_DEF(ptr_);
 
  private:
-  Type *ptr_;
+  const Type *ptr_;
 };
 
 // Note that all types are immutable once created.
@@ -335,7 +335,7 @@ class TI_DLL_EXPORT QuantIntType : public Type {
  private:
   // TODO(type): for now we can uniformly use i32 as the "compute_type". It may
   // be a good idea to make "compute_type" also customizable.
-  Type *compute_type_{nullptr};
+  const Type *compute_type_{nullptr};
   int num_bits_{32};
   bool is_signed_{true};
 };
@@ -349,7 +349,7 @@ class TI_DLL_EXPORT QuantFixedType : public Type {
 
   bool get_is_signed() const;
 
-  Type *get_digits_type() {
+  const Type *get_digits_type() {
     return digits_type_;
   }
 
@@ -379,7 +379,7 @@ class TI_DLL_EXPORT QuantFloatType : public Type {
 
   std::string to_string() const override;
 
-  Type *get_digits_type() {
+  const Type *get_digits_type() {
     return digits_type_;
   }
 
@@ -411,7 +411,7 @@ class TI_DLL_EXPORT BitStructType : public Type {
  public:
   BitStructType() : Type(TypeKind::BitStruct){};
   BitStructType(PrimitiveType *physical_type,
-                const std::vector<Type *> &member_types,
+                const std::vector<const Type *> &member_types,
                 const std::vector<int> &member_bit_offsets,
                 const std::vector<int> &member_exponents,
                 const std::vector<std::vector<int>> &member_exponent_users);
@@ -457,7 +457,7 @@ class TI_DLL_EXPORT BitStructType : public Type {
 
  private:
   PrimitiveType *physical_type_;
-  std::vector<Type *> member_types_;
+  std::vector<const Type *> member_types_;
   std::vector<int> member_bit_offsets_;
   std::vector<int> member_exponents_;
   std::vector<std::vector<int>> member_exponent_users_;

@@ -242,7 +242,7 @@ class BitStructTypeBuilder {
     member_bit_offsets_.push_back(member_total_bits_);
     member_exponents_.push_back(-1);
     member_exponent_users_.push_back({});
-    QuantIntType *member_qit = nullptr;
+    const QuantIntType *member_qit = nullptr;
     if (auto qit = member_type->cast<QuantIntType>()) {
       member_qit = qit;
     } else if (auto qfxt = member_type->cast<QuantFixedType>()) {
@@ -260,8 +260,8 @@ class BitStructTypeBuilder {
     return old_num_members;
   }
 
-  PrimitiveType *physical_type_{nullptr};
-  std::vector<Type *> member_types_;
+  const PrimitiveType *physical_type_{nullptr};
+  std::vector<const Type *> member_types_;
   std::vector<int> member_bit_offsets_;
   int member_total_bits_{0};
   std::vector<int> member_exponents_;

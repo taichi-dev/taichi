@@ -266,7 +266,7 @@ bool QuantFloatType::get_is_signed() const {
 
 BitStructType::BitStructType(
     PrimitiveType *physical_type,
-    const std::vector<Type *> &member_types,
+    const std::vector<const Type *> &member_types,
     const std::vector<int> &member_bit_offsets,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users)
@@ -282,7 +282,7 @@ BitStructType::BitStructType(
   int physical_type_bits = data_type_bits(physical_type_);
   int member_total_bits = 0;
   for (auto i = 0; i < member_types_.size(); ++i) {
-    QuantIntType *component_qit = nullptr;
+    const QuantIntType *component_qit = nullptr;
     if (auto qit = member_types_[i]->cast<QuantIntType>()) {
       component_qit = qit;
     } else if (auto qfxt = member_types_[i]->cast<QuantFixedType>()) {

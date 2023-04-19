@@ -17,16 +17,19 @@ CpuDevice::CpuDevice() {
 RhiResult CpuDevice::allocate_memory(const AllocParams &params,
                                      DeviceAllocation *out_devalloc) {
   AllocInfo info;
-
-  info.ptr = HostMemoryPool::get_instance().allocate(
-      params.size, HostMemoryPool::page_size, true /*exclusive*/);
   info.size = params.size;
   info.use_cached = false;
 
-  if (info.ptr == nullptr) {
-    return RhiResult::out_of_memory;
-  }
+  if (info.size == 0) {
+    info.ptr = nullptr;
+  } else {
+    info.ptr = HostMemoryPool::get_instance().allocate(
+        params.size, HostMemoryPool::page_size, true /*exclusive*/);
 
+    if (info.ptr == nullptr) {
+      return RhiResult::out_of_memory;
+    }
+  }
   *out_devalloc = DeviceAllocation{};
   out_devalloc->alloc_id = allocations_.size();
   out_devalloc->device = this;
@@ -48,6 +51,9 @@ DeviceAllocation CpuDevice::allocate_memory_runtime(
 void CpuDevice::dealloc_memory(DeviceAllocation handle) {
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
+  if (info.size == 0) {
+    return;
+  }
   if (info.ptr == nullptr) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }

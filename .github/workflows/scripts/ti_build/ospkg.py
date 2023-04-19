@@ -9,7 +9,7 @@ import sys
 
 # -- third party --
 # -- own --
-from .misc import banner, info
+from .misc import banner, warn
 from .tinysh import apt
 
 
@@ -58,13 +58,12 @@ def install_ubuntu_pkgs():
     if os.isatty(sys.stdin.fileno()):
         apt.install(*sorted(to_install))
     else:
-        info("Please install the following packages:")
+        warn("The following packages are required for build and not installed:")
         p = lambda s: print(s, file=sys.stderr, flush=True)
         p("")
         for v in sorted(to_install):
             p(f"    {v}")
         p("")
-        sys.exit(1)
 
 
 @banner("Install Required OS Packages")
@@ -73,6 +72,6 @@ def setup_os_pkgs() -> None:
     if u.system == "Linux":
         lsb = Path("/etc/lsb-release")
         if lsb.exists():
-            distro = DISTRIB_ID.findall(lsb.read_text())[0]
+            distro = DISTRIB_ID.findall(lsb.read_text())[-1]
             if distro == "Ubuntu":
                 install_ubuntu_pkgs()

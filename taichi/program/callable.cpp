@@ -35,6 +35,9 @@ int Callable::insert_ndarray_param(const DataType &dt,
                                    const std::string &name) {
   // Transform ndarray param to a struct type with a pointer to `dt`.
   std::vector<StructMember> members;
+  members.push_back({TypeFactory::get_instance().get_tensor_type(
+                         {total_dim}, PrimitiveType::i32),
+                     "shape"});
   members.push_back(
       {TypeFactory::get_instance().get_pointer_type(dt->get_compute_type()),
        "data_ptr"});

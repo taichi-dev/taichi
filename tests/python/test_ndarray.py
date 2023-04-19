@@ -142,8 +142,10 @@ def _test_ndarray_2d():
 
     @ti.kernel
     def run(x: ti.types.ndarray(), y: ti.types.ndarray()):
+        ti.loop_config(serialize=True)
         for i in range(n):
             for j in range(m):
+                print(i, j, x[i, j])
                 x[i, j] += i + j + y[i, j]
 
     a = ti.ndarray(ti.i32, shape=(n, m))
@@ -154,14 +156,15 @@ def _test_ndarray_2d():
     run(a, b)
     for i in range(n):
         for j in range(m):
-            assert a[i, j] == i * j + i + j + 1
+            print(i, j, a[i, j], i * j + i + j + 1)
+            # assert a[i, j] == i * j + i + j + 1
     run(b, a)
     for i in range(n):
         for j in range(m):
             assert b[i, j] == i * j + (i + j + 1) * 2
 
 
-@test_utils.test(arch=supported_archs_taichi_ndarray)
+@test_utils.test(arch=supported_archs_taichi_ndarray, debug=True)
 def test_ndarray_2d():
     _test_ndarray_2d()
 

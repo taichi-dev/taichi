@@ -841,10 +841,14 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
       // with flattened indices. Main goal is to keep all the hacks in a single
       // place so that they're easier to remove
-      std::vector<StructMember> members;
-      members.push_back({stmt->ret_type, "data_ptr"});
+      auto members = origin->base_ptr->as<ArgLoadStmt>()
+                         ->ret_type.ptr_removed()
+                         ->as<StructType>()
+                         ->elements();
+      members[1] = {stmt->ret_type, "data_ptr"};
       auto type = TypeFactory::get_instance().get_struct_type(members);
-      origin->base_ptr->as<ArgLoadStmt>()->ret_type = type;
+      origin->base_ptr->as<ArgLoadStmt>()->ret_type =
+          TypeFactory::get_instance().get_pointer_type((Type *)type);
       stmt->replace_usages_with(fused.get());
       modifier_.insert_before(stmt, std::move(fused));
       modifier_.erase(stmt);

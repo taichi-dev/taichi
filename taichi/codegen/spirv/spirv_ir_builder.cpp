@@ -344,6 +344,12 @@ SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
           from_taichi_type(type, has_buffer_ptr), name, offset));
     }
     return create_struct_type(components);
+  } else if (auto tensor_type = dt->cast<TensorType>()) {
+    // FIXME: assume all tensor types are 1D
+    return get_array_type(
+        from_taichi_type(tensor_type->get_element_type(), has_buffer_ptr),
+        tensor_type->get_num_elements());
+
   } else {
     TI_ERROR("Type {} not supported.", dt->to_string());
   }
@@ -562,8 +568,8 @@ SType IRBuilder::get_array_type(const SType &value_type, uint32_t num_elems) {
   arr_type.element_type_id = value_type.id;
 
   if (num_elems != 0) {
-    Value length = uint_immediate_number(
-        get_primitive_type(get_data_type<uint32>()), num_elems);
+    Value length = int_immediate_number(
+        get_primitive_type(get_data_type<int32>()), num_elems);
     ib_.begin(spv::OpTypeArray)
         .add_seq(arr_type, value_type, length)
         .commit(&global_);

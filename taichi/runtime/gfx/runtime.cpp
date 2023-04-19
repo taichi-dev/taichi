@@ -81,7 +81,7 @@ class HostDeviceContextBlitter {
                 DeviceCapability::spirv_has_physical_storage_buffer)) {
           uint64_t addr =
               device_->get_memory_physical_pointer(ext_arrays.at(i));
-          host_ctx_.set_struct_arg({i, 0}, addr);
+          host_ctx_.set_struct_arg({i, 1}, addr);
         }
       }
     }
@@ -825,7 +825,8 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
         member_align = element_size * 4;
       }
       if (!is_430) {
-        member_size = member_align;
+        member_align = 16;
+        member_size = member_align * num_elements;
       } else {
         member_size = tensor_type->get_num_elements() * element_size;
       }

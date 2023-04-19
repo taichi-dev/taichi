@@ -97,7 +97,7 @@ TEST(IRBuilder, ExternalPtr) {
   array[0] = 2;
   array[2] = 40;
   auto *arg =
-      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>());
+      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *two = builder.get_int32(2);
@@ -165,7 +165,7 @@ TEST(IRBuilder, AtomicOp) {
   array[0] = 2;
   array[2] = 40;
   auto *arg =
-      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>());
+      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *a0ptr = builder.create_external_ptr(arg, {zero});

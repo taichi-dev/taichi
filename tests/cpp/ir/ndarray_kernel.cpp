@@ -6,7 +6,7 @@ std::unique_ptr<Kernel> setup_kernel1(Program *prog) {
   IRBuilder builder1;
   {
     auto *arg =
-        builder1.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>());
+        builder1.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
     auto *zero = builder1.get_int32(0);
     auto *one = builder1.get_int32(1);
     auto *two = builder1.get_int32(2);
@@ -32,7 +32,7 @@ std::unique_ptr<Kernel> setup_kernel2(Program *prog) {
 
   {
     auto *arg0 =
-        builder2.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>());
+        builder2.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
     auto *arg1 = builder2.create_arg_load(/*arg_id=*/1, get_data_type<int>(),
                                           /*is_ptr=*/false);
     auto *one = builder2.get_int32(1);

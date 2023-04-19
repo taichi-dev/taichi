@@ -120,35 +120,33 @@ def action_open_cache_dir():
 
 def parse_args():
     parser = argparse.ArgumentParser()
+
     # Possible actions:
     #   wheel: build the wheel
     #   android: build the Android C-API shared library
     #   ios: build the iOS C-API shared library
     #   cache: open the cache directory
+    help = 'Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.'
     parser.add_argument(
         "action",
         type=str,
         nargs="?",
         default="wheel",
-        help='Action, may be build target "wheel" / "android" / "ios", or "cache" for opening the cache directory.',
+        help=help,
     )
-    parser.add_argument(
-        "-w", "--write-env", type=str, default=None, help="Do not build, write environment variables to file instead"
-    )
-    parser.add_argument(
-        "-s", "--shell", action="store_true", help="Do not build, start a shell with environment variables set instead"
-    )
-    parser.add_argument(
-        "--python",
-        default=None,
-        help="Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter.",
-    )
-    parser.add_argument(
-        "--permissive",
-        actiion="store_true",
-        default=False,
-        help="Continue when encounters error.",
-    )
+
+    help = "Do not build, write environment variables to file instead"
+    parser.add_argument("-w", "--write-env", type=str, default=None, help=help)
+
+    help = "Do not build, start a shell with environment variables set instead"
+    parser.add_argument("-s", "--shell", action="store_true", help=help)
+
+    help = "Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter."
+    parser.add_argument("--python", default=None, help=help)
+
+    help = "Continue when encounters error."
+    parser.add_argument("--permissive", actiion="store_true", default=False, help=help)
+
     options = parser.parse_args()
     return options
 

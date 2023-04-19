@@ -4,6 +4,7 @@
 #include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
+#include "taichi/codegen/llvm/compiled_kernel_data.h"
 
 namespace taichi::lang {
 
@@ -22,7 +23,12 @@ void LlvmAotModuleBuilder::add_per_backend(const std::string &identifier,
   LlvmOfflineCache::KernelCacheData kcache;
   kcache.kernel_key = identifier;
   kcache.compiled_data = std::move(compiled);
-  kcache.args = infer_launch_args(kernel);
+  kcache.args = kernel->parameter_list;
+  kcache.args_type = kernel->args_type;
+  kcache.args_size = kernel->args_size;
+  kcache.rets = kernel->rets;
+  kcache.ret_size = kernel->ret_size;
+  kcache.ret_type = kernel->ret_type;
   kcache.last_used_at = std::time(nullptr);
   kcache.created_at = std::time(nullptr);
   cache_.kernels[identifier] = std::move(kcache);
@@ -58,6 +64,15 @@ void LlvmAotModuleBuilder::add_field_per_backend(const std::string &identifier,
 
   // 3. Update AOT Cache
   cache_.fields[snode_tree_id] = std::move(field_cache);
+}
+
+LLVMCompiledKernel LlvmAotModuleBuilder::compile_kernel(Kernel *kernel) {
+  const auto &ckd =
+      compilation_manager_.load_or_compile(compile_config_, {}, *kernel);
+  TI_ASSERT(arch_uses_llvm(ckd.arch()));
+  return dynamic_cast<const LLVM::CompiledKernelData &>(ckd)
+      .get_internal_data()
+      .compiled_data.clone();
 }
 
 }  // namespace taichi::lang

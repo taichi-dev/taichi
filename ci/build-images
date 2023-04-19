@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# -- stdlib --
+import datetime
+import os
+import sys
+
+# -- third party --
+# -- own --
+
+# -- code --
+GLOBAL_VARS = {
+    "__TIME__": datetime.datetime.now().strftime("%Y%m%d%H%M"),
+}
+
+SNIPPETS = {}
+
+
+def replace_vars(tpl, variables=""):
+    lst = variables.split()
+    items = [i.split("=", 1) for i in lst]
+    for k, v in items:
+        tpl = tpl.replace(k, v)
+    for k, v in GLOBAL_VARS.items():
+        tpl = tpl.replace(k, v)
+    return tpl
+
+
+def parse_template(tpl):
+    lines = tpl.split("\n")
+    result = []
+    staging = ""
+    while lines:
+        l = lines.pop(0).strip()
+        if not l:
+            continue
+        elif l.startswith("#"):
+            continue
+        elif l.endswith("\\"):
+            staging += l[:-1]
+        else:
+            staging += l
+            result.append(staging)
+            staging = ""
+    return result
+
+
+def process_template(parsed):
+    lines = []
+    targets = []
+    while parsed:
+        l = parsed.pop(0)
+        cmd, args = l.split(" ", 1)
+        args = args.strip()
+        if cmd == "INCLUDE":
+            path, *args = args.split(" ", 1)
+            tpl = open(path).read()
+            tpl = replace_vars(tpl, *args)
+            processed, subtargets = process_template(parse_template(tpl))
+            lines.extend(processed)
+            targets.extend(subtargets)
+        elif cmd == "BUILD":
+            stage, _as, image_name = args.split()
+            assert _as == "AS"
+            targets.append((stage, replace_vars(image_name)))
+        elif cmd == "SNIPPET":
+            name = args
+            assert name not in SNIPPETS
+            lst = []
+            while parsed and parsed[0].split(" ", 1)[0] not in ("FROM", "SNIPPET"):
+                lst.append(parsed.pop(0))
+            SNIPPETS[name] = "\n".join(lst)
+        elif cmd == "USE":
+            name, *args = args.split()
+            tpl = replace_vars(SNIPPETS[name], *args)
+            processed, subtargets = process_template(parse_template(tpl))
+            lines.extend(processed)
+            targets.extend(subtargets)
+        else:
+            lines.append(l)
+
+    return lines, targets
+
+
+def build_targets(processed, targets, push):
+    print(":: Writing Dockerfile")
+    with open(".generated-dockerfile", "w") as f:
+        f.write("\n".join(processed))
+
+    for stage, image_name in targets:
+        cmd = "sudo docker build --target {} -t {} -f .generated-dockerfile .".format(stage, image_name)
+        print(f":: RUN {cmd}")
+        if os.system(cmd):
+            print("!! Failed")
+            exit(1)
+
+        if not push:
+            continue
+
+        cmd = "sudo docker push {}".format(image_name)
+        print(f":: RUN {cmd}")
+        if os.system(cmd):
+            print("!! Failed")
+            exit(1)
+
+
+tpl = open("Dockerfile.tpl").read()
+parsed = parse_template(tpl)
+processed, targets = process_template(parsed)
+build_targets(processed, targets, "--push" in sys.argv)

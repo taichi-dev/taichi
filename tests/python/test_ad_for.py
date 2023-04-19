@@ -102,13 +102,13 @@ def test_ad_power():
     power()
 
     for i in range(N):
-        assert p[i] == 3**b[i]
+        assert p[i] == 3 ** b[i]
         p.grad[i] = 1
 
     power.grad()
 
     for i in range(N):
-        assert a.grad[i] == b[i] * 3**(b[i] - 1)
+        assert a.grad[i] == b[i] * 3 ** (b[i] - 1)
 
 
 @test_utils.test(require=ti.extension.adstack)
@@ -193,7 +193,7 @@ def test_ad_global_ptr():
         for i in range(N):
             p = 0
             for j in range(N):
-                b[i] += a[p]**2
+                b[i] += a[p] ** 2
                 p += 1
 
         for i in range(N):
@@ -284,7 +284,7 @@ def test_double_for_loops():
     double_for.grad()
 
     for i in range(N):
-        assert a.grad[i] == 2 * i * i * 2**(i - 1)
+        assert a.grad[i] == 2 * i * i * 2 ** (i - 1)
         assert b.grad[i] == 2 * i
 
 
@@ -319,7 +319,7 @@ def test_double_for_loops_more_nests():
 
     for i in range(N):
         for k in range(N // 2):
-            assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
+            assert f[i, k] == 2 * (i + k) * (1 + 2 ** (i + k))
             f.grad[i, k] = 1
 
     double_for.grad()
@@ -328,7 +328,7 @@ def test_double_for_loops_more_nests():
         total_grad_a = 0
         total_grad_b = 0
         for k in range(N // 2):
-            total_grad_a += 2 * (i + k)**2 * 2**(i + k - 1)
+            total_grad_a += 2 * (i + k) ** 2 * 2 ** (i + k - 1)
             total_grad_b += 2 * (i + k)
         assert a.grad[i] == total_grad_a
         assert b.grad[i] == total_grad_b
@@ -411,8 +411,7 @@ def test_triple_for_loops_bls():
     triple_for.grad()
 
     for i in range(N):
-        assert a.grad[i] == 2 * M * min(min(N - i - 1, i + 1), M) * \
-               2**(M - 1) * N
+        assert a.grad[i] == 2 * M * min(min(N - i - 1, i + 1), M) * 2 ** (M - 1) * N
     for i in range(N):
         assert b.grad[i * 2] == min(min(N - i - 1, i + 1), M) * N
         assert b.grad[i * 2 + 1] == min(min(N - i - 1, i + 1), M) * N
@@ -563,9 +562,7 @@ def test_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=0,
-                 exclude=[ti.cc])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0)
 def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -592,9 +589,7 @@ def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=32,
-                 exclude=[ti.cc])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32)
 def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -621,9 +616,7 @@ def test_more_inner_loops_local_variable_fixed_stack_size_tape():
     assert x.grad[None] == 36.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=32,
-                 arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
 def test_stacked_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -653,11 +646,8 @@ def test_stacked_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     assert x.grad[None] == 38.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=32,
-                 arch=[ti.cpu, ti.gpu])
-def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size_kernel_grad(
-):
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=32, arch=[ti.cpu, ti.gpu])
+def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -687,9 +677,7 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_fixed_stack_size
     assert x.grad[None] == 56.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=0,
-                 arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
 def test_stacked_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -719,11 +707,8 @@ def test_stacked_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     assert x.grad[None] == 38.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=0,
-                 arch=[ti.cpu, ti.gpu])
-def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_size_kernel_grad(
-):
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
+def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_size_kernel_grad():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -753,9 +738,7 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable_adaptive_stack_s
     assert x.grad[None] == 56.0
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=0,
-                 arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=0, arch=[ti.cpu, ti.gpu])
 def test_large_for_loops_adaptive_stack_size():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)
@@ -775,9 +758,7 @@ def test_large_for_loops_adaptive_stack_size():
     assert x.grad[None] == 1e7
 
 
-@test_utils.test(require=ti.extension.adstack,
-                 ad_stack_size=1,
-                 arch=[ti.cpu, ti.gpu])
+@test_utils.test(require=ti.extension.adstack, ad_stack_size=1, arch=[ti.cpu, ti.gpu])
 def test_large_for_loops_fixed_stack_size():
     x = ti.field(dtype=float, shape=(), needs_grad=True)
     arr = ti.field(dtype=float, shape=(2), needs_grad=True)

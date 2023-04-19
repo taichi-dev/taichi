@@ -21,7 +21,7 @@ def main(arch):
     dir_name = str(os.environ["TAICHI_AOT_FOLDER_PATH"])
 
     m = ti.aot.Module()
-    m.add_kernel(run, template_args={'arr': arr})
+    m.add_kernel(run, template_args={"arr": arr})
 
     tcm_path = dir_name + "/module.tcm"
     m.archive(tcm_path)
@@ -35,5 +35,7 @@ if __name__ == "__main__":
 
     if args.arch == "vulkan":
         main(arch=ti.vulkan)
+    elif args.arch == "metal":
+        main(arch=ti.metal)
     else:
         assert False

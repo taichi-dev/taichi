@@ -165,15 +165,13 @@ class FrontendIfStmt : public Stmt {
 class FrontendPrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Expr, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit FrontendPrintStmt(const std::vector<EntryType> &contents_) {
-    for (const auto &c : contents_) {
-      if (std::holds_alternative<Expr>(c))
-        contents.push_back(std::get<Expr>(c));
-      else
-        contents.push_back(c);
-    }
+  FrontendPrintStmt(const std::vector<EntryType> &contents_,
+                    const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
   }
 
   TI_DEFINE_ACCEPT
@@ -318,8 +316,17 @@ class ArgLoadExpression : public Expression {
   DataType dt;
   bool is_ptr;
 
-  ArgLoadExpression(int arg_id, DataType dt, bool is_ptr = false)
-      : arg_id(arg_id), dt(dt), is_ptr(is_ptr) {
+  /* Creates a load statement if true, otherwise returns the pointer
+   * directly.
+   * TODO: Split ArgLoad into two steps: ArgAddr and GlobalLoad.
+   */
+  bool create_load;
+
+  ArgLoadExpression(int arg_id,
+                    DataType dt,
+                    bool is_ptr = false,
+                    bool create_load = true)
+      : arg_id(arg_id), dt(dt), is_ptr(is_ptr), create_load(create_load) {
   }
 
   void type_check(const CompileConfig *config) override;
@@ -342,24 +349,22 @@ class TexturePtrExpression : public Expression {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{BufferFormat::unknown};
   int lod{0};
 
   explicit TexturePtrExpression(int arg_id, int num_dims)
-      : arg_id(arg_id), num_dims(num_dims) {
+      : arg_id(arg_id),
+        num_dims(num_dims),
+        is_storage(false),
+        format(BufferFormat::rgba8),
+        lod(0) {
   }
 
-  TexturePtrExpression(int arg_id,
-                       int num_dims,
-                       int num_channels,
-                       DataType channel_format,
-                       int lod)
+  TexturePtrExpression(int arg_id, int num_dims, BufferFormat format, int lod)
       : arg_id(arg_id),
         num_dims(num_dims),
         is_storage(true),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
   }
 
@@ -826,6 +831,7 @@ class FrontendFuncCallStmt : public Stmt {
   }
 
   TI_DEFINE_ACCEPT
+  TI_DEFINE_CLONE_FOR_FRONTEND_IR
 };
 
 class GetElementExpression : public Expression {
@@ -975,7 +981,8 @@ class ASTBuilder {
   Expr insert_thread_idx_expr();
   Expr insert_patch_idx_expr();
   void create_kernel_exprgroup_return(const ExprGroup &group);
-  void create_print(std::vector<std::variant<Expr, std::string>> contents);
+  void create_print(std::vector<std::variant<Expr, std::string>> contents,
+                    std::vector<std::optional<std::string>> formats);
   void begin_func(const std::string &funcid);
   void end_func(const std::string &funcid);
   void begin_frontend_if(const Expr &cond);

@@ -2,11 +2,11 @@
 
 #include "taichi/aot/module_builder.h"
 #include "taichi/ir/statements.h"
-#include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/program/kernel_profiler.h"
+#include "taichi/program/kernel_launcher.h"
 #include "taichi/rhi/device.h"
 #include "taichi/aot/graph_data.h"
 #include "taichi/codegen/kernel_compiler.h"
@@ -38,14 +38,13 @@ class ProgramImpl {
    * Codegen to specific backend
    */
   virtual FunctionType compile(const CompileConfig &compile_config,
-                               Kernel *kernel) = 0;
+                               Kernel *kernel);
 
   /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
    * buffer, e.g. preallocated_device_buffer on CUDA.
    */
-  virtual void materialize_runtime(MemoryPool *memory_pool,
-                                   KernelProfilerBase *profiler,
+  virtual void materialize_runtime(KernelProfilerBase *profiler,
                                    uint64 **result_buffer_ptr) = 0;
 
   /**
@@ -76,7 +75,7 @@ class ProgramImpl {
   }
 
   /**
-   * Make a AotModulerBuilder, currently only supported by metal and wasm.
+   * Make a AotModulerBuilder.
    */
   virtual std::unique_ptr<AotModuleBuilder> make_aot_module_builder(
       const DeviceCapabilityConfig &caps) = 0;
@@ -132,10 +131,6 @@ class ProgramImpl {
     TI_ERROR("fill_ndarray() not implemented on the current backend");
   }
 
-  // TODO: Move to Runtime Object
-  virtual void prepare_runtime_context(RuntimeContext *ctx) {
-  }
-
   virtual void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) {
@@ -160,12 +155,6 @@ class ProgramImpl {
     return result_buffer[i];
   }
 
-  virtual TypedConstant fetch_result(char *result_buffer,
-                                     int offset,
-                                     const Type *dt) {
-    TI_NOT_IMPLEMENTED;
-  }
-
   virtual std::string get_kernel_return_data_layout() {
     return "";
   };
@@ -174,19 +163,30 @@ class ProgramImpl {
     return "";
   };
 
-  virtual const StructType *get_struct_type_with_data_layout(
-      const StructType *old_ty,
-      const std::string &layout) {
-    return old_ty;
+  virtual std::pair<const StructType *, size_t>
+  get_struct_type_with_data_layout(const StructType *old_ty,
+                                   const std::string &layout) {
+    return {old_ty, 0};
   }
 
   KernelCompilationManager &get_kernel_compilation_manager();
 
+  KernelLauncher &get_kernel_launcher();
+
  protected:
   virtual std::unique_ptr<KernelCompiler> make_kernel_compiler() = 0;
 
+  virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  virtual DeviceCapabilityConfig get_device_caps() {
+    return {};
+  }
+
  private:
   std::unique_ptr<KernelCompilationManager> kernel_com_mgr_;
+  std::unique_ptr<KernelLauncher> kernel_launcher_;
 };
 
 }  // namespace taichi::lang

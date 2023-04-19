@@ -14,7 +14,6 @@ CompileConfig::CompileConfig() {
   print_ir = false;
   print_preprocessed_ir = false;
   print_accessor_ir = false;
-  print_evaluator_ir = false;
   use_llvm = true;
   demote_dense_struct_fors = true;
   advanced_optimization = true;
@@ -45,6 +44,8 @@ CompileConfig::CompileConfig() {
   detect_read_only = true;
   ndarray_use_cached_allocator = true;
   real_matrix_scalarize = true;
+  half2_vectorization = false;
+  make_cpu_multithreading_loop = true;
 
   saturating_grid_dim = 0;
   max_block_dim = 0;
@@ -54,17 +55,13 @@ CompileConfig::CompileConfig() {
   // LLVM backend options:
   print_struct_llvm_ir = false;
   print_kernel_llvm_ir = false;
-  print_kernel_nvptx = false;
+  print_kernel_asm = false;
   print_kernel_amdgcn = false;
   print_kernel_llvm_ir_optimized = false;
 
   // CUDA/AMDGPU backend options:
   device_memory_GB = 1;  // by default, preallocate 1 GB GPU memory
   device_memory_fraction = 0.0;
-
-  // C backend options:
-  cc_compile_cmd = "gcc -Wc99-c11-compat -c -o '{}' '{}' -O3";
-  cc_link_cmd = "gcc -shared -fPIC -o '{}' '{}'";
 }
 
 void CompileConfig::fit() {
@@ -72,7 +69,7 @@ void CompileConfig::fit() {
     // TODO: allow users to run in debug mode without out-of-bound checks
     check_out_of_bound = true;
   }
-  if (arch == Arch::cc || arch_uses_spirv(arch)) {
+  if (arch_uses_spirv(arch)) {
     demote_dense_struct_fors = true;
   }
   offline_cache::disable_offline_cache_if_needed(this);

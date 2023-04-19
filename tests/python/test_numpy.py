@@ -15,7 +15,7 @@ def with_data_type(dt):
     @ti.kernel
     def test_numpy(arr: ti.types.ndarray()):
         for i in range(n):
-            arr[i] = arr[i]**2
+            arr[i] = arr[i] ** 2
 
     a = np.array([4, 8, 1, 24], dtype=dt)
 
@@ -163,7 +163,6 @@ def test_numpy_3d_error():
 
 @test_utils.test()
 def test_numpy_multiple_external_arrays():
-
     n = 4
 
     @ti.kernel
@@ -222,8 +221,7 @@ def test_numpy_struct_for():
 def test_numpy_op_with_matrix():
     scalar = np.cos(0)
     vec = ti.Vector([1, 2])
-    assert isinstance(scalar + vec, ti.Matrix) and isinstance(
-        vec + scalar, ti.Matrix)
+    assert isinstance(scalar + vec, ti.Matrix) and isinstance(vec + scalar, ti.Matrix)
 
     @ti.kernel
     def test():
@@ -264,8 +262,7 @@ def test_numpy_view():
         img[0] = 1
 
     a = np.zeros(shape=(2, 2))[:, 0]
-    with pytest.raises(ValueError,
-                       match='Non contiguous numpy arrays are not supported'):
+    with pytest.raises(ValueError, match="Non contiguous numpy arrays are not supported"):
         fill(a)
 
 
@@ -287,24 +284,20 @@ def test_numpy_ndarray_dim_check():
     d = np.zeros(shape=(2, 2), dtype=np.float32)
     add_one_mat(a)
     add_one_scalar(d)
-    np.testing.assert_allclose(a, np.ones(shape=(2, 2, 3, 3),
-                                          dtype=np.float32))
+    np.testing.assert_allclose(a, np.ones(shape=(2, 2, 3, 3), dtype=np.float32))
     np.testing.assert_allclose(d, np.ones(shape=(2, 2), dtype=np.float32))
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti.types.ndarray\(\) - required element_shape=\(.*\), but the argument has element shape of \(.*\)'
+        ValueError,
+        match=r"Invalid argument into ti.types.ndarray\(\) - required element_shape=\(.*\), but the argument has element shape of \(.*\)",
     ):
         add_one_mat(b)
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti.types.ndarray\(\) - required array has ndim=2 element_dim=2, but the argument has 3 dimensions'
+        ValueError,
+        match=r"Invalid argument into ti.types.ndarray\(\) - required array has ndim=2 element_dim=2, but the argument has 3 dimensions",
     ):
         add_one_mat(c)
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti.types.ndarray\(\) - required array has ndim=2, but the argument has 4 dimensions'
+        ValueError,
+        match=r"Invalid argument into ti.types.ndarray\(\) - required array has ndim=2, but the argument has 4 dimensions",
     ):
         add_one_scalar(a)

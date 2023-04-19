@@ -2,15 +2,14 @@
 
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/runtime/llvm/llvm_runtime_executor.h"
-#include "taichi/system/memory_pool.h"
-#include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 
 #ifdef TI_WITH_CUDA
 
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 
 #endif
 
@@ -39,58 +38,51 @@ static void run_field_tests(aot::Module *mod,
 
   // Initialize SNodeTree
   aot::Field *snode_tree_0 = mod->get_snode_tree("0" /*snode_tree_id*/);
-  allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
+  LLVM::allocate_aot_snode_tree_type(mod, snode_tree_0, result_buffer);
 
   int base_value = 10;
   /* -------- Test Case 1 ------ */
   // Kernel: init_fields(int)
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_init_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_init_fields);
+    builder.set_arg(0, base_value);
+    k_init_fields->launch(builder);
   }
 
   // Kernel: check_init_x(int)
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    ctx.set_arg(0, base_value);
-    k_check_init_x->launch(&ctx);
+    LaunchContextBuilder builder(k_check_init_x);
+    builder.set_arg(0, base_value);
+    k_check_init_x->launch(builder);
   }
   // Kernel: check_init_y()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_init_y->launch(&ctx);
+    LaunchContextBuilder builder(k_check_init_y);
+    k_check_init_y->launch(builder);
   }
 
   /* -------- Test Case 2 ------ */
   // Kernel: deactivate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_deactivate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_deactivate_pointer_fields);
+    k_deactivate_pointer_fields->launch(builder);
   }
   // Kernel: check_deactivate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_deactivate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_check_deactivate_pointer_fields);
+    k_check_deactivate_pointer_fields->launch(builder);
   }
 
   /* -------- Test Case 3 ------ */
   // Kernel: activate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_activate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_activate_pointer_fields);
+    k_activate_pointer_fields->launch(builder);
   }
   // Kernel: check_activate_pointer_fields()
   {
-    RuntimeContext ctx;
-    ctx.runtime = exec->get_llvm_runtime();
-    k_check_activate_pointer_fields->launch(&ctx);
+    LaunchContextBuilder builder(k_check_activate_pointer_fields);
+    k_check_activate_pointer_fields->launch(builder);
   }
 
   // Check assertion error from ti.kernel
@@ -103,21 +95,22 @@ TEST(LlvmAotTest, CpuField) {
   cfg.kernel_profiler = false;
   constexpr KernelProfilerBase *kNoProfiler = nullptr;
   LlvmRuntimeExecutor exec{cfg, kNoProfiler};
-  auto *compute_device = exec.get_compute_device();
 
   // Must have handled all the arch fallback logic by this point.
-  auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(kNoProfiler, &result_buffer);
 
-  cpu::AotModuleParams aot_params;
+  LLVM::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
   aot_params.executor_ = &exec;
-  std::unique_ptr<aot::Module> mod = cpu::make_aot_module(aot_params);
+  aot_params.kernel_launcher =
+      std::make_unique<cpu::KernelLauncher>(cpu::KernelLauncher::Config{&exec});
+  std::unique_ptr<aot::Module> mod =
+      LLVM::make_aot_module(std::move(aot_params));
 
   run_field_tests(mod.get(), &exec, result_buffer);
 }
@@ -133,16 +126,18 @@ TEST(LlvmAotTest, CudaField) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(kNoProfiler, &result_buffer);
 
-    cuda::AotModuleParams aot_params;
+    LLVM::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
     aot_params.executor_ = &exec;
-    auto mod = cuda::make_aot_module(aot_params);
+    aot_params.kernel_launcher = std::make_unique<cuda::KernelLauncher>(
+        cuda::KernelLauncher::Config{&exec});
+    auto mod = LLVM::make_aot_module(std::move(aot_params));
 
     run_field_tests(mod.get(), &exec, result_buffer);
   }

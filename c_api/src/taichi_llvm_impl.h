@@ -9,7 +9,6 @@
 
 namespace taichi::lang {
 class LlvmRuntimeExecutor;
-class MemoryPool;
 struct CompileConfig;
 }  // namespace taichi::lang
 
@@ -18,6 +17,7 @@ namespace capi {
 class LlvmRuntime : public Runtime {
  public:
   LlvmRuntime(taichi::Arch arch);
+  virtual ~LlvmRuntime();
 
   void check_runtime_error();
   taichi::lang::Device &get() override;
@@ -38,10 +38,9 @@ class LlvmRuntime : public Runtime {
   void wait() override;
 
  private:
-  taichi::uint64 *result_buffer{nullptr};
-  std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
-  std::unique_ptr<taichi::lang::MemoryPool> memory_pool_{nullptr};
   std::unique_ptr<taichi::lang::CompileConfig> cfg_{nullptr};
+  std::unique_ptr<taichi::lang::LlvmRuntimeExecutor> executor_{nullptr};
+  taichi::uint64 *result_buffer{nullptr};
 };
 
 }  // namespace capi

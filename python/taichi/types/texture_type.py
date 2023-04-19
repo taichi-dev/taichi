@@ -52,6 +52,7 @@ class TextureType:
     Args:
         num_dimensions (int): Number of dimensions. For examples for a 2D texture this should be `2`.
     """
+
     def __init__(self, num_dimensions):
         self.num_dimensions = num_dimensions
 
@@ -64,12 +65,12 @@ class RWTextureType:
         lod (float): Specifies the explicit level-of-detail.
         fmt (ti.Format): Color format of texture
     """
+
     def __init__(self, num_dimensions, lod=0, fmt=None):
         self.num_dimensions = num_dimensions
         if fmt is None:
             raise TaichiCompilationError("fmt is required for rw_texture type")
         else:
-            self.channel_format, self.num_channels = FORMAT2TY_CH[fmt]
             self.fmt = fmt
         self.lod = lod
 
@@ -79,4 +80,4 @@ rw_texture = RWTextureType
 """Alias for :class:`~taichi.types.ndarray_type.TextureType`.
 """
 
-__all__ = ['texture', 'rw_texture']
+__all__ = ["texture", "rw_texture"]

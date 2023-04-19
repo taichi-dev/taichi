@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+# -- stdlib --
 import linecache
 import sys
 import uuid
@@ -7,34 +10,42 @@ from functools import wraps
 from itertools import count
 from typing import List, Optional
 
+# -- third party --
 import marko
 import pytest
 from pytest import ExceptionInfo
 
 import taichi as ti
 
+# -- own --
+
+# -- code --
+warnings.filterwarnings("error", category=DeprecationWarning)
+
 SANE_LANGUAGE_TAGS = {
-    'python',
-    'c',
-    'cpp',
-    'cmake',
-    'plaintext',
-    'text',
-    'md',
-    'markdown',
-    '',
-    'shell',
-    'bash',
-    'sh',
-    'mdx-code-block',
-    'javascript',
-    'js',
-    'Gherkin',
+    "python",
+    "c",
+    "cpp",
+    "cmake",
+    "plaintext",
+    "text",
+    "md",
+    "markdown",
+    "",
+    "shell",
+    "bash",
+    "sh",
+    "mdx-code-block",
+    "javascript",
+    "js",
+    "Gherkin",
 }
 
 PRELUDES = {}
 
-PRELUDES['init'] = '''
+PRELUDES[
+    "init"
+] = """
 import taichi as ti
 import numpy as np
 import math
@@ -45,8 +56,13 @@ ti.init()
 i, j, k = (0, 0, 0)
 N = 16
 M = 8
+"""
 
-'''
+PRELUDES[
+    "gui"
+] = """
+gui = ti.GUI('Title', res=(400, 400))
+"""
 
 
 def hook(module, name=None):
@@ -113,34 +129,32 @@ class MarkdownFile(pytest.File):
         codes = list(self.extract_fenced_code_blocks(doc))
         bad_tags = set(c.lang for _, c in codes) - SANE_LANGUAGE_TAGS
         if bad_tags:
-            raise ValueError(
-                f"Invalid language tag {bad_tags} in markdown file")
+            raise ValueError(f"Invalid language tag {bad_tags} in markdown file")
 
         spec = None
         for name, c in codes:
-            if not c.lang == 'python':
+            if not c.lang == "python":
                 continue
-            extra = dict(
-                (v.split(':', 1) + [None])[:2] for v in c.extra.split())
+            extra = dict((v.split(":", 1) + [None])[:2] for v in c.extra.split())
             code = c.children[0].children
-            if 'cont' in extra:
+            if "cont" in extra:
                 assert spec is not None
                 spec.code += code
             else:
                 if spec is not None:
-                    yield MarkdownItem.from_parent(self,
-                                                   name=spec.name,
-                                                   spec=spec)
-                preludes = extra.get('preludes')
+                    yield MarkdownItem.from_parent(self, name=spec.name, spec=spec)
+                preludes = extra.get("preludes")
                 if preludes is None:
-                    preludes = ['init']
+                    preludes = []
                 else:
-                    preludes = preludes.split(',')
-                spec = PythonSnippet(name=name,
-                                     code=code,
-                                     skip=extra.get('skip-ci'),
-                                     known_error='known-error' in extra,
-                                     preludes=preludes)
+                    preludes = preludes.split(",")
+                spec = PythonSnippet(
+                    name=name,
+                    code=code,
+                    skip=extra.get("skip-ci"),
+                    known_error="known-error" in extra,
+                    preludes=preludes,
+                )
 
         if spec is not None:
             yield MarkdownItem.from_parent(self, name=spec.name, spec=spec)
@@ -154,9 +168,9 @@ class MarkdownFile(pytest.File):
             return
         if isinstance(root, marko.block.FencedCode):
             end = path.index(None)
-            name = ' - '.join(f'[{p}]' for p in path[:end])
-            yield f'{name} #{next(counter)}', root
-        if not hasattr(root, 'children'):
+            name = " - ".join(f"[{p}]" for p in path[:end])
+            yield f"{name} #{next(counter)}", root
+        if not hasattr(root, "children"):
             return
 
         child_counter = count(1)
@@ -165,17 +179,16 @@ class MarkdownFile(pytest.File):
                 continue
             if isinstance(child, marko.block.Heading):
                 lv = child.level
-                path[lv - 1] = ''.join(self.extract_text_fragments(child))
+                path[lv - 1] = "".join(self.extract_text_fragments(child))
                 path[lv] = None
                 child_counter = count(1)
 
-            yield from self.extract_fenced_code_blocks(child, path,
-                                                       child_counter)
+            yield from self.extract_fenced_code_blocks(child, path, child_counter)
 
     def extract_text_fragments(self, el):
         if isinstance(el, str):
             yield el
-        if not hasattr(el, 'children'):
+        if not hasattr(el, "children"):
             return
         for child in el.children:
             yield from self.extract_text_fragments(child)
@@ -192,16 +205,26 @@ class MarkdownItem(pytest.Item):
             pytest.skip(spec.skip)
 
         if spec.known_error:
-            warnings.warn('Known Error, please fix it')
-            pytest.skip('KnownError')
-            return
+            warnings.warn("Known Error, please fix it")
+            print(f"::warning:: Known Error: {spec.name}")
+            pytest.skip("KnownError")
 
-        source = [PRELUDES[p] for p in spec.preludes] + [spec.code]
-        source = ''.join(source)
-        fn = f'<snippet:{uuid.uuid4()}>'
-        code = compile(source, fn, 'exec')
-        linecache.cache[fn] = (len(source), None,
-                               [f'{i}\n' for i in source.splitlines()], fn)
+        preludes = list(spec.preludes)
+        if "-init" in preludes:
+            preludes.remove("-init")
+        else:
+            preludes.insert(0, "init")
+
+        source = [PRELUDES[p] for p in preludes] + [spec.code]
+        source = "".join(source)
+        fn = f"<snippet:{uuid.uuid4()}>"
+        code = compile(source, fn, "exec")
+        linecache.cache[fn] = (
+            len(source),
+            None,
+            [f"{i}\n" for i in source.splitlines()],
+            fn,
+        )
         env = {}
         try:
             exec(code, env, env)
@@ -221,5 +244,6 @@ class MarkdownItem(pytest.Item):
 
 class MarkdownException(Exception):
     """Custom exception for error reporting."""
+
     def __init__(self, excinfo):
         self.excinfo = excinfo

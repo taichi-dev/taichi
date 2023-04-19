@@ -36,24 +36,24 @@ def get_field_info(field):
 
 def euler_to_vec(yaw, pitch):
     v = Vector([0.0, 0.0, 0.0])
-    v[0] = -sin(yaw) * cos(pitch)
+    v[0] = sin(yaw) * cos(pitch)
     v[1] = sin(pitch)
-    v[2] = -cos(yaw) * cos(pitch)
+    v[2] = cos(yaw) * cos(pitch)
     return v
 
 
-def vec_to_euler(v):
+def vec_to_euler(v, eps: float = 1e-6):
     v = v.normalized()
     pitch = asin(v[1])
 
-    sin_yaw = -v[0] / cos(pitch)
-    cos_yaw = -v[2] / cos(pitch)
-
-    eps = 1e-6
+    sin_yaw = v[0] / cos(pitch)
+    cos_yaw = v[2] / cos(pitch)
 
     if abs(sin_yaw) < eps:
         yaw = 0
     else:
+        # fix math domain error due to float precision loss
+        cos_yaw = max(min(cos_yaw, 1.0), -1.0)
         yaw = acos(cos_yaw)
         if sin_yaw < 0:
             yaw = -yaw
@@ -66,17 +66,16 @@ class GGUINotAvailableException(Exception):
 
 
 def check_ggui_availability():
-    """Checks if the `GGUI` environment is available.
-    """
+    """Checks if the `GGUI` environment is available."""
     if _ti_core.GGUI_AVAILABLE:
         return
 
     try:
         # Try identifying the reason
         import taichi  # pylint: disable=import-outside-toplevel
+
         wheel_tag = try_get_wheel_tag(taichi)
-        if platform.system(
-        ) == "Linux" and wheel_tag and 'manylinux2014' in wheel_tag:
+        if platform.system() == "Linux" and wheel_tag and "manylinux2014" in wheel_tag:
             raise GGUINotAvailableException(
                 "GGUI is not available since you have installed a restricted version of taichi. "
                 "Please see yellow warning messages printed during startup for details."

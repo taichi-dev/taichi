@@ -6,7 +6,6 @@
 #include "taichi/rhi/dx/dx_device.h"
 #include "taichi/rhi/dx/dx_info_queue.h"
 #include "taichi/runtime/program_impls/dx/dx_program.h"
-#include "taichi/system/memory_pool.h"
 #include "tests/cpp/program/test_program.h"
 
 namespace taichi::lang {
@@ -38,8 +37,8 @@ TEST(Dx11DeviceCreationTest, CreateDeviceAndAllocateMemory) {
   params.size = 1048576;
   params.host_read = true;
   params.host_write = true;
-  const taichi::lang::DeviceAllocation device_alloc =
-      device->allocate_memory(params);
+  taichi::lang::DeviceAllocation device_alloc;
+  EXPECT_EQ(device->allocate_memory(params, &device_alloc), RhiResult::success);
 
   // The purpose of the device_alloc_guard is to rule out double free
   const taichi::lang::DeviceAllocationGuard device_alloc_guard(device_alloc);
@@ -126,8 +125,7 @@ TEST(Dx11StreamTest, CommandListTest) {
 TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   std::unique_ptr<directx11::Dx11Device> device =
       std::make_unique<directx11::Dx11Device>();
-  std::unique_ptr<MemoryPool> pool =
-      std::make_unique<MemoryPool>(Arch::dx11, device.get());
+
   std::unique_ptr<Dx11ProgramImpl> program =
       std::make_unique<Dx11ProgramImpl>(default_compile_config);
   /*
@@ -142,7 +140,7 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
         - Dx11Stream::submit_synced
   */
   uint64_t *result_buffer;
-  program->materialize_runtime(pool.get(), nullptr, &result_buffer);
+  program->materialize_runtime(nullptr, &result_buffer);
 
   TestProgram test_prog;
   test_prog.setup(Arch::dx11);
@@ -152,6 +150,8 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
 
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
+  ker->finalize_rets();
+  ker->finalize_params();
   program->compile(*program->config, ker.get());
 }
 

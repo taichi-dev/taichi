@@ -2,17 +2,24 @@
 
 set -x
 
-setup_python() {
-    for conda in .cache/build-cache/miniforge3 miniconda miniconda3 miniforge3; do
-        if [[ -d $HOME/$conda ]]; then
-            source $HOME/$conda/bin/activate
-            conda activate "$PY"
-            break
-        fi
-    done
-    python3 -m pip install -U pip
-    python3 -m pip uninstall taichi taichi-nightly -y
+function unset-git-caching-proxy {
+    echo "Unsetting git caching proxy"
+    git config --global --unset-all url.http://git-cdn-github.botmaster.tgr/.insteadOf || true
+    git config --global --unset-all url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf || true
 }
+
+function set-git-caching-proxy {
+    trap unset-git-caching-proxy EXIT
+    echo "Setting git caching proxy"
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf https://github.com/
+    git config --global --add url.http://git-cdn-github.botmaster.tgr/.insteadOf git@github.com:
+    git config --global --add url.http://git-cdn-gitlab.botmaster.tgr/.insteadOf https://gitlab.com/
+}
+
+if [ ! -z "$TI_USE_GIT_CACHE" ]; then
+    set-git-caching-proxy
+fi
+
 
 install_taichi_wheel() {
     if [ ! -z "$AMDGPU_TEST" ]; then
@@ -23,9 +30,10 @@ install_taichi_wheel() {
     if [ "$(uname -s):$(uname -m)" == "Darwin:arm64" ]; then
         # No FORTRAN compiler is currently working reliably on M1 Macs
         # We can't just pip install scipy, using conda instead
-        conda install -y scipy
+        conda install -n $PY -y scipy
     fi
 
+    python3 -m pip uninstall -y taichi taichi-nightly || true
     python3 -m pip install dist/*.whl
     if [ -z "$GPU_TEST" ]; then
         python3 -m pip install -r requirements_test.txt
@@ -51,42 +59,6 @@ install_taichi_wheel() {
             sysctl -a | grep machdep.cpu
         fi
     fi
-}
-
-function setup-sccache-local {
-    if [ -z $SCCACHE_ROOT ]; then
-        echo "Skipping sccache setup since SCCACHE_ROOT is not set"
-        return
-    fi
-
-    mkdir -p $SCCACHE_ROOT/{bin,cache}
-
-    export SCCACHE_DIR=$SCCACHE_ROOT/cache
-    export SCCACHE_CACHE_SIZE="10G"
-    export SCCACHE_LOG=error
-    export SCCACHE_ERROR_LOG=$SCCACHE_ROOT/sccache_error.log
-
-    echo "SCCACHE_ROOT: $SCCACHE_ROOT"
-
-    if [ ! -x $SCCACHE_ROOT/bin/sccache ]; then
-        if [[ $OSTYPE == "linux-"* ]]; then
-            wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-            tar -xzf sccache-v0.2.15-x86_64-unknown-linux-musl.tar.gz
-            mv sccache-v0.2.15-x86_64-unknown-linux-musl/* $SCCACHE_ROOT/bin
-        elif [[ $(uname -m) == "arm64" ]]; then
-            wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-aarch64-apple-darwin.tar.gz
-            tar -xzf sccache-v0.2.15-aarch64-apple-darwin.tar.gz
-            mv sccache-v0.2.15-aarch64-apple-darwin/* $SCCACHE_ROOT/bin
-        else
-            wget https://github.com/mozilla/sccache/releases/download/v0.2.15/sccache-v0.2.15-x86_64-apple-darwin.tar.gz
-            tar -xzf sccache-v0.2.15-x86_64-apple-darwin.tar.gz
-            mv sccache-v0.2.15-x86_64-apple-darwin/* $SCCACHE_ROOT/bin
-        fi
-        chmod +x $SCCACHE_ROOT/bin/sccache
-    fi
-
-    export PATH=$SCCACHE_ROOT/bin:$PATH
-    export TAICHI_CMAKE_ARGS="$TAICHI_CMAKE_ARGS -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache"
 }
 
 function clear-taichi-offline-cache {
@@ -156,6 +128,7 @@ function ci-docker-run {
         -e PY \
         -e PROJECT_NAME \
         -e LLVM_VERSION \
+        -e EXTRA_TEST_MARKERS \
         -e TAICHI_CMAKE_ARGS \
         -e IN_DOCKER=true \
         -e TI_CI=1 \

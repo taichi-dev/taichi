@@ -1,10 +1,8 @@
 import taichi as ti
 from tests import test_utils
 
-archs_excluded_fwd = [ti.cc]
 
-
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_ad_sum_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -36,17 +34,14 @@ def test_ad_sum_fwd():
         assert p.dual[i] == b[i]
         assert a.dual[i] == 0
 
-    with ti.ad.FwdMode(loss=p,
-                       param=a,
-                       seed=[1.0 for _ in range(N)],
-                       clear_gradients=False):
+    with ti.ad.FwdMode(loss=p, param=a, seed=[1.0 for _ in range(N)], clear_gradients=False):
         pass
 
     for i in range(N):
         assert p.dual[i] == b[i]
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_ad_sum_local_atomic_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -76,7 +71,7 @@ def test_ad_sum_local_atomic_fwd():
         assert p.dual[i] == b[i]
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_ad_power_fwd():
     N = 10
     a = ti.field(ti.f32, shape=N)
@@ -100,13 +95,13 @@ def test_ad_power_fwd():
         power()
 
     for i in range(N):
-        assert p[i] == 3**b[i]
+        assert p[i] == 3 ** b[i]
 
     for i in range(N):
-        assert p.dual[i] == b[i] * 3**(b[i] - 1)
+        assert p.dual[i] == b[i] * 3 ** (b[i] - 1)
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_ad_fibonacci_fwd():
     N = 15
     a = ti.field(ti.f32, shape=N)
@@ -145,7 +140,7 @@ def test_ad_fibonacci_fwd():
         assert f.dual[i] == f[i]
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_ad_fibonacci_index_fwd():
     N = 5
     M = 10
@@ -177,7 +172,7 @@ def test_ad_fibonacci_index_fwd():
         assert b[i] == is_fib * N
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_double_for_loops():
     N = 5
     a = ti.field(ti.f32, shape=N)
@@ -207,7 +202,7 @@ def test_double_for_loops():
         double_for()
 
     for i in range(N):
-        assert f.dual[i] == 2 * i * i * 2**(i - 1)
+        assert f.dual[i] == 2 * i * i * 2 ** (i - 1)
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
         double_for()
@@ -216,7 +211,7 @@ def test_double_for_loops():
         assert f.dual[i] == 2 * i
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_double_for_loops_more_nests():
     N = 6
     a = ti.field(ti.f32, shape=N, needs_dual=True)
@@ -247,7 +242,7 @@ def test_double_for_loops_more_nests():
 
     for i in range(N):
         for k in range(N // 2):
-            assert f[i, k] == 2 * (i + k) * (1 + 2**(i + k))
+            assert f[i, k] == 2 * (i + k) * (1 + 2 ** (i + k))
 
     with ti.ad.FwdMode(loss=f, param=a, seed=[1.0 for _ in range(N)]):
         double_for()
@@ -255,7 +250,7 @@ def test_double_for_loops_more_nests():
     for i in range(N):
         total_grad_a = 0
         for k in range(N // 2):
-            total_grad_a = 2 * (i + k)**2 * 2**(i + k - 1)
+            total_grad_a = 2 * (i + k) ** 2 * 2 ** (i + k - 1)
             assert f.dual[i, k] == total_grad_a
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(N)]):
@@ -268,7 +263,7 @@ def test_double_for_loops_more_nests():
             assert f.dual[i, k] == total_grad_b
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_complex_body():
     N = 5
     a = ti.field(ti.f32, shape=N, needs_dual=True)
@@ -307,7 +302,7 @@ def test_complex_body():
         assert f.dual[i] == g[i]
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_triple_for_loops_bls():
     N = 8
     M = 3
@@ -345,7 +340,7 @@ def test_triple_for_loops_bls():
 
     for i in range(N - M):
         for k in range(N):
-            assert f.dual[i, k] == 2 * M * M * 2**(M - 1)
+            assert f.dual[i, k] == 2 * M * M * 2 ** (M - 1)
 
     with ti.ad.FwdMode(loss=f, param=b, seed=[1.0 for _ in range(2 * N)]):
         triple_for()
@@ -355,7 +350,7 @@ def test_triple_for_loops_bls():
             assert f.dual[i, k] == 2 * M
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_mixed_inner_loops():
     x = ti.field(dtype=ti.f32, shape=(), needs_dual=True)
     arr = ti.field(dtype=ti.f32, shape=(5))
@@ -376,7 +371,7 @@ def test_mixed_inner_loops():
     assert loss.dual[None] == 15.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -401,7 +396,7 @@ def test_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_more_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -428,7 +423,7 @@ def test_more_inner_loops_local_variable():
     assert loss.dual[None] == 36.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_stacked_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -457,7 +452,7 @@ def test_stacked_inner_loops_local_variable():
     assert loss.dual[None] == 38.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -487,7 +482,7 @@ def test_stacked_mixed_ib_and_non_ib_inner_loops_local_variable():
     assert loss.dual[None] == 56.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_large_for_loops():
     x = ti.field(dtype=float, shape=(), needs_dual=True)
     arr = ti.field(dtype=float, shape=(2), needs_dual=True)
@@ -507,7 +502,7 @@ def test_large_for_loops():
     assert loss.dual[None] == 1e6
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -528,7 +523,7 @@ def test_multiple_ib():
     assert y.dual[None] == 12.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_multiple_outermost():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -554,7 +549,7 @@ def test_multiple_ib_multiple_outermost():
     assert y.dual[None] == 24.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_multiple_outermost_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -582,7 +577,7 @@ def test_multiple_ib_multiple_outermost_mixed():
     assert y.dual[None] == 42.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -607,7 +602,7 @@ def test_multiple_ib_mixed():
     assert y.dual[None] == 30.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_deeper():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)
@@ -633,7 +628,7 @@ def test_multiple_ib_deeper():
     assert y.dual[None] == 42.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_deeper_non_scalar():
     N = 10
     x = ti.field(float, shape=N, needs_dual=True)
@@ -660,7 +655,7 @@ def test_multiple_ib_deeper_non_scalar():
         assert y.dual[i] == i * 10.0
 
 
-@test_utils.test(exclude=archs_excluded_fwd)
+@test_utils.test()
 def test_multiple_ib_inner_mixed():
     x = ti.field(float, (), needs_dual=True)
     y = ti.field(float, (), needs_dual=True)

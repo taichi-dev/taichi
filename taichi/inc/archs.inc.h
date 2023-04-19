@@ -4,8 +4,6 @@
 PER_ARCH(x64)    // a.k.a. AMD64/x86_64
 PER_ARCH(arm64)  // a.k.a. Aarch64, WIP
 PER_ARCH(js)     // Javascript, N/A
-PER_ARCH(cc)     // C language, WIP
-PER_ARCH(wasm)   // WebAssembly
 
 // GPU archs
 PER_ARCH(cuda)    // NVIDIA CUDA

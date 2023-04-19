@@ -4,6 +4,7 @@
 #include "taichi/ir/offloaded_task_type.h"
 #include "taichi/ir/stmt_op_types.h"
 #include "taichi/rhi/arch.h"
+#include "taichi/rhi/device.h"
 #include "taichi/ir/mesh.h"
 
 #include <optional>
@@ -179,30 +180,26 @@ class ArgLoadStmt : public Stmt {
      ndarray, ...
 
      Therefore we need to add a field to indicate the type of the argument. For
-     now, only "is_ptr" and "field_dims" is needed.
+     now, only "is_ptr" is needed.
 
   */
   bool is_ptr;
 
   bool is_grad;
 
-  // field_dims of ndarray
-  int field_dims_ = 0;
+  bool create_load;
 
   ArgLoadStmt(int arg_id,
               const DataType &dt,
-              bool is_ptr = false,
-              bool is_grad = false)
-      : arg_id(arg_id) {
+              bool is_ptr,
+              bool is_grad,
+              bool create_load)
+      : arg_id(arg_id),
+        is_ptr(is_ptr),
+        is_grad(is_grad),
+        create_load(create_load) {
     this->ret_type = dt;
-    this->is_ptr = is_ptr;
-    this->is_grad = is_grad;
-    this->field_dims_ = -1;  // -1 means uninitialized
     TI_STMT_REG_FIELDS;
-  }
-
-  void set_extern_dims(int dims) {
-    this->field_dims_ = dims;
   }
 
   bool has_global_side_effect() const override {
@@ -350,6 +347,11 @@ class ExternalPtrStmt : public Stmt {
   // AOS: element_dim < 0
   // SOA: element_dim > 0
   int element_dim;
+
+  // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
 
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
@@ -790,7 +792,7 @@ class LocalStoreStmt : public Stmt, public ir_traits::Store {
 
   LocalStoreStmt(Stmt *dest, Stmt *val) : dest(dest), val(val) {
     TI_ASSERT(dest->is<AllocaStmt>() || dest->is<MatrixPtrStmt>() ||
-              dest->is<MatrixOfMatrixPtrStmt>());
+              dest->is<MatrixOfMatrixPtrStmt>() || dest->is<GetElementStmt>());
     TI_STMT_REG_FIELDS;
   }
 
@@ -852,10 +854,13 @@ class IfStmt : public Stmt {
 class PrintStmt : public Stmt {
  public:
   using EntryType = std::variant<Stmt *, std::string>;
-  std::vector<EntryType> contents;
+  using FormatType = std::optional<std::string>;
+  const std::vector<EntryType> contents;
+  const std::vector<FormatType> formats;
 
-  explicit PrintStmt(const std::vector<EntryType> &contents_)
-      : contents(contents_) {
+  PrintStmt(const std::vector<EntryType> &contents_,
+            const std::vector<FormatType> &formats_)
+      : contents(contents_), formats(formats_) {
     TI_STMT_REG_FIELDS;
   }
 
@@ -1271,6 +1276,10 @@ class GetChStmt : public Stmt {
   SNode *input_snode, *output_snode;
   int chid;
   bool is_bit_vectorized;
+  // irpass::vectorize_half2() will override the ret_type of GetChStmt.
+  // We use "overrided_dtype" to prevent type inference from
+  // irpass::type_check()
+  bool overrided_dtype = false;
 
   GetChStmt(Stmt *input_ptr, int chid, bool is_bit_vectorized = false);
   GetChStmt(Stmt *input_ptr,
@@ -1591,21 +1600,18 @@ class TexturePtrStmt : public Stmt {
   bool is_storage{false};
 
   // Optional, for storage textures
-  int num_channels{0};
-  DataType channel_format{PrimitiveType::f32};
+  BufferFormat format{0};
   int lod{0};
 
   explicit TexturePtrStmt(Stmt *stmt,
                           int dimensions,
                           bool is_storage,
-                          int num_channels,
-                          DataType channel_format,
+                          BufferFormat format,
                           int lod)
       : arg_load_stmt(stmt),
         dimensions(dimensions),
         is_storage(is_storage),
-        num_channels(num_channels),
-        channel_format(channel_format),
+        format(format),
         lod(lod) {
     TI_STMT_REG_FIELDS;
   }
@@ -1615,12 +1621,7 @@ class TexturePtrStmt : public Stmt {
     TI_STMT_REG_FIELDS;
   }
 
-  TI_STMT_DEF_FIELDS(arg_load_stmt,
-                     dimensions,
-                     is_storage,
-                     num_channels,
-                     channel_format,
-                     lod);
+  TI_STMT_DEF_FIELDS(arg_load_stmt, dimensions, is_storage, format, lod);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

@@ -149,14 +149,9 @@ class JITSessionCPU : public JITSession {
     return dl_;
   }
 
-  void global_optimize_module(llvm::Module *module) override {
-    global_optimize_module_cpu(module);
-  }
-
   JITModule *add_module(std::unique_ptr<llvm::Module> M, int max_reg) override {
     TI_ASSERT(max_reg == 0);  // No need to specify max_reg on CPUs
     TI_ASSERT(M);
-    global_optimize_module_cpu(M.get());
     std::lock_guard<std::mutex> _(mut_);
     auto dylib_expect = es_.createJITDylib(fmt::format("{}", module_counter_));
     TI_ASSERT(dylib_expect);
@@ -200,110 +195,10 @@ class JITSessionCPU : public JITSession {
       TI_ERROR("Function \"{}\" not found", Name);
     return (void *)(symbol->getAddress());
   }
-
- private:
-  void global_optimize_module_cpu(llvm::Module *module);
 };
 
 void *JITModuleCPU::lookup_function(const std::string &name) {
   return session_->lookup_in_module(dylib_, name);
-}
-
-void JITSessionCPU::global_optimize_module_cpu(llvm::Module *module) {
-  TI_AUTO_PROF
-  if (llvm::verifyModule(*module, &llvm::errs())) {
-    module->print(llvm::errs(), nullptr);
-    TI_ERROR("Module broken");
-  }
-
-  auto triple = get_host_target_info().first.getTargetTriple();
-
-  std::string err_str;
-  const llvm::Target *target =
-      TargetRegistry::lookupTarget(triple.str(), err_str);
-  TI_ERROR_UNLESS(target, err_str);
-
-  TargetOptions options;
-  if (this->config_.fast_math) {
-    options.AllowFPOpFusion = FPOpFusion::Fast;
-    options.UnsafeFPMath = 1;
-    options.NoInfsFPMath = 1;
-    options.NoNaNsFPMath = 1;
-  } else {
-    options.AllowFPOpFusion = FPOpFusion::Strict;
-    options.UnsafeFPMath = 0;
-    options.NoInfsFPMath = 0;
-    options.NoNaNsFPMath = 0;
-  }
-  options.HonorSignDependentRoundingFPMathOption = false;
-  options.NoZerosInBSS = false;
-  options.GuaranteedTailCallOpt = false;
-
-  legacy::FunctionPassManager function_pass_manager(module);
-  legacy::PassManager module_pass_manager;
-
-  llvm::StringRef mcpu = llvm::sys::getHostCPUName();
-  std::unique_ptr<TargetMachine> target_machine(target->createTargetMachine(
-      triple.str(), mcpu.str(), "", options, llvm::Reloc::PIC_,
-      llvm::CodeModel::Small, CodeGenOpt::Aggressive));
-
-  TI_ERROR_UNLESS(target_machine.get(), "Could not allocate target machine!");
-
-  module->setDataLayout(target_machine->createDataLayout());
-
-  module_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
-  function_pass_manager.add(createTargetTransformInfoWrapperPass(
-      target_machine->getTargetIRAnalysis()));
-
-  PassManagerBuilder b;
-  b.OptLevel = 3;
-  b.Inliner = createFunctionInliningPass(b.OptLevel, 0, false);
-  b.LoopVectorize = true;
-  b.SLPVectorize = true;
-
-  target_machine->adjustPassManager(b);
-
-  b.populateFunctionPassManager(function_pass_manager);
-  b.populateModulePassManager(module_pass_manager);
-
-  {
-    TI_PROFILER("llvm_function_pass");
-    function_pass_manager.doInitialization();
-    for (llvm::Module::iterator i = module->begin(); i != module->end(); i++)
-      function_pass_manager.run(*i);
-
-    function_pass_manager.doFinalization();
-  }
-
-  /*
-    Optimization for llvm::GetElementPointer:
-    https://github.com/taichi-dev/taichi/issues/5472 The three other passes
-    "loop-reduce", "ind-vars", "cse" serves as preprocessing for
-    "separate-const-offset-gep".
-
-    Note there's an update for "separate-const-offset-gep" in llvm-12.
-  */
-  module_pass_manager.add(llvm::createLoopStrengthReducePass());
-  module_pass_manager.add(llvm::createIndVarSimplifyPass());
-  module_pass_manager.add(llvm::createSeparateConstOffsetFromGEPPass(false));
-  module_pass_manager.add(llvm::createEarlyCSEPass(true));
-
-  {
-    TI_PROFILER("llvm_module_pass");
-    module_pass_manager.run(*module);
-  }
-
-  if (this->config_.print_kernel_llvm_ir_optimized) {
-    if (false) {
-      TI_INFO("Functions with > 100 instructions in optimized LLVM IR:");
-      TaichiLLVMContext::print_huge_functions(module);
-    }
-    static FileSequenceWriter writer(
-        "taichi_kernel_cpu_llvm_ir_optimized_{:04d}.ll",
-        "optimized LLVM IR (CPU)");
-    writer.write(module);
-  }
 }
 
 std::unique_ptr<JITSession> create_llvm_jit_session_cpu(

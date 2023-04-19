@@ -4,110 +4,19 @@
 #include <type_traits>
 
 #include "taichi/aot/module_data.h"
-#include "taichi/codegen/spirv/spirv_codegen.h"
+#include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/runtime/gfx/aot_graph_data.h"
 
 namespace taichi::lang {
 namespace gfx {
 
-namespace {
-class AotDataConverter {
- public:
-  static aot::ModuleData convert(const TaichiAotData &in) {
-    AotDataConverter c{};
-    return c.visit(in);
-  }
-
- private:
-  explicit AotDataConverter() = default;
-
-  aot::ModuleData visit(const TaichiAotData &in) const {
-    aot::ModuleData res{};
-    for (const auto &ker : in.kernels) {
-      auto val = visit(ker);
-      res.kernels[ker.name] = val;
-    }
-    res.fields = in.fields;
-    res.required_caps = in.required_caps;
-    res.root_buffer_size = in.root_buffer_size;
-    return res;
-  }
-
-  aot::CompiledTaichiKernel visit(
-      const spirv::TaichiKernelAttributes &in) const {
-    aot::CompiledTaichiKernel res{};
-    res.tasks.reserve(in.tasks_attribs.size());
-    for (const auto &t : in.tasks_attribs) {
-      res.tasks.push_back(visit(t));
-    }
-    res.args_count = in.ctx_attribs.args().size();
-    res.rets_count = in.ctx_attribs.rets().size();
-    res.args_buffer_size = in.ctx_attribs.args_bytes();
-    res.rets_buffer_size = in.ctx_attribs.rets_bytes();
-    for (const auto &arg : in.ctx_attribs.args()) {
-      if (!arg.is_array) {
-        aot::ScalarArg scalar_arg{};
-        scalar_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
-        scalar_arg.offset_in_args_buf = arg.offset_in_mem;
-        res.scalar_args[arg.index] = scalar_arg;
-      } else {
-        aot::ArrayArg arr_arg{};
-        arr_arg.dtype_name = PrimitiveType::get(arg.dtype).to_string();
-        arr_arg.field_dim = arg.field_dim;
-        arr_arg.element_shape = arg.element_shape;
-        arr_arg.shape_offset_in_args_buf = arg.index * sizeof(int32_t);
-        res.arr_args[arg.index] = arr_arg;
-      }
-    }
-    return res;
-  }
-
-  aot::CompiledOffloadedTask visit(const TaskAttributes &in) const {
-    aot::CompiledOffloadedTask res{};
-    res.type = offloaded_task_type_name(in.task_type);
-    res.name = in.name;
-    if (in.range_for_attribs && in.range_for_attribs->const_begin &&
-        in.range_for_attribs->const_end) {
-      res.range_hint = std::to_string(in.range_for_attribs->end -
-                                      in.range_for_attribs->begin);
-    }
-    res.gpu_block_size = in.advisory_num_threads_per_group;
-    for (auto &buffer_bind : in.buffer_binds) {
-      if (buffer_bind.buffer.type == BufferType::Root) {
-        res.buffer_binds.push_back(
-            {{aot::BufferType::Root, buffer_bind.buffer.root_id},
-             buffer_bind.binding});
-      } else if (buffer_bind.buffer.type == BufferType::Rets) {
-        res.buffer_binds.push_back(
-            {{aot::BufferType::Rets, buffer_bind.buffer.root_id},
-             buffer_bind.binding});
-      } else if (buffer_bind.buffer.type == BufferType::GlobalTmps) {
-        res.buffer_binds.push_back(
-            {{aot::BufferType::GlobalTmps, buffer_bind.buffer.root_id},
-             buffer_bind.binding});
-      } else if (buffer_bind.buffer.type == BufferType::Args) {
-        res.buffer_binds.push_back(
-            {{aot::BufferType::Args, buffer_bind.buffer.root_id},
-             buffer_bind.binding});
-      }
-    }
-
-    for (auto &texture_bind : in.texture_binds) {
-      res.texture_binds.push_back(
-          {texture_bind.arg_id, texture_bind.binding, texture_bind.is_storage});
-    }
-    return res;
-  }
-};
-
-}  // namespace
 AotModuleBuilderImpl::AotModuleBuilderImpl(
-    const std::vector<CompiledSNodeStructs> &compiled_structs,
-    Arch device_api_backend,
+    const std::vector<spirv::CompiledSNodeStructs> &compiled_structs,
+    KernelCompilationManager &compilation_manager,
     const CompileConfig &compile_config,
     const DeviceCapabilityConfig &caps)
     : compiled_structs_(compiled_structs),
-      device_api_backend_(device_api_backend),
+      compilation_manager_(compilation_manager),
       config_(compile_config),
       caps_(caps) {
   for (const auto &pair : caps.to_inner()) {
@@ -162,12 +71,14 @@ void AotModuleBuilderImpl::dump(const std::string &output_dir,
 
 void AotModuleBuilderImpl::add_per_backend(const std::string &identifier,
                                            Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
-                              compiled_structs_, config_);
-  compiled.kernel_attribs.name = identifier;
-  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+  const auto &ckd =
+      compilation_manager_.load_or_compile(config_, caps_, *kernel);
+  const auto &spirv_ckd = dynamic_cast<const spirv::CompiledKernelData &>(ckd);
+
+  auto compiled = spirv_ckd.get_internal_data();
+  compiled.metadata.kernel_attribs.name = identifier;
+  ti_aot_data_.kernels.push_back(compiled.metadata.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.src.spirv_src);
 }
 
 void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
@@ -204,12 +115,14 @@ void AotModuleBuilderImpl::add_field_per_backend(const std::string &identifier,
 void AotModuleBuilderImpl::add_per_backend_tmpl(const std::string &identifier,
                                                 const std::string &key,
                                                 Kernel *kernel) {
-  spirv::lower(config_, kernel);
-  auto compiled = run_codegen(kernel, device_api_backend_, caps_,
-                              compiled_structs_, config_);
-  compiled.kernel_attribs.name = identifier + "|" + key;
-  ti_aot_data_.kernels.push_back(compiled.kernel_attribs);
-  ti_aot_data_.spirv_codes.push_back(compiled.task_spirv_source_codes);
+  const auto &ckd =
+      compilation_manager_.load_or_compile(config_, caps_, *kernel);
+  const auto &spirv_ckd = dynamic_cast<const spirv::CompiledKernelData &>(ckd);
+
+  auto compiled = spirv_ckd.get_internal_data();
+  compiled.metadata.kernel_attribs.name = identifier + "|" + key;
+  ti_aot_data_.kernels.push_back(compiled.metadata.kernel_attribs);
+  ti_aot_data_.spirv_codes.push_back(compiled.src.spirv_src);
 }
 
 }  // namespace gfx

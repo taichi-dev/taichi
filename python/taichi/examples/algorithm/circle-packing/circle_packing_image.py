@@ -2,11 +2,11 @@
 Given an input image, redraw it with circle packings.
 """
 try:
-    import cairocffi as cairo
+    import cairo
     import cv2
 except:
     raise ImportError(
-        "This example depends on opencv and cairocffi, please run 'pip install opencv-python cairocffi' to install."
+        "This example depends on opencv and cairo, please run 'pip install opencv-python pycairo' to install."
     )
 
 import os
@@ -35,9 +35,11 @@ ti.root.dynamic(ti.i, 100000, chunk_size=64).place(circles)
 def load_image(imgfile):
     image = cv2.imread(imgfile)
     h, w = image.shape[:2]
-    image = cv2.resize(image,
-                       (int(_internal_scale * w), int(_internal_scale * h)),
-                       interpolation=cv2.INTER_AREA)
+    image = cv2.resize(
+        image,
+        (int(_internal_scale * w), int(_internal_scale * h)),
+        interpolation=cv2.INTER_AREA,
+    )
     return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
@@ -49,8 +51,12 @@ def get_dist_transform_image(image):
 
 
 @ti.kernel
-def add_new_circles(filled: ti.types.ndarray(), dist_image: ti.types.ndarray(),
-                    min_radius: int, max_radius: int) -> int:
+def add_new_circles(
+    filled: ti.types.ndarray(),
+    dist_image: ti.types.ndarray(),
+    min_radius: int,
+    max_radius: int,
+) -> int:
     H, W = dist_image.shape[0], dist_image.shape[1]
     ti.loop_config(serialize=True)
     for x in range(min_radius, W - min_radius):
@@ -62,7 +68,7 @@ def add_new_circles(filled: ti.types.ndarray(), dist_image: ti.types.ndarray(),
                 if not filled[y, x] and r <= x < W - r and r <= y < H - r:
                     for ii in range(x - r, x + r + 1):
                         for jj in range(y - r, y + r + 1):
-                            if (ii - x)**2 + (jj - y)**2 < (r + 1)**2:
+                            if (ii - x) ** 2 + (jj - y) ** 2 < (r + 1) ** 2:
                                 if filled[jj, ii]:
                                     valid = False
                                     break
@@ -73,7 +79,7 @@ def add_new_circles(filled: ti.types.ndarray(), dist_image: ti.types.ndarray(),
                         circles.append(Circle(x, y, r))
                         for ii in range(x - r, x + r + 1):
                             for jj in range(y - r, y + r + 1):
-                                if (ii - x)**2 + (jj - y)**2 < (r + 1)**2:
+                                if (ii - x) ** 2 + (jj - y) ** 2 < (r + 1) ** 2:
                                     filled[jj, ii] = 1
 
     return circles.length()
@@ -117,17 +123,16 @@ def process(imgfile, scale):
     h = int(H / _internal_scale * scale)
     result = cv2.resize(result, (w, h), interpolation=cv2.INTER_CUBIC)
     plt.tight_layout()
-    plt.axis('off')
+    plt.axis("off")
     plt.imshow(result)
     plt.show()
 
 
 def main(imgfile=None, scale=2):
     if imgfile is None:
-        imgfile = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                               'taichi_logo.png')
+        imgfile = os.path.join(os.path.dirname(os.path.realpath(__file__)), "taichi_logo.png")
     process(imgfile, scale)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

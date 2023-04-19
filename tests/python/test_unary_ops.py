@@ -1,14 +1,13 @@
 import numpy as np
 import pytest
+from taichi.lang.exception import TaichiTypeError
 
 import taichi as ti
 from tests import test_utils
 
 
 def _test_op(dt, taichi_op, np_op):
-    print('arch={} default_fp={}'.format(
-        ti.lang.impl.current_cfg().arch,
-        ti.lang.impl.current_cfg().default_fp))
+    print("arch={} default_fp={}".format(ti.lang.impl.current_cfg().arch, ti.lang.impl.current_cfg().default_fp))
     n = 4
     val = ti.field(dt, shape=n)
 
@@ -27,9 +26,11 @@ def _test_op(dt, taichi_op, np_op):
         if dt == ti.f64:
             assert abs(np_op(float(f(i))) - val[i]) < 1e-15
         else:
-            assert abs(np_op(float(f(i))) -
-                       val[i]) < 1e-6 if ti.lang.impl.current_cfg(
-                       ).arch not in (ti.opengl, ti.gles, ti.vulkan) else 1e-5
+            assert (
+                abs(np_op(float(f(i))) - val[i]) < 1e-6
+                if ti.lang.impl.current_cfg().arch not in (ti.opengl, ti.gles, ti.vulkan)
+                else 1e-5
+            )
 
 
 op_pairs = [
@@ -54,3 +55,90 @@ def test_trig_f32(taichi_op, np_op):
 @test_utils.test(require=ti.extension.data64, default_fp=ti.f64)
 def test_trig_f64(taichi_op, np_op):
     _test_op(ti.f64, taichi_op, np_op)
+
+
+@test_utils.test()
+def test_bit_not_invalid():
+    @ti.kernel
+    def test(x: ti.f32) -> ti.i32:
+        return ~x
+
+    with pytest.raises(TaichiTypeError, match=r"takes integral inputs only"):
+        test(1.0)
+
+
+@test_utils.test()
+def test_logic_not_invalid():
+    @ti.kernel
+    def test(x: ti.f32) -> ti.i32:
+        return not x
+
+    with pytest.raises(TaichiTypeError, match=r"takes integral inputs only"):
+        test(1.0)
+
+
+@test_utils.test(arch=[ti.cuda, ti.vulkan, ti.opengl, ti.metal])
+def test_frexp():
+    @ti.kernel
+    def get_frac(x: ti.f32) -> ti.f32:
+        a, b = ti.frexp(x)
+        return a
+
+    assert test_utils.allclose(get_frac(1.4), 0.7)
+
+    @ti.kernel
+    def get_exp(x: ti.f32) -> ti.i32:
+        a, b = ti.frexp(x)
+        return b
+
+    assert get_exp(1.4) == 1
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan])
+def test_popcnt():
+    @ti.kernel
+    def test_i32(x: ti.int32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    @ti.kernel
+    def test_i64(x: ti.int64) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    @ti.kernel
+    def test_u32(x: ti.uint32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    @ti.kernel
+    def test_u64(x: ti.uint64) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    assert test_i32(100) == 3
+    assert test_i32(1000) == 6
+    assert test_i32(10000) == 5
+    assert test_i64(100) == 3
+    assert test_i64(1000) == 6
+    assert test_i64(10000) == 5
+    assert test_u32(100) == 3
+    assert test_u32(1000) == 6
+    assert test_u32(10000) == 5
+    assert test_u64(100) == 3
+    assert test_u64(1000) == 6
+    assert test_i64(10000) == 5
+
+
+@test_utils.test(arch=[ti.metal])
+def test_popcnt():
+    @ti.kernel
+    def test_i32(x: ti.int32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    @ti.kernel
+    def test_u32(x: ti.uint32) -> ti.int32:
+        return ti.math.popcnt(x)
+
+    assert test_i32(100) == 3
+    assert test_i32(1000) == 6
+    assert test_i32(10000) == 5
+    assert test_u32(100) == 3
+    assert test_u32(1000) == 6
+    assert test_u32(10000) == 5

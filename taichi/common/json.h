@@ -43,7 +43,7 @@ class JsonException : public std::exception {
   std::string msg_;
 
  public:
-  explicit JsonException(const char *msg) : msg_(msg) {
+  explicit JsonException(std::string_view msg) : msg_(msg) {
   }
   const char *what() const noexcept override {
     return msg_.c_str();

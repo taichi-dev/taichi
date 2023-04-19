@@ -82,6 +82,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dt);
     emit(expr->arg_id);
     emit(expr->is_ptr);
+    emit(expr->create_load);
   }
 
   void visit(TexturePtrExpression *expr) override {
@@ -89,8 +90,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->arg_id);
     emit(expr->num_dims);
     emit(expr->is_storage);
-    emit(expr->num_channels);
-    emit(expr->channel_format);
+    emit(expr->format);
     emit(expr->lod);
   }
 
@@ -142,6 +142,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
     emit(expr->dim);
     emit(expr->arg_id);
     emit(expr->element_dim);
+    emit(expr->is_grad);
   }
 
   void visit(FieldExpression *expr) override {
@@ -346,6 +347,14 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
         emit(std::get<Expr>(c));
       } else {
         emit(std::get<std::string>(c));
+      }
+    }
+    for (const auto &f : stmt->formats) {
+      emit(static_cast<std::uint8_t>(f.has_value()));
+      if (f.has_value()) {
+        emit(f.value());
+      } else {
+        emit(0);
       }
     }
   }
@@ -635,6 +644,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   DEFINE_EMIT_ENUM(mesh::MeshRelationType);
   DEFINE_EMIT_ENUM(mesh::ConvType);
   DEFINE_EMIT_ENUM(SNodeGradType);
+  DEFINE_EMIT_ENUM(BufferFormat);
 
 #undef DEFINE_EMIT_ENUM
 

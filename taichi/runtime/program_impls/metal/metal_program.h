@@ -8,7 +8,6 @@
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 
-#include "taichi/system/memory_pool.h"
 #include "taichi/common/logging.h"
 #include "taichi/struct/snode_tree.h"
 #include "taichi/program/snode_expr_utils.h"
@@ -20,8 +19,6 @@ namespace taichi::lang {
 class MetalProgramImpl : public ProgramImpl {
  public:
   explicit MetalProgramImpl(CompileConfig &config);
-  FunctionType compile(const CompileConfig &compile_config,
-                       Kernel *kernel) override;
 
   std::size_t get_snode_num_dynamically_allocated(
       SNode *snode,
@@ -31,8 +28,7 @@ class MetalProgramImpl : public ProgramImpl {
 
   void compile_snode_tree_types(SNodeTree *tree) override;
 
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;
 
   void materialize_snode_tree(SNodeTree *tree, uint64 *result_buffer) override;
@@ -91,8 +87,28 @@ class MetalProgramImpl : public ProgramImpl {
 
   ~MetalProgramImpl() override;
 
+  // TODO: These three functions are the same in Vulkan, Metal, DX and OpenGL.
+  //   We should add a GfxProgramImpl base class for these functions.
+  std::pair<const StructType *, size_t> get_struct_type_with_data_layout(
+      const StructType *old_ty,
+      const std::string &layout) override {
+    return gfx::GfxRuntime::get_struct_type_with_data_layout(old_ty, layout);
+  }
+
+  std::string get_kernel_return_data_layout() override {
+    return "4-";
+  };
+
+  std::string get_kernel_argument_data_layout() override {
+    auto has_buffer_ptr = gfx_runtime_->get_ti_device()->get_caps().get(
+        DeviceCapability::spirv_has_physical_storage_buffer);
+    return "1" + std::string(has_buffer_ptr ? "b" : "-");
+  };
+
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
+  std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
+  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::unique_ptr<metal::MetalDevice> embedded_device_{nullptr};

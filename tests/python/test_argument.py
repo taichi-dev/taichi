@@ -4,29 +4,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=[ti.cc])
-def test_exceed_max_eight():
-    @ti.kernel
-    def foo1(a: ti.i32, b: ti.i32, c: ti.i32, d: ti.i32, e: ti.i32, f: ti.i32,
-             g: ti.i32, h: ti.i32) -> ti.i32:
-        return a + b + c + d + e + f + g + h
-
-    assert foo1(1, 2, 3, 4, 5, 6, 7, 8) == 36
-
-    @ti.kernel
-    def foo2(a: ti.i32, b: ti.i32, c: ti.i32, d: ti.i32, e: ti.i32, f: ti.i32,
-             g: ti.i32, h: ti.i32, i: ti.i32) -> ti.i32:
-        return a + b + c + d + e + f + g + h + i
-
-    with pytest.raises(
-            ti.TaichiRuntimeError,
-            match=
-            f"The number of elements in kernel arguments is too big! Do not exceed 8 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
-    ):
-        foo2(1, 2, 3, 4, 5, 6, 7, 8, 9)
-
-
-@test_utils.test(exclude=[ti.opengl, ti.gles, ti.cc])
+@test_utils.test(exclude=[ti.opengl, ti.gles])
 def test_exceed_max_64():
     N = 64
 
@@ -46,9 +24,8 @@ def test_exceed_max_64():
     A = ti.Vector([1] * N)
 
     with pytest.raises(
-            ti.TaichiRuntimeError,
-            match=
-            f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend."
+        ti.TaichiRuntimeError,
+        match=f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend.",
     ):
         foo2(A)
 
@@ -178,14 +155,12 @@ def test_function_keyword_args_duplicate():
     def duplicate():
         foo(1, a=3, b=3)
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match="Multiple values for argument 'a'"):
+    with pytest.raises(ti.TaichiSyntaxError, match="Multiple values for argument 'a'"):
         duplicate()
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_args_with_many_ndarrays():
-
     particle_num = 0
     cluster_num = 0
     permu_num = 0
@@ -206,9 +181,11 @@ def test_args_with_many_ndarrays():
 
     @ti.kernel
     def ti_import_cluster_data(
-        center: ti.types.vector(3,
-                                ti.f32), particle_num: int, cluster_num: int,
-        permu_num: int, particlePosition: ti.types.ndarray(ndim=1),
+        center: ti.types.vector(3, ti.f32),
+        particle_num: int,
+        cluster_num: int,
+        permu_num: int,
+        particlePosition: ti.types.ndarray(ndim=1),
         outClusterPosition: ti.types.ndarray(ndim=1),
         outClusterOffsets: ti.types.ndarray(ndim=1),
         outClusterSizes: ti.types.ndarray(ndim=1),
@@ -218,17 +195,41 @@ def test_args_with_many_ndarrays():
         particle_rest_pos: ti.types.ndarray(ndim=1),
         cluster_rest_mass_center: ti.types.ndarray(ndim=1),
         cluster_begin: ti.types.ndarray(ndim=1),
-        particle_index: ti.types.ndarray(ndim=1)):
-
+        particle_index: ti.types.ndarray(ndim=1),
+    ):
         added_permu_num = outClusterIndices.shape[0]
 
         for i in range(added_permu_num):
             particle_index[i] = 1.0
 
     center = ti.math.vec3(0, 0, 0)
-    ti_import_cluster_data(center, particle_num, cluster_num, permu_num,
-                           particlePosition, outClusterPosition,
-                           outClusterOffsets, outClusterSizes,
-                           outClusterIndices, particle_pos, particle_prev_pos,
-                           particle_rest_pos, cluster_rest_mass_center,
-                           cluster_begin, particle_index)
+    ti_import_cluster_data(
+        center,
+        particle_num,
+        cluster_num,
+        permu_num,
+        particlePosition,
+        outClusterPosition,
+        outClusterOffsets,
+        outClusterSizes,
+        outClusterIndices,
+        particle_pos,
+        particle_prev_pos,
+        particle_rest_pos,
+        cluster_rest_mass_center,
+        cluster_begin,
+        particle_index,
+    )
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda])
+def test_struct_arg():
+    s0 = ti.types.struct(a=ti.i16, b=ti.f64)
+    s1 = ti.types.struct(a=ti.f32, b=s0)
+
+    @ti.kernel
+    def foo(a: s1) -> ti.f32:
+        return a.a + a.b.a + a.b.b
+
+    ret = foo(s1(a=1, b=s0(a=65537, b=123)))
+    assert ret == pytest.approx(125)

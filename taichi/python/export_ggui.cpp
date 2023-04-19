@@ -25,6 +25,12 @@ namespace py = pybind11;
 #include "taichi/program/ndarray.h"
 #include <memory>
 
+#ifndef TI_WITH_LLVM
+#if defined(_WIN64)
+typedef signed __int64 ssize_t;
+#endif /* _WIN64 */
+#endif /* TI_WITH_LLVM */
+
 namespace taichi::ui {
 
 using namespace taichi::lang;

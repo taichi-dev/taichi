@@ -50,7 +50,7 @@ def test_from_numpy_2d():
 @test_utils.test()
 def test_to_numpy_struct():
     n = 16
-    f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+    f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n,))
 
     for i in range(n):
         f[i].a = i
@@ -66,7 +66,7 @@ def test_to_numpy_struct():
 @test_utils.test()
 def test_from_numpy_struct():
     n = 16
-    f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n, ))
+    f = ti.Struct.field({"a": ti.i32, "b": ti.f32}, shape=(n,))
 
     arr_dict = {
         "a": np.arange(n, dtype=np.int32),
@@ -162,7 +162,7 @@ def test_numpy_io_example():
     # For PyTorch tensors, use to_torch/from_torch instead
 
 
-@test_utils.test(exclude=[ti.cc])
+@test_utils.test()
 def test_from_numpy_non_contiguous():
     n = 9
     m = 7

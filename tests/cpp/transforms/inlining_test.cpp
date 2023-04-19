@@ -36,6 +36,7 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
   func->insert_scalar_param(get_data_type<int>());
   func->insert_ret(get_data_type<int>());
   func->set_function_body(std::move(func_body));
+  func->finalize_params();
   func->finalize_rets();
 
   // def kernel(x: ti.i32) -> ti.i32:
@@ -51,8 +52,7 @@ TEST_F(InliningTest, ArgLoadOfArgLoad) {
   irpass::type_check(kernel_block, CompileConfig());
 
   irpass::inlining(kernel_block, CompileConfig(), {});
-  irpass::full_simplify(kernel_block, CompileConfig(),
-                        {false, false, prog_.get()});
+  irpass::full_simplify(kernel_block, CompileConfig(), {false, false});
 
   EXPECT_EQ(kernel_block->size(), 4);
   EXPECT_TRUE(irpass::analysis::same_statements(func_block, kernel_block));

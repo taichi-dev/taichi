@@ -10,39 +10,28 @@ from tests import test_utils
 archs_support_f16 = [ti.cpu, ti.cuda, ti.vulkan]
 
 
-def skip_if_not_supported(f):
-    def wrapper(*args, **kwargs):
-        try:
-            return f(*args, **kwargs)
-        except RuntimeError as e:
-            if 'Type f16 not supported' in str(e):
-                pytest.skip('f16 not supported')
-
-    return wrapper
-
-
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_snode_read_write():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
+    assert x[None] == test_utils.approx(0.3, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_float16():
     dtype = ti.float16
     x = ti.field(dtype, shape=())
     x[None] = 0.3
     print(x[None])
-    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
+    assert x[None] == test_utils.approx(0.3, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_to_numpy():
     n = 16
     x = ti.field(ti.f16, shape=n)
@@ -55,11 +44,11 @@ def test_to_numpy():
     init()
     y = x.to_numpy()
     for i in range(n):
-        assert (y[i] == 2 * i)
+        assert y[i] == 2 * i
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_from_numpy():
     n = 16
     y = ti.field(dtype=ti.f16, shape=n)
@@ -74,11 +63,11 @@ def test_from_numpy():
     init()
     z = y.to_numpy()
     for i in range(n):
-        assert (z[i] == i * 3)
+        assert z[i] == i * 3
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@skip_if_not_supported
+@pytest.mark.sm70
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_f16)
 def test_to_torch():
     n = 16
@@ -93,14 +82,15 @@ def test_to_torch():
     y = x.to_torch()
     print(y)
     for i in range(n):
-        assert (y[i] == 2 * i)
+        assert y[i] == 2 * i
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
-@skip_if_not_supported
+@pytest.mark.sm70
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_f16)
 def test_from_torch():
     import torch
+
     n = 16
     y = ti.field(dtype=ti.f16, shape=n)
     # torch doesn't have rand implementation for float16 so we need to create float first and then convert
@@ -115,14 +105,15 @@ def test_from_torch():
     init()
     z = y.to_torch()
     for i in range(n):
-        assert (z[i] == i * 3)
+        assert z[i] == i * 3
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
-@skip_if_not_supported
+@pytest.mark.sm70
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=archs_support_f16, exclude=[ti.vulkan, ti.dx11])
 def test_to_paddle():
     import paddle
+
     n = 16
     x = ti.field(ti.f16, shape=n)
 
@@ -137,14 +128,15 @@ def test_to_paddle():
     y = y.cast(paddle.float32)
     print(y)
     for i in range(n):
-        assert (y[i] == 2 * i)
+        assert y[i] == 2 * i
 
 
-@pytest.mark.skipif(not has_paddle(), reason='Paddle not installed.')
-@skip_if_not_supported
+@pytest.mark.sm70
+@pytest.mark.skipif(not has_paddle(), reason="Paddle not installed.")
 @test_utils.test(arch=archs_support_f16, exclude=[ti.vulkan, ti.dx11])
 def test_from_paddle():
     import paddle
+
     n = 16
     y = ti.field(dtype=ti.f16, shape=n)
     # paddle doesn't have arrange implementation for float16 so we need to create other type first and then convert
@@ -161,11 +153,11 @@ def test_from_paddle():
     # paddle's operator slice doesn't have kernel for f16, so cast to f32
     z = z.cast(paddle.float32)
     for i in range(n):
-        assert (z[i] == i * 3)
+        assert z[i] == i * 3
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_binary_op():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -181,11 +173,11 @@ def test_binary_op():
     z[None] = 0.72
     add()
     u = x.to_numpy()
-    assert (u[None] == test_utils.approx(0.6624, rel=1e-3))
+    assert u[None] == test_utils.approx(0.6624, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_rand_promote():
     dtype = ti.f16
     x = ti.field(dtype, shape=(4, 4))
@@ -199,8 +191,8 @@ def test_rand_promote():
     init()
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_unary_op():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -214,12 +206,12 @@ def test_unary_op():
 
     y[None] = -1.4
     foo()
-    assert (x[None] == test_utils.approx(1, rel=1e-3))
-    assert (y[None] == test_utils.approx(-1, rel=1e-3))
+    assert x[None] == test_utils.approx(1, rel=1e-3)
+    assert y[None] == test_utils.approx(-1, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_extra_unary_promote():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
@@ -231,11 +223,11 @@ def test_extra_unary_promote():
 
     y[None] = -0.3
     foo()
-    assert (x[None] == test_utils.approx(0.3, rel=1e-3))
+    assert x[None] == test_utils.approx(0.3, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16, exclude=ti.vulkan)
-@skip_if_not_supported
 def test_binary_extra_promote():
     x = ti.field(dtype=ti.f16, shape=())
     y = ti.field(dtype=ti.f16, shape=())
@@ -243,39 +235,39 @@ def test_binary_extra_promote():
 
     @ti.kernel
     def foo():
-        y[None] = x[None]**2
+        y[None] = x[None] ** 2
         z[None] = ti.atan2(y[None], 0.3)
 
     x[None] = 0.1
     foo()
-    assert (z[None] == test_utils.approx(math.atan2(0.1**2, 0.3), rel=1e-3))
+    assert z[None] == test_utils.approx(math.atan2(0.1**2, 0.3), rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_arg_f16():
     dtype = ti.f16
     x = ti.field(dtype, shape=())
     y = ti.field(dtype, shape=())
 
     @ti.kernel
-    def foo(a: ti.f16):
-        x[None] = y[None] + a
+    def foo(a: ti.f16, b: ti.f32, c: ti.f16):
+        x[None] = y[None] + a + b + c
 
     y[None] = -0.3
-    foo(1.2)
-    assert (x[None] == test_utils.approx(0.9, rel=1e-3))
+    foo(0.3, 0.4, 0.5)
+    assert x[None] == test_utils.approx(0.9, rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_fractal_f16():
     n = 320
     pixels = ti.field(dtype=ti.f16, shape=(n * 2, n))
 
     @ti.func
     def complex_sqr(z):
-        return ti.Vector([z[0]**2 - z[1]**2, z[1] * z[0] * 2], dt=ti.f16)
+        return ti.Vector([z[0] ** 2 - z[1] ** 2, z[1] * z[0] * 2], dt=ti.f16)
 
     @ti.kernel
     def paint(t: float):
@@ -292,8 +284,8 @@ def test_fractal_f16():
 
 
 # TODO(): Vulkan support
+@pytest.mark.sm70
 @test_utils.test(arch=[ti.cpu, ti.cuda])
-@skip_if_not_supported
 def test_atomic_add_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -309,12 +301,12 @@ def test_atomic_add_f16():
                 f[1] = f[1] + 1.12
 
     foo()
-    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
+    assert f[0] == test_utils.approx(f[1], rel=1e-3)
 
 
 # TODO(): Vulkan support
+@pytest.mark.sm70
 @test_utils.test(arch=[ti.cpu, ti.cuda])
-@skip_if_not_supported
 def test_atomic_max_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -330,12 +322,12 @@ def test_atomic_max_f16():
                 f[1] = ti.max(1.12 * i, f[1])
 
     foo()
-    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
+    assert f[0] == test_utils.approx(f[1], rel=1e-3)
 
 
 # TODO(): Vulkan support
+@pytest.mark.sm70
 @test_utils.test(arch=[ti.cpu, ti.cuda])
-@skip_if_not_supported
 def test_atomic_min_f16():
     f = ti.field(dtype=ti.f16, shape=(2))
 
@@ -351,11 +343,11 @@ def test_atomic_min_f16():
                 f[1] = ti.min(-3.13 * i, f[1])
 
     foo()
-    assert (f[0] == test_utils.approx(f[1], rel=1e-3))
+    assert f[0] == test_utils.approx(f[1], rel=1e-3)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16)
-@skip_if_not_supported
 def test_cast_f32_to_f16():
     @ti.kernel
     def func() -> ti.f16:
@@ -366,8 +358,8 @@ def test_cast_f32_to_f16():
     assert func() == pytest.approx(23.0 * 4.0, 1e-4)
 
 
+@pytest.mark.sm70
 @test_utils.test(arch=archs_support_f16, require=ti.extension.data64)
-@skip_if_not_supported
 def test_cast_f64_to_f16():
     @ti.kernel
     def func() -> ti.f16:
@@ -376,3 +368,40 @@ def test_cast_f64_to_f16():
         return ti.cast(a * b, ti.f16)
 
     assert func() == pytest.approx(23.0 * 4.0, 1e-4)
+
+
+@pytest.mark.sm70
+@test_utils.test(arch=[ti.cuda], half2_vectorization=True)
+def test_half2_vectorize():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    table = half2.field(shape=(40), needs_grad=True)
+    embeddings = half2.field(shape=(40, 16), needs_grad=True)
+    B = 1
+
+    @ti.kernel
+    def test(B: ti.i32):
+        for i, level in ti.ndrange(B, 16):
+            w = 4.0
+            local_feature = ti.Vector([ti.f16(0.0), ti.f16(0.0)])
+            for index in ti.static(range(64)):
+                local_feature += w * table[index]
+
+            embeddings[i, level] = local_feature
+
+    test(B)
+
+    for i in range(10):
+        test.grad(B)
+
+    ti.sync()
+
+    for i in range(40):
+        for j in range(16):
+            embeddings.grad[i, j] = half2(1.0)
+
+    for i in range(1000):
+        test.grad(B)
+    ti.sync()
+
+    assert (table.grad.to_numpy() == 64).all()

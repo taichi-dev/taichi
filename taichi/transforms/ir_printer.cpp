@@ -252,12 +252,20 @@ class IRPrinter : public IRVisitor {
 
   void visit(FrontendPrintStmt *print_stmt) override {
     std::vector<std::string> contents;
-    for (auto const &c : print_stmt->contents) {
+    for (auto i = 0; i != print_stmt->contents.size(); ++i) {
+      auto const &c = print_stmt->contents[i];
+      auto const &f = print_stmt->formats[i];
+
       std::string name;
       if (std::holds_alternative<Expr>(c))
         name = expr_to_string(std::get<Expr>(c).expr.get());
       else
         name = c_quoted(std::get<std::string>(c));
+
+      if (f.has_value()) {
+        name += ":";
+        name += f.value();
+      }
       contents.push_back(name);
     }
     print("print {}", fmt::join(contents, ", "));
@@ -265,12 +273,20 @@ class IRPrinter : public IRVisitor {
 
   void visit(PrintStmt *print_stmt) override {
     std::vector<std::string> names;
-    for (auto const &c : print_stmt->contents) {
+    for (auto i = 0; i != print_stmt->contents.size(); ++i) {
+      auto const &c = print_stmt->contents[i];
+      auto const &f = print_stmt->formats[i];
+
       std::string name;
       if (std::holds_alternative<Stmt *>(c))
         name = std::get<Stmt *>(c)->name();
       else
         name = c_quoted(std::get<std::string>(c));
+
+      if (f.has_value()) {
+        name += ":";
+        name += f.value();
+      }
       names.push_back(name);
     }
     print("print {}", fmt::join(names, ", "));
@@ -303,7 +319,8 @@ class IRPrinter : public IRVisitor {
       args += expr_to_string(stmt->args.exprs[i]);
     }
     print("{}${} = call \"{}\", args = ({}), ret = {}", stmt->type_hint(),
-          stmt->id, stmt->func->get_name(), args, stmt->ident->name());
+          stmt->id, stmt->func->get_name(), args,
+          stmt->ident.has_value() ? stmt->ident->name() : "none");
   }
 
   void visit(FuncCallStmt *stmt) override {
@@ -460,7 +477,8 @@ class IRPrinter : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     if (!stmt->is_grad) {
-      print("{}{} = arg[{}]", stmt->type_hint(), stmt->name(), stmt->arg_id);
+      print("{}{} = arg{}[{}]", stmt->type_hint(), stmt->name(),
+            stmt->create_load ? "load" : "addr", stmt->arg_id);
     } else {
       print("{}{} = grad_arg[{}]", stmt->type_hint(), stmt->name(),
             stmt->arg_id);

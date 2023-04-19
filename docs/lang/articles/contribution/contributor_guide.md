@@ -115,7 +115,7 @@ We highly recommend that you complete code style checks and integration tests on
 Taichi enforces code style via [pre-commit](https://pre-commit.com/) hooks, which includes the following checks:
 
 1. C++ codes are formatted by `clang-format-10`.
-2. Python codes are formatted by `yapf v0.31.0` based on PEP 8 rules.
+2. Python codes are formatted by `black v23.3.0`.
 3. Python codes are statically checked by [`pylint`](https://pylint.org/).
 
 You will need to install `pre-commit` first:
@@ -130,7 +130,7 @@ and run the code checkers:
 pre-commit run -a
 ```
 
-With this command, `yapf` will format your Python codes automatically.
+With this command, `black` will format your Python codes automatically.
 You can install it as a pre-commit hook so that it is run before you commit the changes to git:
 
 ```
@@ -210,6 +210,7 @@ Now you get to the point where you need to get your hands dirty with your PRs. T
 - **When implementing a complex feature:**
 
   - Consider breaking it down to multiple separate, self-contained PRs to provide the community with a clearer context and keep a more traceable development history.
+  - If you're already a collaborator or maintainer with write access to the Taichi repository, please consider adopting [the ghstack workflow](#ghstack-workflow).
 
 - **When creating a PR:**
 
@@ -315,6 +316,20 @@ Here, we do not want to repeat some best practices summarized in the following G
   - [Code Health: Understanding Code In Review](https://testing.googleblog.com/2018/05/code-health-understanding-code-in-review.html)
   - [Code Health: Respectful Reviews == Useful Reviews](https://testing.googleblog.com/2019/11/code-health-respectful-reviews-useful.html)
   - [How to have your PR merged quickly](https://testing.googleblog.com/2017/06/code-health-too-many-comments-on-your.html)
+
+
+<a name="ghstack-workflow"></a>
+
+### Implementing the ghstack workflow for complex changesets
+
+The standard GitHub PR workflow can become unwieldy when dealing with large changesets.
+With the help of [ghstack](https://github.com/ezyang/ghstack), you can break down a large changeset into multiple PRs, each building upon the previous one.
+Each PR will undergo its own review process and CI/CD checks.
+
+For details on how to use ghstack, please consult its documentation, with the exception of the landing step.
+To land ghstack commits, simply comment `/land` on the PR. A landing bot will then verify if the corresponding PR and all its predecessors have been approved and passed the CI/CD checks.
+If all checks have been cleared, the bot will execute `ghstack land` for you.
+
 
 ## Deal with compilation warnings
 

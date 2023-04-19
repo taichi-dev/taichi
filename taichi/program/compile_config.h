@@ -18,7 +18,6 @@ struct CompileConfig {
   bool print_preprocessed_ir;
   bool print_ir;
   bool print_accessor_ir;
-  bool print_evaluator_ir;
   bool serial_schedule;
   bool simplify_before_lower_access;
   bool lower_access;
@@ -40,6 +39,8 @@ struct CompileConfig {
   bool detect_read_only;
   bool ndarray_use_cached_allocator;
   bool real_matrix_scalarize;
+  bool half2_vectorization;
+  bool make_cpu_multithreading_loop;
   DataType default_fp;
   DataType default_ip;
   DataType default_up;
@@ -62,16 +63,12 @@ struct CompileConfig {
   bool print_struct_llvm_ir;
   bool print_kernel_llvm_ir;
   bool print_kernel_llvm_ir_optimized;
-  bool print_kernel_nvptx;
+  bool print_kernel_asm;
   bool print_kernel_amdgcn;
 
   // CUDA/AMDGPU backend options:
   float64 device_memory_GB;
   float64 device_memory_fraction;
-
-  // C backend options:
-  std::string cc_compile_cmd;
-  std::string cc_link_cmd;
 
   // Opengl backend options:
   bool allow_nv_shader_extension{true};

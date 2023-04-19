@@ -108,6 +108,17 @@ TEST_F(CapiTest, SphTestVulkan) {
   }
 }
 
+TEST_F(CapiTest, SphTestMetal) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
+
+    std::stringstream aot_mod_ss;
+    aot_mod_ss << folder_dir;
+
+    run(TiArch::TI_ARCH_METAL, aot_mod_ss.str());
+  }
+}
+
 TEST_F(CapiTest, SphTestOpengl) {
   if (ti::is_arch_available(TI_ARCH_OPENGL)) {
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");

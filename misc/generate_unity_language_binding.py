@@ -1,11 +1,23 @@
 import re
 
-from taichi_json import (Alias, BitField, BuiltInType, Callback, Definition,
-                         EntryBase, Enumeration, Field, Function, Handle,
-                         Module, Structure, Union)
+from taichi_json import (
+    Alias,
+    BitField,
+    BuiltInType,
+    Callback,
+    Definition,
+    EntryBase,
+    Enumeration,
+    Field,
+    Function,
+    Handle,
+    Module,
+    Structure,
+    Union,
+)
 
 RESERVED_WORD_TRANSFORM = {
-    'event': 'event_',
+    "event": "event_",
 }
 _T = lambda n: RESERVED_WORD_TRANSFORM.get(str(n), str(n))
 
@@ -17,7 +29,7 @@ def get_type_name(x: EntryBase):
     elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
         return x.name.upper_camel_case
     elif ty in [BitField]:
-        return x.name.extend('flag_bits').upper_camel_case
+        return x.name.extend("flag_bits").upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
 
@@ -102,9 +114,9 @@ def get_declr(x: EntryBase):
         out = [
             "static partial class Def {",
             f"public const uint {x.name.screaming_snake_case} = {x.value};",
-            "}"
+            "}",
         ]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Handle:
         out = [
@@ -113,26 +125,24 @@ def get_declr(x: EntryBase):
             "  public IntPtr Inner;",
             "}",
         ]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Enumeration:
         out = ["public enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
             name = x.name.extend(name).screaming_snake_case
             out += [f"  {name} = {value},"]
-        out += [
-            f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"
-        ]
+        out += [f"  {x.name.extend('max_enum').screaming_snake_case} = 0x7fffffff,"]
         out += ["}"]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is BitField:
         out = ["[Flags]", "public enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
-            name = x.name.extend(name).extend('bit').screaming_snake_case
+            name = x.name.extend(name).extend("bit").screaming_snake_case
             out += [f"  {name} = 1 << {value},"]
         out += ["};"]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Structure:
         out = [
@@ -142,7 +152,7 @@ def get_declr(x: EntryBase):
         for field in x.fields:
             out += [f"  {get_struct_field(field)};"]
         out += ["}"]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Union:
         out = [
@@ -152,7 +162,7 @@ def get_declr(x: EntryBase):
         for variant in x.variants:
             out += [f"  {get_union_variant(variant)};"]
         out += ["}"]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Callback:
         out = [
@@ -161,45 +171,42 @@ def get_declr(x: EntryBase):
             "  public IntPtr Inner;",
             "}",
         ]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     elif ty is Function:
-
         out = []
 
-        return_value_type = "void" if x.return_value_type == None else get_type_name(
-            x.return_value_type)
+        return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
 
         n = 1
         c_function_param_perm = []
         function_param_perm = []
         for param in x.params:
-            if isinstance(param.type, BuiltInType) and (
-                    param.type.id == "char") and (param.count is not None):
+            if isinstance(param.type, BuiltInType) and (param.type.id == "char") and (param.count is not None):
                 if param.by_mut:
-                    c_function_param_perm += [[
-                        f"  [MarshalAs(UnmanagedType.LPArray)] [In, Out] byte[] {param.name}"
-                    ]]
+                    c_function_param_perm += [[f"  [MarshalAs(UnmanagedType.LPArray)] [In, Out] byte[] {param.name}"]]
                     function_param_perm += [[f"  byte[] {param.name}"]]
                 else:
-                    c_function_param_perm += [[
-                        f"  [MarshalAs(UnmanagedType.LPArray)] byte[] {param.name}"
-                    ]]
+                    c_function_param_perm += [[f"  [MarshalAs(UnmanagedType.LPArray)] byte[] {param.name}"]]
                     function_param_perm += [[f"  byte[] {param.name}"]]
-            elif isinstance(param.type,
-                            BuiltInType) and (param.type.id == "const void*"
-                                              or param.type.id == "void*"):
+            elif isinstance(param.type, BuiltInType) and (param.type.id == "const void*" or param.type.id == "void*"):
                 perm = [
-                    "byte", "sbyte", "short", "ushort", "int", "uint", "long",
-                    "ulong", "IntPtr", "float", "double"
+                    "byte",
+                    "sbyte",
+                    "short",
+                    "ushort",
+                    "int",
+                    "uint",
+                    "long",
+                    "ulong",
+                    "IntPtr",
+                    "float",
+                    "double",
                 ]
-                c_function_param_perm += [[
-                    f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {_T(param.name)}"
-                    for x in perm
-                ]]
-                function_param_perm += [[
-                    f"  {x}[] {_T(param.name)}" for x in perm
-                ]]
+                c_function_param_perm += [
+                    [f"  [MarshalAs(UnmanagedType.LPArray)] {x}[] {_T(param.name)}" for x in perm]
+                ]
+                function_param_perm += [[f"  {x}[] {_T(param.name)}" for x in perm]]
                 n *= len(perm)
             else:
                 c_function_param_perm += [[f"  {get_c_function_param(param)}"]]
@@ -209,7 +216,7 @@ def get_declr(x: EntryBase):
             c_function_params = []
             function_params = []
 
-            for (a, b) in zip(c_function_param_perm, function_param_perm):
+            for a, b in zip(c_function_param_perm, function_param_perm):
                 local_idx = i % len(a)
                 i //= len(a)
                 c_function_params.append(a[local_idx])
@@ -220,57 +227,42 @@ def get_declr(x: EntryBase):
                 "#if (UNITY_IOS || UNITY_TVOS || UNITY_WEBGL) && !UNITY_EDITOR",
                 '    [DllImport ("__Internal")]',
                 "#else",
-                '    [DllImport("taichi_unity")]'
-                if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
+                '    [DllImport("taichi_unity")]' if x.vendor == "unity" else '    [DllImport("taichi_c_api")]',
                 "#endif",
-                "private static extern " + return_value_type + " " +
-                _T(x.name.snake_case) + "(",
-                ',\n'.join(c_function_params),
+                "private static extern " + return_value_type + " " + _T(x.name.snake_case) + "(",
+                ",\n".join(c_function_params),
                 ");",
-                "public static " + return_value_type + " " +
-                _T(x.name.upper_camel_case) + "(",
-                ',\n'.join(function_params),
+                "public static " + return_value_type + " " + _T(x.name.upper_camel_case) + "(",
+                ",\n".join(function_params),
                 ") {",
             ]
 
             for param in x.params:
-                is_single_ref = (param.by_ref
-                                 or param.by_mut) and (not param.count)
-                if isinstance(
-                        param.type,
-                    (Structure, Union, BuiltInType)) and is_single_ref:
+                is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [
                         f"  var arr_{_T(param.name)} = new {get_type_name(param.type)}[1];",
-                        f"  arr_{_T(param.name)}[0] = {_T(param.name)};"
+                        f"  arr_{_T(param.name)}[0] = {_T(param.name)};",
                     ]
             if x.return_value_type:
                 out += [f"  var rv = {_T(x.name.snake_case)}("]
             else:
                 out += [f"  {_T(x.name.snake_case)}("]
             for i, param in enumerate(x.params):
-                is_single_ref = (param.by_ref
-                                 or param.by_mut) and (not param.count)
-                if isinstance(
-                        param.type,
-                    (Structure, Union, BuiltInType)) and is_single_ref:
-                    out += [
-                        f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"
-                    ]
+                is_single_ref = (param.by_ref or param.by_mut) and (not param.count)
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
+                    out += [f"    arr_{_T(param.name)}{','if i + 1 != len(x.params) else ''}"]
                 else:
-                    out += [
-                        f"    {_T(param.name)}{','if i + 1 != len(x.params) else ''}"
-                    ]
+                    out += [f"    {_T(param.name)}{','if i + 1 != len(x.params) else ''}"]
             out += ["  );"]
             for param in x.params:
                 is_single_ref = param.by_mut and (not param.count)
-                if isinstance(
-                        param.type,
-                    (Structure, Union, BuiltInType)) and is_single_ref:
+                if isinstance(param.type, (Structure, Union, BuiltInType)) and is_single_ref:
                     out += [f"  {_T(param.name)} = arr_{_T(param.name)}[0];"]
             if x.return_value_type:
                 out += [f"  return rv;"]
             out += ["}", "}"]
-        return '\n'.join(out)
+        return "\n".join(out)
 
     else:
         raise RuntimeError(f"'{x.id}' doesn't need declaration")
@@ -298,7 +290,7 @@ def print_module_header(module):
         "",
     ]
 
-    return '\n'.join(out)
+    return "\n".join(out)
 
 
 def generate_module_header(module):
@@ -307,7 +299,7 @@ def generate_module_header(module):
 
     print(f"processing module '{module.name}'")
     assert re.match("taichi/\w+.h", module.name)
-    module_name = module.name[len("taichi/"):-len(".h")]
+    module_name = module.name[len("taichi/") : -len(".h")]
     path = f"c_api/unity/{module_name}.cs"
     with open(path, "w") as f:
         f.write(print_module_header(module))

@@ -6,26 +6,21 @@
 #include "taichi/program/extension.h"
 #include "taichi/codegen/cpu/codegen_cpu.h"
 #include "taichi/struct/struct.h"
-#include "taichi/runtime/wasm/aot_module_builder_impl.h"
 #include "taichi/runtime/program_impls/opengl/opengl_program.h"
 #include "taichi/runtime/program_impls/metal/metal_program.h"
-#include "taichi/codegen/cc/cc_program.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/system/unified_allocator.h"
 #include "taichi/system/timeline.h"
 #include "taichi/ir/snode.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/program/snode_expr_utils.h"
 #include "taichi/math/arithmetic.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/codegen/llvm/struct_llvm.h"
 #endif
 
-#if defined(TI_WITH_CC)
-#include "taichi/codegen/cc/cc_program.h"
-#endif
 #ifdef TI_WITH_VULKAN
 #include "taichi/runtime/program_impls/vulkan/vulkan_program.h"
 #include "taichi/rhi/vulkan/vulkan_loader.h"
@@ -133,12 +128,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
 #else
     TI_ERROR("This taichi is not compiled with OpenGL");
 #endif
-  } else if (config.arch == Arch::cc) {
-#ifdef TI_WITH_CC
-    program_impl_ = std::make_unique<CCProgramImpl>(config);
-#else
-    TI_ERROR("No C backend detected.");
-#endif
   } else {
     TI_NOT_IMPLEMENTED
   }
@@ -149,7 +138,6 @@ Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   Device *compute_device = nullptr;
   compute_device = program_impl_->get_compute_device();
   // Must have handled all the arch fallback logic by this point.
-  memory_pool_ = std::make_unique<MemoryPool>(config.arch, compute_device);
   TI_ASSERT_INFO(num_instances_ == 0, "Only one instance at a time");
   total_compilation_time_ = 0;
   num_instances_ += 1;
@@ -198,8 +186,19 @@ FunctionType Program::compile(const CompileConfig &compile_config,
 }
 
 void Program::materialize_runtime() {
-  program_impl_->materialize_runtime(memory_pool_.get(), profiler.get(),
-                                     &result_buffer);
+  program_impl_->materialize_runtime(profiler.get(), &result_buffer);
+}
+
+static void remove_rw_accessor_cache(
+    SNode *parent_snode,
+    SNodeRwAccessorsBank *snode_rw_accessors_bank) {
+  for (int i = 0; i < (int)parent_snode->ch.size(); i++) {
+    auto child_snode = parent_snode->ch[i].get();
+    if (child_snode->type == SNodeType::place) {
+      snode_rw_accessors_bank->remove_cached_kernels(child_snode);
+    }
+    remove_rw_accessor_cache(child_snode, snode_rw_accessors_bank);
+  }
 }
 
 void Program::destroy_snode_tree(SNodeTree *snode_tree) {
@@ -207,6 +206,21 @@ void Program::destroy_snode_tree(SNodeTree *snode_tree) {
             compile_config().arch == Arch::vulkan ||
             compile_config().arch == Arch::dx11 ||
             compile_config().arch == Arch::dx12);
+
+  // When accessing a ti.field at Python scope, SNodeRwAccessorsBank creates
+  // a Taichi Kernel to read/write the field in a JIT manner, which caches the
+  // compiled JIT Kernel so as to avoid recompilation when accessing the same
+  // field.
+
+  // This cache uses the place-SNode's address (SNode*) as the key,
+  // which becomes unsafe once the SNodeTree gets destroyed and that
+  // place-SNode's address gets reused by another SNode. We have to remove all
+  // cached kernels upon SNodeTree destruction.
+  SNode *root = snode_tree->root();
+
+  // Traverse SNodeTree to remove all cached RWAccessor kernels
+  remove_rw_accessor_cache(root, &snode_rw_accessors_bank_);
+
   program_impl_->destroy_snode_tree(snode_tree);
   free_snode_tree_ids_.push(snode_tree->id());
 }
@@ -270,6 +284,7 @@ Kernel &Program::get_snode_reader(SNode *snode) {
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_ret(snode->dt);
+  ker.finalize_params();
   ker.finalize_rets();
   return ker;
 }
@@ -287,17 +302,18 @@ Kernel &Program::get_snode_writer(SNode *snode) {
     ASTBuilder &builder = kernel->context->builder();
     auto expr =
         builder.expr_subscript(Expr(snode_to_fields_.at(snode)), indices);
-    builder.insert_assignment(
-        expr,
-        Expr::make<ArgLoadExpression>(snode->num_active_indices,
-                                      snode->dt->get_compute_type()),
-        expr->tb);
+    auto argload_expr = Expr::make<ArgLoadExpression>(
+        snode->num_active_indices, snode->dt->get_compute_type());
+    argload_expr->type_check(&this->compile_config());
+    builder.insert_assignment(expr, argload_expr, expr->tb);
   });
   ker.name = kernel_name;
   ker.is_accessor = true;
   for (int i = 0; i < snode->num_active_indices; i++)
     ker.insert_scalar_param(PrimitiveType::i32);
   ker.insert_scalar_param(snode->dt);
+  ker.finalize_params();
+  ker.finalize_rets();
   return ker;
 }
 
@@ -309,11 +325,11 @@ void Program::finalize() {
   if (finalized_) {
     return;
   }
+
   synchronize();
   TI_TRACE("Program finalizing...");
 
   synchronize();
-  memory_pool_->terminate();
   if (arch_uses_llvm(compile_config().arch)) {
     program_impl_->finalize();
   }
@@ -325,6 +341,9 @@ void Program::finalize() {
   program_impl_->dump_cache_data_to_disk();
   compile_config_ = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
+
+  // Reset memory pool
+  HostMemoryPool::get_instance().reset();
 }
 
 int Program::default_block_dim(const CompileConfig &config) {
@@ -388,10 +407,8 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   }
 }
 
-Texture *Program::create_texture(const DataType type,
-                                 int num_channels,
+Texture *Program::create_texture(BufferFormat buffer_format,
                                  const std::vector<int> &shape) {
-  BufferFormat buffer_format = type_channels2buffer_format(type, num_channels);
   if (shape.size() == 1) {
     textures_.push_back(
         std::make_unique<Texture>(this, buffer_format, shape[0], 1, 1));
@@ -467,17 +484,6 @@ std::unique_ptr<AotModuleBuilder> Program::make_aot_module_builder(
   // FIXME: This couples the runtime backend with the target AOT backend. E.g.
   // If we want to build a Metal AOT module, we have to be on the macOS
   // platform. Consider decoupling this part
-  if (arch == Arch::wasm) {
-    // TODO(PGZXB): Dispatch to the LlvmProgramImpl.
-#ifdef TI_WITH_LLVM
-    auto *llvm_prog = dynamic_cast<LlvmProgramImpl *>(program_impl_.get());
-    TI_ASSERT(llvm_prog != nullptr);
-    return std::make_unique<wasm::AotModuleBuilderImpl>(
-        compile_config(), *llvm_prog->get_llvm_context());
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  }
   if (arch_uses_llvm(compile_config().arch) ||
       compile_config().arch == Arch::metal ||
       compile_config().arch == Arch::vulkan ||
@@ -497,11 +503,6 @@ int Program::allocate_snode_tree_id() {
     free_snode_tree_ids_.pop();
     return id;
   }
-}
-
-void Program::prepare_runtime_context(RuntimeContext *ctx) {
-  ctx->result_buffer = result_buffer;
-  program_impl_->prepare_runtime_context(ctx);
 }
 
 void Program::enqueue_compute_op_lambda(

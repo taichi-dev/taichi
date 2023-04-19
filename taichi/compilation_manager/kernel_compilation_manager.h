@@ -32,6 +32,8 @@ struct CacheData {
     TI_IO_DEF(kernel_key, size, created_at, last_used_at);
   };
 
+  using KernelMetadata = KernelData;  // Required by CacheCleaner
+
   Version version{};
   std::size_t size{0};
   std::unordered_map<std::string, KernelData> kernels;
@@ -41,14 +43,14 @@ struct CacheData {
 };
 
 class KernelCompilationManager final {
+ public:
   static constexpr char kMetadataFilename[] = "ticache.tcb";
-  static constexpr char kCacheFilenameFormat[] = "{}-{}.tic";
+  static constexpr char kCacheFilenameFormat[] = "{}.tic";
   static constexpr char kMetadataLockName[] = "ticache.lock";
 
   using KernelCacheData = CacheData::KernelData;
   using CachingKernels = std::unordered_map<std::string, KernelCacheData>;
 
- public:
   struct Config {
     std::string offline_cache_path;
     std::unique_ptr<KernelCompiler> kernel_compiler;
@@ -70,7 +72,7 @@ class KernelCompilationManager final {
                            double cleaning_factor) const;
 
  private:
-  std::string make_filename(const std::string &kernel_key, Arch arch) const;
+  std::string make_filename(const std::string &kernel_key) const;
 
   std::unique_ptr<CompiledKernelData> compile_kernel(
       const CompileConfig &compile_config,

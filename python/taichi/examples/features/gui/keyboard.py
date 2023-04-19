@@ -22,18 +22,18 @@ while gui.running:
             elif dt[1] < 0:
                 radius = max(8, radius - 10)
 
-    if gui.is_pressed(ti.GUI.LEFT, 'a'):
+    if gui.is_pressed(ti.GUI.LEFT, "a"):
         x -= delta
-    if gui.is_pressed(ti.GUI.RIGHT, 'd'):
+    if gui.is_pressed(ti.GUI.RIGHT, "d"):
         x += delta
-    if gui.is_pressed(ti.GUI.UP, 'w'):
+    if gui.is_pressed(ti.GUI.UP, "w"):
         y += delta
-    if gui.is_pressed(ti.GUI.DOWN, 's'):
+    if gui.is_pressed(ti.GUI.DOWN, "s"):
         y -= delta
     if gui.is_pressed(ti.GUI.LMB):
         x, y = gui.get_cursor_pos()
 
-    gui.text(f'({x:.3}, {y:.3})', (x, y))
+    gui.text(f"({x:.3}, {y:.3})", (x, y))
 
-    gui.circle((x, y), 0xffffff, radius)
+    gui.circle((x, y), 0xFFFFFF, radius)
     gui.show()

@@ -1,9 +1,10 @@
-import taichi as ti
+from taichi.lang import ops
+from taichi.lang.kernel_impl import func
 
 from .mathimpl import dot, vec2
 
 
-@ti.func
+@func
 def cmul(z1, z2):
     """Performs complex multiplication between two 2d vectors.
 
@@ -30,7 +31,7 @@ def cmul(z1, z2):
     return vec2(x1 * x2 - y1 * y2, x1 * y2 + x2 * y1)
 
 
-@ti.func
+@func
 def cconj(z):
     """Returns the complex conjugate of a 2d vector.
 
@@ -45,7 +46,7 @@ def cconj(z):
     return vec2(z[0], -z[1])
 
 
-@ti.func
+@func
 def cdiv(z1, z2):
     """Performs complex division between two 2d vectors.
 
@@ -72,7 +73,7 @@ def cdiv(z1, z2):
     return vec2(x1 * x2 + y1 * y2, -x1 * y2 + x2 * y1) / dot(z2, z2)
 
 
-@ti.func
+@func
 def csqrt(z):
     """Returns the complex square root of a 2d vector `z`, so that
     if `w^2=z`, then `w = csqrt(z)`.
@@ -94,16 +95,16 @@ def csqrt(z):
     Returns:
         :class:`~taichi.math.vec2`: The complex square root.
     """
-    result = vec2(0.)
+    result = vec2(0.0)
     if any(z):
-        r = ti.sqrt(z.norm())
-        a = ti.atan2(z[1], z[0])
-        result = r * vec2(ti.cos(a / 2.0), ti.sin(a / 2.0))
+        r = ops.sqrt(z.norm())
+        a = ops.atan2(z[1], z[0])
+        result = r * vec2(ops.cos(a / 2.0), ops.sin(a / 2.0))
 
     return result
 
 
-@ti.func
+@func
 def cinv(z):
     """Computes the reciprocal of a complex `z`.
 
@@ -123,7 +124,7 @@ def cinv(z):
     return cconj(z) / dot(z, z)
 
 
-@ti.func
+@func
 def cpow(z, n):
     """Computes the power of a complex `z`: :math:`z^a`.
 
@@ -141,24 +142,23 @@ def cpow(z, n):
     Returns:
         :class:`~taichi.math.vec2`: The power :math:`z^a`.
     """
-    result = vec2(0.)
+    result = vec2(0.0)
     if any(z):
         r2 = dot(z, z)
-        a = ti.atan2(z[1], z[0]) * n
-        result = ti.pow(r2, n / 2.0) * vec2(ti.cos(a), ti.sin(a))
+        a = ops.atan2(z[1], z[0]) * n
+        result = ops.pow(r2, n / 2.0) * vec2(ops.cos(a), ops.sin(a))
 
     return result
 
 
-@ti.func
+@func
 def cexp(z):
     """Returns the complex exponential :math:`e^z`.
 
     `z` is a 2d vector treated as a complex number.
 
     Args:
-        z (:class:`~taichi.math.vec2`): The base.
-        a (float): The exponent.
+        z (:class:`~taichi.math.vec2`): The exponent.
 
     Example::
 
@@ -168,13 +168,13 @@ def cexp(z):
         >>>     w = ti.math.cexp(z)  # [1.468694, 2.287355]
 
     Returns:
-        :class:`~taichi.math.vec2`: The power :math:`z^a`
+        :class:`~taichi.math.vec2`: The power :math:`exp(z)`
     """
-    r = ti.exp(z[0])
-    return vec2(r * ti.cos(z[1]), r * ti.sin(z[1]))
+    r = ops.exp(z[0])
+    return vec2(r * ops.cos(z[1]), r * ops.sin(z[1]))
 
 
-@ti.func
+@func
 def clog(z):
     """Returns the complex logarithm of `z`, so that if :math:`e^w = z`,
     then :math:`log(z) = w`.
@@ -195,9 +195,9 @@ def clog(z):
     Returns:
         :class:`~taichi.math.vec2`: The logarithm of `z`.
     """
-    ang = ti.atan2(z[1], z[0])
+    ang = ops.atan2(z[1], z[0])
     r2 = dot(z, z)
-    return vec2(ti.log(r2) / 2., ang)
+    return vec2(ops.log(r2) / 2.0, ang)
 
 
 __all__ = ["cconj", "cdiv", "cexp", "cinv", "clog", "cmul", "cpow", "csqrt"]

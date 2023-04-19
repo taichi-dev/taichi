@@ -11,30 +11,6 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(arch=ti.cc)
-def test_record():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        recorded_file = os.path.join(tmpdir, 'record.yml')
-        ti.aot.start_recording(recorded_file)
-
-        loss = ti.field(float, (), needs_grad=True)
-        x = ti.field(float, 233, needs_grad=True)
-
-        @ti.kernel
-        def compute_loss():
-            for i in x:
-                loss[None] += x[i]**2
-
-        compute_loss()
-        ti.aot.stop_recording()
-
-        assert os.path.exists(recorded_file)
-
-        # Make sure kernel info is in the file
-        with open(recorded_file, 'r') as f:
-            assert 'compute_loss' in ''.join(f.readlines())
-
-
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_field_range_hint():
     density = ti.field(float, shape=(8, 8))
@@ -46,15 +22,14 @@ def test_aot_field_range_hint():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_field('density', density)
+        m.add_field("density", density)
         m.add_kernel(init)
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             res = json.load(json_file)
-            for kernel in res['kernels']:
-                if kernel['name'] == 'init':
-                    range_hint2 = kernel['tasks_attribs'][0][
-                        'range_for_attribs']
+            for kernel in res["kernels"]:
+                if kernel["name"] == "init":
+                    range_hint2 = kernel["tasks_attribs"][0]["range_for_attribs"]
                     assert range_hint2["end"] - range_hint2["begin"] == 64
 
 
@@ -71,18 +46,18 @@ def test_aot_bind_id():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_kernel(init, {'density1': density1})
+        m.add_kernel(init, {"density1": density1})
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             res = json.load(json_file)
-            for kernel in res['kernels']:
-                if kernel['name'] == 'init':
-                    buffer_binds = kernel['tasks_attribs'][0]['buffer_binds']
+            for kernel in res["kernels"]:
+                if kernel["name"] == "init":
+                    buffer_binds = kernel["tasks_attribs"][0]["buffer_binds"]
                     for buffer_bind in buffer_binds:
-                        if buffer_bind['buffer']['type'] == 0:  # Root
-                            assert buffer_bind['binding'] != -1
-                        elif buffer_bind['buffer']['type'] == 2:  # Rets
-                            assert buffer_bind['binding'] != -1
+                        if buffer_bind["buffer"]["type"] == 0:  # Root
+                            assert buffer_bind["binding"] != -1
+                        elif buffer_bind["buffer"]["type"] == 2:  # Rets
+                            assert buffer_bind["binding"] != -1
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -96,10 +71,10 @@ def test_save():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_field('density', density)
+        m.add_field("density", density)
         m.add_kernel(init)
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             json.load(json_file)
 
 
@@ -114,12 +89,12 @@ def test_save_template_kernel():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_field('density', density)
+        m.add_field("density", density)
         with m.add_kernel_template(foo) as kt:
             kt.instantiate(n=6)
             kt.instantiate(n=8)
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             json.load(json_file)
 
 
@@ -132,10 +107,10 @@ def test_non_dense_snode():
     blk.place(x)
     blk.dense(ti.i, n).place(y)
 
-    with pytest.raises(RuntimeError, match='AOT: only supports dense field'):
+    with pytest.raises(RuntimeError, match="AOT: only supports dense field"):
         m = ti.aot.Module()
-        m.add_field('x', x)
-        m.add_field('y', y)
+        m.add_field("x", x)
+        m.add_field("y", y)
 
 
 @test_utils.test(arch=[ti.opengl, ti.gles, ti.vulkan])
@@ -146,7 +121,7 @@ def test_mpm88_aot():
     dt = 2e-4
 
     p_rho = 1
-    p_vol = (dx * 0.5)**2
+    p_vol = (dx * 0.5) ** 2
     p_mass = p_vol * p_rho
     gravity = 9.8
     bound = 3
@@ -169,15 +144,14 @@ def test_mpm88_aot():
             Xp = x[p] / dx
             base = int(Xp - 0.5)
             fx = Xp - base
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             stress = -dt * 4 * E * p_vol * (J[p] - 1) / dx**2
             affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
             for i, j in ti.static(ti.ndrange(3, 3)):
                 offset = ti.Vector([i, j])
                 dpos = (offset - fx) * dx
                 weight = w[i].x * w[j].y
-                grid_v[base +
-                       offset] += weight * (p_mass * v[p] + affine @ dpos)
+                grid_v[base + offset] += weight * (p_mass * v[p] + affine @ dpos)
                 grid_m[base + offset] += weight * p_mass
         for i, j in grid_m:
             if grid_m[i, j] > 0:
@@ -195,7 +169,7 @@ def test_mpm88_aot():
             Xp = x[p] / dx
             base = int(Xp - 0.5)
             fx = Xp - base
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_v = ti.Vector.zero(float, 2)
             new_C = ti.Matrix.zero(float, 2, 2)
             for i, j in ti.static(ti.ndrange(3, 3)):
@@ -228,7 +202,7 @@ def test_mpm88_aot():
         m.add_kernel(substep)
         m.add_kernel(init)
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             json.load(json_file)
 
 
@@ -244,10 +218,15 @@ def test_opengl_8_ssbo():
     density6 = ti.ndarray(dtype=ti.f32, shape=(4, 4))
 
     @ti.kernel
-    def init(d: ti.i32, density1: ti.types.ndarray(),
-             density2: ti.types.ndarray(), density3: ti.types.ndarray(),
-             density4: ti.types.ndarray(), density5: ti.types.ndarray(),
-             density6: ti.types.ndarray()):
+    def init(
+        d: ti.i32,
+        density1: ti.types.ndarray(),
+        density2: ti.types.ndarray(),
+        density3: ti.types.ndarray(),
+        density4: ti.types.ndarray(),
+        density5: ti.types.ndarray(),
+        density6: ti.types.ndarray(),
+    ):
         for i, j in density1:
             density1[i, j] = d + 1
             density2[i, j] = d + 2
@@ -271,26 +250,19 @@ def test_mpm99_aot():
     n_particles, n_grid = 9000 * quality**2, 128 * quality
     dx, inv_dx = 1 / n_grid, float(n_grid)
     dt = 1e-4 / quality
-    p_vol, p_rho = (dx * 0.5)**2, 1
+    p_vol, p_rho = (dx * 0.5) ** 2, 1
     p_mass = p_vol * p_rho
     E, nu = 0.1e4, 0.2  # Young's modulus and Poisson's ratio
-    mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / (
-        (1 + nu) * (1 - 2 * nu))  # Lame parameters
+    mu_0, lambda_0 = E / (2 * (1 + nu)), E * nu / ((1 + nu) * (1 - 2 * nu))  # Lame parameters
     x = ti.Vector.field(2, dtype=float, shape=n_particles)  # position
     v = ti.Vector.field(2, dtype=float, shape=n_particles)  # velocity
-    C = ti.Matrix.field(2, 2, dtype=float,
-                        shape=n_particles)  # affine velocity field
-    F = ti.Matrix.field(2, 2, dtype=float,
-                        shape=n_particles)  # deformation gradient
+    C = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # affine velocity field
+    F = ti.Matrix.field(2, 2, dtype=float, shape=n_particles)  # deformation gradient
     material = ti.field(dtype=int, shape=n_particles)  # material id
     Jp = ti.field(dtype=float, shape=n_particles)  # plastic deformation
-    grid_v = ti.Vector.field(2, dtype=float,
-                             shape=(n_grid,
-                                    n_grid))  # grid node momentum/velocity
+    grid_v = ti.Vector.field(2, dtype=float, shape=(n_grid, n_grid))  # grid node momentum/velocity
     grid_m = ti.field(dtype=float, shape=(n_grid, n_grid))  # grid node mass
-    grid_v_int = ti.Vector.field(2, dtype=int,
-                                 shape=(n_grid,
-                                        n_grid))  # grid node momentum/velocity
+    grid_v_int = ti.Vector.field(2, dtype=int, shape=(n_grid, n_grid))  # grid node momentum/velocity
     grid_m_int = ti.field(dtype=int, shape=(n_grid, n_grid))  # grid node mass
 
     v_exp = 24
@@ -307,12 +279,9 @@ def test_mpm99_aot():
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
             # Quadratic kernels  [http://mpm.graphics   Eqn. 123, with x=fx, fx-1,fx-2]
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
-            F[p] = (ti.Matrix.identity(float, 2) +
-                    dt * C[p]) @ F[p]  # deformation gradient update
-            h = ti.exp(
-                10 * (1.0 - Jp[p])
-            )  # Hardening coefficient: snow gets harder when compressed
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
+            F[p] = (ti.Matrix.identity(float, 2) + dt * C[p]) @ F[p]  # deformation gradient update
+            h = ti.exp(10 * (1.0 - Jp[p]))  # Hardening coefficient: snow gets harder when compressed
             if material[p] == 1:  # jelly, make it softer
                 h = 0.3
             mu, la = mu_0 * h, lambda_0 * h
@@ -323,36 +292,31 @@ def test_mpm99_aot():
             for d in ti.static(range(2)):
                 new_sig = sig[d, d]
                 if material[p] == 2:  # Snow
-                    new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2),
-                                     1 + 4.5e-3)  # Plasticity
+                    new_sig = ti.min(ti.max(sig[d, d], 1 - 2.5e-2), 1 + 4.5e-3)  # Plasticity
                 Jp[p] *= sig[d, d] / new_sig
                 sig[d, d] = new_sig
                 J *= new_sig
-            if material[
-                    p] == 0:  # Reset deformation gradient to avoid numerical instability
+            if material[p] == 0:  # Reset deformation gradient to avoid numerical instability
                 F[p] = ti.Matrix.identity(float, 2) * ti.sqrt(J)
             elif material[p] == 2:
-                F[p] = U @ sig @ V.transpose(
-                )  # Reconstruct elastic deformation gradient after plasticity
-            stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose(
-            ) + ti.Matrix.identity(float, 2) * la * J * (J - 1)
+                F[p] = U @ sig @ V.transpose()  # Reconstruct elastic deformation gradient after plasticity
+            stress = 2 * mu * (F[p] - U @ V.transpose()) @ F[p].transpose() + ti.Matrix.identity(float, 2) * la * J * (
+                J - 1
+            )
             stress = (-dt * p_vol * 4 * inv_dx * inv_dx) * stress
             affine = stress + p_mass * C[p]
-            for i, j in ti.static(ti.ndrange(
-                    3, 3)):  # Loop over 3x3 grid node neighborhood
+            for i, j in ti.static(ti.ndrange(3, 3)):  # Loop over 3x3 grid node neighborhood
                 offset = ti.Vector([i, j])
                 dpos = (offset.cast(float) - fx) * dx
                 weight = w[i][0] * w[j][1]
                 grid_v_int[base + offset] += int(
-                    ti.floor(0.5 + weight * (p_mass * v[p] + affine @ dpos) *
-                             (2.0**v_exp)))
-                grid_m_int[base + offset] += int(
-                    ti.floor(0.5 + weight * p_mass * (2.0**m_exp)))
+                    ti.floor(0.5 + weight * (p_mass * v[p] + affine @ dpos) * (2.0**v_exp))
+                )
+                grid_m_int[base + offset] += int(ti.floor(0.5 + weight * p_mass * (2.0**m_exp)))
         for i, j in grid_m:
             if grid_m_int[i, j] > 0:  # No need for epsilon here
                 # grid_v[i, j] = (1.0 / grid_m[i, j]) * grid_v[i, j] # Momentum to velocity
-                grid_v[i, j] = (2**(m_exp - v_exp) / grid_m_int[i, j]
-                                ) * grid_v_int[i, j]  # Momentum to velocity
+                grid_v[i, j] = (2 ** (m_exp - v_exp) / grid_m_int[i, j]) * grid_v_int[i, j]  # Momentum to velocity
                 grid_v[i, j][1] -= dt * 50  # gravity
                 if i < 3 and grid_v[i, j][0] < 0:
                     grid_v[i, j][0] = 0  # Boundary conditions
@@ -365,13 +329,10 @@ def test_mpm99_aot():
         for p in x:  # grid to particle (G2P)
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
-            w = [
-                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
-            ]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_v = ti.Vector.zero(float, 2)
             new_C = ti.Matrix.zero(float, 2, 2)
-            for i, j in ti.static(ti.ndrange(
-                    3, 3)):  # loop over 3x3 grid node neighborhood
+            for i, j in ti.static(ti.ndrange(3, 3)):  # loop over 3x3 grid node neighborhood
                 dpos = ti.Vector([i, j]).cast(float) - fx
                 g_v = grid_v[base + ti.Vector([i, j])]
                 weight = w[i][0] * w[j][1]
@@ -387,7 +348,7 @@ def test_mpm99_aot():
         for i in range(n_particles):
             x[i] = [
                 ti.random() * 0.2 + 0.3 + 0.10 * (i // group_size),
-                ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size)
+                ti.random() * 0.2 + 0.05 + 0.32 * (i // group_size),
             ]
             material[i] = i // group_size  # 0: fluid 1: jelly 2: snow
             v[i] = ti.Matrix([0, 0])
@@ -396,20 +357,20 @@ def test_mpm99_aot():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_field('x', x)
-        m.add_field('v', v)
-        m.add_field('C', C)
-        m.add_field('J', Jp)
-        m.add_field('grid_v', grid_v)
-        m.add_field('grid_m', grid_m)
-        m.add_field('grid_v_int', grid_v_int)
-        m.add_field('grid_m_int', grid_m_int)
-        m.add_field('material', material)
+        m.add_field("x", x)
+        m.add_field("v", v)
+        m.add_field("C", C)
+        m.add_field("J", Jp)
+        m.add_field("grid_v", grid_v)
+        m.add_field("grid_m", grid_m)
+        m.add_field("grid_v_int", grid_v_int)
+        m.add_field("grid_m_int", grid_m_int)
+        m.add_field("material", material)
         m.add_kernel(initialize)
         m.add_kernel(substep)
 
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             json.load(json_file)
 
 
@@ -422,21 +383,24 @@ def test_mpm88_ndarray():
     dx = 1 / n_grid
     inv_dx = 1 / dx
     dt = 2.0e-4
-    p_vol = (dx * 0.5)**2
+    p_vol = (dx * 0.5) ** 2
     p_rho = 1
     p_mass = p_vol * p_rho
     E = 400
 
     @ti.kernel
-    def substep(x: ti.types.ndarray(dtype=ti.math.vec2),
-                v: ti.types.ndarray(dtype=ti.math.vec2),
-                C: ti.types.ndarray(dtype=ti.math.mat2), J: ti.types.ndarray(),
-                grid_v: ti.types.ndarray(dtype=ti.math.vec2),
-                grid_m: ti.types.ndarray()):
+    def substep(
+        x: ti.types.ndarray(dtype=ti.math.vec2),
+        v: ti.types.ndarray(dtype=ti.math.vec2),
+        C: ti.types.ndarray(dtype=ti.math.mat2),
+        J: ti.types.ndarray(),
+        grid_v: ti.types.ndarray(dtype=ti.math.vec2),
+        grid_m: ti.types.ndarray(),
+    ):
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
-            w = [0.5 * (1.5 - fx)**2, 0.75 - (fx - 1)**2, 0.5 * (fx - 0.5)**2]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1) ** 2, 0.5 * (fx - 0.5) ** 2]
             stress = -dt * p_vol * (J[p] - 1) * 4 * inv_dx * inv_dx * E
             affine = ti.Matrix([[stress, 0], [0, stress]]) + p_mass * C[p]
             for i in ti.static(range(3)):
@@ -444,8 +408,7 @@ def test_mpm88_ndarray():
                     offset = ti.Vector([i, j])
                     dpos = (offset.cast(float) - fx) * dx
                     weight = w[i][0] * w[j][1]
-                    ti.atomic_add(grid_v[base + offset],
-                                  weight * (p_mass * v[p] + affine @ dpos))
+                    ti.atomic_add(grid_v[base + offset], weight * (p_mass * v[p] + affine @ dpos))
                     ti.atomic_add(grid_m[base + offset], weight * p_mass)
 
         for i, j in grid_m:
@@ -466,9 +429,7 @@ def test_mpm88_ndarray():
         for p in x:
             base = (x[p] * inv_dx - 0.5).cast(int)
             fx = x[p] * inv_dx - base.cast(float)
-            w = [
-                0.5 * (1.5 - fx)**2, 0.75 - (fx - 1.0)**2, 0.5 * (fx - 0.5)**2
-            ]
+            w = [0.5 * (1.5 - fx) ** 2, 0.75 - (fx - 1.0) ** 2, 0.5 * (fx - 0.5) ** 2]
             new_v = ti.Vector.zero(ti.f32, 2)
             new_C = ti.Matrix.zero(ti.f32, 2, 2)
             for i in ti.static(range(3)):
@@ -493,17 +454,17 @@ def test_mpm88_ndarray():
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
         template_args = {
-            'x': x,
-            'v': v,
-            'C': C,
-            'J': J,
-            'grid_m': grid_m,
-            'grid_v': grid_v,
+            "x": x,
+            "v": v,
+            "C": C,
+            "J": J,
+            "grid_m": grid_m,
+            "grid_v": grid_v,
         }
         m.add_kernel(substep, template_args=template_args)
 
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             json.load(json_file)
 
 
@@ -517,13 +478,13 @@ def test_aot_ndarray_template_mixed():
     with tempfile.TemporaryDirectory() as tmpdir:
         x = ti.ndarray(dtype=ti.f32, shape=16)
         m = ti.aot.Module()
-        m.add_kernel(run, template_args={'arr': x, 'val2': 42})
+        m.add_kernel(run, template_args={"arr": x, "val2": 42})
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json')) as json_file:
+        with open(os.path.join(tmpdir, "metadata.json")) as json_file:
             res = json.load(json_file)
-            for kernel in res['kernels']:
-                if kernel['name'] == 'run':
-                    args_count = len(kernel['ctx_attribs']['arg_attribs_vec_'])
+            for kernel in res["kernels"]:
+                if kernel["name"] == "run":
+                    args_count = len(kernel["ctx_attribs"]["arg_attribs_vec_"])
                     assert args_count == 2, res  # `arr` and `val1`
 
 
@@ -532,17 +493,17 @@ def test_aot_ndarray_without_template_args():
     @ti.kernel
     def kernel1(arr: ti.types.ndarray(dtype=ti.f32, ndim=2)):
         for I in ti.grouped(arr):
-            arr[I] = 0.
+            arr[I] = 0.0
 
     @ti.kernel
     def kernel2(arr: ti.types.ndarray(dtype=ti.math.vec2, ndim=2)):
         for I in ti.grouped(arr):
-            arr[I] = 0.
+            arr[I] = 0.0
 
     @ti.kernel
     def kernel3(arr: ti.types.ndarray(dtype=ti.math.mat2, ndim=2)):
         for I in ti.grouped(arr):
-            arr[I] = 0.
+            arr[I] = 0.0
 
     m = ti.aot.Module()
     m.add_kernel(kernel1)
@@ -561,13 +522,12 @@ def test_archive():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
-        m.add_field('density', density)
+        m.add_field("density", density)
         m.add_kernel(init)
         tcm_path = f"{tmpdir}/x.tcm"
         m.archive(tcm_path)
-        with zipfile.ZipFile(tcm_path, 'r') as z:
-            assert z.read("__version__") == bytes(
-                '.'.join(str(x) for x in ti.__version__), 'utf-8')
+        with zipfile.ZipFile(tcm_path, "r") as z:
+            assert z.read("__version__") == bytes(".".join(str(x) for x in ti.__version__), "utf-8")
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -581,8 +541,7 @@ def test_sequential_dispatch():
     def init_data(test_vec: ivec3):
         pass
 
-    sym_args = ti.graph.Arg(ti.graph.ArgKind.MATRIX, 'test_arg',
-                            ti.types.vector(3, ti.i32))
+    sym_args = ti.graph.Arg(ti.graph.ArgKind.MATRIX, "test_arg", ti.types.vector(3, ti.i32))
 
     g_init_substep.dispatch(init_data, sym_args)
     g_init_builder.append(g_init_substep)
@@ -593,7 +552,7 @@ def test_sequential_dispatch():
         m = ti.aot.Module()
         m.add_graph("g_init", g_init)
         m.save(tmpdir)
-        with open(os.path.join(tmpdir, 'metadata.json'), "r") as json_file:
+        with open(os.path.join(tmpdir, "metadata.json"), "r") as json_file:
             json.load(json_file)
 
 
@@ -607,16 +566,16 @@ def test_vulkan_cgraph_short():
         for i in a:
             a[i] = i + c
 
-    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, 'a', ti.u8, ndim=1)
-    sym_c = ti.graph.Arg(ti.graph.ArgKind.SCALAR, 'c', ti.u8)
+    sym_a = ti.graph.Arg(ti.graph.ArgKind.NDARRAY, "a", ti.u8, ndim=1)
+    sym_c = ti.graph.Arg(ti.graph.ArgKind.SCALAR, "c", ti.u8)
     g_init = ti.graph.GraphBuilder()
     g_init.dispatch(test, sym_a, sym_c)
     g = g_init.compile()
 
-    g.run({'a': a, 'c': c})
+    g.run({"a": a, "c": c})
 
     m = ti.aot.Module(caps=[ti.DeviceCapability.spirv_has_int8])
-    m.add_graph('g_init', g)
+    m.add_graph("g_init", g)
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
 
@@ -627,8 +586,9 @@ def test_devcap():
         ti.vulkan,
         caps=[
             ti.DeviceCapability.spirv_has_float16,
-            ti.DeviceCapability.spirv_has_atomic_float16_minmax
-        ])
+            ti.DeviceCapability.spirv_has_atomic_float16_minmax,
+        ],
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         module.save(tmpdir)
@@ -650,25 +610,25 @@ def test_devcap():
 
 @test_utils.test(arch=[ti.vulkan])
 def test_devcap_weird_user_input():
-    with pytest.raises(RuntimeError,
-                       match='unexpected device capability name'):
-        ti.aot.Module(ti.vulkan,
-                      caps=[
-                          "Never gonna give you up"
-                          "Never gonna let you down"
-                          "Never gonna run around and desert you"
-                          "Never gonna make you cry"
-                          "Never gonna say goodbye"
-                          "Never gonna tell a lie and hurt you"
-                      ])
+    with pytest.raises(RuntimeError, match="unexpected device capability name"):
+        ti.aot.Module(
+            ti.vulkan,
+            caps=[
+                "Never gonna give you up"
+                "Never gonna let you down"
+                "Never gonna run around and desert you"
+                "Never gonna make you cry"
+                "Never gonna say goodbye"
+                "Never gonna tell a lie and hurt you"
+            ],
+        )
 
 
 @test_utils.test(arch=[ti.vulkan])
 def test_module_arch_fallback():
     with pytest.warns(
-            Warning,
-            match=
-            r'AOT compilation to a different arch than the current one is not yet supported, switching'
+        Warning,
+        match=r"AOT compilation to a different arch than the current one is not yet supported, switching",
     ):
         m = ti.aot.Module(ti.cpu)
 
@@ -676,9 +636,7 @@ def test_module_arch_fallback():
 @test_utils.test(arch=[ti.vulkan])
 def test_save_kernel_with_rwtexture():
     @ti.kernel
-    def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       fmt=ti.Format.r32f,
-                                       lod=0)):
+    def write(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
@@ -708,13 +666,12 @@ def test_read_kernel_with_texture():
 @test_utils.test(arch=[ti.vulkan])
 def test_rwtexture_with_ndarray():
     @ti.kernel
-    def init_texture_from_ndarray(tex: ti.types.rw_texture(num_dimensions=2,
-                                                           fmt=ti.Format.r32f,
-                                                           lod=0),
-                                  img: ti.types.ndarray(ndim=2)):
+    def init_texture_from_ndarray(
+        tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0),
+        img: ti.types.ndarray(ndim=2),
+    ):
         for i, j in img:
-            tex.store(ti.Vector([i, j]),
-                      ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.)
+            tex.store(ti.Vector([i, j]), ti.Vector([img[i, j], 0.0, 0.0, 0.0]) / 255.0)
 
     m = ti.aot.Module()
     tex = ti.Texture(ti.Format.r32f, (128, 128))

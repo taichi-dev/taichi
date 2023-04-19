@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# -- stdlib --
+import argparse
+import glob
+import re
+
+# -- third party --
+# -- own --
+
+# -- code --
+parser = argparse.ArgumentParser(description="Replace CI_IMAGE_VERSION in .github/workflows/*.yml files.")
+parser.add_argument("version", help="The version number to replace with (12-digit number).", type=str)
+options = parser.parse_args()
+
+if not re.fullmatch(r"\d{12}", options.version):
+    print("Error: Please provide a 12-digit version number.")
+    exit(1)
+
+pattern = re.compile(r"""(CI_IMAGE_VERSION:\s*['"])(\d{12})(['"])""")
+
+for fn in glob.glob("../.github/workflows/*.yml"):
+    with open(fn, "r") as f:
+        content = f.read()
+
+    new_content = pattern.sub(rf"\g<1>{options.version}\3", content)
+
+    with open(fn, "w") as f:
+        f.write(new_content)

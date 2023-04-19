@@ -179,7 +179,8 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
 }
 
 ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr));
+  return insert(Stmt::make_typed<ArgLoadStmt>(
+      arg_id, dt, is_ptr, /*is_grad*/ false, /*create_load*/ true));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -268,6 +269,10 @@ UnaryOpStmt *IRBuilder::create_exp(Stmt *value) {
 
 UnaryOpStmt *IRBuilder::create_log(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::log, value));
+}
+
+UnaryOpStmt *IRBuilder::create_popcnt(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::popcnt, value));
 }
 
 BinaryOpStmt *IRBuilder::create_add(Stmt *l, Stmt *r) {
@@ -360,6 +365,15 @@ BinaryOpStmt *IRBuilder::create_cmp_eq(Stmt *l, Stmt *r) {
 
 BinaryOpStmt *IRBuilder::create_cmp_ne(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::cmp_ne, l, r));
+}
+
+BinaryOpStmt *IRBuilder::create_logical_or(Stmt *l, Stmt *r) {
+  return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::logical_or, l, r));
+}
+
+BinaryOpStmt *IRBuilder::create_logical_and(Stmt *l, Stmt *r) {
+  return insert(
+      Stmt::make_typed<BinaryOpStmt>(BinaryOpType::logical_and, l, r));
 }
 
 AtomicOpStmt *IRBuilder::create_atomic_add(Stmt *dest, Stmt *val) {

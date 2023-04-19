@@ -78,13 +78,15 @@ class TypeCheck : public IRVisitor {
 
   void visit(AtomicOpStmt *stmt) override {
     // TODO(type): test_ad_for fails if we assume dest is a pointer type.
+
     stmt->ret_type = type_check_store(
         stmt, stmt->dest, stmt->val,
         fmt::format("Atomic {}", atomic_op_type_name(stmt->op_type)));
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>());
+    TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
+              stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
       TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
                 ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
@@ -169,7 +171,8 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    TI_ASSERT(stmt->offset->ret_type->is_primitive(PrimitiveTypeID::i32));
+    TI_ASSERT(stmt->offset->ret_type.get_element_type()->is_primitive(
+        PrimitiveTypeID::i32));
     stmt->ret_type.set_is_pointer(true);
   }
 
@@ -196,6 +199,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(UnaryOpStmt *stmt) override {
+    if (stmt->op_type == UnaryOpType::frexp) {
+      // frexp returns a struct type of {double, i32} and it's set in frontend
+      // IR lowering.
+      return;
+    }
     auto operand_type = stmt->operand->ret_type;
     stmt->ret_type = operand_type;
     if (stmt->is_cast()) {
@@ -389,7 +397,8 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type->is_primitive(PrimitiveTypeID::i32));
+      TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
+          PrimitiveTypeID::i32));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -416,24 +425,30 @@ class TypeCheck : public IRVisitor {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(FrontendFuncCallStmt *stmt) override {
     auto *func = stmt->func;
     TI_ASSERT(func);
     stmt->ret_type = func->ret_type;
+    stmt->ret_type.set_is_pointer(true);
   }
 
   void visit(GetElementStmt *stmt) override {
+    TI_ASSERT(stmt->src->ret_type->is<PointerType>());
     stmt->ret_type =
-        stmt->src->ret_type->as<StructType>()->get_element_type(stmt->index);
+        stmt->src->ret_type.ptr_removed()->as<StructType>()->get_element_type(
+            stmt->index);
   }
 
   void visit(ArgLoadStmt *stmt) override {
     // TODO: Maybe have a type_inference() pass, which takes in the args/rets
     // defined by the kernel. After that, type_check() pass will purely do
     // verification, without modifying any types.
-    stmt->ret_type.set_is_pointer(stmt->is_ptr);
+    if (stmt->is_ptr) {
+      stmt->ret_type.set_is_pointer(true);
+    }
   }
 
   void visit(ReturnStmt *stmt) override {
@@ -441,22 +456,13 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ExternalPtrStmt *stmt) override {
-    /* ExternalPtrStmt may have two different semantics:
-       1. outer indexing to an argloaded external tensor
-       2. outer indexing + inner indexing to get the innermost primitive
-       element of an external tensor
-       We rely on "external_dims" and "indices" to distinguish these two cases.
-       Case #1: external_dims == indices.size(), return TensorType
-       Case #2: external_dims < indices.size(), return PrimitiveType
-    */
     TI_ASSERT(stmt->base_ptr->is<ArgLoadStmt>());
     auto arg_load_stmt = stmt->base_ptr->cast<ArgLoadStmt>();
 
-    int external_dims = arg_load_stmt->field_dims_;
-    if (external_dims == stmt->indices.size() || external_dims == -1) {
-      stmt->ret_type = arg_load_stmt->ret_type;
+    if (stmt->overrided_dtype) {
+      // pass
     } else {
-      stmt->ret_type = arg_load_stmt->ret_type.ptr_removed().get_element_type();
+      stmt->ret_type = arg_load_stmt->ret_type;
     }
 
     stmt->ret_type.set_is_pointer(true);
@@ -501,6 +507,9 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(GetChStmt *stmt) override {
+    if (stmt->overrided_dtype)
+      return;
+
     if (stmt->is_bit_vectorized) {
       auto physical_type = stmt->output_snode->physical_type;
       auto ptr_ret_type =

@@ -45,16 +45,21 @@ def taichi_logo(pos: ti.template(), scale: float = 1 / 1.11):
 
 
 @ti.kernel
-def make_texture_2d(tex: ti.types.rw_texture(
-    num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
+def make_texture_2d_r32f(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j in ti.ndrange(n, n):
         ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
         tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
 
 
 @ti.kernel
-def make_texture_3d(tex: ti.types.rw_texture(
-    num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32):
+def make_texture_2d_rgba8(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.rgba8, lod=0), n: ti.i32):
+    for i, j in ti.ndrange(n, n):
+        ret = ti.cast(taichi_logo(ti.Vector([i, j]) / n), ti.f32)
+        tex.store(ti.Vector([i, j]), ti.Vector([ret, 0.0, 0.0, 0.0]))
+
+
+@ti.kernel
+def make_texture_3d(tex: ti.types.rw_texture(num_dimensions=3, fmt=ti.Format.r32f, lod=0), n: ti.i32):
     for i, j, k in ti.ndrange(n, n, n):
         div = ti.cast(i / n, ti.f32)
         if div > 0.5:
@@ -72,9 +77,7 @@ def test_texture_compiled_functions():
     def paint(t: ti.f32, tex: ti.types.texture(num_dimensions=2), n: ti.i32):
         for i, j in pixels:
             uv = ti.Vector([i / res[0], j / res[1]])
-            warp_uv = uv + ti.Vector(
-                [ti.cos(t + uv.x * 5.0),
-                 ti.sin(t + uv.y * 5.0)]) * 0.1
+            warp_uv = uv + ti.Vector([ti.cos(t + uv.x * 5.0), ti.sin(t + uv.y * 5.0)]) * 0.1
             c = ti.math.vec4(0.0)
             if uv.x > 0.5:
                 c = tex.sample_lod(warp_uv, 0.0)
@@ -86,15 +89,15 @@ def test_texture_compiled_functions():
     texture1 = ti.Texture(ti.Format.r32f, (n1, n1))
     n2 = 256
     texture2 = ti.Texture(ti.Format.r32f, (n2, n2))
-    texture3 = ti.Texture(ti.Format.r8, (n1, n1))
+    texture3 = ti.Texture(ti.Format.rgba8, (n1, n1))
 
-    make_texture_2d(texture1, n1)
+    make_texture_2d_r32f(texture1, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 1
 
-    make_texture_2d(texture2, n2)
+    make_texture_2d_r32f(texture2, n2)
     assert impl.get_runtime().get_num_compiled_functions() == 1
 
-    make_texture_2d(texture3, n1)
+    make_texture_2d_rgba8(texture3, n1)
     assert impl.get_runtime().get_num_compiled_functions() == 2
 
     paint(0.1, texture1, n1)
@@ -103,8 +106,10 @@ def test_texture_compiled_functions():
     paint(0.2, texture2, n2)
     assert impl.get_runtime().get_num_compiled_functions() == 3
 
+    # (penguinliong) Remember that non-RW textures don't enforce a format so
+    # it's the same as the first call to `paint`.
     paint(0.3, texture3, n1)
-    assert impl.get_runtime().get_num_compiled_functions() == 4
+    assert impl.get_runtime().get_num_compiled_functions() == 3
 
 
 @test_utils.test(arch=supported_archs_texture_excluding_load_store)
@@ -147,7 +152,7 @@ def test_texture_3d():
 
 @test_utils.test(arch=supported_archs_texture)
 def test_from_to_image():
-    url = 'https://github.com/taichi-dev/taichi/blob/master/misc/logo.png?raw=true'
+    url = "https://github.com/taichi-dev/taichi/blob/master/misc/logo.png?raw=true"
     response = requests.get(url)
     img = Image.open(BytesIO(response.content))
     tex = ti.Texture(ti.Format.rgba8, img.size)
@@ -155,7 +160,7 @@ def test_from_to_image():
     tex.from_image(img)
     out = tex.to_image()
 
-    assert (np.asarray(out) == np.asarray(img.convert('RGB'))).all()
+    assert (np.asarray(out) == np.asarray(img.convert("RGB"))).all()
 
 
 @test_utils.test(arch=supported_archs_texture)
@@ -165,9 +170,7 @@ def test_rw_texture_2d_struct_for():
     arr = ti.ndarray(ti.f32, res)
 
     @ti.kernel
-    def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       fmt=ti.Format.r32f,
-                                       lod=0)):
+    def write(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
@@ -186,15 +189,44 @@ def test_rw_texture_2d_struct_for_dim_check():
     tex = ti.Texture(ti.Format.r32f, (32, 32, 32))
 
     @ti.kernel
-    def write(tex: ti.types.rw_texture(num_dimensions=2,
-                                       fmt=ti.Format.r32f,
-                                       lod=0)):
+    def write(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)):
         for i, j in tex:
             tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
 
     with pytest.raises(
-            ti.TaichiCompilationError,
-            match=
-            "Number of struct-for indices does not match loop variable dimensionality \(2 != 3\)."
+        ti.TaichiRuntimeError,
+        match="RWTextureType dimension mismatch: expected 2, got 3",
+    ) as e:
+        write(tex)
+
+
+@test_utils.test(arch=supported_archs_texture)
+def test_rw_texture_wrong_fmt():
+    tex = ti.Texture(ti.Format.rgba8, (32, 32))
+
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=2, fmt=ti.Format.r32f, lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    with pytest.raises(
+        ti.TaichiRuntimeError,
+        match="RWTextureType format mismatch: expected Format.r32f, got Format.rgba8",
+    ) as e:
+        write(tex)
+
+
+@test_utils.test(arch=supported_archs_texture)
+def test_rw_texture_wrong_ndim():
+    tex = ti.Texture(ti.Format.rgba8, (32, 32))
+
+    @ti.kernel
+    def write(tex: ti.types.rw_texture(num_dimensions=1, fmt=ti.Format.rgba8, lod=0)):
+        for i, j in tex:
+            tex.store(ti.Vector([i, j]), ti.Vector([1.0, 0.0, 0.0, 0.0]))
+
+    with pytest.raises(
+        ti.TaichiRuntimeError,
+        match="RWTextureType dimension mismatch: expected 1, got 2",
     ) as e:
         write(tex)

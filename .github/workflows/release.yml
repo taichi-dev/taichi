@@ -18,7 +18,11 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
-  TI_CI: 1
+  CI_IMAGE_VERSION: '202303241150'
+  TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: 'ON'
+  TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
+
 
 jobs:
   add_version_to_database:
@@ -50,16 +54,16 @@ jobs:
         run: |
           if [ -n "$RELEASE_VERSION" ]; then
             # For production release, we run on five python versions.
-            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi","python":"3.7"},{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports 3.8, 3.9, and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi","python":"3.8"},{"name":"taichi","python":"3.9"},{"name":"taichi","python":"3.10"},{"name":"taichi","python":"3.11"}]}"' >> $GITHUB_OUTPUT
           else
             # For nightly release, we run on three python versions.
-            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix={"include":[{"name":"taichi-nightly","python":"3.7"},{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"}]}"' >> $GITHUB_OUTPUT
 
             # M1 only supports 3.8 and 3.10(conda), so change matrix.
-            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"}]}"' >> $GITHUB_OUTPUT
+            echo 'matrix_osx={"include":[{"name":"taichi-nightly","python":"3.8"},{"name":"taichi-nightly","python":"3.9"},{"name":"taichi-nightly","python":"3.10"},{"name":"taichi-nightly","python":"3.11"}]}"' >> $GITHUB_OUTPUT
           fi
 
   build_and_test_linux:
@@ -68,7 +72,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, cuda, vulkan, cn, release]
+    runs-on: [self-hosted, cuda, vulkan, cn, release, sm70]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -86,16 +98,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-build \
-            registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
             /home/dev/taichi/.github/workflows/scripts/build.py
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -109,7 +113,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
@@ -121,6 +125,14 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
     runs-on: [self-hosted, cuda, cn, release]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -138,17 +150,8 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-manylinux2014-cuda:v0.0.1 \
+             registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/build.py
-
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -162,7 +165,7 @@ jobs:
           . .github/workflows/scripts/common-utils.sh
 
           ci-docker-run-gpu --name taichi-test \
-             registry.taichigraphics.com/taichidev-ubuntu18.04:v0.3.4 \
+             registry.botmaster.tgr/taichi-test-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
              /home/dev/taichi/.github/workflows/scripts/unix_test.sh
         env:
           PY: ${{ matrix.python }}
@@ -177,6 +180,11 @@ jobs:
     runs-on: [self-hosted, macos-10.15]
     env:
       PY: ${{ matrix.python }}
+      CXX: clang++
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
     steps:
       - uses: actions/checkout@v3
         with:
@@ -195,12 +203,6 @@ jobs:
           .github/workflows/scripts/build.py
         env:
           PROJECT_NAME: ${{ matrix.name }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -225,6 +227,16 @@ jobs:
     defaults:
       run:
         shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
+    env:
+      PY: ${{ matrix.python }}
+      CXX: clang++
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -240,16 +252,6 @@ jobs:
         run: |
           brew install molten-vk
           .github/workflows/scripts/build.py
-        env:
-          PROJECT_NAME: ${{ matrix.name }}
-          PY: ${{ matrix.python }}
-          CXX: clang++
-          TAICHI_CMAKE_ARGS: >-
-            -DTI_WITH_OPENGL:BOOL=OFF
-            -DTI_WITH_CUDA:BOOL=OFF
-            -DTI_WITH_CC:BOOL=OFF
-            -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_BUILD_TESTS:BOOL=ON
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -272,7 +274,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.matrix_prep.outputs.matrix) }}
-    runs-on: [self-hosted, windows, cuda, OpenGL]
+    # FIXME: force running on sm70 for now. Should be refactored out
+    runs-on: [self-hosted, windows, cuda, OpenGL, sm70]
+    env:
+      PY: ${{ matrix.python }}
+      PROJECT_NAME: ${{ matrix.name }}
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=ON
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_DX11:BOOL=ON
+        -DTI_WITH_DX12:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
+
     steps:
       - name: Workaround checkout Needed single revision issue
         run: |
@@ -289,13 +303,10 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Build
-        shell: pwsh
         if: ${{ needs.check_files.outputs.run_job != 'false' }}
+        shell: cmd
         run: |
-          .\.github\workflows\scripts\win_build.ps1 -llvmVer 15 -installVulkan -libsDir "$env:LocalAppData/buildbot"
-        env:
-          PY: ${{ matrix.python }}
-          PROJECT_NAME: ${{ matrix.name }}
+          python .\.github\workflows\scripts\build.py
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -307,11 +318,19 @@ jobs:
       - name: Test
         shell: pwsh
         run: |
-          .\.github\workflows\scripts\win_test.ps1 -libsDir "$env:LocalAppData/buildbot"
+          .\.github\workflows\scripts\win_test.ps1
         env:
           PY: ${{ matrix.python }}
           TI_WANTED_ARCHS: "cpu,cuda,opengl,vulkan"
           TI_SKIP_VERSION_CHECK: ON
+
+      - name: Cleanup Git Cache Configs
+        shell: pwsh
+        if: always()
+        run: |
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
+          exit 0
 
   upload_to_pypi:
     name: Upload release to PyPI

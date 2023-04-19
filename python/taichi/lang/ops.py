@@ -1,34 +1,14 @@
 import builtins
 import functools
-import math
 import operator as _bt_ops_mod  # bt for builtin
+from typing import Union
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl
 from taichi.lang.exception import TaichiSyntaxError
 from taichi.lang.field import Field
-from taichi.lang.util import (cook_dtype, is_matrix_class, is_taichi_class,
-                              taichi_scope)
-
-
-def uniform_matrix_inputs(*args):
-    has_real_matrix = False
-    for arg in args:
-        if is_taichi_expr(arg) and arg.ptr.is_tensor():
-            has_real_matrix = True
-            break
-
-    results = []
-    for arg in args:
-        if has_real_matrix and is_matrix_class(arg):
-            results.append(impl.expr_init(arg))
-        else:
-            results.append(arg)
-
-    return results
-
-
-unary_ops = []
+from taichi.lang.util import cook_dtype, is_matrix_class, is_taichi_class, taichi_scope
 
 
 def stack_info():
@@ -43,110 +23,21 @@ def wrap_if_not_expr(a):
     return expr.Expr(a) if not is_taichi_expr(a) else a
 
 
-def unary(foo):
-    @functools.wraps(foo)
-    def imp_foo(x):
-        return foo(x)
-
-    @functools.wraps(foo)
-    def wrapped(a):
-        if is_taichi_class(a):
-            return a._element_wise_unary(imp_foo)
-        return imp_foo(a)
-
-    return wrapped
-
-
-binary_ops = []
-
-
-def binary(foo):
-    @functools.wraps(foo)
-    def imp_foo(x, y):
-        return foo(x, y)
-
-    @functools.wraps(foo)
-    def rev_foo(x, y):
-        return foo(y, x)
-
-    @functools.wraps(foo)
-    def wrapped(a, b):
-        a, b = uniform_matrix_inputs(a, b)
-
-        if isinstance(a, Field) or isinstance(b, Field):
-            return NotImplemented
-        if is_taichi_class(a):
-            return a._element_wise_binary(imp_foo, b)
-        if is_taichi_class(b):
-            return b._element_wise_binary(rev_foo, a)
-        return imp_foo(a, b)
-
-    binary_ops.append(wrapped)
-    return wrapped
-
-
-ternary_ops = []
-
-
-def ternary(foo):
-    @functools.wraps(foo)
-    def abc_foo(a, b, c):
-        return foo(a, b, c)
-
-    @functools.wraps(foo)
-    def bac_foo(b, a, c):
-        return foo(a, b, c)
-
-    @functools.wraps(foo)
-    def cab_foo(c, a, b):
-        return foo(a, b, c)
-
-    @functools.wraps(foo)
-    def wrapped(a, b, c):
-        a, b, c = uniform_matrix_inputs(a, b, c)
-
-        if isinstance(a, Field) or isinstance(b, Field) or isinstance(
-                c, Field):
-            return NotImplemented
-        if is_taichi_class(a):
-            return a._element_wise_ternary(abc_foo, b, c)
-        if is_taichi_class(b):
-            return b._element_wise_ternary(bac_foo, a, c)
-        if is_taichi_class(c):
-            return c._element_wise_ternary(cab_foo, a, b)
-        return abc_foo(a, b, c)
-
-    ternary_ops.append(wrapped)
-    return wrapped
-
-
-writeback_binary_ops = []
+def _read_matrix_or_scalar(x):
+    if is_matrix_class(x):
+        return x.to_numpy()
+    return x
 
 
 def writeback_binary(foo):
     @functools.wraps(foo)
-    def imp_foo(x, y):
-        return foo(x, wrap_if_not_expr(y))
-
-    @functools.wraps(foo)
     def wrapped(a, b):
-        a, b = uniform_matrix_inputs(a, b)
-
         if isinstance(a, Field) or isinstance(b, Field):
             return NotImplemented
-        if is_taichi_class(a):
-            return a._element_wise_writeback_binary(imp_foo, b)
-        if is_taichi_class(b):
-            raise TaichiSyntaxError(
-                f'cannot augassign taichi class {type(b)} to scalar expr')
         if not (is_taichi_expr(a) and a.ptr.is_lvalue()):
-            raise TaichiSyntaxError(
-                f'cannot use a non-writable target as the first operand of \'{foo.__name__}\''
-            )
-        else:
-            return imp_foo(a, b)
+            raise TaichiSyntaxError(f"cannot use a non-writable target as the first operand of '{foo.__name__}'")
+        return foo(a, wrap_if_not_expr(b))
 
-    writeback_binary_ops.append(wrapped)
     return wrapped
 
 
@@ -209,32 +100,55 @@ def bit_cast(obj, dtype):
     """
     dtype = cook_dtype(dtype)
     if is_taichi_class(obj):
-        raise ValueError('Cannot apply bit_cast on Taichi classes')
+        raise ValueError("Cannot apply bit_cast on Taichi classes")
     else:
         return expr.Expr(_ti_core.bits_cast(expr.Expr(obj).ptr, dtype))
 
 
 def _unary_operation(taichi_op, python_op, a):
+    if isinstance(a, Field):
+        return NotImplemented
     if is_taichi_expr(a):
         return expr.Expr(taichi_op(a.ptr), tb=stack_info())
+    from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
+    if isinstance(a, Matrix):
+        return Matrix(python_op(a.to_numpy()))
     return python_op(a)
 
 
 def _binary_operation(taichi_op, python_op, a, b):
+    if isinstance(a, Field) or isinstance(b, Field):
+        return NotImplemented
     if is_taichi_expr(a) or is_taichi_expr(b):
         a, b = wrap_if_not_expr(a), wrap_if_not_expr(b)
         return expr.Expr(taichi_op(a.ptr, b.ptr), tb=stack_info())
+    from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
+    if isinstance(a, Matrix) or isinstance(b, Matrix):
+        return Matrix(python_op(_read_matrix_or_scalar(a), _read_matrix_or_scalar(b)))
     return python_op(a, b)
 
 
 def _ternary_operation(taichi_op, python_op, a, b, c):
+    if isinstance(a, Field) or isinstance(b, Field) or isinstance(c, Field):
+        return NotImplemented
     if is_taichi_expr(a) or is_taichi_expr(b) or is_taichi_expr(c):
         a, b, c = wrap_if_not_expr(a), wrap_if_not_expr(b), wrap_if_not_expr(c)
         return expr.Expr(taichi_op(a.ptr, b.ptr, c.ptr), tb=stack_info())
+    from taichi.lang.matrix import Matrix  # pylint: disable-msg=C0415
+
+    if isinstance(a, Matrix) or isinstance(b, Matrix) or isinstance(c, Matrix):
+        return Matrix(
+            python_op(
+                _read_matrix_or_scalar(a),
+                _read_matrix_or_scalar(b),
+                _read_matrix_or_scalar(c),
+            )
+        )
     return python_op(a, b, c)
 
 
-@unary
 def neg(x):
     """Numerical negative, element-wise.
 
@@ -254,7 +168,6 @@ def neg(x):
     return _unary_operation(_ti_core.expr_neg, _bt_ops_mod.neg, x)
 
 
-@unary
 def sin(x):
     """Trigonometric sine, element-wise.
 
@@ -272,10 +185,9 @@ def sin(x):
         >>> ti.sin(x)
         [-1., 0., 1.]
     """
-    return _unary_operation(_ti_core.expr_sin, math.sin, x)
+    return _unary_operation(_ti_core.expr_sin, np.sin, x)
 
 
-@unary
 def cos(x):
     """Trigonometric cosine, element-wise.
 
@@ -293,10 +205,9 @@ def cos(x):
         >>> ti.cos(x)
         [-1., 1., 0.]
     """
-    return _unary_operation(_ti_core.expr_cos, math.cos, x)
+    return _unary_operation(_ti_core.expr_cos, np.cos, x)
 
 
-@unary
 def asin(x):
     """Trigonometric inverse sine, element-wise.
 
@@ -319,10 +230,9 @@ def asin(x):
         >>> ti.asin(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
         [-90., 0., 90.]
     """
-    return _unary_operation(_ti_core.expr_asin, math.asin, x)
+    return _unary_operation(_ti_core.expr_asin, np.arcsin, x)
 
 
-@unary
 def acos(x):
     """Trigonometric inverse cosine, element-wise.
 
@@ -345,10 +255,9 @@ def acos(x):
         >>> ti.acos(ti.Matrix([-1.0, 0.0, 1.0])) * 180 / pi
         [180., 90., 0.]
     """
-    return _unary_operation(_ti_core.expr_acos, math.acos, x)
+    return _unary_operation(_ti_core.expr_acos, np.arccos, x)
 
 
-@unary
 def sqrt(x):
     """Return the non-negative square-root of a scalar or a matrix,
     element wise. If `x < 0` an exception is raised.
@@ -367,10 +276,9 @@ def sqrt(x):
         >>> y
         [1.0, 2.0, 3.0]
     """
-    return _unary_operation(_ti_core.expr_sqrt, math.sqrt, x)
+    return _unary_operation(_ti_core.expr_sqrt, np.sqrt, x)
 
 
-@unary
 def rsqrt(x):
     """The reciprocal of the square root function.
 
@@ -381,15 +289,15 @@ def rsqrt(x):
     Returns:
         The reciprocal of `sqrt(x)`.
     """
+
     def _rsqrt(x):
-        return 1 / math.sqrt(x)
+        return 1 / np.sqrt(x)
 
     return _unary_operation(_ti_core.expr_rsqrt, _rsqrt, x)
 
 
-@unary
 def _round(x):
-    return _unary_operation(_ti_core.expr_round, builtins.round, x)
+    return _unary_operation(_ti_core.expr_round, np.round, x)
 
 
 def round(x, dtype=None):  # pylint: disable=redefined-builtin
@@ -419,9 +327,8 @@ def round(x, dtype=None):  # pylint: disable=redefined-builtin
     return result
 
 
-@unary
 def _floor(x):
-    return _unary_operation(_ti_core.expr_floor, math.floor, x)
+    return _unary_operation(_ti_core.expr_floor, np.floor, x)
 
 
 def floor(x, dtype=None):
@@ -451,9 +358,8 @@ def floor(x, dtype=None):
     return result
 
 
-@unary
 def _ceil(x):
-    return _unary_operation(_ti_core.expr_ceil, math.ceil, x)
+    return _unary_operation(_ti_core.expr_ceil, np.ceil, x)
 
 
 def ceil(x, dtype=None):
@@ -485,7 +391,10 @@ def ceil(x, dtype=None):
     return result
 
 
-@unary
+def frexp(x):
+    return _unary_operation(_ti_core.expr_frexp, np.frexp, x)
+
+
 def tan(x):
     """Trigonometric tangent function, element-wise.
 
@@ -510,10 +419,9 @@ def tan(x):
         >>> test()
         [-0.0, -22877334.0, 0.0]
     """
-    return _unary_operation(_ti_core.expr_tan, math.tan, x)
+    return _unary_operation(_ti_core.expr_tan, np.tan, x)
 
 
-@unary
 def tanh(x):
     """Compute the hyperbolic tangent of `x`, element-wise.
 
@@ -535,10 +443,9 @@ def tanh(x):
         >>> test()
         [-0.761594, 0.000000, 0.761594]
     """
-    return _unary_operation(_ti_core.expr_tanh, math.tanh, x)
+    return _unary_operation(_ti_core.expr_tanh, np.tanh, x)
 
 
-@unary
 def exp(x):
     """Compute the exponential of all elements in `x`, element-wise.
 
@@ -560,10 +467,9 @@ def exp(x):
         >>> test()
         [0.367879, 1.000000, 2.718282]
     """
-    return _unary_operation(_ti_core.expr_exp, math.exp, x)
+    return _unary_operation(_ti_core.expr_exp, np.exp, x)
 
 
-@unary
 def log(x):
     """Compute the natural logarithm, element-wise.
 
@@ -588,10 +494,9 @@ def log(x):
         >>> test()
         [-nan, -inf, 0.000000]
     """
-    return _unary_operation(_ti_core.expr_log, math.log, x)
+    return _unary_operation(_ti_core.expr_log, np.log, x)
 
 
-@unary
 def abs(x):  # pylint: disable=W0622
     """Compute the absolute value :math:`|x|` of `x`, element-wise.
 
@@ -616,7 +521,6 @@ def abs(x):  # pylint: disable=W0622
     return _unary_operation(_ti_core.expr_abs, builtins.abs, x)
 
 
-@unary
 def bit_not(a):
     """The bit not function.
 
@@ -629,7 +533,13 @@ def bit_not(a):
     return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
-@unary
+def popcnt(a):
+    def _popcnt(x):
+        return bin(x).count("1")
+
+    return _unary_operation(_ti_core.expr_popcnt, _popcnt, a)
+
+
 def logical_not(a):
     """The logical not function.
 
@@ -639,10 +549,10 @@ def logical_not(a):
     Returns:
         `1` iff `a=0`, otherwise `0`.
     """
-    return _unary_operation(_ti_core.expr_logic_not, lambda x: int(not x), a)
+    return _unary_operation(_ti_core.expr_logic_not, np.logical_not, a)
 
 
-def random(dtype=float):
+def random(dtype=float) -> Union[float, int]:
     """Return a single random float/integer according to the specified data type.
     Must be called in taichi scope.
 
@@ -684,7 +594,6 @@ def random(dtype=float):
 # NEXT: add matpow(self, power)
 
 
-@binary
 def add(a, b):
     """The add function.
 
@@ -698,7 +607,6 @@ def add(a, b):
     return _binary_operation(_ti_core.expr_add, _bt_ops_mod.add, a, b)
 
 
-@binary
 def sub(a, b):
     """The sub function.
 
@@ -712,7 +620,6 @@ def sub(a, b):
     return _binary_operation(_ti_core.expr_sub, _bt_ops_mod.sub, a, b)
 
 
-@binary
 def mul(a, b):
     """The multiply function.
 
@@ -726,7 +633,6 @@ def mul(a, b):
     return _binary_operation(_ti_core.expr_mul, _bt_ops_mod.mul, a, b)
 
 
-@binary
 def mod(x1, x2):
     """Returns the element-wise remainder of division.
 
@@ -756,6 +662,7 @@ def mod(x1, x2):
         >>> test()
         [1.0, 0.0, 4.0]
     """
+
     def expr_python_mod(a, b):
         # a % b = a - (a // b) * b
         quotient = expr.Expr(_ti_core.expr_floordiv(a, b))
@@ -765,7 +672,6 @@ def mod(x1, x2):
     return _binary_operation(expr_python_mod, _bt_ops_mod.mod, x1, x2)
 
 
-@binary
 def pow(base, exponent):  # pylint: disable=W0622
     """First array elements raised to second array elements :math:`{base}^{exponent}`, element-wise.
 
@@ -803,11 +709,9 @@ def pow(base, exponent):  # pylint: disable=W0622
         >>> test()
         [-0.125000, 0.125000]
     """
-    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base,
-                             exponent)
+    return _binary_operation(_ti_core.expr_pow, _bt_ops_mod.pow, base, exponent)
 
 
-@binary
 def floordiv(a, b):
     """The floor division function.
 
@@ -818,11 +722,9 @@ def floordiv(a, b):
     Returns:
         The floor function of `a` divided by `b`.
     """
-    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a,
-                             b)
+    return _binary_operation(_ti_core.expr_floordiv, _bt_ops_mod.floordiv, a, b)
 
 
-@binary
 def truediv(a, b):
     """True division function.
 
@@ -836,7 +738,6 @@ def truediv(a, b):
     return _binary_operation(_ti_core.expr_truediv, _bt_ops_mod.truediv, a, b)
 
 
-@binary
 def max_impl(a, b):
     """The maxnimum function.
 
@@ -847,10 +748,9 @@ def max_impl(a, b):
     Returns:
         The maxnimum of `a` and `b`.
     """
-    return _binary_operation(_ti_core.expr_max, builtins.max, a, b)
+    return _binary_operation(_ti_core.expr_max, np.maximum, a, b)
 
 
-@binary
 def min_impl(a, b):
     """The minimum function.
 
@@ -861,10 +761,9 @@ def min_impl(a, b):
     Returns:
         The minimum of `a` and `b`.
     """
-    return _binary_operation(_ti_core.expr_min, builtins.min, a, b)
+    return _binary_operation(_ti_core.expr_min, np.minimum, a, b)
 
 
-@binary
 def atan2(x1, x2):
     """Element-wise arc tangent of `x1/x2`.
 
@@ -891,10 +790,9 @@ def atan2(x1, x2):
         >>> test()
         [-135.0, -45.0, 135.0, 45.0]
     """
-    return _binary_operation(_ti_core.expr_atan2, math.atan2, x1, x2)
+    return _binary_operation(_ti_core.expr_atan2, np.arctan2, x1, x2)
 
 
-@binary
 def raw_div(x1, x2):
     """Return `x1 // x2` if both `x1`, `x2` are integers, otherwise return `x1/x2`.
 
@@ -915,6 +813,7 @@ def raw_div(x1, x2):
         >>>     z = 4.0
         >>>     print(raw_div(x, z))  # 1.25
     """
+
     def c_div(a, b):
         if isinstance(a, int) and isinstance(b, int):
             return a // b
@@ -923,7 +822,6 @@ def raw_div(x1, x2):
     return _binary_operation(_ti_core.expr_div, c_div, x1, x2)
 
 
-@binary
 def raw_mod(x1, x2):
     """Return the remainder of `x1/x2`, element-wise.
     This is the C-style `mod` function.
@@ -944,13 +842,13 @@ def raw_mod(x1, x2):
         >>>     print(ti.mod(-4, 3))  # 2
         >>>     print(ti.raw_mod(-4, 3))  # -1
     """
+
     def c_mod(x, y):
         return x - y * int(float(x) / y)
 
     return _binary_operation(_ti_core.expr_mod, c_mod, x1, x2)
 
 
-@binary
 def cmp_lt(a, b):
     """Compare two values (less than)
 
@@ -962,11 +860,9 @@ def cmp_lt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly smaller than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_lt, lambda a, b: int(a < b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_lt, _bt_ops_mod.lt, a, b)
 
 
-@binary
 def cmp_le(a, b):
     """Compare two values (less than or equal to)
 
@@ -978,11 +874,9 @@ def cmp_le(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is smaller than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_le, lambda a, b: int(a <= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_le, _bt_ops_mod.le, a, b)
 
 
-@binary
 def cmp_gt(a, b):
     """Compare two values (greater than)
 
@@ -994,11 +888,9 @@ def cmp_gt(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is strictly larger than RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_gt, lambda a, b: int(a > b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_gt, _bt_ops_mod.gt, a, b)
 
 
-@binary
 def cmp_ge(a, b):
     """Compare two values (greater than or equal to)
 
@@ -1010,11 +902,9 @@ def cmp_ge(a, b):
         bool: True if LHS is greater than or equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ge, lambda a, b: int(a >= b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ge, _bt_ops_mod.ge, a, b)
 
 
-@binary
 def cmp_eq(a, b):
     """Compare two values (equal to)
 
@@ -1026,11 +916,9 @@ def cmp_eq(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is equal to RHS, False otherwise.
 
     """
-    return _binary_operation(_ti_core.expr_cmp_eq, lambda a, b: int(a == b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_eq, _bt_ops_mod.eq, a, b)
 
 
-@binary
 def cmp_ne(a, b):
     """Compare two values (not equal to)
 
@@ -1042,11 +930,9 @@ def cmp_ne(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: True if LHS is not equal to RHS, False otherwise
 
     """
-    return _binary_operation(_ti_core.expr_cmp_ne, lambda a, b: int(a != b), a,
-                             b)
+    return _binary_operation(_ti_core.expr_cmp_ne, _bt_ops_mod.ne, a, b)
 
 
-@binary
 def bit_or(a, b):
     """Computes bitwise-or
 
@@ -1061,7 +947,6 @@ def bit_or(a, b):
     return _binary_operation(_ti_core.expr_bit_or, _bt_ops_mod.or_, a, b)
 
 
-@binary
 def bit_and(a, b):
     """Compute bitwise-and
 
@@ -1076,7 +961,6 @@ def bit_and(a, b):
     return _binary_operation(_ti_core.expr_bit_and, _bt_ops_mod.and_, a, b)
 
 
-@binary
 def bit_xor(a, b):
     """Compute bitwise-xor
 
@@ -1091,7 +975,6 @@ def bit_xor(a, b):
     return _binary_operation(_ti_core.expr_bit_xor, _bt_ops_mod.xor, a, b)
 
 
-@binary
 def bit_shl(a, b):
     """Compute bitwise shift left
 
@@ -1106,7 +989,6 @@ def bit_shl(a, b):
     return _binary_operation(_ti_core.expr_bit_shl, _bt_ops_mod.lshift, a, b)
 
 
-@binary
 def bit_sar(a, b):
     """Compute bitwise shift right
 
@@ -1122,7 +1004,6 @@ def bit_sar(a, b):
 
 
 @taichi_scope
-@binary
 def bit_shr(x1, x2):
     """Elements in `x1` shifted to the right by number of bits in `x2`.
     Both `x1`, `x2` must have integer type.
@@ -1150,7 +1031,6 @@ def bit_shr(x1, x2):
     return _binary_operation(_ti_core.expr_bit_shr, _bt_ops_mod.rshift, x1, x2)
 
 
-@binary
 def logical_and(a, b):
     """Compute logical_and
 
@@ -1162,11 +1042,9 @@ def logical_and(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-and RHS (with short-circuit semantics)
 
     """
-    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b,
-                             a, b)
+    return _binary_operation(_ti_core.expr_logical_and, lambda a, b: a and b, a, b)
 
 
-@binary
 def logical_or(a, b):
     """Compute logical_or
 
@@ -1178,11 +1056,9 @@ def logical_or(a, b):
         Union[:class:`~taichi.lang.expr.Expr`, bool]: LHS logical-or RHS (with short-circuit semantics)
 
     """
-    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a,
-                             b)
+    return _binary_operation(_ti_core.expr_logical_or, lambda a, b: a or b, a, b)
 
 
-@ternary
 def select(cond, x1, x2):
     """Return an array drawn from elements in `x1` or `x2`,
     depending on the conditions in `cond`.
@@ -1218,7 +1094,6 @@ def select(cond, x1, x2):
     return _ternary_operation(_ti_core.expr_select, py_select, cond, x1, x2)
 
 
-@ternary
 def ifte(cond, x1, x2):
     """Evaluate and return `x1` if `cond` is true; otherwise evaluate and return `x2`. This operator guarantees
     short-circuit semantics: exactly one of `x1` or `x2` will be evaluated.
@@ -1268,8 +1143,7 @@ def atomic_add(x, y):
         >>>
         >>>     ti.atomic_add(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_add(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1299,8 +1173,7 @@ def atomic_sub(x, y):
         >>>
         >>>     ti.atomic_sub(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_sub(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1330,8 +1203,7 @@ def atomic_min(x, y):
         >>>
         >>>     ti.atomic_min(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_min(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1361,8 +1233,7 @@ def atomic_max(x, y):
         >>>
         >>>     ti.atomic_max(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_max(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1392,8 +1263,7 @@ def atomic_and(x, y):
         >>>
         >>>     ti.atomic_and(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_and(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1423,8 +1293,7 @@ def atomic_or(x, y):
         >>>
         >>>     ti.atomic_or(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_or(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
@@ -1454,14 +1323,12 @@ def atomic_xor(x, y):
         >>>
         >>>     ti.atomic_xor(1, x)  # will raise TaichiSyntaxError
     """
-    return impl.expr_init(
-        expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_bit_xor(x.ptr, y.ptr), tb=stack_info()))
 
 
 @writeback_binary
 def assign(a, b):
-    impl.get_runtime().compiling_callable.ast_builder().expr_assign(
-        a.ptr, b.ptr, stack_info())
+    impl.get_runtime().compiling_callable.ast_builder().expr_assign(a.ptr, b.ptr, stack_info())
     return a
 
 
@@ -1530,9 +1397,37 @@ def min(*args):  # pylint: disable=W0622
 
 
 __all__ = [
-    "acos", "asin", "atan2", "atomic_and", "atomic_or", "atomic_xor",
-    "atomic_max", "atomic_sub", "atomic_min", "atomic_add", "bit_cast",
-    "bit_shr", "cast", "ceil", "cos", "exp", "floor", "log", "random",
-    "raw_mod", "raw_div", "round", "rsqrt", "sin", "sqrt", "tan", "tanh",
-    "max", "min", "select", "abs", "pow"
+    "acos",
+    "asin",
+    "atan2",
+    "atomic_and",
+    "atomic_or",
+    "atomic_xor",
+    "atomic_max",
+    "atomic_sub",
+    "atomic_min",
+    "atomic_add",
+    "bit_cast",
+    "bit_shr",
+    "cast",
+    "ceil",
+    "cos",
+    "exp",
+    "floor",
+    "frexp",
+    "log",
+    "random",
+    "raw_mod",
+    "raw_div",
+    "round",
+    "rsqrt",
+    "sin",
+    "sqrt",
+    "tan",
+    "tanh",
+    "max",
+    "min",
+    "select",
+    "abs",
+    "pow",
 ]

@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 
+#include "taichi/codegen/codegen_utils.h"
 #include "taichi/program/program.h"
 #include "taichi/program/kernel.h"
 #include "taichi/ir/statements.h"
@@ -16,6 +17,7 @@
 
 #include <spirv-tools/libspirv.hpp>
 #include <spirv-tools/optimizer.hpp>
+#include "fp16.h"
 
 namespace taichi::lang {
 namespace spirv {
@@ -97,6 +99,19 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  // Replace the wild '%' in the format string with "%%".
+  std::string sanitize_format_string(std::string const &str) {
+    std::string sanitized_str;
+    for (char c : str) {
+      if (c == '%') {
+        sanitized_str += "%%";
+      } else {
+        sanitized_str += c;
+      }
+    }
+    return sanitized_str;
+  }
+
   struct Result {
     std::vector<uint32_t> spirv_code;
     TaskAttributes task_attribs;
@@ -151,17 +166,52 @@ class TaskCodegen : public IRVisitor {
     std::string formats;
     std::vector<Value> vals;
 
-    for (auto const &content : stmt->contents) {
+    for (auto i = 0; i < stmt->contents.size(); ++i) {
+      auto const &content = stmt->contents[i];
+      auto const &format = stmt->formats[i];
       if (std::holds_alternative<Stmt *>(content)) {
         auto arg_stmt = std::get<Stmt *>(content);
         TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
 
         auto value = ir_->query_value(arg_stmt->raw_name());
         vals.push_back(value);
-        formats += data_type_format(arg_stmt->ret_type, Arch::vulkan);
+
+        auto &&merged_format = merge_printf_specifier(
+            format, data_type_format(arg_stmt->ret_type));
+        // Vulkan doesn't support length, flags, or width specifier, except for
+        // unsigned long.
+        // https://vulkan.lunarg.com/doc/view/1.3.204.1/windows/debug_printf.html
+        auto &&[format_flags, format_width, format_precision, format_length,
+                format_conversion] = parse_printf_specifier(merged_format);
+        if (!format_flags.empty()) {
+          TI_WARN(
+              "The printf flags '{}' are not supported in Vulkan, "
+              "and will be discarded.",
+              format_flags);
+          format_flags.clear();
+        }
+        if (!format_width.empty()) {
+          TI_WARN(
+              "The printf width modifier '{}' is not supported in Vulkan, "
+              "and will be discarded.",
+              format_width);
+          format_width.clear();
+        }
+        if (!format_length.empty() &&
+            !(format_length == "l" &&
+              (format_conversion == "u" || format_conversion == "x"))) {
+          TI_WARN(
+              "The printf length modifier '{}' is not supported in Vulkan, "
+              "and will be discarded.",
+              format_length);
+          format_length.clear();
+        }
+        formats +=
+            "%" +
+            format_precision.append(format_length).append(format_conversion);
       } else {
         auto arg_str = std::get<std::string>(content);
-        formats += arg_str;
+        formats += sanitize_format_string(arg_str);
       }
     }
     ir_->call_debugprintf(formats, vals);
@@ -173,6 +223,12 @@ class TaskCodegen : public IRVisitor {
       spirv::SType stype = ir_->get_primitive_type(dt);
 
       if (dt->is_primitive(PrimitiveTypeID::f32)) {
+        return ir_->float_immediate_number(
+            stype, static_cast<double>(const_val.val_f32), false);
+      } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
+        // Ref: See taichi::lang::TypedConstant::TypedConstant()
+        // FP16 is stored as FP32 on host side,
+        // as some CPUs does not have native FP16 (and no libc support)
         return ir_->float_immediate_number(
             stype, static_cast<double>(const_val.val_f32), false);
       } else if (dt->is_primitive(PrimitiveTypeID::i32)) {
@@ -247,6 +303,9 @@ class TaskCodegen : public IRVisitor {
             ir_->get_primitive_type(dt), origin_val.stype.storage_class);
         ptr_val = ir_->make_value(spv::OpAccessChain, ptr_type, origin_val,
                                   offset_val);
+        if (stmt->origin->as<AllocaStmt>()->is_shared) {
+          ptr_to_buffers_[stmt] = ptr_to_buffers_[stmt->origin];
+        }
       } else if (stmt->origin->is<GlobalTemporaryStmt>()) {
         spirv::Value dt_bytes = ir_->int_immediate_number(
             ir_->i32_type(), ir_->get_primitive_type_size(dt), false);
@@ -527,6 +586,16 @@ class TaskCodegen : public IRVisitor {
     }
   }
 
+  void visit(GetElementStmt *stmt) override {
+    spirv::Value val = ir_->query_value(stmt->src->raw_name());
+    const auto val_type = ir_->get_primitive_type(stmt->element_type());
+    const auto val_type_ptr =
+        ir_->get_pointer_type(val_type, spv::StorageClassUniform);
+    val = ir_->make_access_chain(val_type_ptr, val, stmt->index);
+    val = ir_->load_variable(val, val_type);
+    ir_->register_value(stmt->raw_name(), val);
+  }
+
   void visit(ReturnStmt *stmt) override {
     // Now we only support one ret
     auto dt = stmt->element_types()[0];
@@ -654,7 +723,19 @@ class TaskCodegen : public IRVisitor {
     const auto src_dt = stmt->operand->element_type();
     const auto dst_dt = stmt->element_type();
     spirv::SType src_type = ir_->get_primitive_type(src_dt);
-    spirv::SType dst_type = ir_->get_primitive_type(dst_dt);
+    spirv::SType dst_type;
+    if (dst_dt.is_pointer()) {
+      auto stype = dst_dt.ptr_removed()->as<lang::StructType>();
+      std::vector<std::tuple<SType, std::string, size_t>> components;
+      for (int i = 0; i < stype->get_num_elements(); i++) {
+        components.push_back(
+            {ir_->get_primitive_type(stype->get_element_type({i})),
+             fmt::format("element{}", i), stype->get_element_offset({i})});
+      }
+      dst_type = ir_->create_struct_type(components);
+    } else {
+      dst_type = ir_->get_primitive_type(dst_dt);
+    }
     spirv::Value operand_val = ir_->query_value(operand_name);
     spirv::Value val = spirv::Value();
 
@@ -748,6 +829,13 @@ class TaskCodegen : public IRVisitor {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (stmt->op_type == UnaryOpType::frexp) {
+      // FrexpStruct is the same type of the first member.
+      val = ir_->alloca_variable(dst_type);
+      auto v = ir_->call_glsl450(dst_type, 52, operand_val);
+      ir_->store_variable(val, v);
+    } else if (stmt->op_type == UnaryOpType::popcnt) {
+      val = ir_->popcnt(operand_val);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \
@@ -1031,11 +1119,10 @@ class TaskCodegen : public IRVisitor {
     }
 #undef BINARY_OP_TO_SPIRV_BITWISE
 
-#define BINARY_OP_TO_SPIRV_LOGICAL(op, func)                          \
-  else if (op_type == BinaryOpType::op) {                             \
-    bin_value = ir_->func(lhs_value, rhs_value);                      \
-    bin_value = ir_->cast(dst_type, bin_value);                       \
-    bin_value = ir_->make_value(spv::OpSNegate, dst_type, bin_value); \
+#define BINARY_OP_TO_SPIRV_LOGICAL(op, func)     \
+  else if (op_type == BinaryOpType::op) {        \
+    bin_value = ir_->func(lhs_value, rhs_value); \
+    bin_value = ir_->cast(dst_type, bin_value);  \
   }
 
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_lt, lt)
@@ -1123,45 +1210,7 @@ class TaskCodegen : public IRVisitor {
       val = argid_to_tex_value_.at(arg_id);
     } else {
       if (stmt->is_storage) {
-        BufferFormat format = BufferFormat::unknown;
-
-        if (stmt->num_channels == 1) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::r8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::r16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::r16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::r32f;
-          }
-        } else if (stmt->num_channels == 2) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rg8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rg16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rg16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rg32f;
-          }
-        } else if (stmt->num_channels == 4) {
-          if (stmt->channel_format == PrimitiveType::u8 ||
-              stmt->channel_format == PrimitiveType::i8) {
-            format = BufferFormat::rgba8;
-          } else if (stmt->channel_format == PrimitiveType::u16 ||
-                     stmt->channel_format == PrimitiveType::i16) {
-            format = BufferFormat::rgba16;
-          } else if (stmt->channel_format == PrimitiveType::f16) {
-            format = BufferFormat::rgba16f;
-          } else if (stmt->channel_format == PrimitiveType::f32) {
-            format = BufferFormat::rgba32f;
-          }
-        }
+        BufferFormat format = stmt->format;
 
         int binding = binding_head_++;
         val =
@@ -1478,7 +1527,12 @@ class TaskCodegen : public IRVisitor {
         addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
       }
     } else {
-      addr_ptr = at_buffer(stmt->dest, dt);
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        // Shared arrays have already created an accesschain, use it directly.
+        addr_ptr = ir_->query_value(stmt->dest->raw_name());
+      } else {
+        addr_ptr = at_buffer(stmt->dest, dt);
+      }
     }
 
     auto ret_type = ir_->get_primitive_type(dt);
@@ -1794,6 +1848,14 @@ class TaskCodegen : public IRVisitor {
   }
 
   void gen_array_range(Stmt *stmt) {
+    /* Fix issue 7493
+     *
+     * Prevent repeated range generation for the same array
+     * when loop range has multiple dimensions.
+     */
+    if (ir_->check_value_existence(stmt->raw_name())) {
+      return;
+    }
     int num_operands = stmt->num_operands();
     for (int i = 0; i < num_operands; i++) {
       gen_array_range(stmt->operand(i));
@@ -2416,18 +2478,6 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
   }
   kernel_attribs.ctx_attribs = std::move(ctx_attribs_);
   kernel_attribs.name = params_.ti_kernel_name;
-  kernel_attribs.is_jit_evaluator = params_.kernel->is_evaluator;
-}
-
-void lower(const CompileConfig &config, Kernel *kernel) {
-  if (!kernel->lowered()) {
-    irpass::compile_to_executable(kernel->ir.get(), config, kernel,
-                                  kernel->autodiff_mode,
-                                  /*ad_use_stack=*/false, config.print_ir,
-                                  /*lower_global_access=*/true,
-                                  /*make_thread_local=*/false);
-    kernel->set_lowered(true);
-  }
 }
 
 }  // namespace spirv

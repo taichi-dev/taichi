@@ -5,6 +5,8 @@ add_library(${LLVM_RHI})
 target_sources(${LLVM_RHI}
   PRIVATE
     llvm_device.cpp
+    allocator.cpp
+    device_memory_pool.cpp
   )
 
 target_include_directories(${LLVM_RHI}

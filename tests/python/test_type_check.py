@@ -13,8 +13,7 @@ def test_unary_op():
         a = 1
         b = ti.floor(a)
 
-    with pytest.raises(ti.TaichiTypeError,
-                       match="'floor' takes real inputs only"):
+    with pytest.raises(ti.TaichiTypeError, match="'floor' takes real inputs only"):
         floor()
 
 
@@ -26,8 +25,7 @@ def test_binary_op():
         b = 3.1
         c = a & b
 
-    with pytest.raises(ti.TaichiTypeError,
-                       match=r"unsupported operand type\(s\) for '&'"):
+    with pytest.raises(ti.TaichiTypeError, match=r"unsupported operand type\(s\) for '&'"):
         bitwise_float()
 
 
@@ -35,17 +33,16 @@ def test_binary_op():
 def test_ternary_op():
     @ti.kernel
     def select():
-        a = 1.1
+        a = ti.math.vec2(1.0, 1.0)
         b = 3
-        c = 3.6
-        d = b if a else c
+        c = ti.math.vec3(1.0, 1.0, 2.0)
+        d = a if b else c
 
-    with pytest.raises(TypeError,
-                       match="unsupported operand type\\(s\\) for 'ifte'"):
+    with pytest.raises(ti.TaichiCompilationError, match="Cannot broadcast tensor to tensor"):
         select()
 
 
-@pytest.mark.skipif(not has_pytorch(), reason='Pytorch not installed.')
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=[ti.cpu, ti.opengl])
 def test_subscript():
     a = ti.ndarray(ti.i32, shape=(10, 10))
@@ -75,8 +72,22 @@ def test_non_0d_ndarray():
         a = np.array([1])
 
     with pytest.raises(
-            ti.TaichiTypeError,
-            match=
-            "Only 0-dimensional numpy array can be used to initialize a scalar expression"
+        ti.TaichiTypeError,
+        match="Only 0-dimensional numpy array can be used to initialize a scalar expression",
     ):
         foo()
+
+
+@test_utils.test(arch=ti.cpu)
+def test_assign():
+    f = ti.Vector.field(4, dtype=ti.i32, shape=())
+
+    @ti.kernel
+    def floor():
+        f[None] = ti.Vector([1, 2, 3])
+
+    with pytest.raises(
+        ti.TaichiTypeError,
+        match=r"cannot assign '\[Tensor \(3\) i32\]' to '\[Tensor \(4\) i32\]'",
+    ):
+        floor()

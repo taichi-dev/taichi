@@ -5,9 +5,11 @@
 #include "taichi/codegen/spirv/kernel_compiler.h"
 #include "taichi/codegen/spirv/compiled_kernel_data.h"
 #include "taichi/runtime/gfx/aot_module_builder_impl.h"
+#include "taichi/runtime/gfx/kernel_launcher.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
 #include "taichi/runtime/gfx/aot_module_loader_impl.h"
 #include "taichi/util/offline_cache.h"
+#include "taichi/rhi/common/host_memory_pool.h"
 
 #include "taichi/rhi/window_system.h"
 
@@ -63,43 +65,15 @@ std::vector<std::string> get_required_device_extensions() {
   return extensions;
 }
 
-FunctionType register_params_to_executable(
-    gfx::GfxRuntime::RegisterParams &&params,
-    gfx::GfxRuntime *runtime) {
-  auto handle = runtime->register_taichi_kernel(std::move(params));
-  return [runtime, handle](RuntimeContext &ctx) {
-    runtime->launch_kernel(handle, &ctx);
-  };
-}
-
 }  // namespace
 
 VulkanProgramImpl::VulkanProgramImpl(CompileConfig &config)
     : ProgramImpl(config) {
 }
 
-FunctionType VulkanProgramImpl::compile(const CompileConfig &compile_config,
-                                        Kernel *kernel) {
-  // NOTE: Temporary implementation
-  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
-  auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled = mgr.load_or_compile(
-      compile_config, vulkan_runtime_->get_ti_device()->get_caps(), *kernel);
-  const auto *spirv_compiled =
-      dynamic_cast<const spirv::CompiledKernelData *>(&compiled);
-  const auto &spirv_data = spirv_compiled->get_internal_data();
-  gfx::GfxRuntime::RegisterParams params;
-  params.kernel_attribs = spirv_data.metadata.kernel_attribs;
-  params.task_spirv_source_codes = spirv_data.src.spirv_src;
-  params.num_snode_trees = spirv_data.metadata.num_snode_trees;
-  return register_params_to_executable(std::move(params),
-                                       vulkan_runtime_.get());
-}
-
-void VulkanProgramImpl::materialize_runtime(MemoryPool *memory_pool,
-                                            KernelProfilerBase *profiler,
+void VulkanProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
                                             uint64 **result_buffer_ptr) {
-  *result_buffer_ptr = (uint64 *)memory_pool->allocate(
+  *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
 // Android is meant to be embedded in other application only so the creation of
@@ -191,19 +165,25 @@ std::unique_ptr<AotModuleBuilder> VulkanProgramImpl::make_aot_module_builder(
     const DeviceCapabilityConfig &caps) {
   if (vulkan_runtime_) {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        snode_tree_mgr_->get_compiled_structs(), Arch::vulkan, *config, caps);
+        snode_tree_mgr_->get_compiled_structs(),
+        get_kernel_compilation_manager(), *config, caps);
   } else {
     return std::make_unique<gfx::AotModuleBuilderImpl>(
-        aot_compiled_snode_structs_, Arch::vulkan, *config, caps);
+        aot_compiled_snode_structs_, get_kernel_compilation_manager(), *config,
+        caps);
   }
 }
 
 DeviceAllocation VulkanProgramImpl::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return get_compute_device()->allocate_memory(
+  DeviceAllocation alloc;
+  RhiResult res = get_compute_device()->allocate_memory(
       {alloc_size, /*host_write=*/false, /*host_read=*/false,
-       /*export_sharing=*/false});
+       /*export_sharing=*/false},
+      &alloc);
+  TI_ASSERT(res == RhiResult::success);
+  return alloc;
 }
 
 DeviceAllocation VulkanProgramImpl::allocate_texture(
@@ -223,6 +203,17 @@ std::unique_ptr<KernelCompiler> VulkanProgramImpl::make_kernel_compiler() {
                                  ? &snode_tree_mgr_->get_compiled_structs()
                                  : &aot_compiled_snode_structs_;
   return std::make_unique<spirv::KernelCompiler>(std::move(cfg));
+}
+
+std::unique_ptr<KernelLauncher> VulkanProgramImpl::make_kernel_launcher() {
+  gfx::KernelLauncher::Config cfg;
+  cfg.gfx_runtime_ = vulkan_runtime_.get();
+  return std::make_unique<gfx::KernelLauncher>(std::move(cfg));
+}
+
+DeviceCapabilityConfig VulkanProgramImpl::get_device_caps() {
+  TI_ASSERT(vulkan_runtime_);
+  return vulkan_runtime_->get_ti_device()->get_caps();
 }
 
 VulkanProgramImpl::~VulkanProgramImpl() {

@@ -3,7 +3,7 @@
 #include <cstddef>
 
 constexpr int taichi_max_num_indices = 12;
-// legacy: only used in cc and opengl backends
+// legacy: only used in opengl backends
 constexpr int taichi_max_num_args = 8;
 // used in llvm backend: only the first 32 arguments can be types.ndarray
 // TODO: refine argument passing
@@ -26,6 +26,14 @@ constexpr std::size_t taichi_result_buffer_error_id = 30;
 constexpr std::size_t taichi_result_buffer_runtime_query_id = 31;
 
 constexpr int taichi_listgen_max_element_size = 1024;
+
+// By default, CUDA could allocate up to 48KB static shared arrays.
+// It requires dynamic shared memory to allocate a larger array.
+// Therefore, when one shared array request for size greater than 48KB,
+// we switch it to dynamic allocation.
+// In current version, only one dynamic instance is allowed.
+// TODO: remove the limit.
+constexpr std::size_t cuda_dynamic_shared_array_threshold_bytes = 49152;
 
 // use for auto mesh_local to determine shared-mem size per block (in bytes)
 // TODO: get this at runtime

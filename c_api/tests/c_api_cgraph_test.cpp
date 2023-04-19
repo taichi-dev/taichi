@@ -103,9 +103,24 @@ TEST_F(CapiTest, GraphTestVulkanGraph) {
     graph_aot_test(arch);
   }
 }
+
+TEST_F(CapiTest, GraphTestMetalGraph) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
+    graph_aot_test(arch);
+  }
+}
+
 TEST_F(CapiTest, GraphTestVulkanTextureGraph) {
   if (ti::is_arch_available(TI_ARCH_VULKAN)) {
     TiArch arch = TiArch::TI_ARCH_VULKAN;
+    texture_aot_test(arch);
+  }
+}
+
+TEST_F(CapiTest, GraphTestMetalTextureGraph) {
+  if (ti::is_arch_available(TI_ARCH_METAL)) {
+    TiArch arch = TiArch::TI_ARCH_METAL;
     texture_aot_test(arch);
   }
 }

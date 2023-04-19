@@ -50,38 +50,37 @@ def patch_os_environ_helper(custom_environ: dict, excludes: dict):
 TF = [True, False]
 init_args = {
     # 'key': [default, choices],
-    'log_level': ['info', ['error', 'warn', 'info', 'debug', 'trace']],
-    'gdb_trigger': [False, TF],
-    'advanced_optimization': [True, TF],
-    'debug': [False, TF],
-    'print_ir': [False, TF],
-    'verbose': [True, TF],
-    'fast_math': [True, TF],
-    'flatten_if': [False, TF],
-    'simplify_before_lower_access': [True, TF],
-    'simplify_after_lower_access': [True, TF],
-    'kernel_profiler': [False, TF],
-    'check_out_of_bound': [False, TF],
-    'print_accessor_ir': [False, TF],
-    'print_evaluator_ir': [False, TF],
-    'print_struct_llvm_ir': [False, TF],
-    'print_kernel_llvm_ir': [False, TF],
-    'print_kernel_llvm_ir_optimized': [False, TF],
+    "log_level": ["info", ["error", "warn", "info", "debug", "trace"]],
+    "gdb_trigger": [False, TF],
+    "advanced_optimization": [True, TF],
+    "debug": [False, TF],
+    "print_ir": [False, TF],
+    "verbose": [True, TF],
+    "fast_math": [True, TF],
+    "flatten_if": [False, TF],
+    "simplify_before_lower_access": [True, TF],
+    "simplify_after_lower_access": [True, TF],
+    "kernel_profiler": [False, TF],
+    "check_out_of_bound": [False, TF],
+    "print_accessor_ir": [False, TF],
+    "print_struct_llvm_ir": [False, TF],
+    "print_kernel_llvm_ir": [False, TF],
+    "print_kernel_llvm_ir_optimized": [False, TF],
     # FIXME: figure out why these two failed test:
     #'device_memory_fraction': [0.0, [0.5, 1, 0]],
     #'device_memory_GB': [1.0, [0.5, 1, 1.5, 2]],
 }
 
-env_configs = ['TI_' + key.upper() for key in init_args.keys()]
+env_configs = ["TI_" + key.upper() for key in init_args.keys()]
 
 special_init_cfgs = [
-    'log_level',
-    'gdb_trigger',
+    "log_level",
+    "gdb_trigger",
 ]
 
 
 @pytest.mark.skipif(
-    platform.system() == 'Windows',
+    platform.system() == "Windows",
     reason="XDG Base Directory Specification is only supported on *nix.",
 )
 @test_utils.test()
@@ -108,7 +107,7 @@ def test_xdg_basedir(tmpdir):
             os.environ["XDG_CACHE_HOME"] = orig_cache
 
 
-@pytest.mark.parametrize('key,values', init_args.items())
+@pytest.mark.parametrize("key,values", init_args.items())
 @test_utils.test()
 def test_init_arg(key, values):
     default, values = values
@@ -133,7 +132,7 @@ def test_init_arg(key, values):
             test_arg(key, value, kwargs)
 
     # test if specified in environment:
-    env_key = 'TI_' + key.upper()
+    env_key = "TI_" + key.upper()
     for value in values:
         env_value = str(int(value) if isinstance(value, bool) else value)
         environ = {env_key: env_value}
@@ -141,14 +140,10 @@ def test_init_arg(key, values):
             test_arg(key, value)
 
 
-@pytest.mark.parametrize('arch', test_utils.expected_archs())
+@pytest.mark.parametrize("arch", test_utils.expected_archs())
 def test_init_arch(arch):
-    with patch_os_environ_helper({}, excludes=['TI_ARCH']):
+    with patch_os_environ_helper({}, excludes=["TI_ARCH"]):
         ti.init(arch=arch)
-        assert ti.lang.impl.current_cfg().arch == arch
-    with patch_os_environ_helper({'TI_ARCH': ti._lib.core.arch_name(arch)},
-                                 excludes=['TI_ARCH']):
-        ti.init(arch=ti.cc)
         assert ti.lang.impl.current_cfg().arch == arch
 
 
@@ -161,9 +156,11 @@ def test_init_bad_arg():
 @test_utils.test(arch=ti.cpu)
 def test_init_require_version():
     ti_python_core = ti._lib.utils.import_ti_python_core()
-    require_version = '{}.{}.{}'.format(ti_python_core.get_version_major(),
-                                        ti_python_core.get_version_minor(),
-                                        ti_python_core.get_version_patch())
+    require_version = "{}.{}.{}".format(
+        ti_python_core.get_version_major(),
+        ti_python_core.get_version_minor(),
+        ti_python_core.get_version_patch(),
+    )
     ti.init(_test_mode=True, debug=True, require_version=require_version)
 
 
@@ -171,25 +168,22 @@ def test_init_require_version():
 def test_init_bad_require_version():
     with pytest.raises(Exception):
         ti_python_core = ti._lib.utils.import_ti_python_core()
-        bad_require_version = '{}.{}.{}'.format(
+        bad_require_version = "{}.{}.{}".format(
             ti_python_core.get_version_major(),
             ti_python_core.get_version_minor(),
-            ti_python_core.get_version_patch() + 1)
-        ti.init(_test_mode=True,
-                debug=True,
-                require_version=bad_require_version)
+            ti_python_core.get_version_patch() + 1,
+        )
+        ti.init(_test_mode=True, debug=True, require_version=bad_require_version)
 
 
-@pytest.mark.parametrize(
-    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@pytest.mark.parametrize("level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True, log_level=level)
     assert spec_cfg.log_level == level
 
 
-@pytest.mark.parametrize(
-    'level', [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
+@pytest.mark.parametrize("level", [ti.DEBUG, ti.TRACE, ti.INFO, ti.WARN, ti.ERROR, ti.CRITICAL])
 @test_utils.test(arch=ti.cpu)
 def test_supported_log_levels(level):
     spec_cfg = ti.init(_test_mode=True)

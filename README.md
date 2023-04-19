@@ -141,7 +141,7 @@ If you wish to try our our experimental features or build Taichi Lang for your o
 
 Kudos to all of our amazing contributors! Taichi Lang thrives through open-source. In that spirit, we welcome all kinds of contributions from the community. If you would like to participate, check out the [Contribution Guidelines](CONTRIBUTING.md) first.
 
-<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_12.png" width="800px"></a>
+<a href="https://github.com/taichi-dev/taichi/graphs/contributors"><img src="https://raw.githubusercontent.com/taichi-dev/public_files/master/taichi/contributors_taichi-dev_taichi_18.png" width="800px"></a>
 
 *Contributor avatars are randomly shuffled.*
 
@@ -153,9 +153,8 @@ See [Apache License](https://github.com/taichi-dev/taichi/blob/master/LICENSE) f
 
 ## Community
 
-### Event
+For more information about the events or community, please refer to [this page](https://github.com/taichi-dev/community)
 
-Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/voxel-challenge/issues/11) until 18th May. Find out more [here](https://github.com/taichi-dev/community/tree/main/events/voxel-challenge).
 
 ### Join our discussions
 
@@ -171,12 +170,13 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 ### Contact us
 
 - [Discord](https://discord.gg/f25GRdXRfg)
-- WeChat: Drop us a message at <a href = "mailto:community@taichi.graphics">community@taichi.graphics</a> first, and we'll follow up.
+- [WeChat](https://forum.taichi-lang.cn/t/topic/2884)
 
 ## Reference
 
 ### Demos
 
+- [Nerf with Taichi](https://github.com/taichi-dev/taichi-nerfs)
 - [Taichi Lang examples](https://github.com/taichi-dev/taichi/tree/master/python/taichi/examples)
 - [Advanced Taichi Lang examples](https://github.com/taichi-dev/advanced_examples)
 - [Awesome Taichi](https://github.com/taichi-dev/awesome-taichi)
@@ -184,6 +184,12 @@ Voxel Challenge 2022 is open for [submissions](https://github.com/taichi-dev/vox
 - [Taichi elements](https://github.com/taichi-dev/taichi_elements)
 - [Taichi Houdini](https://github.com/taichi-dev/taichi_houdini)
 - [More...](misc/links.md)
+
+
+### AOT deployment
+
+- [Taichi AOT demos & tutorial](https://github.com/taichi-dev/taichi-aot-demo/)
+
 
 ### Lectures & talks
 

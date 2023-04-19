@@ -7,6 +7,7 @@
 #include "taichi/program/extension.h"
 #include "taichi/program/function.h"
 #include "taichi/program/kernel.h"
+#include "taichi/util/lang_util.h"
 
 namespace taichi::lang {
 
@@ -65,32 +66,9 @@ void compile_to_offloads(IRNode *ir,
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
-  irpass::lower_matrix_ptr(ir);
-  print("Matrix ptr lowered");
-
   irpass::type_check(ir, config);
   print("Typechecked");
   irpass::analysis::verify(ir);
-
-  if (kernel->is_evaluator) {
-    TI_ASSERT(autodiff_mode == AutodiffMode::kNone);
-
-    irpass::demote_operations(ir, config);
-    print("Operations demoted");
-
-    irpass::offload(ir, config);
-    print("Offloaded");
-    irpass::analysis::verify(ir);
-    return;
-  }
 
   // TODO: strictly enforce bit vectorization for x86 cpu and CUDA now
   //       create a separate CompileConfig flag for the new pass
@@ -102,10 +80,20 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::lower_matrix_ptr(ir);
+  print("Matrix ptr lowered");
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
+  }
+
   irpass::full_simplify(
       ir, config,
-      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone,
-       kernel->program});
+      {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});
   print("Simplified I");
   irpass::analysis::verify(ir);
 
@@ -128,12 +116,10 @@ void compile_to_offloads(IRNode *ir,
     // Remove local atomics here so that we don't have to handle their gradients
     irpass::demote_atomics(ir, config);
 
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ true, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ true});
     irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
     // TODO: Be carefull with the full_simplify when do high-order autodiff
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ false, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Gradient");
     irpass::analysis::verify(ir);
   }
@@ -148,8 +134,7 @@ void compile_to_offloads(IRNode *ir,
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  irpass::full_simplify(ir, config,
-                        {false, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified II");
   irpass::analysis::verify(ir);
 
@@ -169,8 +154,7 @@ void compile_to_offloads(IRNode *ir,
   irpass::flag_access(ir);
   print("Access flagged II");
 
-  irpass::full_simplify(ir, config,
-                        {false, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified III");
   irpass::analysis::verify(ir);
 }
@@ -217,6 +201,13 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (config.make_cpu_multithreading_loop && arch_is_cpu(config.arch)) {
+    irpass::make_cpu_multithreaded_range_for(ir, config);
+    irpass::type_check(ir, config);
+    print("Make CPU multithreaded range-for");
+    irpass::analysis::verify(ir);
+  }
+
   if (is_extension_supported(config.arch, Extension::mesh) &&
       config.demote_no_access_mesh_fors) {
     irpass::demote_no_access_mesh_fors(ir);
@@ -236,8 +227,7 @@ void offload_to_executable(IRNode *ir,
     if (config.make_mesh_block_local && config.arch == Arch::cuda) {
       irpass::make_mesh_block_local(ir, config, {kernel->get_name()});
       print("Make mesh block local");
-      irpass::full_simplify(
-          ir, config, {false, /*autodiff_enabled*/ false, kernel->program});
+      irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
       print("Simplified X");
     }
   }
@@ -269,8 +259,7 @@ void offload_to_executable(IRNode *ir,
   irpass::analysis::verify(ir);
 
   if (lower_global_access) {
-    irpass::full_simplify(ir, config,
-                          {false, /*autodiff_enabled*/ false, kernel->program});
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Simplified before lower access");
     irpass::lower_access(ir, config, {kernel->no_activate, true});
     print("Access lowered");
@@ -288,9 +277,8 @@ void offload_to_executable(IRNode *ir,
   irpass::demote_operations(ir, config);
   print("Operations demoted");
 
-  irpass::full_simplify(
-      ir, config,
-      {lower_global_access, /*autodiff_enabled*/ false, kernel->program});
+  irpass::full_simplify(ir, config,
+                        {lower_global_access, /*autodiff_enabled*/ false});
   print("Simplified IV");
 
   if (determine_ad_stack_size) {
@@ -301,6 +289,19 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::quant)) {
     irpass::optimize_bit_struct_stores(ir, config, amgr.get());
     print("Bit struct stores optimized");
+  }
+
+  if (config.arch == Arch::cuda && config.half2_vectorization &&
+      !get_custom_cuda_library_path().empty()) {
+    irpass::vectorize_half2(ir);
+
+    irpass::type_check(ir, config);
+
+    irpass::full_simplify(ir, config,
+                          {lower_global_access, /*autodiff_enabled*/ false});
+
+    irpass::flag_access(ir);
+    print("Half2 vectorized");
   }
 
   // Final field registration correctness & type checking
@@ -378,8 +379,8 @@ void compile_function(IRNode *ir,
   irpass::demote_operations(ir, config);
   print("Operations demoted");
 
-  irpass::full_simplify(
-      ir, config, {false, autodiff_mode != AutodiffMode::kNone, func->program});
+  irpass::full_simplify(ir, config,
+                        {false, autodiff_mode != AutodiffMode::kNone});
   print("Simplified");
   irpass::analysis::verify(ir);
 }

@@ -6,8 +6,7 @@ from microbenchmarks._utils import dtype_size, fill_random, scaled_repeat_times
 import taichi as ti
 
 
-def reduction_default(arch, repeat, atomic_op, container, dtype, dsize,
-                      get_metric):
+def reduction_default(arch, repeat, atomic_op, container, dtype, dsize, get_metric):
     repeat = scaled_repeat_times(arch, dsize, repeat)
     num_elements = dsize // dtype_size(dtype)
 
@@ -32,11 +31,9 @@ def reduction_default(arch, repeat, atomic_op, container, dtype, dsize,
 
 class AtomicOpsPlan(BenchmarkPlan):
     def __init__(self, arch: str):
-        super().__init__('atomic_ops', arch, basic_repeat_times=10)
+        super().__init__("atomic_ops", arch, basic_repeat_times=10)
         atomic_ops = AtomicOps()
-        atomic_ops.remove(
-            ['atomic_sub', 'atomic_and', 'atomic_xor', 'atomic_max'])
-        self.create_plan(atomic_ops, Container(), DataType(), DataSize(),
-                         MetricType())
-        self.add_func(['field'], reduction_default)
-        self.add_func(['ndarray'], reduction_default)
+        atomic_ops.remove(["atomic_sub", "atomic_and", "atomic_xor", "atomic_max"])
+        self.create_plan(atomic_ops, Container(), DataType(), DataSize(), MetricType())
+        self.add_func(["field"], reduction_default)
+        self.add_func(["ndarray"], reduction_default)

@@ -20,8 +20,23 @@ class LlvmDevice : public Device {
     TI_NOT_IMPLEMENTED
   }
 
+  template <typename DEVICE>
+  DEVICE *as() {
+    auto *device = dynamic_cast<DEVICE *>(this);
+    TI_ASSERT(device != nullptr);
+    return device;
+  }
+
+  virtual DeviceAllocation import_memory(void *ptr, size_t size) {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual DeviceAllocation allocate_memory_runtime(
       const LlvmRuntimeAllocParams &params) {
+    TI_NOT_IMPLEMENTED;
+  }
+
+  virtual void clear() {
     TI_NOT_IMPLEMENTED;
   }
 

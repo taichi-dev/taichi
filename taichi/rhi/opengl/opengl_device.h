@@ -261,7 +261,8 @@ class GLDevice : public GraphicsDevice {
     return Arch::opengl;
   }
 
-  DeviceAllocation allocate_memory(const AllocParams &params) override;
+  RhiResult allocate_memory(const AllocParams &params,
+                            DeviceAllocation *out_devalloc) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
   GLint get_devalloc_size(DeviceAllocation handle);

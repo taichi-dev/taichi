@@ -39,7 +39,7 @@ using host_vsnprintf_type = int (*)(char *,
                                     std::size_t,
                                     const char *,
                                     std::va_list);
-using vm_allocator_type = void *(*)(void *, std::size_t, std::size_t);
+using host_allocator_type = void *(*)(void *, std::size_t, std::size_t);
 using RangeForTaskFunc = void(RuntimeContext *, const char *tls, int i);
 using MeshForTaskFunc = void(RuntimeContext *, const char *tls, uint32_t i);
 using parallel_for_type = void (*)(void *thread_pool,
@@ -284,9 +284,7 @@ struct PhysicalCoordinates {
 STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 #include "taichi/program/context.h"
-#include "taichi/runtime/llvm/runtime_module/mem_request.h"
 
-STRUCT_FIELD_ARRAY(RuntimeContext, args);
 STRUCT_FIELD_ARRAY(RuntimeContext, grad_args);
 STRUCT_FIELD(RuntimeContext, runtime);
 STRUCT_FIELD(RuntimeContext, result_buffer)
@@ -542,14 +540,16 @@ void initialize_rand_state(RandState *state, u32 i) {
 
 struct NodeManager;
 
+struct PreallocatedMemoryChunk {
+  Ptr preallocated_head = nullptr;
+  Ptr preallocated_tail = nullptr;
+  std::size_t preallocated_size = 0;
+};
+
 struct LLVMRuntime {
-  bool preallocated;
-  std::size_t preallocated_size;
+  PreallocatedMemoryChunk preallocated_memory_chunk;
 
-  Ptr preallocated_head;
-  Ptr preallocated_tail;
-
-  vm_allocator_type vm_allocator;
+  host_allocator_type host_allocator;
   assert_failed_type assert_failed;
   host_printf_type host_printf;
   host_vsnprintf_type host_vsnprintf;
@@ -566,11 +566,10 @@ struct LLVMRuntime {
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
-  MemRequestQueue *mem_req_queue;
-  Ptr allocate(std::size_t size);
-  Ptr allocate_aligned(std::size_t size, std::size_t alignment);
-  Ptr request_allocate_aligned(std::size_t size, std::size_t alignment);
-  Ptr allocate_from_buffer(std::size_t size, std::size_t alignment);
+  Ptr allocate_aligned(std::size_t size,
+                       std::size_t alignment,
+                       bool request = false);
+  Ptr allocate_from_reserved_memory(std::size_t size, std::size_t alignment);
   Ptr profiler;
   void (*profiler_start)(Ptr, Ptr);
   void (*profiler_stop)(Ptr);
@@ -587,8 +586,6 @@ struct LLVMRuntime {
 
   i64 total_requested_memory;
 
-  Ptr wasm_print_buffer = nullptr;
-
   template <typename T>
   void set_result(std::size_t i, T t) {
     static_assert(sizeof(T) <= sizeof(uint64));
@@ -598,7 +595,7 @@ struct LLVMRuntime {
 
   template <typename T, typename... Args>
   T *create(Args &&...args) {
-    auto ptr = (T *)request_allocate_aligned(sizeof(T), 4096);
+    auto ptr = (T *)allocate_aligned(sizeof(T), 4096, true /*request*/);
     new (ptr) T(std::forward<Args>(args)...);
     return ptr;
   }
@@ -810,24 +807,38 @@ void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
-Ptr LLVMRuntime::allocate_aligned(std::size_t size, std::size_t alignment) {
-  if (preallocated) {
-    return allocate_from_buffer(size, alignment);
+// [ON HOST] CPU backend
+// [ON DEVICE] CUDA/AMDGPU backend
+Ptr LLVMRuntime::allocate_aligned(std::size_t size,
+                                  std::size_t alignment,
+                                  bool request) {
+  if (request)
+    atomic_add_i64(&total_requested_memory, size);
+
+  if (preallocated_memory_chunk.preallocated_size > 0) {
+    return allocate_from_reserved_memory(size, alignment);
   }
-  return (Ptr)vm_allocator(memory_pool, size, alignment);
+
+  return (Ptr)host_allocator(memory_pool, size, alignment);
 }
 
-Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
+// [ONLY ON DEVICE] CUDA/AMDGPU backend
+Ptr LLVMRuntime::allocate_from_reserved_memory(std::size_t size,
+                                               std::size_t alignment) {
   Ptr ret = nullptr;
   bool success = false;
   locked_task(&allocator_lock, [&] {
+    std::size_t preallocated_head =
+        (std::size_t)preallocated_memory_chunk.preallocated_head;
+    std::size_t preallocated_tail =
+        (std::size_t)preallocated_memory_chunk.preallocated_tail;
+
     auto alignment_bytes =
-        alignment - 1 -
-        ((std::size_t)preallocated_head + alignment - 1) % alignment;
+        alignment - 1 - (preallocated_head + alignment - 1) % alignment;
     size += alignment_bytes;
     if (preallocated_head + size <= preallocated_tail) {
-      ret = preallocated_head + alignment_bytes;
-      preallocated_head += size;
+      ret = (Ptr)(preallocated_head + alignment_bytes);
+      preallocated_memory_chunk.preallocated_head += size;
       success = true;
     } else {
       success = false;
@@ -843,38 +854,11 @@ Ptr LLVMRuntime::allocate_from_buffer(std::size_t size, std::size_t alignment) {
         "Consider using ti.init(device_memory_fraction=0.9) or "
         "ti.init(device_memory_GB=4) to allocate more"
         " GPU memory",
-        "Taichi JIT", 0, "allocate_from_buffer", 1);
+        "Taichi JIT", 0, "allocate_from_reserved_memory", 1);
 #endif
   }
   taichi_assert_runtime(this, success, "Out of pre-allocated memory");
   return ret;
-}
-
-Ptr LLVMRuntime::allocate(std::size_t size) {
-  return allocate_aligned(size, 1);
-}
-
-Ptr LLVMRuntime::request_allocate_aligned(std::size_t size,
-                                          std::size_t alignment) {
-  atomic_add_i64(&total_requested_memory, size);
-  if (preallocated)
-    return allocate_from_buffer(size, alignment);
-  else {
-    auto i = atomic_add_i32(&mem_req_queue->tail, 1);
-    taichi_assert_runtime(this, i <= taichi_max_num_mem_requests,
-                          "Too many memory allocation requests.");
-    auto volatile r = &mem_req_queue->requests[i];
-    atomic_exchange_u64((uint64 *)&r->size, size);
-    atomic_exchange_u64((uint64 *)&r->alignment, alignment);
-
-    // wait for host to allocate
-    while (r->ptr == nullptr) {
-#if defined(ARCH_cuda)
-      system_memfence();
-#endif
-    };
-    return r->ptr;
-  }
 }
 
 RuntimeContext *allocate_runtime_context(LLVMRuntime *runtime) {
@@ -886,18 +870,20 @@ void recycle_runtime_context(LLVMRuntime *runtime, RuntimeContext *ptr) {
   runtime->runtime_context_buffer_allocator->recycle((Ptr)ptr);
 }
 
+// External API
+// [ON HOST] CPU backend
+// [ON DEVICE] CUDA/AMDGPU backend
 void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
                                      std::size_t size,
-                                     std::size_t alignment) {
-  runtime->set_result(taichi_result_buffer_runtime_query_id,
-                      runtime->allocate_aligned(size, alignment));
+                                     std::size_t alignment,
+                                     uint64 *result) {
+  *result = taichi_union_cast_with_different_sizes<uint64>(
+      runtime->allocate_aligned(size, alignment));
 }
 
-void runtime_get_mem_req_queue(LLVMRuntime *runtime) {
-  runtime->set_result(taichi_result_buffer_ret_value_id,
-                      runtime->mem_req_queue);
-}
-
+// External API
+// [ON HOST] CPU backend
+// [ON DEVICE] CUDA/AMDGPU backend
 void runtime_initialize(
     Ptr result_buffer,
     Ptr memory_pool,
@@ -905,11 +891,11 @@ void runtime_initialize(
         preallocated_size,  // Non-zero means use the preallocated buffer
     Ptr preallocated_buffer,
     i32 num_rand_states,
-    void *_vm_allocator,
+    void *_host_allocator,
     void *_host_printf,
     void *_host_vsnprintf) {
   // bootstrap
-  auto vm_allocator = (vm_allocator_type)_vm_allocator;
+  auto host_allocator = (host_allocator_type)_host_allocator;
   auto host_printf = (host_printf_type)_host_printf;
   auto host_vsnprintf = (host_vsnprintf_type)_host_vsnprintf;
   LLVMRuntime *runtime = nullptr;
@@ -920,25 +906,24 @@ void runtime_initialize(
         taichi::iroundup(sizeof(LLVMRuntime), taichi_page_size);
   } else {
     runtime =
-        (LLVMRuntime *)vm_allocator(memory_pool, sizeof(LLVMRuntime), 128);
+        (LLVMRuntime *)host_allocator(memory_pool, sizeof(LLVMRuntime), 128);
   }
 
-  runtime->preallocated = preallocated_size > 0;
-  runtime->preallocated_head = preallocated_buffer;
-  runtime->preallocated_tail = preallocated_tail;
+  PreallocatedMemoryChunk preallocated_memory_chunk;
+  preallocated_memory_chunk.preallocated_size = preallocated_size;
+  preallocated_memory_chunk.preallocated_head = preallocated_buffer;
+  preallocated_memory_chunk.preallocated_tail = preallocated_tail;
+
+  runtime->preallocated_memory_chunk = std::move(preallocated_memory_chunk);
 
   runtime->result_buffer = result_buffer;
   runtime->set_result(taichi_result_buffer_ret_value_id, runtime);
-  runtime->vm_allocator = vm_allocator;
+  runtime->host_allocator = host_allocator;
   runtime->host_printf = host_printf;
   runtime->host_vsnprintf = host_vsnprintf;
   runtime->memory_pool = memory_pool;
 
   runtime->total_requested_memory = 0;
-
-  // runtime->allocate ready to use
-  runtime->mem_req_queue = (MemRequestQueue *)runtime->allocate_aligned(
-      sizeof(MemRequestQueue), taichi_page_size);
 
   runtime->temporaries = (Ptr)runtime->allocate_aligned(
       taichi_global_tmp_buffer_size, taichi_page_size);
@@ -1019,7 +1004,7 @@ void runtime_allocate_ambient(LLVMRuntime *runtime,
   // Do not use NodeManager for the ambient node since it will never be garbage
   // collected.
   runtime->ambient_elements[snode_id] =
-      runtime->request_allocate_aligned(size, 128);
+      runtime->allocate_aligned(size, 128, true /*request*/);
 }
 
 void mutex_lock_i32(Ptr mutex) {
@@ -1640,8 +1625,8 @@ void ListManager::touch_chunk(int chunk_id) {
       // may have been allocated during lock contention
       if (!chunks[chunk_id]) {
         grid_memfence();
-        auto chunk_ptr = runtime->request_allocate_aligned(
-            max_num_elements_per_chunk * element_size, 4096);
+        auto chunk_ptr = runtime->allocate_aligned(
+            max_num_elements_per_chunk * element_size, 4096, true /*request*/);
         atomic_exchange_u64((u64 *)&chunks[chunk_id], (u64)chunk_ptr);
       }
     });
@@ -1967,99 +1952,6 @@ f64 rounding_prepare_f64(f64 f) {
                    taichi_union_cast<i64>(0.5);
   f64 delta = taichi_union_cast<f64>(delta_bits);
   return f + delta;
-}
-}
-
-namespace {
-i32 kWasmPrintBufferSize = 1024 * 1024;
-}
-
-extern "C" {
-// The input means starting address of RuntimeContext, which should be set to
-// '__heap_base' to avoid conflicts with C++ stack data which is stored in
-// memory. The function returns starting address of root buffer. The print
-// buffer locates just before RuntimeContext (8MB). Here is an illustration for
-// proper memory layout in WASM:
-// clang-format off
-// ━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━
-//  Print ┃▄ RuntimeContext ┃  ▄ Runtime ▄  ┃ RandState[0] ┃ Root Buffer ...
-// ━━━━━━━┻│━━━━━━━━━━━━━━━━▲━━│━━━━━━━━━│━━▲━━━━━━━━━━━━━━▲━━━━━━━━━━━━━━━━━━━
-//         └────────────────┘  │         └──┘              │
-//                             └───────────────────────────┘
-// clang-format on
-i32 wasm_materialize(RuntimeContext *context) {
-  context->runtime = (LLVMRuntime *)((size_t)context + sizeof(RuntimeContext));
-  context->runtime->rand_states =
-      (RandState *)((size_t)context->runtime + sizeof(LLVMRuntime));
-  // set random seed to (1, 0, 0, 0)
-  context->runtime->rand_states[0].x = 1;
-  // TODO: remove hard coding on root id 0(SNodeTree::kFirstID)
-  context->runtime->roots[0] =
-      (Ptr)((size_t)context->runtime->rand_states + sizeof(RandState));
-  return (i32)(size_t)context->runtime->roots[0];
-}
-
-// Memory layout for Print section:
-// i32 total_print_character_num;
-// struct {
-//    int type;  // 0 for i32, 1 for f32, 2 for char (i8)
-//    union {
-//      i32 i;
-//      f32 f;
-//      char c[4];
-//    } data;
-//} wasm_buffer_buffer[kWasmPrintBufferSize];
-void wasm_set_print_buffer(RuntimeContext *context, Ptr buffer) {
-  context->runtime->wasm_print_buffer = buffer;
-}
-
-void wasm_print_i32(RuntimeContext *context, i32 value) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 0;  // 0 for i32
-  ((i32 *)buffer)[print_pos * 2 + 2] = value;
-}
-
-void wasm_print_f32(RuntimeContext *context, f32 value) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 1;  // 1 for f32
-  ((f32 *)buffer)[print_pos * 2 + 2] = value;
-}
-
-void wasm_print_char(RuntimeContext *context,
-                     i8 value0,
-                     i8 value1,
-                     i8 value2,
-                     i8 value3) {
-  Ptr buffer = context->runtime->wasm_print_buffer;
-  if (buffer == nullptr)
-    return;
-  i32 total_cnt = ((i32 *)buffer)[0]++;
-  i32 print_pos = total_cnt % kWasmPrintBufferSize;
-  ((i32 *)buffer)[print_pos * 2 + 1] = 2;  // 2 for char
-  ((i8 *)buffer)[print_pos * 8 + 8] = value0;
-  ((i8 *)buffer)[print_pos * 8 + 9] = value1;
-  ((i8 *)buffer)[print_pos * 8 + 10] = value2;
-  ((i8 *)buffer)[print_pos * 8 + 11] = value3;
-}
-
-void wasm_set_kernel_parameter_i32(RuntimeContext *context,
-                                   int index,
-                                   i32 value) {
-  *(i32 *)(&context->args[index]) = value;
-}
-
-void wasm_set_kernel_parameter_f32(RuntimeContext *context,
-                                   int index,
-                                   f32 value) {
-  *(f32 *)(&context->args[index]) = value;
 }
 }
 

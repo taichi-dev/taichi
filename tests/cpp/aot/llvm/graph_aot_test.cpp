@@ -2,15 +2,14 @@
 
 #include "taichi/program/kernel_profiler.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/system/memory_pool.h"
-#include "taichi/runtime/cpu/aot_module_loader_impl.h"
 #include "taichi/runtime/llvm/llvm_aot_module_loader.h"
+#include "taichi/runtime/cpu/kernel_launcher.h"
 
 #ifdef TI_WITH_CUDA
 
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/platform/cuda/detect_cuda.h"
-#include "taichi/runtime/cuda/aot_module_loader_impl.h"
+#include "taichi/runtime/cuda/kernel_launcher.h"
 
 #endif
 
@@ -27,21 +26,22 @@ TEST(LlvmCGraph, RunGraphCpu) {
   cfg.kernel_profiler = false;
   constexpr KernelProfilerBase *kNoProfiler = nullptr;
   LlvmRuntimeExecutor exec{cfg, kNoProfiler};
-  auto *compute_device = exec.get_compute_device();
   // Must have handled all the arch fallback logic by this point.
-  auto memory_pool = std::make_unique<MemoryPool>(cfg.arch, compute_device);
   uint64 *result_buffer{nullptr};
-  exec.materialize_runtime(memory_pool.get(), kNoProfiler, &result_buffer);
+  exec.materialize_runtime(kNoProfiler, &result_buffer);
 
   /* AOTLoader */
-  cpu::AotModuleParams aot_params;
+  LLVM::AotModuleParams aot_params;
   const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
   std::stringstream aot_mod_ss;
   aot_mod_ss << folder_dir;
   aot_params.module_path = aot_mod_ss.str();
   aot_params.executor_ = &exec;
-  auto mod = cpu::make_aot_module(aot_params);
+  aot_params.kernel_launcher =
+      std::make_unique<cpu::KernelLauncher>(cpu::KernelLauncher::Config{&exec});
+  std::unique_ptr<aot::Module> mod =
+      LLVM::make_aot_module(std::move(aot_params));
 
   constexpr int ArrLength = 100;
   constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);
@@ -98,17 +98,19 @@ TEST(LlvmCGraph, RunGraphCuda) {
 
     // Must have handled all the arch fallback logic by this point.
     uint64 *result_buffer{nullptr};
-    exec.materialize_runtime(nullptr, kNoProfiler, &result_buffer);
+    exec.materialize_runtime(kNoProfiler, &result_buffer);
 
     /* AOTLoader */
-    cuda::AotModuleParams aot_params;
+    LLVM::AotModuleParams aot_params;
     const auto folder_dir = getenv("TAICHI_AOT_FOLDER_PATH");
 
     std::stringstream aot_mod_ss;
     aot_mod_ss << folder_dir;
     aot_params.module_path = aot_mod_ss.str();
     aot_params.executor_ = &exec;
-    auto mod = cuda::make_aot_module(aot_params);
+    aot_params.kernel_launcher = std::make_unique<cuda::KernelLauncher>(
+        cuda::KernelLauncher::Config{&exec});
+    auto mod = LLVM::make_aot_module(std::move(aot_params));
 
     constexpr int ArrLength = 100;
     constexpr int kArrBytes_arr = ArrLength * 1 * sizeof(int32_t);

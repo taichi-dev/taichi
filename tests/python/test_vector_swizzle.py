@@ -88,7 +88,7 @@ def test_vector_dtype():
     def foo():
         a = ti.math.vec3(1, 2, 3)
         a /= 2
-        assert all(abs(a - (0.5, 1., 1.5)) < 1e-6)
+        assert all(abs(a - (0.5, 1.0, 1.5)) < 1e-6)
         b = ti.math.ivec3(1.5, 2.5, 3.5)
         assert all(b == (1, 2, 3))
 
@@ -99,20 +99,22 @@ def test_vector_dtype():
 def test_vector_invalid_swizzle_patterns():
     a = ti.math.vec2(1, 2)
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match=re.escape(
-                           "vec2 only has attributes=('x', 'y'), got=('z',)")):
+    with pytest.raises(
+        ti.TaichiSyntaxError,
+        match=re.escape("vec2 only has attributes=('x', 'y'), got=('z',)"),
+    ):
         a.z = 3
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match=re.escape(
-                "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
+        ti.TaichiSyntaxError,
+        match=re.escape("vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')"),
+    ):
         a.xyz = [1, 2, 3]
 
-    with pytest.raises(ti.TaichiRuntimeError,
-                       match=re.escape(
-                           "value len does not match the swizzle pattern=xy")):
+    with pytest.raises(
+        ti.TaichiRuntimeError,
+        match=re.escape("value len does not match the swizzle pattern=xy"),
+    ):
         a.xy = [1, 2, 3]
 
     @ti.kernel
@@ -125,15 +127,16 @@ def test_vector_invalid_swizzle_patterns():
         b = ti.math.vec2(1, 2)
         b.xyz = [1, 2, 3]
 
-    with pytest.raises(ti.TaichiSyntaxError,
-                       match=re.escape(
-                           "vec2 only has attributes=('x', 'y'), got=('z',)")):
+    with pytest.raises(
+        ti.TaichiSyntaxError,
+        match=re.escape("vec2 only has attributes=('x', 'y'), got=('z',)"),
+    ):
         invalid_z()
 
     with pytest.raises(
-            ti.TaichiSyntaxError,
-            match=re.escape(
-                "vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')")):
+        ti.TaichiSyntaxError,
+        match=re.escape("vec2 only has attributes=('x', 'y'), got=('x', 'y', 'z')"),
+    ):
         invalid_xyz()
 
 

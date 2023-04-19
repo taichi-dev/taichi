@@ -16,7 +16,6 @@
 #include "taichi/python/export.h"
 #include "taichi/python/memory_usage_monitor.h"
 #include "taichi/system/benchmark.h"
-#include "taichi/system/dynamic_loader.h"
 #include "taichi/system/hacked_signal_handler.h"
 #include "taichi/system/profiler.h"
 #include "taichi/util/offline_cache.h"
@@ -39,12 +38,6 @@
 
 #ifdef TI_WITH_DX12
 #include "taichi/rhi/dx12/dx12_api.h"
-#endif
-
-#ifdef TI_WITH_CC
-namespace taichi::lang::cccp {
-extern bool is_c_backend_available();
-}
 #endif
 
 namespace taichi {
@@ -177,12 +170,6 @@ void export_misc(py::module &m) {
   m.def("with_dx12", taichi::lang::directx12::is_dx12_api_available);
 #else
   m.def("with_dx12", []() { return false; });
-#endif
-
-#ifdef TI_WITH_CC
-  m.def("with_cc", taichi::lang::cccp::is_c_backend_available);
-#else
-  m.def("with_cc", []() { return false; });
 #endif
 
   m.def("clean_offline_cache_files",

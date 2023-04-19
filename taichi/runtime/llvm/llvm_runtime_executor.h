@@ -13,7 +13,6 @@
 #include "taichi/program/compile_config.h"
 
 #include "taichi/system/threading.h"
-#include "taichi/system/memory_pool.h"
 
 #define TI_RUNTIME_HOST
 #include "taichi/program/context.h"
@@ -36,12 +35,11 @@ class CpuDevice;
 class LlvmRuntimeExecutor {
  public:
   LlvmRuntimeExecutor(CompileConfig &config, KernelProfilerBase *profiler);
-
+  virtual ~LlvmRuntimeExecutor();
   /**
    * Initializes the runtime system for LLVM based backends.
    */
-  void materialize_runtime(MemoryPool *memory_pool,
-                           KernelProfilerBase *profiler,
+  void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr);
 
   // SNodeTree Allocation
@@ -71,8 +69,6 @@ class LlvmRuntimeExecutor {
 
   LLVMRuntime *get_llvm_runtime();
 
-  void prepare_runtime_context(RuntimeContext *ctx);
-
   Device *get_compute_device();
 
   LlvmDevice *llvm_device();
@@ -91,12 +87,8 @@ class LlvmRuntimeExecutor {
 
   template <typename T>
   T fetch_result(char *result_buffer, int offset) {
-    T ret;
-    fetch_result_impl(&ret, result_buffer, offset, sizeof(T));
-    return ret;
+    return *(T *)(result_buffer + offset);
   }
-
-  void fetch_result_impl(void *dest, char *result_buffer, int offset, int size);
 
   DevicePtr get_snode_tree_device_ptr(int tree_id);
 
@@ -128,10 +120,6 @@ class LlvmRuntimeExecutor {
   /* -------------------------- */
   /* ------ Member Access ----- */
   /* -------------------------- */
-  cuda::CudaDevice *cuda_device();
-  cpu::CpuDevice *cpu_device();
-  amdgpu::AmdgpuDevice *amdgpu_device();
-
   void finalize();
 
   uint64 fetch_result_uint64(int i, uint64 *result_buffer);
@@ -164,6 +152,7 @@ class LlvmRuntimeExecutor {
   friend LlvmProgramImpl;
   friend SNodeTreeBufferManager;
 
+  bool finalized_{false};
   KernelProfilerBase *profiler_ = nullptr;
 };
 

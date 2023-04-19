@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
+from taichi.lang.exception import TaichiIndexError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 
@@ -19,7 +20,12 @@ ndarray_shapes = [(), 8, (6, 12)]
 vector_dims = [3]
 matrix_dims = [(1, 2), (2, 3)]
 supported_archs_taichi_ndarray = [
-    ti.cpu, ti.cuda, ti.opengl, ti.vulkan, ti.metal, ti.amdgpu
+    ti.cpu,
+    ti.cuda,
+    ti.opengl,
+    ti.vulkan,
+    ti.metal,
+    ti.amdgpu,
 ]
 
 
@@ -29,14 +35,14 @@ def _test_scalar_ndarray(dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape, )
+        assert x.shape == (shape,)
     assert x.element_shape == ()
 
     assert x.dtype == dtype
 
 
-@pytest.mark.parametrize('dtype', data_types)
-@pytest.mark.parametrize('shape', ndarray_shapes)
+@pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize("shape", ndarray_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_scalar_ndarray(dtype, shape):
     _test_scalar_ndarray(dtype, shape)
@@ -48,16 +54,16 @@ def _test_vector_ndarray(n, dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape, )
-    assert x.element_shape == (n, )
+        assert x.shape == (shape,)
+    assert x.element_shape == (n,)
 
     assert x.dtype == dtype
     assert x.n == n
 
 
-@pytest.mark.parametrize('n', vector_dims)
-@pytest.mark.parametrize('dtype', data_types)
-@pytest.mark.parametrize('shape', ndarray_shapes)
+@pytest.mark.parametrize("n", vector_dims)
+@pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize("shape", ndarray_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_vector_ndarray(n, dtype, shape):
     _test_vector_ndarray(n, dtype, shape)
@@ -69,7 +75,7 @@ def _test_matrix_ndarray(n, m, dtype, shape):
     if isinstance(shape, tuple):
         assert x.shape == shape
     else:
-        assert x.shape == (shape, )
+        assert x.shape == (shape,)
     assert x.element_shape == (n, m)
 
     assert x.dtype == dtype
@@ -77,15 +83,15 @@ def _test_matrix_ndarray(n, m, dtype, shape):
     assert x.m == m
 
 
-@pytest.mark.parametrize('n,m', matrix_dims)
-@pytest.mark.parametrize('dtype', data_types)
-@pytest.mark.parametrize('shape', ndarray_shapes)
+@pytest.mark.parametrize("n,m", matrix_dims)
+@pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize("shape", ndarray_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_matrix_ndarray(n, m, dtype, shape):
     _test_matrix_ndarray(n, m, dtype, shape)
 
 
-@pytest.mark.parametrize('dtype', [ti.f32, ti.f64])
+@pytest.mark.parametrize("dtype", [ti.f32, ti.f64])
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_fp_ndarray(dtype):
     arch = ti.lang.impl.current_cfg().arch
@@ -97,7 +103,7 @@ def test_default_fp_ndarray(dtype):
     assert x.dtype == impl.get_runtime().default_fp
 
 
-@pytest.mark.parametrize('dtype', [ti.i32, ti.i64])
+@pytest.mark.parametrize("dtype", [ti.i32, ti.i64])
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_default_ip_ndarray(dtype):
     arch = ti.lang.impl.current_cfg().arch
@@ -118,10 +124,10 @@ def test_ndarray_1d():
         for i in range(n):
             x[i] += i + y[i]
 
-    a = ti.ndarray(ti.i32, shape=(n, ))
+    a = ti.ndarray(ti.i32, shape=(n,))
     for i in range(n):
         a[i] = i * i
-    b = np.ones((n, ), dtype=np.int32)
+    b = np.ones((n,), dtype=np.int32)
     run(a, b)
     for i in range(n):
         assert a[i] == i * i + i + 1
@@ -163,14 +169,14 @@ def test_ndarray_2d():
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_compound_element():
     n = 10
-    a = ti.ndarray(ti.i32, shape=(n, ))
+    a = ti.ndarray(ti.i32, shape=(n,))
 
     vec3 = ti.types.vector(3, ti.i32)
     b = ti.ndarray(vec3, shape=(n, n))
     assert isinstance(b, ti.VectorNdarray)
     assert b.shape == (n, n)
     assert b.element_type.element_type() == ti.i32
-    assert b.element_type.shape() == (3, )
+    assert b.element_type.shape() == (3,)
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1))
@@ -273,7 +279,7 @@ def test_ndarray_deepcopy():
 
 
 @test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
-def test_ndarray_cuda_caching_allocator():
+def test_ndarray_caching_allocator():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
     a.fill(2)
@@ -286,7 +292,7 @@ def test_ndarray_cuda_caching_allocator():
 def test_ndarray_fill():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
-    anp = np.ones((n, ), dtype=np.int32)
+    anp = np.ones((n,), dtype=np.int32)
     a.fill(2)
     anp.fill(2)
     assert (a.to_numpy() == anp).all()
@@ -353,7 +359,7 @@ def test_ndarray_matrix_numpy_io():
     n = 5
     m = 2
 
-    x = ti.Vector.ndarray(n, ti.i32, (m, ))
+    x = ti.Vector.ndarray(n, ti.i32, (m,))
     x_np = 1 + np.arange(n * m).reshape(m, n).astype(np.int32)
     x.from_numpy(x_np)
     assert (x_np.flatten() == x.to_numpy().flatten()).all()
@@ -500,9 +506,8 @@ def _test_arg_not_match():
 
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim=1, but .* is provided'
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=1, but .* is provided",
     ):
         func1(x)
 
@@ -512,9 +517,8 @@ def _test_arg_not_match():
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim=2, but .* is provided'
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=2, but .* is provided",
     ):
         func2(x)
 
@@ -524,9 +528,8 @@ def _test_arg_not_match():
 
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required element_dim'
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim",
     ):
         func5(x)
 
@@ -534,11 +537,11 @@ def _test_arg_not_match():
     def func7(a: ti.types.ndarray(ndim=2)):
         pass
 
-    x = ti.ndarray(ti.i32, shape=(3, ))
+    x = ti.ndarray(ti.i32, shape=(3,))
     with pytest.raises(
-            ValueError,
-            match=
-            r'Invalid argument into ti\.types\.ndarray\(\) - required ndim'):
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required ndim",
+    ):
         func7(x)
 
     @ti.kernel
@@ -546,9 +549,7 @@ def _test_arg_not_match():
         pass
 
     x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
-    with pytest.raises(
-            TypeError,
-            match=r'Expect element type .* for Ndarray, but get .*'):
+    with pytest.raises(TypeError, match=r"Expect element type .* for Ndarray, but get .*"):
         func8(x)
 
 
@@ -632,8 +633,7 @@ def test_ndarray_as_template():
 
     arr_0 = ti.ndarray(ti.f32, shape=(5, 10))
     arr_1 = ti.ndarray(ti.f32, shape=(5, 10))
-    with pytest.raises(ti.TaichiRuntimeTypeError,
-                       match=r"Ndarray shouldn't be passed in via"):
+    with pytest.raises(ti.TaichiRuntimeTypeError, match=r"Ndarray shouldn't be passed in via"):
         func(arr_0, arr_1)
 
 
@@ -643,8 +643,7 @@ def test_gaussian_kernel():
 
     @ti.func
     def gaussian(x, sigma):
-        return ti.exp(
-            -0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
+        return ti.exp(-0.5 * ti.pow(x / sigma, 2)) / (sigma * ti.sqrt(2.0 * M_PI))
 
     @ti.kernel
     def fill_gaussian_kernel(ker: ti.types.ndarray(ti.f32, ndim=1), N: ti.i32):
@@ -676,9 +675,8 @@ def test_ndarray_numpy_matrix():
     assert (boundary_box_np == ref_numpy).all()
 
 
-@pytest.mark.parametrize('dtype', [ti.i64, ti.u64, ti.f64])
-@test_utils.test(arch=supported_archs_taichi_ndarray,
-                 require=ti.extension.data64)
+@pytest.mark.parametrize("dtype", [ti.i64, ti.u64, ti.f64])
+@test_utils.test(arch=supported_archs_taichi_ndarray, require=ti.extension.data64)
 def test_ndarray_python_scope_read_64bit(dtype):
     @ti.kernel
     def run(x: ti.types.ndarray()):
@@ -686,7 +684,7 @@ def test_ndarray_python_scope_read_64bit(dtype):
             x[i] = i + ti.i64(2**40)
 
     n = 4
-    a = ti.ndarray(dtype, shape=(n, ))
+    a = ti.ndarray(dtype, shape=(n,))
     run(a)
     for i in range(n):
         assert a[i] == i + 2**40
@@ -716,3 +714,96 @@ def test_ndarray_in_python_func():
 
     for i in range(300):
         test()
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda], exclude=[ti.amdgpu])
+def test_ndarray_with_fp16():
+    half2 = ti.types.vector(n=2, dtype=ti.f16)
+
+    @ti.kernel
+    def init(x: ti.types.ndarray(dtype=half2, ndim=1)):
+        for i in x:
+            x[i] = half2(2.0)
+
+    @ti.kernel
+    def test(table: ti.types.ndarray(dtype=half2, ndim=1)):
+        tmp = ti.Vector([ti.f16(0.0), ti.f16(0.0)])
+        for i in ti.static(range(2)):
+            tmp = tmp + 4.0 * table[i]
+
+        table[0] = tmp
+
+    acc = ti.ndarray(dtype=half2, shape=(40))
+    table = ti.ndarray(dtype=half2, shape=(40))
+
+    init(table)
+    test(table)
+
+    assert (table.to_numpy()[0] == 16.0).all()
+
+
+@test_utils.test(
+    arch=supported_archs_taichi_ndarray,
+    require=ti.extension.assertion,
+    debug=True,
+    check_out_of_bound=True,
+    gdb_trigger=False,
+)
+def test_scalar_ndarray_oob():
+    @ti.kernel
+    def access_arr(input: ti.types.ndarray(), x: ti.i32) -> ti.f32:
+        return input[x]
+
+    input = np.random.randn(4)
+
+    # Works
+    access_arr(input, 1)
+
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, 4)
+
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, -1)
+
+
+# SOA layout for ndarray is deprecated so no need to test
+@test_utils.test(
+    arch=supported_archs_taichi_ndarray,
+    require=ti.extension.assertion,
+    debug=True,
+    check_out_of_bound=True,
+    gdb_trigger=False,
+)
+def test_matrix_ndarray_oob():
+    @ti.kernel
+    def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32) -> ti.f32:
+        return input[p, q][x, y]
+
+    input = ti.ndarray(dtype=ti.math.mat2, shape=(4, 5))
+
+    # Works
+    access_arr(input, 2, 3, 0, 1)
+
+    # element_shape
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, 2, 3, 2, 1)
+    # field_shape[0]
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, 4, 4, 0, 1)
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, -3, 4, 1, 1)
+    # field_shape[1]
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, 3, 5, 0, 1)
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_arr(input, 2, -10, 1, 1)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_mismatched_index_python_scope():
+    x = ti.ndarray(dtype=ti.f32, shape=(4, 4))
+    with pytest.raises(TaichiIndexError, match=r"2d ndarray indexed with 1d indices"):
+        x[0]
+
+    with pytest.raises(TaichiIndexError, match=r"2d ndarray indexed with 3d indices"):
+        x[0, 0, 0]

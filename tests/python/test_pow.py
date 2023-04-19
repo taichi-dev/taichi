@@ -52,7 +52,6 @@ def test_pow_i64():
 
 
 def _ipow_negative_exp(dt):
-
     z = ti.field(dt, shape=())
 
     @ti.kernel
@@ -63,17 +62,21 @@ def _ipow_negative_exp(dt):
         foo(10, -10)
 
 
-@test_utils.test(debug=True,
-                 advanced_optimization=False,
-                 exclude=[ti.vulkan, ti.metal, ti.opengl, ti.gles, ti.cc])
+@test_utils.test(
+    debug=True,
+    advanced_optimization=False,
+    exclude=[ti.vulkan, ti.metal, ti.opengl, ti.gles],
+)
 def test_ipow_negative_exp_i32():
     _ipow_negative_exp(ti.i32)
 
 
-@test_utils.test(debug=True,
-                 advanced_optimization=False,
-                 require=ti.extension.data64,
-                 exclude=[ti.vulkan, ti.metal, ti.opengl, ti.gles, ti.cc])
+@test_utils.test(
+    debug=True,
+    advanced_optimization=False,
+    require=ti.extension.data64,
+    exclude=[ti.vulkan, ti.metal, ti.opengl, ti.gles],
+)
 def test_ipow_negative_exp_i64():
     _ipow_negative_exp(ti.i64)
 
@@ -96,9 +99,7 @@ def test_pow_int_base_int_exp_32():
     _test_pow_int_base_int_exp(ti.i32, ti.i32)
 
 
-@pytest.mark.parametrize('dt_base, dt_exp',
-                         [(ti.i32, ti.i64), (ti.i64, ti.i64),
-                          (ti.i64, ti.i32)])
+@pytest.mark.parametrize("dt_base, dt_exp", [(ti.i32, ti.i64), (ti.i64, ti.i64), (ti.i64, ti.i32)])
 @test_utils.test(require=ti.extension.data64)
 def test_pow_int_base_int_exp_64(dt_base, dt_exp):
     _test_pow_int_base_int_exp(dt_base, dt_exp)
@@ -122,9 +123,7 @@ def test_pow_float_base_int_exp_32():
     _test_pow_float_base_int_exp(ti.f32, ti.i32)
 
 
-@pytest.mark.parametrize('dt_base, dt_exp',
-                         [(ti.f64, ti.i32), (ti.f32, ti.i64),
-                          (ti.f64, ti.i64)])
+@pytest.mark.parametrize("dt_base, dt_exp", [(ti.f64, ti.i32), (ti.f32, ti.i64), (ti.f64, ti.i64)])
 @test_utils.test(require=ti.extension.data64)
 def test_pow_float_base_int_exp_64(dt_base, dt_exp):
     _test_pow_float_base_int_exp(dt_base, dt_exp)

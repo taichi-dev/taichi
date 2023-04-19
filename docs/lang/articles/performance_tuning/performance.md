@@ -69,7 +69,7 @@ def func():
     for i in range(8192):  # no decorator, use default settings
         ...
 
-    ti.block_dim(128)      # change the property of next for-loop:
+    ti.loop_config(block_dim=128)      # change the property of next for-loop:
     for i in range(8192):  # will be parallelized with block_dim=128
         ...
 

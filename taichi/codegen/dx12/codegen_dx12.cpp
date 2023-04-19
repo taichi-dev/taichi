@@ -21,11 +21,12 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
  public:
   using IRVisitor::visit;
 
-  TaskCodeGenLLVMDX12(const CompileConfig &config,
+  TaskCodeGenLLVMDX12(int id,
+                      const CompileConfig &config,
                       TaichiLLVMContext &tlctx,
-                      Kernel *kernel,
+                      const Kernel *kernel,
                       IRNode *ir)
-      : TaskCodeGenLLVM(config, tlctx, kernel, ir, nullptr) {
+      : TaskCodeGenLLVM(id, config, tlctx, kernel, ir, nullptr) {
     TI_AUTO_PROF
   }
 
@@ -210,7 +211,7 @@ class TaskCodeGenLLVMDX12 : public TaskCodeGenLLVM {
 static std::vector<uint8_t> generate_dxil_from_llvm(
     LLVMCompiledTask &compiled_data,
     const CompileConfig &config,
-    taichi::lang::Kernel *kernel) {
+    const taichi::lang::Kernel *kernel) {
   // generate dxil from llvm ir.
   auto offloaded_local = compiled_data.tasks;
   auto module = compiled_data.module.get();
@@ -231,9 +232,17 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   TI_AUTO_PROF;
   const auto &config = get_compile_config();
 
-  irpass::ast_to_ir(config, *kernel, false);
+  bool verbose = config.print_ir;
+  if (kernel->is_accessor && !config.print_accessor_ir) {
+    verbose = false;
+  }
 
-  auto block = dynamic_cast<Block *>(kernel->ir.get());
+  irpass::compile_to_offloads(ir, config, kernel, verbose,
+                              /*autodiff_mode=*/kernel->autodiff_mode,
+                              /*ad_use_stack=*/true,
+                              /*start_from_ast=*/kernel->ir_is_ast());
+
+  auto block = dynamic_cast<Block *>(ir);
   TI_ASSERT(block);
 
   auto &offloads = block->statements;
@@ -243,7 +252,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
     auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
     auto *offload_stmt = offload->as<OffloadedStmt>();
-    auto new_data = compile_task(config, nullptr, offload_stmt);
+    auto new_data = compile_task(i, config, nullptr, offload_stmt);
 
     Result.task_dxil_source_codes.emplace_back(
         generate_dxil_from_llvm(new_data, config, kernel));
@@ -260,16 +269,13 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
 }
 
 LLVMCompiledTask KernelCodeGenDX12::compile_task(
+    int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
     OffloadedStmt *stmt) {
-  TaskCodeGenLLVMDX12 gen(config, get_taichi_llvm_context(), kernel, stmt);
+  TaskCodeGenLLVMDX12 gen(task_codegen_id, config, get_taichi_llvm_context(),
+                          kernel, stmt);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM
-
-FunctionType KernelCodeGenDX12::compile_to_function() {
-  // FIXME: implement compile_to_function.
-  return [](RuntimeContext &ctx) {};
-}
 }  // namespace taichi::lang

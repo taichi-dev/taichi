@@ -49,7 +49,6 @@ jobs:
             -DTI_WITH_OPENGL:BOOL=ON
             -DTI_WITH_CUDA:BOOL=ON
             -DTI_WITH_VULKAN:BOOL=ON
-            -DTI_WITH_CC:BOOL=OFF
             -DTI_BUILD_TESTS:BOOL=OFF
             -DTI_WITH_C_API=OFF
 

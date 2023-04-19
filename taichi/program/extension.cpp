@@ -25,7 +25,6 @@ bool is_extension_supported(Arch arch, Extension ext) {
       {Arch::gles, {}},
       {Arch::vulkan, {}},
       {Arch::dx11, {}},
-      {Arch::cc, {Extension::data64, Extension::extfunc, Extension::adstack}},
   };
   // if (with_opengl_extension_data64())
   // arch2ext[Arch::opengl].insert(Extension::data64); // TODO: singleton

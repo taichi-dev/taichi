@@ -114,7 +114,6 @@ user_api[ti] = [
     "block_local",
     "cache_read_only",
     "cast",
-    "cc",
     "ceil",
     "cos",
     "cpu",

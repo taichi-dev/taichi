@@ -80,8 +80,8 @@ uint64_t *CudaDevice::allocate_llvm_runtime_memory_jit(
       taichi_page_size, params.result_buffer);
   CUDADriver::get_instance().stream_synchronize(nullptr);
   uint64 *ret{nullptr};
-  CUDADriver::get_instance().memcpy_device_to_host(
-      &ret, params.result_buffer, sizeof(uint64));
+  CUDADriver::get_instance().memcpy_device_to_host(&ret, params.result_buffer,
+                                                   sizeof(uint64));
   return ret;
 }
 

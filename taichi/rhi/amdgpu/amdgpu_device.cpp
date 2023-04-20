@@ -85,7 +85,7 @@ uint64_t *AmdgpuDevice::allocate_llvm_runtime_memory_jit(
   AMDGPUDriver::get_instance().stream_synchronize(nullptr);
   uint64 *ret{nullptr};
   AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, params.result_buffer,
-                                                   sizeof(uint64));
+                                                     sizeof(uint64));
   return ret;
 }
 

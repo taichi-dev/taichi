@@ -19,7 +19,7 @@ def setup_sccache() -> Command:
     """
     Download and install sccache, setup compiler wrappers, and return the `sccache` command.
     """
-    root = get_cache_home() / "sccache"
+    root = get_cache_home() / "sccache-v041"
     bin = root / "bin"
 
     u = platform.uname()

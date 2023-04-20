@@ -2,7 +2,6 @@
 #define TI_RUNTIME_HOST
 #include <taichi/program/context.h>
 #undef TI_RUNTIME_HOST
-#include "taichi/util/action_recorder.h"
 #include "fp16.h"
 
 namespace taichi::lang {
@@ -29,11 +28,6 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 
   PrimitiveTypeID typeId = dt->as<PrimitiveType>()->type;
 
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_float64",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("val", d)});
-
   switch (typeId) {
 #define PER_C_TYPE(tp, ctype)  \
   case PrimitiveTypeID::tp:    \
@@ -54,10 +48,12 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices, T d) {
   auto dt = kernel_->args_type->get_element_type(arg_indices);
-  TI_ASSERT_INFO(dt->is<PrimitiveType>(),
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
 
+  TI_ASSERT(dt->is<PrimitiveType>() || dt->is<PointerType>());
+  if (dt->is<PointerType>()) {
+    set_struct_arg_impl(arg_indices, (uint64)d);
+    return;
+  }
   PrimitiveTypeID typeId = dt->as<PrimitiveType>()->type;
 
   switch (typeId) {
@@ -90,11 +86,6 @@ void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
   TI_ASSERT_INFO(dt->is<PrimitiveType>(),
                  "Assigning scalar value to external (numpy) array argument is "
                  "not allowed.");
-
-  ActionRecorder::get_instance().record(
-      "set_kernel_arg_integer",
-      {ActionArg("kernel_name", kernel_->name), ActionArg("arg_id", arg_id),
-       ActionArg("val", d)});
 
   if (dt->is_primitive(PrimitiveTypeID::i32)) {
     set_arg(arg_id, (int32)d);
@@ -142,9 +133,6 @@ void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
 template <typename T>
 void LaunchContextBuilder::set_struct_arg_impl(std::vector<int> arg_indices,
                                                T v) {
-  if (kernel_->arch == Arch::cc) {
-    return;
-  }
   int offset = args_type->get_element_offset(arg_indices);
   TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
@@ -170,9 +158,6 @@ T LaunchContextBuilder::get_grad_arg(int i) {
 template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg_impl({i}, v);
-  if (kernel_->arch == Arch::cc) {
-    cc_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
-  }
   set_array_device_allocation_type(i, DevAllocType::kNone);
 }
 

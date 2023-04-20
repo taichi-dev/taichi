@@ -297,6 +297,11 @@ class IRBuilder {
     return val;
   }
 
+  // Make an AccessChain
+  Value make_access_chain(const SType &out_type,
+                          Value base,
+                          const std::vector<int> &indices);
+
   // Make a phi value
   PhiValue make_phi(const SType &out_type, uint32_t num_incoming);
 
@@ -332,8 +337,10 @@ class IRBuilder {
 
   // Get null stype
   SType get_null_type();
-  // Get the spirv type for a given Taichi data type
+  // Get the spirv type for a given Taichi primitive data type
   SType get_primitive_type(const DataType &dt) const;
+  // Get the spirv type for a given Taichi data type
+  SType from_taichi_type(const DataType &dt, bool has_buffer_ptr);
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
   // Get the spirv uint type with the same size of a given Taichi data type
@@ -467,6 +474,7 @@ class IRBuilder {
   Value ge(Value a, Value b);
   Value bit_field_extract(Value base, Value offset, Value count);
   Value select(Value cond, Value a, Value b);
+  Value popcnt(Value x);
 
   // Create a cast that cast value to dst_type
   Value cast(const SType &dst_type, Value value);

@@ -231,6 +231,13 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     ret_type.set_is_pointer(true);
     return;
   }
+
+  if (type == UnaryOpType::popcnt && is_real(operand_primitive_type)) {
+    throw TaichiTypeError(fmt::format(
+        "'{}' takes integral inputs only, however '{}' is provided",
+        unary_op_type_name(type), operand_primitive_type->to_string()));
+  }
+
   if (operand->ret_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
         operand->ret_type.get_shape(), ret_primitive_type);
@@ -589,9 +596,14 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   // turned-on by default.
   //                 The scalarization should happen after
   //                 irpass::lower_access()
-  auto prim_dt = dt;
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
-                                     /*is_grad=*/is_grad, /*create_load=*/true);
+  auto ret_type = TypeFactory::get_instance().get_pointer_type(dt);
+  std::vector<StructMember> members;
+  members.push_back({ret_type, "data_ptr"});
+  auto type = TypeFactory::get_instance().get_struct_type(members);
+
+  auto ptr =
+      Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                              /*is_grad=*/is_grad, /*create_load=*/false);
 
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));

@@ -328,7 +328,31 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
+SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
+  if (dt->is<PrimitiveType>()) {
+    return get_primitive_type(dt);
+  } else if (dt->is<PointerType>()) {
+    if (has_buffer_ptr) {
+      return t_uint64_;
+    } else {
+      return t_uint32_;
+    }
+  } else if (auto struct_type = dt->cast<lang::StructType>()) {
+    std::vector<std::tuple<SType, std::string, size_t>> components;
+    for (const auto &[type, name, offset] : struct_type->elements()) {
+      components.push_back(std::make_tuple(
+          from_taichi_type(type, has_buffer_ptr), name, offset));
+    }
+    return create_struct_type(components);
+  } else {
+    TI_ERROR("Type {} not supported.", dt->to_string());
+  }
+}
+
 size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
+  if (!dt->is<PrimitiveType>()) {
+    TI_ERROR("Type {} not supported.", dt->to_string());
+  }
   if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
       dt == PrimitiveType::f64) {
     return 8;
@@ -996,6 +1020,11 @@ Value IRBuilder::get_subgroup_size() {
   return this->make_value(spv::OpLoad, t_uint32_, subgroup_size_);
 }
 
+Value IRBuilder::popcnt(Value x) {
+  TI_ASSERT(is_integral(x.stype.dt));
+  return make_value(spv::OpBitCount, x.stype, x);
+}
+
 #define DEFINE_BUILDER_BINARY_USIGN_OP(_OpName, _Op)   \
   Value IRBuilder::_OpName(Value a, Value b) {         \
     TI_ASSERT(a.stype.id == b.stype.id);               \
@@ -1620,6 +1649,18 @@ void IRBuilder::init_random_function(Value global_tmp_) {
   }
 
   init_rand_ = true;
+}
+
+Value IRBuilder::make_access_chain(const SType &out_type,
+                                   Value base,
+                                   const std::vector<int> &indices) {
+  Value ret = new_value(out_type, ValueKind::kVariablePtr);
+  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  for (auto &ind : indices) {
+    ib_.add(int_immediate_number(t_int32_, ind));
+  }
+  ib_.commit(&func_header_);
+  return ret;
 }
 
 }  // namespace spirv

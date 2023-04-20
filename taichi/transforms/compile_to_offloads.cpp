@@ -80,16 +80,9 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  // Removes MatrixOfMatrixPtrStmt & MatrixOfGlobalPtrStmt
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
-
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
 
   irpass::full_simplify(
       ir, config,
@@ -109,6 +102,14 @@ void compile_to_offloads(IRNode *ir,
     irpass::demote_atomics(ir, config);
     irpass::differentiation_validation_check(ir, config, kernel->get_name());
     irpass::analysis::verify(ir);
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
   }
 
   if (autodiff_mode == AutodiffMode::kReverse ||

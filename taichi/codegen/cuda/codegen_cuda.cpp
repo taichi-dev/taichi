@@ -13,7 +13,6 @@
 #include "taichi/rhi/cuda/cuda_driver.h"
 #include "taichi/rhi/cuda/cuda_context.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
-#include "taichi/util/action_recorder.h"
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/transforms.h"
@@ -278,6 +277,17 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
               : frac;
       builder->CreateStore(output, frac_ptr);
       llvm_val[stmt] = res;
+    } else if (op == UnaryOpType::popcnt) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::u64) ||
+          input_taichi_type->is_primitive(PrimitiveTypeID::i64)) {
+        stmt->ret_type = PrimitiveType::i32;
+        llvm_val[stmt] = call("__nv_popcll", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32) ||
+                 input_taichi_type->is_primitive(PrimitiveTypeID::u32)) {
+        llvm_val[stmt] = call("__nv_popc", input);
+      } else {
+        TI_NOT_IMPLEMENTED
+      }
     }
     UNARY_STD(exp)
     UNARY_STD(log)

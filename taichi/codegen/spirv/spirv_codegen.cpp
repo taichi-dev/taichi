@@ -566,24 +566,42 @@ class TaskCodegen : public IRVisitor {
 
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
-    const auto &arg_attribs = ctx_attribs_->args()[arg_id];
-    if (stmt->is_ptr) {
+    const auto arg_type = ctx_attribs_->args_type()->get_element_type({arg_id});
+    if (arg_type->is<PointerType>() ||
+        (arg_type->is<lang::StructType>() && arg_type->as<lang::StructType>()
+                                                 ->get_element_type({0})
+                                                 ->is<PointerType>())) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      const auto dt = PrimitiveType::get(arg_attribs.dtype);
-      const auto val_type = ir_->get_primitive_type(dt);
+      bool has_buffer_ptr =
+          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+      const auto val_type = ir_->from_taichi_type(arg_type, has_buffer_ptr);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(val_type, spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
           ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
+      if (!stmt->create_load) {
+        ir_->register_value(stmt->raw_name(), buffer_val);
+        return;
+      }
       spirv::Value val = ir_->load_variable(buffer_val, val_type);
       ir_->register_value(stmt->raw_name(), val);
     }
+  }
+
+  void visit(GetElementStmt *stmt) override {
+    spirv::Value val = ir_->query_value(stmt->src->raw_name());
+    const auto val_type = ir_->get_primitive_type(stmt->element_type());
+    const auto val_type_ptr =
+        ir_->get_pointer_type(val_type, spv::StorageClassUniform);
+    val = ir_->make_access_chain(val_type_ptr, val, stmt->index);
+    val = ir_->load_variable(val, val_type);
+    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(ReturnStmt *stmt) override {
@@ -600,17 +618,6 @@ class TaskCodegen : public IRVisitor {
       spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
       ir_->store_variable(buffer_val, val);
     }
-  }
-
-  void visit(GetElementStmt *stmt) override {
-    auto src_val = ir_->query_value(stmt->src->raw_name());
-    auto ret_type = stmt->src->ret_type.ptr_removed()
-                        ->as<lang::StructType>()
-                        ->get_element_type(stmt->index);
-    auto ret_stype = ir_->get_primitive_type(ret_type);
-    spirv::Value val = ir_->make_value(spv::OpCompositeExtract, ret_stype,
-                                       src_val, stmt->index);
-    ir_->register_value(stmt->raw_name(), val);
   }
 
   void visit(GlobalTemporaryStmt *stmt) override {
@@ -688,7 +695,7 @@ class TaskCodegen : public IRVisitor {
           spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
           ir_->int_immediate_number(ir_->i32_type(),
                                     log2int(ir_->get_primitive_type_size(
-                                        argload->ret_type.ptr_removed()))));
+                                        stmt->ret_type.ptr_removed()))));
       if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
         ir_->decorate(spv::OpDecorate, linear_offset,
                       spv::DecorationNoSignedWrap);
@@ -699,7 +706,8 @@ class TaskCodegen : public IRVisitor {
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), arg_id));
+          ir_->int_immediate_number(ir_->i32_type(), arg_id),
+          ir_->int_immediate_number(ir_->i32_type(), 0));
       spirv::Value addr = ir_->load_variable(addr_ptr, ir_->u64_type());
       addr = ir_->add(addr, ir_->make_value(spv::OpSConvert, ir_->u64_type(),
                                             linear_offset));
@@ -832,7 +840,11 @@ class TaskCodegen : public IRVisitor {
       }
     } else if (stmt->op_type == UnaryOpType::frexp) {
       // FrexpStruct is the same type of the first member.
-      val = ir_->call_glsl450(dst_type, 52, operand_val);
+      val = ir_->alloca_variable(dst_type);
+      auto v = ir_->call_glsl450(dst_type, 52, operand_val);
+      ir_->store_variable(val, v);
+    } else if (stmt->op_type == UnaryOpType::popcnt) {
+      val = ir_->popcnt(operand_val);
     }
 #define UNARY_OP_TO_SPIRV(op, instruction, instruction_id, max_bits)           \
   else if (stmt->op_type == UnaryOpType::op) {                                 \
@@ -2203,15 +2215,11 @@ class TaskCodegen : public IRVisitor {
     // Generate struct IR
     tinyir::Block blk;
     std::vector<const tinyir::Type *> element_types;
-    for (auto &arg : ctx_attribs_->args()) {
-      const tinyir::Type *t;
-      if (arg.is_array &&
-          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer)) {
-        t = blk.emplace_back<IntType>(/*num_bits=*/64, /*is_signed=*/false);
-      } else {
-        t = translate_ti_primitive(blk, PrimitiveType::get(arg.dtype));
-      }
-      element_types.push_back(t);
+    bool has_buffer_ptr =
+        caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+    for (auto &element : ctx_attribs_->args_type()->elements()) {
+      element_types.push_back(
+          translate_ti_type(blk, element.type, has_buffer_ptr));
     }
     const tinyir::Type *i32_type =
         blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);

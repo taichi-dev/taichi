@@ -533,6 +533,13 @@ def bit_not(a):
     return _unary_operation(_ti_core.expr_bit_not, _bt_ops_mod.invert, a)
 
 
+def popcnt(a):
+    def _popcnt(x):
+        return bin(x).count("1")
+
+    return _unary_operation(_ti_core.expr_popcnt, _popcnt, a)
+
+
 def logical_not(a):
     """The logical not function.
 

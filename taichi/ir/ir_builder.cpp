@@ -271,6 +271,10 @@ UnaryOpStmt *IRBuilder::create_log(Stmt *value) {
   return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::log, value));
 }
 
+UnaryOpStmt *IRBuilder::create_popcnt(Stmt *value) {
+  return insert(Stmt::make_typed<UnaryOpStmt>(UnaryOpType::popcnt, value));
+}
+
 BinaryOpStmt *IRBuilder::create_add(Stmt *l, Stmt *r) {
   return insert(Stmt::make_typed<BinaryOpStmt>(BinaryOpType::add, l, r));
 }
@@ -492,6 +496,15 @@ MeshRelationAccessStmt *IRBuilder::get_relation_access(
 
 MeshPatchIndexStmt *IRBuilder::get_patch_index() {
   return insert(Stmt::make_typed<MeshPatchIndexStmt>());
+}
+ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id, DataType dt) {
+  auto ret_type = TypeFactory::get_instance().get_pointer_type(dt);
+  std::vector<StructMember> members;
+  members.push_back({ret_type, "data_ptr"});
+  auto type = TypeFactory::get_instance().get_struct_type(members);
+
+  return insert(Stmt::make_typed<ArgLoadStmt>(
+      arg_id, type, /*is_ptr=*/true, /*is_grad=*/false, /*create_load=*/false));
 }
 
 }  // namespace taichi::lang

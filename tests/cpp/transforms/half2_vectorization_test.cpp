@@ -58,9 +58,15 @@ TEST(Half2Vectorization, Ndarray) {
     alloca_stmt1->replace_all_usages_with(old_val1);
   */
 
+  auto ret_type =
+      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f16);
+  std::vector<StructMember> members;
+  members.push_back({ret_type, "data_ptr"});
+  auto type = TypeFactory::get_instance().get_struct_type(members);
+
   auto argload_stmt = block->push_back<ArgLoadStmt>(
-      0 /*arg_id*/, PrimitiveType::f16, /*is_ptr*/ false, /*is_grad*/ false,
-      /*create_load*/ true);
+      0 /*arg_id*/, type, /*is_ptr*/ true, /*is_grad*/ false,
+      /*create_load*/ false);
   auto const_0_stmt = block->push_back<ConstStmt>(TypedConstant(0));
   auto const_1_stmt = block->push_back<ConstStmt>(TypedConstant(1));
 
@@ -98,29 +104,34 @@ TEST(Half2Vectorization, Ndarray) {
 
   irpass::vectorize_half2(block.get());
 
-  irpass::type_check(block.get(), CompileConfig());
-
-  irpass::full_simplify(block.get(), CompileConfig(), {});
-
-  irpass::flag_access(block.get());
-
   /*
   After:
-    <f16> $0 = arg[0]
-    <f16> $1 = const 10.0
-    <[Tensor (2) f16]> $2 = [$1, $5]
-    <*[Tensor (2) f16]> $3 = external_ptr $0, [], (2) element_dim=-1 layout=AOS
-  is_grad=false
-    <[Tensor (2) f16]> $4 = atomic add($3, $2)
-    <f16> $5 = const 20.0
+      <f16> $0 = argload[0]
+      <i32> $1 = const 0
+      <i32> $2 = const 1
+      <i32> $3 = const 10
+      <i32> $4 = const 20
+      <*f16> $5 = external_ptr $0, [$1] element_dim=14 layout=SOA is_grad=false
+      <*f16> $6 = external_ptr $0, [$2] element_dim=0 layout=AOS is_grad=false
+      <f16> $7 = cast_value<f16> $3
+      <i32> $8 = const 0
+      <i32> $9 = const 1
+      <[Tensor (2) f16]> $10 = [$7, $17]
+      <*[Tensor (2) f16]> $11 = external_ptr $0, [], (2) element_dim=-1
+  layout=AOS is_grad=false
+      <[Tensor (2) f16]> $12 = atomic add($11, $10)
+      <*[Tensor (2) f16]> $13 = alloca
+      $14 : local store [$13 <- $12]
+      <f16> $15 = shift ptr [$13 + $8]
+      <f16> $16 = shift ptr [$13 + $9]
+      <f16> $17 = cast_value<f16> $4
   */
-  EXPECT_EQ(block->size(), 1 /*argload*/ + 1 /*const*/ + 1 /*matrix_init*/ +
-                               1 /*external*/ + 1 /*atomic*/ + 1 /*const*/);
+  EXPECT_EQ(block->size(), 18);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[2]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[3]->is<ExternalPtrStmt>(), true);
-  EXPECT_EQ(block->statements[4]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[10]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[11]->is<ExternalPtrStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<AtomicOpStmt>(), true);
 }
 
 TEST(Half2Vectorization, GlobalTemporary) {
@@ -186,28 +197,30 @@ TEST(Half2Vectorization, GlobalTemporary) {
   */
 
   irpass::vectorize_half2(block.get());
-
-  irpass::type_check(block.get(), CompileConfig());
-
-  irpass::full_simplify(block.get(), CompileConfig(), {});
-
-  irpass::flag_access(block.get());
-
   /*
     After:
-      <f16> $0 = const 10.0
-      <[Tensor (2) f16]> $1 = [$0, $4]
-      <*[Tensor (2) f16]> $2 = global tmp var (offset = 0 B)
-      <[Tensor (2) f16]> $3 = atomic add($2, $1)
-      <f16> $4 = const 20.0
+      <i32> $0 = const 10
+      <i32> $1 = const 20
+      <*f16> $2 = global tmp var (offset = 0 B)
+      <*f16> $3 = global tmp var (offset = 2 B)
+      <f16> $4 = cast_value<f16> $0
+      <i32> $5 = const 0
+      <i32> $6 = const 1
+      <[Tensor (2) f16]> $7 = [$4, $14]
+      <*[Tensor (2) f16]> $8 = global tmp var (offset = 0 B)
+      <[Tensor (2) f16]> $9 = atomic add($8, $7)
+      <*[Tensor (2) f16]> $10 = alloca
+      $11 : local store [$10 <- $9]
+      <f16> $12 = shift ptr [$10 + $5]
+      <f16> $13 = shift ptr [$10 + $6]
+      <f16> $14 = cast_value<f16> $1
   */
-  EXPECT_EQ(block->size(), 1 /*const*/ + 1 /*matrix_init*/ + 1 /*global_temp*/ +
-                               1 /*atomic*/ + 1 /*const*/);
+  EXPECT_EQ(block->size(), 15);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[1]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[2]->is<GlobalTemporaryStmt>(), true);
-  EXPECT_EQ(block->statements[3]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[7]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[8]->is<GlobalTemporaryStmt>(), true);
+  EXPECT_EQ(block->statements[9]->is<AtomicOpStmt>(), true);
 }
 
 TEST(Half2Vectorization, Field) {
@@ -273,6 +286,7 @@ TEST(Half2Vectorization, Field) {
   block->push_back<AtomicOpStmt>(AtomicOpType::add, get_ch_stmt_1, val_1_stmt);
 
   irpass::type_check(block.get(), CompileConfig());
+
   /*
     Before:
       <*gen> $0 = get root nullptr
@@ -289,31 +303,33 @@ TEST(Half2Vectorization, Field) {
   */
 
   irpass::vectorize_half2(block.get());
-
-  irpass::type_check(block.get(), CompileConfig());
-
-  irpass::full_simplify(block.get(), CompileConfig(), {});
-
-  irpass::flag_access(block.get());
   /*
     After:
       <*gen> $0 = get root nullptr
-      <i32> $1 = const 0
+      <i32> $1 = linearized(ind {}, stride {})
       <*gen> $2 = [S1root][root]::lookup($0, $1) activate = false
-      <f16> $3 = const 10.0
-      <[Tensor (2) f16]> $4 = [$3, $7]
-      <*[Tensor (2) f16]> $5 = get child [S1root->S2place<gen>] $2
-      <[Tensor (2) f16]> $6 = atomic add($5, $4)
-      <f16> $7 = const 20.0
+      <*f16> $3 = get child [S1root->S2place<gen>] $2
+      <*f16> $4 = get child [S1root->S3place<gen>] $2
+      <i32> $5 = const 10
+      <i32> $6 = const 20
+      <f16> $7 = cast_value<f16> $5
+      <i32> $8 = const 0
+      <i32> $9 = const 1
+      <[Tensor (2) f16]> $10 = [$7, $17]
+      <*[Tensor (2) f16]> $11 = get child [S1root->S2place<gen>] $2
+      <[Tensor (2) f16]> $12 = atomic add($11, $10)
+      <*[Tensor (2) f16]> $13 = alloca
+      $14 : local store [$13 <- $12]
+      <f16> $15 = shift ptr [$13 + $8]
+      <f16> $16 = shift ptr [$13 + $9]
+      <f16> $17 = cast_value<f16> $6
   */
-  EXPECT_EQ(block->size(), 1 /*root*/ + 1 /*const*/ + 1 /*loopup*/ +
-                               1 /*const*/ + 1 /*matrix_init*/ +
-                               1 /*get_child*/ + 1 /*atomic*/ + 1 /*const*/);
+  EXPECT_EQ(block->size(), 18);
 
   // Check for scalarized statements
-  EXPECT_EQ(block->statements[4]->is<MatrixInitStmt>(), true);
-  EXPECT_EQ(block->statements[5]->is<GetChStmt>(), true);
-  EXPECT_EQ(block->statements[6]->is<AtomicOpStmt>(), true);
+  EXPECT_EQ(block->statements[10]->is<MatrixInitStmt>(), true);
+  EXPECT_EQ(block->statements[11]->is<GetChStmt>(), true);
+  EXPECT_EQ(block->statements[12]->is<AtomicOpStmt>(), true);
 }
 
 }  // namespace taichi::lang

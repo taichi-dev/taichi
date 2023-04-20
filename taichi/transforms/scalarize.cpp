@@ -268,14 +268,30 @@ class Scalarize : public BasicStmtVisitor {
   void visit(PrintStmt *stmt) override {
     auto const &contents = stmt->contents;
     auto const &formats = stmt->formats;
-    std::vector<std::variant<Stmt *, std::string>> new_contents;
-    // Sparse mapping between formatted expr and its specifier
-    std::map<Stmt *, std::string> new_formats;
-    for (size_t i = 0; i < contents.size(); i++) {
-      auto const &content = contents[i];
-      auto const &format = formats[i];
+
+    using EntryType = PrintStmt::EntryType;
+    using FormatType = PrintStmt::FormatType;
+    using PairType = std::pair<std::vector<EntryType>, std::vector<FormatType>>;
+    auto push_content_and_format = [](PairType &pair, EntryType content,
+                                      FormatType format = std::nullopt) {
+      pair.first.push_back(content);
+      pair.second.push_back(format);
+    };
+    auto get_num_pairs = [](PairType const &pair) -> size_t {
+      TI_ASSERT(pair.first.size() == pair.second.size());
+      return pair.first.size();
+    };
+    auto get_pair_at = [](PairType const &pair,
+                          size_t index) -> std::pair<EntryType, FormatType> {
+      return {pair.first[index], pair.second[index]};
+    };
+
+    PairType new_pair;
+    for (size_t pair_i = 0; pair_i < contents.size(); ++pair_i) {
+      const EntryType &content = contents[pair_i];
+      const FormatType &format = formats[pair_i];
       if (auto string_ptr = std::get_if<std::string>(&content)) {
-        new_contents.push_back(*string_ptr);
+        push_content_and_format(new_pair, *string_ptr, format);
       } else {
         Stmt *print_stmt = std::get<Stmt *>(content);
         if (print_stmt->is<MatrixInitStmt>()) {
@@ -286,75 +302,63 @@ class Scalarize : public BasicStmtVisitor {
           bool is_matrix = tensor_shape.size() == 2;
           int m = tensor_shape[0];
 
-          new_contents.push_back("[");
+          push_content_and_format(new_pair, "[");
           if (is_matrix) {
             int n = tensor_shape[1];
             for (size_t i = 0; i < m; i++) {
-              new_contents.push_back("[");
+              push_content_and_format(new_pair, "[");
               for (size_t j = 0; j < n; j++) {
                 size_t index = i * n + j;
-                new_contents.push_back(matrix_init_stmt->values[index]);
-                if (format.has_value()) {
-                  new_formats[matrix_init_stmt->values[index]] = format.value();
+                push_content_and_format(
+                    new_pair, matrix_init_stmt->values[index], format);
+                if (j != n - 1) {
+                  push_content_and_format(new_pair, ", ");
                 }
-                if (j != n - 1)
-                  new_contents.push_back(", ");
               }
-              new_contents.push_back("]");
+              push_content_and_format(new_pair, "]");
 
-              if (i != m - 1)
-                new_contents.push_back(", ");
+              if (i != m - 1) {
+                push_content_and_format(new_pair, ", ");
+              }
             }
           } else {
             for (size_t i = 0; i < m; i++) {
-              new_contents.push_back(matrix_init_stmt->values[i]);
-              if (format.has_value()) {
-                new_formats[matrix_init_stmt->values[i]] = format.value();
+              push_content_and_format(new_pair, matrix_init_stmt->values[i],
+                                      format);
+              if (i != m - 1) {
+                push_content_and_format(new_pair, ", ");
               }
-              if (i != m - 1)
-                new_contents.push_back(", ");
             }
           }
-          new_contents.push_back("]");
+          push_content_and_format(new_pair, "]");
         } else {
-          new_contents.push_back(print_stmt);
-          if (format.has_value()) {
-            new_formats[print_stmt] = format.value();
-          }
+          push_content_and_format(new_pair, print_stmt, format);
         }
       }
     }
 
     // Merge string contents
-    std::vector<std::variant<Stmt *, std::string>> merged_contents;
-    std::vector<std::optional<std::string>> merged_formats;
+    PairType merged_pair;
     std::string merged_string = "";
-    for (const auto &content : new_contents) {
+    for (size_t i = 0; i < get_num_pairs(new_pair); ++i) {
+      auto const &[content, format] = get_pair_at(new_pair, i);
       if (auto string_content = std::get_if<std::string>(&content)) {
         merged_string += *string_content;
+        TI_ASSERT(!format.has_value());
       } else {
         if (!merged_string.empty()) {
-          merged_contents.push_back(merged_string);
-          merged_formats.push_back(std::nullopt);
+          push_content_and_format(merged_pair, merged_string);
           merged_string = "";
         }
-        merged_contents.push_back(content);
-        const auto format = new_formats.find(std::get<Stmt *>(content));
-        if (format != new_formats.end()) {
-          merged_formats.push_back(format->second);
-        } else {
-          merged_formats.push_back(std::nullopt);
-        }
+        push_content_and_format(merged_pair, content, format);
       }
     }
     if (!merged_string.empty()) {
-      merged_contents.push_back(merged_string);
-      merged_formats.push_back(std::nullopt);
+      push_content_and_format(merged_pair, merged_string);
     }
 
-    assert(merged_contents.size() == merged_formats.size());
     delayed_modifier_.insert_before(
-        stmt, Stmt::make<PrintStmt>(merged_contents, merged_formats));
+        stmt, Stmt::make<PrintStmt>(merged_pair.first, merged_pair.second));
     delayed_modifier_.erase(stmt);
   }
 
@@ -659,11 +663,12 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
     Although we can do nothing about "global" tensors like tensors from
     ArgLoadStmt or GlobalPtrStmt, we can still optimize "local" tensors like
     tensors from AllocaStmt. In this pass, we ask AllocaStmt to allocate
-    multiple scalarized PrimitiveTyped variables in replacement of the original
-    TensorType.
+    multiple scalarized PrimitiveTyped variables in replacement of the
+    original TensorType.
 
-    An additional container "scalarized_local_tensor_map_" is used to keep track
-    of the scalarized AllocaStmt, for later use in LoadStmt and StoreStmt.
+    An additional container "scalarized_local_tensor_map_" is used to keep
+    track of the scalarized AllocaStmt, for later use in LoadStmt and
+    StoreStmt.
 
     Before:
       TensorType<4 x i32>* addr = AllocaStmt(TensorType<4 x i32>)
@@ -704,7 +709,8 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
       MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
 
     After:
-      scalarized_alloca_stmt = scalarized_local_tensor_map_[alloca_stmt][offset]
+      scalarized_alloca_stmt =
+    scalarized_local_tensor_map_[alloca_stmt][offset]
       stmt->replace_all_usages_with(scalarized_alloca_stmt)
   */
   void visit(MatrixPtrStmt *stmt) override {
@@ -763,8 +769,8 @@ class ExtractLocalPointers : public BasicStmtVisitor {
   std::unordered_map<std::pair<Stmt *, int>,
                      Stmt *,
                      hashing::Hasher<std::pair<Stmt *, int>>>
-      first_matrix_ptr_;  // mapping an (AllocaStmt, integer) pair to the first
-                          // MatrixPtrStmt representing it
+      first_matrix_ptr_;  // mapping an (AllocaStmt, integer) pair to the
+                          // first MatrixPtrStmt representing it
   std::unordered_map<int, Stmt *>
       first_const_;  // mapping an integer to the first ConstStmt representing
                      // it
@@ -835,7 +841,10 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
       // with flattened indices. Main goal is to keep all the hacks in a single
       // place so that they're easier to remove
-      origin->base_ptr->as<ArgLoadStmt>()->ret_type = stmt->ret_type;
+      std::vector<StructMember> members;
+      members.push_back({stmt->ret_type, "data_ptr"});
+      auto type = TypeFactory::get_instance().get_struct_type(members);
+      origin->base_ptr->as<ArgLoadStmt>()->ret_type = type;
       stmt->replace_usages_with(fused.get());
       modifier_.insert_before(stmt, std::move(fused));
       modifier_.erase(stmt);

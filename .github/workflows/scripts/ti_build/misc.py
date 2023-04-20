@@ -38,15 +38,20 @@ def warn(msg: str) -> None:
 
 
 def error(msg: str) -> None:
-    R = escape_codes["bold_red"]
-    N = escape_codes["reset"]
-    print(f"{R}:: ERROR {msg}{N}", file=sys.stderr, flush=True)
+    if options and options.permissive:
+        warn(msg)
+    else:
+        R = escape_codes["bold_red"]
+        N = escape_codes["reset"]
+        print(f"{R}!! ERROR {msg}{N}", file=sys.stderr, flush=True)
+        sys.exit(1)
 
 
 def banner(msg: str) -> Callable:
     """
     Decorate a function to print a banner before and after it.
     """
+    p = lambda s: print(s, file=sys.stderr, flush=True)
 
     def decorate(f: Callable) -> Callable:
         sig = inspect.signature(f)
@@ -56,25 +61,13 @@ def banner(msg: str) -> Callable:
 
         def wrapper(*args, **kwargs):
             _args = sig.bind(*args, **kwargs)
-            print(
-                f"{C}:: -----BEGIN {msg}-----{N}".format(**_args.arguments),
-                file=sys.stderr,
-                flush=True,
-            )
+            p(f"{C}:: -----BEGIN {msg}-----{N}".format(**_args.arguments))
             try:
                 ret = f(*args, **kwargs)
-                print(
-                    f"{C}:: -----END {msg}-----{N}".format(**_args.arguments),
-                    file=sys.stderr,
-                    flush=True,
-                )
+                p(f"{C}:: -----END {msg}-----{N}".format(**_args.arguments))
                 return ret
             except BaseException as e:
-                print(
-                    f"{R}!! -----EXCEPTION {msg}-----{N}".format(**_args.arguments),
-                    file=sys.stderr,
-                    flush=True,
-                )
+                p(f"{R}!! -----EXCEPTION {msg}-----{N}".format(**_args.arguments))
                 raise
 
         return wrapper

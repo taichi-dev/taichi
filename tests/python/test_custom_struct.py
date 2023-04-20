@@ -196,7 +196,7 @@ def test_struct_type():
         assert x[i].line.length == 5.0
 
 
-@test_utils.test(exclude=ti.cc)
+@test_utils.test()
 def test_dataclass():
     # example struct class type
     vec3f = ti.types.vector(3, float)
@@ -349,7 +349,7 @@ def test_copy_python_scope_struct_to_taichi_scope():
     test()
 
 
-@test_utils.test(exclude=[ti.cc], debug=True)
+@test_utils.test(debug=True)
 def test_copy_struct_field_element_to_taichi_scope():
     a = ti.Struct.field({"a": ti.i32, "b": ti.i32}, shape=())
     a[None].a = 2

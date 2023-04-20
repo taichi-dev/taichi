@@ -29,17 +29,24 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
   Stmt *origin1 = retrieve_local(var1);
   Stmt *origin2 = retrieve_local(var2);
   if (origin1 != nullptr && origin2 != nullptr) {
-    if (origin1 == origin2) {
-      if (var1->is<MatrixPtrStmt>() && var2->is<MatrixPtrStmt>()) {
+    if (var1->is<MatrixPtrStmt>() && var2->is<MatrixPtrStmt>()) {
+      if (origin1 == origin2 ||
+          alias_analysis(origin1, origin2) == AliasResult::same) {
         auto diff = value_diff_ptr_index(var1->cast<MatrixPtrStmt>()->offset,
                                          var2->cast<MatrixPtrStmt>()->offset);
         if (diff.is_diff_certain) {
           return diff.diff_range == 0 ? AliasResult::same
                                       : AliasResult::different;
         }
+      } else {
+        return AliasResult::different;
       }
+    }
+
+    if (origin1 == origin2) {
       return AliasResult::uncertain;
     }
+
     if (origin1->is<AllocaStmt>() || origin2->is<AllocaStmt>())
       return AliasResult::different;
     TI_ASSERT(origin1->is<GlobalTemporaryStmt>() &&

@@ -394,7 +394,7 @@ mass = sp.mass
 
 Use case:
 
-```python
+```python cont
 pos[1,2] = ti.Vector([1.5,2,3])
 mass[1,0] = 0.1
 sp.usage()

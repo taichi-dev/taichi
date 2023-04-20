@@ -280,7 +280,7 @@ def test():
             ret = 0
         if ret != 0:
             exit(ret)
-     
+
 
 if __name__ == "__main__":
     test()

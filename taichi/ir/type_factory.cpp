@@ -12,7 +12,7 @@ TypeFactory &TypeFactory::get_instance() {
 TypeFactory::TypeFactory() {
 }
 
-Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
+const Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   std::lock_guard<std::mutex> _(primitive_mut_);
 
   if (primitive_types_.find(id) == primitive_types_.end()) {
@@ -22,7 +22,8 @@ Type *TypeFactory::get_primitive_type(PrimitiveTypeID id) {
   return primitive_types_[id].get();
 }
 
-Type *TypeFactory::get_tensor_type(std::vector<int> shape, Type *element) {
+const Type *TypeFactory::get_tensor_type(std::vector<int> shape,
+                                         Type *element) {
   std::lock_guard<std::mutex> _(tensor_mut_);
 
   auto encode = [](const std::vector<int> &shape) -> std::string {
@@ -57,7 +58,8 @@ const Type *TypeFactory::get_struct_type(
   return struct_types_[key].get();
 }
 
-Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
+const Type *TypeFactory::get_pointer_type(const Type *element,
+                                          bool is_bit_pointer) {
   std::lock_guard<std::mutex> _(pointer_mut_);
 
   auto key = std::make_pair(element, is_bit_pointer);
@@ -68,9 +70,9 @@ Type *TypeFactory::get_pointer_type(Type *element, bool is_bit_pointer) {
   return pointer_types_[key].get();
 }
 
-Type *TypeFactory::get_quant_int_type(int num_bits,
-                                      bool is_signed,
-                                      Type *compute_type) {
+const Type *TypeFactory::get_quant_int_type(int num_bits,
+                                            bool is_signed,
+                                            const Type *compute_type) {
   std::lock_guard<std::mutex> _(quant_int_mut_);
 
   auto key = std::make_tuple(num_bits, is_signed, compute_type);
@@ -81,9 +83,9 @@ Type *TypeFactory::get_quant_int_type(int num_bits,
   return quant_int_types_[key].get();
 }
 
-Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
-                                        Type *compute_type,
-                                        float64 scale) {
+const Type *TypeFactory::get_quant_fixed_type(const Type *digits_type,
+                                              const Type *compute_type,
+                                              float64 scale) {
   std::lock_guard<std::mutex> _(quant_fixed_mut_);
 
   auto key = std::make_tuple(digits_type, compute_type, scale);
@@ -94,9 +96,9 @@ Type *TypeFactory::get_quant_fixed_type(Type *digits_type,
   return quant_fixed_types_[key].get();
 }
 
-Type *TypeFactory::get_quant_float_type(Type *digits_type,
-                                        Type *exponent_type,
-                                        Type *compute_type) {
+const Type *TypeFactory::get_quant_float_type(const Type *digits_type,
+                                              const Type *exponent_type,
+                                              const Type *compute_type) {
   std::lock_guard<std::mutex> _(quant_float_mut_);
 
   auto key = std::make_tuple(digits_type, exponent_type, compute_type);
@@ -108,8 +110,8 @@ Type *TypeFactory::get_quant_float_type(Type *digits_type,
 }
 
 BitStructType *TypeFactory::get_bit_struct_type(
-    PrimitiveType *physical_type,
-    const std::vector<Type *> &member_types,
+    const PrimitiveType *physical_type,
+    const std::vector<const Type *> &member_types,
     const std::vector<int> &member_bit_offsets,
     const std::vector<int> &member_exponents,
     const std::vector<std::vector<int>> &member_exponent_users) {
@@ -121,9 +123,10 @@ BitStructType *TypeFactory::get_bit_struct_type(
   return bit_struct_types_.back().get();
 }
 
-Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
-                                        Type *element_type,
-                                        int num_elements) {
+const Type *TypeFactory::get_quant_array_type(
+    const PrimitiveType *physical_type,
+    const Type *element_type,
+    int num_elements) {
   std::lock_guard<std::mutex> _(quant_array_mut_);
 
   quant_array_types_.push_back(std::make_unique<QuantArrayType>(
@@ -131,8 +134,9 @@ Type *TypeFactory::get_quant_array_type(PrimitiveType *physical_type,
   return quant_array_types_.back().get();
 }
 
-PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
-  Type *int_type;
+const PrimitiveType *TypeFactory::get_primitive_int_type(int bits,
+                                                         bool is_signed) {
+  const Type *int_type;
   if (bits == 8) {
     int_type = get_primitive_type(PrimitiveTypeID::i8);
   } else if (bits == 16) {
@@ -150,8 +154,8 @@ PrimitiveType *TypeFactory::get_primitive_int_type(int bits, bool is_signed) {
   return int_type->cast<PrimitiveType>();
 }
 
-PrimitiveType *TypeFactory::get_primitive_real_type(int bits) {
-  Type *real_type;
+const PrimitiveType *TypeFactory::get_primitive_real_type(int bits) {
+  const Type *real_type;
   if (bits == 16) {
     real_type = get_primitive_type(PrimitiveTypeID::f16);
   } else if (bits == 32) {

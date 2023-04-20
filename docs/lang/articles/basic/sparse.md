@@ -363,6 +363,46 @@ print(ti.rescale_index(block2, block1, [3, 1]))       # output: [1, 0]
 
 Regarding line 1, you can also compute the `block1` index given `pixel` index `[7, 3]` as `[7//2//2, 3//2//2]`. However, doing so couples computation code with the internal configuration of data structures (in this case, the size of `block1` containers). By using `ti.rescale_index()`, you can avoid hard-coding internal information of data structures.
 
+
+## Sparse grid example
+We now show a simple example of how to use the sparse data structures to implement a sparse grid.
+
+```python
+import taichi as ti
+ti.init()
+grid_size = (10,10)
+@ti.data_oriented
+class SparseGrid():
+    def __init__(self, grid_size):
+        self.pos = ti.field(int)
+        self.snode = ti.root.bitmasked(ti.ij, grid_size)
+        self.snode.place(self.pos)
+    @ti.kernel
+    def usage(self):
+        cnt = 0
+        for I in ti.grouped(self.snode):
+            if ti.is_active(self.snode, I):
+                cnt+=1
+        usage =  cnt/(grid_size[0]*grid_size[1])
+        print("Grid usage: ", usage)
+sp = SparseGrid(grid_size=grid_size)
+pos = sp.pos
+```
+
+Use case: 
+```python
+>>> sp.usage()
+Grid usage:  0.000000
+
+>>> pos[1,2] = 1
+
+>>> sp.usage()
+Grid usage:  0.010000
+
+>>> pos[1,3] = 1
+Grid usage:  0.020000
+```
+
 ## Further reading
 
 Please read the SIGGRAPH Asia 2019 [paper](https://yuanming.taichi.graphics/publication/2019-taichi/taichi-lang.pdf) or watch the associated

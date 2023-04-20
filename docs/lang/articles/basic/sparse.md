@@ -389,7 +389,7 @@ sp = SparseGrid(grid_size=grid_size)
 pos = sp.pos
 ```
 
-Use case: 
+Use case:
 ```python
 >>> sp.usage()
 Grid usage:  0.000000

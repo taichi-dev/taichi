@@ -132,12 +132,10 @@ class LayoutContext : public Polymorphic {
 
  public:
   void register_size(const MemRefElementTypeInterface *t, size_t size) {
-    TI_ASSERT(size != 0);
     size_cache_[t] = size;
   }
 
   void register_alignment(const MemRefElementTypeInterface *t, size_t size) {
-    TI_ASSERT(size != 0);
     alignment_cache_[t] = size;
   }
 

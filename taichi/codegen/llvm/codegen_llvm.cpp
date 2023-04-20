@@ -1860,7 +1860,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto *struct_type = tlctx->get_data_type(
       TypeFactory::get_instance().get_struct_type(members));
   auto *gep =
-      builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
+      builder->CreateGEP(struct_type, llvm_val.at(stmt->base_ptr),
                          {tlctx->get_constant(0), tlctx->get_constant(1)});
   auto *ptr_val = builder->CreateLoad(tlctx->get_data_type(ptr_type), gep);
 

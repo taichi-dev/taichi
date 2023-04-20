@@ -1423,7 +1423,6 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
     return nullptr;
   }
 
-  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
   // Atomic operators not supported by LLVM, we implement them using CAS
   if (stmt->op_type == AtomicOpType::mul) {
     return atomic_op_using_cas(

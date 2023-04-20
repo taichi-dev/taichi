@@ -2463,21 +2463,7 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
     }
 
     std::vector<uint32_t> optimized_spv(task_res.spirv_code);
-    // Enable to dump SPIR-V assembly of kernels
-    if constexpr (true) {
-      std::vector<uint32_t> &spirv = task_res.spirv_code;
 
-      std::string spirv_asm;
-      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
-      auto kernel_name = tp.ti_kernel_name;
-      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
-
-      std::ofstream fout(kernel_name + ".spv",
-                         std::ios::binary | std::ios::out);
-      fout.write(reinterpret_cast<const char *>(spirv.data()),
-                 spirv.size() * sizeof(uint32_t));
-      fout.close();
-    }
     bool success = true;
     {
       bool result = false;
@@ -2492,6 +2478,23 @@ void KernelCodegen::run(TaichiKernelAttributes &kernel_attribs,
 
     TI_TRACE("SPIRV-Tools-opt: binary size, before={}, after={}",
              task_res.spirv_code.size(), optimized_spv.size());
+
+    // Enable to dump SPIR-V assembly of kernels
+    if constexpr (false) {
+      std::vector<uint32_t> &spirv =
+          success ? optimized_spv : task_res.spirv_code;
+
+      std::string spirv_asm;
+      spirv_tools_->Disassemble(optimized_spv, &spirv_asm);
+      auto kernel_name = tp.ti_kernel_name;
+      TI_WARN("SPIR-V Assembly dump for {} :\n{}\n\n", kernel_name, spirv_asm);
+
+      std::ofstream fout(kernel_name + ".spv",
+                         std::ios::binary | std::ios::out);
+      fout.write(reinterpret_cast<const char *>(spirv.data()),
+                 spirv.size() * sizeof(uint32_t));
+      fout.close();
+    }
 
     kernel_attribs.tasks_attribs.push_back(std::move(task_res.task_attribs));
     generated_spirv.push_back(std::move(optimized_spv));

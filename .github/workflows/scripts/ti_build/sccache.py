@@ -32,32 +32,21 @@ def setup_sccache() -> Command:
 
     if not exe.exists():
         if u.system == "Linux":
-            download_dep(
-                "https://github.com/mozilla/sccache/releases/download/v0.3.1/sccache-v0.3.1-x86_64-unknown-linux-musl.tar.gz",
-                bin,
-                strip=1,
-            )
+            url = "https://github.com/mozilla/sccache/releases/download/v0.4.1/sccache-v0.4.1-x86_64-unknown-linux-musl.tar.gz"
         elif (u.system, u.machine) == ("Darwin", "arm64"):
-            download_dep(
-                "https://github.com/mozilla/sccache/releases/download/v0.3.1/sccache-v0.3.1-aarch64-apple-darwin.tar.gz",
-                bin,
-                strip=1,
+            url = (
+                "https://github.com/mozilla/sccache/releases/download/v0.4.1/sccache-v0.4.1-aarch64-apple-darwin.tar.gz"
             )
         elif (u.system, u.machine) == ("Darwin", "x86_64"):
-            download_dep(
-                "https://github.com/mozilla/sccache/releases/download/v0.3.1/sccache-v0.3.1-x86_64-apple-darwin.tar.gz",
-                bin,
-                strip=1,
+            url = (
+                "https://github.com/mozilla/sccache/releases/download/v0.4.1/sccache-v0.4.1-x86_64-apple-darwin.tar.gz"
             )
         elif u.system == "Windows":
-            download_dep(
-                "https://github.com/mozilla/sccache/releases/download/v0.3.1/sccache-v0.3.1-x86_64-pc-windows-msvc.tar.gz",
-                bin,
-                strip=1,
-            )
+            url = "https://github.com/mozilla/sccache/releases/download/v0.4.1/sccache-v0.4.1-x86_64-pc-windows-msvc.tar.gz"
         else:
             raise RuntimeError(f"Unsupported platform: {u.system} {u.machine}")
 
+        download_dep(url, bin, strip=1)
         exe.chmod(0o755)
 
     os.environ["SCCACHE_LOG"] = "error"

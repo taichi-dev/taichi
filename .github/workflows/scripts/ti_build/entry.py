@@ -88,7 +88,6 @@ def action_wheel():
     install_build_wheel_deps(python, pip)
     handle_alternate_actions()
     build_wheel(python, pip)
-    sccache("-s")
     sccache("--stop-server")
 
 
@@ -97,7 +96,6 @@ def action_android():
     setup_android_ndk()
     handle_alternate_actions()
     build_android(python, pip)
-    sccache("-s")
     sccache("--stop-server")
 
 

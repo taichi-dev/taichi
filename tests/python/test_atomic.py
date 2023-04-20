@@ -299,7 +299,7 @@ def test_atomic_mul_expr_evaled():
 
     func()
 
-    assert c[None] == base ** 16
+    assert c[None] == base**16
 
 
 @test_utils.test()

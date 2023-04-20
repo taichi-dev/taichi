@@ -1454,7 +1454,7 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
     std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
-    const DataType& type) {
+    const DataType &type) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   BasicBlock *after_loop =
@@ -1466,8 +1466,8 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
-    std::unordered_map<int, std::pair<llvm::PointerType*,
-                                      IntegerType*>> bitCastType;
+    std::unordered_map<int, std::pair<llvm::PointerType *, IntegerType *>>
+        bitCastType;
     bitCastType[8] = {llvm::Type::getInt8PtrTy(*llvm_context),
                       llvm::Type::getInt8Ty(*llvm_context)};
     bitCastType[16] = {llvm::Type::getInt16PtrTy(*llvm_context),
@@ -1483,13 +1483,11 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
 
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
-    dest =
-        builder->CreateBitCast(dest, typePair.first);
+    dest = builder->CreateBitCast(dest, typePair.first);
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
-        dest,
-        builder->CreateBitCast(old_val, typePair.second),
-        builder->CreateBitCast(new_val, typePair.second),
-        llvm::MaybeAlign(0), AtomicOrdering::SequentiallyConsistent,
+        dest, builder->CreateBitCast(old_val, typePair.second),
+        builder->CreateBitCast(new_val, typePair.second), llvm::MaybeAlign(0),
+        AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
     auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);

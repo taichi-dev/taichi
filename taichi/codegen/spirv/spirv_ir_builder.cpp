@@ -1292,46 +1292,55 @@ bool IRBuilder::check_value_existence(const std::string &name) const {
 Value IRBuilder::float_atomic(AtomicOpType op_type,
                               Value addr_ptr,
                               Value data,
-                              const DataType& dt) {
+                              const DataType &dt) {
   if (op_type == AtomicOpType::add) {
-    return atomic_operation(addr_ptr, data,
-        [&](Value lhs, Value rhs) { return add(lhs, rhs); }, dt);
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return add(lhs, rhs); },
+        dt);
   } else if (op_type == AtomicOpType::sub) {
-    return atomic_operation(addr_ptr, data,
-        [&](Value lhs, Value rhs) { return sub(lhs, rhs); }, dt);
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return sub(lhs, rhs); },
+        dt);
   } else if (op_type == AtomicOpType::mul) {
-    return atomic_operation(addr_ptr, data,
-        [&](Value lhs, Value rhs) { return mul(lhs, rhs); }, dt);
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return mul(lhs, rhs); },
+        dt);
   } else if (op_type == AtomicOpType::min) {
-    return atomic_operation(addr_ptr, data,
+    return atomic_operation(
+        addr_ptr, data,
         [&](Value lhs, Value rhs) {
-      return call_glsl450(t_fp32_, /*FMin*/ 37, lhs, rhs);
-    }, dt);
+          return call_glsl450(t_fp32_, /*FMin*/ 37, lhs, rhs);
+        },
+        dt);
   } else if (op_type == AtomicOpType::max) {
-    return atomic_operation(addr_ptr, data, [&](Value lhs, Value rhs) {
-      return call_glsl450(t_fp32_, /*FMax*/ 40, lhs, rhs);
-    }, dt);
+    return atomic_operation(
+        addr_ptr, data,
+        [&](Value lhs, Value rhs) {
+          return call_glsl450(t_fp32_, /*FMax*/ 40, lhs, rhs);
+        },
+        dt);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
 Value IRBuilder::integer_atomic(AtomicOpType op_type,
-                              Value addr_ptr,
-                              Value data,
-                              const DataType& dt) {
+                                Value addr_ptr,
+                                Value data,
+                                const DataType &dt) {
   if (op_type == AtomicOpType::mul) {
-    return atomic_operation(addr_ptr, data,
-        [&](Value lhs, Value rhs) { return mul(lhs, rhs); }, dt);
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return mul(lhs, rhs); },
+        dt);
   } else {
     TI_NOT_IMPLEMENTED
   }
 }
 
 Value IRBuilder::atomic_operation(Value addr_ptr,
-                       Value data,
-                       std::function<Value(Value, Value)> op,
-                       const DataType& dt) {
+                                  Value data,
+                                  std::function<Value(Value, Value)> op,
+                                  const DataType &dt) {
   SType out_type = get_primitive_type(dt);
   SType res_type = get_primitive_uint_type(dt);
   Value ret_val_int = alloca_variable(res_type);

@@ -12,7 +12,7 @@ from typing import Tuple
 # -- own --
 from . import misc
 from .dep import download_dep
-from .misc import banner, get_cache_home, path_prepend
+from .misc import banner, get_cache_home, path_prepend, info
 from .tinysh import Command, sh
 
 
@@ -63,6 +63,8 @@ def get_desired_python_version() -> str:
         return this_version
     elif version and re.match(r"^3\.\d+$", version):
         return version
+    elif version in ("native", "Native"):
+        return "(Native)"
     else:
         raise RuntimeError(f"Unsupported Python version: {version}")
 
@@ -72,6 +74,12 @@ def setup_python(version: str) -> Tuple[Command, Command]:
     """
     Find the required Python environment and return the `python` and `pip` commands.
     """
+    if version == "(Native)":
+        info("Using your current Python interpreter as requested.")
+        python = sh.bake(sys.executable)
+        pip = python.bake("-m", "pip")
+        return python, pip
+
     windows = platform.system() == "Windows"
 
     prefix = get_cache_home() / "mambaforge"

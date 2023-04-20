@@ -135,7 +135,10 @@ def parse_args():
     help = "Do not build, start a shell with environment variables set instead"
     parser.add_argument("-s", "--shell", action="store_true", help=help)
 
-    help = "Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter."
+    help = (
+        "Python version to use, e.g. '3.7', '3.11', or 'native' to not use an isolated python environment. "
+        "Defaults to the same version of the current python interpreter."
+    )
     parser.add_argument("--python", default=None, help=help)
 
     help = "Continue when encounters error."

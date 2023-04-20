@@ -335,11 +335,9 @@ On Windows, Vulkan SDK requires elevated privileges to install (the installer wo
 
   # export DEBUG=1 # Uncomment it if you wish to keep debug information.
 
-  # This would build a wheel file in `dist/` folder
-  ./build.py
-
-  # Alternatively, this would drop into a shell with complete build environment,
+  # This would drop into a shell with complete build environment,
   ./build.py --shell
+
   # and then you could install Taichi in development mode
   python3 setup.py develop
   ```
@@ -357,10 +355,7 @@ On Windows, Vulkan SDK requires elevated privileges to install (the installer wo
 
   # $env:DEBUG = 1 # Uncomment it if you wish to keep debug information.
 
-  # This would build a wheel file in `dist/` folder
-  ./build.py
-
-  # Alternatively, this would drop into a shell with complete build environment,
+  # This would drop into a shell with complete build environment,
   ./build.py --shell
   # and then you could install Taichi in development mode
   python3 setup.py develop
@@ -370,6 +365,17 @@ On Windows, Vulkan SDK requires elevated privileges to install (the installer wo
 
 </Tabs>
 ````
+
+:::note
+
+Alternatively, you could build a wheel file ready for install if you don't care about the convenience provided by `python develop install`:
+
+```shell
+./build.py
+ls dist/*.whl
+```
+
+:::
 
 2. Try out some of the demos in the **examples/** folder to see if Taichi is properly installed. For example:
 

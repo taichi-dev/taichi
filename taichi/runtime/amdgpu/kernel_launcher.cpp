@@ -40,12 +40,12 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           device_buffers[i] = arg_buffers[i];
         }
 
-        ctx.set_arg(i, (uint64)device_buffers[i]);
+        ctx.set_struct_arg({i, 1}, (uint64)device_buffers[i]);
       } else if (arr_sz > 0) {  // why use arr_sz constrain?
         DeviceAllocation *ptr = static_cast<DeviceAllocation *>(arg_buffers[i]);
         device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
         arg_buffers[i] = device_buffers[i];
-        ctx.set_arg(i, (uint64)device_buffers[i]);
+        ctx.set_struct_arg({i, 1}, (uint64)device_buffers[i]);
       }
     }
   }

@@ -421,14 +421,6 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
     }
   }
 
-  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
-    const auto arg_id = stmt->arg_id;
-    const auto axis = stmt->axis;
-    llvm_val[stmt] = call("RuntimeContext_get_extra_args",
-                          {get_context(), tlctx->get_constant(arg_id),
-                           tlctx->get_constant(axis)});
-  }
-
   void visit(BinaryOpStmt *stmt) override {
     auto op = stmt->op_type;
     auto ret_taichi_type = stmt->ret_type;

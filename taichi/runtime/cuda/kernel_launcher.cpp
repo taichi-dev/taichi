@@ -62,7 +62,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
           device_buffers[i] = arg_buffers[i];
         }
         // device_buffers[i] saves a raw ptr on CUDA device.
-        ctx.set_struct_arg({i, 0}, (uint64)device_buffers[i]);
+        ctx.set_struct_arg({i, 1}, (uint64)device_buffers[i]);
 
       } else if (arr_sz > 0) {
         // arg_buffers[i] is a DeviceAllocation*
@@ -77,7 +77,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         arg_buffers[i] = device_buffers[i];
 
         // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-        ctx.set_struct_arg({i, 0}, (uint64)device_buffers[i]);
+        ctx.set_struct_arg({i, 1}, (uint64)device_buffers[i]);
       }
     }
   }

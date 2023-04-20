@@ -1868,7 +1868,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   // Index into ndarray struct
   DataType operand_dtype = stmt->base_ptr->ret_type.ptr_removed()
                                ->as<StructType>()
-                               ->get_element_type({0})
+                               ->get_element_type({1})
                                ->as<PointerType>()
                                ->get_pointee_type();
   auto arg_type = operand_dtype;
@@ -1876,15 +1876,16 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     arg_type = operand_dtype->as<TensorType>()->get_element_type();
   }
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
+  auto members =
+      stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
+  members[1].type = ptr_type;
   auto *struct_type = tlctx->get_data_type(
-      TypeFactory::get_instance().get_struct_type({{ptr_type}}));
-  std::vector<llvm::Value *> index(2, tlctx->get_constant(0));
+      TypeFactory::get_instance().get_struct_type(members));
   auto *gep =
-      builder->CreateGEP(struct_type, llvm_val.at(stmt->base_ptr), index);
+      builder->CreateGEP(struct_type, llvm_val.at(stmt->base_ptr),
+                         {tlctx->get_constant(0), tlctx->get_constant(1)});
   auto *ptr_val = builder->CreateLoad(tlctx->get_data_type(ptr_type), gep);
 
-  auto argload = stmt->base_ptr->as<ArgLoadStmt>();
-  auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
   auto dt = stmt->ret_type.ptr_removed();
@@ -1911,8 +1912,12 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
 
   for (int i = 0; i < num_array_args; i++) {
-    auto raw_arg = call("RuntimeContext_get_extra_args", get_context(),
-                        tlctx->get_constant(arg_id), tlctx->get_constant(i));
+    auto raw_arg =
+        builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(i)});
+    raw_arg =
+        builder->CreateLoad(tlctx->get_data_type(PrimitiveType::i32), raw_arg);
     sizes[i] = raw_arg;
   }
 
@@ -1980,8 +1985,16 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = call("RuntimeContext_get_extra_args", get_context(),
-                        tlctx->get_constant(arg_id), tlctx->get_constant(axis));
+  if (auto struct_type = current_callable->args_type->get_element_type({arg_id})
+                             ->cast<StructType>()) {
+    // Is ndarray
+    llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
+  } else {
+    // Is texture
+    llvm_val[stmt] =
+        call("RuntimeContext_get_extra_args", get_context(),
+             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
+  }
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,

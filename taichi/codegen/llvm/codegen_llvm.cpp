@@ -1468,8 +1468,6 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     int bits = data_type_bits(type);
     llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
     llvm::IntegerType *typeIntTy = get_integer_type(bits);
-    TI_ASSERT_INFO(typeIntPtr != nullptr && typeIntTy != nullptr,
-                   "No compatible integer type with same bits for this CAS operation.");
 
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
@@ -2645,6 +2643,7 @@ llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
     default:
       break;
   }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer ptr type.");
   return nullptr;
 }
 
@@ -2661,6 +2660,7 @@ llvm::IntegerType* TaskCodeGenLLVM::get_integer_type(int bits) {
     default:
       break;
   }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer type.");
   return nullptr;
 }
 

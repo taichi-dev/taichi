@@ -208,6 +208,7 @@ user_api[ti] = [
     "simt",
     "sin",
     "solve",
+    "sparse",
     "sparse_matrix_builder",
     "sqrt",
     "static",
@@ -429,6 +430,7 @@ user_api[ti.VectorNdarray] = [
     "get_type",
     "to_numpy",
 ]
+user_api[ti.sparse] = ["grid", "usage"]
 
 
 @pytest.mark.parametrize("src", user_api.keys())

@@ -843,9 +843,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       member_size = data_type_size(member.type);
       member_align = member_size;
     }
-    if (member_align) {
-      bytes = align_up(bytes, member_align);
-    }
+    bytes = align_up(bytes, member_align);
     members[i].offset = bytes;
     bytes += member_size;
     align = std::max(align, member_align);

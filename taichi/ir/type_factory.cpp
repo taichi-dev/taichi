@@ -168,7 +168,9 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
                                          DataType element) {
   return TypeFactory::get_instance().get_tensor_type(shape, element);
 }
+
 const Type *TypeFactory::get_ndarray_struct_type(DataType dt, int total_dim) {
+  total_dim = std::max(1, total_dim);  // Avoiding empty struct
   std::vector<StructMember> shape_members;
   for (int i = 0; i < total_dim; i++) {
     shape_members.push_back({PrimitiveType::i32, fmt::format("dim_{}", i)});

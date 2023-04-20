@@ -1465,27 +1465,18 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
-    std::unordered_map<int, std::pair<llvm::PointerType *, IntegerType *>>
-        bitCastType;
-    bitCastType[8] = {llvm::Type::getInt8PtrTy(*llvm_context),
-                      llvm::Type::getInt8Ty(*llvm_context)};
-    bitCastType[16] = {llvm::Type::getInt16PtrTy(*llvm_context),
-                       llvm::Type::getInt16Ty(*llvm_context)};
-    bitCastType[32] = {llvm::Type::getInt32PtrTy(*llvm_context),
-                       llvm::Type::getInt32Ty(*llvm_context)};
-    bitCastType[64] = {llvm::Type::getInt64PtrTy(*llvm_context),
-                       llvm::Type::getInt64Ty(*llvm_context)};
-
     int bits = data_type_bits(type);
-    TI_ASSERT(bitCastType.find(bits) != bitCastType.end());
-    auto typePair = bitCastType.find(bits)->second;
+    llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
+    llvm::IntegerType *typeIntTy = get_integer_type(bits);
+    TI_ASSERT_INFO(typeIntPtr != nullptr && typeIntTy != nullptr,
+                   "No compatible integer type with same bits for this CAS operation.");
 
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
-    dest = builder->CreateBitCast(dest, typePair.first);
+    dest = builder->CreateBitCast(dest, typeIntPtr);
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
-        dest, builder->CreateBitCast(old_val, typePair.second),
-        builder->CreateBitCast(new_val, typePair.second), llvm::MaybeAlign(0),
+        dest, builder->CreateBitCast(old_val, typeIntTy),
+        builder->CreateBitCast(new_val, typeIntTy), llvm::MaybeAlign(0),
         AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
@@ -2639,6 +2630,38 @@ llvm::Type *TaskCodeGenLLVM::get_xlogue_function_type() {
 llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_mesh_xlogue_argument_types(), false);
+}
+
+llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8PtrTy(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16PtrTy(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32PtrTy(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64PtrTy(*llvm_context);
+    default:
+      break;
+  }
+  return nullptr;
+}
+
+llvm::IntegerType* TaskCodeGenLLVM::get_integer_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8Ty(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16Ty(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32Ty(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64Ty(*llvm_context);
+    default:
+      break;
+  }
+  return nullptr;
 }
 
 llvm::Value *TaskCodeGenLLVM::get_root(int snode_tree_id) {

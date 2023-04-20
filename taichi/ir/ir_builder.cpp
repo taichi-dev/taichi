@@ -498,7 +498,8 @@ ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
   auto ret_type = TypeFactory::get_instance().get_pointer_type(dt);
   std::vector<StructMember> members;
   members.push_back({TypeFactory::get_instance().get_tensor_type(
-      {total_dim}, PrimitiveType::i32)});
+                         {total_dim}, PrimitiveType::i32),
+                     "shape"});
   members.push_back({ret_type, "data_ptr"});
   auto type = TypeFactory::get_instance().get_struct_type(members);
 

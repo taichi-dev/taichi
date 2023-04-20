@@ -81,7 +81,7 @@ class HostDeviceContextBlitter {
                 DeviceCapability::spirv_has_physical_storage_buffer)) {
           uint64_t addr =
               device_->get_memory_physical_pointer(ext_arrays.at(i));
-          host_ctx_.set_arg(i, addr);
+          host_ctx_.set_struct_arg({i, 0}, addr);
         }
       }
     }

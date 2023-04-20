@@ -350,6 +350,9 @@ SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
 }
 
 size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
+  if (!dt->is<PrimitiveType>()) {
+    TI_ERROR("Type {} not supported.", dt->to_string());
+  }
   if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
       dt == PrimitiveType::f64) {
     return 8;

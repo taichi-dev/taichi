@@ -29,6 +29,23 @@ int Callable::insert_arr_param(const DataType &dt,
   return (int)parameter_list.size() - 1;
 }
 
+int Callable::insert_ndarray_param(const DataType &dt,
+                                   int total_dim,
+                                   std::vector<int> element_shape,
+                                   const std::string &name) {
+  // Transform ndarray param to a struct type with a pointer to `dt`.
+  std::vector<StructMember> members;
+  members.push_back(
+      {TypeFactory::get_instance().get_pointer_type(dt->get_compute_type()),
+       "data_ptr"});
+
+  auto *type = TypeFactory::get_instance().get_struct_type(members);
+  parameter_list.emplace_back(type, /*is_array=*/true,
+                              /*size=*/0, total_dim, element_shape);
+  parameter_list.back().name = name;
+  return (int)parameter_list.size() - 1;
+}
+
 int Callable::insert_texture_param(int total_dim, const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
   parameter_list.emplace_back(PrimitiveType::f32, /*is_array=*/true, 0,
@@ -73,7 +90,7 @@ void Callable::finalize_params() {
   for (int i = 0; i < parameter_list.size(); i++) {
     auto &param = parameter_list[i];
     members.push_back(
-        {param.is_array
+        {param.is_array && !param.get_dtype()->is<StructType>()
              ? TypeFactory::get_instance().get_pointer_type(param.get_dtype())
              : (const Type *)param.get_dtype(),
          fmt::format("arg_{}", i)});

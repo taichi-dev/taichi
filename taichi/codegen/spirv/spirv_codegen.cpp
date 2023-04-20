@@ -567,7 +567,10 @@ class TaskCodegen : public IRVisitor {
   void visit(ArgLoadStmt *stmt) override {
     const auto arg_id = stmt->arg_id;
     const auto arg_type = ctx_attribs_->args_type()->get_element_type({arg_id});
-    if (arg_type->is<PointerType>()) {
+    if (arg_type->is<PointerType>() ||
+        (arg_type->is<lang::StructType>() && arg_type->as<lang::StructType>()
+                                                 ->get_element_type({0})
+                                                 ->is<PointerType>())) {
       // Do not shift! We are indexing the buffers at byte granularity.
       // spirv::Value val =
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
@@ -692,7 +695,7 @@ class TaskCodegen : public IRVisitor {
           spv::OpShiftLeftLogical, ir_->i32_type(), linear_offset,
           ir_->int_immediate_number(ir_->i32_type(),
                                     log2int(ir_->get_primitive_type_size(
-                                        argload->ret_type.ptr_removed()))));
+                                        stmt->ret_type.ptr_removed()))));
       if (caps_->get(DeviceCapability::spirv_has_no_integer_wrap_decoration)) {
         ir_->decorate(spv::OpDecorate, linear_offset,
                       spv::DecorationNoSignedWrap);
@@ -703,7 +706,8 @@ class TaskCodegen : public IRVisitor {
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->u64_type(), spv::StorageClassUniform),
           get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), arg_id));
+          ir_->int_immediate_number(ir_->i32_type(), arg_id),
+          ir_->int_immediate_number(ir_->i32_type(), 0));
       spirv::Value addr = ir_->load_variable(addr_ptr, ir_->u64_type());
       addr = ir_->add(addr, ir_->make_value(spv::OpSConvert, ir_->u64_type(),
                                             linear_offset));

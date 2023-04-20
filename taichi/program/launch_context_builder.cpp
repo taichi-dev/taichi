@@ -48,10 +48,12 @@ void LaunchContextBuilder::set_arg_float(int arg_id, float64 d) {
 template <typename T>
 void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices, T d) {
   auto dt = kernel_->args_type->get_element_type(arg_indices);
-  TI_ASSERT_INFO(dt->is<PrimitiveType>(),
-                 "Assigning scalar value to external (numpy) array argument is "
-                 "not allowed.");
 
+  TI_ASSERT(dt->is<PrimitiveType>() || dt->is<PointerType>());
+  if (dt->is<PointerType>()) {
+    set_struct_arg_impl(arg_indices, (uint64)d);
+    return;
+  }
   PrimitiveTypeID typeId = dt->as<PrimitiveType>()->type;
 
   switch (typeId) {

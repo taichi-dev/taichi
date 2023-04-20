@@ -145,6 +145,8 @@ class IRBuilder {
 
   // Load kernel arguments.
   ArgLoadStmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
+  // Load kernel arguments.
+  ArgLoadStmt *create_ndarray_arg_load(int arg_id, DataType dt);
 
   // The return value of the kernel.
   ReturnStmt *create_return(Stmt *value);

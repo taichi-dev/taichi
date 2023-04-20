@@ -278,8 +278,9 @@ def test():
         if ret == 5:
             # treat 'no tests collected' as success
             ret = 0
-        exit(ret)
-
+        if ret != 0:
+            exit(ret)
+     
 
 if __name__ == "__main__":
     test()

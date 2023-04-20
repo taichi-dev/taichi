@@ -464,9 +464,7 @@ The whole cache folder can be safely removed.
 On Debian/Ubuntu systems, `apt install python3-distutils` is required due to packaging quirks.
 :::
 
-:::warn
-
-Behaviors considered intrusive:
+:::caution Behaviors considered intrusive
 
 1. On Ubuntu systems, there's an attempt to install missing development libraries at [ospkg.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/ospkg.py) by invoking `sudo apt install libxxxx-dev`
    if a terminal is detected. It can be skipped by telling `apt` not to install them.

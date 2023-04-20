@@ -144,7 +144,6 @@ def _test_ndarray_2d():
     def run(x: ti.types.ndarray(), y: ti.types.ndarray()):
         for i in range(n):
             for j in range(m):
-                print(i, j, x[i, j])
                 x[i, j] += i + j + y[i, j]
 
     a = ti.ndarray(ti.i32, shape=(n, m))

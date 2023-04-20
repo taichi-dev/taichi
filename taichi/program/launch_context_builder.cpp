@@ -211,7 +211,6 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
   set_array_device_allocation_type(arg_id, DevAllocType::kNone);
   for (uint64 i = 0; i < shape.size(); ++i) {
     set_struct_arg({arg_id, 0, (int32)i}, (int32)shape[i]);
-    //    ctx_->extra_args[arg_id][i] = shape[i];
   }
 }
 
@@ -260,7 +259,6 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
   for (int i = 0; i < shape.size(); i++) {
-    //    set_struct_arg({arg_id, 0, (int32)i}, (int32)shape[i]);
     ctx_->extra_args[arg_id][i] = shape[i];
   }
 }
@@ -288,7 +286,6 @@ void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
   size_t total_size = 1;
   for (int i = 0; i < shape.size(); i++) {
     set_struct_arg({arg_id, 0, (int32)i}, (int32)shape[i]);
-    //    ctx_->extra_args[arg_id][i] = shape[i];
     total_size *= shape[i];
   }
   set_array_runtime_size(arg_id, total_size);

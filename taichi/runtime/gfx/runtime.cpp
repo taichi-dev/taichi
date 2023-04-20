@@ -825,8 +825,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
         member_align = element_size * 4;
       }
       if (!is_430) {
-        member_align = 16;
-        member_size = member_align * num_elements;
+        member_size = member_align;
       } else {
         member_size = tensor_type->get_num_elements() * element_size;
       }
@@ -844,7 +843,9 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       member_size = data_type_size(member.type);
       member_align = member_size;
     }
-    bytes = align_up(bytes, member_align);
+    if (member_align) {
+      bytes = align_up(bytes, member_align);
+    }
     members[i].offset = bytes;
     bytes += member_size;
     align = std::max(align, member_align);

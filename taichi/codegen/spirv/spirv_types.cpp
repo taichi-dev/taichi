@@ -453,10 +453,9 @@ class Translate2Spirv : public TypeVisitor {
 
   void visit_array_type(const ArrayType *type) override {
     SType vt = spir_builder_->get_null_type();
-    spir_builder_->declare_global(
-        spv::OpTypeArray, vt, ir_node_2_spv_value[type->element_type()],
-        spir_builder_->int_immediate_number(spir_builder_->i32_type(),
-                                            type->get_constant_shape()[0]));
+    spir_builder_->declare_global(spv::OpTypeArray, vt,
+                                  ir_node_2_spv_value[type->element_type()],
+                                  type->get_constant_shape()[0]);
     ir_node_2_spv_value[type] = vt.id;
     spir_builder_->decorate(spv::OpDecorate, vt, spv::DecorationArrayStride,
                             type->memory_alignment_size(layout_context_));
@@ -485,13 +484,6 @@ const tinyir::Type *translate_ti_type(tinyir::Block &ir_module,
       return ir_module.emplace_back<IntType>(/*num_bits=*/32,
                                              /*is_signed=*/false);
     }
-  }
-  if (auto tensor_type = t->cast<TensorType>()) {
-    // FIXME: assuming all tensor types are 1D
-    return ir_module.emplace_back<ArrayType>(
-        translate_ti_type(ir_module, tensor_type->get_element_type(),
-                          has_buffer_ptr),
-        tensor_type->get_num_elements());
   }
   if (auto struct_type = t->cast<lang::StructType>()) {
     std::vector<const tinyir::Type *> element_types;

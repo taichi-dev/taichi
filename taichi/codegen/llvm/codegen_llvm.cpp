@@ -1864,8 +1864,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
                          {tlctx->get_constant(0), tlctx->get_constant(1)});
   auto *ptr_val = builder->CreateLoad(tlctx->get_data_type(ptr_type), gep);
 
-  //  auto argload = stmt->base_ptr->as<ArgLoadStmt>();
-  //  auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
   auto dt = stmt->ret_type.ptr_removed();
@@ -1892,9 +1890,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
 
   for (int i = 0; i < num_array_args; i++) {
-    //    auto raw_arg = call("RuntimeContext_get_extra_args", get_context(),
-    //                        tlctx->get_constant(arg_id),
-    //                        tlctx->get_constant(i));
     auto raw_arg =
         builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
                            {tlctx->get_constant(0), tlctx->get_constant(0),

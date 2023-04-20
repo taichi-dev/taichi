@@ -640,7 +640,8 @@ class TaskCodegen : public IRVisitor {
     spirv::Value var_ptr;
     if (ctx_attribs_->args_type()
             ->get_element_type({arg_id})
-            ->cast<lang::StructType>()) {
+            ->is<lang::StructType>()) {
+      // Is ndarray
       var_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
@@ -649,6 +650,7 @@ class TaskCodegen : public IRVisitor {
           ir_->int_immediate_number(ir_->i32_type(), 0),
           ir_->int_immediate_number(ir_->i32_type(), axis));
     } else {
+      // Is texture
       var_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
@@ -673,15 +675,12 @@ class TaskCodegen : public IRVisitor {
       const auto &element_shape = stmt->element_shape;
       const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
                                                  : ExternalArrayLayout::kSOA;
-      //      const auto extra_args_member_index = ctx_attribs_->args().size();
       const size_t element_shape_index_offset =
           (layout == ExternalArrayLayout::kAOS)
               ? num_indices - element_shape.size()
               : 0;
       for (int i = 0; i < num_indices - element_shape.size(); i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
-        //        const auto extra_arg_index = (arg_id * taichi_max_num_indices)
-        //        + i;
         spirv::Value var_ptr = ir_->make_value(
             spv::OpAccessChain,
             ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),

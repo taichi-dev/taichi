@@ -392,7 +392,7 @@ pos = sp.pos
 mass = sp.mass
 ```
 
-Use case: 
+Use case:
 
 ```python
 pos[1,2] = ti.Vector([1.5,2,3])

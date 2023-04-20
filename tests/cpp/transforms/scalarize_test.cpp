@@ -28,12 +28,8 @@ TEST(Scalarize, ScalarizeGlobalStore) {
       {2, 2}, type_factory.get_primitive_type(PrimitiveTypeID::i32));
   auto const_1_stmt = block->push_back<ConstStmt>(TypedConstant(1));
   auto const_2_stmt = block->push_back<ConstStmt>(TypedConstant(2));
-  std::vector<StructMember> members;
-  members.push_back(
-      {TypeFactory::get_instance().get_tensor_type({1}, PrimitiveType::i32),
-       "shape"});
-  members.push_back({type_factory.get_pointer_type(tensor_type), "data_ptr"});
-  auto type = TypeFactory::get_instance().get_struct_type(members);
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(tensor_type, 1);
 
   auto argload_stmt =
       block->push_back<ArgLoadStmt>(0 /*arg_id*/, type, /*is_ptr*/ true,
@@ -97,12 +93,8 @@ TEST(Scalarize, ScalarizeGlobalLoad) {
   */
   Type *tensor_type = type_factory.get_tensor_type(
       {2, 2}, type_factory.get_primitive_type(PrimitiveTypeID::i32));
-  std::vector<StructMember> members;
-  members.push_back(
-      {TypeFactory::get_instance().get_tensor_type({1}, PrimitiveType::i32),
-       "shape"});
-  members.push_back({type_factory.get_pointer_type(tensor_type), "data_ptr"});
-  auto type = TypeFactory::get_instance().get_struct_type(members);
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(tensor_type, 1);
 
   auto argload_stmt =
       block->push_back<ArgLoadStmt>(0 /*arg_id*/, type, /*is_ptr*/ true,

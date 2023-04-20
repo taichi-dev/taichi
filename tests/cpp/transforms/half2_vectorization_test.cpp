@@ -58,14 +58,8 @@ TEST(Half2Vectorization, Ndarray) {
     alloca_stmt1->replace_all_usages_with(old_val1);
   */
 
-  auto ret_type =
-      TypeFactory::get_instance().get_pointer_type(PrimitiveType::f16);
-  std::vector<StructMember> members;
-  members.push_back(
-      {TypeFactory::get_instance().get_tensor_type({1}, PrimitiveType::i32),
-       "shape"});
-  members.push_back({ret_type, "data_ptr"});
-  auto type = TypeFactory::get_instance().get_struct_type(members);
+  auto type = TypeFactory::get_instance().get_ndarray_struct_type(
+      PrimitiveType::f16, 1);
 
   auto argload_stmt = block->push_back<ArgLoadStmt>(
       0 /*arg_id*/, type, /*is_ptr*/ true, /*is_grad*/ false,

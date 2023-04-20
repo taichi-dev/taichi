@@ -640,8 +640,7 @@ class TaskCodegen : public IRVisitor {
     spirv::Value var_ptr;
     if (ctx_attribs_->args_type()
             ->get_element_type({arg_id})
-            ->cast<StructType>()) {
-      TI_INFO("StructType: {}", arg_id);
+            ->cast<lang::StructType>()) {
       var_ptr = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),

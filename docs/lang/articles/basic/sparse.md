@@ -374,8 +374,10 @@ grid_size = (10,10)
 @ti.data_oriented
 class SparseGrid():
     def __init__(self, grid_size):
-        self.pos = ti.field(int)
+        self.mass = ti.field(float)
+        self.pos = ti.Vector.field(3, float)
         self.snode = ti.root.bitmasked(ti.ij, grid_size)
+        self.snode.place(self.mass)
         self.snode.place(self.pos)
     @ti.kernel
     def usage(self):
@@ -387,19 +389,19 @@ class SparseGrid():
         print("Grid usage: ", usage)
 sp = SparseGrid(grid_size=grid_size)
 pos = sp.pos
+mass = sp.mass
 ```
 
-Use case:
+Use case: 
+
 ```python
->>> sp.usage()
-Grid usage:  0.000000
+pos[1,2] = ti.Vector([1.5,2,3])
+mass[1,0] = 0.1
+sp.usage()
+```
 
->>> pos[1,2] = 1
-
->>> sp.usage()
-Grid usage:  0.010000
-
->>> pos[1,3] = 1
+possible output:
+```
 Grid usage:  0.020000
 ```
 

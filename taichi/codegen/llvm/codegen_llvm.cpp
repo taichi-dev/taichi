@@ -1468,8 +1468,9 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     int bits = data_type_bits(type);
     llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
     llvm::IntegerType *typeIntTy = get_integer_type(bits);
-    TI_ASSERT_INFO(typeIntPtr != nullptr && typeIntTy != nullptr,
-                   "No compatible integer type with same bits for this CAS operation.");
+    TI_ASSERT_INFO(
+        typeIntPtr != nullptr && typeIntTy != nullptr,
+        "No compatible integer type with same bits for this CAS operation.");
 
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
@@ -2632,7 +2633,7 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
                                  get_mesh_xlogue_argument_types(), false);
 }
 
-llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   switch (bits) {
     case 8:
       return llvm::Type::getInt8PtrTy(*llvm_context);
@@ -2648,7 +2649,7 @@ llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   return nullptr;
 }
 
-llvm::IntegerType* TaskCodeGenLLVM::get_integer_type(int bits) {
+llvm::IntegerType *TaskCodeGenLLVM::get_integer_type(int bits) {
   switch (bits) {
     case 8:
       return llvm::Type::getInt8Ty(*llvm_context);

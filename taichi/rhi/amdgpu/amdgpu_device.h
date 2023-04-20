@@ -77,6 +77,9 @@ class AmdgpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params) override;
+
   ShaderResourceSet *create_resource_set() final{TI_NOT_IMPLEMENTED};
 
   RhiResult create_pipeline(Pipeline **out_pipeline,

@@ -91,6 +91,9 @@ class CudaDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params) override;
+
   RhiResult upload_data(DevicePtr *device_ptr,
                         const void **data,
                         size_t *size,

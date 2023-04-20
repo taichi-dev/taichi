@@ -570,7 +570,18 @@ class IRBuilder {
   Value const_i32_one_;
 
   // Use force-inline float atomic helper function
-  Value float_atomic(AtomicOpType op_type, Value addr_ptr, Value data);
+  Value float_atomic(AtomicOpType op_type,
+                     Value addr_ptr,
+                     Value data,
+                     const DataType &dt);
+  Value integer_atomic(AtomicOpType op_type,
+                       Value addr_ptr,
+                       Value data,
+                       const DataType &dt);
+  Value atomic_operation(Value addr_ptr,
+                         Value data,
+                         std::function<Value(Value, Value)> op,
+                         const DataType &dt);
   Value rand_u32(Value global_tmp_);
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);

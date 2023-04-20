@@ -1423,6 +1423,14 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
     return nullptr;
   }
 
+  // Atomic operators not supported by LLVM, we implement them using CAS
+  if (stmt->op_type == AtomicOpType::mul) {
+    return atomic_op_using_cas(
+        llvm_val[stmt->dest], llvm_val[stmt->val],
+        [&](auto v1, auto v2) { return builder->CreateMul(v1, v2); },
+        stmt->val->ret_type);
+  }
+  // Atomic operators supported by LLVM
   std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
   bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
   if (is_signed(stmt->val->ret_type)) {
@@ -1444,7 +1452,8 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
 llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
-    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
+    const DataType &type) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   BasicBlock *after_loop =
@@ -1456,15 +1465,17 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
+    int bits = data_type_bits(type);
+    llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
+    llvm::IntegerType *typeIntTy = get_integer_type(bits);
+
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
-    dest =
-        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    dest = builder->CreateBitCast(dest, typeIntPtr);
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
-        dest,
-        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
-        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
-        llvm::MaybeAlign(0), AtomicOrdering::SequentiallyConsistent,
+        dest, builder->CreateBitCast(old_val, typeIntTy),
+        builder->CreateBitCast(new_val, typeIntTy), llvm::MaybeAlign(0),
+        AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
     auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
@@ -1488,24 +1499,35 @@ llvm::Value *TaskCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
       case AtomicOpType::add:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::max:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::min:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); },
+            stmt->val->ret_type);
       default:
         break;
     }
   }
 
-  if (op == AtomicOpType::add) {
-    return builder->CreateAtomicRMW(
-        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
-        llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+  switch (op) {
+    case AtomicOpType::add:
+      return builder->CreateAtomicRMW(
+          llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+          llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+    case AtomicOpType::mul:
+      return atomic_op_using_cas(
+          llvm_val[stmt->dest], llvm_val[stmt->val],
+          [&](auto v1, auto v2) { return builder->CreateFMul(v1, v2); },
+          stmt->val->ret_type);
+    default:
+      break;
   }
 
   std::unordered_map<PrimitiveTypeID,
@@ -2606,6 +2628,40 @@ llvm::Type *TaskCodeGenLLVM::get_xlogue_function_type() {
 llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_mesh_xlogue_argument_types(), false);
+}
+
+llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8PtrTy(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16PtrTy(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32PtrTy(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64PtrTy(*llvm_context);
+    default:
+      break;
+  }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer ptr type.");
+  return nullptr;
+}
+
+llvm::IntegerType *TaskCodeGenLLVM::get_integer_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8Ty(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16Ty(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32Ty(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64Ty(*llvm_context);
+    default:
+      break;
+  }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer type.");
+  return nullptr;
 }
 
 llvm::Value *TaskCodeGenLLVM::get_root(int snode_tree_id) {

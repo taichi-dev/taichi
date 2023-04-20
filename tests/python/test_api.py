@@ -105,6 +105,7 @@ user_api[ti] = [
     "atomic_and",
     "atomic_max",
     "atomic_min",
+    "atomic_mul",
     "atomic_or",
     "atomic_sub",
     "atomic_xor",

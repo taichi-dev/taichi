@@ -1577,46 +1577,60 @@ class TaskCodegen : public IRVisitor {
                             /*scope=*/ir_->const_i32_one_,
                             /*semantics=*/ir_->const_i32_zero_, data);
       } else {
-        val = ir_->float_atomic(stmt->op_type, addr_ptr, data);
+        val = ir_->float_atomic(stmt->op_type, addr_ptr, data, dt);
       }
     } else if (is_integral(dt)) {
+      bool use_native_atomics = false;
       spv::Op op;
       if (stmt->op_type == AtomicOpType::add) {
         op = spv::OpAtomicIAdd;
+        use_native_atomics = true;
       } else if (stmt->op_type == AtomicOpType::sub) {
         op = spv::OpAtomicISub;
+        use_native_atomics = true;
+      } else if (stmt->op_type == AtomicOpType::mul) {
+        addr_ptr = at_buffer(stmt->dest, ir_->get_taichi_uint_type(dt));
+        val = ir_->integer_atomic(stmt->op_type, addr_ptr, data, dt);
+        use_native_atomics = false;
       } else if (stmt->op_type == AtomicOpType::min) {
         op = is_signed(dt) ? spv::OpAtomicSMin : spv::OpAtomicUMin;
+        use_native_atomics = true;
       } else if (stmt->op_type == AtomicOpType::max) {
         op = is_signed(dt) ? spv::OpAtomicSMax : spv::OpAtomicUMax;
+        use_native_atomics = true;
       } else if (stmt->op_type == AtomicOpType::bit_or) {
         op = spv::OpAtomicOr;
+        use_native_atomics = true;
       } else if (stmt->op_type == AtomicOpType::bit_and) {
         op = spv::OpAtomicAnd;
+        use_native_atomics = true;
       } else if (stmt->op_type == AtomicOpType::bit_xor) {
         op = spv::OpAtomicXor;
+        use_native_atomics = true;
       } else {
         TI_NOT_IMPLEMENTED
       }
 
-      auto uint_type = ir_->get_primitive_uint_type(dt);
+      if (use_native_atomics) {
+        auto uint_type = ir_->get_primitive_uint_type(dt);
 
-      if (data.stype.id != addr_ptr.stype.element_type_id) {
-        data = ir_->make_value(spv::OpBitcast, ret_type, data);
-      }
+        if (data.stype.id != addr_ptr.stype.element_type_id) {
+          data = ir_->make_value(spv::OpBitcast, ret_type, data);
+        }
 
-      // Semantics = (UniformMemory 0x40) | (AcquireRelease 0x8)
-      ir_->make_inst(
-          spv::OpMemoryBarrier, ir_->const_i32_one_,
-          ir_->uint_immediate_number(
-              ir_->u32_type(), spv::MemorySemanticsAcquireReleaseMask |
-                                   spv::MemorySemanticsUniformMemoryMask));
-      val = ir_->make_value(op, ret_type, addr_ptr,
-                            /*scope=*/ir_->const_i32_one_,
-                            /*semantics=*/ir_->const_i32_zero_, data);
+        // Semantics = (UniformMemory 0x40) | (AcquireRelease 0x8)
+        ir_->make_inst(
+            spv::OpMemoryBarrier, ir_->const_i32_one_,
+            ir_->uint_immediate_number(
+                ir_->u32_type(), spv::MemorySemanticsAcquireReleaseMask |
+                                     spv::MemorySemanticsUniformMemoryMask));
+        val = ir_->make_value(op, ret_type, addr_ptr,
+                              /*scope=*/ir_->const_i32_one_,
+                              /*semantics=*/ir_->const_i32_zero_, data);
 
-      if (val.stype.id != ret_type.id) {
-        val = ir_->make_value(spv::OpBitcast, ret_type, val);
+        if (val.stype.id != ret_type.id) {
+          val = ir_->make_value(spv::OpBitcast, ret_type, val);
+        }
       }
     } else {
       TI_NOT_IMPLEMENTED

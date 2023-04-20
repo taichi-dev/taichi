@@ -91,6 +91,7 @@ std::string atomic_op_type_name(AtomicOpType type) {
     return #i;
 
     REGISTER_TYPE(add);
+    REGISTER_TYPE(mul);
     REGISTER_TYPE(sub);
     REGISTER_TYPE(max);
     REGISTER_TYPE(min);

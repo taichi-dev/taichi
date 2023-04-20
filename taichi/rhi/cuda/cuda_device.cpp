@@ -179,12 +179,5 @@ DeviceAllocation CudaDevice::import_memory(void *ptr, size_t size) {
   return alloc;
 }
 
-uint64 CudaDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
-  CUDADriver::get_instance().stream_synchronize(nullptr);
-  uint64 ret;
-  CUDADriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                   sizeof(uint64));
-  return ret;
-}
 }  // namespace cuda
 }  // namespace taichi::lang

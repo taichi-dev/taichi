@@ -86,8 +86,6 @@ class AmdgpuDevice : public LlvmDevice {
     TI_NOT_IMPLEMENTED;
   }
 
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
-
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
     TI_NOT_IMPLEMENTED;
   }

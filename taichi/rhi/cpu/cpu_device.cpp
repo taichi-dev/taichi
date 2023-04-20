@@ -150,10 +150,5 @@ DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
   return alloc;
 }
 
-uint64 CpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
-  uint64 ret = result_buffer[i];
-  return ret;
-}
-
 }  // namespace cpu
 }  // namespace taichi::lang

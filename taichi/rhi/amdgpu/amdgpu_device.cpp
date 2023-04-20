@@ -139,13 +139,6 @@ DeviceAllocation AmdgpuDevice::import_memory(void *ptr, size_t size) {
   return alloc;
 }
 
-uint64 AmdgpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
-  AMDGPUDriver::get_instance().stream_synchronize(nullptr);
-  uint64 ret;
-  AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                     sizeof(uint64));
-  return ret;
-}
 }  // namespace amdgpu
 }  // namespace lang
 }  // namespace taichi

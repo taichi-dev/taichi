@@ -245,7 +245,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,
       llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
+      const DataType& type);
 
   virtual llvm::Value *real_type_atomic(AtomicOpStmt *stmt);
 

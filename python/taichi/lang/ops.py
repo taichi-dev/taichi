@@ -1140,6 +1140,36 @@ def atomic_add(x, y):
 
 
 @writeback_binary
+def atomic_mul(x, y):
+    """Atomically compute `x * y`, store the result in `x`,
+    and return the old value of `x`.
+
+    `x` must be a writable target, constant expressions or scalars
+    are not allowed.
+
+    Args:
+        x, y (Union[:mod:`~taichi.types.primitive_types`, :class:`~taichi.Matrix`]): \
+            The input.
+
+    Returns:
+        The old value of `x`.
+
+    Example::
+
+        >>> @ti.kernel
+        >>> def test():
+        >>>     x = ti.Vector([1, 2, 3])
+        >>>     y = ti.Vector([4, 5, 6])
+        >>>     z = ti.atomic_mul(x, y)
+        >>>     print(x)  # [1, 2, 3]  the new value of x
+        >>>     print(z)  # [4, 10, 18], the old value of x
+        >>>
+        >>>     ti.atomic_mul(1, x)  # will raise TaichiSyntaxError
+    """
+    return impl.expr_init(expr.Expr(_ti_core.expr_atomic_mul(x.ptr, y.ptr), tb=stack_info()))
+
+
+@writeback_binary
 def atomic_sub(x, y):
     """Atomically subtract `x` by `y`, store the result in `x`,
     and return the old value of `x`.
@@ -1400,6 +1430,7 @@ __all__ = [
     "atomic_sub",
     "atomic_min",
     "atomic_add",
+    "atomic_mul",
     "bit_cast",
     "bit_shr",
     "cast",

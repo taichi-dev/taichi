@@ -10,6 +10,7 @@ class TaichiOperations:
 
     __deprecated_atomic_ops__ = {
         "atomic_add": "_atomic_add",
+        "atomic_mul": "_atomic_mul",
         "atomic_and": "_atomic_and",
         "atomic_or": "_atomic_or",
         "atomic_sub": "_atomic_sub",
@@ -137,6 +138,16 @@ class TaichiOperations:
             :class:`~taichi.lang.expr.Expr`: The computing expression of atomic add."""
         return ops.atomic_add(self, other)
 
+    def _atomic_mul(self, other):
+        """Return the new expression of computing atomic mul between self and a given operand.
+
+        Args:
+            other (Any): Given operand.
+
+        Returns:
+            :class:`~taichi.lang.expr.Expr`: The computing expression of atomic mul."""
+        return ops.atomic_mul(self, other)
+
     def _atomic_sub(self, other):
         """Return the new expression of computing atomic sub between self and a given operand.
 
@@ -182,6 +193,12 @@ class TaichiOperations:
         if in_python_scope():
             return NotImplemented
         self._atomic_add(other)
+        return self
+
+    def __imul__(self, other):
+        if in_python_scope():
+            return NotImplemented
+        self._atomic_mul(other)
         return self
 
     def __isub__(self, other):

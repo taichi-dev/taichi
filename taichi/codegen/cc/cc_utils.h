@@ -20,6 +20,8 @@ inline std::string cc_atomic_op_type_symbol(AtomicOpType op) {
       return "+";
     case AtomicOpType::sub:
       return "-";
+    case AtomicOpType::mul:
+      return "*";
     case AtomicOpType::bit_or:
       return "|";
     case AtomicOpType::bit_xor:

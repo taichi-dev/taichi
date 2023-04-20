@@ -403,6 +403,11 @@ AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *dest, Stmt *val) {
       Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
 }
 
+AtomicOpStmt *IRBuilder::create_atomic_mul(Stmt *dest, Stmt *val) {
+  return insert(
+      Stmt::make_typed<AtomicOpStmt>(AtomicOpType::mul, dest, val));
+}
+
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,
                                         Stmt *true_result,
                                         Stmt *false_result) {

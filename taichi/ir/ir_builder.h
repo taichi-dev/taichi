@@ -213,6 +213,7 @@ class IRBuilder {
   AtomicOpStmt *create_atomic_and(Stmt *dest, Stmt *val);
   AtomicOpStmt *create_atomic_or(Stmt *dest, Stmt *val);
   AtomicOpStmt *create_atomic_xor(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_mul(Stmt *dest, Stmt *val);
 
   // Ternary operations. Returns the result.
   TernaryOpStmt *create_select(Stmt *cond,

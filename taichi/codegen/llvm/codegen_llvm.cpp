@@ -1419,6 +1419,15 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
     return nullptr;
   }
 
+  PrimitiveTypeID prim_type = stmt->val->ret_type->cast<PrimitiveType>()->type;
+  // Atomic operators not supported by LLVM, we implement them using CAS
+  if (stmt->op_type == AtomicOpType::mul) {
+    return atomic_op_using_cas(
+        llvm_val[stmt->dest], llvm_val[stmt->val],
+        [&](auto v1, auto v2) { return builder->CreateMul(v1, v2); },
+        stmt->val->ret_type);
+  }
+  // Atomic operators supported by LLVM
   std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
   bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
   if (is_signed(stmt->val->ret_type)) {
@@ -1440,7 +1449,8 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
 llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
-    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
+    const DataType& type) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   BasicBlock *after_loop =
@@ -1452,14 +1462,29 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
+    std::unordered_map<int, std::pair<llvm::PointerType*,
+                                      IntegerType*>> bitCastType;
+    bitCastType[8] = {llvm::Type::getInt8PtrTy(*llvm_context),
+                      llvm::Type::getInt8Ty(*llvm_context)};
+    bitCastType[16] = {llvm::Type::getInt16PtrTy(*llvm_context),
+                       llvm::Type::getInt16Ty(*llvm_context)};
+    bitCastType[32] = {llvm::Type::getInt32PtrTy(*llvm_context),
+                       llvm::Type::getInt32Ty(*llvm_context)};
+    bitCastType[64] = {llvm::Type::getInt64PtrTy(*llvm_context),
+                       llvm::Type::getInt64Ty(*llvm_context)};
+
+    int bits = data_type_bits(type);
+    TI_ASSERT(bitCastType.find(bits) != bitCastType.end());
+    auto typePair = bitCastType.find(bits)->second;
+
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
     dest =
-        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+        builder->CreateBitCast(dest, typePair.first);
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
         dest,
-        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
-        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
+        builder->CreateBitCast(old_val, typePair.second),
+        builder->CreateBitCast(new_val, typePair.second),
         llvm::MaybeAlign(0), AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
@@ -1484,24 +1509,35 @@ llvm::Value *TaskCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
       case AtomicOpType::add:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::max:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::min:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); },
+            stmt->val->ret_type);
       default:
         break;
     }
   }
 
-  if (op == AtomicOpType::add) {
-    return builder->CreateAtomicRMW(
-        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
-        llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+  switch (op) {
+    case AtomicOpType::add:
+      return builder->CreateAtomicRMW(
+          llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+          llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+    case AtomicOpType::mul:
+      return atomic_op_using_cas(
+          llvm_val[stmt->dest], llvm_val[stmt->val],
+          [&](auto v1, auto v2) { return builder->CreateFMul(v1, v2); },
+          stmt->val->ret_type);
+    default:
+      break;
   }
 
   std::unordered_map<PrimitiveTypeID,

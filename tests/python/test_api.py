@@ -102,6 +102,7 @@ user_api[ti] = [
     "assume_in_range",
     "atan2",
     "atomic_add",
+    "atomic_mul",
     "atomic_and",
     "atomic_max",
     "atomic_min",

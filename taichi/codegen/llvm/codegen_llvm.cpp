@@ -2630,7 +2630,7 @@ llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
                                  get_mesh_xlogue_argument_types(), false);
 }
 
-llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   switch (bits) {
     case 8:
       return llvm::Type::getInt8PtrTy(*llvm_context);
@@ -2647,7 +2647,7 @@ llvm::PointerType* TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
   return nullptr;
 }
 
-llvm::IntegerType* TaskCodeGenLLVM::get_integer_type(int bits) {
+llvm::IntegerType *TaskCodeGenLLVM::get_integer_type(int bits) {
   switch (bits) {
     case 8:
       return llvm::Type::getInt8Ty(*llvm_context);

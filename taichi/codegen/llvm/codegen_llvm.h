@@ -108,9 +108,9 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_mesh_xlogue_function_type();
 
-  llvm::PointerType* get_integer_ptr_type(int bits);
+  llvm::PointerType *get_integer_ptr_type(int bits);
 
-  llvm::IntegerType* get_integer_type(int bits);
+  llvm::IntegerType *get_integer_type(int bits);
 
   llvm::Value *get_root(int snode_tree_id);
 

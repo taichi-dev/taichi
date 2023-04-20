@@ -20,7 +20,7 @@ from .misc import banner, is_manylinux2014
 from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
-from .tinysh import Command, git
+from .tinysh import Command, CommandFailed, git
 from .vulkan import setup_vulkan
 
 
@@ -88,7 +88,10 @@ def action_wheel():
     install_build_wheel_deps(python, pip)
     handle_alternate_actions()
     build_wheel(python, pip)
-    sccache("--stop-server")
+    try:
+        sccache("--stop-server")
+    except CommandFailed:
+        pass
 
 
 def action_android():
@@ -96,7 +99,10 @@ def action_android():
     setup_android_ndk()
     handle_alternate_actions()
     build_android(python, pip)
-    sccache("--stop-server")
+    try:
+        sccache("--stop-server")
+    except CommandFailed:
+        pass
 
 
 def action_ios():

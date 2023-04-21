@@ -344,6 +344,8 @@ class ExternalPtrStmt : public Stmt {
   // irpass::type_check()
   bool overrided_dtype = false;
 
+  bool is_grad = false;
+
   ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
 
   ExternalPtrStmt(Stmt *base_ptr,
@@ -353,6 +355,10 @@ class ExternalPtrStmt : public Stmt {
 
   bool has_global_side_effect() const override {
     return false;
+  }
+
+  void set_grad() {
+    is_grad = true;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices);

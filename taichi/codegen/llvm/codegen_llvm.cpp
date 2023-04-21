@@ -1862,11 +1862,12 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
   members[1].type = ptr_type;
+  members[2].type = ptr_type;
   auto *struct_type = tlctx->get_data_type(
       TypeFactory::get_instance().get_struct_type(members));
-  auto *gep =
-      builder->CreateGEP(struct_type, llvm_val.at(stmt->base_ptr),
-                         {tlctx->get_constant(0), tlctx->get_constant(1)});
+  auto *gep = builder->CreateGEP(
+      struct_type, llvm_val.at(stmt->base_ptr),
+      {tlctx->get_constant(0), tlctx->get_constant(int(stmt->is_grad) + 1)});
   auto *ptr_val = builder->CreateLoad(tlctx->get_data_type(ptr_type), gep);
 
   int num_indices = stmt->indices.size();

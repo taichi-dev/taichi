@@ -17,7 +17,6 @@ struct RuntimeContext {
 
   LLVMRuntime *runtime{nullptr};
 
-  uint64_t grad_args[taichi_max_num_args_total];
   int32_t extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32_t cpu_thread_id;
 

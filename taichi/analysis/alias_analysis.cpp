@@ -109,6 +109,8 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2) {
       if (base1->arg_id != base2->arg_id) {
         return AliasResult::different;
       }
+    } else if (ptr1->is_grad != ptr2->is_grad) {
+      return AliasResult::different;
     }
     TI_ASSERT(ptr1->indices.size() == ptr2->indices.size());
     bool uncertain = false;

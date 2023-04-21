@@ -434,7 +434,7 @@ To check if a key is pressed:
 
 The following is a user input processing example from [**mpm128**](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/ggui_examples/mpm128_ggui.py):
 
-```python
+```python cont
 while window.running:
     # keyboard event processing
     if window.get_event(ti.ui.PRESS):

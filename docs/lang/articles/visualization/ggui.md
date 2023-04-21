@@ -49,7 +49,7 @@ canvas = window.get_canvas()
 
 ### Draw on the canvas
 
-```python cont
+```python skip-ci
 canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
 canvas.circles(vertices, radius, color, per_vertex_color)

@@ -49,7 +49,7 @@ canvas = window.get_canvas()
 
 ### Draw on the canvas
 
-```python skip-ci
+```python skip-ci:Trivial
 canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
 canvas.circles(vertices, radius, color, per_vertex_color)
@@ -171,7 +171,7 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python skip-ci
+```python skip-ci:Trivial
 # For particles
 # draw the 2-th to 7-th particles
 scene.particles(center, radius, index_offset = 1, index_count = 6)
@@ -317,13 +317,13 @@ while window.running:
 
 If `indices` is not provided, consider using like this:
 
-```python skip-ci
+```python skip-ci:Trivial
 scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
 ```
 
 If `indices` is provided, consider using like this:
 
-```python skip-ci
+```python skip-ci:Trivial
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
 ```
 
@@ -392,7 +392,7 @@ while window.running:
 
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
-```python skip-ci
+```python skip-ci:Trivial
 gui = window.get_gui()
 with gui.sub_window(name, x, y, width, height):
     gui.text(text)
@@ -459,7 +459,7 @@ while window.running:
 
 To write the current frame in the window to an image file:
 
-```python skip-ci
+```python skip-ci:Trivial
 window.save_image(filename)
 ```
 

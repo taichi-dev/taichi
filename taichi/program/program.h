@@ -125,11 +125,16 @@ class TI_DLL_EXPORT Program {
 
   Function *create_function(const FunctionKey &func_key);
 
-  // TODO: This function is doing two things: 1) compiling CHI IR, and 2)
-  // offloading them to each backend. We should probably separate the logic?
-  FunctionType compile(const CompileConfig &compile_config, Kernel &kernel);
+  const CompiledKernelData &compile_kernel(const CompileConfig &compile_config,
+                                           const DeviceCapabilityConfig &caps,
+                                           const Kernel &kernel_def);
 
-  void check_runtime_error();
+  void launch_kernel(const CompiledKernelData &compiled_kernel_data,
+                     LaunchContextBuilder &ctx);
+
+  DeviceCapabilityConfig get_device_caps() {
+    return program_impl_->get_device_caps();
+  }
 
   Kernel &get_snode_reader(SNode *snode);
 

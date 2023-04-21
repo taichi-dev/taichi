@@ -61,9 +61,9 @@ TEST(Half2Vectorization, Ndarray) {
   auto type = TypeFactory::get_instance().get_ndarray_struct_type(
       PrimitiveType::f16, 1);
 
-  auto argload_stmt = block->push_back<ArgLoadStmt>(
-      0 /*arg_id*/, type, /*is_ptr*/ true, /*is_grad*/ false,
-      /*create_load*/ false);
+  auto argload_stmt =
+      block->push_back<ArgLoadStmt>(0 /*arg_id*/, type, /*is_ptr*/ true,
+                                    /*create_load*/ false);
   auto const_0_stmt = block->push_back<ConstStmt>(TypedConstant(0));
   auto const_1_stmt = block->push_back<ConstStmt>(TypedConstant(1));
 

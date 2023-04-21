@@ -77,6 +77,9 @@ class AmdgpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params) override;
+
   ShaderResourceSet *create_resource_set() final{TI_NOT_IMPLEMENTED};
 
   RhiResult create_pipeline(Pipeline **out_pipeline,
@@ -85,8 +88,6 @@ class AmdgpuDevice : public LlvmDevice {
                             PipelineCache *cache) noexcept final {
     TI_NOT_IMPLEMENTED;
   }
-
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final {
     TI_NOT_IMPLEMENTED;

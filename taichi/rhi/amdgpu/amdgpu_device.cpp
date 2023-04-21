@@ -1,6 +1,8 @@
 #include "taichi/rhi/amdgpu/amdgpu_device.h"
 #include "taichi/rhi/llvm/device_memory_pool.h"
 
+#include "taichi/jit/jit_module.h"
+
 namespace taichi {
 namespace lang {
 
@@ -75,6 +77,18 @@ DeviceAllocation AmdgpuDevice::allocate_memory_runtime(
   return alloc;
 }
 
+uint64_t *AmdgpuDevice::allocate_llvm_runtime_memory_jit(
+    const LlvmRuntimeAllocParams &params) {
+  params.runtime_jit->call<void *, std::size_t, std::size_t>(
+      "runtime_memory_allocate_aligned", params.runtime, params.size,
+      taichi_page_size, params.result_buffer);
+  AMDGPUDriver::get_instance().stream_synchronize(nullptr);
+  uint64 *ret{nullptr};
+  AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, params.result_buffer,
+                                                     sizeof(uint64));
+  return ret;
+}
+
 void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
   // After reset, all allocations are invalid
   if (allocations_.empty()) {
@@ -139,13 +153,6 @@ DeviceAllocation AmdgpuDevice::import_memory(void *ptr, size_t size) {
   return alloc;
 }
 
-uint64 AmdgpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
-  AMDGPUDriver::get_instance().stream_synchronize(nullptr);
-  uint64 ret;
-  AMDGPUDriver::get_instance().memcpy_device_to_host(&ret, result_buffer + i,
-                                                     sizeof(uint64));
-  return ret;
-}
 }  // namespace amdgpu
 }  // namespace lang
 }  // namespace taichi

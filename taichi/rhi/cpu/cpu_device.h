@@ -77,6 +77,9 @@ class CpuDevice : public LlvmDevice {
       const LlvmRuntimeAllocParams &params) override;
   void dealloc_memory(DeviceAllocation handle) override;
 
+  uint64_t *allocate_llvm_runtime_memory_jit(
+      const LlvmRuntimeAllocParams &params) override;
+
   RhiResult upload_data(DevicePtr *device_ptr,
                         const void **data,
                         size_t *size,
@@ -97,8 +100,6 @@ class CpuDevice : public LlvmDevice {
                             PipelineCache *cache) noexcept final {
     TI_NOT_IMPLEMENTED;
   }
-
-  uint64 fetch_result_uint64(int i, uint64 *result_buffer) override;
 
   RhiResult map_range(DevicePtr ptr, uint64_t size, void **mapped_ptr) final;
   RhiResult map(DeviceAllocation alloc, void **mapped_ptr) final;

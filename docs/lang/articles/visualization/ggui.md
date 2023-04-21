@@ -467,7 +467,7 @@ To write the current frame in the window to an image file:
 window.save_image(filename)
 ```
 
-Note that you must call `window.save_image()` before calling `window.show()`.
+Note that you _must_ call `window.save_image()` before calling `window.show()`.
 
 ## Off-screen rendering
 

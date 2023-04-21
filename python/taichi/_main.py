@@ -113,7 +113,7 @@ class TaichiMain:
     def _exec_python_file(filename: str):
         """Execute a Python file based on filename."""
         # TODO: do we really need this?
-        subprocess.call([sys.executable, filename] + sys.argv[1:])
+        subprocess.call([sys.executable, str(filename)] + sys.argv[1:])
 
     @staticmethod
     def _get_examples_dir() -> Path:

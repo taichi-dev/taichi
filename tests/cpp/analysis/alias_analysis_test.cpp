@@ -158,14 +158,14 @@ TEST(AliasAnalysis, ExternalPtr_GradSame) {
   EXPECT_EQ(aa, AliasResult::same);
 }
 
-TEST(AliasAnalysis, DISABLED_ExternalPtr_GradDiff) {
+TEST(AliasAnalysis, ExternalPtr_GradDiff) {
   IRBuilder builder;
   auto *arg1 = builder.create_arg_load(1, PrimitiveType::i32, true);
   auto *arg2 = builder.create_arg_load(1, PrimitiveType::i32, true);
   auto *arg3 = builder.create_arg_load(2, PrimitiveType::i32, false);
   const auto indices = std::vector<Stmt *>{arg3, arg3};
-  auto *eptr1 = builder.create_external_ptr(arg1, indices);
-  auto *eptr2 = builder.create_external_ptr(arg2, indices);
+  auto *eptr1 = builder.create_external_ptr(arg1, indices, /*is_grad=*/false);
+  auto *eptr2 = builder.create_external_ptr(arg2, indices, /*is_grad=*/true);
 
   const auto aa = alias_analysis(eptr1, eptr2);
   EXPECT_EQ(aa, AliasResult::different);

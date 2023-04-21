@@ -443,11 +443,15 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
             LaunchContextBuilder::DevAllocType::kNone) {
           DeviceAllocation devalloc = kDeviceNullAllocation;
 
-          // NDArray / Texture
+          // NDArray
           if (host_ctx.array_ptrs.count(
                   {i, TypeFactory::DATA_PTR_POS_IN_NDARRAY})) {
             devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{
                 i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}]);
+          }
+          // Texture
+          if (host_ctx.array_ptrs.count({i})) {
+            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{i}]);
           }
 
           if (host_ctx.device_allocation_type[i] ==

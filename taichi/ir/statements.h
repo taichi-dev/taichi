@@ -185,19 +185,10 @@ class ArgLoadStmt : public Stmt {
   */
   bool is_ptr;
 
-  bool is_grad;
-
   bool create_load;
 
-  ArgLoadStmt(int arg_id,
-              const DataType &dt,
-              bool is_ptr,
-              bool is_grad,
-              bool create_load)
-      : arg_id(arg_id),
-        is_ptr(is_ptr),
-        is_grad(is_grad),
-        create_load(create_load) {
+  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr, bool create_load)
+      : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }

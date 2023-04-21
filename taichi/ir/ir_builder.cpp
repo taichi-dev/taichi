@@ -179,8 +179,8 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
 }
 
 ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, dt, is_ptr, /*is_grad*/ false, /*create_load*/ true));
+  return insert(
+      Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -502,8 +502,8 @@ ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
   auto type =
       TypeFactory::get_instance().get_ndarray_struct_type(dt, total_dim);
 
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, type, /*is_ptr=*/true, /*is_grad=*/false, /*create_load=*/false));
+  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                                              /*create_load=*/false));
 }
 
 }  // namespace taichi::lang

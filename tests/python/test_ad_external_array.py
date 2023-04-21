@@ -5,7 +5,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(exclude=[ti.metal])
+@test_utils.test()
 def test_to_numpy():
     a = ti.field(dtype=float, shape=(), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)
@@ -19,7 +19,7 @@ def test_to_numpy():
     assert "Exporting data to external array (such as numpy array) not supported in AutoDiff for now" in e.value.args[0]
 
 
-@test_utils.test(exclude=[ti.metal])
+@test_utils.test()
 def test_from_numpy():
     a = ti.field(dtype=float, shape=(), needs_grad=True)
     loss = ti.field(dtype=float, shape=(), needs_grad=True)

@@ -43,13 +43,13 @@ A ti.ui.Window can display three types of objects:
 
 The following code retrieves a `Canvas` object that covers the entire window.
 
-```python
+```python cont
 canvas = window.get_canvas()
 ```
 
 ### Draw on the canvas
 
-```python
+```python cont
 canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
 canvas.circles(vertices, radius, color, per_vertex_color)
@@ -73,7 +73,7 @@ scene = ti.ui.Scene()
 
 ### Configure camera
 
-```python
+```python cont
 camera = ti.ui.Camera()
 camera.position(pos)
 camera.lookat(pos)
@@ -88,7 +88,7 @@ scene.set_camera(camera)
 
 Call `point_light()` to add a point light to the scene.
 
-```python
+```python cont
 scene.point_light(pos, color)
 ```
 
@@ -96,7 +96,7 @@ Note that you need to call `point_light()` for every frame. Similar to the `canv
 
 ### 3D Geometries
 
-```python
+```python cont
 scene.lines(vertices, width, indices, color, per_vertex_color)
 scene.mesh(vertices, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
@@ -155,7 +155,7 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python
+```python cont
 scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
 
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
@@ -171,7 +171,7 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python
+```python cont
 # For particles
 # draw the 2-th to 7-th particles
 scene.particles(center, radius,
@@ -254,7 +254,7 @@ while window.running:
 
 3. Details of mesh instancing
 
-```python
+```python cont
 num_instance  = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 
@@ -289,7 +289,7 @@ scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offse
 
 4. Example of setting wireframe mode
 
-```python
+```python cont
 
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
 canvas = window.get_canvas()
@@ -320,13 +320,13 @@ while window.running:
 
 If `indices` is not provided, consider using like this:
 
-```python
+```python cont
 scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
 ```
 
 If `indices` is provided, consider using like this:
 
-```python
+```python cont
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
 ```
 
@@ -336,13 +336,13 @@ scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, i
 
 You can render a scene on a canvas.
 
-```python
+```python cont
 canvas.scene(scene)
 ```
 
 ### Fetching Color/Depth information
 
-```python
+```python cont
 img = window.get_image_buffer_as_numpy()
 window.get_depth_buffer(scene_depth)
 depth = window.get_depth_buffer_as_numpy()
@@ -395,7 +395,7 @@ while window.running:
 
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
-```python
+```python cont
 gui = window.get_gui()
 with gui.sub_window(name, x, y, width, height):
     gui.text(text)
@@ -409,7 +409,7 @@ with gui.sub_window(name, x, y, width, height):
 Call `show()` to show a window.
 
 ```python
-...
+... cont
 window.show()
 ```
 
@@ -463,7 +463,7 @@ while window.running:
 
 To write the current frame in the window to an image file:
 
-```python
+```python skip-ci
 window.save_image(filename)
 ```
 

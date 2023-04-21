@@ -196,7 +196,7 @@ A Taichi kernel **cannot** take a Python list directly. You need to use NumPy ar
 
 For example, the following code snippet does not work:
 
-```python
+```python skip-ci:Error
 import taichi as ti
 import numpy as np
 ti.init()

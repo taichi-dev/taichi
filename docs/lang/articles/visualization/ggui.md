@@ -73,7 +73,7 @@ scene = ti.ui.Scene()
 
 ### Configure camera
 
-```python skip-ci
+```python skip-ci:Trivial
 camera = ti.ui.Camera()
 camera.position(pos)
 camera.lookat(pos)
@@ -96,7 +96,7 @@ Note that you need to call `point_light()` for every frame. Similar to the `canv
 
 ### 3D Geometries
 
-```python skip-ci
+```python skip-ci:Trivial
 scene.lines(vertices, width, indices, color, per_vertex_color)
 scene.mesh(vertices, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
@@ -155,7 +155,7 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python skip-ci
+```python skip-ci:Trivial
 scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
 
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)

@@ -14,7 +14,7 @@ You may have a Python interpreter with an unsupported version. Currently, Taichi
 
 ### Outer-most loops in Taichi kernels are by default parallel. How can I **serialize** one of them?
 
-A solution is to add an additional *ghost* loop with only one iteration outside the loop you want to serialize.
+A solution is to add an additional _ghost_ loop with only one iteration outside the loop you want to serialize.
 
 ```python {1}
 for _ in range(1):  # This "ghost" loop will be "parallelized", but with only one thread. Therefore, the containing loop below is serialized.
@@ -27,7 +27,6 @@ for _ in range(1):  # This "ghost" loop will be "parallelized", but with only on
 You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
 
 `__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.
-
 
 ## Data structures
 
@@ -72,7 +71,6 @@ for i in x:
    ret = ti.atomic_min(ret, x[i])
 ```
 
-
 ### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
 
 These structures have to be decomposed into 1D Taichi fields. For example, when representing a graph, you can allocate two fields, one for the vertices and the other for the edges. You can then traverse the elements using `for v in vertices` or `for v in range(n)`.
@@ -92,6 +90,7 @@ Yes, Taichi's Python user-facing APIs should work natively with any language ser
 Take VSCode as an example, you can install `Python` or `Pylance` extensions to get language support like signature help with type information, code completion etc.
 
 If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
+
 - invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
 - find `Python: Select Interpreter`
 - make sure you select the path to the Python interpreter you're using with a `taichi` package installed
@@ -106,14 +105,13 @@ Follow these steps to install Taichi on a server without Internet access.
 pip download taichi
 ```
 
-*This command downloads the wheel package of Taichi and all its dependencies.*
+_This command downloads the wheel package of Taichi and all its dependencies._
 
-2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must\* complete all dependency installation before installing Taichi.
 
 ```
 python -m pip install xxxx.whl
 ```
-
 
 ## Integration with other libs/softwares
 
@@ -147,13 +145,11 @@ while gui.running:
 
 Besides, you can also pass numpy arrays or torch tensors into a Taichi kernel as arguments. See [Interacting with external arrays](../basic/external.md) for more details.
 
-
 ### Can I integrate Taichi and Houdini?
 
 The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elements](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
-
 
 ## Precision related
 
@@ -189,6 +185,25 @@ You may notice the value of `A` is slightly different from `[0.2, 0]`. This is b
 Alternatively, if you can afford having all floating-point operations in `f64` precision, you can directly initialize Taichi with `ti.init(..., default_fp=ti.f64)`.
 
 ## From Python to Taichi
+
+### What's the right way to declare fields as local containers in Python functions?
+
+In some situations, you may need to declare a field within a Python function, perform computations using it, and have the field automatically destroyed once the function call is complete. For instance:
+
+```python skip-ci
+def some_pythn_function(n: int):
+    x = ti.field(int, shape=n)
+
+    @ti.kernel
+    def some_kernel(x: ti.template()):
+        ...
+
+    some_kernel(x)
+
+some_python_function(100)
+```
+
+However, calling this function multiple times can lead to a memory leak because the memory allocated for the fields x is not handled by the garbage collector. To avoid this issue, you can either use `ti.ndarray` instead if you only need a dense array-like data container or explicitly manage field creation and destruction, as explained [here](../basic/layout.md#manage-memory-occupancy).
 
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 
@@ -248,6 +263,20 @@ while gui.running: # Main loop
 ```
 
 ## Objective-oriented programming
+
+### What's the right way to type annotate a field as a dataclass member?
+
+Currently, the only way to type annotate a field as a dataclass member is to use `ti.template()`:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Foo:
+    x: ti.template()
+
+foo = Foo(ti.field(int, shape=(10,)))
+```
 
 ### Why does inheritance fail? I created a parent class and a child class, both decorated with `@ti.data_oriented`, and placed fields under `@ti.kernel`.
 
@@ -328,7 +357,7 @@ And data in fields `x` and `y` can be found in files **x.txt** and **y.txt**, re
 
 Taichi fields adopt a different coordinate system from NumPy's arrays for storing images. In a Taichi field, [0,0] denotes the pixel at the lower left corner of the image; the first axis extends to the right of the image; the second axis extends to the top.
 
-This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis  extends to the right.
+This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis extends to the right.
 
 Therefore, to display a NumPy array using `matplotlb`'s `imshow()`, you must rotate it 90 degrees clockwise.
 

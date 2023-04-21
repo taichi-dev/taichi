@@ -20,7 +20,7 @@ from .misc import banner, is_manylinux2014
 from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
-from .tinysh import Command, git
+from .tinysh import Command, CommandFailed, git
 from .vulkan import setup_vulkan
 
 
@@ -88,7 +88,10 @@ def action_wheel():
     install_build_wheel_deps(python, pip)
     handle_alternate_actions()
     build_wheel(python, pip)
-    sccache("-s")
+    try:
+        sccache("--stop-server")
+    except CommandFailed:
+        pass
 
 
 def action_android():
@@ -96,7 +99,10 @@ def action_android():
     setup_android_ndk()
     handle_alternate_actions()
     build_android(python, pip)
-    sccache("-s")
+    try:
+        sccache("--stop-server")
+    except CommandFailed:
+        pass
 
 
 def action_ios():
@@ -135,7 +141,10 @@ def parse_args():
     help = "Do not build, start a shell with environment variables set instead"
     parser.add_argument("-s", "--shell", action="store_true", help=help)
 
-    help = "Python version to use, e.g. 3.7, 3.11. Defaults to the version of the current python interpreter."
+    help = (
+        "Python version to use, e.g. '3.7', '3.11', or 'native' to not use an isolated python environment. "
+        "Defaults to the same version of the current python interpreter."
+    )
     parser.add_argument("--python", default=None, help=help)
 
     help = "Continue when encounters error."

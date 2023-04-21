@@ -195,19 +195,26 @@ void autograd() {
   ctx_ext.set_arg_external_array_with_shape(2, taichi::uint64(ext_c.data()), n,
                                             {n});
 
-  program.launch_kernel(
-      program.compile_kernel(config, program.get_device_caps(), *kernel_init),
-      ctx_init);
-  program.launch_kernel(program.compile_kernel(
-                            config, program.get_device_caps(), *kernel_forward),
-                        ctx_forward);
-  program.launch_kernel(
-      program.compile_kernel(config, program.get_device_caps(),
-                             *kernel_backward),
-      ctx_backward);
-  program.launch_kernel(
-      program.compile_kernel(config, program.get_device_caps(), *kernel_ext),
-      ctx_ext);
+  {
+    const auto &compiled_kernel_data =
+        program.compile_kernel(config, program.get_device_caps(), *kernel_init);
+    program.launch_kernel(compiled_kernel_data, ctx_init);
+  }
+  {
+    const auto &compiled_kernel_data = program.compile_kernel(
+        config, program.get_device_caps(), *kernel_forward);
+    program.launch_kernel(compiled_kernel_data, ctx_forward);
+  }
+  {
+    const auto &compiled_kernel_data = program.compile_kernel(
+        config, program.get_device_caps(), *kernel_backward);
+    program.launch_kernel(compiled_kernel_data, ctx_backward);
+  }
+  {
+    const auto &compiled_kernel_data =
+        program.compile_kernel(config, program.get_device_caps(), *kernel_ext);
+    program.launch_kernel(compiled_kernel_data, ctx_ext);
+  }
   for (int i = 0; i < n; i++)
     std::cout << ext_a[i] << " ";
   std::cout << std::endl;

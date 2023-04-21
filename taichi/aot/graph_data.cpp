@@ -31,9 +31,9 @@ void CompiledGraph::jit_run(
     // worry that the kernels dispatched by this cgraph will be compiled
     // repeatedly.
     auto *prog = dispatch.ti_kernel->program;
-    const auto &ckd = prog->compile_kernel(
+    const auto &compiled_kernel_data = prog->compile_kernel(
         compile_config, prog->get_device_caps(), *dispatch.ti_kernel);
-    prog->launch_kernel(ckd, launch_ctx);
+    prog->launch_kernel(compiled_kernel_data, launch_ctx);
   }
 }
 

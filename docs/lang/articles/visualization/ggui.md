@@ -4,17 +4,16 @@ sidebar_position: 2
 
 # A New UI system: GGUI
 
-| **Category** | **Prerequisites**                                            |
-| ------------ | ------------------------------------------------------------ |
-| OS           | Windows / Linux / Mac OS X                                   |
-| Backend      | x64 / CUDA / Vulkan                                          |
+| **Category** | **Prerequisites**          |
+| ------------ | -------------------------- |
+| OS           | Windows / Linux / Mac OS X |
+| Backend      | x64 / CUDA / Vulkan        |
 
 Starting from v0.8.0, Taichi adds a new UI system GGUI. The new system uses GPU for rendering, making it much faster to render 3D scenes. That is why this new system gets its name as GGUI. This document describes the APIs that it provides.
 
 :::caution IMPORTANT
 If you choose Vulkan as backend, ensure that you [install the Vulkan environment](https://vulkan.lunarg.com/sdk/home).
 :::
-
 
 :::note
 It is recommended that you familiarize yourself with GGUI through the examples in `examples/ggui_examples`.
@@ -25,15 +24,18 @@ It is recommended that you familiarize yourself with GGUI through the examples i
 `ti.ui.Window(name, res)` creates a window.
 
 ```python
-window = ti.ui.Window('Window Title', res = (640, 360), pos = (150, 150))
+window = ti.ui.Window(name='Window Title', res = (640, 360), fps_limit=200, pos = (150, 150))
 ```
-The argument `res` means resulotion(width and height) of the window, `pos` means the position of the window which origins from the left-top of your main screen.
 
-The following three types of objects can be displayed on a `ti.ui.Window`:
+- The `name` parameter sets the title of the window.
+- The `res` parameter specifies the resolution (width and height) of the window.
+- The `fps_limit` parameter sets the maximum frames per second (FPS) for the window.
+- The `pos` parameter specifies the position of the window with respect to the top-left corner of the main screen.
 
-- 2D Canvas, which can be used to draw simple 2D geometries such as circles and triangles.
-- 3D Scene, which can be used to render 3D meshes and particles, with a configurable camera and light sources.
-- Immediate mode GUI components, for example buttons and textboxes.
+A ti.ui.Window can display three types of objects:
+
+- 2D Canvas, which is used to draw simple 2D geometries like circles and triangles.+ 3D Scene, which is used to render 3D meshes and particles, and provides configurable camera and light sources.
+- Immediate mode GUI components, such as buttons and textboxes.
 
 ## 2D Canvas
 
@@ -106,7 +108,7 @@ The positions/centers of geometries should be in the world-space coordinates.
 
 :::note
 
-If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a shape `(num * 3)`, *not* a vector field.
+If a mesh has `num` triangles, the `indices` should be a 1D scalar field with a shape `(num * 3)`, _not_ a vector field.
 
 `normals` is an optional parameter for `scene.mesh()`.
 
@@ -196,7 +198,9 @@ scene.mesh(vertices,
 vertex_offset = user_defined_first_vertex_index,
 vertex_count  = user_defined_vertex_count)
 ```
+
 2. An example of drawing part of lines
+
 ```python
 import taichi as ti
 
@@ -249,6 +253,7 @@ while window.running:
 ```
 
 3. Details of mesh instancing
+
 ```python
 num_instance  = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
@@ -281,7 +286,9 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 # Draw mesh instances (from the 1st instance)
 scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
 ```
+
 4. Example of setting wireframe mode
+
 ```python
 
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
@@ -309,20 +316,19 @@ while window.running:
     window.show()
 ```
 
-
-
 :::note
 
 If `indices` is not provided, consider using like this:
+
 ```python
 scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
 ```
+
 If `indices` is provided, consider using like this:
+
 ```python
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
 ```
-
-
 
 :::
 
@@ -348,6 +354,7 @@ After rendering the current scene, you can fetch the color and depth information
 :::example
 
 1. Example of fetching color information
+
 ```python
 window = ti.ui.Window("Test for getting image buffer from ggui", (768, 768), vsync=True)
 video_manager = ti.tools.VideoManager("OutputDir")
@@ -362,6 +369,7 @@ video_manager.make_video(gif=True, mp4=True)
 ```
 
 2. An example of fetching the depth data
+
 ```python
 window_shape = (720, 1080)
 window = ti.ui.Window("Test for copy depth data", window_shape)
@@ -405,7 +413,7 @@ Call `show()` to show a window.
 window.show()
 ```
 
-Call this method *only* at the end of the render loop for each frame.
+Call this method _only_ at the end of the render loop for each frame.
 
 ## User input processing
 

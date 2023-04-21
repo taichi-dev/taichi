@@ -607,7 +607,7 @@ class IRPrinter : public IRVisitor {
       s += ")";
     }
     s += fmt::format(" element_dim={} layout={} is_grad={}", stmt->element_dim,
-                     (stmt->element_dim <= 0) ? "AOS" : "SOA", false);
+                     (stmt->element_dim <= 0) ? "AOS" : "SOA", stmt->is_grad);
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));

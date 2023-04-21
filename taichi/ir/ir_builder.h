@@ -241,7 +241,8 @@ class IRBuilder {
   GlobalPtrStmt *create_global_ptr(SNode *snode,
                                    const std::vector<Stmt *> &indices);
   ExternalPtrStmt *create_external_ptr(ArgLoadStmt *ptr,
-                                       const std::vector<Stmt *> &indices);
+                                       const std::vector<Stmt *> &indices,
+                                       bool is_grad = false);
   template <typename XStmt>
   GlobalLoadStmt *create_global_load(XStmt *ptr) {
     using DecayedType = typename std::decay_t<XStmt>;

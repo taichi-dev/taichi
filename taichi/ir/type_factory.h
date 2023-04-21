@@ -52,6 +52,9 @@ class TypeFactory {
 
   static DataType create_tensor_type(std::vector<int> shape, DataType element);
 
+  constexpr static int DATA_PTR_POS_IN_NDARRAY = 1;
+  constexpr static int GRAD_PTR_POS_IN_NDARRAY = 2;
+
  private:
   TypeFactory();
 

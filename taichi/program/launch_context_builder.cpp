@@ -73,6 +73,13 @@ void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices, T d) {
   }
 }
 
+void LaunchContextBuilder::set_ndarray_ptrs(int arg_id,
+                                            uint64 data_ptr,
+                                            uint64 grad_ptr) {
+  set_struct_arg({arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}, data_ptr);
+  set_struct_arg({arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}, grad_ptr);
+}
+
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
                                                    uint64 v);
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
@@ -151,19 +158,9 @@ T LaunchContextBuilder::get_struct_arg(std::vector<int> arg_indices) {
 }
 
 template <typename T>
-T LaunchContextBuilder::get_grad_arg(int i) {
-  return taichi_union_cast_with_different_sizes<T>(ctx_->grad_args[i]);
-}
-
-template <typename T>
 void LaunchContextBuilder::set_arg(int i, T v) {
   set_struct_arg_impl({i}, v);
   set_array_device_allocation_type(i, DevAllocType::kNone);
-}
-
-template <typename T>
-void LaunchContextBuilder::set_grad_arg(int i, T v) {
-  ctx_->grad_args[i] = taichi_union_cast_with_different_sizes<uint64>(v);
 }
 
 template <typename T>
@@ -171,15 +168,13 @@ T LaunchContextBuilder::get_ret(int i) {
   return taichi_union_cast_with_different_sizes<T>(ctx_->result_buffer[i]);
 }
 
-#define PER_C_TYPE(type, ctype)                                     \
-  template void LaunchContextBuilder::set_struct_arg_impl(          \
-      std::vector<int> arg_indices, ctype v);                       \
-  template ctype LaunchContextBuilder::get_arg(int i);              \
-  template ctype LaunchContextBuilder::get_struct_arg(              \
-      std::vector<int> arg_indices);                                \
-  template ctype LaunchContextBuilder::get_grad_arg(int i);         \
-  template void LaunchContextBuilder::set_arg(int i, ctype v);      \
-  template void LaunchContextBuilder::set_grad_arg(int i, ctype v); \
+#define PER_C_TYPE(type, ctype)                                \
+  template void LaunchContextBuilder::set_struct_arg_impl(     \
+      std::vector<int> arg_indices, ctype v);                  \
+  template ctype LaunchContextBuilder::get_arg(int i);         \
+  template ctype LaunchContextBuilder::get_struct_arg(         \
+      std::vector<int> arg_indices);                           \
+  template void LaunchContextBuilder::set_arg(int i, ctype v); \
   template ctype LaunchContextBuilder::get_ret(int i);
 #include "taichi/inc/data_type_with_c_type.inc.h"
 PER_C_TYPE(gen, void *)  // Register void* as a valid type
@@ -199,14 +194,16 @@ void LaunchContextBuilder::set_arg_external_array_with_shape(
     int arg_id,
     uintptr_t ptr,
     uint64 size,
-    const std::vector<int64> &shape) {
+    const std::vector<int64> &shape,
+    uintptr_t grad_ptr) {
   TI_ASSERT_INFO(
       kernel_->parameter_list[arg_id].is_array,
       "Assigning external (numpy) array to scalar argument is not allowed.");
 
   TI_ASSERT_INFO(shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  array_ptrs[{arg_id}] = (void *)ptr;
+  array_ptrs[{arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}] = (void *)ptr;
+  array_ptrs[{arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}] = (void *)grad_ptr;
   set_array_runtime_size(arg_id, size);
   set_array_device_allocation_type(arg_id, DevAllocType::kNone);
   for (uint64 i = 0; i < shape.size(); ++i) {
@@ -272,12 +269,11 @@ void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
   has_grad[arg_id] = grad;
 
   // Set array ptr
-  array_ptrs[{arg_id}] = (void *)devalloc_ptr;
-
-  // Set grad_args[arg_id] value
+  array_ptrs[{arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}] =
+      (void *)devalloc_ptr;
   if (grad) {
-    ctx_->grad_args[arg_id] =
-        taichi_union_cast_with_different_sizes<uint64>(devalloc_ptr_grad);
+    array_ptrs[{arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}] =
+        (void *)devalloc_ptr_grad;
   }
 
   // Set device allocation type and runtime size

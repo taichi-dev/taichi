@@ -178,7 +178,9 @@ const Type *TypeFactory::get_ndarray_struct_type(DataType dt, int total_dim) {
   auto *shape_type = get_struct_type(shape_members);
   std::vector<StructMember> members;
   members.push_back({shape_type, "shape"});
-  members.push_back({get_pointer_type(dt->get_compute_type()), "data_ptr"});
+  auto ptr_type = get_pointer_type(dt->get_compute_type());
+  members.push_back({ptr_type, "data_ptr"});
+  members.push_back({ptr_type, "grad_ptr"});
   return get_struct_type(members);
 }
 

@@ -251,7 +251,7 @@ while window.running:
 
 3. Details of mesh instancing
 
-```python cont
+```python skip-ci:Trivial
 num_instance  = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 
@@ -352,7 +352,7 @@ After rendering the current scene, you can fetch the color and depth information
 
 1. Example of fetching color information
 
-```python
+```python skip-ci:Trivial
 window = ti.ui.Window("Test for getting image buffer from ggui", (768, 768), vsync=True)
 video_manager = ti.tools.VideoManager("OutputDir")
 

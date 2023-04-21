@@ -1,20 +1,20 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
-import linecache
-import sys
-import uuid
-import warnings
 from dataclasses import dataclass
 from functools import wraps
 from itertools import count
 from typing import List, Optional
+import linecache
+import sys
+import uuid
+import warnings
 
 # -- third party --
-import marko
-import pytest
 from pytest import ExceptionInfo
-
+import marko
+import matplotlib.pyplot as plt
+import pytest
 import taichi as ti
 
 # -- own --
@@ -101,6 +101,11 @@ def show(orig, self, *args, **kwargs):
     self._frames_remaining -= 1
 
     return orig(self, *args, *kwargs)
+
+
+@hook(plt)
+def show(orig):
+    return
 
 
 ti.GUI._frames_remaining = 10

@@ -32,7 +32,7 @@ window = ti.ui.Window(name='Window Title', res = (640, 360), fps_limit=200, pos 
 - The `fps_limit` parameter sets the maximum frames per second (FPS) for the window.
 - The `pos` parameter specifies the position of the window with respect to the top-left corner of the main screen.
 
-A ti.ui.Window can display three types of objects:
+A `ti.ui.Window` can display three types of objects:
 
 - 2D Canvas, which is used to draw simple 2D geometries like circles and triangles.+ 3D Scene, which is used to render 3D meshes and particles, and provides configurable camera and light sources.
 - Immediate mode GUI components, such as buttons and textboxes.
@@ -73,7 +73,7 @@ scene = ti.ui.Scene()
 
 ### Configure camera
 
-```python cont
+```python skip-ci
 camera = ti.ui.Camera()
 camera.position(pos)
 camera.lookat(pos)
@@ -96,7 +96,7 @@ Note that you need to call `point_light()` for every frame. Similar to the `canv
 
 ### 3D Geometries
 
-```python cont
+```python skip-ci
 scene.lines(vertices, width, indices, color, per_vertex_color)
 scene.mesh(vertices, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
@@ -155,7 +155,7 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python cont
+```python skip-ci
 scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
 
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
@@ -171,32 +171,29 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python cont
+```python skip-ci
 # For particles
 # draw the 2-th to 7-th particles
-scene.particles(center, radius,
-index_offset = 1,
-index_count = 6)
+scene.particles(center, radius, index_offset = 1, index_count = 6)
 
 # For mesh
 # 1. with indices
-scene.mesh(vertices, indices,
-index_offset  = user_defined_first_indices_index,
-index_count   = user_defined_index_count,
-# vertex_offset is set to 0 by default, and it is not necessary
-# to assign vertex_offset a value that otherwise you must.
-vertex_offset = user_defined_vertex_offset)
-
+scene.mesh(
+    vertices, indices, index_offset=user_defined_first_indices_index,index_count=user_defined_index_count,
+    # vertex_offset is set to 0 by default, and it is not necessary
+    # to assign vertex_offset a value that otherwise you must.
+    vertex_offset = user_defined_vertex_offset
+    )
 # usually used as below:
 # draw the 11-th to 111-th mesh vertexes
-scene.mesh(vertices, indices,
-index_offset  = 10,
-index_count   = 100)
+scene.mesh(vertices, indices, index_offset=10, index_count=100)
 
 # 2. without indices (similar to the particles' example above)
-scene.mesh(vertices,
-vertex_offset = user_defined_first_vertex_index,
-vertex_count  = user_defined_vertex_count)
+scene.mesh(
+    vertices,
+    vertex_offset=user_defined_first_vertex_index,
+    vertex_count=user_defined_vertex_count
+    )
 ```
 
 2. An example of drawing part of lines
@@ -320,13 +317,13 @@ while window.running:
 
 If `indices` is not provided, consider using like this:
 
-```python cont
+```python skip-ci
 scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
 ```
 
 If `indices` is provided, consider using like this:
 
-```python cont
+```python skip-ci
 scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
 ```
 
@@ -395,7 +392,7 @@ while window.running:
 
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
-```python cont
+```python skip-ci
 gui = window.get_gui()
 with gui.sub_window(name, x, y, width, height):
     gui.text(text)
@@ -408,8 +405,7 @@ with gui.sub_window(name, x, y, width, height):
 
 Call `show()` to show a window.
 
-```python
-... cont
+```python cont
 window.show()
 ```
 
@@ -419,7 +415,7 @@ Call this method _only_ at the end of the render loop for each frame.
 
 To retrieve the events that have occurred since the last method call:
 
-```python
+```python cont
 events = window.get_events()
 ```
 

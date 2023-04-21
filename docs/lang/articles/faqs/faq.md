@@ -48,6 +48,9 @@ Direct value assignments lead to semantic ambiguity. For example, `a = b` can me
 You can swap two fields in the Taichi scope using a struct for:
 
 ```python
+a = ti.field(ti.i32, 32)
+b = ti.field(ti.i32, 32)
+
 @ti.func
 def field_copy(src: ti.template(), dst: ti.template()):
     for I in ti.grouped(src):
@@ -64,11 +67,21 @@ test()
 
 ### How do I compute the minimum/maximum of a field?
 
-Use `ti.automic.min/max` instead of `ti.min/max`. For example:
+Use `ti.atomic_min/atomic_max` instead of `ti.min/max`. For example:
 
 ```python
-for i in x:
-   ret = ti.atomic_min(ret, x[i])
+x = ti.field(ti.f32, 32)
+
+@ti.kernel
+def x_min() -> ti.f32:
+    ret: ti.f32 = x[0]
+
+    for i in x:
+        ret = ti.atomic_min(ret, x[i])
+
+    return ret
+
+x_min()
 ```
 
 ### Does Taichi support `bool` type?
@@ -234,12 +247,12 @@ Taichi's GUI system can display colors when the field it accepts is a 3D vector 
 To enable color mapping, convert `ti.field` into a NumPy array and call Matplotlib's colormap (`cm`), as shown in the following example:
 
 ```python
-gui = ti.GUI(f'Re = {un * lx / mu:4.0f} V_mag', (nx+1, ny+1)）
+gui = ti.GUI(f'Re = {un * lx / mu:4.0f} V_mag', (nx+1, ny+1))
 step = 0
 while gui.running: # Main loop
     print(f'>>> step : {step:<6d}, time : {step*dt:<6.3f} sec')
     substep()
-    if step % 10 = 1:
+    if step % 10 == 1:
         V_np = V_mag.to_numpy()
         V_img = cm.jet(V_np)
         gui.set_image(V_img) # Plot the velocity magnitude contour

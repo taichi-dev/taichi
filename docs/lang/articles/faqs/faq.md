@@ -246,7 +246,7 @@ Taichi's GUI system can display colors when the field it accepts is a 3D vector 
 
 To enable color mapping, convert `ti.field` into a NumPy array and call Matplotlib's colormap (`cm`), as shown in the following example:
 
-```python skip-ci
+```python skip-ci:Trivial
 pixels = ti.Vector.field(3, shape=(w, h))
 gui = ti.GUI(f'Window title', (w, h))
 step = 0

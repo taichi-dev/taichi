@@ -447,14 +447,14 @@ Or you can find it at:
 
 A typical cache dir will contain sub folders below:
 
-| Sub Folder       | Purpose                                                  |
-| ---------------- | -------------------------------------------------------- |
-| bootstrap        | Contains Python packages used by `build.py` itself       |
-| deps             | Downloaded external dependencies, before extract/install |
-| llvm15           | Managed pre-built LLVM binaries                          |
-| miniforge3       | Conda environment dedicated to build / develop Taichi    |
-| sccache          | Compile cache                                            |
-| vulkan-1.x.xxx.x | Vulkan SDK location                                      |
+| Sub Folder       | Purpose                                                       | Code Responsible                                                                                                 |
+| ---------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| bootstrap        | Contains Python packages used by `build.py` itself            | [bootstrap.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/bootstrap.py) |
+| deps             | Downloaded external dependencies, before extract/install      | [dep.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/dep.py)             |
+| llvm15           | Managed pre-built LLVM binaries                               | [llvm.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/llvm.py)           |
+| mambaforge       | Managed conda environment dedicated to build / develop Taichi | [python.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/python.py)       |
+| sccache          | Compile cache                                                 | [sccache.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/sccache.py)     |
+| vulkan-1.x.xxx.x | Vulkan SDK location                                           | [vulkan.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/vulkan.py)       |
 
 The whole cache folder can be safely removed.
 
@@ -464,9 +464,20 @@ The whole cache folder can be safely removed.
 On Debian/Ubuntu systems, `apt install python3-distutils` is required due to packaging quirks.
 :::
 
-### Build / develop for a different Python interpreter version
+:::caution Behaviors considered intrusive
+
+1. On Ubuntu systems, there's an attempt to install missing development libraries at [ospkg.py](https://github.com/taichi-dev/taichi/blob/master/.github/workflows/scripts/ti_build/ospkg.py) by invoking `sudo apt install libxxxx-dev`
+   if a terminal is detected. It can be skipped by telling `apt` not to install them.
+
+2. Installing Vulkan SDK on Windows requires elevated privileges, and the installer will set several machine scoped environment variables (`VULKAN_SDK` and `VK_SDK_PATH`).
+
+:::
+
+
+### Choose your desired Python version, or use your own Python environment.
 
 By default, `build.py` assumes that the same Python version used to invoke it will also be used for building Taichi.
+`build.py` will then create an isolated Python environment and use it for all the subsequent Python related tasks.
 To use a different version, please specify the desired version via `--python` option:
 
 ```shell
@@ -475,6 +486,19 @@ To use a different version, please specify the desired version via `--python` op
 
 # Or enter development shell
 ./build.py --python=3.10 --shell
+```
+
+If you prefer to manage Python environments yourself, you could specify `--python=native`, and `build.py` will not attempt to use a managed Python environment.
+
+```shell
+# Use your own conda
+conda activate my-own-conda-env
+
+# Build a wheel
+./build.py --python=native
+
+# Or enter development shell
+./build.py --python=native --shell
 ```
 
 ## Troubleshooting and debugging

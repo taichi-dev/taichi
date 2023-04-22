@@ -132,11 +132,8 @@ class LlvmRuntimeExecutor {
  private:
   CompileConfig &config_;
 
-  // TODO(zhanlue): compile - runtime split for TaichiLLVMContext
-  //
-  // TaichiLLVMContext is a thread-safe class with llvm::Module for compilation
-  // and JITSession/JITModule for runtime loading & execution
   std::unique_ptr<TaichiLLVMContext> llvm_context_{nullptr};
+  std::unique_ptr<JITSession> jit_session_{nullptr};
   JITModule *runtime_jit_module_{nullptr};
   void *llvm_runtime_{nullptr};
 

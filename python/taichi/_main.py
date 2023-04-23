@@ -215,7 +215,7 @@ class TaichiMain:
             content = Syntax.from_path(script, line_numbers=True)
             console = rich.console.Console()
             console.print(content)
-            self._exec_python_file(script)
+            self._exec_python_file(str(script))
 
         index = None
         while not gui.get_event(ti.GUI.ESCAPE, ti.GUI.EXIT):

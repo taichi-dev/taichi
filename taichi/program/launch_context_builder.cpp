@@ -141,8 +141,6 @@ template <typename T>
 void LaunchContextBuilder::set_struct_arg_impl(std::vector<int> arg_indices,
                                                T v) {
   int offset = args_type->get_element_offset(arg_indices);
-  TI_INFO("offset = {}, size = {}, arg_buffer_size = {}", offset, sizeof(T),
-          arg_buffer_size);
   TI_ASSERT(offset + sizeof(T) <= arg_buffer_size);
   *(T *)(ctx_->arg_buffer + offset) = v;
 }

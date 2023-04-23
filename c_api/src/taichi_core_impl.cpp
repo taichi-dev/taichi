@@ -715,7 +715,6 @@ void ti_launch_kernel(TiRuntime runtime,
   }
 
   auto ti_kernel = (taichi::lang::aot::Kernel *)kernel;
-  TI_INFO("{}", ti_kernel->args_type->to_string());
 
   Runtime &runtime2 = *((Runtime *)runtime);
   taichi::lang::LaunchContextBuilder builder(ti_kernel);

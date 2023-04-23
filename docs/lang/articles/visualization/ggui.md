@@ -345,15 +345,15 @@ while window.running:
 
 If `indices` is not provided, consider using like this:
 
-```python preludes:vars
+```python preludes:vars skip-ci:Taichi-Bug
 scene = ti.ui.Scene()
-scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=50, show_wireframe=True)
+scene.mesh(vertices_3d, normals, color, per_vertex_color, vertex_offset=0, vertex_count=50, show_wireframe=True)
 ```
 
 If `indices` is provided, consider using like this:
 
 ```python cont
-scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset=0, index_offset=0, index_count=50, show_wireframe=True)
+scene.mesh(vertices_3d, indices, normals, color, per_vertex_color, vertex_offset=0, index_offset=0, index_count=50, show_wireframe=True)
 ```
 
 :::

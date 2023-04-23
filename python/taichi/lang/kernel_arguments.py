@@ -63,10 +63,10 @@ def decl_scalar_arg(dtype, name):
 def get_type_for_kernel_args(dtype, name):
     if isinstance(dtype, MatrixType):
         if dtype.ndim == 1:
-            structtype = StructType(**{f"{name}_{i}": dtype.dtype for i in range(dtype.n)})
+            elements = [(dtype.dtype, f"{name}_{i}") for i in range(dtype.n)]
         else:
-            structtype = StructType(**{f"{name}_{i}_{j}": dtype.dtype for j in range(dtype.m) for i in range(dtype.n)})
-        return structtype.dtype
+            elements = [(dtype.dtype, f"{name}_{i}_{j}") for j in range(dtype.m) for i in range(dtype.n)]
+        return _ti_core.get_type_factory_instance().get_struct_type(elements)
     if isinstance(dtype, StructType):
         elements = []
         for k, element_type in dtype.members.items():

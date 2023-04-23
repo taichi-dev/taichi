@@ -463,6 +463,8 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_TEXTURE = 3,
   // Typed scalar.
   TI_ARGUMENT_TYPE_SCALAR = 4,
+  // Typed tensor.
+  TI_ARGUMENT_TYPE_TENSOR = 5,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
 
@@ -802,6 +804,12 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
+typedef struct TiTensor {
+  uint64_t *data;
+  uint32_t num_elements;
+  uint8_t width;
+} TiTensor;
+
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
@@ -818,6 +826,8 @@ typedef union TiArgumentValue {
   TiTexture texture;
   // An scalar to be bound.
   TiScalar scalar;
+  // A tensor to be bound.
+  TiTensor tensor;
 } TiArgumentValue;
 
 // Structure `TiArgument` (1.4.0)

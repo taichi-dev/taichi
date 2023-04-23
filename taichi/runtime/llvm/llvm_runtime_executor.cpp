@@ -164,6 +164,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
   }
   llvm_context_ = std::make_unique<TaichiLLVMContext>(
       config_, arch_is_cpu(config.arch) ? host_arch() : config.arch);
+  jit_session_ = JITSession::create(llvm_context_.get(), config, config.arch);
   init_runtime_jit_module(llvm_context_->clone_runtime_module());
 }
 
@@ -173,7 +174,7 @@ TaichiLLVMContext *LlvmRuntimeExecutor::get_llvm_context() {
 
 JITModule *LlvmRuntimeExecutor::create_jit_module(
     std::unique_ptr<llvm::Module> module) {
-  return get_llvm_context()->jit->add_module(std::move(module));
+  return jit_session_->add_module(std::move(module));
 }
 
 JITModule *LlvmRuntimeExecutor::get_runtime_jit_module() {

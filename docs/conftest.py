@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from functools import wraps
 from itertools import count
-from typing import List, Optional
+from typing import List, Optional, Dict
 import linecache
 import sys
 import uuid
@@ -95,7 +95,7 @@ def show(orig, self, *args, **kwargs):
 @hook(ti.ui.Window)
 def show(orig, self, *args, **kwargs):
     if not self.running:
-        self.close()
+        self.destroy()
         return
 
     self._frames_remaining -= 1
@@ -119,6 +119,7 @@ class PythonSnippet:
     name: str
     code: str
     skip: Optional[str]
+    per_file_preludes: Dict[str, str]
     known_error: bool = False
     preludes: Optional[List[str]] = None
 
@@ -136,13 +137,21 @@ class MarkdownFile(pytest.File):
         if bad_tags:
             raise ValueError(f"Invalid language tag {bad_tags} in markdown file")
 
+        per_file_preludes = {}
+
         spec = None
         for name, c in codes:
             if not c.lang == "python":
                 continue
             extra = dict((v.split(":", 1) + [None])[:2] for v in c.extra.split())
             code = c.children[0].children
-            if "cont" in extra:
+            if "as-prelude" in extra:
+                assert "cont" not in extra
+                assert "preludes" not in extra
+                prelude_name = extra["as-prelude"]
+                assert prelude_name not in per_file_preludes, f"Duplicate prelude {prelude_name}"
+                per_file_preludes[prelude_name] = code
+            elif "cont" in extra:
                 assert spec is not None
                 spec.code += code
             else:
@@ -158,6 +167,7 @@ class MarkdownFile(pytest.File):
                     code=code,
                     skip=extra.get("skip-ci"),
                     known_error="known-error" in extra,
+                    per_file_preludes=per_file_preludes,
                     preludes=preludes,
                 )
 
@@ -220,8 +230,14 @@ class MarkdownItem(pytest.Item):
         else:
             preludes.insert(0, "init")
 
-        source = [PRELUDES[p] for p in preludes] + [spec.code]
-        source = "".join(source)
+        snippets = []
+        for p in preludes:
+            c = spec.per_file_preludes.get(p)
+            c = c or PRELUDES.get(p)
+            assert c is not None, f"Unknown prelude {p}"
+            snippets.append(c)
+        snippets.append(spec.code)
+        source = "".join(snippets)
         fn = f"<snippet:{uuid.uuid4()}>"
         code = compile(source, fn, "exec")
         linecache.cache[fn] = (

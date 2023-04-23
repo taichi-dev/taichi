@@ -19,11 +19,25 @@ If you choose Vulkan as backend, ensure that you [install the Vulkan environment
 It is recommended that you familiarize yourself with GGUI through the examples in `examples/ggui_examples`.
 :::
 
+:::note
+The variables referenced in code snippets below are define like this:
+
+```python as-prelude:vars
+vertices         = ti.Vector.field(2, ti.f32, shape=200)
+vertices_3d      = ti.Vector.field(3, ti.f32, shape=200)
+indices          = ti.field(ti.i32, shape=200 * 3)
+normals          = ti.Vector.field(3, ti.f32, shape=200)
+per_vertex_color = ti.Vector.field(3, ti.f32, shape=200)
+
+color  = (0.5, 0.5, 0.5)
+```
+:::
+
 ## Create a window
 
 `ti.ui.Window(name, res)` creates a window.
 
-```python
+```python preludes:vars
 window = ti.ui.Window(name='Window Title', res = (640, 360), fps_limit=200, pos = (150, 150))
 ```
 
@@ -49,12 +63,16 @@ canvas = window.get_canvas()
 
 ### Draw on the canvas
 
-```python skip-ci:Trivial
+```python cont
 canvas.set_background_color(color)
 canvas.triangles(vertices, color, indices, per_vertex_color)
+
+radius = 5
 canvas.circles(vertices, radius, color, per_vertex_color)
+
+width = 2
 canvas.lines(vertices, width, indices, color, per_vertex_color)
-canvas.set_image(image)
+canvas.set_image(window.get_image_buffer_as_numpy())
 ```
 
 The arguments `vertices`, `indices`, `per_vertex_color`, and `image` must be Taichi fields. If `per_vertex_color` is provided, `color` is ignored.
@@ -67,18 +85,18 @@ The canvas is cleared after every frame. Always call these methods within the re
 
 ### Create a scene
 
-```python
+```python cont
 scene = ti.ui.Scene()
 ```
 
 ### Configure camera
 
-```python skip-ci:Trivial
+```python cont
 camera = ti.ui.Camera()
-camera.position(pos)
-camera.lookat(pos)
-camera.up(dir)
-camera.projection_mode(mode)
+camera.position(1, 2, 3)  # x, y, z
+camera.lookat(4, 5, 6)
+camera.up(0, 1, 0)
+camera.projection_mode(ti.ui.ProjectionMode.Perspective)
 scene.set_camera(camera)
 ```
 
@@ -89,16 +107,16 @@ scene.set_camera(camera)
 Call `point_light()` to add a point light to the scene.
 
 ```python cont
-scene.point_light(pos, color)
+scene.point_light(pos=(1, 2, 3), color=(0.5, 0.5, 0.5))
 ```
 
 Note that you need to call `point_light()` for every frame. Similar to the `canvas()` methods, call this method within your render loop.
 
 ### 3D Geometries
 
-```python skip-ci:Trivial
+```python cont
 scene.lines(vertices, width, indices, color, per_vertex_color)
-scene.mesh(vertices, indices, normals, color, per_vertex_color)
+scene.mesh(vertices_3d, indices, normals, color, per_vertex_color)
 scene.particles(vertices, radius, color, per_vertex_color)
 ```
 
@@ -155,14 +173,18 @@ while window.running:
 
 ### Advanced 3d Geometries
 
-```python skip-ci:Trivial
-scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count)
+```python preludes:vars
+scene = ti.ui.Scene()
+width = 2
+radius = 5
 
-scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
+scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset=0, vertex_count=10, index_offset=0, index_count=10)
 
-scene.particles(vertices, radius, color, per_vertex_color, index_offset, index_count)
+scene.mesh(vertices_3d, indices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=10, index_offset=0, index_count=10, show_wireframe=True)
 
-scene.mesh_instance(vertices, indices, normals, color, per_vertex_color, vertex_offset, vertex_count, index_offset, index_count, show_wireframe)
+scene.particles(vertices, radius, color, per_vertex_color, index_offset=0, index_count=10)
+
+scene.mesh_instance(vertices_3d, indices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=10, index_offset=0, index_count=10, show_wireframe=True)
 ```
 
 The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `index_count` control the visible part of the particles and mesh. For the `mesh()` and `mesh_instance()` methods, set whether to show wireframe mode through setting `show_wireframe`.
@@ -171,28 +193,33 @@ The additional arguments `vertex_offset`, `vertex_count`, `index_offset` and `in
 
 1. Example of drawing a part of the mesh/particles
 
-```python skip-ci:Trivial
+```python preludes:vars
+scene = ti.ui.Scene()
+
+center = ti.Vector.field(3, ti.f32, shape=10)
+
 # For particles
 # draw the 2-th to 7-th particles
-scene.particles(center, radius, index_offset = 1, index_count = 6)
+scene.particles(center, radius=1, index_offset = 1, index_count = 6)
 
 # For mesh
 # 1. with indices
 scene.mesh(
-    vertices, indices, index_offset=user_defined_first_indices_index,index_count=user_defined_index_count,
+    vertices_3d, indices, index_offset=1, index_count=3,
     # vertex_offset is set to 0 by default, and it is not necessary
     # to assign vertex_offset a value that otherwise you must.
-    vertex_offset = user_defined_vertex_offset
+    vertex_offset = 1
     )
+
 # usually used as below:
 # draw the 11-th to 111-th mesh vertexes
-scene.mesh(vertices, indices, index_offset=10, index_count=100)
+scene.mesh(vertices_3d, indices, index_offset=10, index_count=100)
 
 # 2. without indices (similar to the particles' example above)
 scene.mesh(
-    vertices,
-    vertex_offset=user_defined_first_vertex_index,
-    vertex_count=user_defined_vertex_count
+    vertices_3d,
+    vertex_offset=2,  # user defined first vertex index
+    vertex_count=3,  # user defined vertex count
     )
 ```
 
@@ -251,8 +278,10 @@ while window.running:
 
 3. Details of mesh instancing
 
-```python skip-ci:Trivial
-num_instance  = 100
+```python preludes:vars
+scene = ti.ui.Scene()
+
+num_instance = 100
 m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 
 
@@ -281,13 +310,12 @@ m_transforms = ti.Matrix.field(4, 4, dtype = ti.f32, shape = num_instance)
 ...
 
 # Draw mesh instances (from the 1st instance)
-scene.mesh_instance(vertices, indices, transforms = m_transforms, instance_offset = 1)
+scene.mesh_instance(vertices_3d, indices, transforms = m_transforms, instance_offset = 1)
 ```
 
 4. Example of setting wireframe mode
 
-```python cont
-
+```python preludes:vars
 window = ti.ui.Window("Display Mesh", (1024, 1024), vsync=True)
 canvas = window.get_canvas()
 scene = ti.ui.Scene()
@@ -306,7 +334,7 @@ while window.running:
 
     ...
     # if to show wireframe
-    scene.mesh_instance(vertices, indices, instance_count = 100 , show_wireframe = True)
+    scene.mesh_instance(vertices_3d, indices, instance_count = 100 , show_wireframe = True)
 
     canvas.scene(scene)
     show_options()
@@ -317,14 +345,15 @@ while window.running:
 
 If `indices` is not provided, consider using like this:
 
-```python skip-ci:Trivial
-scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset, vertex_count, wireframe)
+```python preludes:vars
+scene = ti.ui.Scene()
+scene.mesh(vertices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=50, show_wireframe=True)
 ```
 
 If `indices` is provided, consider using like this:
 
-```python skip-ci:Trivial
-scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, index_offset, index_count, wireframe)
+```python cont
+scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset=0, index_offset=0, index_count=50, show_wireframe=True)
 ```
 
 :::
@@ -334,6 +363,8 @@ scene.mesh(vertices, indices, normals, color, per_vertex_color, vertex_offset, i
 You can render a scene on a canvas.
 
 ```python cont
+window = ti.ui.Window(name='Title', res=(640, 360))
+canvas = window.get_canvas()
 canvas.scene(scene)
 ```
 
@@ -392,13 +423,16 @@ while window.running:
 
 The design of GGUI's GUI components follows the [Dear ImGui](https://github.com/ocornut/imgui) APIs.
 
-```python skip-ci:Trivial
+```python
+window = ti.ui.Window("Test for GUI", res=(512, 512))
 gui = window.get_gui()
-with gui.sub_window(name, x, y, width, height):
-    gui.text(text)
-    is_clicked = gui.button(name)
-    new_value = gui.slider_float(name, old_value, min_value, max_value)
-    new_color = gui.color_edit_3(name, old_color)
+value = 0
+color = (1.0, 1.0, 1.0)
+with gui.sub_window("Sub Window", x=10, y=10, width=300, height=100):
+    gui.text("text")
+    is_clicked = gui.button("name")
+    value = gui.slider_float("name1", value, minimum=0, maximum=100)
+    color = gui.color_edit_3("name2", color)
 ```
 
 ## Show a window
@@ -459,7 +493,7 @@ while window.running:
 
 To write the current frame in the window to an image file:
 
-```python skip-ci:Trivial
+```python cont
 window.save_image(filename)
 ```
 

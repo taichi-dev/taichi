@@ -135,6 +135,33 @@ class Scalarize : public BasicStmtVisitor {
       delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
       delayed_modifier_.erase(stmt);
+      return;
+    }
+
+    // Obtained from Autodiff
+    // $2 = adstack top(is_ptr=True)
+    // $3 = matrix ptr $2, 0
+    // $4 = local load $3
+
+    // during previous irpass::scalarize()
+    // $2 = matrix init(...)
+    // $3 = matrix ptr $2, 0
+    // $4 = local load $3
+
+    // Transform to:
+    // $4 = $2->values[0]
+    if (stmt->src->template is<MatrixPtrStmt>()) {
+      auto matrix_ptr_stmt = stmt->src->template as<MatrixPtrStmt>();
+      if (matrix_ptr_stmt->origin->template is<MatrixInitStmt>()) {
+        auto matrix_init_stmt =
+            matrix_ptr_stmt->origin->template as<MatrixInitStmt>();
+        TI_ASSERT(matrix_ptr_stmt->offset->template is<ConstStmt>());
+        auto offset_stmt = matrix_ptr_stmt->offset->template as<ConstStmt>();
+        int offset = offset_stmt->val.val_int32();
+
+        stmt->replace_usages_with(matrix_init_stmt->values[offset]);
+        delayed_modifier_.erase(stmt);
+      }
     }
   }
 
@@ -727,8 +754,8 @@ class Scalarize : public BasicStmtVisitor {
           std::make_unique<MatrixInitStmt>(scalar_ad_stack_load_top);
       matrix_init_stmt->ret_type = tensor_type;
 
-      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
       stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
       delayed_modifier_.erase(stmt);
     }
   }
@@ -772,8 +799,8 @@ class Scalarize : public BasicStmtVisitor {
           std::make_unique<MatrixInitStmt>(scalar_ad_stack_load_top);
       matrix_init_stmt->ret_type = tensor_type;
 
-      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
       stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
       delayed_modifier_.erase(stmt);
     }
   }

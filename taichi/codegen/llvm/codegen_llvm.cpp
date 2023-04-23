@@ -2402,6 +2402,7 @@ void TaskCodeGenLLVM::visit(AdStackPushStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+  TI_ASSERT(stmt->return_ptr == false);
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));

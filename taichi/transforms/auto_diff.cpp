@@ -5,10 +5,29 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/utils.h"
 
+#include <signal.h>
 #include <typeinfo>
 #include <algorithm>
 
 namespace taichi::lang {
+
+namespace {
+
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
+}  // namespace
 
 template <typename T>
 Stmt *insert_const(const DataType &dtype,
@@ -26,10 +45,12 @@ Stmt *insert_const(const DataType &dtype,
   if (dtype->is<TensorType>()) {
     auto t_dtype = dtype->as<TensorType>();
     std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
-    if (insert_before_me)
+    if (insert_before_me) {
       zero = zero->insert_before_me(Stmt::make<MatrixInitStmt>(values));
-    else
+    } else {
       zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
+    }
+    zero->ret_type = dtype;
   }
   return zero;
 }
@@ -483,6 +504,8 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
   int ad_stack_size;
+  DelayedIRModifier delayed_modifier_;
+
   explicit ReplaceLocalVarWithStacks(int ad_stack_size)
       : ad_stack_size(ad_stack_size) {
   }
@@ -505,13 +528,84 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   }
 
   void visit(LocalLoadStmt *stmt) override {
-    if (stmt->src->is<AdStackAllocaStmt>())
-      stmt->replace_with(Stmt::make<AdStackLoadTopStmt>(stmt->src));
+    if (stmt->src->is<AdStackAllocaStmt>()) {
+      auto stack_load = Stmt::make<AdStackLoadTopStmt>(stmt->src);
+      stack_load->ret_type = stmt->ret_type;
+
+      stmt->replace_with(std::move(stack_load));
+    }
   }
 
   void visit(LocalStoreStmt *stmt) override {
+    if (stmt->dest->is<MatrixPtrStmt>()) {
+      auto matrix_ptr_stmt = stmt->dest->as<MatrixPtrStmt>();
+      if (matrix_ptr_stmt->origin->is<AdStackLoadTopStmt>()) {
+        auto stack_top = matrix_ptr_stmt->origin->as<AdStackLoadTopStmt>();
+        TI_ASSERT(stack_top->return_ptr == true);
+
+        TI_ASSERT(matrix_ptr_stmt->offset->is<ConstStmt>());
+        int offset = matrix_ptr_stmt->offset->as<ConstStmt>()->val.val_int32();
+
+        auto tensor_type = stack_top->ret_type.ptr_removed()->as<TensorType>();
+        auto num_elements = tensor_type->get_num_elements();
+        TI_ASSERT(offset < num_elements);
+
+        std::vector<Stmt *> values;
+        for (int i = 0; i < num_elements; i++) {
+          if (i == offset) {
+            values.push_back(stmt->val);
+            continue;
+          }
+
+          auto const_i = insert_const(PrimitiveType::i32, stmt, i, true);
+          auto matrix_ptr_stmt_i =
+              Stmt::make<MatrixPtrStmt>(stack_top, const_i);
+          matrix_ptr_stmt_i->ret_type = tensor_type->get_element_type();
+
+          auto local_load_stmt_i =
+              Stmt::make<LocalLoadStmt>(matrix_ptr_stmt_i.get());
+          local_load_stmt_i->ret_type = tensor_type->get_element_type();
+
+          values.push_back(local_load_stmt_i.get());
+
+          stmt->insert_before_me(std::move(matrix_ptr_stmt_i));
+          stmt->insert_before_me(std::move(local_load_stmt_i));
+        }
+
+        auto matrix_init_stmt = Stmt::make<MatrixInitStmt>(values);
+        matrix_init_stmt->ret_type = tensor_type;
+
+        auto stack_push = Stmt::make<AdStackPushStmt>(stack_top->stack,
+                                                      matrix_init_stmt.get());
+
+        stmt->insert_before_me(std::move(matrix_init_stmt));
+        stmt->replace_with(std::move(stack_push));
+        return;
+      }
+    }
+
+    // Non Tensor-type
     if (stmt->dest->is<AdStackAllocaStmt>())
       stmt->replace_with(Stmt::make<AdStackPushStmt>(stmt->dest, stmt->val));
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<AdStackAllocaStmt>()) {
+      auto stack_top =
+          Stmt::make<AdStackLoadTopStmt>(stmt->origin, true /*is_ptr*/);
+      stack_top->ret_type = stmt->origin->ret_type;
+      stack_top->ret_type.set_is_pointer(true);
+
+      Stmt *stack_top_stmt = stack_top.get();
+      stmt->insert_before_me(std::move(stack_top));
+
+      auto new_matrix_ptr_stmt =
+          Stmt::make<MatrixPtrStmt>(stack_top_stmt, stmt->offset);
+      new_matrix_ptr_stmt->ret_type = stmt->ret_type;
+      std::cout << "orig name: " << stmt->name() << " "
+                << "new: " << new_matrix_ptr_stmt->name() << std::endl;
+      stmt->replace_with(std::move(new_matrix_ptr_stmt));
+    }
   }
 };
 
@@ -557,8 +651,19 @@ class ReverseOuterLoops : public BasicStmtVisitor {
 // Base class for both reverse (make adjoint) and forward (make dual) mode
 class ADTransform : public IRVisitor {
  protected:
-  Stmt *constant(float32 x) {
-    return insert<ConstStmt>(TypedConstant(x));
+  Stmt *constant(float32 x, DataType dtype = PrimitiveType::unknown) {
+    if (!dtype->is<TensorType>())
+      return insert<ConstStmt>(TypedConstant(x));
+
+    auto tensor_type = dtype->as<TensorType>();
+    auto num_elements = tensor_type->get_num_elements();
+    std::vector<Stmt *> values;
+    for (int i = 0; i < num_elements; i++) {
+      values.push_back(insert<ConstStmt>(TypedConstant(x)));
+    }
+    auto matrix_init_stmt = insert<MatrixInitStmt>(values);
+    matrix_init_stmt->ret_type = tensor_type;
+    return matrix_init_stmt;
   }
 
   // utils
@@ -639,6 +744,7 @@ class ADTransform : public IRVisitor {
       auto t_dtype = dtype->as<TensorType>();
       std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
       zero = insert<MatrixInitStmt>(values);
+      zero->ret_type = dtype;
     }
     return zero;
   }
@@ -693,7 +799,7 @@ class ADTransform : public IRVisitor {
 
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
-    if (alloc->is<AllocaStmt>()) {
+    if (alloc->is<AllocaStmt>() || alloc->is<MatrixPtrStmt>()) {
       return insert<LocalLoadStmt>(alloc);
     } else {
       // non alloca
@@ -783,8 +889,9 @@ class MakeAdjoint : public ADTransform {
   // Accumulate [value] to the adjoint of [primal]
   void accumulate(Stmt *primal, Stmt *value) {
     auto alloca_ = adjoint(primal);
-    if (!alloca_ || alloca_->is<ConstStmt>())
+    if (!alloca_ || alloca_->is<ConstStmt>()) {
       return;  // primal may be int variable
+    }
     if (alloca_->is<AdStackAllocaStmt>()) {
       auto alloca = alloca_->cast<AdStackAllocaStmt>();
       if (is_real(alloca->ret_type.get_element_type())) {
@@ -794,14 +901,22 @@ class MakeAdjoint : public ADTransform {
       TI_ASSERT(alloca_->is<AllocaStmt>());
       auto alloca = alloca_->as<AllocaStmt>();
       auto local_load = insert<LocalLoadStmt>(alloca);
+      local_load->ret_type = alloca->ret_type.ptr_removed();
       insert<LocalStoreStmt>(alloca, add(local_load, value));
     }
   }
 
   Stmt *adjoint(Stmt *stmt) {
-    if (!is_real(stmt->ret_type.get_element_type()) || stmt->is<ConstStmt>()) {
+    DataType adjoint_dtype = stmt->ret_type.ptr_removed();
+    if (stmt->ret_type->is<TensorType>()) {
+      adjoint_dtype = TypeFactory::get_instance().get_tensor_type(
+          stmt->ret_type->as<TensorType>()->get_shape(), PrimitiveType::f32);
+    } else if (stmt->is<MatrixPtrStmt>()) {
+      // pass
+    } else if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
+
     if (adjoint_stmt.find(stmt) == adjoint_stmt.end()) {
       // normal SSA cases
 
@@ -809,7 +924,7 @@ class MakeAdjoint : public ADTransform {
       // auto alloca =
       //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(adjoint_dtype);
       adjoint_stmt[stmt] = alloca.get();
 
       // We need to insert the alloca in the block of GlobalLoadStmt when the
@@ -869,30 +984,34 @@ class MakeAdjoint : public ADTransform {
       // `tan`.
       TI_NOT_IMPLEMENTED;
     } else if (stmt->op_type == UnaryOpType::tanh) {
-      accumulate(stmt->operand,
-                 mul(adjoint(stmt), sub(constant(1), sqr(stmt))));
+      accumulate(
+          stmt->operand,
+          mul(adjoint(stmt), sub(constant(1, stmt->ret_type), sqr(stmt))));
     } else if (stmt->op_type == UnaryOpType::asin) {
       accumulate(
           stmt->operand,
           mul(adjoint(stmt),
-              div(constant(1), sqrt(sub(constant(1), sqr(stmt->operand))))));
+              div(constant(1, stmt->ret_type),
+                  sqrt(sub(constant(1, stmt->ret_type), sqr(stmt->operand))))));
     } else if (stmt->op_type == UnaryOpType::acos) {
-      accumulate(stmt->operand,
-                 mul(adjoint(stmt),
-                     negate(div(constant(1),
-                                sqrt(sub(constant(1), sqr(stmt->operand)))))));
+      accumulate(
+          stmt->operand,
+          mul(adjoint(stmt), negate(div(constant(1, stmt->ret_type),
+                                        sqrt(sub(constant(1, stmt->ret_type),
+                                                 sqr(stmt->operand)))))));
     } else if (stmt->op_type == UnaryOpType::exp) {
       accumulate(stmt->operand, mul(adjoint(stmt), stmt));
     } else if (stmt->op_type == UnaryOpType::log) {
       accumulate(stmt->operand, div(adjoint(stmt), stmt->operand));
     } else if (stmt->op_type == UnaryOpType::sqrt) {
       accumulate(stmt->operand,
-                 mul(adjoint(stmt), div(constant(0.5f), sqrt(stmt->operand))));
+                 mul(adjoint(stmt),
+                     div(constant(0.5f, stmt->ret_type), sqrt(stmt->operand))));
     } else if (stmt->op_type == UnaryOpType::rsqrt) {
-      accumulate(
-          stmt->operand,
-          mul(adjoint(stmt),
-              mul(constant(-0.5f), pow(rsqrt(stmt->operand), constant(3)))));
+      accumulate(stmt->operand,
+                 mul(adjoint(stmt), mul(constant(-0.5f, stmt->ret_type),
+                                        pow(rsqrt(stmt->operand),
+                                            constant(3, stmt->ret_type)))));
     } else if (stmt->op_type == UnaryOpType::cast_value) {
       if (is_real(stmt->cast_type.get_element_type()) &&
           is_real(stmt->operand->ret_type.get_element_type())) {
@@ -929,8 +1048,8 @@ class MakeAdjoint : public ADTransform {
       accumulate(bin->rhs, negate(div(mul(adjoint(bin), bin->lhs), numerator)));
     } else if (bin->op_type == BinaryOpType::pow) {
       // d (x ^ y) = x ^ (y-1) * (y * dx + log(x) * x * dy)
-      auto common_coeff =
-          pow(bin->lhs, sub(bin->rhs, constant(1)));  // x ^ (y-1)
+      auto common_coeff = pow(
+          bin->lhs, sub(bin->rhs, constant(1, bin->ret_type)));  // x ^ (y-1)
       accumulate(bin->lhs, mul(adjoint(bin), mul(bin->rhs, common_coeff)));
       accumulate(bin->rhs, mul(adjoint(bin), mul(log(bin->lhs),
                                                  mul(bin->lhs, common_coeff))));
@@ -1174,6 +1293,46 @@ class MakeAdjoint : public ADTransform {
     }
     accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     stmt->parent->erase(stmt);
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    TI_ASSERT(stmt->offset->is<ConstStmt>());
+    int offset = stmt->offset->as<ConstStmt>()->val.val_int32();
+
+    auto tensor_type = stmt->origin->ret_type->as<TensorType>();
+    int num_elements = tensor_type->get_num_elements();
+
+    auto zero = insert_const_for_grad(PrimitiveType::f32, stmt, 0);
+    std::vector<Stmt *> values;
+    for (int i = 0; i < num_elements; i++) {
+      if (i == offset) {
+        values.push_back(load(adjoint(stmt)));
+      } else {
+        values.push_back(zero);
+      }
+    }
+
+    auto matrix_init_stmt = insert<MatrixInitStmt>(values);
+    matrix_init_stmt->ret_type = tensor_type;
+
+    accumulate(stmt->origin, matrix_init_stmt);
+  }
+
+  void visit(MatrixInitStmt *stmt) override {
+    auto adjoint_ptr = adjoint(stmt);
+
+    auto tensor_type = stmt->ret_type->as<TensorType>();
+    int num_elements = tensor_type->get_num_elements();
+
+    for (size_t i = 0; i < num_elements; i++) {
+      auto const_i = insert_const_for_grad(PrimitiveType::i32, stmt, i);
+
+      auto matrix_ptr_stmt_i = insert<MatrixPtrStmt>(adjoint_ptr, const_i);
+      matrix_ptr_stmt_i->ret_type = tensor_type->get_element_type();
+      matrix_ptr_stmt_i->ret_type.set_is_pointer(true);
+
+      accumulate(stmt->values[i], load(matrix_ptr_stmt_i));
+    }
   }
 };
 
@@ -1619,11 +1778,19 @@ void auto_diff(IRNode *root,
       ReverseOuterLoops::run(root, IB);
 
       for (auto ib : IB) {
+        auto print = make_pass_printer(true, "", root);
         PromoteSSA2LocalVar::run(ib);
+        print("Before Replacement");
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
+        print("After Replacement");
         type_check(root, config);
+
+        print("After Type Check");
+
         MakeAdjoint::run(ib);
+        print("After MakeAdjoint");
+
         type_check(root, config);
         BackupSSA::run(ib);
         irpass::analysis::verify(root);

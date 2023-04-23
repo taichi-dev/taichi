@@ -62,6 +62,7 @@ def decl_scalar_arg(dtype, name):
 
 def get_type_for_kernel_args(dtype, name):
     if isinstance(dtype, MatrixType):
+        # Compiling the matrix type to a struct type because the support for the matrix type is not ready yet on SPIR-V based backends.
         if dtype.ndim == 1:
             elements = [(dtype.dtype, f"{name}_{i}") for i in range(dtype.n)]
         else:
@@ -76,6 +77,7 @@ def get_type_for_kernel_args(dtype, name):
             else:
                 elements.append([element_type, k])
         return _ti_core.get_type_factory_instance().get_struct_type(elements)
+    # Assuming dtype is a primitive type
     return dtype
 
 

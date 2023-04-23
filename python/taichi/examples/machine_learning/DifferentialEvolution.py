@@ -7,7 +7,6 @@ ti.init(arch=ti.cpu)
 
 @ti.func
 def clip(pop: ti.template(), lb: ti.template(), ub: ti.template()):
-
     search_num, dim = pop.shape
     for i, j in ti.ndrange(search_num, dim):
         if pop[i, j] > ub[j]:
@@ -18,7 +17,6 @@ def clip(pop: ti.template(), lb: ti.template(), ub: ti.template()):
 
 @ti.func
 def clip_only(trial: ti.template(), lb: ti.template(), ub: ti.template()):
-
     dim = trial.shape[0]
     for j in range(dim):
         if trial[j] > ub[j]:
@@ -29,7 +27,6 @@ def clip_only(trial: ti.template(), lb: ti.template(), ub: ti.template()):
 
 @ti.func
 def f1(fit: ti.template(), pop: ti.template()):
-
     search_num, dim = pop.shape
     for i in range(search_num):
         cur = 0.0
@@ -41,7 +38,6 @@ def f1(fit: ti.template(), pop: ti.template()):
 
 @ti.func
 def f1_only(trial: ti.template()) -> ti.float32:
-
     dim = trial.shape[0]
     res = 0.0
     for j in range(dim):
@@ -52,7 +48,6 @@ def f1_only(trial: ti.template()) -> ti.float32:
 
 @ti.func
 def find_min(fit: ti.template()) -> ti.i32:
-
     search_num = fit.shape[0]
     min_fit = fit[0]
     min_pos = 0
@@ -66,7 +61,6 @@ def find_min(fit: ti.template()) -> ti.i32:
 
 @ti.func
 def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
-
     r = ti.random(float)
     res = r * (high - low) + low
 
@@ -75,7 +69,6 @@ def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
 
 @ti.func
 def copy_pop_to_field(pop: ti.template(), trial: ti.template(), ind: ti.i32):
-
     search_num, dim = pop.shape
     for j in range(dim):
         trial[j] = pop[ind, j]
@@ -83,7 +76,6 @@ def copy_pop_to_field(pop: ti.template(), trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_field_to_pop(pop: ti.template(), trial: ti.template(), ind: ti.i32):
-
     search_num, dim = pop.shape
     for j in range(dim):
         pop[ind, j] = trial[j]
@@ -91,7 +83,6 @@ def copy_field_to_pop(pop: ti.template(), trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_2d_to_3d(a: ti.template(), b: ti.template(), iter: ti.i32):
-
     r, c = b.shape
     for i, j in ti.ndrange(r, c):
         a[iter, i, j] = b[i, j]
@@ -106,7 +97,6 @@ def copy_field_a_to_b(a: ti.template(), b: ti.template()):
 
 @ti.func
 def de_crossover(pop: ti.template(), trial: ti.template(), a: ti.i32, b: ti.i32, c: ti.i32, ind: ti.i32):
-
     search_num, dim = pop.shape
     CR = 0.5
     para_F = 0.7
@@ -117,11 +107,16 @@ def de_crossover(pop: ti.template(), trial: ti.template(), a: ti.i32, b: ti.i32,
 
 
 @ti.func
-def de_loop(pop: ti.template(), all_best: ti.float32, fit: ti.template(), trial: ti.template(), lb: ti.template(), ub: ti.template()) -> ti.float32:
-
+def de_loop(
+    pop: ti.template(),
+    all_best: ti.float32,
+    fit: ti.template(),
+    trial: ti.template(),
+    lb: ti.template(),
+    ub: ti.template(),
+) -> ti.float32:
     search_num, dim = pop.shape
     for i in range(search_num):
-
         copy_pop_to_field(pop=pop, trial=trial, ind=i)
 
         a = rand_int(low=0, high=search_num)
@@ -150,8 +145,16 @@ def de_loop(pop: ti.template(), all_best: ti.float32, fit: ti.template(), trial:
 
 
 @ti.kernel
-def DE(pop: ti.template(), max_iter: ti.i32, lb: ti.template(), ub: ti.template(), fit: ti.template(), best_fit: ti.template(), best_pop: ti.template(), trial: ti.template()):
-
+def DE(
+    pop: ti.template(),
+    max_iter: ti.i32,
+    lb: ti.template(),
+    ub: ti.template(),
+    fit: ti.template(),
+    best_fit: ti.template(),
+    best_pop: ti.template(),
+    trial: ti.template(),
+):
     f1(fit=fit, pop=pop)
     min_pos = find_min(fit=fit)
     all_best = fit[min_pos]
@@ -160,13 +163,13 @@ def DE(pop: ti.template(), max_iter: ti.i32, lb: ti.template(), ub: ti.template(
 
     for _ in range(1):
         for cur_iter in range(1, max_iter + 1):
-
             all_best = de_loop(pop=pop, fit=fit, all_best=all_best, trial=trial, lb=lb, ub=ub)
             best_fit[cur_iter] = all_best
             copy_2d_to_3d(a=all_pop, b=pop, iter=cur_iter)
 
 
 import time
+
 #
 # M = np.loadtxt("./input/CEC2017_input_data/M_" + str(15) + "_D" + str(30) + ".txt")
 # o = np.loadtxt("./input/CEC2017_input_data/shift_data_" + str(15) + ".txt")
@@ -188,7 +191,6 @@ ti.init(arch=ti.cpu)
 
 @ti.func
 def clip(pop: ti.template(), lb: ti.template(), ub: ti.template()):
-
     search_num, dim = pop.shape
     for i, j in ti.ndrange(search_num, dim):
         if pop[i, j] > ub[j]:
@@ -199,7 +201,6 @@ def clip(pop: ti.template(), lb: ti.template(), ub: ti.template()):
 
 @ti.func
 def clip_only(trial: ti.template(), lb: ti.template(), ub: ti.template()):
-
     dim = trial.shape[0]
     for j in range(dim):
         if trial[j] > ub[j]:
@@ -210,7 +211,6 @@ def clip_only(trial: ti.template(), lb: ti.template(), ub: ti.template()):
 
 @ti.func
 def f1(fit: ti.template(), pop: ti.template()):
-
     search_num, dim = pop.shape
     for i in range(search_num):
         cur = 0.0
@@ -222,7 +222,6 @@ def f1(fit: ti.template(), pop: ti.template()):
 
 @ti.func
 def f1_only(trial: ti.template()) -> ti.float32:
-
     dim = trial.shape[0]
     res = 0.0
     for j in range(dim):
@@ -233,7 +232,6 @@ def f1_only(trial: ti.template()) -> ti.float32:
 
 @ti.func
 def find_min(fit: ti.template()) -> ti.i32:
-
     search_num = fit.shape[0]
     min_fit = fit[0]
     min_pos = 0
@@ -247,7 +245,6 @@ def find_min(fit: ti.template()) -> ti.i32:
 
 @ti.func
 def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
-
     r = ti.random(float)
     res = r * (high - low) + low
 
@@ -256,7 +253,6 @@ def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
 
 @ti.func
 def copy_pop_to_field(pop: ti.template(), trial: ti.template(), ind: ti.i32):
-
     search_num, dim = pop.shape
     for j in range(dim):
         trial[j] = pop[ind, j]
@@ -264,7 +260,6 @@ def copy_pop_to_field(pop: ti.template(), trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_field_to_pop(pop: ti.template(), trial: ti.template(), ind: ti.i32):
-
     search_num, dim = pop.shape
     for j in range(dim):
         pop[ind, j] = trial[j]
@@ -272,7 +267,6 @@ def copy_field_to_pop(pop: ti.template(), trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_2d_to_3d(a: ti.template(), b: ti.template(), iter: ti.i32):
-
     r, c = b.shape
     for i, j in ti.ndrange(r, c):
         a[iter, i, j] = b[i, j]
@@ -287,7 +281,6 @@ def copy_field_a_to_b(a: ti.template(), b: ti.template()):
 
 @ti.func
 def de_crossover(pop: ti.template(), trial: ti.template(), a: ti.i32, b: ti.i32, c: ti.i32, ind: ti.i32):
-
     search_num, dim = pop.shape
     CR = 0.5
     para_F = 0.7
@@ -298,11 +291,16 @@ def de_crossover(pop: ti.template(), trial: ti.template(), a: ti.i32, b: ti.i32,
 
 
 @ti.func
-def de_loop(pop: ti.template(), all_best: ti.float32, fit: ti.template(), trial: ti.template(), lb: ti.template(), ub: ti.template()) -> ti.float32:
-
+def de_loop(
+    pop: ti.template(),
+    all_best: ti.float32,
+    fit: ti.template(),
+    trial: ti.template(),
+    lb: ti.template(),
+    ub: ti.template(),
+) -> ti.float32:
     search_num, dim = pop.shape
     for i in range(search_num):
-
         copy_pop_to_field(pop=pop, trial=trial, ind=i)
 
         a = rand_int(low=0, high=search_num)
@@ -331,8 +329,16 @@ def de_loop(pop: ti.template(), all_best: ti.float32, fit: ti.template(), trial:
 
 
 @ti.kernel
-def DE(pop: ti.template(), max_iter: ti.i32, lb: ti.template(), ub: ti.template(), fit: ti.template(), best_fit: ti.template(), best_pop: ti.template(), trial: ti.template()):
-
+def DE(
+    pop: ti.template(),
+    max_iter: ti.i32,
+    lb: ti.template(),
+    ub: ti.template(),
+    fit: ti.template(),
+    best_fit: ti.template(),
+    best_pop: ti.template(),
+    trial: ti.template(),
+):
     f1(fit=fit, pop=pop)
     min_pos = find_min(fit=fit)
     all_best = fit[min_pos]
@@ -341,13 +347,13 @@ def DE(pop: ti.template(), max_iter: ti.i32, lb: ti.template(), ub: ti.template(
 
     for _ in range(1):
         for cur_iter in range(1, max_iter + 1):
-
             all_best = de_loop(pop=pop, fit=fit, all_best=all_best, trial=trial, lb=lb, ub=ub)
             best_fit[cur_iter] = all_best
             copy_2d_to_3d(a=all_pop, b=pop, iter=cur_iter)
 
 
 import time
+
 #
 # M = np.loadtxt("./input/CEC2017_input_data/M_" + str(15) + "_D" + str(30) + ".txt")
 # o = np.loadtxt("./input/CEC2017_input_data/shift_data_" + str(15) + ".txt")
@@ -369,22 +375,23 @@ ub.from_numpy(_ub)
 pop = ti.field(ti.float32, shape=(search_num, dim))
 pop.from_numpy((np.random.random((search_num, dim)) * (_ub - _lb) + _lb).astype(np.float32))
 
-fit = ti.field(ti.float32, shape=(search_num, ))
-best_fit = ti.field(ti.float32, shape=(max_iter, ))
-best_pop = ti.field(ti.float32, shape=(search_num, ))
+fit = ti.field(ti.float32, shape=(search_num,))
+best_fit = ti.field(ti.float32, shape=(max_iter,))
+best_pop = ti.field(ti.float32, shape=(search_num,))
 all_pop = ti.field(ti.float32, shape=(max_iter, search_num, dim))
 
-trial = ti.field(ti.float32, shape=(search_num, ))
+trial = ti.field(ti.float32, shape=(search_num,))
 
 DE(pop=pop, max_iter=max_iter, lb=lb, ub=ub, fit=fit, best_fit=best_fit, best_pop=best_pop, trial=trial)
 
 res = best_fit.to_numpy()
 
+
 @ti.kernel
 def draw_contour():
-
     for i, j in ti.ndrange(201, 201):
         z[i, j] = x[i] ** 2 + y[j] ** 2
+
 
 _x = np.arange(-100, 101, 1)
 x = ti.field(ti.float32, shape=201)
@@ -406,11 +413,10 @@ plt.contourf(_x, _y, _z)
 plt.colorbar()
 
 for i in range(max_iter):
-
     plt.cla()
     plt.contourf(_x, _y, _z)
-    plt.scatter(_pop[i, :, 0], _pop[i, :, 1], color='black')
-    plt.title(f'cur_iter: {i}, best_fit: {best_fit[i]:.2f}')
+    plt.scatter(_pop[i, :, 0], _pop[i, :, 1], color="black")
+    plt.title(f"cur_iter: {i}, best_fit: {best_fit[i]:.2f}")
     plt.savefig(f"./2dimg/iter-{i}.png")
     plt.pause(0.5)
 

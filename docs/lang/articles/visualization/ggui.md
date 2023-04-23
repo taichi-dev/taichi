@@ -388,7 +388,7 @@ window = ti.ui.Window("Test for getting image buffer from ggui", (768, 768), vsy
 video_manager = ti.tools.VideoManager("OutputDir")
 
 while window.running:
-    render_scene()
+    # render_scene()
     img = window.get_image_buffer_as_numpy()
     video_manager.write_frame(img)
     window.show()
@@ -413,7 +413,7 @@ scene_depth = ti.ndarray(ti.f32, shape = (w, h))
 # scene_depth = ti.field(ti.f32, shape = (w, h))
 
 while window.running:
-    render()
+    # render()
     canvas.scene(scene)
     window.get_depth_buffer(scene_depth)
     window.show()
@@ -469,6 +469,9 @@ To check if a key is pressed:
 The following is a user input processing example from [**mpm128**](https://github.com/taichi-dev/taichi/blob/master/python/taichi/examples/ggui_examples/mpm128_ggui.py):
 
 ```python cont
+gravity = ti.Vector.field(2, ti.f32, shape=())
+attractor_strength = ti.field(ti.f32, shape=())
+
 while window.running:
     # keyboard event processing
     if window.get_event(ti.ui.PRESS):
@@ -487,6 +490,8 @@ while window.running:
         attractor_strength[None] = 1
     if window.is_pressed(ti.ui.RMB):
         attractor_strength[None] = -1
+
+    window.show()
 ```
 
 ## Image I/O
@@ -494,7 +499,7 @@ while window.running:
 To write the current frame in the window to an image file:
 
 ```python cont
-window.save_image(filename)
+window.save_image('frame.png')
 ```
 
 Note that you _must_ call `window.save_image()` before calling `window.show()`.

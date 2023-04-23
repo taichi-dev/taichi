@@ -92,6 +92,9 @@ def show(orig, self, *args, **kwargs):
     return orig(self, *args, *kwargs)
 
 
+GGUI_WINDOW = None
+
+
 @hook(ti.ui.Window)
 def show(orig, self, *args, **kwargs):
     if not self.running:
@@ -103,15 +106,34 @@ def show(orig, self, *args, **kwargs):
     return orig(self, *args, *kwargs)
 
 
+@hook(ti.ui.Window)
+def __init__(orig, self, *args, **kwargs):
+    global GGUI_WINDOW
+    if GGUI_WINDOW:
+        GGUI_WINDOW.destroy()
+
+    assert not GGUI_WINDOW
+    orig(self, *args, **kwargs)
+    GGUI_WINDOW = self
+
+
+@hook(ti.ui.Window)
+def destroy(orig, self):
+    global GGUI_WINDOW
+    assert self is GGUI_WINDOW
+    GGUI_WINDOW = None
+    return orig(self)
+
+
 @hook(plt)
 def show(orig):
     return
 
 
 ti.GUI._frames_remaining = 10
-ti.GUI.running = property(lambda self: self._frames_remaining <= 0)
+ti.GUI.running = property(lambda self: self._frames_remaining > 0)
 ti.ui.Window._frames_remaining = 10
-ti.ui.Window.running = property(lambda self: self._frames_remaining <= 0)
+ti.ui.Window.running = property(lambda self: self._frames_remaining > 0)
 
 
 @dataclass

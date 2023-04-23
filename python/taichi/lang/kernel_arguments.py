@@ -7,10 +7,11 @@ from taichi.lang._texture import RWTextureAccessor, TextureSampler
 from taichi.lang.any_array import AnyArray
 from taichi.lang.enums import Layout
 from taichi.lang.expr import Expr
-from taichi.lang.matrix import MatrixType, VectorType, make_matrix
+from taichi.lang.matrix import MatrixType
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import RefType, u64
+from taichi.types.compound_types import CompoundType
 
 
 class KernelArgument:
@@ -59,20 +60,36 @@ def decl_scalar_arg(dtype, name):
     return Expr(_ti_core.make_arg_load_expr(arg_id, dtype, is_ref))
 
 
+def get_type_for_kernel_args(dtype, name):
+    if isinstance(dtype, MatrixType):
+        if dtype.ndim == 1:
+            structtype = StructType(**{f"{name}_{i}": dtype.dtype for i in range(dtype.n)})
+        else:
+            structtype = StructType(**{f"{name}_{i}_{j}": dtype.dtype for j in range(dtype.m) for i in range(dtype.n)})
+        return structtype.dtype
+    if isinstance(dtype, StructType):
+        elements = []
+        for k, element_type in dtype.members.items():
+            if isinstance(element_type, CompoundType):
+                new_dtype = get_type_for_kernel_args(element_type, k)
+                elements.append([new_dtype, k])
+            else:
+                elements.append([element_type, k])
+        return _ti_core.get_type_factory_instance().get_struct_type(elements)
+    return dtype
+
+
 def decl_matrix_arg(matrixtype, name):
-    if isinstance(matrixtype, VectorType):
-        return make_matrix([decl_scalar_arg(matrixtype.dtype, f"{name}_{i}") for i in range(matrixtype.n)])
-    return make_matrix(
-        [
-            [decl_scalar_arg(matrixtype.dtype, f"{name}_{i}_{j}") for i in range(matrixtype.m)]
-            for j in range(matrixtype.n)
-        ]
-    )
+    arg_type = get_type_for_kernel_args(matrixtype, name)
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(arg_type, name)
+    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False))
+    return matrixtype.from_taichi_object(arg_load)
 
 
 def decl_struct_arg(structtype, name):
-    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(structtype.dtype, name)
-    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, structtype.dtype, create_load=False))
+    arg_type = get_type_for_kernel_args(structtype, name)
+    arg_id = impl.get_runtime().compiling_callable.insert_scalar_param(arg_type, name)
+    arg_load = Expr(_ti_core.make_arg_load_expr(arg_id, arg_type, create_load=False))
     return structtype.from_taichi_object(arg_load)
 
 

@@ -4,6 +4,7 @@
 from dataclasses import dataclass
 from functools import wraps
 from itertools import count
+from re import M
 from typing import List, Optional, Dict
 import linecache
 import sys
@@ -58,12 +59,6 @@ N = 16
 M = 8
 """
 
-PRELUDES[
-    "gui"
-] = """
-gui = ti.GUI('Title', res=(400, 400))
-"""
-
 
 def hook(module, name=None):
     def inner(hooker):
@@ -81,6 +76,9 @@ def hook(module, name=None):
     return inner
 
 
+GUI_WINDOW = None
+
+
 @hook(ti.GUI)
 def show(orig, self, *args, **kwargs):
     if not self.running:
@@ -90,6 +88,22 @@ def show(orig, self, *args, **kwargs):
     self._frames_remaining -= 1
 
     return orig(self, *args, *kwargs)
+
+
+@hook(ti.GUI)
+def __init__(orig, self, *args, **kwargs):
+    global GUI_WINDOW
+    assert not GUI_WINDOW
+    orig(self, *args, **kwargs)
+    GUI_WINDOW = self
+
+
+@hook(ti.GUI)
+def close(orig, self):
+    global GUI_WINDOW
+    assert not GUI_WINDOW or self is GUI_WINDOW
+    GUI_WINDOW = None
+    return orig(self)
 
 
 GGUI_WINDOW = None
@@ -109,9 +123,6 @@ def show(orig, self, *args, **kwargs):
 @hook(ti.ui.Window)
 def __init__(orig, self, *args, **kwargs):
     global GGUI_WINDOW
-    if GGUI_WINDOW:
-        GGUI_WINDOW.destroy()
-
     assert not GGUI_WINDOW
     orig(self, *args, **kwargs)
     GGUI_WINDOW = self
@@ -120,7 +131,7 @@ def __init__(orig, self, *args, **kwargs):
 @hook(ti.ui.Window)
 def destroy(orig, self):
     global GGUI_WINDOW
-    assert self is GGUI_WINDOW
+    assert not GGUI_WINDOW or self is GGUI_WINDOW
     GGUI_WINDOW = None
     return orig(self)
 
@@ -130,10 +141,26 @@ def show(orig):
     return
 
 
+@hook(plt)
+def imshow(orig, img):
+    return
+
+
+_prop_running = property(
+    (lambda self: self._frames_remaining > 0),
+    (lambda self, v: None),
+)
+
 ti.GUI._frames_remaining = 10
-ti.GUI.running = property(lambda self: self._frames_remaining > 0)
+ti.GUI.running = _prop_running
 ti.ui.Window._frames_remaining = 10
-ti.ui.Window.running = property(lambda self: self._frames_remaining > 0)
+ti.ui.Window.running = _prop_running
+
+
+def pytest_runtest_teardown(item, nextitem):
+    global GUI_WINDOW, GGUI_WINDOW
+    GUI_WINDOW and GUI_WINDOW.close()
+    GGUI_WINDOW and GGUI_WINDOW.destroy()
 
 
 @dataclass

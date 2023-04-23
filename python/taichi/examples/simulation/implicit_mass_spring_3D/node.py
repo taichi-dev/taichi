@@ -67,7 +67,7 @@ class NODE:
                 self.s.add((self.indices[i * 3 + 2], self.indices[i * 3]))
             # Edge 2-3
             if self.indices[i * 3 + 1] < self.indices[i * 3 + 2]:
-                self.s.add((self.indices[i * 3 + 1],self.indices[i * 3 + 2]))
+                self.s.add((self.indices[i * 3 + 1], self.indices[i * 3 + 2]))
             else:
                 self.s.add((self.indices[i * 3 + 2], self.indices[i * 3 + 1]))
 

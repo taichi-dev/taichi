@@ -630,6 +630,7 @@ class StructType(CompoundType):
                 d[name] = dtype.from_taichi_object(func_ret, ret_index + (index,))
             else:
                 d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
+        d["__struct_methods"] = self.methods
 
         return Struct(d)
 
@@ -650,6 +651,7 @@ class StructType(CompoundType):
                     d[name] = launch_ctx.get_struct_ret_float(ret_index + (index,))
                 else:
                     raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
+        d["__struct_methods"] = self.methods
 
         return Struct(d)
 

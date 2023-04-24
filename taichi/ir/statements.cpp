@@ -1,7 +1,6 @@
 // TODO: gradually cppize statements.h
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
-#include <signal.h>
 
 namespace taichi::lang {
 
@@ -107,7 +106,6 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
     element_type() = origin->ret_type.get_element_type();
     element_type().set_is_pointer(true);
   } else {
-    raise(SIGSEGV);
     TI_ERROR(
         "MatrixPtrStmt must be used for AllocaStmt / GlobalTemporaryStmt "
         "(locally) or GlobalPtrStmt / MatrixOfGlobalPtrStmt / ExternalPtrStmt "

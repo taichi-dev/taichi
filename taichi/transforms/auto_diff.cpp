@@ -5,31 +5,10 @@
 #include "taichi/ir/visitors.h"
 #include "taichi/transforms/utils.h"
 
-#include <signal.h>
 #include <typeinfo>
 #include <algorithm>
 
 namespace taichi::lang {
-
-/*
-namespace {
-
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
-}  // namespace
-*/
 
 template <typename T>
 Stmt *insert_const(const DataType &dtype,
@@ -1999,7 +1978,6 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
     auto dtype = global_ptr->ret_type;
-    // auto one = insert_const(dtype, global_ptr, 1);
     auto one = global_ptr->insert_after_me(
         Stmt::make<ConstStmt>(TypedConstant(dtype, 1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(global_ptr, one));

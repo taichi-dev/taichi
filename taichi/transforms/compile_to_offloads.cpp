@@ -119,19 +119,6 @@ void compile_to_offloads(IRNode *ir,
 
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
-    print("Scalarized Before Verify");
-
-    irpass::analysis::verify(ir);
-    auto config_new = config;
-    config_new.cfg_optimization = false;
-    irpass::full_simplify(ir, config_new, {false, /*autodiff_enabled*/ false});
-    print("Scalarized After Verify");
-
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized Simplified Before Verify");
-
-    irpass::analysis::verify(ir);
-    print("Scalarized After Verify");
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);

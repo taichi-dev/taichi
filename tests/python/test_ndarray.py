@@ -836,3 +836,15 @@ def test_0dim_ndarray_read_write_taichi_scope():
     y = ti.ndarray(dtype=ti.math.vec2, shape=())
     write(y)
     assert y[None] == [2.0, 2.0]
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray, require=ti.extension.data64)
+def test_read_write_f64_python_scope():
+    x = ti.ndarray(dtype=ti.f64, shape=2)
+
+    x[0] = 1.0
+    assert x[0] == 1.0
+
+    y = ti.ndarray(dtype=ti.math.vec2, shape=2)
+    y[0] = [1.0, 2.0]
+    assert y[0] == [1.0, 2.0]

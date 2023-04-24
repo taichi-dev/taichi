@@ -54,9 +54,14 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+
+    if (stmt->dest->is<ExternalPtrStmt>()) {
       qualified_glb_operations_ = true;
+    } else {
+      TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+      if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+        qualified_glb_operations_ = true;
+      }
     }
   }
 
@@ -657,6 +662,14 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
+  void visit(ExternalPtrStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(DecorationStmt *stmt) override {
+    // do nothing
+  }
+
   Stmt *load(Stmt *alloc) {
     TI_ASSERT(alloc != nullptr);
     if (alloc->is<AllocaStmt>()) {
@@ -1040,17 +1053,21 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
-    if (stmt->src->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Importing data from external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
 
     GlobalPtrStmt *src = nullptr;
     bool is_ptr_offset = false;
     if (stmt->src->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
       src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    } else if (stmt->src->is<ExternalPtrStmt>()) {
+      auto src = stmt->src->as<ExternalPtrStmt>();
+      TI_ASSERT(!src->is_grad);
+      auto adj_ptr = insert<ExternalPtrStmt>(
+          src->base_ptr, src->indices, src->element_shape, src->element_dim,
+          /*is_grad=*/true);
+      adj_ptr->ret_type = src->ret_type;
+      insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
+      return;
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
@@ -1076,35 +1093,39 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
+
+    Stmt *adjoint_ptr{nullptr};
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Exporting data to external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
-
-    GlobalPtrStmt *dest = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->dest->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      auto dest = stmt->dest->as<ExternalPtrStmt>();
+      adjoint_ptr = insert<ExternalPtrStmt>(
+          dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
+          /*is_grad=*/true);
+      adjoint_ptr->ret_type = dest->ret_type;
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     } else {
-      dest = stmt->dest->as<GlobalPtrStmt>();
-    }
+      GlobalPtrStmt *dest = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        dest = stmt->dest->as<GlobalPtrStmt>();
+      }
 
-    auto snode = dest->snode;
-    if (!snode->has_adjoint()) {
-      // no gradient (likely integer types)
-      return;
+      auto snode = dest->snode;
+      if (!snode->has_adjoint()) {
+        // no gradient (likely integer types)
+        return;
+      }
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      if (is_ptr_offset) {
+        adjoint_ptr = insert<MatrixPtrStmt>(
+            adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+      }
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     }
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
-    if (is_ptr_offset) {
-      adjoint_ptr = insert<MatrixPtrStmt>(
-          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
-    }
-    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-
     // Clear the gradient after accumulation finished.
     auto zero = insert<ConstStmt>(
         TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
@@ -1120,6 +1141,15 @@ class MakeAdjoint : public ADTransform {
     if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
       dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    } else if (stmt->dest->is<ExternalPtrStmt>()) {
+      auto dest = stmt->dest->as<ExternalPtrStmt>();
+      auto adjoint_ptr = insert<ExternalPtrStmt>(
+          dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
+          /*is_grad=*/true);
+      adjoint_ptr->ret_type = dest->ret_type;
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+      stmt->parent->erase(stmt);
+      return;
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1520,7 +1550,7 @@ class BackupSSA : public BasicStmtVisitor {
             // Erase the outdated AdStackAllocaStmt
             op->parent->erase(op);
           }
-        } else {
+        } else if (!op->is<ArgLoadStmt>()) {
           auto alloca = load(op);
           stmt->set_operand(
               i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(alloca)));
@@ -1570,6 +1600,24 @@ class BackupSSA : public BasicStmtVisitor {
   }
 };
 
+namespace {
+
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
+}  // namespace
+
 namespace irpass {
 
 void auto_diff(IRNode *root,
@@ -1577,6 +1625,7 @@ void auto_diff(IRNode *root,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
+  auto print = make_pass_printer(true, "debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);

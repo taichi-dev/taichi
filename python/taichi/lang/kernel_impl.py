@@ -706,6 +706,10 @@ class Kernel:
 
                                 return call_back
 
+                            # FIXME: only allocate when launching grad kernel
+                            if v.requires_grad and v.grad is None:
+                                v.grad = torch.zeros_like(v)
+
                             tmp = v
                             if str(v.device).startswith("cuda") and taichi_arch != _ti_core.Arch.cuda:
                                 # Getting a torch CUDA tensor on Taichi non-cuda arch:
@@ -719,7 +723,7 @@ class Kernel:
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
-                                0,
+                                int(v.grad.data_ptr()) if v.grad is not None else 0,
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)

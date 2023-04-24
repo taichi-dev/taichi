@@ -7,8 +7,8 @@ namespace amdgpu {
 bool KernelLauncher::on_amdgpu_device(void *ptr) {
   unsigned int attr_val[8];
   // mem_get_attribute doesn't work well on ROCm
-  uint32_t ret_code = AMDGPUDriver::get_instance().mem_get_attributes.call(
-      attr_val, ptr);
+  uint32_t ret_code =
+      AMDGPUDriver::get_instance().mem_get_attributes.call(attr_val, ptr);
 
   return ret_code == HIP_SUCCESS && attr_val[0] == HIP_MEMORYTYPE_DEVICE;
 }
@@ -29,8 +29,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
                      hashing::Hasher<std::vector<int>>>
       transfers;
   std::unordered_map<std::vector<int>, void *,
-                    hashing::Hasher<std::vector<int>>>
-    device_ptrs;
+                     hashing::Hasher<std::vector<int>>>
+      device_ptrs;
 
   char *device_result_buffer{nullptr};
   for (int i = 0; i < (int)parameters.size(); i++) {
@@ -40,10 +40,9 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         continue;
       std::vector<int> data_ptr_idx{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY};
       auto data_ptr = ctx.array_ptrs[data_ptr_idx];
-      
+
       if (ctx.device_allocation_type[i] ==
           LaunchContextBuilder::DevAllocType::kNone) {
-
         if (on_amdgpu_device(data_ptr)) {
           device_ptrs[data_ptr_idx] = data_ptr;
         } else {

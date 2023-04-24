@@ -813,11 +813,11 @@ def test_mismatched_index_python_scope():
 def test_0dim_ndarray_read_write_python_scope():
     x = ti.ndarray(dtype=ti.f32, shape=())
 
-    x[None] = 1.0
+    x[()] = 1.0
     assert x[None] == 1.0
 
     y = ti.ndarray(dtype=ti.math.vec2, shape=())
-    y[None] = [1.0, 2.0]
+    y[()] = [1.0, 2.0]
     assert y[None] == [1.0, 2.0]
 
 
@@ -827,7 +827,7 @@ def test_0dim_ndarray_read_write_taichi_scope():
 
     @ti.kernel
     def write(x: ti.types.ndarray()):
-        a = x[None] + 1
+        a = x[()] + 1
         x[None] = 2 * a
 
     write(x)

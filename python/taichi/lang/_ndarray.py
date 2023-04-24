@@ -208,7 +208,7 @@ class Ndarray:
 
     @python_scope
     def _pad_key(self, key):
-        if key is None:
+        if key is None or key == ():
             return (0,)
         if not isinstance(key, (tuple, list)):
             key = (key,)

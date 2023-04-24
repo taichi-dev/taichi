@@ -135,6 +135,8 @@ class CoreState {
 
 using uchar = unsigned char;
 
+using uint1 = bool;
+
 using int8 = int8_t;
 using uint8 = uint8_t;
 

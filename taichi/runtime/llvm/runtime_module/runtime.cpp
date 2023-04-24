@@ -85,6 +85,7 @@ using int8 = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;
 using int64 = int64_t;
+using uint1 = bool;
 using uint8 = uint8_t;
 using uint16 = uint16_t;
 using uint32 = uint32_t;
@@ -96,6 +97,7 @@ using i8 = int8;
 using i16 = int16;
 using i32 = int32;
 using i64 = int64;
+using u1 = uint1;
 using u8 = uint8;
 using u16 = uint16;
 using u32 = uint32;
@@ -227,7 +229,7 @@ i64 max_i64(i64 a, i64 b) {
   return a > b ? a : b;
 }
 
-int32 logic_not_i32(int32 a) {
+u1 logical_not_u1(u1 a) {
   return !a;
 }
 
@@ -753,7 +755,7 @@ void taichi_assert(RuntimeContext *context, i32 test, const char *msg) {
 }
 
 void taichi_assert_format(LLVMRuntime *runtime,
-                          i32 test,
+                          u1 test,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {

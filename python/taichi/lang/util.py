@@ -16,6 +16,7 @@ from taichi.types.primitive_types import (
     i16,
     i32,
     i64,
+    u1,
     u8,
     u16,
     u32,
@@ -121,6 +122,8 @@ def to_numpy_type(dt):
         return np.int16
     if dt == u8:
         return np.uint8
+    if dt == u1:
+        return bool
     if dt == u16:
         return np.uint16
     if dt == u32:
@@ -159,6 +162,8 @@ def to_pytorch_type(dt):
         return torch.int16
     if dt == u8:
         return torch.uint8
+    if dt == u1:
+        return torch.bool
     if dt == f16:
         return torch.float16
     if dt in (u16, u32, u64):
@@ -192,6 +197,8 @@ def to_paddle_type(dt):
         return paddle.int16
     if dt == u8:
         return paddle.uint8
+    if dt == u1:
+        return paddle.bool
     if dt == f16:
         return paddle.float16
     if dt in (u16, u32, u64):
@@ -224,6 +231,8 @@ def to_taichi_type(dt):
         return i8
     if dt == np.int16:
         return i16
+    if dt == np.bool:
+        return u1
     if dt == np.uint8:
         return u8
     if dt == np.uint16:
@@ -253,6 +262,8 @@ def to_taichi_type(dt):
             return i16
         if dt == torch.uint8:
             return u8
+        if dt == torch.bool:
+            return u1
         if dt == torch.float16:
             return f16
         if dt in (u16, u32, u64):
@@ -275,6 +286,8 @@ def to_taichi_type(dt):
             return i16
         if dt == paddle.uint8:
             return u8
+        if dt == paddle.bool:
+            return u1
         if dt == paddle.float16:
             return f16
         if dt in (u16, u32, u64):
@@ -293,7 +306,7 @@ def cook_dtype(dtype):
     if dtype is int:
         return impl.get_runtime().default_ip
     if dtype is bool:
-        return i32  # TODO[Xiaoyan]: Use i1 in the future
+        return u1
     raise ValueError(f"Invalid data type {dtype}")
 
 

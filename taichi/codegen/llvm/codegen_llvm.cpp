@@ -197,7 +197,6 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   UNARY_STD(tan)
   UNARY_STD(tanh)
   UNARY_STD(sgn)
-  UNARY_STD(logic_not)
   UNARY_STD(acos)
   UNARY_STD(asin)
   UNARY_STD(cos)
@@ -205,6 +204,14 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   else if (op == UnaryOpType::sqrt) {
     llvm_val[stmt] =
         builder->CreateIntrinsic(llvm::Intrinsic::sqrt, {input_type}, {input});
+  }
+  else if (op == UnaryOpType::logic_not) {
+    if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
+      llvm_val[stmt] = call("logical_not_u1", input);
+    } else {
+      TI_INFO(input_taichi_type->to_string());
+      TI_NOT_IMPLEMENTED
+    }
   }
   else if (op == UnaryOpType::popcnt) {
     llvm_val[stmt] =
@@ -790,8 +797,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] =
-        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+    llvm_val[stmt] = cmp;
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -865,8 +871,11 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
       llvm::BasicBlock::Create(*llvm_context, "false_block", func);
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
+  llvm::Value *casted = builder->CreateTrunc(
+      llvm_val[if_stmt->cond],
+      tlctx->get_data_type(PrimitiveType::u1));
   builder->CreateCondBr(
-      builder->CreateICmpNE(llvm_val[if_stmt->cond], tlctx->get_constant(0)),
+      builder->CreateICmpNE(casted, tlctx->get_constant(false)),
       true_block, false_block);
   builder->SetInsertPoint(true_block);
   if (if_stmt->true_statements) {
@@ -959,6 +968,12 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
     if (dtype->is_primitive(PrimitiveTypeID::u8))
       return builder->CreateZExt(to_print,
                                  tlctx->get_data_type(PrimitiveType::u16));
+    if (dtype->is_primitive(PrimitiveTypeID::u1))
+      return builder->CreateSelect(
+          builder->CreateTrunc(to_print,
+                               tlctx->get_data_type(PrimitiveType::u1)),
+          builder->CreateGlobalStringPtr("True", "u1_true_value"),
+          builder->CreateGlobalStringPtr("False", "u1_false_value"));
     return to_print;
   };
   for (auto i = 0; i < stmt->contents.size(); ++i) {
@@ -1021,6 +1036,9 @@ void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::u8)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(8, (uint64)val.val_uint8(), false));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u1)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(1, (uint64)val.val_uint1(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i16)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(16, (uint64)val.val_int16(), true));

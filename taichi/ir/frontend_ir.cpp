@@ -357,11 +357,11 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
                                   !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (is_tensor_op || lhs_type != PrimitiveType::i32 ||
-       rhs_type != PrimitiveType::i32))
+      (is_tensor_op || lhs_type != PrimitiveType::u1 ||
+       rhs_type != PrimitiveType::u1))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
-    ret_type = make_dt(PrimitiveType::i32);
+    ret_type = make_dt(PrimitiveType::u1);
     return;
   }
   if (is_shift_op(type) ||
@@ -537,7 +537,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
     is_valid = false;
   }
 
-  if (op1_type != PrimitiveType::i32) {
+  if (op1_type != PrimitiveType::u1) {
     is_valid = false;
   }
   if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>()) {

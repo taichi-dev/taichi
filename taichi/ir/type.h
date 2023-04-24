@@ -528,6 +528,7 @@ class TypedConstant {
     float64 val_f64;
     int8 val_i8;
     int16 val_i16;
+    uint1 val_u1;
     uint8 val_u8;
     uint16 val_u16;
     uint32 val_u32;
@@ -566,6 +567,9 @@ class TypedConstant {
   explicit TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
   }
 
+  explicit TypedConstant(uint1 x) : dt(PrimitiveType::u1), val_u1(x) {
+  }
+
   explicit TypedConstant(uint16 x) : dt(PrimitiveType::u16), val_u16(x) {
   }
 
@@ -593,7 +597,9 @@ class TypedConstant {
       val_i8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
       val_i16 = value;
-    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      val_u1 = value;
+    }  else if (dt->is_primitive(PrimitiveTypeID::u8)) {
       val_u8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
       val_u16 = value;
@@ -626,6 +632,7 @@ class TypedConstant {
   float64 &val_float64();
   int8 &val_int8();
   int16 &val_int16();
+  uint1 &val_uint1();
   uint8 &val_uint8();
   uint16 &val_uint16();
   uint32 &val_uint32();

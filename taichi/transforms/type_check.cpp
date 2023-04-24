@@ -388,7 +388,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = make_dt(PrimitiveType::i32);
+      stmt->ret_type = make_dt(PrimitiveType::u1);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -398,7 +398,7 @@ class TypeCheck : public IRVisitor {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
       TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
-          PrimitiveTypeID::i32));
+          PrimitiveTypeID::u1));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;

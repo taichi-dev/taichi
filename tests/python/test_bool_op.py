@@ -7,14 +7,14 @@ def test_and_shorted():
     a = ti.field(ti.i32, shape=10)
 
     @ti.func
-    def explode() -> ti.i32:
-        return a[-1]
+    def explode() -> ti.u1:
+        return ti.u1(a[-1])
 
     @ti.kernel
-    def func() -> ti.i32:
+    def func() -> ti.u1:
         return False and explode()
 
-    assert func() == 0
+    assert func() == False
 
 
 @test_utils.test(debug=True, short_circuit_operators=True)
@@ -31,8 +31,8 @@ def test_or_shorted():
     a = ti.field(ti.i32, shape=10)
 
     @ti.func
-    def explode() -> ti.i32:
-        return a[-1]
+    def explode() -> ti.u1:
+        return ti.u1(a[-1])
 
     @ti.kernel
     def func() -> ti.i32:
@@ -44,7 +44,7 @@ def test_or_shorted():
 @test_utils.test(debug=True, short_circuit_operators=True)
 def test_or_not_shorted():
     @ti.kernel
-    def func() -> ti.i32:
+    def func() -> ti.u1:
         return False or True
 
     assert func() == 1
@@ -72,7 +72,7 @@ def test_static_and():
 def test_condition_type():
     @ti.kernel
     def func() -> int:
-        x = 0
+        x = False
         result = 0
         if x:
             result = 1
@@ -84,9 +84,51 @@ def test_condition_type():
 
 
 @test_utils.test(require=ti.extension.data64, default_ip=ti.i64)
-def test_i32_bool():
+def test_u1_bool():
     @ti.kernel
-    def func() -> ti.i32:
+    def func() -> ti.u1:
         return True
 
     assert func() == 1
+
+
+@test_utils.test()
+def test_bool_parameter():
+    @ti.kernel
+    def func(x: ti.u1) -> ti.i32:
+        return not x
+
+    assert func(False) == True
+
+
+@test_utils.test()
+def test_if():
+    @ti.kernel
+    def func(x: ti.u1) -> ti.i32:
+        y = False
+        if x:
+            y = True
+        return y
+
+    assert func(2 == 2) == True
+    assert func(2 == 3) == False
+
+
+@test_utils.test()
+def test_ternary():
+    @ti.kernel
+    def func(x: ti.i32) -> ti.i32:
+        return True if x == 114514 else False
+
+    assert func(114514) == True
+    assert func(1919810) == False
+
+
+@test_utils.test()
+def test_ternary():
+    @ti.kernel
+    def func(x: ti.i32) -> ti.i32:
+        return True if x == 114514 else False
+
+    assert func(114514) == True
+    assert func(1919810) == False

@@ -208,8 +208,9 @@ class TaskCodegen : public IRVisitor {
               format_length);
           format_length.clear();
         }
-        format_to_print = "%" + format_precision.append(format_length)
-                                    .append(format_conversion);
+        format_to_print =
+            "%" +
+            format_precision.append(format_length).append(format_conversion);
       } else {
         auto arg_str = std::get<std::string>(content);
         format_to_print = sanitize_format_string(arg_str);
@@ -224,7 +225,8 @@ class TaskCodegen : public IRVisitor {
         spirv::Label else_label = ir_->new_label();
         ir_->make_inst(spv::OpSelectionMerge, merge_label,
                        spv::SelectionControlMaskNone);
-        ir_->make_inst(spv::OpBranchConditional, val_to_print, then_label, else_label);
+        ir_->make_inst(spv::OpBranchConditional, val_to_print, then_label,
+                       else_label);
         ir_->start_label(then_label);
         ir_->call_debugprintf("True", std::vector<Value>());
         ir_->make_inst(spv::OpBranch, merge_label);
@@ -233,7 +235,9 @@ class TaskCodegen : public IRVisitor {
         ir_->make_inst(spv::OpBranch, merge_label);
         ir_->start_label(merge_label);
       } else {
-        ir_->call_debugprintf(format_to_print,has_val_to_print ? std::vector<Value>{val_to_print} : std::vector<Value>());
+        ir_->call_debugprintf(
+            format_to_print, has_val_to_print ? std::vector<Value>{val_to_print}
+                                              : std::vector<Value>());
       }
     }
   }

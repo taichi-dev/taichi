@@ -600,7 +600,7 @@ class TypedConstant {
       val_i16 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
       val_u1 = value;
-    }  else if (dt->is_primitive(PrimitiveTypeID::u8)) {
+    } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
       val_u8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
       val_u16 = value;

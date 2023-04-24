@@ -184,9 +184,9 @@ const tinyir::Type *translate_ti_primitive(tinyir::Block &ir_module,
                                              /*is_signed=*/false);
     } else if (t == PrimitiveType::u1) {
       // Spir-v has no full support for boolean types, using boolean types in
-      // backend may cause issues. These issues arise when we use boolean as return
-      // type, argument type and inner dtype of compount types.
-      // Since boolean types has the same width with int32 in GLSL, we use int32
+      // backend may cause issues. These issues arise when we use boolean as
+      // return type, argument type and inner dtype of compount types. Since
+      // boolean types has the same width with int32 in GLSL, we use int32
       // instead.
       return ir_module.emplace_back<IntType>(/*num_bits=*/32,
                                              /*is_signed=*/false);

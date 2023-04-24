@@ -285,9 +285,9 @@ SType IRBuilder::get_null_type() {
 SType IRBuilder::get_primitive_type(const DataType &dt) const {
   if (dt->is_primitive(PrimitiveTypeID::u1)) {
     // Spir-v has no full support for boolean types, using boolean types in
-    // backend may cause issues. These issues arise when we use boolean as return
-    // type, argument type and inner dtype of compount types.
-    // Since boolean types has the same width with int32 in GLSL, we use int32
+    // backend may cause issues. These issues arise when we use boolean as
+    // return type, argument type and inner dtype of compount types. Since
+    // boolean types has the same width with int32 in GLSL, we use int32
     // instead.
     return t_int32_;
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
@@ -384,9 +384,9 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
     return t_uint16_;
   } else if (dt == PrimitiveType::u1) {
     // Spir-v has no full support for boolean types, using boolean types in
-    // backend may cause issues. These issues arise when we use boolean as return
-    // type, argument type and inner dtype of compount types.
-    // Since boolean types has the same width with int32 in GLSL, we use int32
+    // backend may cause issues. These issues arise when we use boolean as
+    // return type, argument type and inner dtype of compount types. Since
+    // boolean types has the same width with int32 in GLSL, we use int32
     // instead.
     return t_int32_;
   } else {

@@ -872,11 +872,10 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
   llvm::Value *casted = builder->CreateTrunc(
-      llvm_val[if_stmt->cond],
-      tlctx->get_data_type(PrimitiveType::u1));
+      llvm_val[if_stmt->cond], tlctx->get_data_type(PrimitiveType::u1));
   builder->CreateCondBr(
-      builder->CreateICmpNE(casted, tlctx->get_constant(false)),
-      true_block, false_block);
+      builder->CreateICmpNE(casted, tlctx->get_constant(false)), true_block,
+      false_block);
   builder->SetInsertPoint(true_block);
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);

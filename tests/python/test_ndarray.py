@@ -827,11 +827,12 @@ def test_0dim_ndarray_read_write_taichi_scope():
 
     @ti.kernel
     def write(x: ti.types.ndarray()):
-        x[None] = 1.0
+        a = x[None] + 1
+        x[None] = 2 * a
 
     write(x)
-    assert x[None] == 1.0
+    assert x[None] == 2.0
 
     y = ti.ndarray(dtype=ti.math.vec2, shape=())
     write(y)
-    assert y[None] == [1.0, 1.0]
+    assert y[None] == [2.0, 2.0]

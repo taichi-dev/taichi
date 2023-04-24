@@ -109,12 +109,12 @@ def de_crossover(_pop: ti.template(), _trial: ti.template(), a: ti.i32, b: ti.i3
 
 @ti.func
 def de_loop(
-        _pop: ti.template(),
-        all_best: ti.float32,
-        _fit: ti.template(),
-        _trial: ti.template(),
-        _lb: ti.template(),
-        _ub: ti.template(),
+    _pop: ti.template(),
+    all_best: ti.float32,
+    _fit: ti.template(),
+    _trial: ti.template(),
+    _lb: ti.template(),
+    _ub: ti.template(),
 ) -> ti.float32:
     _search_num, _ = _pop.shape
     for ii in range(_search_num):

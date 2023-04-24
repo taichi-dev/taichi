@@ -8,7 +8,6 @@ ti.init(arch=ti.cpu)
 
 @ti.func
 def clip(_pop: ti.template(), _lb: ti.template(), _ub: ti.template()):
-
     _search_num, _dim = _pop.shape
     for ii, j in ti.ndrange(_search_num, _dim):
         if _pop[ii, j] > _ub[j]:
@@ -19,7 +18,6 @@ def clip(_pop: ti.template(), _lb: ti.template(), _ub: ti.template()):
 
 @ti.func
 def clip_only(_trial: ti.template(), _lb: ti.template(), _ub: ti.template()):
-
     _dim = _trial.shape[0]
     for j in range(_dim):
         if _trial[j] > _ub[j]:
@@ -30,7 +28,6 @@ def clip_only(_trial: ti.template(), _lb: ti.template(), _ub: ti.template()):
 
 @ti.func
 def f1(_fit: ti.template(), _pop: ti.template()):
-
     _search_num, _dim = _pop.shape
     for ii in range(_search_num):
         cur = 0.0
@@ -42,7 +39,6 @@ def f1(_fit: ti.template(), _pop: ti.template()):
 
 @ti.func
 def f1_only(_trial: ti.template()) -> ti.float32:
-
     _dim = _trial.shape[0]
     _res = 0.0
     for j in range(_dim):
@@ -53,7 +49,6 @@ def f1_only(_trial: ti.template()) -> ti.float32:
 
 @ti.func
 def find_min(_fit: ti.template()) -> ti.i32:
-
     _search_num = _fit.shape[0]
     min_fit = _fit[0]
     min_pos = 0
@@ -67,7 +62,6 @@ def find_min(_fit: ti.template()) -> ti.i32:
 
 @ti.func
 def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
-
     r = ti.random(float)
     _res = r * (high - low) + low
 
@@ -76,7 +70,6 @@ def rand_int(low: ti.i32, high: ti.i32) -> ti.i32:
 
 @ti.func
 def copy_pop_to_field(_pop: ti.template(), _trial: ti.template(), ind: ti.i32):
-
     _, _dim = _pop.shape
     for j in range(_dim):
         _trial[j] = _pop[ind, j]
@@ -84,7 +77,6 @@ def copy_pop_to_field(_pop: ti.template(), _trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_field_to_pop(_pop: ti.template(), _trial: ti.template(), ind: ti.i32):
-
     _, _dim = _pop.shape
     for j in range(dim):
         _pop[ind, j] = _trial[j]
@@ -92,7 +84,6 @@ def copy_field_to_pop(_pop: ti.template(), _trial: ti.template(), ind: ti.i32):
 
 @ti.func
 def copy_2d_to_3d(a: ti.template(), b: ti.template(), _iter: ti.i32):
-
     r, c = b.shape
     for ii, j in ti.ndrange(r, c):
         a[_iter, ii, j] = b[ii, j]
@@ -107,7 +98,6 @@ def copy_field_a_to_b(a: ti.template(), b: ti.template()):
 
 @ti.func
 def de_crossover(_pop: ti.template(), _trial: ti.template(), a: ti.i32, b: ti.i32, c: ti.i32):
-
     _, _dim = _pop.shape
     CR = 0.5
     para_F = 0.7
@@ -118,11 +108,16 @@ def de_crossover(_pop: ti.template(), _trial: ti.template(), a: ti.i32, b: ti.i3
 
 
 @ti.func
-def de_loop(_pop: ti.template(), all_best: ti.float32, _fit: ti.template(), _trial: ti.template(), _lb: ti.template(), _ub: ti.template()) -> ti.float32:
-
+def de_loop(
+    _pop: ti.template(),
+    all_best: ti.float32,
+    _fit: ti.template(),
+    _trial: ti.template(),
+    _lb: ti.template(),
+    _ub: ti.template(),
+) -> ti.float32:
     _search_num, _ = _pop.shape
     for ii in range(_search_num):
-
         copy_pop_to_field(_pop=_pop, _trial=_trial, ind=ii)
 
         a = rand_int(low=0, high=_search_num)
@@ -151,8 +146,15 @@ def de_loop(_pop: ti.template(), all_best: ti.float32, _fit: ti.template(), _tri
 
 
 @ti.kernel
-def DE(_pop: ti.template(), _max_iter: ti.i32, _lb: ti.template(), _ub: ti.template(), _fit: ti.template(), _best_fit: ti.template(), _trial: ti.template()):
-
+def DE(
+    _pop: ti.template(),
+    _max_iter: ti.i32,
+    _lb: ti.template(),
+    _ub: ti.template(),
+    _fit: ti.template(),
+    _best_fit: ti.template(),
+    _trial: ti.template(),
+):
     f1(_fit=_fit, _pop=_pop)
     min_pos = find_min(_fit=_fit)
     all_best = _fit[min_pos]
@@ -161,7 +163,6 @@ def DE(_pop: ti.template(), _max_iter: ti.i32, _lb: ti.template(), _ub: ti.templ
 
     for _ in range(1):
         for cur_iter in range(1, _max_iter + 1):
-
             all_best = de_loop(_pop=_pop, _fit=_fit, all_best=all_best, _trial=_trial, _lb=_lb, _ub=_ub)
             _best_fit[cur_iter] = all_best
             copy_2d_to_3d(a=all_pop, b=_pop, _iter=cur_iter)
@@ -182,22 +183,23 @@ ub.from_numpy(_ub)
 pop = ti.field(ti.float32, shape=(search_num, dim))
 pop.from_numpy((np.random.random((search_num, dim)) * (_ub - _lb) + _lb).astype(np.float32))
 
-fit = ti.field(ti.float32, shape=(search_num, ))
-best_fit = ti.field(ti.float32, shape=(max_iter, ))
-best_pop = ti.field(ti.float32, shape=(search_num, ))
+fit = ti.field(ti.float32, shape=(search_num,))
+best_fit = ti.field(ti.float32, shape=(max_iter,))
+best_pop = ti.field(ti.float32, shape=(search_num,))
 all_pop = ti.field(ti.float32, shape=(max_iter, search_num, dim))
 
-trial = ti.field(ti.float32, shape=(search_num, ))
+trial = ti.field(ti.float32, shape=(search_num,))
 
 DE(_pop=pop, _max_iter=max_iter, _lb=lb, _ub=ub, _fit=fit, _best_fit=best_fit, _trial=trial)
 
 res = best_fit.to_numpy()
 
+
 @ti.kernel
 def draw_contour():
-
     for ii, j in ti.ndrange(201, 201):
         z[ii, j] = x[ii] ** 2 + y[j] ** 2
+
 
 _x = np.arange(-100, 101, 1)
 x = ti.field(ti.float32, shape=201)
@@ -219,11 +221,10 @@ plt.contourf(_x, _y, _z)
 plt.colorbar()
 
 for i in range(max_iter):
-
     plt.cla()
     plt.contourf(_x, _y, _z)
-    plt.scatter(_pop[i, :, 0], _pop[i, :, 1], color='black')
-    plt.title(f'cur_iter: {i}, best_fit: {best_fit[i]:.2f}')
+    plt.scatter(_pop[i, :, 0], _pop[i, :, 1], color="black")
+    plt.title(f"cur_iter: {i}, best_fit: {best_fit[i]:.2f}")
     # plt.savefig(f"./2dimg/iter-{i}.png")
     plt.pause(0.5)
 
@@ -246,12 +247,11 @@ fig = plt.figure()
 ax = Axes3D(fig, auto_add_to_figure=False)
 ax.view_init(elev=51, azim=-70)
 fig.add_axes(ax)
-ax.plot_surface(mesh_x, mesh_y, _z, cmap='viridis', alpha=0.7)
+ax.plot_surface(mesh_x, mesh_y, _z, cmap="viridis", alpha=0.7)
 
 for i in range(max_iter):
-
     ax.cla()
-    ax.plot_surface(mesh_x, mesh_y, _z, cmap='viridis', alpha=0.7)
+    ax.plot_surface(mesh_x, mesh_y, _z, cmap="viridis", alpha=0.7)
 
     row = []
     col = []
@@ -259,11 +259,10 @@ for i in range(max_iter):
     nr, _ = _pop[i, :, :].shape
     for _i in range(nr - 1):
         row.append(np.round(_pop[i, _i, 0]).astype(int))
-        col.append(np.round(_pop[i, _i, 1] ).astype(int))
-        val.append(_z[np.round(_pop[i, _i, 0]).astype(int) + 100, np.round(_pop[i, _i, 1] ).astype(int) + 100])
+        col.append(np.round(_pop[i, _i, 1]).astype(int))
+        val.append(_z[np.round(_pop[i, _i, 0]).astype(int) + 100, np.round(_pop[i, _i, 1]).astype(int) + 100])
 
-
-    ax.scatter3D(row, col, val, color='black')
+    ax.scatter3D(row, col, val, color="black")
     # plt.savefig(f"./3dimg/iter-{i}.png")
     plt.pause(0.5)
 #

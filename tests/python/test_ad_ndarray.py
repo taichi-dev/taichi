@@ -1,8 +1,12 @@
 import taichi as ti
-import torch
+
 import pytest
 
 from tests import test_utils
+from taichi.lang.util import has_pytorch
+
+if has_pytorch():
+    import torch
 
 archs_support_ndarray_ad = [ti.cpu, ti.cuda]
 
@@ -1098,30 +1102,30 @@ def test_ad_if_parallel():
     assert x.grad[1] == 1
 
 
-# @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
-# def test_ad_if_parallel_f64():
-#     x = ti.ndarray(ti.f64, shape=2, needs_grad=True)
-#     y = ti.ndarray(ti.f64, shape=2, needs_grad=True)
+@test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
+def test_ad_if_parallel_f64():
+    x = ti.ndarray(ti.f64, shape=2, needs_grad=True)
+    y = ti.ndarray(ti.f64, shape=2, needs_grad=True)
 
-#     @ti.kernel
-#     def func(x: ti.types.ndarray(), y: ti.types.ndarray()):
-#         for i in range(2):
-#             t = x[i]
-#             if t > 0:
-#                 y[i] = t
-#             else:
-#                 y[i] = 2 * t
+    @ti.kernel
+    def func(x: ti.types.ndarray(), y: ti.types.ndarray()):
+        for i in range(2):
+            t = x[i]
+            if t > 0:
+                y[i] = t
+            else:
+                y[i] = 2 * t
 
-#     x[0] = 0
-#     x[1] = 1
-#     y.grad[0] = 1
-#     y.grad[1] = 1
+    x[0] = 0
+    x[1] = 1
+    y.grad[0] = 1
+    y.grad[1] = 1
 
-#     func(x, y)
-#     func.grad(x, y)
+    func(x, y)
+    func.grad(x, y)
 
-#     assert x.grad[0] == 2
-#     assert x.grad[1] == 1
+    assert x.grad[0] == 2
+    assert x.grad[1] == 1
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)

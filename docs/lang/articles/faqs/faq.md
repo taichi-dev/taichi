@@ -14,7 +14,7 @@ You may have a Python interpreter with an unsupported version. Currently, Taichi
 
 ### Outer-most loops in Taichi kernels are by default parallel. How can I **serialize** one of them?
 
-A solution is to add an additional *ghost* loop with only one iteration outside the loop you want to serialize.
+A solution is to add an additional _ghost_ loop with only one iteration outside the loop you want to serialize.
 
 ```python {1}
 for _ in range(1):  # This "ghost" loop will be "parallelized", but with only one thread. Therefore, the containing loop below is serialized.
@@ -27,7 +27,6 @@ for _ in range(1):  # This "ghost" loop will be "parallelized", but with only on
 You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, in Taichi to synchronize the parallel for loops.
 
 `__syncthreads()` is a block-level synchronization barrier, and Taichi provides a synonymous API `ti.simt.block.sync()`, which for now supports CUDA and Vulkan backends only. However, all block-level APIs are still experimental, and you should use this API only when it relates to SIMT operation synchronization and `SharedArray` reads and writes.
-
 
 ## Data structures
 
@@ -49,6 +48,9 @@ Direct value assignments lead to semantic ambiguity. For example, `a = b` can me
 You can swap two fields in the Taichi scope using a struct for:
 
 ```python
+a = ti.field(ti.i32, 32)
+b = ti.field(ti.i32, 32)
+
 @ti.func
 def field_copy(src: ti.template(), dst: ti.template()):
     for I in ti.grouped(src):
@@ -65,13 +67,26 @@ test()
 
 ### How do I compute the minimum/maximum of a field?
 
-Use `ti.automic.min/max` instead of `ti.min/max`. For example:
+Use `ti.atomic_min/atomic_max` instead of `ti.min/max`. For example:
 
 ```python
-for i in x:
-   ret = ti.atomic_min(ret, x[i])
+x = ti.field(ti.f32, 32)
+
+@ti.kernel
+def x_min() -> ti.f32:
+    ret: ti.f32 = x[0]
+
+    for i in x:
+        ret = ti.atomic_min(ret, x[i])
+
+    return ret
+
+x_min()
 ```
 
+### Does Taichi support `bool` type?
+
+Currently, Taichi does not support the `bool` type.
 
 ### How do I program on less structured data structures (such as graphs and tetrahedral meshes) in Taichi?
 
@@ -92,6 +107,7 @@ Yes, Taichi's Python user-facing APIs should work natively with any language ser
 Take VSCode as an example, you can install `Python` or `Pylance` extensions to get language support like signature help with type information, code completion etc.
 
 If it doesn't work out of box after installing the extension, please make sure the right Python interpreter is selected by:
+
 - invoke command palette (`Shift + Command + P (Mac) / Ctrl + Shift + P (Windows/Linux)`)
 - find `Python: Select Interpreter`
 - make sure you select the path to the Python interpreter you're using with a `taichi` package installed
@@ -106,14 +122,13 @@ Follow these steps to install Taichi on a server without Internet access.
 pip download taichi
 ```
 
-*This command downloads the wheel package of Taichi and all its dependencies.*
+_This command downloads the wheel package of Taichi and all its dependencies._
 
-2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must* complete all dependency installation before installing Taichi.
+2. Copy the downloaded *.whl packages to your local server and install each with the following command. Note that you *must\* complete all dependency installation before installing Taichi.
 
 ```
 python -m pip install xxxx.whl
 ```
-
 
 ## Integration with other libs/softwares
 
@@ -127,17 +142,23 @@ Yes, Taichi supports many popular Python packages. Taichi provides helper functi
 
 ```python
 import taichi as ti
-pixels = ti.field(ti.f32, (1024, 512))
 import numpy as np
-arr = np.random.rand(1024, 512)
-pixels.from_numpy(arr)   # load numpy data into taichi fields
 import matplotlib.pyplot as plt
+
+pixels = ti.field(ti.f32, (512, 512))
+
+def render_pixels():
+    arr = np.random.rand(512, 512)
+    pixels.from_numpy(arr)   # load numpy data into taichi fields
+
+render_pixels()
 arr = pixels.to_numpy()  # store taichi data into numpy arrays
 plt.imshow(arr)
 plt.show()
 import matplotlib.cm as cm
 cmap = cm.get_cmap('magma')
-gui = ti.GUI('Color map')
+gui = ti.GUI('Color map', (512, 512))
+
 while gui.running:
     render_pixels()
     arr = pixels.to_numpy()
@@ -147,13 +168,11 @@ while gui.running:
 
 Besides, you can also pass numpy arrays or torch tensors into a Taichi kernel as arguments. See [Interacting with external arrays](../basic/external.md) for more details.
 
-
 ### Can I integrate Taichi and Houdini?
 
 The answer is an unequivocal Yes! Our contributors managed to embed [taichi_elements](https://github.com/taichi-dev/taichi_elements), a multi-material continuum physics engine, into Houdini as an extension, combining Houdini's flexibility in preprocessing with Taichi's strength in high-performance computation.
 
 You can follow the instructions provided [here](https://github.com/taichi-dev/taichi_houdini).
-
 
 ## Precision related
 
@@ -196,7 +215,7 @@ A Taichi kernel **cannot** take a Python list directly. You need to use NumPy ar
 
 For example, the following code snippet does not work:
 
-```python
+```python skip-ci:Error
 import taichi as ti
 import numpy as np
 ti.init()
@@ -233,18 +252,16 @@ Taichi's GUI system can display colors when the field it accepts is a 3D vector 
 
 To enable color mapping, convert `ti.field` into a NumPy array and call Matplotlib's colormap (`cm`), as shown in the following example:
 
-```python
-gui = ti.GUI(f'Re = {un * lx / mu:4.0f} V_mag', (nx+1, ny+1)）
+```python skip-ci:Trivial
+pixels = ti.Vector.field(3, shape=(w, h))
+gui = ti.GUI(f'Window title', (w, h))
 step = 0
 while gui.running: # Main loop
-    print(f'>>> step : {step:<6d}, time : {step*dt:<6.3f} sec')
-    substep()
-    if step % 10 = 1:
-        V_np = V_mag.to_numpy()
-        V_img = cm.jet(V_np)
-        gui.set_image(V_img) # Plot the velocity magnitude contour
-        gui.show()
-    step += 1
+    simulate_one_substep(pixels)
+    img = pixels.to_numpy()
+    img = cm.jet(img)
+    gui.set_image(img)
+    gui.show()
 ```
 
 ## Objective-oriented programming
@@ -328,7 +345,7 @@ And data in fields `x` and `y` can be found in files **x.txt** and **y.txt**, re
 
 Taichi fields adopt a different coordinate system from NumPy's arrays for storing images. In a Taichi field, [0,0] denotes the pixel at the lower left corner of the image; the first axis extends to the right of the image; the second axis extends to the top.
 
-This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis  extends to the right.
+This is different from the usual convention taken by popular third-party libs like `matplotlib` or `opencv`, where [0, 0] denotes the pixel at the top left corner, the first axis extends down to the bottom of the image, and the second axis extends to the right.
 
 Therefore, to display a NumPy array using `matplotlb`'s `imshow()`, you must rotate it 90 degrees clockwise.
 

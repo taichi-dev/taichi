@@ -1949,6 +1949,69 @@ class BackupSSA : public BasicStmtVisitor {
 
 namespace irpass {
 
+// clang-format off
+/*
+Support for TensorType: How to handle MatrixPtrStmt & MatrixInitStmt
+
+[Original Taichi Code]
+
+@ti.kernel
+def test(...):
+    b = ti.Vector([0, 1, 2, 3])
+    b[2] = 100
+    y = b[3] * b[2] * x
+
+
+[Forward]                          [Forward-Replaced]              [Backward]
+$b = alloca Tensor<4 x i32>   -->  $b = adstack alloca <4 x i32>
+$1 = matrix init [0, 1, 2, 3] -->  $1 = matrix init [0, 1, 2, 3]
+                                                                       adstack pop
+$2:  local store $b, $1       -->  adstack push $1                 --> acc($1_adj, adstack top adj())
+
+$3 = matrix ptr $b, 2         -->  $2 = adstack top(is_ptr=True)   --> adstack acc adj($2_adj)
+
+                                                                       acc($2_adj, $14)
+                                   $3 = matrix ptr $2, 0           --> $14 = matrix_init({$3_adj, 0, 0, 0})
+
+                                                                       acc($2_adj, $13)
+                                   $4 = matrix ptr $2, 2           --> $13 = matrix_init({0, 0, $4_adj, 0})
+
+                                                                       acc($2_adj, $12)
+                                   $5 = matrix ptr $2, 3           --> $12 = matrix_init({0, 0, 0, $5_adj})
+
+                                   $6 = load($3)                   --> acc($3_adj, $6_adj)
+                                   $7 = load($4)                   --> acc($4_adj, $7_adj)
+                                   $8 = load($5)                   --> acc($5_adj, $8_adj)
+
+                                                                       acc($8_adj, matrix ptr($9_adj, 3))
+                                                                       acc($7_adj, matrix ptr($9_adj, 2))
+                                                                       acc(100_adj, matrix ptr($9_adj, 1))
+                                   $9 = matrix_init($6,100,$7,$8)  --> acc($6_adj, matrix ptr($9_adj, 0))
+
+                                                                       adstack pop
+$4 = local store $3, 100      -->  adstack push $9                 --> acc($9_adj, adstack top adj())
+
+                                   $10 = adstack top(is_ptr=True)  --> adstack acc adj($10_adj)
+
+                                                                       acc($10_adj, $18)
+$5 = matrix ptr $b, 3         -->  $11 = matrix ptr $10, 3         --> $18 = matrix_init({0, 0, 0, $11_adj})
+$b3 = local load $5           -->  $b3 = local load $11            --> acc($11_adj, $b3_adj)
+
+                                   $12 = adstack top(is_ptr=True)  --> adstack acc adj($12_adj)
+
+                                                                       acc($12_adj, $17)
+$6 = matrix ptr $b, 2         -->  $13 = matrix ptr $12, 2         --> $17 = matrix_init({0, 0, $13_adj, 0})
+$b2 = local load $6           -->  $b2 = local load $13            --> acc($13_adj, $b2_adj)
+
+                                                                       acc($b3_adj, $15)
+                                                                       acc($b2_adj, $16)
+                                                                       $16 = mul($tmp_adj, $b3)
+$tmp = mul b3, b2             -->  $tmp = mul $b3, $b2             --> $15 = mul($tmp_adj, $b2)
+
+                                                                       acc($tmp_adj, $14)
+$y = mul $tmp, $x             -->  $y = mul $tmp, $x               --> $14 = mul($y_adj, $x)
+*/
+// clang-format on
 void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,

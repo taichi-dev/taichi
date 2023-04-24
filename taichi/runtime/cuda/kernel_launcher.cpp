@@ -113,7 +113,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         nullptr);
     ctx.get_context().arg_buffer = device_arg_buffer;
   }
-  device_ptrsCUDADriver::get_instance().context_set_limit(
+  CUDADriver::get_instance().context_set_limit(
       CU_LIMIT_STACK_SIZE, executor->get_config().cuda_stack_limit);
 
   for (auto task : offloaded_tasks) {

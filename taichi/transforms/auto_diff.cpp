@@ -1809,6 +1809,31 @@ class MakeDual : public ADTransform {
     }
     insert<AtomicOpStmt>(AtomicOpType::add, dual_ptr, load(dual(stmt->val)));
   }
+
+  void visit(MatrixInitStmt *stmt) override {
+    std::vector<Stmt *> duals;
+    for (auto &s : stmt->values) {
+      duals.push_back(dual(s));
+    }
+    auto dual_stmt = insert<MatrixInitStmt>(duals);
+    dual_stmt->ret_type = stmt->ret_type;
+
+    accumulate(stmt, dual_stmt);
+  }
+
+  void visit(MatrixPtrStmt *stmt) override {
+    if (stmt->origin->is<GlobalPtrStmt>() ||
+        stmt->origin->is<ExternalPtrStmt>()) {
+      // Handled in GlobalLoadStmt and GlobalStoreStmt
+      return;
+    }
+
+    auto origin_dual = dual(stmt->origin);
+    auto origin_dual_ptr = insert<MatrixPtrStmt>(origin_dual, stmt->offset);
+    origin_dual_ptr->ret_type = stmt->ret_type;
+
+    accumulate(stmt, origin_dual_ptr);
+  }
 };
 
 class BackupSSA : public BasicStmtVisitor {

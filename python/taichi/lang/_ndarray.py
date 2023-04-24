@@ -209,7 +209,7 @@ class Ndarray:
     @python_scope
     def _pad_key(self, key):
         if key is None:
-            key = ()
+            return (0,)
         if not isinstance(key, (tuple, list)):
             key = (key,)
         if len(key) != len(self.arr.total_shape()):

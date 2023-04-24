@@ -14,6 +14,10 @@ namespace {
 
 size_t flatten_index(const std::vector<int> &shapes,
                      const std::vector<int> &indices) {
+  if (shapes.size() == 0) {
+    TI_ASSERT(indices.size() == 1 && indices[0] == 0);
+    return 0;
+  }
   TI_ASSERT(shapes.size() == indices.size());
   if (indices.size() == 1) {
     return indices[0];

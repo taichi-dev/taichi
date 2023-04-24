@@ -15,7 +15,7 @@ namespace {
 size_t flatten_index(const std::vector<int> &shapes,
                      const std::vector<int> &indices) {
   size_t ind = 0;
-  for (int i = 0; i < shapes.size(); i++) {
+  for (int i = 0; i < indices.size(); i++) {
     ind = ind * shapes[i] + indices[i];
   }
   return ind;

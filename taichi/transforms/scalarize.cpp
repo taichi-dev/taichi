@@ -613,7 +613,7 @@ class Scalarize : public BasicStmtVisitor {
     }
     auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
     auto arg_load = std::make_unique<ArgLoadStmt>(
-        stmt->arg_id, ret_type, stmt->is_ptr, stmt->is_grad, stmt->create_load);
+        stmt->arg_id, ret_type, stmt->is_ptr, stmt->create_load);
 
     immediate_modifier_.replace_usages_with(stmt, arg_load.get());
 
@@ -1082,10 +1082,18 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       auto fused = std::make_unique<ExternalPtrStmt>(
           origin->base_ptr, indices, element_shape, element_dim);
       fused->ret_type = stmt->ret_type;
-      // Note: Update base_ptr's ret_type so that it matches the
-      // ExternalPtrStmt with flattened indices. Main goal is to keep all the
-      // hacks in a single place so that they're easier to remove
-      origin->base_ptr->as<ArgLoadStmt>()->ret_type = stmt->ret_type;
+      // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
+      // with flattened indices. Main goal is to keep all the hacks in a single
+      // place so that they're easier to remove
+      auto members = origin->base_ptr->as<ArgLoadStmt>()
+                         ->ret_type.ptr_removed()
+                         ->as<StructType>()
+                         ->elements();
+      members[1] = {stmt->ret_type, "data_ptr"};
+      members[2] = {stmt->ret_type, "grad_ptr"};
+      auto type = TypeFactory::get_instance().get_struct_type(members);
+      origin->base_ptr->as<ArgLoadStmt>()->ret_type =
+          TypeFactory::get_instance().get_pointer_type((Type *)type);
       stmt->replace_usages_with(fused.get());
       modifier_.insert_before(stmt, std::move(fused));
       modifier_.erase(stmt);

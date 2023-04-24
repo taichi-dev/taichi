@@ -36,9 +36,6 @@ class LaunchContextBuilder {
   template <typename T>
   void set_arg(int i, T v);
 
-  template <typename T>
-  void set_grad_arg(int i, T v);
-
   // The following two functions can be used to set struct args and primitive
   // args. The first element of `arg_indices` is the index of the argument. The
   // rest of the elements are the index of the field in each depth of the nested
@@ -50,14 +47,13 @@ class LaunchContextBuilder {
   template <typename T>
   void set_struct_arg(std::vector<int> arg_indices, T v);
 
+  void set_ndarray_ptrs(int arg_id, uint64 data_ptr, uint64 grad_ptr);
+
   template <typename T>
   T get_arg(int i);
 
   template <typename T>
   T get_struct_arg(std::vector<int> arg_indices);
-
-  template <typename T>
-  T get_grad_arg(int i);
 
   template <typename T>
   T get_ret(int i);
@@ -66,7 +62,8 @@ class LaunchContextBuilder {
   void set_arg_external_array_with_shape(int arg_id,
                                          uintptr_t ptr,
                                          uint64 size,
-                                         const std::vector<int64> &shape);
+                                         const std::vector<int64> &shape,
+                                         uintptr_t grad_ptr = 0);
 
   void set_arg_ndarray_impl(int arg_id,
                             intptr_t devalloc_ptr,

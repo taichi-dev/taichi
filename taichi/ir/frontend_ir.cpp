@@ -146,8 +146,8 @@ void ArgLoadExpression::type_check(const CompileConfig *) {
 }
 
 void ArgLoadExpression::flatten(FlattenContext *ctx) {
-  auto arg_load = std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr,
-                                                /*is_grad=*/false, create_load);
+  auto arg_load =
+      std::make_unique<ArgLoadStmt>(arg_id, dt, is_ptr, create_load);
   arg_load->ret_type = ret_type;
   ctx->push_back(std::move(arg_load));
   stmt = ctx->back_stmt();
@@ -158,7 +158,7 @@ void TexturePtrExpression::type_check(const CompileConfig *config) {
 
 void TexturePtrExpression::flatten(FlattenContext *ctx) {
   ctx->push_back<ArgLoadStmt>(arg_id, PrimitiveType::f32, /*is_ptr=*/true,
-                              /*is_grad=*/false, /*create_load*/ true);
+                              /*create_load*/ true);
   ctx->push_back<TexturePtrStmt>(ctx->back_stmt(), num_dims, is_storage, format,
                                  lod);
   stmt = ctx->back_stmt();
@@ -596,9 +596,11 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   // turned-on by default.
   //                 The scalarization should happen after
   //                 irpass::lower_access()
-  auto prim_dt = dt;
-  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, prim_dt, /*is_ptr=*/true,
-                                     /*is_grad=*/is_grad, /*create_load=*/true);
+
+  auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, dim);
+
+  auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                                     /*create_load=*/false);
 
   ptr->tb = tb;
   ctx->push_back(std::move(ptr));

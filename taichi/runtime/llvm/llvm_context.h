@@ -37,7 +37,6 @@ class TaichiLLVMContext {
   const CompileConfig &config_;
 
  public:
-  std::unique_ptr<JITSession> jit{nullptr};
   // main_thread is defined to be the thread that runs the initializer
 
   std::unique_ptr<ThreadLocalData> linking_context_data{nullptr};
@@ -128,6 +127,8 @@ class TaichiLLVMContext {
   LLVMCompiledKernel link_compiled_tasks(
       std::vector<std::unique_ptr<LLVMCompiledTask>> data_list);
 
+  static llvm::DataLayout get_data_layout(Arch arch);
+
  private:
   std::unique_ptr<llvm::Module> clone_module_to_context(
       llvm::Module *module,
@@ -153,7 +154,7 @@ class TaichiLLVMContext {
       per_thread_data_;
 
   Arch arch_;
-
+  llvm::DataLayout data_layout_{""};
   std::thread::id main_thread_id_;
   ThreadLocalData *main_thread_data_{nullptr};
   std::mutex mut_;

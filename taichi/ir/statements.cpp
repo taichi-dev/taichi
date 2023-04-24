@@ -33,8 +33,9 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 }
 
 ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
-                                 const std::vector<Stmt *> &indices)
-    : base_ptr(base_ptr), indices(indices) {
+                                 const std::vector<Stmt *> &indices,
+                                 bool is_grad)
+    : base_ptr(base_ptr), indices(indices), is_grad(is_grad) {
   TI_ASSERT(base_ptr != nullptr);
   TI_ASSERT(base_ptr->is<ArgLoadStmt>());
   TI_STMT_REG_FIELDS;
@@ -43,8 +44,9 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
 ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  const std::vector<int> &element_shape,
-                                 int element_dim)
-    : ExternalPtrStmt(base_ptr, indices) {
+                                 int element_dim,
+                                 bool is_grad)
+    : ExternalPtrStmt(base_ptr, indices, is_grad) {
   this->element_shape = element_shape;
   this->element_dim = element_dim;
 }

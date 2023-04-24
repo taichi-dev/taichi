@@ -337,8 +337,10 @@ class IRBuilder {
 
   // Get null stype
   SType get_null_type();
-  // Get the spirv type for a given Taichi data type
+  // Get the spirv type for a given Taichi primitive data type
   SType get_primitive_type(const DataType &dt) const;
+  // Get the spirv type for a given Taichi data type
+  SType from_taichi_type(const DataType &dt, bool has_buffer_ptr);
   // Get the size in bytes of a given Taichi data type
   size_t get_primitive_type_size(const DataType &dt) const;
   // Get the spirv uint type with the same size of a given Taichi data type
@@ -568,7 +570,18 @@ class IRBuilder {
   Value const_i32_one_;
 
   // Use force-inline float atomic helper function
-  Value float_atomic(AtomicOpType op_type, Value addr_ptr, Value data);
+  Value float_atomic(AtomicOpType op_type,
+                     Value addr_ptr,
+                     Value data,
+                     const DataType &dt);
+  Value integer_atomic(AtomicOpType op_type,
+                       Value addr_ptr,
+                       Value data,
+                       const DataType &dt);
+  Value atomic_operation(Value addr_ptr,
+                         Value data,
+                         std::function<Value(Value, Value)> op,
+                         const DataType &dt);
   Value rand_u32(Value global_tmp_);
   Value rand_f32(Value global_tmp_);
   Value rand_i32(Value global_tmp_);

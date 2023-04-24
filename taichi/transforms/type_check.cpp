@@ -450,7 +450,9 @@ class TypeCheck : public IRVisitor {
     if (stmt->overrided_dtype) {
       // pass
     } else {
-      stmt->ret_type = arg_load_stmt->ret_type;
+      stmt->ret_type = arg_load_stmt->ret_type.ptr_removed()
+                           ->as<StructType>()
+                           ->get_element_type({1});
     }
 
     stmt->ret_type.set_is_pointer(true);

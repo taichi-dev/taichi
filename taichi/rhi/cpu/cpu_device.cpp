@@ -2,6 +2,8 @@
 #include "taichi/rhi/impl_support.h"
 #include "taichi/rhi/common/host_memory_pool.h"
 
+#include "taichi/jit/jit_module.h"
+
 namespace taichi::lang {
 
 namespace cpu {
@@ -46,6 +48,14 @@ DeviceAllocation CpuDevice::allocate_memory_runtime(
   RHI_ASSERT(res == RhiResult::success &&
              "Failed to allocate memory for runtime");
   return alloc;
+}
+
+uint64_t *CpuDevice::allocate_llvm_runtime_memory_jit(
+    const LlvmRuntimeAllocParams &params) {
+  params.runtime_jit->call<void *, std::size_t, std::size_t>(
+      "runtime_memory_allocate_aligned", params.runtime, params.size,
+      taichi_page_size, params.result_buffer);
+  return reinterpret_cast<uint64_t *>(params.result_buffer[0]);
 }
 
 void CpuDevice::dealloc_memory(DeviceAllocation handle) {
@@ -148,11 +158,6 @@ DeviceAllocation CpuDevice::import_memory(void *ptr, size_t size) {
 
   allocations_.push_back(info);
   return alloc;
-}
-
-uint64 CpuDevice::fetch_result_uint64(int i, uint64 *result_buffer) {
-  uint64 ret = result_buffer[i];
-  return ret;
 }
 
 }  // namespace cpu

@@ -18,6 +18,10 @@ inline int data_type_bits(DataType t) {
   return data_type_size(t) * 8;
 }
 
+inline size_t align_up(size_t x, size_t alignment) {
+  return (x + alignment - 1) / alignment * alignment;
+}
+
 template <typename T>
 inline DataType get_data_type() {
   if (std::is_same<T, float32>()) {

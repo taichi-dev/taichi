@@ -14,16 +14,11 @@ namespace {
 
 size_t flatten_index(const std::vector<int> &shapes,
                      const std::vector<int> &indices) {
-  TI_ASSERT(shapes.size() == indices.size());
-  if (indices.size() == 1) {
-    return indices[0];
-  } else {
-    size_t ind = indices[0];
-    for (int i = 1; i < indices.size(); i++) {
-      ind = ind * shapes[i] + indices[i];
-    }
-    return ind;
+  size_t ind = 0;
+  for (int i = 0; i < indices.size(); i++) {
+    ind = ind * shapes[i] + indices[i];
   }
+  return ind;
 }
 }  // namespace
 

@@ -807,3 +807,32 @@ def test_mismatched_index_python_scope():
 
     with pytest.raises(TaichiIndexError, match=r"2d ndarray indexed with 3d indices"):
         x[0, 0, 0]
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_0dim_ndarray_read_write_python_scope():
+    x = ti.ndarray(dtype=ti.f32, shape=())
+
+    x[()] = 1.0
+    assert x[None] == 1.0
+
+    y = ti.ndarray(dtype=ti.math.vec2, shape=())
+    y[()] = [1.0, 2.0]
+    assert y[None] == [1.0, 2.0]
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_0dim_ndarray_read_write_taichi_scope():
+    x = ti.ndarray(dtype=ti.f32, shape=())
+
+    @ti.kernel
+    def write(x: ti.types.ndarray()):
+        a = x[()] + 1
+        x[None] = 2 * a
+
+    write(x)
+    assert x[None] == 2.0
+
+    y = ti.ndarray(dtype=ti.math.vec2, shape=())
+    write(y)
+    assert y[None] == [2.0, 2.0]

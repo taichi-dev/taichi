@@ -8,10 +8,15 @@ Taichi has a built-in GUI system for visualizing simulation data in data contain
 
 ## Create and display a window
 
-The following code creates a `640x360` window with a "Hello World!" title, and displays it by calling `gui.show()`:
+The following code creates a `640x360` window with a "Hello World!" title:
 
-```python
+```python as-prelude:gui
 gui = ti.GUI('Hello World!', (640, 360))
+```
+
+Displays it by calling `gui.show()`:
+
+```python preludes:gui
 while gui.running:
     gui.show()
 ```
@@ -28,8 +33,10 @@ You can set `gui.running=False` in the `while` loop to close the GUI:
 
 ```python
 gui = ti.GUI('Window Title', (640, 360))
+some_events_happend = lambda: random.random() < 0.8
+
 while gui.running:
-    if some_events_happend:
+    if some_events_happend():
         gui.running = False
     gui.show()
 ```
@@ -331,6 +338,7 @@ while gui.running:
         print('Go left!')
     elif gui.is_pressed('d', ti.GUI.RIGHT):
         print('Go right!')
+    gui.show()
 ```
 
 :::caution

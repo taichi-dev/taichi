@@ -6,6 +6,7 @@ namespace amdgpu {
 
 bool KernelLauncher::on_amdgpu_device(void *ptr) {
   unsigned int attr_val[8];
+  // mem_get_attribute doesn't work well on ROCm
   uint32_t ret_code = AMDGPUDriver::get_instance().mem_get_attributes.call(
       attr_val, ptr);
 
@@ -76,6 +77,7 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   }
   char *host_result_buffer = (char *)ctx.get_context().result_buffer;
   if (ctx.result_buffer_size > 0) {
+    // Malloc_Async and Free_Async are available after ROCm 5.4
     AMDGPUDriver::get_instance().malloc((void **)&device_result_buffer,
                                         ctx.result_buffer_size);
     ctx.get_context().result_buffer = (uint64 *)device_result_buffer;

@@ -15,13 +15,8 @@ namespace {
 size_t flatten_index(const std::vector<int> &shapes,
                      const std::vector<int> &indices) {
   size_t ind = 0;
-  if (shapes.size() == 0) {
-    TI_ASSERT(indices.size() == 1 && indices[0] == 0);
-  } else {
-    TI_ASSERT(shapes.size() == indices.size());
-    for (int i = 0; i < indices.size(); i++) {
-      ind = ind * shapes[i] + indices[i];
-    }
+  for (int i = 0; i < shapes.size(); i++) {
+    ind = ind * shapes[i] + indices[i];
   }
   return ind;
 }

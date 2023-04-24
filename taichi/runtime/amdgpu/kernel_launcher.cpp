@@ -24,7 +24,8 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       const auto arr_sz = ctx.array_runtime_sizes[i];
       if (arr_sz == 0)
         continue;
-      arg_buffers[i] = ctx.array_ptrs[{i}];
+      arg_buffers[i] =
+          ctx.array_ptrs[{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}];
       if (ctx.device_allocation_type[i] ==
           LaunchContextBuilder::DevAllocType::kNone) {
         unsigned int attr_val[8];
@@ -39,13 +40,17 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
         } else {
           device_buffers[i] = arg_buffers[i];
         }
+        ctx.set_ndarray_ptrs(
+            i, (uint64)device_buffers[i],
+            (uint64)ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
 
-        ctx.set_arg(i, (uint64)device_buffers[i]);
       } else if (arr_sz > 0) {  // why use arr_sz constrain?
         DeviceAllocation *ptr = static_cast<DeviceAllocation *>(arg_buffers[i]);
         device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
         arg_buffers[i] = device_buffers[i];
-        ctx.set_arg(i, (uint64)device_buffers[i]);
+        ctx.set_ndarray_ptrs(
+            i, (uint64)device_buffers[i],
+            (uint64)ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
       }
     }
   }

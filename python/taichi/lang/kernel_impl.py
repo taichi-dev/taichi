@@ -671,10 +671,7 @@ class Kernel:
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(v.ctypes.data),
-                                v.nbytes,
-                                array_shape,
+                                actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0
                             )
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
@@ -687,10 +684,7 @@ class Kernel:
 
                             callbacks.append(functools.partial(callback, v, tmp))
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(tmp.ctypes.data),
-                                tmp.nbytes,
-                                array_shape,
+                                actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
                             )
                         else:
                             raise ValueError(
@@ -725,6 +719,7 @@ class Kernel:
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
+                                0,
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
@@ -759,10 +754,7 @@ class Kernel:
                                     f"Taichi do not support backend {v.place} that Paddle support"
                                 )
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(tmp._ptr()),
-                                v.element_size() * v.size,
-                                array_shape,
+                                actual_argument_slot, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
@@ -811,7 +803,11 @@ class Kernel:
                 )
 
             try:
-                t_kernel(launch_ctx)
+                prog = impl.get_runtime().prog
+                # Compile kernel (& Online Cache & Offline Cache)
+                compiled_kernel_data = prog.compile_kernel(prog.config(), prog.get_device_caps(), t_kernel)
+                # Launch kernel
+                prog.launch_kernel(compiled_kernel_data, launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)
                 raise e from None

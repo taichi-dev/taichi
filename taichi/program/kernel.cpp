@@ -40,7 +40,6 @@ Kernel::Kernel(Program &program,
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
-  compiled_ = nullptr;
   ir_is_ast_ = false;  // CHI IR
 
   if (autodiff_mode == AutodiffMode::kNone) {
@@ -53,25 +52,6 @@ Kernel::Kernel(Program &program,
     name = primal_name + "_validate_grad";
   } else {
     TI_ERROR("Unsupported autodiff mode");
-  }
-}
-
-void Kernel::compile(const CompileConfig &compile_config) {
-  compiled_ = program->compile(compile_config, *this);
-}
-
-void Kernel::operator()(const CompileConfig &compile_config,
-                        LaunchContextBuilder &ctx_builder) {
-  if (!compiled_) {
-    compile(compile_config);
-  }
-
-  compiled_(ctx_builder);
-
-  const auto arch = compile_config.arch;
-  if (compile_config.debug &&
-      (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu)) {
-    program->check_runtime_error();
   }
 }
 
@@ -168,7 +148,6 @@ void Kernel::init(Program &program,
   this->program = &program;
 
   is_accessor = false;
-  compiled_ = nullptr;
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
   ir_is_ast_ = true;

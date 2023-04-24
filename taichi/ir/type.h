@@ -289,7 +289,8 @@ class TI_DLL_EXPORT StructType : public Type {
       } else if (auto tensor_type = element.type->cast<TensorType>()) {
         num += tensor_type->get_num_elements();
       } else {
-        TI_ASSERT(element.type->is<PrimitiveType>());
+        TI_ASSERT(element.type->is<PrimitiveType>() ||
+                  element.type->is<PointerType>());
         num += 1;
       }
     }

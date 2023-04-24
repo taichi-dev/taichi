@@ -12,6 +12,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/ExecutionEngine/Orc/ThreadSafeModule.h"
+#include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicsNVPTX.h"
@@ -126,8 +127,8 @@ TaichiLLVMContext::TaichiLLVMContext(const CompileConfig &config, Arch arch)
     TI_NOT_IMPLEMENTED
 #endif
   }
-  jit = JITSession::create(this, config, arch);
 
+  data_layout_ = TaichiLLVMContext::get_data_layout(arch);
   linking_context_data = std::make_unique<ThreadLocalData>(
       std::make_unique<llvm::orc::ThreadSafeContext>(
           std::make_unique<llvm::LLVMContext>()));
@@ -794,7 +795,7 @@ void TaichiLLVMContext::print_huge_functions(llvm::Module *module) {
 }
 
 llvm::DataLayout TaichiLLVMContext::get_data_layout() {
-  return jit->get_data_layout();
+  return data_layout_;
 }
 
 void TaichiLLVMContext::insert_nvvm_annotation(llvm::Function *func,
@@ -1090,6 +1091,37 @@ void TaichiLLVMContext::add_struct_for_func(llvm::Module *module,
 
 std::string TaichiLLVMContext::get_struct_for_func_name(int tls_size) {
   return "parallel_struct_for_" + std::to_string(tls_size);
+}
+
+llvm::DataLayout TaichiLLVMContext::get_data_layout(Arch arch) {
+  TI_ASSERT(arch_uses_llvm(arch));
+  if (arch_is_cpu(arch)) {
+    auto expected_jtmb = llvm::orc::JITTargetMachineBuilder::detectHost();
+    if (!expected_jtmb)
+      TI_ERROR("LLVM TargetMachineBuilder has failed.");
+    auto jtmb = *expected_jtmb;
+    auto expected_data_layout = jtmb.getDefaultDataLayoutForTarget();
+    if (!expected_data_layout) {
+      TI_ERROR(
+          "LLVM TargetMachineBuilder has failed when getting data layout.");
+    }
+    return *expected_data_layout;
+  } else if (arch == Arch::cuda) {
+    return llvm::DataLayout(
+        "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-i128:128:128-"
+        "f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:"
+        "64");
+  } else if (arch == Arch::amdgpu) {
+    return llvm::DataLayout(
+        "e-p:64:64-p1:64:64-p2:32:32-p3:32:32-p4:64:64-p5:32:32-p6:32:32-i64:"
+        "64-v16:16-v24:32-v32:32-v48:64-v96:128-v192:256-v256:256-v512:512-"
+        "v1024:1024-v2048:2048-n32:64-S32-A5-G1-ni:7");
+  } else if (arch == Arch::dx12) {
+    // NOTE: Return the default data layout to avoid crash.
+    return llvm::DataLayout("");
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
 }
 
 std::string TaichiLLVMContext::get_data_layout_string() {

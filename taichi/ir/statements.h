@@ -185,19 +185,10 @@ class ArgLoadStmt : public Stmt {
   */
   bool is_ptr;
 
-  bool is_grad;
-
   bool create_load;
 
-  ArgLoadStmt(int arg_id,
-              const DataType &dt,
-              bool is_ptr,
-              bool is_grad,
-              bool create_load)
-      : arg_id(arg_id),
-        is_ptr(is_ptr),
-        is_grad(is_grad),
-        create_load(create_load) {
+  ArgLoadStmt(int arg_id, const DataType &dt, bool is_ptr, bool create_load)
+      : arg_id(arg_id), is_ptr(is_ptr), create_load(create_load) {
     this->ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
@@ -353,18 +344,23 @@ class ExternalPtrStmt : public Stmt {
   // irpass::type_check()
   bool overrided_dtype = false;
 
-  ExternalPtrStmt(Stmt *base_ptr, const std::vector<Stmt *> &indices);
+  bool is_grad = false;
+
+  ExternalPtrStmt(Stmt *base_ptr,
+                  const std::vector<Stmt *> &indices,
+                  bool is_grad = false);
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   const std::vector<int> &element_shape,
-                  int element_dim);
+                  int element_dim,
+                  bool is_grad = false);
 
   bool has_global_side_effect() const override {
     return false;
   }
 
-  TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices);
+  TI_STMT_DEF_FIELDS(ret_type, base_ptr, indices, is_grad);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
 

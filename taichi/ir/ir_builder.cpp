@@ -179,8 +179,8 @@ RandStmt *IRBuilder::create_rand(DataType value_type) {
 }
 
 ArgLoadStmt *IRBuilder::create_arg_load(int arg_id, DataType dt, bool is_ptr) {
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, dt, is_ptr, /*is_grad*/ false, /*create_load*/ true));
+  return insert(
+      Stmt::make_typed<ArgLoadStmt>(arg_id, dt, is_ptr, /*create_load*/ true));
 }
 
 ReturnStmt *IRBuilder::create_return(Stmt *value) {
@@ -407,6 +407,10 @@ AtomicOpStmt *IRBuilder::create_atomic_xor(Stmt *dest, Stmt *val) {
       Stmt::make_typed<AtomicOpStmt>(AtomicOpType::bit_xor, dest, val));
 }
 
+AtomicOpStmt *IRBuilder::create_atomic_mul(Stmt *dest, Stmt *val) {
+  return insert(Stmt::make_typed<AtomicOpStmt>(AtomicOpType::mul, dest, val));
+}
+
 TernaryOpStmt *IRBuilder::create_select(Stmt *cond,
                                         Stmt *true_result,
                                         Stmt *false_result) {
@@ -434,9 +438,10 @@ GlobalPtrStmt *IRBuilder::create_global_ptr(
 
 ExternalPtrStmt *IRBuilder::create_external_ptr(
     ArgLoadStmt *ptr,
-    const std::vector<Stmt *> &indices) {
-  return insert(
-      Stmt::make_typed<ExternalPtrStmt>(ptr, indices, std::vector<int>(), 0));
+    const std::vector<Stmt *> &indices,
+    bool is_grad) {
+  return insert(Stmt::make_typed<ExternalPtrStmt>(
+      ptr, indices, std::vector<int>(), 0, is_grad));
 }
 
 AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
@@ -492,14 +497,14 @@ MeshRelationAccessStmt *IRBuilder::get_relation_access(
 MeshPatchIndexStmt *IRBuilder::get_patch_index() {
   return insert(Stmt::make_typed<MeshPatchIndexStmt>());
 }
-ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id, DataType dt) {
-  auto ret_type = TypeFactory::get_instance().get_pointer_type(dt);
-  std::vector<StructMember> members;
-  members.push_back({ret_type, "data_ptr"});
-  auto type = TypeFactory::get_instance().get_struct_type(members);
+ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
+                                                DataType dt,
+                                                int total_dim) {
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, total_dim);
 
-  return insert(Stmt::make_typed<ArgLoadStmt>(
-      arg_id, type, /*is_ptr=*/true, /*is_grad=*/false, /*create_load=*/false));
+  return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
+                                              /*create_load=*/false));
 }
 
 }  // namespace taichi::lang

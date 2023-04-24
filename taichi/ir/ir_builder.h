@@ -146,7 +146,7 @@ class IRBuilder {
   // Load kernel arguments.
   ArgLoadStmt *create_arg_load(int arg_id, DataType dt, bool is_ptr);
   // Load kernel arguments.
-  ArgLoadStmt *create_ndarray_arg_load(int arg_id, DataType dt);
+  ArgLoadStmt *create_ndarray_arg_load(int arg_id, DataType dt, int total_dim);
 
   // The return value of the kernel.
   ReturnStmt *create_return(Stmt *value);
@@ -216,6 +216,7 @@ class IRBuilder {
   AtomicOpStmt *create_atomic_and(Stmt *dest, Stmt *val);
   AtomicOpStmt *create_atomic_or(Stmt *dest, Stmt *val);
   AtomicOpStmt *create_atomic_xor(Stmt *dest, Stmt *val);
+  AtomicOpStmt *create_atomic_mul(Stmt *dest, Stmt *val);
 
   // Ternary operations. Returns the result.
   TernaryOpStmt *create_select(Stmt *cond,
@@ -240,7 +241,8 @@ class IRBuilder {
   GlobalPtrStmt *create_global_ptr(SNode *snode,
                                    const std::vector<Stmt *> &indices);
   ExternalPtrStmt *create_external_ptr(ArgLoadStmt *ptr,
-                                       const std::vector<Stmt *> &indices);
+                                       const std::vector<Stmt *> &indices,
+                                       bool is_grad = false);
   template <typename XStmt>
   GlobalLoadStmt *create_global_load(XStmt *ptr) {
     using DecayedType = typename std::decay_t<XStmt>;

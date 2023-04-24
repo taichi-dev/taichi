@@ -31,8 +31,8 @@ def setup_llvm() -> None:
             url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
         download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ("Darwin", "arm64"):
-        out = get_cache_home() / "llvm15-m1"
-        url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip"
+        out = get_cache_home() / "llvm15-m1-nozstd"
+        url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1-nozstd.zip"
         download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ("Darwin", "x86_64"):
         out = get_cache_home() / "llvm15-mac"

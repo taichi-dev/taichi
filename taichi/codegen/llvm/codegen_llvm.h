@@ -108,6 +108,10 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
 
   llvm::Type *get_mesh_xlogue_function_type();
 
+  llvm::PointerType *get_integer_ptr_type(int bits);
+
+  llvm::IntegerType *get_integer_type(int bits);
+
   llvm::Value *get_root(int snode_tree_id);
 
   llvm::Value *get_runtime();
@@ -245,7 +249,8 @@ class TaskCodeGenLLVM : public IRVisitor, public LLVMModuleBuilder {
   virtual llvm::Value *atomic_op_using_cas(
       llvm::Value *output_address,
       llvm::Value *val,
-      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op);
+      std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
+      const DataType &type);
 
   virtual llvm::Value *real_type_atomic(AtomicOpStmt *stmt);
 

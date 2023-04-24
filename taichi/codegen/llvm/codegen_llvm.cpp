@@ -1283,24 +1283,7 @@ llvm::Value *TaskCodeGenLLVM::bitcast_to_u64(llvm::Value *val, DataType type) {
 }
 
 void TaskCodeGenLLVM::visit(ArgLoadStmt *stmt) {
-  if (!stmt->is_grad) {
-    llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
-    return;
-  }
-
-  auto raw_arg = stmt->is_grad
-                     ? (call(builder.get(), "RuntimeContext_get_grad_args",
-                             get_context(), tlctx->get_constant(stmt->arg_id)))
-                     : (call(builder.get(), "RuntimeContext_get_args",
-                             get_context(), tlctx->get_constant(stmt->arg_id)));
-  llvm::Type *dest_ty = nullptr;
-  if (stmt->is_ptr) {
-    dest_ty = llvm::PointerType::get(
-        tlctx->get_data_type(stmt->ret_type.ptr_removed()), 0);
-    llvm_val[stmt] = builder->CreateIntToPtr(raw_arg, dest_ty);
-  } else {
-    llvm_val[stmt] = bitcast_from_u64(raw_arg, stmt->ret_type);
-  }
+  llvm_val[stmt] = get_struct_arg({stmt->arg_id}, stmt->create_load);
 }
 
 void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
@@ -1441,6 +1424,14 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
     return nullptr;
   }
 
+  // Atomic operators not supported by LLVM, we implement them using CAS
+  if (stmt->op_type == AtomicOpType::mul) {
+    return atomic_op_using_cas(
+        llvm_val[stmt->dest], llvm_val[stmt->val],
+        [&](auto v1, auto v2) { return builder->CreateMul(v1, v2); },
+        stmt->val->ret_type);
+  }
+  // Atomic operators supported by LLVM
   std::unordered_map<AtomicOpType, llvm::AtomicRMWInst::BinOp> bin_op;
   bin_op[AtomicOpType::add] = llvm::AtomicRMWInst::BinOp::Add;
   if (is_signed(stmt->val->ret_type)) {
@@ -1462,7 +1453,8 @@ llvm::Value *TaskCodeGenLLVM::integral_type_atomic(AtomicOpStmt *stmt) {
 llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
     llvm::Value *dest,
     llvm::Value *val,
-    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op) {
+    std::function<llvm::Value *(llvm::Value *, llvm::Value *)> op,
+    const DataType &type) {
   using namespace llvm;
   BasicBlock *body = BasicBlock::Create(*llvm_context, "while_loop_body", func);
   BasicBlock *after_loop =
@@ -1474,15 +1466,17 @@ llvm::Value *TaskCodeGenLLVM::atomic_op_using_cas(
   llvm::Value *old_val;
 
   {
+    int bits = data_type_bits(type);
+    llvm::PointerType *typeIntPtr = get_integer_ptr_type(bits);
+    llvm::IntegerType *typeIntTy = get_integer_type(bits);
+
     old_val = builder->CreateLoad(val->getType(), dest);
     auto new_val = op(old_val, val);
-    dest =
-        builder->CreateBitCast(dest, llvm::Type::getInt16PtrTy(*llvm_context));
+    dest = builder->CreateBitCast(dest, typeIntPtr);
     auto atomicCmpXchg = builder->CreateAtomicCmpXchg(
-        dest,
-        builder->CreateBitCast(old_val, llvm::Type::getInt16Ty(*llvm_context)),
-        builder->CreateBitCast(new_val, llvm::Type::getInt16Ty(*llvm_context)),
-        llvm::MaybeAlign(0), AtomicOrdering::SequentiallyConsistent,
+        dest, builder->CreateBitCast(old_val, typeIntTy),
+        builder->CreateBitCast(new_val, typeIntTy), llvm::MaybeAlign(0),
+        AtomicOrdering::SequentiallyConsistent,
         AtomicOrdering::SequentiallyConsistent);
     // Check whether CAS was succussful
     auto ok = builder->CreateExtractValue(atomicCmpXchg, 1);
@@ -1506,24 +1500,35 @@ llvm::Value *TaskCodeGenLLVM::real_type_atomic(AtomicOpStmt *stmt) {
       case AtomicOpType::add:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateFAdd(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::max:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMaxNum(v1, v2); },
+            stmt->val->ret_type);
       case AtomicOpType::min:
         return atomic_op_using_cas(
             llvm_val[stmt->dest], llvm_val[stmt->val],
-            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); });
+            [&](auto v1, auto v2) { return builder->CreateMinNum(v1, v2); },
+            stmt->val->ret_type);
       default:
         break;
     }
   }
 
-  if (op == AtomicOpType::add) {
-    return builder->CreateAtomicRMW(
-        llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
-        llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+  switch (op) {
+    case AtomicOpType::add:
+      return builder->CreateAtomicRMW(
+          llvm::AtomicRMWInst::FAdd, llvm_val[stmt->dest], llvm_val[stmt->val],
+          llvm::MaybeAlign(0), llvm::AtomicOrdering::SequentiallyConsistent);
+    case AtomicOpType::mul:
+      return atomic_op_using_cas(
+          llvm_val[stmt->dest], llvm_val[stmt->val],
+          [&](auto v1, auto v2) { return builder->CreateFMul(v1, v2); },
+          stmt->val->ret_type);
+    default:
+      break;
   }
 
   std::unordered_map<PrimitiveTypeID,
@@ -1864,7 +1869,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   // Index into ndarray struct
   DataType operand_dtype = stmt->base_ptr->ret_type.ptr_removed()
                                ->as<StructType>()
-                               ->get_element_type({0})
+                               ->get_element_type({1})
                                ->as<PointerType>()
                                ->get_pointee_type();
   auto arg_type = operand_dtype;
@@ -1872,15 +1877,17 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     arg_type = operand_dtype->as<TensorType>()->get_element_type();
   }
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
+  auto members =
+      stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
+  members[1].type = ptr_type;
+  members[2].type = ptr_type;
   auto *struct_type = tlctx->get_data_type(
-      TypeFactory::get_instance().get_struct_type({{ptr_type}}));
-  std::vector<llvm::Value *> index(2, tlctx->get_constant(0));
-  auto *gep =
-      builder->CreateGEP(struct_type, llvm_val.at(stmt->base_ptr), index);
+      TypeFactory::get_instance().get_struct_type(members));
+  auto *gep = builder->CreateGEP(
+      struct_type, llvm_val.at(stmt->base_ptr),
+      {tlctx->get_constant(0), tlctx->get_constant(int(stmt->is_grad) + 1)});
   auto *ptr_val = builder->CreateLoad(tlctx->get_data_type(ptr_type), gep);
 
-  auto argload = stmt->base_ptr->as<ArgLoadStmt>();
-  auto arg_id = argload->arg_id;
   int num_indices = stmt->indices.size();
   std::vector<llvm::Value *> sizes(num_indices);
   auto dt = stmt->ret_type.ptr_removed();
@@ -1907,8 +1914,12 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
 
   for (int i = 0; i < num_array_args; i++) {
-    auto raw_arg = call("RuntimeContext_get_extra_args", get_context(),
-                        tlctx->get_constant(arg_id), tlctx->get_constant(i));
+    auto raw_arg =
+        builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
+                           {tlctx->get_constant(0), tlctx->get_constant(0),
+                            tlctx->get_constant(i)});
+    raw_arg =
+        builder->CreateLoad(tlctx->get_data_type(PrimitiveType::i32), raw_arg);
     sizes[i] = raw_arg;
   }
 
@@ -1976,8 +1987,16 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  llvm_val[stmt] = call("RuntimeContext_get_extra_args", get_context(),
-                        tlctx->get_constant(arg_id), tlctx->get_constant(axis));
+  if (auto struct_type = current_callable->args_type->get_element_type({arg_id})
+                             ->cast<StructType>()) {
+    // Is ndarray
+    llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
+  } else {
+    // Is texture
+    llvm_val[stmt] =
+        call("RuntimeContext_get_extra_args", get_context(),
+             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
+  }
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2624,6 +2643,40 @@ llvm::Type *TaskCodeGenLLVM::get_xlogue_function_type() {
 llvm::Type *TaskCodeGenLLVM::get_mesh_xlogue_function_type() {
   return llvm::FunctionType::get(llvm::Type::getVoidTy(*llvm_context),
                                  get_mesh_xlogue_argument_types(), false);
+}
+
+llvm::PointerType *TaskCodeGenLLVM::get_integer_ptr_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8PtrTy(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16PtrTy(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32PtrTy(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64PtrTy(*llvm_context);
+    default:
+      break;
+  }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer ptr type.");
+  return nullptr;
+}
+
+llvm::IntegerType *TaskCodeGenLLVM::get_integer_type(int bits) {
+  switch (bits) {
+    case 8:
+      return llvm::Type::getInt8Ty(*llvm_context);
+    case 16:
+      return llvm::Type::getInt16Ty(*llvm_context);
+    case 32:
+      return llvm::Type::getInt32Ty(*llvm_context);
+    case 64:
+      return llvm::Type::getInt64Ty(*llvm_context);
+    default:
+      break;
+  }
+  TI_ERROR("No compatible " + std::to_string(bits) + " bits integer type.");
+  return nullptr;
 }
 
 llvm::Value *TaskCodeGenLLVM::get_root(int snode_tree_id) {

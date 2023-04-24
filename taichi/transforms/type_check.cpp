@@ -464,7 +464,7 @@ class TypeCheck : public IRVisitor {
     } else {
       stmt->ret_type = arg_load_stmt->ret_type.ptr_removed()
                            ->as<StructType>()
-                           ->get_element_type({0});
+                           ->get_element_type({1});
     }
 
     stmt->ret_type.set_is_pointer(true);

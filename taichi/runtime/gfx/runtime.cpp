@@ -66,7 +66,8 @@ class HostDeviceContextBlitter {
             void *device_arr_ptr{nullptr};
             TI_ASSERT(device_->map(buffer, &device_arr_ptr) ==
                       RhiResult::success);
-            const void *host_ptr = host_ctx_.array_ptrs[{i}];
+            const void *host_ptr =
+                host_ctx_.array_ptrs[{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}];
             std::memcpy(device_arr_ptr, host_ptr, ext_arr_size.at(i));
             device_->unmap(buffer);
           }
@@ -81,7 +82,10 @@ class HostDeviceContextBlitter {
                 DeviceCapability::spirv_has_physical_storage_buffer)) {
           uint64_t addr =
               device_->get_memory_physical_pointer(ext_arrays.at(i));
-          host_ctx_.set_struct_arg({i, 0}, addr);
+          host_ctx_.set_ndarray_ptrs(
+              i, addr,
+              (uint64)host_ctx_
+                  .array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
         }
       }
     }
@@ -120,7 +124,9 @@ class HostDeviceContextBlitter {
         if (access & uint32_t(irpass::ExternalPtrAccess::WRITE)) {
           // Only need to blit ext arrs (host array)
           readback_dev_ptrs.push_back(ext_arrays.at(i).get_ptr(0));
-          readback_host_ptrs.push_back(host_ctx_.array_ptrs[{i}]);
+          readback_host_ptrs.push_back(
+              host_ctx_.array_ptrs[{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}]);
+          // TODO: readback grad_ptrs as well once ndarray ad is supported
           readback_sizes.push_back(ext_arr_size.at(i));
           require_sync = true;
         }
@@ -438,7 +444,13 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
             LaunchContextBuilder::DevAllocType::kNone) {
           DeviceAllocation devalloc = kDeviceNullAllocation;
 
-          // NDArray / Texture
+          // NDArray
+          if (host_ctx.array_ptrs.count(
+                  {i, TypeFactory::DATA_PTR_POS_IN_NDARRAY})) {
+            devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{
+                i, TypeFactory::DATA_PTR_POS_IN_NDARRAY}]);
+          }
+          // Texture
           if (host_ctx.array_ptrs.count({i})) {
             devalloc = *(DeviceAllocation *)(host_ctx.array_ptrs[{i}]);
           }

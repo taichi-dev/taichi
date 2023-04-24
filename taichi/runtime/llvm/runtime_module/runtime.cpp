@@ -287,7 +287,6 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 
 #include "taichi/program/context.h"
 
-STRUCT_FIELD_ARRAY(RuntimeContext, grad_args);
 STRUCT_FIELD(RuntimeContext, runtime);
 STRUCT_FIELD(RuntimeContext, result_buffer)
 

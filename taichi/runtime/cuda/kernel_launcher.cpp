@@ -4,6 +4,14 @@
 namespace taichi::lang {
 namespace cuda {
 
+bool KernelLauncher::on_cuda_device(void *ptr) {
+  unsigned int attr_val = 0;
+  uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
+      &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, (void *)ptr);
+
+  return ret_code == CUDA_SUCCESS && attr_val == CU_MEMORYTYPE_DEVICE;
+}
+
 void KernelLauncher::launch_llvm_kernel(Handle handle,
                                         LaunchContextBuilder &ctx) {
   TI_ASSERT(handle.get_launch_id() < contexts_.size());
@@ -14,74 +22,82 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   const auto &offloaded_tasks = launcher_ctx.offloaded_tasks;
 
   CUDAContext::get_instance().make_current();
-  std::vector<void *> arg_buffers(parameters.size(), nullptr);
-  std::vector<void *> device_buffers(parameters.size(), nullptr);
-  std::vector<DeviceAllocation> temporary_devallocs(parameters.size());
+
+  // |transfers| is only used for external arrays whose data is originally on
+  // host. They are first transferred onto device and that device pointer is
+  // stored in |device_ptrs| below. |transfers| saves its original pointer so
+  // that we can copy the data back once kernel finishes. as well as the
+  // temporary device allocations, which can be freed after kernel finishes. Key
+  // is [arg_id, ptr_pos], where ptr_pos is TypeFactory::DATA_PTR_POS_IN_NDARRAY
+  // for data_ptr and TypeFactory::GRAD_PTR_POS_IN_NDARRAY for grad_ptr. Value
+  // is [host_ptr, temporary_device_alloc]. Invariant: temp_devallocs.size() !=
+  // 0 <==> transfer happened.
+  std::unordered_map<std::vector<int>, std::pair<void *, DeviceAllocation>,
+                     hashing::Hasher<std::vector<int>>>
+      transfers;
+
+  // |device_ptrs| stores pointers on device for all arrays args, including
+  // external arrays and ndarrays, no matter whether the data is originally on
+  // device or host.
+  // This is the source of truth for us to look for device pointers used in CUDA
+  // kernels.
+  std::unordered_map<std::vector<int>, void *,
+                     hashing::Hasher<std::vector<int>>>
+      device_ptrs;
+
   char *device_result_buffer{nullptr};
   CUDADriver::get_instance().malloc_async(
       (void **)&device_result_buffer,
       std::max(ctx.result_buffer_size, sizeof(uint64)), nullptr);
   ctx.get_context().runtime = executor->get_llvm_runtime();
 
-  bool transferred = false;
   for (int i = 0; i < (int)parameters.size(); i++) {
     if (parameters[i].is_array) {
       const auto arr_sz = ctx.array_runtime_sizes[i];
+      // Note: both numpy and PyTorch support arrays/tensors with zeros
+      // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
+      // `arr_sz` zero.
       if (arr_sz == 0) {
         continue;
       }
-      arg_buffers[i] = ctx.array_ptrs[{i}];
+
+      std::vector<int> data_ptr_idx{i, TypeFactory::DATA_PTR_POS_IN_NDARRAY};
+      auto data_ptr = ctx.array_ptrs[data_ptr_idx];
+
       if (ctx.device_allocation_type[i] ==
           LaunchContextBuilder::DevAllocType::kNone) {
-        // Note: both numpy and PyTorch support arrays/tensors with zeros
-        // in shapes, e.g., shape=(0) or shape=(100, 0, 200). This makes
-        // `arr_sz` zero.
-        unsigned int attr_val = 0;
-        uint32_t ret_code = CUDADriver::get_instance().mem_get_attribute.call(
-            &attr_val, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-            (void *)arg_buffers[i]);
-
-        if (ret_code != CUDA_SUCCESS || attr_val != CU_MEMORYTYPE_DEVICE) {
-          // Copy to device buffer if arg is on host
-          // - ret_code != CUDA_SUCCESS:
-          //   arg_buffers[i] is not on device
-          // - attr_val != CU_MEMORYTYPE_DEVICE:
-          //   Cuda driver is aware of arg_buffers[i] but it might be on
-          //   host.
-          // See CUDA driver API `cuPointerGetAttribute` for more details.
-          transferred = true;
-
+        // External array
+        // Note: assuming both data & grad are on the same device
+        if (on_cuda_device(data_ptr)) {
+          // data_ptr is a raw ptr on CUDA device
+          device_ptrs[data_ptr_idx] = data_ptr;
+        } else {
           DeviceAllocation devalloc = executor->allocate_memory_ndarray(
               arr_sz, (uint64 *)device_result_buffer);
-          device_buffers[i] = executor->get_ndarray_alloc_info_ptr(devalloc);
-          temporary_devallocs[i] = devalloc;
+          device_ptrs[data_ptr_idx] =
+              executor->get_ndarray_alloc_info_ptr(devalloc);
+          transfers[data_ptr_idx] = {data_ptr, devalloc};
 
           CUDADriver::get_instance().memcpy_host_to_device(
-              (void *)device_buffers[i], arg_buffers[i], arr_sz);
-        } else {
-          device_buffers[i] = arg_buffers[i];
+              (void *)device_ptrs[data_ptr_idx], data_ptr, arr_sz);
         }
-        // device_buffers[i] saves a raw ptr on CUDA device.
-        ctx.set_struct_arg({i, 0}, (uint64)device_buffers[i]);
 
+        ctx.set_ndarray_ptrs(
+            i, (uint64)device_ptrs[data_ptr_idx],
+            (uint64)ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
       } else if (arr_sz > 0) {
-        // arg_buffers[i] is a DeviceAllocation*
-        // TODO: Unwraps DeviceAllocation* can be done at TaskCodeGenLLVM
-        // since it's shared by cpu and cuda.
-        DeviceAllocation *ptr = static_cast<DeviceAllocation *>(arg_buffers[i]);
-        device_buffers[i] = executor->get_ndarray_alloc_info_ptr(*ptr);
-        // We compare arg_buffers[i] and device_buffers[i] later to check
-        // if transfer happened.
-        // TODO: this logic can be improved but I'll leave it to a followup
-        // PR.
-        arg_buffers[i] = device_buffers[i];
+        // Ndarray
+        DeviceAllocation *ptr = static_cast<DeviceAllocation *>(data_ptr);
+        // Unwrapped raw ptr on device
+        device_ptrs[data_ptr_idx] = executor->get_ndarray_alloc_info_ptr(*ptr);
 
-        // device_buffers[i] saves the unwrapped raw ptr from arg_buffers[i]
-        ctx.set_struct_arg({i, 0}, (uint64)device_buffers[i]);
+        ctx.set_ndarray_ptrs(
+            i, (uint64)device_ptrs[data_ptr_idx],
+            (uint64)ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
       }
     }
   }
-  if (transferred) {
+  if (transfers.size() > 0) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
   }
   char *host_result_buffer = (char *)ctx.get_context().result_buffer;
@@ -116,15 +132,14 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
   }
   CUDADriver::get_instance().mem_free_async(device_result_buffer, nullptr);
   // copy data back to host
-  if (transferred) {
+  if (transfers.size() > 0) {
     CUDADriver::get_instance().stream_synchronize(nullptr);
-    for (int i = 0; i < (int)parameters.size(); i++) {
-      if (device_buffers[i] != arg_buffers[i]) {
-        CUDADriver::get_instance().memcpy_device_to_host(
-            arg_buffers[i], (void *)device_buffers[i],
-            ctx.array_runtime_sizes[i]);
-        executor->deallocate_memory_ndarray(temporary_devallocs[i]);
-      }
+    for (auto itr = transfers.begin(); itr != transfers.end(); itr++) {
+      auto &idx = itr->first;
+      CUDADriver::get_instance().memcpy_device_to_host(
+          itr->second.first, (void *)device_ptrs[idx],
+          ctx.array_runtime_sizes[idx[0]]);
+      executor->deallocate_memory_ndarray(itr->second.second);
     }
   }
 }

@@ -105,6 +105,7 @@ user_api[ti] = [
     "atomic_and",
     "atomic_max",
     "atomic_min",
+    "atomic_mul",
     "atomic_or",
     "atomic_sub",
     "atomic_xor",
@@ -208,6 +209,7 @@ user_api[ti] = [
     "simt",
     "sin",
     "solve",
+    "sparse",
     "sparse_matrix_builder",
     "sqrt",
     "static",
@@ -431,6 +433,7 @@ user_api[ti.VectorNdarray] = [
     "get_type",
     "to_numpy",
 ]
+user_api[ti.sparse] = ["grid", "usage"]
 
 
 @pytest.mark.parametrize("src", user_api.keys())

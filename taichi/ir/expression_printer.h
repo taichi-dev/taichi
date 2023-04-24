@@ -171,8 +171,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     const auto op_type = (std::size_t)expr->op_type;
     constexpr const char *names_table[] = {
         "atomic_add",     "atomic_sub",    "atomic_min",     "atomic_max",
-        "atomic_bit_and", "atomic_bit_or", "atomic_bit_xor",
-    };
+        "atomic_bit_and", "atomic_bit_or", "atomic_bit_xor", "atomic_mul"};
     if (op_type > std::size(names_table)) {
       // min/max not supported in the LLVM backend yet.
       TI_NOT_IMPLEMENTED;

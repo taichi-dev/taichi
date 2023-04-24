@@ -781,7 +781,7 @@ class Kernel:
                         raise ValueError(f"Matrix dtype {needed.dtype} is not integer type or real type.")
 
                     if needed.ndim == 2:
-                        v = [cast_func(v[i, j]) for j in range(needed.m) for i in range(needed.n)]
+                        v = [cast_func(v[i, j]) for i in range(needed.n) for j in range(needed.m)]
                     else:
                         v = [cast_func(v[i]) for i in range(needed.n)]
                     v = needed(*v)

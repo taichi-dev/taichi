@@ -384,7 +384,8 @@ class IdentifyValuesUsedInOtherOffloads : public BasicStmtVisitor {
     auto top_level_ptr = SquashPtrOffset::run(stmt);
     // We don't support storing a pointer for now.
     if (top_level_ptr->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
-        (stmt->is<ArgLoadStmt>() && stmt->as<ArgLoadStmt>()->is_ptr))
+        (stmt->is<ArgLoadStmt>() && (stmt->as<ArgLoadStmt>()->is_ptr ||
+                                     !stmt->as<ArgLoadStmt>()->create_load)))
       return;
     if ((config_.arch == Arch::opengl || config_.arch == Arch::vulkan ||
          config_.arch == Arch::gles || config_.arch == Arch::metal) &&

@@ -118,7 +118,7 @@ TEST(FrontendTypeInference, TernaryOp_NoBroadcast) {
               op2_ret_type->cast<TensorType>()->get_shape() == shape);
   EXPECT_TRUE(op3_ret_type->is<TensorType>() &&
               op3_ret_type->cast<TensorType>()->get_shape() == shape);
-  EXPECT_EQ(cond_ret_type, PrimitiveType::i32);
+  EXPECT_EQ(cond_ret_type, PrimitiveType::u1);
 }
 
 TEST(FrontendTypeInference, GlobalPtr_Field) {

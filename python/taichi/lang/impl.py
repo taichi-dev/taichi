@@ -55,7 +55,6 @@ from taichi.types.primitive_types import (
     f64,
     i32,
     i64,
-    u1,
     u8,
     u32,
     u64,

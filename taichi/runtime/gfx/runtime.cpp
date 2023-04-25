@@ -178,7 +178,7 @@ class HostDeviceContextBlitter {
       for (int j = 0; j < num; ++j) {
         // (penguinliong) Again, it's the module loader's responsibility to
         // check the data type availability.
-        //        TO_HOST(u1, uint1, j)
+        TO_HOST(u1, uint1, j)
         TO_HOST(i8, int8, j)
         TO_HOST(u8, uint8, j)
         TO_HOST(i16, int16, j)
@@ -830,7 +830,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       member_align = member_align_;
       member_size = size;
     } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
-      size_t element_size = data_type_size(tensor_type->get_element_type());
+      size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
       size_t num_elements = tensor_type->get_num_elements();
       if (num_elements == 2) {
         member_align = element_size * 2;
@@ -853,7 +853,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       }
     } else {
       TI_ASSERT(member.type->is<PrimitiveType>());
-      member_size = data_type_size(member.type);
+      member_size = data_type_size_gfx(member.type);
       member_align = member_size;
     }
     bytes = align_up(bytes, member_align);

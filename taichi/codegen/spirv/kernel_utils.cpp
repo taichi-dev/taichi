@@ -70,15 +70,15 @@ KernelContextAttributes::KernelContextAttributes(
       auto tensor_dtype = tensor_type->get_element_type();
       TI_ASSERT(tensor_dtype->is<PrimitiveType>());
       ra.dtype = tensor_dtype->cast<PrimitiveType>()->type;
-      dt_bytes = data_type_size(tensor_dtype);
+      dt_bytes = data_type_size_gfx(tensor_dtype);
       ra.is_array = true;
-      ra.stride = tensor_type->get_num_elements() * dt_bytes;
+      ra.stride = tensor_type->get_num_elements() * std::max(dt_bytes, 4ul);
     } else {
       TI_ASSERT(kr.dt->is<PrimitiveType>());
       ra.dtype = kr.dt->cast<PrimitiveType>()->type;
-      dt_bytes = data_type_size(kr.dt);
+      dt_bytes = data_type_size_gfx(kr.dt);
       ra.is_array = false;
-      ra.stride = dt_bytes;
+      ra.stride = std::max(dt_bytes, 4ul);
     }
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);
@@ -92,7 +92,7 @@ KernelContextAttributes::KernelContextAttributes(
       const size_t dt_bytes =
           (attribs.is_array && !is_ret)
               ? (has_buffer_ptr ? sizeof(uint64_t) : sizeof(uint32_t))
-              : data_type_size(PrimitiveType::get(attribs.dtype));
+              : data_type_size_gfx(PrimitiveType::get(attribs.dtype));
       // Align bytes to the nearest multiple of dt_bytes
       bytes = (bytes + dt_bytes - 1) / dt_bytes * dt_bytes;
       attribs.offset_in_mem = bytes;

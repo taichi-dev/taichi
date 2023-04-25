@@ -95,7 +95,7 @@ def test_u1_bool():
 @test_utils.test()
 def test_bool_parameter():
     @ti.kernel
-    def func(x: ti.u1) -> ti.i32:
+    def func(x: ti.u1) -> ti.u1:
         return not x
 
     assert func(False) == True
@@ -104,7 +104,7 @@ def test_bool_parameter():
 @test_utils.test()
 def test_if():
     @ti.kernel
-    def func(x: ti.u1) -> ti.i32:
+    def func(x: ti.u1) -> ti.u1:
         y = False
         if x:
             y = True
@@ -117,7 +117,7 @@ def test_if():
 @test_utils.test()
 def test_ternary():
     @ti.kernel
-    def func(x: ti.i32) -> ti.i32:
+    def func(x: ti.i32) -> ti.u1:
         return True if x == 114514 else False
 
     assert func(114514) == True
@@ -125,10 +125,17 @@ def test_ternary():
 
 
 @test_utils.test()
-def test_ternary():
+def test_while():
     @ti.kernel
     def func(x: ti.i32) -> ti.i32:
-        return True if x == 114514 else False
+        y = x
+        flag = y > 0
+        ans = 0
+        while flag:
+            ans += y
+            y -= 1
+            flag = y > 0
+        return ans
 
-    assert func(114514) == True
-    assert func(1919810) == False
+    assert func(10) == 55
+    assert func(100) == 5050

@@ -1275,7 +1275,7 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(stmt->values.size() ==
-              current_callable->ret_type->get_num_elements());
+              current_callable->ret_type->get_flattened_num_elements());
     auto *buffer = call("RuntimeContext_get_result_buffer", get_context());
     set_struct_to_buffer(current_callable->ret_type, buffer, stmt->values);
   }

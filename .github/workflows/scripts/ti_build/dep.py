@@ -147,11 +147,11 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False, e
 
         shutil.move(str(local_cached) + ".download", local_cached)
 
-    outdir.mkdir(parents=True, exist_ok=True)
-
     if name.endswith(".zip"):
+        outdir.mkdir(parents=True, exist_ok=True)
         unzip(local_cached, outdir, strip=strip)
     elif name.endswith(".tar.gz") or name.endswith(".tgz"):
+        outdir.mkdir(parents=True, exist_ok=True)
         tar("-xzf", local_cached, "-C", outdir, f"--strip-components={strip}")
     elif name.endswith(".sh"):
         bash(local_cached, *args)
@@ -168,6 +168,7 @@ def download_dep(url, outdir, *, strip=0, force=False, args=None, plain=False, e
             cmd(*args)
         # start(local_cached, *args)
     elif plain:
+        outdir.mkdir(parents=True, exist_ok=True)
         shutil.copy(local_cached, outdir / name)
     else:
         raise RuntimeError(f"Unknown file type: {name}")

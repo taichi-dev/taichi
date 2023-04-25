@@ -67,7 +67,7 @@ def setup_msvc() -> None:
             return
 
     url = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
-    out = get_cache_home() / "vs_installer"
+    out = base
     download_dep(
         url,
         out,

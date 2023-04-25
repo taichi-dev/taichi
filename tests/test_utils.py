@@ -283,6 +283,46 @@ def test(arch=None, exclude=None, require=None, **options):
     return decorator
 
 
+def torch_op(*, output_shapes=[(1,)]):
+    def inner(f):
+        from taichi.lang.util import has_pytorch
+
+        if has_pytorch():
+            import torch
+
+        class CustomTaichiOp(torch.autograd.Function):
+            @staticmethod
+            def forward(ctx, *inputs):
+                outputs = tuple([torch.zeros(shape, dtype=torch.double, requires_grad=True) for shape in output_shapes])
+                f(*inputs, *outputs)
+                ctx.save_for_backward(*inputs, *outputs)
+                return outputs
+
+            @staticmethod
+            def backward(ctx, grad_outputs):
+                if not isinstance(grad_outputs, tuple):
+                    grad_outputs = (grad_outputs,)
+                inputs = ctx.saved_tensors[: -len(grad_outputs)]
+                if not isinstance(inputs, tuple):
+                    inputs = (inputs,)
+                outputs = ctx.saved_tensors[-len(grad_outputs) :]
+                if not isinstance(outputs, tuple):
+                    outputs = (outputs,)
+                for i in inputs:
+                    i.grad.fill_(0)
+                for i, g in zip(outputs, grad_outputs):
+                    i.grad = g
+                f.grad(*inputs, *outputs)
+                return tuple([input.grad for input in inputs])
+
+        def wrapper(*args, **kwargs):
+            return CustomTaichiOp.apply(*args, **kwargs)
+
+        return wrapper
+
+    return inner
+
+
 __all__ = [
     "test",
 ]

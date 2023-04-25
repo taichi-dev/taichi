@@ -1089,8 +1089,11 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
                          ->ret_type.ptr_removed()
                          ->as<StructType>()
                          ->elements();
-      members[1] = {stmt->ret_type, "data_ptr"};
-      members[2] = {stmt->ret_type, "grad_ptr"};
+      members[TypeFactory::DATA_PTR_POS_IN_NDARRAY] = {stmt->ret_type,
+                                                       "data_ptr"};
+      if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        members.back() = {stmt->ret_type, "grad_ptr"};
+      }
       auto type = TypeFactory::get_instance().get_struct_type(members);
       origin->base_ptr->as<ArgLoadStmt>()->ret_type =
           TypeFactory::get_instance().get_pointer_type((Type *)type);

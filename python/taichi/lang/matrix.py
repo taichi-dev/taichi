@@ -1455,6 +1455,24 @@ class MatrixType(CompoundType):
             raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index}")
         return self([get_ret_func(ret_index + (i,)) for i in range(self.m * self.n)])
 
+    def set_kernel_struct_args(self, mat, launch_ctx, ret_index=()):
+        if self.dtype in primitive_types.integer_types:
+            if is_signed(cook_dtype(self.dtype)):
+                set_arg_func = launch_ctx.set_struct_arg_int
+            else:
+                set_arg_func = launch_ctx.set_struct_arg_uint
+        elif self.dtype in primitive_types.real_types:
+            set_arg_func = launch_ctx.set_struct_arg_float
+        else:
+            raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index}")
+        if self.ndim == 1:
+            for i in range(self.n):
+                set_arg_func(ret_index + (i,), mat[i])
+        else:
+            for i in range(self.n):
+                for j in range(self.m):
+                    set_arg_func(ret_index + (i * self.m + j,), mat[i, j])
+
     def _instantiate_in_python_scope(self, entries):
         entries = [[entries[k * self.m + i] for i in range(self.m)] for k in range(self.n)]
         return Matrix(

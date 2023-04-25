@@ -72,13 +72,13 @@ KernelContextAttributes::KernelContextAttributes(
       ra.dtype = tensor_dtype->cast<PrimitiveType>()->type;
       dt_bytes = data_type_size_gfx(tensor_dtype);
       ra.is_array = true;
-      ra.stride = tensor_type->get_num_elements() * std::max(dt_bytes, 4ul);
+      ra.stride = tensor_type->get_num_elements() * dt_bytes;
     } else {
       TI_ASSERT(kr.dt->is<PrimitiveType>());
       ra.dtype = kr.dt->cast<PrimitiveType>()->type;
       dt_bytes = data_type_size_gfx(kr.dt);
       ra.is_array = false;
-      ra.stride = std::max(dt_bytes, 4ul);
+      ra.stride = dt_bytes;
     }
     ra.index = ret_attribs_vec_.size();
     ret_attribs_vec_.push_back(ra);

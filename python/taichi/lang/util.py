@@ -231,7 +231,7 @@ def to_taichi_type(dt):
         return i8
     if dt == np.int16:
         return i16
-    if dt == np.bool:
+    if dt == np.bool_:
         return u1
     if dt == np.uint8:
         return u8

@@ -843,6 +843,7 @@ class Kernel {
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiKernel kernel_{TI_NULL_HANDLE};
   std::vector<TiArgument> args_{};
+  std::vector<std::vector<uint64_t>> tensor_args_{};
 
  public:
   constexpr bool is_valid() const {
@@ -884,11 +885,17 @@ class Kernel {
   template <typename T>
   void push_arg(const std::vector<T> &v) {
     int idx = args_.size();
-    // Temporary workaround for setting vec/matrix arguments in a flattened way.
-    args_.resize(args_.size() + v.size());
+    tensor_args_.emplace_back();
+    auto &arg = tensor_args_.back();
+    arg.reserve(v.size());
     for (int j = 0; j < v.size(); ++j) {
-      at(idx + j) = v[j];
+      arg.push_back(taichi_union_cast_with_different_sizes<uint64_t>(v[j]));
     }
+    args_.resize(idx + 1);
+    args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
+    args_[idx].value.tensor.data = arg.data();
+    args_[idx].value.tensor.num_elements = arg.size();
+    args_[idx].value.tensor.width = sizeof(T);
   }
 
   template <typename T>

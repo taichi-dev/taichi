@@ -792,6 +792,27 @@ void ti_launch_kernel(TiRuntime runtime,
         devallocs.emplace_back(std::move(devalloc));
         break;
       }
+      case TI_ARGUMENT_TYPE_TENSOR: {
+        auto &tensor = arg.value.tensor;
+        TI_CAPI_ARGUMENT_NULL(tensor.data);
+        if (tensor.width == 2) {
+          for (int j = 0; j < tensor.num_elements; j++) {
+            builder.set_struct_arg_impl(
+                {(int)i, j}, taichi_union_cast_with_different_sizes<uint16_t>(
+                                 tensor.data[j]));
+          }
+        } else if (tensor.width == 4) {
+          for (int j = 0; j < tensor.num_elements; j++) {
+            builder.set_struct_arg_impl(
+                {(int)i, j}, taichi_union_cast_with_different_sizes<uint32_t>(
+                                 tensor.data[j]));
+          }
+        } else {
+          ti_set_last_error(TI_ERROR_NOT_SUPPORTED,
+                            ("args[" + std::to_string(i) + "].type").c_str());
+        }
+        break;
+      }
       default: {
         ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
                           ("args[" + std::to_string(i) + "].type").c_str());

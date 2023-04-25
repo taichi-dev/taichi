@@ -764,33 +764,28 @@ class Kernel:
 
                 elif isinstance(needed, MatrixType):
                     if needed.dtype in primitive_types.real_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                if actual_argument_slot >= max_arg_num:
-                                    exceed_max_arg_num = True
-                                    break
-                                val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, (int, float, np.integer, np.floating)):
-                                    raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(val))
-                                launch_ctx.set_arg_float(actual_argument_slot, float(val))
-                                actual_argument_slot += 1
+
+                        def cast_func(x):
+                            if not isinstance(x, (int, float, np.integer, np.floating)):
+                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                            return float(x)
+
                     elif needed.dtype in primitive_types.integer_types:
-                        for a in range(needed.n):
-                            for b in range(needed.m):
-                                if actual_argument_slot >= max_arg_num:
-                                    exceed_max_arg_num = True
-                                    break
-                                val = v[a, b] if needed.ndim == 2 else v[a]
-                                if not isinstance(val, (int, np.integer)):
-                                    raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(val))
-                                if is_signed(needed.dtype):
-                                    launch_ctx.set_arg_int(actual_argument_slot, int(val))
-                                else:
-                                    launch_ctx.set_arg_uint(actual_argument_slot, int(val))
-                                actual_argument_slot += 1
+
+                        def cast_func(x):
+                            if not isinstance(x, (int, np.integer)):
+                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                            return int(x)
+
                     else:
                         raise ValueError(f"Matrix dtype {needed.dtype} is not integer type or real type.")
-                    continue
+
+                    if needed.ndim == 2:
+                        v = [cast_func(v[i, j]) for i in range(needed.n) for j in range(needed.m)]
+                    else:
+                        v = [cast_func(v[i]) for i in range(needed.n)]
+                    v = needed(*v)
+                    needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
                 elif isinstance(needed, StructType):
                     needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
                 else:

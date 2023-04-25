@@ -12,6 +12,7 @@ if has_pytorch():
 archs_support_ndarray_ad = [ti.cpu, ti.cuda]
 
 
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64)
 def test_simple_demo():
     @test_utils.torch_op(output_shapes=[(1,)])
@@ -28,6 +29,7 @@ def test_simple_demo():
     torch.autograd.gradcheck(test, input)
 
 
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64)
 def test_ad_reduce():
     @test_utils.torch_op(output_shapes=[(1,)])
@@ -81,6 +83,7 @@ def test_ad_reduce():
         lambda y: y**0.4,
     ],
 )
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64)
 def test_poly(tifunc):
     s = (4,)
@@ -96,6 +99,7 @@ def test_poly(tifunc):
     torch.autograd.gradcheck(test, input)
 
 
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64)
 def test_ad_select():
     s = (4,)
@@ -1225,6 +1229,7 @@ def test_ad_multiple_tapes():
         assert a.grad[i][1] == 3
 
 
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad)
 def test_ad_mixed_with_torch():
     @test_utils.torch_op(output_shapes=[(1,)])
@@ -1243,6 +1248,7 @@ def test_ad_mixed_with_torch():
         assert a.grad[i] == 4
 
 
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad)
 def test_ad_tape_throw():
     N = 4

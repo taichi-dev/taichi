@@ -258,8 +258,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
         llvm_val[stmt] = call("logical_not_u1", input);
       } else {
-        llvm_val[stmt] = call("logical_not_u1", builder->CreateTrunc(
-                                                    input, tlctx->get_data_type(PrimitiveType::u1)));
+        llvm_val[stmt] =
+            call("logical_not_u1",
+                 builder->CreateTrunc(input,
+                                      tlctx->get_data_type(PrimitiveType::u1)));
       }
     } else if (op == UnaryOpType::frexp) {
       auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());

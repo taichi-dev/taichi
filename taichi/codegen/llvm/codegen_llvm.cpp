@@ -209,10 +209,9 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
       llvm_val[stmt] = call("logical_not_u1", input);
     } else {
-      llvm_val[stmt] = call("logical_not_u1",
-                            builder->CreateTrunc(
-                                input,
-                                tlctx->get_data_type(PrimitiveType::u1)));
+      llvm_val[stmt] = call(
+          "logical_not_u1",
+          builder->CreateTrunc(input, tlctx->get_data_type(PrimitiveType::u1)));
     }
   }
   else if (op == UnaryOpType::popcnt) {
@@ -581,8 +580,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                                         tlctx->get_data_type(stmt->ret_type),
                                         is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0),
-               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
+          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+               builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -601,8 +600,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                                         tlctx->get_data_type(stmt->ret_type),
                                         is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0),
-               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
+          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+               builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -621,8 +620,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                                         tlctx->get_data_type(stmt->ret_type),
                                         is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
-               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
+          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+               builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -661,8 +660,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                                         tlctx->get_data_type(stmt->ret_type),
                                         is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0),
-               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
+          call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+               builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =
           builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

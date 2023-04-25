@@ -1,12 +1,12 @@
 import taichi as ti
 
-ti.init(arch=ti.vulkan)
+ti.init()
 
 
 @ti.kernel
-def p() -> ti.u1:
+def p() -> ti.f32:
     print(42)
-    return False
+    return 40 + 2
 
 
 print(p())

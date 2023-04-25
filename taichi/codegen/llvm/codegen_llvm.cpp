@@ -1861,9 +1861,9 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
-  members[1].type = ptr_type;
+  members[TypeFactory::DATA_PTR_POS_IN_NDARRAY].type = ptr_type;
   if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
-    members[2].type = ptr_type;
+    members[TypeFactory::GRAD_PTR_POS_IN_NDARRAY].type = ptr_type;
   }
   auto *struct_type = tlctx->get_data_type(
       TypeFactory::get_instance().get_struct_type(members));

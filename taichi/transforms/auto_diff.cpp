@@ -61,8 +61,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
               ->ret_type.ptr_removed()
               ->as<StructType>()
               ->elements()
-              .back()
-              .name == "grad_ptr") {
+              .size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
         qualified_glb_operations_ = true;
       }
     } else {
@@ -88,8 +87,7 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
                  ->ret_type.ptr_removed()
                  ->as<StructType>()
                  ->elements()
-                 .back()
-                 .name == "grad_ptr") ||
+                 .size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) ||
         (stmt->src->is<GlobalPtrStmt>() &&
          stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint())) {
       qualified_glb_operations_ = true;
@@ -1087,11 +1085,8 @@ class MakeAdjoint : public ADTransform {
       auto src = stmt->src->as<ExternalPtrStmt>();
       TI_ASSERT(!src->is_grad);
       auto arg = src->base_ptr->as<ArgLoadStmt>();
-      if (arg->ret_type.ptr_removed()
-              ->as<StructType>()
-              ->elements()
-              .back()
-              .name == "grad_ptr") {
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
         auto adj_ptr = insert<ExternalPtrStmt>(
             src->base_ptr, src->indices, src->element_shape, src->element_dim,
             /*is_grad=*/true);
@@ -1129,11 +1124,8 @@ class MakeAdjoint : public ADTransform {
     if (stmt->dest->is<ExternalPtrStmt>()) {
       auto dest = stmt->dest->as<ExternalPtrStmt>();
       auto arg = dest->base_ptr->as<ArgLoadStmt>();
-      if (arg->ret_type.ptr_removed()
-              ->as<StructType>()
-              ->elements()
-              .back()
-              .name != "grad_ptr") {
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() <=
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
         return;
       }
       adjoint_ptr = insert<ExternalPtrStmt>(
@@ -1184,11 +1176,8 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->dest->is<ExternalPtrStmt>()) {
       auto dest = stmt->dest->as<ExternalPtrStmt>();
       auto arg = dest->base_ptr->as<ArgLoadStmt>();
-      if (arg->ret_type.ptr_removed()
-              ->as<StructType>()
-              ->elements()
-              .back()
-              .name == "grad_ptr") {
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
         auto adjoint_ptr =
             insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
                                     dest->element_shape, dest->element_dim,

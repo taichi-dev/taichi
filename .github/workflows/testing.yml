@@ -17,7 +17,8 @@ env:
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
   TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
-  TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
+  # TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
+  TI_TEST_OFFLINE_CACHE: '1'
   CI_IMAGE_VERSION: '202303241150'
   TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
 

@@ -391,13 +391,13 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape), (), Layout.AOS
+                return arg.dtype, len(arg.shape), (), Layout.AOS, arg.grad is not None
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS
+                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS, arg.grad is not None
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS
+                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS, arg.grad is not None
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
@@ -431,7 +431,8 @@ class TaichiCallableTemplateMapper:
                         f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                         f"but the argument has {len(shape)} dimensions"
                     )
-            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS
+            needs_grad = getattr(arg, "requires_grad", False)
+            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -706,6 +707,10 @@ class Kernel:
 
                                 return call_back
 
+                            # FIXME: only allocate when launching grad kernel
+                            if v.requires_grad and v.grad is None:
+                                v.grad = torch.zeros_like(v)
+
                             tmp = v
                             if str(v.device).startswith("cuda") and taichi_arch != _ti_core.Arch.cuda:
                                 # Getting a torch CUDA tensor on Taichi non-cuda arch:
@@ -719,7 +724,7 @@ class Kernel:
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
-                                0,
+                                int(v.grad.data_ptr()) if v.grad is not None else 0,
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)

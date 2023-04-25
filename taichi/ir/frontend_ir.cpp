@@ -597,7 +597,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 The scalarization should happen after
   //                 irpass::lower_access()
 
-  auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, dim);
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, dim, needs_grad);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);

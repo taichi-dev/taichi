@@ -54,9 +54,21 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
-    if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
-      qualified_glb_operations_ = true;
+
+    if (stmt->dest->is<ExternalPtrStmt>()) {
+      if (stmt->dest->as<ExternalPtrStmt>()
+              ->base_ptr->as<ArgLoadStmt>()
+              ->ret_type.ptr_removed()
+              ->as<StructType>()
+              ->elements()
+              .size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        qualified_glb_operations_ = true;
+      }
+    } else {
+      TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
+      if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+        qualified_glb_operations_ = true;
+      }
     }
   }
 
@@ -69,9 +81,15 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    // TODO: handle external ptr stmt after autodiff supporting ndarray
-    if (stmt->src->is<GlobalPtrStmt>() &&
-        stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+    if ((stmt->src->is<ExternalPtrStmt>() &&
+         stmt->src->as<ExternalPtrStmt>()
+                 ->base_ptr->as<ArgLoadStmt>()
+                 ->ret_type.ptr_removed()
+                 ->as<StructType>()
+                 ->elements()
+                 .size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) ||
+        (stmt->src->is<GlobalPtrStmt>() &&
+         stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint())) {
       qualified_glb_operations_ = true;
     }
   }
@@ -386,6 +404,15 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
     }
   }
 
+  void visit(ExternalPtrStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    for (const auto &index : stmt->indices) {
+      if (index == target_alloca_)
+        is_stack_needed_ = true;
+    }
+  }
+
   // Check whether the target stmt is used by the UnaryOpStmts who requires the
   // ad stack
   void visit(UnaryOpStmt *stmt) override {
@@ -654,6 +681,14 @@ class ADTransform : public IRVisitor {
   }
 
   void visit(GlobalPtrStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
+    // do nothing
+  }
+
+  void visit(DecorationStmt *stmt) override {
     // do nothing
   }
 
@@ -1040,17 +1075,25 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
-    if (stmt->src->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Importing data from external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
 
     GlobalPtrStmt *src = nullptr;
     bool is_ptr_offset = false;
     if (stmt->src->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
       src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    } else if (stmt->src->is<ExternalPtrStmt>()) {
+      auto src = stmt->src->as<ExternalPtrStmt>();
+      TI_ASSERT(!src->is_grad);
+      auto arg = src->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        auto adj_ptr = insert<ExternalPtrStmt>(
+            src->base_ptr, src->indices, src->element_shape, src->element_dim,
+            /*is_grad=*/true);
+        adj_ptr->ret_type = src->ret_type;
+        insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
+      }
+      return;
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
     }
@@ -1076,35 +1119,45 @@ class MakeAdjoint : public ADTransform {
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
+
+    Stmt *adjoint_ptr{nullptr};
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      TI_ERROR(
-          "Exporting data to external array (such as numpy array) not "
-          "supported in AutoDiff for now")
-    }
+      auto dest = stmt->dest->as<ExternalPtrStmt>();
+      auto arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() <=
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        return;
+      }
+      adjoint_ptr = insert<ExternalPtrStmt>(
+          dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
+          /*is_grad=*/true);
+      adjoint_ptr->ret_type = dest->ret_type;
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
-    GlobalPtrStmt *dest = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->dest->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else {
-      dest = stmt->dest->as<GlobalPtrStmt>();
-    }
+      GlobalPtrStmt *dest = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        dest = stmt->dest->as<GlobalPtrStmt>();
+      }
 
-    auto snode = dest->snode;
-    if (!snode->has_adjoint()) {
-      // no gradient (likely integer types)
-      return;
+      auto snode = dest->snode;
+      if (!snode->has_adjoint()) {
+        // no gradient (likely integer types)
+        return;
+      }
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
+      if (is_ptr_offset) {
+        adjoint_ptr = insert<MatrixPtrStmt>(
+            adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+      }
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     }
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adjoint_ptr = insert<GlobalPtrStmt>(snode, dest->indices);
-    if (is_ptr_offset) {
-      adjoint_ptr = insert<MatrixPtrStmt>(
-          adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
-    }
-    accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-
     // Clear the gradient after accumulation finished.
     auto zero = insert<ConstStmt>(
         TypedConstant(adjoint_ptr->ret_type.ptr_removed(), 0));
@@ -1120,6 +1173,20 @@ class MakeAdjoint : public ADTransform {
     if (stmt->dest->is<MatrixPtrStmt>()) {
       is_ptr_offset = true;
       dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    } else if (stmt->dest->is<ExternalPtrStmt>()) {
+      auto dest = stmt->dest->as<ExternalPtrStmt>();
+      auto arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
+          TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        auto adjoint_ptr =
+            insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
+                                    dest->element_shape, dest->element_dim,
+                                    /*is_grad=*/true);
+        adjoint_ptr->ret_type = dest->ret_type;
+        accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+        stmt->parent->erase(stmt);
+      }
+      return;
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
     }
@@ -1520,6 +1587,8 @@ class BackupSSA : public BasicStmtVisitor {
             // Erase the outdated AdStackAllocaStmt
             op->parent->erase(op);
           }
+        } else if (op->is<ArgLoadStmt>()) {
+          stmt->set_operand(i, stmt->insert_before_me(op->clone()));
         } else {
           auto alloca = load(op);
           stmt->set_operand(

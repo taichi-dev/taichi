@@ -204,6 +204,13 @@ class Tape:
             from taichi._kernels import clear_loss  # pylint: disable=C0415
 
             clear_loss(self.loss)
+        elif isinstance(self.loss, Ndarray):
+            self.loss.fill(0.0)
+        else:
+            import torch  # pylint: disable=C0415
+
+            with torch.no_grad():
+                self.loss.fill_(0.0)
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self

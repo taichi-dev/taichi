@@ -1186,3 +1186,40 @@ def test_ad_sum_vector():
     for i in range(N):
         for j in range(2):
             assert a.grad[i][j] == 2
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_multiple_tapes():
+    N = 10
+
+    @ti.kernel
+    def compute_sum(a: ti.types.ndarray(), p: ti.types.ndarray()):
+        for i in a:
+            p[None] += a[i][0] * 2 + a[i][1] * 3
+
+    a = ti.ndarray(ti.math.vec2, shape=N, needs_grad=True)
+    p = ti.ndarray(ti.f32, shape=(), needs_grad=True)
+
+    init_val = 3
+    for i in range(N):
+        a[i] = [init_val, init_val]
+
+    with ti.ad.Tape(loss=p):
+        compute_sum(a, p)
+
+    assert p[None] == N * (2 + 3) * init_val
+
+    for i in range(N):
+        assert a.grad[i][0] == 2
+        assert a.grad[i][1] == 3
+
+    # second run
+    a.grad.fill(0)
+    with ti.ad.Tape(loss=p):
+        compute_sum(a, p)
+
+    assert p[None] == N * (2 + 3) * init_val
+
+    for i in range(N):
+        assert a.grad[i][0] == 2
+        assert a.grad[i][1] == 3

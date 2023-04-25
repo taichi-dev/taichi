@@ -1444,8 +1444,7 @@ class MakeAdjoint : public ADTransform {
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<GlobalPtrStmt>() ||
-        stmt->origin->is<ExternalPtrStmt>()) {
+    if (stmt->origin->is<GlobalPtrStmt>()) {
       // Handled in GlobalLoadStmt and GlobalStoreStmt
       return;
     }
@@ -1889,8 +1888,7 @@ class MakeDual : public ADTransform {
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<GlobalPtrStmt>() ||
-        stmt->origin->is<ExternalPtrStmt>()) {
+    if (stmt->origin->is<GlobalPtrStmt>()) {
       // Handled in GlobalLoadStmt and GlobalStoreStmt
       return;
     }

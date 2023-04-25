@@ -17,6 +17,17 @@ except:
     pass
 
 
+def if_has_autograd(func):
+    # functools.wraps is nececssary for pytest parametrization to work
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if has_autograd:
+            func(*args, **kwargs)
+
+    return wrapper
+
+
+@if_has_autograd
 @test_utils.test()
 def test_ad_tensor_store_load():
     x = ti.Vector.field(4, dtype=ti.f32, shape=(), needs_grad=True)

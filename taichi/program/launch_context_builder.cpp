@@ -77,7 +77,9 @@ void LaunchContextBuilder::set_ndarray_ptrs(int arg_id,
                                             uint64 data_ptr,
                                             uint64 grad_ptr) {
   set_struct_arg({arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}, data_ptr);
-  set_struct_arg({arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}, grad_ptr);
+  if (kernel_->parameter_list[arg_id].needs_grad) {
+    set_struct_arg({arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}, grad_ptr);
+  }
 }
 
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,

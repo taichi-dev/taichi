@@ -56,7 +56,15 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
       return;
 
     if (stmt->dest->is<ExternalPtrStmt>()) {
-      qualified_glb_operations_ = true;
+      if (stmt->dest->as<ExternalPtrStmt>()
+              ->base_ptr->as<ArgLoadStmt>()
+              ->ret_type.ptr_removed()
+              ->as<StructType>()
+              ->elements()
+              .back()
+              .name == "grad_ptr") {
+        qualified_glb_operations_ = true;
+      }
     } else {
       TI_ASSERT(stmt->dest->is<GlobalPtrStmt>());
       if (stmt->dest->as<GlobalPtrStmt>()->snode->has_adjoint()) {
@@ -74,9 +82,16 @@ class IndependentBlocksJudger : public BasicStmtVisitor {
     // another IndependentBlocksJudger
     if (is_inside_loop_)
       return;
-    // TODO: handle external ptr stmt after autodiff supporting ndarray
-    if (stmt->src->is<GlobalPtrStmt>() &&
-        stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint()) {
+    if ((stmt->src->is<ExternalPtrStmt>() &&
+         stmt->src->as<ExternalPtrStmt>()
+                 ->base_ptr->as<ArgLoadStmt>()
+                 ->ret_type.ptr_removed()
+                 ->as<StructType>()
+                 ->elements()
+                 .back()
+                 .name == "grad_ptr") ||
+        (stmt->src->is<GlobalPtrStmt>() &&
+         stmt->src->as<GlobalPtrStmt>()->snode->has_adjoint())) {
       qualified_glb_operations_ = true;
     }
   }
@@ -383,6 +398,15 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   // The stack is needed if the alloc serves as the index of any global
   // variables
   void visit(GlobalPtrStmt *stmt) override {
+    if (is_stack_needed_)
+      return;
+    for (const auto &index : stmt->indices) {
+      if (index == target_alloca_)
+        is_stack_needed_ = true;
+    }
+  }
+
+  void visit(ExternalPtrStmt *stmt) override {
     if (is_stack_needed_)
       return;
     for (const auto &index : stmt->indices) {
@@ -1062,11 +1086,18 @@ class MakeAdjoint : public ADTransform {
     } else if (stmt->src->is<ExternalPtrStmt>()) {
       auto src = stmt->src->as<ExternalPtrStmt>();
       TI_ASSERT(!src->is_grad);
-      auto adj_ptr = insert<ExternalPtrStmt>(
-          src->base_ptr, src->indices, src->element_shape, src->element_dim,
-          /*is_grad=*/true);
-      adj_ptr->ret_type = src->ret_type;
-      insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
+      auto arg = src->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()
+              ->as<StructType>()
+              ->elements()
+              .back()
+              .name == "grad_ptr") {
+        auto adj_ptr = insert<ExternalPtrStmt>(
+            src->base_ptr, src->indices, src->element_shape, src->element_dim,
+            /*is_grad=*/true);
+        adj_ptr->ret_type = src->ret_type;
+        insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
+      }
       return;
     } else {
       src = stmt->src->as<GlobalPtrStmt>();
@@ -1097,11 +1128,20 @@ class MakeAdjoint : public ADTransform {
     Stmt *adjoint_ptr{nullptr};
     if (stmt->dest->is<ExternalPtrStmt>()) {
       auto dest = stmt->dest->as<ExternalPtrStmt>();
+      auto arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()
+              ->as<StructType>()
+              ->elements()
+              .back()
+              .name != "grad_ptr") {
+        return;
+      }
       adjoint_ptr = insert<ExternalPtrStmt>(
           dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
           /*is_grad=*/true);
       adjoint_ptr->ret_type = dest->ret_type;
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+
     } else {
       GlobalPtrStmt *dest = nullptr;
       bool is_ptr_offset = false;
@@ -1143,12 +1183,20 @@ class MakeAdjoint : public ADTransform {
       dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
     } else if (stmt->dest->is<ExternalPtrStmt>()) {
       auto dest = stmt->dest->as<ExternalPtrStmt>();
-      auto adjoint_ptr = insert<ExternalPtrStmt>(
-          dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
-          /*is_grad=*/true);
-      adjoint_ptr->ret_type = dest->ret_type;
-      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
-      stmt->parent->erase(stmt);
+      auto arg = dest->base_ptr->as<ArgLoadStmt>();
+      if (arg->ret_type.ptr_removed()
+              ->as<StructType>()
+              ->elements()
+              .back()
+              .name == "grad_ptr") {
+        auto adjoint_ptr =
+            insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
+                                    dest->element_shape, dest->element_dim,
+                                    /*is_grad=*/true);
+        adjoint_ptr->ret_type = dest->ret_type;
+        accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+        stmt->parent->erase(stmt);
+      }
       return;
     } else {
       dest = stmt->dest->as<GlobalPtrStmt>();
@@ -1550,7 +1598,9 @@ class BackupSSA : public BasicStmtVisitor {
             // Erase the outdated AdStackAllocaStmt
             op->parent->erase(op);
           }
-        } else if (!op->is<ArgLoadStmt>()) {
+        } else if (op->is<ArgLoadStmt>()) {
+          stmt->set_operand(i, stmt->insert_before_me(op->clone()));
+        } else {
           auto alloca = load(op);
           stmt->set_operand(
               i, stmt->insert_before_me(Stmt::make<LocalLoadStmt>(alloca)));
@@ -1600,24 +1650,6 @@ class BackupSSA : public BasicStmtVisitor {
   }
 };
 
-namespace {
-
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
-}  // namespace
-
 namespace irpass {
 
 void auto_diff(IRNode *root,
@@ -1625,7 +1657,6 @@ void auto_diff(IRNode *root,
                AutodiffMode autodiff_mode,
                bool use_stack) {
   TI_AUTO_PROF;
-  auto print = make_pass_printer(true, "debug", root);
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);

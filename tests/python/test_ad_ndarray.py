@@ -1,6 +1,7 @@
 import taichi as ti
 
 import pytest
+from taichi.lang.exception import TaichiRuntimeError
 
 from tests import test_utils
 from taichi.lang.util import has_pytorch
@@ -242,37 +243,36 @@ def test_ad_fibonacci():
         assert b.grad[i] == f[i]
 
 
-# FIMXE
-# @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f32, require=ti.extension.adstack)
-# def test_ad_fibonacci_index():
-#     N = 5
-#     M = 10
-#     a = ti.ndarray(ti.f32, shape=M, needs_grad=True)
-#     b = ti.ndarray(ti.f32, shape=M, needs_grad=True)
-#     f = ti.ndarray(ti.f32, shape=(), needs_grad=True)
+@test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f32, require=ti.extension.adstack)
+def test_ad_fibonacci_index():
+    N = 5
+    M = 10
+    a = ti.ndarray(ti.f32, shape=M, needs_grad=True)
+    b = ti.ndarray(ti.f32, shape=M, needs_grad=True)
+    f = ti.ndarray(ti.f32, shape=(), needs_grad=True)
 
-#     @ti.kernel
-#     def fib(a: ti.types.ndarray(), b: ti.types.ndarray(), f: ti.types.ndarray()):
-#         for i in range(N):
-#             p = 0
-#             q = 1
-#             for j in range(5):
-#                 p, q = q, p + q
-#                 b[q] += a[q]
+    @ti.kernel
+    def fib(a: ti.types.ndarray(), b: ti.types.ndarray(), f: ti.types.ndarray()):
+        for i in range(N):
+            p = 0
+            q = 1
+            for j in range(5):
+                p, q = q, p + q
+                b[q] += a[q]
 
-#         for i in range(M):
-#             f[None] += b[i]
+        for i in range(M):
+            f[None] += b[i]
 
-#     f.grad[None] = 1
-#     a.fill(1)
+    f.grad[None] = 1
+    a.fill(1)
 
-#     fib(a, b, f)
-#     fib.grad(a, b, f)
+    fib(a, b, f)
+    fib.grad(a, b, f)
 
-#     for i in range(M):
-#         is_fib = int(i in [1, 2, 3, 5, 8])
-#         assert a.grad[i] == is_fib * N
-#         assert b[i] == is_fib * N
+    for i in range(M):
+        is_fib = int(i in [1, 2, 3, 5, 8])
+        assert a.grad[i] == is_fib * N
+        assert b[i] == is_fib * N
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64, require=ti.extension.adstack)
@@ -398,43 +398,43 @@ def test_double_for_loops_more_nests():
         assert b.grad[i] == total_grad_b
 
 
-# @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64, require=ti.extension.adstack)
-# def test_complex_body():
-#     N = 5
-#     a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
-#     c = ti.ndarray(ti.i32, shape=N)
-#     f = ti.ndarray(ti.f32, shape=N, needs_grad=True)
-#     g = ti.ndarray(ti.f32, shape=N, needs_grad=False)
+@test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64, require=ti.extension.adstack)
+def test_complex_body():
+    N = 5
+    a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    c = ti.ndarray(ti.i32, shape=N)
+    f = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    g = ti.ndarray(ti.f32, shape=N, needs_grad=True)
 
-#     @ti.kernel
-#     def complex(a: ti.types.ndarray(), c: ti.types.ndarray(), f: ti.types.ndarray(), g: ti.types.ndarray()):
-#         for i in range(N):
-#             weight = 2.0
-#             tot = 0.0
-#             tot_weight = 0.0
-#             for j in range(c[i]):
-#                 tot_weight += weight + 1
-#                 tot += (weight + 1) * a[i]
-#                 weight = weight + 1
-#                 weight = weight * 4
-#                 weight = ti.cast(weight, ti.f64)
-#                 weight = ti.cast(weight, ti.f32)
+    @ti.kernel
+    def complex(a: ti.types.ndarray(), c: ti.types.ndarray(), f: ti.types.ndarray(), g: ti.types.ndarray()):
+        for i in range(N):
+            weight = 2.0
+            tot = 0.0
+            tot_weight = 0.0
+            for j in range(c[i]):
+                tot_weight += weight + 1
+                tot += (weight + 1) * a[i]
+                weight = weight + 1
+                weight = weight * 4
+                weight = ti.cast(weight, ti.f64)
+                weight = ti.cast(weight, ti.f32)
 
-#             g[i] = tot_weight
-#             f[i] = tot
+            g[i] = tot_weight
+            f[i] = tot
 
-#     a.fill(2)
+    a.fill(2)
 
-#     for i in range(N):
-#         c[i] = i
-#         f.grad[i] = 1
+    for i in range(N):
+        c[i] = i
+        f.grad[i] = 1
 
-#     complex(a, c, f, g)
-#     complex.grad(a, c, f, g)
+    complex(a, c, f, g)
+    complex.grad(a, c, f, g)
 
-#     for i in range(N):
-#         print(a.grad.to_numpy())
-#         # assert a.grad[i] == g[i]
+    for i in range(N):
+        print(a.grad.to_numpy())
+        # assert a.grad[i] == g[i]
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, default_fp=ti.f64, require=ti.extension.adstack)
@@ -530,57 +530,58 @@ def test_inner_loops_local_variable_adaptive_stack_size_tape():
     assert x.grad[0] == 36.0
 
 
-# @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack, ad_stack_size=0)
-# def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
-#     x = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
-#     arr = ti.ndarray(dtype=float, shape=(2), needs_grad=True)
-#     loss = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
+@test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack, ad_stack_size=0)
+def test_more_inner_loops_local_variable_adaptive_stack_size_tape():
+    x = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
+    arr = ti.ndarray(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
 
-#     @ti.kernel
-#     def test_more_inner_loops_local_variable(x: ti.types.ndarray(), arr: ti.types.ndarray(), loss: ti.types.ndarray()):
-#         for i in arr:
-#             for j in range(2):
-#                 s = 0.0
-#                 for k in range(3):
-#                     u = 0.0
-#                     s += ti.sin(x[0]) + 1.0
-#                     for l in range(2):
-#                         u += ti.sin(x[0])
-#                     loss[0] += u
-#                 loss[0] += s
+    @ti.kernel
+    def test_more_inner_loops_local_variable(x: ti.types.ndarray(), arr: ti.types.ndarray(), loss: ti.types.ndarray()):
+        for i in arr:
+            for j in range(2):
+                s = 0.0
+                for k in range(3):
+                    u = 0.0
+                    s += ti.sin(x[0]) + 1.0
+                    for l in range(2):
+                        u += ti.sin(x[0])
+                    loss[0] += u
+                loss[0] += s
 
-#     x[0] = 0.0
-#     with ti.ad.Tape(loss=loss):
-#         test_more_inner_loops_local_variable(x, arr, loss)
+    x[0] = 0.0
+    with ti.ad.Tape(loss=loss):
+        test_more_inner_loops_local_variable(x, arr, loss)
 
-#     assert loss[0] == 18.0
-#     assert x.grad[0] == 36.0
+    assert loss[0] == 12.0
+    assert x.grad[0] == 36.0
 
-# @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack, ad_stack_size=0)
-# def test_more_inner_loops_local_variable_fixed_stack_size_tape():
-#     x = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
-#     arr = ti.ndarray(dtype=float, shape=(2), needs_grad=True)
-#     loss = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
 
-#     @ti.kernel
-#     def test_more_inner_loops_local_variable(x: ti.types.ndarray(), arr: ti.types.ndarray(), loss: ti.types.ndarray()):
-#         for i in arr:
-#             for j in range(2):
-#                 s = 0.0
-#                 for k in range(3):
-#                     u = 0.0
-#                     s += ti.sin(x[0]) + 1.0
-#                     for l in range(2):
-#                         u += ti.sin(x[0])
-#                     loss[0] += u
-#                 loss[0] += s
+@test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack, ad_stack_size=32)
+def test_more_inner_loops_local_variable_fixed_stack_size_tape():
+    x = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
+    arr = ti.ndarray(dtype=float, shape=(2), needs_grad=True)
+    loss = ti.ndarray(dtype=float, shape=(1), needs_grad=True)
 
-#     x[0] = 0.0
-#     with ti.ad.Tape(loss=loss):
-#         test_more_inner_loops_local_variable(x, arr, loss)
+    @ti.kernel
+    def test_more_inner_loops_local_variable(x: ti.types.ndarray(), arr: ti.types.ndarray(), loss: ti.types.ndarray()):
+        for i in arr:
+            for j in range(2):
+                s = 0.0
+                for k in range(3):
+                    u = 0.0
+                    s += ti.sin(x[0]) + 1.0
+                    for l in range(2):
+                        u += ti.sin(x[0])
+                    loss[0] += u
+                loss[0] += s
 
-#     assert loss[0] == 18.0
-#     assert x.grad[0] == 36.0
+    x[0] = 0.0
+    with ti.ad.Tape(loss=loss):
+        test_more_inner_loops_local_variable(x, arr, loss)
+
+    assert loss[0] == 12.0
+    assert x.grad[0] == 36.0
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack, ad_stack_size=32)
@@ -938,34 +939,34 @@ def test_multiple_ib_inner_mixed():
     assert x.grad[None] == 78.0
 
 
-# @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
-# def test_ib_global_load():
-#     N = 10
-#     a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
-#     b = ti.ndarray(ti.i32, shape=N)
-#     p = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+@test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
+def test_ib_global_load():
+    N = 10
+    a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    b = ti.ndarray(ti.i32, shape=N)
+    p = ti.ndarray(ti.f32, shape=N, needs_grad=True)
 
-#     @ti.kernel
-#     def compute(a: ti.types.ndarray(), b: ti.types.ndarray(), p: ti.types.ndarray()):
-#         for i in range(N):
-#             val = a[i]
-#             for j in range(b[i]):
-#                 p[i] += i
-#             p[i] = val * i
+    @ti.kernel
+    def compute(a: ti.types.ndarray(), b: ti.types.ndarray(), p: ti.types.ndarray()):
+        for i in range(N):
+            val = a[i]
+            for j in range(b[i]):
+                p[i] += i
+            p[i] = val * i
 
-#     for i in range(N):
-#         a[i] = i
-#         b[i] = 2
+    for i in range(N):
+        a[i] = i
+        b[i] = 2
 
-#     compute(a, b, p)
+    compute(a, b, p)
 
-#     for i in range(N):
-#         assert p[i] == i * i
-#         p.grad[i] = 1
+    for i in range(N):
+        assert p[i] == i * i
+        p.grad[i] = 1
 
-#     compute.grad(a, b, p)
-#     for i in range(N):
-#         assert a.grad[i] == i
+    compute.grad(a, b, p)
+    for i in range(N):
+        assert a.grad[i] == i
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
@@ -1013,40 +1014,40 @@ def test_ad_if():
     assert x.grad[1] == 1
 
 
-# @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
-# def test_ad_if_nested():
-#     n = 20
-#     x = ti.ndarray(ti.f32, shape=n, needs_grad=True)
-#     y = ti.ndarray(ti.f32, shape=n, needs_grad=True)
-#     z = ti.ndarray(ti.f32, shape=n, needs_grad=True)
+@test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
+def test_ad_if_nested():
+    n = 20
+    x = ti.ndarray(ti.f32, shape=n, needs_grad=True)
+    y = ti.ndarray(ti.f32, shape=n, needs_grad=True)
+    z = ti.ndarray(ti.f32, shape=n, needs_grad=True)
 
-#     @ti.kernel
-#     def func(x: ti.types.ndarray(), y: ti.types.ndarray(), z: ti.types.ndarray()):
-#         for i in x:
-#             if x[i] < 2:
-#                 if x[i] == 0:
-#                     y[i] = 0
-#                 else:
-#                     y[i] = z[i] * 1
-#             else:
-#                 if x[i] == 2:
-#                     y[i] = z[i] * 2
-#                 else:
-#                     y[i] = z[i] * 3
+    @ti.kernel
+    def func(x: ti.types.ndarray(), y: ti.types.ndarray(), z: ti.types.ndarray()):
+        for i in x:
+            if x[i] < 2:
+                if x[i] == 0:
+                    y[i] = 0
+                else:
+                    y[i] = z[i] * 1
+            else:
+                if x[i] == 2:
+                    y[i] = z[i] * 2
+                else:
+                    y[i] = z[i] * 3
 
-#     z.fill(1)
+    z.fill(1)
 
-#     for i in range(n):
-#         x[i] = i % 4
+    for i in range(n):
+        x[i] = i % 4
 
-#     func(x, y, z)
-#     for i in range(n):
-#         assert y[i] == i % 4
-#         y.grad[i] = 1
-#     func.grad(x, y, z)
+    func(x, y, z)
+    for i in range(n):
+        assert y[i] == i % 4
+        y.grad[i] = 1
+    func.grad(x, y, z)
 
-#     for i in range(n):
-#         assert z.grad[i] == i % 4
+    for i in range(n):
+        assert z.grad[i] == i % 4
 
 
 @test_utils.test(arch=archs_support_ndarray_ad, require=ti.extension.adstack)
@@ -1152,3 +1153,36 @@ def test_ad_if_parallel_complex():
 
     assert x.grad[0] == 0
     assert x.grad[1] == -0.25
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_ndarray_i32():
+    with pytest.raises(TaichiRuntimeError, match=r"i32 is not supported for ndarray"):
+        ti.ndarray(ti.i32, shape=3, needs_grad=True)
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_sum_vector():
+    N = 10
+
+    @ti.kernel
+    def compute_sum(a: ti.types.ndarray(), p: ti.types.ndarray()):
+        for i in p:
+            p[i] = a[i] * 2
+
+    a = ti.ndarray(ti.math.vec2, shape=N, needs_grad=True)
+    p = ti.ndarray(ti.math.vec2, shape=N, needs_grad=True)
+    for i in range(N):
+        a[i] = [3, 3]
+
+    compute_sum(a, p)
+
+    for i in range(N):
+        assert p[i] == [a[i] * 2, a[i] * 3]
+        p.grad[i] = [1, 1]
+
+    compute_sum.grad(a, p)
+
+    for i in range(N):
+        for j in range(2):
+            assert a.grad[i][j] == 2

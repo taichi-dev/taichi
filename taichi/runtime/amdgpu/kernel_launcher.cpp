@@ -33,6 +33,10 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       device_ptrs;
 
   char *device_result_buffer{nullptr};
+  AMDGPUDriver::get_instance().malloc(
+      (void **)&device_result_buffer,
+      std::max(ctx.result_buffer_size, sizeof(uint64)));
+
   for (int i = 0; i < (int)parameters.size(); i++) {
     if (parameters[i].is_array) {
       const auto arr_sz = ctx.array_runtime_sizes[i];

@@ -1223,3 +1223,61 @@ def test_ad_multiple_tapes():
     for i in range(N):
         assert a.grad[i][0] == 2
         assert a.grad[i][1] == 3
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_mixed_with_torch():
+    @test_utils.torch_op(output_shapes=[(1,)])
+    @ti.kernel
+    def compute_sum(a: ti.types.ndarray(), p: ti.types.ndarray()):
+        for i in a:
+            p[0] += a[i] * 2
+
+    N = 4
+    a = torch.ones(N, requires_grad=True)
+    b = a * 2
+    c = compute_sum(b)
+    c[0].sum().backward()
+
+    for i in range(4):
+        assert a.grad[i] == 4
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_tape_throw():
+    N = 4
+
+    @ti.kernel
+    def compute_sum(a: ti.types.ndarray(), p: ti.types.ndarray()):
+        for i in a:
+            p[0] += a[i] * 2
+
+    a = torch.ones(N, requires_grad=True)
+    p = torch.ones(2, requires_grad=True)
+
+    with pytest.raises(RuntimeError, match=r"he loss of `Tape` must be a tensor only contains one element"):
+        with ti.ad.Tape(loss=p):
+            compute_sum(a, p)
+
+    b = ti.ndarray(ti.f32, shape=(N), needs_grad=True)
+    q = ti.ndarray(ti.f32, shape=(2), needs_grad=True)
+
+    with pytest.raises(RuntimeError, match=r"The loss of `Tape` must be an ndarray with only one element"):
+        with ti.ad.Tape(loss=q):
+            compute_sum(b, q)
+
+    m = torch.ones(1, requires_grad=False)
+    with pytest.raises(
+        RuntimeError,
+        match=r"Gradients of loss are not allocated, please set requires_grad=True for all tensors that are required by autodiff.",
+    ):
+        with ti.ad.Tape(loss=m):
+            compute_sum(a, m)
+
+    n = ti.ndarray(ti.f32, shape=(1), needs_grad=False)
+    with pytest.raises(
+        RuntimeError,
+        match=r"Gradients of loss are not allocated, please set needs_grad=True for all ndarrays that are required by autodiff.",
+    ):
+        with ti.ad.Tape(loss=n):
+            compute_sum(b, n)

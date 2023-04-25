@@ -205,10 +205,22 @@ class Tape:
 
             clear_loss(self.loss)
         elif isinstance(self.loss, Ndarray):
+            if self.loss._get_nelement() != 1:
+                raise RuntimeError("The loss of `Tape` must be an ndarray with only one element")
+            if self.loss.grad is None:
+                raise RuntimeError(
+                    "Gradients of loss are not allocated, please set needs_grad=True for all ndarrays that are required by autodiff."
+                )
             self.loss.fill(0.0)
         else:
             import torch  # pylint: disable=C0415
 
+            if self.loss.numel() != 1:
+                raise RuntimeError("The loss of `Tape` must be a tensor only contains one element")
+            if not self.loss.requires_grad:
+                raise RuntimeError(
+                    "Gradients of loss are not allocated, please set requires_grad=True for all tensors that are required by autodiff."
+                )
             with torch.no_grad():
                 self.loss.fill_(0.0)
 

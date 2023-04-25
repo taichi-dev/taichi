@@ -209,8 +209,10 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
       llvm_val[stmt] = call("logical_not_u1", input);
     } else {
-      TI_INFO(input_taichi_type->to_string());
-      TI_NOT_IMPLEMENTED
+      llvm_val[stmt] = call("logical_not_u1",
+                            builder->CreateTrunc(
+                                input,
+                                tlctx->get_data_type(PrimitiveType::u1)));
     }
   }
   else if (op == UnaryOpType::popcnt) {
@@ -572,10 +574,15 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
+      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->lhs->ret_type));
+      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
           call("debug_add_" + stmt->ret_type->to_string(), get_arg(0),
-               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -587,10 +594,15 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
+      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->lhs->ret_type));
+      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
           call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0),
-               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -602,10 +614,15 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
+      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->lhs->ret_type));
+      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
           call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
-               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
       llvm_val[stmt] =
@@ -637,10 +654,15 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_shl) {
 #if defined(__clang__) || defined(__GNUC__)
     if (compile_config.debug && is_integral(stmt->ret_type)) {
+      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->lhs->ret_type));
+      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
+                                        tlctx->get_data_type(stmt->ret_type),
+                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
           call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0),
-               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
-               builder->CreateGlobalStringPtr(stmt->tb));
+               lhs, rhs, builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =
           builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -1327,7 +1349,8 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 
   std::vector<llvm::Value *> args;
   args.emplace_back(get_runtime());
-  args.emplace_back(llvm_val[stmt->cond]);
+  args.emplace_back(builder->CreateTrunc(
+      llvm_val[stmt->cond], tlctx->get_data_type(PrimitiveType::u1)));
   args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
 
   for (int i = 0; i < stmt->args.size(); i++) {

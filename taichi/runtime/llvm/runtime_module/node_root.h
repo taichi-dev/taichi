@@ -9,7 +9,7 @@ STRUCT_FIELD(RootMeta, tag);
 void Root_activate(Ptr meta, Ptr node, int i) {
 }
 
-i32 Root_is_active(Ptr meta, Ptr node, int i) {
+u1 Root_is_active(Ptr meta, Ptr node, int i) {
   return 1;
 }
 

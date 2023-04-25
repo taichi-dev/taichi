@@ -29,7 +29,7 @@ void Bitmasked_deactivate(Ptr meta, Ptr node, int i) {
   atomic_and_u32(&mask_begin[i / 32], ~(1UL << (i % 32)));
 }
 
-i32 Bitmasked_is_active(Ptr meta, Ptr node, int i) {
+u1 Bitmasked_is_active(Ptr meta, Ptr node, int i) {
   auto smeta = (StructMeta *)meta;
   auto element_size = StructMeta_get_element_size(smeta);
   auto num_elements = Dense_get_num_elements(meta, node);

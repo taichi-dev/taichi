@@ -311,7 +311,7 @@ struct StructMeta {
 
   Ptr (*from_parent_element)(Ptr);
 
-  i32 (*is_active)(Ptr, Ptr, int i);
+  u1 (*is_active)(Ptr, Ptr, int i);
 
   i32 (*get_num_elements)(Ptr, Ptr);
 

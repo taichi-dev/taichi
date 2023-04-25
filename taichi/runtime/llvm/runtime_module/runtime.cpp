@@ -749,7 +749,7 @@ RUNTIME_STRUCT_FIELD(ListManager, num_elements);
 RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
 RUNTIME_STRUCT_FIELD(ListManager, element_size);
 
-void taichi_assert(RuntimeContext *context, i32 test, const char *msg) {
+void taichi_assert(RuntimeContext *context, u1 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 

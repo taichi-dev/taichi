@@ -559,27 +559,27 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
             [Static index]
             Fwd:
             $0 = adstack alloca <4 x i32>
-            $0 = adstack load top
-            $1 = matrix ptr $0, 2 // offset = 2
-            $2 : local store $1, $val
+            $1 = adstack load top
+            $2 = matrix ptr $1, 2 // offset = 2
+            $3 : local store $2, $val
 
             Replaced:
             $0 = adstack alloca <4 x i32>
-            $0 = adstack load top
-            $1 = matrix ptr $0, 2 // --> erase
+            $1 = adstack load top
+            $2 = matrix ptr $1, 2 // --> erase
 
-            $2 = matrix ptr $0, 0
-            $3 = load $2
+            $3 = matrix ptr $1, 0
+            $4 = load $3
 
-            $4 = matrix ptr $0, 1
-            $5 = load $4
+            $5 = matrix ptr $1, 1
+            $6 = load $5
 
-            $6 = matrix ptr $0, 3
-            $7 = load $6
+            $7 = matrix ptr $1, 3
+            $8 = load $7
 
-            $5 = matrix init [$3, $5, $val, $7]
+            $9 = matrix init [$4, $6, $val, $8]
 
-            $2 : adstack push $5
+            $10 : adstack push $9
           */
           int offset =
               matrix_ptr_stmt->offset->as<ConstStmt>()->val.val_int32();
@@ -1445,7 +1445,14 @@ class MakeAdjoint : public ADTransform {
 
   void visit(MatrixPtrStmt *stmt) override {
     if (stmt->origin->is<GlobalPtrStmt>()) {
-      // Handled in GlobalLoadStmt and GlobalStoreStmt
+      /*
+        The case of MatrixPtrStmt(GlobalPtrStmt, ...) is already handled in
+        GlobalPtrStmt, GlobalStoreStmt and AtomicStmt
+
+        TODO(zhanlue): Try to separate out the chain rule for MatrixPtrStmt from
+        GlobalPtrStmt, GlobalStoreStmt and AtomicStmt and migrate the logics
+        here.
+      */
       return;
     }
 

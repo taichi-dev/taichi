@@ -1647,7 +1647,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
     if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
-      auto num_elem = struct_type->get_num_elements();
+      auto num_elem = struct_type->elements().size();
       for (int i = 0; i < num_elem; i++) {
         std::vector<int> indices = {i};
         auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));

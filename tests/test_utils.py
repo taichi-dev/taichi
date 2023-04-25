@@ -285,7 +285,10 @@ def test(arch=None, exclude=None, require=None, **options):
 
 def torch_op(*, output_shapes=[(1,)]):
     def inner(f):
-        import torch
+        from taichi.lang.util import has_pytorch
+
+        if has_pytorch():
+            import torch
 
         class CustomTaichiOp(torch.autograd.Function):
             @staticmethod

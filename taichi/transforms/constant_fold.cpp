@@ -38,6 +38,7 @@ class ConstantFold : public BasicStmtVisitor {
         dt->is_primitive(PrimitiveTypeID::i64) ||
         dt->is_primitive(PrimitiveTypeID::u32) ||
         dt->is_primitive(PrimitiveTypeID::u64) ||
+        dt->is_primitive(PrimitiveTypeID::u1)  ||
         dt->is_primitive(PrimitiveTypeID::f32) ||
         dt->is_primitive(PrimitiveTypeID::f64))
       return true;
@@ -83,6 +84,10 @@ class ConstantFold : public BasicStmtVisitor {
                dt->is_primitive(PrimitiveTypeID::u64)) {                     \
       auto res = TypedConstant(                                              \
           dst_type, PREFIX(lhs->val.val_uint() OP_CPP rhs->val.val_uint())); \
+      insert_and_erase(stmt, res);                                           \
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                      \
+      auto res = TypedConstant(                                              \
+          dst_type, PREFIX(lhs->val.val_uint1() OP_CPP rhs->val.val_uint1())); \
       insert_and_erase(stmt, res);                                           \
     }                                                                        \
     break;                                                                   \
@@ -180,6 +185,9 @@ class ConstantFold : public BasicStmtVisitor {
     } else if (dt->is_primitive(PrimitiveTypeID::u32) ||                    \
                dt->is_primitive(PrimitiveTypeID::u64)) {                    \
       auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint()));  \
+      insert_and_erase(stmt, res);                                          \
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                      \
+      auto res = TypedConstant(dst_type,operand->val.val_uint());           \
       insert_and_erase(stmt, res);                                          \
     }                                                                       \
     break;                                                                  \

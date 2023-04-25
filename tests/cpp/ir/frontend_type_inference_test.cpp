@@ -67,9 +67,11 @@ TEST(FrontendTypeInference, UnaryOp) {
 }
 
 TEST(FrontendTypeInference, TernaryOp) {
+  auto const_u1 = value<uint1>(true);
+  const_u1->type_check(nullptr);
+  EXPECT_EQ(const_u1->ret_type, PrimitiveType::u1);
   auto const_i32 = value<int32>(-(1 << 10));
   const_i32->type_check(nullptr);
-  EXPECT_EQ(const_i32->ret_type, PrimitiveType::i32);
   auto cast_i8 = cast(const_i32, PrimitiveType::i8);
 
   CompileConfig dummy_config;
@@ -79,15 +81,15 @@ TEST(FrontendTypeInference, TernaryOp) {
   auto const_f32 = value<float32>(5.0);
   const_f32->type_check(nullptr);
   EXPECT_EQ(const_f32->ret_type, PrimitiveType::f32);
-  auto ternary_f32 = expr_select(const_i32, cast_i8, const_f32);
+  auto ternary_f32 = expr_select(const_u1, cast_i8, const_f32);
   ternary_f32->type_check(nullptr);
   EXPECT_EQ(ternary_f32->ret_type, PrimitiveType::f32);
 }
 
 TEST(FrontendTypeInference, TernaryOp_NoBroadcast) {
-  auto cond = value<int32>(42);
+  auto cond = value<uint1>(true);
   cond->type_check(nullptr);
-  EXPECT_EQ(cond->ret_type, PrimitiveType::i32);
+  EXPECT_EQ(cond->ret_type, PrimitiveType::u1);
 
   auto const_3 = Expr::make<ConstExpression, int32>(3);
   auto const_5 = Expr::make<ConstExpression, int32>(5);

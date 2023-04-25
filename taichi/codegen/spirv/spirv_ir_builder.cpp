@@ -1664,9 +1664,13 @@ Value IRBuilder::make_access_chain(const SType &out_type,
                                    Value base,
                                    const std::vector<int> &indices) {
   Value ret = new_value(out_type, ValueKind::kVariablePtr);
-  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  std::vector<Value> index_values;
   for (auto &ind : indices) {
-    ib_.add(int_immediate_number(t_int32_, ind));
+    index_values.push_back(int_immediate_number(t_int32_, ind));
+  }
+  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  for (auto &ind : index_values) {
+    ib_.add(ind);
   }
   ib_.commit(&func_header_);
   return ret;

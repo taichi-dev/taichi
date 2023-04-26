@@ -90,11 +90,23 @@ def ensure_dependencies(*deps: str):
         pass
 
     print("Installing dependencies...", flush=True)
-    pip = str(bootstrap_root / "get-pip.py")
-    fetch_pip(pip)
     py = sys.executable
-    if run(py, "-S", pip, "--no-user", f"--target={bootstrap_root}"):
-        raise Exception("Unable to install pip!")
+
+    try:
+        import pip
+
+        has_pip = True
+    except ModuleNotFoundError:
+        has_pip = False
+
+    if has_pip:
+        if run(py, "-m", "pip", "--no-user", f"--target={bootstrap_root}"):
+            raise Exception("Unable to install pip!")
+    else:
+        pip = str(bootstrap_root / "get-pip.py")
+        fetch_pip(pip)
+        if run(py, "-S", pip, "--no-user", f"--target={bootstrap_root}"):
+            raise Exception("Unable to install pip!")
 
     pipcmd = [py, "-S", "-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
     if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):

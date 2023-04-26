@@ -30,6 +30,24 @@ You can call `ti.sync()`, which is similar to CUDA's `cudaStreamSynchronize()`, 
 
 ## Data structures
 
+### Why I cannot declare a field with a very large dimension?
+
+In Taichi, the maximum size of each dimension of a field is restricted to the range represented by the int32 type (less than or equal to 2^31-1) due to Taichi's current internal implementation.
+
+If a field with a size of a dimension larger than int32 is declared, Taichi will raise an error. For example, the following code will raise an error:
+
+```python skip-ci:Error
+x = ti.field(int, shape=(10**10))  # error!
+```
+
+However, multi-dimensional fields of large size can still be declared as long as each dimension does not exceed the int32 limit. For example, the following code declares a three-dimensional field:
+
+```python skip-ci:Error
+x = ti.field(int, shape=(10**4, 10**4, 10**2))  # OK!
+```
+
+However, we do not recommend doing so, as this approach can also bring about some issues. For example, the field `x` created above does not support _struct-for loop_, the compiler will throw a warning message in this case.
+
 ### How do I declare a field with a **dynamic length**?
 
 The `dynamic` SNode supports variable-length fields. It acts similarly to `std::vector` in C++ or `list` in Python.
@@ -209,6 +227,22 @@ Alternatively, if you can afford having all floating-point operations in `f64` p
 
 ## From Python to Taichi
 
+### What's the right way to declare fields as local containers in Python functions?
+
+In some situations, you may need to declare a field within a Python function, perform computations using it, and have the field automatically destroyed once the function call is complete. For instance:
+
+```python skip-ci
+def some_pythn_function(n: int):
+    x = ti.field(int, shape=n)
+    @ti.kernel
+    def some_kernel(x: ti.template()):
+        ...
+    some_kernel(x)
+some_python_function(100)
+```
+
+However, calling this function multiple times can lead to memory leak because the memory allocated for the fields `x` is not handled by the garbage collector. To avoid this issue, you can either use `ti.ndarray` instead if you only need a dense array-like data container (explained [here](../basic/ndarray.md)) or explicitly manage field creation and destruction (explained [here](../basic/layout.md#manage-memory-occupancy)).
+
 ### Why does it always return an error when I pass a list from the Python scope to a Taichi kernel?
 
 A Taichi kernel **cannot** take a Python list directly. You need to use NumPy arrays as a bridge.
@@ -229,7 +263,7 @@ def test(arr: list):
 test(array)
 ```
 
-You need to import NumPy:
+You can use a NumPy array instead:
 
 ```python
 import taichi as ti
@@ -265,6 +299,18 @@ while gui.running: # Main loop
 ```
 
 ## Objective-oriented programming
+
+### What's the right way to type annotate a field as a dataclass member?
+
+Currently, the only way to type annotate a field as a dataclass member is to use `ti.template()`:
+
+```python
+from dataclasses import dataclass
+@dataclass
+class Foo:
+    x: ti.template()
+foo = Foo(ti.field(int, shape=(10,)))
+```
 
 ### Why does inheritance fail? I created a parent class and a child class, both decorated with `@ti.data_oriented`, and placed fields under `@ti.kernel`.
 

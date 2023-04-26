@@ -288,8 +288,8 @@ class TernaryOpStmt final : public Stmt {
  * An atomic operation.
  */
 class AtomicOpStmt final : public Stmt,
-                     public ir_traits::Store,
-                     public ir_traits::Load {
+                           public ir_traits::Store,
+                           public ir_traits::Load {
  public:
   AtomicOpType op_type;
   Stmt *dest, *val;
@@ -581,8 +581,8 @@ class AssertStmt final : public Stmt {
  * Call an external (C++) function.
  */
 class ExternalFuncCallStmt final : public Stmt,
-                             public ir_traits::Store,
-                             public ir_traits::Load {
+                                   public ir_traits::Store,
+                                   public ir_traits::Load {
  public:
   enum Type { SHARED_OBJECT = 0, ASSEMBLY = 1, BITCODE = 2 };
 

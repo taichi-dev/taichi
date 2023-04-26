@@ -20,9 +20,9 @@ from taichi.math import vec3
 # A set of helper (meta)functions
 @kernel
 def fill_field(field: template(), val: template()):
-    tmp = ops.cast(val, field.dtype)
+    value = ops.cast(val, field.dtype)
     for I in grouped(field):
-        field[I] = tmp
+        field[I] = value
 
 
 @kernel

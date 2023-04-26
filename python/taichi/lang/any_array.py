@@ -32,13 +32,9 @@ class AnyArray:
         return Layout.AOS
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.ptr.get_ret_type(), None)  # AnyArray can take any shape
-
-    @property
-    @taichi_scope
-    def grad(self):
-        """Returns the gradient of this array."""
-        return AnyArray(_ti_core.make_external_grad_tensor_expr(self.ptr))
+        return NdarrayTypeMetadata(
+            self.ptr.get_ret_type(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+        )  # AnyArray can take any shape
 
     @property
     @taichi_scope

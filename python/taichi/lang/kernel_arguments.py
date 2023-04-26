@@ -84,13 +84,13 @@ def decl_sparse_matrix(dtype, name):
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, dim, element_shape, layout, name):
+def decl_ndarray_arg(dtype, dim, element_shape, layout, name, needs_grad):
     dtype = cook_dtype(dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.insert_arr_param(dtype, dim, element_shape, name)
+    arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(dtype, dim, element_shape, name, needs_grad)
     if layout == Layout.AOS:
         element_dim = -element_dim
-    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim, element_shape))
+    return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim, element_shape, needs_grad))
 
 
 def decl_texture_arg(num_dimensions, name):

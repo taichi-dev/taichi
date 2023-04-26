@@ -40,11 +40,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
     return ir_is_ast_;
   }
 
-  void compile(const CompileConfig &compile_config);
-
-  void operator()(const CompileConfig &compile_config,
-                  LaunchContextBuilder &ctx_builder);
-
   LaunchContextBuilder make_launch_context();
 
   template <typename T>
@@ -75,8 +70,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
 
   // True if |ir| is a frontend AST. False if it's already offloaded to CHI IR.
   bool ir_is_ast_{false};
-  // The closure that, if invoked, launches the backend kernel (shader)
-  FunctionType compiled_{nullptr};
   mutable std::string kernel_key_;
 };
 

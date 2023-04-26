@@ -35,12 +35,6 @@ class ProgramImpl {
   explicit ProgramImpl(CompileConfig &config);
 
   /**
-   * Codegen to specific backend
-   */
-  virtual FunctionType compile(const CompileConfig &compile_config,
-                               Kernel *kernel);
-
-  /**
    * Allocate runtime buffer, e.g result_buffer or backend specific runtime
    * buffer, e.g. preallocated_device_buffer on CUDA.
    */
@@ -173,15 +167,15 @@ class ProgramImpl {
 
   KernelLauncher &get_kernel_launcher();
 
+  virtual DeviceCapabilityConfig get_device_caps() {
+    return {};
+  }
+
  protected:
   virtual std::unique_ptr<KernelCompiler> make_kernel_compiler() = 0;
 
   virtual std::unique_ptr<KernelLauncher> make_kernel_launcher() {
     TI_NOT_IMPLEMENTED;
-  }
-
-  virtual DeviceCapabilityConfig get_device_caps() {
-    return {};
   }
 
  private:

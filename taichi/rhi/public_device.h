@@ -762,10 +762,6 @@ class RHI_DLL_EXPORT Device {
       int num_alloc = 1,
       const std::vector<StreamSemaphore> &wait_sema = {}) noexcept;
 
-  virtual uint64_t fetch_result_uint64(int i, uint64_t *result_buffer) {
-    RHI_NOT_IMPLEMENTED
-  }
-
   // Each thraed will acquire its own stream
   virtual Stream *get_compute_stream() = 0;
 

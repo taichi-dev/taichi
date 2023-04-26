@@ -25,6 +25,10 @@ class TypeFactory {
   const Type *get_struct_type(const std::vector<StructMember> &elements,
                               const std::string &layout = "none");
 
+  const Type *get_ndarray_struct_type(DataType dt,
+                                      int total_dim,
+                                      bool needs_grad = false);
+
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_quant_int_type(int num_bits, bool is_signed, Type *compute_type);
@@ -49,6 +53,9 @@ class TypeFactory {
                              int num_elements);
 
   static DataType create_tensor_type(std::vector<int> shape, DataType element);
+
+  constexpr static int DATA_PTR_POS_IN_NDARRAY = 1;
+  constexpr static int GRAD_PTR_POS_IN_NDARRAY = 2;
 
  private:
   TypeFactory();

@@ -104,22 +104,24 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  // if (autodiff_mode == AutodiffMode::kReverse ||
-  //     autodiff_mode == AutodiffMode::kForward) {
-  //   // Remove local atomics here so that we don't have to handle their
-  //   gradients irpass::demote_atomics(ir, config);
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
 
-  //   irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ true});
-  //   irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
-  //   // TODO: Be carefull with the full_simplify when do high-order autodiff
-  //   irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-  //   print("Gradient");
-  //   irpass::analysis::verify(ir);
-  // }
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
+  }
 
-  if (config.check_out_of_bound) {
-    irpass::check_out_of_bound(ir, config, {kernel->get_name()});
-    print("Bound checked");
+  if (autodiff_mode == AutodiffMode::kReverse ||
+      autodiff_mode == AutodiffMode::kForward) {
+    // Remove local atomics here so that we don't have to handle their gradients
+    irpass::demote_atomics(ir, config);
+
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ true});
+    irpass::auto_diff(ir, config, autodiff_mode, ad_use_stack);
+    // TODO: Be carefull with the full_simplify when do high-order autodiff
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Gradient");
     irpass::analysis::verify(ir);
   }
 
@@ -129,6 +131,12 @@ void compile_to_offloads(IRNode *ir,
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
     print("Scalarized");
+  }
+
+  if (config.check_out_of_bound) {
+    irpass::check_out_of_bound(ir, config, {kernel->get_name()});
+    print("Bound checked");
+    irpass::analysis::verify(ir);
   }
 
   irpass::flag_access(ir);

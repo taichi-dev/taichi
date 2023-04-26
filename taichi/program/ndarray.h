@@ -59,8 +59,7 @@ class TI_DLL_EXPORT Ndarray {
   std::size_t get_element_size() const;
   std::size_t get_nelement() const;
   TypedConstant read(const std::vector<int> &I) const;
-  template <typename T>
-  void write(const std::vector<int> &I, T val) const;
+  void write(const std::vector<int> &I, TypedConstant val) const;
   int64 read_int(const std::vector<int> &i);
   uint64 read_uint(const std::vector<int> &i);
   float64 read_float(const std::vector<int> &i);

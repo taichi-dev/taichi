@@ -134,11 +134,23 @@ void run_snode() {
   ctx_ext.set_arg_external_array_with_shape(0, taichi::uint64(ext_arr.data()),
                                             n, {n});
 
-  (*kernel_init)(config, ctx_init);
-  (*kernel_ret)(config, ctx_ret);
-  std::cout << program.fetch_result<int>(0) << std::endl;
-  (*kernel_ext)(config, ctx_ext);
-  for (int i = 0; i < n; i++)
-    std::cout << ext_arr[i] << " ";
-  std::cout << std::endl;
+  {
+    const auto &compiled_kernel_data =
+        program.compile_kernel(config, program.get_device_caps(), *kernel_init);
+    program.launch_kernel(compiled_kernel_data, ctx_init);
+  }
+  {
+    const auto &compiled_kernel_data =
+        program.compile_kernel(config, program.get_device_caps(), *kernel_ret);
+    program.launch_kernel(compiled_kernel_data, ctx_ret);
+    std::cout << program.fetch_result<int>(0) << std::endl;
+  }
+  {
+    const auto &compiled_kernel_data =
+        program.compile_kernel(config, program.get_device_caps(), *kernel_ext);
+    program.launch_kernel(compiled_kernel_data, ctx_ext);
+    for (int i = 0; i < n; i++)
+      std::cout << ext_arr[i] << " ";
+    std::cout << std::endl;
+  }
 }

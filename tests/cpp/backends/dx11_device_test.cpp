@@ -152,7 +152,8 @@ TEST(Dx11ProgramTest, MaterializeRuntimeTest) {
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
   ker->finalize_rets();
   ker->finalize_params();
-  program->compile(*program->config, ker.get());
+  program->get_kernel_compilation_manager().load_or_compile(
+      *program->config, program->get_device_caps(), *ker.get());
 }
 
 }  // namespace directx11

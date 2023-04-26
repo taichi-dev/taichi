@@ -475,14 +475,14 @@ class ExternalTensorExpression : public Expression {
   int arg_id;
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
-  bool is_grad;
+  bool needs_grad;
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
                            int arg_id,
                            int element_dim,
-                           bool is_grad = false) {
-    init(dt, dim, arg_id, element_dim, is_grad);
+                           bool needs_grad = false) {
+    init(dt, dim, arg_id, element_dim, needs_grad);
   }
 
   ExternalTensorExpression(const DataType &dt,
@@ -490,22 +490,22 @@ class ExternalTensorExpression : public Expression {
                            int arg_id,
                            int element_dim,
                            const std::vector<int> &element_shape,
-                           bool is_grad = false) {
+                           bool needs_grad = false) {
     if (element_shape.size() == 0) {
-      init(dt, dim, arg_id, element_dim, is_grad);
+      init(dt, dim, arg_id, element_dim, needs_grad);
     } else {
       TI_ASSERT(dt->is<PrimitiveType>());
 
       auto tensor_type =
           taichi::lang::TypeFactory::get_instance().create_tensor_type(
               element_shape, dt);
-      init(tensor_type, dim, arg_id, element_dim, is_grad);
+      init(tensor_type, dim, arg_id, element_dim, needs_grad);
     }
   }
 
-  explicit ExternalTensorExpression(Expr *expr, bool is_grad = true) {
+  explicit ExternalTensorExpression(Expr *expr, bool needs_grad = true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, is_grad);
+    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, needs_grad);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -529,12 +529,12 @@ class ExternalTensorExpression : public Expression {
             int dim,
             int arg_id,
             int element_dim,
-            bool is_grad) {
+            bool needs_grad) {
     this->dt = dt;
     this->dim = dim;
     this->arg_id = arg_id;
     this->element_dim = element_dim;
-    this->is_grad = is_grad;
+    this->needs_grad = needs_grad;
   }
 };
 

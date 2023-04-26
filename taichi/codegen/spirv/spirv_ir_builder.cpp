@@ -328,7 +328,31 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
   }
 }
 
+SType IRBuilder::from_taichi_type(const DataType &dt, bool has_buffer_ptr) {
+  if (dt->is<PrimitiveType>()) {
+    return get_primitive_type(dt);
+  } else if (dt->is<PointerType>()) {
+    if (has_buffer_ptr) {
+      return t_uint64_;
+    } else {
+      return t_uint32_;
+    }
+  } else if (auto struct_type = dt->cast<lang::StructType>()) {
+    std::vector<std::tuple<SType, std::string, size_t>> components;
+    for (const auto &[type, name, offset] : struct_type->elements()) {
+      components.push_back(std::make_tuple(
+          from_taichi_type(type, has_buffer_ptr), name, offset));
+    }
+    return create_struct_type(components);
+  } else {
+    TI_ERROR("Type {} not supported.", dt->to_string());
+  }
+}
+
 size_t IRBuilder::get_primitive_type_size(const DataType &dt) const {
+  if (!dt->is<PrimitiveType>()) {
+    TI_ERROR("Type {} not supported.", dt->to_string());
+  }
   if (dt == PrimitiveType::i64 || dt == PrimitiveType::u64 ||
       dt == PrimitiveType::f64) {
     return 8;
@@ -1267,84 +1291,117 @@ bool IRBuilder::check_value_existence(const std::string &name) const {
 
 Value IRBuilder::float_atomic(AtomicOpType op_type,
                               Value addr_ptr,
-                              Value data) {
-  auto atomic_func_ = [&](std::function<Value(Value, Value)> atomic_op) {
-    Value ret_val_int = alloca_variable(t_uint32_);
-
-    // do-while
-    Label head = new_label();
-    Label body = new_label();
-    Label branch_true = new_label();
-    Label branch_false = new_label();
-    Label merge = new_label();
-    Label exit = new_label();
-
-    make_inst(spv::OpBranch, head);
-    start_label(head);
-    make_inst(spv::OpLoopMerge, branch_true, merge, 0);
-    make_inst(spv::OpBranch, body);
-    make_inst(spv::OpLabel, body);
-    // while (true)
-    {
-      // int old = addr_ptr[0];
-      Value old_val = load_variable(addr_ptr, t_uint32_);
-      // int new = floatBitsToInt(atomic_op(intBitsToFloat(old), data));
-      Value old_float = make_value(spv::OpBitcast, t_fp32_, old_val);
-      Value new_float = atomic_op(old_float, data);
-      Value new_val = make_value(spv::OpBitcast, t_uint32_, new_float);
-      // int loaded = atomicCompSwap(vals[0], old, new);
-      /*
-      * Don't need this part, theoretically
-      auto semantics = uint_immediate_number(
-          t_uint32_, spv::MemorySemanticsAcquireReleaseMask |
-                         spv::MemorySemanticsUniformMemoryMask);
-      make_inst(spv::OpMemoryBarrier, const_i32_one_, semantics);
-      */
-      Value loaded = make_value(
-          spv::OpAtomicCompareExchange, t_uint32_, addr_ptr,
-          /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,
-          /*semantics if unequal=*/const_i32_zero_, new_val, old_val);
-      // bool ok = (loaded == old);
-      Value ok = make_value(spv::OpIEqual, t_bool_, loaded, old_val);
-      // int ret_val_int = loaded;
-      store_variable(ret_val_int, loaded);
-      // if (ok)
-      make_inst(spv::OpSelectionMerge, branch_false, 0);
-      make_inst(spv::OpBranchConditional, ok, branch_true, branch_false);
-      {
-        make_inst(spv::OpLabel, branch_true);
-        make_inst(spv::OpBranch, exit);
-      }
-      // else
-      {
-        make_inst(spv::OpLabel, branch_false);
-        make_inst(spv::OpBranch, merge);
-      }
-      // continue;
-      make_inst(spv::OpLabel, merge);
-      make_inst(spv::OpBranch, head);
-    }
-    start_label(exit);
-
-    return make_value(spv::OpBitcast, t_fp32_,
-                      load_variable(ret_val_int, t_uint32_));
-  };
-
+                              Value data,
+                              const DataType &dt) {
   if (op_type == AtomicOpType::add) {
-    return atomic_func_([&](Value lhs, Value rhs) { return add(lhs, rhs); });
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return add(lhs, rhs); },
+        dt);
   } else if (op_type == AtomicOpType::sub) {
-    return atomic_func_([&](Value lhs, Value rhs) { return sub(lhs, rhs); });
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return sub(lhs, rhs); },
+        dt);
+  } else if (op_type == AtomicOpType::mul) {
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return mul(lhs, rhs); },
+        dt);
   } else if (op_type == AtomicOpType::min) {
-    return atomic_func_([&](Value lhs, Value rhs) {
-      return call_glsl450(t_fp32_, /*FMin*/ 37, lhs, rhs);
-    });
+    return atomic_operation(
+        addr_ptr, data,
+        [&](Value lhs, Value rhs) {
+          return call_glsl450(t_fp32_, /*FMin*/ 37, lhs, rhs);
+        },
+        dt);
   } else if (op_type == AtomicOpType::max) {
-    return atomic_func_([&](Value lhs, Value rhs) {
-      return call_glsl450(t_fp32_, /*FMax*/ 40, lhs, rhs);
-    });
+    return atomic_operation(
+        addr_ptr, data,
+        [&](Value lhs, Value rhs) {
+          return call_glsl450(t_fp32_, /*FMax*/ 40, lhs, rhs);
+        },
+        dt);
   } else {
     TI_NOT_IMPLEMENTED
   }
+}
+
+Value IRBuilder::integer_atomic(AtomicOpType op_type,
+                                Value addr_ptr,
+                                Value data,
+                                const DataType &dt) {
+  if (op_type == AtomicOpType::mul) {
+    return atomic_operation(
+        addr_ptr, data, [&](Value lhs, Value rhs) { return mul(lhs, rhs); },
+        dt);
+  } else {
+    TI_NOT_IMPLEMENTED
+  }
+}
+
+Value IRBuilder::atomic_operation(Value addr_ptr,
+                                  Value data,
+                                  std::function<Value(Value, Value)> op,
+                                  const DataType &dt) {
+  SType out_type = get_primitive_type(dt);
+  SType res_type = get_primitive_uint_type(dt);
+  Value ret_val_int = alloca_variable(res_type);
+
+  // do-while
+  Label head = new_label();
+  Label body = new_label();
+  Label branch_true = new_label();
+  Label branch_false = new_label();
+  Label merge = new_label();
+  Label exit = new_label();
+
+  make_inst(spv::OpBranch, head);
+  start_label(head);
+  make_inst(spv::OpLoopMerge, branch_true, merge, 0);
+  make_inst(spv::OpBranch, body);
+  make_inst(spv::OpLabel, body);
+  // while (true)
+  {
+    // int old = addr_ptr[0];
+    Value old_val = load_variable(addr_ptr, res_type);
+    // int new = dataTypeBitsToInt(atomic_op(intBitsToDataType(old), data));
+    Value old_data_value = make_value(spv::OpBitcast, out_type, old_val);
+    Value new_data_value = op(old_data_value, data);
+    Value new_val = make_value(spv::OpBitcast, res_type, new_data_value);
+    // int loaded = atomicCompSwap(vals[0], old, new);
+    /*
+    * Don't need this part, theoretically
+    auto semantics = uint_imm ediate_number(
+        t_uint32_, spv::MemorySemanticsAcquireReleaseMask |
+                       spv::MemorySemanticsUniformMemoryMask);
+    make_inst(spv::OpMemoryBarrier, const_i32_one_, semantics);
+    */
+    Value loaded = make_value(
+        spv::OpAtomicCompareExchange, res_type, addr_ptr,
+        /*scope=*/const_i32_one_, /*semantics if equal=*/const_i32_zero_,
+        /*semantics if unequal=*/const_i32_zero_, new_val, old_val);
+    // bool ok = (loaded == old);
+    Value ok = make_value(spv::OpIEqual, t_bool_, loaded, old_val);
+    // int ret_val_int = loaded;
+    store_variable(ret_val_int, loaded);
+    // if (ok)
+    make_inst(spv::OpSelectionMerge, branch_false, 0);
+    make_inst(spv::OpBranchConditional, ok, branch_true, branch_false);
+    {
+      make_inst(spv::OpLabel, branch_true);
+      make_inst(spv::OpBranch, exit);
+    }
+    // else
+    {
+      make_inst(spv::OpLabel, branch_false);
+      make_inst(spv::OpBranch, merge);
+    }
+    // continue;
+    make_inst(spv::OpLabel, merge);
+    make_inst(spv::OpBranch, head);
+  }
+  start_label(exit);
+
+  return make_value(spv::OpBitcast, out_type,
+                    load_variable(ret_val_int, res_type));
 }
 
 Value IRBuilder::rand_u32(Value global_tmp_) {

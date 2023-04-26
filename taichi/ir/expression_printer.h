@@ -93,7 +93,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
   void visit(ExternalTensorExpression *expr) override {
     emit(fmt::format("{}d_ext_arr (element_dim={}, dt={}, grad={})", expr->dim,
-                     expr->element_dim, expr->dt->to_string(), expr->is_grad));
+                     expr->element_dim, expr->dt->to_string(),
+                     expr->needs_grad));
   }
 
   void visit(FieldExpression *expr) override {
@@ -171,8 +172,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     const auto op_type = (std::size_t)expr->op_type;
     constexpr const char *names_table[] = {
         "atomic_add",     "atomic_sub",    "atomic_min",     "atomic_max",
-        "atomic_bit_and", "atomic_bit_or", "atomic_bit_xor",
-    };
+        "atomic_bit_and", "atomic_bit_or", "atomic_bit_xor", "atomic_mul"};
     if (op_type > std::size(names_table)) {
       // min/max not supported in the LLVM backend yet.
       TI_NOT_IMPLEMENTED;

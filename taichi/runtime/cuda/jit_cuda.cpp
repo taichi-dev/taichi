@@ -243,10 +243,7 @@ std::unique_ptr<JITSession> create_llvm_jit_session_cuda(
     Arch arch) {
   TI_ASSERT(arch == Arch::cuda);
   // https://docs.nvidia.com/cuda/nvvm-ir-spec/index.html#data-layout
-  auto data_layout = llvm::DataLayout(
-      "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-i128:128:128-"
-      "f32:32:32-f64:64:64-v16:16:16-v32:32:32-v64:64:64-v128:128:128-n16:32:"
-      "64");
+  auto data_layout = TaichiLLVMContext::get_data_layout(arch);
   return std::make_unique<JITSessionCUDA>(tlctx, config, data_layout);
 }
 #else

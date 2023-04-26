@@ -79,7 +79,7 @@ class Ndarray:
         elif self.dtype == primitive_types.u32:
             impl.get_runtime().prog.fill_uint(self.arr, val)
         else:
-            raise TypeError(f"fill for dtype={self.dtype} is not supported")
+            self._fill_by_kernel(val)
 
     @python_scope
     def _ndarray_to_numpy(self):

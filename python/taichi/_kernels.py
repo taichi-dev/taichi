@@ -19,9 +19,10 @@ from taichi.math import vec3
 
 # A set of helper (meta)functions
 @kernel
-def fill_tensor(tensor: template(), val: template()):
-    for I in grouped(tensor):
-        tensor[I] = val
+def fill_field(field: template(), val: template()):
+    tmp = ops.cast(val, field.dtype)
+    for I in grouped(field):
+        field[I] = tmp
 
 
 @kernel

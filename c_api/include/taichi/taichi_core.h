@@ -227,7 +227,7 @@
 #pragma once
 
 #ifndef TI_C_API_VERSION
-#define TI_C_API_VERSION 1005000
+#define TI_C_API_VERSION 1007000
 #endif  // TI_C_API_VERSION
 
 #ifndef TAICHI_H
@@ -804,10 +804,13 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
+// Structure `TiTensor` (1.7.0)
+//
+// A typed tensor value.
 typedef struct TiTensor {
-  uint64_t *data;
-  uint32_t num_elements;
-  uint8_t width;
+  TiDataType type;
+  uint8_t length;
+  uint8_t data[128];
 } TiTensor;
 
 // Union `TiArgumentValue` (1.4.0)

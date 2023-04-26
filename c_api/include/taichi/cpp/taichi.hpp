@@ -837,13 +837,31 @@ class ComputeGraph {
     return compute_graph_;
   }
 };
+template <typename T>
+struct DataTypeToEnum {
+  static constexpr TiDataType value = TI_DATA_TYPE_UNKNOWN;
+};
+#define DEFINE_DATA_TYPE_ENUM(type, enumv)                    \
+  template <>                                                 \
+  struct DataTypeToEnum<type> {                               \
+    static constexpr TiDataType value = TI_DATA_TYPE_##enumv; \
+  };
+
+DEFINE_DATA_TYPE_ENUM(int32_t, I32);
+DEFINE_DATA_TYPE_ENUM(float, F32);
+DEFINE_DATA_TYPE_ENUM(uint16_t, U16);
+DEFINE_DATA_TYPE_ENUM(int16_t, I16);
+DEFINE_DATA_TYPE_ENUM(uint8_t, U8);
+DEFINE_DATA_TYPE_ENUM(int8_t, I8);
+DEFINE_DATA_TYPE_ENUM(uint64_t, U64);
+DEFINE_DATA_TYPE_ENUM(int64_t, I64);
+#undef DEFINE_DATA_TYPE_ENUM
 
 class Kernel {
  protected:
   TiRuntime runtime_{TI_NULL_HANDLE};
   TiKernel kernel_{TI_NULL_HANDLE};
   std::vector<TiArgument> args_{};
-  std::vector<std::vector<uint64_t>> tensor_args_{};
 
  public:
   constexpr bool is_valid() const {
@@ -885,17 +903,11 @@ class Kernel {
   template <typename T>
   void push_arg(const std::vector<T> &v) {
     int idx = args_.size();
-    tensor_args_.emplace_back();
-    auto &arg = tensor_args_.back();
-    arg.reserve(v.size());
-    for (int j = 0; j < v.size(); ++j) {
-      arg.push_back(taichi_union_cast_with_different_sizes<uint64_t>(v[j]));
-    }
     args_.resize(idx + 1);
     args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
-    args_[idx].value.tensor.data = arg.data();
-    args_[idx].value.tensor.num_elements = arg.size();
-    args_[idx].value.tensor.width = sizeof(T);
+    memcpy(args_[idx].value.tensor.data, v.data(), v.size() * sizeof(T));
+    args_[idx].value.tensor.length = v.size();
+    args_[idx].value.tensor.type = DataTypeToEnum<T>::value;
   }
 
   template <typename T>

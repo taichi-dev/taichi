@@ -156,7 +156,8 @@
                         "f32": 1,
                         "ndarray": 2,
                         "texture": 3,
-                        "scalar": 4
+                        "scalar": 4,
+                        "tensor": 5
                     }
                 },
                 {
@@ -485,6 +486,26 @@
                     ]
                 },
                 {
+                    "name": "tensor",
+                    "type": "structure",
+                    "since": "v1.7.0",
+                    "fields": [
+                        {
+                            "name": "type",
+                            "type": "enumeration.data_type"
+                        },
+                        {
+                            "name": "length",
+                            "type": "uint8_t"
+                        },
+                        {
+                            "name": "data",
+                            "type": "uint8_t",
+                            "count": 128
+                        }
+                    ]
+                },
+                {
                     "name": "argument_value",
                     "type": "union",
                     "since": "v1.4.0",
@@ -508,6 +529,10 @@
                         {
                             "name": "scalar",
                             "type": "structure.scalar"
+                        },
+                        {
+                            "name": "tensor",
+                            "type": "structure.tensor"
                         }
                     ]
                 },

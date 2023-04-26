@@ -795,17 +795,26 @@ void ti_launch_kernel(TiRuntime runtime,
       case TI_ARGUMENT_TYPE_TENSOR: {
         auto &tensor = arg.value.tensor;
         TI_CAPI_ARGUMENT_NULL(tensor.data);
-        if (tensor.width == 2) {
-          for (int j = 0; j < tensor.num_elements; j++) {
-            builder.set_struct_arg_impl(
-                {(int)i, j}, taichi_union_cast_with_different_sizes<uint16_t>(
-                                 tensor.data[j]));
+        if (tensor.type == TI_DATA_TYPE_I16 ||
+            tensor.type == TI_DATA_TYPE_U16 ||
+            tensor.type == TI_DATA_TYPE_F16) {
+          for (int j = 0; j < tensor.length; j++) {
+            builder.set_struct_arg_impl({(int)i, j},
+                                        ((uint16_t *)tensor.data)[j]);
           }
-        } else if (tensor.width == 4) {
-          for (int j = 0; j < tensor.num_elements; j++) {
-            builder.set_struct_arg_impl(
-                {(int)i, j}, taichi_union_cast_with_different_sizes<uint32_t>(
-                                 tensor.data[j]));
+        } else if (tensor.type == TI_DATA_TYPE_I32 ||
+                   tensor.type == TI_DATA_TYPE_U32 ||
+                   tensor.type == TI_DATA_TYPE_F32) {
+          for (int j = 0; j < tensor.length; j++) {
+            builder.set_struct_arg_impl({(int)i, j},
+                                        ((uint32_t *)tensor.data)[j]);
+          }
+        } else if (tensor.type == TI_DATA_TYPE_I64 ||
+                   tensor.type == TI_DATA_TYPE_U64 ||
+                   tensor.type == TI_DATA_TYPE_F64) {
+          for (int j = 0; j < tensor.length; j++) {
+            builder.set_struct_arg_impl({(int)i, j},
+                                        ((uint64_t *)tensor.data)[j]);
           }
         } else {
           ti_set_last_error(TI_ERROR_NOT_SUPPORTED,

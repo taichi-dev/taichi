@@ -305,6 +305,7 @@ Types of kernel and compute graph argument.
 - `enumeration.argument_type.ndarray`: ND-array wrapped around a `handle.memory`.
 - `enumeration.argument_type.texture`: Texture wrapped around a `handle.image`.
 - `enumeration.argument_type.scalar`: Typed scalar.
+- `enumeration.argument_type.tensor`: Typed tensor.
 
 
 `bit_field.memory_usage`
@@ -450,6 +451,10 @@ Scalar value represented by a power-of-two number of bits.
 
 A typed scalar value.
 
+`structure.tensor`
+
+A typed tensor value.
+
 `union.argument_value`
 
 A scalar or structured argument value.
@@ -459,6 +464,7 @@ A scalar or structured argument value.
 - `union.argument_value.ndarray`: An ND-array to be bound.
 - `union.argument_value.texture`: A texture to be bound.
 - `union.argument_value.scalar`: An scalar to be bound.
+- `union.argument_value.tensor`: A tensor to be bound.
 
 `structure.argument`
 

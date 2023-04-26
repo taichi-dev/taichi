@@ -1656,7 +1656,19 @@ class MatrixNdarray(Ndarray):
     def _fill_by_kernel(self, val):
         from taichi._kernels import fill_ndarray_matrix  # pylint: disable=C0415
 
-        fill_ndarray_matrix(self, val)
+        shape = self.element_type.shape()
+        n = shape[0]
+        m = 1
+        if len(shape) > 1:
+            m = shape[1]
+
+        prim_dtype = self.element_type.element_type()
+        matrix_type = MatrixType(n, m, len(shape), prim_dtype)
+        if isinstance(val, Matrix):
+            value = val
+        else:
+            value = matrix_type(val)
+        fill_ndarray_matrix(self, value)
 
     @python_scope
     def __repr__(self):
@@ -1752,7 +1764,14 @@ class VectorNdarray(Ndarray):
     def _fill_by_kernel(self, val):
         from taichi._kernels import fill_ndarray_matrix  # pylint: disable=C0415
 
-        fill_ndarray_matrix(self, val)
+        shape = self.element_type.shape()
+        prim_dtype = self.element_type.element_type()
+        vector_type = VectorType(shape[0], prim_dtype)
+        if isinstance(val, Vector):
+            value = val
+        else:
+            value = vector_type(val)
+        fill_ndarray_matrix(self, value)
 
     @python_scope
     def __repr__(self):

@@ -1025,8 +1025,12 @@ class MakeAdjoint : public ADTransform {
   Stmt *adjoint(Stmt *stmt) {
     DataType adjoint_dtype = stmt->ret_type.ptr_removed();
     if (stmt->ret_type->is<TensorType>()) {
+      DataType prim_dtype = PrimitiveType::f32;
+      if (is_real(stmt->ret_type.ptr_removed().get_element_type())) {
+        prim_dtype = stmt->ret_type.ptr_removed().get_element_type();
+      }
       adjoint_dtype = TypeFactory::get_instance().get_tensor_type(
-          stmt->ret_type->as<TensorType>()->get_shape(), PrimitiveType::f32);
+          stmt->ret_type->as<TensorType>()->get_shape(), prim_dtype);
     } else if (stmt->is<MatrixPtrStmt>()) {
       // pass
     } else if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
@@ -1502,6 +1506,11 @@ class MakeAdjoint : public ADTransform {
       return;
     }
 
+    DataType prim_dtype = PrimitiveType::f32;
+    if (is_real(stmt->ret_type.ptr_removed().get_element_type())) {
+      prim_dtype = stmt->ret_type.ptr_removed().get_element_type();
+    }
+
     Stmt *adjoint_value = nullptr;
     if (stmt->offset->is<ConstStmt>()) {
       /*
@@ -1520,7 +1529,7 @@ class MakeAdjoint : public ADTransform {
       auto tensor_type = stmt->origin->ret_type->as<TensorType>();
       int num_elements = tensor_type->get_num_elements();
 
-      auto zero = insert_const_for_grad(PrimitiveType::f32, stmt, 0);
+      auto zero = insert_const_for_grad(prim_dtype, stmt, 0);
       std::vector<Stmt *> values;
       for (int i = 0; i < num_elements; i++) {
         if (i == offset) {
@@ -1556,7 +1565,7 @@ class MakeAdjoint : public ADTransform {
       auto tensor_shape = tensor_type->get_shape();
       int num_elements = tensor_type->get_num_elements();
 
-      auto zero = insert_const_for_grad(PrimitiveType::f32, stmt, 0);
+      auto zero = insert_const_for_grad(prim_dtype, stmt, 0);
       auto stmt_adj = load(adjoint(stmt));
 
       std::vector<Stmt *> zero_values(num_elements, zero);

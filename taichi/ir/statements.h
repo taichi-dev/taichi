@@ -1658,6 +1658,7 @@ class AdStackAllocaStmt : public Stmt {
 
   AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
+    ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1692,9 +1693,14 @@ class AdStackLoadTopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
-  explicit AdStackLoadTopStmt(Stmt *stack) {
+  // return the pointer to the top element instead of the stack, instead of
+  // loading the value
+  bool return_ptr = false;
+
+  explicit AdStackLoadTopStmt(Stmt *stack, bool return_ptr = false) {
     TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
+    this->return_ptr = return_ptr;
     TI_STMT_REG_FIELDS;
   }
 

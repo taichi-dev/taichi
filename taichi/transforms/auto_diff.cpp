@@ -1311,13 +1311,17 @@ class MakeAdjoint : public ADTransform {
   void visit(GlobalLoadStmt *stmt) override {
     // issue global store to adjoint
 
-    GlobalPtrStmt *src = nullptr;
-    bool is_ptr_offset = false;
-    if (stmt->src->is<MatrixPtrStmt>()) {
-      is_ptr_offset = true;
-      src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
-    } else if (stmt->src->is<ExternalPtrStmt>()) {
-      auto src = stmt->src->as<ExternalPtrStmt>();
+    if (stmt->src->is<ExternalPtrStmt>() ||
+        (stmt->src->is<MatrixPtrStmt>() &&
+         stmt->src->as<MatrixPtrStmt>()->origin->is<ExternalPtrStmt>())) {
+      ExternalPtrStmt *src = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->src->is<MatrixPtrStmt>()) {
+        src = stmt->src->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
+        is_ptr_offset = true;
+      } else {
+        src = stmt->src->as<ExternalPtrStmt>();
+      }
       TI_ASSERT(!src->is_grad);
       auto arg = src->base_ptr->as<ArgLoadStmt>();
       if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
@@ -1326,38 +1330,67 @@ class MakeAdjoint : public ADTransform {
             src->base_ptr, src->indices, src->element_shape, src->element_dim,
             /*is_grad=*/true);
         adj_ptr->ret_type = src->ret_type;
+
+        if (is_ptr_offset) {
+          adj_ptr = insert<MatrixPtrStmt>(
+              adj_ptr, stmt->src->as<MatrixPtrStmt>()->offset);
+          adj_ptr->ret_type = stmt->src->ret_type;
+          adj_ptr->ret_type.set_is_pointer(true);
+        }
         insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
       }
       return;
-    } else {
-      src = stmt->src->as<GlobalPtrStmt>();
     }
 
-    auto snode = src->snode;
-    if (!snode->has_adjoint()) {
-      // No adjoint SNode. Do nothing
+    if (stmt->src->is<GlobalPtrStmt>() ||
+        (stmt->src->is<MatrixPtrStmt>() &&
+         stmt->src->as<MatrixPtrStmt>()->origin->is<GlobalPtrStmt>())) {
+      GlobalPtrStmt *src = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->src->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        src = stmt->src->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+      } else {
+        src = stmt->src->as<GlobalPtrStmt>();
+      }
+
+      auto snode = src->snode;
+      if (!snode->has_adjoint()) {
+        // No adjoint SNode. Do nothing
+        return;
+      }
+      if (gradients_stopped(stmt, snode)) {
+        // gradients stopped, do nothing.
+        return;
+      }
+      TI_ASSERT(snode->get_adjoint() != nullptr);
+      snode = snode->get_adjoint();
+      auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
+      if (is_ptr_offset) {
+        adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
+                                        stmt->src->as<MatrixPtrStmt>()->offset);
+      }
+      insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
       return;
     }
-    if (gradients_stopped(stmt, snode)) {
-      // gradients stopped, do nothing.
-      return;
-    }
-    TI_ASSERT(snode->get_adjoint() != nullptr);
-    snode = snode->get_adjoint();
-    auto adj_ptr = insert<GlobalPtrStmt>(snode, src->indices);
-    if (is_ptr_offset) {
-      adj_ptr = insert<MatrixPtrStmt>(adj_ptr,
-                                      stmt->src->as<MatrixPtrStmt>()->offset);
-    }
-    insert<AtomicOpStmt>(AtomicOpType::add, adj_ptr, load(adjoint(stmt)));
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     // erase and replace with global load adjoint
 
     Stmt *adjoint_ptr{nullptr};
-    if (stmt->dest->is<ExternalPtrStmt>()) {
-      auto dest = stmt->dest->as<ExternalPtrStmt>();
+    if (stmt->dest->is<ExternalPtrStmt>() ||
+        (stmt->dest->is<MatrixPtrStmt>() &&
+         stmt->dest->as<MatrixPtrStmt>()->origin->is<ExternalPtrStmt>())) {
+      ExternalPtrStmt *dest = nullptr;
+      bool is_ptr_offset = false;
+      if (stmt->dest->is<MatrixPtrStmt>()) {
+        is_ptr_offset = true;
+        dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
+      } else {
+        dest = stmt->dest->as<ExternalPtrStmt>();
+      }
+
       auto arg = dest->base_ptr->as<ArgLoadStmt>();
       if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() <=
           TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
@@ -1367,9 +1400,20 @@ class MakeAdjoint : public ADTransform {
           dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
           /*is_grad=*/true);
       adjoint_ptr->ret_type = dest->ret_type;
-      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
 
-    } else {
+      if (is_ptr_offset) {
+        adjoint_ptr = insert<MatrixPtrStmt>(
+            adjoint_ptr, stmt->dest->as<MatrixPtrStmt>()->offset);
+        adjoint_ptr->ret_type = stmt->dest->ret_type;
+        adjoint_ptr->ret_type.set_is_pointer(true);
+      }
+
+      accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
+    }
+
+    if (stmt->dest->is<GlobalPtrStmt>() ||
+        (stmt->dest->is<MatrixPtrStmt>() &&
+         stmt->dest->as<MatrixPtrStmt>()->origin->is<GlobalPtrStmt>())) {
       GlobalPtrStmt *dest = nullptr;
       bool is_ptr_offset = false;
       if (stmt->dest->is<MatrixPtrStmt>()) {
@@ -1393,6 +1437,7 @@ class MakeAdjoint : public ADTransform {
       }
       accumulate(stmt->val, insert<GlobalLoadStmt>(adjoint_ptr));
     }
+
     // Clear the gradient after accumulation finished.
     auto zero =
         insert_const_for_grad(adjoint_ptr->ret_type.ptr_removed(), stmt, 0);
@@ -1444,7 +1489,8 @@ class MakeAdjoint : public ADTransform {
   }
 
   void visit(MatrixPtrStmt *stmt) override {
-    if (stmt->origin->is<GlobalPtrStmt>()) {
+    if (stmt->origin->is<GlobalPtrStmt>() ||
+        stmt->origin->is<ExternalPtrStmt>()) {
       /*
         The case of MatrixPtrStmt(GlobalPtrStmt, ...) is already handled in
         GlobalPtrStmt, GlobalStoreStmt and AtomicStmt
@@ -2114,6 +2160,9 @@ void auto_diff(IRNode *root,
       type_check(root, config);
       for (auto ib : IB) {
         MakeAdjoint::run(ib);
+        type_check(root, config);
+        BackupSSA::run(ib);
+        irpass::analysis::verify(root);
       }
     }
   } else if (autodiff_mode == AutodiffMode::kForward) {

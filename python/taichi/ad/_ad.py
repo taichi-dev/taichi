@@ -261,8 +261,11 @@ class Tape:
                 else:
                     import torch  # pylint: disable=C0415
 
-                    with torch.no_grad():
-                        self.loss.grad.fill_(1.0)
+                    if self.loss.grad is None:
+                        self.loss.grad = torch.ones_like(self.loss)
+                    else:
+                        with torch.no_grad():
+                            self.loss.grad.fill_(1.0)
                 func.grad(*args)
 
         self.gradient_evaluated = True

@@ -321,7 +321,7 @@ class TaichiMain:
                 example_name = names[int(index)]
             except KeyboardInterrupt as e:
                 print("\nCacelled by user, exit...")
-                return
+                return None
 
         target = str(
             (examples_dir / choices[example_name] / f"{example_name}.py").resolve())

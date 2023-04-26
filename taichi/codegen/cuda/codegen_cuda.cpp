@@ -260,8 +260,9 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         llvm_val[stmt] =
             call("logical_not_u1",
-                 builder->CreateTrunc(input,
-                                      tlctx->get_data_type(PrimitiveType::u1)));
+                 builder->CreateTrunc(
+                     builder->CreateIsNotNull(input),
+                     tlctx->get_data_type(PrimitiveType::u1)));
       }
     } else if (op == UnaryOpType::frexp) {
       auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());

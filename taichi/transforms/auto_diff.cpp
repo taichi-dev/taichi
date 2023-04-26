@@ -623,9 +623,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
             [Dynamic index]
             Fwd:
             $0 = adstack alloca <4 x i32>
-            $0 = adstack load top
-            $1 = matrix ptr $0, $offset // offset = 2
-            $2 : local store $1, $val
+            $1 = adstack load top
+            $2 = matrix ptr $1, $offset // offset = 2
+            $3 : local store $2, $val
 
             Replaced:
             $0 = adstack alloca <4 x i32>
@@ -639,7 +639,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
             $5 = bin_eq $3, $4
             $6 = select $5, $2, $1
 
-            $2 : adstack push $6
+            $7 : adstack push $6
           */
           auto tensor_type =
               stack_top->ret_type.ptr_removed()->as<TensorType>();

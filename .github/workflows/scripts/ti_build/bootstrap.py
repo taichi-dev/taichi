@@ -3,7 +3,6 @@
 # -- stdlib --
 from pathlib import Path
 from typing import Optional
-from urllib.request import urlretrieve
 import importlib
 import os
 import platform
@@ -56,24 +55,19 @@ def restart():
         os.execl(sys.executable, sys.executable, "-S", *sys.argv)
 
 
-def fetch_pip(to):
-    v = sys.version_info
-    if v[:2] >= (3, 7):
-        url = f"https://bootstrap.pypa.io/pip/get-pip.py"
-    else:
-        url = f"https://bootstrap.pypa.io/pip/{v.major}.{v.minor}/get-pip.py"
-
-    report = lambda n, bs, sz: print(f"Fetching pip ({n*bs}/{sz}) bytes) ...", end="\r", flush=True)
-    urlretrieve(url, to, report)
-    print(f'Fetched pip!{" " * 40}')
-
-
 def ensure_dependencies(*deps: str):
     """
     Automatically install dependencies if they are not installed.
     """
 
-    if "site" in sys.modules:
+    if not sys.flags.no_site:
+        # First run, do pip checks
+        try:
+            import pip
+        except ModuleNotFoundError:
+            print("!! pip not found, build.py needs at least a functional pip to work.", flush=True)
+            exit(1)
+
         restart()
 
     v = sys.version_info
@@ -92,21 +86,8 @@ def ensure_dependencies(*deps: str):
     print("Installing dependencies...", flush=True)
     py = sys.executable
 
-    try:
-        import pip
-
-        has_pip = True
-    except ModuleNotFoundError:
-        has_pip = False
-
-    if has_pip:
-        if run(py, "-m", "pip", "--no-user", f"--target={bootstrap_root}"):
-            raise Exception("Unable to install pip!")
-    else:
-        pip = str(bootstrap_root / "get-pip.py")
-        fetch_pip(pip)
-        if run(py, "-S", pip, "--no-user", f"--target={bootstrap_root}"):
-            raise Exception("Unable to install pip!")
+    if run(py, "-m", "pip", "install", "pip", "--no-user", f"--target={bootstrap_root}"):
+        raise Exception("Unable to install pip!")
 
     pipcmd = [py, "-S", "-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
     if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):

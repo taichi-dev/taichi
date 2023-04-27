@@ -488,7 +488,7 @@
                 {
                     "name": "tensor_value",
                     "type": "union",
-                    "since": "v1.5.0",
+                    "since": "v1.7.0",
                     "variants": [
                         {
                             "name": "x8",

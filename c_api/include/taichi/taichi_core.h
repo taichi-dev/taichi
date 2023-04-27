@@ -804,7 +804,7 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
-// Union `TiTensorValue` (1.5.0)
+// Union `TiTensorValue` (1.7.0)
 typedef union TiTensorValue {
   uint8_t x8[128];
   uint16_t x16[64];

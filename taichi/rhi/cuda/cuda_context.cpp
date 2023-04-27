@@ -38,8 +38,10 @@ CUDAContext::CUDAContext()
                                  device_);
   } else {
     TI_WARN(
-        "Please consider upgrade your nvidia driver for better device memory pool"
-        "support. Current driver supports CUDA {}.{}, we recommend driver version"
+        "Please consider upgrade your nvidia driver for better device memory "
+        "pool"
+        "support. Current driver supports CUDA {}.{}, we recommend driver "
+        "version"
         "above 470 (CUDA 11.2).",
         driver_.get_version_major(), driver_.get_version_minor());
     device_supports_mem_pool = 0;

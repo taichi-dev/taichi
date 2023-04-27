@@ -525,6 +525,10 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
       auto matrix_ptr_stmt = stmt->dest->template as<MatrixPtrStmt>();
       auto orig_stmt = matrix_ptr_stmt->origin;
 
+      if (!orig_stmt->ret_type.ptr_removed()->template is<TensorType>()) {
+        return;
+      }
+
       auto tensor_type =
           orig_stmt->ret_type.ptr_removed()->template as<TensorType>();
       auto num_elements = tensor_type->get_num_elements();
@@ -721,6 +725,10 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
       if (matrix_ptr_stmt->origin->is<AdStackLoadTopStmt>()) {
         auto stack_top_stmt = matrix_ptr_stmt->origin->as<AdStackLoadTopStmt>();
         TI_ASSERT(stack_top_stmt->return_ptr == true);
+
+        if (!stack_top_stmt->ret_type.ptr_removed()->is<TensorType>()) {
+          return;
+        }
 
         auto tensor_type =
             stack_top_stmt->ret_type.ptr_removed()->as<TensorType>();

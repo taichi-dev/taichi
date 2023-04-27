@@ -201,9 +201,7 @@ class Tape:
             if self.validation:
                 clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
 
-            from taichi._kernels import clear_loss  # pylint: disable=C0415
-
-            clear_loss(self.loss)
+            self.loss.fill(0.0)
         elif isinstance(self.loss, Ndarray):
             if self.loss._get_nelement() != 1:
                 raise RuntimeError("The loss of `Tape` must be an ndarray with only one element")
@@ -212,7 +210,6 @@ class Tape:
                     "Gradients of loss are not allocated, please set needs_grad=True for all ndarrays that are required by autodiff."
                 )
             self.loss.fill(0.0)
-            self.loss.grad.fill(1.0)
         else:
             import torch  # pylint: disable=C0415
 
@@ -224,12 +221,6 @@ class Tape:
                 )
             with torch.no_grad():
                 self.loss.fill_(0.0)
-
-            if self.loss.grad is None:
-                self.loss.grad = torch.ones_like(self.loss)
-            else:
-                with torch.no_grad():
-                    self.loss.grad.fill_(1.0)
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self
@@ -258,6 +249,19 @@ class Tape:
         assert self.entered, "Before evaluating gradients tape must be entered."
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
+        # Set grad for loss
+        if isinstance(self.loss, Field):
+            self.loss.grad.fill(1.0)
+        elif isinstance(self.loss, Ndarray):
+            self.loss.grad.fill(1.0)
+        else:
+            import torch  # pylint: disable=C0415
+            if self.loss.grad is None:
+                self.loss.grad = torch.ones_like(self.loss)
+            else:
+                with torch.no_grad():
+                    self.loss.grad.fill_(1.0)
+        
         for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls

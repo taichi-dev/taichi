@@ -508,6 +508,177 @@ class AdStackAllocaJudger : public BasicStmtVisitor {
   bool load_only_ = true;
 };
 
+class RegulateTensorTypedStatements : public BasicStmtVisitor {
+ public:
+  using BasicStmtVisitor::visit;
+  DelayedIRModifier delayed_modifier_;
+
+  explicit RegulateTensorTypedStatements() {
+  }
+
+  template <typename Store, typename Load>
+  void process_store_stmt(Store *stmt) {
+    TI_ASSERT(stmt->template is<LocalStoreStmt>() ||
+              stmt->template is<GlobalStoreStmt>());
+
+    if (stmt->dest->template is<MatrixPtrStmt>()) {
+      auto matrix_ptr_stmt = stmt->dest->template as<MatrixPtrStmt>();
+      auto orig_stmt = matrix_ptr_stmt->origin;
+
+      auto tensor_type =
+          orig_stmt->ret_type.ptr_removed()->template as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+
+      if (matrix_ptr_stmt->offset->template is<ConstStmt>()) {
+        /*
+          [Static index]
+          Fwd:
+          $0 = adstack alloca <4 x i32>
+          $1 = adstack load top
+          $2 = matrix ptr $1, 2 // offset = 2
+          $3 : local store $2, $val
+
+          Replaced:
+          $0 = adstack alloca <4 x i32>
+          $1 = adstack load top
+          $2 = matrix ptr $1, 2 // --> erase
+
+          $3 = matrix ptr $1, 0
+          $4 = load $3
+
+          $5 = matrix ptr $1, 1
+          $6 = load $5
+
+          $7 = matrix ptr $1, 3
+          $8 = load $7
+
+          $9 = matrix init [$4, $6, $val, $8]
+
+          $10 : adstack push $9
+        */
+        int offset =
+            matrix_ptr_stmt->offset->template as<ConstStmt>()->val.val_int32();
+
+        TI_ASSERT(offset < num_elements);
+
+        std::vector<Stmt *> values;
+        for (int i = 0; i < num_elements; i++) {
+          if (i == offset) {
+            values.push_back(stmt->val);
+            continue;
+          }
+
+          auto const_i = insert_const(PrimitiveType::i32, stmt, i, true);
+          auto matrix_ptr_stmt_i =
+              Stmt::make<MatrixPtrStmt>(orig_stmt, const_i);
+          matrix_ptr_stmt_i->ret_type = tensor_type->get_element_type();
+
+          auto local_load_stmt_i = Stmt::make<Load>(matrix_ptr_stmt_i.get());
+          local_load_stmt_i->ret_type = tensor_type->get_element_type();
+
+          values.push_back(local_load_stmt_i.get());
+
+          stmt->insert_before_me(std::move(matrix_ptr_stmt_i));
+          stmt->insert_before_me(std::move(local_load_stmt_i));
+        }
+
+        auto matrix_init_stmt = Stmt::make<MatrixInitStmt>(values);
+        matrix_init_stmt->ret_type = tensor_type;
+
+        auto store_stmt = Stmt::make<Store>(orig_stmt, matrix_init_stmt.get());
+        stmt->insert_before_me(std::move(matrix_init_stmt));
+        stmt->replace_with(std::move(store_stmt));
+
+        return;
+
+      } else {
+        /*
+          [Dynamic index]
+          Fwd:
+          $0 = adstack alloca <4 x i32>
+          $1 = adstack load top
+          $2 = matrix ptr $1, $offset // offset = 2
+          $3 : local store $2, $val
+
+          Replaced:
+          $0 = adstack alloca <4 x i32>
+
+          $1 = adstack load top (return_ptr=false)
+          $2 = matrix init [$val, $val, $val, $val]
+
+          $3 = matrix init [$offset, $offset, $offset, $offset]
+          $4 = matrix init [0, 1, 2, 3]
+
+          $5 = bin_eq $3, $4
+          $6 = select $5, $2, $1
+
+          $7 : adstack push $6
+        */
+        auto tensor_type =
+            orig_stmt->ret_type.ptr_removed()->template as<TensorType>();
+        auto num_elements = tensor_type->get_num_elements();
+
+        auto tensor_shape = tensor_type->get_shape();
+        auto index_tensor_type = TypeFactory::get_instance().get_tensor_type(
+            tensor_shape, PrimitiveType::i32);
+
+        std::vector<Stmt *> val_values(num_elements, stmt->val);
+        std::vector<Stmt *> offset_values(num_elements,
+                                          matrix_ptr_stmt->offset);
+        std::vector<Stmt *> index_values(num_elements);
+        for (int i = 0; i < num_elements; i++) {
+          index_values[i] = insert_const(PrimitiveType::i32, stmt, i, true);
+        }
+
+        auto matrix_val = Stmt::make<MatrixInitStmt>(val_values);
+        matrix_val->ret_type = tensor_type;
+
+        auto matrix_offset = Stmt::make<MatrixInitStmt>(offset_values);
+        matrix_offset->ret_type = index_tensor_type;
+
+        auto matrix_index = Stmt::make<MatrixInitStmt>(index_values);
+        matrix_index->ret_type = index_tensor_type;
+
+        auto matrix_eq = Stmt::make<BinaryOpStmt>(
+            BinaryOpType::cmp_eq, matrix_offset.get(), matrix_index.get());
+        matrix_eq->ret_type = index_tensor_type;
+
+        auto orig_value = Stmt::make<Load>(orig_stmt);
+        orig_value->ret_type = tensor_type;
+
+        auto matrix_select =
+            Stmt::make<TernaryOpStmt>(TernaryOpType::select, matrix_eq.get(),
+                                      matrix_val.get(), orig_value.get());
+        matrix_select->ret_type = tensor_type;
+
+        auto store_stmt = Stmt::make<Store>(orig_stmt, matrix_select.get());
+
+        stmt->insert_before_me(std::move(matrix_val));
+        stmt->insert_before_me(std::move(matrix_offset));
+        stmt->insert_before_me(std::move(matrix_index));
+        stmt->insert_before_me(std::move(matrix_eq));
+        stmt->insert_before_me(std::move(orig_value));
+        stmt->insert_before_me(std::move(matrix_select));
+        stmt->replace_with(std::move(store_stmt));
+        return;
+      }
+    }
+  }
+
+  void visit(LocalStoreStmt *stmt) override {
+    process_store_stmt<LocalStoreStmt, LocalLoadStmt>(stmt);
+  }
+
+  void visit(GlobalStoreStmt *stmt) override {
+    process_store_stmt<GlobalStoreStmt, GlobalLoadStmt>(stmt);
+  }
+
+  static void run(IRNode *root) {
+    RegulateTensorTypedStatements pass;
+    root->accept(&pass);
+  }
+};
+
 class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
@@ -547,144 +718,129 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   void visit(LocalStoreStmt *stmt) override {
     if (stmt->dest->is<MatrixPtrStmt>()) {
       auto matrix_ptr_stmt = stmt->dest->as<MatrixPtrStmt>();
-      TI_ASSERT(matrix_ptr_stmt->origin->is<AdStackLoadTopStmt>() ||
-                matrix_ptr_stmt->origin->is<AllocaStmt>());
-      bool is_adstack_load_top =
-          matrix_ptr_stmt->origin->is<AdStackLoadTopStmt>();
-      auto orig_stmt = matrix_ptr_stmt->origin;
+      if (matrix_ptr_stmt->origin->is<AdStackLoadTopStmt>()) {
+        auto stack_top_stmt = matrix_ptr_stmt->origin->as<AdStackLoadTopStmt>();
+        TI_ASSERT(stack_top_stmt->return_ptr == true);
 
-      auto tensor_type = orig_stmt->ret_type.ptr_removed()->as<TensorType>();
-      auto num_elements = tensor_type->get_num_elements();
+        auto tensor_type =
+            stack_top_stmt->ret_type.ptr_removed()->as<TensorType>();
+        auto num_elements = tensor_type->get_num_elements();
 
-      if (matrix_ptr_stmt->offset->is<ConstStmt>()) {
-        /*
-          [Static index]
-          Fwd:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
-          $2 = matrix ptr $1, 2 // offset = 2
-          $3 : local store $2, $val
+        if (matrix_ptr_stmt->offset->is<ConstStmt>()) {
+          /*
+            [Static index]
+            Fwd:
+            $0 = adstack alloca <4 x i32>
+            $1 = adstack load top
+            $2 = matrix ptr $1, 2 // offset = 2
+            $3 : local store $2, $val
 
-          Replaced:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
-          $2 = matrix ptr $1, 2 // --> erase
+            Replaced:
+            $0 = adstack alloca <4 x i32>
+            $1 = adstack load top
+            $2 = matrix ptr $1, 2 // --> erase
 
-          $3 = matrix ptr $1, 0
-          $4 = load $3
+            $3 = matrix ptr $1, 0
+            $4 = load $3
 
-          $5 = matrix ptr $1, 1
-          $6 = load $5
+            $5 = matrix ptr $1, 1
+            $6 = load $5
 
-          $7 = matrix ptr $1, 3
-          $8 = load $7
+            $7 = matrix ptr $1, 3
+            $8 = load $7
 
-          $9 = matrix init [$4, $6, $val, $8]
+            $9 = matrix init [$4, $6, $val, $8]
 
-          $10 : adstack push $9
-        */
-        int offset = matrix_ptr_stmt->offset->as<ConstStmt>()->val.val_int32();
+            $10 : adstack push $9
+          */
+          int offset =
+              matrix_ptr_stmt->offset->as<ConstStmt>()->val.val_int32();
 
-        TI_ASSERT(offset < num_elements);
+          TI_ASSERT(offset < num_elements);
 
-        std::vector<Stmt *> values;
-        for (int i = 0; i < num_elements; i++) {
-          if (i == offset) {
-            values.push_back(stmt->val);
-            continue;
+          std::vector<Stmt *> values;
+          for (int i = 0; i < num_elements; i++) {
+            if (i == offset) {
+              values.push_back(stmt->val);
+              continue;
+            }
+
+            auto const_i = insert_const(PrimitiveType::i32, stmt, i, true);
+            auto matrix_ptr_stmt_i =
+                Stmt::make<MatrixPtrStmt>(stack_top_stmt, const_i);
+            matrix_ptr_stmt_i->ret_type = tensor_type->get_element_type();
+
+            auto local_load_stmt_i =
+                Stmt::make<LocalLoadStmt>(matrix_ptr_stmt_i.get());
+            local_load_stmt_i->ret_type = tensor_type->get_element_type();
+
+            values.push_back(local_load_stmt_i.get());
+
+            stmt->insert_before_me(std::move(matrix_ptr_stmt_i));
+            stmt->insert_before_me(std::move(local_load_stmt_i));
           }
 
-          auto const_i = insert_const(PrimitiveType::i32, stmt, i, true);
-          auto matrix_ptr_stmt_i =
-              Stmt::make<MatrixPtrStmt>(orig_stmt, const_i);
-          matrix_ptr_stmt_i->ret_type = tensor_type->get_element_type();
-
-          auto local_load_stmt_i =
-              Stmt::make<LocalLoadStmt>(matrix_ptr_stmt_i.get());
-          local_load_stmt_i->ret_type = tensor_type->get_element_type();
-
-          values.push_back(local_load_stmt_i.get());
-
-          stmt->insert_before_me(std::move(matrix_ptr_stmt_i));
-          stmt->insert_before_me(std::move(local_load_stmt_i));
-        }
-
-        auto matrix_init_stmt = Stmt::make<MatrixInitStmt>(values);
-        matrix_init_stmt->ret_type = tensor_type;
-
-        if (is_adstack_load_top) {
-          auto stack_top_stmt =
-              matrix_ptr_stmt->origin->as<AdStackLoadTopStmt>();
-          TI_ASSERT(stack_top_stmt->return_ptr == true);
+          auto matrix_init_stmt = Stmt::make<MatrixInitStmt>(values);
+          matrix_init_stmt->ret_type = tensor_type;
 
           auto stack_push = Stmt::make<AdStackPushStmt>(stack_top_stmt->stack,
                                                         matrix_init_stmt.get());
           stmt->insert_before_me(std::move(matrix_init_stmt));
           stmt->replace_with(std::move(stack_push));
+
+          return;
+
         } else {
-          auto store_stmt =
-              Stmt::make<LocalStoreStmt>(orig_stmt, matrix_init_stmt.get());
-          stmt->insert_before_me(std::move(matrix_init_stmt));
-          stmt->replace_with(std::move(store_stmt));
-        }
+          /*
+            [Dynamic index]
+            Fwd:
+            $0 = adstack alloca <4 x i32>
+            $1 = adstack load top
+            $2 = matrix ptr $1, $offset // offset = 2
+            $3 : local store $2, $val
 
-        return;
+            Replaced:
+            $0 = adstack alloca <4 x i32>
 
-      } else {
-        /*
-          [Dynamic index]
-          Fwd:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
-          $2 = matrix ptr $1, $offset // offset = 2
-          $3 : local store $2, $val
+            $1 = adstack load top (return_ptr=false)
+            $2 = matrix init [$val, $val, $val, $val]
 
-          Replaced:
-          $0 = adstack alloca <4 x i32>
+            $3 = matrix init [$offset, $offset, $offset, $offset]
+            $4 = matrix init [0, 1, 2, 3]
 
-          $1 = adstack load top (return_ptr=false)
-          $2 = matrix init [$val, $val, $val, $val]
+            $5 = bin_eq $3, $4
+            $6 = select $5, $2, $1
 
-          $3 = matrix init [$offset, $offset, $offset, $offset]
-          $4 = matrix init [0, 1, 2, 3]
+            $7 : adstack push $6
+          */
+          auto tensor_type =
+              stack_top_stmt->ret_type.ptr_removed()->as<TensorType>();
+          auto num_elements = tensor_type->get_num_elements();
 
-          $5 = bin_eq $3, $4
-          $6 = select $5, $2, $1
+          auto tensor_shape = tensor_type->get_shape();
+          auto index_tensor_type = TypeFactory::get_instance().get_tensor_type(
+              tensor_shape, PrimitiveType::i32);
 
-          $7 : adstack push $6
-        */
-        auto tensor_type = orig_stmt->ret_type.ptr_removed()->as<TensorType>();
-        auto num_elements = tensor_type->get_num_elements();
+          std::vector<Stmt *> val_values(num_elements, stmt->val);
+          std::vector<Stmt *> offset_values(num_elements,
+                                            matrix_ptr_stmt->offset);
+          std::vector<Stmt *> index_values(num_elements);
+          for (int i = 0; i < num_elements; i++) {
+            index_values[i] = insert_const(PrimitiveType::i32, stmt, i, true);
+          }
 
-        auto tensor_shape = tensor_type->get_shape();
-        auto index_tensor_type = TypeFactory::get_instance().get_tensor_type(
-            tensor_shape, PrimitiveType::i32);
+          auto matrix_val = Stmt::make<MatrixInitStmt>(val_values);
+          matrix_val->ret_type = tensor_type;
 
-        std::vector<Stmt *> val_values(num_elements, stmt->val);
-        std::vector<Stmt *> offset_values(num_elements,
-                                          matrix_ptr_stmt->offset);
-        std::vector<Stmt *> index_values(num_elements);
-        for (int i = 0; i < num_elements; i++) {
-          index_values[i] = insert_const(PrimitiveType::i32, stmt, i, true);
-        }
+          auto matrix_offset = Stmt::make<MatrixInitStmt>(offset_values);
+          matrix_offset->ret_type = index_tensor_type;
 
-        auto matrix_val = Stmt::make<MatrixInitStmt>(val_values);
-        matrix_val->ret_type = tensor_type;
+          auto matrix_index = Stmt::make<MatrixInitStmt>(index_values);
+          matrix_index->ret_type = index_tensor_type;
 
-        auto matrix_offset = Stmt::make<MatrixInitStmt>(offset_values);
-        matrix_offset->ret_type = index_tensor_type;
-
-        auto matrix_index = Stmt::make<MatrixInitStmt>(index_values);
-        matrix_index->ret_type = index_tensor_type;
-
-        auto matrix_eq = Stmt::make<BinaryOpStmt>(
-            BinaryOpType::cmp_eq, matrix_offset.get(), matrix_index.get());
-        matrix_eq->ret_type = index_tensor_type;
-
-        if (is_adstack_load_top) {
-          auto stack_top_stmt =
-              matrix_ptr_stmt->origin->as<AdStackLoadTopStmt>();
-          TI_ASSERT(stack_top_stmt->return_ptr == true);
+          auto matrix_eq = Stmt::make<BinaryOpStmt>(
+              BinaryOpType::cmp_eq, matrix_offset.get(), matrix_index.get());
+          matrix_eq->ret_type = index_tensor_type;
 
           auto matrix_alloca_value =
               Stmt::make<AdStackLoadTopStmt>(stack_top_stmt->stack);
@@ -705,27 +861,9 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
           stmt->insert_before_me(std::move(matrix_alloca_value));
           stmt->insert_before_me(std::move(matrix_select));
           stmt->replace_with(std::move(stack_push));
-        } else {
-          auto orig_value = Stmt::make<LocalLoadStmt>(orig_stmt);
-          orig_value->ret_type = tensor_type;
 
-          auto matrix_select =
-              Stmt::make<TernaryOpStmt>(TernaryOpType::select, matrix_eq.get(),
-                                        matrix_val.get(), orig_value.get());
-          matrix_select->ret_type = tensor_type;
-
-          auto store_stmt =
-              Stmt::make<LocalStoreStmt>(orig_stmt, matrix_select.get());
-
-          stmt->insert_before_me(std::move(matrix_val));
-          stmt->insert_before_me(std::move(matrix_offset));
-          stmt->insert_before_me(std::move(matrix_index));
-          stmt->insert_before_me(std::move(matrix_eq));
-          stmt->insert_before_me(std::move(orig_value));
-          stmt->insert_before_me(std::move(matrix_select));
-          stmt->replace_with(std::move(store_stmt));
+          return;
         }
-        return;
       }
     }
 
@@ -2182,6 +2320,7 @@ void auto_diff(IRNode *root,
                bool use_stack) {
   TI_AUTO_PROF;
   if (autodiff_mode == AutodiffMode::kReverse) {
+    RegulateTensorTypedStatements::run(root);
     if (use_stack) {
       auto IB = IdentifyIndependentBlocks::run(root);
       ReverseOuterLoops::run(root, IB);

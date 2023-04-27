@@ -475,6 +475,7 @@ def test_offline_cache_cleaning(curr_arch, factor, policy):
 @pytest.mark.run_in_serial
 @pytest.mark.parametrize("curr_arch", {ti.cpu, ti.cuda} & supported_archs_offline_cache)
 @_test_offline_cache_dec
+@test_utils.test(cuda_stack_limit=8192)
 def test_offline_cache_for_kernels_calling_real_func(curr_arch):
     count_of_cache_file = cache_files_cnt()
 

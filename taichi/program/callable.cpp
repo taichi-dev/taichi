@@ -32,12 +32,14 @@ int Callable::insert_arr_param(const DataType &dt,
 int Callable::insert_ndarray_param(const DataType &dt,
                                    int total_dim,
                                    std::vector<int> element_shape,
-                                   const std::string &name) {
+                                   const std::string &name,
+                                   bool needs_grad) {
   // Transform ndarray param to a struct type with a pointer to `dt`.
-  auto *type =
-      TypeFactory::get_instance().get_ndarray_struct_type(dt, total_dim);
+  auto *type = TypeFactory::get_instance().get_ndarray_struct_type(
+      dt, total_dim, needs_grad);
   parameter_list.emplace_back(type, /*is_array=*/true,
-                              /*size=*/0, total_dim, element_shape);
+                              /*size=*/0, total_dim, element_shape,
+                              BufferFormat::unknown, needs_grad);
   parameter_list.back().name = name;
   return (int)parameter_list.size() - 1;
 }

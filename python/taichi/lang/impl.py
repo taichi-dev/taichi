@@ -827,18 +827,22 @@ def ndarray(dtype, shape, needs_grad=False):
     if isinstance(shape, numbers.Number):
         shape = (shape,)
     if dtype in all_types:
-        x = ScalarNdarray(dtype, shape)
-        if needs_grad:
-            x_grad = ScalarNdarray(dtype, shape)
-            x._set_grad(x_grad)
-        return x
-    if isinstance(dtype, MatrixType):
+        dt = cook_dtype(dtype)
+        x = ScalarNdarray(dt, shape)
+    elif isinstance(dtype, MatrixType):
         if dtype.ndim == 1:
-            return VectorNdarray(dtype.n, dtype.dtype, shape)
-
-        return MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
-
-    raise TaichiRuntimeError(f"{dtype} is not supported as ndarray element type")
+            x = VectorNdarray(dtype.n, dtype.dtype, shape)
+        else:
+            x = MatrixNdarray(dtype.n, dtype.m, dtype.dtype, shape)
+        dt = dtype.dtype
+    else:
+        raise TaichiRuntimeError(f"{dtype} is not supported as ndarray element type")
+    if needs_grad:
+        if not _ti_core.is_real(dt):
+            raise TaichiRuntimeError(f"{dt} is not supported for ndarray with `needs_grad=True` or `needs_dual=True`.")
+        x_grad = ndarray(dtype, shape, needs_grad=False)
+        x._set_grad(x_grad)
+    return x
 
 
 @taichi_scope

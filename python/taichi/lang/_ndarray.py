@@ -27,7 +27,7 @@ class Ndarray:
         self.grad = None
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.element_type, self.shape)
+        return NdarrayTypeMetadata(self.element_type, self.shape, self.grad is not None)
 
     @property
     def element_shape(self):

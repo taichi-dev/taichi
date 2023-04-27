@@ -11,7 +11,8 @@ import taichi.types.primitive_types as types
 from taichi.lang import impl
 from taichi.lang.enums import AutodiffMode, SNodeGradType
 from taichi.lang.expr import Expr
-from taichi.lang.field import ScalarField
+from taichi.lang.field import Field, ScalarField
+from taichi.lang._ndarray import Ndarray
 from taichi.lang.kernel_impl import kernel
 from taichi.lang.snode import SNode
 from taichi.types import ndarray, template
@@ -186,22 +187,42 @@ class Tape:
         assert not self.entered, "Tape can be entered only once."
         self.entered = True
 
-        impl.get_runtime().materialize()
-        if len(self.loss.shape) != 0:
-            raise RuntimeError("The loss of `Tape` must be a 0-D field, i.e. scalar")
-        if not self.loss.snode.ptr.has_adjoint():
-            raise RuntimeError(
-                "Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)"
-                " for all fields that are required by autodiff."
-            )
-        if self.clear_gradients:
-            clear_all_gradients()
-        if self.validation:
-            clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
+        if isinstance(self.loss, Field):
+            impl.get_runtime().materialize()
+            if len(self.loss.shape) != 0:
+                raise RuntimeError("The loss of `Tape` must be a 0-D field, i.e. scalar")
+            if not self.loss.snode.ptr.has_adjoint():
+                raise RuntimeError(
+                    "Gradients of loss are not allocated, please use ti.field(..., needs_grad=True)"
+                    " for all fields that are required by autodiff."
+                )
+            if self.clear_gradients:
+                clear_all_gradients()
+            if self.validation:
+                clear_all_gradients(gradient_type=SNodeGradType.ADJOINT_CHECKBIT)
 
-        from taichi._kernels import clear_loss  # pylint: disable=C0415
+            from taichi._kernels import clear_loss  # pylint: disable=C0415
 
-        clear_loss(self.loss)
+            clear_loss(self.loss)
+        elif isinstance(self.loss, Ndarray):
+            if self.loss._get_nelement() != 1:
+                raise RuntimeError("The loss of `Tape` must be an ndarray with only one element")
+            if self.loss.grad is None:
+                raise RuntimeError(
+                    "Gradients of loss are not allocated, please set needs_grad=True for all ndarrays that are required by autodiff."
+                )
+            self.loss.fill(0.0)
+        else:
+            import torch  # pylint: disable=C0415
+
+            if self.loss.numel() != 1:
+                raise RuntimeError("The loss of `Tape` must be a tensor only contains one element")
+            if not self.loss.requires_grad:
+                raise RuntimeError(
+                    "Gradients of loss are not allocated, please set requires_grad=True for all tensors that are required by autodiff."
+                )
+            with torch.no_grad():
+                self.loss.fill_(0.0)
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self
@@ -235,7 +256,16 @@ class Tape:
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, "grad"):
-                self.loss.grad.fill(1.0)
+                if isinstance(self.loss, (Field, Ndarray)):
+                    self.loss.grad.fill(1.0)
+                else:
+                    import torch  # pylint: disable=C0415
+
+                    if self.loss.grad is None:
+                        self.loss.grad = torch.ones_like(self.loss)
+                    else:
+                        with torch.no_grad():
+                            self.loss.grad.fill_(1.0)
                 func.grad(*args)
 
         self.gradient_evaluated = True

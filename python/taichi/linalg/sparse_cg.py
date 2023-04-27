@@ -6,7 +6,7 @@ from taichi.lang.impl import get_runtime
 from taichi.types import f32, f64
 
 
-class CG:
+class SparseCG:
     def __init__(self, A, b, x0=None, max_iter=50, atol=1e-6):
         self.dtype = A.dtype
         self.ti_arch = get_runtime().prog.config().arch

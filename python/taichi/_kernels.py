@@ -229,14 +229,6 @@ def clear_gradients(_vars: template()):
 
 
 @kernel
-def clear_loss(l: template()):
-    # Using SNode writers would result in a forced sync, therefore we wrap these
-    # writes into a kernel.
-    l[None] = 0
-    l.grad[None] = 1
-
-
-@kernel
 def field_fill_python_scope(F: template(), val: template()):
     field_fill_taichi_scope(F, val)
 

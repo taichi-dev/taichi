@@ -587,8 +587,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
-      TI_INFO("Create Add, lhs bits = " + std::to_string(llvm_val[stmt->lhs]->getType()->getPrimitiveSizeInBits()) + " rhs bits = " + std::to_string(llvm_val[stmt->rhs]->getType()->getPrimitiveSizeInBits()));
-      TI_INFO("Create Add, ret bits = " + stmt->ret_type.to_string());
+//      TI_INFO("Create Add, lhs bits = " + std::to_string(llvm_val[stmt->lhs]->getType()->getPrimitiveSizeInBits()) + " rhs bits = " + std::to_string(llvm_val[stmt->rhs]->getType()->getPrimitiveSizeInBits()));
+//      TI_INFO("Create Add, ret bits = " + stmt->ret_type.to_string());
 //      llvm_val[stmt] =
 //          builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] =

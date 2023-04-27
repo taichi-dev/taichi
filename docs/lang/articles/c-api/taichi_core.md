@@ -924,19 +924,15 @@ A typed scalar value.
 ```c
 // union.tensor_value
 typedef union TiTensorValue {
-  uint8_t x8[128];
   uint16_t x16[64];
   uint32_t x32[32];
-  uint64_t x64[16];
 } TiTensorValue;
 ```
 
 Tensor value represented by a power-of-two number of bits.
 
-- `x8`: Tensor value that fits into 8 bits.
 - `x16`: Tensor value that fits into 16 bits.
 - `x32`: Tensor value that fits into 32 bits.
-- `x64`: Tensor value that fits into 64 bits.
 
 ---
 ### Structure `TiTensor`

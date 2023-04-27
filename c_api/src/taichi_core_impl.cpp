@@ -806,12 +806,6 @@ void ti_launch_kernel(TiRuntime runtime,
           for (int j = 0; j < tensor.length; j++) {
             builder.set_struct_arg_impl({(int)i, j}, tensor.data.x32[j]);
           }
-        } else if (tensor.type == TI_DATA_TYPE_I64 ||
-                   tensor.type == TI_DATA_TYPE_U64 ||
-                   tensor.type == TI_DATA_TYPE_F64) {
-          for (int j = 0; j < tensor.length; j++) {
-            builder.set_struct_arg_impl({(int)i, j}, tensor.data.x64[j]);
-          }
         } else {
           ti_set_last_error(TI_ERROR_NOT_SUPPORTED,
                             ("args[" + std::to_string(i) + "].type").c_str());

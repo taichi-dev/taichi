@@ -491,11 +491,6 @@
                     "since": "v1.7.0",
                     "variants": [
                         {
-                            "name": "x8",
-                            "type": "uint8_t",
-                            "count": 128
-                        },
-                        {
                             "name": "x16",
                             "type": "uint16_t",
                             "count": 64
@@ -504,11 +499,6 @@
                             "name": "x32",
                             "type": "uint32_t",
                             "count": 32
-                        },
-                        {
-                            "name": "x64",
-                            "type": "uint64_t",
-                            "count": 16
                         }
                     ]
                 },

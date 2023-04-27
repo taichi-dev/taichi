@@ -1090,7 +1090,7 @@ void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
       BasicBlock::Create(*llvm_context, "after_break", func);
   TI_ASSERT(current_while_after_loop);
   llvm::Value *cond =
-      builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[stmt->cond]),
+      builder->CreateTrunc(builder->CreateIsNull(llvm_val[stmt->cond]),
                            tlctx->get_data_type(PrimitiveType::u1));
   builder->CreateCondBr(cond, current_while_after_loop, after_break);
   builder->SetInsertPoint(after_break);

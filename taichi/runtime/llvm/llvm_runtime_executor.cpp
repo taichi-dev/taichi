@@ -121,6 +121,10 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
       CUDAContext::get_instance().set_profiler(nullptr);
     }
     CUDAContext::get_instance().set_debug(config.debug);
+    if (config.cuda_stack_limit != 0) {
+      CUDADriver::get_instance().context_set_limit(CU_LIMIT_STACK_SIZE,
+                                                   config.cuda_stack_limit);
+    }
     device_ = std::make_shared<cuda::CudaDevice>();
   }
 #endif

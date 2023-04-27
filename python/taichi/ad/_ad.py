@@ -212,6 +212,7 @@ class Tape:
                     "Gradients of loss are not allocated, please set needs_grad=True for all ndarrays that are required by autodiff."
                 )
             self.loss.fill(0.0)
+            self.loss.grad.fill(1.0)
         else:
             import torch  # pylint: disable=C0415
 
@@ -223,6 +224,12 @@ class Tape:
                 )
             with torch.no_grad():
                 self.loss.fill_(0.0)
+
+            if self.loss.grad is None:
+                self.loss.grad = torch.ones_like(self.loss)
+            else:
+                with torch.no_grad():
+                    self.loss.grad.fill_(1.0)
 
         # Attach the context manager to runtime
         self.runtime.target_tape = self
@@ -256,16 +263,6 @@ class Tape:
             # since we insert write_int and write_float kernels to self.calls
             # e.g. x[None] = 0.0, this func has no grad attribute
             if hasattr(func, "grad"):
-                if isinstance(self.loss, (Field, Ndarray)):
-                    self.loss.grad.fill(1.0)
-                else:
-                    import torch  # pylint: disable=C0415
-
-                    if self.loss.grad is None:
-                        self.loss.grad = torch.ones_like(self.loss)
-                    else:
-                        with torch.no_grad():
-                            self.loss.grad.fill_(1.0)
                 func.grad(*args)
 
         self.gradient_evaluated = True

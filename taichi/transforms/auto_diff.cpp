@@ -10,24 +10,6 @@
 
 namespace taichi::lang {
 
-namespace {
-
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
-}  // namespace
-
 template <typename T>
 Stmt *insert_const(const DataType &dtype,
                    Stmt *stmt,
@@ -2198,8 +2180,6 @@ void auto_diff(IRNode *root,
                const CompileConfig &config,
                AutodiffMode autodiff_mode,
                bool use_stack) {
-  auto print = make_pass_printer(true, "asdasdasd", root);
-
   TI_AUTO_PROF;
   if (autodiff_mode == AutodiffMode::kReverse) {
     if (use_stack) {
@@ -2212,11 +2192,7 @@ void auto_diff(IRNode *root,
         ib->accept(&replace);
         type_check(root, config);
 
-        print("After ReplaceLocalVarWithStacks");
-
         MakeAdjoint::run(ib);
-        print("After MakeAdjoint");
-
         type_check(root, config);
         BackupSSA::run(ib);
         irpass::analysis::verify(root);

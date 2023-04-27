@@ -1027,6 +1027,8 @@ SNodeOpExpression::SNodeOpExpression(SNode *snode,
 void SNodeOpExpression::type_check(const CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
+  } else if (op_type == SNodeOpType::is_active) {
+    ret_type = PrimitiveType::u1;
   } else {
     ret_type = PrimitiveType::i32;
   }

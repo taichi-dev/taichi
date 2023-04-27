@@ -209,10 +209,11 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
     if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
       llvm_val[stmt] = call("logical_not_u1", input);
     } else {
-      llvm_val[stmt] =
+      auto result =
           call("logical_not_u1",
                builder->CreateTrunc(builder->CreateIsNotNull(input),
                                     tlctx->get_data_type(PrimitiveType::u1)));
+      llvm_val[stmt] = builder->CreateZExt(result, input->getType());
     }
   }
   else if (op == UnaryOpType::popcnt) {
@@ -504,6 +505,7 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       }
     } else if (!is_real(from.get_element_type()) &&
                !is_real(to.get_element_type())) {
+      TI_INFO("INT Cast from " + std::to_string(llvm_val[stmt->operand]->getType()->getPrimitiveSizeInBits()) + " bits type to " + to.to_string());
       llvm_val[stmt] = builder->CreateIntCast(
           llvm_val[stmt->operand], tlctx->get_data_type(to),
           is_signed(from.get_element_type()));
@@ -585,8 +587,12 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
+      TI_INFO("Create Add, lhs bits = " + std::to_string(llvm_val[stmt->lhs]->getType()->getPrimitiveSizeInBits()) + " rhs bits = " + std::to_string(llvm_val[stmt->rhs]->getType()->getPrimitiveSizeInBits()));
+      TI_INFO("Create Add, ret bits = " + stmt->ret_type.to_string());
+//      llvm_val[stmt] =
+//          builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
       llvm_val[stmt] =
-          builder->CreateAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+          builder->CreateAdd(llvm_val[stmt->lhs], builder->CreateZExt(llvm_val[stmt->rhs], tlctx->get_data_type(stmt->ret_type)));
     }
   } else if (op == BinaryOpType::sub) {
     if (is_real(stmt->ret_type.get_element_type())) {

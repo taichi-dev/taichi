@@ -349,6 +349,7 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
+      TI_INFO("NOT EQUAL: lhs=" + stmt->lhs->ret_type.to_string() + ", rhs=" + stmt->rhs->ret_type.to_string());
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {
         // shift_ops does not follow the same type promotion rule as numerical
@@ -367,6 +368,7 @@ class TypeCheck : public IRVisitor {
         }
       } else {
         ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
+        TI_INFO("Entered Here #1, promoted=" + ret_type.to_string());
       }
 
       if (ret_type != stmt->lhs->ret_type) {
@@ -378,6 +380,7 @@ class TypeCheck : public IRVisitor {
         // promote rhs
         auto cast_stmt = insert_type_cast_before(stmt, stmt->rhs, ret_type);
         stmt->rhs = cast_stmt;
+        TI_INFO("Promoted RHS");
       }
     }
     bool matching = true;

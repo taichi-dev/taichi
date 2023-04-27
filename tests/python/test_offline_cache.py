@@ -280,11 +280,11 @@ def test_multiple_ib_with_offline_cache(curr_arch):
     assert added_files() == expected_num_cache_files()
 
     ti.init(arch=curr_arch, enable_fallback=False, **current_thread_ext_options())
-    assert added_files() == expected_num_cache_files(9)
+    assert added_files() == expected_num_cache_files(8)
     helper()
 
     ti.reset()
-    assert added_files() == expected_num_cache_files(9)
+    assert added_files() == expected_num_cache_files(8)
 
 
 @pytest.mark.parametrize("curr_arch", supported_archs_offline_cache)

@@ -905,7 +905,7 @@ class Kernel {
     int idx = args_.size();
     args_.resize(idx + 1);
     args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
-    std::memcpy(args_[idx].value.tensor.data.x8, v.data(),
+    std::memcpy(args_[idx].value.tensor.data.x32, v.data(),
                 v.size() * sizeof(T));
     args_[idx].value.tensor.length = v.size();
     args_[idx].value.tensor.type = DataTypeToEnum<T>::value;

@@ -349,7 +349,8 @@ class TypeCheck : public IRVisitor {
     }
 
     if (stmt->lhs->ret_type != stmt->rhs->ret_type) {
-      TI_INFO("NOT EQUAL: lhs=" + stmt->lhs->ret_type.to_string() + ", rhs=" + stmt->rhs->ret_type.to_string());
+      TI_INFO("NOT EQUAL: lhs=" + stmt->lhs->ret_type.to_string() +
+              ", rhs=" + stmt->rhs->ret_type.to_string());
       DataType ret_type;
       if (is_shift_op(stmt->op_type)) {
         // shift_ops does not follow the same type promotion rule as numerical

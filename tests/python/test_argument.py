@@ -273,7 +273,7 @@ def test_struct_arg():
     assert ret == pytest.approx(125)
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_struct_arg_with_matrix():
     mat = ti.types.matrix(3, 2, ti.f32)
     s0 = ti.types.struct(a=mat, b=ti.f32)

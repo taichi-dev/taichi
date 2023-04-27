@@ -315,7 +315,7 @@ class TaichiMain:
             try:
                 index = input(
                     f"Please input the example index (between 0 and {len(names)}): ")
-                while not index.isdigit() or abs(int(index)) >= len(names):
+                while not index.isdigit() or int(index) >= len(names):
                     index = input(
                         f"Example [{index}] does not exist. Please try again: ")
                 example_name = names[int(index)]

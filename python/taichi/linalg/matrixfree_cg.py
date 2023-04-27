@@ -16,7 +16,7 @@ class LinearOperator:
         self._matvec(x, Ax)
 
 
-def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
+def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     if b.dtype != x.dtype:
         raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
     if str(b.dtype) == "f32":

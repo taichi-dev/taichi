@@ -1,7 +1,7 @@
 import math
 
 import pytest
-from taichi.linalg import LinearOperator, taichi_cg_solver
+from taichi.linalg import LinearOperator, MatrixFreeCG
 
 import taichi as ti
 from tests import test_utils
@@ -11,7 +11,7 @@ vk_on_mac = (ti.vulkan, "Darwin")
 
 @pytest.mark.parametrize("ti_dtype", [ti.f32, ti.f64])
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac])
-def test_taichi_cg(ti_dtype):
+def test_matrixfree_cg(ti_dtype):
     GRID = 32
     Ax = ti.field(dtype=ti_dtype, shape=(GRID, GRID))
     x = ti.field(dtype=ti_dtype, shape=(GRID, GRID))
@@ -47,7 +47,7 @@ def test_taichi_cg(ti_dtype):
 
     A = LinearOperator(compute_Ax)
     init()
-    taichi_cg_solver(A, b, x, maxiter=10 * GRID * GRID, tol=1e-18, quiet=True)
+    MatrixFreeCG(A, b, x, maxiter=10 * GRID * GRID, tol=1e-18, quiet=True)
     compute_Ax(x, Ax)
     # `tol` can't be < 1e-6 for ti.f32 because of accumulating round-off error;
     # see https://en.wikipedia.org/wiki/Conjugate_gradient_method#cite_note-6

@@ -3,4 +3,4 @@
 from taichi.linalg.cg import CG
 from taichi.linalg.sparse_matrix import *
 from taichi.linalg.sparse_solver import SparseSolver
-from taichi.linalg.taichi_cg import *
+from taichi.linalg.matrixfree_cg import *

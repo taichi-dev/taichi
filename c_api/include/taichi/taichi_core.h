@@ -804,13 +804,21 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
+// Union `TiTensorValue` (1.5.0)
+typedef union TiTensorValue {
+  uint8_t x8[128];
+  uint16_t x16[64];
+  uint32_t x32[32];
+  uint64_t x64[16];
+} TiTensorValue;
+
 // Structure `TiTensor` (1.7.0)
 //
 // A typed tensor value.
 typedef struct TiTensor {
   TiDataType type;
-  uint8_t length;
-  uint8_t data[128];
+  uint32_t length;
+  TiTensorValue data;
 } TiTensor;
 
 // Union `TiArgumentValue` (1.4.0)

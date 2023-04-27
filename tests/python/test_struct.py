@@ -128,3 +128,29 @@ def test_func_of_data_class_as_kernel_return():
     c = b.add_python(b)
     assert c.x == 4
     assert c.y == 8
+
+
+@test_utils.test()
+def test_nested_data_class_func():
+    @ti.dataclass
+    class Foo:
+        a: int
+
+        @ti.func
+        def foo(self):
+            return self.a
+
+    @ti.dataclass
+    class Nested:
+        f: Foo
+
+        @ti.func
+        def testme(self) -> int:
+            return self.f.foo()
+
+    @ti.kernel
+    def k() -> int:
+        x = Nested(Foo(42))
+        return x.testme()
+
+    assert k() == 42

@@ -751,7 +751,7 @@ class TaskCodegen : public IRVisitor {
     if (dst_dt.is_pointer()) {
       auto stype = dst_dt.ptr_removed()->as<lang::StructType>();
       std::vector<std::tuple<SType, std::string, size_t>> components;
-      for (int i = 0; i < stype->get_num_elements(); i++) {
+      for (int i = 0; i < stype->elements().size(); i++) {
         components.push_back(
             {ir_->get_primitive_type(stype->get_element_type({i})),
              fmt::format("element{}", i), stype->get_element_offset({i})});

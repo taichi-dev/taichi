@@ -32,15 +32,12 @@ void KernelLauncher::launch_llvm_kernel(Handle handle,
       ctx.set_array_device_allocation_type(
           i, LaunchContextBuilder::DevAllocType::kNone);
 
-      if (ctx.has_grad[i]) {
-        DeviceAllocation *ptr_grad = static_cast<DeviceAllocation *>(
-            ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}]);
-        uint64 host_ptr_grad =
-            (uint64)executor->get_ndarray_alloc_info_ptr(*ptr_grad);
-        ctx.set_ndarray_ptrs(i, host_ptr, host_ptr_grad);
-      } else {
-        ctx.set_ndarray_ptrs(i, host_ptr, 0);
-      }
+      auto grad_ptr = ctx.array_ptrs[{i, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}];
+      uint64 host_ptr_grad =
+          grad_ptr == nullptr ? 0
+                              : (uint64)executor->get_ndarray_alloc_info_ptr(
+                                    *static_cast<DeviceAllocation *>(grad_ptr));
+      ctx.set_ndarray_ptrs(i, host_ptr, host_ptr_grad);
     }
   }
   for (auto task : launcher_ctx.task_funcs) {

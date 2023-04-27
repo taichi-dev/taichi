@@ -925,7 +925,8 @@ A typed scalar value.
 // structure.tensor
 typedef struct TiTensor {
   TiDataType type;
-  uint8_t length;
+  uint32_t n;
+  uint32_t m;
   uint8_t data[128];
 } TiTensor;
 ```

@@ -25,7 +25,9 @@ class TypeFactory {
   const Type *get_struct_type(const std::vector<StructMember> &elements,
                               const std::string &layout = "none");
 
-  const Type *get_ndarray_struct_type(DataType dt, int total_dim);
+  const Type *get_ndarray_struct_type(DataType dt,
+                                      int total_dim,
+                                      bool needs_grad = false);
 
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 

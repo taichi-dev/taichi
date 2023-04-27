@@ -32,7 +32,9 @@ class AnyArray:
         return Layout.AOS
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.ptr.get_ret_type(), None)  # AnyArray can take any shape
+        return NdarrayTypeMetadata(
+            self.ptr.get_ret_type(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+        )  # AnyArray can take any shape
 
     @property
     @taichi_scope

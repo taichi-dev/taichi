@@ -4,10 +4,11 @@ from taichi.types.compound_types import CompoundType, TensorType, matrix, vector
 
 
 class NdarrayTypeMetadata:
-    def __init__(self, element_type, shape=None):
+    def __init__(self, element_type, shape=None, needs_grad=False):
         self.element_type = element_type
         self.shape = shape
         self.layout = Layout.AOS
+        self.needs_grad = needs_grad
 
 
 # TODO(Haidong): This is a helper function that creates a MatrixType
@@ -75,6 +76,7 @@ class NdarrayType:
         element_dim=None,
         element_shape=None,
         field_dim=None,
+        needs_grad=None,
     ):
         if field_dim is not None:
             raise ValueError("The field_dim argument for ndarray type is already deprecated. Please use ndim instead.")
@@ -85,6 +87,7 @@ class NdarrayType:
 
         self.ndim = ndim
         self.layout = Layout.AOS
+        self.needs_grad = needs_grad
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
         # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import
@@ -124,8 +127,14 @@ class NdarrayType:
                 f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
             )
 
+        # Check needs_grad
+        if self.needs_grad is not None and self.needs_grad != ndarray_type.needs_grad:
+            raise ValueError(
+                f"Invalid argument into ti.types.ndarray() - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
+            )
+
     def __repr__(self):
-        return f"NdarrayType(dtype={self.dtype}, ndim={self.ndim}, layout={self.layout})"
+        return f"NdarrayType(dtype={self.dtype}, ndim={self.ndim}, layout={self.layout}, needs_grad={self.needs_grad})"
 
     def __str__(self):
         return self.__repr__()

@@ -938,7 +938,7 @@ void export_lang(py::module &m) {
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &>);
+                   const std::vector<int> &, bool>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
@@ -997,6 +997,11 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->element_dim;
+  });
+
+  m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->needs_grad;
   });
 
   m.def("get_external_tensor_element_shape", [](const Expr &expr) {

@@ -730,14 +730,12 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
           /*
             [Static index]
             Fwd:
-            $0 = adstack alloca <4 x i32>
-            $1 = adstack load top
+            $1 = alloca <4 x i32>
             $2 = matrix ptr $1, 2 // offset = 2
             $3 : local store $2, $val
 
             Replaced:
-            $0 = adstack alloca <4 x i32>
-            $1 = adstack load top
+            $1 =  alloca <4 x i32>
             $2 = matrix ptr $1, 2 // --> erase
 
             $3 = matrix ptr $1, 0
@@ -751,7 +749,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
 
             $9 = matrix init [$4, $6, $val, $8]
 
-            $10 : adstack push $9
+            $10 : store $1, $9
           */
           int offset =
               matrix_ptr_stmt->offset->as<ConstStmt>()->val.val_int32();
@@ -794,15 +792,13 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
           /*
             [Dynamic index]
             Fwd:
-            $0 = adstack alloca <4 x i32>
-            $1 = adstack load top
+            $1 = alloca <4 x i32>
             $2 = matrix ptr $1, $offset // offset = 2
             $3 : local store $2, $val
 
             Replaced:
-            $0 = adstack alloca <4 x i32>
+            $1 = alloca <4 x i32>
 
-            $1 = adstack load top (return_ptr=false)
             $2 = matrix init [$val, $val, $val, $val]
 
             $3 = matrix init [$offset, $offset, $offset, $offset]
@@ -811,7 +807,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
             $5 = bin_eq $3, $4
             $6 = select $5, $2, $1
 
-            $7 : adstack push $6
+            $7 : store $1, $6
           */
           auto tensor_type =
               stack_top_stmt->ret_type.ptr_removed()->as<TensorType>();

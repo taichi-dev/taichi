@@ -254,12 +254,13 @@ class Tape:
             self.loss.grad.fill(1.0)
         else:
             import torch  # pylint: disable=C0415
+
             if self.loss.grad is None:
                 self.loss.grad = torch.ones_like(self.loss)
             else:
                 with torch.no_grad():
                     self.loss.grad.fill_(1.0)
-        
+
         for func, args in reversed(self.calls):
             # we need to check whether "func" has "grad" attribute
             # since we insert write_int and write_float kernels to self.calls

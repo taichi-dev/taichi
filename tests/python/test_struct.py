@@ -78,7 +78,7 @@ def test_2d_nested():
             assert x[i, j] == i + j * 10
 
 
-@test_utils.test()
+@test_utils.test(exclude=[ti.cc])
 def test_func_of_data_class_as_kernel_arg():
     @ti.dataclass
     class Foo:

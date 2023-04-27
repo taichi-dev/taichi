@@ -91,7 +91,8 @@ function build-unity-demo {
         -androidKeystoreName ~/.android/debug.keystore \
         -androidKeystorePass android \
         -androidKeyaliasName androiddebugkey \
-        -androidKeyaliasPass android
+        -androidKeyaliasPass android \
+        -development
 }
 
 function smoke-test-unity-demo {

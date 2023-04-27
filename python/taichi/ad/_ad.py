@@ -250,9 +250,7 @@ class Tape:
         assert not self.gradient_evaluated, "Gradients of grad can be evaluated only once."
 
         # Set grad for loss
-        if isinstance(self.loss, Field):
-            self.loss.grad.fill(1.0)
-        elif isinstance(self.loss, Ndarray):
+        if isinstance(self.loss, (Field, Ndarray)):
             self.loss.grad.fill(1.0)
         else:
             import torch  # pylint: disable=C0415

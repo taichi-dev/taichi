@@ -557,6 +557,6 @@ def test_ad_set_loss_grad():
         compute_1(x, loss)
         compute_2(x, loss)
         compute_3(x, loss)
-    
+
     assert loss[None] == 4
     assert x.grad[None] == 4

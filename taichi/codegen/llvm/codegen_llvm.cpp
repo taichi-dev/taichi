@@ -893,12 +893,10 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
       llvm::BasicBlock::Create(*llvm_context, "false_block", func);
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
-  llvm::Value *casted =
+  llvm::Value *cond =
       builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[if_stmt->cond]),
                            tlctx->get_data_type(PrimitiveType::u1));
-  builder->CreateCondBr(
-      builder->CreateICmpNE(casted, tlctx->get_constant(false)), true_block,
-      false_block);
+  builder->CreateCondBr(cond, true_block, false_block);
   builder->SetInsertPoint(true_block);
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
@@ -1091,8 +1089,9 @@ void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
   TI_ASSERT(current_while_after_loop);
-  auto cond =
-      builder->CreateICmpEQ(llvm_val[stmt->cond], tlctx->get_constant(0));
+  llvm::Value *cond =
+      builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[stmt->cond]),
+                           tlctx->get_data_type(PrimitiveType::u1));
   builder->CreateCondBr(cond, current_while_after_loop, after_break);
   builder->SetInsertPoint(after_break);
 }

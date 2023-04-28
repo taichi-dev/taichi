@@ -804,15 +804,15 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
-// Union `TiTensorValue` (1.7.0)
+// Union `TiTensorValue` (1.6.0)
 //
 // Tensor value represented by a power-of-two number of bits.
 typedef union TiTensorValue {
   // Tensor value that fits into 32 bits.
-  uint32_t x32[32];
+  uint32_t x32[16];
 } TiTensorValue;
 
-// Structure `TiTensor` (1.7.0)
+// Structure `TiTensor` (1.6.0)
 //
 // A typed tensor value.
 typedef struct TiTensor {

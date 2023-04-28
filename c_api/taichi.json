@@ -488,19 +488,19 @@
                 {
                     "name": "tensor_value",
                     "type": "union",
-                    "since": "v1.7.0",
+                    "since": "v1.6.0",
                     "variants": [
                         {
                             "name": "x32",
                             "type": "uint32_t",
-                            "count": 32
+                            "count": 16
                         }
                     ]
                 },
                 {
                     "name": "tensor",
                     "type": "structure",
-                    "since": "v1.7.0",
+                    "since": "v1.6.0",
                     "fields": [
                         {
                             "name": "type",

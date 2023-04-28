@@ -919,12 +919,12 @@ A typed scalar value.
 ---
 ### Union `TiTensorValue`
 
-> Stable since Taichi version: 1.7.0
+> Stable since Taichi version: 1.6.0
 
 ```c
 // union.tensor_value
 typedef union TiTensorValue {
-  uint32_t x32[32];
+  uint32_t x32[16];
 } TiTensorValue;
 ```
 
@@ -935,7 +935,7 @@ Tensor value represented by a power-of-two number of bits.
 ---
 ### Structure `TiTensor`
 
-> Stable since Taichi version: 1.7.0
+> Stable since Taichi version: 1.6.0
 
 ```c
 // structure.tensor

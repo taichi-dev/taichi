@@ -214,7 +214,7 @@ def test_different_argument_type():
 
 
 @pytest.mark.run_in_serial
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=8192)
 def test_recursion():
     @ti.experimental.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:

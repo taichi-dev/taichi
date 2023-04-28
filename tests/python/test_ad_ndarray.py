@@ -1229,6 +1229,37 @@ def test_ad_multiple_tapes():
         assert a.grad[i][1] == 3
 
 
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_set_loss_grad():
+    x = ti.ndarray(dtype=ti.f32, shape=(), needs_grad=True)
+    loss = ti.ndarray(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def eval_x(x: ti.types.ndarray()):
+        x[None] = 1.0
+
+    @ti.kernel
+    def compute_1(x: ti.types.ndarray(), loss: ti.types.ndarray()):
+        loss[None] = x[None]
+
+    @ti.kernel
+    def compute_2(x: ti.types.ndarray(), loss: ti.types.ndarray()):
+        loss[None] = 2 * x[None]
+
+    @ti.kernel
+    def compute_3(x: ti.types.ndarray(), loss: ti.types.ndarray()):
+        loss[None] = 4 * x[None]
+
+    eval_x(x)
+    with ti.ad.Tape(loss=loss):
+        compute_1(x, loss)
+        compute_2(x, loss)
+        compute_3(x, loss)
+
+    assert loss[None] == 4
+    assert x.grad[None] == 4
+
+
 @pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad)
 def test_ad_mixed_with_torch():

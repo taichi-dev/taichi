@@ -92,7 +92,7 @@ function build-unity-demo {
         -androidKeystorePass android \
         -androidKeyaliasName androiddebugkey \
         -androidKeyaliasPass android \
-        -development
+        -Development
 }
 
 function smoke-test-unity-demo {

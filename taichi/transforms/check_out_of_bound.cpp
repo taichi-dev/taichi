@@ -156,6 +156,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
+  // TODO: As offset information per dimension is lacking, only the accumulated
+  // index is checked.
   void visit(MatrixPtrStmt *stmt) override {
     if (is_done(stmt) || !stmt->offset_used_as_index())
       return;

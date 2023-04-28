@@ -1276,7 +1276,6 @@ def test_matrix_oob():
         y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
         y[i, j] = 42
 
-
     # works
     access_vec(1)
     access_mat(2, 2)

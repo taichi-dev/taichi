@@ -289,7 +289,7 @@ SType IRBuilder::get_primitive_type(const DataType &dt) const {
     // return type, argument type and inner dtype of compount types. Since
     // boolean types has the same width with int32 in GLSL, we use int32
     // instead.
-    return t_bool_;
+    return t_int32_;
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     if (!caps_->get(cap::spirv_has_float16))
       TI_ERROR("Type {} not supported.", dt->to_string());
@@ -388,7 +388,7 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
     // return type, argument type and inner dtype of compount types. Since
     // boolean types has the same width with int32 in GLSL, we use int32
     // instead.
-    return t_bool_;
+    return t_int32_;
   } else {
     return t_uint8_;
   }

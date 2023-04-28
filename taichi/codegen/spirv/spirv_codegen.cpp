@@ -1689,7 +1689,8 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    spirv::Value cond_v = ir_->cast(ir_->bool_type(), ir_->query_value(if_stmt->cond->raw_name()));
+    spirv::Value cond_v = ir_->cast(
+        ir_->bool_type(), ir_->query_value(if_stmt->cond->raw_name()));
     spirv::Value cond =
         ir_->ne(cond_v, ir_->cast(ir_->bool_type(), ir_->const_i32_zero_));
     spirv::Label then_label = ir_->new_label();

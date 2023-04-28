@@ -187,7 +187,7 @@ class ConstantFold : public BasicStmtVisitor {
       auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint()));  \
       insert_and_erase(stmt, res);                                          \
     } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                     \
-      auto res = TypedConstant(dst_type, !operand->val.val_uint());          \
+      auto res = TypedConstant(dst_type, operand->val.val_uint1());         \
       insert_and_erase(stmt, res);                                          \
     }                                                                       \
     break;                                                                  \
@@ -209,7 +209,6 @@ class ConstantFold : public BasicStmtVisitor {
       HANDLE_REAL_AND_INTEGRAL_UNARY(exp, std::exp)
       HANDLE_REAL_AND_INTEGRAL_UNARY(cast_value, )
       HANDLE_REAL_AND_INTEGRAL_UNARY(rsqrt, 1.0 / std::sqrt)
-      HANDLE_REAL_AND_INTEGRAL_UNARY(logic_not, !)
 #undef HANDLE_REAL_AND_INTEGRAL_UNARY
 
 #define HANDLE_INTEGRAL_UNARY(OP_TYPE, OP_CPP)                             \
@@ -222,11 +221,15 @@ class ConstantFold : public BasicStmtVisitor {
                dt->is_primitive(PrimitiveTypeID::u64)) {                   \
       auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint())); \
       insert_and_erase(stmt, res);                                         \
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                    \
+      auto res = TypedConstant(dst_type, !operand->val.val_uint1());       \
+      insert_and_erase(stmt, res);                                         \
     }                                                                      \
     break;                                                                 \
   }
 
       HANDLE_INTEGRAL_UNARY(bit_not, ~)
+      HANDLE_INTEGRAL_UNARY(logic_not, !)
 #undef HANDLE_INTEGRAL_UNARY
 
       default:

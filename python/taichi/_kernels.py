@@ -34,7 +34,7 @@ def fill_ndarray(ndarray: ndarray_type.ndarray(), val: template()):
 @kernel
 def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
-        ndarray[I].fill(val)
+        ndarray[I] = val
 
 
 @kernel

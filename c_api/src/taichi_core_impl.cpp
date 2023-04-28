@@ -794,15 +794,17 @@ void ti_launch_kernel(TiRuntime runtime,
       }
       case TI_ARGUMENT_TYPE_TENSOR: {
         auto &tensor = arg.value.tensor;
-        if (tensor.type == TI_DATA_TYPE_I16 ||
-            tensor.type == TI_DATA_TYPE_U16 ||
-            tensor.type == TI_DATA_TYPE_F16) {
-          for (int j = 0; j < tensor.length; j++) {
-            builder.set_struct_arg_impl({(int)i, j}, tensor.data.x16[j]);
-          }
-        } else if (tensor.type == TI_DATA_TYPE_I32 ||
-                   tensor.type == TI_DATA_TYPE_U32 ||
-                   tensor.type == TI_DATA_TYPE_F32) {
+        //        if (tensor.type == TI_DATA_TYPE_I16 ||
+        //            tensor.type == TI_DATA_TYPE_U16 ||
+        //            tensor.type == TI_DATA_TYPE_F16) {
+        //          for (int j = 0; j < tensor.length; j++) {
+        //            builder.set_struct_arg_impl({(int)i, j},
+        //            tensor.data.x16[j]);
+        //          }
+        //        } else
+        if (tensor.type == TI_DATA_TYPE_I32 ||
+            tensor.type == TI_DATA_TYPE_U32 ||
+            tensor.type == TI_DATA_TYPE_F32) {
           for (int j = 0; j < tensor.length; j++) {
             builder.set_struct_arg_impl({(int)i, j}, tensor.data.x32[j]);
           }

@@ -491,11 +491,6 @@
                     "since": "v1.7.0",
                     "variants": [
                         {
-                            "name": "x16",
-                            "type": "uint16_t",
-                            "count": 64
-                        },
-                        {
                             "name": "x32",
                             "type": "uint32_t",
                             "count": 32

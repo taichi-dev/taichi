@@ -924,14 +924,12 @@ A typed scalar value.
 ```c
 // union.tensor_value
 typedef union TiTensorValue {
-  uint16_t x16[64];
   uint32_t x32[32];
 } TiTensorValue;
 ```
 
 Tensor value represented by a power-of-two number of bits.
 
-- `x16`: Tensor value that fits into 16 bits.
 - `x32`: Tensor value that fits into 32 bits.
 
 ---

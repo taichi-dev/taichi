@@ -455,7 +455,6 @@ A typed scalar value.
 
 Tensor value represented by a power-of-two number of bits.
 
-- `union.tensor_value.x16`: Tensor value that fits into 16 bits.
 - `union.tensor_value.x32`: Tensor value that fits into 32 bits.
 
 `structure.tensor`

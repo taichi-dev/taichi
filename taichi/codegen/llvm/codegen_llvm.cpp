@@ -667,14 +667,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::bit_shl) {
 #if defined(__clang__) || defined(__GNUC__)
     if (compile_config.debug && is_integral(stmt->ret_type)) {
-      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->lhs->ret_type));
-      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+          call("debug_shl_" + stmt->ret_type->to_string(), get_arg(0),
+               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
     } else {
       llvm_val[stmt] =

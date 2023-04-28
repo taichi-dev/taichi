@@ -156,6 +156,8 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
+  // TODO: As offset information per dimension is lacking, only the accumulated
+  // index is checked.
   void visit(MatrixPtrStmt *stmt) override {
     if (is_done(stmt) || !stmt->offset_used_as_index())
       return;
@@ -165,9 +167,10 @@ class CheckOutOfBound : public BasicStmtVisitor {
     for (int i = 0; i < matrix_shape.size(); i++) {
       max_valid_index *= matrix_shape[i];
     }
+    // index starts from 0, max_valid_index = size(matrix) - 1
+    max_valid_index -= 1;
 
     auto index = stmt->offset;
-
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
     Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));

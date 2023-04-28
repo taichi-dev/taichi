@@ -175,14 +175,24 @@ Function *Program::create_function(const FunctionKey &func_key) {
   return functions_.back().get();
 }
 
-FunctionType Program::compile(const CompileConfig &compile_config,
-                              Kernel &kernel) {
+const CompiledKernelData &Program::compile_kernel(
+    const CompileConfig &compile_config,
+    const DeviceCapabilityConfig &caps,
+    const Kernel &kernel_def) {
   auto start_t = Time::get_time();
   TI_AUTO_PROF;
-  auto ret = program_impl_->compile(compile_config, &kernel);
-  TI_ASSERT(ret);
+  auto &mgr = program_impl_->get_kernel_compilation_manager();
+  const auto &ckd = mgr.load_or_compile(compile_config, caps, kernel_def);
   total_compilation_time_ += Time::get_time() - start_t;
-  return ret;
+  return ckd;
+}
+
+void Program::launch_kernel(const CompiledKernelData &compiled_kernel_data,
+                            LaunchContextBuilder &ctx) {
+  program_impl_->get_kernel_launcher().launch_kernel(compiled_kernel_data, ctx);
+  if (compile_config().debug && arch_uses_llvm(compiled_kernel_data.arch())) {
+    program_impl_->check_runtime_error(result_buffer);
+  }
 }
 
 void Program::materialize_runtime() {
@@ -246,10 +256,6 @@ SNodeTree *Program::add_snode_tree(std::unique_ptr<SNode> root,
 
 SNode *Program::get_snode_root(int tree_id) {
   return snode_trees_[tree_id]->root();
-}
-
-void Program::check_runtime_error() {
-  program_impl_->check_runtime_error(result_buffer);
 }
 
 void Program::synchronize() {

@@ -88,22 +88,10 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
               stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
-      TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
-                ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
-      if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
-        auto lookup =
-            DataType(
-                alloca_stmt->ret_type->as<TensorType>()->get_element_type())
-                .ptr_removed();
-        stmt->ret_type = lookup;
-      }
-      if (auto global_temporary_stmt =
-              ptr_offset_stmt->origin->cast<GlobalTemporaryStmt>()) {
-        auto lookup = DataType(global_temporary_stmt->ret_type->as<TensorType>()
-                                   ->get_element_type())
-                          .ptr_removed();
-        stmt->ret_type = lookup;
-      }
+      auto lookup = DataType(ptr_offset_stmt->origin->ret_type->as<TensorType>()
+                                 ->get_element_type())
+                        .ptr_removed();
+      stmt->ret_type = lookup;
     } else {
       auto lookup = stmt->src->ret_type;
       stmt->ret_type = lookup;
@@ -462,7 +450,9 @@ class TypeCheck : public IRVisitor {
     if (stmt->overrided_dtype) {
       // pass
     } else {
-      stmt->ret_type = arg_load_stmt->ret_type;
+      stmt->ret_type = arg_load_stmt->ret_type.ptr_removed()
+                           ->as<StructType>()
+                           ->get_element_type({1});
     }
 
     stmt->ret_type.set_is_pointer(true);

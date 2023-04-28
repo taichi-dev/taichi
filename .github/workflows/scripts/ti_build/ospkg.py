@@ -22,7 +22,6 @@ UBUNTU_PACKAGES = {
     "libglu1-mesa-dev",
     "libjpeg-dev",
     "liblz4-dev",
-    "libmirclient-dev",
     "libpng-dev",
     "libssl-dev",
     "libtinfo-dev",

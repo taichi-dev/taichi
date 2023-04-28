@@ -4,7 +4,6 @@ set(LLVM_RHI llvm_rhi)
 add_library(${LLVM_RHI})
 target_sources(${LLVM_RHI}
   PRIVATE
-    llvm_device.cpp
     allocator.cpp
     device_memory_pool.cpp
   )

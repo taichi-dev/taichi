@@ -85,10 +85,11 @@ class OpenglProgramImpl : public ProgramImpl {
     return "1" + std::string(has_buffer_ptr ? "b" : "-");
   };
 
+  DeviceCapabilityConfig get_device_caps() override;
+
  protected:
   std::unique_ptr<KernelCompiler> make_kernel_compiler() override;
   std::unique_ptr<KernelLauncher> make_kernel_launcher() override;
-  DeviceCapabilityConfig get_device_caps() override;
 
  private:
   std::shared_ptr<Device> device_{nullptr};

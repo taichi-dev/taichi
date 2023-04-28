@@ -179,6 +179,7 @@ class Struct:
         """Python scope struct array print support."""
         if impl.inside_kernel():
             item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
+            item_str += f", struct_methods={self.methods}"
             return f"<ti.Struct {item_str}>"
         return str(self.to_dict())
 
@@ -196,7 +197,11 @@ class Struct:
             Dict: The result dictionary.
         """
         res_dict = {
-            k: v.to_dict() if isinstance(v, Struct) else v.to_list() if isinstance(v, Matrix) else v
+            k: v.to_dict(include_methods=include_methods, include_ndim=include_ndim)
+            if isinstance(v, Struct)
+            else v.to_list()
+            if isinstance(v, Matrix)
+            else v
             for k, v in self.entries.items()
         }
         if include_methods:
@@ -630,6 +635,7 @@ class StructType(CompoundType):
                 d[name] = dtype.from_taichi_object(func_ret, ret_index + (index,))
             else:
                 d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
+        d["__struct_methods"] = self.methods
 
         return Struct(d)
 
@@ -650,6 +656,7 @@ class StructType(CompoundType):
                     d[name] = launch_ctx.get_struct_ret_float(ret_index + (index,))
                 else:
                     raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
+        d["__struct_methods"] = self.methods
 
         return Struct(d)
 

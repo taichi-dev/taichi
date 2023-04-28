@@ -169,6 +169,25 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
   return TypeFactory::get_instance().get_tensor_type(shape, element);
 }
 
+const Type *TypeFactory::get_ndarray_struct_type(DataType dt,
+                                                 int total_dim,
+                                                 bool needs_grad) {
+  total_dim = std::max(1, total_dim);  // Avoiding empty struct
+  std::vector<StructMember> shape_members;
+  for (int i = 0; i < total_dim; i++) {
+    shape_members.push_back({PrimitiveType::i32, fmt::format("dim_{}", i)});
+  }
+  auto *shape_type = get_struct_type(shape_members);
+  std::vector<StructMember> members;
+  members.push_back({shape_type, "shape"});
+  auto ptr_type = get_pointer_type(dt->get_compute_type());
+  members.push_back({ptr_type, "data_ptr"});
+  if (needs_grad) {
+    members.push_back({ptr_type, "grad_ptr"});
+  }
+  return get_struct_type(members);
+}
+
 namespace {
 static bool compare_types(DataType x, DataType y) {
   // Is the first type "bigger" than the second type?

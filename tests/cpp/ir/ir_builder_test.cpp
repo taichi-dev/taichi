@@ -96,8 +96,8 @@ TEST(IRBuilder, ExternalPtr) {
   auto array = std::make_unique<int[]>(size);
   array[0] = 2;
   array[2] = 40;
-  auto *arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
-                                      /*is_ptr=*/true);
+  auto *arg =
+      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *two = builder.get_int32(2);
@@ -111,12 +111,15 @@ TEST(IRBuilder, ExternalPtr) {
   builder.create_global_store(a2ptr, a0plusa2);  // a[2] = a[0] + a[2]
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  ker->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
+  ker->insert_ndarray_param(get_data_type<int>(), /*total_dim=*/1, {1});
   ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});
-  (*ker)(test_prog.prog()->compile_config(), launch_ctx);
+  auto *prog = test_prog.prog();
+  const auto &compiled_kernel_data = prog->compile_kernel(
+      prog->compile_config(), prog->get_device_caps(), *ker);
+  prog->launch_kernel(compiled_kernel_data, launch_ctx);
   EXPECT_EQ(array[0], 2);
   EXPECT_EQ(array[1], 1);
   EXPECT_EQ(array[2], 42);
@@ -131,6 +134,8 @@ TEST(IRBuilder, Ndarray) {
   Arch arch = Arch::x64;
 #endif
   test_prog.setup(arch);
+  auto *prog = test_prog.prog();
+
   IRBuilder builder1;
   int size = 10;
 
@@ -140,7 +145,9 @@ TEST(IRBuilder, Ndarray) {
   auto ker1 = setup_kernel1(test_prog.prog());
   auto launch_ctx1 = ker1->make_launch_context();
   launch_ctx1.set_arg_ndarray(/*arg_id=*/0, array);
-  (*ker1)(test_prog.prog()->compile_config(), launch_ctx1);
+  const auto &compiled_kernel_data = prog->compile_kernel(
+      prog->compile_config(), prog->get_device_caps(), *ker1);
+  prog->launch_kernel(compiled_kernel_data, launch_ctx1);
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 1);
   EXPECT_EQ(array.read_int({2}), 42);
@@ -149,7 +156,9 @@ TEST(IRBuilder, Ndarray) {
   auto launch_ctx2 = ker2->make_launch_context();
   launch_ctx2.set_arg_ndarray(/*arg_id=*/0, array);
   launch_ctx2.set_arg_int(/*arg_id=*/1, 3);
-  (*ker2)(test_prog.prog()->compile_config(), launch_ctx2);
+  const auto &compiled_kernel_data2 = prog->compile_kernel(
+      prog->compile_config(), prog->get_device_caps(), *ker2);
+  prog->launch_kernel(compiled_kernel_data2, launch_ctx2);
   EXPECT_EQ(array.read_int({0}), 2);
   EXPECT_EQ(array.read_int({1}), 3);
   EXPECT_EQ(array.read_int({2}), 42);
@@ -164,21 +173,23 @@ TEST(IRBuilder, AtomicOp) {
   auto array = std::make_unique<int[]>(size);
   array[0] = 2;
   array[2] = 40;
-  auto *arg = builder.create_arg_load(/*arg_id=*/0, get_data_type<int>(),
-                                      /*is_ptr=*/true);
+  auto *arg =
+      builder.create_ndarray_arg_load(/*arg_id=*/0, get_data_type<int>(), 1);
   auto *zero = builder.get_int32(0);
   auto *one = builder.get_int32(1);
   auto *a0ptr = builder.create_external_ptr(arg, {zero});
   builder.create_atomic_add(a0ptr, one);  // a[0] += 1
   auto block = builder.extract_ir();
   auto ker = std::make_unique<Kernel>(*test_prog.prog(), std::move(block));
-  ker->insert_arr_param(get_data_type<int>(), /*total_dim=*/1, {1});
+  ker->insert_ndarray_param(get_data_type<int>(), /*total_dim=*/1, {1});
   ker->finalize_params();
   auto launch_ctx = ker->make_launch_context();
   launch_ctx.set_arg_external_array_with_shape(
       /*arg_id=*/0, (uint64)array.get(), size, {size});
-  (*ker)(test_prog.prog()->compile_config(), launch_ctx);
-
+  auto *prog = test_prog.prog();
+  const auto &compiled_kernel_data = prog->compile_kernel(
+      prog->compile_config(), prog->get_device_caps(), *ker);
+  prog->launch_kernel(compiled_kernel_data, launch_ctx);
   EXPECT_EQ(array[0], 3);
 }
 }  // namespace taichi::lang

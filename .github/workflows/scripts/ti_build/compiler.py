@@ -67,7 +67,7 @@ def setup_msvc() -> None:
             return
 
     url = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
-    out = Path(r"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools")
+    out = base
     download_dep(
         url,
         out,

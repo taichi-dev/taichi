@@ -7,6 +7,7 @@ import platform
 # -- third party --
 # -- own --
 from .bootstrap import get_cache_home
+from .cmake import cmake_args
 from .dep import download_dep
 from .misc import banner, get_cache_home, is_manylinux2014
 
@@ -19,9 +20,9 @@ def setup_llvm() -> None:
     """
     u = platform.uname()
     if u.system == "Linux":
-        if "AMDGPU_TEST" in os.environ:
-            out = get_cache_home() / "llvm15-amdgpu"
-            url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.4/taichi-llvm-15.0.0-linux.zip"
+        if cmake_args.get_effective("TI_WITH_AMDGPU"):
+            out = get_cache_home() / "llvm15-amdgpu-005"
+            url = "https://github.com/GaleSeLee/assets/releases/download/v0.0.5/taichi-llvm-15.0.0-linux.zip"
         elif is_manylinux2014():
             # FIXME: prebuilt llvm15 on ubuntu didn't work on manylinux2014 image of centos. Once that's fixed, remove this hack.
             out = get_cache_home() / "llvm15-manylinux2014"
@@ -31,8 +32,8 @@ def setup_llvm() -> None:
             url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-linux.zip"
         download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ("Darwin", "arm64"):
-        out = get_cache_home() / "llvm15-m1"
-        url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1.zip"
+        out = get_cache_home() / "llvm15-m1-nozstd"
+        url = "https://github.com/taichi-dev/taichi_assets/releases/download/llvm15/taichi-llvm-15-m1-nozstd.zip"
         download_dep(url, out, strip=1)
     elif (u.system, u.machine) == ("Darwin", "x86_64"):
         out = get_cache_home() / "llvm15-mac"

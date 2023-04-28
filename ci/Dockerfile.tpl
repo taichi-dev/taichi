@@ -50,7 +50,8 @@ RUN set -x && \
     add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
     add-apt-repository -y ppa:git-core/ppa && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
-    echo 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-15 main' > /etc/apt/sources.list.d/llvm-15.list && \
+    . /etc/lsb-release && \
+    echo "deb http://apt.llvm.org/$DISTRIB_CODENAME/ llvm-toolchain-$DISTRIB_CODENAME-15 main" > /etc/apt/sources.list.d/llvm-15.list && \
     apt update && \
     apt install -y build-essential clang-15 clang-tidy-15 llvm-15 lld-15 gcc-11 g++-11 curl wget sudo python3-pip git unzip && \
     python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
@@ -131,12 +132,13 @@ RUN set -x && \
     true
 
 # -------
-FROM rocm/dev-ubuntu-18.04:5.2 AS build-amdgpu
+FROM rocm/dev-ubuntu-20.04:5.4.3 AS build-amdgpu
+# The AMDGPU lists has bad distribution
+RUN rm /etc/apt/sources.list.d/*.list
 USE debian-addons
 USE mitm-ca
 USE gpu-build-image-deps
 USE dev-user
-RUN sudo addgroup --gid 109 render
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-build-amdgpu:__TIME__
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-test-amdgpu:__TIME__
 
@@ -147,7 +149,6 @@ ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons
 USE mitm-ca
 USE gpu-build-image-deps
-COPY assets/nvidia_icd.json /usr/share/vulkan/icd.d/nvidia_icd.json
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user
@@ -159,7 +160,6 @@ FROM nvidia/cudagl:11.2.2-devel-ubuntu18.04 AS test-cuda
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons-test
 USE mitm-ca
-COPY assets/nvidia_icd.json /usr/share/vulkan/icd.d/nvidia_icd.json
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user

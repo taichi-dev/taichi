@@ -222,9 +222,9 @@ def test_args_with_many_ndarrays():
     )
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test()
 def test_struct_arg():
-    s0 = ti.types.struct(a=ti.i16, b=ti.f64)
+    s0 = ti.types.struct(a=ti.i16, b=ti.f32)
     s1 = ti.types.struct(a=ti.f32, b=s0)
 
     @ti.kernel
@@ -233,3 +233,28 @@ def test_struct_arg():
 
     ret = foo(s1(a=1, b=s0(a=65537, b=123)))
     assert ret == pytest.approx(125)
+
+
+@test_utils.test()
+def test_struct_arg_with_matrix():
+    mat = ti.types.matrix(3, 2, ti.f32)
+    s0 = ti.types.struct(a=mat, b=ti.f32)
+    s1 = ti.types.struct(a=ti.i32, b=s0)
+
+    @ti.kernel
+    def foo(a: s1) -> ti.i32:
+        ret = a.a + a.b.b
+        for i in range(3):
+            for j in range(2):
+                ret += a.b.a[i, j] * (i + 1) * (j + 2)
+        return ret
+
+    arg = s1(a=1, b=s0(a=mat(1, 2, 3, 4, 5, 6), b=123))
+    ret_std = 1 + 123
+
+    for i in range(3):
+        for j in range(2):
+            ret_std += (i + 1) * (j + 2) * (i * 2 + j + 1)
+
+    ret = foo(arg)
+    assert ret == ret_std

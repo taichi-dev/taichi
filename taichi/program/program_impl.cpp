@@ -10,19 +10,6 @@ void ProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
   TI_NOT_IMPLEMENTED;
 }
 
-FunctionType ProgramImpl::compile(const CompileConfig &compile_config,
-                                  Kernel *kernel) {
-  // NOTE: Temporary implementation (blocked by cc backend)
-  // TODO(PGZXB): Final solution: compile -> load_or_compile + launch_kernel
-  auto &mgr = get_kernel_compilation_manager();
-  const auto &compiled =
-      mgr.load_or_compile(compile_config, get_device_caps(), *kernel);
-  auto &launcher = get_kernel_launcher();
-  return [&launcher, &compiled](LaunchContextBuilder &ctx_builder) {
-    launcher.launch_kernel(compiled, ctx_builder);
-  };
-}
-
 void ProgramImpl::dump_cache_data_to_disk() {
   auto &mgr = get_kernel_compilation_manager();
   mgr.clean_offline_cache(offline_cache::string_to_clean_cache_policy(

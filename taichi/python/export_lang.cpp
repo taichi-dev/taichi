@@ -327,6 +327,12 @@ void export_lang(py::module &m) {
       .def("insert_snode_access_flag", &ASTBuilder::insert_snode_access_flag)
       .def("reset_snode_access_flag", &ASTBuilder::reset_snode_access_flag);
 
+  py::class_<DeviceCapabilityConfig>(
+      m, "DeviceCapabilityConfig");  // NOLINT(bugprone-unused-raii)
+
+  py::class_<CompiledKernelData>(
+      m, "CompiledKernelData");  // NOLINT(bugprone-unused-raii)
+
   py::class_<Program>(m, "Program")
       .def(py::init<>())
       .def("config", &Program::compile_config,
@@ -443,7 +449,11 @@ void export_lang(py::module &m) {
              program->fill_ndarray_fast_u32(ndarray, val);
            })
       .def("get_graphics_device",
-           [](Program *program) { return program->get_graphics_device(); });
+           [](Program *program) { return program->get_graphics_device(); })
+      .def("compile_kernel", &Program::compile_kernel,
+           py::return_value_policy::reference)
+      .def("launch_kernel", &Program::launch_kernel)
+      .def("get_device_caps", &Program::get_device_caps);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)
@@ -676,6 +686,7 @@ void export_lang(py::module &m) {
            })
       .def("insert_scalar_param", &Kernel::insert_scalar_param)
       .def("insert_arr_param", &Kernel::insert_arr_param)
+      .def("insert_ndarray_param", &Kernel::insert_ndarray_param)
       .def("insert_texture_param", &Kernel::insert_texture_param)
       .def("insert_pointer_param", &Kernel::insert_pointer_param)
       .def("insert_rw_texture_param", &Kernel::insert_rw_texture_param)
@@ -694,11 +705,7 @@ void export_lang(py::module &m) {
           [](Kernel *self) -> ASTBuilder * {
             return &self->context->builder();
           },
-          py::return_value_policy::reference)
-      .def("__call__", [](Kernel *kernel, LaunchContextBuilder &launch_ctx) {
-        py::gil_scoped_release release;
-        kernel->operator()(kernel->program->compile_config(), launch_ctx);
-      });
+          py::return_value_policy::reference);
 
   py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &LaunchContextBuilder::set_arg_int)
@@ -859,6 +866,10 @@ void export_lang(py::module &m) {
     return Expr::make<AtomicOpExpression>(AtomicOpType::bit_xor, a, b);
   });
 
+  m.def("expr_atomic_mul", [&](const Expr &a, const Expr &b) {
+    return Expr::make<AtomicOpExpression>(AtomicOpType::mul, a, b);
+  });
+
   m.def("expr_assume_in_range", assume_range);
 
   m.def("expr_loop_unique", loop_unique);
@@ -938,10 +949,7 @@ void export_lang(py::module &m) {
 
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &>);
-
-  m.def("make_external_grad_tensor_expr",
-        Expr::make<ExternalTensorExpression, Expr *>);
+                   const std::vector<int> &, bool>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
@@ -1000,6 +1008,11 @@ void export_lang(py::module &m) {
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
     return expr.cast<ExternalTensorExpression>()->element_dim;
+  });
+
+  m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->needs_grad;
   });
 
   m.def("get_external_tensor_element_shape", [](const Expr &expr) {

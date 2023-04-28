@@ -13,14 +13,18 @@ import platform
 import time
 from typing import Tuple
 
-import cv2
 import numpy as np
-import wget
 from matplotlib import pyplot as plt
-from scipy.spatial.transform import Rotation as R
 
 import taichi as ti
 from taichi.math import uvec3, vec2, vec3
+
+try:
+    import cv2
+    import wget
+    from scipy.spatial.transform import Rotation as R
+except:
+    raise ImportError("The Taichi NGP renderer requires cv2, wget and scipy to be installed.")
 
 
 def depth2img(depth):

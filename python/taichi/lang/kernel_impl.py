@@ -391,13 +391,13 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, ndarray_type.NdarrayType):
             if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape), (), Layout.AOS
+                return arg.dtype, len(arg.shape), (), Layout.AOS, arg.grad is not None
             if isinstance(arg, taichi.lang.matrix.VectorNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS
+                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS, arg.grad is not None
             if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS
+                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS, arg.grad is not None
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
@@ -431,7 +431,8 @@ class TaichiCallableTemplateMapper:
                         f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                         f"but the argument has {len(shape)} dimensions"
                     )
-            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS
+            needs_grad = getattr(arg, "requires_grad", False)
+            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -671,10 +672,7 @@ class Kernel:
                     if isinstance(v, np.ndarray):
                         if v.flags.c_contiguous:
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(v.ctypes.data),
-                                v.nbytes,
-                                array_shape,
+                                actual_argument_slot, int(v.ctypes.data), v.nbytes, array_shape, 0
                             )
                         elif v.flags.f_contiguous:
                             # TODO: A better way that avoids copying is saving strides info.
@@ -687,10 +685,7 @@ class Kernel:
 
                             callbacks.append(functools.partial(callback, v, tmp))
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(tmp.ctypes.data),
-                                tmp.nbytes,
-                                array_shape,
+                                actual_argument_slot, int(tmp.ctypes.data), tmp.nbytes, array_shape, 0
                             )
                         else:
                             raise ValueError(
@@ -712,6 +707,10 @@ class Kernel:
 
                                 return call_back
 
+                            # FIXME: only allocate when launching grad kernel
+                            if v.requires_grad and v.grad is None:
+                                v.grad = torch.zeros_like(v)
+
                             tmp = v
                             if str(v.device).startswith("cuda") and taichi_arch != _ti_core.Arch.cuda:
                                 # Getting a torch CUDA tensor on Taichi non-cuda arch:
@@ -725,6 +724,7 @@ class Kernel:
                                 int(tmp.data_ptr()),
                                 tmp.element_size() * tmp.nelement(),
                                 array_shape,
+                                int(v.grad.data_ptr()) if v.grad is not None else 0,
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
@@ -759,10 +759,7 @@ class Kernel:
                                     f"Taichi do not support backend {v.place} that Paddle support"
                                 )
                             launch_ctx.set_arg_external_array_with_shape(
-                                actual_argument_slot,
-                                int(tmp._ptr()),
-                                v.element_size() * v.size,
-                                array_shape,
+                                actual_argument_slot, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                             )
                         else:
                             raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
@@ -811,7 +808,11 @@ class Kernel:
                 )
 
             try:
-                t_kernel(launch_ctx)
+                prog = impl.get_runtime().prog
+                # Compile kernel (& Online Cache & Offline Cache)
+                compiled_kernel_data = prog.compile_kernel(prog.config(), prog.get_device_caps(), t_kernel)
+                # Launch kernel
+                prog.launch_kernel(compiled_kernel_data, launch_ctx)
             except Exception as e:
                 e = handle_exception_from_cpp(e)
                 raise e from None

@@ -165,9 +165,10 @@ class CheckOutOfBound : public BasicStmtVisitor {
     for (int i = 0; i < matrix_shape.size(); i++) {
       max_valid_index *= matrix_shape[i];
     }
+    // index starts from 0, max_valid_index = size(matrix) - 1
+    max_valid_index -= 1;
 
     auto index = stmt->offset;
-
     auto new_stmts = VecStatement();
     auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
     Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));

@@ -633,30 +633,17 @@ class TaskCodegen : public IRVisitor {
     const auto arg_id = stmt->arg_id;
     const auto axis = stmt->axis;
 
-    const auto extra_args_member_index = ctx_attribs_->args().size();
-
-    const auto extra_arg_index = (arg_id * taichi_max_num_indices) + axis;
     spirv::Value var_ptr;
-    if (ctx_attribs_->args_type()
-            ->get_element_type({arg_id})
-            ->is<lang::StructType>()) {
-      // Is ndarray
-      var_ptr = ir_->make_value(
-          spv::OpAccessChain,
-          ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
-          get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), arg_id),
-          ir_->int_immediate_number(ir_->i32_type(), 0),
-          ir_->int_immediate_number(ir_->i32_type(), axis));
-    } else {
-      // Is texture
-      var_ptr = ir_->make_value(
-          spv::OpAccessChain,
-          ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
-          get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(),
-                                    extra_args_member_index + extra_arg_index));
-    }
+    TI_ASSERT(ctx_attribs_->args_type()
+                  ->get_element_type({arg_id})
+                  ->is<lang::StructType>());
+    var_ptr = ir_->make_value(
+        spv::OpAccessChain,
+        ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
+        get_buffer_value(BufferType::Args, PrimitiveType::i32),
+        ir_->int_immediate_number(ir_->i32_type(), arg_id),
+        ir_->int_immediate_number(ir_->i32_type(), 0),
+        ir_->int_immediate_number(ir_->i32_type(), axis));
     spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
 
     ir_->register_value(name, var);
@@ -2235,11 +2222,6 @@ class TaskCodegen : public IRVisitor {
     for (auto &element : ctx_attribs_->args_type()->elements()) {
       element_types.push_back(
           translate_ti_type(blk, element.type, has_buffer_ptr));
-    }
-    const tinyir::Type *i32_type =
-        blk.emplace_back<IntType>(/*num_bits=*/32, /*is_signed=*/true);
-    for (int i = 0; i < ctx_attribs_->extra_args_bytes() / 4; i++) {
-      element_types.push_back(i32_type);
     }
     const tinyir::Type *struct_type =
         blk.emplace_back<StructType>(element_types);

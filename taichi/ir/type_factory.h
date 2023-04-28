@@ -29,6 +29,8 @@ class TypeFactory {
                                       int total_dim,
                                       bool needs_grad = false);
 
+  const Type *get_rwtexture_struct_type();
+
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_quant_int_type(int num_bits, bool is_signed, Type *compute_type);

@@ -1971,16 +1971,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  if (auto struct_type = current_callable->args_type->get_element_type({arg_id})
-                             ->cast<StructType>()) {
-    // Is ndarray
-    llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
-  } else {
-    // Is texture
-    llvm_val[stmt] =
-        call("RuntimeContext_get_extra_args", get_context(),
-             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
-  }
+  llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,

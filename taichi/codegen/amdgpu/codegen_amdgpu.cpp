@@ -66,10 +66,14 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
     }                                                                   \
   }
     if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = call("logic_not_i32", input);
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::u1)) {
+        llvm_val[stmt] = call("logical_not_u1", input);
       } else {
-        TI_NOT_IMPLEMENTED
+        auto result =
+            call("logical_not_u1",
+                 builder->CreateTrunc(builder->CreateIsNotNull(input),
+                                      tlctx->get_data_type(PrimitiveType::u1)));
+        llvm_val[stmt] = builder->CreateZExt(result, input->getType());
       }
     } else if (op == UnaryOpType::abs) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {

@@ -1138,7 +1138,7 @@ Value IRBuilder::cast(const SType &dst_type, Value value) {
   const DataType &to = dst_type.dt;
   if (from->is_primitive(PrimitiveTypeID::u1)) {  // Bool
     value = cast(bool_type(), value);
-    if (is_integral(to) && is_signed(to)) {       // Bool -> Int
+    if (is_integral(to) && is_signed(to)) {  // Bool -> Int
       return select(value, int_immediate_number(dst_type, 1),
                     int_immediate_number(dst_type, 0));
     } else if (is_integral(to) && is_unsigned(to)) {  // Bool -> UInt

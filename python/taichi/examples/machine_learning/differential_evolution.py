@@ -1,12 +1,5 @@
 """
-information about this example
-1.what does this script animate?
-This script reflects the optimization process of differential evolution. The black points are the search agents and they find out the minimum solution finally.
-
-2.which feature would you like to highlight with this example?
-The feature of this example is to demonstrate the fabulous parallel performance of taichi and prove that taichi can not only be applied in CFD, but also is suitable for various fields required parallel computing such as evolutionary algorithm (EA).
-
-3.where to find the reference if the user wants to learn more about this algorithm?
+This script shows the optimization process of differential evolution. The black points are the search agents, and they finally find the minimum solution.
 Here are sone paper for differential algorithm (DE) and evolutionary algorithm (EA):
 [1]. Differential Evolution – A Simple and Efficient Heuristic for global Optimization over Continuous Spaces
 [2]. Application of differential evolution algorithm in static and dynamic economic or emission dispatch problem: A review

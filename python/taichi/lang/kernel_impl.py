@@ -751,9 +751,7 @@ class Kernel:
                                 callbacks.append(get_call_back(v, gpu_v))
                         else:
                             # Paddle do support many other backends like XPU, NPU, MLU, IPU
-                            raise TaichiRuntimeTypeError(
-                                f"Taichi do not support backend {v.place} that Paddle support"
-                            )
+                            raise TaichiRuntimeTypeError(f"Taichi do not support backend {v.place} that Paddle support")
                         launch_ctx.set_arg_external_array_with_shape(
                             actual_argument_slot, int(tmp._ptr()), v.element_size() * v.size, array_shape, 0
                         )

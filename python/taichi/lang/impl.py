@@ -313,7 +313,6 @@ class PyTaichi:
     def __init__(self, kernels=None):
         self.materialized = False
         self.prog = None
-        self.compiled_functions = {}
         self.src_info_stack = []
         self.inside_kernel = False
         self.compiling_callable = None  # pointer to instance of lang::Kernel/Function
@@ -336,7 +335,8 @@ class PyTaichi:
         self.unfinalized_fields_builder[builder] = get_traceback(2)
 
     def clear_compiled_functions(self):
-        self.compiled_functions.clear()
+        for k in self.kernels:
+            k.compiled_kernels.clear()
 
     def finalize_fields_builder(self, builder):
         self.unfinalized_fields_builder.pop(builder)
@@ -351,7 +351,10 @@ class PyTaichi:
             )
 
     def get_num_compiled_functions(self):
-        return len(self.compiled_functions)
+        count = 0
+        for k in self.kernels:
+            count += len(k.compiled_kernels)
+        return count
 
     def src_info_guard(self, info):
         return SrcInfoGuard(self.src_info_stack, info)

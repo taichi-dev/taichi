@@ -808,8 +808,7 @@ typedef struct TiScalar {
 //
 // Tensor value represented by a power-of-two number of bits.
 typedef struct TiTensorValue {
-  // Tensor value that fits into 32 bits.
-  uint32_t x32[16];
+  uint32_t x32_tensor[16];
 } TiTensorValue;
 
 // Structure `TiTensor` (1.7.0)

@@ -924,13 +924,13 @@ A typed scalar value.
 ```c
 // structure.tensor_value
 typedef struct TiTensorValue {
-  uint32_t x32[16];
+  uint32_t x32_tensor[16];
 } TiTensorValue;
 ```
 
 Tensor value represented by a power-of-two number of bits.
 
-- `x32`: Tensor value that fits into 32 bits.
+- `structure.tensor_value.x32`: Tensor value that fits into 32 bits.
 
 ---
 ### Structure `TiTensor`

@@ -123,14 +123,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
   irpass::flag_access(ir);
   print("Access flagged I");
   irpass::analysis::verify(ir);
@@ -142,6 +134,14 @@ void compile_to_offloads(IRNode *ir,
   irpass::offload(ir, config);
   print("Offloaded");
   irpass::analysis::verify(ir);
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
+  }
 
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().

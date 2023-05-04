@@ -902,13 +902,13 @@ class Kernel {
 
   template <typename T>
   void push_arg(const std::vector<T> &v) {
-    //    int idx = args_.size();
-    //    args_.resize(idx + 1);
-    //    args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
-    //    std::memcpy(args_[idx].value.tensor.data.x32, v.data(),
-    //                v.size() * sizeof(T));
-    //    args_[idx].value.tensor.length = v.size();
-    //    args_[idx].value.tensor.type = DataTypeToEnum<T>::value;
+    int idx = args_.size();
+    args_.resize(idx + 1);
+    args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
+    std::memcpy(args_[idx].value.tensor.contents.data.x32, v.data(),
+                v.size() * sizeof(T));
+    args_[idx].value.tensor.contents.length = v.size();
+    args_[idx].value.tensor.type = DataTypeToEnum<T>::value;
   }
 
   template <typename T>

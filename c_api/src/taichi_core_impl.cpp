@@ -792,30 +792,28 @@ void ti_launch_kernel(TiRuntime runtime,
         devallocs.emplace_back(std::move(devalloc));
         break;
       }
-        //      case TI_ARGUMENT_TYPE_TENSOR: {
-        //        auto &tensor = arg.value.tensor;
-        //        //        if (tensor.type == TI_DATA_TYPE_I16 ||
-        //        //            tensor.type == TI_DATA_TYPE_U16 ||
-        //        //            tensor.type == TI_DATA_TYPE_F16) {
-        //        //          for (int j = 0; j < tensor.length; j++) {
-        //        //            builder.set_struct_arg_impl({(int)i, j},
-        //        //            tensor.data.x16[j]);
-        //        //          }
-        //        //        } else
-        //        if (tensor.type == TI_DATA_TYPE_I32 ||
-        //            tensor.type == TI_DATA_TYPE_U32 ||
-        //            tensor.type == TI_DATA_TYPE_F32) {
-        //          for (int j = 0; j < tensor.length; j++) {
-        //            builder.set_struct_arg_impl({(int)i, j},
-        //            tensor.data.x32[j]);
-        //          }
-        //        } else {
-        //          ti_set_last_error(TI_ERROR_NOT_SUPPORTED,
-        //                            ("args[" + std::to_string(i) +
-        //                            "].type").c_str());
-        //        }
-        //        break;
-        //      }
+      case TI_ARGUMENT_TYPE_TENSOR: {
+        auto &tensor = arg.value.tensor;
+        if (tensor.type == TI_DATA_TYPE_I16 ||
+            tensor.type == TI_DATA_TYPE_U16 ||
+            tensor.type == TI_DATA_TYPE_F16) {
+          for (int j = 0; j < tensor.contents.length; j++) {
+            builder.set_struct_arg_impl({(int)i, j},
+                                        tensor.contents.data.x16[j]);
+          }
+        } else if (tensor.type == TI_DATA_TYPE_I32 ||
+                   tensor.type == TI_DATA_TYPE_U32 ||
+                   tensor.type == TI_DATA_TYPE_F32) {
+          for (int j = 0; j < tensor.contents.length; j++) {
+            builder.set_struct_arg_impl({(int)i, j},
+                                        tensor.contents.data.x32[j]);
+          }
+        } else {
+          ti_set_last_error(TI_ERROR_NOT_SUPPORTED,
+                            ("args[" + std::to_string(i) + "].type").c_str());
+        }
+        break;
+      }
       default: {
         ti_set_last_error(TI_ERROR_ARGUMENT_OUT_OF_RANGE,
                           ("args[" + std::to_string(i) + "].type").c_str());

@@ -488,7 +488,6 @@
                 {
                     "name": "tensor_value",
                     "type": "union",
-                    "since": "v1.7.0",
                     "variants": [
                         {
                             "name": "x8",
@@ -515,7 +514,6 @@
                 {
                     "name": "tensor_value_with_length",
                     "type": "structure",
-                    "since": "v1.7.0",
                     "fields": [
                         {
                             "name": "length",
@@ -530,7 +528,6 @@
                 {
                     "name": "tensor",
                     "type": "structure",
-                    "since": "v1.7.0",
                     "fields": [
                         {
                             "name": "type",

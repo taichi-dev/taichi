@@ -36,13 +36,13 @@ In Taichi, the maximum size of each dimension of a field is restricted to the ra
 
 If a field with a size of a dimension larger than int32 is declared, Taichi will raise an error. For example, the following code will raise an error:
 
-```python skip-ci:Error
+```python skip-ci:NegativeExample
 x = ti.field(int, shape=(10**10))  # error!
 ```
 
 However, multi-dimensional fields of large size can still be declared as long as each dimension does not exceed the int32 limit. For example, the following code declares a three-dimensional field:
 
-```python skip-ci:Error
+```python
 x = ti.field(int, shape=(10**4, 10**4, 10**2))  # OK!
 ```
 
@@ -249,7 +249,7 @@ A Taichi kernel **cannot** take a Python list directly. You need to use NumPy ar
 
 For example, the following code snippet does not work:
 
-```python skip-ci:Error
+```python skip-ci:NegativeExample
 import taichi as ti
 import numpy as np
 ti.init()

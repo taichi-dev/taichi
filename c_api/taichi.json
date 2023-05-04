@@ -487,6 +487,33 @@
                 },
                 {
                     "name": "tensor_value",
+                    "type": "union",
+                    "since": "v1.7.0",
+                    "variants": [
+                        {
+                            "name": "x8",
+                            "type": "uint8_t",
+                            "count": 128
+                        },
+                        {
+                            "name": "x16",
+                            "type": "uint16_t",
+                            "count": 64
+                        },
+                        {
+                            "name": "x32",
+                            "type": "uint32_t",
+                            "count": 32
+                        },
+                        {
+                            "name": "x64",
+                            "type": "uint64_t",
+                            "count": 16
+                        }
+                    ]
+                },
+                {
+                    "name": "tensor_value_with_length",
                     "type": "structure",
                     "since": "v1.7.0",
                     "fields": [
@@ -495,9 +522,8 @@
                             "type": "uint32_t"
                         },
                         {
-                            "name": "x32",
-                            "type": "uint32_t",
-                            "count": 16
+                            "name": "data",
+                            "type": "union.tensor_value"
                         }
                     ]
                 },
@@ -511,8 +537,8 @@
                             "type": "enumeration.data_type"
                         },
                         {
-                            "name": "data",
-                            "type": "structure.tensor_value"
+                            "name": "contents",
+                            "type": "structure.tensor_value_with_length"
                         }
                     ]
                 },

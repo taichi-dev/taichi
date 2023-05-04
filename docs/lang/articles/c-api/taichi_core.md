@@ -917,21 +917,41 @@ typedef struct TiScalar {
 A typed scalar value.
 
 ---
-### Structure `TiTensorValue`
+### Union `TiTensorValue`
 
 > Stable since Taichi version: 1.7.0
 
 ```c
-// structure.tensor_value
-typedef struct TiTensorValue {
-  uint32_t length;
-  uint32_t x32[16];
+// union.tensor_value
+typedef union TiTensorValue {
+  uint8_t x8[128];
+  uint16_t x16[64];
+  uint32_t x32[32];
+  uint64_t x64[16];
 } TiTensorValue;
 ```
 
 Tensor value represented by a power-of-two number of bits.
 
+- `x8`: Tensor value that fits into 8 bits.
+- `x16`: Tensor value that fits into 16 bits.
 - `x32`: Tensor value that fits into 32 bits.
+- `x64`: Tensor value that fits into 64 bits.
+
+---
+### Structure `TiTensorValueWithLength`
+
+> Stable since Taichi version: 1.7.0
+
+```c
+// structure.tensor_value_with_length
+typedef struct TiTensorValueWithLength {
+  uint32_t length;
+  TiTensorValue data;
+} TiTensorValueWithLength;
+```
+
+A tensor value with a length.
 
 ---
 ### Structure `TiTensor`
@@ -942,7 +962,7 @@ Tensor value represented by a power-of-two number of bits.
 // structure.tensor
 typedef struct TiTensor {
   TiDataType type;
-  TiTensorValue data;
+  TiTensorValueWithLength contents;
 } TiTensor;
 ```
 

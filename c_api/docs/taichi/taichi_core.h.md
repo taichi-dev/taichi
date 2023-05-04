@@ -451,11 +451,18 @@ Scalar value represented by a power-of-two number of bits.
 
 A typed scalar value.
 
-`structure.tensor_value`
+`union.tensor_value`
 
 Tensor value represented by a power-of-two number of bits.
 
-- `structure.tensor_value.x32`: Tensor value that fits into 32 bits.
+- `union.tensor_value.x8`: Tensor value that fits into 8 bits.
+- `union.tensor_value.x16`: Tensor value that fits into 16 bits.
+- `union.tensor_value.x32`: Tensor value that fits into 32 bits.
+- `union.tensor_value.x64`: Tensor value that fits into 64 bits.
+
+`structure.tensor_value_with_length`
+
+A tensor value with a length.
 
 `structure.tensor`
 

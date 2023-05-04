@@ -925,7 +925,7 @@ A typed scalar value.
 // structure.tensor_value
 typedef struct TiTensorValue {
   uint32_t placeholder;
-  uint32_t x32[16];
+  uint32_t x32[15];
 } TiTensorValue;
 ```
 

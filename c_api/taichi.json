@@ -497,7 +497,7 @@
                         {
                             "name": "x32",
                             "type": "uint32_t",
-                            "count": 16
+                            "count": 15
                         }
                     ]
                 },

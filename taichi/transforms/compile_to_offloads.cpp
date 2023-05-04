@@ -123,6 +123,10 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::flag_access(ir);
+  print("Access flagged I");
+  irpass::analysis::verify(ir);
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -130,10 +134,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::die(ir);
     print("Scalarized");
   }
-
-  irpass::flag_access(ir);
-  print("Access flagged I");
-  irpass::analysis::verify(ir);
 
   irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified II");

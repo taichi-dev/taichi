@@ -39,7 +39,7 @@ def f1(_fit: ti.template(), _pop: ti.template()):
     for ii in range(_search_num):
         cur = 0.0
         for j in range(_dim):
-            cur += ti.pow(a=_pop[ii, j], b=2)
+            cur += ti.pow(_pop[ii, j], 2)
 
         _fit[ii] = cur
 
@@ -49,7 +49,7 @@ def f1_only(_trial: ti.template()) -> ti.float32:
     _dim = _trial.shape[0]
     _res = 0.0
     for j in range(_dim):
-        _res += ti.pow(a=_trial[j], b=2)
+        _res += ti.pow(_trial[j], 2)
 
     return _res
 

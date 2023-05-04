@@ -804,23 +804,6 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
-// Union `TiTensorValue` (1.6.0)
-//
-// Tensor value represented by a power-of-two number of bits.
-typedef union TiTensorValue {
-  // Tensor value that fits into 32 bits.
-  uint32_t x32[16];
-} TiTensorValue;
-
-// Structure `TiTensor` (1.6.0)
-//
-// A typed tensor value.
-typedef struct TiTensor {
-  TiDataType type;
-  uint32_t length;
-  TiTensorValue data;
-} TiTensor;
-
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
@@ -837,8 +820,6 @@ typedef union TiArgumentValue {
   TiTexture texture;
   // An scalar to be bound.
   TiScalar scalar;
-  // A tensor to be bound.
-  TiTensor tensor;
 } TiArgumentValue;
 
 // Structure `TiArgument` (1.4.0)

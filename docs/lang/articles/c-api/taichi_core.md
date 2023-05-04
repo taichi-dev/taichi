@@ -917,38 +917,6 @@ typedef struct TiScalar {
 A typed scalar value.
 
 ---
-### Union `TiTensorValue`
-
-> Stable since Taichi version: 1.6.0
-
-```c
-// union.tensor_value
-typedef union TiTensorValue {
-  uint32_t x32[16];
-} TiTensorValue;
-```
-
-Tensor value represented by a power-of-two number of bits.
-
-- `x32`: Tensor value that fits into 32 bits.
-
----
-### Structure `TiTensor`
-
-> Stable since Taichi version: 1.6.0
-
-```c
-// structure.tensor
-typedef struct TiTensor {
-  TiDataType type;
-  uint32_t length;
-  TiTensorValue data;
-} TiTensor;
-```
-
-A typed tensor value.
-
----
 ### Union `TiArgumentValue`
 
 > Stable since Taichi version: 1.4.0
@@ -961,7 +929,6 @@ typedef union TiArgumentValue {
   TiNdArray ndarray;
   TiTexture texture;
   TiScalar scalar;
-  TiTensor tensor;
 } TiArgumentValue;
 ```
 
@@ -972,7 +939,7 @@ A scalar or structured argument value.
 - `ndarray`: An ND-array to be bound.
 - `texture`: A texture to be bound.
 - `scalar`: An scalar to be bound.
-- `tensor`: A tensor to be bound.
+- `union.argument_value.tensor`: A tensor to be bound.
 
 ---
 ### Structure `TiArgument`

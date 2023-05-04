@@ -18,7 +18,7 @@ class LinearOperator:
 
 def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     """Matrix-free conjugate-gradient solver.
-    
+
     Use conjugate-gradient method to solve the linear system Ax = b, where A is implicitly
     represented as a LinearOperator.
 
@@ -30,7 +30,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
         atol: Tolerance(absolute) for convergence.
         quiet (bool): Switch to turn on/off iteration log.
     """
-    
+
     if b.dtype != x.dtype:
         raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
     if str(b.dtype) == "f32":

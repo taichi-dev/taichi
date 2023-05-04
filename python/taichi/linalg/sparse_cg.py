@@ -8,7 +8,7 @@ from taichi.types import f32, f64
 
 class SparseCG:
     """Conjugate-gradient solver built for SparseMatrix.
-    
+
     Use conjugate-gradient method to solve the linear system Ax = b, where A is SparseMatrix.
 
     Args:
@@ -18,7 +18,7 @@ class SparseCG:
         max_iter (int): Maximum number of iterations.
         atol: Tolerance(absolute) for convergence.
     """
-    
+
     def __init__(self, A, b, x0=None, max_iter=50, atol=1e-6):
         self.dtype = A.dtype
         self.ti_arch = get_runtime().prog.config().arch

@@ -942,7 +942,6 @@ Tensor value represented by a power-of-two number of bits.
 typedef struct TiTensor {
   TiDataType type;
   uint32_t length;
-  TiTensorValue data;
 } TiTensor;
 ```
 

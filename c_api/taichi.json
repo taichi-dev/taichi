@@ -509,10 +509,6 @@
                         {
                             "name": "length",
                             "type": "uint32_t"
-                        },
-                        {
-                            "name": "data",
-                            "type": "union.tensor_value"
                         }
                     ]
                 },

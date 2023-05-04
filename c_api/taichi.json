@@ -486,6 +486,37 @@
                     ]
                 },
                 {
+                    "name": "tensor_value",
+                    "type": "union",
+                    "since": "v1.6.0",
+                    "variants": [
+                        {
+                            "name": "x32",
+                            "type": "uint32_t",
+                            "count": 16
+                        }
+                    ]
+                },
+                {
+                    "name": "tensor",
+                    "type": "structure",
+                    "since": "v1.6.0",
+                    "fields": [
+                        {
+                            "name": "type",
+                            "type": "enumeration.data_type"
+                        },
+                        {
+                            "name": "length",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "data",
+                            "type": "union.tensor_value"
+                        }
+                    ]
+                },
+                {
                     "name": "argument_value",
                     "type": "union",
                     "since": "v1.4.0",
@@ -509,6 +540,10 @@
                         {
                             "name": "scalar",
                             "type": "structure.scalar"
+                        },
+                        {
+                            "name": "tensor",
+                            "type": "structure.tensor"
                         }
                     ]
                 },

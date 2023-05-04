@@ -313,7 +313,7 @@ class TaichiMain:
                     index = input(f"Example [{index}] does not exist. Please try again: ")
                 example_name = names[int(index)]
             except KeyboardInterrupt as e:
-                print("\nCacelled by user, exit...")
+                print("\nCancelled by user, exiting...")
                 return 1
 
         target = str((examples_dir / choices[example_name] / f"{example_name}.py").resolve())

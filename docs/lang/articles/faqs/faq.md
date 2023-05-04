@@ -232,7 +232,7 @@ Alternatively, if you can afford having all floating-point operations in `f64` p
 In some situations, you may need to declare a field within a Python function, perform computations using it, and have the field automatically destroyed once the function call is complete. For instance:
 
 ```python skip-ci
-def some_pythn_function(n: int):
+def some_python_function(n: int):
     x = ti.field(int, shape=n)
     @ti.kernel
     def some_kernel(x: ti.template()):

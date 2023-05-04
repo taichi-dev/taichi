@@ -1,8 +1,7 @@
 """
-This script shows the optimization process of differential evolution. The black points are the search agents, and they finally find the minimum solution.
-Here are sone paper for differential algorithm (DE) and evolutionary algorithm (EA):
-[1]. Differential Evolution – A Simple and Efficient Heuristic for global Optimization over Continuous Spaces
-[2]. Application of differential evolution algorithm in static and dynamic economic or emission dispatch problem: A review
+Authored by Erqi Chen.
+This script shows the optimization process of differential evolution.
+The black points are the search agents, and they finally find the minimum solution.
 """
 
 

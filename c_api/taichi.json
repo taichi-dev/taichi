@@ -512,7 +512,8 @@
                         },
                         {
                             "name": "data",
-                            "type": "structure.nd_shape"
+                            "type": "uint32_t",
+                            "count": 16
                         }
                     ]
                 },

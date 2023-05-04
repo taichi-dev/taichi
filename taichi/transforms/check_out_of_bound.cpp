@@ -156,6 +156,52 @@ class CheckOutOfBound : public BasicStmtVisitor {
     set_done(stmt);
   }
 
+  // TODO: As offset information per dimension is lacking, only the accumulated
+  // index is checked.
+  void visit(MatrixPtrStmt *stmt) override {
+    if (is_done(stmt) || !stmt->offset_used_as_index())
+      return;
+
+    auto const &matrix_shape = stmt->get_origin_shape();
+    int max_valid_index = 1;
+    for (int i = 0; i < matrix_shape.size(); i++) {
+      max_valid_index *= matrix_shape[i];
+    }
+    // index starts from 0, max_valid_index = size(matrix) - 1
+    max_valid_index -= 1;
+
+    auto index = stmt->offset;
+    auto new_stmts = VecStatement();
+    auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
+    Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));
+
+    auto lower_bound = zero;
+    auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::cmp_ge, index, lower_bound);
+    auto upper_bound =
+        new_stmts.push_back<ConstStmt>(TypedConstant(max_valid_index));
+    auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::cmp_le, index, upper_bound);
+    auto check_i = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::bit_and, check_lower_bound, check_upper_bound);
+    result = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and, result,
+                                               check_i);
+
+    std::string msg =
+        fmt::format("(kernel={}) Out of bound access to a [", kernel_name);
+    for (int i = 0; i < matrix_shape.size(); i++) {
+      if (i > 0)
+        msg += ", ";
+      msg += std::to_string(matrix_shape[i]);
+    }
+    msg += "] matrix with index [%d]\n" + stmt->tb;
+
+    std::vector<Stmt *> args = {index};
+    new_stmts.push_back<AssertStmt>(result, msg, args);
+    modifier.insert_before(stmt, std::move(new_stmts));
+    set_done(stmt);
+  }
+
   void visit(BinaryOpStmt *stmt) override {
     // Insert assertions if debug is on
     if (is_done(stmt)) {

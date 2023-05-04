@@ -818,7 +818,7 @@ typedef union TiTensorValue {
 typedef struct TiTensor {
   TiDataType type;
   uint32_t length;
-  TiTensorValue data;
+  TiNdShape data;
 } TiTensor;
 
 // Union `TiArgumentValue` (1.4.0)

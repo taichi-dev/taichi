@@ -512,7 +512,7 @@
                         },
                         {
                             "name": "data",
-                            "type": "union.tensor_value"
+                            "type": "structure.nd_shape"
                         }
                     ]
                 },

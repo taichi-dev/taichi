@@ -2,7 +2,7 @@
 """
 Math functions for glsl-like functions and other stuff.
 """
-from math import e, inf, nan, pi
+import math
 
 from taichi.lang import impl, ops
 from taichi.lang.impl import static, zero
@@ -30,6 +30,26 @@ from taichi.types import matrix, template, vector
 from taichi.types.primitive_types import f64, u32, u64
 
 cfg = impl.default_cfg
+
+e = math.e
+"""The mathematical constant e = 2.718281….
+Directly imported from the Python standard library `math`.
+"""
+
+pi = math.pi
+"""The mathematical constant π = 3.141592….
+Directly imported from the Python standard library `math`.
+"""
+
+inf = math.inf
+"""A floating-point positive infinity. (For negative infinity, use `-inf`).
+Directly imported from the Python standard library `math`.
+"""
+
+nan = math.nan
+"""A floating-point "not a number" (NaN) value.
+Directly imported from the Python standard library `math`
+"""
 
 vec2 = vector(2, cfg().default_fp)
 """2D floating vector type.

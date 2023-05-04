@@ -488,7 +488,7 @@
                 {
                     "name": "tensor_value",
                     "type": "union",
-                    "since": "v1.6.0",
+                    "since": "v1.7.0",
                     "variants": [
                         {
                             "name": "x32",
@@ -500,8 +500,12 @@
                 {
                     "name": "tensor",
                     "type": "structure",
-                    "since": "v1.6.0",
+                    "since": "v1.7.0",
                     "fields": [
+                        {
+                            "name": "data",
+                            "type": "union.tensor_value"
+                        },
                         {
                             "name": "type",
                             "type": "enumeration.data_type"
@@ -509,10 +513,6 @@
                         {
                             "name": "length",
                             "type": "uint32_t"
-                        },
-                        {
-                            "name": "data",
-                            "type": "union.tensor_value"
                         }
                     ]
                 },

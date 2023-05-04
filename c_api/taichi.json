@@ -491,7 +491,11 @@
                     "since": "v1.7.0",
                     "fields": [
                         {
-                            "name": "x32_tensor",
+                            "name": "placeholder",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "x32",
                             "type": "uint32_t",
                             "count": 16
                         }

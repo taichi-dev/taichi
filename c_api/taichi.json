@@ -493,7 +493,7 @@
                         {
                             "name": "x32",
                             "type": "uint32_t",
-                            "count": 16
+                            "count": 8
                         }
                     ]
                 },
@@ -509,6 +509,10 @@
                         {
                             "name": "length",
                             "type": "uint32_t"
+                        },
+                        {
+                            "name": "data",
+                            "type": "union.tensor_value"
                         }
                     ]
                 },

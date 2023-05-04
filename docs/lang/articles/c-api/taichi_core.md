@@ -924,7 +924,7 @@ A typed scalar value.
 ```c
 // union.tensor_value
 typedef union TiTensorValue {
-  uint32_t x32[8];
+  uint32_t x32[1];
 } TiTensorValue;
 ```
 
@@ -940,9 +940,9 @@ Tensor value represented by a power-of-two number of bits.
 ```c
 // structure.tensor
 typedef struct TiTensor {
-  TiTensorValue data;
   TiDataType type;
   uint32_t length;
+  TiTensorValue data;
 } TiTensor;
 ```
 

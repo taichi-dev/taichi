@@ -307,10 +307,15 @@ class TaichiMain:
         examples_dir = TaichiMain._get_examples_dir()
         example_name = args.name
         if example_name is None:
-            index = int(input("Please input the number of the example: "))
-            while not 0 <= index < len(names):
-                index = int(input(f"Example [{index}] does not exist. Please try again: "))
-            example_name = names[index]
+            try:
+                index = input(f"Please input the example index (between 0 and {len(names)}): ")
+                while not index.isdigit() or int(index) >= len(names):
+                    index = input(f"Example [{index}] does not exist. Please try again: ")
+                example_name = names[int(index)]
+            except KeyboardInterrupt as e:
+                print("\nCancelled by user, exiting...")
+                return 1
+
         target = str((examples_dir / choices[example_name] / f"{example_name}.py").resolve())
         # path for examples needs to be modified for implicit relative imports
         sys.path.append(str((examples_dir / choices[example_name]).resolve()))

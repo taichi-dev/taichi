@@ -82,7 +82,7 @@ Let's dive into this simple Taichi program.
 
 ### Import Taichi
 
-```python skip-ci:Trivial
+```python
 import taichi as ti
 import taichi.math as tm
 ```
@@ -91,7 +91,7 @@ The first two lines import Taichi and its `math` module. The `math` module conta
 
 ### Initialize Taichi
 
-```python skip-ci:Trivial
+```python
 ti.init(arch=ti.gpu)
 ```
 
@@ -105,7 +105,7 @@ Additionally, you can specify the desired GPU backend directly by setting `arch=
 
 ### Define a Taichi field
 
-```python skip-ci:Trivial
+```python as-prelude:pixels
 n = 320
 pixels = ti.field(dtype=float, shape=(n * 2, n))
 ```
@@ -116,7 +116,7 @@ Field is a fundamental and frequently utilized data structure in Taichi. It can 
 
 ### Kernels and functions
 
-```python skip-ci:Trivial
+```python preludes:pixels as-prelude:paint
 @ti.func
 def complex_sqr(z):  # complex square of a 2D vector
     return tm.vec2(z[0] * z[0] - z[1] * z[1], 2 * z[0] * z[1])
@@ -151,10 +151,11 @@ For those familiar with the world of OpenGL, `ti.func` can be compared to a typi
 
 ### Parallel for loops
 
-```python skip-ci:Trivial
+```python preludes:pixels
 @ti.kernel
 def paint(t: float):
     for i, j in pixels:  # Parallelized over all pixels
+        pass
 ```
 
 The key to achieving high performance in Taichi lies in efficient iteration. By utilizing parallelized looping, data can be processed more effectively.
@@ -167,7 +168,7 @@ The field pixels is treated as an iterator, with `i` and `j` being integer indic
 
 It is important to keep in mind that for loops nested within other constructs, such as `if/else` statements or other loops, are not automatically parallelized and are processed _sequentially_.
 
-```python skip-ci:Trivial
+```python
 @ti.kernel
 def fill():
     total = 0
@@ -177,6 +178,7 @@ def fill():
 
     if total > 10:
         for k in range(5):  # Not parallelized because it is not at the outermost scope
+            total -= k
 ```
 
 You may also serialize a for loop at the outermost scope using `ti.loop_config(serialize=True)`. Please refer to [Serialize a specified parallel for loop](../debug/debugging.md#serialize-a-specified-parallel-for-loop) for additional information.
@@ -185,7 +187,7 @@ You may also serialize a for loop at the outermost scope using `ti.loop_config(s
 
 The `break` statement is _not_ supported in parallelized loops:
 
-```python skip-ci:ToyDemo
+```python skip-ci:NegativeExample
 @ti.kernel
 def foo():
     for i in x:
@@ -206,7 +208,7 @@ def foo():
 
 To render the result on screen, Taichi provides a built-in [GUI System](../visualization/gui_system.md). Use the `gui.set_image()` method to set the content of the window and `gui.show()` method to show the updated image.
 
-```python skip-ci:Trivial
+```python preludes:pixels,paint
 gui = ti.GUI("Julia Set", res=(n * 2, n))
 # Sets the window title and the resolution
 

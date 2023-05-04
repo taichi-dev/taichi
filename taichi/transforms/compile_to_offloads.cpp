@@ -117,18 +117,18 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (config.check_out_of_bound) {
+    irpass::check_out_of_bound(ir, config, {kernel->get_name()});
+    print("Bound checked");
+    irpass::analysis::verify(ir);
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::die(ir);
     print("Scalarized");
-  }
-
-  if (config.check_out_of_bound) {
-    irpass::check_out_of_bound(ir, config, {kernel->get_name()});
-    print("Bound checked");
-    irpass::analysis::verify(ir);
   }
 
   irpass::flag_access(ir);

@@ -491,13 +491,13 @@
                     "since": "v1.7.0",
                     "fields": [
                         {
-                            "name": "placeholder",
+                            "name": "length",
                             "type": "uint32_t"
                         },
                         {
                             "name": "x32",
                             "type": "uint32_t",
-                            "count": 15
+                            "count": 16
                         }
                     ]
                 },
@@ -509,10 +509,6 @@
                         {
                             "name": "type",
                             "type": "enumeration.data_type"
-                        },
-                        {
-                            "name": "length",
-                            "type": "uint32_t"
                         },
                         {
                             "name": "data",

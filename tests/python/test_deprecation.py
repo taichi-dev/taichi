@@ -84,21 +84,6 @@ def test_deprecate_rwtexture_ndim():
 
 
 @test_utils.test()
-def test_deprecate_builtin_min_max():
-    with pytest.warns(
-        DeprecationWarning,
-        match='Calling builtin function "max" in Taichi scope is deprecated, '
-        "and it will be removed in Taichi v1.6.0.",
-    ):
-
-        @ti.kernel
-        def func():
-            max(1, 2)
-
-        func()
-
-
-@test_utils.test()
 def test_deprecate_is_is_not():
     with pytest.warns(
         DeprecationWarning,

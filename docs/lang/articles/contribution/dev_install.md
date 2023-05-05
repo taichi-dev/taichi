@@ -57,12 +57,12 @@ This guide will focus on the `build.py` approach. If you prefer to use the conve
 
 <TabItem value="linux">
 
-| Category                      | Prerequisites                                                        |
-| :---------------------------- | :------------------------------------------------------------------- |
-| Linux distribution            | Anything recent enough, e.g. Ubuntu 20.04                            |
-| Python                        | 3.6+, with a usable distutils(`python3-distutils` package on Ubuntu) |
-| Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.                         |
-| libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`.           |
+| Category                      | Prerequisites                                                |
+| :---------------------------- | :----------------------------------------------------------- |
+| Linux distribution            | Anything recent enough, e.g. Ubuntu 20.04                    |
+| Python                        | 3.6+, with a usable pip(`python3-pip` package on Ubuntu)     |
+| Clang++                       | Clang++ &gt;= 10, Clang++ 15 is recommended.                 |
+| libstdc++-xx-dev              | Run `apt install libstdc++-10-dev`, or just install `g++`.   |
 
 </TabItem>
 
@@ -461,7 +461,7 @@ The whole cache folder can be safely removed.
 `build.py` operates without the need for any third-party libraries to be installed, the requirements will be handled by its bootstrapping process.
 
 :::note
-On Debian/Ubuntu systems, `apt install python3-distutils` is required due to packaging quirks.
+On Debian/Ubuntu systems, `apt install python3-pip` is required.
 :::
 
 :::caution Behaviors considered intrusive

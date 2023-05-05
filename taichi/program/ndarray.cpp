@@ -14,16 +14,11 @@ namespace {
 
 size_t flatten_index(const std::vector<int> &shapes,
                      const std::vector<int> &indices) {
-  TI_ASSERT(shapes.size() == indices.size());
-  if (indices.size() == 1) {
-    return indices[0];
-  } else {
-    size_t ind = indices[0];
-    for (int i = 1; i < indices.size(); i++) {
-      ind = ind * shapes[i] + indices[i];
-    }
-    return ind;
+  size_t ind = 0;
+  for (int i = 0; i < indices.size(); i++) {
+    ind = ind * shapes[i] + indices[i];
   }
+  return ind;
 }
 }  // namespace
 
@@ -176,10 +171,9 @@ TypedConstant Ndarray::read(const std::vector<int> &I) const {
   return data;
 }
 
-template <typename T>
-void Ndarray::write(const std::vector<int> &I, T val) const {
+void Ndarray::write(const std::vector<int> &I, TypedConstant val) const {
   size_t index = flatten_index(total_shape_, I);
-  size_t size_ = sizeof(T);
+  size_t size_ = data_type_size(get_element_data_type());
   taichi::lang::Device::AllocParams alloc_params;
   alloc_params.host_write = true;
   alloc_params.host_read = false;
@@ -189,16 +183,16 @@ void Ndarray::write(const std::vector<int> &I, T val) const {
       this->ndarray_alloc_.device->allocate_memory_unique(alloc_params);
   TI_ASSERT(res == RhiResult::success);
 
-  T *device_arr_ptr{nullptr};
+  char *device_arr_ptr{nullptr};
   TI_ASSERT(staging_buf_->device->map(
                 *staging_buf_, (void **)&device_arr_ptr) == RhiResult::success);
 
   TI_ASSERT(device_arr_ptr);
-  device_arr_ptr[0] = val;
+  std::memcpy(device_arr_ptr, &val.value_bits, size_);
 
   staging_buf_->device->unmap(*staging_buf_);
   staging_buf_->device->memcpy_internal(
-      this->ndarray_alloc_.get_ptr(index * sizeof(T)), staging_buf_->get_ptr(),
+      this->ndarray_alloc_.get_ptr(index * size_), staging_buf_->get_ptr(),
       size_);
 
   prog_->synchronize();
@@ -217,11 +211,11 @@ float64 Ndarray::read_float(const std::vector<int> &i) {
 }
 
 void Ndarray::write_int(const std::vector<int> &i, int64 val) {
-  write<int>(i, val);
+  write(i, TypedConstant(get_element_data_type(), val));
 }
 
 void Ndarray::write_float(const std::vector<int> &i, float64 val) {
-  write<float>(i, val);
+  write(i, TypedConstant(get_element_data_type(), val));
 }
 
 }  // namespace taichi::lang

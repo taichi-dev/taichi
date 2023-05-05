@@ -597,7 +597,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   //                 The scalarization should happen after
   //                 irpass::lower_access()
 
-  auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, dim);
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, dim, needs_grad);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
@@ -1648,7 +1649,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
   for (auto expr : exprs) {
     TI_ASSERT_TYPE_CHECKED(expr);
     if (auto struct_type = expr->ret_type.ptr_removed()->cast<StructType>()) {
-      auto num_elem = struct_type->get_num_elements();
+      auto num_elem = struct_type->elements().size();
       for (int i = 0; i < num_elem; i++) {
         std::vector<int> indices = {i};
         auto elem = Expr(std::make_shared<GetElementExpression>(expr, indices));

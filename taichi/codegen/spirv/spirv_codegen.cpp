@@ -606,15 +606,14 @@ class TaskCodegen : public IRVisitor {
       //    ir_->int_immediate_number(ir_->i32_type(), offset_in_mem);
       // ir_->register_value(stmt->raw_name(), val);
     } else {
-      bool has_buffer_ptr =
-          caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+      auto buffer_value =
+          get_buffer_value(BufferType::Args, PrimitiveType::i32);
       bool is_bool = arg_type->is_primitive(PrimitiveTypeID::u1);
-      const auto val_type = is_bool ? ir_->u32_type() : ir_->from_taichi_type(arg_type, has_buffer_ptr);
+      const auto val_type = is_bool ? ir_->u32_type() : args_struct_types_.at(arg_id);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(val_type, spv::StorageClassUniform),
-          get_buffer_value(BufferType::Args, PrimitiveType::i32),
-          ir_->int_immediate_number(ir_->i32_type(), arg_id));
+          buffer_value, ir_->int_immediate_number(ir_->i32_type(), arg_id));
       buffer_val.flag = ValueKind::kVariablePtr;
       if (!stmt->create_load) {
         ir_->register_value(stmt->raw_name(), buffer_val);
@@ -793,7 +792,7 @@ class TaskCodegen : public IRVisitor {
     if (dst_dt.is_pointer()) {
       auto stype = dst_dt.ptr_removed()->as<lang::StructType>();
       std::vector<std::tuple<SType, std::string, size_t>> components;
-      for (int i = 0; i < stype->get_num_elements(); i++) {
+      for (int i = 0; i < stype->elements().size(); i++) {
         components.push_back(
             {ir_->get_primitive_type(stype->get_element_type({i})),
              fmt::format("element{}", i), stype->get_element_offset({i})});
@@ -2293,11 +2292,28 @@ class TaskCodegen : public IRVisitor {
     auto reduced_blk = ir_reduce_types(&blk, old2new);
     struct_type = old2new[struct_type];
 
+    for (auto &element : element_types) {
+      element = old2new[element];
+    }
+
     // Layout & translate to SPIR-V
     STD140LayoutContext layout_ctx;
     auto ir2spirv_map =
         ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
     args_struct_type_.id = ir2spirv_map[struct_type];
+
+    // Must use the same type in ArgLoadStmt as in the args struct,
+    // otherwise the validation will fail.
+    args_struct_types_.resize(element_types.size());
+    for (int i = 0; i < element_types.size(); i++) {
+      args_struct_types_[i].id = ir2spirv_map.at(element_types[i]);
+      if (i < ctx_attribs_->args_type()->elements().size()) {
+        args_struct_types_[i].dt =
+            ctx_attribs_->args_type()->get_element_type({i});
+      } else {
+        args_struct_types_[i].dt = PrimitiveType::i32;
+      }
+    }
 
     args_buffer_value_ =
         ir_->uniform_struct_argument(args_struct_type_, 0, 0, "args");
@@ -2378,6 +2394,8 @@ class TaskCodegen : public IRVisitor {
 
   spirv::SType args_struct_type_;
   spirv::Value args_buffer_value_;
+
+  std::vector<spirv::SType> args_struct_types_;
 
   spirv::SType ret_struct_type_;
   spirv::Value ret_buffer_value_;

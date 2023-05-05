@@ -414,8 +414,6 @@ class ASTTransformer(Builder):
         func = node.func.ptr
         replace_func = {
             id(print): impl.ti_print,
-            id(min): ti_ops.min,
-            id(max): ti_ops.max,
             id(int): impl.ti_int,
             id(bool): impl.ti_bool,
             id(float): impl.ti_float,
@@ -432,19 +430,13 @@ class ASTTransformer(Builder):
                 node.ptr = args[0].get_shape()[0]
                 return True
 
+        if id(func) == id(max) or id(func) == id(min):
+            raise TaichiSyntaxError(
+                f"Builtin function '{func.__name__}' is not supported in Taichi kernels. Please use 'ti.{func.__name__}' instead."
+            )
+
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
-            if func is min or func is max:
-                name = "min" if func is min else "max"
-                warnings.warn_explicit(
-                    f'Calling builtin function "{name}" in Taichi scope is deprecated, '
-                    f"and it will be removed in Taichi v1.6.0."
-                    f'Please use "ti.{name}" instead.',
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
-                )
             return True
         return False
 

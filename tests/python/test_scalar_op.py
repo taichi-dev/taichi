@@ -189,3 +189,17 @@ def test_min_max_vector_starred():
 
     assert min_starred() == 1
     assert max_starred() == 6
+
+
+@test_utils.test()
+def test_removed_builtin_min_max():
+    with pytest.raises(
+        ti.TaichiSyntaxError,
+        match="Builtin function 'max' is not supported in Taichi kernels. Please use 'ti.max' instead.",
+    ):
+
+        @ti.kernel
+        def func(a: ti.i32, b: ti.i32):
+            print(max(a, b))
+
+        func(2, 1)

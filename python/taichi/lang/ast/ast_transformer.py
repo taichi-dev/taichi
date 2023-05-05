@@ -1165,16 +1165,11 @@ class ASTTransformer(Builder):
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != len(ndrange_var.dimensions):
-                warnings.warn_explicit(
+                raise TaichiSyntaxError(
                     "Ndrange for loop with number of the loop variables not equal to "
-                    "the dimension of the ndrange is deprecated, "
-                    "and it will be removed in Taichi 1.6.0. "
+                    "the dimension of the ndrange is not supported. "
                     "Please check if the number of arguments of ti.ndrange() is equal to "
-                    "the number of the loop variables.",
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
+                    "the number of the loop variables."
                 )
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):

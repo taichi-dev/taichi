@@ -443,6 +443,7 @@ def to_dr_kernel(s: Kernel) -> Dict[str, Any]:
         "arg_attribs_vec_": args,
         "args_bytes_": arg_bytes,
         "arr_access": arr_access,
+        "extra_args_bytes_": 1536,
         "ret_attribs_vec_": rets,
         "rets_bytes_": ret_bytes,
     }

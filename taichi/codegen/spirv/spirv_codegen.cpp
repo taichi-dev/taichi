@@ -642,7 +642,8 @@ class TaskCodegen : public IRVisitor {
         ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
         get_buffer_value(BufferType::Args, PrimitiveType::i32),
         ir_->int_immediate_number(ir_->i32_type(), arg_id),
-        ir_->int_immediate_number(ir_->i32_type(), 0),
+        ir_->int_immediate_number(ir_->i32_type(),
+                                  TypeFactory::SHAPE_POS_IN_NDARRAY),
         ir_->int_immediate_number(ir_->i32_type(), axis));
     spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
 
@@ -672,7 +673,8 @@ class TaskCodegen : public IRVisitor {
             ir_->get_pointer_type(ir_->i32_type(), spv::StorageClassUniform),
             get_buffer_value(BufferType::Args, PrimitiveType::i32),
             ir_->int_immediate_number(ir_->i32_type(), arg_id),
-            ir_->int_immediate_number(ir_->i32_type(), 0),
+            ir_->int_immediate_number(ir_->i32_type(),
+                                      TypeFactory::SHAPE_POS_IN_NDARRAY),
             ir_->int_immediate_number(ir_->i32_type(), i));
         spirv::Value var = ir_->load_variable(var_ptr, ir_->i32_type());
         ir_->register_value(var_name, var);

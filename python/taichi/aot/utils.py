@@ -97,11 +97,8 @@ def produce_injected_args(kernel, symbolic_args=None):
             texture_shape = (2,) * anno.num_dimensions
             injected_args.append(Texture(Format.rgba8, texture_shape))
         elif isinstance(anno, MatrixType):
-            if not isinstance(symbolic_args[i], list):
-                raise RuntimeError("Expected a symbolic arg with Matrix type.")
-
-            symbolic_mat_n = len(symbolic_args[i])
-            symbolic_mat_m = len(symbolic_args[i][0])
+            symbolic_mat_n = symbolic_args[i].element_shape[0]
+            symbolic_mat_m = symbolic_args[i].element_shape[1]
 
             if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
                 raise RuntimeError(

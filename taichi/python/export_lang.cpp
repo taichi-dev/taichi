@@ -617,66 +617,55 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("jit_run", [](aot::CompiledGraph *self,
-                         const CompileConfig &compile_config,
-                         const py::dict &pyargs) {
-        std::unordered_map<std::string, aot::IValue> args;
-        for (auto it : pyargs) {
-          std::string arg_name = py::cast<std::string>(it.first);
-          auto tag = self->args[arg_name].tag;
-          if (tag == aot::ArgKind::kNdarray) {
-            auto &val = it.second.cast<Ndarray &>();
-            args.insert(
-                {py::cast<std::string>(it.first), aot::IValue::create(val)});
-          } else if (tag == aot::ArgKind::kTexture ||
-                     tag == aot::ArgKind::kRWTexture) {
-            auto &val = it.second.cast<Texture &>();
-            args.insert(
-                {py::cast<std::string>(it.first), aot::IValue::create(val)});
-
-          } else if (tag == aot::ArgKind::kScalar ||
-                     tag == aot::ArgKind::kMatrix) {
-            std::string arg_name = py::cast<std::string>(it.first);
-            auto expected_dtype = self->args[arg_name].dtype();
-            if (expected_dtype == PrimitiveType::i32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
-            } else if (expected_dtype == PrimitiveType::f32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<float>(it.second))});
-            } else if (expected_dtype == PrimitiveType::f64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<double>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i16) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u16) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u8) {
-              args.insert({arg_name,
-                           aot::IValue::create(py::cast<uint8_t>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i8) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int8_t>(it.second))});
-            } else {
-              TI_NOT_IMPLEMENTED;
-            }
-          } else {
-            TI_NOT_IMPLEMENTED;
-          }
-        }
-        self->jit_run(compile_config, args);
-      });
+      .def("jit_run",
+           [](aot::CompiledGraph *self, const CompileConfig &compile_config,
+              const py::dict &pyargs) {
+             std::unordered_map<std::string, aot::IValue> args;
+             auto insert_scalar_arg = [&args](std::string arg_name,
+                                              DataType expected_dtype,
+                                              py::object pyarg) {
+               auto type_id = expected_dtype->as<PrimitiveType>()->type;
+               switch (type_id) {
+#define PER_C_TYPE(type, ctype)                                           \
+  case PrimitiveTypeID::type:                                             \
+    args.insert({arg_name, aot::IValue::create(py::cast<ctype>(pyarg))}); \
+    break;
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+                 default:
+                   TI_ERROR("Unsupported scalar type {}", type_id);
+               }
+             };
+             for (const auto &[arg_name, arg] : self->args) {
+               auto tag = arg.tag;
+               if (tag == aot::ArgKind::kMatrix) {
+                 int size = arg.element_shape[0] * arg.element_shape[1];
+                 for (int i = 0; i < size; i++) {
+                   auto name = fmt::format("{}_{}", arg_name, i);
+                   TI_ASSERT(pyargs.contains(name.c_str()));
+                   auto pyarg = pyargs[name.c_str()];
+                   insert_scalar_arg(name, arg.dtype(), pyarg);
+                 }
+                 continue;
+               }
+               TI_ASSERT(pyargs.contains(arg_name.c_str()));
+               auto pyarg = pyargs[arg_name.c_str()];
+               if (tag == aot::ArgKind::kNdarray) {
+                 auto &val = pyarg.cast<Ndarray &>();
+                 args.insert({arg_name, aot::IValue::create(val)});
+               } else if (tag == aot::ArgKind::kTexture ||
+                          tag == aot::ArgKind::kRWTexture) {
+                 auto &val = pyarg.cast<Texture &>();
+                 args.insert({arg_name, aot::IValue::create(val)});
+               } else if (tag == aot::ArgKind::kScalar) {
+                 auto expected_dtype = arg.dtype();
+                 insert_scalar_arg(arg_name, expected_dtype, pyarg);
+               } else {
+                 TI_NOT_IMPLEMENTED;
+               }
+             }
+             self->jit_run(compile_config, args);
+           });
 
   py::class_<Kernel>(m, "Kernel")
       .def("no_activate",

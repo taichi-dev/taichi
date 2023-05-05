@@ -498,6 +498,7 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_NDARRAY = 2,
   TI_ARGUMENT_TYPE_TEXTURE = 3,
   TI_ARGUMENT_TYPE_SCALAR = 4,
+  TI_ARGUMENT_TYPE_TENSOR = 5,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
 ```
@@ -509,6 +510,7 @@ Types of kernel and compute graph argument.
 - `TI_ARGUMENT_TYPE_NDARRAY`: ND-array wrapped around a [`TiMemory`](#handle-timemory).
 - `TI_ARGUMENT_TYPE_TEXTURE`: Texture wrapped around a [`TiImage`](#handle-tiimage).
 - `TI_ARGUMENT_TYPE_SCALAR`: Typed scalar.
+- `TI_ARGUMENT_TYPE_TENSOR`: Typed tensor.
 
 
 ---
@@ -927,6 +929,7 @@ typedef union TiArgumentValue {
   TiNdArray ndarray;
   TiTexture texture;
   TiScalar scalar;
+  TiTensor tensor;
 } TiArgumentValue;
 ```
 
@@ -937,6 +940,7 @@ A scalar or structured argument value.
 - `ndarray`: An ND-array to be bound.
 - `texture`: A texture to be bound.
 - `scalar`: An scalar to be bound.
+- `tensor`: A tensor to be bound.
 
 ---
 ### Structure `TiArgument`

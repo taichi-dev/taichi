@@ -284,12 +284,7 @@ SType IRBuilder::get_null_type() {
 
 SType IRBuilder::get_primitive_type(const DataType &dt) const {
   if (dt->is_primitive(PrimitiveTypeID::u1)) {
-    // Spir-v has no full support for boolean types, using boolean types in
-    // backend may cause issues. These issues arise when we use boolean as
-    // return type, argument type and inner dtype of compount types. Since
-    // boolean types has the same width with int32 in GLSL, we use int32
-    // instead.
-    return t_int32_;
+    return t_bool_;
   } else if (dt->is_primitive(PrimitiveTypeID::f16)) {
     if (!caps_->get(cap::spirv_has_float16))
       TI_ERROR("Type {} not supported.", dt->to_string());
@@ -383,12 +378,7 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
              dt == PrimitiveType::f16) {
     return t_uint16_;
   } else if (dt == PrimitiveType::u1) {
-    // Spir-v has no full support for boolean types, using boolean types in
-    // backend may cause issues. These issues arise when we use boolean as
-    // return type, argument type and inner dtype of compount types. Since
-    // boolean types has the same width with int32 in GLSL, we use int32
-    // instead.
-    return t_int32_;
+    return t_bool_;
   } else {
     return t_uint8_;
   }
@@ -569,7 +559,11 @@ SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
   return get_pointer_type(value_type, storage_class);
 }
 
-SType IRBuilder::get_array_type(const SType &value_type, uint32_t num_elems) {
+SType IRBuilder::get_array_type(const SType &_value_type, uint32_t num_elems) {
+  auto value_type = _value_type;
+  if (value_type.dt->is_primitive(PrimitiveTypeID::u1)) {
+    value_type = i32_type();
+  }
   SType arr_type;
   arr_type.id = id_counter_++;
   arr_type.flag = TypeKind::kPtr;

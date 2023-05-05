@@ -128,6 +128,7 @@ endif()
 
 include(cmake/TaichiCXXFlags.cmake)
 include(cmake/TaichiCore.cmake)
+include(cmake/TaichiCoreExports.cmake)
 
 option(TI_BUILD_TESTS "Build the CPP tests" OFF)
 

@@ -571,6 +571,12 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     } else {
       prealloc_size = std::size_t(config_.device_memory_fraction * total_mem);
     }
+
+    if (CUDAContext::get_instance().supports_mem_pool()) {
+      // Only preallocate for Runtime Objects & Sparse
+      prealloc_size *= 0.5;
+    }
+
     TI_ASSERT(prealloc_size <= total_mem);
 
     TI_TRACE("Allocating device memory {:.2f} GB",

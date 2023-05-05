@@ -52,8 +52,13 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   if (info.size == 0) {
     info.ptr = nullptr;
   } else if (params.use_cached) {
-    info.ptr =
-        DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
+    if (CUDAContext::get_instance().supports_mem_pool()) {
+      CUDADriver::get_instance().malloc_async((void **)&info.ptr, info.size,
+                                              nullptr);
+    } else {
+      info.ptr =
+          DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
+    }
 
     TI_ASSERT(info.ptr != nullptr);
 
@@ -100,8 +105,12 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   }
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
-    DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
-                                             false);
+    if (CUDAContext::get_instance().supports_mem_pool()) {
+      CUDADriver::get_instance().mem_free_async((void **)&info.ptr, nullptr);
+    } else {
+      DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
+                                               false);
+    }
   } else if (!info.use_preallocated) {
     auto &mem_pool = DeviceMemoryPool::get_instance();
     mem_pool.release(info.size, info.ptr, true /*release_raw*/);

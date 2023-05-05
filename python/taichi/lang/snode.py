@@ -1,10 +1,10 @@
 import numbers
 
 from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, matrix
+from taichi.lang import expr, impl, matrix, ops
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import BitpackedFields, Field
-from taichi.lang.util import get_traceback
+from taichi.lang.util import get_traceback, in_taichi_scope
 
 
 class SNode:
@@ -349,10 +349,22 @@ def rescale_index(a, b, I):
         ), "The third argument must be an index (list, ti.Vector, or Expr with TensorType)"
         n = I.n
 
-    from taichi.lang.kernel_impl import pyfunc  # pylint: disable=C0415
+    if in_taichi_scope():
+        from taichi.lang.kernel_impl import func  # pylint: disable=C0415
 
-    @pyfunc
-    def _rescale_index():
+        @func
+        def _rescale_index_ti_scope():
+            result = matrix.Vector([I[i] for i in range(n)])
+            for i in impl.static(range(ops.min(n, ops.min(len(a.shape), len(b.shape))))):
+                if a.shape[i] > b.shape[i]:
+                    result[i] = I[i] // (a.shape[i] // b.shape[i])
+                if a.shape[i] < b.shape[i]:
+                    result[i] = I[i] * (b.shape[i] // a.shape[i])
+            return result
+
+        return _rescale_index_ti_scope()
+
+    def _rescale_index_python_scope():
         result = matrix.Vector([I[i] for i in range(n)])
         for i in impl.static(range(min(n, min(len(a.shape), len(b.shape))))):
             if a.shape[i] > b.shape[i]:
@@ -361,7 +373,7 @@ def rescale_index(a, b, I):
                 result[i] = I[i] * (b.shape[i] // a.shape[i])
         return result
 
-    return _rescale_index()
+    return _rescale_index_python_scope()
 
 
 def append(node, indices, val):

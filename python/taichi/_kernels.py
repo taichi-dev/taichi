@@ -39,8 +39,9 @@ def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
 
 @kernel
 def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
+    offset = static(tensor.snode.ptr.offset)
     for I in grouped(tensor):
-        arr[I] = tensor[I]
+        arr[I - offset] = tensor[I]
 
 
 @kernel

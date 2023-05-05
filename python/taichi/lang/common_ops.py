@@ -1,5 +1,3 @@
-import warnings
-
 from taichi.lang import ops
 from taichi.lang.util import in_python_scope
 from taichi.types import primitive_types
@@ -7,24 +5,6 @@ from taichi.types import primitive_types
 
 class TaichiOperations:
     """The base class of taichi operations of expressions. Subclasses: :class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`"""
-
-    __deprecated_atomic_ops__ = {
-        "atomic_add": "_atomic_add",
-        "atomic_mul": "_atomic_mul",
-        "atomic_and": "_atomic_and",
-        "atomic_or": "_atomic_or",
-        "atomic_sub": "_atomic_sub",
-        "atomic_xor": "_atomic_xor",
-    }
-
-    def __getattr__(self, item):
-        if item in TaichiOperations.__deprecated_atomic_ops__:
-            warnings.warn(
-                f"a.{item}(b) is deprecated, and it will be removed in Taichi v1.6.0. Please use ti.{item}(a, b) instead.",
-                DeprecationWarning,
-            )
-            return getattr(self, TaichiOperations.__deprecated_atomic_ops__[item])
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{item}'")
 
     def __neg__(self):
         return ops.neg(self)

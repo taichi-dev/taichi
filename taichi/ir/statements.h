@@ -485,6 +485,13 @@ class MatrixPtrStmt : public Stmt {
     return false;
   }
 
+  std::vector<int> get_origin_shape() const {
+    if (offset_used_as_index()) {
+      return origin->ret_type.ptr_removed()->cast<TensorType>()->get_shape();
+    }
+    TI_NOT_IMPLEMENTED;
+  }
+
   bool is_unlowered_global_ptr() const {
     return origin->is<GlobalPtrStmt>();
   }

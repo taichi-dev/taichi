@@ -529,3 +529,34 @@ def test_ad_global_store_forwarding():
     assert b.grad[None] == 0.0
     assert c.grad[None] == 0.0
     assert d.grad[None] == 0.0
+
+
+@test_utils.test()
+def test_ad_set_loss_grad():
+    x = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+    loss = ti.field(dtype=ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def eval_x(x: ti.template()):
+        x[None] = 1.0
+
+    @ti.kernel
+    def compute_1(x: ti.template(), loss: ti.template()):
+        loss[None] = x[None]
+
+    @ti.kernel
+    def compute_2(x: ti.template(), loss: ti.template()):
+        loss[None] = 2 * x[None]
+
+    @ti.kernel
+    def compute_3(x: ti.template(), loss: ti.template()):
+        loss[None] = 4 * x[None]
+
+    eval_x(x)
+    with ti.ad.Tape(loss=loss):
+        compute_1(x, loss)
+        compute_2(x, loss)
+        compute_3(x, loss)
+
+    assert loss[None] == 4
+    assert x.grad[None] == 4

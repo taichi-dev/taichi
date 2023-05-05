@@ -2,6 +2,7 @@
 
 # -- stdlib --
 from pathlib import Path
+from types import ModuleType
 from typing import Optional
 import importlib
 import os
@@ -55,21 +56,32 @@ def restart():
         os.execl(sys.executable, sys.executable, "-S", *sys.argv)
 
 
+def _try_import(name: str) -> Optional[ModuleType]:
+    try:
+        return importlib.import_module(name)
+    except ModuleNotFoundError:
+        return None
+
+
 def ensure_dependencies(*deps: str):
     """
     Automatically install dependencies if they are not installed.
     """
 
+    pip = _try_import("pip")
+    ensurepip = _try_import("ensurepip")
+
     if not sys.flags.no_site:
-        # First run, do pip checks
-        try:
-            import pip
-        except ModuleNotFoundError:
-            print("!! pip not found, build.py needs at least a functional pip to work.", flush=True)
-            exit(1)
+        # First run, restart with no_site
+        if not pip and not ensurepip:
+            print(
+                "!! pip or ensurepip not found, build.py needs at least a functional pip/ensurepip to work.", flush=True
+            )
+            sys.exit(1)
 
         restart()
 
+    # Second run
     v = sys.version_info
     bootstrap_root = get_cache_home() / "bootstrap" / f"{v.major}.{v.minor}"
     bootstrap_root.mkdir(parents=True, exist_ok=True)
@@ -85,12 +97,18 @@ def ensure_dependencies(*deps: str):
 
     print("Installing dependencies...", flush=True)
     py = sys.executable
+    pip_install = ["-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
 
-    if run(py, "-m", "pip", "install", "pip", "--no-user", f"--target={bootstrap_root}"):
-        raise Exception("Unable to install pip!")
+    if ensurepip:
+        wheels = Path(ensurepip.__path__[0]).glob("**/*.whl")
+        wheels = os.pathsep.join(map(str, wheels))
+        if run(py, "-S", *pip_install, "pip", env={"PYTHONPATH": wheels}):
+            raise Exception("Unable to install pip! (ensurepip method)")
+    else:  # pip must exist
+        if run(py, *pip_install, "pip"):
+            raise Exception("Unable to install pip! (pip method)")
 
-    pipcmd = [py, "-S", "-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
-    if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
+    if run(py, "-S", *pip_install, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
         raise Exception("Unable to install dependencies!")
 
     restart()

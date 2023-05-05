@@ -282,9 +282,9 @@ class ScalarField(Field):
     def fill(self, val):
         """Fills this scalar field with a specified value."""
         if in_python_scope():
-            from taichi._kernels import fill_tensor  # pylint: disable=C0415
+            from taichi._kernels import fill_field  # pylint: disable=C0415
 
-            fill_tensor(self, val)
+            fill_field(self, val)
         else:
             from taichi._funcs import field_fill_taichi_scope  # pylint: disable=C0415
 

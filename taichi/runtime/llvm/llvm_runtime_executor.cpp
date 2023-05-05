@@ -573,8 +573,13 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     }
 
     if (CUDAContext::get_instance().supports_mem_pool()) {
+      // TODO(zhanlue): List all runtime objects and calculate the exact size
+      std::size_t runtime_init_memory = 100 * (1UL << 20);  // 100 MB
+
       // Only preallocate for Runtime Objects & Sparse
-      prealloc_size *= 0.5;
+      float sparse_memory_fraction = 0.2f;
+      prealloc_size =
+          sparse_memory_fraction * prealloc_size + runtime_init_memory;
     }
 
     TI_ASSERT(prealloc_size <= total_mem);

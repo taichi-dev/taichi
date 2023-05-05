@@ -106,7 +106,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   TI_ASSERT(!info.is_imported);
   if (info.use_cached) {
     if (CUDAContext::get_instance().supports_mem_pool()) {
-      CUDADriver::get_instance().mem_free_async((void **)&info.ptr, nullptr);
+      CUDADriver::get_instance().mem_free_async(info.ptr, nullptr);
     } else {
       DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
                                                false);

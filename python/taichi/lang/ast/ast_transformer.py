@@ -1023,28 +1023,19 @@ class ASTTransformer(Builder):
         ops_static = {
             ast.In: lambda l, r: l in r,
             ast.NotIn: lambda l, r: l not in r,
-            ast.Is: lambda l, r: l is r,
-            ast.IsNot: lambda l, r: l is not r,
         }
         if ctx.is_in_static_scope():
             ops = {**ops, **ops_static}
         operands = [node.left.ptr] + [comparator.ptr for comparator in node.comparators]
         val = True
         for i, node_op in enumerate(node.ops):
+            if isinstance(node_op, (ast.Is, ast.IsNot)):
+                name = "is" if isinstance(node_op, ast.Is) else "is not"
+                raise TaichiSyntaxError(f'Operator "{name}" in Taichi scope is not supported.')
             l = operands[i]
             r = operands[i + 1]
             op = ops.get(type(node_op))
-            if isinstance(node_op, (ast.Is, ast.IsNot)):
-                name = "is" if isinstance(node_op, ast.Is) else "is not"
-                warnings.warn_explicit(
-                    f'Operator "{name}" in Taichi scope is deprecated, '
-                    f"and it will be removed in Taichi v1.6.0. "
-                    f"Please avoid using it.",
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
-                )
+
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(f'"{type(node_op).__name__}" is only supported inside `ti.static`.')

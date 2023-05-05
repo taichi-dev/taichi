@@ -84,7 +84,7 @@ mat4 = matrix(4, 4, cfg().default_fp)
 def mix(x, y, a):
     """Performs a linear interpolation between `x` and `y` using
     `a` to weight between them. The return value is computed as
-    :math:`x\times a + (1-a)\times y`.
+    `x * (1 - a) + a * y`.
 
     The arguments can be scalars or :class:`~taichi.Matrix`,
     as long as the operation can be performed.

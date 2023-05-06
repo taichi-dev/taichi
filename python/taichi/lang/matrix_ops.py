@@ -213,13 +213,13 @@ def normalized(vec, eps=0.0):
 @preconditions(assert_tensor)
 @pyfunc
 def any(mat):  # pylint: disable=W0622
-    return _reduce(mat != 0, ops_mod.logical_or) and True
+    return _reduce(mat != 0, ops_mod.bit_or) & True
 
 
 @preconditions(assert_tensor)
 @pyfunc
 def all(mat):  # pylint: disable=W0622
-    return _reduce(mat != 0, ops_mod.logical_and) and True
+    return _reduce(mat != 0, ops_mod.bit_and) & True
 
 
 @preconditions(assert_tensor)

@@ -26,6 +26,14 @@ class LlvmDevice : public Device {
     return device;
   }
 
+  virtual void *get_memory_addr(DeviceAllocation devalloc) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  virtual std::size_t get_total_memory() {
+    TI_NOT_IMPLEMENTED
+  }
+
   virtual DeviceAllocation import_memory(void *ptr, size_t size) {
     TI_NOT_IMPLEMENTED
   }

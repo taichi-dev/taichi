@@ -52,7 +52,7 @@ def _test_block_gc():
     assert 1 <= grid._num_dynamically_allocated <= 2, grid._num_dynamically_allocated
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, device_memory_GB=2)
 def test_block():
     _test_block_gc()
 
@@ -72,7 +72,7 @@ def test_dynamic_gc():
         assert L._num_dynamically_allocated <= 2
 
 
-@test_utils.test(require=ti.extension.sparse)
+@test_utils.test(require=ti.extension.sparse, device_memory_GB=2)
 def test_pointer_gc():
     x = ti.field(dtype=ti.i32)
 

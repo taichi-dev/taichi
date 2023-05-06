@@ -584,8 +584,11 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
       // moment. This is because preallocation happens at the very beginning
       // where ti.init() is performed.
 
+      // Since Ndarray/SNodeTree are allocated from the cuda memory pool, we
+      // only need to reserve memory for sparse SNodes.
       // End users can set "device_memory_GB = 0" if non-sparse SNodes are used.
-      prealloc_size = std::max(prealloc_size, runtime_init_memory);
+      float sparse_fraction = 0.4f;
+      prealloc_size = runtime_init_memory + sparse_fraction * prealloc_size;
     }
 
     TI_ASSERT(prealloc_size <= total_mem);

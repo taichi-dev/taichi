@@ -29,6 +29,8 @@ class TypeFactory {
                                       int total_dim,
                                       bool needs_grad = false);
 
+  const Type *get_rwtexture_struct_type();
+
   Type *get_pointer_type(Type *element, bool is_bit_pointer = false);
 
   Type *get_quant_int_type(int num_bits, bool is_signed, Type *compute_type);
@@ -54,6 +56,7 @@ class TypeFactory {
 
   static DataType create_tensor_type(std::vector<int> shape, DataType element);
 
+  constexpr static int SHAPE_POS_IN_NDARRAY = 0;
   constexpr static int DATA_PTR_POS_IN_NDARRAY = 1;
   constexpr static int GRAD_PTR_POS_IN_NDARRAY = 2;
 

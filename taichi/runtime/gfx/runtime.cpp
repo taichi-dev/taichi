@@ -93,11 +93,6 @@ class HostDeviceContextBlitter {
     std::memcpy(device_base, host_ctx_.get_context().arg_buffer,
                 ctx_attribs_->args_bytes());
 
-    void *device_ptr =
-        (uint8_t *)device_base + ctx_attribs_->extra_args_mem_offset();
-    std::memcpy(device_ptr, host_ctx_.get_context().extra_args,
-                ctx_attribs_->extra_args_bytes());
-
     device_->unmap(*device_args_buffer_);
   }
 
@@ -257,10 +252,6 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
 
   args_buffer_size_ = arg_sz;
   ret_buffer_size_ = ret_sz;
-
-  if (arg_sz) {
-    args_buffer_size_ += ti_kernel_attribs_.ctx_attribs.extra_args_bytes();
-  }
 
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
   const auto &spirv_bins = ti_params.spirv_bins;
@@ -802,15 +793,14 @@ std::pair<const lang::StructType *, size_t>
 GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
                                              const std::string &layout) {
   auto [new_ty, size, align] =
-      get_struct_type_with_data_layout_impl(old_ty, layout, true);
+      get_struct_type_with_data_layout_impl(old_ty, layout);
   return {new_ty, size};
 }
 
 std::tuple<const lang::StructType *, size_t, size_t>
 GfxRuntime::get_struct_type_with_data_layout_impl(
     const lang::StructType *old_ty,
-    const std::string &layout,
-    bool is_outmost) {
+    const std::string &layout) {
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
   TI_ASSERT(layout.size() == 2);
   auto is_430 = layout[0] == '4';
@@ -824,7 +814,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     size_t member_size;
     if (auto struct_type = member.type->cast<lang::StructType>()) {
       auto [new_ty, size, member_align_] =
-          get_struct_type_with_data_layout_impl(struct_type, layout, false);
+          get_struct_type_with_data_layout_impl(struct_type, layout);
       members[i].type = new_ty;
       member_align = member_align_;
       member_size = size;
@@ -863,7 +853,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
 
   if (!is_430) {
     align = align_up(align, sizeof(float) * 4);
-    bytes = align_up(bytes, is_outmost ? 4 : 4 * sizeof(float));
+    bytes = align_up(bytes, 4 * sizeof(float));
   }
   TI_TRACE("  total_bytes={}", bytes);
   return {TypeFactory::get_instance()

@@ -357,8 +357,9 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
                                   !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (is_tensor_op || lhs_type != PrimitiveType::u1 ||
-       rhs_type != PrimitiveType::u1))    error();
+      (lhs_type.get_element_type() != PrimitiveType::u1 ||
+       rhs_type.get_element_type() != PrimitiveType::u1))
+    error();
   if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::u1);
     return;
@@ -397,7 +398,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
 
-  if (binary_is_logical(type)) {
+  if (binary_is_logical(type) && !is_tensor(lhs->ret_type) && !is_tensor(rhs->ret_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
     auto cond = ctx->push_back<LocalLoadStmt>(result);

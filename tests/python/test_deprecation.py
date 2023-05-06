@@ -136,15 +136,6 @@ def test_deprecate_ti_ui_make_camera():
 
 
 @test_utils.test()
-def test_deprecation_in_taichi_init_py():
-    with pytest.warns(
-        DeprecationWarning,
-        match="ti.SOA is deprecated, and it will be removed in Taichi v1.6.0.",
-    ):
-        ti.SOA
-
-
-@test_utils.test()
 def test_deprecate_sparse_matrix_builder():
     with pytest.warns(
         DeprecationWarning,

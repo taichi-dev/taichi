@@ -398,7 +398,8 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
 
-  if (binary_is_logical(type) && !is_tensor(lhs->ret_type) && !is_tensor(rhs->ret_type)) {
+  if (binary_is_logical(type) && !is_tensor(lhs->ret_type) &&
+      !is_tensor(rhs->ret_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
     auto cond = ctx->push_back<LocalLoadStmt>(result);

@@ -1,10 +1,16 @@
 from taichi.lang import ops
 from taichi.lang.util import in_python_scope
 from taichi.types import primitive_types
+from typing import TYPE_CHECKING
 
 
 class TaichiOperations:
     """The base class of taichi operations of expressions. Subclasses: :class:`~taichi.lang.expr.Expr`, :class:`~taichi.lang.matrix.Matrix`"""
+
+    if TYPE_CHECKING:
+        # Make pylint happy
+        def __getattr__(self, item):
+            pass
 
     def __neg__(self):
         return ops.neg(self)

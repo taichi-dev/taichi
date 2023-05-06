@@ -358,7 +358,8 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
     error();
   if (binary_is_logical(type) &&
       (is_tensor_op || lhs_type != PrimitiveType::u1 ||
-       rhs_type != PrimitiveType::u1))    error();
+       rhs_type != PrimitiveType::u1))
+    error();
   if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::u1);
     return;

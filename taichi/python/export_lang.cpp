@@ -711,7 +711,6 @@ void export_lang(py::module &m) {
            &LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
       .def("get_struct_ret_int", &LaunchContextBuilder::get_struct_ret_int)
       .def("get_struct_ret_uint", &LaunchContextBuilder::get_struct_ret_uint)
       .def("get_struct_ret_float", &LaunchContextBuilder::get_struct_ret_float);

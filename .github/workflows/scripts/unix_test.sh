@@ -39,7 +39,7 @@ fi
 
 if [ "$TI_RUN_RELEASE_TESTS" == "1" ]; then
     python3 -m pip install PyYAML
-    git clone https://github.com/taichi-dev/taichi-release-tests
+    git clone https://github.com/lin-hitonami/taichi-release-tests
     pushd taichi-release-tests
     git checkout 20230130
     mkdir -p repos/taichi/python/taichi

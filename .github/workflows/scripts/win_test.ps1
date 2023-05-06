@@ -86,7 +86,7 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Info "Running release tests"
     # release tests
     Invoke pip install PyYAML
-    Invoke git clone https://github.com/taichi-dev/taichi-release-tests
+    Invoke git clone https://github.com/lin-hitonami/taichi-release-tests
     Push-Location taichi-release-tests
     Invoke git checkout 20230130
     mkdir -p repos/taichi/python/taichi

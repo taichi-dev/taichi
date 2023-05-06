@@ -329,12 +329,12 @@ def test_ref():
         a = 7
 
     @ti.kernel
-    def bar():
+    def bar() -> ti.f32:
         a = 5.0
         foo(a)
-        assert a == 7
+        return a
 
-    bar()
+    assert bar() == 7
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
@@ -352,12 +352,12 @@ def test_ref_atomic():
         a += a
 
     @ti.kernel
-    def bar():
+    def bar() -> ti.f32:
         a = 5.0
         foo(a)
-        assert a == 10.0
+        return a
 
-    bar()
+    assert bar() == 10.0
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)

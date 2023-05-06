@@ -57,10 +57,10 @@ solver = ti.linalg.SparseSolver(solver_type="LLT")
 solver.analyze_pattern(A)
 solver.factorize(A)
 x = solver.solve(b)
-isSuccess = solver.info()
+success = solver.info()
 print(">>>> Solve sparse linear systems Ax = b with the solution x:")
 print(x)
-print(f">>>> Computation was successful?: {isSuccess}")
+print(f">>>> Computation succeed: {success}")
 # outputs:
 # >>>> Solve sparse linear systems Ax = b with the solution x:
 # [0.5 0.  0.  0.5]

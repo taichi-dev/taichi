@@ -40,8 +40,12 @@ def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
 @kernel
 def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
     offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], substitute it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+
     for I in grouped(tensor):
-        arr[I - offset] = tensor[I]
+        arr[I - offset_new] = tensor[I]
 
 
 @kernel

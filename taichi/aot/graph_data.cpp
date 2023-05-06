@@ -44,6 +44,41 @@ void CompiledGraph::init_runtime_context(
     LaunchContextBuilder &ctx) {
   for (int i = 0; i < paramter_list.size(); ++i) {
     auto &symbolic_arg = paramter_list[i];
+    if (symbolic_arg.tag == aot::ArgKind::kMatrix) {
+      int size = symbolic_arg.element_shape[0] * symbolic_arg.element_shape[1];
+      for (int j = 0; j < size; j++) {
+        auto found = args.find(symbolic_arg.name + "_" + std::to_string(j));
+        TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
+                    symbolic_arg.name);
+        const aot::IValue &ival = found->second;
+        TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
+        int type_size = data_type_size(symbolic_arg.dtype());
+        switch (type_size) {
+          case 1:
+            ctx.set_struct_arg_impl(
+                {i, j}, taichi_union_cast_with_different_sizes<int8>(ival.val));
+            break;
+          case 2:
+            ctx.set_struct_arg_impl(
+                {i, j},
+                taichi_union_cast_with_different_sizes<int16>(ival.val));
+            break;
+          case 4:
+            ctx.set_struct_arg_impl(
+                {i, j},
+                taichi_union_cast_with_different_sizes<int32>(ival.val));
+            break;
+          case 8:
+            ctx.set_struct_arg_impl(
+                {i, j},
+                taichi_union_cast_with_different_sizes<int64>(ival.val));
+            break;
+          default:
+            TI_ERROR("Unsupported type size {}", type_size);
+        }
+      }
+      continue;
+    }
     auto found = args.find(symbolic_arg.name);
     TI_ERROR_IF(found == args.end(), "Missing runtime value for {}",
                 symbolic_arg.name);
@@ -89,8 +124,7 @@ void CompiledGraph::init_runtime_context(
                   symbolic_arg.name, symbolic_arg_primitive_dtype.to_string(),
                   arr_primitive_dtype.to_string());
       ctx.set_arg_ndarray(i, *arr);
-    } else if (symbolic_arg.tag == aot::ArgKind::kScalar ||
-               symbolic_arg.tag == aot::ArgKind::kMatrix) {
+    } else if (symbolic_arg.tag == aot::ArgKind::kScalar) {
       TI_ASSERT(ival.tag == aot::ArgKind::kScalar);
       // Matrix args are flattened so they're same as scalars.
       int type_size = data_type_size(symbolic_arg.dtype());

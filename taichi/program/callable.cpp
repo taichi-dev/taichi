@@ -46,8 +46,11 @@ int Callable::insert_ndarray_param(const DataType &dt,
 
 int Callable::insert_texture_param(int total_dim, const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
-  parameter_list.emplace_back(PrimitiveType::f32, /*is_array=*/true, 0,
-                              total_dim, std::vector<int>{});
+  // FIXME: using rwtexture struct type for texture parameters because C-API
+  // does not distinguish between texture and rwtexture.
+  auto *type = TypeFactory::get_instance().get_rwtexture_struct_type();
+  parameter_list.emplace_back(type, /*is_array=*/true, 0, total_dim,
+                              std::vector<int>{});
   parameter_list.back().name = name;
   return (int)parameter_list.size() - 1;
 }
@@ -63,8 +66,9 @@ int Callable::insert_rw_texture_param(int total_dim,
                                       BufferFormat format,
                                       const std::string &name) {
   // FIXME: we shouldn't abuse is_array for texture parameters
-  parameter_list.emplace_back(PrimitiveType::f32, /*is_array=*/true, 0,
-                              total_dim, std::vector<int>{}, format);
+  auto *type = TypeFactory::get_instance().get_rwtexture_struct_type();
+  parameter_list.emplace_back(type, /*is_array=*/true, 0, total_dim,
+                              std::vector<int>{}, format);
   parameter_list.back().name = name;
   return (int)parameter_list.size() - 1;
 }

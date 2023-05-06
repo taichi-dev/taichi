@@ -156,7 +156,8 @@
                         "f32": 1,
                         "ndarray": 2,
                         "texture": 3,
-                        "scalar": 4
+                        "scalar": 4,
+                        "tensor": 5
                     }
                 },
                 {
@@ -485,6 +486,60 @@
                     ]
                 },
                 {
+                    "name": "tensor_value",
+                    "type": "union",
+                    "variants": [
+                        {
+                            "name": "x8",
+                            "type": "uint8_t",
+                            "count": 128
+                        },
+                        {
+                            "name": "x16",
+                            "type": "uint16_t",
+                            "count": 64
+                        },
+                        {
+                            "name": "x32",
+                            "type": "uint32_t",
+                            "count": 32
+                        },
+                        {
+                            "name": "x64",
+                            "type": "uint64_t",
+                            "count": 16
+                        }
+                    ]
+                },
+                {
+                    "name": "tensor_value_with_length",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "length",
+                            "type": "uint32_t"
+                        },
+                        {
+                            "name": "data",
+                            "type": "union.tensor_value"
+                        }
+                    ]
+                },
+                {
+                    "name": "tensor",
+                    "type": "structure",
+                    "fields": [
+                        {
+                            "name": "type",
+                            "type": "enumeration.data_type"
+                        },
+                        {
+                            "name": "contents",
+                            "type": "structure.tensor_value_with_length"
+                        }
+                    ]
+                },
+                {
                     "name": "argument_value",
                     "type": "union",
                     "since": "v1.4.0",
@@ -508,6 +563,10 @@
                         {
                             "name": "scalar",
                             "type": "structure.scalar"
+                        },
+                        {
+                            "name": "tensor",
+                            "type": "structure.tensor"
                         }
                     ]
                 },

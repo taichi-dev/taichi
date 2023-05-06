@@ -17,7 +17,6 @@ struct RuntimeContext {
 
   LLVMRuntime *runtime{nullptr};
 
-  int32_t extra_args[taichi_max_num_args_extra][taichi_max_num_indices];
   int32_t cpu_thread_id;
 
   // We move the pointer of result buffer from LLVMRuntime to RuntimeContext
@@ -25,8 +24,6 @@ struct RuntimeContext {
   // LLVMRuntime is shared among functions. So we moved the pointer to
   // RuntimeContext which each function have one.
   uint64_t *result_buffer;
-
-  static constexpr size_t extra_args_size = sizeof(extra_args);
 };
 
 #if defined(TI_RUNTIME_HOST)

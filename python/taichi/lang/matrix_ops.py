@@ -219,7 +219,7 @@ def any(mat):  # pylint: disable=W0622
 @preconditions(assert_tensor)
 @pyfunc
 def all(mat):  # pylint: disable=W0622
-    return _reduce(mat != 0, ops_mod.logical_and) & True
+    return _reduce(mat != 0, ops_mod.logical_and) and True
 
 
 @preconditions(assert_tensor)

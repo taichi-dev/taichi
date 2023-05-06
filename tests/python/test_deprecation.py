@@ -9,21 +9,6 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_deprecate_a_atomic_b():
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"a\.atomic_add\(b\) is deprecated, and it will be removed in Taichi v1.6.0.",
-    ):
-
-        @ti.kernel
-        def func():
-            a = 1
-            a.atomic_add(2)
-
-        func()
-
-
-@test_utils.test()
 def test_deprecate_element_shape_scalar():
     with pytest.warns(
         DeprecationWarning,
@@ -96,22 +81,6 @@ def test_deprecate_is_is_not():
 
         func()
 
-
-@test_utils.test()
-def test_deprecate_ndrange():
-    with pytest.warns(
-        DeprecationWarning,
-        match="Ndrange for loop with number of the loop variables not equal to "
-        "the dimension of the ndrange is deprecated, "
-        "and it will be removed in Taichi 1.6.0. ",
-    ):
-
-        @ti.kernel
-        def func():
-            for i in ti.ndrange(4, 4):
-                pass
-
-        func()
 
 
 @test_utils.test()

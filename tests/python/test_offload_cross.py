@@ -133,3 +133,24 @@ def test_offload_with_cross_if_inside_for():
                 print("OK")
 
     run(2)
+
+
+@test_utils.test(exclude=ti.amdgpu)
+def test_offload_with_save():
+    a = ti.Vector.field(2, dtype=ti.f32, shape=1)
+    b = ti.Vector.field(2, dtype=ti.f32, shape=1)
+    c = ti.Vector.field(2, dtype=ti.f32, shape=1)
+
+    @ti.kernel
+    def test():
+        a[0] = ti.Vector([1, 1])
+        b[0] = ti.Vector([0, 0])
+        c[0] = ti.Vector([0, 0])
+        b[0] += a[0]  # b[0] = [1, 1]
+        b[0] /= 2  # b[0] = [0.5, 0.5]
+        for i in c:
+            c[i] += b[0]  # c[0] = [0.5, 0.5]
+
+    test()
+    assert c[0][0] == 0.5
+    assert c[0][1] == 0.5

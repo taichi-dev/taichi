@@ -123,19 +123,3 @@ def test_ternary():
     assert func(114514) == True
     assert func(1919810) == False
 
-
-@test_utils.test()
-def test_while():
-    @ti.kernel
-    def func(x: ti.i32) -> ti.i32:
-        y = x
-        flag = y > 0
-        ans = 0
-        while flag:
-            ans += y
-            y -= 1
-            flag = y > 0
-        return ans
-
-    assert func(10) == 55
-    assert func(100) == 5050

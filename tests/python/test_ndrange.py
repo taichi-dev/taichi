@@ -312,20 +312,6 @@ def test_static_ndrange_should_accept_numpy_integer():
     example()
 
 
-@test_utils.test(exclude=[ti.amdgpu])
-def test_n_loop_var_neq_dimension():
-    @ti.kernel
-    def iter():
-        for i in ti.ndrange(1, 4):
-            print(i)
-
-    with pytest.warns(
-        DeprecationWarning,
-        match="Ndrange for loop with number of the loop variables not equal to",
-    ):
-        iter()
-
-
 @test_utils.test(exclude=[ti.cc])
 def test_2d_loop_over_ndarray():
     @ti.kernel
@@ -336,3 +322,19 @@ def test_2d_loop_over_ndarray():
 
     array = ti.ndarray(ti.i32, shape=(16,))
     foo(array)
+
+
+@test_utils.test()
+def test_dimension_error():
+    with pytest.raises(
+        ti.TaichiSyntaxError,
+        match="Ndrange for loop with number of the loop variables not equal to "
+        "the dimension of the ndrange is not supported",
+    ):
+
+        @ti.kernel
+        def func():
+            for i in ti.ndrange(4, 4):
+                pass
+
+        func()

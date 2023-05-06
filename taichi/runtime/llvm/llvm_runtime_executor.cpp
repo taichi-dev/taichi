@@ -566,7 +566,7 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 #if defined(TI_WITH_CUDA)
     const auto total_mem = CUDAContext::get_instance().get_total_memory();
     if (config_.device_memory_fraction == 0) {
-      TI_ASSERT(config_.device_memory_GB > 0);
+      TI_ASSERT(config_.device_memory_GB >= 0);
       prealloc_size = std::size_t(config_.device_memory_GB * (1UL << 30));
     } else {
       prealloc_size = std::size_t(config_.device_memory_fraction * total_mem);
@@ -574,12 +574,18 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 
     if (CUDAContext::get_instance().supports_mem_pool()) {
       // TODO(zhanlue): List all runtime objects and calculate the exact size
-      std::size_t runtime_init_memory = 100 * (1UL << 20);  // 100 MB
+      std::size_t runtime_init_memory = 50 * (1UL << 20);  // 50 MB
 
-      // Only preallocate for Runtime Objects & Sparse
-      float sparse_memory_fraction = 0.2f;
-      prealloc_size =
-          sparse_memory_fraction * prealloc_size + runtime_init_memory;
+      // TODO(zhanlue): Split preallocation memory into sparse, host, and
+      // runtime objects
+      //                Then migrate sparse preallocation to
+      //                initialize_llvm_runtime_snodes()
+      // Unfortunately, we can't decide whether there's sparse SNode at this
+      // moment. This is because preallocation happens at the very beginning
+      // where ti.init() is performed.
+
+      // End users can set "device_memory_GB = 0" if non-sparse SNodes are used.
+      prealloc_size = std::max(prealloc_size, runtime_init_memory);
     }
 
     TI_ASSERT(prealloc_size <= total_mem);

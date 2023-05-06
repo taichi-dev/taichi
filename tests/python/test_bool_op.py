@@ -122,4 +122,3 @@ def test_ternary():
 
     assert func(114514) == True
     assert func(1919810) == False
-

@@ -278,7 +278,7 @@ def test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
-@test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
+@test_utils.test(arch=[ti.cuda])
 def test_ndarray_caching_allocator():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))

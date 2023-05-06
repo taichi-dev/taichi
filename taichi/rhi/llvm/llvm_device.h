@@ -10,7 +10,6 @@ struct LLVMRuntime;
 class LlvmDevice : public Device {
  public:
   struct LlvmRuntimeAllocParams : AllocParams {
-    bool use_cached{true};
     JITModule *runtime_jit{nullptr};
     LLVMRuntime *runtime{nullptr};
     uint64 *result_buffer{nullptr};

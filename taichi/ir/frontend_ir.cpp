@@ -357,8 +357,8 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
                                   !is_integral(rhs_type.get_element_type())))
     error();
   if (binary_is_logical(type) &&
-      (is_tensor_op || lhs_type != PrimitiveType::u1 ||
-       rhs_type != PrimitiveType::u1))
+      (lhs_type.get_element_type() != PrimitiveType::u1 ||
+       rhs_type.get_element_type() != PrimitiveType::u1))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::u1);

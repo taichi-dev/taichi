@@ -68,8 +68,8 @@ function run-it {
     KEYS=${3:-"not torch and not paddle"}
 
     if [[ $TI_WANTED_ARCHS == *"$1"* ]]; then
-        python3 tests/run_tests.py -vr2 -t$PARALLELISM -k "test_if" -m "not run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
-        python3 tests/run_tests.py -vr2 -t1 -k "test_if" -m "run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
+        python3 tests/run_tests.py -vr2 -t$PARALLELISM -k "$KEYS" -m "not run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
+        python3 tests/run_tests.py -vr2 -t1 -k "$KEYS" -m "run_in_serial ${EXTRA_TEST_MARKERS:+and $EXTRA_TEST_MARKERS}" -a $ARCH
     fi
 }
 

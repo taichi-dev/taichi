@@ -1111,11 +1111,11 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
 DEFINE_BUILDER_CMP_UOP(eq, Equal);
 DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
 
-#define DEFINE_BUILDER_LOGICAL_OP(_OpName, _Op)                            \
-  Value IRBuilder::_OpName(Value a, Value b) {                             \
-    TI_ASSERT(a.stype.id == b.stype.id);                                   \
-    TI_ASSERT(a.stype.dt->is_primitive(PrimitiveTypeID::u1));              \
-    return make_value(spv::OpLogical##_Op, t_bool_, a, b);                 \
+#define DEFINE_BUILDER_LOGICAL_OP(_OpName, _Op)               \
+  Value IRBuilder::_OpName(Value a, Value b) {                \
+    TI_ASSERT(a.stype.id == b.stype.id);                      \
+    TI_ASSERT(a.stype.dt->is_primitive(PrimitiveTypeID::u1)); \
+    return make_value(spv::OpLogical##_Op, t_bool_, a, b);    \
   }
 
 DEFINE_BUILDER_LOGICAL_OP(logical_and, And);

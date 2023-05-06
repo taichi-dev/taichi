@@ -82,23 +82,6 @@ def test_deprecate_is_is_not():
         func()
 
 
-@test_utils.test()
-def test_deprecate_ndrange():
-    with pytest.warns(
-        DeprecationWarning,
-        match="Ndrange for loop with number of the loop variables not equal to "
-        "the dimension of the ndrange is deprecated, "
-        "and it will be removed in Taichi 1.6.0. ",
-    ):
-
-        @ti.kernel
-        def func():
-            for i in ti.ndrange(4, 4):
-                pass
-
-        func()
-
-
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=ti.cpu)
 def test_deprecate_ti_ui_window():

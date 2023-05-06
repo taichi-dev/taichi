@@ -2,7 +2,7 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(require=ti.extension.quant, debug=True, cfg_optimization=False)
+@test_utils.test(require=ti.extension.quant, debug=True, cfg_optimization=False, device_memory_GB=2)
 def test_vectorized_struct_for():
     qu1 = ti.types.quant.int(1, False)
 

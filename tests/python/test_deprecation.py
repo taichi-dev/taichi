@@ -82,7 +82,6 @@ def test_deprecate_is_is_not():
         func()
 
 
-
 @test_utils.test()
 def test_deprecation_in_taichi_init_py():
     with pytest.warns(

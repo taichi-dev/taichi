@@ -150,14 +150,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified III");
   irpass::analysis::verify(ir);
-
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
 }
 
 void offload_to_executable(IRNode *ir,

@@ -609,7 +609,8 @@ class TaskCodegen : public IRVisitor {
       auto buffer_value =
           get_buffer_value(BufferType::Args, PrimitiveType::i32);
       bool is_bool = arg_type->is_primitive(PrimitiveTypeID::u1);
-      const auto val_type = is_bool ? ir_->u32_type() : args_struct_types_.at(arg_id);
+      const auto val_type =
+          is_bool ? ir_->u32_type() : args_struct_types_.at(arg_id);
       spirv::Value buffer_val = ir_->make_value(
           spv::OpAccessChain,
           ir_->get_pointer_type(val_type, spv::StorageClassUniform),
@@ -621,9 +622,8 @@ class TaskCodegen : public IRVisitor {
       }
       spirv::Value val = ir_->load_variable(buffer_val, val_type);
       if (is_bool) {
-        val = ir_->make_value(
-            spv::OpINotEqual, ir_->bool_type(), val,
-            ir_->uint_immediate_number(ir_->u32_type(), 0));
+        val = ir_->make_value(spv::OpINotEqual, ir_->bool_type(), val,
+                              ir_->uint_immediate_number(ir_->u32_type(), 0));
       }
       ir_->register_value(stmt->raw_name(), val);
     }
@@ -648,8 +648,7 @@ class TaskCodegen : public IRVisitor {
         val_type = ir_->i32_type();
       }
       spirv::Value buffer_val = ir_->make_value(
-          spv::OpAccessChain,
-          ir_->get_storage_pointer_type(val_type),
+          spv::OpAccessChain, ir_->get_storage_pointer_type(val_type),
           get_buffer_value(BufferType::Rets, dt),
           ir_->int_immediate_number(ir_->i32_type(), 0),
           ir_->int_immediate_number(ir_->i32_type(), i));
@@ -1160,7 +1159,7 @@ class TaskCodegen : public IRVisitor {
 
 #define BINARY_OP_TO_SPIRV_BITWISE(op, sym)                                \
   else if (op_type == BinaryOpType::op) {                                  \
-    /*TI_ASSERT(!dst_type.dt->is_primitive(PrimitiveTypeID::u1));*/            \
+    /*TI_ASSERT(!dst_type.dt->is_primitive(PrimitiveTypeID::u1));*/        \
     bin_value = ir_->make_value(spv::sym, dst_type, lhs_value, rhs_value); \
   }
 

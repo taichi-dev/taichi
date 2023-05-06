@@ -163,11 +163,9 @@ class TaskCodegen : public IRVisitor {
       return;
     }
 
+    std::string formats;
+    std::vector<Value> vals;
     for (auto i = 0; i < stmt->contents.size(); ++i) {
-      std::string format_to_print;
-      Value val_to_print;
-      bool has_val_to_print = false;
-
       auto const &content = stmt->contents[i];
       auto const &format = stmt->formats[i];
       if (std::holds_alternative<Stmt *>(content)) {
@@ -175,8 +173,7 @@ class TaskCodegen : public IRVisitor {
         TI_ASSERT(!arg_stmt->ret_type->is<TensorType>());
 
         auto value = ir_->query_value(arg_stmt->raw_name());
-        val_to_print = value;
-        has_val_to_print = true;
+        vals.push_back(value);
 
         auto &&merged_format = merge_printf_specifier(
             format, data_type_format(arg_stmt->ret_type));
@@ -208,38 +205,15 @@ class TaskCodegen : public IRVisitor {
               format_length);
           format_length.clear();
         }
-        format_to_print =
+        formats +=
             "%" +
             format_precision.append(format_length).append(format_conversion);
       } else {
         auto arg_str = std::get<std::string>(content);
-        format_to_print = sanitize_format_string(arg_str);
-      }
-
-      // Vulkan does not support either strings nor booleans to be formatted.
-      // To print boolean values, we should put "True" or "False" in format
-      // strings based on the value of boolean types.
-      if (val_to_print.stype.dt->is_primitive(PrimitiveTypeID::u1)) {
-        spirv::Label then_label = ir_->new_label();
-        spirv::Label merge_label = ir_->new_label();
-        spirv::Label else_label = ir_->new_label();
-        ir_->make_inst(spv::OpSelectionMerge, merge_label,
-                       spv::SelectionControlMaskNone);
-        ir_->make_inst(spv::OpBranchConditional, val_to_print, then_label,
-                       else_label);
-        ir_->start_label(then_label);
-        ir_->call_debugprintf("True", std::vector<Value>());
-        ir_->make_inst(spv::OpBranch, merge_label);
-        ir_->start_label(else_label);
-        ir_->call_debugprintf("False", std::vector<Value>());
-        ir_->make_inst(spv::OpBranch, merge_label);
-        ir_->start_label(merge_label);
-      } else {
-        ir_->call_debugprintf(
-            format_to_print, has_val_to_print ? std::vector<Value>{val_to_print}
-                                              : std::vector<Value>());
+        formats += sanitize_format_string(arg_str);
       }
     }
+    ir_->call_debugprintf(formats, vals);
   }
 
   void visit(ConstStmt *const_stmt) override {

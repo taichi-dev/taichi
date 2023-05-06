@@ -1003,11 +1003,8 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
       return builder->CreateZExt(to_print,
                                  tlctx->get_data_type(PrimitiveType::u16));
     if (dtype->is_primitive(PrimitiveTypeID::u1))
-      return builder->CreateSelect(
-          builder->CreateTrunc(builder->CreateIsNotNull(to_print),
-                               tlctx->get_data_type(PrimitiveType::u1)),
-          builder->CreateGlobalStringPtr("True", "u1_true_value"),
-          builder->CreateGlobalStringPtr("False", "u1_false_value"));
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i32));
     return to_print;
   };
   for (auto i = 0; i < stmt->contents.size(); ++i) {

@@ -533,24 +533,19 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
         local_to_global_offset_.at(stmt), ret_type);
     auto offloaded = stmt_to_offloaded_[stmt];
     stmt_to_offloaded_[ptr] = offloaded;
+
+    TypedConstant zero(stmt->ret_type.get_element_type());
+    auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
     if (auto tensor_type = stmt->ret_type->cast<TensorType>()) {
-      TypedConstant zero(tensor_type->get_element_type());
-      auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
-      stmt_to_offloaded_[const_zero_stmt] = offloaded;
-      for (int i = 0; i < tensor_type->get_num_elements(); ++i) {
-        auto const_offset_stmt =
-            replacement.push_back<ConstStmt>(TypedConstant(i));
-        auto ptr_offset_stmt =
-            replacement.push_back<MatrixPtrStmt>(ptr, const_offset_stmt);
-        auto global_store_stmt = replacement.push_back<GlobalStoreStmt>(
-            ptr_offset_stmt, const_zero_stmt);
-        stmt_to_offloaded_[const_offset_stmt] = offloaded;
-        stmt_to_offloaded_[ptr_offset_stmt] = offloaded;
-        stmt_to_offloaded_[global_store_stmt] = offloaded;
-      }
+      std::vector<Stmt *> zero_values(tensor_type->get_num_elements(),
+                                      const_zero_stmt);
+      auto zero_matrix_init_stmt =
+          replacement.push_back<MatrixInitStmt>(zero_values);
+      zero_matrix_init_stmt->ret_type = stmt->ret_type.ptr_removed();
+      auto global_store_stmt =
+          replacement.push_back<GlobalStoreStmt>(ptr, zero_matrix_init_stmt);
+      stmt_to_offloaded_[global_store_stmt] = offloaded;
     } else {
-      TypedConstant zero(stmt->ret_type);
-      auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
       auto global_store_stmt =
           replacement.push_back<GlobalStoreStmt>(ptr, const_zero_stmt);
       stmt_to_offloaded_[global_store_stmt] = offloaded;

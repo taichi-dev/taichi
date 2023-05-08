@@ -188,6 +188,10 @@ const Type *TypeFactory::get_ndarray_struct_type(DataType dt,
   return get_struct_type(members);
 }
 
+const Type *TypeFactory::get_rwtexture_struct_type() {
+  return get_ndarray_struct_type(PrimitiveType::f32, 3);
+}
+
 namespace {
 static bool compare_types(DataType x, DataType y) {
   // Is the first type "bigger" than the second type?

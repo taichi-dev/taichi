@@ -54,7 +54,7 @@ TEST(LlvmAotTest, CpuKernel) {
   builder.set_arg_ndarray(/*arg_id=*/1, arr);
   std::vector<int> vec = {1, 2, 3};
   for (int i = 0; i < vec.size(); ++i) {
-    builder.set_arg(/*arg_id=*/i + 2, vec[i]);
+    builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);
   }
   k_run->launch(builder);
 
@@ -100,7 +100,7 @@ TEST(LlvmAotTest, CudaKernel) {
     builder.set_arg_ndarray(/*arg_id=*/1, arr);
     std::vector<int> vec = {1, 2, 3};
     for (int i = 0; i < vec.size(); ++i) {
-      builder.set_arg(/*arg_id=*/i + 2, vec[i]);
+      builder.set_struct_arg(/*arg_indices=*/{2, i}, vec[i]);
     }
     k_run->launch(builder);
 

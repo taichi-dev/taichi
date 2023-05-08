@@ -85,6 +85,30 @@ def test_scalr_field_from_numpy(dtype, shape):
 
 
 @pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize("shape, offset", [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))])
+@test_utils.test(arch=get_host_arch_list())
+def test_scalr_field_from_numpy_with_offset(dtype, shape, offset):
+    import numpy as np
+
+    x = ti.field(dtype=dtype, shape=shape, offset=offset)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    arr = np.ones(shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+    def mat_equal(A, B, tol=1e-6):
+        return np.max(np.abs(A - B)) < tol
+
+    tol = 1e-5 if dtype == ti.f32 else 1e-12
+    assert mat_equal(x.to_numpy(), arr, tol=tol)
+
+
+@pytest.mark.parametrize("dtype", data_types)
 @pytest.mark.parametrize("shape", field_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):

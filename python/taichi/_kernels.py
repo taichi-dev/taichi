@@ -148,8 +148,12 @@ def tensor_to_tensor(tensor: template(), other: template()):
 
 @kernel
 def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
+    offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(tensor):
-        tensor[I] = arr[I]
+        tensor[I] = arr[I - offset_new]
 
 
 @kernel

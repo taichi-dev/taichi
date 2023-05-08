@@ -107,20 +107,28 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
 
 @kernel
 def tensor_to_image(tensor: template(), arr: ndarray_type.ndarray()):
+    offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(tensor):
         t = ops.cast(tensor[I], f32)
-        arr[I, 0] = t
-        arr[I, 1] = t
-        arr[I, 2] = t
+        arr[I - offset_new, 0] = t
+        arr[I - offset_new, 1] = t
+        arr[I - offset_new, 2] = t
 
 
 @kernel
 def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
+    offset = static(mat.snode.ptr.offset)
+    shape = static(mat.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(mat):
         for p in static(range(mat.n)):
-            arr[I, p] = ops.cast(mat[I][p], f32)
+            arr[I - offset_new, p] = ops.cast(mat[I][p], f32)
             if static(mat.n <= 2):
-                arr[I, 2] = 0
+                arr[I - offset_new, 2] = 0
 
 
 @kernel

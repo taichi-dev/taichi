@@ -32,13 +32,17 @@ def test_save_image_without_window(dtype):
 
 
 @pytest.mark.parametrize("fast_gui", [True, False])
+@pytest.mark.parametrize("dtype, color", [(ti.u8, 128), (ti.f32, 0.5), (ti.f64, 0.5)])
+@pytest.mark.parametrize("offset", [(-299, -299), (-150, -150), (0, 0), (150, 150), (299, 299)])
 @test_utils.test(arch=get_host_arch_list())
-def test_set_image_with_offset(fast_gui):
+def test_set_image_with_offset(fast_gui, offset, dtype, color):
     n = 300
     shape = (n, n)
-    offset = (-(n-1), -(n-1))
-    img = ti.Vector.field(dtype=ti.uint8, n = 3, shape=shape, offset=offset)
-    img.fill(128);
+    if fast_gui is True or dtype is ti.f64:
+        img = ti.Vector.field(dtype=dtype, n = 3, shape=shape, offset=offset)
+    else:
+        img = ti.field(dtype=dtype, shape=shape, offset=offset)
+    img.fill(color);
 
     gui = ti.GUI(name='test', res=shape, show_gui=False, fast_gui=fast_gui)
     gui.set_image(img)

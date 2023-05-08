@@ -1,5 +1,4 @@
 import pathlib
-import warnings
 
 import numpy
 from taichi._kernels import (
@@ -144,20 +143,6 @@ class Window:
             tuple : (width, height)
         """
         return self.window.get_window_shape()
-
-    def write_image(self, filename):
-        """Save the window content to an image file. This is an deprecated
-        interface; please use `save_image` instead.
-
-        Args:
-            filename (str): output filename.
-        """
-        warnings.warn(
-            "`Window.write_image()` is deprecated, and it will be removed in Taichi v1.6.0. "
-            "Please use `Window.save_image()` instead.",
-            DeprecationWarning,
-        )
-        return self.save_image(filename)
 
     def save_image(self, filename):
         """Save the window content to an image file.

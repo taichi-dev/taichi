@@ -9,21 +9,6 @@ from tests import test_utils
 
 
 @test_utils.test()
-def test_deprecate_a_atomic_b():
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"a\.atomic_add\(b\) is deprecated, and it will be removed in Taichi v1.6.0.",
-    ):
-
-        @ti.kernel
-        def func():
-            a = 1
-            a.atomic_add(2)
-
-        func()
-
-
-@test_utils.test()
 def test_deprecate_element_shape_scalar():
     with pytest.warns(
         DeprecationWarning,
@@ -84,55 +69,14 @@ def test_deprecate_rwtexture_ndim():
 
 
 @test_utils.test()
-def test_deprecate_is_is_not():
-    with pytest.warns(
-        DeprecationWarning,
-        match='Operator "is" in Taichi scope is deprecated, ' "and it will be removed in Taichi v1.6.0.",
-    ):
+def test_remove_is_is_not():
+    with pytest.raises(ti.TaichiSyntaxError, match='Operator "is" in Taichi scope is not supported'):
 
         @ti.kernel
         def func():
             ti.static(1 is 2)
 
         func()
-
-
-@test_utils.test()
-def test_deprecate_ndrange():
-    with pytest.warns(
-        DeprecationWarning,
-        match="Ndrange for loop with number of the loop variables not equal to "
-        "the dimension of the ndrange is deprecated, "
-        "and it will be removed in Taichi 1.6.0. ",
-    ):
-
-        @ti.kernel
-        def func():
-            for i in ti.ndrange(4, 4):
-                pass
-
-        func()
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=ti.cpu)
-def test_deprecate_ti_ui_window():
-    window = ti.ui.Window("Diff SPH", (256, 256), show_window=False)
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"`Window\.write_image\(\)` is deprecated, and it will be removed in Taichi v1\.6\.0\. ",
-    ):
-        window.write_image("deprecate.png")
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=ti.cpu)
-def test_deprecate_ti_ui_make_camera():
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"`ti\.ui\.make_camera\(\)` is deprecated, and will be removed in Taichi v1\.6\.0\. ",
-    ):
-        ti.ui.make_camera()
 
 
 @test_utils.test()

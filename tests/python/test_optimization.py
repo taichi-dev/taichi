@@ -143,3 +143,13 @@ def test_parallel_assignment():
     for i in range(3):
         for j in range(4):
             assert mat[i, j] == i + 1
+
+
+@test_utils.test()
+def test_casts_int_uint():
+    @ti.kernel
+    def my_cast(x: ti.f32) -> ti.u32:
+        y = ti.floor(x, ti.i32)
+        return ti.cast(y, ti.u32)
+
+    assert my_cast(-1) == 4294967295

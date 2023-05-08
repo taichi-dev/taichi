@@ -142,7 +142,7 @@ def tensor_to_tensor(tensor: template(), other: template()):
     other_offset_new = static([0] * len(other_shape) if len(other_offset) == 0 else other_offset)
 
     for I in grouped(ndrange(*tensor_shape)):
-        print('index ', I)
+        print("index ", I)
         tensor[I + tensor_offset_new] = other[I + other_offset_new]
 
 

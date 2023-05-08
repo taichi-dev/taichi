@@ -149,14 +149,14 @@ def test_offset_must_throw_matrix():
 
 @test_utils.test(arch=get_host_arch_list())
 def test_field_offset_print():
-    val = ti.field(dtype=ti.f32, shape=(3,3), offset=(-1, -1))
+    val = ti.field(dtype=ti.f32, shape=(3, 3), offset=(-1, -1))
     val.fill(1.0)
     print(val)
 
 
 @test_utils.test(arch=get_host_arch_list())
 def test_field_offset_to_numpy():
-    shape = (3,3)
-    val =  ti.field(dtype=ti.f32, shape=shape, offset=(-1, -1))
+    shape = (3, 3)
+    val = ti.field(dtype=ti.f32, shape=shape, offset=(-1, -1))
     val.fill(1.0)
     assert np.allclose(val.to_numpy(), np.ones(shape, dtype=np.float32))

@@ -85,7 +85,10 @@ def test_scalr_field_from_numpy(dtype, shape):
 
 
 @pytest.mark.parametrize("dtype", data_types)
-@pytest.mark.parametrize("shape, offset", [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))])
+@pytest.mark.parametrize(
+    "shape, offset",
+    [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))],
+)
 @test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_offset(dtype, shape, offset):
     import numpy as np
@@ -273,7 +276,19 @@ def test_field_copy_from_with_mismatch_shape():
 
 
 @test_utils.test()
-@pytest.mark.parametrize("shape, x_offset, other_offset", [((), (), ()), (8, 4, 0), (8, 0, -4), (8, -4, -4), (8, 8, -4), ((6, 12), (0, 0), (-6, -6)), ((6, 12), (-6, -6), (0, 0)), ((6, 12), (-6, -6), (-6, -6))])
+@pytest.mark.parametrize(
+    "shape, x_offset, other_offset",
+    [
+        ((), (), ()),
+        (8, 4, 0),
+        (8, 0, -4),
+        (8, -4, -4),
+        (8, 8, -4),
+        ((6, 12), (0, 0), (-6, -6)),
+        ((6, 12), (-6, -6), (0, 0)),
+        ((6, 12), (-6, -6), (-6, -6)),
+    ],
+)
 @pytest.mark.parametrize("dtype", [ti.i32, ti.f32])
 def test_field_copy_from_with_offset(shape, dtype, x_offset, other_offset):
     x = ti.field(dtype=ti.f32, shape=shape, offset=x_offset)

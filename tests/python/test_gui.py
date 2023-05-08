@@ -39,11 +39,11 @@ def test_set_image_with_offset(fast_gui, offset, dtype, color):
     n = 300
     shape = (n, n)
     if fast_gui is True or dtype is ti.f64:
-        img = ti.Vector.field(dtype=dtype, n = 3, shape=shape, offset=offset)
+        img = ti.Vector.field(dtype=dtype, n=3, shape=shape, offset=offset)
     else:
         img = ti.field(dtype=dtype, shape=shape, offset=offset)
-    img.fill(color);
+    img.fill(color)
 
-    gui = ti.GUI(name='test', res=shape, show_gui=False, fast_gui=fast_gui)
+    gui = ti.GUI(name="test", res=shape, show_gui=False, fast_gui=fast_gui)
     gui.set_image(img)
     gui.show()

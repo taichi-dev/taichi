@@ -1049,8 +1049,12 @@ class ExtractLocalPointers : public BasicStmtVisitor {
   Block *top_level_;
 
   explicit ExtractLocalPointers(IRNode *root) : immediate_modifier_(root) {
-    TI_ASSERT(root->is<Block>());
-    top_level_ = root->as<Block>();
+    if (root->is<OffloadedStmt>()) {
+      top_level_ = root->as<OffloadedStmt>()->body.get();
+    } else {
+      TI_ASSERT(root->is<Block>());
+      top_level_ = root->as<Block>();
+    }
     root->accept(this);
     delayed_modifier_.modify_ir();
   }

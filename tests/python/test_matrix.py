@@ -1303,3 +1303,29 @@ def test_matrix_oob():
     #    access_mat(-1, 10)
     # with pytest.raises(AssertionError, match=r"Out of bound access"):
     #    access_mat(3, -1)
+
+
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize("shape, offset", [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))])
+@test_utils.test(arch=get_host_arch_list())
+def test_matrix_from_numpy_with_offset(dtype, shape, offset):
+    import numpy as np
+    m = 3
+    n = 4
+    x = ti.Matrix.field(dtype=dtype,m=m,n=n, shape=shape, offset=offset)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    numpy_shape = ((shape,) if isinstance(shape, int) else shape) + (n, m)
+    arr = np.ones(numpy_shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+    def mat_equal(A, B, tol=1e-6):
+        return np.max(np.abs(A - B)) < tol
+
+    tol = 1e-5 if dtype == ti.f32 else 1e-12
+    assert mat_equal(x.to_numpy(), arr, tol=tol)

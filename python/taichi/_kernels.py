@@ -214,19 +214,24 @@ def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(), as_vector: t
 
 @kernel
 def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(), as_vector: template()):
+    offset = static(mat.snode.ptr.offset)
+    shape = static(mat.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(getattr(mat, "ndim", 2) == 1):
                     if static(as_vector):
-                        mat[I][p] = arr[I, p]
+                        mat[I][p] = arr[I - offset_new, p]
                     else:
-                        mat[I][p] = arr[I, p, q]
+                        mat[I][p] = arr[I - offset_new, p, q]
                 else:
                     if static(as_vector):
-                        mat[I][p, q] = arr[I, p]
+                        mat[I][p, q] = arr[I - offset_new, p]
                     else:
-                        mat[I][p, q] = arr[I, p, q]
+                        mat[I][p, q] = arr[I - offset_new, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.

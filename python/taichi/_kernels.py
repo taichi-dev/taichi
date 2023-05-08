@@ -133,8 +133,17 @@ def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
 
 @kernel
 def tensor_to_tensor(tensor: template(), other: template()):
-    for I in grouped(tensor):
-        tensor[I] = other[I]
+    tensor_offset = static(tensor.snode.ptr.offset)
+    tensor_shape = static(tensor.shape)
+    tensor_offset_new = static([0] * len(tensor_shape) if len(tensor_offset) == 0 else tensor_offset)
+
+    other_offset = static(other.snode.ptr.offset)
+    other_shape = static(other.shape)
+    other_offset_new = static([0] * len(other_shape) if len(other_offset) == 0 else other_offset)
+
+    for I in grouped(ndrange(*tensor_shape)):
+        print('index ', I)
+        tensor[I + tensor_offset_new] = other[I + other_offset_new]
 
 
 @kernel

@@ -1303,3 +1303,12 @@ def test_matrix_oob():
     #    access_mat(-1, 10)
     # with pytest.raises(AssertionError, match=r"Out of bound access"):
     #    access_mat(3, -1)
+
+
+@test_utils.test()
+def test_matrix_dtype():
+    a = ti.types.vector(3, dtype=ti.f32)([0, 1, 2])
+    assert a.entries.dtype == np.float32
+
+    b = ti.types.matrix(2, 2, dtype=ti.i32)([[0, 1], [2, 3]])
+    assert b.entries.dtype == np.int32

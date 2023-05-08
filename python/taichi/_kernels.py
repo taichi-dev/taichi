@@ -78,10 +78,12 @@ def ndarray_matrix_to_ext_arr(
 
 @kernel
 def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
+    i_offset = static(0 if len(img.snode.ptr.offset) == 0 else img.snode.ptr.offset[0])
+    j_offset = static(1 if len(img.snode.ptr.offset) == 0 else img.snode.ptr.offset[1])
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
-        color = img[i, img.shape[1] - 1 - j]
+        color = img[i + i_offset, (img.shape[1] + j_offset) - 1 - j]
         if static(img.dtype in [f16, f32, f64]):
             r, g, b = ops.min(255, ops.max(0, int(color * 255)))[:3]
         else:

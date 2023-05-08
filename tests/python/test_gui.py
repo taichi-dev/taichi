@@ -29,3 +29,16 @@ def test_save_image_without_window(dtype):
         image = ti.tools.imread(image_path)
         delta = (image - i).sum()
         assert delta == 0, "Expected image difference to be 0 but got {} instead.".format(delta)
+
+
+@test_utils.test(arch=get_host_arch_list())
+def test_set_image_with_offset():
+    n = 300
+    shape = (n, n)
+    offset = (-(n-1), -(n-1))
+    img = ti.Vector.field(dtype=ti.uint8, n = 3, shape=shape, offset=offset)
+    img.fill(128);
+
+    gui = ti.GUI(name='test', res=shape, show_gui=False, fast_gui=True)
+    gui.set_image(img)
+    gui.show()

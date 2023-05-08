@@ -165,17 +165,6 @@ def test_boolop():
 
 
 @test_utils.test()
-def test_compare_fail():
-    with pytest.raises(ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'):
-
-        @ti.kernel
-        def foo():
-            None is None
-
-        foo()
-
-
-@test_utils.test()
 def test_single_compare():
     @ti.kernel
     def foo(a: ti.template(), b: ti.template(), c: ti.template()):

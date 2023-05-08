@@ -505,9 +505,6 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
       }
     } else if (!is_real(from.get_element_type()) &&
                !is_real(to.get_element_type())) {
-      // TI_INFO("INT Cast from " +
-      // std::to_string(llvm_val[stmt->operand]->getType()->getPrimitiveSizeInBits())
-      // + " bits type to " + to.to_string());
       llvm_val[stmt] = builder->CreateIntCast(
           llvm_val[stmt->operand], tlctx->get_data_type(to),
           is_signed(from.get_element_type()));

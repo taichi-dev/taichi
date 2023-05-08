@@ -1133,7 +1133,6 @@ class TaskCodegen : public IRVisitor {
 
 #define BINARY_OP_TO_SPIRV_BITWISE(op, sym)                                \
   else if (op_type == BinaryOpType::op) {                                  \
-    /*TI_ASSERT(!dst_type.dt->is_primitive(PrimitiveTypeID::u1));*/        \
     bin_value = ir_->make_value(spv::sym, dst_type, lhs_value, rhs_value); \
   }
 

@@ -364,45 +364,33 @@ print(ti.rescale_index(block2, block1, [3, 1]))       # output: [1, 0]
 Regarding line 1, you can also compute the `block1` index given `pixel` index `[7, 3]` as `[7//2//2, 3//2//2]`. However, doing so couples computation code with the internal configuration of data structures (in this case, the size of `block1` containers). By using `ti.rescale_index()`, you can avoid hard-coding internal information of data structures.
 
 
-## Sparse grid example
-We now show a simple example of how to use the sparse data structures to implement a sparse grid.
+## Sparse grid
+We now show an example of how to create a sparse grid with our simplified API(`ti.sparse.grid()`), and how to print the usage with `ti.sparse.usage()`.
 
 ```python
 import taichi as ti
-ti.init()
-grid_size = (10,10)
-@ti.data_oriented
-class SparseGrid():
-    def __init__(self, grid_size):
-        self.mass = ti.field(float)
-        self.pos = ti.Vector.field(3, float)
-        self.snode = ti.root.bitmasked(ti.ij, grid_size)
-        self.snode.place(self.mass)
-        self.snode.place(self.pos)
-    @ti.kernel
-    def usage(self):
-        cnt = 0
-        for I in ti.grouped(self.snode):
-            if ti.is_active(self.snode, I):
-                cnt+=1
-        usage =  cnt/(grid_size[0]*grid_size[1])
-        print("Grid usage: ", usage)
-sp = SparseGrid(grid_size=grid_size)
-pos = sp.pos
-mass = sp.mass
-```
+# create a 2D sparse grid
+grid = ti.sparse.grid(
+    {
+        "pos": ti.math.vec2,
+        "mass": ti.f32,
+        "grid2particles": ti.types.vector(20, ti.i32),
+    },
+    shape=(10, 10),
+)
 
-Use case:
+# access
+grid[0, 0].pos = ti.math.vec2(1, 2)
+grid[0, 0].mass = 1.0
+grid[0, 0].grid2particles[2] = 123
 
-```python cont
-pos[1,2] = ti.Vector([1.5,2,3])
-mass[1,0] = 0.1
-sp.usage()
+# print the usage of the sparse grid, which is in [0,1]
+ti.sparse.usage(grid)
 ```
 
 possible output:
 ```
-Grid usage:  0.020000
+Grid usage:  0.010000
 ```
 
 ## Further reading

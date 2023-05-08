@@ -79,27 +79,6 @@ def test_remove_is_is_not():
         func()
 
 
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=ti.cpu)
-def test_deprecate_ti_ui_window():
-    window = ti.ui.Window("Diff SPH", (256, 256), show_window=False)
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"`Window\.write_image\(\)` is deprecated, and it will be removed in Taichi v1\.6\.0\. ",
-    ):
-        window.write_image("deprecate.png")
-
-
-@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
-@test_utils.test(arch=ti.cpu)
-def test_deprecate_ti_ui_make_camera():
-    with pytest.warns(
-        DeprecationWarning,
-        match=r"`ti\.ui\.make_camera\(\)` is deprecated, and will be removed in Taichi v1\.6\.0\. ",
-    ):
-        ti.ui.make_camera()
-
-
 @test_utils.test()
 def test_deprecation_in_taichi_init_py():
     with pytest.warns(

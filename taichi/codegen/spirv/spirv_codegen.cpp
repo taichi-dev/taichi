@@ -2175,8 +2175,8 @@ class TaskCodegen : public IRVisitor {
       return ir_->cast(ir_->bool_type(), val_bits);
     return ti_buffer_type == dt
                ? val_bits
-               : ir_->make_value(spv::OpBitcast,
-                                 ir_->get_primitive_type(dt), val_bits);
+               : ir_->make_value(spv::OpBitcast, ir_->get_primitive_type(dt),
+                                 val_bits);
   }
 
   void store_buffer(const Stmt *ptr, spirv::Value val) {
@@ -2187,7 +2187,8 @@ class TaskCodegen : public IRVisitor {
       ti_buffer_type = val.stype.dt;
     } else if (val.stype.dt->is_primitive(PrimitiveTypeID::u1)) {
       ti_buffer_type = PrimitiveType::i32;
-      val = ir_->make_value(spv::OpSelect, ir_->u32_type(), val, ir_->const_i32_one_, ir_->const_i32_zero_);
+      val = ir_->make_value(spv::OpSelect, ir_->u32_type(), val,
+                            ir_->const_i32_one_, ir_->const_i32_zero_);
     }
 
     auto buf_ptr = at_buffer(ptr, ti_buffer_type);

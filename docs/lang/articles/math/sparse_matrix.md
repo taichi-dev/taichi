@@ -56,7 +56,7 @@ print(A)
 
 The basic operations like `+`, `-`, `*`, `@` and transpose of sparse matrices are supported now.
 
-```python
+```python cont
 print(">>>> Summation: C = A + A")
 C = A + A
 print(C)

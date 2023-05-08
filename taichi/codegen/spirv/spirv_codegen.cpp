@@ -2164,25 +2164,30 @@ class TaskCodegen : public IRVisitor {
 
     if (ptr_val.stype.dt == PrimitiveType::u64) {
       ti_buffer_type = dt;
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      ti_buffer_type = PrimitiveType::u32;
     }
 
     auto buf_ptr = at_buffer(ptr, ti_buffer_type);
     auto val_bits =
         ir_->load_variable(buf_ptr, ir_->get_primitive_type(ti_buffer_type));
-    auto ret = ti_buffer_type == dt
-                   ? val_bits
-                   : ir_->make_value(spv::OpBitcast,
-                                     ir_->get_primitive_type(dt), val_bits);
-    return ret;
+    if (dt->is_primitive(PrimitiveTypeID::u1))
+      return ir_->cast(ir_->bool_type(), val_bits);
+    return ti_buffer_type == dt
+               ? val_bits
+               : ir_->make_value(spv::OpBitcast,
+                                 ir_->get_primitive_type(dt), val_bits);
   }
 
   void store_buffer(const Stmt *ptr, spirv::Value val) {
     spirv::Value ptr_val = ir_->query_value(ptr->raw_name());
-
     DataType ti_buffer_type = ir_->get_taichi_uint_type(val.stype.dt);
 
     if (ptr_val.stype.dt == PrimitiveType::u64) {
       ti_buffer_type = val.stype.dt;
+    } else if (val.stype.dt->is_primitive(PrimitiveTypeID::u1)) {
+      ti_buffer_type = PrimitiveType::i32;
+      val = ir_->make_value(spv::OpSelect, ir_->u32_type(), val, ir_->const_i32_one_, ir_->const_i32_zero_);
     }
 
     auto buf_ptr = at_buffer(ptr, ti_buffer_type);

@@ -135,14 +135,6 @@ void compile_to_offloads(IRNode *ir,
   print("Offloaded");
   irpass::analysis::verify(ir);
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().
   if (config.opt_level > 0 && config.cfg_optimization) {
@@ -191,17 +183,17 @@ void offload_to_executable(IRNode *ir,
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
 
+  if (config.cache_loop_invariant_global_vars) {
+    irpass::cache_loop_invariant_global_vars(ir, config);
+    print("Cache loop-invariant global vars");
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Scalarized");
-  }
-
-  if (config.cache_loop_invariant_global_vars) {
-    irpass::cache_loop_invariant_global_vars(ir, config);
-    print("Cache loop-invariant global vars");
   }
 
   if (config.demote_dense_struct_fors) {

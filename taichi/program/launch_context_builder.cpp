@@ -137,10 +137,6 @@ void LaunchContextBuilder::set_arg<TypedConstant>(int i, TypedConstant d) {
   }
 }
 
-void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
-  ctx_->extra_args[i][j] = d;
-}
-
 template <typename T>
 void LaunchContextBuilder::set_struct_arg_impl(std::vector<int> arg_indices,
                                                T v) {
@@ -259,8 +255,8 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
   array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
-  for (int i = 0; i < shape.size(); i++) {
-    ctx_->extra_args[arg_id][i] = shape[i];
+  for (int i = 0; i < shape.size(); ++i) {
+    set_struct_arg({arg_id, 0, i}, shape[i]);
   }
 }
 

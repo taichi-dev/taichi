@@ -227,7 +227,7 @@
 #pragma once
 
 #ifndef TI_C_API_VERSION
-#define TI_C_API_VERSION 1005000
+#define TI_C_API_VERSION 1007000
 #endif  // TI_C_API_VERSION
 
 #ifndef TAICHI_H
@@ -463,6 +463,8 @@ typedef enum TiArgumentType {
   TI_ARGUMENT_TYPE_TEXTURE = 3,
   // Typed scalar.
   TI_ARGUMENT_TYPE_SCALAR = 4,
+  // Typed tensor.
+  TI_ARGUMENT_TYPE_TENSOR = 5,
   TI_ARGUMENT_TYPE_MAX_ENUM = 0xffffffff,
 } TiArgumentType;
 
@@ -802,6 +804,36 @@ typedef struct TiScalar {
   TiScalarValue value;
 } TiScalar;
 
+// Union `TiTensorValue`
+//
+// Tensor value represented by a power-of-two number of bits.
+typedef union TiTensorValue {
+  // Tensor value that fits into 8 bits.
+  uint8_t x8[128];
+  // Tensor value that fits into 16 bits.
+  uint16_t x16[64];
+  // Tensor value that fits into 32 bits.
+  uint32_t x32[32];
+  // Tensor value that fits into 64 bits.
+  uint64_t x64[16];
+} TiTensorValue;
+
+// Structure `TiTensorValueWithLength`
+//
+// A tensor value with a length.
+typedef struct TiTensorValueWithLength {
+  uint32_t length;
+  TiTensorValue data;
+} TiTensorValueWithLength;
+
+// Structure `TiTensor`
+//
+// A typed tensor value.
+typedef struct TiTensor {
+  TiDataType type;
+  TiTensorValueWithLength contents;
+} TiTensor;
+
 // Union `TiArgumentValue` (1.4.0)
 //
 // A scalar or structured argument value.
@@ -818,6 +850,8 @@ typedef union TiArgumentValue {
   TiTexture texture;
   // An scalar to be bound.
   TiScalar scalar;
+  // A tensor to be bound.
+  TiTensor tensor;
 } TiArgumentValue;
 
 // Structure `TiArgument` (1.4.0)

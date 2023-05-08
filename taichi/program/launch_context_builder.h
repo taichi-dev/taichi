@@ -57,7 +57,6 @@ class LaunchContextBuilder {
 
   template <typename T>
   T get_ret(int i);
-  void set_extra_arg_int(int i, int j, int32 d);
 
   void set_arg_external_array_with_shape(int arg_id,
                                          uintptr_t ptr,

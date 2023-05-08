@@ -31,3 +31,5 @@ docs/lang/articles/visualization/ggui.md
 docs/lang/articles/visualization/gui_system.md
 docs/rfcs/20220410-rfc-process.md
 docs/rfcs/yyyymmdd-rfc-template.md
+docs/lang/articles/math/linear_solver.md
+docs/lang/articles/math/sparse_matrix.md

@@ -16,6 +16,13 @@ from taichi.ui import GUI, hex_to_rgb, rgb_to_hex, ui
 # Issue#2223: Do not reorder, or we're busted with partially initialized module
 from taichi import aot  # isort:skip
 
+
+def __getattr__(attr):
+    if attr == "cfg":
+        return None if lang.impl.get_runtime().prog is None else lang.impl.current_cfg()
+    raise AttributeError(f"module '{__name__}' has no attribute '{attr}'")
+
+
 __version__ = (
     _ti_core.get_version_major(),
     _ti_core.get_version_minor(),

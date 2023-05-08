@@ -23,6 +23,7 @@ class KernelLauncher : public LLVM::KernelLauncher {
       const LLVM::CompiledKernelData &compiled) override;
 
  private:
+  bool on_amdgpu_device(void *ptr);
   std::vector<Context> contexts_;
 };
 

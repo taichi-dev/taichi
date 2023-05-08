@@ -19,9 +19,10 @@ from taichi.math import vec3
 
 # A set of helper (meta)functions
 @kernel
-def fill_tensor(tensor: template(), val: template()):
-    for I in grouped(tensor):
-        tensor[I] = val
+def fill_field(field: template(), val: template()):
+    value = ops.cast(val, field.dtype)
+    for I in grouped(field):
+        field[I] = value
 
 
 @kernel
@@ -33,7 +34,7 @@ def fill_ndarray(ndarray: ndarray_type.ndarray(), val: template()):
 @kernel
 def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
     for I in grouped(ndarray):
-        ndarray[I].fill(val)
+        ndarray[I] = val
 
 
 @kernel
@@ -225,14 +226,6 @@ def clear_gradients(_vars: template()):
     for I in grouped(ScalarField(Expr(_vars[0]))):
         for s in static(_vars):
             ScalarField(Expr(s))[I] = ops.cast(0, dtype=s.get_dt())
-
-
-@kernel
-def clear_loss(l: template()):
-    # Using SNode writers would result in a forced sync, therefore we wrap these
-    # writes into a kernel.
-    l[None] = 0
-    l.grad[None] = 1
 
 
 @kernel

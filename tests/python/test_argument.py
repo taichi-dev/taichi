@@ -4,32 +4,6 @@ import taichi as ti
 from tests import test_utils
 
 
-@test_utils.test(exclude=[ti.opengl, ti.gles])
-def test_exceed_max_64():
-    N = 64
-
-    @ti.kernel
-    def foo1(a: ti.types.vector(N, ti.i32)) -> ti.i32:
-        return a.sum()
-
-    A = ti.Vector([1] * N)
-    assert foo1(A) == 64
-
-    N = 65
-
-    @ti.kernel
-    def foo2(a: ti.types.vector(N, ti.i32)) -> ti.i32:
-        return a.sum()
-
-    A = ti.Vector([1] * N)
-
-    with pytest.raises(
-        ti.TaichiRuntimeError,
-        match=f"The number of elements in kernel arguments is too big! Do not exceed 64 on {ti._lib.core.arch_name(ti.lang.impl.current_cfg().arch)} backend.",
-    ):
-        foo2(A)
-
-
 @test_utils.test(debug=True)
 def test_kernel_keyword_args():
     @ti.kernel
@@ -233,3 +207,28 @@ def test_struct_arg():
 
     ret = foo(s1(a=1, b=s0(a=65537, b=123)))
     assert ret == pytest.approx(125)
+
+
+@test_utils.test()
+def test_struct_arg_with_matrix():
+    mat = ti.types.matrix(3, 2, ti.f32)
+    s0 = ti.types.struct(a=mat, b=ti.f32)
+    s1 = ti.types.struct(a=ti.i32, b=s0)
+
+    @ti.kernel
+    def foo(a: s1) -> ti.i32:
+        ret = a.a + a.b.b
+        for i in range(3):
+            for j in range(2):
+                ret += a.b.a[i, j] * (i + 1) * (j + 2)
+        return ret
+
+    arg = s1(a=1, b=s0(a=mat(1, 2, 3, 4, 5, 6), b=123))
+    ret_std = 1 + 123
+
+    for i in range(3):
+        for j in range(2):
+            ret_std += (i + 1) * (j + 2) * (i * 2 + j + 1)
+
+    ret = foo(arg)
+    assert ret == ret_std

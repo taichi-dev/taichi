@@ -77,7 +77,9 @@ void LaunchContextBuilder::set_ndarray_ptrs(int arg_id,
                                             uint64 data_ptr,
                                             uint64 grad_ptr) {
   set_struct_arg({arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}, data_ptr);
-  set_struct_arg({arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}, grad_ptr);
+  if (kernel_->parameter_list[arg_id].needs_grad) {
+    set_struct_arg({arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}, grad_ptr);
+  }
 }
 
 template void LaunchContextBuilder::set_struct_arg(std::vector<int> arg_indices,
@@ -131,10 +133,6 @@ void LaunchContextBuilder::set_arg<TypedConstant>(int i, TypedConstant d) {
       set_arg_uint(i, d.val_uint());
     }
   }
-}
-
-void LaunchContextBuilder::set_extra_arg_int(int i, int j, int32 d) {
-  ctx_->extra_args[i][j] = d;
 }
 
 template <typename T>
@@ -225,7 +223,7 @@ void LaunchContextBuilder::set_arg_ndarray_with_grad(int arg_id,
   intptr_t ptr_grad = arr_grad.get_device_allocation_ptr_as_int();
   TI_ASSERT_INFO(arr.shape.size() <= taichi_max_num_indices,
                  "External array cannot have > {max_num_indices} indices");
-  set_arg_ndarray_impl(arg_id, ptr, arr.shape, true, ptr_grad);
+  set_arg_ndarray_impl(arg_id, ptr, arr.shape, ptr_grad);
 }
 
 void LaunchContextBuilder::set_arg_texture(int arg_id, const Texture &tex) {
@@ -255,23 +253,19 @@ void LaunchContextBuilder::set_arg_rw_texture_impl(
   array_ptrs[{arg_id}] = (void *)alloc_ptr;
   set_array_device_allocation_type(arg_id, DevAllocType::kRWTexture);
   TI_ASSERT(shape.size() <= taichi_max_num_indices);
-  for (int i = 0; i < shape.size(); i++) {
-    ctx_->extra_args[arg_id][i] = shape[i];
+  for (int i = 0; i < shape.size(); ++i) {
+    set_struct_arg({arg_id, 0, i}, shape[i]);
   }
 }
 
 void LaunchContextBuilder::set_arg_ndarray_impl(int arg_id,
                                                 intptr_t devalloc_ptr,
                                                 const std::vector<int> &shape,
-                                                bool grad,
                                                 intptr_t devalloc_ptr_grad) {
-  // Set has_grad value
-  has_grad[arg_id] = grad;
-
   // Set array ptr
   array_ptrs[{arg_id, TypeFactory::DATA_PTR_POS_IN_NDARRAY}] =
       (void *)devalloc_ptr;
-  if (grad) {
+  if (devalloc_ptr != 0) {
     array_ptrs[{arg_id, TypeFactory::GRAD_PTR_POS_IN_NDARRAY}] =
         (void *)devalloc_ptr_grad;
   }

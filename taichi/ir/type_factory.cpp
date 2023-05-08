@@ -169,7 +169,9 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
   return TypeFactory::get_instance().get_tensor_type(shape, element);
 }
 
-const Type *TypeFactory::get_ndarray_struct_type(DataType dt, int total_dim) {
+const Type *TypeFactory::get_ndarray_struct_type(DataType dt,
+                                                 int total_dim,
+                                                 bool needs_grad) {
   total_dim = std::max(1, total_dim);  // Avoiding empty struct
   std::vector<StructMember> shape_members;
   for (int i = 0; i < total_dim; i++) {
@@ -180,8 +182,14 @@ const Type *TypeFactory::get_ndarray_struct_type(DataType dt, int total_dim) {
   members.push_back({shape_type, "shape"});
   auto ptr_type = get_pointer_type(dt->get_compute_type());
   members.push_back({ptr_type, "data_ptr"});
-  members.push_back({ptr_type, "grad_ptr"});
+  if (needs_grad) {
+    members.push_back({ptr_type, "grad_ptr"});
+  }
   return get_struct_type(members);
+}
+
+const Type *TypeFactory::get_rwtexture_struct_type() {
+  return get_ndarray_struct_type(PrimitiveType::f32, 3);
 }
 
 namespace {

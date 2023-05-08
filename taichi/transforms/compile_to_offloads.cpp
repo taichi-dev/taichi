@@ -104,14 +104,6 @@ void compile_to_offloads(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
   if (autodiff_mode == AutodiffMode::kReverse ||
       autodiff_mode == AutodiffMode::kForward) {
     // Remove local atomics here so that we don't have to handle their gradients
@@ -142,6 +134,14 @@ void compile_to_offloads(IRNode *ir,
   irpass::offload(ir, config);
   print("Offloaded");
   irpass::analysis::verify(ir);
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::die(ir);
+    print("Scalarized");
+  }
 
   // TODO: This pass may be redundant as cfg_optimization() is already called
   //  in full_simplify().

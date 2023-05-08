@@ -1257,3 +1257,58 @@ def test_matrix_arithmatics():
             ]
         )
     ).all()
+
+
+@test_utils.test(
+    require=ti.extension.assertion,
+    debug=True,
+    check_out_of_bound=True,
+    gdb_trigger=False,
+)
+def test_matrix_oob():
+    @ti.kernel
+    def access_vec(i: ti.i32):
+        x = ti.Vector([1, 0])
+        x[i] = 42
+
+    @ti.kernel
+    def access_mat(i: ti.i32, j: ti.i32):
+        y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        y[i, j] = 42
+
+    # works
+    access_vec(1)
+    access_mat(2, 2)
+
+    # vector overflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_vec(2)
+    # vector underflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_vec(-1)
+
+    # matrix overflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(2, 3)
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(3, 0)
+    # matrix underflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(-1, 0)
+
+    # TODO: As offset information per dimension is lacking, only the accumulated index is checked. These tests will not raise even if the individual indices are incorrect.
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(0, 8)
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(-1, 10)
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(3, -1)
+
+
+@test_utils.test()
+def test_matrix_dtype():
+    a = ti.types.vector(3, dtype=ti.f32)([0, 1, 2])
+    assert a.entries.dtype == np.float32
+
+    b = ti.types.matrix(2, 2, dtype=ti.i32)([[0, 1], [2, 3]])
+    assert b.entries.dtype == np.int32

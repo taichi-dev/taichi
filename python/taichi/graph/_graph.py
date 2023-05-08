@@ -235,15 +235,7 @@ def _make_arg_matrix(kwargs: Dict[str, Any]):
     dtype = kwargs["dtype"]
     if not isinstance(dtype, MatrixType):
         raise TaichiRuntimeError(f"Tag ArgKind.MATRIX must specify matrix type, but got {dtype}.")
-    arg_list = []
-    i = 0
-    for _ in range(dtype.n):
-        arg_sublist = []
-        for _ in range(dtype.m):
-            arg_sublist.append(_ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg_{i}", dtype.dtype, 0, []))
-            i += 1
-        arg_list.append(arg_sublist)
-    return arg_list
+    return _ti_core.Arg(ArgKind.MATRIX, f"{name}_mat_arg", dtype.dtype, 0, [dtype.n, dtype.m])
 
 
 def _make_arg_texture(kwargs: Dict[str, Any]):

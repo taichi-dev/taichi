@@ -6,6 +6,7 @@ from taichi.lang.exception import TaichiIndexError
 from taichi.lang.util import cook_dtype, python_scope, to_numpy_type
 from taichi.types import primitive_types
 from taichi.types.ndarray_type import NdarrayTypeMetadata
+from taichi.types.compound_types import TensorType
 from taichi.types.utils import is_real, is_signed
 
 
@@ -27,7 +28,7 @@ class Ndarray:
         self.grad = None
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.element_type, self.shape)
+        return NdarrayTypeMetadata(self.element_type, self.shape, self.grad is not None)
 
     @property
     def element_shape(self):
@@ -68,6 +69,8 @@ class Ndarray:
             val (Union[int, float]): Value to fill.
         """
         if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
+            self._fill_by_kernel(val)
+        elif isinstance(self.element_type, TensorType):
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             impl.get_runtime().prog.fill_float(self.arr, val)

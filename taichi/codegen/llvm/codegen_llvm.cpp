@@ -1275,7 +1275,7 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(stmt->values.size() ==
-              current_callable->ret_type->get_num_elements());
+              current_callable->ret_type->get_flattened_num_elements());
     auto *buffer = call("RuntimeContext_get_result_buffer", get_context());
     set_struct_to_buffer(current_callable->ret_type, buffer, stmt->values);
   }
@@ -1861,8 +1861,10 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
-  members[1].type = ptr_type;
-  members[2].type = ptr_type;
+  members[TypeFactory::DATA_PTR_POS_IN_NDARRAY].type = ptr_type;
+  if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+    members[TypeFactory::GRAD_PTR_POS_IN_NDARRAY].type = ptr_type;
+  }
   auto *struct_type = tlctx->get_data_type(
       TypeFactory::get_instance().get_struct_type(members));
   auto *gep = builder->CreateGEP(
@@ -1896,10 +1898,11 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
       (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
 
   for (int i = 0; i < num_array_args; i++) {
-    auto raw_arg =
-        builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
-                           {tlctx->get_constant(0), tlctx->get_constant(0),
-                            tlctx->get_constant(i)});
+    auto raw_arg = builder->CreateGEP(
+        struct_type, llvm_val[stmt->base_ptr],
+        {tlctx->get_constant(0),
+         tlctx->get_constant(TypeFactory::SHAPE_POS_IN_NDARRAY),
+         tlctx->get_constant(i)});
     raw_arg =
         builder->CreateLoad(tlctx->get_data_type(PrimitiveType::i32), raw_arg);
     sizes[i] = raw_arg;
@@ -1969,16 +1972,8 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  if (auto struct_type = current_callable->args_type->get_element_type({arg_id})
-                             ->cast<StructType>()) {
-    // Is ndarray
-    llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
-  } else {
-    // Is texture
-    llvm_val[stmt] =
-        call("RuntimeContext_get_extra_args", get_context(),
-             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
-  }
+  llvm_val[stmt] = get_struct_arg(
+      {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2434,6 +2429,7 @@ void TaskCodeGenLLVM::visit(AdStackPushStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+  TI_ASSERT(stmt->return_ptr == false);
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));

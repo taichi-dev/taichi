@@ -57,7 +57,6 @@ class LaunchContextBuilder {
 
   template <typename T>
   T get_ret(int i);
-  void set_extra_arg_int(int i, int j, int32 d);
 
   void set_arg_external_array_with_shape(int arg_id,
                                          uintptr_t ptr,
@@ -68,7 +67,6 @@ class LaunchContextBuilder {
   void set_arg_ndarray_impl(int arg_id,
                             intptr_t devalloc_ptr,
                             const std::vector<int> &shape,
-                            bool grad = false,
                             intptr_t devalloc_ptr_grad = 0);
   void set_arg_ndarray(int arg_id, const Ndarray &arr);
   void set_arg_ndarray_with_grad(int arg_id,
@@ -106,7 +104,6 @@ class LaunchContextBuilder {
   size_t arg_buffer_size{0};
   const StructType *args_type{nullptr};
   size_t result_buffer_size{0};
-  bool has_grad[taichi_max_num_args_total];
 
   // Note that I've tried to group `array_runtime_size` and
   // `is_device_allocations` into a small struct. However, it caused some test

@@ -28,7 +28,7 @@ def test_cg(ti_dtype):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build(dtype=ti_dtype)
-    cg = ti.linalg.CG(A, b, x0, max_iter=50, atol=1e-6)
+    cg = ti.linalg.SparseCG(A, b, x0, max_iter=50, atol=1e-6)
     x, exit_code = cg.solve()
     res = np.linalg.solve(A_psd, b.to_numpy())
     assert exit_code == True
@@ -59,7 +59,7 @@ def test_cg_cuda(ti_dtype):
 
     fill(Abuilder, A_psd, b)
     A = Abuilder.build(dtype=ti_dtype)
-    cg = ti.linalg.CG(A, b, x0, max_iter=50, atol=1e-6)
+    cg = ti.linalg.SparseCG(A, b, x0, max_iter=50, atol=1e-6)
     x, exit_code = cg.solve()
     res = np.linalg.solve(A_psd, b.to_numpy())
     assert exit_code == True

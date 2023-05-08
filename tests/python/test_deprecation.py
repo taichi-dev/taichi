@@ -69,11 +69,8 @@ def test_deprecate_rwtexture_ndim():
 
 
 @test_utils.test()
-def test_deprecate_is_is_not():
-    with pytest.warns(
-        DeprecationWarning,
-        match='Operator "is" in Taichi scope is deprecated, ' "and it will be removed in Taichi v1.6.0.",
-    ):
+def test_remove_is_is_not():
+    with pytest.raises(ti.TaichiSyntaxError, match='Operator "is" in Taichi scope is not supported'):
 
         @ti.kernel
         def func():

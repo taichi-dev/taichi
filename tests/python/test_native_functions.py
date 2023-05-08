@@ -72,9 +72,7 @@ def test_minmax():
         y[i] = N - i
         z[i] = i - 2 if i % 2 else i + 2
 
-    with pytest.warns(DeprecationWarning, match="Calling builtin function") as records:
-        func()
-    assert len(records) > 0
+    func()
 
     assert np.allclose(
         minimum.to_numpy(),

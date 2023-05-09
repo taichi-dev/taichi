@@ -112,20 +112,14 @@ my_kernel(1, 1.0)  # Prints 2.0
 Here is another example of passing a nested struct argument with a matrix to a kernel by value:
 
 ```python
-mat = ti.types.matrix(3, 2, ti.f32)
-s0 = ti.types.struct(c=mat, d=ti.f32)
-s1 = ti.types.struct(a=ti.i32, b=s0)
-
+transform_type = ti.types.struct(R=ti.math.mat3, T=ti.math.vec3)
+pos_type = ti.types.struct(x=ti.math.vec3, trans=transform_type)
 @ti.kernel
-def kernel_with_nested_struct_arg(e: s1) -> ti.i32:
-    ret = e.a + e.b.d
-    for i in range(3):
-        for j in range(2):
-            ret += e.b.c[i, j]
-    return ret
-
-arg = s1(a=1, b=s0(c=mat(1, 2, 3, 4, 5, 6), d=123))
-print(kernel_with_nested_struct_arg(arg))  # Prints 145
+def kernel_with_nested_struct_arg(p: pos_type) -> ti.math.vec3:
+    return p.trans.R @ p.x + p.trans.T
+trans = transform_type(ti.math.mat3(1), [1, 1, 1])
+p = pos_type(x=[1, 1, 1], trans=trans)
+print(kernel_with_nested_struct_arg(p))  # [4., 4., 4.]
 ```
 
 You can use `ti.types.ndarray()` as a type hint to pass a `ndarray` from NumPy or a `tensor` from PyTorch to a kernel. Taichi recognizes the shape and data type of these data structures, which allows you to access their attributes in a kernel.

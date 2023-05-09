@@ -42,6 +42,8 @@ RhiResult AmdgpuDevice::allocate_memory(const AllocParams &params,
     return RhiResult::out_of_memory;
   }
 
+  AMDGPUDriver::get_instance().memset((void *)info.ptr, 0, info.size);
+
   *out_devalloc = DeviceAllocation{};
   out_devalloc->alloc_id = allocations_.size();
   out_devalloc->device = this;

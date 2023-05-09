@@ -562,10 +562,14 @@ struct LLVMRuntime {
   Ptr ambient_elements[taichi_max_num_snodes];
   Ptr temporaries;
   RandState *rand_states;
+  
+  // Cross backend (CPU, CUDA, AMDGPU) runtime memory allocation
   Ptr allocate_aligned(PreallocatedMemoryChunk &memory_chunk,
                        std::size_t size,
                        std::size_t alignment,
                        bool request = false);
+ 
+  // Allocate from preallocated memory (CUDA, AMDGPU)
   Ptr allocate_from_reserved_memory(PreallocatedMemoryChunk &memory_chunk,
                                     std::size_t size,
                                     std::size_t alignment);

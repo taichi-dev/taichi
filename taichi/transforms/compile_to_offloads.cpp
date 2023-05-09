@@ -188,14 +188,6 @@ void offload_to_executable(IRNode *ir,
     print("Cache loop-invariant global vars");
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (config.demote_dense_struct_fors) {
     irpass::demote_dense_struct_fors(ir);
     irpass::type_check(ir, config);
@@ -208,6 +200,14 @@ void offload_to_executable(IRNode *ir,
     irpass::type_check(ir, config);
     print("Make CPU multithreaded range-for");
     irpass::analysis::verify(ir);
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
   }
 
   if (is_extension_supported(config.arch, Extension::mesh) &&

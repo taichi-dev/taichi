@@ -171,33 +171,6 @@ def test_non_static_in():
         foo(ti.i32)
 
 
-@test_utils.test()
-def test_static_is():
-    @ti.kernel
-    def is_f32(tp: ti.template()) -> ti.i32:
-        return ti.static(tp is ti.f32)
-
-    @ti.kernel
-    def is_not_f32(tp: ti.template()) -> ti.i32:
-        return ti.static(tp is not ti.f32)
-
-    assert is_f32(ti.f32) == 1
-    assert is_f32(ti.i32) == 0
-    assert is_not_f32(ti.f32) == 0
-    assert is_not_f32(ti.i32) == 1
-
-
-@test_utils.test()
-def test_non_static_is():
-    with pytest.raises(ti.TaichiCompilationError, match='"Is" is only supported inside `ti.static`.'):
-
-        @ti.kernel
-        def is_f32(tp: ti.template()) -> ti.i32:
-            return tp is ti.f32
-
-        is_f32(ti.f32)
-
-
 @test_utils.test(default_ip=ti.i64, require=ti.extension.data64)
 def test_compare_ret_type():
     # The purpose of this test is to make sure a comparison returns i32

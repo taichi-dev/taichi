@@ -37,6 +37,8 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
   info.use_cached = false;
   info.use_preallocated = false;
 
+  CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
+
   *out_devalloc = DeviceAllocation{};
   out_devalloc->alloc_id = allocations_.size();
   out_devalloc->device = this;
@@ -51,24 +53,17 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   info.size = taichi::iroundup(params.size, taichi_page_size);
   if (info.size == 0) {
     info.ptr = nullptr;
-  } else if (params.use_cached) {
-    if (CUDAContext::get_instance().supports_mem_pool()) {
-      CUDADriver::get_instance().malloc_async((void **)&info.ptr, info.size,
-                                              nullptr);
-    } else {
-      info.ptr =
-          DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
-    }
-
-    TI_ASSERT(info.ptr != nullptr);
-
-    CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
+  } else if (params.use_memory_pool) {
+    CUDADriver::get_instance().malloc_async((void **)&info.ptr, info.size,
+                                            nullptr);
   } else {
-    info.ptr = allocate_llvm_runtime_memory_jit(params);
+    info.ptr =
+        DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
   }
   info.is_imported = false;
-  info.use_cached = params.use_cached;
+  info.use_cached = true;
   info.use_preallocated = true;
+  info.use_memory_pool = params.use_memory_pool;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -104,13 +99,11 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   TI_ASSERT(!info.is_imported);
-  if (info.use_cached) {
-    if (CUDAContext::get_instance().supports_mem_pool()) {
-      CUDADriver::get_instance().mem_free_async(info.ptr, nullptr);
-    } else {
-      DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
-                                               false);
-    }
+  if (info.use_memory_pool) {
+    CUDADriver::get_instance().mem_free_async(info.ptr, nullptr);
+  } else if (info.use_cached) {
+    DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
+                                             false);
   } else if (!info.use_preallocated) {
     auto &mem_pool = DeviceMemoryPool::get_instance();
     mem_pool.release(info.size, info.ptr, true /*release_raw*/);

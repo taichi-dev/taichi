@@ -230,23 +230,6 @@ class KernelContextAttributes {
   }
 
   /**
-   * Number of bytes needed by the extra arguments.
-   *
-   * Extra argument region is used to store some metadata, like the shape of the
-   * external array.
-   */
-  inline size_t extra_args_bytes() const {
-    return extra_args_bytes_;
-  }
-
-  /**
-   * Offset (in bytes) of the extra arguments in the memory.
-   */
-  inline size_t extra_args_mem_offset() const {
-    return args_bytes();
-  }
-
-  /**
    * The type of the struct that contains all the arguments.
    */
   inline const lang::StructType *args_type() const {
@@ -266,7 +249,6 @@ class KernelContextAttributes {
             ret_attribs_vec_,
             args_bytes_,
             rets_bytes_,
-            extra_args_bytes_,
             arr_access,
             args_type_,
             rets_type_);
@@ -277,7 +259,6 @@ class KernelContextAttributes {
 
   size_t args_bytes_{0};
   size_t rets_bytes_{0};
-  size_t extra_args_bytes_{0};
 
   const lang::StructType *args_type_{nullptr};
   const lang::StructType *rets_type_{nullptr};

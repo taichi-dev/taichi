@@ -93,9 +93,9 @@ Kernels in Taichi can be called either directly or from inside a native Python f
 
 A kernel can accept multiple arguments. However, it's important to note that you can't pass arbitrary Python objects to a kernel. This is because Python objects can be dynamic and may contain data that the Taichi compiler cannot recognize.
 
-The kernel can accept various argument types, including scalars, `ti.Matrix`, `ti.Vector`, `ti.types.ndarray()`, and `ti.template()`. These argument types make it easy to pass data from the Python scope to the Taichi scope. You can find the supported types in the `ti.types` module. For more information on this, see the [Type System](../type_system/type.md).
+The kernel can accept various argument types, including scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, and `ti.template()`. These argument types make it easy to pass data from the Python scope to the Taichi scope. You can find the supported types in the `ti.types` module. For more information on this, see the [Type System](../type_system/type.md).
 
-Scalars, `ti.Vector` and `ti.Matrix` are passed by value, which means that the kernel receives a copy of the argument. However, `ti.types.ndarray()` and `ti.template()` are passed by reference, which means that any changes made to the argument inside the kernel will affect the original value as well.
+Scalars, `ti.types.matrix()`, `ti.types.vector()`, and `ti.types.struct()` are passed by value, which means that the kernel receives a copy of the argument. However, `ti.types.ndarray()` and `ti.template()` are passed by reference, which means that any changes made to the argument inside the kernel will affect the original value as well.
 
 Note that we won't cover `ti.template()` here as it is a more advanced topic and is discussed in [Metaprogramming](../advanced/meta.md#template-metaprogramming).
 
@@ -107,6 +107,25 @@ def my_kernel(x: int, y: float):
     print(x + y)
 
 my_kernel(1, 1.0)  # Prints 2.0
+```
+
+Here is another example of passing a nested struct argument with a matrix to `my_kernel()` by value:
+
+```python
+mat = ti.types.matrix(3, 2, ti.f32)
+s0 = ti.types.struct(c=mat, d=ti.f32)
+s1 = ti.types.struct(a=ti.i32, b=s0)
+
+@ti.kernel
+def kernel_with_nested_struct_arg(e: s1) -> ti.i32:
+    ret = e.a + e.b.d
+    for i in range(3):
+        for j in range(2):
+            ret += e.b.c[i, j]
+    return ret
+
+arg = s1(a=1, b=s0(c=mat(1, 2, 3, 4, 5, 6), d=123))
+print(kernel_with_nested_struct_arg(arg))  # Prints 145
 ```
 
 You can use `ti.types.ndarray()` as a type hint to pass a `ndarray` from NumPy or a `tensor` from PyTorch to a kernel. Taichi recognizes the shape and data type of these data structures, which allows you to access their attributes in a kernel.
@@ -135,8 +154,8 @@ print(x)  # Prints [5, 7, 9]
 
 ### Return value
 
-In Taichi, a kernel is allowed to have a maximum of one return value, which could either be a scalar, `ti.Matrix`, or `ti.Vector`.
-Moreover, in the LLVM-based backends (CPU and CUDA backends), a return value could also be a `ti.Struct`.
+In Taichi, a kernel is allowed to have a maximum of one return value, which could either be a scalar, `ti.types.matrix()`, or `ti.types.vector()`.
+Moreover, in the LLVM-based backends (CPU and CUDA backends), a return value could also be a `ti.types.struct()`.
 
 Here is an example of a kernel that returns a ti.Struct:
 
@@ -276,7 +295,7 @@ All Taichi functions are force-inlined. This means that if you call a Taichi fun
 
 ### Arguments
 
-A Taichi function can accept multiple arguments, which may include scalar, `ti.Matrix`, `ti.Vector`, `ti.types.ndarray()`, `ti.template()`, `ti.field`, and `ti.Struct` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
+A Taichi function can accept multiple arguments, which may include scalar, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, `ti.types.ndarray()`, `ti.field()`, and `ti.template()` types. Note that some of the restrictions on kernel arguments do not apply to Taichi functions:
 
 - It is not strictly required to type hint the function arguments (but it is still recommended).
 - You can pass an unlimited number of elements in the function arguments.
@@ -284,7 +303,7 @@ A Taichi function can accept multiple arguments, which may include scalar, `ti.M
 
 ### Return values
 
-Return values of a Taichi function can be scalars, `ti.Matrix`, `ti.Vector`, `ti.Struct`, or other types. Note the following:
+Return values of a Taichi function can be scalars, `ti.types.matrix()`, `ti.types.vector()`, `ti.types.struct()`, or other types. Note the following:
 
 - Unlike a kernel, a Taichi function can have multiple return values.
 - It is *not* required (but recommended) to type hint the return values of a Taichi function.
@@ -297,7 +316,7 @@ Return values of a Taichi function can be scalars, `ti.Matrix`, `ti.Vector`, `ti
 | Call scope                                            | Python scope                                                                                                      | Taichi scope                                                 |
 | Type hint arguments                                   | Mandatory                                                                                                         | Recommended                                                  |
 | Type hint return values                               | Mandatory                                                                                                         | Recommended                                                  |
-| Return type                                           | <ul><li>Scalar</li><li>`ti.Vector`</li><li>`ti.Matrix`</li><li>`ti.Struct`(Only on LLVM-based backends)</li></ul> | <ul><li>Scalar</li><li>`ti.Vector`</li><li>`ti.Matrix`</li><li>`ti.Struct`</li><li>...</li></ul> |
+| Return type                                           | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`(Only on LLVM-based backends)</li></ul> | <ul><li>Scalar</li><li>`ti.types.matrix()`</li><li>`ti.types.vector()`</li><li>`ti.types.struct()`</li><li>...</li></ul> |
 | Maximum number of elements in arguments               | <ul><li>32 (OpenGL)</li><li>64 (otherwise)</li></ul>                                                              | Unlimited                                                    |
 | Maximum number of return values in a return statement | 1                                                                                                                 | Unlimited                                                    |
 

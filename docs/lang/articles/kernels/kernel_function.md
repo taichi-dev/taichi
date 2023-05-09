@@ -109,7 +109,7 @@ def my_kernel(x: int, y: float):
 my_kernel(1, 1.0)  # Prints 2.0
 ```
 
-Here is another example of passing a nested struct argument with a matrix to `my_kernel()` by value:
+Here is another example of passing a nested struct argument with a matrix to a kernel by value:
 
 ```python
 mat = ti.types.matrix(3, 2, ti.f32)

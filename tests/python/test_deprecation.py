@@ -77,12 +77,3 @@ def test_remove_is_is_not():
             ti.static(1 is 2)
 
         func()
-
-
-@test_utils.test()
-def test_deprecation_in_taichi_init_py():
-    with pytest.warns(
-        DeprecationWarning,
-        match="ti.SOA is deprecated, and it will be removed in Taichi v1.6.0.",
-    ):
-        ti.SOA

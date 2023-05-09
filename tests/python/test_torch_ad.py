@@ -45,7 +45,7 @@ def test_torch_ad():
 
         @staticmethod
         def backward(ctx, outp_grad):
-            ti.clear_all_gradients()
+            ti.ad.clear_all_gradients()
             y.grad.from_torch(outp_grad)
             torch_kernel.grad()
             inp_grad = x.grad.to_torch()
@@ -90,7 +90,7 @@ def test_torch_ad_gpu():
 
         @staticmethod
         def backward(ctx, outp_grad):
-            ti.clear_all_gradients()
+            ti.ad.clear_all_gradients()
             y.grad.from_torch(outp_grad)
             torch_kernel.grad()
             inp_grad = x.grad.to_torch(device=device)

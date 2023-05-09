@@ -576,7 +576,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
-          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
+          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0),
+               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
@@ -590,7 +591,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
-          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
+          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0),
+               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
@@ -604,7 +606,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
       llvm_val[stmt] =
-          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
+          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0),
+               llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {

@@ -1343,3 +1343,28 @@ def test_tape_torch_tensor_grad_none():
 
     for i in range(N):
         assert a.grad[i] == 1.0
+
+
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_tensor_shape():
+    N = 3
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(), y: ti.types.ndarray()):
+        for i in range(N):
+            a = 2.0
+            for j in range(N):
+                a += x[i] / x.shape[0]
+            y[0] += a
+
+    device = "cuda" if ti.lang.impl.current_cfg().arch == ti.cuda else "cpu"
+
+    a = torch.zeros((N,), device=device, requires_grad=True)
+    loss = torch.zeros((1,), device=device, requires_grad=True)
+
+    with ti.ad.Tape(loss=loss):
+        test(a, loss)
+
+    for i in range(N):
+        assert a.grad[i] == 1.0

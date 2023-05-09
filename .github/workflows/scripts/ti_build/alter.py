@@ -23,8 +23,8 @@ from .tinysh import Command
 def add_aot_env():
     os.environ["TAICHI_REPO_DIR"] = os.getcwd()
     pyver = get_desired_python_version()
-    for p in Path(os.getcwd()).glob("**/cmake-install/c_api"):
-        if p.is_dir() and p.parent.parent.name.endswith(pyver):
+    for p in Path(os.getcwd()).glob("**/cmake-install/python/taichi/_lib/c_api"):
+        if p.is_dir() and any(v.name.endswith(f"-{pyver}") for v in p.parents):
             os.environ["TAICHI_C_API_INSTALL_DIR"] = str(p)
             break
     else:

@@ -209,9 +209,10 @@ function(install_taichi_c_api INSTALL_NAME TAICHI_C_API_INSTALL_DIR)
   set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX_BACKUP})
 endfunction()
 
-install_taichi_c_api(Distribute c_api)
 if (TI_WITH_PYTHON)
   install_taichi_c_api(PyTaichi python/taichi/_lib/c_api)
+else()
+  install_taichi_c_api(Distribute c_api)
 endif()
 
 if(TI_WITH_STATIC_C_API)

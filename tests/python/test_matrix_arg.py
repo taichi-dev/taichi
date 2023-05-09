@@ -70,3 +70,25 @@ def test_matrix_fancy_arg():
     m = mat4x3(m)
 
     k = mat2x6(m)
+
+
+@test_utils.test()
+def test_matrix_arg_insertion_pos():
+    rgba8 = ti.types.vector(4, ti.u8)
+
+    @ti.kernel
+    def _render(
+        color_attm: ti.types.ndarray(rgba8, ndim=2),
+        camera_pos: ti.math.vec3,
+        camera_up: ti.math.vec3,
+    ):
+        up = ti.math.normalize(camera_up)
+
+        for x, y in color_attm:
+            o = camera_pos
+
+    color_attm = ti.Vector.ndarray(4, dtype=ti.u8, shape=(512, 512))
+    camera_pos = ti.math.vec3(0, 0, 0)
+    camera_up = ti.math.vec3(0, 1, 0)
+
+    _render(color_attm, camera_pos, camera_up)

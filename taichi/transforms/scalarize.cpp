@@ -881,7 +881,7 @@ class GatherScalarizableLocalPointers : public BasicStmtVisitor {
   }
 };
 
-class ScalarizeLocalPointers : public BasicStmtVisitor {
+class ScalarizePointers : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
@@ -890,7 +890,7 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  explicit ScalarizeLocalPointers(
+  explicit ScalarizePointers(
       IRNode *node,
       const std::unordered_set<Stmt *> &scalarizable_allocas)
       : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
@@ -948,16 +948,16 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
     }
   }
 
-  /*
-    Before:
-      MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
-
-    After:
-      scalarized_alloca_stmt =
-    scalarized_local_tensor_map_[alloca_stmt][offset]
-      stmt->replace_all_usages_with(scalarized_alloca_stmt)
-  */
   void visit(MatrixPtrStmt *stmt) override {
+    /*
+      Before:
+        MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
+
+      After:
+        scalarized_alloca_stmt =
+      scalarized_local_tensor_map_[alloca_stmt][offset]
+        stmt->replace_all_usages_with(scalarized_alloca_stmt)
+    */
     if (stmt->origin->is<AllocaStmt>() &&
         scalarizable_allocas_.count(stmt->origin) == 1) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
@@ -979,6 +979,34 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
 
       immediate_modifier_.replace_usages_with(stmt, new_stmt);
       delayed_modifier_.erase(stmt);
+      return;
+    }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = GlobalTempStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = GlobalTempStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<GlobalTemporaryStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto global_temp_stmt = stmt->origin->as<GlobalTemporaryStmt>();
+      auto offset_0 = global_temp_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_global_temp_stmt = std::make_unique<GlobalTemporaryStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_global_temp_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_global_temp_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_global_temp_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
     }
   }
 
@@ -1021,10 +1049,22 @@ class ExtractLocalPointers : public BasicStmtVisitor {
   Block *top_level_;
 
   explicit ExtractLocalPointers(IRNode *root) : immediate_modifier_(root) {
-    TI_ASSERT(root->is<Block>());
-    top_level_ = root->as<Block>();
+    if (root->is<OffloadedStmt>()) {
+      top_level_ = root->as<OffloadedStmt>()->body.get();
+    } else {
+      TI_ASSERT(root->is<Block>());
+      top_level_ = root->as<Block>();
+    }
     root->accept(this);
     delayed_modifier_.modify_ir();
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    // Extract to OffloadStmt
+    Block *orig_top_level = top_level_;
+    top_level_ = stmt->body.get();
+    stmt->all_blocks_accept(this);
+    top_level_ = orig_top_level;
   }
 
   void visit(MatrixPtrStmt *stmt) override {
@@ -1118,7 +1158,7 @@ void scalarize(IRNode *root) {
   TI_AUTO_PROF;
   Scalarize scalarize_pass(root);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
-  ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_allocas);
+  ScalarizePointers scalarize_pointers_pass(root, scalarizable_allocas);
   ExtractLocalPointers extract_pointers_pass(root);
   MergeExternalAndMatrixPtr::run(root);
 }

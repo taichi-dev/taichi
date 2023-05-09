@@ -475,7 +475,6 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
   return llvm_device()->allocate_memory_runtime(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
-       config_.ndarray_use_cached_allocator,
        get_runtime_jit_module(),
        get_llvm_runtime(),
        result_buffer});

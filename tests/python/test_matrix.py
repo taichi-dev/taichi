@@ -1333,3 +1333,12 @@ def test_matrix_from_numpy_with_offset(dtype, shape, offset):
 
     tol = 1e-5 if dtype == ti.f32 else 1e-12
     assert mat_equal(x.to_numpy(), arr, tol=tol)
+
+
+@test_utils.test()
+def test_matrix_dtype():
+    a = ti.types.vector(3, dtype=ti.f32)([0, 1, 2])
+    assert a.entries.dtype == np.float32
+
+    b = ti.types.matrix(2, 2, dtype=ti.i32)([[0, 1], [2, 3]])
+    assert b.entries.dtype == np.int32

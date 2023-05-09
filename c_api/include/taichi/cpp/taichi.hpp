@@ -837,6 +837,25 @@ class ComputeGraph {
     return compute_graph_;
   }
 };
+template <typename T>
+struct DataTypeToEnum {
+  static constexpr TiDataType value = TI_DATA_TYPE_UNKNOWN;
+};
+#define DEFINE_DATA_TYPE_ENUM(type, enumv)                    \
+  template <>                                                 \
+  struct DataTypeToEnum<type> {                               \
+    static constexpr TiDataType value = TI_DATA_TYPE_##enumv; \
+  };
+
+DEFINE_DATA_TYPE_ENUM(int32_t, I32);
+DEFINE_DATA_TYPE_ENUM(float, F32);
+DEFINE_DATA_TYPE_ENUM(uint16_t, U16);
+DEFINE_DATA_TYPE_ENUM(int16_t, I16);
+DEFINE_DATA_TYPE_ENUM(uint8_t, U8);
+DEFINE_DATA_TYPE_ENUM(int8_t, I8);
+DEFINE_DATA_TYPE_ENUM(uint64_t, U64);
+DEFINE_DATA_TYPE_ENUM(int64_t, I64);
+#undef DEFINE_DATA_TYPE_ENUM
 
 class Kernel {
  protected:
@@ -884,11 +903,12 @@ class Kernel {
   template <typename T>
   void push_arg(const std::vector<T> &v) {
     int idx = args_.size();
-    // Temporary workaround for setting vec/matrix arguments in a flattened way.
-    args_.resize(args_.size() + v.size());
-    for (int j = 0; j < v.size(); ++j) {
-      at(idx + j) = v[j];
-    }
+    args_.resize(idx + 1);
+    args_[idx].type = TI_ARGUMENT_TYPE_TENSOR;
+    std::memcpy(args_[idx].value.tensor.contents.data.x32, v.data(),
+                v.size() * sizeof(T));
+    args_[idx].value.tensor.contents.length = v.size();
+    args_[idx].value.tensor.type = DataTypeToEnum<T>::value;
   }
 
   template <typename T>

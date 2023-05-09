@@ -575,14 +575,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFAdd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
-      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->lhs->ret_type));
-      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+          call("debug_add_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
@@ -595,14 +589,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFSub(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
-      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->lhs->ret_type));
-      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+          call("debug_sub_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {
@@ -615,14 +603,8 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
           builder->CreateFMul(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #if defined(__clang__) || defined(__GNUC__)
     } else if (compile_config.debug && is_integral(stmt->ret_type)) {
-      auto lhs = builder->CreateIntCast(llvm_val[stmt->lhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->lhs->ret_type));
-      auto rhs = builder->CreateIntCast(llvm_val[stmt->rhs],
-                                        tlctx->get_data_type(stmt->ret_type),
-                                        is_signed(stmt->rhs->ret_type));
       llvm_val[stmt] =
-          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0), lhs, rhs,
+          call("debug_mul_" + stmt->ret_type->to_string(), get_arg(0), llvm_val[stmt->lhs], llvm_val[stmt->rhs],
                builder->CreateGlobalStringPtr(stmt->tb));
 #endif
     } else {

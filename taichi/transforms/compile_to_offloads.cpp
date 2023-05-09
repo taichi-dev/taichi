@@ -202,20 +202,20 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (is_extension_supported(config.arch, Extension::mesh) &&
       config.demote_no_access_mesh_fors) {
     irpass::demote_no_access_mesh_fors(ir);
     irpass::type_check(ir, config);
     print("No-access mesh-for demoted");
     irpass::analysis::verify(ir);
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
   }
 
   if (make_thread_local) {

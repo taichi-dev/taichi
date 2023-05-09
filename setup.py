@@ -168,9 +168,6 @@ def get_cmake_args():
 BLACKLISTED_FILES = [
     "libSPIRV-Tools-shared.so",
     "libSPIRV-Tools-shared.dll",
-    "libtaichi_c_api.so",
-    "taichi_c_api.dll",
-    "libtaichi_c_api.dylib",
 ]
 
 WHITELISTED_FILES = [

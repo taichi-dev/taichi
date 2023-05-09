@@ -27,19 +27,19 @@ def compile_mpm88(arch, save_compute_graph):
     ti.init(arch=arch)
 
     @ti.kernel
-    def substep_reset_grid(grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
+    def substep_reset_grid(grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)):
         for i, j in grid_m:
             grid_v[i, j] = [0, 0]
             grid_m[i, j] = 0
 
     @ti.kernel
     def substep_p2g(
-        x: ti.any_arr(ndim=1),
-        v: ti.any_arr(ndim=1),
-        C: ti.any_arr(ndim=1),
-        J: ti.any_arr(ndim=1),
-        grid_v: ti.any_arr(ndim=2),
-        grid_m: ti.any_arr(ndim=2),
+        x: ti.types.ndarray(ndim=1),
+        v: ti.types.ndarray(ndim=1),
+        C: ti.types.ndarray(ndim=1),
+        J: ti.types.ndarray(ndim=1),
+        grid_v: ti.types.ndarray(ndim=2),
+        grid_m: ti.types.ndarray(ndim=2),
     ):
         for p in x:
             dx = 1 / grid_v.shape[0]
@@ -59,7 +59,7 @@ def compile_mpm88(arch, save_compute_graph):
                 grid_m[base + offset] += weight * p_mass
 
     @ti.kernel
-    def substep_update_grid_v(grid_v: ti.any_arr(ndim=2), grid_m: ti.any_arr(ndim=2)):
+    def substep_update_grid_v(grid_v: ti.types.ndarray(ndim=2), grid_m: ti.types.ndarray(ndim=2)):
         for i, j in grid_m:
             num_grid = grid_v.shape[0]
             if grid_m[i, j] > 0:
@@ -76,12 +76,12 @@ def compile_mpm88(arch, save_compute_graph):
 
     @ti.kernel
     def substep_g2p(
-        x: ti.any_arr(ndim=1),
-        v: ti.any_arr(ndim=1),
-        C: ti.any_arr(ndim=1),
-        J: ti.any_arr(ndim=1),
-        grid_v: ti.any_arr(ndim=2),
-        pos: ti.any_arr(ndim=1),
+        x: ti.types.ndarray(ndim=1),
+        v: ti.types.ndarray(ndim=1),
+        C: ti.types.ndarray(ndim=1),
+        J: ti.types.ndarray(ndim=1),
+        grid_v: ti.types.ndarray(ndim=2),
+        pos: ti.types.ndarray(ndim=1),
     ):
         for p in x:
             dx = 1 / grid_v.shape[0]
@@ -105,7 +105,7 @@ def compile_mpm88(arch, save_compute_graph):
             C[p] = new_C
 
     @ti.kernel
-    def init_particles(x: ti.any_arr(ndim=1), v: ti.any_arr(ndim=1), J: ti.any_arr(ndim=1)):
+    def init_particles(x: ti.types.ndarray(ndim=1), v: ti.types.ndarray(ndim=1), J: ti.types.ndarray(ndim=1)):
         for i in range(x.shape[0]):
             x[i] = [ti.random() * 0.4 + 0.2, ti.random() * 0.4 + 0.2]
             v[i] = [0, -1]

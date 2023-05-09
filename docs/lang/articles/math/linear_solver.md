@@ -80,7 +80,7 @@ Please have a look at our two demos for more information:
 
 ### Sparse iterative solver
 To solve a linear system whose coefficient matrix is a `SparseMatrix` using a iterative (conjugate-gradient) method, follow the steps below:
-1. Create a `solver` using `ti.linalg.SparseCG(A, b, x0, max_iter, atol)`, where `A` is a `SparseMatrix` that stores the coefficient matrix of the linear system, `b` is the right-hand side of the equations, `x0` is the initial guess and `atol` is the absolute tolerance threshold. 
+1. Create a `solver` using `ti.linalg.SparseCG(A, b, x0, max_iter, atol)`, where `A` is a `SparseMatrix` that stores the coefficient matrix of the linear system, `b` is the right-hand side of the equations, `x0` is the initial guess and `atol` is the absolute tolerance threshold.
 2. Call `x, exit_code = solver.solve()` to obtain the solution `x` along with the `exit_code` that indicates the status of the solution. `exit_code` should be `True` if the solving was successful. Here is an example:
 
 ```python
@@ -128,7 +128,7 @@ print(f">>>> Computation was successful?: {exit_code}")
 Note that the building process of `SparseMatrix` `A` is exactly the same as in the case of `SparseSolver`, the only difference here is that we created a `solver` whose type is `SparseCG` instead of `SparseSolver`.
 
 ## Matrix-free iterative solver
-Apart from `SparseMatrix` as an efficient representation of matrices, Taichi also support the `LinearOperator` type, which is a matrix-free representation of matrices. 
+Apart from `SparseMatrix` as an efficient representation of matrices, Taichi also support the `LinearOperator` type, which is a matrix-free representation of matrices.
 Keep in mind that matrices can be seen as a linear transformation from an input vector to a output vector, it is possible to encapsulate the information of a matrice as a `LinearOperator`.
 
 To create a `LinearOperator` in Taichi, we first need to define a kernel that represent the linear transformation:

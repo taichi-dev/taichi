@@ -290,10 +290,6 @@ STRUCT_FIELD_ARRAY(PhysicalCoordinates, val);
 STRUCT_FIELD(RuntimeContext, runtime);
 STRUCT_FIELD(RuntimeContext, result_buffer)
 
-int32 RuntimeContext_get_extra_args(RuntimeContext *ctx, int32 i, int32 j) {
-  return ctx->extra_args[i][j];
-}
-
 #include "taichi/runtime/llvm/runtime_module/atomic.h"
 
 // These structures are accessible by both the LLVM backend and this C++ runtime

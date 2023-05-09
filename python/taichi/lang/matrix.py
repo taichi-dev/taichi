@@ -1482,7 +1482,8 @@ class MatrixType(CompoundType):
                     for j in range(self.m)
                 ]
                 for i in range(self.n)
-            ]
+            ],
+            dt=self.dtype,
         )
 
     def _instantiate(self, entries):
@@ -1569,7 +1570,8 @@ class VectorType(MatrixType):
             [
                 int(entries[i]) if self.dtype in primitive_types.integer_types else float(entries[i])
                 for i in range(self.n)
-            ]
+            ],
+            dt=self.dtype,
         )
 
     def _instantiate(self, entries):

@@ -434,17 +434,6 @@ class ASTTransformer(Builder):
 
         if id(func) in replace_func:
             node.ptr = replace_func[id(func)](*args, **keywords)
-            if func is min or func is max:
-                name = "min" if func is min else "max"
-                warnings.warn_explicit(
-                    f'Calling builtin function "{name}" in Taichi scope is deprecated, '
-                    f"and it will be removed in Taichi v1.6.0."
-                    f'Please use "ti.{name}" instead.',
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
-                )
             return True
         return False
 
@@ -1023,28 +1012,19 @@ class ASTTransformer(Builder):
         ops_static = {
             ast.In: lambda l, r: l in r,
             ast.NotIn: lambda l, r: l not in r,
-            ast.Is: lambda l, r: l is r,
-            ast.IsNot: lambda l, r: l is not r,
         }
         if ctx.is_in_static_scope():
             ops = {**ops, **ops_static}
         operands = [node.left.ptr] + [comparator.ptr for comparator in node.comparators]
         val = True
         for i, node_op in enumerate(node.ops):
+            if isinstance(node_op, (ast.Is, ast.IsNot)):
+                name = "is" if isinstance(node_op, ast.Is) else "is not"
+                raise TaichiSyntaxError(f'Operator "{name}" in Taichi scope is not supported.')
             l = operands[i]
             r = operands[i + 1]
             op = ops.get(type(node_op))
-            if isinstance(node_op, (ast.Is, ast.IsNot)):
-                name = "is" if isinstance(node_op, ast.Is) else "is not"
-                warnings.warn_explicit(
-                    f'Operator "{name}" in Taichi scope is deprecated, '
-                    f"and it will be removed in Taichi v1.6.0. "
-                    f"Please avoid using it.",
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
-                )
+
             if op is None:
                 if type(node_op) in ops_static:
                     raise TaichiSyntaxError(f'"{type(node_op).__name__}" is only supported inside `ti.static`.')
@@ -1165,16 +1145,11 @@ class ASTTransformer(Builder):
             I = impl.expr_init(ndrange_loop_var)
             targets = ASTTransformer.get_for_loop_targets(node)
             if len(targets) != len(ndrange_var.dimensions):
-                warnings.warn_explicit(
+                raise TaichiSyntaxError(
                     "Ndrange for loop with number of the loop variables not equal to "
-                    "the dimension of the ndrange is deprecated, "
-                    "and it will be removed in Taichi 1.6.0. "
+                    "the dimension of the ndrange is not supported. "
                     "Please check if the number of arguments of ti.ndrange() is equal to "
-                    "the number of the loop variables.",
-                    DeprecationWarning,
-                    ctx.file,
-                    node.lineno + ctx.lineno_offset,
-                    module="taichi",
+                    "the number of the loop variables."
                 )
             for i, target in enumerate(targets):
                 if i + 1 < len(targets):

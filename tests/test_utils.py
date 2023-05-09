@@ -141,7 +141,7 @@ def expected_archs():
     """
 
     def get_archs():
-        archs = set([cpu, cuda, metal, vulkan, opengl, cc, gles])
+        archs = set([cpu, cuda, metal, vulkan, opengl, gles])
         # TODO: now expected_archs is not called per test so we cannot test it
         archs = set(filter(is_arch_supported, archs))
         return archs

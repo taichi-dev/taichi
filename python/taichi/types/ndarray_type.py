@@ -128,7 +128,8 @@ class NdarrayType:
             )
 
         # Check needs_grad
-        if self.needs_grad is not None and self.needs_grad != ndarray_type.needs_grad:
+        if self.needs_grad is not None and self.needs_grad > ndarray_type.needs_grad:
+            # It's okay to pass a needs_grad=True ndarray at runtime to a need_grad=False arg but not vice versa.
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
             )

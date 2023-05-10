@@ -109,7 +109,7 @@ def my_kernel(x: int, y: float):
 my_kernel(1, 1.0)  # Prints 2.0
 ```
 
-Here is another example of passing a nested struct argument with a matrix to a kernel by value:
+Here is another example of passing a nested struct argument with a matrix to a kernel by value, in which we created a struct type `transform_type` that contains two members: a rotation matrix `R` and a translation vector `T`. We then created another struct type `pos_type` that has `transform_type` as its member and passed an instance of `pos_type` to a kernel.
 
 ```python
 transform_type = ti.types.struct(R=ti.math.mat3, T=ti.math.vec3)

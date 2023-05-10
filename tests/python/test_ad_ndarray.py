@@ -1345,6 +1345,26 @@ def test_tape_torch_tensor_grad_none():
         assert a.grad[i] == 1.0
 
 
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_grad_tensor_in_kernel():
+    N = 10
+
+    a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    b = ti.ndarray(ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(), b: ti.types.ndarray()):
+        for i in x:
+            b[None] += x.grad[i]
+
+    a.grad.fill(2.0)
+    test(a, b)
+    assert b[None] == N * 2.0
+
+    with pytest.raises(RuntimeError, match=r"Cannot automatically differentiate through a grad tensor"):
+        test.grad(a, b)
+
+
 @pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad)
 def test_tensor_shape():

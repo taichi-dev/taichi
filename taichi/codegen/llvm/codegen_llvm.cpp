@@ -1131,10 +1131,6 @@ void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
 }
 
-void TaskCodeGenLLVM::emit_gc_rc() {
-  call("runtime_context_gc", get_runtime());
-}
-
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
   auto original_value = builder->CreateLoad(value->getType(), ptr);
   builder->CreateStore(builder->CreateAdd(original_value, value), ptr);
@@ -2773,7 +2769,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     current_callable = old_callable;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = call("allocate_runtime_context", get_runtime());
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   if (!stmt->func->parameter_list.empty()) {
     auto *buffer =
@@ -2792,7 +2788,6 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
   call(llvm_func, new_ctx);
   llvm_val[stmt] = result_buffer;
-  call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {

@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiIndexError
+from taichi.lang.exception import TaichiIndexError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
 
@@ -867,3 +867,44 @@ def test_ndarray_fill():
 
     x_mat.fill(mat2x2([[2.0, 4.0], [1.0, 3.0]]))
     assert (x_mat[3, 3] == [[2.0, 4.0], [1.0, 3.0]]).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_wrong_dtype():
+    @ti.kernel
+    def test2(arr: ti.types.ndarray(dtype=ti.f32)):
+        for I in ti.grouped(arr):
+            arr[I] = 2.0
+
+    tp_ivec3 = ti.types.vector(3, ti.i32)
+
+    y = ti.ndarray(tp_ivec3, shape=(12, 4))
+    with pytest.raises(TypeError, match=r"get TensorType\(shape=\(3,\), dtype=i32\)"):
+        test2(y)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_bad_assign():
+    tp_ivec3 = ti.types.vector(3, ti.i32)
+
+    @ti.kernel
+    def test4(arr: ti.types.ndarray(dtype=tp_ivec3)):
+        for I in ti.grouped(arr):
+            arr[I] = [1, 2]
+
+    y = ti.ndarray(tp_ivec3, shape=(12, 4))
+    with pytest.raises(TaichiTypeError, match=r"cannot assign '\[Tensor \(2\) i32\]' to '\[Tensor \(3\) i32\]'"):
+        test4(y)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_bad_ndim():
+    x = ti.ndarray(ti.f32, shape=(12, 13))
+
+    @ti.kernel
+    def test5(arr: ti.types.ndarray(ndim=1)):
+        for i, j in arr:
+            arr[i, j] = 0
+
+    with pytest.raises(ValueError, match=r"required ndim=1, but 2d ndarray with shape \(12, 13\) is provided"):
+        test5(x)

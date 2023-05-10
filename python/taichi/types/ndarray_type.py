@@ -124,7 +124,7 @@ class NdarrayType:
         # Check ndim match
         if self.ndim is not None and ndarray_type.shape is not None and self.ndim != len(ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
+                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {len(ndarray_type.shape)}d ndarray with shape {ndarray_type.shape} is provided"
             )
 
         # Check needs_grad

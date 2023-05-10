@@ -422,5 +422,8 @@ def uniform_add(arr_in: template(), in_beg: i32, in_end: i32):
 
 @kernel
 def blit_from_field_to_field(dst: template(), src: template(), offset: i32, size: i32):
+    dst_offset = static(dst.snode.ptr.offset if len(dst.snode.ptr.offset) != 0 else 0)
+    src_offset = static(src.snode.ptr.offset if len(src.snode.ptr.offset) != 0 else 0)
+    print('[debug]', dst_offset, src_offset)
     for i in range(size):
-        dst[i + offset] = src[i]
+        dst[i + dst_offset + offset] = src[i + src_offset]

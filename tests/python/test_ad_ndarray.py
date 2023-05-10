@@ -1435,3 +1435,31 @@ def test_torch_needs_grad_false():
     test.grad(x, y)
     for i in range(N):
         assert x.grad[i] == 0.0
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ad_vector_arg():
+    N = 10
+
+    @ti.kernel
+    def compute_sum(a: ti.types.ndarray(), p: ti.types.ndarray(), z: ti.math.vec2):
+        for i in p:
+            p[i] = a[i] * z[0]
+
+    a = ti.ndarray(ti.math.vec2, shape=N, needs_grad=True)
+    p = ti.ndarray(ti.math.vec2, shape=N, needs_grad=True)
+    z = ti.math.vec2([2.0, 3.0])
+    for i in range(N):
+        a[i] = [3, 3]
+
+    compute_sum(a, p, z)
+
+    for i in range(N):
+        assert p[i] == [a[i] * 2, a[i] * 2]
+        p.grad[i] = [1, 1]
+
+    compute_sum.grad(a, p, z)
+
+    for i in range(N):
+        for j in range(2):
+            assert a.grad[i][j] == 2

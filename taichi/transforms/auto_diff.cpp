@@ -1046,6 +1046,10 @@ class ADTransform : public IRVisitor {
     // do nothing.
   }
 
+  void visit(GetElementStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(LoopIndexStmt *stmt) override {
     // do nothing.
   }

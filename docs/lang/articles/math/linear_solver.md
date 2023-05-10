@@ -144,7 +144,7 @@ def compute_matrix_vector(v:ti.template(), mv:ti.template()):
         mv[i] = 2 * v[i]
 ```
 In this case, `compute_matrix_vector` kernel accepts an input vector `v` and calculates the corresponding matrix-vector product `mv`. It is mathematically equal to a matrice whose diagonal elements are all 2. In the case of `n=4`, the equivalent matrice `A` is:
-```python
+```python cont
 # >>>> Matrix A:
 # [2, 0, 0, 0]
 # [0, 2, 0, 0]

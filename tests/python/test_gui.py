@@ -73,7 +73,7 @@ def test_set_image_fast_gui_with_offset(channel, dtype, color, offset):
     gui.set_image(img)
     fast_image = gui.img
 
-    alpha = -16777216
+    alpha = 0xff << 24
     from taichi._lib.utils import get_os_name  # pylint: disable=C0415
 
     rgb_color = (
@@ -81,6 +81,6 @@ def test_set_image_fast_gui_with_offset(channel, dtype, color, offset):
         if ti.static(get_os_name() != "osx")
         else (color << 16) + (color << 8) + color + alpha
     )
-    ground_truth = np.full(n * n, rgb_color, dtype=np.int32)
+    ground_truth = np.full(n * n, rgb_color, dtype=np.uint32)
 
     assert np.allclose(fast_image, ground_truth)

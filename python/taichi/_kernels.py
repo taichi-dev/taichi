@@ -78,8 +78,8 @@ def ndarray_matrix_to_ext_arr(
 
 @kernel
 def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
-    i_offset = static(0 if len(img.snode.ptr.offset) == 0 else img.snode.ptr.offset[0])
-    j_offset = static(1 if len(img.snode.ptr.offset) == 0 else img.snode.ptr.offset[1])
+    i_offset = static(img.snode.ptr.offset[0] if len(img.snode.ptr.offset) != 0 else 0)
+    j_offset = static(img.snode.ptr.offset[1] if len(img.snode.ptr.offset) != 0 else 0)
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
@@ -316,8 +316,8 @@ def sort_stage(
     k: int,
     invocations: int,
 ):
-    keys_offset = static(keys.snode.ptr.offset)
-    values_offset = static(values.snode.ptr.offset)
+    keys_offset = static(keys.snode.ptr.offset if len(keys.snode.ptr.offset) != 0 else 0)
+    values_offset = static(values.snode.ptr.offset if len(values.snode.ptr.offset) != 0 else 0)
     for inv in range(invocations):
         j = k % p + inv * 2 * k
         for i in range(0, ops.min(k, N - j - k)):

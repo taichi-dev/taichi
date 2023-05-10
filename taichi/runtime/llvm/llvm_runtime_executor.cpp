@@ -607,9 +607,6 @@ void LlvmRuntimeExecutor::preallocate_runtime_memory(float fraction) {
   runtime_jit->call<void *, std::size_t, void *>(
       "runtime_initialize_memory", llvm_runtime_, total_prealloc_size,
       runtime_memory_prealloc_buffer);
-
-  runtime_jit->call<void *>("runtime_initialize_runtime_context_buffer",
-                            llvm_runtime_);
 }
 
 void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,

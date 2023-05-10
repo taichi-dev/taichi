@@ -1364,7 +1364,7 @@ def test_grad_tensor_in_kernel():
     with pytest.raises(RuntimeError, match=r"Cannot automatically differentiate through a grad tensor"):
         test.grad(a, b)
 
-        
+
 @pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
 @test_utils.test(arch=archs_support_ndarray_ad)
 def test_tensor_shape():

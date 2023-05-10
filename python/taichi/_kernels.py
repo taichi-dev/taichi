@@ -316,23 +316,23 @@ def sort_stage(
     k: int,
     invocations: int,
 ):
+    keys_offset = static(keys.snode.ptr.offset)
+    values_offset = static(values.snode.ptr.offset)
     for inv in range(invocations):
         j = k % p + inv * 2 * k
         for i in range(0, ops.min(k, N - j - k)):
             a = i + j
             b = i + j + k
             if int(a / (p * 2)) == int(b / (p * 2)):
-                key_a = keys[a]
-                key_b = keys[b]
+                key_a = keys[a + keys_offset]
+                key_b = keys[b + keys_offset]
                 if key_a > key_b:
-                    keys[a] = key_b
-                    keys[b] = key_a
+                    keys[a + keys_offset] = key_b
+                    keys[b + keys_offset] = key_a
                     if use_values != 0:
-                        temp = values[a]
-                        values[a] = values[b]
-                        values[b] = temp
-
-
+                        temp = values[a + values_offset]
+                        values[a + values_offset] = values[b + values_offset]
+                        values[b + values_offset] = temp
 # Parallel Prefix Sum (Scan)
 @func
 def warp_shfl_up_i32(val: template()):

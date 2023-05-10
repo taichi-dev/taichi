@@ -506,7 +506,7 @@ class ExternalTensorExpression : public Expression {
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, ptr->needs_grad);
+    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, /*needs_grad=*/false);
   }
 
   void flatten(FlattenContext *ctx) override;

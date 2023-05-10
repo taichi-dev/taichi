@@ -251,10 +251,13 @@ def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(), norma
 @kernel
 def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(), normal_field: template()):
     static_assert(len(normal_field.shape) == 2)
-    w = normal_field.shape[0]
-    h = normal_field.shape[1]
+    w = static(normal_field.shape[0])
+    h = static(normal_field.shape[1])
+    i_offset = static(normal_field.snode.ptr.offset[0] if len(normal_field.snode.ptr.offset) != 0 else 0)
+    j_offset = static(normal_field.snode.ptr.offset[1] if len(normal_field.snode.ptr.offset) != 0 else 0)
+
     for i, j in ndrange(w, h):
-        normal_field[i, j] = vk_arr[(h - 1 - j) * w + i]
+        normal_field[i + i_offset, j + j_offset] = vk_arr[(h - 1 - j) * w + i]
 
 
 @kernel

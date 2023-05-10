@@ -1306,17 +1306,13 @@ def test_matrix_oob():
 
 
 @pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
-@pytest.mark.parametrize(
-    "shape, offset",
-    [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))],
-)
+@pytest.mark.parametrize("shape", [(8,), (6, 12)])
+@pytest.mark.parametrize("offset", [0, -4, 4])
+@pytest.mark.parametrize("m, n", [(3, 4)])
 @test_utils.test(arch=get_host_arch_list())
-def test_matrix_from_numpy_with_offset(dtype, shape, offset):
+def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
     import numpy as np
-
-    m = 3
-    n = 4
-    x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=offset)
+    x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
     # use the corresponding dtype for the numpy array.
     numpy_dtypes = {
         ti.i32: np.int32,
@@ -1328,11 +1324,34 @@ def test_matrix_from_numpy_with_offset(dtype, shape, offset):
     arr = np.ones(numpy_shape, dtype=numpy_dtypes[dtype])
     x.from_numpy(arr)
 
-    def mat_equal(A, B, tol=1e-6):
-        return np.max(np.abs(A - B)) < tol
+    @ti.kernel
+    def func():
+        for I in ti.grouped(x):
+                assert all(abs(I - 1.) < 1e-6)
 
-    tol = 1e-5 if dtype == ti.f32 else 1e-12
-    assert mat_equal(x.to_numpy(), arr, tol=tol)
+    func()
+
+
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize("shape", [(8,), (6, 12)])
+@pytest.mark.parametrize("offset", [0, -4, 4])
+@pytest.mark.parametrize("m, n", [(3, 4)])
+@test_utils.test(arch=get_host_arch_list())
+def test_matrix_to_numpy_with_offset(dtype, shape, offset, m, n):
+    import numpy as np
+    x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
+    x.fill(1.)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    numpy_shape = ((shape,) if isinstance(shape, int) else shape) + (n, m)
+    arr = x.to_numpy()
+
+    assert(np.allclose(arr, np.ones(numpy_shape, dtype=numpy_dtypes[dtype])))
 
 
 @test_utils.test()

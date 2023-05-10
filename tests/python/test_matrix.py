@@ -1312,6 +1312,7 @@ def test_matrix_oob():
 @test_utils.test(arch=get_host_arch_list())
 def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
     import numpy as np
+
     x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
     # use the corresponding dtype for the numpy array.
     numpy_dtypes = {
@@ -1327,7 +1328,7 @@ def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
     @ti.kernel
     def func():
         for I in ti.grouped(x):
-                assert all(abs(I - 1.) < 1e-6)
+            assert all(abs(I - 1.0) < 1e-6)
 
     func()
 
@@ -1339,8 +1340,9 @@ def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
 @test_utils.test(arch=get_host_arch_list())
 def test_matrix_to_numpy_with_offset(dtype, shape, offset, m, n):
     import numpy as np
+
     x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
-    x.fill(1.)
+    x.fill(1.0)
     # use the corresponding dtype for the numpy array.
     numpy_dtypes = {
         ti.i32: np.int32,
@@ -1351,7 +1353,7 @@ def test_matrix_to_numpy_with_offset(dtype, shape, offset, m, n):
     numpy_shape = ((shape,) if isinstance(shape, int) else shape) + (n, m)
     arr = x.to_numpy()
 
-    assert(np.allclose(arr, np.ones(numpy_shape, dtype=numpy_dtypes[dtype])))
+    assert np.allclose(arr, np.ones(numpy_shape, dtype=numpy_dtypes[dtype]))
 
 
 @test_utils.test()

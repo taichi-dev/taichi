@@ -75,6 +75,10 @@ class LlvmRuntimeExecutor {
 
   void synchronize();
 
+  bool use_device_memory_pool() {
+    return use_device_memory_pool_;
+  }
+
  private:
   /* ----------------------- */
   /* ------ Allocation ----- */
@@ -98,7 +102,7 @@ class LlvmRuntimeExecutor {
 
   void *preallocate_memory(std::size_t prealloc_size,
                            DeviceAllocation &devalloc);
-  void preallocate_runtime_memory(std::size_t size = 0);
+  void preallocate_runtime_memory(float fraction = 1.0);
 
   /* ------------------------- */
   /* ---- Runtime Helpers ---- */

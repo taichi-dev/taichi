@@ -409,9 +409,9 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
     }
   }
 
-  std::size_t alloc_size = all_dense ? 50 * (1UL << 20) : 0;
-  if (config_.arch == Arch::cuda && use_device_memory_pool_ && !all_dense) {
-    preallocate_runtime_memory(alloc_size);
+  if (config_.arch == Arch::cuda && use_device_memory_pool() && !all_dense) {
+    float fraction = all_dense ? 0.1 : 0.7;
+    preallocate_runtime_memory(fraction);
   }
 
   TI_TRACE("Allocating data structure of size {} bytes", root_size);
@@ -483,7 +483,7 @@ DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
        get_runtime_jit_module(),
        get_llvm_runtime(),
        result_buffer,
-       use_device_memory_pool_});
+       use_device_memory_pool()});
 }
 
 void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
@@ -581,7 +581,7 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size,
   return preallocated_device_buffer;
 }
 
-void LlvmRuntimeExecutor::preallocate_runtime_memory(std::size_t size) {
+void LlvmRuntimeExecutor::preallocate_runtime_memory(float fraction) {
   if (preallocated_runtime_memory_allocs_ != kDeviceNullAllocation)
     return;
 
@@ -594,10 +594,8 @@ void LlvmRuntimeExecutor::preallocate_runtime_memory(std::size_t size) {
     total_prealloc_size =
         std::size_t(config_.device_memory_fraction * total_mem);
   }
+  total_prealloc_size *= fraction;
   TI_ASSERT(total_prealloc_size <= total_mem);
-
-  if (size > 0)
-    total_prealloc_size = size;
 
   void *runtime_memory_prealloc_buffer = preallocate_memory(
       total_prealloc_size, preallocated_runtime_memory_allocs_);
@@ -685,7 +683,7 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 
   // Preallocate for runtime memory and update to LLVMRuntime
   if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
-    if (!use_device_memory_pool_) {
+    if (!use_device_memory_pool()) {
       preallocate_runtime_memory();
     }
   }

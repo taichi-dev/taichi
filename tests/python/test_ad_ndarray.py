@@ -1343,3 +1343,95 @@ def test_tape_torch_tensor_grad_none():
 
     for i in range(N):
         assert a.grad[i] == 1.0
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_grad_tensor_in_kernel():
+    N = 10
+
+    a = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    b = ti.ndarray(ti.f32, shape=(), needs_grad=True)
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(), b: ti.types.ndarray()):
+        for i in x:
+            b[None] += x.grad[i]
+
+    a.grad.fill(2.0)
+    test(a, b)
+    assert b[None] == N * 2.0
+
+    with pytest.raises(RuntimeError, match=r"Cannot automatically differentiate through a grad tensor"):
+        test.grad(a, b)
+
+
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_tensor_shape():
+    N = 3
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(), y: ti.types.ndarray()):
+        for i in range(N):
+            a = 2.0
+            for j in range(N):
+                a += x[i] / x.shape[0]
+            y[0] += a
+
+    device = "cuda" if ti.lang.impl.current_cfg().arch == ti.cuda else "cpu"
+
+    a = torch.zeros((N,), device=device, requires_grad=True)
+    loss = torch.zeros((1,), device=device, requires_grad=True)
+
+    with ti.ad.Tape(loss=loss):
+        test(a, loss)
+
+    for i in range(N):
+        assert a.grad[i] == 1.0
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_ndarray_needs_grad_false():
+    N = 3
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(needs_grad=False), y: ti.types.ndarray()):
+        for i in range(N):
+            a = 2.0
+            for j in range(N):
+                a += x[i] / x.shape[0]
+            y[0] += a
+
+    x = ti.ndarray(ti.f32, shape=N, needs_grad=True)
+    y = ti.ndarray(ti.f32, shape=1, needs_grad=True)
+
+    test(x, y)
+
+    y.grad.fill(1.0)
+    test.grad(x, y)
+    for i in range(N):
+        assert x.grad[i] == 0.0
+
+
+@pytest.mark.skipif(not has_pytorch(), reason="Pytorch not installed.")
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_torch_needs_grad_false():
+    N = 3
+
+    @ti.kernel
+    def test(x: ti.types.ndarray(needs_grad=False), y: ti.types.ndarray()):
+        for i in range(N):
+            a = 2.0
+            for j in range(N):
+                a += x[i] / x.shape[0]
+            y[0] += a
+
+    x = torch.rand((N,), dtype=torch.float, requires_grad=True)
+    y = torch.rand((1,), dtype=torch.float, requires_grad=True)
+
+    test(x, y)
+
+    y.grad.fill_(1.0)
+    test.grad(x, y)
+    for i in range(N):
+        assert x.grad[i] == 0.0

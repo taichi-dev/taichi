@@ -1086,6 +1086,10 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(DecorationStmt *stmt) override {
     // do nothing
   }
@@ -1503,10 +1507,13 @@ class MakeAdjoint : public ADTransform {
       } else {
         src = stmt->src->as<ExternalPtrStmt>();
       }
-      TI_ASSERT(!src->is_grad);
       auto arg = src->base_ptr->as<ArgLoadStmt>();
       if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
           TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        TI_ASSERT_INFO(!src->is_grad,
+                       "Cannot automatically differentiate through a grad "
+                       "tensor, if you really want to do that, pass the grad "
+                       "tensor into the kernel directly");
         auto adj_ptr = insert<ExternalPtrStmt>(
             src->base_ptr, src->indices, src->element_shape, src->element_dim,
             /*is_grad=*/true);
@@ -1577,6 +1584,10 @@ class MakeAdjoint : public ADTransform {
           TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
         return;
       }
+      TI_ASSERT_INFO(!dest->is_grad,
+                     "Cannot automatically differentiate through a grad "
+                     "tensor, if you really want to do that, pass the grad "
+                     "tensor into the kernel directly");
       adjoint_ptr = insert<ExternalPtrStmt>(
           dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
           /*is_grad=*/true);
@@ -1639,6 +1650,10 @@ class MakeAdjoint : public ADTransform {
       auto arg = dest->base_ptr->as<ArgLoadStmt>();
       if (arg->ret_type.ptr_removed()->as<StructType>()->elements().size() >
           TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
+        TI_ASSERT_INFO(!dest->is_grad,
+                       "Cannot automatically differentiate through a grad "
+                       "tensor, if you really want to do that, pass the grad "
+                       "tensor into the kernel directly");
         auto adjoint_ptr =
             insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
                                     dest->element_shape, dest->element_dim,

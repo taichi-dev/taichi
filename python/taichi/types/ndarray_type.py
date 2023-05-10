@@ -124,11 +124,12 @@ class NdarrayType:
         # Check ndim match
         if self.ndim is not None and ndarray_type.shape is not None and self.ndim != len(ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
+                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {len(ndarray_type.shape)}d ndarray with shape {ndarray_type.shape} is provided"
             )
 
         # Check needs_grad
-        if self.needs_grad is not None and self.needs_grad != ndarray_type.needs_grad:
+        if self.needs_grad is not None and self.needs_grad > ndarray_type.needs_grad:
+            # It's okay to pass a needs_grad=True ndarray at runtime to a need_grad=False arg but not vice versa.
             raise ValueError(
                 f"Invalid argument into ti.types.ndarray() - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
             )

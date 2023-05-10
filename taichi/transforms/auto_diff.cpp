@@ -1086,6 +1086,10 @@ class ADTransform : public IRVisitor {
     // do nothing
   }
 
+  void visit(ExternalTensorShapeAlongAxisStmt *stmt) override {
+    // do nothing
+  }
+
   void visit(DecorationStmt *stmt) override {
     // do nothing
   }

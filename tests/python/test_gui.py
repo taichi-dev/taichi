@@ -73,7 +73,7 @@ def test_set_image_fast_gui_with_offset(channel, dtype, color, offset):
     gui.set_image(img)
     fast_image = gui.img
 
-    alpha = 0xff << 24
+    alpha = 0xFF << 24
     from taichi._lib.utils import get_os_name  # pylint: disable=C0415
 
     rgb_color = (

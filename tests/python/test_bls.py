@@ -171,7 +171,7 @@ def test_bls_large_block():
 
     @ti.kernel
     def foo():
-        ti.block_dim(512)
+        ti.loop_config(block_dim=512)
         ti.block_local(a)
         for i, j in a:
             for k in range(stencil_length):

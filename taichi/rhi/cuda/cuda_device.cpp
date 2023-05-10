@@ -37,6 +37,8 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
   info.use_cached = false;
   info.use_preallocated = false;
 
+  CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
+
   *out_devalloc = DeviceAllocation{};
   out_devalloc->alloc_id = allocations_.size();
   out_devalloc->device = this;

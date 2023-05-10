@@ -1672,7 +1672,7 @@ Value IRBuilder::make_access_chain(const SType &out_type,
   for (auto &ind : index_values) {
     ib_.add(ind);
   }
-  ib_.commit(&func_header_);
+  ib_.commit(&function_);
   return ret;
 }
 

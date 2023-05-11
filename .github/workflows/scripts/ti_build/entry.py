@@ -2,6 +2,7 @@
 
 # -- stdlib --
 import argparse
+import datetime
 import os
 import platform
 import subprocess
@@ -30,15 +31,22 @@ def build_wheel(python: Command, pip: Command) -> None:
     """
     Build the Taichi wheel
     """
+
     git.fetch("origin", "master", "--tags")
-    proj = os.environ.get("PROJECT_NAME", "taichi")
     proj_tags = []
     extra = []
 
-    if proj == "taichi-nightly":
-        proj_tags.extend(["egg_info", "--tag-date", "--tag-build=.post"])
-        # Include C-API in nightly builds
-        cmake_args["TI_WITH_C_API"] = True
+    cmake_args.writeback()
+    wheel_tag = cmake_args.render_wheel_tag()
+    if misc.options.tag_local:
+        wheel_tag = misc.options.tag_local
+
+    if misc.options.nightly:
+        os.environ["PROJECT_NAME"] = "taichi-nightly"
+        now = datetime.datetime.now().strftime("%Y%m%d")
+        proj_tags.extend(["egg_info", f"--tag-build=.post{now}+{wheel_tag}"])
+    elif misc.options.tag_config or misc.options.tag_local:
+        proj_tags.extend(["egg_info", f"--tag-build=+{wheel_tag}"])
 
     if platform.system() == "Linux":
         if is_manylinux2014():
@@ -46,7 +54,6 @@ def build_wheel(python: Command, pip: Command) -> None:
         else:
             extra.extend(["-p", "manylinux_2_27_x86_64"])
 
-    cmake_args.writeback()
     python("setup.py", "clean")
     python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 
@@ -60,7 +67,7 @@ def install_build_wheel_deps(python: Command, pip: Command) -> None:
     pip.install("-r", "requirements_dev.txt")
 
 
-def setup_basic_build_env(force_vulkan=False):
+def setup_basic_build_env():
     u = platform.uname()
     if (u.system, u.machine) == ("Windows", "AMD64"):
         # Use MSVC on Windows
@@ -71,8 +78,7 @@ def setup_basic_build_env(force_vulkan=False):
         setup_clang()
 
     setup_llvm()
-    if force_vulkan or cmake_args.get_effective("TI_WITH_VULKAN"):
-        setup_vulkan()
+    setup_vulkan()
 
     sccache = setup_sccache()
 
@@ -96,7 +102,7 @@ def action_wheel():
 
 
 def action_android():
-    sccache, python, pip = setup_basic_build_env(force_vulkan=True)
+    sccache, python, pip = setup_basic_build_env()
     setup_android_ndk()
     handle_alternate_actions()
     build_android(python, pip)
@@ -150,6 +156,15 @@ def parse_args():
 
     help = "Continue when encounters error."
     parser.add_argument("--permissive", action="store_true", default=False, help=help)
+
+    help = "Tag built wheel with TI_WITH_xxx config."
+    parser.add_argument("--tag-config", action="store_true", default=False, help=help)
+
+    help = "Set a local version. Overrides --tag-config."
+    parser.add_argument("--tag-local", type=str, default=None, help=help)
+
+    help = "Build nightly wheel."
+    parser.add_argument("--nightly", action="store_true", default=False, help=help)
 
     options = parser.parse_args()
     return options

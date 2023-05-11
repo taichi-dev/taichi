@@ -68,7 +68,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
-option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
+option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)  # wheel-tag: bt
 
 if(LINUX OR APPLE)
     if (NOT IOS)
@@ -205,8 +205,8 @@ endif()
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
-option(TI_WITH_C_API "build taichi runtime c-api library" ON)
-option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)
+option(TI_WITH_C_API "build taichi runtime c-api library" ON)  # wheel-tag: aot
+option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)  # wheel-tag: static_aot
 
 if(TI_WITH_STATIC_C_API)
     set(TI_WITH_C_API ${TI_WITH_STATIC_C_API})
@@ -231,7 +231,7 @@ if (TI_BUILD_RHI_EXAMPLES)
 endif()
 
 
-option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)
+option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)  # wheel-tag: viz
 if (TI_WITH_GRAPHVIZ)
   set(GRAPHVIZ_GRAPH_NAME "ti_targets")
   add_custom_target(graphviz ALL

@@ -73,7 +73,7 @@ def get_struct_field(x: Field):
 
     out = ""
     if is_ptr:
-        out += f"IntPtr {name}"
+        out += f"public IntPtr {name}"
     elif x.count:
         out += f"[MarshalAs(UnmanagedType.ByValArray, SizeConst={x.count})] "
         out += f"public {get_type_name(x.type)}[] {name}"
@@ -92,7 +92,7 @@ def get_union_variant(x: Field):
 
     out = "[FieldOffset(0)] "
     if is_ptr:
-        out += f"IntPtr {name}"
+        out += f"public IntPtr {name}"
     elif x.count:
         out += f"[MarshalAs(UnmanagedType.ByValArray, SizeConst={x.count})] "
         out += f"public {get_type_name(x.type)}[] {name}"

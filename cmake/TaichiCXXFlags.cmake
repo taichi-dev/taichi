@@ -39,8 +39,10 @@ if (WIN32)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:__cplusplus /Zc:inline /std:c++17")
         # Linker & object related flags
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /bigobj")
-        # Debugging (generate PBD files)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi /Zf")
+        # Debugging (generate PDB files)
+        if (TI_GENERATE_PDB)
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zi /Zf")
+        endif()
         # Performance and optimizations
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")
         # C4244: conversion from 'type1' to 'type2', possible loss of data

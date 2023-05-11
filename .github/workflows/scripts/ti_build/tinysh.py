@@ -218,6 +218,19 @@ def sudo():
         return prefix("sudo")
 
 
+def nice():
+    """
+    Wrap a command with sudo.
+    """
+    if IS_WINDOWS:
+        from .misc import warn
+
+        warn("nice is not yet implemented on Windows")
+        return with_options({})
+    else:
+        return prefix("nice")
+
+
 sh = Command()
 git = sh.git
 # Use setup_python !

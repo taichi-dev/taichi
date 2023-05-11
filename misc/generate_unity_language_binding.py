@@ -23,12 +23,11 @@ _T = lambda n: RESERVED_WORD_TRANSFORM.get(str(n), str(n))
 
 
 def get_type_name(x: EntryBase):
-    ty = type(x)
-    if ty in [BuiltInType]:
+    if isinstance(x, BuiltInType):
         return x.type_name
-    elif ty in [Alias, Handle, Enumeration, Structure, Union, Callback]:
+    elif isinstance(x, (Alias, Handle, Enumeration, Structure, Union, Callback)):
         return x.name.upper_camel_case
-    elif ty in [BitField]:
+    elif isinstance(x, BitField):
         return x.name.extend("flag_bits").upper_camel_case
     else:
         raise RuntimeError(f"'{x.id}' is not a type")
@@ -103,14 +102,13 @@ def get_union_variant(x: Field):
 
 
 def get_declr(x: EntryBase):
-    ty = type(x)
-    if ty is BuiltInType:
+    if isinstance(x, BuiltInType):
         return ""
 
-    elif ty is Alias:
+    elif isinstance(x, Alias):
         return f"// using {get_type_name(x)} = {get_type_name(x.alias_of)};"
 
-    elif ty is Definition:
+    elif isinstance(x, Definition):
         out = [
             "static partial class Def {",
             f"public const uint {x.name.screaming_snake_case} = {x.value};",
@@ -118,7 +116,7 @@ def get_declr(x: EntryBase):
         ]
         return "\n".join(out)
 
-    elif ty is Handle:
+    elif isinstance(x, Handle):
         out = [
             "[StructLayout(LayoutKind.Sequential)]",
             "public struct " + get_type_name(x) + " {",
@@ -127,7 +125,7 @@ def get_declr(x: EntryBase):
         ]
         return "\n".join(out)
 
-    elif ty is Enumeration:
+    elif isinstance(x, Enumeration):
         out = ["public enum " + get_type_name(x) + " {"]
         for name, value in x.cases.items():
             name = x.name.extend(name).screaming_snake_case
@@ -136,7 +134,7 @@ def get_declr(x: EntryBase):
         out += ["}"]
         return "\n".join(out)
 
-    elif ty is BitField:
+    elif isinstance(x, BitField):
         out = ["[Flags]", "public enum " + get_type_name(x) + " {"]
         for name, value in x.bits.items():
             name = x.name.extend(name).extend("bit").screaming_snake_case
@@ -144,7 +142,7 @@ def get_declr(x: EntryBase):
         out += ["};"]
         return "\n".join(out)
 
-    elif ty is Structure:
+    elif isinstance(x, Structure):
         out = [
             "[StructLayout(LayoutKind.Sequential)]",
             "public struct " + get_type_name(x) + " {",
@@ -154,7 +152,7 @@ def get_declr(x: EntryBase):
         out += ["}"]
         return "\n".join(out)
 
-    elif ty is Union:
+    elif isinstance(x, Union):
         out = [
             "[StructLayout(LayoutKind.Explicit)]",
             "public struct " + get_type_name(x) + " {",
@@ -164,7 +162,7 @@ def get_declr(x: EntryBase):
         out += ["}"]
         return "\n".join(out)
 
-    elif ty is Callback:
+    elif isinstance(x, Callback):
         out = [
             "[StructLayout(LayoutKind.Sequential)]",
             "public struct " + get_type_name(x) + " {",
@@ -173,7 +171,7 @@ def get_declr(x: EntryBase):
         ]
         return "\n".join(out)
 
-    elif ty is Function:
+    elif isinstance(x, Function):
         out = []
 
         return_value_type = "void" if x.return_value_type == None else get_type_name(x.return_value_type)
@@ -298,7 +296,7 @@ def generate_module_header(module):
         return
 
     print(f"processing module '{module.name}'")
-    assert re.match("taichi/\w+.h", module.name)
+    assert re.match(r"taichi/\w+.h", module.name)
     module_name = module.name[len("taichi/") : -len(".h")]
     path = f"c_api/unity/{module_name}.cs"
     with open(path, "w") as f:

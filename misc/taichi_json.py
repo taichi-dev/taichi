@@ -3,7 +3,7 @@ import json
 import re
 from collections import defaultdict
 from pathlib import Path
-from typing import List
+from typing import DefaultDict, Dict, List, Optional
 
 
 class Version:
@@ -12,7 +12,7 @@ class Version:
             ver = ver[1:]
         xs = [int(x) for x in ver.split(".")]
         assert len(xs) <= 3
-        xs += ["0"] * (3 - len(xs))
+        xs += [0] * (3 - len(xs))
 
         self.major = xs[0]
         self.minor = xs[1]
@@ -66,7 +66,7 @@ class Name:
 
 
 class DeclarationRegistry:
-    current = None
+    current: 'Optional[DeclarationRegistry]' = None
 
     def __init__(self, builtin_tys={}):
         # "xxx.yyy" -> Xxx(yyy) Look-up table.
@@ -74,7 +74,7 @@ class DeclarationRegistry:
         self._imported = {}
         self._builtin_tys = dict((x.id, x) for x in builtin_tys)
 
-    def resolve(self, id: str) -> "EntryBase":
+    def resolve(self, id: str) -> Optional["EntryBase"]:
         if id in self._builtin_tys:
             return self._builtin_tys[id]
         elif id in self._inner:
@@ -99,7 +99,7 @@ class DeclarationRegistry:
         DeclarationRegistry.current = declr_reg
 
 
-def load_inc_enums():
+def load_inc_enums() -> DefaultDict[str, Dict[Name, int]]:
     paths = glob.glob("taichi/inc/*.inc.h")
     cases = defaultdict(dict)
     for path in paths:
@@ -161,7 +161,10 @@ class BuiltInType(EntryBase):
 class Alias(EntryBase):
     def __init__(self, j):
         super().__init__(j, "alias")
-        self.alias_of = DeclarationRegistry.current.resolve(j["alias_of"])
+        assert DeclarationRegistry.current is not None
+        alias_of = DeclarationRegistry.current.resolve(j["alias_of"])
+        assert alias_of is not None
+        self.alias_of = alias_of
 
 
 class Definition(EntryBase):
@@ -179,10 +182,12 @@ class Handle(EntryBase):
 class Enumeration(EntryBase):
     def __init__(self, j):
         super().__init__(j, "enumeration")
+        cases: Dict[Name, int]
         if "inc_cases" in j:
-            self.cases = load_inc_enums()[j["inc_cases"]]
+            cases = load_inc_enums()[j["inc_cases"]]
         else:
-            self.cases = dict((Name(name), value) for name, value in j["cases"].items())
+            cases = dict((Name(name), value) for name, value in j["cases"].items())
+        self.cases = cases
 
 
 class BitField(EntryBase):
@@ -196,6 +201,7 @@ class BitField(EntryBase):
 
 class Field:
     def __init__(self, j):
+        assert DeclarationRegistry.current is not None
         ty = DeclarationRegistry.current.resolve(j["type"])
         assert ty != None, f"unknown type '{j['type']}'"
         # The type has been registered.
@@ -268,10 +274,12 @@ class Documentation:
             with path.open() as f:
                 templ = f.readlines()
 
+            i = 1
+
             # Ignore markdown headers
             markdown_metadata = []
             if len(templ) > 0 and templ[0].startswith("---"):
-                for i in range(1, len(templ)):
+                for i in range(i, len(templ)):
                     if templ[i].startswith("---"):
                         i += 1
                         break

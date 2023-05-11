@@ -1,0 +1,19 @@
+self-hosted-runner:
+  labels:
+  - cn
+  - cuda
+  - OpenGL
+  - vulkan
+  - m1
+  - driver470
+  - driver510
+  - benchmark
+  - release
+  - build
+  - sm70
+  - sm86
+  - amdgpu
+  - online
+
+# config-variables:
+#   - ENVIRONMENT_STAGE

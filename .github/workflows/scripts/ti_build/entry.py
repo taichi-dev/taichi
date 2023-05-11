@@ -20,7 +20,7 @@ from .misc import banner, is_manylinux2014
 from .ospkg import setup_os_pkgs
 from .python import get_desired_python_version, setup_python
 from .sccache import setup_sccache
-from .tinysh import Command, CommandFailed, git
+from .tinysh import Command, CommandFailed, git, nice
 from .vulkan import setup_vulkan
 
 
@@ -50,7 +50,8 @@ def build_wheel(python: Command, pip: Command) -> None:
     python("setup.py", "clean")
     python("misc/make_changelog.py", "--ver", "origin/master", "--repo_dir", "./", "--save")
 
-    python("setup.py", *proj_tags, "bdist_wheel", *extra)
+    with nice():
+        python("setup.py", *proj_tags, "bdist_wheel", *extra)
 
 
 @banner("Install Build Wheel Dependencies")

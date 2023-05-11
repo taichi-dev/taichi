@@ -89,7 +89,7 @@ def action_wheel():
     handle_alternate_actions()
     build_wheel(python, pip)
     try:
-        sccache("--stop-server")
+        sccache("-s")
     except CommandFailed:
         pass
 
@@ -100,7 +100,7 @@ def action_android():
     handle_alternate_actions()
     build_android(python, pip)
     try:
-        sccache("--stop-server")
+        sccache("-s")
     except CommandFailed:
         pass
 

@@ -492,6 +492,39 @@ def test_fetching_depth_attachment():
     window.destroy()
 
 
+@pytest.mark.parametrize("offset", [(0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_get_depth_buffer_with_offset(offset):
+    window = ti.ui.Window("test", (512, 512), vsync=True, show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.Camera()
+
+    ball_center = ti.Vector.field(3, dtype=float, shape=(1,))
+    ball_center[0] = ti.math.vec3(0, 0, 0.5)
+
+    def render():
+        camera.position(0.0, 0.0, 1)
+        camera.lookat(0.0, 0.0, 0)
+        scene.set_camera(camera)
+        scene.point_light(pos=(0, 1, 2), color=(1, 1, 1))
+        scene.ambient_light((0.5, 0.5, 0.5))
+        scene.particles(ball_center, radius=0.05, color=(0.5, 0.42, 0.8))
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+
+    depth_buffer_field = ti.field(dtype=ti.f32, shape=(512, 512), offset=offset)
+    window.get_depth_buffer(depth_buffer_field)
+    verify_image(depth_buffer_field, "test_depth")
+    window.destroy()
+
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_lines():

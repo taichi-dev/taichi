@@ -39,8 +39,13 @@ def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
 
 @kernel
 def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
+    offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+
     for I in grouped(tensor):
-        arr[I] = tensor[I]
+        arr[I - offset_new] = tensor[I]
 
 
 @kernel
@@ -73,10 +78,12 @@ def ndarray_matrix_to_ext_arr(
 
 @kernel
 def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
+    i_offset = static(img.snode.ptr.offset[0] if len(img.snode.ptr.offset) != 0 else 0)
+    j_offset = static(img.snode.ptr.offset[1] if len(img.snode.ptr.offset) != 0 else 0)
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
-        color = img[i, img.shape[1] - 1 - j]
+        color = img[i + i_offset, (img.shape[1] + j_offset) - 1 - j]
         if static(img.dtype in [f16, f32, f64]):
             r, g, b = ops.min(255, ops.max(0, int(color * 255)))[:3]
         else:
@@ -100,32 +107,51 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
 
 @kernel
 def tensor_to_image(tensor: template(), arr: ndarray_type.ndarray()):
+    offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(tensor):
         t = ops.cast(tensor[I], f32)
-        arr[I, 0] = t
-        arr[I, 1] = t
-        arr[I, 2] = t
+        arr[I - offset_new, 0] = t
+        arr[I - offset_new, 1] = t
+        arr[I - offset_new, 2] = t
 
 
 @kernel
 def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
+    offset = static(mat.snode.ptr.offset)
+    shape = static(mat.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(mat):
         for p in static(range(mat.n)):
-            arr[I, p] = ops.cast(mat[I][p], f32)
+            arr[I - offset_new, p] = ops.cast(mat[I][p], f32)
             if static(mat.n <= 2):
-                arr[I, 2] = 0
+                arr[I - offset_new, 2] = 0
 
 
 @kernel
 def tensor_to_tensor(tensor: template(), other: template()):
-    for I in grouped(tensor):
-        tensor[I] = other[I]
+    # assumes that tensor and other have the same shape
+    shape = static(tensor.shape)
+    tensor_offset = static(tensor.snode.ptr.offset)
+    tensor_offset_new = static([0] * len(shape) if len(tensor_offset) == 0 else tensor_offset)
+    other_offset = static(other.snode.ptr.offset)
+    other_offset_new = static([0] * len(shape) if len(other_offset) == 0 else other_offset)
+
+    for I in grouped(ndrange(*shape)):
+        tensor[I + tensor_offset_new] = other[I + other_offset_new]
 
 
 @kernel
 def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
+    offset = static(tensor.snode.ptr.offset)
+    shape = static(tensor.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
     for I in grouped(tensor):
-        tensor[I] = arr[I]
+        tensor[I] = arr[I - offset_new]
 
 
 @kernel
@@ -164,36 +190,46 @@ def ext_arr_to_ndarray_matrix(
 
 @kernel
 def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(), as_vector: template()):
+    offset = static(mat.snode.ptr.offset)
+    shape = static(mat.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(as_vector):
                     if static(getattr(mat, "ndim", 2) == 1):
-                        arr[I, p] = mat[I][p]
+                        arr[I - offset_new, p] = mat[I][p]
                     else:
-                        arr[I, p] = mat[I][p, q]
+                        arr[I - offset_new, p] = mat[I][p, q]
                 else:
                     if static(getattr(mat, "ndim", 2) == 1):
-                        arr[I, p, q] = mat[I][p]
+                        arr[I - offset_new, p, q] = mat[I][p]
                     else:
-                        arr[I, p, q] = mat[I][p, q]
+                        arr[I - offset_new, p, q] = mat[I][p, q]
 
 
 @kernel
 def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(), as_vector: template()):
+    offset = static(mat.snode.ptr.offset)
+    shape = static(mat.shape)
+    # default value of offset is [], replace it with [0] * len
+    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(getattr(mat, "ndim", 2) == 1):
                     if static(as_vector):
-                        mat[I][p] = arr[I, p]
+                        mat[I][p] = arr[I - offset_new, p]
                     else:
-                        mat[I][p] = arr[I, p, q]
+                        mat[I][p] = arr[I - offset_new, p, q]
                 else:
                     if static(as_vector):
-                        mat[I][p, q] = arr[I, p]
+                        mat[I][p, q] = arr[I - offset_new, p]
                     else:
-                        mat[I][p, q] = arr[I, p, q]
+                        mat[I][p, q] = arr[I - offset_new, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.
@@ -215,10 +251,13 @@ def arr_vulkan_layout_to_arr_normal_layout(vk_arr: ndarray_type.ndarray(), norma
 @kernel
 def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(), normal_field: template()):
     static_assert(len(normal_field.shape) == 2)
-    w = normal_field.shape[0]
-    h = normal_field.shape[1]
+    w = static(normal_field.shape[0])
+    h = static(normal_field.shape[1])
+    i_offset = static(normal_field.snode.ptr.offset[0] if len(normal_field.snode.ptr.offset) != 0 else 0)
+    j_offset = static(normal_field.snode.ptr.offset[1] if len(normal_field.snode.ptr.offset) != 0 else 0)
+
     for i, j in ndrange(w, h):
-        normal_field[i, j] = vk_arr[(h - 1 - j) * w + i]
+        normal_field[i + i_offset, j + j_offset] = vk_arr[(h - 1 - j) * w + i]
 
 
 @kernel
@@ -277,21 +316,23 @@ def sort_stage(
     k: int,
     invocations: int,
 ):
+    keys_offset = static(keys.snode.ptr.offset if len(keys.snode.ptr.offset) != 0 else 0)
+    values_offset = static(values.snode.ptr.offset if len(values.snode.ptr.offset) != 0 else 0)
     for inv in range(invocations):
         j = k % p + inv * 2 * k
         for i in range(0, ops.min(k, N - j - k)):
             a = i + j
             b = i + j + k
             if int(a / (p * 2)) == int(b / (p * 2)):
-                key_a = keys[a]
-                key_b = keys[b]
+                key_a = keys[a + keys_offset]
+                key_b = keys[b + keys_offset]
                 if key_a > key_b:
-                    keys[a] = key_b
-                    keys[b] = key_a
+                    keys[a + keys_offset] = key_b
+                    keys[b + keys_offset] = key_a
                     if use_values != 0:
-                        temp = values[a]
-                        values[a] = values[b]
-                        values[b] = temp
+                        temp = values[a + values_offset]
+                        values[a + values_offset] = values[b + values_offset]
+                        values[b + values_offset] = temp
 
 
 # Parallel Prefix Sum (Scan)
@@ -383,5 +424,8 @@ def uniform_add(arr_in: template(), in_beg: i32, in_end: i32):
 
 @kernel
 def blit_from_field_to_field(dst: template(), src: template(), offset: i32, size: i32):
+    dst_offset = static(dst.snode.ptr.offset if len(dst.snode.ptr.offset) != 0 else 0)
+    src_offset = static(src.snode.ptr.offset if len(src.snode.ptr.offset) != 0 else 0)
+    print("[debug]", dst_offset, src_offset)
     for i in range(size):
-        dst[i + offset] = src[i]
+        dst[i + dst_offset + offset] = src[i + src_offset]

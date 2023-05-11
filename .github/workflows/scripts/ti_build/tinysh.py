@@ -241,3 +241,5 @@ tar = sh.tar
 bash = sh.bash
 start = sh.start.bake("/wait")
 apt = sh.sudo.apt
+powershell = Command("powershell.exe")
+pwsh = Command("pwsh.exe")

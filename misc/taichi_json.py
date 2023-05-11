@@ -66,7 +66,7 @@ class Name:
 
 
 class DeclarationRegistry:
-    current: 'Optional[DeclarationRegistry]' = None
+    current: "Optional[DeclarationRegistry]" = None
 
     def __init__(self, builtin_tys={}):
         # "xxx.yyy" -> Xxx(yyy) Look-up table.

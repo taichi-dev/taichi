@@ -23,8 +23,8 @@ from .tinysh import Command
 def add_aot_env():
     os.environ["TAICHI_REPO_DIR"] = os.getcwd()
     pyver = get_desired_python_version()
-    for p in Path(os.getcwd()).glob("**/cmake-install/c_api"):
-        if p.is_dir() and p.parent.parent.name.endswith(pyver):
+    for p in Path(os.getcwd()).glob("**/cmake-install/python/taichi/_lib/c_api"):
+        if p.is_dir() and any(v.name.endswith(f"-{pyver}") for v in p.parents):
             os.environ["TAICHI_C_API_INSTALL_DIR"] = str(p)
             break
     else:
@@ -33,11 +33,15 @@ def add_aot_env():
 
 def _write_ti_bashrc():
     path = get_cache_home() / "ti.bashrc"
+    envs = get_cache_home() / "ti-env.sh"
+    _write_env(envs)
     with open(path, "w") as f:
         f.write(
             "[ -f /etc/bashrc ] && source /etc/bashrc\n"
             "[ -f ~/.bashrc ] && source ~/.bashrc\n"
             r'export PS1="\[\e]0;[Taichi Build Environment]\a\]\[\033[01;31m\][Taichi Build] \[\033[00m\]$PS1"'
+            "\n"
+            f"source {envs}\n"
         )
 
     return path
@@ -47,11 +51,15 @@ def _write_ti_zshrc():
     dotdir = get_cache_home() / "zdotdir"
     dotdir.mkdir(parents=True, exist_ok=True)
     path = dotdir / ".zshrc"
+    envs = get_cache_home() / "ti-env.sh"
+    _write_env(envs)
     with open(path, "w") as f:
         f.write(
             "[ -f /etc/zsh/zshrc ] && source /etc/zsh/zshrc\n"
             "[ -f $HOME/.zshrc ] && source $HOME/.zshrc\n"
             r"export PROMPT='%{$fg_bold[red]%}[Taichi Build] %{$reset_color%}'$PROMPT"
+            "\n"
+            f"source {envs}\n"
         )
     return dotdir
 
@@ -138,10 +146,13 @@ def enter_shell():
             os.execl(shell.exe, shell.exe)
 
 
-def write_env(path):
-    cmake_args.writeback()
+def _write_env(path):
     envs = os.environ.get_changed_envs()
     envstr = ""
+
+    if isinstance(path, Path):
+        path = str(path)
+
     if path.endswith(".ps1"):
         envstr = "\n".join([f'$env:{k}="{v}"' for k, v in envs.items()])
     elif path.endswith(".sh"):
@@ -156,6 +167,10 @@ def write_env(path):
     with open(path, "w") as f:
         f.write(envstr)
 
+
+def write_env(path):
+    cmake_args.writeback()
+    _write_env(path)
     misc.info(f"Environment variables written to {path}")
 
 

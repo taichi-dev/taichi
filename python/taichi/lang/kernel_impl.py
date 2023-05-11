@@ -389,50 +389,51 @@ class TaichiCallableTemplateMapper:
             # support mip-mapping.
             return arg.num_dims, arg.fmt, 0
         if isinstance(anno, ndarray_type.NdarrayType):
-            if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
+            if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape), (), Layout.AOS, arg.grad is not None
-            if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS, arg.grad is not None
-            if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS, arg.grad is not None
-            # external arrays
-            shape = getattr(arg, "shape", None)
-            if shape is None:
-                raise TaichiRuntimeTypeError(f"Invalid argument into ti.types.ndarray(), got {arg}")
-            shape = tuple(shape)
-            element_shape = ()
-            if isinstance(anno.dtype, MatrixType):
-                if anno.ndim is not None:
-                    if len(shape) != anno.dtype.ndim + anno.ndim:
+                needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
+                if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
+                    return arg.dtype, len(arg.shape), (), Layout.AOS, needs_grad
+                if isinstance(arg, taichi.lang.matrix.VectorNdarray):
+                    return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS, needs_grad
+                if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
+                    return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS, needs_grad
+            else:
+                # external arrays
+                shape = getattr(arg, "shape", None)
+                if shape is None:
+                    raise TaichiRuntimeTypeError(f"Invalid argument into ti.types.ndarray(), got {arg}")
+                shape = tuple(shape)
+                element_shape = ()
+                if isinstance(anno.dtype, MatrixType):
+                    if anno.ndim is not None:
+                        if len(shape) != anno.dtype.ndim + anno.ndim:
+                            raise ValueError(
+                                f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
+                                f"but the argument has {len(shape)} dimensions"
+                            )
+                    else:
+                        if len(shape) < anno.dtype.ndim:
+                            raise ValueError(
+                                f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
+                                f"but the argument has only {len(shape)} dimensions"
+                            )
+                    element_shape = shape[-anno.dtype.ndim :]
+                    anno_element_shape = anno.dtype.get_shape()
+                    if None not in anno_element_shape and element_shape != anno_element_shape:
                         raise ValueError(
-                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim} element_dim={anno.dtype.ndim}, "
+                            f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
+                            f"but the argument has element shape of {element_shape}"
+                        )
+                elif anno.dtype is not None:
+                    # User specified scalar dtype
+                    if anno.ndim is not None and len(shape) != anno.ndim:
+                        raise ValueError(
+                            f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                             f"but the argument has {len(shape)} dimensions"
                         )
-                else:
-                    if len(shape) < anno.dtype.ndim:
-                        raise ValueError(
-                            f"Invalid argument into ti.types.ndarray() - required element_dim={anno.dtype.ndim}, "
-                            f"but the argument has only {len(shape)} dimensions"
-                        )
-                element_shape = shape[-anno.dtype.ndim :]
-                anno_element_shape = anno.dtype.get_shape()
-                if None not in anno_element_shape and element_shape != anno_element_shape:
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_shape={anno_element_shape}, "
-                        f"but the argument has element shape of {element_shape}"
-                    )
-            elif anno.dtype is not None:
-                # User specified scalar dtype
-                if anno.ndim is not None and len(shape) != anno.ndim:
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
-                        f"but the argument has {len(shape)} dimensions"
-                    )
-            needs_grad = getattr(arg, "requires_grad", False)
-            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
+                needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
+                return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -757,39 +758,33 @@ class Kernel:
                         )
                     else:
                         raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
-
                 else:
                     raise TaichiRuntimeTypeError.get(i, needed.to_string(), v)
 
             elif isinstance(needed, MatrixType):
                 if needed.dtype in primitive_types.real_types:
-                    for a in range(needed.n):
-                        for b in range(needed.m):
-                            if actual_argument_slot >= max_arg_num:
-                                exceed_max_arg_num = True
-                                break
-                            val = v[a, b] if needed.ndim == 2 else v[a]
-                            if not isinstance(val, (int, float, np.integer, np.floating)):
-                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(val))
-                            launch_ctx.set_arg_float(actual_argument_slot, float(val))
-                            actual_argument_slot += 1
+
+                    def cast_func(x):
+                        if not isinstance(x, (int, float, np.integer, np.floating)):
+                            raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                        return float(x)
+
                 elif needed.dtype in primitive_types.integer_types:
-                    for a in range(needed.n):
-                        for b in range(needed.m):
-                            if actual_argument_slot >= max_arg_num:
-                                exceed_max_arg_num = True
-                                break
-                            val = v[a, b] if needed.ndim == 2 else v[a]
-                            if not isinstance(val, (int, np.integer)):
-                                raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(val))
-                            if is_signed(needed.dtype):
-                                launch_ctx.set_arg_int(actual_argument_slot, int(val))
-                            else:
-                                launch_ctx.set_arg_uint(actual_argument_slot, int(val))
-                            actual_argument_slot += 1
+
+                    def cast_func(x):
+                        if not isinstance(x, (int, np.integer)):
+                            raise TaichiRuntimeTypeError.get(i, needed.dtype.to_string(), type(x))
+                        return int(x)
+
                 else:
                     raise ValueError(f"Matrix dtype {needed.dtype} is not integer type or real type.")
-                continue
+
+                if needed.ndim == 2:
+                    v = [cast_func(v[i, j]) for i in range(needed.n) for j in range(needed.m)]
+                else:
+                    v = [cast_func(v[i]) for i in range(needed.n)]
+                v = needed(*v)
+                needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
             elif isinstance(needed, StructType):
                 needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
             else:

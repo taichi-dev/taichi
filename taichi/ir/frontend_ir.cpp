@@ -656,7 +656,8 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   auto var_stmt = flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
   auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
-      var_stmt, index_stmts, expr->dt.get_shape(), expr->element_dim);
+      var_stmt, index_stmts, expr->dt.get_shape(), expr->element_dim,
+      expr->is_grad);
   if (expr->dim == indices.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();

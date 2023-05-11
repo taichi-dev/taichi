@@ -127,14 +127,6 @@ void compile_to_offloads(IRNode *ir,
   print("Access flagged I");
   irpass::analysis::verify(ir);
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
-  }
-
   irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
   print("Simplified II");
   irpass::analysis::verify(ir);
@@ -185,6 +177,14 @@ void offload_to_executable(IRNode *ir,
   if (config.detect_read_only) {
     irpass::detect_read_only(ir);
     print("Detect read-only accesses");
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
   }
 
   irpass::demote_atomics(ir, config);

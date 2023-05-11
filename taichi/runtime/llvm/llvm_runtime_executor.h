@@ -96,6 +96,8 @@ class LlvmRuntimeExecutor {
                     std::size_t size,
                     uint32_t data);
 
+  void *preallocate_memory(std::size_t prealloc_size);
+
   /* ------------------------- */
   /* ---- Runtime Helpers ---- */
   /* ------------------------- */
@@ -142,8 +144,7 @@ class LlvmRuntimeExecutor {
 
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  void *preallocated_device_buffer_{nullptr};  // TODO: move to memory allocator
-  DeviceAllocation preallocated_device_buffer_alloc_{kDeviceNullAllocation};
+  std::vector<DeviceAllocation> preallocated_device_buffer_allocs_;
 
   // good buddy
   friend LlvmProgramImpl;

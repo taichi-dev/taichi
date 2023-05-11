@@ -10,7 +10,6 @@ struct LLVMRuntime;
 class LlvmDevice : public Device {
  public:
   struct LlvmRuntimeAllocParams : AllocParams {
-    bool use_cached{true};
     JITModule *runtime_jit{nullptr};
     LLVMRuntime *runtime{nullptr};
     uint64 *result_buffer{nullptr};
@@ -25,6 +24,14 @@ class LlvmDevice : public Device {
     auto *device = dynamic_cast<DEVICE *>(this);
     TI_ASSERT(device != nullptr);
     return device;
+  }
+
+  virtual void *get_memory_addr(DeviceAllocation devalloc) {
+    TI_NOT_IMPLEMENTED
+  }
+
+  virtual std::size_t get_total_memory() {
+    TI_NOT_IMPLEMENTED
   }
 
   virtual DeviceAllocation import_memory(void *ptr, size_t size) {

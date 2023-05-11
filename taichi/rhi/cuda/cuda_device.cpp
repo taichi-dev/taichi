@@ -37,6 +37,8 @@ RhiResult CudaDevice::allocate_memory(const AllocParams &params,
   info.use_cached = false;
   info.use_preallocated = false;
 
+  CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
+
   *out_devalloc = DeviceAllocation{};
   out_devalloc->alloc_id = allocations_.size();
   out_devalloc->device = this;
@@ -51,18 +53,16 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   info.size = taichi::iroundup(params.size, taichi_page_size);
   if (info.size == 0) {
     info.ptr = nullptr;
-  } else if (params.use_cached) {
+  } else {
     info.ptr =
         DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
 
     TI_ASSERT(info.ptr != nullptr);
 
     CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
-  } else {
-    info.ptr = allocate_llvm_runtime_memory_jit(params);
   }
   info.is_imported = false;
-  info.use_cached = params.use_cached;
+  info.use_cached = true;
   info.use_preallocated = true;
 
   DeviceAllocation alloc;

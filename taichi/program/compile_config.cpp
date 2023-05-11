@@ -42,7 +42,6 @@ CompileConfig::CompileConfig() {
   make_thread_local = true;
   make_block_local = true;
   detect_read_only = true;
-  ndarray_use_cached_allocator = true;
   real_matrix_scalarize = true;
   half2_vectorization = false;
   make_cpu_multithreading_loop = true;

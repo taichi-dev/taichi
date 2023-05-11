@@ -60,8 +60,10 @@ class AlgSimp : public BasicStmtVisitor {
              data_type_bits(second_cast) <= data_type_bits(first_cast);
     }
     if (is_integral(first_cast)) {
-      // int(int(a))
-      return data_type_bits(second_cast) <= data_type_bits(first_cast);
+      // int(int(a)), note it's not always equivalent when signedness differ,
+      // see #7915
+      return data_type_bits(second_cast) <= data_type_bits(first_cast) &&
+             is_signed(second_cast) == is_signed(first_cast);
     }
     // int(float(a))
     if (data_type_bits(second_cast) <= data_type_bits(first_cast) * 2) {

@@ -6,7 +6,19 @@ from taichi.lang.impl import get_runtime
 from taichi.types import f32, f64
 
 
-class CG:
+class SparseCG:
+    """Conjugate-gradient solver built for SparseMatrix.
+
+    Use conjugate-gradient method to solve the linear system Ax = b, where A is SparseMatrix.
+
+    Args:
+        A (SparseMatrix): The coefficient matrix A of the linear system.
+        b (numpy ndarray, taichi Ndarray): The right-hand side of the linear system.
+        x0 (numpy ndarray, taichi Ndarray): The initial guess for the solution.
+        max_iter (int): Maximum number of iterations.
+        atol: Tolerance(absolute) for convergence.
+    """
+
     def __init__(self, A, b, x0=None, max_iter=50, atol=1e-6):
         self.dtype = A.dtype
         self.ti_arch = get_runtime().prog.config().arch

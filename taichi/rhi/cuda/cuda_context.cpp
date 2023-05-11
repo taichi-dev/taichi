@@ -30,10 +30,23 @@ CUDAContext::CUDAContext()
   driver_.device_get_attribute(
       &cc_minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_);
 
-  int device_supports_mem_pool;
-  driver_.device_get_attribute(&device_supports_mem_pool,
-                               CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,
-                               device_);
+  int device_supports_mem_pool = 0;
+  if (driver_.get_version_major() > 11 ||
+      (driver_.get_version_major() == 11 && driver_.get_version_minor() >= 2)) {
+    driver_.device_get_attribute(&device_supports_mem_pool,
+                                 CU_DEVICE_ATTRIBUTE_MEMORY_POOLS_SUPPORTED,
+                                 device_);
+  } else {
+    TI_WARN(
+        "Please consider upgrade your nvidia driver for better device memory "
+        "pool"
+        "support. Current driver supports CUDA {}.{}, we recommend driver "
+        "version"
+        "above 470 (CUDA 11.2).",
+        driver_.get_version_major(), driver_.get_version_minor());
+    device_supports_mem_pool = 0;
+  }
+
   if (device_supports_mem_pool) {
     supports_mem_pool_ = true;
     void *default_mem_pool;

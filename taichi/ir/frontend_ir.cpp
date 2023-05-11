@@ -1271,8 +1271,7 @@ void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
 }
 
 void ReferenceExpression::type_check(const CompileConfig *) {
-  ret_type = var->ret_type;
-  ret_type.set_is_pointer(true);
+  ret_type = TypeFactory::get_instance().get_pointer_type(var->ret_type);
 }
 
 void ReferenceExpression::flatten(FlattenContext *ctx) {

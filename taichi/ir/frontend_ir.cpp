@@ -140,6 +140,9 @@ FrontendWhileStmt::FrontendWhileStmt(const FrontendWhileStmt &o)
 
 void ArgLoadExpression::type_check(const CompileConfig *) {
   ret_type = dt;
+  if (is_ptr) {
+    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
+  }
   if (!create_load) {
     ret_type = TypeFactory::get_instance().get_pointer_type(ret_type, false);
   }
@@ -959,7 +962,7 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   };
 
   // Broadcast val to dest if neccessary
-  auto val_dtype = val->ret_type;
+  auto val_dtype = get_rvalue_dtype(val);
   auto dest_dtype = dest->ret_type.ptr_removed();
   if (dest_dtype->is<PrimitiveType>() && val_dtype->is<TensorType>()) {
     error();
@@ -972,20 +975,18 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   }
 
   // Validate dtype
-  auto dtype = val->ret_type;
-  if (dtype->is<TensorType>()) {
-    dtype = dtype.get_element_type();
+  if (val_dtype->is<TensorType>()) {
+    val_dtype = val_dtype.get_element_type();
   }
 
-  if (!dtype->is<PrimitiveType>()) {
+  if (!val_dtype->is<PrimitiveType>()) {
     error();
   }
 
-  if (is_quant(dest->ret_type)) {
-    ret_type = dest->ret_type->get_compute_type();
-  } else if (dest->ret_type->is<PrimitiveType>() ||
-             dest->ret_type->is<TensorType>()) {
-    ret_type = dest->ret_type;
+  if (is_quant(dest_dtype)) {
+    ret_type = dest_dtype->get_compute_type();
+  } else if (dest_dtype->is<PrimitiveType>() || dest_dtype->is<TensorType>()) {
+    ret_type = dest_dtype;
   } else {
     error();
   }
@@ -1271,6 +1272,7 @@ void MeshIndexConversionExpression::flatten(FlattenContext *ctx) {
 
 void ReferenceExpression::type_check(const CompileConfig *) {
   ret_type = var->ret_type;
+  ret_type.set_is_pointer(true);
 }
 
 void ReferenceExpression::flatten(FlattenContext *ctx) {
@@ -1793,6 +1795,16 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 
   return ptr_stmt;
+}
+
+DataType get_rvalue_dtype(Expr expr) {
+  if (auto argload = expr.cast<ArgLoadExpression>()) {
+    if (argload->is_ptr) {
+      return argload->ret_type.ptr_removed();
+    }
+    return argload->ret_type;
+  }
+  return expr->ret_type;
 }
 
 }  // namespace taichi::lang

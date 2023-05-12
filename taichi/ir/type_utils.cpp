@@ -57,6 +57,7 @@ int data_type_size(DataType t) {
   REGISTER_DATA_TYPE(i16, int16);
   REGISTER_DATA_TYPE(i32, int32);
   REGISTER_DATA_TYPE(i64, int64);
+  REGISTER_DATA_TYPE(u1, uint1);
   REGISTER_DATA_TYPE(u8, uint8);
   REGISTER_DATA_TYPE(u16, uint16);
   REGISTER_DATA_TYPE(u32, uint32);
@@ -99,7 +100,9 @@ std::string tensor_type_format(DataType t, Arch arch) {
 }
 
 std::string data_type_format(DataType dt, Arch arch) {
-  if (dt->is_primitive(PrimitiveTypeID::i8)) {
+  if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return "%d";
+  } else if (dt->is_primitive(PrimitiveTypeID::i8)) {
     // i8/u8 is converted to i16/u16 before printing, because CUDA doesn't
     // support the "%hhd"/"%hhu" specifiers.
     return "%hd";

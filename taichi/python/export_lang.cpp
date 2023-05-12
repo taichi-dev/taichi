@@ -939,6 +939,9 @@ void export_lang(py::module &m) {
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 
+  m.def("make_const_expr_bool",
+        Expr::make<ConstExpression, const DataType &, uint1>);
+
   m.def("make_const_expr_int",
         Expr::make<ConstExpression, const DataType &, int64>);
 

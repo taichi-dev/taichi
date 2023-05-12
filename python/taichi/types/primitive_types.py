@@ -93,6 +93,18 @@ i64 = int64
 
 # ----------------------------------------
 
+uint1 = ti_python_core.DataType_u1
+"""1-bit unsigned integer data type. Same as booleans.
+"""
+
+# ----------------------------------------
+
+u1 = uint1
+"""Alias for :const:`~taichi.types.primitive_types.uint1`
+"""
+
+# ----------------------------------------
+
 uint8 = ti_python_core.DataType_u8
 """8-bit unsigned integer data type.
 """
@@ -154,7 +166,7 @@ def ref(tp):
 real_types = [f16, f32, f64, float]
 real_type_ids = [id(t) for t in real_types]
 
-integer_types = [i8, i16, i32, i64, u8, u16, u32, u64, int, bool]
+integer_types = [i8, i16, i32, i64, u1, u8, u16, u32, u64, int, bool]
 integer_type_ids = [id(t) for t in integer_types]
 
 all_types = real_types + integer_types
@@ -175,6 +187,8 @@ __all__ = [
     "i32",
     "int64",
     "i64",
+    "uint1",
+    "u1",
     "uint8",
     "u8",
     "uint16",

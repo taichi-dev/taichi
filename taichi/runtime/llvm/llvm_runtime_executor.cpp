@@ -621,10 +621,10 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
   void *runtime_objects_prealloc_buffer = nullptr;
   if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
 #if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
-    // Pre-allocate for runtime objects
-    runtime_objects_prealloc_size = 50 * (1UL << 20);  // 50 MB
-    runtime_objects_prealloc_buffer = preallocate_memory(
-        runtime_objects_prealloc_size, preallocated_runtime_objects_allocs_);
+
+    runtime_objects_prealloc_size = 60 * (1UL << 20);  // 50 MB
+    runtime_objects_prealloc_buffer =
+        preallocate_memory(runtime_objects_prealloc_size);
 
     TI_TRACE("Allocating device memory {:.2f} MB",
              1.0 * runtime_objects_prealloc_size / (1UL << 20));

@@ -16,6 +16,7 @@ env:
   TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
   CI_IMAGE_VERSION: '202304251731'
   TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
+  REDIS_HOST: 172.16.5.1
 
 jobs:
   show_environ:
@@ -60,3 +61,14 @@ jobs:
     secrets:
       BOT_MINIO_ACCESS_KEY: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
       BOT_MINIO_SECRET_KEY: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+
+  save_build_metadata:
+    name: Save Build Metadata
+    runs-on: [self-hosted, Linux]
+    needs: [preparation, build]
+    steps:
+      - name: Saving Metadata
+        id: gather
+        run: >-
+          redis-cli -h $REDIS_HOST --raw
+          set "latest-build-id:$GITHUB_REPOSITORY:$GITHUB_REF" ${{ needs.preparation.outputs.build_id }}

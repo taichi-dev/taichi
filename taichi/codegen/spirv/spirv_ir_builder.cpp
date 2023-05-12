@@ -377,6 +377,8 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return t_uint16_;
+  } else if (dt == PrimitiveType::u1) {
+    return t_bool_;
   } else {
     return t_uint8_;
   }
@@ -392,6 +394,8 @@ DataType IRBuilder::get_taichi_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return PrimitiveType::u16;
+  } else if (dt == PrimitiveType::u1) {
+    return PrimitiveType::u1;
   } else {
     return PrimitiveType::u8;
   }
@@ -1090,10 +1094,10 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
   Value IRBuilder::_OpName(Value a, Value b) {                             \
     TI_ASSERT(a.stype.id == b.stype.id);                                   \
     const auto &bool_type = t_bool_; /* TODO: Only scalar supported now */ \
-    if (is_integral(a.stype.dt)) {                                         \
-      return make_value(spv::OpI##_Op, bool_type, a, b);                   \
-    } else if (a.stype.id == bool_type.id) {                               \
+    if (a.stype.id == bool_type.id) {                                      \
       return make_value(spv::OpLogical##_Op, bool_type, a, b);             \
+    } else if (is_integral(a.stype.dt)) {                                  \
+      return make_value(spv::OpI##_Op, bool_type, a, b);                   \
     } else {                                                               \
       TI_ASSERT(is_real(a.stype.dt));                                      \
       return make_value(spv::OpFOrd##_Op, bool_type, a, b);                \

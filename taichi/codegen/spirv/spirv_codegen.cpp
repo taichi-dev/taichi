@@ -246,6 +246,9 @@ class TaskCodegen : public IRVisitor {
       } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
         return ir_->int_immediate_number(
             stype, static_cast<int64_t>(const_val.val_i16), false);
+      } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+        return ir_->uint_immediate_number(
+            stype, static_cast<uint64_t>(const_val.val_u1), false);
       } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
         return ir_->uint_immediate_number(
             stype, static_cast<uint64_t>(const_val.val_u8), false);

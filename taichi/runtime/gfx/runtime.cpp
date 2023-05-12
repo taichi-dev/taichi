@@ -173,6 +173,7 @@ class HostDeviceContextBlitter {
       for (int j = 0; j < num; ++j) {
         // (penguinliong) Again, it's the module loader's responsibility to
         // check the data type availability.
+        TO_HOST(u1, uint1, j)
         TO_HOST(i8, int8, j)
         TO_HOST(u8, uint8, j)
         TO_HOST(i16, int16, j)

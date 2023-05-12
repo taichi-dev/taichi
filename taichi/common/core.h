@@ -133,6 +133,8 @@ class CoreState {
 //                                 Types
 //******************************************************************************
 
+using uint1 = bool;
+
 using uchar = unsigned char;
 
 using int8 = int8_t;

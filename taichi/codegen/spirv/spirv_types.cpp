@@ -179,6 +179,14 @@ const tinyir::Type *translate_ti_primitive(tinyir::Block &ir_module,
     } else if (t == PrimitiveType::i64) {
       return ir_module.emplace_back<IntType>(/*num_bits=*/64,
                                              /*is_signed=*/true);
+    } else if (t == PrimitiveType::u1) {
+      // Spir-v has no full support for boolean types, using boolean types in
+      // backend may cause issues. These issues arise when we use boolean as
+      // return type, argument type and inner dtype of compount types. Since
+      // boolean types has the same width with int32 in GLSL, we use int32
+      // instead.
+      return ir_module.emplace_back<IntType>(/*num_bits=*/32,
+                                             /*is_signed=*/false);
     } else if (t == PrimitiveType::u8) {
       return ir_module.emplace_back<IntType>(/*num_bits=*/8,
                                              /*is_signed=*/false);
@@ -395,7 +403,9 @@ class Translate2Spirv : public TypeVisitor {
         vt = spir_builder_->i64_type();
       }
     } else {
-      if (type->num_bits() == 8) {
+      if (type->num_bits() == 1) {
+        vt = spir_builder_->bool_type();
+      } else if (type->num_bits() == 8) {
         vt = spir_builder_->u8_type();
       } else if (type->num_bits() == 16) {
         vt = spir_builder_->u16_type();

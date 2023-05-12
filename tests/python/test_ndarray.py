@@ -6,6 +6,7 @@ from taichi.lang import impl
 from taichi.lang.exception import TaichiIndexError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
+from taichi.math import vec3, ivec3
 
 import taichi as ti
 from tests import test_utils

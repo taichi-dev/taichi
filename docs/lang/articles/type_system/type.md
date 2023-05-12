@@ -9,7 +9,7 @@ Taichi is a statically typed programming language, meaning that the type of a va
 
 Let's see a quick example:
 
-```python skip-ci:NotRunnable
+```python skip-ci:NegativeExample
 @ti.kernel
 def test():
     x = 1  # x is the integer 1
@@ -55,7 +55,7 @@ When initializing the Taichi runtime, Taichi automatically uses the following da
 
 Taichi allows you to specify the default primitive data type(s) when calling `init()`:
 
-```python skip-ci:ToyDemo
+```python skip-ci:Trivial
 ti.init(default_ip=ti.i64)  # Sets the default integer type to ti.i64
 ti.init(default_fp=ti.f64)  # Sets the default floating-point type to ti.f64
 ```
@@ -70,7 +70,7 @@ The numeric literals in Taichi's scope have default integer or floating-point ty
 
 In Taichi scope, the two names `int` and `float` serve as aliases for the default integer and floating-point types, respectively. These default types can be changed using the configuration option `default_ip` and `default_fp`. For instance, setting the `default_ip` to `i64` and `default_fp` to `f64` would allow you to use `int` as an alias for `i64` and `float` as an alias for `f64` in your code.
 
-```python skip-ci
+```python
 ti.init(default_ip=ti.i64, default_fp=ti.f64)
 
 @ti.kernel
@@ -82,7 +82,7 @@ def example_cast() -> int:  # the returned type is ti.i64
 
 Furthermore, in the Python scope, when declaring Taichi's data containers using `ti.field`, `ti.Vector`, `ti.Matrix`, `ti.ndarray`, these two names also serve as aliases for the default integer and floating-point types. For example:
 
-```python skip-ci
+```python
 x = ti.field(float, 5)
 # Is equivalent to:
 x = ti.field(ti.f64, 5)
@@ -90,8 +90,8 @@ x = ti.field(ti.f64, 5)
 
 However, when using `int` and `float` outside of Taichi's data containers in regular Python code, they refer to their standard meaning as built-in functions and not aliases for Taichi's `default_ip` and `default_fp`. Therefore, in Python scope and outside of Taichi's data containers, `int` and `float` have their standard meaning as built-in functions.
 
-```python skip-ci
-x = numpy.array([1, 2, 3, 4], dtype=int)  # NumPy's int64 type
+```python
+x = np.array([1, 2, 3, 4], dtype=int)  # NumPy's int64 type
 y = int(3.14)  # Python's built-in int type
 ```
 
@@ -212,7 +212,7 @@ mat4x3i = ti.types.matrix(4, 3, int)  # a 4x3 integer matrix type
 
 You can utilize the customized compound types to instantiate vectors and matrices, as well as annotate the data types of function arguments and struct members. For instance:
 
-```python
+```python cont
 v = vec4d(1, 2, 3, 4)  # Create a vector instance, here v = [1.0 2.0 3.0 4.0]
 
 @ti.func
@@ -229,7 +229,7 @@ def test():
 
 You can use the function `ti.types.struct()` to create a struct type, which can be utilized to represent a sphere in 3D space, abstracted by its center and radius. To achieve this, you can call `ti.types.vector()` and `ti.types.struct()` to create two higher-level compound types: `vec3` and `sphere_type`, respectively. These types can then be used as templates to initialize two local variables, `sphere1` and `sphere2`, to represent two instances of spheres.
 
-```python
+```python cont
 # Define a compound type vec3 to represent a sphere's center
 vec3 = ti.types.vector(3, float)
 # Define a compound type sphere_type to represent a sphere
@@ -242,7 +242,7 @@ sphere2 = sphere_type(center=vec3([1, 1, 1]), radius=1.0)
 
 When defining a struct with numerous members, the use of `ti.types.struct` can lead to cluttered and unorganized code. Taichi provides a more elegant solution with the `@ti.dataclass` decorator, which acts as a lightweight wrapper around the struct type.
 
-```python skip-ci
+```python cont
 @ti.dataclass
 class Sphere:
     center: vec3
@@ -251,7 +251,7 @@ class Sphere:
 
 The code above accomplishes the same task as the following line, however it offers improved comprehensibility:
 
-```python skip-ci
+```python cont
 Sphere = ti.types.struct(center=vec3, radius=float)
 ```
 
@@ -271,6 +271,8 @@ As of Taichi v1.1.0, multiple options are available for initializing instances o
 For example:
 
   ```python
+  vec3 = ti.types.vector(3, float)
+
   @ti.dataclass
   class Ray:
       ro: vec3

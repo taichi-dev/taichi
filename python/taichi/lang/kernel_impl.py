@@ -389,15 +389,10 @@ class TaichiCallableTemplateMapper:
             # support mip-mapping.
             return arg.num_dims, arg.fmt, 0
         if isinstance(anno, ndarray_type.NdarrayType):
-            if isinstance(arg, taichi.lang._ndarray.ScalarNdarray):
+            if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape), (), Layout.AOS, arg.grad is not None
-            if isinstance(arg, taichi.lang.matrix.VectorNdarray):
-                anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 1, (arg.n,), Layout.AOS, arg.grad is not None
-            if isinstance(arg, taichi.lang.matrix.MatrixNdarray):
-                anno.check_matched(arg.get_type())
-                return arg.dtype, len(arg.shape) + 2, (arg.n, arg.m), Layout.AOS, arg.grad is not None
+                needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
+                return arg.dtype, len(arg.shape) + len(arg.element_shape), arg.element_shape, Layout.AOS, needs_grad
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
@@ -431,7 +426,7 @@ class TaichiCallableTemplateMapper:
                         f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                         f"but the argument has {len(shape)} dimensions"
                     )
-            needs_grad = getattr(arg, "requires_grad", False)
+            needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
             return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype

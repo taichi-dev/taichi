@@ -127,6 +127,14 @@ class CudaDevice : public LlvmDevice {
 
   DeviceAllocation import_memory(void *ptr, size_t size) override;
 
+  void *get_memory_addr(DeviceAllocation devalloc) override {
+    return get_alloc_info(devalloc).ptr;
+  }
+
+  std::size_t get_total_memory() override {
+    return CUDAContext::get_instance().get_total_memory();
+  }
+
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 
   void wait_idle() override{TI_NOT_IMPLEMENTED};

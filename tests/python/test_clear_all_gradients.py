@@ -25,7 +25,7 @@ def test_clear_all_gradients():
             z.grad[i, j] = 5
             w.grad[i, j] = 6
 
-    ti.clear_all_gradients()
+    ti.ad.clear_all_gradients()
     assert impl.get_runtime().get_num_compiled_functions() == 3
 
     assert x.grad[None] == 0
@@ -35,6 +35,6 @@ def test_clear_all_gradients():
             assert z.grad[i, j] == 0
             assert w.grad[i, j] == 0
 
-    ti.clear_all_gradients()
+    ti.ad.clear_all_gradients()
     # No more kernel compilation
     assert impl.get_runtime().get_num_compiled_functions() == 3

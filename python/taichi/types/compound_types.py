@@ -19,6 +19,9 @@ class TensorType(CompoundType):
     def element_type(self):
         return self.ptr.element_type()
 
+    def __repr__(self):
+        return f"TensorType(shape={self.shape()}, dtype={self.element_type()})"
+
 
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?
 def matrix(n, m, dtype):

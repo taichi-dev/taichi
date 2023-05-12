@@ -193,8 +193,6 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
-      .def_readwrite("ndarray_use_cached_allocator",
-                     &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
@@ -468,6 +466,7 @@ void export_lang(py::module &m) {
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
+      .def_readonly("offset", &SNode::index_offsets)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
@@ -938,6 +937,9 @@ void export_lang(py::module &m) {
   m.def("make_external_tensor_expr",
         Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
                    const std::vector<int> &, bool>);
+
+  m.def("make_external_tensor_grad_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
 

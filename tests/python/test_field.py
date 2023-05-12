@@ -85,6 +85,33 @@ def test_scalr_field_from_numpy(dtype, shape):
 
 
 @pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize(
+    "shape, offset",
+    [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))],
+)
+@test_utils.test(arch=get_host_arch_list())
+def test_scalr_field_from_numpy_with_offset(dtype, shape, offset):
+    import numpy as np
+
+    x = ti.field(dtype=dtype, shape=shape, offset=offset)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    arr = np.ones(shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+    def mat_equal(A, B, tol=1e-6):
+        return np.max(np.abs(A - B)) < tol
+
+    tol = 1e-5 if dtype == ti.f32 else 1e-12
+    assert mat_equal(x.to_numpy(), arr, tol=tol)
+
+
+@pytest.mark.parametrize("dtype", data_types)
 @pytest.mark.parametrize("shape", field_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):
@@ -246,6 +273,32 @@ def test_field_copy_from_with_mismatch_shape():
         other = ti.field(dtype=ti.f16, shape=other_shape)
         with pytest.raises(ValueError):
             x.copy_from(other)
+
+
+@test_utils.test()
+@pytest.mark.parametrize(
+    "shape, x_offset, other_offset",
+    [
+        ((), (), ()),
+        (8, 4, 0),
+        (8, 0, -4),
+        (8, -4, -4),
+        (8, 8, -4),
+        ((6, 12), (0, 0), (-6, -6)),
+        ((6, 12), (-6, -6), (0, 0)),
+        ((6, 12), (-6, -6), (-6, -6)),
+    ],
+)
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32])
+def test_field_copy_from_with_offset(shape, dtype, x_offset, other_offset):
+    x = ti.field(dtype=ti.f32, shape=shape, offset=x_offset)
+    other = ti.field(dtype=dtype, shape=shape, offset=other_offset)
+    other.fill(1)
+    x.copy_from(other)
+    convert = lambda arr: arr[0] if len(arr) == 1 else arr
+    assert convert(x.shape) == shape
+    assert x.dtype == ti.f32
+    assert (x.to_numpy() == 1).all()
 
 
 @test_utils.test()

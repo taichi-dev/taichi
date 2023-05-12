@@ -60,7 +60,7 @@ def regress_raw():
             with ti.ad.Tape(loss=loss):
                 regress()
         else:
-            ti.clear_all_gradients()
+            ti.ad.clear_all_gradients()
             loss[None] = 0
             loss.grad[None] = 1
             regress()

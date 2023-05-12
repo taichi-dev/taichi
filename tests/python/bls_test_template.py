@@ -54,7 +54,7 @@ def bls_test_template(dim, N, bs, stencil, block_dim=None, scatter=False, benchm
         if ti.static(use_bls and scatter):
             ti.block_local(y)
 
-        ti.block_dim(block_dim)
+        ti.loop_config(block_dim=block_dim)
         for I in ti.grouped(x):
             if ti.static(scatter):
                 for offset in ti.static(stencil):
@@ -167,7 +167,7 @@ def bls_particle_grid(
 
     @ti.kernel
     def insert():
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         for i in x:
             # It is important to ensure insert and p2g uses the exact same way to compute the base
             # coordinates. Otherwise there might be coordinate mismatch due to float-point errors.
@@ -184,7 +184,7 @@ def bls_particle_grid(
 
     @ti.kernel
     def p2g(use_shared: ti.template(), m: ti.template()):
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         if ti.static(use_shared):
             ti.block_local(m)
         for I in ti.grouped(pid):
@@ -202,7 +202,7 @@ def bls_particle_grid(
 
     @ti.kernel
     def p2g_naive():
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         for p in x:
             u = ti.floor(x[p] * N).cast(ti.i32)
 
@@ -216,7 +216,7 @@ def bls_particle_grid(
 
     @ti.kernel
     def g2p(use_shared: ti.template(), s: ti.template()):
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         if ti.static(use_shared):
             ti.block_local(m1)
         for I in ti.grouped(pid):
@@ -239,7 +239,7 @@ def bls_particle_grid(
 
     @ti.kernel
     def g2p_naive(s: ti.template()):
-        ti.block_dim(256)
+        ti.loop_config(block_dim=256)
         for p in x:
             u = ti.floor(x[p] * N).cast(ti.i32)
 

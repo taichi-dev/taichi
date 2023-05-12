@@ -475,7 +475,8 @@ class ExternalTensorExpression : public Expression {
   int arg_id;
   int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
                     // (AOS); -2: matrix (AOS)
-  bool needs_grad;
+  bool needs_grad{false};
+  bool is_grad{false};
 
   ExternalTensorExpression(const DataType &dt,
                            int dim,
@@ -503,9 +504,9 @@ class ExternalTensorExpression : public Expression {
     }
   }
 
-  explicit ExternalTensorExpression(Expr *expr, bool needs_grad = true) {
+  explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, needs_grad);
+    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, ptr->needs_grad);
   }
 
   void flatten(FlattenContext *ctx) override;

@@ -179,6 +179,10 @@ void offload_to_executable(IRNode *ir,
     print("Detect read-only accesses");
   }
 
+  irpass::demote_atomics(ir, config);
+  print("Atomics demoted I");
+  irpass::analysis::verify(ir);
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
@@ -187,9 +191,6 @@ void offload_to_executable(IRNode *ir,
     print("Scalarized");
   }
 
-  irpass::demote_atomics(ir, config);
-  print("Atomics demoted I");
-  irpass::analysis::verify(ir);
   if (config.cache_loop_invariant_global_vars) {
     irpass::cache_loop_invariant_global_vars(ir, config);
     print("Cache loop-invariant global vars");

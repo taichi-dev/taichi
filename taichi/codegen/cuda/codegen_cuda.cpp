@@ -302,7 +302,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     } else if (op == UnaryOpType::sin) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
         // sinf has fast-math option
-        llvm_val[stmt] = call(compile_config.fast_math ? "__nv_fast_sinf" : "__nv_sinf", input);
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_sinf" : "__nv_sinf", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__nv_sin", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {

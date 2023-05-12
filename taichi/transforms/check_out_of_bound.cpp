@@ -62,7 +62,7 @@ class CheckOutOfBound : public BasicStmtVisitor {
 
       // SOA layout for ndarray is deprecated, assert it's AOS layout
       TI_ASSERT(stmt->element_dim <= 0);
-      auto ndim = std::abs(stmt->element_dim);
+      auto ndim = stmt->ndim;
       if (i < ndim) {
         // Check for External Shape
         auto axis = i;

@@ -1518,9 +1518,10 @@ class MakeAdjoint : public ADTransform {
                        "Cannot automatically differentiate through a grad "
                        "tensor, if you really want to do that, pass the grad "
                        "tensor into the kernel directly");
-        auto adj_ptr = insert<ExternalPtrStmt>(
-            src->base_ptr, src->indices, src->element_shape, src->element_dim,
-            /*is_grad=*/true);
+        auto adj_ptr =
+            insert<ExternalPtrStmt>(src->base_ptr, src->indices, src->ndim,
+                                    src->element_shape, src->element_dim,
+                                    /*is_grad=*/true);
         adj_ptr->ret_type = src->ret_type;
 
         if (is_ptr_offset) {
@@ -1592,9 +1593,10 @@ class MakeAdjoint : public ADTransform {
                      "Cannot automatically differentiate through a grad "
                      "tensor, if you really want to do that, pass the grad "
                      "tensor into the kernel directly");
-      adjoint_ptr = insert<ExternalPtrStmt>(
-          dest->base_ptr, dest->indices, dest->element_shape, dest->element_dim,
-          /*is_grad=*/true);
+      adjoint_ptr =
+          insert<ExternalPtrStmt>(dest->base_ptr, dest->indices, dest->ndim,
+                                  dest->element_shape, dest->element_dim,
+                                  /*is_grad=*/true);
       adjoint_ptr->ret_type = dest->ret_type;
 
       if (is_ptr_offset) {
@@ -1659,7 +1661,7 @@ class MakeAdjoint : public ADTransform {
                        "tensor, if you really want to do that, pass the grad "
                        "tensor into the kernel directly");
         auto adjoint_ptr =
-            insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
+            insert<ExternalPtrStmt>(dest->base_ptr, dest->indices, dest->ndim,
                                     dest->element_shape, dest->element_dim,
                                     /*is_grad=*/true);
         adjoint_ptr->ret_type = dest->ret_type;

@@ -28,22 +28,21 @@ The `ti.types` module in Taichi defines all of the supported data types. These d
 
 ## Primitive types
 
-The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. Specially, there is 1 bit precision type `u1` used to represent boolean values. The three most commonly used primitive types are:
+The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. The two most commonly used primitive types are:
 
 - `i32`: 32-bit signed integer
-- `f32` : 32-bit floating-point number
-- `u1` : 1-bit unsigned integer, used to represent boolean values.
+- `f32` : 32-bit floating-point number.
 
 The support of Taichi's primitive types by various backends may vary. Consult the following table for detailed information, and note that some backends may require extensions for complete support of a specific primitive type.
 
 
-| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u1`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
-| ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |--------------------| ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
-| CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| OpenGL  | :x:                | :x:                | :heavy_check_mark: | :o:                | :x:                | :heavy_check_mark: | :x:                | :x:                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: |
-| Metal   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | :heavy_check_mark: | :x:                |
-| Vulkan  | :o:                | :o:                | :heavy_check_mark: | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :heavy_check_mark: | :o:                |
+| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
+| ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| OpenGL  | :x:                | :x:                | :heavy_check_mark: | :o:                | :x:                | :x:                | :x:                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: |
+| Metal   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | :heavy_check_mark: | :x:                |
+| Vulkan  | :o:                | :o:                | :heavy_check_mark: | :o:                | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :heavy_check_mark: | :o:                |
 
 > :o:: Requiring extensions for the backend.
 

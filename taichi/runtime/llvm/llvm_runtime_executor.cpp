@@ -410,8 +410,7 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   }
 
   if (config_.arch == Arch::cuda && use_device_memory_pool() && !all_dense) {
-    float fraction = all_dense ? 0.1 : 0.7;
-    preallocate_runtime_memory(fraction);
+    preallocate_runtime_memory();
   }
 
   TI_TRACE("Allocating data structure of size {} bytes", root_size);
@@ -581,7 +580,7 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size,
   return preallocated_device_buffer;
 }
 
-void LlvmRuntimeExecutor::preallocate_runtime_memory(float fraction) {
+void LlvmRuntimeExecutor::preallocate_runtime_memory() {
   if (preallocated_runtime_memory_allocs_ != kDeviceNullAllocation)
     return;
 
@@ -594,7 +593,6 @@ void LlvmRuntimeExecutor::preallocate_runtime_memory(float fraction) {
     total_prealloc_size =
         std::size_t(config_.device_memory_fraction * total_mem);
   }
-  total_prealloc_size *= fraction;
   TI_ASSERT(total_prealloc_size <= total_mem);
 
   void *runtime_memory_prealloc_buffer = preallocate_memory(

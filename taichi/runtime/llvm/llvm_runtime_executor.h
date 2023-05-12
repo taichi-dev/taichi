@@ -102,7 +102,7 @@ class LlvmRuntimeExecutor {
 
   void *preallocate_memory(std::size_t prealloc_size,
                            DeviceAllocation &devalloc);
-  void preallocate_runtime_memory(float fraction = 1.0);
+  void preallocate_runtime_memory();
 
   /* ------------------------- */
   /* ---- Runtime Helpers ---- */

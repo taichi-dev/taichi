@@ -59,17 +59,22 @@ class CheckOutOfBound : public BasicStmtVisitor {
       auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       Stmt *upper_bound{nullptr};
-      // TODO: Simplify logic here since SOA layout for ndarray is deprecated
-      if ((stmt->element_dim < 0 && i == (stmt->indices.size() - 1)) ||
-          (stmt->element_dim > 0 && i == 0)) {
-        upper_bound =
-            new_stmts.push_back<ConstStmt>(TypedConstant(flattened_element));
-      } else {
-        auto axis = stmt->element_dim <= 0 ? i : (i - stmt->element_dim);
+
+      // SOA layout for ndarray is deprecated, assert it's AOS layout
+      TI_ASSERT(stmt->element_dim <= 0);
+      auto ndim = std::abs(stmt->element_dim);
+      if (i < ndim) {
+        // Check for External Shape
+        auto axis = i;
         upper_bound = new_stmts.push_back<ExternalTensorShapeAlongAxisStmt>(
             /*axis=*/axis,
             /*arg_id=*/stmt->base_ptr->as<ArgLoadStmt>()->arg_id);
+      } else {
+        // Check for Element Shape
+        upper_bound =
+            new_stmts.push_back<ConstStmt>(TypedConstant(flattened_element));
       }
+
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_lt, stmt->indices[i], upper_bound);
       auto check_i = new_stmts.push_back<BinaryOpStmt>(

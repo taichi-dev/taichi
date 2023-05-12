@@ -781,11 +781,11 @@ def test_matrix_ndarray_oob():
         return input[p, q][x, y]
 
     @ti.kernel
-    def valid_access(indicies: ti.types.ndarray(dtype=ivec3, ndim=1), dummy: ti.types.ndarray(dtype=ivec3, ndim=1)):
-        for i in indicies:
+    def valid_access(indices: ti.types.ndarray(dtype=ivec3, ndim=1), dummy: ti.types.ndarray(dtype=ivec3, ndim=1)):
+        for i in indices:
             index_vec = ti.Vector([0, 0, 0])
             for j in ti.static(range(3)):
-                index = indicies[i][j]
+                index = indices[i][j]
                 index_vec[j] = index
             dummy[i] = index_vec
 

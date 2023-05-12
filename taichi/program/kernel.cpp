@@ -73,6 +73,8 @@ T Kernel::fetch_ret(DataType dt, int i) {
     return (T)program->fetch_result<int8>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return (T)program->fetch_result<int16>(i);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return (T)program->fetch_result<uint1>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return (T)program->fetch_result<uint8>(i);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {

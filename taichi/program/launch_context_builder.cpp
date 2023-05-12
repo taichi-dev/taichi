@@ -104,6 +104,8 @@ void LaunchContextBuilder::set_arg_int(int arg_id, int64 d) {
     set_arg(arg_id, (int8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     set_arg(arg_id, (int16)d);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    set_arg(arg_id, (uint1)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     set_arg(arg_id, (uint8)d);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {

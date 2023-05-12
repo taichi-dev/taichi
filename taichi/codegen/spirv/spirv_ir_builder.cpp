@@ -377,6 +377,8 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return t_uint16_;
+  } else if (dt == PrimitiveType::u1) {
+    return t_bool_;
   } else {
     return t_uint8_;
   }
@@ -392,6 +394,8 @@ DataType IRBuilder::get_taichi_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return PrimitiveType::u16;
+  } else if (dt == PrimitiveType::u1) {
+    return PrimitiveType::u1;
   } else {
     return PrimitiveType::u8;
   }

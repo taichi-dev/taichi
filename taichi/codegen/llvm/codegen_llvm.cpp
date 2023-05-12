@@ -1015,6 +1015,9 @@ void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u1)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(1, (uint64)val.val_uint1(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i8)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(8, (uint64)val.val_int8(), true));

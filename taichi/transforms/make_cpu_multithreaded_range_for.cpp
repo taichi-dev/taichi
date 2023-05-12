@@ -48,7 +48,7 @@ using TaskType = OffloadedStmt::TaskType;
 
 class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
  public:
-  MakeCPUMultithreadedRangeFor(const CompileConfig &config) : config(config) {
+  explicit MakeCPUMultithreadedRangeFor(const CompileConfig &config) : config(config) {
   }
 
   void visit(Block *block) override {

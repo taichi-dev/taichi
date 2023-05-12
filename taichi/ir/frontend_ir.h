@@ -105,7 +105,7 @@ class FrontendSNodeOpStmt : public Stmt {
   FrontendSNodeOpStmt(SNodeOpType op_type,
                       SNode *snode,
                       const ExprGroup &indices,
-                      const Expr &val = Expr(nullptr));
+                      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)));
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR

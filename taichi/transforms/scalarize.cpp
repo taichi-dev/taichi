@@ -1119,9 +1119,9 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
           std::accumulate(begin(origin->element_shape),
                           end(origin->element_shape), 1, std::multiplies<>())};
 
-      auto fused = std::make_unique<ExternalPtrStmt>(origin->base_ptr, indices,
-                                                     element_shape, element_dim,
-                                                     origin->is_grad);
+      auto fused = std::make_unique<ExternalPtrStmt>(
+          origin->base_ptr, indices, origin->ndim, element_shape, element_dim,
+          origin->is_grad);
       fused->ret_type = stmt->ret_type;
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
       // with flattened indices. Main goal is to keep all the hacks in a single

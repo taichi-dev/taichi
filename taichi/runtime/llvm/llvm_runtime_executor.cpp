@@ -559,7 +559,8 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size) {
   RhiResult res =
       llvm_device()->allocate_memory(preallocated_device_buffer_alloc_params,
                                      &preallocated_device_buffer_alloc);
-  TI_ASSERT(res == RhiResult::success);
+  TI_ERROR_IF(res != RhiResult::success,
+              "Failed to pre-allocate device memory (err: {})", int(res));
 
   void *preallocated_device_buffer =
       llvm_device()->get_memory_addr(preallocated_device_buffer_alloc);
@@ -570,38 +571,6 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size) {
 
 void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
                                               uint64 **result_buffer_ptr) {
-  // The result buffer allocated here is only used for the launches of
-  // runtime JIT functions. To avoid memory leak, we use the head of
-  // the preallocated device buffer as the result buffer in
-  // CUDA and AMDGPU backends.
-  // | ==================preallocated device buffer ========================== |
-  // |<- reserved for return ->|<---- usable for allocators on the device ---->|
-
-  std::size_t runtime_objects_prealloc_size = 0;
-  void *runtime_objects_prealloc_buffer = nullptr;
-  if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
-#if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
-    runtime_objects_prealloc_size = 60 * (1UL << 20);  // 50 MB
-    runtime_objects_prealloc_buffer =
-        preallocate_memory(runtime_objects_prealloc_size);
-
-    TI_TRACE("Allocating device memory {:.2f} MB",
-             1.0 * runtime_objects_prealloc_size / (1UL << 20));
-
-    *result_buffer_ptr = (uint64 *)runtime_objects_prealloc_buffer;
-    size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
-    runtime_objects_prealloc_buffer =
-        (char *)runtime_objects_prealloc_buffer + result_buffer_size;
-    runtime_objects_prealloc_size -= result_buffer_size;
-#else
-    TI_NOT_IMPLEMENTED
-#endif
-  } else {
-    *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
-        sizeof(uint64) * taichi_result_buffer_entries, 8);
-  }
-  auto *const runtime_jit = get_runtime_jit_module();
-
   // Starting random state for the program calculated using the random seed.
   // The seed is multiplied by 1048391 so that two programs with different seeds
   // will not have overlapping random states in any thread.
@@ -620,6 +589,54 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 #endif
   } else {
     num_rand_states = config_.cpu_max_num_threads;
+  }
+
+  // The result buffer allocated here is only used for the launches of
+  // runtime JIT functions. To avoid memory leak, we use the head of
+  // the preallocated device buffer as the result buffer in
+  // CUDA and AMDGPU backends.
+  // | ==================preallocated device buffer ========================== |
+  // |<- reserved for return ->|<---- usable for allocators on the device ---->|
+
+  auto *const runtime_jit = get_runtime_jit_module();
+
+  size_t runtime_objects_prealloc_size = 0;
+  void *runtime_objects_prealloc_buffer = nullptr;
+  if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
+#if defined(TI_WITH_CUDA) || defined(TI_WITH_AMDGPU)
+    auto [temp_result_alloc, res] =
+        llvm_device()->allocate_memory_unique({sizeof(uint64_t)});
+    TI_ERROR_IF(
+        res != RhiResult::success,
+        "Failed to allocate memory for `runtime_get_memory_requirements`");
+    void *temp_result_ptr =
+        llvm_device()->get_memory_addr(*temp_result_alloc);
+
+    runtime_jit->call<void *, int32_t, int32_t>(
+        "runtime_get_memory_requirements", temp_result_ptr,
+        num_rand_states,
+        /*use_preallocated_buffer=*/1);
+    runtime_objects_prealloc_size =
+        size_t(fetch_result<uint64_t>(0, (uint64_t *)temp_result_ptr));
+    temp_result_alloc.reset();
+    size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
+
+    TI_TRACE("Allocating device memory {:.2f} MB",
+             1.0 * (runtime_objects_prealloc_size + result_buffer_size) /
+                 (1UL << 20));
+
+    runtime_objects_prealloc_buffer =
+        preallocate_memory(runtime_objects_prealloc_size + result_buffer_size);
+
+    *result_buffer_ptr =
+        (uint64_t *)((uint8_t *)runtime_objects_prealloc_buffer +
+                     runtime_objects_prealloc_size);
+#else
+    TI_NOT_IMPLEMENTED
+#endif
+  } else {
+    *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
+        sizeof(uint64) * taichi_result_buffer_entries, 8);
   }
 
   TI_TRACE("Launching runtime_initialize");

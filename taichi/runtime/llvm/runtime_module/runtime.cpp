@@ -883,13 +883,14 @@ void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
 void runtime_get_memory_requirements(Ptr result_buffer,
                                      i32 num_rand_states,
                                      i32 use_preallocated_buffer) {
-  i64 size = taichi_page_size; // Initial alignment bleeding
-  
+  i64 size = taichi_page_size;  // Initial alignment bleeding
+
   if (use_preallocated_buffer) {
     size += taichi::iroundup(i64(sizeof(LLVMRuntime)), taichi_page_size);
   }
 
-  size += taichi::iroundup(i64(taichi_global_tmp_buffer_size), taichi_page_size);
+  size +=
+      taichi::iroundup(i64(taichi_global_tmp_buffer_size), taichi_page_size);
   size += taichi::iroundup(i64(sizeof(RandState)) * num_rand_states,
                            taichi_page_size);
 

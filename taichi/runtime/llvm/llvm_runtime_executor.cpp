@@ -625,8 +625,8 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
              1.0 * (runtime_objects_prealloc_size + result_buffer_size) /
                  (1UL << 20));
 
-    runtime_objects_prealloc_buffer =
-        preallocate_memory(runtime_objects_prealloc_size + result_buffer_size);
+    runtime_objects_prealloc_buffer = preallocate_memory(iroundup(
+        runtime_objects_prealloc_size + result_buffer_size, taichi_page_size));
 
     *result_buffer_ptr =
         (uint64_t *)((uint8_t *)runtime_objects_prealloc_buffer +

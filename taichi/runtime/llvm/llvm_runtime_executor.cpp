@@ -609,12 +609,10 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     TI_ERROR_IF(
         res != RhiResult::success,
         "Failed to allocate memory for `runtime_get_memory_requirements`");
-    void *temp_result_ptr =
-        llvm_device()->get_memory_addr(*temp_result_alloc);
+    void *temp_result_ptr = llvm_device()->get_memory_addr(*temp_result_alloc);
 
     runtime_jit->call<void *, int32_t, int32_t>(
-        "runtime_get_memory_requirements", temp_result_ptr,
-        num_rand_states,
+        "runtime_get_memory_requirements", temp_result_ptr, num_rand_states,
         /*use_preallocated_buffer=*/1);
     runtime_objects_prealloc_size =
         size_t(fetch_result<uint64_t>(0, (uint64_t *)temp_result_ptr));

@@ -884,7 +884,7 @@ void runtime_get_memory_requirements(Ptr result_buffer,
                                      i32 num_rand_states,
                                      i32 use_preallocated_buffer) {
   i64 size = 0;
-  
+
   if (use_preallocated_buffer) {
     size += taichi::iroundup(i64(sizeof(LLVMRuntime)), taichi_page_size);
   }

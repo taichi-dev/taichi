@@ -852,7 +852,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
   llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateTrunc(llvm_val[stmt->op1],
+      builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[stmt->op1]),
                            tlctx->get_data_type(PrimitiveType::u1)),
       llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
@@ -865,9 +865,10 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
       llvm::BasicBlock::Create(*llvm_context, "false_block", func);
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
-  builder->CreateCondBr(
-      builder->CreateICmpNE(llvm_val[if_stmt->cond], tlctx->get_constant(0)),
-      true_block, false_block);
+  llvm::Value *cond =
+      builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[if_stmt->cond]),
+                           tlctx->get_data_type(PrimitiveType::u1));
+  builder->CreateCondBr(cond, true_block, false_block);
   builder->SetInsertPoint(true_block);
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
@@ -959,6 +960,9 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
     if (dtype->is_primitive(PrimitiveTypeID::u8))
       return builder->CreateZExt(to_print,
                                  tlctx->get_data_type(PrimitiveType::u16));
+    if (dtype->is_primitive(PrimitiveTypeID::u1))
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i32));
     return to_print;
   };
   for (auto i = 0; i < stmt->contents.size(); ++i) {
@@ -1054,8 +1058,9 @@ void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
   TI_ASSERT(current_while_after_loop);
-  auto cond =
-      builder->CreateICmpEQ(llvm_val[stmt->cond], tlctx->get_constant(0));
+  auto *cond =
+      builder->CreateTrunc(builder->CreateIsNull(llvm_val[stmt->cond]),
+                           tlctx->get_data_type(PrimitiveType::u1));
   builder->CreateCondBr(cond, current_while_after_loop, after_break);
   builder->SetInsertPoint(after_break);
 }
@@ -1309,7 +1314,9 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 
   std::vector<llvm::Value *> args;
   args.emplace_back(get_runtime());
-  args.emplace_back(llvm_val[stmt->cond]);
+  args.emplace_back(
+      builder->CreateTrunc(builder->CreateIsNotNull(llvm_val[stmt->cond]),
+                           tlctx->get_data_type(PrimitiveType::u1)));
   args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
 
   for (int i = 0; i < stmt->args.size(); i++) {
@@ -2220,8 +2227,8 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt) {
       // test whether the current voxel is active or not
       auto is_active = call(leaf_block, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index_ty, loop_index)});
-      is_active =
-          builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
+      is_active = builder->CreateTrunc(builder->CreateIsNotNull(is_active),
+                                       llvm::Type::getInt1Ty(*llvm_context));
       exec_cond = builder->CreateAnd(exec_cond, is_active);
     }
 

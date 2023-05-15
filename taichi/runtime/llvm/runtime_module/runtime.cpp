@@ -332,9 +332,9 @@ struct LLVMRuntime;
 
 constexpr bool enable_assert = true;
 
-void taichi_assert(RuntimeContext *context, i32 test, const char *msg);
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
-#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
+void taichi_assert(RuntimeContext *context, u1 test, const char *msg);
+void taichi_assert_runtime(LLVMRuntime *runtime, u1 test, const char *msg);
+#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (u1)(x), msg)
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
@@ -753,12 +753,12 @@ RUNTIME_STRUCT_FIELD(ListManager, num_elements);
 RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
 RUNTIME_STRUCT_FIELD(ListManager, element_size);
 
-void taichi_assert(RuntimeContext *context, i32 test, const char *msg) {
+void taichi_assert(RuntimeContext *context, u1 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
 void taichi_assert_format(LLVMRuntime *runtime,
-                          i32 test,
+                          u1 test,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
@@ -808,7 +808,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
 #endif
 }
 
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+void taichi_assert_runtime(LLVMRuntime *runtime, u1 test, const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 

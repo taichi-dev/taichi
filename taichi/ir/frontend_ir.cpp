@@ -538,7 +538,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
     is_valid = false;
   }
 
-  if (op1_type != PrimitiveType::i32) {
+  if (!is_integral(op1_type)) {
     is_valid = false;
   }
   if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>()) {

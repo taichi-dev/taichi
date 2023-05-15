@@ -95,11 +95,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       value = builder->CreateZExt(value, value_type);
     }
     if (dt->is_primitive(PrimitiveTypeID::u1)) {
-      auto char_type = llvm::Type::getInt8Ty(*tlctx->get_this_thread_context());
-      value_type = llvm::PointerType::get(char_type, 0);
-      value = builder->CreateSelect(
-          value, builder->CreateGlobalStringPtr("True", "u1_true_value"),
-          builder->CreateGlobalStringPtr("False", "u1_false_value"));
+      value_type = tlctx->get_data_type(PrimitiveType::i32);
+      value = builder->CreateZExt(value, value_type);
     }
     return std::make_tuple(value, value_type);
   }

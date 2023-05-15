@@ -1,4 +1,3 @@
-from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
 from taichi.types.compound_types import CompoundType, matrix, vector
 
@@ -86,23 +85,10 @@ class NdarrayType:
 
         # Check dtype match
         if isinstance(self.dtype, CompoundType):
-            # Check element shape and dim for MatrixType
-            if self.dtype.ndim > 0:
-                if not _ti_core.is_tensor(ndarray_type.element_type):
-                    raise TypeError(f"Expect TensorType element for Ndarray with element_dim: {self.dtype.ndim} > 0")
-                if self.dtype.ndim != len(ndarray_type.element_type.shape()):
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_dim={self.dtype.ndim}, but {len(ndarray_type.element_type.shape())} is provided"
-                    )
-            if self.dtype.get_shape() is not None:
-                if not _ti_core.is_tensor(ndarray_type.element_type):
-                    raise TypeError(
-                        f"Expect TensorType element for Ndarray with element_shape: {self.dtype.get_shape()}"
-                    )
-                if list(self.dtype.get_shape()) != list(ndarray_type.element_type.shape()):
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_shape={self.dtype.get_shape()}, but {ndarray_type.element_type.shape()} is provided"
-                    )
+            if not self.dtype.check_matched(ndarray_type.element_type):
+                raise ValueError(
+                    f"Invalid argument into ti.types.ndarray() - required element type: {self.dtype.to_string()}, but {ndarray_type.element_type.to_string()} is provided"
+                )
         else:
             if self.dtype is not None:
                 # Check dtype match for scalar.

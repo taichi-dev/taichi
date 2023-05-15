@@ -197,7 +197,6 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   UNARY_STD(tan)
   UNARY_STD(tanh)
   UNARY_STD(sgn)
-  UNARY_STD(logic_not)
   UNARY_STD(acos)
   UNARY_STD(asin)
   UNARY_STD(cos)
@@ -209,6 +208,12 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   else if (op == UnaryOpType::popcnt) {
     llvm_val[stmt] =
         builder->CreateIntrinsic(llvm::Intrinsic::ctpop, {input_type}, {input});
+  }
+  else if (op == UnaryOpType::logic_not) {
+    llvm_val[stmt] = builder->CreateSelect(
+        builder->CreateIsNull(input),
+        tlctx->get_constant(true),
+        tlctx->get_constant(false));
   }
   else {
     TI_P(unary_op_type_name(op));

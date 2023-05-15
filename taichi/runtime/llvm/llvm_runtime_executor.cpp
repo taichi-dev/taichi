@@ -665,10 +665,13 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     }
     TI_ASSERT(total_prealloc_size <= total_mem);
 
+    /*
     auto runtime_memory_prealloc_size =
         total_prealloc_size > runtime_objects_prealloc_size
             ? total_prealloc_size - runtime_objects_prealloc_size
             : 0;
+    */
+    auto runtime_memory_prealloc_size = total_prealloc_size;
 
     void *runtime_memory_prealloc_buffer =
         preallocate_memory(runtime_memory_prealloc_size);

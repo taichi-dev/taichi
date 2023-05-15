@@ -229,10 +229,6 @@ i64 max_i64(i64 a, i64 b) {
   return a > b ? a : b;
 }
 
-int32 logic_not_i32(int32 a) {
-  return !a;
-}
-
 float32 sgn_f32(float32 a) {
   float32 b;
   if (a > 0)

@@ -1513,10 +1513,12 @@ class MatrixType(CompoundType):
     def check_matched(self, other):
         if self.ndim != len(other.shape()):
             return False
-        if self.dtype != other.element_type():
+        if self.dtype is not None and self.dtype != other.element_type():
             return False
-        if self.get_shape() != tuple(other.shape()):
-            return False
+        shape = self.get_shape()
+        for i in range(self.ndim):
+            if shape[i] is not None and shape[i] != other.shape()[i]:
+                return False
         return True
 
 

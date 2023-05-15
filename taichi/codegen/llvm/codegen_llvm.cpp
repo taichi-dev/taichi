@@ -526,9 +526,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
   } else if (op == UnaryOpType::logic_not) {
     llvm_val[stmt] = builder->CreateNot(builder->CreateIsNull(input));
     // TODO: (zhantong) remove this zero ext
-    llvm_val[stmt] =
-        builder->CreateZExt(llvm_val[stmt],
-                            tlctx->get_data_type(PrimitiveType::i32));
+    llvm_val[stmt] = builder->CreateZExt(
+        llvm_val[stmt], tlctx->get_data_type(PrimitiveType::i32));
   }
   UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)

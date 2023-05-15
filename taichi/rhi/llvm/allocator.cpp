@@ -40,6 +40,13 @@ uint64_t *CachingAllocator::allocate(
   if (it_blk != mem_blocks_.end()) {
     size_t remaining_sz = it_blk->first - size_aligned;
     if (remaining_sz > 0) {
+      if (remaining_sz % taichi_page_size != 0) {
+        // Page Alignment Error, print out remaining_sz and taichi_page_size
+        TI_ERROR(
+            "Page Alignment Error: remaining_sz = {}, taichi_page_size = {}, "
+            "it_blk->first = {}, size_aligned = {}",
+            remaining_sz, taichi_page_size, it_blk->first, size_aligned);
+      }
       TI_ASSERT(remaining_sz % taichi_page_size == 0);
       auto remaining_head =
           reinterpret_cast<uint8_t *>(it_blk->second) + size_aligned;

@@ -209,15 +209,15 @@
 #  - test: CapiTest.TestBehaviorGetCgraphVulkan
 #    script: aot/python_scripts/graph_aot_test_.py
 #    args: --arch=vulkan
-#  - test: CapiTest.Float16Fill
-#    script: aot/python_scripts/numerical_aot_test_.py
-#    args: --arch=vulkan
-#    markers: [sm70]
-#  - test: CapiTest.Float16Compute
-#    script: aot/python_scripts/numerical_aot_test_.py
-#    args: --arch=vulkan
-#    markers: [sm70]
+  - test: CapiTest.Float16Fill
+    script: aot/python_scripts/numerical_aot_test_.py
+    args: --arch=vulkan
+    markers: [sm70]
+  - test: CapiTest.Float16Compute
+    script: aot/python_scripts/numerical_aot_test_.py
+    args: --arch=vulkan
+    markers: [sm70]
 
-#- name: C-API Tests (Static binary)
-#  binary: ../../build/taichi_static_c_api_tests
-#  tests: *c-api-tests
+- name: C-API Tests (Static binary)
+  binary: ../../build/taichi_static_c_api_tests
+  tests: *c-api-tests

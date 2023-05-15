@@ -90,9 +90,9 @@
     script: aot/python_scripts/kernel_aot_test2.py
     args: --arch=opengl --cgraph
 
-#- name: C-API Tests
-#  binary: ../../build/taichi_c_api_tests
-#  tests: &c-api-tests
+- name: C-API Tests
+  binary: ../../build/taichi_c_api_tests
+  tests: &c-api-tests
 #  - test: CapiTest.Mpm88TestVulkan
 #    script: aot/python_scripts/mpm88_graph_aot.py
 #    args: --arch=vulkan

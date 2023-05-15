@@ -476,17 +476,25 @@ LlvmDevice *LlvmRuntimeExecutor::llvm_device() {
 DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return llvm_device()->allocate_memory_runtime(
+  auto devalloc = llvm_device()->allocate_memory_runtime(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
        get_runtime_jit_module(),
        get_llvm_runtime(),
        result_buffer,
        use_device_memory_pool()});
+
+  TI_ASSERT(allocated_runtime_memory_allocs_.find(devalloc.alloc_id) ==
+            allocated_runtime_memory_allocs_.end());
+  allocated_runtime_memory_allocs_[devalloc.alloc_id] = devalloc;
+  return devalloc;
 }
 
 void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
+  TI_ASSERT(allocated_runtime_memory_allocs_.find(handle.alloc_id) !=
+            allocated_runtime_memory_allocs_.end());
   llvm_device()->dealloc_memory(handle);
+  allocated_runtime_memory_allocs_.erase(handle.alloc_id);
 }
 
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
@@ -551,8 +559,28 @@ void LlvmRuntimeExecutor::finalize() {
       preallocated_runtime_memory_allocs_ = kDeviceNullAllocation;
     }
 
+    // Reset runtime memory
+    auto allocated_runtime_memory_allocs_copy =
+        allocated_runtime_memory_allocs_;
+    for (auto &iter : allocated_runtime_memory_allocs_copy) {
+      // The runtime allocation may have already been freed upon explicit
+      // Ndarray/Field destruction Check if the allocation still alive
+      void *ptr = llvm_device()->get_memory_addr(iter.second);
+      if (ptr == nullptr)
+        continue;
+
+      deallocate_memory_ndarray(iter.second);
+    }
+    allocated_runtime_memory_allocs_.clear();
+
+    // Reset device
     llvm_device()->clear();
+
+    // Reset memory pool
     DeviceMemoryPool::get_instance().reset();
+
+    // Release unused memory from cuda memory pool
+    synchronize();
   }
   finalized_ = true;
 }

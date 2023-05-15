@@ -152,6 +152,8 @@ class LlvmRuntimeExecutor {
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
   DeviceAllocation preallocated_runtime_objects_allocs_{kDeviceNullAllocation};
   DeviceAllocation preallocated_runtime_memory_allocs_{kDeviceNullAllocation};
+  std::unordered_map<DeviceAllocationId, DeviceAllocation>
+      allocated_runtime_memory_allocs_;
 
   // good buddy
   friend LlvmProgramImpl;

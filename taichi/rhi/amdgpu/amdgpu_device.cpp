@@ -106,8 +106,8 @@ void AmdgpuDevice::dealloc_memory(DeviceAllocation handle) {
                                              false);
   } else if (!info.use_preallocated) {
     DeviceMemoryPool::get_instance().release(info.size, info.ptr);
-    info.ptr = nullptr;
   }
+  info.ptr = nullptr;
 }
 
 RhiResult AmdgpuDevice::map(DeviceAllocation alloc, void **mapped_ptr) {

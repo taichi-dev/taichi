@@ -92,6 +92,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
 
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
+
   if (info.size == 0) {
     return;
   }
@@ -107,8 +108,8 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
   } else if (!info.use_preallocated) {
     auto &mem_pool = DeviceMemoryPool::get_instance();
     mem_pool.release(info.size, info.ptr, true /*release_raw*/);
-    info.ptr = nullptr;
   }
+  info.ptr = nullptr;
 }
 
 RhiResult CudaDevice::upload_data(DevicePtr *device_ptr,

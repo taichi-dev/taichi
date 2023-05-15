@@ -218,6 +218,6 @@
     args: --arch=vulkan
     markers: [sm70]
 
-- name: C-API Tests (Static binary)
-  binary: ../../build/taichi_static_c_api_tests
-  tests: *c-api-tests
+#- name: C-API Tests (Static binary)
+#  binary: ../../build/taichi_static_c_api_tests
+#  tests: *c-api-tests

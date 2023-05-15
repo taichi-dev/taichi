@@ -197,6 +197,7 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   UNARY_STD(tan)
   UNARY_STD(tanh)
   UNARY_STD(sgn)
+  UNARY_STD(logic_not)
   UNARY_STD(acos)
   UNARY_STD(asin)
   UNARY_STD(cos)
@@ -523,11 +524,6 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
-  } else if (op == UnaryOpType::logic_not) {
-    llvm_val[stmt] = builder->CreateIsNull(input);
-    // TODO: (zhantong) remove this zero ext
-    llvm_val[stmt] = builder->CreateZExt(
-        llvm_val[stmt], tlctx->get_data_type(PrimitiveType::i32));
   }
   UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
@@ -622,12 +618,6 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::mod) {
     llvm_val[stmt] =
         builder->CreateSRem(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-  } else if (op == BinaryOpType::logical_and) {
-    llvm_val[stmt] =
-        builder->CreateAnd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-  } else if (op == BinaryOpType::logical_or) {
-    llvm_val[stmt] =
-        builder->CreateOr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::bit_and) {
     llvm_val[stmt] =
         builder->CreateAnd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -861,9 +851,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
-  llvm_val[stmt] =
-      builder->CreateSelect(builder->CreateIsNotNull(llvm_val[stmt->op1]),
-                            llvm_val[stmt->op2], llvm_val[stmt->op3]);
+  llvm_val[stmt] = builder->CreateSelect(
+      builder->CreateIsNotNull(llvm_val[stmt->op1]),
+      llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
 void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {

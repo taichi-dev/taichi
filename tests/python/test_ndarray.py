@@ -177,14 +177,14 @@ def test_ndarray_compound_element():
     assert isinstance(b, ti.VectorNdarray)
     assert b.shape == (n, n)
     assert b.element_type.element_type() == ti.i32
-    assert b.element_type.shape() == (3,)
+    assert b.element_type.shape() == [3]
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1))
     assert isinstance(c, ti.MatrixNdarray)
     assert c.shape == (n, n + 1)
     assert c.element_type.element_type() == ti.f32
-    assert c.element_type.shape() == (3, 4)
+    assert c.element_type.shape() == [3, 4]
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
@@ -893,7 +893,7 @@ def test_ndarray_wrong_dtype():
     tp_ivec3 = ti.types.vector(3, ti.i32)
 
     y = ti.ndarray(tp_ivec3, shape=(12, 4))
-    with pytest.raises(TypeError, match=r"get TensorType\(shape=\(3,\), dtype=i32\)"):
+    with pytest.raises(TypeError, match=r"get \[Tensor \(3\) i32\]"):
         test2(y)
 
 

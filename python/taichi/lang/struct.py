@@ -596,7 +596,7 @@ class StructType(CompoundType):
                 elements.append([dtype.dtype, k])
             elif isinstance(dtype, MatrixType):
                 self.members[k] = dtype
-                elements.append([dtype.tensor_type.ptr, k])
+                elements.append([dtype.tensor_type, k])
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype

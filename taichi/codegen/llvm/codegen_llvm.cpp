@@ -210,10 +210,9 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
         builder->CreateIntrinsic(llvm::Intrinsic::ctpop, {input_type}, {input});
   }
   else if (op == UnaryOpType::logic_not) {
-    llvm_val[stmt] = builder->CreateSelect(
-        builder->CreateIsNull(input),
-        tlctx->get_constant(true),
-        tlctx->get_constant(false));
+    llvm_val[stmt] = builder->CreateSelect(builder->CreateIsNull(input),
+                                           tlctx->get_constant(true),
+                                           tlctx->get_constant(false));
   }
   else {
     TI_P(unary_op_type_name(op));

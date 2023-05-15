@@ -619,6 +619,8 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
     temp_result_alloc.reset();
     size_t result_buffer_size = sizeof(uint64) * taichi_result_buffer_entries;
 
+    runtime_objects_prealloc_size =
+        taichi::iroundup(runtime_objects_prealloc_size, 10 * (1UL << 20));
     TI_TRACE("Allocating device memory {:.2f} MB",
              1.0 * (runtime_objects_prealloc_size + result_buffer_size) /
                  (1UL << 20));

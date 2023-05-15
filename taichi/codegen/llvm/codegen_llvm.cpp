@@ -851,9 +851,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
-  llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateIsNotNull(llvm_val[stmt->op1]),
-      llvm_val[stmt->op2], llvm_val[stmt->op3]);
+  llvm_val[stmt] =
+      builder->CreateSelect(builder->CreateIsNotNull(llvm_val[stmt->op1]),
+                            llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
 void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {

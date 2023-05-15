@@ -19,7 +19,7 @@ class Function;
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = type;
+    ret_type = TypeFactory::get_instance().get_pointer_type(type);
     TI_STMT_REG_FIELDS;
   }
 
@@ -27,7 +27,8 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
              DataType type,
              bool is_shared = false)
       : is_shared(is_shared) {
-    ret_type = TypeFactory::create_tensor_type(shape, type);
+    ret_type = TypeFactory::get_instance().get_pointer_type(
+        TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;
   }
 

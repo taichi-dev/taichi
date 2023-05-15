@@ -166,6 +166,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
 
   void visit(IdExpression *expr) override {
     emit(expr->id.name());
+    emit(": ");
+    emit(to_string(expr->op));
   }
 
   void visit(AtomicOpExpression *expr) override {
@@ -246,6 +248,13 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   static std::string expr_to_string(Expr &expr) {
+    std::ostringstream oss;
+    ExpressionHumanFriendlyPrinter printer(&oss);
+    expr->accept(&printer);
+    return oss.str();
+  }
+
+  static std::string expr_to_string(Expression *expr) {
     std::ostringstream oss;
     ExpressionHumanFriendlyPrinter printer(&oss);
     expr->accept(&printer);

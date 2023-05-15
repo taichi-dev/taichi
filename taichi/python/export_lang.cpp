@@ -16,6 +16,7 @@
 #include "taichi/ir/expression_ops.h"
 #include "taichi/ir/frontend_ir.h"
 #include "taichi/ir/statements.h"
+#include "taichi/ir/expression_printer.h"
 #include "taichi/program/graph_builder.h"
 #include "taichi/program/extension.h"
 #include "taichi/program/ndarray.h"
@@ -779,7 +780,9 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("is_tensor",
-           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+           [](Expr *expr) {
+             return expr->expr->ret_type.ptr_removed()->is<TensorType>();
+           })
       .def("is_struct",
            [](Expr *expr) {
              return expr->expr->ret_type.ptr_removed()->is<StructType>();

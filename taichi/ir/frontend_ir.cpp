@@ -37,7 +37,9 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
-    lhs.expr->ret_type = rhs->ret_type;
+    TI_ASSERT(lhs.cast<IdExpression>()->op == StmtOpCode::FrontendAllocaStmt);
+    lhs.expr->ret_type =
+        TypeFactory::get_instance().get_pointer_type(get_rvalue_dtype(rhs));
   }
 }
 
@@ -188,8 +190,8 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     the same. Therefore we extract the primitive type to perform the type
     inference, and then reconstruct the TensorType once neccessary.
   */
-
-  auto operand_primitive_type = operand->ret_type.get_element_type();
+  auto operand_type = get_rvalue_dtype(operand);
+  auto operand_primitive_type = operand_type.get_element_type();
   auto ret_primitive_type = ret_type;
 
   if (!operand_primitive_type->is<PrimitiveType>()) {
@@ -241,11 +243,11 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
         unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
-  if (operand->ret_type->is<TensorType>()) {
+  if (operand_type->is<TensorType>()) {
     ret_type = taichi::lang::TypeFactory::get_instance().get_tensor_type(
-        operand->ret_type.get_shape(), ret_primitive_type);
+        operand_type.get_shape(), ret_primitive_type);
   } else {
-    TI_ASSERT(operand->ret_type->is<PrimitiveType>());
+    TI_ASSERT(operand_type->is<PrimitiveType>());
     ret_type = ret_primitive_type;
   }
 }
@@ -306,13 +308,14 @@ std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
 void BinaryOpExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(lhs);
   TI_ASSERT_TYPE_CHECKED(rhs);
-  auto lhs_type = lhs->ret_type;
-  auto rhs_type = rhs->ret_type;
+
+  auto lhs_type = get_rvalue_dtype(lhs);
+  auto rhs_type = get_rvalue_dtype(rhs);
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
-                    binary_op_type_symbol(type), lhs->ret_type->to_string(),
-                    rhs->ret_type->to_string()));
+                    binary_op_type_symbol(type), lhs_type->to_string(),
+                    rhs_type->to_string()));
   };
 
   if (!is_primitive_or_tensor_type(lhs_type) ||
@@ -326,14 +329,14 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
     auto [unified_l, unified_r] = unify_binop_operands(lhs, rhs);
     lhs = unified_l;
     rhs = unified_r;
-    if (lhs->ret_type == PrimitiveType::unknown)
+    if (lhs_type == PrimitiveType::unknown)
       lhs.type_check(config);
-    if (rhs->ret_type == PrimitiveType::unknown)
+    if (rhs_type == PrimitiveType::unknown)
       rhs.type_check(config);
-    TI_ASSERT(lhs->ret_type->is<TensorType>());
-    TI_ASSERT(rhs->ret_type->is<TensorType>());
-    lhs_type = lhs->ret_type;
-    rhs_type = rhs->ret_type;
+    lhs_type = get_rvalue_dtype(lhs);
+    rhs_type = get_rvalue_dtype(rhs);
+    TI_ASSERT(lhs_type->is<TensorType>());
+    TI_ASSERT(rhs_type->is<TensorType>());
   }
 
   bool is_tensor_op = false;
@@ -347,10 +350,10 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
       error();
   }
 
-  auto make_dt = [&is_tensor_op, this](DataType dt) {
+  auto make_dt = [&is_tensor_op, lhs_type](DataType dt) {
     if (is_tensor_op) {
       return TypeFactory::create_tensor_type(
-          this->lhs->ret_type->cast<TensorType>()->get_shape(), dt);
+          lhs_type->cast<TensorType>()->get_shape(), dt);
     } else {
       return dt;
     }
@@ -503,15 +506,15 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
   op1 = unified_cond;
   op2 = unified_l;
   op3 = unified_r;
-  auto op1_type = op1->ret_type;
-  auto op2_type = op2->ret_type;
-  auto op3_type = op3->ret_type;
+  auto op1_type = get_rvalue_dtype(op1);
+  auto op2_type = get_rvalue_dtype(op2);
+  auto op3_type = get_rvalue_dtype(op3);
 
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}', '{}' and '{}'",
-                    ternary_type_name(type), op1->ret_type->to_string(),
-                    op2->ret_type->to_string(), op3->ret_type->to_string()));
+                    ternary_type_name(type), op1_type->to_string(),
+                    op2_type->to_string(), op3_type->to_string()));
   };
 
   if (op2_type->is<TensorType>() && op3_type->is<TensorType>()) {
@@ -552,7 +555,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
 
   if (is_tensor) {
     auto primitive_dtype = promoted_type(op2_type, op3_type);
-    auto shape = op2->ret_type->cast<TensorType>()->get_shape();
+    auto shape = op2_type->cast<TensorType>()->get_shape();
     ret_type = TypeFactory::create_tensor_type(shape, primitive_dtype);
   } else {
     ret_type = promoted_type(op2_type, op3_type);
@@ -734,7 +737,7 @@ void MatrixExpression::type_check(const CompileConfig *config) {
 
   for (auto &arg : elements) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    if (arg->ret_type != dt.get_element_type()) {
+    if (get_rvalue_dtype(arg) != dt.get_element_type()) {
       arg = cast(arg, dt.get_element_type());
       arg->type_check(config);
     }
@@ -785,7 +788,7 @@ bool IndexExpression::is_ndarray() const {
 }
 
 bool IndexExpression::is_tensor() const {
-  return var->ret_type->is<TensorType>();
+  return var->ret_type.ptr_removed()->is<TensorType>();
 }
 
 bool IndexExpression::is_local() const {
@@ -846,6 +849,7 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                matrix_field_expr->fields[0]
                                                    .cast<FieldExpression>()
                                                    ->dt->get_compute_type());
+    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
@@ -864,12 +868,13 @@ void IndexExpression::type_check(const CompileConfig *) {
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
   } else if (is_tensor()) {  // local tensor
-    auto shape = var->ret_type->as<TensorType>()->get_shape();
+    auto var_type = var->ret_type.ptr_removed()->cast<TensorType>();
+    auto shape = var_type->get_shape();
     if (indices_group[0].size() != shape.size()) {
       TI_ERROR("Expected {} indices, got {}.", shape.size(),
                indices_group[0].size());
     }
-    ret_type = var->ret_type->cast<TensorType>()->get_element_type();
+    ret_type = var_type->get_element_type();
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -880,11 +885,12 @@ void IndexExpression::type_check(const CompileConfig *) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
       TI_ASSERT_TYPE_CHECKED(expr);
-      if (!is_integral(expr->ret_type))
+      auto expr_type = get_rvalue_dtype(expr);
+      if (!is_integral(expr_type))
         throw TaichiTypeError(
             fmt::format("indices must be integers, however '{}' is "
                         "provided as index {}",
-                        expr->ret_type->to_string(), i));
+                        expr_type->to_string(), i));
     }
   }
 }
@@ -899,9 +905,13 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    stmt =
-        make_tensor_access(ctx, var, indices_group, ret_type,
-                           var->ret_type->cast<TensorType>()->get_shape(), tb);
+    TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(var));
+    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
+                              var->ret_type->as<PointerType>()
+                                  ->get_pointee_type()
+                                  ->as<TensorType>()
+                                  ->get_shape(),
+                              tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -913,13 +923,15 @@ void IndexExpression::flatten(FlattenContext *ctx) {
 void RangeAssumptionExpression::type_check(const CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
   TI_ASSERT_TYPE_CHECKED(base);
-  if (!input->ret_type->is<PrimitiveType>() ||
-      !base->ret_type->is<PrimitiveType>() || input->ret_type != base->ret_type)
+  auto input_type = get_rvalue_dtype(input);
+  auto base_type = get_rvalue_dtype(base);
+  if (!input_type->is<PrimitiveType>() || !base_type->is<PrimitiveType>() ||
+      input_type != base_type)
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for "
                     "'range_assumption': '{}' and '{}'",
-                    input->ret_type->to_string(), base->ret_type->to_string()));
-  ret_type = input->ret_type;
+                    input_type->to_string(), base_type->to_string()));
+  ret_type = input_type;
 }
 
 void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
@@ -932,11 +944,13 @@ void RangeAssumptionExpression::flatten(FlattenContext *ctx) {
 
 void LoopUniqueExpression::type_check(const CompileConfig *) {
   TI_ASSERT_TYPE_CHECKED(input);
-  if (!input->ret_type->is<PrimitiveType>())
+  auto input_type = get_rvalue_dtype(input);
+
+  if (!input_type->is<PrimitiveType>())
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for 'loop_unique': '{}'",
-                    input->ret_type->to_string()));
-  ret_type = input->ret_type;
+                    input_type->to_string()));
+  ret_type = input_type;
 }
 
 void LoopUniqueExpression::flatten(FlattenContext *ctx) {
@@ -1038,10 +1052,11 @@ void SNodeOpExpression::type_check(const CompileConfig *config) {
     for (int i = 0; i < values.size(); i++) {
       TI_ASSERT_TYPE_CHECKED(values[i]);
       auto &dst_type = snode->ch[i]->dt;
-      auto promoted = promoted_type(dst_type, values[i]->ret_type);
+      auto value_type = get_rvalue_dtype(values[i]);
+      auto promoted = promoted_type(dst_type, value_type);
       if (dst_type != promoted) {
         TI_WARN("Append may lose precision: {} <- {}\n{}",
-                dst_type->to_string(), values[i]->ret_type->to_string(), tb);
+                dst_type->to_string(), value_type->to_string(), tb);
       }
       values[i] = cast(values[i], dst_type);
       values[i]->type_check(config);
@@ -1105,11 +1120,12 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
                    ptr->num_dims);
     for (int i = 0; i < ptr->num_dims; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
-      if (args[i].get_ret_type() != PrimitiveType::f32) {
+      auto arg_type = get_rvalue_dtype(args[i]);
+      if (arg_type != PrimitiveType::f32) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture sample_lod: '{}', all "
                         "arguments must be f32",
-                        args[i].get_ret_type()->to_string()));
+                        arg_type->to_string()));
       }
     }
   } else if (op == TextureOpType::kFetchTexel) {
@@ -1120,11 +1136,12 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
                    ptr->num_dims);
     for (int i = 0; i < ptr->num_dims; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
-      if (args[i].get_ret_type() != PrimitiveType::i32) {
+      auto arg_type = get_rvalue_dtype(args[i]);
+      if (arg_type != PrimitiveType::i32) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture fetch_texel: '{}', all "
                         "arguments must be i32",
-                        args[i].get_ret_type()->to_string()));
+                        arg_type->to_string()));
       }
     }
   } else if (op == TextureOpType::kLoad) {
@@ -1135,11 +1152,12 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
                    ptr->num_dims);
     for (int i = 0; i < ptr->num_dims; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
-      if (args[i].get_ret_type() != PrimitiveType::i32) {
+      auto arg_type = get_rvalue_dtype(args[i]);
+      if (arg_type != PrimitiveType::i32) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture load: '{}', all "
                         "arguments must be i32",
-                        args[i].get_ret_type()->to_string()));
+                        arg_type->to_string()));
       }
     }
   } else if (op == TextureOpType::kStore) {
@@ -1150,20 +1168,22 @@ void TextureOpExpression::type_check(const CompileConfig *config) {
                    ptr->num_dims);
     for (int i = 0; i < ptr->num_dims; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
-      if (args[i].get_ret_type() != PrimitiveType::i32) {
+      auto arg_type = get_rvalue_dtype(args[i]);
+      if (arg_type != PrimitiveType::i32) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture load: '{}', index "
                         "arguments must be i32",
-                        args[i].get_ret_type()->to_string()));
+                        arg_type->to_string()));
       }
     }
     for (int i = ptr->num_dims; i < ptr->num_dims + 4; i++) {
       TI_ASSERT_TYPE_CHECKED(args[i]);
-      if (args[i].get_ret_type() != PrimitiveType::f32) {
+      auto arg_type = get_rvalue_dtype(args[i]);
+      if (arg_type != PrimitiveType::f32) {
         throw TaichiTypeError(
             fmt::format("Invalid type for texture load: '{}', value "
                         "arguments must be f32",
-                        args[i].get_ret_type()->to_string()));
+                        arg_type->to_string()));
       }
     }
   } else {
@@ -1213,12 +1233,12 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
-  TI_ASSERT_INFO(src->ret_type->is<PointerType>(),
+  auto src_type = get_rvalue_dtype(src);
+  TI_ASSERT_INFO(src_type->is<PointerType>(),
                  "Invalid src [{}] for GetElementExpression",
                  ExpressionHumanFriendlyPrinter::expr_to_string(src));
 
-  ret_type =
-      src->ret_type.ptr_removed()->as<StructType>()->get_element_type(index);
+  ret_type = src_type.ptr_removed()->as<StructType>()->get_element_type(index);
 }
 
 void GetElementExpression::flatten(FlattenContext *ctx) {
@@ -1334,7 +1354,8 @@ Expr ASTBuilder::make_id_expr(const std::string &name) {
 void ASTBuilder::insert_for(const Expr &s,
                             const Expr &e,
                             const std::function<void(Expr)> &func) {
-  auto i = Expr(std::make_shared<IdExpression>(get_next_id()));
+  auto i = Expr(std::make_shared<IdExpression>(get_next_id(),
+                                               StmtOpCode::FrontendForStmt));
   auto stmt_unique = std::make_unique<FrontendForStmt>(i, s, e, this->arch_,
                                                        for_loop_dec_.config);
   for_loop_dec_.reset();
@@ -1431,7 +1452,8 @@ void ASTBuilder::insert_external_func_call(std::size_t func_addr,
 }
 
 Expr ASTBuilder::expr_alloca() {
-  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+  auto var = Expr(std::make_shared<IdExpression>(
+      get_next_id(), StmtOpCode::FrontendAllocaStmt));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id,
       PrimitiveType::unknown));
@@ -1443,7 +1465,8 @@ std::optional<Expr> ASTBuilder::insert_func_call(Function *func,
   ExprGroup expanded_args;
   expanded_args.exprs = this->expand_exprs(args.exprs);
   if (!func->rets.empty()) {
-    auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+    auto var = Expr(std::make_shared<IdExpression>(
+        get_next_id(), StmtOpCode::FrontendFuncCallStmt));
     this->insert(std::make_unique<FrontendFuncCallStmt>(
         func, expanded_args,
         std::static_pointer_cast<IdExpression>(var.expr)->id));
@@ -1473,7 +1496,8 @@ Expr ASTBuilder::make_matrix_expr(const std::vector<int> &shape,
 
 Expr ASTBuilder::expr_alloca_shared_array(const std::vector<int> &shape,
                                           const DataType &element_type) {
-  auto var = Expr(std::make_shared<IdExpression>(get_next_id()));
+  auto var = Expr(std::make_shared<IdExpression>(
+      get_next_id(), StmtOpCode::FrontendAllocaStmt));
   this->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape, element_type,
       true));
@@ -1493,7 +1517,7 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
                                 std::string tb) {
   TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
             expr.is<ExternalTensorExpression>() ||
-            is_tensor(expr.expr->ret_type));
+            is_tensor(expr.expr->ret_type.ptr_removed()));
 
   // IndexExpression without ret_shape is used for matrix indexing,
   // where each entry of ExprGroup is interpreted as indexing into a specific
@@ -1656,7 +1680,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         elem.expr->ret_type = struct_type->get_element_type(indices);
         expanded_exprs.push_back(elem);
       }
-    } else if (!expr->ret_type->is<TensorType>()) {
+    } else if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
       expanded_exprs.push_back(expr);
     } else {
       // Expand TensorType expr
@@ -1674,7 +1698,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           return {ind0, ind1, ind2, ind3}
 
       */
-      auto tensor_type = expr->ret_type->cast<TensorType>();
+      auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
 
       Expr id_expr;
       if (expr.is<IdExpression>()) {
@@ -1800,9 +1824,15 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
 DataType get_rvalue_dtype(Expr expr) {
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
-      return argload->ret_type.ptr_removed();
+      return argload->ret_type->as<PointerType>()->get_pointee_type();
     }
     return argload->ret_type;
+  }
+  if (auto id = expr.cast<IdExpression>()) {
+    if (id->op == StmtOpCode::FrontendAllocaStmt) {
+      return id->ret_type->as<PointerType>()->get_pointee_type();
+    }
+    return id->ret_type;
   }
   return expr->ret_type;
 }

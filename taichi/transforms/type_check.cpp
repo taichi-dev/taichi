@@ -88,13 +88,15 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
               stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
-      auto lookup = DataType(ptr_offset_stmt->origin->ret_type->as<TensorType>()
+      auto lookup = DataType(ptr_offset_stmt->origin->ret_type.ptr_removed()
+                                 ->as<TensorType>()
                                  ->get_element_type())
                         .ptr_removed();
       stmt->ret_type = lookup;
     } else {
       auto lookup = stmt->src->ret_type;
-      stmt->ret_type = lookup;
+      TI_ASSERT(lookup.is_pointer());
+      stmt->ret_type = lookup->as<PointerType>()->get_pointee_type();
     }
   }
 
@@ -354,6 +356,9 @@ class TypeCheck : public IRVisitor {
           insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
         }
       } else {
+        irpass::print(stmt);
+        irpass::print(stmt->lhs);
+        irpass::print(stmt->rhs);
         ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       }
 

@@ -94,6 +94,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       value_type = tlctx->get_data_type(PrimitiveType::u16);
       value = builder->CreateZExt(value, value_type);
     }
+    if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i32);
+      value = builder->CreateZExt(value, value_type);
+    }
     return std::make_tuple(value, value_type);
   }
 

@@ -1510,6 +1510,15 @@ class MatrixType(CompoundType):
         dtype_str = self.dtype.to_string() if self.dtype is not None else ""
         return f"MatrixType[{self.n},{self.m}, {dtype_str}]"
 
+    def check_matched(self, other):
+        if self.ndim != len(other.shape()):
+            return False
+        if self.dtype != other.element_type():
+            return False
+        if self.get_shape() != tuple(other.shape()):
+            return False
+        return True
+
 
 class VectorType(MatrixType):
     def __init__(self, n, dtype):
@@ -1586,6 +1595,10 @@ class VectorType(MatrixType):
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
+
+    def to_string(self):
+        dtype_str = self.dtype.to_string() if self.dtype is not None else ""
+        return f"VectorType[{self.n}, {dtype_str}]"
 
 
 class MatrixNdarray(Ndarray):

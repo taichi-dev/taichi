@@ -11,21 +11,27 @@ struct one_or_more {
 
   std::variant<value_type, Container> var;
 
+  // NOLINTNEXTLINE
   one_or_more(value_type const &value) : var(value) {
   }
 
+  // NOLINTNEXTLINE
   one_or_more(value_type &value) : var(value) {
   }
 
+  // NOLINTNEXTLINE
   one_or_more(value_type &&value) : var(std::move(value)) {
   }
 
+  // NOLINTNEXTLINE
   one_or_more(Container const &value) : var(value) {
   }
 
+  // NOLINTNEXTLINE
   one_or_more(Container &value) : var(value) {
   }
 
+  // NOLINTNEXTLINE
   one_or_more(Container &&value) : var(std::move(value)) {
   }
 

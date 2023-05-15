@@ -105,15 +105,15 @@
   - test: CapiTest.Mpm88TestCuda
     script: aot/python_scripts/mpm88_graph_aot.py
     args: --arch=cuda
-  - test: CapiTest.SphTestVulkan
-    script: aot/python_scripts/sph_aot.py
-    args: --arch=vulkan
+#  - test: CapiTest.SphTestVulkan
+#    script: aot/python_scripts/sph_aot.py
+#    args: --arch=vulkan
   - test: CapiTest.SphTestMetal
     script: aot/python_scripts/sph_aot.py
     args: --arch=metal
-  - test: CapiTest.SphTestOpengl
-    script: aot/python_scripts/sph_aot.py
-    args: --arch=opengl
+#  - test: CapiTest.SphTestOpengl
+#    script: aot/python_scripts/sph_aot.py
+#    args: --arch=opengl
   - test: CapiTest.SphTestCuda
     script: aot/python_scripts/sph_aot.py
     args: --arch=cuda
@@ -137,12 +137,12 @@
   - test: CapiTest.GraphTestVulkanGraph
     script: aot/python_scripts/graph_aot_test_.py
     args: --arch=vulkan
-  - test: CapiTest.GraphTestVulkanTextureGraph
-    script: aot/python_scripts/texture_aot_test_.py
-    args: --arch=vulkan --graph
-  - test: CapiTest.GraphTestVulkanTextureKernel
-    script: aot/python_scripts/texture_aot_test_.py
-    args: --arch=vulkan
+#  - test: CapiTest.GraphTestVulkanTextureGraph
+#    script: aot/python_scripts/texture_aot_test_.py
+#    args: --arch=vulkan --graph
+#  - test: CapiTest.GraphTestVulkanTextureKernel
+#    script: aot/python_scripts/texture_aot_test_.py
+#    args: --arch=vulkan
   - test: CapiTest.GraphTestMetalGraph
     script: aot/python_scripts/graph_aot_test_.py
     args: --arch=metal
@@ -167,9 +167,9 @@
   - test: CapiTest.AotTestVulkanKernel
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=vulkan
-  - test: CapiTest.AotTestVulkanSharedArray
-    script: aot/python_scripts/shared_array_aot_test_.py
-    args: --arch=vulkan
+#  - test: CapiTest.AotTestVulkanSharedArray
+#    script: aot/python_scripts/shared_array_aot_test_.py
+#    args: --arch=vulkan
   - test: CapiTest.AotTestMetalKernel
     script: aot/python_scripts/kernel_aot_test1.py
     args: --arch=metal

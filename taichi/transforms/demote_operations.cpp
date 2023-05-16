@@ -33,10 +33,10 @@ class DemoteOperations : public BasicStmtVisitor {
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, lhs, zero.get());
     auto cond3 =
         Stmt::make<BinaryOpStmt>(BinaryOpType::cmp_ne, rhs_mul_ret.get(), lhs);
-    auto cond12 = Stmt::make<BinaryOpStmt>(BinaryOpType::logical_and,
-                                           cond1.get(), cond2.get());
-    auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::logical_and,
-                                         cond12.get(), cond3.get());
+    auto cond12 = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, cond1.get(),
+                                           cond2.get());
+    auto cond = Stmt::make<BinaryOpStmt>(BinaryOpType::bit_and, cond12.get(),
+                                         cond3.get());
     auto real_ret =
         Stmt::make<BinaryOpStmt>(BinaryOpType::sub, ret.get(), cond.get());
     modifier.insert_before(stmt, std::move(ret));

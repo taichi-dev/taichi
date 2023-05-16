@@ -13,6 +13,7 @@ class LlvmDevice : public Device {
     JITModule *runtime_jit{nullptr};
     LLVMRuntime *runtime{nullptr};
     uint64 *result_buffer{nullptr};
+    bool use_memory_pool{false};
   };
 
   Arch arch() const override {

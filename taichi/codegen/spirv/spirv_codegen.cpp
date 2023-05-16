@@ -623,7 +623,8 @@ class TaskCodegen : public IRVisitor {
         val_type = ir_->i32_type();
       }
       spirv::Value buffer_val = ir_->make_value(
-          spv::OpAccessChain, ir_->get_storage_pointer_type(val_type),
+          spv::OpAccessChain,
+          ir_->get_storage_pointer_type(val_type),
           get_buffer_value(BufferType::Rets, dt),
           ir_->int_immediate_number(ir_->i32_type(), 0),
           ir_->int_immediate_number(ir_->i32_type(), i));

@@ -1,14 +1,14 @@
 option(USE_STDCPP "Use -stdlib=libc++" OFF)
-option(TI_WITH_LLVM "Build with LLVM backends" ON)
-option(TI_WITH_METAL "Build with the Metal backend" ON)
-option(TI_WITH_CUDA "Build with the CUDA backend" ON)
-option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)
-option(TI_WITH_AMDGPU "Build with the AMDGPU backend" OFF)
-option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)
-option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)
-option(TI_WITH_DX11 "Build with the DX11 backend" OFF)
-option(TI_WITH_DX12 "Build with the DX12 backend" OFF)
-option(TI_WITH_GGUI "Build with GGUI" OFF)
+option(TI_WITH_LLVM "Build with LLVM backends" ON)              # wheel-tag: llvm
+option(TI_WITH_METAL "Build with the Metal backend" ON)         # wheel-tag: mtl
+option(TI_WITH_CUDA "Build with the CUDA backend" ON)           # wheel-tag: cu
+option(TI_WITH_CUDA_TOOLKIT "Build with the CUDA toolkit" OFF)  # wheel-tag: cutk
+option(TI_WITH_AMDGPU "Build with the AMDGPU backend" OFF)      # wheel-tag: amd
+option(TI_WITH_OPENGL "Build with the OpenGL backend" ON)       # wheel-tag: gl
+option(TI_WITH_VULKAN "Build with the Vulkan backend" OFF)      # wheel-tag: vk
+option(TI_WITH_DX11 "Build with the DX11 backend" OFF)          # wheel-tag: dx11
+option(TI_WITH_DX12 "Build with the DX12 backend" OFF)          # wheel-tag: dx12
+option(TI_WITH_GGUI "Build with GGUI" OFF)                      # wheel-tag: ggui
 
 # Force symbols to be 'hidden' by default so nothing is exported from the Taichi
 # library including the third-party dependencies.

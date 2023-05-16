@@ -441,7 +441,7 @@ ExternalPtrStmt *IRBuilder::create_external_ptr(
     const std::vector<Stmt *> &indices,
     bool is_grad) {
   return insert(Stmt::make_typed<ExternalPtrStmt>(
-      ptr, indices, std::vector<int>(), 0, is_grad));
+      ptr, indices, indices.size(), std::vector<int>(), 0, is_grad));
 }
 
 AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,

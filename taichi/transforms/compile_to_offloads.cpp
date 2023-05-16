@@ -183,14 +183,6 @@ void offload_to_executable(IRNode *ir,
   print("Atomics demoted I");
   irpass::analysis::verify(ir);
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (config.cache_loop_invariant_global_vars) {
     irpass::cache_loop_invariant_global_vars(ir, config);
     print("Cache loop-invariant global vars");
@@ -216,6 +208,14 @@ void offload_to_executable(IRNode *ir,
     irpass::type_check(ir, config);
     print("No-access mesh-for demoted");
     irpass::analysis::verify(ir);
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
   }
 
   if (make_thread_local) {

@@ -333,7 +333,13 @@ class AtomicOpStmt : public Stmt,
 class ExternalPtrStmt : public Stmt {
  public:
   Stmt *base_ptr;
+
   std::vector<Stmt *> indices;
+
+  // Number of dimensions of external shape
+  int ndim;
+
+  // Shape of element type
   std::vector<int> element_shape;
   // AOS: element_dim < 0
   // SOA: element_dim > 0
@@ -352,6 +358,7 @@ class ExternalPtrStmt : public Stmt {
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
+                  int ndim,
                   const std::vector<int> &element_shape,
                   int element_dim,
                   bool is_grad = false);

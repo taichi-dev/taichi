@@ -24,7 +24,7 @@ def test_bool_type_conv():
 
     @ti.kernel
     def test():
-        assert f(1000) == 1000
-        assert f(ti.u32(4_294_967_295)) == -1
+        assert f(1000) == True
+        assert f(ti.u32(4_294_967_295)) == True
 
     test()

@@ -125,7 +125,18 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
-      if (irpass::analysis::definitely_same_address(var, store_ptr)) {
+      // Exclude `store_ptr` as a potential store destination, as the store
+      // operation may result in a loss of precision. For example:
+      //   <i32> $3 = const 233333
+      //   <*qi4> $4 = global ptr [S3place<qi4><bit>], index [$1] activate=false
+      //   $5 : global store [$4 <- $3]
+      //   <i32> $6 = global load $4
+      // The store cannot be forwarded because $3 may not fit into a qi4,
+      // leading to truncation.
+      // TODO: Add casting between integer and quantInt before store and load
+      // operations
+      if (!is_quant(store_ptr->ret_type.ptr_removed()) &&
+          irpass::analysis::definitely_same_address(var, store_ptr)) {
         last_def_position = i;
         break;
       }

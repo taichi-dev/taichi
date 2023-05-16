@@ -1147,6 +1147,8 @@ class TaskCodegen : public IRVisitor {
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ge, ge)
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_eq, eq)
     BINARY_OP_TO_SPIRV_LOGICAL(cmp_ne, ne)
+    BINARY_OP_TO_SPIRV_LOGICAL(logical_and, logical_and)
+    BINARY_OP_TO_SPIRV_LOGICAL(logical_or, logical_or)
 #undef BINARY_OP_TO_SPIRV_LOGICAL
 
 #define FLOAT_BINARY_OP_TO_SPIRV_FLOAT_FUNC(op, instruction, instruction_id,   \

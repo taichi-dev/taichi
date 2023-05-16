@@ -69,6 +69,17 @@ int data_type_size(DataType t) {
   }
 }
 
+// In GLSL, boolean types are special as they are 4 bytes in length. If we
+// ignore this characteristic, issues will arise when we pass values to kernels
+// or read return values from kernels.
+int data_type_size_gfx(DataType t) {
+  if (t->is_primitive(PrimitiveTypeID::u1)) {
+    return 4;
+  } else {
+    return data_type_size(t);
+  }
+}
+
 std::string tensor_type_format_helper(const std::vector<int> &shape,
                                       std::string format_str,
                                       int dim) {

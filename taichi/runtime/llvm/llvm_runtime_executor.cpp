@@ -46,6 +46,7 @@ LlvmRuntimeExecutor::LlvmRuntimeExecutor(CompileConfig &config,
       config.arch = host_arch();
     } else {
       // CUDA runtime created successfully
+      use_device_memory_pool_ = CUDAContext::get_instance().supports_mem_pool();
     }
 #else
     TI_WARN("Taichi is not compiled with CUDA.");
@@ -398,6 +399,20 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
   const int tree_id = field_cache_data.tree_id;
   const int root_id = field_cache_data.root_id;
 
+  bool all_dense = config_.demote_dense_struct_fors;
+  for (size_t i = 0; i < snode_metas.size(); i++) {
+    if (snode_metas[i].type != SNodeType::dense &&
+        snode_metas[i].type != SNodeType::place &&
+        snode_metas[i].type != SNodeType::root) {
+      all_dense = false;
+      break;
+    }
+  }
+
+  if (config_.arch == Arch::cuda && use_device_memory_pool() && !all_dense) {
+    preallocate_runtime_memory();
+  }
+
   TI_TRACE("Allocating data structure of size {} bytes", root_size);
   std::size_t rounded_size = taichi::iroundup(root_size, taichi_page_size);
 
@@ -423,16 +438,6 @@ void LlvmRuntimeExecutor::initialize_llvm_runtime_snodes(
       llvm_device()->import_memory(root_buffer, rounded_size);
 
   snode_tree_allocs_[tree_id] = alloc;
-
-  bool all_dense = config_.demote_dense_struct_fors;
-  for (size_t i = 0; i < snode_metas.size(); i++) {
-    if (snode_metas[i].type != SNodeType::dense &&
-        snode_metas[i].type != SNodeType::place &&
-        snode_metas[i].type != SNodeType::root) {
-      all_dense = false;
-      break;
-    }
-  }
 
   runtime_jit->call<void *, std::size_t, int, int, int, std::size_t, Ptr>(
       "runtime_initialize_snodes", llvm_runtime_, root_size, root_id,
@@ -471,16 +476,25 @@ LlvmDevice *LlvmRuntimeExecutor::llvm_device() {
 DeviceAllocation LlvmRuntimeExecutor::allocate_memory_ndarray(
     std::size_t alloc_size,
     uint64 *result_buffer) {
-  return llvm_device()->allocate_memory_runtime(
+  auto devalloc = llvm_device()->allocate_memory_runtime(
       {{alloc_size, /*host_write=*/false, /*host_read=*/false,
         /*export_sharing=*/false, AllocUsage::Storage},
        get_runtime_jit_module(),
        get_llvm_runtime(),
-       result_buffer});
+       result_buffer,
+       use_device_memory_pool()});
+
+  TI_ASSERT(allocated_runtime_memory_allocs_.find(devalloc.alloc_id) ==
+            allocated_runtime_memory_allocs_.end());
+  allocated_runtime_memory_allocs_[devalloc.alloc_id] = devalloc;
+  return devalloc;
 }
 
 void LlvmRuntimeExecutor::deallocate_memory_ndarray(DeviceAllocation handle) {
+  TI_ASSERT(allocated_runtime_memory_allocs_.find(handle.alloc_id) !=
+            allocated_runtime_memory_allocs_.end());
   llvm_device()->dealloc_memory(handle);
+  allocated_runtime_memory_allocs_.erase(handle.alloc_id);
 }
 
 void LlvmRuntimeExecutor::fill_ndarray(const DeviceAllocation &alloc,
@@ -534,13 +548,32 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 
 void LlvmRuntimeExecutor::finalize() {
   profiler_ = nullptr;
-  for (auto &preallocated_device_buffer_alloc :
-       preallocated_device_buffer_allocs_) {
-    if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
-      llvm_device()->dealloc_memory(preallocated_device_buffer_alloc);
-      llvm_device()->clear();
-      DeviceMemoryPool::get_instance().reset();
+  if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
+    preallocated_runtime_objects_allocs_.reset();
+    preallocated_runtime_memory_allocs_.reset();
+
+    // Reset runtime memory
+    auto allocated_runtime_memory_allocs_copy =
+        allocated_runtime_memory_allocs_;
+    for (auto &iter : allocated_runtime_memory_allocs_copy) {
+      // The runtime allocation may have already been freed upon explicit
+      // Ndarray/Field destruction Check if the allocation still alive
+      void *ptr = llvm_device()->get_memory_addr(iter.second);
+      if (ptr == nullptr)
+        continue;
+
+      deallocate_memory_ndarray(iter.second);
     }
+    allocated_runtime_memory_allocs_.clear();
+
+    // Reset device
+    llvm_device()->clear();
+
+    // Reset memory pool
+    DeviceMemoryPool::get_instance().reset();
+
+    // Release unused memory from cuda memory pool
+    synchronize();
   }
   finalized_ = true;
 }
@@ -551,7 +584,9 @@ LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
   }
 }
 
-void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size) {
+void *LlvmRuntimeExecutor::preallocate_memory(
+    std::size_t prealloc_size,
+    DeviceAllocationUnique &devalloc) {
   DeviceAllocation preallocated_device_buffer_alloc;
 
   Device::AllocParams preallocated_device_buffer_alloc_params;
@@ -564,9 +599,36 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size) {
 
   void *preallocated_device_buffer =
       llvm_device()->get_memory_addr(preallocated_device_buffer_alloc);
-  preallocated_device_buffer_allocs_.emplace_back(
+  devalloc = std::make_unique<DeviceAllocationGuard>(
       std::move(preallocated_device_buffer_alloc));
   return preallocated_device_buffer;
+}
+
+void LlvmRuntimeExecutor::preallocate_runtime_memory() {
+  if (preallocated_runtime_memory_allocs_ != nullptr)
+    return;
+
+  std::size_t total_prealloc_size = 0;
+  const auto total_mem = llvm_device()->get_total_memory();
+  if (config_.device_memory_fraction == 0) {
+    TI_ASSERT(config_.device_memory_GB > 0);
+    total_prealloc_size = std::size_t(config_.device_memory_GB * (1UL << 30));
+  } else {
+    total_prealloc_size =
+        std::size_t(config_.device_memory_fraction * total_mem);
+  }
+  TI_ASSERT(total_prealloc_size <= total_mem);
+
+  void *runtime_memory_prealloc_buffer = preallocate_memory(
+      total_prealloc_size, preallocated_runtime_memory_allocs_);
+
+  TI_TRACE("Allocating device memory {:.2f} MB",
+           1.0 * total_prealloc_size / (1UL << 20));
+
+  auto *const runtime_jit = get_runtime_jit_module();
+  runtime_jit->call<void *, std::size_t, void *>(
+      "runtime_initialize_memory", llvm_runtime_, total_prealloc_size,
+      runtime_memory_prealloc_buffer);
 }
 
 void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
@@ -597,7 +659,6 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
   // CUDA and AMDGPU backends.
   // | ==================preallocated device buffer ========================== |
   // |<- reserved for return ->|<---- usable for allocators on the device ---->|
-
   auto *const runtime_jit = get_runtime_jit_module();
 
   size_t runtime_objects_prealloc_size = 0;
@@ -654,31 +715,9 @@ void LlvmRuntimeExecutor::materialize_runtime(KernelProfilerBase *profiler,
 
   // Preallocate for runtime memory and update to LLVMRuntime
   if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
-    std::size_t total_prealloc_size = 0;
-    const auto total_mem = llvm_device()->get_total_memory();
-    if (config_.device_memory_fraction == 0) {
-      TI_ASSERT(config_.device_memory_GB > 0);
-      total_prealloc_size = std::size_t(config_.device_memory_GB * (1UL << 30));
-    } else {
-      total_prealloc_size =
-          std::size_t(config_.device_memory_fraction * total_mem);
+    if (!use_device_memory_pool()) {
+      preallocate_runtime_memory();
     }
-    TI_ASSERT(total_prealloc_size <= total_mem);
-
-    auto runtime_memory_prealloc_size =
-        total_prealloc_size > runtime_objects_prealloc_size
-            ? total_prealloc_size - runtime_objects_prealloc_size
-            : 0;
-
-    void *runtime_memory_prealloc_buffer =
-        preallocate_memory(runtime_memory_prealloc_size);
-
-    TI_TRACE("Allocating device memory {:.2f} MB",
-             1.0 * runtime_memory_prealloc_size / (1UL << 20));
-
-    runtime_jit->call<void *, std::size_t, void *>(
-        "runtime_initialize_memory", llvm_runtime_,
-        runtime_memory_prealloc_size, runtime_memory_prealloc_buffer);
   }
 
   if (config_.arch == Arch::cuda) {

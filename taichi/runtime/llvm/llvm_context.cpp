@@ -692,6 +692,9 @@ llvm::Value *TaichiLLVMContext::get_constant(DataType dt, T t) {
     return llvm::ConstantFP::get(llvm::Type::getHalfTy(*ctx), (float32)t);
   } else if (dt->is_primitive(PrimitiveTypeID::f64)) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat((float64)t));
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return t ? llvm::ConstantInt::getTrue(*ctx)
+             : llvm::ConstantInt::getFalse(*ctx);
   } else if (is_integral(dt)) {
     if (is_signed(dt)) {
       return llvm::ConstantInt::get(
@@ -721,7 +724,8 @@ llvm::Value *TaichiLLVMContext::get_constant(T t) {
                 std::is_same_v<TargetType, float64>) {
     return llvm::ConstantFP::get(*ctx, llvm::APFloat(t));
   } else if (std::is_same_v<TargetType, bool>) {
-    return llvm::ConstantInt::get(*ctx, llvm::APInt(1, (uint64)t, true));
+    return t ? llvm::ConstantInt::getTrue(*ctx)
+             : llvm::ConstantInt::getFalse(*ctx);
   } else if (std::is_same_v<TargetType, int32> ||
              std::is_same_v<TargetType, uint32>) {
     return llvm::ConstantInt::get(*ctx, llvm::APInt(32, (uint64)t, true));

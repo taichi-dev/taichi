@@ -23,6 +23,8 @@ class Expr {
     atomic = false;
   }
 
+  explicit Expr(uint1 x);
+
   explicit Expr(int16 x);
 
   explicit Expr(int32 x);

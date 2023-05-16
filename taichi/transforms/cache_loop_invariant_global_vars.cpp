@@ -54,7 +54,20 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
     if (current_offloaded->task_type == OffloadedTaskType::serial) {
       return true;
     }
-    if (auto global_ptr = stmt->cast<GlobalPtrStmt>()) {
+
+    // Handle GlobalPtrStmt
+    bool is_global_ptr_stmt = false;
+    GlobalPtrStmt *global_ptr = nullptr;
+    if (stmt->is<GlobalPtrStmt>()) {
+      is_global_ptr_stmt = true;
+      global_ptr = stmt->as<GlobalPtrStmt>();
+    } else if (stmt->is<MatrixPtrStmt>() &&
+               stmt->as<MatrixPtrStmt>()->origin->is<GlobalPtrStmt>()) {
+      is_global_ptr_stmt = true;
+      global_ptr = stmt->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+    }
+
+    if (global_ptr) {
       auto snode = global_ptr->snode;
       if (loop_unique_ptr_[snode] == nullptr ||
           loop_unique_ptr_[snode]->indices.empty()) {
@@ -69,8 +82,21 @@ class CacheLoopInvariantGlobalVars : public LoopInvariantDetector {
         return false;
       }
       return true;
-    } else if (stmt->is<ExternalPtrStmt>()) {
-      ExternalPtrStmt *dest_ptr = stmt->as<ExternalPtrStmt>();
+    }
+
+    // Handle ExternalPtrStmt
+    bool is_external_ptr_stmt = false;
+    ExternalPtrStmt *dest_ptr = nullptr;
+    if (stmt->is<ExternalPtrStmt>()) {
+      is_external_ptr_stmt = true;
+      dest_ptr = stmt->as<ExternalPtrStmt>();
+    } else if (stmt->is<MatrixPtrStmt>() &&
+               stmt->as<MatrixPtrStmt>()->origin->is<ExternalPtrStmt>()) {
+      is_external_ptr_stmt = true;
+      dest_ptr = stmt->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
+    }
+
+    if (is_external_ptr_stmt) {
       if (dest_ptr->indices.empty()) {
         return false;
       }

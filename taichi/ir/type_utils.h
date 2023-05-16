@@ -38,6 +38,8 @@ inline DataType get_data_type() {
     return PrimitiveType::i32;
   } else if (std::is_same<T, int64>()) {
     return PrimitiveType::i64;
+  } else if (std::is_same<T, uint1>()) {
+    return PrimitiveType::u1;
   } else if (std::is_same<T, uint8>()) {
     return PrimitiveType::u8;
   } else if (std::is_same<T, uint16>()) {
@@ -101,6 +103,7 @@ inline bool is_integral(DataType dt) {
          dt->is_primitive(PrimitiveTypeID::i16) ||
          dt->is_primitive(PrimitiveTypeID::i32) ||
          dt->is_primitive(PrimitiveTypeID::i64) ||
+         dt->is_primitive(PrimitiveTypeID::u1) ||
          dt->is_primitive(PrimitiveTypeID::u8) ||
          dt->is_primitive(PrimitiveTypeID::u16) ||
          dt->is_primitive(PrimitiveTypeID::u32) ||
@@ -146,6 +149,8 @@ inline TypedConstant get_max_value(DataType dt) {
     return {dt, std::numeric_limits<int32>::max()};
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return {dt, std::numeric_limits<int64>::max()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return {dt, std::numeric_limits<uint1>::max()};
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return {dt, std::numeric_limits<uint8>::max()};
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -172,6 +177,8 @@ inline TypedConstant get_min_value(DataType dt) {
     return {dt, std::numeric_limits<int32>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::i64)) {
     return {dt, std::numeric_limits<int64>::lowest()};
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return {dt, std::numeric_limits<uint1>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return {dt, std::numeric_limits<uint8>::lowest()};
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {

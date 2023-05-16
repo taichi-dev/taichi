@@ -6,6 +6,7 @@ from taichi.lang import impl
 from taichi.lang.exception import TaichiIndexError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
+from taichi.math import vec3, ivec3
 
 import taichi as ti
 from tests import test_utils
@@ -779,10 +780,23 @@ def test_matrix_ndarray_oob():
     def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32) -> ti.f32:
         return input[p, q][x, y]
 
+    @ti.kernel
+    def valid_access(indices: ti.types.ndarray(dtype=ivec3, ndim=1), dummy: ti.types.ndarray(dtype=ivec3, ndim=1)):
+        for i in indices:
+            index_vec = ti.Vector([0, 0, 0])
+            for j in ti.static(range(3)):
+                index = indices[i][j]
+                index_vec[j] = index
+            dummy[i] = index_vec
+
     input = ti.ndarray(dtype=ti.math.mat2, shape=(4, 5))
+
+    indices = ti.ndarray(dtype=ivec3, shape=(10))
+    dummy = ti.ndarray(dtype=ivec3, shape=(10))
 
     # Works
     access_arr(input, 2, 3, 0, 1)
+    valid_access(indices, dummy)
 
     # element_shape
     with pytest.raises(AssertionError, match=r"Out of bound access"):

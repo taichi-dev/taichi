@@ -14,7 +14,7 @@ from .escapes import escape_codes
 from .misc import banner
 
 # -- code --
-OPTION_RE = re.compile(r'option\(([A-Z0-9_]*) +"(.*?)" +(ON|OFF)\)')
+OPTION_RE = re.compile(r'option\(([A-Z0-9_]*) +"(.*?)" +(ON|OFF)\)(?: *# wheel-tag: (.*))?')
 DEF_RE = re.compile(r"-D([A-Z0-9_]*)(?::BOOL)?=([^ ]+)(?: |$)")
 
 
@@ -28,10 +28,7 @@ class CMakeArgsManager:
         self.environ_name = environ_name
         self.definitions = {}
         self.option_definitions = {
-            "CMAKE_EXPORT_COMPILE_COMMANDS": (
-                "Generate compile_commands.json",
-                False,
-            ),
+            "CMAKE_EXPORT_COMPILE_COMMANDS": ("Generate compile_commands.json", False, ""),
         }
 
         self.finalized = False
@@ -39,9 +36,9 @@ class CMakeArgsManager:
     def collect_options(self, *files: str) -> None:
         for fn in files:
             with open(fn, "r") as f:
-                for name, desc, default in OPTION_RE.findall(f.read()):
+                for name, desc, default, wheel_tag in OPTION_RE.findall(f.read()):
                     default = self._VMAP.get(default, default)
-                    self.option_definitions[name] = (desc, default)
+                    self.option_definitions[name] = (desc, default, wheel_tag)
 
     def parse_initial_args(self) -> None:
         args = os.environ.get(self.environ_name, "")
@@ -49,7 +46,7 @@ class CMakeArgsManager:
             self.set(name, value)
 
     def get_effective(self, name: str) -> Union[str, bool]:
-        _, default = self.option_definitions.get(name, ("", None))
+        _, default, _ = self.option_definitions.get(name, ("", None, ""))
         return self.definitions.get(name, default)
 
     def set(self, name: str, value: Union[str, bool]) -> None:
@@ -57,7 +54,7 @@ class CMakeArgsManager:
         desc = ""
         value = self._VMAP.get(value, value)
         default = None
-        desc, default = self.option_definitions.get(name, ("", None))
+        desc, default, wheel_tag = self.option_definitions.get(name, ("", None, ""))
         desc = desc and f" ({desc}) "
         is_bool = isinstance(default, bool)
         assert not is_bool or isinstance(value, bool), f"Option {name} must be bool"
@@ -84,6 +81,7 @@ class CMakeArgsManager:
                 else:
                     p(f"{B}:: CMAKE: Already disabled: {name}{desc}{N}")
         else:
+            assert not wheel_tag, "Set a non boolean value to an option with wheel-tag"
             if orig != value:
                 if orig != default:
                     p(f"{R}:: CMAKE- {name}={orig}{desc}{N}")
@@ -99,7 +97,7 @@ class CMakeArgsManager:
             else:
                 v = f"-D{name}={value}"
 
-            desc, _ = self.option_definitions.get(name, ("", None))
+            desc, _, _ = self.option_definitions.get(name, ("", None, ""))
             if desc:
                 prefix = "DO NOT " if not value else ""
                 desc = f" ({prefix}{desc})"
@@ -107,6 +105,15 @@ class CMakeArgsManager:
             lst.append((name, v, desc))
 
         return lst
+
+    def render_wheel_tag(self) -> str:
+        tags = []
+        for name, (_, default, wheel_tag) in self.option_definitions.items():
+            if not wheel_tag:
+                continue
+            if self.definitions.get(name, default):
+                tags.append(wheel_tag)
+        return ".".join(sorted(tags))
 
     @banner("{self.environ_name} Summary")
     def print_summary(self, rendered) -> None:

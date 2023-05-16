@@ -29,7 +29,7 @@ extern void *kGetOpenglProcAddr;
 class GLResourceSet : public ShaderResourceSet {
  public:
   GLResourceSet() = default;
-  explicit GLResourceSet(const GLResourceSet &other) = default;
+  GLResourceSet(const GLResourceSet &other) = default;
 
   ~GLResourceSet() override;
 

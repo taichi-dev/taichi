@@ -77,7 +77,7 @@ def x_min() -> ti.f32:
     ret: ti.f32 = x[0]
 
     for i in x:
-        ret = ti.atomic_min(ret, x[i])
+        ti.atomic_min(ret, x[i])  # store result in the first argument
 
     return ret
 

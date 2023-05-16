@@ -246,6 +246,9 @@ class TaskCodegen : public IRVisitor {
       } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
         return ir_->int_immediate_number(
             stype, static_cast<int64_t>(const_val.val_i16), false);
+      } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+        return ir_->uint_immediate_number(
+            stype, static_cast<uint64_t>(const_val.val_u1), false);
       } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
         return ir_->uint_immediate_number(
             stype, static_cast<uint64_t>(const_val.val_u8), false);
@@ -1649,9 +1652,10 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(IfStmt *if_stmt) override {
-    spirv::Value cond_v = ir_->query_value(if_stmt->cond->raw_name());
+    spirv::Value cond_v = ir_->cast(
+        ir_->bool_type(), ir_->query_value(if_stmt->cond->raw_name()));
     spirv::Value cond =
-        ir_->ne(cond_v, ir_->cast(cond_v.stype, ir_->const_i32_zero_));
+        ir_->ne(cond_v, ir_->cast(ir_->bool_type(), ir_->const_i32_zero_));
     spirv::Label then_label = ir_->new_label();
     spirv::Label merge_label = ir_->new_label();
     spirv::Label else_label = ir_->new_label();
@@ -1773,9 +1777,10 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(WhileControlStmt *stmt) override {
-    spirv::Value cond_v = ir_->query_value(stmt->cond->raw_name());
+    spirv::Value cond_v =
+        ir_->cast(ir_->bool_type(), ir_->query_value(stmt->cond->raw_name()));
     spirv::Value cond =
-        ir_->eq(cond_v, ir_->cast(cond_v.stype, ir_->const_i32_zero_));
+        ir_->eq(cond_v, ir_->cast(ir_->bool_type(), ir_->const_i32_zero_));
     spirv::Label then_label = ir_->new_label();
     spirv::Label merge_label = ir_->new_label();
 

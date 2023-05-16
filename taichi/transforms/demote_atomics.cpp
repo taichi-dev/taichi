@@ -39,9 +39,21 @@ class DemoteAtomics : public BasicStmtVisitor {
           (current_offloaded->task_type == OffloadedTaskType::range_for ||
            current_offloaded->task_type == OffloadedTaskType::mesh_for ||
            current_offloaded->task_type == OffloadedTaskType::struct_for)) {
+        // Handle loop-unique GlobalPtrStmt
+        bool is_global_ptr_stmt = false;
+        GlobalPtrStmt *dest = nullptr;
         if (stmt->dest->is<GlobalPtrStmt>()) {
+          is_global_ptr_stmt = true;
+          dest = stmt->dest->as<GlobalPtrStmt>();
+        } else if (stmt->dest->is<MatrixPtrStmt>() &&
+                   stmt->dest->as<MatrixPtrStmt>()
+                       ->origin->is<GlobalPtrStmt>()) {
+          is_global_ptr_stmt = true;
+          dest = stmt->dest->as<MatrixPtrStmt>()->origin->as<GlobalPtrStmt>();
+        }
+
+        if (is_global_ptr_stmt) {
           demote = true;
-          auto dest = stmt->dest->as<GlobalPtrStmt>();
           auto snode = dest->snode;
           if (loop_unique_ptr_[snode] == nullptr ||
               loop_unique_ptr_[snode]->indices.empty()) {
@@ -66,14 +78,28 @@ class DemoteAtomics : public BasicStmtVisitor {
               }
               if (idx->is<LoopIndexStmt>() &&
                   idx->as<LoopIndexStmt>()->is_mesh_index() &&
-                  loop_unique_ptr_[stmt->dest->as<GlobalPtrStmt>()->snode] !=
-                      nullptr) {
+                  loop_unique_ptr_[dest->snode] != nullptr) {
                 demote = true;
               }
             }
           }
-        } else if (stmt->dest->is<ExternalPtrStmt>()) {
-          ExternalPtrStmt *dest_ptr = stmt->dest->as<ExternalPtrStmt>();
+        }
+
+        // Handle loop-unique ExternalPtrStmt
+        bool is_external_ptr_stmt = false;
+        ExternalPtrStmt *dest_ptr = nullptr;
+        if (stmt->dest->is<ExternalPtrStmt>()) {
+          is_external_ptr_stmt = true;
+          dest_ptr = stmt->dest->as<ExternalPtrStmt>();
+        } else if (stmt->dest->is<MatrixPtrStmt>() &&
+                   stmt->dest->as<MatrixPtrStmt>()
+                       ->origin->is<ExternalPtrStmt>()) {
+          is_external_ptr_stmt = true;
+          dest_ptr =
+              stmt->dest->as<MatrixPtrStmt>()->origin->as<ExternalPtrStmt>();
+        }
+
+        if (is_external_ptr_stmt) {
           demote = true;
           if (dest_ptr->indices.empty()) {
             demote = false;
@@ -88,6 +114,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         }
       }
     }
+
     if (stmt->dest->is<AllocaStmt>()) {
       // Except shared array
       if (!stmt->dest->as<AllocaStmt>()->is_shared) {
@@ -95,6 +122,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         is_local = true;
       }
     }
+
     if (stmt->dest->is<MatrixPtrStmt>() &&
         stmt->dest->cast<MatrixPtrStmt>()->origin->is<AllocaStmt>()) {
       // Except shared array

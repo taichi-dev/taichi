@@ -169,7 +169,7 @@ class HostDeviceContextBlitter {
       const auto &ret = ctx_attribs_->rets()[i];
       void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
       const auto dt = PrimitiveType::get(ret.dtype);
-      const auto num = ret.stride / data_type_size(dt);
+      const auto num = ret.stride / data_type_size_gfx(dt);
       for (int j = 0; j < num; ++j) {
         // (penguinliong) Again, it's the module loader's responsibility to
         // check the data type availability.
@@ -820,7 +820,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       member_align = member_align_;
       member_size = size;
     } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
-      size_t element_size = data_type_size(tensor_type->get_element_type());
+      size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
       size_t num_elements = tensor_type->get_num_elements();
       if (num_elements == 2) {
         member_align = element_size * 2;
@@ -843,7 +843,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       }
     } else {
       TI_ASSERT(member.type->is<PrimitiveType>());
-      member_size = data_type_size(member.type);
+      member_size = data_type_size_gfx(member.type);
       member_align = member_size;
     }
     bytes = align_up(bytes, member_align);

@@ -12,6 +12,8 @@ TI_DLL_EXPORT std::string data_type_name(DataType t);
 
 TI_DLL_EXPORT int data_type_size(DataType t);
 
+TI_DLL_EXPORT int data_type_size_gfx(DataType t);
+
 TI_DLL_EXPORT std::string data_type_format(DataType dt, Arch arch = Arch::x64);
 
 inline int data_type_bits(DataType t) {

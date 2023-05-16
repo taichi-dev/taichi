@@ -549,15 +549,8 @@ uint64_t *LlvmRuntimeExecutor::get_ndarray_alloc_info_ptr(
 void LlvmRuntimeExecutor::finalize() {
   profiler_ = nullptr;
   if (config_.arch == Arch::cuda || config_.arch == Arch::amdgpu) {
-    if (preallocated_runtime_objects_allocs_ != kDeviceNullAllocation) {
-      llvm_device()->dealloc_memory(preallocated_runtime_objects_allocs_);
-      preallocated_runtime_objects_allocs_ = kDeviceNullAllocation;
-    }
-
-    if (preallocated_runtime_memory_allocs_ != kDeviceNullAllocation) {
-      llvm_device()->dealloc_memory(preallocated_runtime_memory_allocs_);
-      preallocated_runtime_memory_allocs_ = kDeviceNullAllocation;
-    }
+    preallocated_runtime_objects_allocs_.reset();
+    preallocated_runtime_memory_allocs_.reset();
 
     // Reset runtime memory
     auto allocated_runtime_memory_allocs_copy =
@@ -591,8 +584,9 @@ LlvmRuntimeExecutor::~LlvmRuntimeExecutor() {
   }
 }
 
-void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size,
-                                              DeviceAllocation &devalloc) {
+void *LlvmRuntimeExecutor::preallocate_memory(
+    std::size_t prealloc_size,
+    DeviceAllocationUnique &devalloc) {
   DeviceAllocation preallocated_device_buffer_alloc;
 
   Device::AllocParams preallocated_device_buffer_alloc_params;
@@ -604,12 +598,13 @@ void *LlvmRuntimeExecutor::preallocate_memory(std::size_t prealloc_size,
 
   void *preallocated_device_buffer =
       llvm_device()->get_memory_addr(preallocated_device_buffer_alloc);
-  devalloc = std::move(preallocated_device_buffer_alloc);
+  devalloc = std::make_unique<DeviceAllocationGuard>(
+      std::move(preallocated_device_buffer_alloc));
   return preallocated_device_buffer;
 }
 
 void LlvmRuntimeExecutor::preallocate_runtime_memory() {
-  if (preallocated_runtime_memory_allocs_ != kDeviceNullAllocation)
+  if (preallocated_runtime_memory_allocs_ != nullptr)
     return;
 
   std::size_t total_prealloc_size = 0;

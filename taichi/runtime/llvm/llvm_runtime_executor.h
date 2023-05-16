@@ -101,7 +101,7 @@ class LlvmRuntimeExecutor {
                     uint32_t data);
 
   void *preallocate_memory(std::size_t prealloc_size,
-                           DeviceAllocation &devalloc);
+                           DeviceAllocationUnique &devalloc);
   void preallocate_runtime_memory();
 
   /* ------------------------- */
@@ -150,8 +150,8 @@ class LlvmRuntimeExecutor {
 
   std::unique_ptr<SNodeTreeBufferManager> snode_tree_buffer_manager_{nullptr};
   std::unordered_map<int, DeviceAllocation> snode_tree_allocs_;
-  DeviceAllocation preallocated_runtime_objects_allocs_{kDeviceNullAllocation};
-  DeviceAllocation preallocated_runtime_memory_allocs_{kDeviceNullAllocation};
+  DeviceAllocationUnique preallocated_runtime_objects_allocs_ = nullptr;
+  DeviceAllocationUnique preallocated_runtime_memory_allocs_ = nullptr;
   std::unordered_map<DeviceAllocationId, DeviceAllocation>
       allocated_runtime_memory_allocs_;
 

@@ -537,14 +537,14 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
         /*
           [Static index]
           Fwd:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
+          $0 = alloca <4 x i32>
+          $1 = load $0
           $2 = matrix ptr $1, 2 // offset = 2
           $3 : local store $2, $val
 
           Replaced:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
+          $0 = alloca <4 x i32>
+          $1 = load $0
           $2 = matrix ptr $1, 2 // --> erase
 
           $3 = matrix ptr $1, 0
@@ -558,7 +558,7 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
 
           $9 = matrix init [$4, $6, $val, $8]
 
-          $10 : adstack push $9
+          $10 : store $0, $9
         */
         int offset =
             matrix_ptr_stmt->offset->template as<ConstStmt>()->val.val_int32();
@@ -599,15 +599,15 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
         /*
           [Dynamic index]
           Fwd:
-          $0 = adstack alloca <4 x i32>
-          $1 = adstack load top
+          $0 = alloca <4 x i32>
+          $1 = load $0
           $2 = matrix ptr $1, $offset // offset = 2
           $3 : local store $2, $val
 
           Replaced:
-          $0 = adstack alloca <4 x i32>
+          $0 = alloca <4 x i32>
 
-          $1 = adstack load top (return_ptr=false)
+          $1 = load $0
           $2 = matrix init [$val, $val, $val, $val]
 
           $3 = matrix init [$offset, $offset, $offset, $offset]
@@ -616,7 +616,7 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
           $5 = bin_eq $3, $4
           $6 = select $5, $2, $1
 
-          $7 : adstack push $6
+          $7 : store $0, $6
         */
         auto tensor_type =
             orig_stmt->ret_type.ptr_removed()->template as<TensorType>();
@@ -669,12 +669,70 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
     }
   }
 
+  template <typename Load>
+  void process_load_stmt(Load *stmt) {
+    /*
+      [Duplicate shared MatrixPtrStmt]
+      Fwd:
+      $0 = alloca <4 x i32>
+      $1 = load $0
+      $2 = matrix ptr $1, 2
+
+      $3 = local load $2
+      ...
+      $3 : local store $0, [$val, ...]
+      $4 = local load $2
+      ...
+
+      Replaced:
+        $0 = alloca <4 x i32>
+        $1 = load $0
+        $2 = matrix ptr $1, 2
+
+        $3 = local load $2
+        ...
+        $3 : local store $0, [$val, ...]
+
+        $4 = matrix ptr $1, 2
+        $5 = local load $2
+        ...
+    */
+    if (stmt->src->template is<MatrixPtrStmt>()) {
+      auto matrix_ptr_stmt = stmt->src->template as<MatrixPtrStmt>();
+      // Find current block
+      Block *block = stmt->parent;
+      int matrix_ptr_idx = block->locate(matrix_ptr_stmt);
+      int load_idx = block->locate(stmt);
+
+      if (matrix_ptr_idx + 1 != load_idx) {
+        // Duplicate MatrixPtrStmt
+        auto new_matrix_ptr_stmt = Stmt::make<MatrixPtrStmt>(
+            matrix_ptr_stmt->origin, matrix_ptr_stmt->offset);
+        new_matrix_ptr_stmt->ret_type = matrix_ptr_stmt->ret_type;
+
+        auto new_load_stmt = Stmt::make<Load>(new_matrix_ptr_stmt.get());
+        new_load_stmt->ret_type = stmt->ret_type;
+
+        stmt->insert_before_me(std::move(new_matrix_ptr_stmt));
+        stmt->replace_with(std::move(new_load_stmt));
+      }
+    }
+  }
+
   void visit(LocalStoreStmt *stmt) override {
     process_store_stmt<LocalStoreStmt, LocalLoadStmt>(stmt);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     process_store_stmt<GlobalStoreStmt, GlobalLoadStmt>(stmt);
+  }
+
+  void visit(LocalLoadStmt *stmt) override {
+    process_load_stmt<LocalLoadStmt>(stmt);
+  }
+
+  void visit(GlobalLoadStmt *stmt) override {
+    process_load_stmt<GlobalLoadStmt>(stmt);
   }
 
   static void run(IRNode *root) {

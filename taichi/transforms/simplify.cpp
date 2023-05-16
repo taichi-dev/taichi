@@ -509,42 +509,82 @@ bool simplify(IRNode *root, const CompileConfig &config) {
   return modified;
 }
 
+namespace {
+
+std::function<void(const std::string &)> make_pass_printer(IRNode *ir) {
+  return [ir](const std::string &pass) {
+    TI_INFO("[debug] {}:", pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
+}  // namespace
+
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
   TI_AUTO_PROF;
+
+  auto print = make_pass_printer(root);
   if (config.advanced_optimization) {
     bool first_iteration = true;
     while (true) {
       bool modified = false;
-      if (extract_constant(root, config))
+      if (extract_constant(root, config)) {
         modified = true;
-      if (unreachable_code_elimination(root))
+        print("");
+      }
+      if (unreachable_code_elimination(root)) {
         modified = true;
-      if (binary_op_simplify(root, config))
+        print("unreachable_code_elimination");
+      }
+      if (binary_op_simplify(root, config)) {
         modified = true;
-      if (config.constant_folding && constant_fold(root))
+        print("binary_op_simplify");
+      }
+      if (config.constant_folding && constant_fold(root)) {
         modified = true;
-      if (die(root))
+        print("constant_folding");
+      }
+      if (die(root)) {
         modified = true;
-      if (alg_simp(root, config))
+        print("die");
+      }
+      if (alg_simp(root, config)) {
         modified = true;
-      if (loop_invariant_code_motion(root, config))
+        print("alg_simp");
+      }
+      if (loop_invariant_code_motion(root, config)) {
         modified = true;
-      if (die(root))
+        print("loop_invariant_code_motion");
+      }
+      if (die(root)) {
         modified = true;
-      if (simplify(root, config))
+        print("die");
+      }
+      if (simplify(root, config)) {
         modified = true;
-      if (die(root))
+        print("simplify");
+      }
+      if (die(root)) {
         modified = true;
-      if (config.opt_level > 0 && whole_kernel_cse(root))
+        print("die");
+      }
+      if (config.opt_level > 0 && whole_kernel_cse(root)) {
         modified = true;
+        print("whole_kernel_cse");
+      }
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
       if (config.opt_level > 0 && first_iteration && config.cfg_optimization &&
           cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
-                           !config.real_matrix_scalarize))
+                           !config.real_matrix_scalarize)) {
         modified = true;
+        print("cfg_optimization");
+      }
       first_iteration = false;
       if (!modified)
         break;
@@ -552,11 +592,15 @@ void full_simplify(IRNode *root,
     return;
   }
   if (config.constant_folding) {
-    constant_fold(root);
-    die(root);
+    if (constant_fold(root))
+      print("constant_fold");
+    if (die(root))
+      print("die");
   }
-  simplify(root, config);
-  die(root);
+  if (simplify(root, config))
+    print("simplify");
+  if (die(root))
+    print("die");
 }
 
 }  // namespace irpass

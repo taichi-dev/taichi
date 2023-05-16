@@ -878,6 +878,26 @@ void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
 // External API
 // [ON HOST] CPU backend
 // [ON DEVICE] CUDA/AMDGPU backend
+void runtime_get_memory_requirements(Ptr result_buffer,
+                                     i32 num_rand_states,
+                                     i32 use_preallocated_buffer) {
+  i64 size = 0;
+
+  if (use_preallocated_buffer) {
+    size += taichi::iroundup(i64(sizeof(LLVMRuntime)), taichi_page_size);
+  }
+
+  size +=
+      taichi::iroundup(i64(taichi_global_tmp_buffer_size), taichi_page_size);
+  size += taichi::iroundup(i64(sizeof(RandState)) * num_rand_states,
+                           taichi_page_size);
+
+  reinterpret_cast<i64 *>(result_buffer)[0] = size;
+}
+
+// External API
+// [ON HOST] CPU backend
+// [ON DEVICE] CUDA/AMDGPU backend
 void runtime_initialize(
     Ptr result_buffer,
     Ptr memory_pool,

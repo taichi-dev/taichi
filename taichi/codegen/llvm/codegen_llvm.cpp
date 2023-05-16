@@ -126,8 +126,10 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 }
 
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
-  if (stmt->ret_type->is<TensorType>()) {
-    auto tensor_type = stmt->ret_type->cast<TensorType>();
+  TI_ASSERT(stmt->ret_type.is_pointer());
+  auto alloca_type = stmt->ret_type->as<PointerType>()->get_pointee_type();
+  if (alloca_type->is<TensorType>()) {
+    auto tensor_type = alloca_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type);
     if (stmt->is_shared) {
       auto base = new llvm::GlobalVariable(
@@ -141,12 +143,10 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
       llvm_val[stmt] = create_entry_block_alloca(type);
     }
   } else {
-    llvm_val[stmt] =
-        create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
+    llvm_val[stmt] = create_entry_block_alloca(alloca_type);
     // initialize as zero if element is not a pointer
-    if (!stmt->ret_type.is_pointer())
-      builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
-                           llvm_val[stmt]);
+    if (!alloca_type->is<PointerType>())
+      builder->CreateStore(tlctx->get_constant(alloca_type, 0), llvm_val[stmt]);
   }
 }
 
@@ -1293,6 +1293,9 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(LocalStoreStmt *stmt) {
+  irpass::print(stmt);
+  llvm_val[stmt->val]->dump();
+  llvm_val[stmt->dest]->dump();
   builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 

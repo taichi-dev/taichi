@@ -57,6 +57,7 @@ void compile_to_offloads(IRNode *ir,
 
   if (start_from_ast) {
     irpass::frontend_type_check(ir);
+    print("Frontend Typechecked");
     irpass::lower_ast(ir);
     print("Lowered");
   }

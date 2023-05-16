@@ -83,8 +83,8 @@ class LLVMModuleBuilder {
 
   llvm::Value *create_entry_block_alloca(DataType dt, bool is_pointer = false) {
     auto type = tlctx->get_data_type(dt);
-    if (is_pointer)
-      type = llvm::PointerType::get(type, 0);
+    //    if (is_pointer)
+    //      type = llvm::PointerType::get(type, 0);
     return create_entry_block_alloca(type);
   }
 

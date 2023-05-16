@@ -300,11 +300,12 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       $6 = LoadStmt($1)
     */
 
-    if (result && !result->ret_type->is<TensorType>()) {
+    if (result && !result->ret_type.ptr_removed()->is<TensorType>()) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
-        auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
+        auto zero = Stmt::make<ConstStmt>(
+            TypedConstant(result->ret_type.ptr_removed(), 0));
         replace_with(i, std::move(zero), true);
       } else {
         stmt->replace_usages_with(result);

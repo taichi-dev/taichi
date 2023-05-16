@@ -19,7 +19,11 @@ class Function;
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = TypeFactory::get_instance().get_pointer_type(type);
+    if (type->is_primitive(PrimitiveTypeID::unknown)) {
+      ret_type = type;
+    } else {
+      ret_type = TypeFactory::get_instance().get_pointer_type(type);
+    }
     TI_STMT_REG_FIELDS;
   }
 

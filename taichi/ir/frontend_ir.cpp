@@ -129,7 +129,8 @@ void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
 
 void FrontendForStmt::add_loop_var(const Expr &loop_var) {
   loop_var_ids.push_back(loop_var.cast<IdExpression>()->id);
-  loop_var.expr->ret_type = PrimitiveType::i32;
+  loop_var.expr->ret_type =
+      TypeFactory::get_instance().get_pointer_type(PrimitiveType::i32);
 }
 
 FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
@@ -733,12 +734,14 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
 }
 
 void MatrixExpression::type_check(const CompileConfig *config) {
-  TI_ASSERT(dt->as<TensorType>()->get_num_elements() == elements.size());
+  auto tensor_type =
+      dt->as<PointerType>()->get_pointee_type()->as<TensorType>();
+  TI_ASSERT(tensor_type->get_num_elements() == elements.size());
 
   for (auto &arg : elements) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    if (get_rvalue_dtype(arg) != dt.get_element_type()) {
-      arg = cast(arg, dt.get_element_type());
+    if (get_rvalue_dtype(arg)->get_type() != tensor_type->get_element_type()) {
+      arg = cast(arg, tensor_type->get_element_type());
       arg->type_check(config);
     }
   }
@@ -746,13 +749,13 @@ void MatrixExpression::type_check(const CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(this->dt->is<TensorType>());
+  TI_ASSERT(dt->is<PointerType>() && dt.ptr_removed()->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
     values.push_back(flatten_rvalue(elt, ctx));
   }
   stmt = ctx->push_back<MatrixInitStmt>(values);
-  stmt->ret_type = this->dt;
+  stmt->ret_type = dt;
 }
 
 IndexExpression::IndexExpression(const Expr &var,
@@ -961,7 +964,7 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
-  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+  if (stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
     stmt->ret_type = ret_type;
   }
 }
@@ -1829,10 +1832,10 @@ DataType get_rvalue_dtype(Expr expr) {
     return argload->ret_type;
   }
   if (auto id = expr.cast<IdExpression>()) {
-    if (id->op == StmtOpCode::FrontendAllocaStmt) {
-      return id->ret_type->as<PointerType>()->get_pointee_type();
-    }
-    return id->ret_type;
+    //    if (id->op == StmtOpCode::FrontendAllocaStmt) {
+    return id->ret_type->as<PointerType>()->get_pointee_type();
+    //    }
+    //    return id->ret_type;
   }
   return expr->ret_type;
 }

@@ -23,4 +23,4 @@ def export_as(name: str, *, template_types: Optional[Dict[str, Any]] = None):
 
 
 def export(f):
-    export_as(f.__name__)(f)
+    return export_as(f.__name__)(f)

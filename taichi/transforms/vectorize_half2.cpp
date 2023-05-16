@@ -355,7 +355,8 @@ class Half2Vectorize : public BasicStmtVisitor {
       std::vector<int> element_shape = {2};
       int element_dim = -1;
       auto new_extern_stmt = std::make_unique<ExternalPtrStmt>(
-          self_ptr, new_indices, element_shape, element_dim);
+          self_ptr, new_indices, self_extern_stmt->ndim, element_shape,
+          element_dim);
       new_extern_stmt->overrided_dtype = true;
       new_extern_stmt->ret_type = tensor_type;
       new_extern_stmt->ret_type.set_is_pointer(true);

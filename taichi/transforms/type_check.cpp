@@ -431,12 +431,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    // TODO: Maybe have a type_inference() pass, which takes in the args/rets
-    // defined by the kernel. After that, type_check() pass will purely do
-    // verification, without modifying any types.
-    if (stmt->is_ptr) {
-      stmt->ret_type.set_is_pointer(true);
-    }
+    // Do nothing
   }
 
   void visit(ReturnStmt *stmt) override {

@@ -112,4 +112,5 @@ if __name__ == "__main__":
     if args.save:
         with open("./python/taichi/CHANGELOG.md", "w", encoding="utf-8") as f:
             f.write(res)
-    print(res)
+    else:
+        print(res)

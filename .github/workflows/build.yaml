@@ -1,0 +1,395 @@
+name: Build Taichi
+on:
+  workflow_call:
+    inputs:
+      build_id:
+        required: true
+        type: string
+      nightly:
+        required: true
+        type: boolean
+      python:
+        required: true
+        type: string
+    secrets:
+      BOT_MINIO_ACCESS_KEY:
+        required: true
+      BOT_MINIO_SECRET_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      build_id:
+        description: 'The build id. e.g.: 20230427-102544-abcdefab'
+        required: true
+        type: string
+      nightly:
+        description: 'Are we building nightly wheels?'
+        required: true
+        default: false
+        type: boolean
+      python:
+        description: 'JSON encoded python versions need building wheel. e.g.: ["3.7"]'
+        required: true
+        type: string
+
+concurrency:
+  group: build-${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: 'ON'
+  CI_IMAGE_VERSION: '202304251731'
+  TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
+  NIGHTLY: ${{ inputs.nightly && 'nightly' || '' }}
+
+jobs:
+  show_environ:
+    name: Show Environment Variables
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
+    runs-on: [self-hosted, Linux]
+    steps:
+    - name: Environment Variables
+      run: env
+    - name: Github Object
+      run: |
+        cat <<'EOF'
+        ${{ toJson(github) }}
+        EOF
+
+  build_cpu_mac:
+    name: Build macOS-x86
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ${{ fromJSON(inputs.python) }}
+        _designated: ['']
+        include:
+        - _designated: ''
+          designated: designated
+    runs-on:
+    - self-hosted
+    - macos-10.15
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_WITH_C_API:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+
+      - name: Build
+        run: ./build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} ${SHOULD_TAG_CONFIG:+--tag-config}
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+  build_linux:
+    name: Build Linux
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: ['', cuda]
+        llvm: ['', llvm]
+        gl: ['', gl]
+        vk: ['', vk]
+        python: ${{ fromJSON(inputs.python) }}
+        include:
+        - {cuda: cuda, llvm: llvm, gl: gl, vk: vk, designated: designated}
+        exclude:
+        - {llvm: '', cuda: cuda}
+    runs-on: [self-hosted, online, Linux, build]
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_CUDA:BOOL=${{ matrix.cuda && 'ON' || 'OFF' }}
+        -DTI_WITH_LLVM:BOOL=${{ matrix.llvm && 'ON' || 'OFF' }}
+        -DTI_WITH_OPENGL:BOOL=${{ matrix.gl && 'ON' || 'OFF' }}
+        -DTI_WITH_VULKAN:BOOL=${{ matrix.vk && 'ON' || 'OFF' }}
+        -DTI_WITH_METAL:BOOL=OFF
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+          ci-docker-run-gpu \
+            -v $(pwd):/home/dev/taichi \
+            registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} ${SHOULD_TAG_CONFIG:+--tag-config}
+        env:
+          SHOULD_TAG_CONFIG: ${{ !matrix.designated && 'yes' || '' }}
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+  build_manylinux2014:
+    name: Build manylinux2014
+    timeout-minutes: 30
+    runs-on: [self-hosted, online, Linux, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ${{ fromJSON(inputs.python) }}
+        _designated: ['']
+        include:
+        - _designated: ''
+          designated: designated
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Build
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run-gpu \
+            -v $(pwd):/home/dev/taichi \
+            registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} ${SHOULD_TAG_CONFIG:+--tag-config}
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+  build_amdgpu_linux:
+    name: Build AMDGPU
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ${{ fromJSON(inputs.python) }}
+        designated: ['']
+    runs-on: [self-hosted, online, Linux, build]
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=OFF
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_AMDGPU:BOOL=ON
+
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+          fetch-depth: '0'
+
+      - name: Build & Install
+        run: |
+          . .github/workflows/scripts/common-utils.sh
+
+          ci-docker-run \
+            -v $(pwd):/home/dev/taichi \
+            registry.botmaster.tgr/taichi-build-amdgpu:${{ env.CI_IMAGE_VERSION }} \
+            /home/dev/taichi/build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }} --tag-local=amd
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+  build_windows:
+    name: Build Windows
+    strategy:
+      fail-fast: false
+      matrix:
+        cuda: ['', cuda]
+        llvm: ['', llvm]
+        gl: ['', gl]
+        vk: ['', vk]
+        python: ${{ fromJSON(inputs.python) }}
+        include:
+        - {cuda: cuda, llvm: llvm, gl: gl, vk: vk, lto: lto, pdb: pdb, designated: designated}
+        exclude:
+        - {llvm: '', cuda: cuda}
+    runs-on: [self-hosted, online, Windows, build]
+    timeout-minutes: 30
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_CUDA:BOOL=${{ matrix.cuda && 'ON' || 'OFF' }}
+        -DTI_WITH_LLVM:BOOL=${{ matrix.llvm && 'ON' || 'OFF' }}
+        -DTI_WITH_OPENGL:BOOL=${{ matrix.gl && 'ON' || 'OFF' }}
+        -DTI_WITH_VULKAN:BOOL=${{ matrix.vk && 'ON' || 'OFF' }}
+        -DTI_WITH_METAL:BOOL=OFF
+        -DTI_WITH_BACKTRACE:BOOL=ON
+        -DTI_WITH_DX11:BOOL=ON
+        -DTI_WITH_DX12:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API:BOOL=ON
+        -DTI_WITH_LTO:BOOL=${{ matrix.lto && 'ON' || 'OFF' }}
+        -DTI_GENERATE_PDB:BOOL=${{ matrix.pdb && 'ON' || 'OFF' }}
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'SilentlyContinue'
+          git config --system core.longpaths true
+          git submodule foreach --recursive 'git rev-parse HEAD || rm -rf $PWD'
+          $LASTEXITCODE = 0
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+
+      - uses: actions/setup-python@v4
+        with:
+          # force a 3.7 is ok, build.py will handle actual python env
+          python-version: 3.7
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $nightlyFlag = $null
+          if ($env:NIGHTLY) { $nightlyFlag = "--nightly" }
+          $tagFlag = $null
+          if ($env:SHOULD_TAG_CONFIG) { $tagFlag = "--tag-config" }
+          python build.py $nightlyFlag --python=${{ matrix.python }} $tagFlag
+        env:
+          SHOULD_TAG_CONFIG: ${{ !matrix.designated && 'yes' || '' }}
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+      - name: Cleanup Git Cache Configs
+        shell: pwsh
+        if: always()
+        run: |
+          . .github/workflows/scripts/common-utils.ps1
+          UnsetGitCachingProxy
+          exit 0
+
+  build_m1:
+    name: Build M1
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ${{ fromJSON(inputs.python) }}
+        _designated: ['']
+        exclude:
+        - python: "3.7"
+        include:
+        - _designated: ''
+          designated: designated
+    defaults:
+      run:
+        shell: '/usr/bin/arch -arch arm64e /bin/bash --noprofile --norc -eo pipefail {0}'
+    runs-on: [self-hosted, online, m1]
+    env:
+      TAICHI_CMAKE_ARGS: >-
+        -DTI_WITH_OPENGL:BOOL=OFF
+        -DTI_WITH_CUDA:BOOL=OFF
+        -DTI_WITH_VULKAN:BOOL=ON
+        -DTI_BUILD_TESTS:BOOL=ON
+        -DTI_WITH_C_API=ON
+        -DTI_WITH_STATIC_C_API=ON
+      PLATFORM: 'm1'
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+
+      - name: Build
+        run: |
+          brew install molten-vk
+          ./build.py ${NIGHTLY:+--nightly} --python=${{ matrix.python }}
+
+      - name: Upload Built Wheel
+        uses: shallwefootball/s3-upload-action@v1.3.3
+        with:
+          aws_key_id: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+          aws_secret_access_key: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+          aws_bucket: built-wheels
+          source_dir: dist
+          destination_dir: built-wheels/${{ inputs.build_id }}/${{ !matrix.designated && 'matrix/' || '' }}
+          endpoint: http://botmaster.tgr:9000
+
+  build_ios_capi:
+    name: Build iOS C-API Static Library
+    timeout-minutes: 30
+    runs-on: [self-hosted, online, m1]
+    steps:
+      - name: Workaround checkout Needed single revision issue
+        run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: '0'
+          submodules: 'recursive'
+
+      - name: Build
+        run: .github/workflows/scripts/build.py ios
+
+      - name: Save Compiled Static Library
+        uses: actions/upload-artifact@v3
+        with:
+          name: libtaichi_c_api.iOS.a
+          path: 'dist/C-API-iOS/*.a'
+          retention-days: 7

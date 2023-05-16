@@ -239,7 +239,7 @@ class VulkanResourceSet : public ShaderResourceSet {
 
 class VulkanRasterResources : public RasterResources {
  public:
-  VulkanRasterResources(VulkanDevice *device) : device_(device) {
+  explicit VulkanRasterResources(VulkanDevice *device) : device_(device) {
   }
 
   struct BufferBinding {

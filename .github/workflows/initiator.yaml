@@ -1,0 +1,74 @@
+name: Taichi Workflow Initiator
+on:
+  push:
+    branches:
+    - master
+    - rc-*
+
+concurrency:
+  group: ${{ github.event.number || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  TI_CI: "1"
+  TI_SKIP_VERSION_CHECK: 'ON'
+  TI_LITE_TEST: ${{ github.event_name == 'pull_request' && ! contains(github.event.pull_request.labels.*.name, 'full-ci') && ! startsWith(github.base_ref, 'rc-') && '1' || '' }}
+  TI_TEST_OFFLINE_CACHE: ${{ github.event.schedule == '0 18 * * *' && '1' || '' }}
+  CI_IMAGE_VERSION: '202304251731'
+  TI_USE_GIT_CACHE: ${{ vars.TI_USE_GIT_CACHE }}
+  REDIS_HOST: 172.16.5.1
+
+jobs:
+  show_environ:
+    name: Show Environment Variables
+    # Disable this workflow on forks
+    if: github.repository_owner == 'taichi-dev'
+    runs-on: [self-hosted, Linux]
+    steps:
+    - name: Environment Variables
+      run: env
+    - name: Github Object
+      run: |
+        cat <<'EOF'
+        ${{ toJson(github) }}
+        EOF
+
+  preparation:
+    name: Preparation
+    runs-on: [self-hosted, Linux]
+    outputs:
+      date: ${{ steps.gather.outputs.date }}
+      short_sha: ${{ steps.gather.outputs.short_sha }}
+      build_id: ${{ steps.gather.outputs.build_id }}
+    steps:
+      - name: Gather Information
+        id: gather
+        run: |
+          DATE=$(date +'%Y%m%d-%H%M%S')
+          SHORT_SHA=$(echo $GITHUB_SHA | cut -c '1-10')
+          echo date=$DATE >> $GITHUB_OUTPUT
+          echo short_sha=$SHORT_SHA >> $GITHUB_OUTPUT
+          echo build_id=$DATE-$SHORT_SHA >> $GITHUB_OUTPUT
+
+  build:
+    name: Build Artifacts
+    needs: [preparation]
+    uses: ./.github/workflows/build.yaml
+    with:
+      build_id: ${{ needs.preparation.outputs.build_id }}
+      nightly: false
+      python: '["3.9", "3.10", "3.11"]'
+    secrets:
+      BOT_MINIO_ACCESS_KEY: ${{ secrets.BOT_MINIO_ACCESS_KEY }}
+      BOT_MINIO_SECRET_KEY: ${{ secrets.BOT_MINIO_SECRET_KEY }}
+
+  save_build_metadata:
+    name: Save Build Metadata
+    runs-on: [self-hosted, Linux]
+    needs: [preparation, build]
+    steps:
+      - name: Saving Metadata
+        id: gather
+        run: >-
+          redis-cli -h $REDIS_HOST --raw
+          set "latest-build-id:$GITHUB_REPOSITORY:$GITHUB_REF" ${{ needs.preparation.outputs.build_id }}

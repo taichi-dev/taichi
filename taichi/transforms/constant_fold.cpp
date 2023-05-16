@@ -136,8 +136,6 @@ class ConstantFold : public BasicStmtVisitor {
 #undef COMMA
 
       case BinaryOpType::truediv:
-      case BinaryOpType::logical_or:
-      case BinaryOpType::logical_and:
         TI_ERROR("{} should have been lowered.",
                  binary_op_type_name(stmt->op_type));
         break;

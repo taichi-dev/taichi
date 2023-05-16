@@ -359,6 +359,8 @@ std::string TypedConstant::stringify() const {
     return fmt::format("{}", val_i8);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return fmt::format("{}", val_i16);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return fmt::format("{}", val_u1);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return fmt::format("{}", val_u8);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -391,6 +393,8 @@ bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
     return val_i8 == o.val_i8;
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16 == o.val_i16;
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return val_u1 == o.val_u1;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8 == o.val_u8;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -440,6 +444,11 @@ int16 &TypedConstant::val_int16() {
   return val_i16;
 }
 
+uint1 &TypedConstant::val_uint1() {
+  TI_ASSERT(get_data_type<uint1>() == dt);
+  return val_u1;
+}
+
 uint8 &TypedConstant::val_uint8() {
   TI_ASSERT(get_data_type<uint8>() == dt);
   return val_u8;
@@ -483,6 +492,8 @@ uint64 TypedConstant::val_uint() const {
     return val_u64;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8;
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return val_u1;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16;
   } else {

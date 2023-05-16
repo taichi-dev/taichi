@@ -94,6 +94,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       value_type = tlctx->get_data_type(PrimitiveType::u16);
       value = builder->CreateZExt(value, value_type);
     }
+    if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i32);
+      value = builder->CreateZExt(value, value_type);
+    }
     return std::make_tuple(value, value_type);
   }
 
@@ -247,12 +251,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
         llvm_val[stmt] = call("__nv_sqrtf", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
         llvm_val[stmt] = call("__nv_sqrt", input);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = call("logic_not_i32", input);
       } else {
         TI_NOT_IMPLEMENTED
       }

@@ -65,13 +65,7 @@ class TaskCodeGenAMDGPU : public TaskCodeGenLLVM {
       TI_NOT_IMPLEMENTED                                                \
     }                                                                   \
   }
-    if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = call("logic_not_i32", input);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
-    } else if (op == UnaryOpType::abs) {
+    if (op == UnaryOpType::abs) {
       if (input_taichi_type->is_primitive(PrimitiveTypeID::f16)) {
         llvm_val[stmt] = call("__ocml_fasb_f16", input);
       } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {

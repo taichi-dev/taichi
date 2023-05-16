@@ -177,14 +177,14 @@ def test_ndarray_compound_element():
     assert isinstance(b, ti.VectorNdarray)
     assert b.shape == (n, n)
     assert b.element_type.element_type() == ti.i32
-    assert b.element_type.shape() == (3,)
+    assert b.element_type.shape() == [3]
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1))
     assert isinstance(c, ti.MatrixNdarray)
     assert c.shape == (n, n + 1)
     assert c.element_type.element_type() == ti.f32
-    assert c.element_type.shape() == (3, 4)
+    assert c.element_type.shape() == [3, 4]
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
@@ -508,7 +508,14 @@ def _test_arg_not_match():
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=1, but .* is provided",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
+    ):
+        func1(x)
+
+    x = ti.Matrix.ndarray(2, 1, ti.i32, shape=(4, 7))
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
     ):
         func1(x)
 
@@ -519,9 +526,20 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=2, but .* is provided",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,2, i32\], but .* is provided",
     ):
         func2(x)
+
+    @ti.kernel
+    def func3(a: ti.types.ndarray(dtype=ti.types.matrix(2, 1, ti.i32))):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,1, i32\], but .* is provided",
+    ):
+        func3(x)
 
     @ti.kernel
     def func5(a: ti.types.ndarray(dtype=ti.types.matrix(2, 3, dtype=ti.i32))):
@@ -530,7 +548,7 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type",
     ):
         func5(x)
 
@@ -893,7 +911,7 @@ def test_ndarray_wrong_dtype():
     tp_ivec3 = ti.types.vector(3, ti.i32)
 
     y = ti.ndarray(tp_ivec3, shape=(12, 4))
-    with pytest.raises(TypeError, match=r"get TensorType\(shape=\(3,\), dtype=i32\)"):
+    with pytest.raises(TypeError, match=r"get \[Tensor \(3\) i32\]"):
         test2(y)
 
 

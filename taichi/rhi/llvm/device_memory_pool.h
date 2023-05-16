@@ -24,7 +24,7 @@ class TI_DLL_EXPORT DeviceMemoryPool {
   void *allocate(std::size_t size, std::size_t alignment, bool managed = false);
   void release(std::size_t size, void *ptr, bool release_raw = false);
   void reset();
-  DeviceMemoryPool(bool merge_upon_release);
+  explicit DeviceMemoryPool(bool merge_upon_release);
   ~DeviceMemoryPool();
 
  protected:

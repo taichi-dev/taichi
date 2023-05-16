@@ -54,11 +54,11 @@ TiMemory LlvmRuntime::allocate_memory(
     const taichi::lang::Device::AllocParams &params) {
   taichi::lang::LLVMRuntime *llvm_runtime = executor_->get_llvm_runtime();
   taichi::lang::LlvmDevice *llvm_device = executor_->llvm_device();
-
   taichi::lang::DeviceAllocation devalloc =
-      llvm_device->allocate_memory_runtime({params,
-                                            executor_->get_runtime_jit_module(),
-                                            llvm_runtime, result_buffer});
+      llvm_device->allocate_memory_runtime(
+          {params, executor_->get_runtime_jit_module(), llvm_runtime,
+           result_buffer, executor_->use_device_memory_pool()});
+
   return devalloc2devmem(*this, devalloc);
 }
 

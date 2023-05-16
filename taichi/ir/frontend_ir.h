@@ -102,10 +102,11 @@ class FrontendSNodeOpStmt : public Stmt {
   ExprGroup indices;
   Expr val;
 
-  FrontendSNodeOpStmt(SNodeOpType op_type,
-                      SNode *snode,
-                      const ExprGroup &indices,
-                      const Expr &val = Expr(nullptr));
+  FrontendSNodeOpStmt(
+      SNodeOpType op_type,
+      SNode *snode,
+      const ExprGroup &indices,
+      const Expr &val = Expr(std::shared_ptr<Expression>(nullptr)));
 
   TI_DEFINE_ACCEPT
   TI_DEFINE_CLONE_FOR_FRONTEND_IR
@@ -1107,5 +1108,7 @@ class FrontendContext {
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
 Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
+
+DataType get_rvalue_dtype(Expr expr);
 
 }  // namespace taichi::lang

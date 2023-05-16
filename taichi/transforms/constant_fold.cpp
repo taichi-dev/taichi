@@ -184,9 +184,6 @@ class ConstantFold : public BasicStmtVisitor {
                dt->is_primitive(PrimitiveTypeID::u64)) {                    \
       auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint()));  \
       insert_and_erase(stmt, res);                                          \
-    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                     \
-      auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint1())); \
-      insert_and_erase(stmt, res);                                          \
     }                                                                       \
     break;                                                                  \
   }

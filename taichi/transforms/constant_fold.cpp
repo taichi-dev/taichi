@@ -202,7 +202,6 @@ class ConstantFold : public BasicStmtVisitor {
       HANDLE_REAL_AND_INTEGRAL_UNARY(tanh, std::tanh)
       HANDLE_REAL_AND_INTEGRAL_UNARY(log, std::log)
       HANDLE_REAL_AND_INTEGRAL_UNARY(exp, std::exp)
-      HANDLE_REAL_AND_INTEGRAL_UNARY(cast_value, )
       HANDLE_REAL_AND_INTEGRAL_UNARY(rsqrt, 1.0 / std::sqrt)
 #undef HANDLE_REAL_AND_INTEGRAL_UNARY
 
@@ -227,6 +226,25 @@ class ConstantFold : public BasicStmtVisitor {
       HANDLE_INTEGRAL_UNARY(logic_not, !)
 #undef HANDLE_INTEGRAL_UNARY
 
+      case UnaryOpType::cast_value: {
+        if (dt->is_primitive(PrimitiveTypeID::f32) ||
+            dt->is_primitive(PrimitiveTypeID::f64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_float());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
+                   dt->is_primitive(PrimitiveTypeID::i64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_int());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::u32) ||
+                   dt->is_primitive(PrimitiveTypeID::u64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_uint());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+          auto res = TypedConstant(dst_type, operand->val.val_uint());
+          insert_and_erase(stmt, res);
+        }
+        break;
+      }
       default:
         return;
     }

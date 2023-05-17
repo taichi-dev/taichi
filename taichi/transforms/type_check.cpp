@@ -193,9 +193,6 @@ class TypeCheck : public IRVisitor {
       // frexp returns a struct type of {double, i32} and it's set in frontend
       // IR lowering.
       return;
-    } else if (stmt->op_type == UnaryOpType::logic_not) {
-      stmt->ret_type = PrimitiveType::u1;
-      return;
     }
     auto operand_type = stmt->operand->ret_type;
     stmt->ret_type = operand_type;
@@ -216,6 +213,16 @@ class TypeCheck : public IRVisitor {
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
         DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
+      } else if (stmt->op_type == UnaryOpType::logic_not) {
+        DataType target_dtype = PrimitiveType::u1;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),

@@ -194,8 +194,7 @@ class TypeCheck : public IRVisitor {
       // IR lowering.
       return;
     } else if (stmt->op_type == UnaryOpType::logic_not) {
-      // logic_not returns boolean type u1, and it's set in frontend IR
-      // lowering.
+      stmt->ret_type = PrimitiveType::u1;
       return;
     }
     auto operand_type = stmt->operand->ret_type;

@@ -1039,6 +1039,33 @@ class ScalarizePointers : public BasicStmtVisitor {
       delayed_modifier_.erase(stmt);
       return;
     }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = BlockLocalPtrStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = BlockLocalPtrStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<BlockLocalPtrStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto block_local_stmt = stmt->origin->as<BlockLocalPtrStmt>();
+      auto offset_0 = block_local_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_block_local_stmt = std::make_unique<BlockLocalPtrStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_block_local_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_block_local_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_block_local_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
+    }
   }
 
  private:

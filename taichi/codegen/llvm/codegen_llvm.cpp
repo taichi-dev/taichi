@@ -376,6 +376,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (to->is_primitive(PrimitiveTypeID::u1)) {
+      llvm_val[stmt] = builder->CreateIsNotNull(input);
     } else if (is_real(from.get_element_type()) !=
                is_real(to.get_element_type())) {
       if (is_real(from.get_element_type()) &&
@@ -525,9 +527,6 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     }
   } else if (op == UnaryOpType::logic_not) {
     llvm_val[stmt] = builder->CreateIsNull(input);
-    // TODO: (zhantong) remove this zero ext
-    llvm_val[stmt] = builder->CreateZExt(
-        llvm_val[stmt], tlctx->get_data_type(PrimitiveType::i32));
   }
   UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
@@ -800,8 +799,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] =
-        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+    llvm_val[stmt] = cmp;
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is

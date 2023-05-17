@@ -118,6 +118,8 @@ class TypeCheck : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::allocate) {
       stmt->ret_type = PrimitiveType::gen;
       stmt->ret_type.set_is_pointer(true);
+    } else if (stmt->op_type == SNodeOpType::is_active) {
+      stmt->ret_type = PrimitiveType::u1;
     } else {
       stmt->ret_type = PrimitiveType::i32;
     }
@@ -220,8 +222,7 @@ class TypeCheck : public IRVisitor {
         cast(stmt->operand, target_dtype);
         stmt->ret_type = target_dtype;
       } else if (stmt->op_type == UnaryOpType::logic_not) {
-        // TODO: replace it with u1
-        DataType target_dtype = PrimitiveType::i32;
+        DataType target_dtype = PrimitiveType::u1;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),
@@ -387,7 +388,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = make_dt(PrimitiveType::i32);
+      stmt->ret_type = make_dt(PrimitiveType::u1);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }

@@ -221,8 +221,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::logic_not) {
-    // FIXME: replace with u1
-    ret_primitive_type = PrimitiveType::i32;
+    ret_primitive_type = PrimitiveType::u1;
   }
 
   if (type == UnaryOpType::frexp) {
@@ -368,7 +367,7 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
                                    is_integral(rhs_type.get_element_type())))
     error();
   if (is_comparison(type) || binary_is_logical(type)) {
-    ret_type = make_dt(PrimitiveType::i32);
+    ret_type = make_dt(PrimitiveType::u1);
     return;
   }
   if (is_shift_op(type) ||
@@ -1035,6 +1034,8 @@ SNodeOpExpression::SNodeOpExpression(SNode *snode,
 void SNodeOpExpression::type_check(const CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
+  } else if (op_type == SNodeOpType::is_active) {
+    ret_type = PrimitiveType::u1;
   } else {
     ret_type = PrimitiveType::i32;
   }

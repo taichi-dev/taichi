@@ -5,5 +5,5 @@ Taichi kernels into an AOT module.
 """
 import taichi.aot.conventions
 from taichi.aot._export import export, export_as
-from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
+from taichi.aot.conventions.gfxruntime170 import GfxRuntime170
 from taichi.aot.module import Module

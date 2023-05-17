@@ -1,5 +1,5 @@
 """
-Data representation of all JSON data structures following the GfxRuntime140
+Data representation of all JSON data structures following the GfxRuntime170
 convention.
 """
 from typing import Any, Dict, List, Optional

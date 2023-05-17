@@ -1,12 +1,12 @@
 """
 Structured representation of all JSON data structures following the
-GfxRuntime140.
+GfxRuntime170.
 """
 from abc import ABC
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from taichi.aot.conventions.gfxruntime140 import dr
+from taichi.aot.conventions.gfxruntime170 import dr
 
 import taichi as ti
 

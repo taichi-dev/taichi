@@ -1,6 +1,6 @@
 from typing import Any, List, Optional, Set
 
-from taichi.aot.conventions.gfxruntime140 import GfxRuntime140, sr
+from taichi.aot.conventions.gfxruntime170 import GfxRuntime170, sr
 
 dtype2ctype = {
     sr.DataType.f16: "half_t",
@@ -197,7 +197,7 @@ def generate_graph_args_builder(graph: sr.Graph) -> List[str]:
     return out
 
 
-def generate_module_content_repr(m: GfxRuntime140, module_name: str, cgraph_kernel_names: Set[str]) -> List[str]:
+def generate_module_content_repr(m: GfxRuntime170, module_name: str, cgraph_kernel_names: Set[str]) -> List[str]:
     out = []
 
     if module_name:
@@ -247,7 +247,7 @@ def generate_module_content_repr(m: GfxRuntime140, module_name: str, cgraph_kern
     return out
 
 
-def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
+def generate_module_content(m: GfxRuntime170, module_name: str) -> List[str]:
     # This has all kernels including all the ones launched by compute graphs.
     cgraph_kernel_names = set(dispatch.kernel.name for graph in m.graphs for dispatch in graph.dispatches)
 
@@ -265,7 +265,7 @@ def generate_module_content(m: GfxRuntime140, module_name: str) -> List[str]:
     return out
 
 
-def generate_header(m: GfxRuntime140, module_name: str, namespace: str, tcm: Optional[bytes]) -> List[str]:
+def generate_header(m: GfxRuntime170, module_name: str, namespace: str, tcm: Optional[bytes]) -> List[str]:
     out = []
 
     out += [

@@ -5,7 +5,7 @@ from typing import List
 
 from taichi._ti_module.cppgen import generate_header
 from taichi.aot._export import _aot_kernels
-from taichi.aot.conventions.gfxruntime140 import GfxRuntime140
+from taichi.aot.conventions.gfxruntime170 import GfxRuntime170
 from taichi.aot.module import Module
 from taichi.types.ndarray_type import NdarrayType
 from taichi.types.primitive_types import integer_type_ids, real_type_ids
@@ -51,7 +51,7 @@ def module_cppgen_impl(a):
         if module_name.endswith(".tcm"):
             module_name = module_name[:-4]
 
-    m = GfxRuntime140.from_module(module_path)
+    m = GfxRuntime170.from_module(module_path)
 
     out = generate_header(m, module_name, a.namespace, tcm)
 

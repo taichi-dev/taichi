@@ -240,7 +240,7 @@ class ConstantFold : public BasicStmtVisitor {
           auto res = TypedConstant(dst_type, operand->val.val_uint());
           insert_and_erase(stmt, res);
         } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
-          auto res = TypedConstant(dst_type, operand->val.val_uint());
+          auto res = TypedConstant(dst_type, operand->val.val_uint1());
           insert_and_erase(stmt, res);
         }
         break;

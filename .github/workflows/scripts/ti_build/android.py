@@ -48,4 +48,5 @@ def build_android(python: Command, pip: Command) -> None:
     pip.install("-r", "requirements_dev.txt")
     python("setup.py", "clean")
     python("setup.py", "build_ext")
-    sh("aarch64-linux-android-strip", "build/libtaichi_c_api.so")
+    for p in Path(os.getcwd()).glob("**/libtaichi_c_api.so"):
+        sh("aarch64-linux-android-strip", p)

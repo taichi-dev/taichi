@@ -130,10 +130,7 @@ class AotModuleImpl : public aot::Module {
   bool get_kernel_params_by_name(const std::string &name,
                                  GfxRuntime::RegisterParams &kernel) {
     for (int i = 0; i < ti_aot_data_.kernels.size(); ++i) {
-      // Offloaded task names encode more than the name of the function, but for
-      // AOT, only use the name of the function which should be the first part
-      // of the struct
-      if (ti_aot_data_.kernels[i].name.rfind(name, 0) == 0) {
+      if (ti_aot_data_.kernels[i].name == name) {
         kernel.kernel_attribs = ti_aot_data_.kernels[i];
         kernel.task_spirv_source_codes = ti_aot_data_.spirv_codes[i];
         // We don't have to store the number of SNodeTree in |ti_aot_data_| yet,

@@ -622,11 +622,51 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     llvm_val[stmt] =
         builder->CreateSRem(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
   } else if (op == BinaryOpType::logical_and) {
-    llvm_val[stmt] =
-        builder->CreateAnd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    llvm::Value *lhs;
+    if (is_real(stmt->lhs->ret_type))
+      lhs = builder->CreateFCmpONE(
+          llvm_val[stmt->lhs], tlctx->get_constant(stmt->lhs->ret_type, 0));
+    else
+      lhs = builder->CreateIsNotNull(llvm_val[stmt->lhs]);
+    llvm::Value *rhs;
+    if (is_real(stmt->rhs->ret_type))
+      rhs = builder->CreateFCmpONE(
+          llvm_val[stmt->rhs], tlctx->get_constant(stmt->rhs->ret_type, 0));
+    else
+      rhs = builder->CreateIsNotNull(llvm_val[stmt->rhs]);
+    llvm_val[stmt] = builder->CreateAnd(lhs, rhs);
+    if (is_real(stmt->ret_type)) {
+      llvm_val[stmt] =
+          builder->CreateSelect(llvm_val[stmt],
+                                tlctx->get_constant(stmt->ret_type, 1),
+                                tlctx->get_constant(stmt->ret_type, 0));
+    } else {
+      llvm_val[stmt] = builder->CreateZExt(llvm_val[stmt],
+                                           tlctx->get_data_type(stmt->ret_type));
+    }
   } else if (op == BinaryOpType::logical_or) {
-    llvm_val[stmt] =
-        builder->CreateOr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+    llvm::Value *lhs;
+    if (is_real(stmt->lhs->ret_type))
+      lhs = builder->CreateFCmpONE(
+          llvm_val[stmt->lhs], tlctx->get_constant(stmt->lhs->ret_type, 0));
+    else
+      lhs = builder->CreateIsNotNull(llvm_val[stmt->lhs]);
+    llvm::Value *rhs;
+    if (is_real(stmt->rhs->ret_type))
+      rhs = builder->CreateFCmpONE(
+          llvm_val[stmt->rhs], tlctx->get_constant(stmt->rhs->ret_type, 0));
+    else
+      rhs = builder->CreateIsNotNull(llvm_val[stmt->rhs]);
+    llvm_val[stmt] = builder->CreateOr(lhs, rhs);
+    if (is_real(stmt->ret_type)) {
+      llvm_val[stmt] =
+          builder->CreateSelect(llvm_val[stmt],
+                                tlctx->get_constant(stmt->ret_type, 1),
+                                tlctx->get_constant(stmt->ret_type, 0));
+    } else {
+      llvm_val[stmt] = builder->CreateZExt(llvm_val[stmt],
+                                           tlctx->get_data_type(stmt->ret_type));
+    }
   } else if (op == BinaryOpType::bit_and) {
     llvm_val[stmt] =
         builder->CreateAnd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);

@@ -1118,17 +1118,17 @@ DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
       return make_value(spv::OpLogical##_Op, t_bool_, a, b);                  \
     } else if (is_integral(a.stype.dt)) {                                     \
       Value val_a = make_value(spv::OpINotEqual, t_bool_, a,                  \
-                              int_immediate_number(a.stype, 0));              \
+                               int_immediate_number(a.stype, 0));             \
       Value val_b = make_value(spv::OpINotEqual, t_bool_, b,                  \
-                              int_immediate_number(b.stype, 0));              \
+                               int_immediate_number(b.stype, 0));             \
       Value val_ret = make_value(spv::OpLogical##_Op, t_bool_, val_a, val_b); \
       return cast(a.stype, val_ret);                                          \
     } else {                                                                  \
       TI_ASSERT(is_real(a.stype.dt));                                         \
       Value val_a = make_value(spv::OpFOrdNotEqual, t_bool_, a,               \
-                              float_immediate_number(a.stype, 0.0));          \
+                               float_immediate_number(a.stype, 0.0));         \
       Value val_b = make_value(spv::OpFOrdNotEqual, t_bool_, b,               \
-                              float_immediate_number(b.stype, 0.0));          \
+                               float_immediate_number(b.stype, 0.0));         \
       Value val_ret = make_value(spv::OpLogical##_Op, t_bool_, val_a, val_b); \
       return cast(a.stype, val_ret);                                          \
     }                                                                         \

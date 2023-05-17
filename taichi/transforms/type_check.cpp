@@ -191,6 +191,9 @@ class TypeCheck : public IRVisitor {
       // frexp returns a struct type of {double, i32} and it's set in frontend
       // IR lowering.
       return;
+    } else if (stmt->op_type == UnaryOpType::logic_not) {
+      // logic_not returns boolean type u1, and it's set in frontend IR lowering.
+      return;
     }
     auto operand_type = stmt->operand->ret_type;
     stmt->ret_type = operand_type;

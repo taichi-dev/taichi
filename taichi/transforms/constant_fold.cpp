@@ -36,6 +36,7 @@ class ConstantFold : public BasicStmtVisitor {
     // https://github.com/taichi-dev/taichi/pull/839#issuecomment-625902727
     if (dt->is_primitive(PrimitiveTypeID::i32) ||
         dt->is_primitive(PrimitiveTypeID::i64) ||
+        dt->is_primitive(PrimitiveTypeID::u1) ||
         dt->is_primitive(PrimitiveTypeID::u32) ||
         dt->is_primitive(PrimitiveTypeID::u64) ||
         dt->is_primitive(PrimitiveTypeID::f32) ||
@@ -66,26 +67,30 @@ class ConstantFold : public BasicStmtVisitor {
     auto dt = lhs->val.dt;
     switch (stmt->op_type) {
 #define COMMA ,
-#define HANDLE_REAL_AND_INTEGRAL_BINARY(OP_TYPE, PREFIX, OP_CPP)             \
-  case BinaryOpType::OP_TYPE: {                                              \
-    if (dt->is_primitive(PrimitiveTypeID::f32) ||                            \
-        dt->is_primitive(PrimitiveTypeID::f64)) {                            \
-      auto res = TypedConstant(                                              \
-          dst_type, PREFIX(lhs->val.val_cast_to_float64()                    \
-                               OP_CPP rhs->val.val_cast_to_float64()));      \
-      insert_and_erase(stmt, res);                                           \
-    } else if (dt->is_primitive(PrimitiveTypeID::i32) ||                     \
-               dt->is_primitive(PrimitiveTypeID::i64)) {                     \
-      auto res = TypedConstant(                                              \
-          dst_type, PREFIX(lhs->val.val_int() OP_CPP rhs->val.val_int()));   \
-      insert_and_erase(stmt, res);                                           \
-    } else if (dt->is_primitive(PrimitiveTypeID::u32) ||                     \
-               dt->is_primitive(PrimitiveTypeID::u64)) {                     \
-      auto res = TypedConstant(                                              \
-          dst_type, PREFIX(lhs->val.val_uint() OP_CPP rhs->val.val_uint())); \
-      insert_and_erase(stmt, res);                                           \
-    }                                                                        \
-    break;                                                                   \
+#define HANDLE_REAL_AND_INTEGRAL_BINARY(OP_TYPE, PREFIX, OP_CPP)               \
+  case BinaryOpType::OP_TYPE: {                                                \
+    if (dt->is_primitive(PrimitiveTypeID::f32) ||                              \
+        dt->is_primitive(PrimitiveTypeID::f64)) {                              \
+      auto res = TypedConstant(                                                \
+          dst_type, PREFIX(lhs->val.val_cast_to_float64()                      \
+                               OP_CPP rhs->val.val_cast_to_float64()));        \
+      insert_and_erase(stmt, res);                                             \
+    } else if (dt->is_primitive(PrimitiveTypeID::i32) ||                       \
+               dt->is_primitive(PrimitiveTypeID::i64)) {                       \
+      auto res = TypedConstant(                                                \
+          dst_type, PREFIX(lhs->val.val_int() OP_CPP rhs->val.val_int()));     \
+      insert_and_erase(stmt, res);                                             \
+    } else if (dt->is_primitive(PrimitiveTypeID::u32) ||                       \
+               dt->is_primitive(PrimitiveTypeID::u64)) {                       \
+      auto res = TypedConstant(                                                \
+          dst_type, PREFIX(lhs->val.val_uint() OP_CPP rhs->val.val_uint()));   \
+      insert_and_erase(stmt, res);                                             \
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                        \
+      auto res = TypedConstant(                                                \
+          dst_type, PREFIX(lhs->val.val_uint1() OP_CPP rhs->val.val_uint1())); \
+      insert_and_erase(stmt, res);                                             \
+    }                                                                          \
+    break;                                                                     \
   }
 
       HANDLE_REAL_AND_INTEGRAL_BINARY(mul, , *)
@@ -197,9 +202,7 @@ class ConstantFold : public BasicStmtVisitor {
       HANDLE_REAL_AND_INTEGRAL_UNARY(tanh, std::tanh)
       HANDLE_REAL_AND_INTEGRAL_UNARY(log, std::log)
       HANDLE_REAL_AND_INTEGRAL_UNARY(exp, std::exp)
-      HANDLE_REAL_AND_INTEGRAL_UNARY(cast_value, )
       HANDLE_REAL_AND_INTEGRAL_UNARY(rsqrt, 1.0 / std::sqrt)
-      HANDLE_REAL_AND_INTEGRAL_UNARY(logic_not, !)
 #undef HANDLE_REAL_AND_INTEGRAL_UNARY
 
 #define HANDLE_INTEGRAL_UNARY(OP_TYPE, OP_CPP)                             \
@@ -212,13 +215,36 @@ class ConstantFold : public BasicStmtVisitor {
                dt->is_primitive(PrimitiveTypeID::u64)) {                   \
       auto res = TypedConstant(dst_type, OP_CPP(operand->val.val_uint())); \
       insert_and_erase(stmt, res);                                         \
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                    \
+      auto res = TypedConstant(dst_type, !operand->val.val_uint1());       \
+      insert_and_erase(stmt, res);                                         \
     }                                                                      \
     break;                                                                 \
   }
 
       HANDLE_INTEGRAL_UNARY(bit_not, ~)
+      HANDLE_INTEGRAL_UNARY(logic_not, !)
 #undef HANDLE_INTEGRAL_UNARY
 
+      case UnaryOpType::cast_value: {
+        if (dt->is_primitive(PrimitiveTypeID::f32) ||
+            dt->is_primitive(PrimitiveTypeID::f64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_float());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::i32) ||
+                   dt->is_primitive(PrimitiveTypeID::i64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_int());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::u32) ||
+                   dt->is_primitive(PrimitiveTypeID::u64)) {
+          auto res = TypedConstant(dst_type, operand->val.val_uint());
+          insert_and_erase(stmt, res);
+        } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+          auto res = TypedConstant(dst_type, operand->val.val_uint1());
+          insert_and_erase(stmt, res);
+        }
+        break;
+      }
       default:
         return;
     }

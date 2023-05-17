@@ -222,8 +222,7 @@ class TypeCheck : public IRVisitor {
         cast(stmt->operand, target_dtype);
         stmt->ret_type = target_dtype;
       } else if (stmt->op_type == UnaryOpType::logic_not) {
-        // TODO: replace it with u1
-        DataType target_dtype = PrimitiveType::i32;
+        DataType target_dtype = PrimitiveType::u1;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),

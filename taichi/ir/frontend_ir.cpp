@@ -410,7 +410,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
       !is_tensor(rhs->ret_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
-    Stmt* cond = ctx->push_back<LocalLoadStmt>(result);
+    Stmt *cond = ctx->push_back<LocalLoadStmt>(result);
     // If stmt only accepts integer during codegen. If there is real logical
     // operations, we should cast condition to integer.
     if (is_real(lhs->ret_type)) {

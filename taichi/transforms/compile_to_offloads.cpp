@@ -210,17 +210,17 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (make_thread_local) {
+    irpass::make_thread_local(ir, config);
+    print("Make thread local");
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Scalarized");
-  }
-
-  if (make_thread_local) {
-    irpass::make_thread_local(ir, config);
-    print("Make thread local");
   }
 
   if (is_extension_supported(config.arch, Extension::mesh)) {

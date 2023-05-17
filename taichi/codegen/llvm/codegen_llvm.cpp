@@ -376,6 +376,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (to->is_primitive(PrimitiveTypeID::u1)) {
+      llvm_val[stmt] = builder->CreateIsNotNull(input);
     } else if (is_real(from.get_element_type()) !=
                is_real(to.get_element_type())) {
       if (is_real(from.get_element_type()) &&

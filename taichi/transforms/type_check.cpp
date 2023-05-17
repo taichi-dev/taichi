@@ -219,6 +219,17 @@ class TypeCheck : public IRVisitor {
 
         cast(stmt->operand, target_dtype);
         stmt->ret_type = target_dtype;
+      } else if (stmt->op_type == UnaryOpType::logic_not) {
+        // TODO: replace it with u1
+        DataType target_dtype = PrimitiveType::i32;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
       }
     }
   }
@@ -385,8 +396,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
-          PrimitiveTypeID::i32));
+      TI_ASSERT(is_integral(stmt->op1->ret_type.get_element_type()));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;

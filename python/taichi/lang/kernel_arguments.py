@@ -12,6 +12,9 @@ from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype
 from taichi.types.primitive_types import RefType, u64
 from taichi.types.compound_types import CompoundType
+from taichi._lib.utils import ti_python_core as _ti_python_core
+
+_type_factory = _ti_python_core.get_type_factory_instance()
 
 
 class KernelArgument:
@@ -105,8 +108,11 @@ def decl_sparse_matrix(dtype, name):
 
 def decl_ndarray_arg(dtype, dim, element_shape, layout, name, needs_grad):
     dtype = cook_dtype(dtype)
+    element_type = _type_factory.get_tensor_type(element_shape, dtype)
     element_dim = len(element_shape)
-    arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(dtype, dim, element_shape, name, needs_grad)
+    arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(
+        element_type, dim, element_shape, name, needs_grad
+    )
     if layout == Layout.AOS:
         element_dim = -element_dim
     return AnyArray(_ti_core.make_external_tensor_expr(dtype, dim, arg_id, element_dim, element_shape, needs_grad))

@@ -59,6 +59,28 @@ KernelContextAttributes::KernelContextAttributes(
     ArgAttributes aa;
     aa.name = ka.name;
     aa.is_array = ka.is_array;
+    if (ka.get_element_type()->is<PrimitiveType>()) {
+      aa.dtype = ka.get_element_type()->as<PrimitiveType>()->type;
+    } else if (ka.get_element_type()->is<StructType>() && ka.is_array) {
+      auto element_type =
+          ka.get_element_type()
+              ->as<StructType>()
+              ->get_element_type({TypeFactory::DATA_PTR_POS_IN_NDARRAY})
+              ->as<PointerType>()
+              ->get_pointee_type();
+
+      if (element_type->is<TensorType>()) {
+        auto tensor_type = element_type->as<TensorType>();
+        aa.dtype = tensor_type->get_element_type()->as<PrimitiveType>()->type;
+        aa.element_shape = tensor_type->get_shape();
+      } else {
+        aa.dtype = element_type->as<PrimitiveType>()->type;
+      }
+    } else {
+      // TODO: handle ti.Vector & ti.Matrix
+    }
+    aa.index = arg_attribs_vec_.size();
+    aa.field_dim = ka.total_dim - aa.element_shape.size();
     arg_attribs_vec_.push_back(aa);
   }
   for (const auto &kr : kernel.rets) {

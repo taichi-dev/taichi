@@ -779,8 +779,12 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("get_rvalue_type",
+           [](Expr *expr) { return get_rvalue_dtype(*expr); })
       .def("is_tensor",
            [](Expr *expr) {
+             TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(
+                               expr->expr.get()));
              return expr->expr->ret_type.ptr_removed()->is<TensorType>();
            })
       .def("is_struct",
@@ -789,9 +793,10 @@ void export_lang(py::module &m) {
            })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
-             if (expr->expr->ret_type->is<TensorType>()) {
-               return std::optional<std::vector<int>>(
-                   expr->expr->ret_type->cast<TensorType>()->get_shape());
+             auto tensor_type =
+                 expr->expr->ret_type.ptr_removed()->cast<TensorType>();
+             if (tensor_type) {
+               return std::optional<std::vector<int>>(tensor_type->get_shape());
              }
              return std::nullopt;
            })

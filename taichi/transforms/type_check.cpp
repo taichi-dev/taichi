@@ -23,13 +23,14 @@ class TypeCheck : public IRVisitor {
                          Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
+    auto val_type = val->ret_type.ptr_removed();
     if (is_quant(dst_type)) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_type = dst_type->get_compute_type();
     }
-    if (dst_type != val->ret_type) {
-      auto promoted = promoted_type(dst_type, val->ret_type);
+    if (dst_type != val_type) {
+      auto promoted = promoted_type(dst_type, val_type);
       if (dst_type != promoted) {
         TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
                 stmt_name, dst_type->to_string(), val->ret_data_type_name(),
@@ -579,10 +580,11 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixInitStmt *stmt) override {
-    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
-                   "Matrix should have tensor type, got {}",
+    auto tensor_type = stmt->ret_type->as<PointerType>()
+                           ->get_pointee_type()
+                           ->cast<TensorType>();
+    TI_ASSERT_INFO(tensor_type, "Matrix should have tensor type, got {}",
                    stmt->ret_type->to_string());
-    auto tensor_type = stmt->ret_type->as<TensorType>();
     auto element_dtype = tensor_type->get_element_type();
     for (int i = 0; i < stmt->values.size(); ++i) {
       if (element_dtype != stmt->values[i]->ret_type) {

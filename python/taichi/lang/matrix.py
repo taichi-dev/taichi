@@ -130,7 +130,7 @@ def _infer_entry_dt(entry):
     if isinstance(entry, (float, np.floating)):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
-        dt = entry.ptr.get_ret_type()
+        dt = entry.ptr.get_rvalue_type()
         if dt == ti_python_core.DataType_unknown:
             raise TaichiTypeError("Element type of the matrix cannot be inferred. Please set dt instead for now.")
         return dt

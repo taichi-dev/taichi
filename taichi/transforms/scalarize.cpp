@@ -44,7 +44,7 @@ class Scalarize : public BasicStmtVisitor {
   template <typename T>
   void scalarize_store_stmt(T *stmt) {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
-    auto val_dtype = stmt->val->ret_type;
+    auto val_dtype = stmt->val->ret_type.ptr_removed();
     if (dest_dtype->template is<TensorType>() &&
         val_dtype->template is<TensorType>()) {
       // Needs scalarize

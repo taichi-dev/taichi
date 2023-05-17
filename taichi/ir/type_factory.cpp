@@ -256,6 +256,7 @@ DataType promoted_type(DataType a, DataType b) {
     return TypeFactory::create_tensor_type(tensor_ty_a->get_shape(),
                                            promoted_dt);
   } else {
+    TI_INFO("a = {}, b = {}", a->to_string(), b->to_string());
     return promoted_primitive_type(a, b);
   }
 };

@@ -1146,6 +1146,6 @@ Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
 Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
 
-DataType get_rvalue_dtype(Expr expr);
+DataType get_rvalue_dtype(const Expr &expr);
 
 }  // namespace taichi::lang

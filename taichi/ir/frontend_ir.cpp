@@ -38,8 +38,14 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
     TI_ASSERT(lhs.cast<IdExpression>()->op == StmtOpCode::FrontendAllocaStmt);
+    TI_INFO("lhs: {}, rhs: {}",
+            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
+            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
     lhs.expr->ret_type =
         TypeFactory::get_instance().get_pointer_type(get_rvalue_dtype(rhs));
+    TI_INFO("after: lhs: {}, rhs: {}",
+            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
+            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
   }
 }
 
@@ -717,7 +723,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::string &tb) {
   auto var_stmt = flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
-    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type);
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type.ptr_removed());
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
@@ -1824,7 +1830,7 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   return ptr_stmt;
 }
 
-DataType get_rvalue_dtype(Expr expr) {
+DataType get_rvalue_dtype(const Expr &expr) {
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
       return argload->ret_type->as<PointerType>()->get_pointee_type();
@@ -1836,6 +1842,9 @@ DataType get_rvalue_dtype(Expr expr) {
     return id->ret_type->as<PointerType>()->get_pointee_type();
     //    }
     //    return id->ret_type;
+  }
+  if (auto mat = expr.cast<MatrixExpression>()) {
+    return mat->ret_type->as<PointerType>()->get_pointee_type();
   }
   return expr->ret_type;
 }

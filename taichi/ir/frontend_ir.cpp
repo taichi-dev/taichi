@@ -220,6 +220,10 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
         unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
+  if (type == UnaryOpType::logic_not) {
+    ret_primitive_type = PrimitiveType::u1;
+  }
+
   if (type == UnaryOpType::frexp) {
     std::vector<StructMember> elements;
     TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||

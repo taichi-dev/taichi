@@ -221,8 +221,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
   }
 
   if (type == UnaryOpType::logic_not) {
-    // FIXME: replace with u1
-    ret_primitive_type = PrimitiveType::i32;
+    ret_primitive_type = PrimitiveType::u1;
   }
 
   if (type == UnaryOpType::frexp) {

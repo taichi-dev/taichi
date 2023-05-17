@@ -1,14 +1,12 @@
 import taichi as ti
 
-ti.init(print_ir=True)
+ti.init()
 
 
 @ti.kernel
 def p() -> ti.f32:
-    y = 0.0
-    x = 1
-    y -= not x
-    return y
+    print(42)
+    return 40 + 2
 
 
 print(p())

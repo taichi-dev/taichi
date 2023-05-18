@@ -29,8 +29,11 @@ from taichi.lang.util import (
     warning,
 )
 from taichi.types import primitive_types
-from taichi.types.compound_types import CompoundType, TensorType
+from taichi.types.compound_types import CompoundType
 from taichi.types.utils import is_signed
+from taichi._lib.utils import ti_python_core as _ti_python_core
+
+_type_factory = _ti_python_core.get_type_factory_instance()
 
 
 def _generate_swizzle_patterns(key_group: str, required_length=4):
@@ -1366,7 +1369,8 @@ class MatrixType(CompoundType):
         #                 Remove the None dtype when we are ready to break legacy code.
         if dtype is not None:
             self.dtype = cook_dtype(dtype)
-            self.tensor_type = TensorType((n, m) if ndim == 2 else (n,), self.dtype)
+            shape = (n, m) if ndim == 2 else (n,)
+            self.tensor_type = _type_factory.get_tensor_type(shape, self.dtype)
         else:
             self.dtype = None
             self.tensor_type = None
@@ -1506,6 +1510,17 @@ class MatrixType(CompoundType):
         dtype_str = self.dtype.to_string() if self.dtype is not None else ""
         return f"MatrixType[{self.n},{self.m}, {dtype_str}]"
 
+    def check_matched(self, other):
+        if self.ndim != len(other.shape()):
+            return False
+        if self.dtype is not None and self.dtype != other.element_type():
+            return False
+        shape = self.get_shape()
+        for i in range(self.ndim):
+            if shape[i] is not None and shape[i] != other.shape()[i]:
+                return False
+        return True
+
 
 class VectorType(MatrixType):
     def __init__(self, n, dtype):
@@ -1583,6 +1598,10 @@ class VectorType(MatrixType):
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
 
+    def to_string(self):
+        dtype_str = self.dtype.to_string() if self.dtype is not None else ""
+        return f"VectorType[{self.n}, {dtype_str}]"
+
 
 class MatrixNdarray(Ndarray):
     """Taichi ndarray with matrix elements.
@@ -1607,9 +1626,9 @@ class MatrixNdarray(Ndarray):
 
         self.layout = Layout.AOS
         self.shape = tuple(shape)
-        self.element_type = TensorType((self.n, self.m), dtype)
+        self.element_type = _type_factory.get_tensor_type((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type.ptr), shape, Layout.AOS)
+        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
 
     @property
     def element_shape(self):
@@ -1716,8 +1735,8 @@ class VectorNdarray(Ndarray):
 
         self.layout = Layout.AOS
         self.shape = tuple(shape)
-        self.element_type = TensorType((n,), self.dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type.ptr), shape, Layout.AOS)
+        self.element_type = _type_factory.get_tensor_type((n,), self.dtype)
+        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
 
     @property
     def element_shape(self):

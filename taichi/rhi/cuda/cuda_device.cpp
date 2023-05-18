@@ -53,17 +53,17 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
   info.size = taichi::iroundup(params.size, taichi_page_size);
   if (info.size == 0) {
     info.ptr = nullptr;
+  } else if (params.use_memory_pool) {
+    CUDADriver::get_instance().malloc_async((void **)&info.ptr, info.size,
+                                            nullptr);
   } else {
     info.ptr =
         DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
-
-    TI_ASSERT(info.ptr != nullptr);
-
-    CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
   }
   info.is_imported = false;
   info.use_cached = true;
   info.use_preallocated = true;
+  info.use_memory_pool = params.use_memory_pool;
 
   DeviceAllocation alloc;
   alloc.alloc_id = allocations_.size();
@@ -92,6 +92,7 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
 
   validate_device_alloc(handle);
   AllocInfo &info = allocations_[handle.alloc_id];
+
   if (info.size == 0) {
     return;
   }
@@ -99,14 +100,16 @@ void CudaDevice::dealloc_memory(DeviceAllocation handle) {
     TI_ERROR("the DeviceAllocation is already deallocated");
   }
   TI_ASSERT(!info.is_imported);
-  if (info.use_cached) {
+  if (info.use_memory_pool) {
+    CUDADriver::get_instance().mem_free_async(info.ptr, nullptr);
+  } else if (info.use_cached) {
     DeviceMemoryPool::get_instance().release(info.size, (uint64_t *)info.ptr,
                                              false);
   } else if (!info.use_preallocated) {
     auto &mem_pool = DeviceMemoryPool::get_instance();
     mem_pool.release(info.size, info.ptr, true /*release_raw*/);
-    info.ptr = nullptr;
   }
+  info.ptr = nullptr;
 }
 
 RhiResult CudaDevice::upload_data(DevicePtr *device_ptr,

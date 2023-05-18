@@ -85,6 +85,7 @@ using int8 = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;
 using int64 = int64_t;
+using uint1 = bool;
 using uint8 = uint8_t;
 using uint16 = uint16_t;
 using uint32 = uint32_t;
@@ -96,6 +97,7 @@ using i8 = int8;
 using i16 = int16;
 using i32 = int32;
 using i64 = int64;
+using u1 = uint1;
 using u8 = uint8;
 using u16 = uint16;
 using u32 = uint32;
@@ -227,10 +229,6 @@ i64 max_i64(i64 a, i64 b) {
   return a > b ? a : b;
 }
 
-int32 logic_not_i32(int32 a) {
-  return !a;
-}
-
 float32 sgn_f32(float32 a) {
   float32 b;
   if (a > 0)
@@ -305,7 +303,7 @@ struct StructMeta {
 
   Ptr (*from_parent_element)(Ptr);
 
-  i32 (*is_active)(Ptr, Ptr, int i);
+  u1 (*is_active)(Ptr, Ptr, int i);
 
   i32 (*get_num_elements)(Ptr, Ptr);
 
@@ -330,9 +328,9 @@ struct LLVMRuntime;
 
 constexpr bool enable_assert = true;
 
-void taichi_assert(RuntimeContext *context, i32 test, const char *msg);
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg);
-#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (int)(x), msg)
+void taichi_assert(RuntimeContext *context, u1 test, const char *msg);
+void taichi_assert_runtime(LLVMRuntime *runtime, u1 test, const char *msg);
+#define TI_ASSERT_INFO(x, msg) taichi_assert(context, (u1)(x), msg)
 #define TI_ASSERT(x) TI_ASSERT_INFO(x, #x)
 
 void ___stubs___() {
@@ -751,12 +749,12 @@ RUNTIME_STRUCT_FIELD(ListManager, num_elements);
 RUNTIME_STRUCT_FIELD(ListManager, max_num_elements_per_chunk);
 RUNTIME_STRUCT_FIELD(ListManager, element_size);
 
-void taichi_assert(RuntimeContext *context, i32 test, const char *msg) {
+void taichi_assert(RuntimeContext *context, u1 test, const char *msg) {
   taichi_assert_runtime(context->runtime, test, msg);
 }
 
 void taichi_assert_format(LLVMRuntime *runtime,
-                          i32 test,
+                          u1 test,
                           const char *format,
                           int num_arguments,
                           uint64 *arguments) {
@@ -806,7 +804,7 @@ void taichi_assert_format(LLVMRuntime *runtime,
 #endif
 }
 
-void taichi_assert_runtime(LLVMRuntime *runtime, i32 test, const char *msg) {
+void taichi_assert_runtime(LLVMRuntime *runtime, u1 test, const char *msg) {
   taichi_assert_format(runtime, test, msg, 0, nullptr);
 }
 
@@ -875,6 +873,26 @@ void runtime_memory_allocate_aligned(LLVMRuntime *runtime,
   *result =
       taichi_union_cast_with_different_sizes<uint64>(runtime->allocate_aligned(
           runtime->runtime_memory_chunk, size, alignment));
+}
+
+// External API
+// [ON HOST] CPU backend
+// [ON DEVICE] CUDA/AMDGPU backend
+void runtime_get_memory_requirements(Ptr result_buffer,
+                                     i32 num_rand_states,
+                                     i32 use_preallocated_buffer) {
+  i64 size = 0;
+
+  if (use_preallocated_buffer) {
+    size += taichi::iroundup(i64(sizeof(LLVMRuntime)), taichi_page_size);
+  }
+
+  size +=
+      taichi::iroundup(i64(taichi_global_tmp_buffer_size), taichi_page_size);
+  size += taichi::iroundup(i64(sizeof(RandState)) * num_rand_states,
+                           taichi_page_size);
+
+  reinterpret_cast<i64 *>(result_buffer)[0] = size;
 }
 
 // External API

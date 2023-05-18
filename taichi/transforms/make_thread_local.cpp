@@ -21,7 +21,8 @@ std::vector<std::pair<T *, AtomicOpType>> find_global_reduction_destinations(
     OffloadedStmt *offload,
     const std::function<bool(T *)> &dest_checker) {
   static_assert(std::is_same_v<T, GlobalPtrStmt> ||
-                std::is_same_v<T, GlobalTemporaryStmt>);
+                std::is_same_v<T, GlobalTemporaryStmt> ||
+                std::is_same_v<T, MatrixPtrStmt>);
   // Gather all atomic add/sub/max/min destinations and record corresponding op
   // type on the first appearance of a destination.
   // Only one op type will be allowed on one destination (add/sub is an
@@ -114,9 +115,16 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     auto valid_global_tmps =
         find_global_reduction_destinations<GlobalTemporaryStmt>(
             offload, [](auto *) { return true; });
+    // gather dest of MatrixPtrStmt(GlobalPtrStmt, offset)
+    auto valid_matrix_ptrs = find_global_reduction_destinations<MatrixPtrStmt>(
+        offload,
+        [](MatrixPtrStmt *dest) { return dest->origin->is<GlobalPtrStmt>(); });
+
     std::copy(valid_global_ptrs.begin(), valid_global_ptrs.end(),
               std::back_inserter(valid_reduction_values));
     std::copy(valid_global_tmps.begin(), valid_global_tmps.end(),
+              std::back_inserter(valid_reduction_values));
+    std::copy(valid_matrix_ptrs.begin(), valid_matrix_ptrs.end(),
               std::back_inserter(valid_reduction_values));
   }
 

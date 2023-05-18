@@ -9,22 +9,8 @@ class CompoundType:
     pass
 
 
-class TensorType(CompoundType):
-    def __init__(self, shape, dtype):
-        self.ptr = _type_factory.get_tensor_type(shape, dtype)
-
-    def shape(self):
-        return tuple(self.ptr.shape())
-
-    def element_type(self):
-        return self.ptr.element_type()
-
-    def __repr__(self):
-        return f"TensorType(shape={self.shape()}, dtype={self.element_type()})"
-
-
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?
-def matrix(n, m, dtype):
+def matrix(n=None, m=None, dtype=None):
     """Creates a matrix type with given shape and data type.
 
     Args:
@@ -43,7 +29,7 @@ def matrix(n, m, dtype):
     return taichi.lang.matrix.MatrixType(n, m, 2, dtype)
 
 
-def vector(n, dtype):
+def vector(n=None, dtype=None):
     """Creates a vector type with given shape and data type.
 
     Args:

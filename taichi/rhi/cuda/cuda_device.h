@@ -77,6 +77,7 @@ class CudaDevice : public LlvmDevice {
      * */
     bool use_preallocated{true};
     bool use_cached{false};
+    bool use_memory_pool{false};
     void *mapped{nullptr};
   };
 

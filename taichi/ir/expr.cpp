@@ -49,6 +49,10 @@ void Expr::set_adjoint_checkbit(const Expr &o) {
   this->cast<FieldExpression>()->adjoint_checkbit.set(o);
 }
 
+Expr::Expr(uint1 x) : Expr() {
+  expr = std::make_shared<ConstExpression>(PrimitiveType::u1, x);
+}
+
 Expr::Expr(int16 x) : Expr() {
   expr = std::make_shared<ConstExpression>(PrimitiveType::i16, x);
 }

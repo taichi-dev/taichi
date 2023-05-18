@@ -1081,19 +1081,6 @@ def test_atomic_op_scalarize():
 
 
 @test_utils.test()
-def test_unsupported_logical_operations():
-    @ti.kernel
-    def test():
-        x = ti.Vector([1, 0])
-        y = ti.Vector([1, 1])
-
-        z = x and y
-
-    with pytest.raises(TaichiTypeError, match=r"unsupported operand type\(s\) for "):
-        test()
-
-
-@test_utils.test()
 def test_vector_transpose():
     @ti.kernel
     def foo():

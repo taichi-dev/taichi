@@ -39,6 +39,13 @@ constexpr std::size_t cuda_dynamic_shared_array_threshold_bytes = 49152;
 // TODO: get this at runtime
 constexpr std::size_t default_shared_mem_size = 65536;
 
+// Specialization for bool type. This solves the issue that return type ti.u1
+// always returns 0 in vulkan. This issue is caused by data endianness.
+template <bool, typename G>
+bool taichi_union_cast_with_different_sizes(G g) {
+  return g != 0;
+}
+
 template <typename T, typename G>
 T taichi_union_cast_with_different_sizes(G g) {
   union {

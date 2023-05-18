@@ -630,7 +630,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::logical_or) {
     auto *lhs = builder->CreateIsNotNull(llvm_val[stmt->lhs]);
     auto *rhs = builder->CreateIsNotNull(llvm_val[stmt->rhs]);
-    llvm_val[stmt] = builder->CreateAnd(lhs, rhs);
+    llvm_val[stmt] = builder->CreateOr(lhs, rhs);
     llvm_val[stmt] = builder->CreateZExt(llvm_val[stmt],
                                          tlctx->get_data_type(stmt->ret_type));
   } else if (op == BinaryOpType::bit_and) {

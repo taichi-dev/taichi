@@ -510,6 +510,10 @@ class MatrixPtrStmt : public Stmt {
     return false;
   }
 
+  bool common_statement_eliminable() const override {
+    return false;
+  }
+
   TI_STMT_DEF_FIELDS(ret_type, origin, offset);
   TI_DEFINE_ACCEPT_AND_CLONE
 };

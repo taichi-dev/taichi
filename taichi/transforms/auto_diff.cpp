@@ -669,68 +669,12 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
     }
   }
 
-  template <typename Load>
-  void process_load_stmt(Load *stmt) {
-    /*
-      [Duplicate shared MatrixPtrStmt]
-      Fwd:
-      $1 = alloca <4 x i32>
-      $2 = matrix ptr $1, 2
-
-      $3 = local load $2
-      ...
-      $3 : local store $0, [$val, ...]
-      $4 = local load $2
-      ...
-
-      Replaced:
-        $1 = alloca <4 x i32>
-        $2 = matrix ptr $1, 2
-
-        $3 = local load $2
-        ...
-        $3 : local store $0, [$val, ...]
-
-        $4 = matrix ptr $1, 2
-        $5 = local load $4
-        ...
-    */
-    if (stmt->src->template is<MatrixPtrStmt>()) {
-      auto matrix_ptr_stmt = stmt->src->template as<MatrixPtrStmt>();
-      // Find current block
-      Block *block = stmt->parent;
-      int matrix_ptr_idx = block->locate(matrix_ptr_stmt);
-      int load_idx = block->locate(stmt);
-
-      if (matrix_ptr_idx + 1 != load_idx) {
-        // Duplicate MatrixPtrStmt
-        auto new_matrix_ptr_stmt = Stmt::make<MatrixPtrStmt>(
-            matrix_ptr_stmt->origin, matrix_ptr_stmt->offset);
-        new_matrix_ptr_stmt->ret_type = matrix_ptr_stmt->ret_type;
-
-        auto new_load_stmt = Stmt::make<Load>(new_matrix_ptr_stmt.get());
-        new_load_stmt->ret_type = stmt->ret_type;
-
-        stmt->insert_before_me(std::move(new_matrix_ptr_stmt));
-        stmt->replace_with(std::move(new_load_stmt));
-      }
-    }
-  }
-
   void visit(LocalStoreStmt *stmt) override {
     process_store_stmt<LocalStoreStmt, LocalLoadStmt>(stmt);
   }
 
   void visit(GlobalStoreStmt *stmt) override {
     process_store_stmt<GlobalStoreStmt, GlobalLoadStmt>(stmt);
-  }
-
-  void visit(LocalLoadStmt *stmt) override {
-    process_load_stmt<LocalLoadStmt>(stmt);
-  }
-
-  void visit(GlobalLoadStmt *stmt) override {
-    process_load_stmt<GlobalLoadStmt>(stmt);
   }
 
   static void run(IRNode *root) {

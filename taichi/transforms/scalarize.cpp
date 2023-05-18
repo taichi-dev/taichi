@@ -1012,6 +1012,33 @@ class ScalarizePointers : public BasicStmtVisitor {
       delayed_modifier_.erase(stmt);
       return;
     }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = ThreadLocalPtrStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = ThreadLocalPtrStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<ThreadLocalPtrStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto thread_local_stmt = stmt->origin->as<ThreadLocalPtrStmt>();
+      auto offset_0 = thread_local_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_thread_local_stmt = std::make_unique<ThreadLocalPtrStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_thread_local_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_thread_local_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_thread_local_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
+    }
   }
 
  private:

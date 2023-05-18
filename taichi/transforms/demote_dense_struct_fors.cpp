@@ -104,7 +104,7 @@ void convert_to_range_for(OffloadedStmt *offloaded) {
   body->insert(std::move(body_header), 0);
 
   offloaded->body = std::move(body);
-  offloaded->body->parent_stmt = offloaded;
+  offloaded->body->set_parent_stmt(offloaded);
   main_loop_var->loop = offloaded;
   ////// End core transformation
 

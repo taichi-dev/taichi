@@ -1352,14 +1352,14 @@ void ASTBuilder::insert_for(const Expr &s,
 }
 
 Expr ASTBuilder::insert_thread_idx_expr() {
-  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   TI_ERROR_IF(
       arch_ != Arch::cuda && !arch_is_cpu(arch_) && arch_ != Arch::amdgpu,
       "ti.thread_idx() is only available in cuda or cpu or amdgpu context.");
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {
-      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      loop = i > 0 ? stack_[--i]->parent_stmt() : nullptr;
       if (loop == nullptr)
         break;
     }
@@ -1371,11 +1371,11 @@ Expr ASTBuilder::insert_thread_idx_expr() {
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {
-  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {
-      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      loop = i > 0 ? stack_[--i]->parent_stmt() : nullptr;
       if (loop == nullptr)
         break;
     }
@@ -1744,7 +1744,7 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   }
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
-    list->parent_stmt = get_last_stmt();
+    list->set_parent_stmt(get_last_stmt());
   }
   stack_.push_back(list.get());
 }

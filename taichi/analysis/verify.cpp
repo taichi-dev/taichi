@@ -68,14 +68,14 @@ class IRVerifier : public BasicStmtVisitor {
 
   void visit(Block *block) override {
     TI_ASSERT_INFO(
-        block->parent_stmt == current_container_stmt_,
+        block->parent_stmt() == current_container_stmt_,
         "block({})->parent({}) != current_container_stmt({})", fmt::ptr(block),
-        block->parent_stmt ? block->parent_stmt->name() : "nullptr",
+        block->parent_stmt() ? block->parent_stmt()->name() : "nullptr",
         current_container_stmt_ ? current_container_stmt_->name() : "nullptr");
     auto backup_block = current_block_;
     current_block_ = block;
     auto backup_container_stmt = current_container_stmt_;
-    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+    if (!block->parent_stmt() || !block->parent_stmt()->is<OffloadedStmt>())
       visible_stmts_.emplace_back();
     for (auto &stmt : block->statements) {
       if (stmt->is_container_statement())
@@ -85,7 +85,7 @@ class IRVerifier : public BasicStmtVisitor {
         current_container_stmt_ = backup_container_stmt;
     }
     current_block_ = backup_block;
-    if (!block->parent_stmt || !block->parent_stmt->is<OffloadedStmt>())
+    if (!block->parent_stmt() || !block->parent_stmt()->is<OffloadedStmt>())
       current_block_ = backup_block;
   }
 

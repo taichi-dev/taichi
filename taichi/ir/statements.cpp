@@ -167,14 +167,14 @@ IfStmt::IfStmt(Stmt *cond) : cond(cond) {
 void IfStmt::set_true_statements(std::unique_ptr<Block> &&new_true_statements) {
   true_statements = std::move(new_true_statements);
   if (true_statements)
-    true_statements->parent_stmt = this;
+    true_statements->set_parent_stmt(this);
 }
 
 void IfStmt::set_false_statements(
     std::unique_ptr<Block> &&new_false_statements) {
   false_statements = std::move(new_false_statements);
   if (false_statements)
-    false_statements->parent_stmt = this;
+    false_statements->set_parent_stmt(this);
 }
 
 std::unique_ptr<Stmt> IfStmt::clone() const {
@@ -203,7 +203,7 @@ RangeForStmt::RangeForStmt(Stmt *begin,
       strictly_serialized(strictly_serialized),
       range_hint(range_hint) {
   reversed = false;
-  this->body->parent_stmt = this;
+  this->body->set_parent_stmt(this);
   TI_STMT_REG_FIELDS;
 }
 
@@ -225,7 +225,7 @@ StructForStmt::StructForStmt(SNode *snode,
       is_bit_vectorized(is_bit_vectorized),
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim) {
-  this->body->parent_stmt = this;
+  this->body->set_parent_stmt(this);
   TI_STMT_REG_FIELDS;
 }
 
@@ -248,7 +248,7 @@ MeshForStmt::MeshForStmt(mesh::Mesh *mesh,
       num_cpu_threads(num_cpu_threads),
       block_dim(block_dim),
       major_from_type(element_type) {
-  this->body->parent_stmt = this;
+  this->body->set_parent_stmt(this);
   TI_STMT_REG_FIELDS;
 }
 
@@ -269,7 +269,7 @@ FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
 
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
     : mask(nullptr), body(std::move(body)) {
-  this->body->parent_stmt = this;
+  this->body->set_parent_stmt(this);
   TI_STMT_REG_FIELDS;
 }
 
@@ -301,7 +301,7 @@ OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
     : task_type(task_type), device(arch) {
   if (has_body()) {
     body = std::make_unique<Block>();
-    body->parent_stmt = this;
+    body->set_parent_stmt(this);
   }
   TI_STMT_REG_FIELDS;
 }
@@ -359,27 +359,27 @@ std::unique_ptr<Stmt> OffloadedStmt::clone() const {
 
   if (tls_prologue) {
     new_stmt->tls_prologue = tls_prologue->clone();
-    new_stmt->tls_prologue->parent_stmt = new_stmt.get();
+    new_stmt->tls_prologue->set_parent_stmt(new_stmt.get());
   }
   if (mesh_prologue) {
     new_stmt->mesh_prologue = mesh_prologue->clone();
-    new_stmt->mesh_prologue->parent_stmt = new_stmt.get();
+    new_stmt->mesh_prologue->set_parent_stmt(new_stmt.get());
   }
   if (bls_prologue) {
     new_stmt->bls_prologue = bls_prologue->clone();
-    new_stmt->bls_prologue->parent_stmt = new_stmt.get();
+    new_stmt->bls_prologue->set_parent_stmt(new_stmt.get());
   }
   if (body) {
     new_stmt->body = body->clone();
-    new_stmt->body->parent_stmt = new_stmt.get();
+    new_stmt->body->set_parent_stmt(new_stmt.get());
   }
   if (bls_epilogue) {
     new_stmt->bls_epilogue = bls_epilogue->clone();
-    new_stmt->bls_epilogue->parent_stmt = new_stmt.get();
+    new_stmt->bls_epilogue->set_parent_stmt(new_stmt.get());
   }
   if (tls_epilogue) {
     new_stmt->tls_epilogue = tls_epilogue->clone();
-    new_stmt->tls_epilogue->parent_stmt = new_stmt.get();
+    new_stmt->tls_epilogue->set_parent_stmt(new_stmt.get());
   }
   new_stmt->tls_size = tls_size;
   new_stmt->bls_size = bls_size;

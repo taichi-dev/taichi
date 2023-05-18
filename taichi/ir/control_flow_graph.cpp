@@ -270,6 +270,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     }
 
     /*
+    [TensorType TODO #1]
+
     TODO(zhanlue): Improve aliasing analysis to enable TensorType forwarding
                    Be careful about the case where MatrixPtrStmt is involved:
 
@@ -434,6 +436,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
         irpass::analysis::get_store_destination(stmt, true /*get_alias*/);
 
     /*
+    [TensorType TODO #1]
     TODO(zhanlue): Improve aliasing analysis to enable dead store elimination
     for tensors. Be careful about the case where MatrixPtrStmt is involved:
 

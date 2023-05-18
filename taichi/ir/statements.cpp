@@ -1,6 +1,7 @@
 // TODO: gradually cppize statements.h
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
+#include "taichi/program/kernel.h"
 
 namespace taichi::lang {
 
@@ -117,6 +118,11 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
         "(globally).")
   }
   TI_STMT_REG_FIELDS;
+}
+
+bool MatrixPtrStmt::common_statement_eliminable() const {
+  Kernel *k = get_kernel();
+  return (k->autodiff_mode == AutodiffMode::kNone);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,

@@ -72,7 +72,7 @@ def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
     for i in range(n):
         assert x[i] == test_utils.approx(res[i], rel=1.0)
 
-        
+
 @pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver():

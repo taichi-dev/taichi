@@ -226,46 +226,6 @@ void offload_to_executable(IRNode *ir,
     }
   }
 
-  if (make_block_local) {
-    /*
-      [TensorType TODO #2]
-      TODO: Remove irpass::scalarize() after cfg_optimization
-      adaptation[TensorType TODO #1] is done
-
-      In general, BLS is trying to analyze and replace load/store of
-      loop-specific GlobalPtrStmt(..., index) with load/store of a cross-loop
-      BlockLocalPtrStmt. This requires heavy analysis upon depencencies between
-      index of GlobalPtrStmt and the loop index.
-
-      In case where GlobalPtrStmt's index being TensorType and stored in an
-      AllocaStmt, the analysis will fail due to the complicity of address
-      aliasing, and requires load-store-forwarding to simplify the IR.
-
-      [Example]
-      <i32> $1 = loop $0 index 0
-      <[Tensor (1) i32]> $3 = [$1]
-      ...
-      <[Tensor (1) i32]> $12 = alloca
-      <[Tensor (1) i32]> $13 : local store [$12 <- $3]
-      <*i32> $14 = shift ptr [$12 + $4]
-      <i32> $15 = local load [$14]
-      <*i32> $15 = global ptr [S5place<i32>], index [$7] activate=true
-    */
-    irpass::scalarize(ir);
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-
-    irpass::make_block_local(ir, config, {kernel->get_name()});
-    print("Make block local");
-  }
-
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
     print("Demote mesh statements");
@@ -286,6 +246,14 @@ void offload_to_executable(IRNode *ir,
   irpass::remove_loop_unique(ir);
   print("Remove loop_unique");
   irpass::analysis::verify(ir);
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
+  }
 
   if (lower_global_access) {
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});

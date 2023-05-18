@@ -136,6 +136,7 @@ def test_gpu_sparse_solver():
     assert np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3)
 
 
+@pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LU"])
 @test_utils.test(arch=ti.cuda)

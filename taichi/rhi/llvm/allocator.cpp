@@ -61,7 +61,9 @@ void CachingAllocator::release(size_t sz, uint64_t *ptr) {
   if (merge_upon_release_) {
     merge_and_insert(reinterpret_cast<uint8_t *>(ptr), sz);
   } else {
-    mem_blocks_.insert(std::make_pair(sz, reinterpret_cast<uint8_t *>(ptr)));
+    if (sz >= taichi_page_size) {
+      mem_blocks_.insert(std::make_pair(sz, reinterpret_cast<uint8_t *>(ptr)));
+    }
   }
 }
 

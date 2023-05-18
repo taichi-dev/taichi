@@ -121,6 +121,8 @@ class TypeCheck : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::allocate) {
       stmt->ret_type = PrimitiveType::gen;
       stmt->ret_type.set_is_pointer(true);
+    } else if (stmt->op_type == SNodeOpType::is_active) {
+      stmt->ret_type = PrimitiveType::u1;
     } else {
       stmt->ret_type = PrimitiveType::i32;
     }
@@ -214,6 +216,16 @@ class TypeCheck : public IRVisitor {
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
         DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
+      } else if (stmt->op_type == UnaryOpType::logic_not) {
+        DataType target_dtype = PrimitiveType::u1;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),
@@ -382,7 +394,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = make_dt(PrimitiveType::i32);
+      stmt->ret_type = make_dt(PrimitiveType::u1);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -391,8 +403,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
-          PrimitiveTypeID::i32));
+      TI_ASSERT(is_integral(stmt->op1->ret_type.get_element_type()));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -580,6 +591,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixInitStmt *stmt) override {
+    irpass::print(stmt);
     auto tensor_type = stmt->ret_type->as<PointerType>()
                            ->get_pointee_type()
                            ->cast<TensorType>();

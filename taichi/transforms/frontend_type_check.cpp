@@ -7,11 +7,12 @@ namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
-    if (!cond->ret_type->is<PrimitiveType>() || !is_integral(cond->ret_type))
+    auto cond_type = get_rvalue_dtype(cond);
+    if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type))
       throw TaichiTypeError(fmt::format(
           "`{0}` conditions must be an integer; found {1}. Consider using "
           "`{0} x != 0` instead of `{0} x` for float values.",
-          stmt_name, cond->ret_type->to_string()));
+          stmt_name, cond_type->to_string()));
   }
 
  public:

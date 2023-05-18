@@ -53,6 +53,9 @@ class Scalarize : public BasicStmtVisitor {
 
       TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
 
+      irpass::print(stmt);
+      irpass::print(stmt->val);
+
       TI_ASSERT(stmt->val->template is<MatrixInitStmt>());
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
 
@@ -185,7 +188,8 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(UnaryOpStmt *stmt) override {
-    auto operand_dtype = stmt->operand->ret_type;
+    auto operand_dtype = stmt->operand->ret_type.ptr_removed();
+    auto stmt_dtype = stmt->ret_type.ptr_removed();
     if (operand_dtype->is<TensorType>()) {
       // Needs scalarize
       auto operand_tensor_type = operand_dtype->as<TensorType>();
@@ -198,7 +202,7 @@ class Scalarize : public BasicStmtVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = operand_tensor_type->get_num_elements();
-      auto primitive_type = stmt->ret_type.get_element_type();
+      auto primitive_type = stmt_dtype.get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
@@ -246,8 +250,9 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(BinaryOpStmt *stmt) override {
-    auto lhs_dtype = stmt->lhs->ret_type;
-    auto rhs_dtype = stmt->rhs->ret_type;
+    auto lhs_dtype = stmt->lhs->ret_type.ptr_removed();
+    auto rhs_dtype = stmt->rhs->ret_type.ptr_removed();
+    auto stmt_dtype = stmt->ret_type.ptr_removed();
     if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // BinaryOpExpression::type_check().
@@ -270,7 +275,7 @@ class Scalarize : public BasicStmtVisitor {
       TI_ASSERT(rhs_vals.size() == lhs_vals.size());
 
       size_t num_elements = lhs_vals.size();
-      auto primitive_type = stmt->ret_type.get_element_type();
+      auto primitive_type = stmt_dtype.get_element_type();
       std::vector<Stmt *> matrix_init_values;
       for (size_t i = 0; i < num_elements; i++) {
         auto binary_stmt = std::make_unique<BinaryOpStmt>(
@@ -498,9 +503,9 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(TernaryOpStmt *stmt) override {
-    auto cond_dtype = stmt->op1->ret_type;
-    auto op2_dtype = stmt->op2->ret_type;
-    auto op3_dtype = stmt->op3->ret_type;
+    auto cond_dtype = stmt->op1->ret_type.ptr_removed();
+    auto op2_dtype = stmt->op2->ret_type.ptr_removed();
+    auto op3_dtype = stmt->op3->ret_type.ptr_removed();
     if (cond_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // TernaryOpExpression::type_check().
@@ -1009,6 +1014,33 @@ class ScalarizePointers : public BasicStmtVisitor {
 
       stmt->replace_usages_with(new_global_temp_stmt.get());
       delayed_modifier_.insert_before(stmt, std::move(new_global_temp_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
+    }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = ThreadLocalPtrStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = ThreadLocalPtrStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<ThreadLocalPtrStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto thread_local_stmt = stmt->origin->as<ThreadLocalPtrStmt>();
+      auto offset_0 = thread_local_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_thread_local_stmt = std::make_unique<ThreadLocalPtrStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_thread_local_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_thread_local_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_thread_local_stmt));
       delayed_modifier_.erase(stmt);
       return;
     }

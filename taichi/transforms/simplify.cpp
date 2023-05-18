@@ -530,7 +530,7 @@ make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
-  auto print = make_pass_printer(false, "simplify", root);
+  auto print = make_pass_printer(config.print_ir, "simplify", root);
   TI_AUTO_PROF;
   if (config.advanced_optimization) {
     bool first_iteration = true;

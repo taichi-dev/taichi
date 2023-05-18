@@ -541,7 +541,8 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
                                       const_zero_stmt);
       auto zero_matrix_init_stmt =
           replacement.push_back<MatrixInitStmt>(zero_values);
-      zero_matrix_init_stmt->ret_type = alloca_type;
+      zero_matrix_init_stmt->ret_type =
+          TypeFactory::get_instance().get_pointer_type(alloca_type);
       auto global_store_stmt =
           replacement.push_back<GlobalStoreStmt>(ptr, zero_matrix_init_stmt);
       stmt_to_offloaded_[global_store_stmt] = offloaded;

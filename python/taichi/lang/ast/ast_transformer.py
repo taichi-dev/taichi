@@ -1030,9 +1030,9 @@ class ASTTransformer(Builder):
                     raise TaichiSyntaxError(f'"{type(node_op).__name__}" is only supported inside `ti.static`.')
                 else:
                     raise TaichiSyntaxError(f'"{type(node_op).__name__}" is not supported in Taichi kernels.')
-            val = ti_ops.bit_and(val, op(l, r))
+            val = ti_ops.logical_and(val, op(l, r))
         if not isinstance(val, (bool, np.bool_)):
-            val = ti_ops.cast(val, primitive_types.i32)
+            val = ti_ops.cast(val, primitive_types.u1)
         node.ptr = val
         return node.ptr
 

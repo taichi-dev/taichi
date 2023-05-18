@@ -18,6 +18,7 @@ env:
   METADATA_PASSWORD: ${{ secrets.METADATA_PASSWORD }}
   METADATA_URL: ${{ secrets.METADATA_URL }}
   RELEASE_VERSION: ${{ github.event.inputs.version }}
+  NIGHTLY: ${{ !github.event.inputs.version && '--nightly' || '' }}
   CI_IMAGE_VERSION: '202304251731'
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: 'ON'
@@ -99,7 +100,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-build \
             registry.botmaster.tgr/taichi-build-cuda:${{ env.CI_IMAGE_VERSION }} \
-            /home/dev/taichi/.github/workflows/scripts/build.py
+            /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -151,7 +152,7 @@ jobs:
 
           ci-docker-run-gpu --name taichi-test \
              registry.botmaster.tgr/taichi-build-manylinux2014-cuda:${{ env.CI_IMAGE_VERSION }} \
-             /home/dev/taichi/.github/workflows/scripts/build.py
+             /home/dev/taichi/.github/workflows/scripts/build.py $NIGHTLY
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -200,7 +201,7 @@ jobs:
         run: |
           # Use the molten-vk v1.1.10 downloaded from taichi assets
           brew uninstall molten-vk -f
-          .github/workflows/scripts/build.py
+          .github/workflows/scripts/build.py $NIGHTLY
         env:
           PROJECT_NAME: ${{ matrix.name }}
 
@@ -251,7 +252,7 @@ jobs:
       - name: Build
         run: |
           brew install molten-vk
-          .github/workflows/scripts/build.py
+          .github/workflows/scripts/build.py $NIGHTLY
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3
@@ -303,10 +304,11 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Build
-        if: ${{ needs.check_files.outputs.run_job != 'false' }}
-        shell: cmd
+        shell: pwsh
         run: |
-          python .\.github\workflows\scripts\build.py
+          $nightlyFlag = $null
+          if ($env:NIGHTLY) { $nightlyFlag = "--nightly" }
+          python .\.github\workflows\scripts\build.py $nightlyFlag
 
       - name: Archive Wheel Artifacts
         uses: actions/upload-artifact@v3

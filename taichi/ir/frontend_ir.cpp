@@ -229,6 +229,10 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
         unary_op_type_name(type), operand_primitive_type->to_string()));
   }
 
+  if (type == UnaryOpType::logic_not) {
+    ret_primitive_type = PrimitiveType::u1;
+  }
+
   if (type == UnaryOpType::frexp) {
     std::vector<StructMember> elements;
     TI_ASSERT(operand_primitive_type->is_primitive(PrimitiveTypeID::f32) ||
@@ -369,12 +373,11 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
   if (binary_is_bitwise(type) && (!is_integral(lhs_type.get_element_type()) ||
                                   !is_integral(rhs_type.get_element_type())))
     error();
-  if (binary_is_logical(type) &&
-      (is_tensor_op || lhs_type != PrimitiveType::i32 ||
-       rhs_type != PrimitiveType::i32))
+  if (binary_is_logical(type) && !(is_integral(lhs_type.get_element_type()) &&
+                                   is_integral(rhs_type.get_element_type())))
     error();
-  if (is_comparison(type) || binary_is_logical(type)) {
-    ret_type = make_dt(PrimitiveType::i32);
+  if (is_comparison(type)) {
+    ret_type = make_dt(PrimitiveType::u1);
     return;
   }
   if (is_shift_op(type) ||
@@ -411,7 +414,8 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
 
-  if (binary_is_logical(type)) {
+  if (binary_is_logical(type) && !is_tensor(lhs->ret_type) &&
+      !is_tensor(rhs->ret_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
     auto cond = ctx->push_back<LocalLoadStmt>(result);
@@ -550,7 +554,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
     is_valid = false;
   }
 
-  if (op1_type != PrimitiveType::i32) {
+  if (!is_integral(op1_type)) {
     is_valid = false;
   }
   if (!op2_type->is<PrimitiveType>() || !op3_type->is<PrimitiveType>()) {
@@ -875,6 +879,7 @@ void IndexExpression::type_check(const CompileConfig *) {
     } else {
       // Access to a Tensor
       ret_type = var.cast<ExternalTensorExpression>()->dt;
+      ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
     }
   } else if (is_tensor()) {  // local tensor
     auto var_type = var->ret_type.ptr_removed()->cast<TensorType>();
@@ -1053,6 +1058,8 @@ SNodeOpExpression::SNodeOpExpression(SNode *snode,
 void SNodeOpExpression::type_check(const CompileConfig *config) {
   if (op_type == SNodeOpType::get_addr) {
     ret_type = PrimitiveType::u64;
+  } else if (op_type == SNodeOpType::is_active) {
+    ret_type = PrimitiveType::u1;
   } else {
     ret_type = PrimitiveType::i32;
   }

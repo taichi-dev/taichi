@@ -94,6 +94,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       value_type = tlctx->get_data_type(PrimitiveType::u16);
       value = builder->CreateZExt(value, value_type);
     }
+    if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i32);
+      value = builder->CreateZExt(value, value_type);
+    }
     return std::make_tuple(value, value_type);
   }
 
@@ -250,12 +254,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
-    } else if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = call("logic_not_i32", input);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
     } else if (op == UnaryOpType::frexp) {
       auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());
       auto res = builder->CreateAlloca(stype);
@@ -288,16 +286,52 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (op == UnaryOpType::log) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // logf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_logf" : "__nv_logf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_log", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("log", input);
+      } else {
+        TI_ERROR("log() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
+    } else if (op == UnaryOpType::sin) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // sinf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_sinf" : "__nv_sinf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_sin", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("sin", input);
+      } else {
+        TI_ERROR("sin() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
+    } else if (op == UnaryOpType::cos) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // cosf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_cosf" : "__nv_cosf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_cos", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("cos", input);
+      } else {
+        TI_ERROR("cos() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
     }
     UNARY_STD(exp)
-    UNARY_STD(log)
     UNARY_STD(tan)
     UNARY_STD(tanh)
     UNARY_STD(sgn)
     UNARY_STD(acos)
     UNARY_STD(asin)
-    UNARY_STD(cos)
-    UNARY_STD(sin)
     else {
       TI_P(unary_op_type_name(op));
       TI_NOT_IMPLEMENTED

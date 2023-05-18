@@ -4,8 +4,7 @@
 OpenglRuntime::OpenglRuntime()
     : GfxRuntime(taichi::Arch::opengl),
       device_(),
-      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
-          host_result_buffer_.data(), &device_}) {
+      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{&device_}) {
   taichi::lang::DeviceCapabilityConfig caps{};
   caps.set(taichi::lang::DeviceCapability::spirv_has_int64, true);
   caps.set(taichi::lang::DeviceCapability::spirv_has_float64, true);

@@ -317,7 +317,7 @@ void LlvmOfflineCacheFileWriter::dump(const std::string &path,
     std::string lock_path = taichi::join_path(path, kMetadataFileLockName);
     if (!lock_with_file(lock_path)) {
       TI_WARN(
-          "Lock {} failed. You can run 'ti ticache clean -p {}' and try again.",
+          "Lock {} failed. You can run 'ti cache clean -p {}' and try again.",
           lock_path, path);
       return;
     }

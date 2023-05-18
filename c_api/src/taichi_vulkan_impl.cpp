@@ -104,7 +104,8 @@ VulkanRuntimeOwned::VulkanRuntimeOwned()
 VulkanRuntimeOwned::VulkanRuntimeOwned(
     const taichi::lang::vulkan::VulkanDeviceCreator::Params &params)
     : vk_device_creator_(params),
-      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{vk_device_creator_.device()}) {
+      gfx_runtime_(
+          taichi::lang::gfx::GfxRuntime::Params{vk_device_creator_.device()}) {
 }
 taichi::lang::Device &VulkanRuntimeOwned::get() {
   return *static_cast<taichi::lang::Device *>(vk_device_creator_.device());

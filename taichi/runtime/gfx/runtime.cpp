@@ -202,8 +202,7 @@ class HostDeviceContextBlitter {
       return nullptr;
     }
     return std::make_unique<HostDeviceContextBlitter>(
-        ctx_attribs, host_ctx, device, device_args_buffer,
-        device_ret_buffer);
+        ctx_attribs, host_ctx, device, device_args_buffer, device_ret_buffer);
   }
 
  private:
@@ -277,8 +276,7 @@ Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
-    : device_(params.device),
-      profiler_(params.profiler) {
+    : device_(params.device), profiler_(params.profiler) {
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
 

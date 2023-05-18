@@ -363,12 +363,10 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
   if (binary_is_bitwise(type) && (!is_integral(lhs_type.get_element_type()) ||
                                   !is_integral(rhs_type.get_element_type())))
     error();
-  if (binary_is_logical(type) && !((is_integral(lhs_type.get_element_type()) ||
-                                    is_real(lhs_type.get_element_type())) &&
-                                   (is_integral(rhs_type.get_element_type()) ||
-                                    is_real(rhs_type.get_element_type()))))
+  if (binary_is_logical(type) && !(is_integral(lhs_type.get_element_type()) &&
+                                   is_integral(rhs_type.get_element_type())))
     error();
-  if (is_comparison(type)) {
+  if (is_comparison(type) || binary_is_logical(type)) {
     ret_type = make_dt(PrimitiveType::u1);
     return;
   }
@@ -410,13 +408,7 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
       !is_tensor(rhs->ret_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
-    Stmt *cond = ctx->push_back<LocalLoadStmt>(result);
-    // If stmt only accepts integer during codegen. If there is real logical
-    // operations, we should cast condition to integer.
-    if (is_real(lhs->ret_type)) {
-      auto f0 = ctx->push_back<ConstStmt>(TypedConstant(lhs->ret_type, 0));
-      cond = ctx->push_back<BinaryOpStmt>(BinaryOpType::cmp_ne, cond, f0);
-    }
+    auto cond = ctx->push_back<LocalLoadStmt>(result);
     auto if_stmt = ctx->push_back<IfStmt>(cond);
 
     FlattenContext rctx;

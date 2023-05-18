@@ -1111,11 +1111,22 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
 DEFINE_BUILDER_CMP_UOP(eq, Equal);
 DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
 
-#define DEFINE_BUILDER_LOGICAL_OP(_OpName, _Op)            \
-  Value IRBuilder::_OpName(Value a, Value b) {             \
-    TI_ASSERT(a.stype.id == b.stype.id);                   \
-    TI_ASSERT(is_integral(a.stype.dt));                    \
-    return make_value(spv::OpLogical##_Op, t_bool_, a, b); \
+#define DEFINE_BUILDER_LOGICAL_OP(_OpName, _Op)                               \
+  Value IRBuilder::_OpName(Value a, Value b) {                                \
+    TI_ASSERT(a.stype.id == b.stype.id);                                      \
+    if (a.stype.id == t_bool_.id) {                                           \
+      return make_value(spv::OpLogical##_Op, t_bool_, a, b);                  \
+    } else if (is_integral(a.stype.dt)) {                                     \
+      Value val_a = make_value(spv::OpINotEqual, t_bool_, a,                  \
+                               int_immediate_number(a.stype, 0));             \
+      Value val_b = make_value(spv::OpINotEqual, t_bool_, b,                  \
+                               int_immediate_number(b.stype, 0));             \
+      Value val_ret = make_value(spv::OpLogical##_Op, t_bool_, val_a, val_b); \
+      return cast(a.stype, val_ret);                                          \
+    } else {                                                                  \
+      TI_ERROR("Logical ops on real types are not supported.");               \
+      return Value();                                                         \
+    }                                                                         \
   }
 
 DEFINE_BUILDER_LOGICAL_OP(logical_and, And);

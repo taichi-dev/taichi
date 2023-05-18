@@ -125,15 +125,17 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
 }
 
 Kernel *Stmt::get_kernel() const {
-  Block *top_level_block = parent;
-  while (top_level_block->parent_block()) {
-    top_level_block = top_level_block->parent_block();
+  Block *parent_block = parent;
+  if (parent_block->parent_kernel()) {
+    return parent_block->parent_kernel();
   }
 
-  Kernel *kernel = top_level_block->parent_kernel();
-  TI_ASSERT(kernel != nullptr);
+  if (parent_block->parent_stmt()) {
+    return parent_block->parent_stmt()->get_kernel();
+  }
 
-  return kernel;
+  TI_ASSERT_INFO(false, "Stmt is not in a kernel.");
+  return nullptr;
 }
 
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {

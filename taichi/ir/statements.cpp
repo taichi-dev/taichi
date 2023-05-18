@@ -122,6 +122,7 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
 
 bool MatrixPtrStmt::common_statement_eliminable() const {
   Kernel *k = get_kernel();
+  TI_ASSERT(k != nullptr);
   return (k->autodiff_mode == AutodiffMode::kNone);
 }
 
@@ -303,8 +304,8 @@ GetChStmt::GetChStmt(Stmt *input_ptr,
   TI_STMT_REG_FIELDS;
 }
 
-OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
-    : task_type(task_type), device(arch) {
+OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch, Kernel *kernel)
+    : kernel_(kernel), task_type(task_type), device(arch) {
   if (has_body()) {
     body = std::make_unique<Block>();
     body->set_parent_stmt(this);
@@ -338,7 +339,7 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {
-  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device);
+  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device, kernel_);
   new_stmt->snode = snode;
   new_stmt->begin_offset = begin_offset;
   new_stmt->end_offset = end_offset;

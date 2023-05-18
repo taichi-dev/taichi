@@ -453,7 +453,7 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_parent() const override;
-  Kernel *get_kernel() const;
+  virtual Kernel *get_kernel() const;
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);

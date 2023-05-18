@@ -674,8 +674,7 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
     /*
       [Duplicate shared MatrixPtrStmt]
       Fwd:
-      $0 = alloca <4 x i32>
-      $1 = load $0
+      $1 = alloca <4 x i32>
       $2 = matrix ptr $1, 2
 
       $3 = local load $2
@@ -685,8 +684,7 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
       ...
 
       Replaced:
-        $0 = alloca <4 x i32>
-        $1 = load $0
+        $1 = alloca <4 x i32>
         $2 = matrix ptr $1, 2
 
         $3 = local load $2
@@ -694,7 +692,7 @@ class RegulateTensorTypedStatements : public BasicStmtVisitor {
         $3 : local store $0, [$val, ...]
 
         $4 = matrix ptr $1, 2
-        $5 = local load $2
+        $5 = local load $4
         ...
     */
     if (stmt->src->template is<MatrixPtrStmt>()) {

@@ -150,6 +150,10 @@ void Kernel::init(Program &program,
   is_accessor = false;
   context = std::make_unique<FrontendContext>(program.compile_config().arch);
   ir = context->get_root();
+
+  TI_ASSERT(ir->is<Block>());
+  ir->as<Block>()->set_parent_kernel(this);
+
   ir_is_ast_ = true;
   arch = program.compile_config().arch;
 

@@ -453,6 +453,7 @@ class Stmt : public IRNode {
   virtual void replace_operand_with(Stmt *old_stmt, Stmt *new_stmt);
 
   IRNode *get_parent() const override;
+  Kernel *get_kernel() const;
 
   // returns the inserted stmt
   Stmt *insert_before_me(std::unique_ptr<Stmt> &&new_stmt);
@@ -501,7 +502,7 @@ class Stmt : public IRNode {
 
 class Block : public IRNode {
  public:
-  Stmt *parent_stmt{nullptr};
+  std::variant<Stmt *, Kernel *> parent_;
   stmt_vector statements;
   stmt_vector trash_bin;
   std::vector<SNode *> stop_gradients;
@@ -510,9 +511,17 @@ class Block : public IRNode {
   // variables, and AllocaStmt for other variables.
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
-  Block() {
-    parent_stmt = nullptr;
+  Block(Kernel *kernel = nullptr) {
+    parent_ = kernel;
   }
+
+  Stmt *parent_stmt() const;
+
+  void set_parent_kernel(Kernel *kernel);
+
+  void set_parent_stmt(Stmt *stmt);
+
+  Kernel *parent_kernel() const;
 
   Block *parent_block() const;
 

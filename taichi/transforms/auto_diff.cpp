@@ -1251,8 +1251,8 @@ class MakeAdjoint : public ADTransform {
       //     for _ in range(5)
       //         q += a[i]
       if (stmt->is<GlobalLoadStmt>() &&
-          (stmt->parent->parent_stmt != nullptr) &&
-          stmt->parent->parent_stmt->is<RangeForStmt>()) {
+          (stmt->parent->parent_stmt() != nullptr) &&
+          stmt->parent->parent_stmt()->is<RangeForStmt>()) {
         // Check whether this GlobalLoadStmt is in the body of a for-loop by
         // searching in the backup forward pass If not (Case 1), the alloca
         // should not be clear every iteration, therefore, we need to insert the

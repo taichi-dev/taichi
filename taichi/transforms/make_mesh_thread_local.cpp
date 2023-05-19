@@ -28,12 +28,12 @@ void make_mesh_thread_local_offload(OffloadedStmt *offload,
 
   if (offload->tls_prologue == nullptr) {
     offload->tls_prologue = std::make_unique<Block>();
-    offload->tls_prologue->parent_stmt = offload;
+    offload->tls_prologue->set_parent_stmt(offload);
   }
 
   if (offload->mesh_prologue == nullptr) {
     offload->mesh_prologue = std::make_unique<Block>();
-    offload->mesh_prologue->parent_stmt = offload;
+    offload->mesh_prologue->set_parent_stmt(offload);
   }
 
   auto patch_idx =

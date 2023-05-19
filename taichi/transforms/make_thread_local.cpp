@@ -140,7 +140,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_prologue == nullptr) {
         offload->tls_prologue = std::make_unique<Block>();
-        offload->tls_prologue->parent_stmt = offload;
+        offload->tls_prologue->set_parent_stmt(offload);
       }
 
       // ensure alignment
@@ -176,7 +176,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_epilogue == nullptr) {
         offload->tls_epilogue = std::make_unique<Block>();
-        offload->tls_epilogue->parent_stmt = offload;
+        offload->tls_epilogue->set_parent_stmt(offload);
       }
       auto tls_ptr = offload->tls_epilogue->push_back<ThreadLocalPtrStmt>(
           tls_offset, TypeFactory::get_instance().get_pointer_type(data_type));

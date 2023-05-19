@@ -66,7 +66,7 @@ void make_block_local_offload(OffloadedStmt *offload,
                 Stmt * bls_element_offset_bytes)> &operation) {
           if (block == nullptr) {
             block = std::make_unique<Block>();
-            block->parent_stmt = offload;
+            block->set_parent_stmt(offload);
           }
           // Equivalent to CUDA threadIdx
           Stmt *thread_idx_stmt =

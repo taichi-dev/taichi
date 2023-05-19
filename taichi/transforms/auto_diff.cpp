@@ -1367,8 +1367,10 @@ class MakeAdjoint : public ADTransform {
       accumulate(bin->rhs, sel(cmp, zero, adjoint(bin)));
     } else if (bin->op_type == BinaryOpType::floordiv) {
       // do nothing
-    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type)) {
+    } else if (is_comparison(bin->op_type) || is_bit_op(bin->op_type) ||
+               binary_is_logical(bin->op_type)) {
       // do nothing
+
     } else {
       TI_WARN("gradient of binary op {}\n{}", binary_op_type_name(bin->op_type),
               bin->tb);

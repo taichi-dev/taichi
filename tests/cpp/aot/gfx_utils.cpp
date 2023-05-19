@@ -80,7 +80,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
   gfx_runtime->add_root_buffer(root_size);
 
   {
-    auto simple_ret_kernel = vk_module->get_kernel("simple_ret");
+    auto simple_ret_kernel = vk_module->get_kernel("simple_return");
     EXPECT_TRUE(simple_ret_kernel);
     LaunchContextBuilder builder(simple_ret_kernel);
     auto &host_ctx = builder.get_context();

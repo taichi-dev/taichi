@@ -154,9 +154,7 @@ class HostDeviceContextBlitter {
               RhiResult::success);
 
     void *ctx_result_buffer = host_ctx_.get_context().result_buffer;
-    void *device_ptr = (uint8_t *)device_base;
-    void *host_ptr = (uint8_t *)ctx_result_buffer;
-    std::memcpy(host_ptr, device_ptr, ctx_attribs_->rets_bytes());
+    std::memcpy(ctx_result_buffer, device_base, ctx_attribs_->rets_bytes());
 
     device_->unmap(*device_ret_buffer_);
 

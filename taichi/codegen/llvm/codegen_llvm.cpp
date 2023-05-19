@@ -1310,9 +1310,9 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  irpass::print(stmt);
-  llvm_val[stmt->val]->dump();
-  llvm_val[stmt->dest]->dump();
+  //  irpass::print(stmt);
+  //  llvm_val[stmt->val]->dump();
+  //  llvm_val[stmt->dest]->dump();
   builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 

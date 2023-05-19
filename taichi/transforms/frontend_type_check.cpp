@@ -50,8 +50,8 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *stmt) override {
-    auto lhs_type = stmt->lhs->ret_type;
-    auto rhs_type = stmt->rhs->ret_type;
+    auto lhs_type = stmt->lhs->ret_type.ptr_removed();
+    auto rhs_type = stmt->rhs->ret_type.ptr_removed();
 
     auto error = [&]() {
       throw TaichiTypeError(fmt::format("{}cannot assign '{}' to '{}'",

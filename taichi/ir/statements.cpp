@@ -88,6 +88,7 @@ MatrixOfMatrixPtrStmt::MatrixOfMatrixPtrStmt(const std::vector<Stmt *> &stmts,
                                              DataType dt)
     : stmts(stmts) {
   ret_type = dt;
+  ret_type.set_is_pointer(true);
   TI_STMT_REG_FIELDS;
 }
 

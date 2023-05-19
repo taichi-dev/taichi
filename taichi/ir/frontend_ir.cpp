@@ -280,13 +280,14 @@ void UnaryOpExpression::flatten(FlattenContext *ctx) {
 }
 
 Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
-  if (!elt->ret_type->is<TensorType>() && !dt->is<TensorType>())
+  auto elt_type = get_rvalue_dtype(elt);
+  if (!elt_type->is<TensorType>() && !dt->is<TensorType>())
     return elt;
 
-  if (elt->ret_type->is<TensorType>() && dt->is<TensorType>()) {
+  if (elt_type->is<TensorType>() && dt->is<TensorType>()) {
     // Only tensor shape will be checked here, since the dtype will
     // be promoted later at irpass::type_check()
-    if (elt->ret_type.get_shape() != dt.get_shape()) {
+    if (elt_type.get_shape() != dt.get_shape()) {
       TI_ERROR("Cannot broadcast tensor to tensor");
     } else {
       return elt;
@@ -294,23 +295,24 @@ Expr to_broadcast_tensor(const Expr &elt, const DataType &dt) {
   }
 
   auto tensor_type = dt->as<TensorType>();
-  auto elt_type = tensor_type->get_element_type();
-  TI_ASSERT_INFO(elt_type->is<PrimitiveType>(),
+  auto tensor_elt_type = tensor_type->get_element_type();
+  TI_ASSERT_INFO(tensor_elt_type->is<PrimitiveType>(),
                  "Only primitive types are supported in Tensors, got {}",
-                 elt_type->to_string());
+                 tensor_elt_type->to_string());
   std::vector<Expr> broadcast_values(tensor_type->get_num_elements(), elt);
   auto matrix_expr = Expr::make<MatrixExpression>(
-      broadcast_values, tensor_type->get_shape(), elt->ret_type);
+      broadcast_values, tensor_type->get_shape(), elt_type);
   matrix_expr->type_check(nullptr);
   return matrix_expr;
 }
 
 std::tuple<Expr, Expr> unify_binop_operands(const Expr &e1, const Expr &e2) {
-  if (e1->ret_type->is<PrimitiveType>() && e2->ret_type->is<TensorType>()) {
-    return std::tuple(to_broadcast_tensor(e1, e2->ret_type), e2);
-  } else if (e1->ret_type->is<TensorType>() &&
-             e2->ret_type->is<PrimitiveType>()) {
-    return std::tuple(e1, to_broadcast_tensor(e2, e1->ret_type));
+  auto e1_type = get_rvalue_dtype(e1);
+  auto e2_type = get_rvalue_dtype(e2);
+  if (e1_type->is<PrimitiveType>() && e2_type->is<TensorType>()) {
+    return std::tuple(to_broadcast_tensor(e1, e2_type), e2);
+  } else if (e1_type->is<TensorType>() && e2_type->is<PrimitiveType>()) {
+    return std::tuple(e1, to_broadcast_tensor(e2, e1_type));
   } else {
     return std::tuple(e1, e2);
   }
@@ -322,6 +324,7 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
 
   auto lhs_type = get_rvalue_dtype(lhs);
   auto rhs_type = get_rvalue_dtype(rhs);
+  TI_INFO("BinExpr: {}", ExpressionHumanFriendlyPrinter::expr_to_string(this));
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -744,8 +747,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
 }
 
 void MatrixExpression::type_check(const CompileConfig *config) {
-  auto tensor_type =
-      dt->as<PointerType>()->get_pointee_type()->as<TensorType>();
+  auto tensor_type = dt->as<TensorType>();
   TI_ASSERT(tensor_type->get_num_elements() == elements.size());
 
   for (auto &arg : elements) {
@@ -759,7 +761,7 @@ void MatrixExpression::type_check(const CompileConfig *config) {
 }
 
 void MatrixExpression::flatten(FlattenContext *ctx) {
-  TI_ASSERT(dt->is<PointerType>() && dt.ptr_removed()->is<TensorType>());
+  TI_ASSERT(dt->is<TensorType>());
   std::vector<Stmt *> values;
   for (auto &elt : elements) {
     values.push_back(flatten_rvalue(elt, ctx));
@@ -841,16 +843,15 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                     std::multiplies<>()));
   int index_dim = indices_group.empty() ? 0 : indices_group[0].size();
   bool has_slice = !ret_shape.empty();
+  auto var_type = get_rvalue_dtype(var);
   if (has_slice) {
     TI_ASSERT_INFO(is_tensor(), "Slice or swizzle can only apply on matrices");
-    auto element_type = var->ret_type->as<TensorType>()->get_element_type();
+    auto element_type = var_type->as<TensorType>()->get_element_type();
     ret_type = TypeFactory::create_tensor_type(ret_shape, element_type);
-
   } else if (is_field()) {  // field
     auto field_expr = var.cast<FieldExpression>();
     field_validation(field_expr.get(), index_dim);
     ret_type = field_expr->dt->get_compute_type();
-
   } else if (is_matrix_field()) {
     auto matrix_field_expr = var.cast<MatrixFieldExpression>();
 
@@ -862,7 +863,6 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                matrix_field_expr->fields[0]
                                                    .cast<FieldExpression>()
                                                    ->dt->get_compute_type());
-    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
     int total_dim = external_tensor_expr->dim;
@@ -879,7 +879,6 @@ void IndexExpression::type_check(const CompileConfig *) {
     } else {
       // Access to a Tensor
       ret_type = var.cast<ExternalTensorExpression>()->dt;
-      ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
     }
   } else if (is_tensor()) {  // local tensor
     auto var_type = var->ret_type.ptr_removed()->cast<TensorType>();
@@ -894,7 +893,10 @@ void IndexExpression::type_check(const CompileConfig *) {
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
-
+  ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
+  TI_INFO("IndexExpression {} type checked : {}.",
+          ExpressionHumanFriendlyPrinter::expr_to_string(this),
+          ret_type->to_string());
   for (auto &indices : indices_group) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
@@ -920,12 +922,9 @@ void IndexExpression::flatten(FlattenContext *ctx) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
     TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(var));
-    stmt = make_tensor_access(ctx, var, indices_group, ret_type,
-                              var->ret_type->as<PointerType>()
-                                  ->get_pointee_type()
-                                  ->as<TensorType>()
-                                  ->get_shape(),
-                              tb);
+    stmt = make_tensor_access(
+        ctx, var, indices_group, ret_type,
+        var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), tb);
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -1727,7 +1726,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         for (int i = 0; i < shape[0]; i++) {
           auto ind = Expr(std::make_shared<IndexExpression>(
               id_expr, ExprGroup(Expr(i)), expr->tb));
-          ind.expr->ret_type = tensor_type->get_element_type();
+          ind->type_check(nullptr);
+          //          ind.expr->ret_type = tensor_type->get_element_type();
           expanded_exprs.push_back(ind);
         }
       } else {
@@ -1736,7 +1736,8 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           for (int j = 0; j < shape[1]; j++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
                 id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
-            ind.expr->ret_type = tensor_type->get_element_type();
+            ind->type_check(nullptr);
+            //            ind.expr->ret_type = tensor_type->get_element_type();
             expanded_exprs.push_back(ind);
           }
         }
@@ -1838,6 +1839,8 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
 }
 
 DataType get_rvalue_dtype(const Expr &expr) {
+  TI_INFO("get_rvalue_dtype {}",
+          ExpressionHumanFriendlyPrinter::expr_to_string(expr.expr.get()));
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
       return argload->ret_type->as<PointerType>()->get_pointee_type();
@@ -1850,9 +1853,12 @@ DataType get_rvalue_dtype(const Expr &expr) {
     //    }
     //    return id->ret_type;
   }
-  if (auto mat = expr.cast<MatrixExpression>()) {
-    return mat->ret_type->as<PointerType>()->get_pointee_type();
+  if (auto index_expr = expr.cast<IndexExpression>()) {
+    return index_expr->ret_type->as<PointerType>()->get_pointee_type();
   }
+  //  if (auto mat = expr.cast<MatrixExpression>()) {
+  //    return mat->ret_type->as<PointerType>()->get_pointee_type();
+  //  }
   return expr->ret_type;
 }
 

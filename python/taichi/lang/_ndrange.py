@@ -23,7 +23,7 @@ class _Ndrange:
         for arg in args:
             for bound in arg:
                 if not isinstance(bound, (int, np.integer)) and not (
-                    isinstance(bound, Expr) and is_integral(bound.ptr.get_ret_type())
+                    isinstance(bound, Expr) and is_integral(bound.ptr.get_rvalue_type())
                 ):
                     raise TaichiTypeError(
                         "Every argument of ndrange should be an integer scalar or a tuple/list of (int, int)"

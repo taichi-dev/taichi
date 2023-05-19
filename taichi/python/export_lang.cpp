@@ -783,8 +783,6 @@ void export_lang(py::module &m) {
            [](Expr *expr) { return get_rvalue_dtype(*expr); })
       .def("is_tensor",
            [](Expr *expr) {
-             TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(
-                               expr->expr.get()));
              return expr->expr->ret_type.ptr_removed()->is<TensorType>();
            })
       .def("is_struct",

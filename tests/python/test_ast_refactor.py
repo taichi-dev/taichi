@@ -694,6 +694,10 @@ def test_func_in_python_func():
         assert foo(i) == fib[i]
 
 
+ti.init(print_ir=True)
+test_func_in_python_func()
+
+
 @test_utils.test(print_preprocessed_ir=True)
 def test_ifexp():
     @ti.kernel

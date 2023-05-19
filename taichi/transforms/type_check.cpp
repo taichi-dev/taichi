@@ -369,6 +369,7 @@ class TypeCheck : public IRVisitor {
           insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
         }
       } else {
+        TI_INFO("promote type bin op");
         irpass::print(stmt);
         irpass::print(stmt->lhs);
         irpass::print(stmt->rhs);
@@ -591,12 +592,10 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(MatrixInitStmt *stmt) override {
-    irpass::print(stmt);
-    auto tensor_type = stmt->ret_type->as<PointerType>()
-                           ->get_pointee_type()
-                           ->cast<TensorType>();
-    TI_ASSERT_INFO(tensor_type, "Matrix should have tensor type, got {}",
+    TI_ASSERT_INFO(stmt->ret_type->is<TensorType>(),
+                   "Matrix should have tensor type, got {}",
                    stmt->ret_type->to_string());
+    auto tensor_type = stmt->ret_type->as<TensorType>();
     auto element_dtype = tensor_type->get_element_type();
     for (int i = 0; i < stmt->values.size(); ++i) {
       if (element_dtype != stmt->values[i]->ret_type) {

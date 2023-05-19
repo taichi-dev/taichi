@@ -70,6 +70,10 @@ def test_abs_fwd():
         assert x.dual[i] == sgn(y[i])
 
 
+ti.init(print_ir=True)
+test_abs_fwd()
+
+
 @test_utils.test(require=ti.extension.data64)
 def test_abs_i64():
     @ti.kernel

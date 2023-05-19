@@ -647,8 +647,7 @@ class MatrixExpression : public Expression {
                    std::vector<int> shape,
                    DataType element_type)
       : elements(elements) {
-    dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
-    dt.set_is_pointer(true);
+    dt = TypeFactory::create_tensor_type(shape, element_type);
   }
 
   void type_check(const CompileConfig *config) override;

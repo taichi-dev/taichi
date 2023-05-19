@@ -151,10 +151,22 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 
       auto zero = offload->tls_prologue->insert(
           std::make_unique<ConstStmt>(
-              dest.second == AtomicOpType::max   ? get_min_value(data_type)
-              : dest.second == AtomicOpType::min ? get_max_value(data_type)
-                                                 : TypedConstant(data_type, 0)),
+              dest.second == AtomicOpType::max
+                  ? get_min_value(data_type.get_element_type())
+              : dest.second == AtomicOpType::min
+                  ? get_max_value(data_type.get_element_type())
+                  : TypedConstant(data_type.get_element_type(), 0)),
           -1);
+
+      if (data_type->is<TensorType>()) {
+        auto tensor_type = data_type->as<TensorType>();
+        int num_elements = tensor_type->get_num_elements();
+
+        std::vector<Stmt *> zero_values(num_elements, zero);
+        zero = offload->tls_prologue->push_back<MatrixInitStmt>(zero_values);
+        zero->ret_type = data_type;
+      }
+
       // Zero-fill
       // TODO: do not use GlobalStore for TLS ptr.
       offload->tls_prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);

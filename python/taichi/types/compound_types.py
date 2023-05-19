@@ -10,7 +10,7 @@ class CompoundType:
 
 
 # TODO: maybe move MatrixType, StructType here to avoid the circular import?
-def matrix(n, m, dtype):
+def matrix(n=None, m=None, dtype=None):
     """Creates a matrix type with given shape and data type.
 
     Args:
@@ -29,7 +29,7 @@ def matrix(n, m, dtype):
     return taichi.lang.matrix.MatrixType(n, m, 2, dtype)
 
 
-def vector(n, dtype):
+def vector(n=None, dtype=None):
     """Creates a vector type with given shape and data type.
 
     Args:

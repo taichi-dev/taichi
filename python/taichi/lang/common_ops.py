@@ -302,7 +302,7 @@ class TaichiOperations:
         return ops.cast(self, int)
 
     def __ti_bool__(self):
-        return ops.cast(self, primitive_types.i32)  # TODO[Xiaoyan]: Use i1 in the future
+        return ops.cast(self, primitive_types.u1)
 
     def __ti_float__(self):
         return ops.cast(self, float)

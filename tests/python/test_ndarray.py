@@ -940,3 +940,43 @@ def test_bad_ndim():
 
     with pytest.raises(ValueError, match=r"required ndim=1, but 2d ndarray with shape \(12, 13\) is provided"):
         test5(x)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_type_hint_matrix():
+    @ti.kernel
+    def test(x: ti.types.ndarray(dtype=ti.types.matrix())):
+        for I in ti.grouped(x):
+            x[I] = 1.0
+
+    x = ti.ndarray(ti.math.mat2, (3))
+    test(x)
+    assert impl.get_runtime().get_num_compiled_functions() == 1
+
+    y = ti.ndarray(ti.math.mat3, (3))
+    test(y)
+    assert impl.get_runtime().get_num_compiled_functions() == 2
+
+    z = ti.ndarray(ti.math.vec2, (3))
+    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+        test(z)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_type_hint_vector():
+    @ti.kernel
+    def test(x: ti.types.ndarray(dtype=ti.types.vector())):
+        for I in ti.grouped(x):
+            x[I] = 1.0
+
+    x = ti.ndarray(ti.math.vec3, (3))
+    test(x)
+    assert impl.get_runtime().get_num_compiled_functions() == 1
+
+    y = ti.ndarray(ti.math.vec2, (3))
+    test(y)
+    assert impl.get_runtime().get_num_compiled_functions() == 2
+
+    z = ti.ndarray(ti.math.mat2, (3))
+    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+        test(z)

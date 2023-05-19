@@ -67,22 +67,47 @@ class MergeBitStructStores : public BasicStmtVisitor {
       // TODO: in some cases BitStructStoreStmts across container statements can
       // still be merged, similar to basic block v.s. CFG optimizations.
       if (i == statements.size() || statements[i]->is_container_statement()) {
-        for (const auto &item : ptr_to_bit_struct_stores) {
-          auto ptr = item.first;
-          auto stores = item.second;
-          if (stores.size() == 1)
+        for (const auto &[ptr, stores] : ptr_to_bit_struct_stores) {
+          if (stores.size() == 1) {
             continue;
-          std::map<int, Stmt *> values;
+          }
+
+          std::map<int, std::vector<Stmt *>> values;
           for (auto s : stores) {
             for (int j = 0; j < (int)s->ch_ids.size(); j++) {
-              values[s->ch_ids[j]] = s->values[j];
+              values[s->ch_ids[j]].push_back(s->values[j]);
             }
           }
+          // Don't do store fusion when there's multiple stores to same child.
+          // Example:
+          //   <^qi4> $18 = get child [...] $17
+          //   $19 : atomic bit_struct_store $17, ch_ids=[0], values=[$2]
+          //   <i32> $20 = global load $18
+          //   print "f[i]=", $20, "\n"
+          //   <i32> $22 = add $20 $2
+          //   $23 : atomic bit_struct_store $17, ch_ids=[0], values=[$22]
+          // Here $19 and $23 can't be merged into a single store since the
+          // result is used by `print`.
+          // FIXME: Due to some hidden assumptions, the bug seems to be only
+          // happen when there's multiple store to same child.
+          bool multi_store_to_same_ch = false;
+          for (auto const &[_, store_stmts] : values) {
+            if (store_stmts.size() > 1) {
+              multi_store_to_same_ch = true;
+              break;
+            }
+          }
+          if (multi_store_to_same_ch) {
+            continue;
+          }
+
           std::vector<int> ch_ids;
           std::vector<Stmt *> store_values;
-          for (auto &ch_id_and_value : values) {
-            ch_ids.push_back(ch_id_and_value.first);
-            store_values.push_back(ch_id_and_value.second);
+          for (auto const &[ch_id, store_value_vec] : values) {
+            ch_ids.push_back(ch_id);
+            TI_ASSERT(store_value_vec.size() == 1);
+            auto const &store_value = store_value_vec.front();
+            store_values.push_back(store_value);
           }
           // Now erase all (except the last) related BitSturctStoreStmts.
           // Replace the last one with a merged version.

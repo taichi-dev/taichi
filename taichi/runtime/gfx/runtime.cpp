@@ -154,38 +154,9 @@ class HostDeviceContextBlitter {
               RhiResult::success);
 
     void *ctx_result_buffer = host_ctx_.get_context().result_buffer;
-    for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
-      const auto &ret = ctx_attribs_->rets()[i];
-      void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
-      void *host_ptr = (uint8_t *)ctx_result_buffer + ret.offset_in_mem;
-      const auto dt = PrimitiveType::get(ret.dtype);
-      const auto num = ret.stride / data_type_size_gfx(dt);
-      for (int j = 0; j < num; ++j) {
-        // (penguinliong) Again, it's the module loader's responsibility to
-        // check the data type availability.
-#define COPY_TO_HOST_BUFFER(short_type, type, offset)                \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \
-    const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
-    *(reinterpret_cast<type *>(host_ptr) + offset) = d;              \
-    continue;                                                        \
-  }
-        COPY_TO_HOST_BUFFER(u1, uint1, j)
-        COPY_TO_HOST_BUFFER(i8, int8, j)
-        COPY_TO_HOST_BUFFER(u8, uint8, j)
-        COPY_TO_HOST_BUFFER(i16, int16, j)
-        COPY_TO_HOST_BUFFER(u16, uint16, j)
-        COPY_TO_HOST_BUFFER(f16, uint16, j)
-        COPY_TO_HOST_BUFFER(i32, int32, j)
-        COPY_TO_HOST_BUFFER(u32, uint32, j)
-        COPY_TO_HOST_BUFFER(f32, float32, j)
-        COPY_TO_HOST_BUFFER(i64, int64, j)
-        COPY_TO_HOST_BUFFER(u64, uint64, j)
-        COPY_TO_HOST_BUFFER(f64, float64, j)
-#undef TO_HOST
-        TI_ERROR("Device does not support return value type={}",
-                 data_type_name(PrimitiveType::get(ret.dtype)));
-      }
-    }
+    void *device_ptr = (uint8_t *)device_base;
+    void *host_ptr = (uint8_t *)ctx_result_buffer;
+    std::memcpy(host_ptr, device_ptr, ctx_attribs_->rets_bytes());
 
     device_->unmap(*device_ret_buffer_);
 

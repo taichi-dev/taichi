@@ -31,12 +31,10 @@ class HostDeviceContextBlitter {
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
                            LaunchContextBuilder &host_ctx,
                            Device *device,
-                           uint64_t *host_result_buffer,
                            DeviceAllocation *device_args_buffer,
                            DeviceAllocation *device_ret_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
-        host_result_buffer_(host_result_buffer),
         device_args_buffer_(device_args_buffer),
         device_ret_buffer_(device_ret_buffer),
         device_(device) {
@@ -155,47 +153,8 @@ class HostDeviceContextBlitter {
     TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==
               RhiResult::success);
 
-#define TO_HOST(short_type, type, offset)                            \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \
-    const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
-    host_result_buffer_[offset] =                                    \
-        taichi_union_cast_with_different_sizes<uint64>(d);           \
-    continue;                                                        \
-  }
-
-    for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
-      // Note that we are copying the i-th return value on Metal to the i-th
-      // *arg* on the host context.
-      const auto &ret = ctx_attribs_->rets()[i];
-      void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
-      const auto dt = PrimitiveType::get(ret.dtype);
-      const auto num = ret.stride / data_type_size_gfx(dt);
-      for (int j = 0; j < num; ++j) {
-        // (penguinliong) Again, it's the module loader's responsibility to
-        // check the data type availability.
-        TO_HOST(u1, uint1, j)
-        TO_HOST(i8, int8, j)
-        TO_HOST(u8, uint8, j)
-        TO_HOST(i16, int16, j)
-        TO_HOST(u16, uint16, j)
-        TO_HOST(i32, int32, j)
-        TO_HOST(u32, uint32, j)
-        TO_HOST(f32, float32, j)
-        TO_HOST(i64, int64, j)
-        TO_HOST(u64, uint64, j)
-        TO_HOST(f64, float64, j)
-        if (dt->is_primitive(PrimitiveTypeID::f16)) {
-          const float d = fp16_ieee_to_fp32_value(
-              *reinterpret_cast<uint16 *>(device_ptr) + j);
-          host_result_buffer_[j] =
-              taichi_union_cast_with_different_sizes<uint64>(d);
-          continue;
-        }
-        TI_ERROR("Device does not support return value type={}",
-                 data_type_name(PrimitiveType::get(ret.dtype)));
-      }
-    }
-#undef TO_HOST
+    void *ctx_result_buffer = host_ctx_.get_context().result_buffer;
+    std::memcpy(ctx_result_buffer, device_base, ctx_attribs_->rets_bytes());
 
     device_->unmap(*device_ret_buffer_);
 
@@ -206,21 +165,18 @@ class HostDeviceContextBlitter {
       const KernelContextAttributes *ctx_attribs,
       LaunchContextBuilder &host_ctx,
       Device *device,
-      uint64_t *host_result_buffer,
       DeviceAllocation *device_args_buffer,
       DeviceAllocation *device_ret_buffer) {
     if (ctx_attribs->empty()) {
       return nullptr;
     }
     return std::make_unique<HostDeviceContextBlitter>(
-        ctx_attribs, host_ctx, device, host_result_buffer, device_args_buffer,
-        device_ret_buffer);
+        ctx_attribs, host_ctx, device, device_args_buffer, device_ret_buffer);
   }
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
   LaunchContextBuilder &host_ctx_;
-  uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_args_buffer_;
   DeviceAllocation *const device_ret_buffer_;
   Device *const device_;
@@ -289,10 +245,7 @@ Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
-    : device_(params.device),
-      host_result_buffer_(params.host_result_buffer),
-      profiler_(params.profiler) {
-  TI_ASSERT(host_result_buffer_ != nullptr);
+    : device_(params.device), profiler_(params.profiler) {
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
 
@@ -412,7 +365,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
   // Create context blitter
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
-      host_result_buffer_, args_buffer.get(), ret_buffer.get());
+      args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
   std::unordered_map<int, DeviceAllocation> any_arrays;

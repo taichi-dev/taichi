@@ -30,7 +30,7 @@ from taichi.lang.exception import (
 )
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
-from taichi.lang.matrix import Matrix, MatrixType, Vector
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype, has_paddle, has_pytorch, to_taichi_type
@@ -808,28 +808,7 @@ class Kernel:
             runtime_ops.sync()
 
         if has_ret:
-            if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
-                ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
-            else:
-                if id(ret_dt) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt)):
-                        ret = t_kernel.get_ret_int(0)
-                    else:
-                        ret = t_kernel.get_ret_uint(0)
-                elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = t_kernel.get_ret_float(0)
-                else:
-                    if id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                        if is_signed(cook_dtype(ret_dt.dtype)):
-                            it = iter(t_kernel.get_ret_int_tensor(0))
-                        else:
-                            it = iter(t_kernel.get_ret_uint_tensor(0))
-                    else:
-                        it = iter(t_kernel.get_ret_float_tensor(0))
-                    if ret_dt.ndim == 1:
-                        ret = Vector([next(it) for _ in range(ret_dt.n)])
-                    else:
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)] for _ in range(ret_dt.n)])
+            ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
         if callbacks:
             for c in callbacks:
                 c()

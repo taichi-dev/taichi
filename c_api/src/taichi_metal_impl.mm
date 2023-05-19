@@ -12,8 +12,7 @@ MetalRuntime::MetalRuntime()
 MetalRuntime::MetalRuntime(
     std::unique_ptr<taichi::lang::metal::MetalDevice> &&mtl_device)
     : GfxRuntime(taichi::Arch::metal), mtl_device_(std::move(mtl_device)),
-      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{
-          host_result_buffer_.data(), mtl_device_.get()}) {}
+      gfx_runtime_(taichi::lang::gfx::GfxRuntime::Params{mtl_device_.get()}) {}
 
 taichi::lang::Device &MetalRuntime::get() {
   return static_cast<taichi::lang::Device &>(*mtl_device_);

@@ -170,11 +170,11 @@ DataType TypeFactory::create_tensor_type(std::vector<int> shape,
 }
 
 const Type *TypeFactory::get_ndarray_struct_type(DataType dt,
-                                                 int total_dim,
+                                                 int ndim,
                                                  bool needs_grad) {
-  total_dim = std::max(1, total_dim);  // Avoiding empty struct
+  ndim = std::max(1, ndim);  // Avoiding empty struct
   std::vector<StructMember> shape_members;
-  for (int i = 0; i < total_dim; i++) {
+  for (int i = 0; i < ndim; i++) {
     shape_members.push_back({PrimitiveType::i32, fmt::format("dim_{}", i)});
   }
   auto *shape_type = get_struct_type(shape_members);

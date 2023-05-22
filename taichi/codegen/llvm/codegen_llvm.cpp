@@ -1874,12 +1874,10 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
-  members[TypeFactory::DATA_PTR_POS_IN_NDARRAY].type = ptr_type;
-  if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
-    members[TypeFactory::GRAD_PTR_POS_IN_NDARRAY].type = ptr_type;
-  }
-  auto *struct_type = tlctx->get_data_type(
-      TypeFactory::get_instance().get_struct_type(members));
+  bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+  auto struct_type =
+      tlctx->get_data_type(TypeFactory::get_instance().get_ndarray_struct_type(
+          arg_type, stmt->ndim, needs_grad));
   auto *gep = builder->CreateGEP(
       struct_type, llvm_val.at(stmt->base_ptr),
       {tlctx->get_constant(0), tlctx->get_constant(int(stmt->is_grad) + 1)});

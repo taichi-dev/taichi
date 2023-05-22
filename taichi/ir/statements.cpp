@@ -100,7 +100,7 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
 
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
-      origin->is<MatrixOfMatrixPtrStmt>()) {
+      origin->is<MatrixOfMatrixPtrStmt>() || origin->is<ThreadLocalPtrStmt>()) {
     auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();

@@ -496,6 +496,10 @@ const tinyir::Type *translate_ti_type(tinyir::Block &ir_module,
                                              /*is_signed=*/false);
     }
   }
+  if (t->is<TensorType>()) {
+    return ir_module.emplace_back<ArrayType>(translate_ti_primitive(ir_module, t.get_element_type()),
+                                             t->as<TensorType>()->get_num_elements());
+  }
   if (auto struct_type = t->cast<lang::StructType>()) {
     std::vector<const tinyir::Type *> element_types;
     auto &elements = struct_type->elements();

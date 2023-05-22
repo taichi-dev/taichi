@@ -775,14 +775,15 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
       size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
       size_t num_elements = tensor_type->get_num_elements();
-      if (num_elements == 2) {
-        member_align = element_size * 2;
-      } else {
-        member_align = element_size * 4;
-      }
       if (!is_430) {
+        if (num_elements == 2) {
+          member_align = element_size * 2;
+        } else {
+          member_align = element_size * 4;
+        }
         member_size = member_align;
       } else {
+        member_align = element_size;
         member_size = tensor_type->get_num_elements() * element_size;
       }
     } else if (auto pointer_type = member.type->cast<PointerType>()) {

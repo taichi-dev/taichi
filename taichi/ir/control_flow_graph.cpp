@@ -345,7 +345,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // replace load stmt with the value-"result"
     if (result) {
       // Forward the stored data |result|.
-      if (result->is<AllocaStmt>()) {
+      if (result->is<AllocaStmt>() && !result->ret_type->is<TensorType>()) {
         // special case of alloca (initialized to 0)
         auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
         replace_with(i, std::move(zero), true);
@@ -746,6 +746,11 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
       }
     }
   }
+
+  // reach_gen: store stmts in the current node
+  // reach_kill: dest_addr (GlobalPtrStmt, AllocaStmt, ...) that's been stored
+  // in this node reach_out: reach_gen + { reach_in's dest not in reach_kill }
+  // reach_in: reach_out of all the previous nodes
   for (int i = 0; i < num_nodes; i++) {
     if (i != start_node) {
       nodes[i]->reaching_definition_analysis(after_lower_access);

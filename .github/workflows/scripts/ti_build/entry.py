@@ -37,16 +37,19 @@ def build_wheel(python: Command, pip: Command) -> None:
     extra = []
 
     cmake_args.writeback()
-    wheel_tag = cmake_args.render_wheel_tag()
     if misc.options.tag_local:
-        wheel_tag = misc.options.tag_local
+        wheel_tag = f"+{misc.options.tag_local}"
+    elif misc.options.tag_config:
+        wheel_tag = f"+{cmake_args.render_wheel_tag()}"
+    else:
+        wheel_tag = ""
 
     if misc.options.nightly:
         os.environ["PROJECT_NAME"] = "taichi-nightly"
         now = datetime.datetime.now().strftime("%Y%m%d")
-        proj_tags.extend(["egg_info", f"--tag-build=.post{now}+{wheel_tag}"])
-    elif misc.options.tag_config or misc.options.tag_local:
-        proj_tags.extend(["egg_info", f"--tag-build=+{wheel_tag}"])
+        proj_tags.extend(["egg_info", f"--tag-build=.post{now}{wheel_tag}"])
+    elif wheel_tag:
+        proj_tags.extend(["egg_info", f"--tag-build={wheel_tag}"])
 
     if platform.system() == "Linux":
         if is_manylinux2014():

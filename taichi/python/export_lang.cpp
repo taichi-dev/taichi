@@ -681,12 +681,6 @@ void export_lang(py::module &m) {
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
-      .def("get_ret_int", &Kernel::get_ret_int)
-      .def("get_ret_uint", &Kernel::get_ret_uint)
-      .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
-      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
-      .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",

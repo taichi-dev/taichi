@@ -210,14 +210,6 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (make_thread_local) {
     irpass::make_thread_local(ir, config);
     print("Make thread local");
@@ -232,6 +224,14 @@ void offload_to_executable(IRNode *ir,
       irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
       print("Simplified X");
     }
+  }
+
+  if (config.real_matrix_scalarize) {
+    irpass::scalarize(ir);
+
+    // Remove redundant MatrixInitStmt inserted during scalarization
+    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+    print("Scalarized");
   }
 
   if (make_block_local) {

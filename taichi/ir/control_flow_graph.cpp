@@ -311,7 +311,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       $6 = LoadStmt($1)
     */
 
-    if (result && !result->ret_type->is<TensorType>()) {
+    if (result && !result->ret_type.ptr_removed()->is<TensorType>()) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
@@ -483,7 +483,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
 
     bool is_tensor_involved = stmt->ret_type->is<TensorType>();
     for (auto store_ptr : store_ptrs) {
-      if (store_ptr->ret_type->is<TensorType>()) {
+      if (store_ptr->ret_type.ptr_removed()->is<TensorType>()) {
         is_tensor_involved = true;
         break;
       }

@@ -59,7 +59,6 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
 
   // Create runtime
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
@@ -80,7 +79,7 @@ void run_dense_field_kernel(Arch arch, taichi::lang::Device *device) {
   gfx_runtime->add_root_buffer(root_size);
 
   {
-    auto simple_ret_kernel = vk_module->get_kernel("simple_ret");
+    auto simple_ret_kernel = vk_module->get_kernel("simple_return");
     EXPECT_TRUE(simple_ret_kernel);
     LaunchContextBuilder builder(simple_ret_kernel);
     auto &host_ctx = builder.get_context();
@@ -129,7 +128,6 @@ void run_kernel_test1(Arch arch, taichi::lang::Device *device) {
 
   // Create runtime
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
@@ -193,7 +191,6 @@ void run_kernel_test2(Arch arch, taichi::lang::Device *device) {
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
 
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
@@ -270,7 +267,6 @@ void run_cgraph1(Arch arch, taichi::lang::Device *device_) {
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device_;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
@@ -346,7 +342,6 @@ void run_cgraph2(Arch arch, taichi::lang::Device *device_) {
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device_;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));
@@ -411,7 +406,6 @@ void run_mpm88_graph(Arch arch, taichi::lang::Device *device_) {
       sizeof(taichi::uint64) * taichi_result_buffer_entries, 8);
   // Create runtime
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = result_buffer;
   params.device = device_;
   auto gfx_runtime =
       std::make_unique<taichi::lang::gfx::GfxRuntime>(std::move(params));

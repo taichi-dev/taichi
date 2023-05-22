@@ -138,7 +138,6 @@ void VulkanProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
   embedded_device_ = std::make_unique<VulkanDeviceCreator>(evd_params);
 
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = *result_buffer_ptr;
   params.device = embedded_device_->device();
   params.profiler = profiler;
   vulkan_runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));

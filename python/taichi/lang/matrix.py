@@ -1412,7 +1412,7 @@ class MatrixType(CompoundType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert self.ndim == len(shape)
                 assert self.n == shape[0]
                 if self.ndim > 1:
@@ -1554,7 +1554,7 @@ class VectorType(MatrixType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert len(shape) == 1
                 assert self.n == shape[0]
                 return expr.Expr(arg.ptr)

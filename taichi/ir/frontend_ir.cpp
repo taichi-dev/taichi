@@ -511,6 +511,8 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
+  TI_INFO("Ternary op {}",
+          ExpressionHumanFriendlyPrinter::expr_to_string(this));
 
   bool is_valid = true;
   bool is_tensor = false;
@@ -530,7 +532,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
                     ternary_type_name(type), op1_type->to_string(),
                     op2_type->to_string(), op3_type->to_string()));
   };
-
+  std::vector<int> shape;
   if (op2_type->is<TensorType>() && op3_type->is<TensorType>()) {
     // valid
     is_tensor = true;
@@ -547,6 +549,7 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
     if (op1_type->is<TensorType>()) {
       op1_type = op1_type->cast<TensorType>()->get_element_type();
     }
+    shape = op2_type->cast<TensorType>()->get_shape();
     op2_type = op2_type->cast<TensorType>()->get_element_type();
     op3_type = op3_type->cast<TensorType>()->get_element_type();
 
@@ -569,7 +572,6 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
 
   if (is_tensor) {
     auto primitive_dtype = promoted_type(op2_type, op3_type);
-    auto shape = op2_type->cast<TensorType>()->get_shape();
     ret_type = TypeFactory::create_tensor_type(shape, primitive_dtype);
   } else {
     ret_type = promoted_type(op2_type, op3_type);
@@ -597,7 +599,7 @@ void InternalFuncCallExpression::type_check(const CompileConfig *) {
   std::vector<DataType> arg_types;
   for (auto &arg : args) {
     TI_ASSERT_TYPE_CHECKED(arg);
-    arg_types.push_back(arg.get_ret_type());
+    arg_types.push_back(get_rvalue_dtype(arg));
   }
   ret_type = op->type_check(arg_types);
 }
@@ -734,7 +736,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
-  if (is_tensor(ret_type)) {
+  if (ret_type->as<PointerType>()->get_pointee_type()->is<TensorType>()) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
       stmts.push_back(
@@ -881,13 +883,13 @@ void IndexExpression::type_check(const CompileConfig *) {
       ret_type = var.cast<ExternalTensorExpression>()->dt;
     }
   } else if (is_tensor()) {  // local tensor
-    auto var_type = var->ret_type.ptr_removed()->cast<TensorType>();
-    auto shape = var_type->get_shape();
+    auto tensor_type = var_type->as<TensorType>();
+    auto shape = tensor_type->get_shape();
     if (indices_group[0].size() != shape.size()) {
       TI_ERROR("Expected {} indices, got {}.", shape.size(),
                indices_group[0].size());
     }
-    ret_type = var_type->get_element_type();
+    ret_type = tensor_type->get_element_type();
   } else {
     throw TaichiTypeError(
         "Invalid IndexExpression: the source is not among field, ndarray or "
@@ -1839,8 +1841,6 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
 }
 
 DataType get_rvalue_dtype(const Expr &expr) {
-  TI_INFO("get_rvalue_dtype {}",
-          ExpressionHumanFriendlyPrinter::expr_to_string(expr.expr.get()));
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
       return argload->ret_type->as<PointerType>()->get_pointee_type();

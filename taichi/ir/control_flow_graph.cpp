@@ -161,7 +161,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    if (!var->is<AllocaStmt>() || !result || !val ||
+    if (!var->is<AllocaStmt>() || !result || !var ||
         result->ret_type->is<TensorType>() || var->ret_type->is<TensorType>()) {
       // In between the store stmt and current stmt,
       // if there's a third-stmt that "may" have stored a "different value" to

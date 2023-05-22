@@ -258,7 +258,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
 
   // [TODO] handle cross-block store-to-load forwarding with TensorType
-  if (result && result->ret_type->is<TensorType>()) {
+  if (result && result->ret_type.ptr_removed()->is<TensorType>()) {
     return nullptr;
   }
 
@@ -348,23 +348,15 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
 
     // [Apply Load-Store-Forwarding]
     // replace load stmt with the value-"result"
-    if (result) {
+    if (result && !result->ret_type.ptr_removed()->is<TensorType>()) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
+        // TensorType does not apply to this special case
+        if (result->ret_type.ptr_removed()->is<TensorType>())
+          continue;
+
         // special case of alloca (initialized to 0)
-        auto zero = Stmt::make<ConstStmt>(TypedConstant(
-            result->ret_type.ptr_removed().get_element_type(), 0));
-        if (result->ret_type.ptr_removed()->is<TensorType>()) {
-          int num_elements = result->ret_type.ptr_removed()
-                                 ->as<TensorType>()
-                                 ->get_num_elements();
-
-          std::vector<Stmt *> zero_values(num_elements, zero.get());
-          block->insert_before(stmt, std::move(zero));
-
-          zero = Stmt::make<MatrixInitStmt>(zero_values);
-          zero->ret_type = result->ret_type.ptr_removed();
-        }
+        auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
         replace_with(i, std::move(zero), true);
       } else {
         stmt->replace_usages_with(result);
@@ -384,6 +376,11 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
       result = get_store_forwarding_data(local_store->dest, i);
       if (result && result->is<AllocaStmt>() && !autodiff_enabled) {
+        // TensorType does not apply to this special case
+        if (result->ret_type.ptr_removed()->is<TensorType>()) {
+          continue;
+        }
+
         // special case of alloca (initialized to 0)
         if (auto stored_data = local_store->val->cast<ConstStmt>()) {
           if (stored_data->val.equal_value(0)) {

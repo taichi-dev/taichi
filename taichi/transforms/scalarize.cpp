@@ -258,14 +258,6 @@ class Scalarize : public BasicStmtVisitor {
                 rhs_dtype->cast<TensorType>()->get_shape());
       // Scalarization for LoadStmt should have already replaced both operands
       // to MatrixInitStmt.
-
-      if (!stmt->lhs->is<MatrixInitStmt>()) {
-        std::cout << "--------------" << std::endl;
-        std::cout << stmt->type() << " " << stmt->name() << std::endl;
-        std::cout << stmt->lhs->type() << " " << stmt->lhs->name() << std::endl;
-        std::cout << "--------------" << std::endl;
-      }
-
       TI_ASSERT(stmt->lhs->is<MatrixInitStmt>());
       TI_ASSERT(stmt->rhs->is<MatrixInitStmt>());
 

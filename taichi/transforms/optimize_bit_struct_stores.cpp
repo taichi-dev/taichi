@@ -98,7 +98,7 @@ class MergeBitStructStores : public BasicStmtVisitor {
           modified_ = true;
         }
         ptr_to_bit_struct_stores.clear();
-        continue;
+        loaded_after_store.clear();
       }
       // Skip bit store fusion when there's a load between multiple stores.
       // Example:
@@ -113,18 +113,19 @@ class MergeBitStructStores : public BasicStmtVisitor {
       //   print "y[i]=", $25, "\n"
       // In this case, $178 and $179 cannot be merged into a single store
       // because the stored value $11 is loaded as $20 and then printed.
-      if (auto stmt = statements[i]->cast<BitStructStoreStmt>()) {
+      else if (auto stmt = statements[i]->cast<BitStructStoreStmt>()) {
         // Phase 2: Find bit store after a marked load
         if (loaded_after_store.find(stmt->ptr) != loaded_after_store.end()) {
-          loaded_after_store.erase(stmt->ptr);
           // Disable store fusion for this bit struct
           ptr_to_bit_struct_stores.erase(stmt->ptr);
-          continue;
+          loaded_after_store.erase(stmt->ptr);
+        } else {
+          ptr_to_bit_struct_stores[stmt->ptr].push_back(stmt);
         }
-        ptr_to_bit_struct_stores[stmt->ptr].push_back(stmt);
       } else if (auto load_stmt = statements[i]->cast<GlobalLoadStmt>()) {
         // Phase 1: Find and mark any global loads after bit_struct_store
-        auto load_src = load_stmt->src->operand(0);
+        auto const &load_ops = load_stmt->src->get_operands();
+        auto load_src = load_ops.empty() ? nullptr : load_ops.front();
         if (ptr_to_bit_struct_stores.find(load_src) !=
             ptr_to_bit_struct_stores.end()) {
           loaded_after_store.insert(load_src);

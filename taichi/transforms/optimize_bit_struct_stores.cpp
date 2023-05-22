@@ -232,12 +232,8 @@ void optimize_bit_struct_stores(IRNode *root,
   TI_AUTO_PROF;
   CreateBitStructStores::run(root);
   die(root);  // remove unused GetCh
-  std::cerr << "[debug] CreateBitStructStores\n";
-  irpass::print(root);
   if (config.quant_opt_store_fusion) {
     MergeBitStructStores::run(root);
-    std::cerr << "[debug] MergeBitStructStores\n";
-    irpass::print(root);
   }
   if (config.quant_opt_atomic_demotion) {
     auto *res = amgr->get_pass_result<GatherUniquelyAccessedBitStructsPass>();
@@ -246,8 +242,6 @@ void optimize_bit_struct_stores(IRNode *root,
                    "gather_uniquely_accessed_bit_structs pass when "
                    "config.quant_opt_atomic_demotion is true.");
     DemoteAtomicBitStructStores::run(root, res->uniquely_accessed_bit_structs);
-    std::cerr << "[debug] DemoteAtomicBitStructStores\n";
-    irpass::print(root);
   }
 }
 

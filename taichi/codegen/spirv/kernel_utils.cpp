@@ -62,8 +62,8 @@ KernelContextAttributes::KernelContextAttributes(
     arg_attribs_vec_.push_back(aa);
   }
   // TODO:
-  //  ret_attribs_vec_ and this for loop is redundant now. Remove it in a follow up PR.
-  //  We keep this loop and use i32 as a placeholder to ensure that
+  //  ret_attribs_vec_ and this for loop is redundant now. Remove it in a follow
+  //  up PR. We keep this loop and use i32 as a placeholder to ensure that
   //  GfxRuntime::device_to_host::require_sync works properly.
   for (const auto &kr : kernel.rets) {
     RetAttributes ra;

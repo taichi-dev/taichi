@@ -618,8 +618,9 @@ class TaskCodegen : public IRVisitor {
     TI_ASSERT(ctx_attribs_->has_rets());
     // The `PrimitiveType::i32` in this function call is a placeholder.
     auto buffer_value = get_buffer_value(BufferType::Rets, PrimitiveType::i32);
-    // Function to store variable using indices provided by `calc_indices_and_store`.
-    auto store_variable = [&](int index, const std::vector<int>& indices) {
+    // Function to store variable using indices provided by
+    // `calc_indices_and_store`.
+    auto store_variable = [&](int index, const std::vector<int> &indices) {
       auto dt = stmt->element_types()[index];
       auto val_type = ir_->get_primitive_type(dt);
       // Extend u1 values to i32 to be passed to the host.
@@ -636,32 +637,38 @@ class TaskCodegen : public IRVisitor {
         val = ir_->select(val, ir_->const_i32_one_, ir_->const_i32_zero_);
       ir_->store_variable(buffer_val, val);
     };
-    // Function to traverse struct tree in depth-first order recursively to calculate AccessChain indices.
-    std::function<void(const taichi::lang::Type*, int&, std::vector<int>&)>
-        calc_indices_and_store = [&](const taichi::lang::Type* type, int& index, std::vector<int>& indices) {
-        if (auto struct_type = type->cast<taichi::lang::StructType>()) {
-          for (int i = 0; i < struct_type->elements().size(); ++i) {
-            indices.push_back(i);
-            calc_indices_and_store(struct_type->elements()[i].type, index, indices);
-            indices.pop_back();
-          }
-        } else if (auto tensor_type = type->cast<taichi::lang::TensorType>()) {
-          int num = tensor_type->get_num_elements();
-          for (int i = 0; i < num; ++i) {
-            indices.push_back(i);
+    // Function to traverse struct tree in depth-first order recursively to
+    // calculate AccessChain indices.
+    std::function<void(const taichi::lang::Type *, int &, std::vector<int> &)>
+        calc_indices_and_store = [&](const taichi::lang::Type *type, int &index,
+                                     std::vector<int> &indices) {
+          if (auto struct_type = type->cast<taichi::lang::StructType>()) {
+            for (int i = 0; i < struct_type->elements().size(); ++i) {
+              indices.push_back(i);
+              calc_indices_and_store(struct_type->elements()[i].type, index,
+                                     indices);
+              indices.pop_back();
+            }
+          } else if (auto tensor_type =
+                         type->cast<taichi::lang::TensorType>()) {
+            int num = tensor_type->get_num_elements();
+            for (int i = 0; i < num; ++i) {
+              indices.push_back(i);
+              store_variable(index++, indices);
+              indices.pop_back();
+            }
+          } else {
             store_variable(index++, indices);
-            indices.pop_back();
           }
-        } else {
-          store_variable(index++, indices);
-        }
-    };
-    // Launch depth-first traversal using `calc_indices_and_store` on return struct.
+        };
+    // Launch depth-first traversal using `calc_indices_and_store` on return
+    // struct.
     std::vector<int> indices;
     int index = 0;
     for (int i = 0; i < ctx_attribs_->rets_type()->elements().size(); ++i) {
       indices.push_back(i);
-      calc_indices_and_store(ctx_attribs_->rets_type()->elements()[i].type, index, indices);
+      calc_indices_and_store(ctx_attribs_->rets_type()->elements()[i].type,
+                             index, indices);
       indices.pop_back();
     }
   }

@@ -186,7 +186,7 @@ const tinyir::Type *translate_ti_primitive(tinyir::Block &ir_module,
       // boolean types has the same width with int32 in GLSL, we use int32
       // instead.
       return ir_module.emplace_back<IntType>(/*num_bits=*/32,
-                                             /*is_signed=*/false);
+                                             /*is_signed=*/true);
     } else if (t == PrimitiveType::u8) {
       return ir_module.emplace_back<IntType>(/*num_bits=*/8,
                                              /*is_signed=*/false);

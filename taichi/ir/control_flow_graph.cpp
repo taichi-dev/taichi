@@ -115,6 +115,7 @@ bool CFGNode::reach_kill_variable(Stmt *var) const {
   return contain_variable(reach_kill, var);
 }
 
+// var: dest_addr
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // Return the stored data if all definitions in the UD-chain of |var| at
   // this position store the same data.
@@ -123,6 +124,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     if (block->statements[i]->is<FuncCallStmt>()) {
       return nullptr;
     }
+
+    // Find previous store stmt to the same dest_addr, stop at the closest one.
+    // store_ptr: prev-store dest_addr
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
       if (irpass::analysis::definitely_same_address(var, store_ptr)) {
@@ -134,20 +138,34 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
       break;
     }
   }
+
+  // Check if store_stmt will ever influence the value of var
   auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
-    for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
-      if (irpass::analysis::maybe_same_address(var, store_ptr)) {
-        return true;
+    std::vector<Stmt *> aliased_vars = {var};
+    if (var->is<MatrixPtrStmt>()) {
+      aliased_vars.push_back(var->as<MatrixPtrStmt>()->origin);
+    }
+    for (auto aliased_var : aliased_vars) {
+      for (auto store_ptr : irpass::analysis::get_store_destination(
+               store_stmt, true /*get_aliased*/)) {
+        if (irpass::analysis::maybe_same_address(aliased_var, store_ptr)) {
+          return true;
+        }
       }
     }
     return false;
   };
 
+  // There's a store to the same dest_addr before this stmt
   if (last_def_position != -1) {
-    // The UD-chain is inside this node.
+    // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    if (!var->is<AllocaStmt>()) {
+    if (!var->is<AllocaStmt>() || !result || !val ||
+        result->ret_type->is<TensorType>() || var->ret_type->is<TensorType>()) {
+      // In between the store stmt and current stmt,
+      // if there's a third-stmt that "may" have stored a "different value" to
+      // the "same dest_addr", then we can't forward the stored data.
       for (int i = last_def_position + 1; i < position; i++) {
         if (!irpass::analysis::same_value(
                 result,
@@ -160,6 +178,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     return result;
   }
+
+  // Search for store to the same dest_addr in reach_in and reach_gen
   Stmt *result = nullptr;
   bool result_visible = false;
   auto visible = [&](Stmt *stmt) {
@@ -203,6 +223,10 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
     return true;  // continue the following loops
   };
+
+  // [Global Addr only]
+  // if there's a store to the same dest_addr in a previous block
+  // if the store values are the same, then return the value
   for (auto stmt : reach_in) {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
@@ -211,6 +235,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         return nullptr;
     }
   }
+
+  // if there's a store to the same dest_addr before this stmt (in reach_gen)
+  // if the store values are the same, then return the value
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
         stmt->parent->locate(stmt) < position) {
@@ -229,6 +256,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // are going to forward. We cannot forward it in this case.
     return nullptr;
   }
+
   return result;
 }
 
@@ -260,7 +288,14 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
     auto stmt = block->statements[i].get();
+
+    // result: the value to be store/load
     Stmt *result = nullptr;
+
+    // [get_store_forwarding_data] find the store stmt that:
+    // 1. stores to the same address and as the load stmt
+    // 2. (one value at a time) closest to the load stmt but before the load
+    // stmt
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       result = get_store_forwarding_data(local_load->src, i);
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
@@ -298,9 +333,17 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       int32* $3 = MatrixPtrStmt($1, 0)
       $5: StoreStmt($1, $2) // can forward this store
       $6 = LoadStmt($1)
+
+      // --------- Able to forward --------- /
+      (Element-store --> Element-Load)
+      int32* $3 = MatrixPtrStmt($1, 0)
+      $5: StoreStmt($3, ConstStmt(100)) // can forward this store
+      $6 = LoadStmt($3)
     */
 
-    if (result && !result->ret_type.ptr_removed()->is<TensorType>()) {
+    // [Apply Load-Store-Forwarding]
+    // replace load stmt with the value-"result"
+    if (result) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // special case of alloca (initialized to 0)
@@ -315,7 +358,12 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
       continue;
     }
 
-    // Identical store elimination
+    // [Identical store elimination]
+    // find the store stmt that:
+    // 1. stores to the same address and as the current store stmt
+    // 2. has the same store value as the current store stmt
+    // 3. (one value at a time) closest to the current store stmt but before the
+    // current store stmt then erase the current store stmt
     if (auto local_store = stmt->cast<LocalStoreStmt>()) {
       result = get_store_forwarding_data(local_store->dest, i);
       if (result && result->is<AllocaStmt>() && !autodiff_enabled) {
@@ -748,6 +796,27 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         }
       }
     }
+  }
+
+  for (int i = 0; i < num_nodes; i++) {
+    std::cout << "-------------" << std::endl;
+    for (auto stmt : nodes[i]->reach_in) {
+      std::cout << "reach_in: " << stmt->name() << " " << stmt->type()
+                << std::endl;
+    }
+    for (auto stmt : nodes[i]->reach_out) {
+      std::cout << "reach_out: " << stmt->name() << " " << stmt->type()
+                << std::endl;
+    }
+    for (auto stmt : nodes[i]->reach_gen) {
+      std::cout << "reach_gen: " << stmt->name() << " " << stmt->type()
+                << std::endl;
+    }
+    for (auto stmt : nodes[i]->reach_kill) {
+      std::cout << "reach_kill: " << stmt->name() << " " << stmt->type()
+                << std::endl;
+    }
+    std::cout << "-------------" << std::endl;
   }
 }
 

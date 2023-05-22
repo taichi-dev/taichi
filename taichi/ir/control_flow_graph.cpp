@@ -798,26 +798,28 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     }
   }
 
-  for (int i = 0; i < num_nodes; i++) {
-    std::cout << "-------------" << std::endl;
-    for (auto stmt : nodes[i]->reach_in) {
-      std::cout << "reach_in: " << stmt->name() << " " << stmt->type()
-                << std::endl;
-    }
-    for (auto stmt : nodes[i]->reach_out) {
-      std::cout << "reach_out: " << stmt->name() << " " << stmt->type()
-                << std::endl;
-    }
-    for (auto stmt : nodes[i]->reach_gen) {
-      std::cout << "reach_gen: " << stmt->name() << " " << stmt->type()
-                << std::endl;
-    }
-    for (auto stmt : nodes[i]->reach_kill) {
-      std::cout << "reach_kill: " << stmt->name() << " " << stmt->type()
-                << std::endl;
-    }
-    std::cout << "-------------" << std::endl;
+  /*
+for (int i = 0; i < num_nodes; i++) {
+  std::cout << "-------------" << std::endl;
+  for (auto stmt : nodes[i]->reach_in) {
+    std::cout << "reach_in: " << stmt->name() << " " << stmt->type()
+              << std::endl;
   }
+  for (auto stmt : nodes[i]->reach_out) {
+    std::cout << "reach_out: " << stmt->name() << " " << stmt->type()
+              << std::endl;
+  }
+  for (auto stmt : nodes[i]->reach_gen) {
+    std::cout << "reach_gen: " << stmt->name() << " " << stmt->type()
+              << std::endl;
+  }
+  for (auto stmt : nodes[i]->reach_kill) {
+    std::cout << "reach_kill: " << stmt->name() << " " << stmt->type()
+              << std::endl;
+  }
+  std::cout << "-------------" << std::endl;
+}
+  */
 }
 
 void ControlFlowGraph::live_variable_analysis(

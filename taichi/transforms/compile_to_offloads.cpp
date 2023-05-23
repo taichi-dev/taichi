@@ -84,24 +84,6 @@ void compile_to_offloads(IRNode *ir,
   irpass::lower_matrix_ptr(ir);
   print("Matrix ptr lowered");
 
-  /* ----------- CFG Play Ground ------------ */
-  /*
-  auto config_cpy = config;
-  config_cpy.cfg_optimization = false;
-  irpass::full_simplify(
-      ir, config_cpy,
-      {false, false});
-
-  print("Playground Simplified");
-
-  irpass::cfg_optimization(ir, false, false,
-                            !config.real_matrix_scalarize);
-  print("Playground CFG Optimized");
-
-  exit(0);
-  */
-  /* ----------- CFG Play Ground ------------ */
-
   irpass::full_simplify(
       ir, config,
       {false, /*autodiff_enabled*/ autodiff_mode != AutodiffMode::kNone});

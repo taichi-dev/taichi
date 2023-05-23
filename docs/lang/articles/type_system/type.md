@@ -224,6 +224,16 @@ def test():
     print(length(v))
 ```
 
+Note that in Taichi, there is no distinction between row vector and column vector. This implies that a vector is handled as a column vector when multiplying a matrix by a vector. In contrast, a vector is considered as a row vector when multiplied by a matrix. This is demonstrated in the following example.
+
+```python
+mat = ti.types.matrix(n=3, m=3, dtype=ti.i32)([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
+vec = ti.types.vector(n=3, dtype=ti.i32)([1, 1, 1])
+
+print(mat @ vec)  # [3 0 0]
+print(vec @ mat)  # [1 1 1]
+```
+
 
 ### Struct types and dataclass
 

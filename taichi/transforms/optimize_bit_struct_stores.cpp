@@ -73,21 +73,22 @@ class MergeBitStructStores : public BasicStmtVisitor {
             continue;
           }
 
-          std::map<int, std::vector<Stmt *>> values;
+          std::vector<int> ch_ids;
+          std::vector<Stmt *> store_values;
           for (auto s : stores) {
             for (int j = 0; j < (int)s->ch_ids.size(); j++) {
-              values[s->ch_ids[j]].push_back(s->values[j]);
+              auto const &ch_id = s->ch_ids[j];
+              auto const &store_value = s->values[j];
+              ch_ids.push_back(ch_id);
+              store_values.push_back(store_value);
             }
           }
 
-          std::vector<int> ch_ids;
-          std::vector<Stmt *> store_values;
-          for (auto const &[ch_id, store_value_vec] : values) {
-            ch_ids.push_back(ch_id);
-            TI_ASSERT(store_value_vec.size() == 1);
-            auto const &store_value = store_value_vec.front();
-            store_values.push_back(store_value);
-          }
+          auto ch_ids_dup = [&ch_ids = std::as_const(ch_ids)]() {
+            std::unordered_set<int> ch_ids_set(ch_ids.begin(), ch_ids.end());
+            return ch_ids_set.size() != ch_ids.size();
+          };
+          TI_ASSERT(!ch_ids_dup());
           // Now erase all (except the last) related BitSturctStoreStmts.
           // Replace the last one with a merged version.
           for (int j = 0; j < (int)stores.size() - 1; j++) {

@@ -119,6 +119,7 @@ bool CFGNode::reach_kill_variable(Stmt *var) const {
 Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // Return the stored data if all definitions in the UD-chain of |var| at
   // this position store the same data.
+  // [Intra-block Search]
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
     if (block->statements[i]->is<FuncCallStmt>()) {
@@ -179,6 +180,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return result;
   }
 
+  // [Cross-block search]
   // Search for store to the same dest_addr in reach_in and reach_gen
   Stmt *result = nullptr;
   bool result_visible = false;
@@ -289,6 +291,15 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
                                        bool autodiff_enabled) {
+  // Contains two separate algorithms:
+  // 1. Store-to-load Forwarding: for each load stmt, find the closest previous
+  // store stmt
+  //        that stores to the same address and as the load stmt, then replace
+  //        load with the "val".
+  // 2. Identical Store Elimination: for each store stmt, find the closest
+  // previous store stmt
+  //        that stores to the same address and as the store stmt. If the "val"s
+  //        are identical, then remove the store stmt.
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
@@ -308,43 +319,6 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
         result = get_store_forwarding_data(global_load->src, i);
       }
     }
-
-    /*
-    TODO(zhanlue): Improve aliasing analysis to enable TensorType forwarding
-                   Be careful about the case where MatrixPtrStmt is involved:
-
-      [Example]
-      TensorType* $1 = AllocaStmt(TensorType)
-      TensorType $2 = MatrixInitStmt([...])
-
-      // --------- Unable to forward --------- //
-      (Tensor-store --> Element-store --> Tensor-Load)
-
-      $3: StoreStmt($1, $2) // can't forward this store int32*
-      $4 = MatrixPtrStmt($1, 0)
-      $5: StoreStmt($4, ConstStmt(100)) // can't forward this store of course
-      TensorType $6 =LoadStmt($1)
-
-      // --------- Unable to forward --------- //
-      (Element-store --> Tensor-store --> Element-Load)
-
-      int32* $3 = MatrixPtrStmt($1, 0)
-      $4: StoreStmt($3, ConstStmt(100)) // can't forward this store
-      $5: StoreStmt($1, $2) // can't forward this store
-      $6 = LoadStmt($3)
-
-      // --------- Able to forward --------- /
-      (Tensor-store --> Tensor-Load)
-      int32* $3 = MatrixPtrStmt($1, 0)
-      $5: StoreStmt($1, $2) // can forward this store
-      $6 = LoadStmt($1)
-
-      // --------- Able to forward --------- /
-      (Element-store --> Element-Load)
-      int32* $3 = MatrixPtrStmt($1, 0)
-      $5: StoreStmt($3, ConstStmt(100)) // can forward this store
-      $6 = LoadStmt($3)
-    */
 
     // [Apply Load-Store-Forwarding]
     // replace load stmt with the value-"result"
@@ -736,6 +710,27 @@ void ControlFlowGraph::print_graph_structure() const {
 }
 
 void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
+  // Prerequisite analysis for load-store-forwarding to help determine
+  // cross-block use-define chain
+  //
+  // The algorithm is separated into two parts:
+  // 1. Determine reach_gen and reach_kill within each node
+  // 2. Propagate reach_in and reach_out through the graph
+  //
+  // - reach_gen: instruction that defines a variable (store stmts) in the
+  // current node
+  // - reach_kill: address (GlobalPtrStmt, AllocaStmt, ...) that's been defined
+  // (stored to) in the current node
+  //
+  // In general, reach_gen and reach_kill are the same except that reach_gen
+  // tracks the store stmts and reach_kill tracks the address
+  //
+  // - reach_out: reach_gen + { reach_in's dest not in reach_kill }
+  // - reach_in: collection of all the reach_out of previous nodes
+  //
+  // reach_out and reach_in is the ultimate result that helps analyze
+  // cross-block use-define chain
+
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -761,10 +756,6 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     }
   }
 
-  // reach_gen: store stmts in the current node
-  // reach_kill: dest_addr (GlobalPtrStmt, AllocaStmt, ...) that's been stored
-  // in this node reach_out: reach_gen + { reach_in's dest not in reach_kill }
-  // reach_in: reach_out of all the previous nodes
   for (int i = 0; i < num_nodes; i++) {
     if (i != start_node) {
       nodes[i]->reaching_definition_analysis(after_lower_access);
@@ -775,7 +766,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
     in_queue[nodes[i].get()] = true;
   }
 
-  // The worklist algorithm.
+  // [The worklist algorithm]
+  // Determines reach_in and reach_out for each node iteratively.
   while (!to_visit.empty()) {
     auto now = to_visit.front();
     to_visit.pop();
@@ -816,29 +808,6 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
       }
     }
   }
-
-  /*
-for (int i = 0; i < num_nodes; i++) {
-  std::cout << "-------------" << std::endl;
-  for (auto stmt : nodes[i]->reach_in) {
-    std::cout << "reach_in: " << stmt->name() << " " << stmt->type()
-              << std::endl;
-  }
-  for (auto stmt : nodes[i]->reach_out) {
-    std::cout << "reach_out: " << stmt->name() << " " << stmt->type()
-              << std::endl;
-  }
-  for (auto stmt : nodes[i]->reach_gen) {
-    std::cout << "reach_gen: " << stmt->name() << " " << stmt->type()
-              << std::endl;
-  }
-  for (auto stmt : nodes[i]->reach_kill) {
-    std::cout << "reach_kill: " << stmt->name() << " " << stmt->type()
-              << std::endl;
-  }
-  std::cout << "-------------" << std::endl;
-}
-  */
 }
 
 void ControlFlowGraph::live_variable_analysis(
@@ -989,6 +958,17 @@ bool ControlFlowGraph::unreachable_code_elimination() {
 
 bool ControlFlowGraph::store_to_load_forwarding(bool after_lower_access,
                                                 bool autodiff_enabled) {
+  // The key idea of load-store-forwarding is to find a use-define-chain,
+  // which is essentially the load-store-chain in CHI IR.
+  //
+  // Analysis of the load-store-chain can be separated into two parts:
+  // 1. cross-node (roughly means cross-blocks) analysis
+  //    This is done in reaching_definition_analysis(), generating reach_in and
+  //    reach_out
+  //
+  // 2. analysis within a node (intra-block analysis):
+  //   This is done in CFGNode::store_to_load_forwarding() of each node
+
   TI_AUTO_PROF;
   reaching_definition_analysis(after_lower_access);
   const int num_nodes = size();

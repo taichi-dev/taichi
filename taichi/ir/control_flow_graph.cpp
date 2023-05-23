@@ -478,67 +478,79 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
+static std::vector<Stmt *> include_aliased_stmts(
+    const std::unordered_map<Stmt *, std::vector<Stmt *>>
+        &tensor_to_matrix_ptrs_map,
+    const std::unordered_map<Stmt *, Stmt *> &matrix_ptr_to_tensor_map,
+    Stmt *key) {
+  std::vector<Stmt *> addresses = {key};
+  // Aliased addresses
+  if (tensor_to_matrix_ptrs_map.find(key) != tensor_to_matrix_ptrs_map.end()) {
+    auto aliased_addresses = tensor_to_matrix_ptrs_map.at(key);
+    addresses.insert(addresses.end(), aliased_addresses.begin(),
+                     aliased_addresses.end());
+  }
+
+  if (matrix_ptr_to_tensor_map.find(key) != matrix_ptr_to_tensor_map.end()) {
+    auto aliased_address = matrix_ptr_to_tensor_map.at(key);
+    addresses.push_back(aliased_address);
+  }
+
+  return addresses;
+}
+
+static void update_container_with_alias(
+    const std::unordered_map<Stmt *, std::vector<Stmt *>>
+        &tensor_to_matrix_ptrs_map,
+    const std::unordered_map<Stmt *, Stmt *> &matrix_ptr_to_tensor_map,
+    std::unordered_set<Stmt *> &container,
+    Stmt *key,
+    bool to_erase) {
+  auto addresses = include_aliased_stmts(tensor_to_matrix_ptrs_map,
+                                         matrix_ptr_to_tensor_map, key);
+
+  for (auto addr : addresses) {
+    if (to_erase) {
+      container.erase(addr);
+    } else {
+      container.insert(addr);
+    }
+  }
+}
+
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
   std::unordered_set<Stmt *> live_in_this_node;
   std::unordered_set<Stmt *> killed_in_this_node;
   // Map a variable to its nearest load
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
+
+  // Search for aliased addresses
+  std::unordered_map<Stmt *, std::vector<Stmt *>> tensor_to_matrix_ptrs_map;
+  std::unordered_map<Stmt *, Stmt *> matrix_ptr_to_tensor_map;
+  for (int i = begin_location; i < end_location; i++) {
+    auto stmt = block->statements[i].get();
+    if (stmt->is<MatrixPtrStmt>()) {
+      if (tensor_to_matrix_ptrs_map.count(stmt->as<MatrixPtrStmt>()->origin) ==
+          0) {
+        tensor_to_matrix_ptrs_map[stmt->as<MatrixPtrStmt>()->origin] = {stmt};
+      } else {
+        tensor_to_matrix_ptrs_map[stmt->as<MatrixPtrStmt>()->origin].push_back(
+            stmt);
+      }
+
+      matrix_ptr_to_tensor_map[stmt] = stmt->as<MatrixPtrStmt>()->origin;
+    }
+  }
+
+  // Reverse order traversal, starting from the last IR to the first IR
   for (int i = end_location - 1; i >= begin_location; i--) {
     auto stmt = block->statements[i].get();
     if (stmt->is<FuncCallStmt>()) {
       killed_in_this_node.clear();
       live_load_in_this_node.clear();
     }
-    auto store_ptrs =
-        irpass::analysis::get_store_destination(stmt, true /*get_alias*/);
-
-    /*
-    TODO(zhanlue): Improve aliasing analysis to enable dead store elimination
-    for tensors. Be careful about the case where MatrixPtrStmt is involved:
-
-    [Example]
-    TensorType* $1 = ExternalPtrStmt(arg_load, ...)
-    TensorType $2 = MatrixInitStmt([...])
-
-    // --------- Unable to eliminate --------- //
-    (Tensor-store --> Element-store) --------- //
-    $3: StoreStmt($1, $2) // can't eliminate this store
-    int32* $4 = MatrixPtrStmt($1, 0)
-    $5: StoreStmt($4, ConstStmt(100))
-
-    // --------- Able to eliminate --------- //
-    (Element-store --> Tensor-store)
-    int32* $3 = MatrixPtrStmt($1, 0)
-    $4: StoreStmt($3, ConstStmt(100)) // can eliminate this store
-    $5: StoreStmt($1, $2)
-
-    // --------- Unable to eliminate --------- //
-    (Element-store --> Tensor-load --> Tensor-store)
-    int32* $3 = MatrixPtrStmt($1, 0)
-    $4: StoreStmt($3, ConstStmt(100)) // can't eliminate this store
-    TensorType $5 = LoadStmt($1) | or int32 $5 = LoadStmt($3)
-    $6: StoreStmt($1, $2)
-
-    // --------- Able to eliminate --------- //
-    (Element-store --> Alternative-Element-load --> Tensor-store)
-    int32* $3 = MatrixPtrStmt($1, 0) int32*
-    $4 = MatrixPtrStmt($1, 1)
-
-    $5: StoreStmt($3, ConstStmt(100)) // can eliminate this store
-    int32 $6 = LoadStmt($4)
-    $6: StoreStmt($1, $2)
-    */
-
-    bool is_tensor_involved = stmt->ret_type->is<TensorType>();
-    for (auto store_ptr : store_ptrs) {
-      if (store_ptr->ret_type.ptr_removed()->is<TensorType>()) {
-        is_tensor_involved = true;
-        break;
-      }
-    }
-    if (is_tensor_involved)
-      continue;
+    auto store_ptrs = irpass::analysis::get_store_destination(stmt);
 
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
@@ -551,19 +563,30 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     } else if (stmt->is<AdStackAllocaStmt>()) {
       store_ptrs = std::vector<Stmt *>(1, stmt);
     }
+
     if (store_ptrs.size() == 1) {
       // Dead store elimination
       auto store_ptr = *store_ptrs.begin();
+
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
-        // After lower_access, we only analyze local variables and stacks.
-        // Do not eliminate AllocaStmt and AdStackAllocaStmt here.
+        // !may_contain_variable(live_in_this_node, store_ptr): address is not
+        // loaded after this store contain_variable(killed_in_this_node,
+        // store_ptr): address is already stored by another store stmt in this
+        // node (thus killed) !may_contain_variable(live_out, store_ptr):
+        // address is not used in the next nodes
         if (!stmt->is<AllocaStmt>() && !stmt->is<AdStackAllocaStmt>() &&
             !stmt->is<ExternalFuncCallStmt>() &&
             !may_contain_variable(live_in_this_node, store_ptr) &&
             (contain_variable(killed_in_this_node, store_ptr) ||
              !may_contain_variable(live_out, store_ptr))) {
-          // Neither used in other nodes nor used in this node.
+          // If an address is neither used in this node, nor used in the next
+          // nodes, then we can consider eliminating any stores to this address
+          // (it's not used anyway). There's two different scenerios though:
+          // 1. Any direct store stmt can be eliminated immediately (LocalStore,
+          // GlobalStore, AdStackPush, ...)
+          // 2. AtomicStmt (load + store): remove the store part, thus
+          // converting the AtomicStmt into a LoadStmt
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
             erase(i);
@@ -577,9 +600,14 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             local_load->ret_type = atomic->ret_type;
             // Notice that we have a load here
             // (the return value of AtomicOpStmt).
-            live_in_this_node.insert(atomic->dest);
+            update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                        matrix_ptr_to_tensor_map,
+                                        live_in_this_node, atomic->dest, false);
+            update_container_with_alias(
+                tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map,
+                killed_in_this_node, atomic->dest, true);
             live_load_in_this_node[atomic->dest] = local_load.get();
-            killed_in_this_node.erase(atomic->dest);
+
             replace_with(i, std::move(local_load), true);
             modified = true;
             continue;
@@ -594,33 +622,58 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
             global_load->ret_type = atomic->ret_type;
             // Notice that we have a load here
             // (the return value of AtomicOpStmt).
-            live_in_this_node.insert(atomic->dest);
+            update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                        matrix_ptr_to_tensor_map,
+                                        live_in_this_node, atomic->dest, false);
+            update_container_with_alias(
+                tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map,
+                killed_in_this_node, atomic->dest, true);
             live_load_in_this_node[atomic->dest] = global_load.get();
-            killed_in_this_node.erase(atomic->dest);
+
             replace_with(i, std::move(global_load), true);
             modified = true;
             continue;
           }
         } else {
           // A non-eliminated store.
-          killed_in_this_node.insert(store_ptr);
+
+          // Insert to killed_in_this_node if it's stored in this node.
+          update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                      matrix_ptr_to_tensor_map,
+                                      killed_in_this_node, store_ptr, false);
+
+          // Remove the address from live_in_this_node if it's stored in this
+          // node.
           auto old_live_in_this_node = std::move(live_in_this_node);
           live_in_this_node.clear();
+
+          auto store_ptrs = include_aliased_stmts(
+              tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map, store_ptr);
           for (auto &var : old_live_in_this_node) {
-            if (!irpass::analysis::definitely_same_address(store_ptr, var))
+            bool is_excluded = false;
+            for (auto &ptr : store_ptrs) {
+              if (irpass::analysis::definitely_same_address(ptr, var)) {
+                is_excluded = true;
+                break;
+              }
+            }
+            if (!is_excluded)
               live_in_this_node.insert(var);
           }
         }
       }
     }
-    auto load_ptrs =
-        irpass::analysis::get_load_pointers(stmt, true /*get_alias*/);
+    auto load_ptrs = irpass::analysis::get_load_pointers(stmt);
     if (load_ptrs.size() == 1 && store_ptrs.empty()) {
       // Identical load elimination
       auto load_ptr = load_ptrs.begin()[0];
+
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
-        // After lower_access, we only analyze local variables and stacks.
+        // live_load_in_this_node[addr]: tracks the next load to the same
+        // address
+        // "!may_contain_variable(killed_in_this_node, load_ptr)"": means it's
+        // not been stored in between the two loads
         if (live_load_in_this_node.find(load_ptr) !=
                 live_load_in_this_node.end() &&
             !may_contain_variable(killed_in_this_node, load_ptr)) {
@@ -631,15 +684,22 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           erase(block->locate(next_load_stmt));
           modified = true;
         }
+
+        update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                    matrix_ptr_to_tensor_map,
+                                    killed_in_this_node, load_ptr, true);
         live_load_in_this_node[load_ptr] = stmt;
-        killed_in_this_node.erase(load_ptr);
       }
     }
+
+    // Update live_in_this_node
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
-        // After lower_access, we only analyze local variables and stacks.
-        live_in_this_node.insert(load_ptr);
+        // Addr is used in this node, so it's live in this node
+        update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                    matrix_ptr_to_tensor_map, live_in_this_node,
+                                    load_ptr, false);
       }
     }
   }

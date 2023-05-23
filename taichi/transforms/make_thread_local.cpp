@@ -140,7 +140,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_prologue == nullptr) {
         offload->tls_prologue = std::make_unique<Block>();
-        offload->tls_prologue->parent_stmt = offload;
+        offload->tls_prologue->set_parent_stmt(offload);
       }
 
       // ensure alignment
@@ -151,10 +151,22 @@ void make_thread_local_offload(OffloadedStmt *offload) {
 
       auto zero = offload->tls_prologue->insert(
           std::make_unique<ConstStmt>(
-              dest.second == AtomicOpType::max   ? get_min_value(data_type)
-              : dest.second == AtomicOpType::min ? get_max_value(data_type)
-                                                 : TypedConstant(data_type, 0)),
+              dest.second == AtomicOpType::max
+                  ? get_min_value(data_type.get_element_type())
+              : dest.second == AtomicOpType::min
+                  ? get_max_value(data_type.get_element_type())
+                  : TypedConstant(data_type.get_element_type(), 0)),
           -1);
+
+      if (data_type->is<TensorType>()) {
+        auto tensor_type = data_type->as<TensorType>();
+        int num_elements = tensor_type->get_num_elements();
+
+        std::vector<Stmt *> zero_values(num_elements, zero);
+        zero = offload->tls_prologue->push_back<MatrixInitStmt>(zero_values);
+        zero->ret_type = data_type;
+      }
+
       // Zero-fill
       // TODO: do not use GlobalStore for TLS ptr.
       offload->tls_prologue->push_back<GlobalStoreStmt>(tls_ptr, zero);
@@ -176,7 +188,7 @@ void make_thread_local_offload(OffloadedStmt *offload) {
     {
       if (offload->tls_epilogue == nullptr) {
         offload->tls_epilogue = std::make_unique<Block>();
-        offload->tls_epilogue->parent_stmt = offload;
+        offload->tls_epilogue->set_parent_stmt(offload);
       }
       auto tls_ptr = offload->tls_epilogue->push_back<ThreadLocalPtrStmt>(
           tls_offset, TypeFactory::get_instance().get_pointer_type(data_type));

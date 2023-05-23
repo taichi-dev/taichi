@@ -140,7 +140,7 @@ class MakeCPUMultithreadedRangeFor : public BasicStmtVisitor {
     offloaded->begin_value = 0;
     offloaded->end_value = config.cpu_max_num_threads;
     offloaded->body = std::move(offloaded_body);
-    offloaded->body->parent_stmt = offloaded;
+    offloaded->body->set_parent_stmt(offloaded);
     offloaded->block_dim = 1;
     modified = true;
   }

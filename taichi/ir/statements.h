@@ -510,6 +510,8 @@ class MatrixPtrStmt : public Stmt {
     return false;
   }
 
+  bool common_statement_eliminable() const override;
+
   TI_STMT_DEF_FIELDS(ret_type, origin, offset);
   TI_DEFINE_ACCEPT_AND_CLONE
 };
@@ -1317,6 +1319,7 @@ class OffloadedStmt : public Stmt {
  public:
   using TaskType = OffloadedTaskType;
 
+  Kernel *kernel_;
   TaskType task_type;
   Arch device;
   SNode *snode{nullptr};
@@ -1360,7 +1363,7 @@ class OffloadedStmt : public Stmt {
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
 
-  OffloadedStmt(TaskType task_type, Arch arch);
+  OffloadedStmt(TaskType task_type, Arch arch, Kernel *kernel);
 
   std::string task_name() const;
 
@@ -1368,6 +1371,10 @@ class OffloadedStmt : public Stmt {
 
   bool has_body() const {
     return task_type != TaskType::listgen && task_type != TaskType::gc;
+  }
+
+  Kernel *get_kernel() const override {
+    return kernel_;
   }
 
   bool is_container_statement() const override {

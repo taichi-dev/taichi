@@ -500,11 +500,11 @@ MakeMeshBlockLocal::MakeMeshBlockLocal(OffloadedStmt *offload,
   bls_offset_in_bytes_ = offload->bls_size;
   if (offload->bls_prologue == nullptr) {
     offload->bls_prologue = std::make_unique<Block>();
-    offload->bls_prologue->parent_stmt = offload;
+    offload->bls_prologue->set_parent_stmt(offload);
   }
   if (offload->bls_epilogue == nullptr) {
     offload->bls_epilogue = std::make_unique<Block>();
-    offload->bls_epilogue->parent_stmt = offload;
+    offload->bls_epilogue->set_parent_stmt(offload);
   }
 
   // Cache both mappings and mesh attribute

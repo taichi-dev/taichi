@@ -58,7 +58,7 @@ class MakeBlockLocalTest : public ::testing::Test {
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
         /*task_type=*/OffloadedTaskType::struct_for,
-        /*arch=*/Arch::x64);
+        /*arch=*/Arch::x64, nullptr);
     for_stmt_->mem_access_opt.add_flag(bls_place_snode_,
                                        SNodeAccessFlag::block_local);
     for_stmt_->snode = struct_for_place_snode_;

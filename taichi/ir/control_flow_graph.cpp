@@ -157,13 +157,15 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return false;
   };
 
+  // Check for aliased address
   // There's a store to the same dest_addr before this stmt
   if (last_def_position != -1) {
     // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    if (!var->is<AllocaStmt>() || !result || !var ||
-        result->ret_type->is<TensorType>() || var->ret_type->is<TensorType>()) {
+    bool is_tensor_involved = result && (result->ret_type->is<TensorType>() ||
+                                         var->ret_type->is<TensorType>());
+    if (!var->is<AllocaStmt>() || is_tensor_involved) {
       // In between the store stmt and current stmt,
       // if there's a third-stmt that "may" have stored a "different value" to
       // the "same dest_addr", then we can't forward the stored data.
@@ -229,12 +231,15 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // [Global Addr only]
   // if there's a store to the same dest_addr in a previous block
   // if the store values are the same, then return the value
+  last_def_position = -1;
   for (auto stmt : reach_in) {
     // var == stmt is for the case that a global ptr is never stored.
     // In this case, stmt is from nodes[start_node]->reach_gen.
     if (var == stmt || may_contain_address(stmt, var)) {
       if (!update_result(stmt))
         return nullptr;
+      else
+        last_def_position = 0;
     }
   }
 
@@ -245,6 +250,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         stmt->parent->locate(stmt) < position) {
       if (!update_result(stmt))
         return nullptr;
+      else
+        last_def_position = stmt->parent->locate(stmt);
     }
   }
   if (!result) {
@@ -259,9 +266,26 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     return nullptr;
   }
 
-  // [TODO] handle cross-block store-to-load forwarding with TensorType
-  if (result && result->ret_type.ptr_removed()->is<TensorType>()) {
+  if (last_def_position == -1)
     return nullptr;
+
+  // Check for aliased address
+  // There's a store to the same dest_addr before this stmt
+  bool is_tensor_involved = result && (result->ret_type->is<TensorType>() ||
+                                       var->ret_type->is<TensorType>());
+  if (!var->is<AllocaStmt>() || is_tensor_involved) {
+    // In between the store stmt and current stmt,
+    // if there's a third-stmt that "may" have stored a "different value" to
+    // the "same dest_addr", then we can't forward the stored data.
+    for (int i = last_def_position; i < position; i++) {
+      if (!irpass::analysis::same_value(
+              result,
+              irpass::analysis::get_store_data(block->statements[i].get()))) {
+        if (may_contain_address(block->statements[i].get(), var)) {
+          return nullptr;
+        }
+      }
+    }
   }
 
   return result;
@@ -291,7 +315,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
 
 bool CFGNode::store_to_load_forwarding(bool after_lower_access,
                                        bool autodiff_enabled) {
-  // Contains two separate algorithms:
+  // Contains two separate parts:
   // 1. Store-to-load Forwarding: for each load stmt, find the closest previous
   // store stmt
   //        that stores to the same address and as the load stmt, then replace
@@ -299,7 +323,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
   // 2. Identical Store Elimination: for each store stmt, find the closest
   // previous store stmt
   //        that stores to the same address and as the store stmt. If the "val"s
-  //        are identical, then remove the store stmt.
+  //        are the same, then remove the store stmt.
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
     // Store-to-load forwarding
@@ -813,6 +837,13 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
 void ControlFlowGraph::live_variable_analysis(
     bool after_lower_access,
     const std::optional<LiveVarAnalysisConfig> &config_opt) {
+  // [live_variable_analysis]
+  // live_gen: address loaded with no previous stored in this node. One cannot
+  // load before storing so
+  //           addrs in live_gen must come from previous nodes
+  // live_kill: address stored in this node
+  // live_in: live_gen + (live_out - live_kill)
+  // live_out: collection of all the live_in of next nodes
   TI_AUTO_PROF;
   const int num_nodes = size();
   std::queue<CFGNode *> to_visit;
@@ -850,6 +881,7 @@ void ControlFlowGraph::live_variable_analysis(
       }
     }
   }
+
   for (int i = num_nodes - 1; i >= 0; i--) {
     // push into the queue in reversed order to make it slightly faster
     if (i != final_node) {

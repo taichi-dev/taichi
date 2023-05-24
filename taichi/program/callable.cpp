@@ -36,7 +36,7 @@ int Callable::insert_ndarray_param(const DataType &dt,
                                    bool needs_grad) {
   // Transform ndarray param to a struct type with a pointer to `dt`.
   auto *type = TypeFactory::get_instance().get_ndarray_struct_type(
-      dt, total_dim, needs_grad);
+      dt, total_dim - element_shape.size(), needs_grad);
   parameter_list.emplace_back(type, /*is_array=*/true,
                               /*size=*/0, total_dim, element_shape,
                               BufferFormat::unknown, needs_grad);

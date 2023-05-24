@@ -199,9 +199,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    bool is_tensor_involved = result && (result->ret_type->is<TensorType>() ||
-                                         var->ret_type->is<TensorType>());
-    if (!var->is<AllocaStmt>() || is_tensor_involved) {
+    bool is_tensor_involved = var->ret_type->is<TensorType>();
+    if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
       // In between the store stmt and current stmt,
       // if there's a third-stmt that "may" have stored a "different value" to
       // the "same dest_addr", then we can't forward the stored data.
@@ -265,7 +264,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   };
 
   // [Global Addr only]
-  // if there's a store to the same dest_addr in a previous block
+  // test whether there's a store to the same dest_addr in a previous block.
   // if the store values are the same, then return the value
   last_def_position = -1;
   for (auto stmt : reach_in) {
@@ -279,8 +278,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     }
   }
 
-  // if there's a store to the same dest_addr before this stmt (in reach_gen)
-  // if the store values are the same, then return the value
+  // test whether there's a store to the same dest_addr before this stmt (in
+  // reach_gen)
+  //  if the store values are the same, then return the value
   for (auto stmt : reach_gen) {
     if (may_contain_address(stmt, var) &&
         stmt->parent->locate(stmt) < position) {
@@ -307,9 +307,8 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check for aliased address
   // There's a store to the same dest_addr before this stmt
-  bool is_tensor_involved = result && (result->ret_type->is<TensorType>() ||
-                                       var->ret_type->is<TensorType>());
-  if (!var->is<AllocaStmt>() || is_tensor_involved) {
+  bool is_tensor_involved = var->ret_type->is<TensorType>();
+  if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
     // In between the store stmt and current stmt,
     // if there's a third-stmt that "may" have stored a "different value" to
     // the "same dest_addr", then we can't forward the stored data.
@@ -354,11 +353,11 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
   // Contains two separate parts:
   // 1. Store-to-load Forwarding: for each load stmt, find the closest previous
   // store stmt
-  //        that stores to the same address and as the load stmt, then replace
+  //        that stores to the same address as the load stmt, then replace
   //        load with the "val".
   // 2. Identical Store Elimination: for each store stmt, find the closest
   // previous store stmt
-  //        that stores to the same address and as the store stmt. If the "val"s
+  //        that stores to the same address as the store stmt. If the "val"s
   //        are the same, then remove the store stmt.
   bool modified = false;
   for (int i = begin_location; i < end_location; i++) {
@@ -368,7 +367,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // result: the value to be store/load
     Stmt *result = nullptr;
 
-    // [get_store_forwarding_damay_contain_variableta] find the store stmt that:
+    // [get_store_forwarding_data] find the store stmt that:
     // 1. stores to the same address and as the load stmt
     // 2. (one value at a time) closest to the load stmt but before the load
     // stmt
@@ -403,7 +402,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
 
     // [Identical store elimination]
     // find the store stmt that:
-    // 1. stores to the same address and as the current store stmt
+    // 1. stores to the same address as the current store stmt
     // 2. has the same store value as the current store stmt
     // 3. (one value at a time) closest to the current store stmt but before the
     // current store stmt then erase the current store stmt

@@ -499,9 +499,8 @@ MeshPatchIndexStmt *IRBuilder::get_patch_index() {
 }
 ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
                                                 DataType dt,
-                                                int total_dim) {
-  auto type =
-      TypeFactory::get_instance().get_ndarray_struct_type(dt, total_dim);
+                                                int ndim) {
+  auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim);
 
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                               /*create_load=*/false));

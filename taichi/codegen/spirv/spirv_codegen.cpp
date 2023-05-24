@@ -615,24 +615,61 @@ class TaskCodegen : public IRVisitor {
   }
 
   void visit(ReturnStmt *stmt) override {
-    // Now we only support one ret
-    auto dt = stmt->element_types()[0];
-    for (int i = 0; i < stmt->values.size(); i++) {
+    TI_ASSERT(ctx_attribs_->has_rets());
+    // The `PrimitiveType::i32` in this function call is a placeholder.
+    auto buffer_value = get_buffer_value(BufferType::Rets, PrimitiveType::i32);
+    // Function to store variable using indices provided by
+    // `calc_indices_and_store`.
+    auto store_variable = [&](int index, const std::vector<int> &indices) {
+      auto dt = stmt->element_types()[index];
       auto val_type = ir_->get_primitive_type(dt);
-      if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      // Extend u1 values to i32 to be passed to the host.
+      if (dt->is_primitive(PrimitiveTypeID::u1))
         val_type = ir_->i32_type();
-      }
-      spirv::Value buffer_val = ir_->make_value(
-          spv::OpAccessChain, ir_->get_storage_pointer_type(val_type),
-          get_buffer_value(BufferType::Rets, dt),
-          ir_->int_immediate_number(ir_->i32_type(), 0),
-          ir_->int_immediate_number(ir_->i32_type(), i));
+      spirv::Value buffer_val;
+      // Accessing based on `indices` using OpAccessChain.
+      buffer_val = ir_->make_access_chain(
+          ir_->get_storage_pointer_type(val_type), buffer_value, indices);
       buffer_val.flag = ValueKind::kVariablePtr;
-      spirv::Value val = ir_->query_value(stmt->values[i]->raw_name());
-      if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      spirv::Value val = ir_->query_value(stmt->values[index]->raw_name());
+      // Extend u1 values to i32 to be passed to the host.
+      if (dt->is_primitive(PrimitiveTypeID::u1))
         val = ir_->select(val, ir_->const_i32_one_, ir_->const_i32_zero_);
-      }
       ir_->store_variable(buffer_val, val);
+    };
+    // Function to traverse struct tree in depth-first order recursively to
+    // calculate AccessChain indices.
+    std::function<void(const taichi::lang::Type *, int &, std::vector<int> &)>
+        calc_indices_and_store = [&](const taichi::lang::Type *type, int &index,
+                                     std::vector<int> &indices) {
+          if (auto struct_type = type->cast<taichi::lang::StructType>()) {
+            for (int i = 0; i < struct_type->elements().size(); ++i) {
+              indices.push_back(i);
+              calc_indices_and_store(struct_type->elements()[i].type, index,
+                                     indices);
+              indices.pop_back();
+            }
+          } else if (auto tensor_type =
+                         type->cast<taichi::lang::TensorType>()) {
+            int num = tensor_type->get_num_elements();
+            for (int i = 0; i < num; ++i) {
+              indices.push_back(i);
+              store_variable(index++, indices);
+              indices.pop_back();
+            }
+          } else {
+            store_variable(index++, indices);
+          }
+        };
+    // Launch depth-first traversal using `calc_indices_and_store` on return
+    // struct.
+    std::vector<int> indices;
+    int index = 0;
+    for (int i = 0; i < ctx_attribs_->rets_type()->elements().size(); ++i) {
+      indices.push_back(i);
+      calc_indices_and_store(ctx_attribs_->rets_type()->elements()[i].type,
+                             index, indices);
+      indices.pop_back();
     }
   }
 
@@ -2290,26 +2327,45 @@ class TaskCodegen : public IRVisitor {
     if (!ctx_attribs_->has_rets())
       return;
 
-    std::vector<std::tuple<spirv::SType, std::string, size_t>>
-        struct_components_;
-    // Now we only have one ret
-    TI_ASSERT(ctx_attribs_->rets().size() == 1);
-    for (auto &ret : ctx_attribs_->rets()) {
-      // Use array size = 0 to generate a RuntimeArray
-      if (auto tensor_type =
-              PrimitiveType::get(ret.dtype)->cast<TensorType>()) {
-        struct_components_.emplace_back(
-            ir_->get_array_type(
-                ir_->get_primitive_type(tensor_type->get_element_type()), 0),
-            "ret" + std::to_string(ret.index), ret.offset_in_mem);
+    // Generate struct IR
+    tinyir::Block blk;
+    std::vector<const tinyir::Type *> element_types;
+    bool has_buffer_ptr =
+        caps_->get(DeviceCapability::spirv_has_physical_storage_buffer);
+    for (auto &element : ctx_attribs_->rets_type()->elements()) {
+      element_types.push_back(
+          translate_ti_type(blk, element.type, has_buffer_ptr));
+    }
+    const tinyir::Type *struct_type =
+        blk.emplace_back<StructType>(element_types);
+
+    // Reduce struct IR
+    std::unordered_map<const tinyir::Type *, const tinyir::Type *> old2new;
+    auto reduced_blk = ir_reduce_types(&blk, old2new);
+    struct_type = old2new[struct_type];
+
+    for (auto &element : element_types) {
+      element = old2new[element];
+    }
+
+    // Layout & translate to SPIR-V
+    STD430LayoutContext layout_ctx;
+    auto ir2spirv_map =
+        ir_translate_to_spirv(reduced_blk.get(), layout_ctx, ir_.get());
+    ret_struct_type_.id = ir2spirv_map[struct_type];
+
+    // Must use the same type in ArgLoadStmt as in the args struct,
+    // otherwise the validation will fail.
+    rets_struct_types_.resize(element_types.size());
+    for (int i = 0; i < element_types.size(); i++) {
+      rets_struct_types_[i].id = ir2spirv_map.at(element_types[i]);
+      if (i < ctx_attribs_->rets_type()->elements().size()) {
+        rets_struct_types_[i].dt =
+            ctx_attribs_->rets_type()->get_element_type({i});
       } else {
-        struct_components_.emplace_back(
-            ir_->get_array_type(
-                ir_->get_primitive_type(PrimitiveType::get(ret.dtype)), 0),
-            "ret" + std::to_string(ret.index), ret.offset_in_mem);
+        rets_struct_types_[i].dt = PrimitiveType::i32;
       }
     }
-    ret_struct_type_ = ir_->create_struct_type(struct_components_);
 
     ret_buffer_value_ =
         ir_->buffer_struct_argument(ret_struct_type_, 0, 1, "rets");
@@ -2363,6 +2419,7 @@ class TaskCodegen : public IRVisitor {
   spirv::Value args_buffer_value_;
 
   std::vector<spirv::SType> args_struct_types_;
+  std::vector<spirv::SType> rets_struct_types_;
 
   spirv::SType ret_struct_type_;
   spirv::Value ret_buffer_value_;

@@ -100,7 +100,10 @@ bool CFGNode::contain_variable(
     const std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &var_set,
     Stmt *var) {
   if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
-    return var_set.find(var) != var_set.end();
+    if (var_set.find(var) != var_set.end()) {
+      return var_set.at(var) != CFGNode::UseDefineStatus::PARTIAL;
+    }
+    return false;
   } else {
     // TODO: How to optimize this?
     if (var_set.find(var) != var_set.end()) {
@@ -540,7 +543,13 @@ static void update_aliased_stmts(
     auto tensor_address = matrix_ptr_to_tensor_map.at(key);
     // no matter to_erase or not, the tensor_address is only partially defined
     // or used
-    container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
+    if (to_erase) {
+      if (container.find(tensor_address) != container.end()) {
+        container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
+      }
+    } else {
+      container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
+    }
   }
 }
 
@@ -553,7 +562,7 @@ static void update_container_with_alias(
     bool to_erase) {
   if (to_erase) {
     container.erase(key);
-  } else if (key->ret_type->is<TensorType>()) {
+  } else if (key->ret_type.ptr_removed()->is<TensorType>()) {
     container[key] = CFGNode::UseDefineStatus::FULL;
   } else {
     container[key] = CFGNode::UseDefineStatus::NONE;
@@ -637,7 +646,6 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // GlobalStore, AdStackPush, ...)
           // 2. AtomicStmt (load + store): remove the store part, thus
           // converting the AtomicStmt into a LoadStmt
-
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
             erase(i);

@@ -96,6 +96,42 @@ bool CFGNode::contain_variable(const std::unordered_set<Stmt *> &var_set,
   }
 }
 
+bool CFGNode::contain_variable(
+    const std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &var_set,
+    Stmt *var) {
+  if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
+    return var_set.find(var) != var_set.end();
+  } else {
+    // TODO: How to optimize this?
+    if (var_set.find(var) != var_set.end()) {
+      return var_set.at(var) != CFGNode::UseDefineStatus::PARTIAL;
+    }
+    return std::any_of(
+        var_set.begin(), var_set.end(), [&](const auto &set_var) {
+          if (irpass::analysis::definitely_same_address(var, set_var.first)) {
+            return set_var.second != CFGNode::UseDefineStatus::PARTIAL;
+          }
+          return false;
+        });
+  }
+}
+
+bool CFGNode::may_contain_variable(
+    const std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &var_set,
+    Stmt *var) {
+  if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
+    return var_set.find(var) != var_set.end();
+  } else {
+    // TODO: How to optimize this?
+    if (var_set.find(var) != var_set.end())
+      return true;
+    return std::any_of(
+        var_set.begin(), var_set.end(), [&](const auto &set_var) {
+          return irpass::analysis::maybe_same_address(var, set_var.first);
+        });
+  }
+}
+
 bool CFGNode::may_contain_variable(const std::unordered_set<Stmt *> &var_set,
                                    Stmt *var) {
   if (var->is<AllocaStmt>() || var->is<AdStackAllocaStmt>()) {
@@ -332,7 +368,7 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // result: the value to be store/load
     Stmt *result = nullptr;
 
-    // [get_store_forwarding_data] find the store stmt that:
+    // [get_store_forwarding_damay_contain_variableta] find the store stmt that:
     // 1. stores to the same address and as the load stmt
     // 2. (one value at a time) closest to the load stmt but before the load
     // stmt
@@ -478,50 +514,60 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   }
 }
 
-static std::vector<Stmt *> include_aliased_stmts(
+static void update_aliased_stmts(
     const std::unordered_map<Stmt *, std::vector<Stmt *>>
         &tensor_to_matrix_ptrs_map,
     const std::unordered_map<Stmt *, Stmt *> &matrix_ptr_to_tensor_map,
-    Stmt *key) {
-  std::vector<Stmt *> addresses = {key};
-  // Aliased addresses
+    std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &container,
+    Stmt *key,
+    bool to_erase) {
   if (tensor_to_matrix_ptrs_map.find(key) != tensor_to_matrix_ptrs_map.end()) {
-    auto aliased_addresses = tensor_to_matrix_ptrs_map.at(key);
-    addresses.insert(addresses.end(), aliased_addresses.begin(),
-                     aliased_addresses.end());
+    auto scalars_address = tensor_to_matrix_ptrs_map.at(key);
+    // Update aliased MatrixPtrStmt for TensorType<>*
+    for (auto scalar_address : scalars_address) {
+      if (to_erase) {
+        if (container.find(scalar_address) != container.end()) {
+          TI_ASSERT(container[scalar_address] ==
+                    CFGNode::UseDefineStatus::NONE);
+          container.erase(scalar_address);
+        }
+      } else {
+        container[scalar_address] = CFGNode::UseDefineStatus::NONE;
+      }
+    }
   }
 
+  // Update aliased TensorType<>* for MatrixPtrStmt
   if (matrix_ptr_to_tensor_map.find(key) != matrix_ptr_to_tensor_map.end()) {
-    auto aliased_address = matrix_ptr_to_tensor_map.at(key);
-    addresses.push_back(aliased_address);
+    auto tensor_address = matrix_ptr_to_tensor_map.at(key);
+    // no matter to_erase or not, the tensor_address is only partially defined
+    // or used
+    container[tensor_address] = CFGNode::UseDefineStatus::PARTIAL;
   }
-
-  return addresses;
 }
 
 static void update_container_with_alias(
     const std::unordered_map<Stmt *, std::vector<Stmt *>>
         &tensor_to_matrix_ptrs_map,
     const std::unordered_map<Stmt *, Stmt *> &matrix_ptr_to_tensor_map,
-    std::unordered_set<Stmt *> &container,
+    std::unordered_map<Stmt *, CFGNode::UseDefineStatus> &container,
     Stmt *key,
     bool to_erase) {
-  auto addresses = include_aliased_stmts(tensor_to_matrix_ptrs_map,
-                                         matrix_ptr_to_tensor_map, key);
-
-  for (auto addr : addresses) {
-    if (to_erase) {
-      container.erase(addr);
-    } else {
-      container.insert(addr);
-    }
+  if (to_erase) {
+    container.erase(key);
+  } else if (key->ret_type->is<TensorType>()) {
+    container[key] = CFGNode::UseDefineStatus::FULL;
+  } else {
+    container[key] = CFGNode::UseDefineStatus::NONE;
   }
+  update_aliased_stmts(tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map,
+                       container, key, to_erase);
 }
 
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
-  std::unordered_set<Stmt *> live_in_this_node;
-  std::unordered_set<Stmt *> killed_in_this_node;
+  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> live_in_this_node;
+  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> killed_in_this_node;
   // Map a variable to its nearest load
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
 
@@ -587,6 +633,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // GlobalStore, AdStackPush, ...)
           // 2. AtomicStmt (load + store): remove the store part, thus
           // converting the AtomicStmt into a LoadStmt
+
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
             erase(i);
@@ -636,7 +683,6 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           }
         } else {
           // A non-eliminated store.
-
           // Insert to killed_in_this_node if it's stored in this node.
           update_container_with_alias(tensor_to_matrix_ptrs_map,
                                       matrix_ptr_to_tensor_map,
@@ -644,21 +690,14 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
 
           // Remove the address from live_in_this_node if it's stored in this
           // node.
-          auto old_live_in_this_node = std::move(live_in_this_node);
-          live_in_this_node.clear();
-
-          auto store_ptrs = include_aliased_stmts(
-              tensor_to_matrix_ptrs_map, matrix_ptr_to_tensor_map, store_ptr);
+          auto old_live_in_this_node = live_in_this_node;
           for (auto &var : old_live_in_this_node) {
-            bool is_excluded = false;
-            for (auto &ptr : store_ptrs) {
-              if (irpass::analysis::definitely_same_address(ptr, var)) {
-                is_excluded = true;
-                break;
-              }
+            if (irpass::analysis::definitely_same_address(store_ptr,
+                                                          var.first)) {
+              update_container_with_alias(tensor_to_matrix_ptrs_map,
+                                          matrix_ptr_to_tensor_map,
+                                          live_in_this_node, store_ptr, true);
             }
-            if (!is_excluded)
-              live_in_this_node.insert(var);
           }
         }
       }

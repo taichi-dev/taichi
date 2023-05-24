@@ -16,6 +16,13 @@ namespace taichi::lang {
  * from this node to any node in |next|.
  */
 class CFGNode {
+ public:
+  enum class UseDefineStatus {
+    FULL = 0,
+    PARTIAL = 1,
+    NONE = 2,
+  };
+
  private:
   // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks_;
@@ -68,8 +75,14 @@ class CFGNode {
   // Utility methods.
   static bool contain_variable(const std::unordered_set<Stmt *> &var_set,
                                Stmt *var);
+  static bool contain_variable(
+      const std::unordered_map<Stmt *, UseDefineStatus> &var_set,
+      Stmt *var);
   static bool may_contain_variable(const std::unordered_set<Stmt *> &var_set,
                                    Stmt *var);
+  static bool may_contain_variable(
+      const std::unordered_map<Stmt *, UseDefineStatus> &var_set,
+      Stmt *var);
   bool reach_kill_variable(Stmt *var) const;
   Stmt *get_store_forwarding_data(Stmt *var, int position) const;
 

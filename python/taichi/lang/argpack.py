@@ -1,10 +1,5 @@
-import numbers
-
-from taichi._lib import core as _ti_core
-from taichi.lang import expr, impl, ops
-from taichi.lang.enums import Layout
+from taichi.lang import impl, ops
 from taichi.lang.exception import (
-    TaichiRuntimeTypeError,
     TaichiSyntaxError,
     TaichiTypeError,
 )

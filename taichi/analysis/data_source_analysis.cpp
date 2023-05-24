@@ -6,11 +6,11 @@ namespace taichi::lang {
 
 namespace irpass::analysis {
 
-stmt_refs get_aliased_stmts(stmt_refs dest) {
+stmt_refs include_aliased_stmts(stmt_refs dest) {
   if (dest.size() == 1) {
     Stmt *dest_stmt = dest.begin()[0];
     if (dest_stmt->is<MatrixOfMatrixPtrStmt>()) {
-      std::vector<Stmt *> rets = {};
+      std::vector<Stmt *> rets = {dest_stmt};
       for (auto stmt : dest_stmt->as<MatrixOfMatrixPtrStmt>()->stmts) {
         if (stmt->is<MatrixPtrStmt>()) {
           rets.push_back(stmt);
@@ -21,7 +21,8 @@ stmt_refs get_aliased_stmts(stmt_refs dest) {
     }
 
     if (dest_stmt->is<MatrixPtrStmt>()) {
-      std::vector<Stmt *> rets = {dest_stmt->as<MatrixPtrStmt>()->origin};
+      std::vector<Stmt *> rets = {dest_stmt,
+                                  dest_stmt->as<MatrixPtrStmt>()->origin};
       return rets;
     }
   }
@@ -33,17 +34,8 @@ stmt_refs get_load_pointers(Stmt *load_stmt, bool get_aliased) {
     // The statement has the "Load" IR Trait
     stmt_refs load_src = load_trait->get_load_pointers();
     if (get_aliased) {
-      std::vector<Stmt *> rets;
-      for (auto stmt : load_src) {
-        rets.push_back(stmt);
-      }
-
-      auto aliased_stmt = get_aliased_stmts(load_src);
-      for (auto stmt : aliased_stmt) {
-        rets.push_back(stmt);
-      }
-
-      return rets;
+      auto aliased_stmts = include_aliased_stmts(load_src);
+      return aliased_stmts;
     }
     return load_src;
   }
@@ -64,18 +56,8 @@ stmt_refs get_store_destination(Stmt *store_stmt, bool get_aliased) noexcept {
     // The statement has the "Store" IR Trait
     stmt_refs store_dest = store_trait->get_store_destination();
     if (get_aliased) {
-      std::vector<Stmt *> rets;
-      for (auto stmt : store_dest) {
-        rets.push_back(stmt);
-      }
-
-      auto aliased_stmt = get_aliased_stmts(store_dest);
-
-      for (auto stmt : aliased_stmt) {
-        rets.push_back(stmt);
-      }
-
-      return rets;
+      auto aliased_stmts = include_aliased_stmts(store_dest);
+      return aliased_stmts;
     }
     return store_dest;
   } else {

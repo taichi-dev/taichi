@@ -110,7 +110,7 @@ gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 stmt_refs get_load_pointers(Stmt *load_stmt, bool get_aliased = false);
-stmt_refs get_aliased_stmts(stmt_refs dest);
+stmt_refs include_aliased_stmts(stmt_refs dest);
 
 Stmt *get_store_data(Stmt *store_stmt) noexcept;
 stmt_refs get_store_destination(Stmt *store_stmt,

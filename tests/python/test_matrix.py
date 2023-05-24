@@ -1254,18 +1254,20 @@ def test_matrix_arithmatics():
 )
 def test_matrix_oob():
     @ti.kernel
-    def access_vec(i: ti.i32) -> ti.types.vector(2, dtype=ti.i32):
+    def access_vec(i: ti.i32):
         x = ti.Vector([1, 0])
         x[i] = 42
 
-        return x
+        # To keep x
+        print(x)
 
     @ti.kernel
-    def access_mat(i: ti.i32, j: ti.i32) -> ti.types.matrix(3, 3, dtype=ti.i32):
+    def access_mat(i: ti.i32, j: ti.i32):
         y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
         y[i, j] = 42
 
-        return y
+        # To keep y
+        print(y)
 
     # works
     access_vec(1)

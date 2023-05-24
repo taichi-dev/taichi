@@ -369,10 +369,10 @@ class TypeCheck : public IRVisitor {
           insert_shift_op_assertion_before(stmt, stmt->lhs, stmt->rhs);
         }
       } else {
-        TI_INFO("promote type bin op");
-        irpass::print(stmt);
-        irpass::print(stmt->lhs);
-        irpass::print(stmt->rhs);
+        //        TI_INFO("promote type bin op");
+        //        irpass::print(stmt);
+        //        irpass::print(stmt->lhs);
+        //        irpass::print(stmt->rhs);
         ret_type = promoted_type(stmt->lhs->ret_type, stmt->rhs->ret_type);
       }
 

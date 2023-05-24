@@ -711,7 +711,7 @@ class ASTTransformer(Builder):
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
                             )
 
-                        element_shape = data.ptr.get_ret_type().shape()
+                        element_shape = data.ptr.get_rvalue_type().shape()
                         if len(element_shape) != ctx.func.arguments[i].annotation.ndim:
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
@@ -1451,7 +1451,7 @@ class ASTTransformer(Builder):
             if isinstance(entry, str):
                 msg += entry
             elif isinstance(entry, _ti_core.Expr):
-                ty = entry.get_ret_type()
+                ty = entry.get_rvalue_type()
                 if ty in primitive_types.real_types:
                     msg += "%f"
                 elif ty in primitive_types.integer_types:

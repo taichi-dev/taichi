@@ -2359,7 +2359,7 @@ void auto_diff(IRNode *root,
         PromoteSSA2LocalVar::run(ib);
         ReplaceLocalVarWithStacks replace(config.ad_stack_size);
         ib->accept(&replace);
-        irpass::print(ib);
+        //        irpass::print(ib);
         type_check(root, config);
 
         MakeAdjoint::run(ib);

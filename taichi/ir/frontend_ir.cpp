@@ -38,14 +38,14 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
     TI_ASSERT(lhs.cast<IdExpression>()->op == StmtOpCode::FrontendAllocaStmt);
-    TI_INFO("lhs: {}, rhs: {}",
-            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
-            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
+    //    TI_INFO("lhs: {}, rhs: {}",
+    //            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
+    //            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
     lhs.expr->ret_type =
         TypeFactory::get_instance().get_pointer_type(get_rvalue_dtype(rhs));
-    TI_INFO("after: lhs: {}, rhs: {}",
-            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
-            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
+    //    TI_INFO("after: lhs: {}, rhs: {}",
+    //            ExpressionHumanFriendlyPrinter::expr_to_string(lhs.expr.get()),
+    //            ExpressionHumanFriendlyPrinter::expr_to_string(rhs.expr.get()));
   }
 }
 
@@ -324,7 +324,8 @@ void BinaryOpExpression::type_check(const CompileConfig *config) {
 
   auto lhs_type = get_rvalue_dtype(lhs);
   auto rhs_type = get_rvalue_dtype(rhs);
-  TI_INFO("BinExpr: {}", ExpressionHumanFriendlyPrinter::expr_to_string(this));
+  //  TI_INFO("BinExpr: {}",
+  //  ExpressionHumanFriendlyPrinter::expr_to_string(this));
   auto error = [&]() {
     throw TaichiTypeError(
         fmt::format("unsupported operand type(s) for '{}': '{}' and '{}'",
@@ -417,8 +418,10 @@ void BinaryOpExpression::flatten(FlattenContext *ctx) {
   //  return;
   auto lhs_stmt = flatten_rvalue(lhs, ctx);
 
-  if (binary_is_logical(type) && !is_tensor(lhs->ret_type) &&
-      !is_tensor(rhs->ret_type)) {
+  auto lhs_type = get_rvalue_dtype(lhs);
+  auto rhs_type = get_rvalue_dtype(rhs);
+
+  if (binary_is_logical(type) && !is_tensor(lhs_type) && !is_tensor(rhs_type)) {
     auto result = ctx->push_back<AllocaStmt>(ret_type);
     ctx->push_back<LocalStoreStmt>(result, lhs_stmt);
     auto cond = ctx->push_back<LocalLoadStmt>(result);
@@ -491,12 +494,15 @@ static std::tuple<Expr, Expr, Expr> unify_ternaryop_operands(const Expr &e1,
   auto target_dtype = PrimitiveType::unknown;
   // Since we don't support broadcasting between two TensorTypes,
   // we can simply use the first TensorType's dtype as the target dtype.
-  if (e1->ret_type->is<TensorType>()) {
-    target_dtype = e1->ret_type;
-  } else if (e2->ret_type->is<TensorType>()) {
-    target_dtype = e2->ret_type;
-  } else if (e3->ret_type->is<TensorType>()) {
-    target_dtype = e3->ret_type;
+  auto e1_type = get_rvalue_dtype(e1);
+  auto e2_type = get_rvalue_dtype(e2);
+  auto e3_type = get_rvalue_dtype(e3);
+  if (e1_type->is<TensorType>()) {
+    target_dtype = e1_type;
+  } else if (e2_type->is<TensorType>()) {
+    target_dtype = e2_type;
+  } else if (e3_type->is<TensorType>()) {
+    target_dtype = e3_type;
   }
 
   if (target_dtype == PrimitiveType::unknown) {
@@ -511,8 +517,8 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
-  TI_INFO("Ternary op {}",
-          ExpressionHumanFriendlyPrinter::expr_to_string(this));
+  //  TI_INFO("Ternary op {}",
+  //          ExpressionHumanFriendlyPrinter::expr_to_string(this));
 
   bool is_valid = true;
   bool is_tensor = false;
@@ -896,9 +902,9 @@ void IndexExpression::type_check(const CompileConfig *) {
         "local tensor");
   }
   ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
-  TI_INFO("IndexExpression {} type checked : {}.",
-          ExpressionHumanFriendlyPrinter::expr_to_string(this),
-          ret_type->to_string());
+  //  TI_INFO("IndexExpression {} type checked : {}.",
+  //          ExpressionHumanFriendlyPrinter::expr_to_string(this),
+  //          ret_type->to_string());
   for (auto &indices : indices_group) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
@@ -923,7 +929,7 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(var));
+    //    TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(var));
     stmt = make_tensor_access(
         ctx, var, indices_group, ret_type,
         var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), tb);
@@ -1250,7 +1256,7 @@ void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
 
 void GetElementExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(src);
-  auto src_type = get_rvalue_dtype(src);
+  auto src_type = src->ret_type;
   TI_ASSERT_INFO(src_type->is<PointerType>(),
                  "Invalid src [{}] for GetElementExpression",
                  ExpressionHumanFriendlyPrinter::expr_to_string(src));

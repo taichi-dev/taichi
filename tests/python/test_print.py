@@ -256,6 +256,12 @@ a[0] = 1.0
 a[0] = 1.0
 a[3] = 0.000, a[2] = 0.00, a[1] = 0.0, a[0] = 1
 """
+    if not (out == expected_out and err == ""):
+        print(out)
+        print("------------------")
+        print(expected_out)
+        print("------------------")
+        print(err)
     assert out == expected_out and err == ""
 
 

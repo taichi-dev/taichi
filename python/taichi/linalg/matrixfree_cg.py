@@ -47,7 +47,15 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     p = ti.field(dtype=solver_dtype)
     r = ti.field(dtype=solver_dtype)
     Ap = ti.field(dtype=solver_dtype)
-    vector_fields_builder.dense(ti.ij, size).place(p, r, Ap)
+    if len(size) == 1:
+        axes = ti.i
+    elif len(size) == 2:
+        axes = ti.ij
+    elif len(size) == 3:
+        axes = ti.ijk
+    else:
+        raise TaichiRuntimeError(f"MatrixFreeCG currently cannot support {len(size)}-D inputs.")
+    vector_fields_builder.dense(axes, size).place(p, r, Ap)
     vector_fields_snode_tree = vector_fields_builder.finalize()
 
     scalar_builder = ti.FieldsBuilder()

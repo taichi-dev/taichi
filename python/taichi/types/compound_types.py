@@ -66,4 +66,23 @@ def struct(**kwargs):
     return taichi.lang.struct.StructType(**kwargs)
 
 
-__all__ = ["matrix", "vector", "struct"]
+def argpack(**kwargs):
+    """Creates an argument pack type with given members.
+
+    Args:
+        kwargs (dict): a dictionary contains the names and types of the
+            argument pack members.
+
+    Returns:
+        A argument pack type.
+
+    Example::
+
+        >>> vec3 = ti.types.vector(3, ti.f32)
+        >>> sphere = ti.types.argpack(center=vec3, radius=float)
+        >>> s = sphere(center=vec3([0., 0., 0.]), radius=1.0)
+    """
+    return taichi.lang.argpack.ArgPackType(**kwargs)
+
+
+__all__ = ["matrix", "vector", "struct", "argpack"]

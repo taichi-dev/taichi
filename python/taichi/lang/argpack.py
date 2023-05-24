@@ -16,8 +16,7 @@ from taichi.types.compound_types import CompoundType
 
 
 class ArgPack:
-    """The ArgPack type class.
-    """
+    """The ArgPack type class."""
 
     def __init__(self, *args, **kwargs):
         # converts dicts to argument packs
@@ -127,11 +126,7 @@ class ArgPack:
             Dict: The result dictionary.
         """
         res_dict = {
-            k: v.to_dict()
-            if isinstance(v, ArgPack)
-            else v.to_list()
-            if isinstance(v, Matrix)
-            else v
+            k: v.to_dict() if isinstance(v, ArgPack) else v.to_list() if isinstance(v, Matrix) else v
             for k, v in self.entries.items()
         }
         return res_dict

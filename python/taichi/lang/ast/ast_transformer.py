@@ -763,7 +763,7 @@ class ASTTransformer(Builder):
                     "with a return value must be annotated "
                     "with a return type, e.g. def func() -> ti.f32"
                 )
-            if ctx.func.return_type in primitive_types.all_types:
+            if id(ctx.func.return_type) in primitive_types.type_ids:
                 if isinstance(node.value.ptr, Expr):
                     if (
                         not node.value.ptr.is_tensor() and not node.value.ptr.is_struct()

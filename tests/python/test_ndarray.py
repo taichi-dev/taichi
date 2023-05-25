@@ -715,6 +715,26 @@ def test_ndarray_init_as_zero():
     v = np.zeros((6, 10), dtype=np.float32)
     assert test_utils.allclose(a.to_numpy(), v)
 
+    b = ti.ndarray(dtype=ti.math.vec2, shape=(6, 4))
+    k = np.zeros((6, 4, 2), dtype=np.float32)
+    assert test_utils.allclose(b.to_numpy(), k)
+
+    c = ti.ndarray(dtype=ti.math.mat2, shape=(6, 4))
+    m = np.zeros((6, 4, 2, 2), dtype=np.float32)
+    assert test_utils.allclose(c.to_numpy(), m)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_zero_fill():
+    dt = ti.types.vector(n=2, dtype=ti.f32)
+    arr = ti.ndarray(dtype=dt, shape=(3, 4))
+
+    arr.fill(1.0)
+
+    arr.to_numpy()
+    no = ti.ndarray(dtype=dt, shape=(3, 5))
+    assert no[0, 0][0] == 0.0
+
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_reset():

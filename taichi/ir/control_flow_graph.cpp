@@ -169,7 +169,22 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // store_ptr: prev-store dest_addr
     for (auto store_ptr :
          irpass::analysis::get_store_destination(block->statements[i].get())) {
-      if (irpass::analysis::definitely_same_address(var, store_ptr)) {
+      // Exclude `store_ptr` as a potential store destination due to mixed
+      // semantics of store statements for quant types. The store operation
+      // involves implicit casting before storing, which may result in a loss of
+      // precision. For example:
+      //   <i32> $3 = const 233333
+      //   <*qi4> $4 = global ptr [S3place<qi4><bit>], index [$1] activate=false
+      //   $5 : global store [$4 <- $3]
+      //   <i32> $6 = global load $4
+      // The store cannot be forwarded because $3 is first casted to a qi4 and
+      // then stored into $4. Since 233333 won't fit into a qi4, the store leads
+      // to truncation, resulting in a different value stored in $4 compared to
+      // $3.
+      // TODO: Still forward the store if the value can be statically proven to
+      // fit into the quant type.
+      if (!is_quant(store_ptr->ret_type.ptr_removed()) &&
+          irpass::analysis::definitely_same_address(var, store_ptr)) {
         last_def_position = i;
         break;
       }

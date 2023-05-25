@@ -219,11 +219,17 @@ def windows_enable_long_paths():
         from .tinysh import Command, sudo
 
         info("Enabling long paths on Windows")
-        python = Command(sys.executable)
+        reg = Command("reg.exe")
         with sudo():
-            python(
-                "-c",
-                "import winreg; winreg.SetValueEx(winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem'), 'LongPathsEnabled', None, winreg.REG_DWORD, 1)",
+            reg.add(
+                r"HKLM\SYSTEM\CurrentControlSet\Control\FileSystem",
+                "/v",
+                "LongPathsEnabled",
+                "/t",
+                "REG_DWORD",
+                "/d",
+                "1",
+                "/f",
             )
 
 

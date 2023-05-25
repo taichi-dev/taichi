@@ -793,8 +793,8 @@ class ASTTransformer(Builder):
                     if not values.is_tensor():
                         raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
                     elif (
-                        ctx.func.return_type.dtype in primitive_types.real_types
-                        and not values.element_type() in primitive_types.all_types
+                            ctx.func.return_type.dtype in primitive_types.real_types
+                            and not values.element_type() in primitive_types.all_types
                     ):
                         raise TaichiRuntimeTypeError.get_ret(
                             ctx.func.return_type.dtype.to_string(), values.element_type()

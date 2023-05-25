@@ -102,13 +102,7 @@ def decl_sparse_matrix(dtype, name):
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(dtype, ndim, element_shape, name, needs_grad):
-    # TODO: use element_type from runtime ndarray once we support tensortype hashing
-    dtype = cook_dtype(dtype)
-    element_dim = len(element_shape)
-    element_type = (
-        _ti_core.get_type_factory_instance().get_tensor_type(element_shape, dtype) if element_dim != 0 else dtype
-    )
+def decl_ndarray_arg(element_type, ndim, name, needs_grad):
     arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(element_type, ndim, name, needs_grad)
     return AnyArray(_ti_core.make_external_tensor_expr(element_type, ndim, arg_id, needs_grad))
 

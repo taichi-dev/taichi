@@ -392,7 +392,7 @@ class TaichiCallableTemplateMapper:
             if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 anno.check_matched(arg.get_type())
                 needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
-                return arg.dtype, len(arg.shape), arg.element_shape, needs_grad
+                return arg.element_type, len(arg.shape), needs_grad
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
@@ -427,7 +427,13 @@ class TaichiCallableTemplateMapper:
                         f"but the argument has {len(shape)} dimensions"
                     )
             needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
-            return to_taichi_type(arg.dtype), len(shape) - len(element_shape), element_shape, needs_grad
+            dtype = to_taichi_type(arg.dtype)
+            element_type = (
+                _ti_core.get_type_factory_instance().get_tensor_type(element_shape, dtype)
+                if len(element_shape) != 0
+                else arg.dtype
+            )
+            return element_type, len(shape) - len(element_shape), needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation

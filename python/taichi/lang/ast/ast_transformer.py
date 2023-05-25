@@ -763,7 +763,7 @@ class ASTTransformer(Builder):
                     "with a return value must be annotated "
                     "with a return type, e.g. def func() -> ti.f32"
                 )
-            if id(ctx.func.return_type) in primitive_types.real_type_ids:
+            if ctx.func.return_type in primitive_types.all_types:
                 if isinstance(node.value.ptr, Expr):
                     if (
                         not node.value.ptr.is_tensor() and not node.value.ptr.is_struct()
@@ -771,18 +771,6 @@ class ASTTransformer(Builder):
                     ):
                         raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 elif not isinstance(node.value.ptr, (float, int, np.floating, np.integer)):
-                    raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
-                ctx.ast_builder.create_kernel_exprgroup_return(
-                    expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)
-                )
-            elif id(ctx.func.return_type) in primitive_types.integer_type_ids:
-                if isinstance(node.value.ptr, Expr):
-                    if (
-                        not node.value.ptr.is_tensor() and not node.value.ptr.is_struct()
-                        and node.value.ptr.element_type() not in primitive_types.integer_types
-                    ):
-                        raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
-                elif not isinstance(node.value.ptr, (int, np.integer)):
                     raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)

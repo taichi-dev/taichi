@@ -216,6 +216,8 @@ def sudo():
         return with_options({"runas": True})
     elif os.geteuid() != 0:
         return prefix("sudo")
+    else:
+        return with_options({})
 
 
 def nice():

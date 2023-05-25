@@ -205,6 +205,28 @@ def detect_crippled_python():
         sys.exit(1)
 
 
+def windows_enable_long_paths():
+    import winreg
+
+    key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem")
+    try:
+        enabled = winreg.QueryKeyEx(key, "LongPathsEnabled") == (1, 4)
+    except FileNotFoundError:
+        enabled = False
+
+    if not enabled:
+        from .misc import info
+        from .tinysh import Command, sudo
+
+        info("Enabling long paths on Windows")
+        python = Command(sys.executable)
+        with sudo():
+            python(
+                "-c",
+                "import winreg; winreg.SetValueEx(winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Control\FileSystem'), 'LongPathsEnabled', None, winreg.REG_DWORD, 1)",
+            )
+
+
 def early_init():
     """
     Do early initialization.
@@ -214,3 +236,6 @@ def early_init():
     ensure_dependencies("tqdm", "requests", "mslex", "psutil>=5.9.5")
     chdir_to_root()
     monkey_patch_environ()
+
+    if platform.system() == "Windows":
+        windows_enable_long_paths()

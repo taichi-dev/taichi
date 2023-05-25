@@ -602,8 +602,8 @@ void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   TI_ASSERT_INFO(element_dim <= 0,
                  "SOA layout for ndarray is deprecated but got element_dim={}",
                  element_dim);
-  auto type = TypeFactory::get_instance().get_ndarray_struct_type(
-      dt, dim + element_dim, needs_grad);
+  auto type =
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, dim, needs_grad);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
@@ -663,7 +663,7 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
       var_stmt, index_stmts, indices.size(), expr->dt.get_shape(),
       expr->element_dim, expr->is_grad);
-  if (expr->dim == indices.size()) {
+  if (expr->dim - expr->element_dim == indices.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
   } else {
@@ -850,8 +850,9 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                    ->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
-    int total_dim = external_tensor_expr->dim;
+    int ndim = external_tensor_expr->dim;
     int element_dim = external_tensor_expr->dt.get_shape().size();
+    int total_dim = ndim + element_dim;
     if (total_dim != index_dim + element_dim) {
       throw TaichiTypeError(
           fmt::format("Array with dim {} accessed with indices of dim {}",

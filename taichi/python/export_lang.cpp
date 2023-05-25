@@ -929,8 +929,7 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &, bool>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);

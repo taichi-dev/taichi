@@ -30,16 +30,23 @@ int Callable::insert_arr_param(const DataType &dt,
 }
 
 int Callable::insert_ndarray_param(const DataType &dt,
-                                   int total_dim,
-                                   std::vector<int> element_shape,
+                                   int ndim,
                                    const std::string &name,
                                    bool needs_grad) {
   // Transform ndarray param to a struct type with a pointer to `dt`.
-  auto *type = TypeFactory::get_instance().get_ndarray_struct_type(
-      dt, total_dim - element_shape.size(), needs_grad);
+  std::vector<int> element_shape{};
+  auto dtype = dt;
+  if (dt->is<TensorType>()) {
+    element_shape = dt->as<TensorType>()->get_shape();
+    dtype = dt->as<TensorType>()->get_element_type();
+  }
+  // FIXME: we have to use dtype here to scalarization.
+  // If we could avoid using parameter_list in codegen it'll be fine
+  auto *type = TypeFactory::get_instance().get_ndarray_struct_type(dtype, ndim,
+                                                                   needs_grad);
   parameter_list.emplace_back(type, /*is_array=*/true,
-                              /*size=*/0, total_dim, element_shape,
-                              BufferFormat::unknown, needs_grad);
+                              /*size=*/0, ndim + element_shape.size(),
+                              element_shape, BufferFormat::unknown, needs_grad);
   parameter_list.back().name = name;
   return (int)parameter_list.size() - 1;
 }

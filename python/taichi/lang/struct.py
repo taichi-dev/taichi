@@ -626,6 +626,10 @@ class StructType(CompoundType):
         struct = self.cast(entries)
         return struct
 
+    def __instancecheck__(self, instance):
+        # TODO: implement instance check for struct
+        return True
+
     def from_taichi_object(self, func_ret, ret_index=()):
         d = {}
         items = self.members.items()

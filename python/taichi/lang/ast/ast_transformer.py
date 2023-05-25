@@ -21,6 +21,7 @@ from taichi.lang.exception import (
     handle_exception_from_cpp,
 )
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.exception import TaichiRuntimeTypeError
 from taichi.lang.field import Field
 from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.snode import append, deactivate, length
@@ -762,22 +763,58 @@ class ASTTransformer(Builder):
                     "with a return value must be annotated "
                     "with a return type, e.g. def func() -> ti.f32"
                 )
-            if id(ctx.func.return_type) in primitive_types.type_ids:
+            if id(ctx.func.return_type) in primitive_types.real_types:
+                if not isinstance(node.value.ptr, (float, int, np.floating, np.integer)):
+                    raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
+                ctx.ast_builder.create_kernel_exprgroup_return(
+                    expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)
+                )
+            elif id(ctx.func.return_type) in primitive_types.integer_types:
+                if not isinstance(node.value.ptr, (int, np.integer)):
+                    raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)
                 )
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
+                    if len(values.get_shape()) != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}.")
+                    elif ctx.func.return_type.get_shape() != values.get_shape():
+                        raise TaichiRuntimeTypeError(f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={values.get_shape()}.")
                     values = (
                         itertools.chain.from_iterable(values.to_list()) if values.ndim == 1 else iter(values.to_list())
                     )
+                elif isinstance(values, Expr):
+                    if not values.is_tensor():
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
+                    elif ctx.func.return_type.dtype in primitive_types.real_types and not values.element_type() in primitive_types.all_types:
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), values.element_type())
+                    elif ctx.func.return_type.dtype in primitive_types.integer_types and not values.element_type() in primitive_types.integer_types:
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), values.element_type())
+                    elif len(values.get_shape()) != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}.")
+                    elif ctx.func.return_type.get_shape() != values.get_shape():
+                        raise TaichiRuntimeTypeError(f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={values.get_shape()}.")
+                    values = [values]
                 else:
+                    np_array = np.array(values)
+                    dt, shape, ndim = np_array.dtype, np_array.shape, np_array.ndim
+                    if ctx.func.return_type.dtype in primitive_types.real_types and dt not in (float, int, np.floating, np.integer):
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), dt)
+                    elif ctx.func.return_type.dtype in primitive_types.integer_types and dt not in (int, np.integer):
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), dt)
+                    elif ndim != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={ndim}.")
+                    elif ctx.func.return_type.get_shape() != shape:
+                        raise TaichiRuntimeTypeError(f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={shape}.")
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in values])
                 )
             elif isinstance(ctx.func.return_type, StructType):
+                if not isinstance(node.value.ptr, Struct):
+                    raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
                 values = node.value.ptr
                 assert isinstance(values, Struct)
                 ctx.ast_builder.create_kernel_exprgroup_return(expr.make_expr_group(expr._get_flattened_ptrs(values)))

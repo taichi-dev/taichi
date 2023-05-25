@@ -793,15 +793,15 @@ class ASTTransformer(Builder):
                     if not values.is_tensor():
                         raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
                     elif (
-                                ctx.func.return_type.dtype in primitive_types.real_types
-                                and not values.element_type() in primitive_types.all_types
-                        ):
+                        ctx.func.return_type.dtype in primitive_types.real_types
+                        and not values.element_type() in primitive_types.all_types
+                    ):
                         raise TaichiRuntimeTypeError.get_ret(
                             ctx.func.return_type.dtype.to_string(), values.element_type()
                         )
                     elif (
-                            ctx.func.return_type.dtype in primitive_types.integer_types
-                            and not values.element_type() in primitive_types.integer_types
+                        ctx.func.return_type.dtype in primitive_types.integer_types
+                        and not values.element_type() in primitive_types.integer_types
                     ):
                         raise TaichiRuntimeTypeError.get_ret(
                             ctx.func.return_type.dtype.to_string(), values.element_type()
@@ -819,10 +819,10 @@ class ASTTransformer(Builder):
                     np_array = np.array(values)
                     dt, shape, ndim = np_array.dtype, np_array.shape, np_array.ndim
                     if ctx.func.return_type.dtype in primitive_types.real_types and dt not in (
-                            float,
-                            int,
-                            np.floating,
-                            np.integer,
+                        float,
+                        int,
+                        np.floating,
+                        np.integer,
                     ):
                         raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), dt)
                     elif ctx.func.return_type.dtype in primitive_types.integer_types and dt not in (int, np.integer):

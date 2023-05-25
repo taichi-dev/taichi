@@ -210,7 +210,7 @@ def windows_enable_long_paths():
 
     key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem")
     try:
-        enabled = winreg.QueryKeyEx(key, "LongPathsEnabled") == (1, 4)
+        enabled = winreg.QueryValueEx(key, "LongPathsEnabled") == (1, 4)
     except FileNotFoundError:
         enabled = False
 

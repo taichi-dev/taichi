@@ -232,9 +232,8 @@ def windows_enable_long_paths():
                     "1",
                     "/f",
                 )
-        except Exception as e:
-            print(e, type(e), e.errno)
-            if e.errno == 1223:  # ERROR_CANCELLED
+        except OSError as e:
+            if e.winerror == 1223:
                 warn("Enabling long paths cancelled, you may encounter compile errors later")
             else:
                 raise

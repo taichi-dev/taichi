@@ -7,6 +7,7 @@ from typing import Optional
 import importlib
 import os
 import platform
+import re
 import subprocess
 import sys
 import sysconfig
@@ -90,7 +91,7 @@ def ensure_dependencies(*deps: str):
 
     try:
         for dep in deps:
-            dep = dep.split("==")[0]
+            dep = re.split(r"[><=]=?", dep)[0]
             importlib.import_module(dep)
         return
     except ModuleNotFoundError:
@@ -210,6 +211,6 @@ def early_init():
     This must be called before any other non-stdlib imports.
     """
     detect_crippled_python()
-    ensure_dependencies("tqdm", "requests", "mslex", "psutil")
+    ensure_dependencies("tqdm", "requests", "mslex", "psutil>=5.9.5")
     chdir_to_root()
     monkey_patch_environ()

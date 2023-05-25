@@ -214,7 +214,7 @@ def sudo():
     """
     if IS_WINDOWS:
         return with_options({"runas": True})
-    else:
+    elif os.geteuid() != 0:
         return prefix("sudo")
 
 

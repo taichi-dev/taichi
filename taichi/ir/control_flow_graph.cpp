@@ -196,16 +196,25 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check if store_stmt will ever influence the value of var
   auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
-    std::vector<Stmt *> aliased_vars = {var};
-    if (var->is<MatrixPtrStmt>()) {
-      aliased_vars.push_back(var->as<MatrixPtrStmt>()->origin);
-    }
-    for (auto aliased_var : aliased_vars) {
-      for (auto store_ptr : irpass::analysis::get_store_destination(
-               store_stmt, true /*get_aliased*/)) {
-        if (irpass::analysis::maybe_same_address(aliased_var, store_ptr)) {
+    for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
+      if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
+        // check for aliased address with var
+        if (irpass::analysis::maybe_same_address(
+                var->as<MatrixPtrStmt>()->origin, store_ptr)) {
           return true;
         }
+      }
+
+      if (!var->is<MatrixPtrStmt>() && store_ptr->is<MatrixPtrStmt>()) {
+        // check for aliased address with store_ptr
+        if (irpass::analysis::maybe_same_address(
+                store_ptr->as<MatrixPtrStmt>()->origin, var)) {
+          return true;
+        }
+      }
+
+      if (irpass::analysis::maybe_same_address(var, store_ptr)) {
+        return true;
       }
     }
     return false;

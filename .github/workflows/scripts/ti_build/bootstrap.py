@@ -4,7 +4,6 @@
 from pathlib import Path
 from types import ModuleType
 from typing import Optional
-import ctypes
 import importlib
 import os
 import platform
@@ -233,7 +232,7 @@ def windows_enable_long_paths():
                     "1",
                     "/f",
                 )
-        except ctypes.WinError as e:
+        except OSError as e:
             if e.errno == 1223:  # ERROR_CANCELLED
                 warn("Enabling long paths cancelled, you may encounter compile errors later")
             else:

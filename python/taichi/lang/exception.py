@@ -52,9 +52,7 @@ class TaichiRuntimeTypeError(TaichiRuntimeError, TypeError):
 
     @staticmethod
     def get_ret(needed, provided):
-        return TaichiRuntimeTypeError(
-            f"Return (type={provided}) cannot be converted into required type {needed}"
-        )
+        return TaichiRuntimeTypeError(f"Return (type={provided}) cannot be converted into required type {needed}")
 
 
 def handle_exception_from_cpp(exc):

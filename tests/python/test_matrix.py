@@ -1253,13 +1253,16 @@ def test_matrix_arithmatics():
     gdb_trigger=False,
 )
 def test_matrix_oob():
+    A = ti.Matrix.field(3, 3, shape=(), dtype=ti.f32)
+    B = ti.Vector.field(2, shape=(), dtype=ti.f32)
+
     @ti.kernel
     def access_vec(i: ti.i32):
         x = ti.Vector([1, 0])
         x[i] = 42
 
         # To keep x
-        print(x)
+        B[None] = x
 
     @ti.kernel
     def access_mat(i: ti.i32, j: ti.i32):
@@ -1267,7 +1270,7 @@ def test_matrix_oob():
         y[i, j] = 42
 
         # To keep y
-        print(y)
+        A[None] = y
 
     # works
     access_vec(1)

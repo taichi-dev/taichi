@@ -215,22 +215,28 @@ def windows_enable_long_paths():
         enabled = False
 
     if not enabled:
-        from .misc import info
+        from .misc import info, warn
         from .tinysh import Command, sudo
 
         info("Enabling long paths on Windows")
         reg = Command("reg.exe")
-        with sudo():
-            reg.add(
-                r"HKLM\SYSTEM\CurrentControlSet\Control\FileSystem",
-                "/v",
-                "LongPathsEnabled",
-                "/t",
-                "REG_DWORD",
-                "/d",
-                "1",
-                "/f",
-            )
+        try:
+            with sudo():
+                reg.add(
+                    r"HKLM\SYSTEM\CurrentControlSet\Control\FileSystem",
+                    "/v",
+                    "LongPathsEnabled",
+                    "/t",
+                    "REG_DWORD",
+                    "/d",
+                    "1",
+                    "/f",
+                )
+        except OSError as e:
+            if e.errno == 1223:  # ERROR_CANCELLED
+                warn("Enabling long paths cancelled, you may encounter compile errors later")
+            else:
+                raise
 
 
 def early_init():

@@ -21,6 +21,7 @@ class SparseSolver:
 
     def __init__(self, dtype=f32, solver_type="LLT", ordering="AMD"):
         self.matrix = None
+        self.dtype = dtype
         solver_type_list = ["LLT", "LDLT", "LU"]
         solver_ordering = ["AMD", "COLAMD"]
         if solver_type in solver_type_list and ordering in solver_ordering:
@@ -70,6 +71,8 @@ class SparseSolver:
         """
         if isinstance(sparse_matrix, SparseMatrix):
             self.matrix = sparse_matrix
+            if self.matrix.dtype != self.dtype:
+                raise TaichiRuntimeError(f"The SparseSolver's dtype {self.dtype} is not consistent with the SparseMatrix's dtype {self.matrix.dtype}.")
             self.solver.analyze_pattern(sparse_matrix.matrix)
         else:
             self._type_assert(sparse_matrix)

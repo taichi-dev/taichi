@@ -38,7 +38,7 @@ std::size_t DataType::hash() const {
     std::size_t ret = 0;
     auto tensor_shape = tensor_type->get_shape();
     for (int i = 0; i < tensor_shape.size(); i++) {
-      ret = (i + 1) * 107 + tensor_shape[i];
+      ret += (i + 1) * 107 + tensor_shape[i];
     }
     return ret + DataType(tensor_type->get_element_type()).hash();
   } else if (auto pointer = ptr_->cast<PointerType>()) {

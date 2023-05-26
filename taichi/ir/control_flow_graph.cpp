@@ -617,7 +617,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
 
   // Search for aliased addresses
   // tensor_to_matrix_ptrs_map: map MatrixPtrStmt->origin to list of
-  //   MatrixPtrStmts 
+  //   MatrixPtrStmts
   // matrix_ptr_to_tensor_map: map MatrixPtrStmt to
   //   MatrixPtrStmt->origin
   std::unordered_map<Stmt *, std::vector<Stmt *>> tensor_to_matrix_ptrs_map;

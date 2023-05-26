@@ -993,7 +993,11 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->element_dim;
+    // FIXME: no need to make it negative since we don't support SOA
+    auto dtype = expr.cast<ExternalTensorExpression>()->dt;
+    return dtype->is<TensorType>()
+               ? -dtype->cast<TensorType>()->get_shape().size()
+               : 0;
   });
 
   m.def("get_external_tensor_needs_grad", [](const Expr &expr) {

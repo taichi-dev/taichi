@@ -474,8 +474,6 @@ class ExternalTensorExpression : public Expression {
   DataType dt;
   int ndim;
   int arg_id;
-  int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
-                    // (AOS); -2: matrix (AOS)
   bool needs_grad{false};
   bool is_grad{false};
 
@@ -512,11 +510,6 @@ class ExternalTensorExpression : public Expression {
     this->dt = dt;
     this->ndim = ndim;
     this->arg_id = arg_id;
-    if (dt->is<TensorType>()) {
-      this->element_dim = -dt->cast<TensorType>()->get_shape().size();
-    } else {
-      this->element_dim = 0;
-    }
     this->needs_grad = needs_grad;
   }
 };

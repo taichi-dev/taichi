@@ -17,6 +17,9 @@ namespace taichi::lang {
  */
 class CFGNode {
  public:
+  // Used for TensorType'd aliasing analysis.
+  // Marks whether a TensorType'd address is modified partially or
+  // fully in this node
   enum class UseDefineStatus {
     FULL = 0,
     PARTIAL = 1,

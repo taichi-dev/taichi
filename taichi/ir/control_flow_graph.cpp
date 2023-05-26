@@ -498,6 +498,10 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
   live_kill.clear();
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
+
+    // If stmt is a MatrixPtrStmt, the load only partially uses the original
+    // address. Since MatrixPtrStmt relies on the original address, we need to
+    // gen the aliased orginal address as well.
     auto load_ptrs =
         irpass::analysis::get_load_pointers(stmt, true /*get_alias*/);
     for (auto &load_ptr : load_ptrs) {
@@ -509,6 +513,10 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
         }
       }
     }
+
+    // If stmt is a MatrixPtrStmt, the store only partially defines the original
+    // address. So it's not safe to fully kill the aliased original address
+    // here.
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
     // TODO: Consider AD-stacks in get_store_destination instead of here
     //  for store-to-load forwarding on AD-stacks
@@ -568,6 +576,13 @@ static void update_aliased_stmts(
   }
 }
 
+// Insert or erase "key" to "container".
+// In case where "key" being MatrixPtrStmt, we also update the aliased original
+// address. In case where "key" is involved with TensorType, we also update the
+// alised MatrixPtrStmt
+//
+// CFGNode::UseDefineStatus is used to mark whether a TensorType'd address
+// is fully or partially modified.
 static void update_container_with_alias(
     const std::unordered_map<Stmt *, std::vector<Stmt *>>
         &tensor_to_matrix_ptrs_map,
@@ -588,12 +603,22 @@ static void update_container_with_alias(
 
 bool CFGNode::dead_store_elimination(bool after_lower_access) {
   bool modified = false;
-  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> live_in_this_node;
-  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> killed_in_this_node;
   // Map a variable to its nearest load
   std::unordered_map<Stmt *, Stmt *> live_load_in_this_node;
 
+  // For any stmt with TensorType'd address, the address can be either partially
+  // or fully stored/loaded, which will eventually influence the
+  // dead-store-elimination strategy
+  //
+  // Here we use CFGNode::UseDefineStatus to mark whether a TensorType'd address
+  // is fully or partially modified.
+  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> live_in_this_node;
+  std::unordered_map<Stmt *, CFGNode::UseDefineStatus> killed_in_this_node;
+
   // Search for aliased addresses
+  // tensor_to_matrix_ptrs_map: map MatrixPtrStmt->origin to list of
+  // MatrixPtrStmts matrix_ptr_to_tensor_map: map MatrixPtrStmt to
+  // MatrixPtrStmt->origin
   std::unordered_map<Stmt *, std::vector<Stmt *>> tensor_to_matrix_ptrs_map;
   std::unordered_map<Stmt *, Stmt *> matrix_ptr_to_tensor_map;
   for (int i = begin_location; i < end_location; i++) {
@@ -639,10 +664,11 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       if (!after_lower_access ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // !may_contain_variable(live_in_this_node, store_ptr): address is not
-        // loaded after this store contain_variable(killed_in_this_node,
-        // store_ptr): address is already stored by another store stmt in this
-        // node (thus killed) !may_contain_variable(live_out, store_ptr):
-        // address is not used in the next nodes
+        //      loaded after this store
+        // contain_variable(killed_in_this_node, store_ptr): address is already
+        //      stored by another store stmt in this node (thus killed)
+        // !may_contain_variable(live_out, store_ptr): address is not used
+        //      in the next nodes
         bool is_used_in_next_nodes = false;
         for (auto ptr : irpass::analysis::include_aliased_stmts(store_ptr)) {
           is_used_in_next_nodes |= may_contain_variable(live_out, ptr);
@@ -658,9 +684,9 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
           // nodes, then we can consider eliminating any stores to this address
           // (it's not used anyway). There's two different scenerios though:
           // 1. Any direct store stmt can be eliminated immediately (LocalStore,
-          // GlobalStore, AdStackPush, ...)
+          //    GlobalStore, AdStackPush, ...)
           // 2. AtomicStmt (load + store): remove the store part, thus
-          // converting the AtomicStmt into a LoadStmt
+          //    converting the AtomicStmt into a LoadStmt
           if (!stmt->is<AtomicOpStmt>()) {
             // Eliminate the dead store.
             erase(i);
@@ -736,10 +762,10 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
 
       if (!after_lower_access ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
-        // live_load_in_this_node[addr]: tracks the next load to the same
-        // address
-        // "!may_contain_variable(killed_in_this_node, load_ptr)"": means it's
-        // not been stored in between the two loads
+        // live_load_in_this_node[addr]: tracks the
+        //        next load to the same address
+        // "!may_contain_variable(killed_in_this_node, load_ptr)": means it's
+        //        not been stored in between the two loads
         if (live_load_in_this_node.find(load_ptr) !=
                 live_load_in_this_node.end() &&
             !may_contain_variable(killed_in_this_node, load_ptr)) {

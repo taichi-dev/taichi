@@ -1009,7 +1009,7 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     if (expr.is<ExternalTensorExpression>()) {
-      return expr.cast<ExternalTensorExpression>()->dim;
+      return expr.cast<ExternalTensorExpression>()->ndim;
     } else if (expr.is<TexturePtrExpression>()) {
       return expr.cast<TexturePtrExpression>()->num_dims;
     } else {

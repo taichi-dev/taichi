@@ -625,15 +625,13 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
   for (int i = begin_location; i < end_location; i++) {
     auto stmt = block->statements[i].get();
     if (stmt->is<MatrixPtrStmt>()) {
-      if (tensor_to_matrix_ptrs_map.count(stmt->as<MatrixPtrStmt>()->origin) ==
-          0) {
-        tensor_to_matrix_ptrs_map[stmt->as<MatrixPtrStmt>()->origin] = {stmt};
+      auto origin = stmt->as<MatrixPtrStmt>()->origin;
+      if (tensor_to_matrix_ptrs_map.count(origin) == 0) {
+        tensor_to_matrix_ptrs_map[origin] = {stmt};
       } else {
-        tensor_to_matrix_ptrs_map[stmt->as<MatrixPtrStmt>()->origin].push_back(
-            stmt);
+        tensor_to_matrix_ptrs_map[origin].push_back(stmt);
       }
-
-      matrix_ptr_to_tensor_map[stmt] = stmt->as<MatrixPtrStmt>()->origin;
+      matrix_ptr_to_tensor_map[stmt] = origin;
     }
   }
 

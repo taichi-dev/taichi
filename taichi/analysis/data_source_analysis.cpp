@@ -6,6 +6,8 @@ namespace taichi::lang {
 
 namespace irpass::analysis {
 
+// If there's TensorType involved,
+// then return dest together with the aliased stmts
 stmt_refs include_aliased_stmts(stmt_refs dest) {
   if (dest.size() == 1) {
     Stmt *dest_stmt = dest.begin()[0];

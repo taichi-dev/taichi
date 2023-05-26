@@ -1145,13 +1145,12 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // MatrixPtrStmt has flattened indices, linearization of which is done
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
-      int element_dim = -1;  // AOS Vector
       std::vector<int> element_shape = {
           std::accumulate(begin(origin->element_shape),
                           end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
-          origin->base_ptr, indices, origin->ndim, element_shape, element_dim,
+          origin->base_ptr, indices, origin->ndim, element_shape,
           origin->is_grad);
       fused->ret_type = stmt->ret_type;
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
@@ -1161,12 +1160,9 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
                          ->ret_type.ptr_removed()
                          ->as<StructType>()
                          ->elements();
-      members[TypeFactory::DATA_PTR_POS_IN_NDARRAY] = {stmt->ret_type,
-                                                       "data_ptr"};
-      if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
-        members.back() = {stmt->ret_type, "grad_ptr"};
-      }
-      auto type = TypeFactory::get_instance().get_struct_type(members);
+      bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+      auto type = TypeFactory::get_instance().get_ndarray_struct_type(
+          fused->ret_type.ptr_removed(), origin->ndim, needs_grad);
       origin->base_ptr->as<ArgLoadStmt>()->ret_type =
           TypeFactory::get_instance().get_pointer_type((Type *)type);
       stmt->replace_usages_with(fused.get());

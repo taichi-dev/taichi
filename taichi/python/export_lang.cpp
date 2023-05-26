@@ -681,12 +681,6 @@ void export_lang(py::module &m) {
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
-      .def("get_ret_int", &Kernel::get_ret_int)
-      .def("get_ret_uint", &Kernel::get_ret_uint)
-      .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
-      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
-      .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -935,8 +929,7 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &, bool>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
@@ -1000,7 +993,11 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->element_dim;
+    // FIXME: no need to make it negative since we don't support SOA
+    auto dtype = expr.cast<ExternalTensorExpression>()->dt;
+    return dtype->is<TensorType>()
+               ? -dtype->cast<TensorType>()->get_shape().size()
+               : 0;
   });
 
   m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
@@ -1016,7 +1013,7 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     if (expr.is<ExternalTensorExpression>()) {
-      return expr.cast<ExternalTensorExpression>()->dim;
+      return expr.cast<ExternalTensorExpression>()->ndim;
     } else if (expr.is<TexturePtrExpression>()) {
       return expr.cast<TexturePtrExpression>()->num_dims;
     } else {

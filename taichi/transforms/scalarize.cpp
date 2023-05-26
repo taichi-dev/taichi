@@ -1145,13 +1145,12 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // MatrixPtrStmt has flattened indices, linearization of which is done
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
-      int element_dim = -1;  // AOS Vector
       std::vector<int> element_shape = {
           std::accumulate(begin(origin->element_shape),
                           end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
-          origin->base_ptr, indices, origin->ndim, element_shape, element_dim,
+          origin->base_ptr, indices, origin->ndim, element_shape,
           origin->is_grad);
       fused->ret_type = stmt->ret_type;
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt

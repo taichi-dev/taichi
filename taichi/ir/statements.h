@@ -341,9 +341,6 @@ class ExternalPtrStmt : public Stmt {
 
   // Shape of element type
   std::vector<int> element_shape;
-  // AOS: element_dim < 0
-  // SOA: element_dim > 0
-  int element_dim;
 
   // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
   // We use "overrided_dtype" to prevent type inference from
@@ -360,7 +357,6 @@ class ExternalPtrStmt : public Stmt {
                   const std::vector<Stmt *> &indices,
                   int ndim,
                   const std::vector<int> &element_shape,
-                  int element_dim,
                   bool is_grad = false);
 
   bool has_global_side_effect() const override {

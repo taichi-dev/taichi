@@ -273,7 +273,7 @@ def sign(x):
         >>> ti.math.sign(x)
         [-1.000000, 0.000000, 1.000000]
     """
-    return ops.cast((x >= 0.0) - (x <= 0.0), float)
+    return ops.cast((x >= 0.0), float) - ops.cast((x <= 0.0), float)
 
 
 @func

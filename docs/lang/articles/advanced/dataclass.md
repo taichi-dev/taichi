@@ -14,7 +14,7 @@ To achieve the ends, Taichi enabled the `@ti.dataclass` decorator on a Python cl
 
 :::note
 
-The `dataclass` in Taichi is simply a wrapper for the `struct` type. Therefore, the member types that a `dataclass` object can contain are the same as those allowed in a struct. They must be one of the following types: scalars, matrix/vector types, and other dataclass/struct types. Objects like `field`, `Vector field`, and `Ndarray` cannot be used as members of a `dataclass` object.
+The `dataclass` in Taichi is simply a wrapper for `ti.types.struct`. Therefore, the member types that a `dataclass` object can contain are the same as those allowed in a struct. They must be one of the following types: scalars, matrix/vector types, and other dataclass/struct types. Objects like `field`, `Vector field`, and `Ndarray` cannot be used as members of a `dataclass` object.
 
 :::
 

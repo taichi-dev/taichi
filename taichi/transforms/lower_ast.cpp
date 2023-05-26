@@ -254,7 +254,7 @@ class LowerAST : public IRVisitor {
       if (stmt->external_tensor.is<ExternalTensorExpression>()) {
         auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
         arg_id = tensor->arg_id;
-        for (int i = 0; i < tensor->dim; i++) {
+        for (int i = 0; i < tensor->ndim; i++) {
           shape.push_back(
               fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
         }

@@ -149,6 +149,27 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
         last_def_position = i;
         break;
       }
+
+      // Special case:
+      // $1 = store $0, MatrixInitStmt(...)
+      // ...
+      // $2 = matrix ptr $0, offset
+      // $3 = load $2
+      // We can forward MatrixInitStmt->values[offset] to $3
+      if (var->is<MatrixPtrStmt>() &&
+          var->as<MatrixPtrStmt>()->offset->is<ConstStmt>()) {
+        auto var_origin = var->as<MatrixPtrStmt>()->origin;
+        // Check for same origin address
+        if (irpass::analysis::definitely_same_address(var_origin, store_ptr)) {
+          // Check for MatrixInitStmt
+          Stmt *store_data =
+              irpass::analysis::get_store_data(block->statements[i].get());
+          if (store_data->is<MatrixInitStmt>()) {
+            last_def_position = i;
+            break;
+          }
+        }
+      }
     }
     if (last_def_position != -1) {
       break;
@@ -359,17 +380,20 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
     // 1. stores to the same address and as the load stmt
     // 2. (one value at a time) closest to the load stmt but before the load
     // stmt
+    Stmt *load_src = nullptr;
     if (auto local_load = stmt->cast<LocalLoadStmt>()) {
       result = get_store_forwarding_data(local_load->src, i);
+      load_src = local_load->src;
     } else if (auto global_load = stmt->cast<GlobalLoadStmt>()) {
       if (!after_lower_access && !autodiff_enabled) {
         result = get_store_forwarding_data(global_load->src, i);
+        load_src = global_load->src;
       }
     }
 
     // [Apply Load-Store-Forwarding]
     // replace load stmt with the value-"result"
-    if (result && !result->ret_type.ptr_removed()->is<TensorType>()) {
+    if (result) {
       // Forward the stored data |result|.
       if (result->is<AllocaStmt>()) {
         // TensorType does not apply to this special case
@@ -380,6 +404,19 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
         auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
         replace_with(i, std::move(zero), true);
       } else {
+        if (result->ret_type.ptr_removed()->is<TensorType>() &&
+            !stmt->ret_type->is<TensorType>()) {
+          TI_ASSERT(load_src->is<MatrixPtrStmt>() &&
+                    load_src->as<MatrixPtrStmt>()->offset->is<ConstStmt>());
+          TI_ASSERT(result->is<MatrixInitStmt>());
+
+          int offset = load_src->as<MatrixPtrStmt>()
+                           ->offset->as<ConstStmt>()
+                           ->val.val_int32();
+
+          result = result->as<MatrixInitStmt>()->values[offset];
+        }
+
         stmt->replace_usages_with(result);
         erase(i);  // This causes end_location--
         i--;       // to cancel i++ in the for loop

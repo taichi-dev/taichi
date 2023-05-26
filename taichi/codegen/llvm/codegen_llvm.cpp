@@ -1888,8 +1888,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto dt = stmt->ret_type.ptr_removed();
   int num_element_indices =
       dt->is<TensorType>() ? 0 : stmt->element_shape.size();
-  const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
-                                             : ExternalArrayLayout::kSOA;
 
   /*
     ExternalPtrStmt can be divided into "outter" and "inner" parts.
@@ -1905,8 +1903,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     "num_indices - num_element_indices" gives how many "extra_args" to read from
   */
   int num_array_args = num_indices - num_element_indices;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+  const size_t element_shape_index_offset = num_array_args;
 
   for (int i = 0; i < num_array_args; i++) {
     auto raw_arg = builder->CreateGEP(

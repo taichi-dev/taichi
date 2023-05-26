@@ -712,12 +712,8 @@ class TaskCodegen : public IRVisitor {
       const int num_indices = stmt->indices.size();
       std::vector<std::string> size_var_names;
       const auto &element_shape = stmt->element_shape;
-      const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
-                                                 : ExternalArrayLayout::kSOA;
       const size_t element_shape_index_offset =
-          (layout == ExternalArrayLayout::kAOS)
-              ? num_indices - element_shape.size()
-              : 0;
+          num_indices - element_shape.size();
       for (int i = 0; i < num_indices - element_shape.size(); i++) {
         std::string var_name = fmt::format("{}_size{}_", stmt->raw_name(), i);
         spirv::Value var_ptr = ir_->make_value(

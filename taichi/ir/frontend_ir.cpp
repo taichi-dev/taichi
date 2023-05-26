@@ -655,9 +655,9 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   auto expr = var.cast<ExternalTensorExpression>();
   // FIXME: No need to make it negative since we only support AOS
   auto element_dim = -expr->dt.get_shape().size();
-  auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
-      var_stmt, index_stmts, indices.size(), expr->dt.get_shape(), element_dim,
-      expr->is_grad);
+  auto external_ptr_stmt =
+      std::make_unique<ExternalPtrStmt>(var_stmt, index_stmts, indices.size(),
+                                        expr->dt.get_shape(), expr->is_grad);
   if (expr->ndim - element_dim == indices.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();

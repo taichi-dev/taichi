@@ -92,7 +92,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(ExternalTensorExpression *expr) override {
-    emit(fmt::format("{}d_ext_arr (element_dim={}, dt={}, grad={})", expr->ndim,
+    emit(fmt::format("{}d_ext_arr (dt={}, grad={})", expr->ndim,
                      expr->dt->to_string(), expr->needs_grad));
   }
 

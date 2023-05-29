@@ -492,7 +492,7 @@ def test_fetching_depth_attachment():
     window.destroy()
 
 
-@pytest.mark.parametrize("offset", [(0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
+@pytest.mark.parametrize("offset", [None, (0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_get_depth_buffer_with_offset(offset):

@@ -384,7 +384,10 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source
-      if (after_lower_access && !(data_source_ptr->is<AllocaStmt>())) {
+      if (after_lower_access &&
+          !((data_source_ptr->is<MatrixPtrStmt>() &&
+             data_source_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
+            data_source_ptr->is<AllocaStmt>())) {
         // After lower_access, we only analyze local variables.
         continue;
       }
@@ -552,6 +555,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
         irpass::analysis::get_load_pointers(stmt, true /*get_alias*/);
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         if (!contain_variable(live_kill, load_ptr)) {
@@ -576,6 +581,8 @@ void CFGNode::live_variable_analysis(bool after_lower_access) {
     }
     for (auto store_ptr : store_ptrs) {
       if (!after_lower_access ||
+          (store_ptr->is<MatrixPtrStmt>() &&
+           store_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // After lower_access, we only analyze local variables and stacks.
         live_kill.insert(store_ptr);
@@ -707,6 +714,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       auto store_ptr = *store_ptrs.begin();
 
       if (!after_lower_access ||
+          (store_ptr->is<MatrixPtrStmt>() &&
+           store_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (store_ptr->is<AllocaStmt>() || store_ptr->is<AdStackAllocaStmt>())) {
         // !may_contain_variable(live_in_this_node, store_ptr): address is not
         //      loaded after this store
@@ -806,6 +815,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
       auto load_ptr = load_ptrs.begin()[0];
 
       if (!after_lower_access ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // live_load_in_this_node[addr]: tracks the
         //        next load to the same address
@@ -832,6 +843,8 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     // Update live_in_this_node
     for (auto &load_ptr : load_ptrs) {
       if (!after_lower_access ||
+          (load_ptr->is<MatrixPtrStmt>() &&
+           load_ptr->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (load_ptr->is<AllocaStmt>() || load_ptr->is<AdStackAllocaStmt>())) {
         // Addr is used in this node, so it's live in this node
         update_container_with_alias(tensor_to_matrix_ptrs_map,

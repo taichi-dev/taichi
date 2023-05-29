@@ -232,11 +232,11 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
   }
 
   if (is_extension_supported(config.arch, Extension::mesh)) {
@@ -356,11 +356,11 @@ void compile_function(IRNode *ir,
   }
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::die(ir);
+      print("Scalarized");
+    }
   }
 
   irpass::lower_access(ir, config, {{}, true});

@@ -9,6 +9,24 @@ namespace taichi::lang {
 
 namespace {
 
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
+}  // namespace
+
+namespace {
+
 void make_block_local_offload(OffloadedStmt *offload,
                               const CompileConfig &config,
                               const std::string &kernel_name) {
@@ -21,6 +39,8 @@ void make_block_local_offload(OffloadedStmt *offload,
   if (!is_bls_applicable) {
     return;
   }
+
+  auto print = make_pass_printer(true, "asdasdasd", offload);
 
   /*
       [TensorType TODO #2]
@@ -43,8 +63,9 @@ void make_block_local_offload(OffloadedStmt *offload,
       <i32> $15 = local load [$14]
       <*i32> $16 = global ptr [S5place<i32>], index [$15] activate=true
   */
-  irpass::scalarize(offload);
-  irpass::full_simplify(offload, config, {false, /*autodiff_enabled*/ false});
+  if (irpass::scalarize(offload)) {
+    irpass::full_simplify(offload, config, {false, /*autodiff_enabled*/ false});
+  }
 
   bool debug = config.debug;
 

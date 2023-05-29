@@ -766,9 +766,9 @@ class ASTTransformer(Builder):
             if id(ctx.func.return_type) in primitive_types.type_ids:
                 if isinstance(node.value.ptr, Expr):
                     if (
-                        not node.value.ptr.is_tensor()
-                        and not node.value.ptr.is_struct()
-                        and node.value.ptr.element_type() not in primitive_types.all_types
+                        node.value.ptr.is_tensor()
+                        or node.value.ptr.is_struct()
+                        or node.value.ptr.element_type() not in primitive_types.all_types
                     ):
                         raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 elif not isinstance(node.value.ptr, (float, int, np.floating, np.integer)):
@@ -841,8 +841,8 @@ class ASTTransformer(Builder):
                     expr.make_expr_group([ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in values])
                 )
             elif isinstance(ctx.func.return_type, StructType):
-                if not isinstance(node.value.ptr, Struct):
-                    raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
+                if not isinstance(node.value.ptr, Struct) or not isinstance(node.value.ptr, ctx.func.return_type):
+                    raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 values = node.value.ptr
                 assert isinstance(values, Struct)
                 ctx.ast_builder.create_kernel_exprgroup_return(expr.make_expr_group(expr._get_flattened_ptrs(values)))

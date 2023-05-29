@@ -268,6 +268,9 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  irpass::demote_operations(ir, config);
+  print("Operations demoted");
+
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir)) {
       // Remove redundant MatrixInitStmt inserted during scalarization
@@ -276,9 +279,6 @@ void offload_to_executable(IRNode *ir,
       print("Scalarized");
     }
   }
-
-  irpass::demote_operations(ir, config);
-  print("Operations demoted");
 
   irpass::full_simplify(ir, config,
                         {lower_global_access, /*autodiff_enabled*/ false});

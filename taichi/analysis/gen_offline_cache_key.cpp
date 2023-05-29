@@ -122,9 +122,8 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(ExternalTensorExpression *expr) override {
     emit(ExprOpCode::ExternalTensorExpression);
     emit(expr->dt);
-    emit(expr->dim);
+    emit(expr->ndim);
     emit(expr->arg_id);
-    emit(expr->element_dim);
     emit(expr->needs_grad);
   }
 

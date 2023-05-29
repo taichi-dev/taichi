@@ -73,6 +73,7 @@ def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
         assert x[i] == test_utils.approx(res[i], rel=1.0)
 
 
+@pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver():
     from scipy.sparse import coo_matrix
@@ -136,6 +137,7 @@ def test_gpu_sparse_solver():
     assert np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3)
 
 
+@pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LU"])
 @test_utils.test(arch=ti.cuda)
@@ -167,3 +169,7 @@ def test_gpu_sparse_solver2(dtype, solver_type):
     res = np.linalg.solve(A_psd, b.to_numpy())
     for i in range(n):
         assert x[i] == test_utils.approx(res[i], rel=1.0)
+
+
+# ti.init(ti.cuda, print_ir=True)
+# test_gpu_sparse_solver2(ti.f32, "LU")

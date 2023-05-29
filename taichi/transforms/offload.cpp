@@ -73,8 +73,8 @@ class Offloader {
     auto root_statements = std::move(root_block->statements);
     root_block->statements.clear();
     const auto arch = config.arch;
-    auto pending_serial_statements =
-        Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::serial, arch);
+    auto pending_serial_statements = Stmt::make_typed<OffloadedStmt>(
+        OffloadedStmt::TaskType::serial, arch, root_block->parent_kernel());
     pending_serial_statements->grid_dim = 1;
     pending_serial_statements->block_dim = 1;
 
@@ -82,7 +82,7 @@ class Offloader {
       if (!pending_serial_statements->body->statements.empty()) {
         root_block->insert(std::move(pending_serial_statements));
         pending_serial_statements = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::serial, arch);
+            OffloadedStmt::TaskType::serial, arch, root_block->parent_kernel());
         pending_serial_statements->grid_dim = 1;
         pending_serial_statements->block_dim = 1;
       }
@@ -93,8 +93,9 @@ class Offloader {
       // Note that stmt->parent is root_block, which doesn't contain stmt now.
       if (auto s = stmt->cast<RangeForStmt>(); s && !s->strictly_serialized) {
         assemble_serial_statements();
-        auto offloaded = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::range_for, arch);
+        auto offloaded =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::range_for,
+                                            arch, root_block->parent_kernel());
         // offloaded->body is an empty block now.
         offloaded->grid_dim = config.saturating_grid_dim;
         if (s->block_dim == 0) {
@@ -140,8 +141,9 @@ class Offloader {
         emit_struct_for(st, root_block, config, st->mem_access_opt);
       } else if (auto st = stmt->cast<MeshForStmt>()) {
         assemble_serial_statements();
-        auto offloaded = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::mesh_for, arch);
+        auto offloaded =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::mesh_for,
+                                            arch, root_block->parent_kernel());
         offloaded->grid_dim = config.saturating_grid_dim;
         if (st->block_dim == 0) {
           offloaded->block_dim = Program::default_block_dim(config);
@@ -198,7 +200,7 @@ class Offloader {
           continue;
         }
         auto offloaded_clear_list = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::serial, arch);
+            OffloadedStmt::TaskType::serial, arch, root_block->parent_kernel());
         offloaded_clear_list->body->insert(
             Stmt::make<ClearListStmt>(snode_child));
         offloaded_clear_list->grid_dim = 1;
@@ -207,8 +209,9 @@ class Offloader {
         // is nothing special about this task, which could otherwise cause
         // problems when fused with other serial tasks.
         root_block->insert(std::move(offloaded_clear_list));
-        auto offloaded_listgen = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::listgen, arch);
+        auto offloaded_listgen =
+            Stmt::make_typed<OffloadedStmt>(OffloadedStmt::TaskType::listgen,
+                                            arch, root_block->parent_kernel());
         offloaded_listgen->snode = snode_child;
         offloaded_listgen->grid_dim = config.saturating_grid_dim;
         offloaded_listgen->block_dim =
@@ -220,7 +223,7 @@ class Offloader {
     }
 
     auto offloaded_struct_for = Stmt::make_typed<OffloadedStmt>(
-        OffloadedStmt::TaskType::struct_for, arch);
+        OffloadedStmt::TaskType::struct_for, arch, root_block->parent_kernel());
 
     offloaded_struct_for->index_offsets = for_stmt->index_offsets;
 
@@ -687,7 +690,7 @@ void insert_gc(IRNode *root, const CompileConfig &config) {
     for (auto *snode : snodes) {
       if (is_gc_able(snode->type)) {
         auto gc_task = Stmt::make_typed<OffloadedStmt>(
-            OffloadedStmt::TaskType::gc, config.arch);
+            OffloadedStmt::TaskType::gc, config.arch, b->parent_kernel());
         gc_task->snode = snode;
         b->insert(std::move(gc_task), i + 1);
       }

@@ -60,6 +60,10 @@ DeviceAllocation CudaDevice::allocate_memory_runtime(
     info.ptr =
         DeviceMemoryPool::get_instance().allocate_with_cache(this, params);
   }
+
+  if (info.ptr)
+    CUDADriver::get_instance().memset((void *)info.ptr, 0, info.size);
+
   info.is_imported = false;
   info.use_cached = true;
   info.use_preallocated = true;

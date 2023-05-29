@@ -1878,12 +1878,10 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
-  members[TypeFactory::DATA_PTR_POS_IN_NDARRAY].type = ptr_type;
-  if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
-    members[TypeFactory::GRAD_PTR_POS_IN_NDARRAY].type = ptr_type;
-  }
-  auto *struct_type = tlctx->get_data_type(
-      TypeFactory::get_instance().get_struct_type(members));
+  bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+  auto struct_type =
+      tlctx->get_data_type(TypeFactory::get_instance().get_ndarray_struct_type(
+          arg_type, stmt->ndim, needs_grad));
   auto *gep = builder->CreateGEP(
       struct_type, llvm_val.at(stmt->base_ptr),
       {tlctx->get_constant(0), tlctx->get_constant(int(stmt->is_grad) + 1)});
@@ -1894,8 +1892,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto dt = stmt->ret_type.ptr_removed();
   int num_element_indices =
       dt->is<TensorType>() ? 0 : stmt->element_shape.size();
-  const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
-                                             : ExternalArrayLayout::kSOA;
 
   /*
     ExternalPtrStmt can be divided into "outter" and "inner" parts.
@@ -1911,8 +1907,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     "num_indices - num_element_indices" gives how many "extra_args" to read from
   */
   int num_array_args = num_indices - num_element_indices;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+  const size_t element_shape_index_offset = num_array_args;
 
   for (int i = 0; i < num_array_args; i++) {
     auto raw_arg = builder->CreateGEP(

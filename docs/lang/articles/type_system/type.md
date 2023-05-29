@@ -28,21 +28,22 @@ The `ti.types` module in Taichi defines all of the supported data types. These d
 
 ## Primitive types
 
-The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. The two most commonly used primitive types are:
+The primitive data types in Taichi are scalars, which are the smallest units that make up compound data types. These types are denoted with a letter indicating their category, followed by a number indicating their precision in bits. The category letter can be `i` for signed integers, `u` for unsigned integers, or `f` for floating-point numbers. The precision bits can be 8, 16, 32, or 64. Specially, precision bit 1 on unsigned number `u1` is used to represent boolean values. The three most commonly used primitive types are:
 
 - `i32`: 32-bit signed integer
-- `f32` : 32-bit floating-point number.
+- `f32` : 32-bit floating-point number
+- `u1` : 1-bit unsigned integer, representing boolean values.
 
 The support of Taichi's primitive types by various backends may vary. Consult the following table for detailed information, and note that some backends may require extensions for complete support of a specific primitive type.
 
 
-| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
-| ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
-| CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| OpenGL  | :x:                | :x:                | :heavy_check_mark: | :o:                | :x:                | :x:                | :x:                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: |
-| Metal   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | :heavy_check_mark: | :x:                |
-| Vulkan  | :o:                | :o:                | :heavy_check_mark: | :o:                | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :heavy_check_mark: | :o:                |
+| Backend | `i8`               | `i16`              | `i32`              | `i64`              | `u1`               | `u8`               | `u16`              | `u32`              | `u64`              | `f16`              | `f32`              | `f64`              |
+| ------- | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ | ------------------ |
+| CPU     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| CUDA    | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| OpenGL  | :x:                | :x:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :x:                | :x:                | :x:                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: |
+| Metal   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | :heavy_check_mark: | :x:                |
+| Vulkan  | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :o:                | :o:                | :heavy_check_mark: | :o:                | :heavy_check_mark: | :heavy_check_mark: | :o:                |
 
 > :o:: Requiring extensions for the backend.
 
@@ -222,6 +223,16 @@ def length(w: vec4d):  # vec4d as type hint
 @ti.kernel
 def test():
     print(length(v))
+```
+
+Note that in Taichi, there is no distinction between row vector and column vector. This implies that a vector is handled as a column vector when multiplying a matrix by a vector. In contrast, a vector is considered as a row vector when multiplied by a matrix. This is demonstrated in the following example.
+
+```python
+mat = ti.types.matrix(n=3, m=3, dtype=ti.i32)([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
+vec = ti.types.vector(n=3, dtype=ti.i32)([1, 1, 1])
+
+print(mat @ vec)  # [3 0 0]
+print(vec @ mat)  # [1 1 1]
 ```
 
 

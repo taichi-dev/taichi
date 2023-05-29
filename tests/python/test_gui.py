@@ -34,7 +34,7 @@ def test_save_image_without_window(dtype):
 @pytest.mark.parametrize("vector_field", [True, False])
 @pytest.mark.parametrize("dtype", [ti.u8, ti.f32, ti.f64])
 @pytest.mark.parametrize("color", [0, 32, 64, 128, 255])
-@pytest.mark.parametrize("offset", [(-150, -150), (0, 0), (150, 150)])
+@pytest.mark.parametrize("offset", [None, (-150, -150), (0, 0), (150, 150)])
 @test_utils.test(arch=get_host_arch_list())
 def test_set_image_with_offset(vector_field, dtype, color, offset):
     n = 300
@@ -60,7 +60,7 @@ def test_set_image_with_offset(vector_field, dtype, color, offset):
 @pytest.mark.parametrize("channel", [3, 4])
 @pytest.mark.parametrize("dtype", [ti.u8, ti.f32, ti.f64])
 @pytest.mark.parametrize("color", [0, 32, 64, 128, 255])
-@pytest.mark.parametrize("offset", [(-150, -150), (0, 0), (150, 150)])
+@pytest.mark.parametrize("offset", [None, (-150, -150), (0, 0), (150, 150)])
 @test_utils.test(arch=get_host_arch_list())
 def test_set_image_fast_gui_with_offset(channel, dtype, color, offset):
     n = 300

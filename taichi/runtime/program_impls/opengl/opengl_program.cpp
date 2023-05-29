@@ -23,7 +23,6 @@ void OpenglProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
   device_ = opengl::make_opengl_device();
 
   gfx::GfxRuntime::Params params;
-  params.host_result_buffer = *result_buffer_ptr;
   params.device = device_.get();
   runtime_ = std::make_unique<gfx::GfxRuntime>(std::move(params));
   snode_tree_mgr_ = std::make_unique<gfx::SNodeTreeManager>(runtime_.get());

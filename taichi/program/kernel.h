@@ -45,13 +45,6 @@ class TI_DLL_EXPORT Kernel : public Callable {
   template <typename T>
   T fetch_ret(DataType dt, int i);
 
-  float64 get_ret_float(int i);
-  int64 get_ret_int(int i);
-  uint64 get_ret_uint(int i);
-  std::vector<int64> get_ret_int_tensor(int i);
-  std::vector<uint64> get_ret_uint_tensor(int i);
-  std::vector<float64> get_ret_float_tensor(int i);
-
   [[nodiscard]] std::string get_name() const override;
 
   void set_kernel_key_for_cache(const std::string &kernel_key) const {

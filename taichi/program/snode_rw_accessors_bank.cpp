@@ -54,11 +54,7 @@ float64 SNodeRwAccessorsBank::Accessors::read_float(const std::vector<int> &I) {
       prog_->compile_config(), prog_->get_device_caps(), *reader_);
   prog_->launch_kernel(compiled_kernel_data, launch_ctx);
   prog_->synchronize();
-  if (arch_uses_llvm(prog_->compile_config().arch)) {
-    return launch_ctx.get_struct_ret_float({0});
-  }
-  auto ret = reader_->get_ret_float(0);
-  return ret;
+  return launch_ctx.get_struct_ret_float({0});
 }
 
 // for int32 and int64
@@ -93,11 +89,7 @@ int64 SNodeRwAccessorsBank::Accessors::read_int(const std::vector<int> &I) {
       prog_->compile_config(), prog_->get_device_caps(), *reader_);
   prog_->launch_kernel(compiled_kernel_data, launch_ctx);
   prog_->synchronize();
-  if (arch_uses_llvm(prog_->compile_config().arch)) {
-    return launch_ctx.get_struct_ret_int({0});
-  }
-  auto ret = reader_->get_ret_int(0);
-  return ret;
+  return launch_ctx.get_struct_ret_int({0});
 }
 
 uint64 SNodeRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
@@ -108,11 +100,7 @@ uint64 SNodeRwAccessorsBank::Accessors::read_uint(const std::vector<int> &I) {
       prog_->compile_config(), prog_->get_device_caps(), *reader_);
   prog_->launch_kernel(compiled_kernel_data, launch_ctx);
   prog_->synchronize();
-  if (arch_uses_llvm(prog_->compile_config().arch)) {
-    return launch_ctx.get_struct_ret_uint({0});
-  }
-  auto ret = reader_->get_ret_uint(0);
-  return ret;
+  return launch_ctx.get_struct_ret_uint({0});
 }
 
 }  // namespace taichi::lang

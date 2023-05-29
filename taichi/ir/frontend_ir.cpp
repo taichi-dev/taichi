@@ -616,17 +616,8 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
-  // https://github.com/taichi-dev/taichi/issues/5819
-  // ArgLoadStmt keeps primitive types since all matrix-type gets
-  // scalarized at python-scope
-  //
-  // FIXME(zhanlue): ArgLoadStmt should use TensorType once real_matrix is
-  // turned-on by default.
-  //                 The scalarization should happen after
-  //                 irpass::lower_access()
-
   auto type =
-      TypeFactory::get_instance().get_ndarray_struct_type(dt, dim, needs_grad);
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
@@ -683,10 +674,12 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   }
   auto var_stmt = flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
-  auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
-      var_stmt, index_stmts, expr->dim, expr->dt.get_shape(), expr->element_dim,
-      expr->is_grad);
-  if (expr->dim == indices.size()) {
+  // FIXME: No need to make it negative since we only support AOS
+  auto element_dim = -expr->dt.get_shape().size();
+  auto external_ptr_stmt =
+      std::make_unique<ExternalPtrStmt>(var_stmt, index_stmts, indices.size(),
+                                        expr->dt.get_shape(), expr->is_grad);
+  if (expr->ndim - element_dim == indices.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
   } else {
@@ -873,8 +866,9 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                    ->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
-    int total_dim = external_tensor_expr->dim;
+    int ndim = external_tensor_expr->ndim;
     int element_dim = external_tensor_expr->dt.get_shape().size();
+    int total_dim = ndim + element_dim;
     if (total_dim != index_dim + element_dim) {
       throw TaichiTypeError(
           fmt::format("Array with dim {} accessed with indices of dim {}",
@@ -1249,7 +1243,7 @@ void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
 
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
-  TI_ASSERT(0 <= axis && axis < temp->dim);
+  TI_ASSERT(0 <= axis && axis < temp->ndim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }
@@ -1390,14 +1384,14 @@ void ASTBuilder::insert_for(const Expr &s,
 }
 
 Expr ASTBuilder::insert_thread_idx_expr() {
-  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   TI_ERROR_IF(
       arch_ != Arch::cuda && !arch_is_cpu(arch_) && arch_ != Arch::amdgpu,
       "ti.thread_idx() is only available in cuda or cpu or amdgpu context.");
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {
-      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      loop = i > 0 ? stack_[--i]->parent_stmt() : nullptr;
       if (loop == nullptr)
         break;
     }
@@ -1409,11 +1403,11 @@ Expr ASTBuilder::insert_thread_idx_expr() {
 }
 
 Expr ASTBuilder::insert_patch_idx_expr() {
-  auto loop = stack_.size() ? stack_.back()->parent_stmt : nullptr;
+  auto loop = stack_.size() ? stack_.back()->parent_stmt() : nullptr;
   if (loop != nullptr) {
     auto i = stack_.size() - 1;
     while (!(loop->is<FrontendForStmt>())) {
-      loop = i > 0 ? stack_[--i]->parent_stmt : nullptr;
+      loop = i > 0 ? stack_[--i]->parent_stmt() : nullptr;
       if (loop == nullptr)
         break;
     }
@@ -1787,7 +1781,7 @@ void ASTBuilder::create_scope(std::unique_ptr<Block> &list, LoopType tp) {
   }
   list = std::make_unique<Block>();
   if (!stack_.empty()) {
-    list->parent_stmt = get_last_stmt();
+    list->set_parent_stmt(get_last_stmt());
   }
   stack_.push_back(list.get());
 }
@@ -1861,6 +1855,12 @@ DataType get_rvalue_dtype(const Expr &expr) {
   }
   if (auto index_expr = expr.cast<IndexExpression>()) {
     return index_expr->ret_type->as<PointerType>()->get_pointee_type();
+  }
+  if (auto unary = expr.cast<UnaryOpExpression>()) {
+    if (unary->type == UnaryOpType::frexp) {
+      return unary->ret_type->as<PointerType>()->get_pointee_type();
+    }
+    return unary->ret_type;
   }
   //  if (auto mat = expr.cast<MatrixExpression>()) {
   //    return mat->ret_type->as<PointerType>()->get_pointee_type();

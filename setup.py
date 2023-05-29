@@ -182,7 +182,7 @@ def cmake_install_manifest_filter(manifest_files):
             return True
         if basename in BLACKLISTED_FILES:
             return False
-        return f.endswith((".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp"))
+        return f.endswith((".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp", ".lib"))
 
     return [f for f in manifest_files if should_include(f)]
 

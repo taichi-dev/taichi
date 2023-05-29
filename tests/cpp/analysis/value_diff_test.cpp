@@ -62,7 +62,7 @@ TEST(DiffRangeTest, Add) {
 
   auto for_stmt = std::make_unique<OffloadedStmt>(
       /*task_type=*/OffloadedTaskType::struct_for,
-      /*arch=*/Arch::x64);
+      /*arch=*/Arch::x64, nullptr);
   auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
   auto *c1 = builder.get_int32(4);
   auto *loop_idx2 = builder.create_add(loop_idx, c1);
@@ -80,7 +80,7 @@ TEST(DiffRangeTest, Sub) {
 
   auto for_stmt = std::make_unique<OffloadedStmt>(
       /*task_type=*/OffloadedTaskType::struct_for,
-      /*arch=*/Arch::x64);
+      /*arch=*/Arch::x64, nullptr);
   auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
   auto *c1 = builder.get_int32(4);
   auto *loop_idx2 = builder.create_sub(loop_idx, c1);
@@ -98,7 +98,7 @@ TEST(DiffRangeTest, Mul) {
 
   auto for_stmt = std::make_unique<OffloadedStmt>(
       /*task_type=*/OffloadedTaskType::struct_for,
-      /*arch=*/Arch::x64);
+      /*arch=*/Arch::x64, nullptr);
   auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
   auto *c1 = builder.get_int32(4);
   auto *loop_idx2 = builder.create_mul(loop_idx, c1);
@@ -116,7 +116,7 @@ TEST(DiffRangeTest, Shl) {
 
   auto for_stmt = std::make_unique<OffloadedStmt>(
       /*task_type=*/OffloadedTaskType::struct_for,
-      /*arch=*/Arch::x64);
+      /*arch=*/Arch::x64, nullptr);
   auto *loop_idx = builder.get_loop_index(for_stmt.get(), /*index=*/0);
   auto *c1 = builder.get_int32(2);
   auto *loop_idx2 = builder.create_shl(loop_idx, c1);

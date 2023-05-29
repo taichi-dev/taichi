@@ -18,9 +18,6 @@ class Scalarize : public BasicStmtVisitor {
   DelayedIRModifier delayed_modifier_;
 
   explicit Scalarize(IRNode *node) : immediate_modifier_(node) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -846,6 +843,12 @@ class Scalarize : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node) {
+    Scalarize pass(node);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_ad_stack_map_;
@@ -903,9 +906,6 @@ class ScalarizePointers : public BasicStmtVisitor {
       IRNode *node,
       const std::unordered_set<Stmt *> &scalarizable_allocas)
       : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -1047,6 +1047,13 @@ class ScalarizePointers : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node,
+                  const std::unordered_set<Stmt *> &scalarizable_allocas) {
+    ScalarizePointers pass(node, scalarizable_allocas);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
@@ -1092,8 +1099,6 @@ class ExtractLocalPointers : public BasicStmtVisitor {
       TI_ASSERT(root->is<Block>());
       top_level_ = root->as<Block>();
     }
-    root->accept(this);
-    delayed_modifier_.modify_ir();
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -1130,6 +1135,12 @@ class ExtractLocalPointers : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node) {
+    ExtractLocalPointers pass(node);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
@@ -1151,13 +1162,12 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // MatrixPtrStmt has flattened indices, linearization of which is done
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
-      int element_dim = -1;  // AOS Vector
       std::vector<int> element_shape = {
           std::accumulate(begin(origin->element_shape),
                           end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
-          origin->base_ptr, indices, origin->ndim, element_shape, element_dim,
+          origin->base_ptr, indices, origin->ndim, element_shape,
           origin->is_grad);
       fused->ret_type = stmt->ret_type;
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
@@ -1167,12 +1177,9 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
                          ->ret_type.ptr_removed()
                          ->as<StructType>()
                          ->elements();
-      members[TypeFactory::DATA_PTR_POS_IN_NDARRAY] = {stmt->ret_type,
-                                                       "data_ptr"};
-      if (members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY) {
-        members.back() = {stmt->ret_type, "grad_ptr"};
-      }
-      auto type = TypeFactory::get_instance().get_struct_type(members);
+      bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+      auto type = TypeFactory::get_instance().get_ndarray_struct_type(
+          fused->ret_type.ptr_removed(), origin->ndim, needs_grad);
       origin->base_ptr->as<ArgLoadStmt>()->ret_type =
           TypeFactory::get_instance().get_pointer_type((Type *)type);
       stmt->replace_usages_with(fused.get());
@@ -1182,22 +1189,26 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     MergeExternalAndMatrixPtr pass;
     node->accept(&pass);
-    pass.modifier_.modify_ir();
+    return pass.modifier_.modify_ir();
   }
 };
 
 namespace irpass {
 
-void scalarize(IRNode *root) {
+bool scalarize(IRNode *root) {
   TI_AUTO_PROF;
-  Scalarize scalarize_pass(root);
+  bool modified = false;
+
+  modified |= Scalarize::run(root);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
-  ScalarizePointers scalarize_pointers_pass(root, scalarizable_allocas);
-  ExtractLocalPointers extract_pointers_pass(root);
-  MergeExternalAndMatrixPtr::run(root);
+  modified |= ScalarizePointers::run(root, scalarizable_allocas);
+  modified |= ExtractLocalPointers::run(root);
+  modified |= MergeExternalAndMatrixPtr::run(root);
+
+  return modified;
 }
 
 }  // namespace irpass

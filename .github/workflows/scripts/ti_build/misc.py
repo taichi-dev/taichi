@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 
 # -- stdlib --
+from pathlib import Path
+from typing import Any, Callable
 import inspect
 import os
 import platform
 import sys
-from pathlib import Path
-from typing import Any, Callable
 
 # -- third party --
 # -- own --
 from .bootstrap import get_cache_home  # noqa, this is a re-export
 from .escapes import escape_codes
+
 
 # -- code --
 options = None

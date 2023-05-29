@@ -42,13 +42,13 @@ class LoopInvariantDetector : public BasicStmtVisitor {
       // We need to check the scope of the operand
       Stmt *operand_parent = operand;
       while (operand_parent->parent) {
-        operand_parent = operand_parent->parent->parent_stmt;
+        operand_parent = operand_parent->parent->parent_stmt();
         if (!operand_parent)
           break;
         // If the one of the current_scope of the operand is the top loop
         // scope Then it will not be visible if we move it outside the top
         // loop scope
-        if (operand_parent == loop_block->parent_stmt) {
+        if (operand_parent == loop_block->parent_stmt()) {
           return false;
         }
       }
@@ -85,7 +85,7 @@ class LoopInvariantDetector : public BasicStmtVisitor {
   }
 
   Stmt *get_loop_stmt(int depth) {
-    return loop_blocks[depth]->parent_stmt;
+    return loop_blocks[depth]->parent_stmt();
   }
 
   Stmt *current_loop_stmt() {

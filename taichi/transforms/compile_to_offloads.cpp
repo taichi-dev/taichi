@@ -231,14 +231,6 @@ void offload_to_executable(IRNode *ir,
     print("Make block local");
   }
 
-  if (config.real_matrix_scalarize) {
-    if (irpass::scalarize(ir)) {
-      // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-      print("Scalarized");
-    }
-  }
-
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::demote_mesh_statements(ir, config, {kernel->get_name()});
     print("Demote mesh statements");

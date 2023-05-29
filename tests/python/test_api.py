@@ -98,6 +98,7 @@ user_api[ti] = [
     "amdgpu",
     "aot",
     "append",
+    "argpack",
     "arm64",
     "asin",
     "assume_in_range",

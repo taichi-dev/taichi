@@ -1258,10 +1258,16 @@ def test_matrix_oob():
         x = ti.Vector([1, 0])
         x[i] = 42
 
+        # To keep x
+        assert x[i] == 42
+
     @ti.kernel
     def access_mat(i: ti.i32, j: ti.i32):
         y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
         y[i, j] = 42
+
+        # To keep y
+        assert y[i, j] == 42
 
     # works
     access_vec(1)

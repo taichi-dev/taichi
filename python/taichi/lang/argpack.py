@@ -93,11 +93,6 @@ class ArgPack:
         """
         return self.__entries.items()
 
-    @property
-    def types(self):
-        """Returns the types of items in this argument pack."""
-        return self.__annotations
-
     def __getitem__(self, key):
         ret = self.__entries[key]
         return ret

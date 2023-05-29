@@ -766,9 +766,9 @@ class ASTTransformer(Builder):
             if id(ctx.func.return_type) in primitive_types.type_ids:
                 if isinstance(node.value.ptr, Expr):
                     if (
-                        not node.value.ptr.is_tensor()
-                        and not node.value.ptr.is_struct()
-                        and node.value.ptr.element_type() not in primitive_types.all_types
+                        node.value.ptr.is_tensor()
+                        or node.value.ptr.is_struct()
+                        or node.value.ptr.element_type() not in primitive_types.all_types
                     ):
                         raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 elif not isinstance(node.value.ptr, (float, int, np.floating, np.integer)):

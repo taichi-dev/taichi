@@ -87,7 +87,20 @@ def test_scalr_field_from_numpy(dtype, shape):
 @pytest.mark.parametrize("dtype", data_types)
 @pytest.mark.parametrize(
     "shape, offset",
-    [((), ()), (8, 0), (8, 8), (8, -4), ((6, 12), (-4, -4)), ((6, 12), (-4, 4)), ((6, 12), (4, -4)), ((6, 12), (8, 8))],
+    [
+        ((), None),
+        ((), ()),
+        (8, None),
+        (8, 0),
+        (8, 8),
+        (8, -4),
+        ((6, 12), None),
+        ((6, 12), (0, 0)),
+        ((6, 12), (-4, -4)),
+        ((6, 12), (-4, 4)),
+        ((6, 12), (4, -4)),
+        ((6, 12), (8, 8)),
+    ],
 )
 @test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_offset(dtype, shape, offset):

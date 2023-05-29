@@ -87,8 +87,8 @@ class ConstantFold : public BasicStmtVisitor {
       insert_and_erase(stmt, res);                                           \
     } else if (dt->is_primitive(PrimitiveTypeID::u1)) {                      \
       auto res = TypedConstant(                                              \
-          dst_type, PREFIX(int32(lhs->val.val_uint1()) OP_CPP                \
-                               int32(rhs->val.val_uint1())));                \
+          dst_type, PREFIX(int32(lhs->val.val_uint1())                       \
+                               OP_CPP int32(rhs->val.val_uint1())));         \
       insert_and_erase(stmt, res);                                           \
     }                                                                        \
     break;                                                                   \

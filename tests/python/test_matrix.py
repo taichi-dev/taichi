@@ -1300,13 +1300,15 @@ def test_matrix_oob():
 
 @pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
 @pytest.mark.parametrize("shape", [(8,), (6, 12)])
-@pytest.mark.parametrize("offset", [0, -4, 4])
+@pytest.mark.parametrize("offset", [None, 0, -4, 4])
 @pytest.mark.parametrize("m, n", [(3, 4)])
 @test_utils.test(arch=get_host_arch_list())
 def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
     import numpy as np
 
-    x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
+    x = ti.Matrix.field(
+        dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape) if offset is not None else None
+    )
     # use the corresponding dtype for the numpy array.
     numpy_dtypes = {
         ti.i32: np.int32,

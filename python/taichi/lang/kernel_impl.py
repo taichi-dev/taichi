@@ -780,6 +780,8 @@ class Kernel:
                 v = needed(*v)
                 needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
             elif isinstance(needed, StructType):
+                if not isinstance(v, needed):
+                    raise TaichiRuntimeTypeError.get(i, str(needed), provided)
                 needed.set_kernel_struct_args(v, launch_ctx, (actual_argument_slot,))
             else:
                 raise ValueError(f"Argument type mismatch. Expecting {needed}, got {type(v)}.")

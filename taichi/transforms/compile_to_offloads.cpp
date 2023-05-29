@@ -363,7 +363,7 @@ void compile_function(IRNode *ir,
     }
   }
 
-  ipass::lower_access(ir, config, {{}, true});
+  irpass::lower_access(ir, config, {{}, true});
   print("Access lowered");
   irpass::analysis::verify(ir);
 

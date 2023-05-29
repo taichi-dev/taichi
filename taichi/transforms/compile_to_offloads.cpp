@@ -271,7 +271,8 @@ void offload_to_executable(IRNode *ir,
   if (config.real_matrix_scalarize) {
     if (irpass::scalarize(ir)) {
       // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
       print("Scalarized");
     }
   }

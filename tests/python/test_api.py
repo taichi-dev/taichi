@@ -408,7 +408,7 @@ user_api[ti.ScalarNdarray] = [
     "get_type",
     "to_numpy",
 ]
-user_api[ti.Struct] = ["field", "items", "keys", "to_dict", "entries"]
+user_api[ti.Struct] = ["entries", "field", "items", "keys", "to_dict"]
 user_api[ti.StructField] = [
     "copy_from",
     "dtype",

@@ -595,15 +595,8 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 }
 
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
-  // FIXME(zhanlue): ArgLoadStmt should use TensorType once real_matrix is
-  // turned-on by default.
-  //                 The scalarization should happen after
-  //                 irpass::lower_access()
-  TI_ASSERT_INFO(element_dim <= 0,
-                 "SOA layout for ndarray is deprecated but got element_dim={}",
-                 element_dim);
   auto type =
-      TypeFactory::get_instance().get_ndarray_struct_type(dt, dim, needs_grad);
+      TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);
@@ -660,10 +653,12 @@ Stmt *make_ndarray_access(Expression::FlattenContext *ctx,
   }
   auto var_stmt = flatten_lvalue(var, ctx);
   auto expr = var.cast<ExternalTensorExpression>();
-  auto external_ptr_stmt = std::make_unique<ExternalPtrStmt>(
-      var_stmt, index_stmts, indices.size(), expr->dt.get_shape(),
-      expr->element_dim, expr->is_grad);
-  if (expr->dim - expr->element_dim == indices.size()) {
+  // FIXME: No need to make it negative since we only support AOS
+  auto element_dim = -expr->dt.get_shape().size();
+  auto external_ptr_stmt =
+      std::make_unique<ExternalPtrStmt>(var_stmt, index_stmts, indices.size(),
+                                        expr->dt.get_shape(), expr->is_grad);
+  if (expr->ndim - element_dim == indices.size()) {
     // Indexing into an scalar element
     external_ptr_stmt->ret_type = expr->dt.ptr_removed().get_element_type();
   } else {
@@ -850,7 +845,7 @@ void IndexExpression::type_check(const CompileConfig *) {
                                                    ->dt->get_compute_type());
   } else if (is_ndarray()) {  // ndarray
     auto external_tensor_expr = var.cast<ExternalTensorExpression>();
-    int ndim = external_tensor_expr->dim;
+    int ndim = external_tensor_expr->ndim;
     int element_dim = external_tensor_expr->dt.get_shape().size();
     int total_dim = ndim + element_dim;
     if (total_dim != index_dim + element_dim) {
@@ -1211,7 +1206,7 @@ void ExternalTensorShapeAlongAxisExpression::type_check(const CompileConfig *) {
 
 void ExternalTensorShapeAlongAxisExpression::flatten(FlattenContext *ctx) {
   auto temp = ptr.cast<ExternalTensorExpression>();
-  TI_ASSERT(0 <= axis && axis < temp->dim);
+  TI_ASSERT(0 <= axis && axis < temp->ndim);
   ctx->push_back<ExternalTensorShapeAlongAxisStmt>(axis, temp->arg_id);
   stmt = ctx->back_stmt();
 }

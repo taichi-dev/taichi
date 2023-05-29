@@ -472,23 +472,21 @@ class InternalFuncCallExpression : public Expression {
 class ExternalTensorExpression : public Expression {
  public:
   DataType dt;
-  int dim;
+  int ndim;
   int arg_id;
-  int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
-                    // (AOS); -2: matrix (AOS)
   bool needs_grad{false};
   bool is_grad{false};
 
   ExternalTensorExpression(const DataType &dt,
-                           int dim,
+                           int ndim,
                            int arg_id,
                            bool needs_grad = false) {
-    init(dt, dim, arg_id, needs_grad);
+    init(dt, ndim, arg_id, needs_grad);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->needs_grad);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -508,15 +506,10 @@ class ExternalTensorExpression : public Expression {
  private:
   const CompileConfig *config_ = nullptr;
 
-  void init(const DataType &dt, int dim, int arg_id, bool needs_grad) {
+  void init(const DataType &dt, int ndim, int arg_id, bool needs_grad) {
     this->dt = dt;
-    this->dim = dim;
+    this->ndim = ndim;
     this->arg_id = arg_id;
-    if (dt->is<TensorType>()) {
-      this->element_dim = -dt->cast<TensorType>()->get_shape().size();
-    } else {
-      this->element_dim = 0;
-    }
     this->needs_grad = needs_grad;
   }
 };

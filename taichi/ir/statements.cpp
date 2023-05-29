@@ -47,11 +47,9 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  int ndim,
                                  const std::vector<int> &element_shape,
-                                 int element_dim,
                                  bool is_grad)
     : ExternalPtrStmt(base_ptr, indices, is_grad) {
   this->element_shape = element_shape;
-  this->element_dim = element_dim;
   this->ndim = ndim;
 }
 

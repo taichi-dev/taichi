@@ -367,4 +367,4 @@ ti.init(arch=ti.gpu)
 test()
 ```
 
-In the provided code, we begin by designating the CPU as the backend, upon which the test function operates. Notably, the test function is initially executed on the CPU backend. As we proceed by invoking ti.init(arch=ti.gpu) to designate the GPU as the backend, all ensuing invocations of test trigger a recompilation of the test kernel tailored for the GPU backend, subsequently executing on the GPU. To conclude, Taichi does not facilitate the concurrent operation of multiple kernels on varied backends.
+In the provided code, we begin by designating the CPU as the backend, upon which the `test` function operates. Notably, the `test` function is initially executed on the CPU backend. As we proceed by invoking `ti.init(arch=ti.gpu)` to designate the GPU as the backend, all ensuing invocations of `test` trigger a recompilation of the `test` kernel tailored for the GPU backend, subsequently executing on the GPU. To conclude, Taichi does not facilitate the concurrent operation of multiple kernels on varied backends.

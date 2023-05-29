@@ -10,7 +10,7 @@ on:
 env:
   TI_CI: "1"
   TI_SKIP_VERSION_CHECK: "ON"
-  CI_IMAGE_VERSION: '202304251731'
+  CI_IMAGE_VERSION: '202305261112'
 
 jobs:
   gpu_backends:

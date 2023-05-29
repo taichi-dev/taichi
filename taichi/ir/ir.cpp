@@ -124,6 +124,20 @@ Stmt::Stmt(const Stmt &stmt) : field_manager(this), fields_registered(false) {
   ret_type = stmt.ret_type;
 }
 
+Kernel *Stmt::get_kernel() const {
+  Block *parent_block = parent;
+  if (parent_block->parent_kernel()) {
+    return parent_block->parent_kernel();
+  }
+
+  if (parent_block->parent_stmt()) {
+    return parent_block->parent_stmt()->get_kernel();
+  }
+
+  TI_ASSERT_INFO(false, "Stmt is not in a kernel.");
+  return nullptr;
+}
+
 Stmt *Stmt::insert_before_me(std::unique_ptr<Stmt> &&new_stmt) {
   auto ret = new_stmt.get();
   TI_ASSERT(parent);
@@ -355,14 +369,32 @@ void Block::replace_with(Stmt *old_statement,
   }
 }
 
+Stmt *Block::parent_stmt() const {
+  auto ptr = std::get_if<Stmt *>(&parent_);
+  return ptr == nullptr ? nullptr : *ptr;
+}
+
+Kernel *Block::parent_kernel() const {
+  auto ptr = std::get_if<Kernel *>(&parent_);
+  return ptr == nullptr ? nullptr : *ptr;
+}
+
+void Block::set_parent_kernel(Kernel *kernel) {
+  parent_ = kernel;
+}
+
+void Block::set_parent_stmt(Stmt *stmt) {
+  parent_ = stmt;
+}
+
 Block *Block::parent_block() const {
-  if (parent_stmt == nullptr)
+  if (parent_stmt() == nullptr)
     return nullptr;
-  return parent_stmt->parent;
+  return parent_stmt()->parent;
 }
 
 IRNode *Block::get_parent() const {
-  return parent_stmt;
+  return parent_stmt();
 }
 
 bool Block::has_container_statements() {
@@ -395,7 +427,7 @@ stmt_vector::iterator Block::find(Stmt *stmt) {
 
 std::unique_ptr<Block> Block::clone() const {
   auto new_block = std::make_unique<Block>();
-  new_block->parent_stmt = parent_stmt;
+  new_block->parent_ = parent_;
   new_block->stop_gradients = stop_gradients;
   new_block->statements.reserve(size());
   for (auto &stmt : statements)

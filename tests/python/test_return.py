@@ -190,7 +190,7 @@ def test_return_uint64_vec():
     assert foo()[0] == 2**64 - 1
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test()
 def test_struct_ret_with_matrix():
     s0 = ti.types.struct(a=ti.math.vec3, b=ti.i16)
     s1 = ti.types.struct(a=ti.f32, b=s0)

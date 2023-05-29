@@ -30,7 +30,7 @@ from taichi.lang.exception import (
 )
 from taichi.lang.expr import Expr
 from taichi.lang.kernel_arguments import KernelArgument
-from taichi.lang.matrix import Matrix, MatrixType, Vector
+from taichi.lang.matrix import MatrixType
 from taichi.lang.shell import _shell_pop_print
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype, has_paddle, has_pytorch, to_taichi_type
@@ -392,7 +392,7 @@ class TaichiCallableTemplateMapper:
             if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 anno.check_matched(arg.get_type())
                 needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
-                return arg.dtype, len(arg.shape) + len(arg.element_shape), arg.element_shape, Layout.AOS, needs_grad
+                return arg.element_type, len(arg.shape), needs_grad
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
@@ -427,7 +427,13 @@ class TaichiCallableTemplateMapper:
                         f"but the argument has {len(shape)} dimensions"
                     )
             needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
-            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
+            dtype = to_taichi_type(arg.dtype)
+            element_type = (
+                _ti_core.get_type_factory_instance().get_tensor_type(element_shape, dtype)
+                if len(element_shape) != 0
+                else arg.dtype
+            )
+            return element_type, len(shape) - len(element_shape), needs_grad
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -808,28 +814,7 @@ class Kernel:
             runtime_ops.sync()
 
         if has_ret:
-            if _ti_core.arch_uses_llvm(impl.current_cfg().arch):
-                ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
-            else:
-                if id(ret_dt) in primitive_types.integer_type_ids:
-                    if is_signed(cook_dtype(ret_dt)):
-                        ret = t_kernel.get_ret_int(0)
-                    else:
-                        ret = t_kernel.get_ret_uint(0)
-                elif id(ret_dt) in primitive_types.real_type_ids:
-                    ret = t_kernel.get_ret_float(0)
-                else:
-                    if id(ret_dt.dtype) in primitive_types.integer_type_ids:
-                        if is_signed(cook_dtype(ret_dt.dtype)):
-                            it = iter(t_kernel.get_ret_int_tensor(0))
-                        else:
-                            it = iter(t_kernel.get_ret_uint_tensor(0))
-                    else:
-                        it = iter(t_kernel.get_ret_float_tensor(0))
-                    if ret_dt.ndim == 1:
-                        ret = Vector([next(it) for _ in range(ret_dt.n)])
-                    else:
-                        ret = Matrix([[next(it) for _ in range(ret_dt.m)] for _ in range(ret_dt.n)])
+            ret = self.construct_kernel_ret(launch_ctx, ret_dt, () if isinstance(ret_dt, tuple) else (0,))
         if callbacks:
             for c in callbacks:
                 c()

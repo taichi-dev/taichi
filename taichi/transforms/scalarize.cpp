@@ -1196,11 +1196,11 @@ bool scalarize(IRNode *root) {
   TI_AUTO_PROF;
   bool modified = false;
 
-  modified = Scalarize::run(root);
+  modified |= Scalarize::run(root);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
-  modified = ScalarizePointers::run(root, scalarizable_allocas);
-  modified = ExtractLocalPointers::run(root);
-  modified = MergeExternalAndMatrixPtr::run(root);
+  modified |= ScalarizePointers::run(root, scalarizable_allocas);
+  modified |= ExtractLocalPointers::run(root);
+  modified |= MergeExternalAndMatrixPtr::run(root);
 
   return modified;
 }

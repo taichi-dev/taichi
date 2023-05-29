@@ -1,6 +1,7 @@
 import numbers
 from types import MethodType
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
@@ -9,6 +10,7 @@ from taichi.lang.exception import (
     TaichiSyntaxError,
     TaichiTypeError,
 )
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
@@ -627,7 +629,41 @@ class StructType(CompoundType):
         return struct
 
     def __instancecheck__(self, instance):
-        # TODO: implement instance check for struct
+        if not isinstance(instance, Struct):
+            return False
+        if list(self.members.keys()) != instance.keys:
+            return False
+        for index, (name, dtype) in enumerate(self.members.items()):
+            val = instance._members[index]
+            if isinstance(dtype, StructType):
+                if not isinstance(val, dtype):
+                    return False
+            elif isinstance(dtype, MatrixType):
+                if isinstance(val, Expr):
+                    if not val.is_tensor():
+                        return False
+                if val.get_shape() != dtype.get_shape():
+                    return False
+            elif dtype in primitive_types.integer_types:
+                if isinstance(val, Expr):
+                    if (
+                        val.is_tensor()
+                        or val.is_struct()
+                        or val.element_type() not in primitive_types.integer_types
+                    ):
+                        return False
+                elif not isinstance(val, (int, np.integer)):
+                    return False
+            elif dtype in primitive_types.real_types:
+                if isinstance(val, Expr):
+                    if (
+                        val.is_tensor()
+                        or val.is_struct()
+                        or val.element_type() not in primitive_types.all_types
+                    ):
+                        return False
+                elif not isinstance(val, (int, float, np.floating, np.integer)):
+                    return False
         return True
 
     def from_taichi_object(self, func_ret, ret_index=()):
@@ -715,6 +751,12 @@ class StructType(CompoundType):
 
     def field(self, **kwargs):
         return Struct.field(self.members, self.methods, **kwargs)
+
+    def __str__(self):
+        """Python scope struct type print support."""
+        item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.members.items()])
+        item_str += f", struct_methods={self.methods}"
+        return f"<ti.StructType {item_str}>"
 
 
 def dataclass(cls):

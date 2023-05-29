@@ -226,17 +226,17 @@ void offload_to_executable(IRNode *ir,
     }
   }
 
+  if (make_block_local) {
+    irpass::make_block_local(ir, config, {kernel->get_name()});
+    print("Make block local");
+  }
+
   if (config.real_matrix_scalarize) {
     irpass::scalarize(ir);
 
     // Remove redundant MatrixInitStmt inserted during scalarization
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Scalarized");
-  }
-
-  if (make_block_local) {
-    irpass::make_block_local(ir, config, {kernel->get_name()});
-    print("Make block local");
   }
 
   if (is_extension_supported(config.arch, Extension::mesh)) {

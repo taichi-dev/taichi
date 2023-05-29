@@ -15,6 +15,37 @@ void make_block_local_offload(OffloadedStmt *offload,
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
 
+  bool is_bls_applicable =
+      offload->mem_access_opt.get_snodes_with_flag(SNodeAccessFlag::block_local)
+          .size() > 0;
+  if (!is_bls_applicable) {
+    return;
+  }
+
+  /*
+      [TensorType TODO #2]
+      In general, BLS is trying to analyze and replace load/store of
+      loop-specific GlobalPtrStmt(..., index) with load/store of a cross-loop
+      BlockLocalPtrStmt. This requires heavy analysis upon depencencies between
+      index of GlobalPtrStmt and the loop index.
+
+      In case where GlobalPtrStmt's index being TensorType and stored in an
+      AllocaStmt, the analysis will fail due to the complicity of address
+      aliasing. Therefore we apply scalarize here to leverage this analysis
+
+      [Example]
+      <i32> $1 = loop $0 index 0
+      <[Tensor (1) i32]> $3 = [$1]
+      ...
+      <[Tensor (1) i32]> $12 = alloca
+      <[Tensor (1) i32]> $13 : local store [$12 <- $3]
+      <*i32> $14 = shift ptr [$12 + $4]
+      <i32> $15 = local load [$14]
+      <*i32> $16 = global ptr [S5place<i32>], index [$15] activate=true
+  */
+  irpass::scalarize(offload);
+  irpass::full_simplify(offload, config, {false, /*autodiff_enabled*/ false});
+
   bool debug = config.debug;
 
   auto pads = irpass::initialize_scratch_pad(offload);

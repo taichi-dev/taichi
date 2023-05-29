@@ -18,9 +18,6 @@ class Scalarize : public BasicStmtVisitor {
   DelayedIRModifier delayed_modifier_;
 
   explicit Scalarize(IRNode *node) : immediate_modifier_(node) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -841,6 +838,12 @@ class Scalarize : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node) {
+    Scalarize pass(node);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_ad_stack_map_;
@@ -898,9 +901,6 @@ class ScalarizePointers : public BasicStmtVisitor {
       IRNode *node,
       const std::unordered_set<Stmt *> &scalarizable_allocas)
       : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -1041,6 +1041,13 @@ class ScalarizePointers : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node,
+                  const std::unordered_set<Stmt *> &scalarizable_allocas) {
+    ScalarizePointers pass(node, scalarizable_allocas);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
@@ -1086,8 +1093,6 @@ class ExtractLocalPointers : public BasicStmtVisitor {
       TI_ASSERT(root->is<Block>());
       top_level_ = root->as<Block>();
     }
-    root->accept(this);
-    delayed_modifier_.modify_ir();
   }
 
   void visit(OffloadedStmt *stmt) override {
@@ -1122,6 +1127,12 @@ class ExtractLocalPointers : public BasicStmtVisitor {
         delayed_modifier_.erase(stmt);
       }
     }
+  }
+
+  static bool run(IRNode *node) {
+    ExtractLocalPointers pass(node);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
   }
 
  private:
@@ -1172,22 +1183,26 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     MergeExternalAndMatrixPtr pass;
     node->accept(&pass);
-    pass.modifier_.modify_ir();
+    return pass.modifier_.modify_ir();
   }
 };
 
 namespace irpass {
 
-void scalarize(IRNode *root) {
+bool scalarize(IRNode *root) {
   TI_AUTO_PROF;
-  Scalarize scalarize_pass(root);
+  bool modified = false;
+
+  modified |= Scalarize::run(root);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
-  ScalarizePointers scalarize_pointers_pass(root, scalarizable_allocas);
-  ExtractLocalPointers extract_pointers_pass(root);
-  MergeExternalAndMatrixPtr::run(root);
+  modified |= ScalarizePointers::run(root, scalarizable_allocas);
+  modified |= ExtractLocalPointers::run(root);
+  modified |= MergeExternalAndMatrixPtr::run(root);
+
+  return modified;
 }
 
 }  // namespace irpass

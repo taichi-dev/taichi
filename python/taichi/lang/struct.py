@@ -646,21 +646,13 @@ class StructType(CompoundType):
                     return False
             elif dtype in primitive_types.integer_types:
                 if isinstance(val, Expr):
-                    if (
-                        val.is_tensor()
-                        or val.is_struct()
-                        or val.element_type() not in primitive_types.integer_types
-                    ):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.integer_types:
                         return False
                 elif not isinstance(val, (int, np.integer)):
                     return False
             elif dtype in primitive_types.real_types:
                 if isinstance(val, Expr):
-                    if (
-                        val.is_tensor()
-                        or val.is_struct()
-                        or val.element_type() not in primitive_types.all_types
-                    ):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.all_types:
                         return False
                 elif not isinstance(val, (int, float, np.floating, np.integer)):
                     return False

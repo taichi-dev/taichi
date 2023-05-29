@@ -350,7 +350,7 @@ class _IntermediateStruct(Struct):
         assert isinstance(entries, dict)
         self.methods = entries.pop("__struct_methods", {})
         self._register_methods()
-        self.__entries = entries
+        self._Struct__entries = entries
         self._register_members()
 
 

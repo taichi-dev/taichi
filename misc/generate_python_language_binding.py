@@ -128,7 +128,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             if with_docs:
                 out += get_api_field_ref(module, x, name)
             name = x.name.extend(name).extend("bit").screaming_snake_case
-            out += [f"{name} = {bit_type_name}(1 << {value}),"]
+            out += [f"{name} = {bit_type_name}(1 << {value})"]
 
     elif ty is Structure:
         out += [
@@ -160,7 +160,16 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
     elif ty is Function:
         return_value_type = "None" if x.return_value_type == None else get_type_name(x.return_value_type)
         out += [
-            "def " + x.name.snake_case + "("
+            f"_LIB.{x.name.snake_case}.argtypes = [",
+        ]
+        for i, param in enumerate(x.params):
+            out += [f"    {get_param(param).split(': ')[1]},"]
+        out += [
+            "]",
+        ]
+        out += [
+            f"_LIB.{x.name.snake_case}.restype = {return_value_type}",
+            "def " + x.name.snake_case + "(",
         ]
         for i, param in enumerate(x.params):
             if i != 0:

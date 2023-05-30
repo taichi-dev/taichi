@@ -37,6 +37,10 @@ TiOpenglImageInteropInfo._fields_ = [
 ]
 
 
+_LIB.ti_import_opengl_runtime.argtypes = [
+    ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*,
+]
+_LIB.ti_import_opengl_runtime.restype = TiRuntime
 def ti_import_opengl_runtime(
   interop_info: ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
 ) -> TiRuntime:
@@ -51,6 +55,11 @@ def ti_import_opengl_runtime(
     return _LIB.ti_import_opengl_runtime(interop_info)
 
 
+_LIB.ti_export_opengl_runtime.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*,
+]
+_LIB.ti_export_opengl_runtime.restype = None
 def ti_export_opengl_runtime(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
@@ -67,6 +76,11 @@ def ti_export_opengl_runtime(
     return _LIB.ti_export_opengl_runtime(runtime, interop_info)
 
 
+_LIB.ti_import_opengl_memory.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiOpenglMemoryInteropInfo*,
+]
+_LIB.ti_import_opengl_memory.restype = TiMemory
 def ti_import_opengl_memory(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # const TiOpenglMemoryInteropInfo*
@@ -83,6 +97,12 @@ def ti_import_opengl_memory(
     return _LIB.ti_import_opengl_memory(runtime, interop_info)
 
 
+_LIB.ti_export_opengl_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+    ctypes.c_void_p, # TiOpenglMemoryInteropInfo*,
+]
+_LIB.ti_export_opengl_memory.restype = None
 def ti_export_opengl_memory(
   runtime: TiRuntime,
   memory: TiMemory,
@@ -101,6 +121,11 @@ def ti_export_opengl_memory(
     return _LIB.ti_export_opengl_memory(runtime, memory, interop_info)
 
 
+_LIB.ti_import_opengl_image.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiOpenglImageInteropInfo*,
+]
+_LIB.ti_import_opengl_image.restype = TiImage
 def ti_import_opengl_image(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # const TiOpenglImageInteropInfo*
@@ -117,6 +142,12 @@ def ti_import_opengl_image(
     return _LIB.ti_import_opengl_image(runtime, interop_info)
 
 
+_LIB.ti_export_opengl_image.argtypes = [
+    TiRuntime,
+    TiImage,
+    ctypes.c_void_p, # TiOpenglImageInteropInfo*,
+]
+_LIB.ti_export_opengl_image.restype = None
 def ti_export_opengl_image(
   runtime: TiRuntime,
   image: TiImage,

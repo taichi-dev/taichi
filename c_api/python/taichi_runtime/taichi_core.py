@@ -457,13 +457,13 @@ Usages of a memory allocation. Taichi requires kernel argument memories to be al
 TiMemoryUsageFlags = TiFlags
 TiMemoryUsageFlagBits = ctypes.c_uint32
 # The memory can be read/write accessed by any kernel.
-TI_MEMORY_USAGE_STORAGE_BIT = TiMemoryUsageFlagBits(1 << 0),
+TI_MEMORY_USAGE_STORAGE_BIT = TiMemoryUsageFlagBits(1 << 0)
 # The memory can be used as a uniform buffer in graphics pipelines.
-TI_MEMORY_USAGE_UNIFORM_BIT = TiMemoryUsageFlagBits(1 << 1),
+TI_MEMORY_USAGE_UNIFORM_BIT = TiMemoryUsageFlagBits(1 << 1)
 # The memory can be used as a vertex buffer in graphics pipelines.
-TI_MEMORY_USAGE_VERTEX_BIT = TiMemoryUsageFlagBits(1 << 2),
+TI_MEMORY_USAGE_VERTEX_BIT = TiMemoryUsageFlagBits(1 << 2)
 # The memory can be used as an index buffer in graphics pipelines.
-TI_MEMORY_USAGE_INDEX_BIT = TiMemoryUsageFlagBits(1 << 3),
+TI_MEMORY_USAGE_INDEX_BIT = TiMemoryUsageFlagBits(1 << 3)
 
 
 """
@@ -542,11 +542,11 @@ Usages of an image allocation. Taichi requires kernel argument images to be allo
 TiImageUsageFlags = TiFlags
 TiImageUsageFlagBits = ctypes.c_uint32
 # The image can be read/write accessed by any kernel.
-TI_IMAGE_USAGE_STORAGE_BIT = TiImageUsageFlagBits(1 << 0),
+TI_IMAGE_USAGE_STORAGE_BIT = TiImageUsageFlagBits(1 << 0)
 # The image can be read-only accessed by any kernel.
-TI_IMAGE_USAGE_SAMPLED_BIT = TiImageUsageFlagBits(1 << 1),
+TI_IMAGE_USAGE_SAMPLED_BIT = TiImageUsageFlagBits(1 << 1)
 # The image can be used as a color or depth-stencil attachment depending on its format.
-TI_IMAGE_USAGE_ATTACHMENT_BIT = TiImageUsageFlagBits(1 << 2),
+TI_IMAGE_USAGE_ATTACHMENT_BIT = TiImageUsageFlagBits(1 << 2)
 
 
 """
@@ -903,6 +903,9 @@ TiNamedArgument._fields_ = [
 ]
 
 
+_LIB.ti_get_version.argtypes = [
+]
+_LIB.ti_get_version.restype = ctypes.c_uint32
 def ti_get_version(
 ) -> ctypes.c_uint32:
     """
@@ -915,6 +918,11 @@ def ti_get_version(
     return _LIB.ti_get_version()
 
 
+_LIB.ti_get_available_archs.argtypes = [
+    ctypes.c_void_p, # ctypes.c_uint32*,
+    ctypes.c_void_p, # TiArch*,
+]
+_LIB.ti_get_available_archs.restype = None
 def ti_get_available_archs(
   arch_count: ctypes.c_void_p, # ctypes.c_uint32*,
   archs: ctypes.c_void_p, # TiArch*
@@ -940,6 +948,11 @@ def ti_get_available_archs(
     return _LIB.ti_get_available_archs(arch_count, archs)
 
 
+_LIB.ti_get_last_error.argtypes = [
+    ctypes.c_void_p, # ctypes.c_uint64*,
+    ctypes.c_void_p, # char*,
+]
+_LIB.ti_get_last_error.restype = TiError
 def ti_get_last_error(
   message_size: ctypes.c_void_p, # ctypes.c_uint64*,
   message: ctypes.c_void_p, # char*
@@ -960,6 +973,11 @@ def ti_get_last_error(
     return _LIB.ti_get_last_error(message_size, message)
 
 
+_LIB.ti_set_last_error.argtypes = [
+    TiError,
+    ctypes.c_void_p,
+]
+_LIB.ti_set_last_error.restype = None
 def ti_set_last_error(
   error: TiError,
   message: ctypes.c_void_p
@@ -980,6 +998,11 @@ def ti_set_last_error(
     return _LIB.ti_set_last_error(error, message)
 
 
+_LIB.ti_create_runtime.argtypes = [
+    TiArch,
+    ctypes.c_uint32,
+]
+_LIB.ti_create_runtime.restype = TiRuntime
 def ti_create_runtime(
   arch: TiArch,
   device_index: ctypes.c_uint32
@@ -1000,6 +1023,10 @@ def ti_create_runtime(
     return _LIB.ti_create_runtime(arch, device_index)
 
 
+_LIB.ti_destroy_runtime.argtypes = [
+    TiRuntime,
+]
+_LIB.ti_destroy_runtime.restype = None
 def ti_destroy_runtime(
   runtime: TiRuntime
 ) -> None:
@@ -1016,6 +1043,12 @@ def ti_destroy_runtime(
     return _LIB.ti_destroy_runtime(runtime)
 
 
+_LIB.ti_set_runtime_capabilities_ext.argtypes = [
+    TiRuntime,
+    ctypes.c_uint32,
+    ctypes.c_void_p, # const TiCapabilityLevelInfo*,
+]
+_LIB.ti_set_runtime_capabilities_ext.restype = None
 def ti_set_runtime_capabilities_ext(
   runtime: TiRuntime,
   capability_count: ctypes.c_uint32,
@@ -1036,6 +1069,12 @@ def ti_set_runtime_capabilities_ext(
     return _LIB.ti_set_runtime_capabilities_ext(runtime, capability_count, capabilities)
 
 
+_LIB.ti_get_runtime_capabilities.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # ctypes.c_uint32*,
+    ctypes.c_void_p, # TiCapabilityLevelInfo*,
+]
+_LIB.ti_get_runtime_capabilities.restype = None
 def ti_get_runtime_capabilities(
   runtime: TiRuntime,
   capability_count: ctypes.c_void_p, # ctypes.c_uint32*,
@@ -1058,6 +1097,11 @@ def ti_get_runtime_capabilities(
     return _LIB.ti_get_runtime_capabilities(runtime, capability_count, capabilities)
 
 
+_LIB.ti_allocate_memory.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiMemoryAllocateInfo*,
+]
+_LIB.ti_allocate_memory.restype = TiMemory
 def ti_allocate_memory(
   runtime: TiRuntime,
   allocate_info: ctypes.c_void_p, # const TiMemoryAllocateInfo*
@@ -1076,6 +1120,11 @@ def ti_allocate_memory(
     return _LIB.ti_allocate_memory(runtime, allocate_info)
 
 
+_LIB.ti_free_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+]
+_LIB.ti_free_memory.restype = None
 def ti_free_memory(
   runtime: TiRuntime,
   memory: TiMemory
@@ -1094,6 +1143,11 @@ def ti_free_memory(
     return _LIB.ti_free_memory(runtime, memory)
 
 
+_LIB.ti_map_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+]
+_LIB.ti_map_memory.restype = ctypes.c_void_p
 def ti_map_memory(
   runtime: TiRuntime,
   memory: TiMemory
@@ -1112,6 +1166,11 @@ def ti_map_memory(
     return _LIB.ti_map_memory(runtime, memory)
 
 
+_LIB.ti_unmap_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+]
+_LIB.ti_unmap_memory.restype = None
 def ti_unmap_memory(
   runtime: TiRuntime,
   memory: TiMemory
@@ -1130,6 +1189,11 @@ def ti_unmap_memory(
     return _LIB.ti_unmap_memory(runtime, memory)
 
 
+_LIB.ti_allocate_image.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiImageAllocateInfo*,
+]
+_LIB.ti_allocate_image.restype = TiImage
 def ti_allocate_image(
   runtime: TiRuntime,
   allocate_info: ctypes.c_void_p, # const TiImageAllocateInfo*
@@ -1148,6 +1212,11 @@ def ti_allocate_image(
     return _LIB.ti_allocate_image(runtime, allocate_info)
 
 
+_LIB.ti_free_image.argtypes = [
+    TiRuntime,
+    TiImage,
+]
+_LIB.ti_free_image.restype = None
 def ti_free_image(
   runtime: TiRuntime,
   image: TiImage
@@ -1166,6 +1235,11 @@ def ti_free_image(
     return _LIB.ti_free_image(runtime, image)
 
 
+_LIB.ti_create_sampler.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiSamplerCreateInfo*,
+]
+_LIB.ti_create_sampler.restype = TiSampler
 def ti_create_sampler(
   runtime: TiRuntime,
   create_info: ctypes.c_void_p, # const TiSamplerCreateInfo*
@@ -1182,6 +1256,11 @@ def ti_create_sampler(
     return _LIB.ti_create_sampler(runtime, create_info)
 
 
+_LIB.ti_destroy_sampler.argtypes = [
+    TiRuntime,
+    TiSampler,
+]
+_LIB.ti_destroy_sampler.restype = None
 def ti_destroy_sampler(
   runtime: TiRuntime,
   sampler: TiSampler
@@ -1198,6 +1277,12 @@ def ti_destroy_sampler(
     return _LIB.ti_destroy_sampler(runtime, sampler)
 
 
+_LIB.ti_copy_memory_device_to_device.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiMemorySlice*,
+    ctypes.c_void_p, # const TiMemorySlice*,
+]
+_LIB.ti_copy_memory_device_to_device.restype = None
 def ti_copy_memory_device_to_device(
   runtime: TiRuntime,
   dst_memory: ctypes.c_void_p, # const TiMemorySlice*,
@@ -1218,6 +1303,12 @@ def ti_copy_memory_device_to_device(
     return _LIB.ti_copy_memory_device_to_device(runtime, dst_memory, src_memory)
 
 
+_LIB.ti_copy_image_device_to_device.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiImageSlice*,
+    ctypes.c_void_p, # const TiImageSlice*,
+]
+_LIB.ti_copy_image_device_to_device.restype = None
 def ti_copy_image_device_to_device(
   runtime: TiRuntime,
   dst_image: ctypes.c_void_p, # const TiImageSlice*,
@@ -1238,6 +1329,12 @@ def ti_copy_image_device_to_device(
     return _LIB.ti_copy_image_device_to_device(runtime, dst_image, src_image)
 
 
+_LIB.ti_track_image_ext.argtypes = [
+    TiRuntime,
+    TiImage,
+    TiImageLayout,
+]
+_LIB.ti_track_image_ext.restype = None
 def ti_track_image_ext(
   runtime: TiRuntime,
   image: TiImage,
@@ -1258,6 +1355,12 @@ def ti_track_image_ext(
     return _LIB.ti_track_image_ext(runtime, image, layout)
 
 
+_LIB.ti_transition_image.argtypes = [
+    TiRuntime,
+    TiImage,
+    TiImageLayout,
+]
+_LIB.ti_transition_image.restype = None
 def ti_transition_image(
   runtime: TiRuntime,
   image: TiImage,
@@ -1278,6 +1381,13 @@ def ti_transition_image(
     return _LIB.ti_transition_image(runtime, image, layout)
 
 
+_LIB.ti_launch_kernel.argtypes = [
+    TiRuntime,
+    TiKernel,
+    ctypes.c_uint32,
+    ctypes.c_void_p, # const TiArgument*,
+]
+_LIB.ti_launch_kernel.restype = None
 def ti_launch_kernel(
   runtime: TiRuntime,
   kernel: TiKernel,
@@ -1300,6 +1410,13 @@ def ti_launch_kernel(
     return _LIB.ti_launch_kernel(runtime, kernel, arg_count, args)
 
 
+_LIB.ti_launch_compute_graph.argtypes = [
+    TiRuntime,
+    TiComputeGraph,
+    ctypes.c_uint32,
+    ctypes.c_void_p, # const TiNamedArgument*,
+]
+_LIB.ti_launch_compute_graph.restype = None
 def ti_launch_compute_graph(
   runtime: TiRuntime,
   compute_graph: TiComputeGraph,
@@ -1322,6 +1439,10 @@ def ti_launch_compute_graph(
     return _LIB.ti_launch_compute_graph(runtime, compute_graph, arg_count, args)
 
 
+_LIB.ti_flush.argtypes = [
+    TiRuntime,
+]
+_LIB.ti_flush.restype = None
 def ti_flush(
   runtime: TiRuntime
 ) -> None:
@@ -1338,6 +1459,10 @@ def ti_flush(
     return _LIB.ti_flush(runtime)
 
 
+_LIB.ti_wait.argtypes = [
+    TiRuntime,
+]
+_LIB.ti_wait.restype = None
 def ti_wait(
   runtime: TiRuntime
 ) -> None:
@@ -1354,6 +1479,11 @@ def ti_wait(
     return _LIB.ti_wait(runtime)
 
 
+_LIB.ti_load_aot_module.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p,
+]
+_LIB.ti_load_aot_module.restype = TiAotModule
 def ti_load_aot_module(
   runtime: TiRuntime,
   module_path: ctypes.c_void_p
@@ -1373,6 +1503,12 @@ def ti_load_aot_module(
     return _LIB.ti_load_aot_module(runtime, module_path)
 
 
+_LIB.ti_create_aot_module.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p,
+    ctypes.c_uint64,
+]
+_LIB.ti_create_aot_module.restype = TiAotModule
 def ti_create_aot_module(
   runtime: TiRuntime,
   tcm: ctypes.c_void_p,
@@ -1394,6 +1530,10 @@ def ti_create_aot_module(
     return _LIB.ti_create_aot_module(runtime, tcm, size)
 
 
+_LIB.ti_destroy_aot_module.argtypes = [
+    TiAotModule,
+]
+_LIB.ti_destroy_aot_module.restype = None
 def ti_destroy_aot_module(
   aot_module: TiAotModule
 ) -> None:
@@ -1410,6 +1550,11 @@ def ti_destroy_aot_module(
     return _LIB.ti_destroy_aot_module(aot_module)
 
 
+_LIB.ti_get_aot_module_kernel.argtypes = [
+    TiAotModule,
+    ctypes.c_void_p,
+]
+_LIB.ti_get_aot_module_kernel.restype = TiKernel
 def ti_get_aot_module_kernel(
   aot_module: TiAotModule,
   name: ctypes.c_void_p
@@ -1429,6 +1574,11 @@ def ti_get_aot_module_kernel(
     return _LIB.ti_get_aot_module_kernel(aot_module, name)
 
 
+_LIB.ti_get_aot_module_compute_graph.argtypes = [
+    TiAotModule,
+    ctypes.c_void_p,
+]
+_LIB.ti_get_aot_module_compute_graph.restype = TiComputeGraph
 def ti_get_aot_module_compute_graph(
   aot_module: TiAotModule,
   name: ctypes.c_void_p

@@ -13,6 +13,12 @@ TiCudaMemoryInteropInfo._fields_ = [
 ]
 
 
+_LIB.ti_export_cuda_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+    ctypes.c_void_p, # TiCudaMemoryInteropInfo*,
+]
+_LIB.ti_export_cuda_memory.restype = None
 def ti_export_cuda_memory(
   runtime: TiRuntime,
   memory: TiMemory,

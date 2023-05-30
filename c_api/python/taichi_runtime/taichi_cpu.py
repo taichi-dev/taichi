@@ -13,6 +13,12 @@ TiCpuMemoryInteropInfo._fields_ = [
 ]
 
 
+_LIB.ti_export_cpu_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+    ctypes.c_void_p, # TiCpuMemoryInteropInfo*,
+]
+_LIB.ti_export_cpu_memory.restype = None
 def ti_export_cpu_memory(
   runtime: TiRuntime,
   memory: TiMemory,

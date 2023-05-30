@@ -88,6 +88,14 @@ TiVulkanImageInteropInfo._fields_ = [
 ]
 
 
+_LIB.ti_create_vulkan_runtime_ext.argtypes = [
+    ctypes.c_uint32,
+    ctypes.c_uint32,
+    ctypes.c_void_p,
+    ctypes.c_uint32,
+    ctypes.c_void_p,
+]
+_LIB.ti_create_vulkan_runtime_ext.restype = TiRuntime
 def ti_create_vulkan_runtime_ext(
   api_version: ctypes.c_uint32,
   instance_extension_count: ctypes.c_uint32,
@@ -112,6 +120,10 @@ def ti_create_vulkan_runtime_ext(
     return _LIB.ti_create_vulkan_runtime_ext(api_version, instance_extension_count, instance_extensions, device_extension_count, device_extensions)
 
 
+_LIB.ti_import_vulkan_runtime.argtypes = [
+    ctypes.c_void_p, # const TiVulkanRuntimeInteropInfo*,
+]
+_LIB.ti_import_vulkan_runtime.restype = TiRuntime
 def ti_import_vulkan_runtime(
   interop_info: ctypes.c_void_p, # const TiVulkanRuntimeInteropInfo*
 ) -> TiRuntime:
@@ -128,6 +140,11 @@ def ti_import_vulkan_runtime(
     return _LIB.ti_import_vulkan_runtime(interop_info)
 
 
+_LIB.ti_export_vulkan_runtime.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # TiVulkanRuntimeInteropInfo*,
+]
+_LIB.ti_export_vulkan_runtime.restype = None
 def ti_export_vulkan_runtime(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # TiVulkanRuntimeInteropInfo*
@@ -146,6 +163,11 @@ def ti_export_vulkan_runtime(
     return _LIB.ti_export_vulkan_runtime(runtime, interop_info)
 
 
+_LIB.ti_import_vulkan_memory.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiVulkanMemoryInteropInfo*,
+]
+_LIB.ti_import_vulkan_memory.restype = TiMemory
 def ti_import_vulkan_memory(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # const TiVulkanMemoryInteropInfo*
@@ -164,6 +186,12 @@ def ti_import_vulkan_memory(
     return _LIB.ti_import_vulkan_memory(runtime, interop_info)
 
 
+_LIB.ti_export_vulkan_memory.argtypes = [
+    TiRuntime,
+    TiMemory,
+    ctypes.c_void_p, # TiVulkanMemoryInteropInfo*,
+]
+_LIB.ti_export_vulkan_memory.restype = None
 def ti_export_vulkan_memory(
   runtime: TiRuntime,
   memory: TiMemory,
@@ -184,6 +212,13 @@ def ti_export_vulkan_memory(
     return _LIB.ti_export_vulkan_memory(runtime, memory, interop_info)
 
 
+_LIB.ti_import_vulkan_image.argtypes = [
+    TiRuntime,
+    ctypes.c_void_p, # const TiVulkanImageInteropInfo*,
+    VkImageViewType,
+    VkImageLayout,
+]
+_LIB.ti_import_vulkan_image.restype = TiImage
 def ti_import_vulkan_image(
   runtime: TiRuntime,
   interop_info: ctypes.c_void_p, # const TiVulkanImageInteropInfo*,
@@ -206,6 +241,12 @@ def ti_import_vulkan_image(
     return _LIB.ti_import_vulkan_image(runtime, interop_info, view_type, layout)
 
 
+_LIB.ti_export_vulkan_image.argtypes = [
+    TiRuntime,
+    TiImage,
+    ctypes.c_void_p, # TiVulkanImageInteropInfo*,
+]
+_LIB.ti_export_vulkan_image.restype = None
 def ti_export_vulkan_image(
   runtime: TiRuntime,
   image: TiImage,

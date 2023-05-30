@@ -68,7 +68,9 @@ TEST(Half2Vectorization, Ndarray) {
       <[Tensor (2) f16]> $6 = atomic add($2, $5)
   */
 
-  irpass::vectorize_half2(block.get());
+  irpass::scalarize(block.get(), true /*half2_optimization_enabled*/);
+  CompileConfig config;
+  irpass::full_simplify(block.get(), config, {false, false});
 
   /*
     After:

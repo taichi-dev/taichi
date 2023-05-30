@@ -71,6 +71,7 @@ class Struct:
                 v = Struct(v)
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
+        self.__dtype = None
 
     @property
     def keys(self):
@@ -149,6 +150,7 @@ class Struct:
             value = Struct(value)
         for k in self.keys:
             self[k] = value[k]
+        self.__dtype = value.__dtype
 
     @staticmethod
     def _make_getter(key):
@@ -176,6 +178,7 @@ class Struct:
             raise TaichiTypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         for k, v in self.items:
             v._assign(other.__entries[k])
+        self.__dtype = other.__dtype
         return self
 
     def __len__(self):
@@ -633,13 +636,17 @@ class StructType(CompoundType):
             d[name] = data
 
         entries = Struct(d)
+        entries._Struct__dtype = self.dtype
         struct = self.cast(entries)
+        struct._Struct__dtype = self.dtype
         return struct
 
     def __instancecheck__(self, instance):
         if not isinstance(instance, Struct):
             return False
         if list(self.members.keys()) != list(instance._Struct__entries.keys()):
+            return False
+        if instance._Struct__dtype is not None and instance._Struct__dtype != self.dtype:
             return False
         for index, (name, dtype) in enumerate(self.members.items()):
             val = instance._members[index]
@@ -660,9 +667,9 @@ class StructType(CompoundType):
                     return False
             elif dtype in primitive_types.real_types:
                 if isinstance(val, Expr):
-                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.all_types:
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.real_types:
                         return False
-                elif not isinstance(val, (int, float, np.floating, np.integer)):
+                elif not isinstance(val, (float, np.floating)):
                     return False
         return True
 
@@ -677,7 +684,9 @@ class StructType(CompoundType):
                 d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct_dtype = self.dtype
+        return struct
 
     def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
         d = {}
@@ -698,7 +707,9 @@ class StructType(CompoundType):
                     raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct_dtype = self.dtype
+        return struct
 
     def set_kernel_struct_args(self, struct, launch_ctx, ret_index=()):
         # TODO: move this to class Struct after we add dtype to Struct
@@ -735,7 +746,9 @@ class StructType(CompoundType):
                 else:
                     entries[k] = ops.cast(struct._Struct__entries[k], dtype)
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct_dtype = self.dtype
+        return struct
 
     def filled_with_scalar(self, value):
         entries = {}
@@ -747,7 +760,9 @@ class StructType(CompoundType):
             else:
                 entries[k] = value
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct_dtype = self.dtype
+        return struct
 
     def field(self, **kwargs):
         return Struct.field(self.members, self.methods, **kwargs)

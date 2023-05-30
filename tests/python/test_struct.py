@@ -154,3 +154,20 @@ def test_nested_data_class_func():
         return x.testme()
 
     assert k() == 42
+
+
+@test_utils.test()
+def test_struct_special_element_name():
+    @ti.dataclass
+    class Foo:
+        entries: int
+        keys: int
+        items: int
+        methods: int
+
+    @ti.kernel
+    def foo() -> int:
+        x = Foo(42, 21, 23, 11)
+        return x.entries + x.keys + x.items + x.methods
+
+    assert foo() == 42 + 21 + 23 + 11

@@ -1862,9 +1862,12 @@ DataType get_rvalue_dtype(const Expr &expr) {
     }
     return unary->ret_type;
   }
-  //  if (auto mat = expr.cast<MatrixExpression>()) {
-  //    return mat->ret_type->as<PointerType>()->get_pointee_type();
-  //  }
+  if (auto texture_op = expr.cast<TextureOpExpression>()) {
+    if (texture_op->op == TextureOpType::kStore) {
+      return texture_op->ret_type->as<PointerType>()->get_pointee_type();
+    }
+    return texture_op->ret_type;
+  }
   return expr->ret_type;
 }
 

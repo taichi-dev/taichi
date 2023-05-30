@@ -8,10 +8,9 @@ from taichi.lang.util import has_pytorch
 import taichi as ti
 from tests import test_utils
 
-# if sys.version_info >= (3, 8):
-#     # Import the test case only if the Python version is >= 3.8
-#     from .py38_only import test_namedexpr  # noqa
-#
+if sys.version_info >= (3, 8):
+    # Import the test case only if the Python version is >= 3.8
+    from .py38_only import test_namedexpr  # noqa
 
 
 @test_utils.test()
@@ -692,10 +691,6 @@ def test_func_in_python_func():
 
     for i in range(10):
         assert foo(i) == fib[i]
-
-
-ti.init(print_ir=True)
-test_func_in_python_func()
 
 
 @test_utils.test(print_preprocessed_ir=True)

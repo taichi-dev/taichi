@@ -247,7 +247,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    bool is_tensor_involved = var->ret_type->is<TensorType>();
+    bool is_tensor_involved = var->ret_type.ptr_removed()->is<TensorType>();
     if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
       // In between the store stmt and current stmt,
       // if there's a third-stmt that "may" have stored a "different value" to
@@ -355,7 +355,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check for aliased address
   // There's a store to the same dest_addr before this stmt
-  bool is_tensor_involved = var->ret_type->is<TensorType>();
+  bool is_tensor_involved = var->ret_type.ptr_removed()->is<TensorType>();
   if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
     // In between the store stmt and current stmt,
     // if there's a third-stmt that "may" have stored a "different value" to

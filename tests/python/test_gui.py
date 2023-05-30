@@ -84,7 +84,3 @@ def test_set_image_fast_gui_with_offset(channel, dtype, color, offset):
     ground_truth = np.full(n * n, rgb_color, dtype=np.uint32)
 
     assert np.allclose(fast_image, ground_truth)
-
-
-ti.init(print_ir=True)
-test_set_image_fast_gui_with_offset(3, ti.u8, 255, (0, 0))

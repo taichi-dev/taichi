@@ -169,7 +169,3 @@ def test_gpu_sparse_solver2(dtype, solver_type):
     res = np.linalg.solve(A_psd, b.to_numpy())
     for i in range(n):
         assert x[i] == test_utils.approx(res[i], rel=1.0)
-
-
-# ti.init(ti.cuda, print_ir=True)
-# test_gpu_sparse_solver2(ti.f32, "LU")

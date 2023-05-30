@@ -274,8 +274,8 @@ class TaskCodegen : public IRVisitor {
 
   void visit(AllocaStmt *alloca) override {
     spirv::Value ptr_val;
-    if (alloca->ret_type->is<TensorType>()) {
-      auto tensor_type = alloca->ret_type->cast<TensorType>();
+    auto alloca_type = alloca->ret_type->as<PointerType>()->get_pointee_type();
+    if (auto tensor_type = alloca_type->cast<TensorType>()) {
       auto elem_num = tensor_type->get_num_elements();
       spirv::SType elem_type =
           ir_->get_primitive_type(tensor_type->get_element_type());
@@ -288,7 +288,7 @@ class TaskCodegen : public IRVisitor {
       }
     } else {
       // Alloca for a single variable
-      spirv::SType src_type = ir_->get_primitive_type(alloca->element_type());
+      spirv::SType src_type = ir_->get_primitive_type(alloca_type);
       ptr_val = ir_->alloca_variable(src_type);
       ir_->store_variable(ptr_val, ir_->get_zero(src_type));
     }

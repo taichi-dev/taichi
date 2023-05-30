@@ -71,7 +71,7 @@ def test_python_scope_matrix_field(ops):
     assert np.allclose(c.to_numpy(), ops(a, b))
 
 
-@test_utils.test(arch=get_host_arch_list(), print_ir=True)
+@test_utils.test(arch=get_host_arch_list())
 def test_constant_matrices():
     assert ti.cos(math.pi / 3) == test_utils.approx(0.5)
     assert np.allclose((-ti.Vector([2, 3])).to_numpy(), np.array([-2, -3]))

@@ -231,10 +231,18 @@ def test_return_type_mismatch_2():
 def test_return_type_mismatch_3():
     sphere_type = ti.types.struct(center=ti.math.vec3, radius=float)
     circle_type = ti.types.struct(center=ti.math.vec2, radius=float)
+    sphere_type_ = ti.types.struct(center=ti.math.vec3, radius=int)
 
     @ti.kernel
     def foo() -> sphere_type:
         return circle_type(center=ti.math.vec2([1, 2]), radius=2)
 
+    @ti.kernel
+    def bar() -> sphere_type:
+        return sphere_type_(center=ti.math.vec3([1, 2, 3]), radius=2)
+
     with pytest.raises(ti.TaichiCompilationError):
         foo()
+
+    with pytest.raises(ti.TaichiCompilationError):
+        bar()

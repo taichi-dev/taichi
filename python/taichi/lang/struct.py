@@ -58,7 +58,7 @@ class Struct:
             raise TaichiSyntaxError(
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
-        self.methods = self.__entries.pop("__struct_methods", {})
+        self.__methods = self.__entries.pop("__struct_methods", {})
         matrix_ndim = self.__entries.pop("__matrix_ndim", {})
         self._register_methods()
 
@@ -92,6 +92,10 @@ class Struct:
         return self.__entries
 
     @property
+    def methods(self):
+        return self.__methods
+
+    @property
     def items(self):
         """Returns the items in this struct.
 
@@ -113,7 +117,7 @@ class Struct:
         self.__class__ = type(new_cls_name, (cls,), properties)
 
     def _register_methods(self):
-        for name, method in self.methods.items():
+        for name, method in self.__methods.items():
             # use MethodType to pass self (this object) to the method
             setattr(self, name, MethodType(method, self))
 
@@ -183,7 +187,7 @@ class Struct:
         """Python scope struct array print support."""
         if impl.inside_kernel():
             item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
-            item_str += f", struct_methods={self.methods}"
+            item_str += f", struct_methods={self.__methods}"
             return f"<ti.Struct {item_str}>"
         return str(self.to_dict())
 
@@ -209,7 +213,7 @@ class Struct:
             for k, v in self.__entries.items()
         }
         if include_methods:
-            res_dict["__struct_methods"] = self.methods
+            res_dict["__struct_methods"] = self.__methods
         if include_ndim:
             res_dict["__matrix_ndim"] = dict()
             for k, v in self.__entries.items():
@@ -346,7 +350,7 @@ class _IntermediateStruct(Struct):
 
     def __init__(self, entries):
         assert isinstance(entries, dict)
-        self.methods = entries.pop("__struct_methods", {})
+        self._Struct__methods = entries.pop("__struct_methods", {})
         self._register_methods()
         self._Struct__entries = entries
         self._register_members()

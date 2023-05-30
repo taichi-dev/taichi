@@ -227,3 +227,4 @@ def test_return_type_mismatch_2():
             return ti.math.vec3([1, 2, 3])
 
         foo()
+

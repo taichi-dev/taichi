@@ -238,6 +238,14 @@ class ArgPackType(CompoundType):
                 entries[k] = dtype(pack._ArgPack__entries[k])
             elif isinstance(dtype, CompoundType):
                 entries[k] = dtype.cast(pack._ArgPack__entries[k])
+            elif isinstance(dtype, ArgPackType):
+                entries[k] = dtype.cast(pack._ArgPack__entries[k])
+            elif isinstance(dtype, ndarray_type.NdarrayType):
+                entries[k] = pack._ArgPack__entries[k]
+            elif isinstance(dtype, texture_type.RWTextureType):
+                entries[k] = pack._ArgPack__entries[k]
+            elif isinstance(dtype, texture_type.TextureType):
+                entries[k] = pack._ArgPack__entries[k]
             else:
                 if in_python_scope():
                     v = pack._ArgPack__entries[k]

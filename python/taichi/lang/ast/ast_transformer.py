@@ -50,7 +50,7 @@ def reshape_list(flat_list, target_shape):
 
 
 def boundary_type_cast_warning(expression):
-    expr_dtype = expression.ptr.get_ret_type()
+    expr_dtype = expression.ptr.get_rvalue_type()
     if not is_integral(expr_dtype) or expr_dtype in [
         primitive_types.i64,
         primitive_types.u64,
@@ -107,7 +107,7 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            if var.ptr.get_ret_type() != anno:
+            if var.ptr.get_rvalue_type() != anno:
                 raise TaichiSyntaxError("Static assign cannot have type overloading")
             var._assign(value)
         return var

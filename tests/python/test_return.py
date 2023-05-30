@@ -210,6 +210,7 @@ def test_struct_ret_with_matrix():
 @test_utils.test()
 def test_return_type_mismatch_1():
     with pytest.raises(ti.TaichiCompilationError):
+
         @ti.kernel
         def foo() -> ti.i32:
             return ti.math.vec3([1, 2, 3])
@@ -220,9 +221,9 @@ def test_return_type_mismatch_1():
 @test_utils.test()
 def test_return_type_mismatch_2():
     with pytest.raises(ti.TaichiCompilationError):
+
         @ti.kernel
         def foo() -> ti.math.vec4:
             return ti.math.vec3([1, 2, 3])
 
         foo()
-

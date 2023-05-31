@@ -96,8 +96,7 @@ class TypeCheck : public IRVisitor {
       stmt->ret_type = lookup;
     } else {
       auto lookup = stmt->src->ret_type;
-      TI_ASSERT(lookup.is_pointer());
-      stmt->ret_type = lookup->as<PointerType>()->get_pointee_type();
+      stmt->ret_type = lookup.ptr_removed();
     }
   }
 

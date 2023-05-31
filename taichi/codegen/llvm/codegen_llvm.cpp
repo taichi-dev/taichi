@@ -127,7 +127,7 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
   TI_ASSERT(stmt->ret_type.is_pointer());
-  auto alloca_type = stmt->ret_type->as<PointerType>()->get_pointee_type();
+  auto alloca_type = stmt->ret_type.ptr_removed();
   if (alloca_type->is<TensorType>()) {
     auto tensor_type = alloca_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type);

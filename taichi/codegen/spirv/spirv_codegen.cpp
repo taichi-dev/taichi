@@ -274,7 +274,7 @@ class TaskCodegen : public IRVisitor {
 
   void visit(AllocaStmt *alloca) override {
     spirv::Value ptr_val;
-    auto alloca_type = alloca->ret_type->as<PointerType>()->get_pointee_type();
+    auto alloca_type = alloca->ret_type.ptr_removed();
     if (auto tensor_type = alloca_type->cast<TensorType>()) {
       auto elem_num = tensor_type->get_num_elements();
       spirv::SType elem_type =

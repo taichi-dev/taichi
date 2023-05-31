@@ -728,7 +728,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
-  if (ret_type->as<PointerType>()->get_pointee_type()->is<TensorType>()) {
+  if (ret_type.ptr_removed()->is<TensorType>()) {
     std::vector<Stmt *> stmts;
     for (auto &indices : indices_group) {
       stmts.push_back(
@@ -1832,25 +1832,25 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
 DataType get_rvalue_dtype(const Expr &expr) {
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
-      return argload->ret_type->as<PointerType>()->get_pointee_type();
+      return argload->ret_type.ptr_removed();
     }
     return argload->ret_type;
   }
   if (auto id = expr.cast<IdExpression>()) {
-    return id->ret_type->as<PointerType>()->get_pointee_type();
+    return id->ret_type.ptr_removed();
   }
   if (auto index_expr = expr.cast<IndexExpression>()) {
-    return index_expr->ret_type->as<PointerType>()->get_pointee_type();
+    return index_expr->ret_type.ptr_removed();
   }
   if (auto unary = expr.cast<UnaryOpExpression>()) {
     if (unary->type == UnaryOpType::frexp) {
-      return unary->ret_type->as<PointerType>()->get_pointee_type();
+      return unary->ret_type.ptr_removed();
     }
     return unary->ret_type;
   }
   if (auto texture_op = expr.cast<TextureOpExpression>()) {
     if (texture_op->op == TextureOpType::kStore) {
-      return texture_op->ret_type->as<PointerType>()->get_pointee_type();
+      return texture_op->ret_type.ptr_removed();
     }
     return texture_op->ret_type;
   }

@@ -363,6 +363,7 @@ class Scene:
         radius,
         color=(0.5, 0.5, 0.5),
         per_vertex_color=None,
+        per_vertex_radius=None,
         index_offset: int = 0,
         index_count: int = None,
     ):
@@ -374,19 +375,26 @@ class Scene:
             color: a global color for the particles as 3 floats representing RGB
                 values. If `per_vertex_color` is provided, this is ignored.
             per_vertex_color (Tuple[float]): a taichi 3D vector field, where each
-                element indicate the RGB color of a particle.
+                element indicates the RGB color of a particle.
             index_offset (int, optional):
                 the index of the first vertex to draw.
             index_count (int, optional):
                 the number of vertices to draw.
         """
         has_per_vertex_color = per_vertex_color is not None
+        has_per_vertex_radius = per_vertex_radius is not None
         if index_count is None:
             index_count = centers.shape[0]
+        per_vertex_radius_vec3 = None
+        if has_per_vertex_radius:
+            per_vertex_radius_vec3 = Vector.field(3, f32, shape=(index_count,))
+            for i in range(index_count):
+                per_vertex_radius_vec3[i][0] = per_vertex_radius[i]
+                # per_vertex_radius_vec3[i] = Vector([per_vertex_radius[i], 0., 0.])
         vbo = get_vbo_field(centers)
-        copy_all_to_vbo(vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo(vbo, centers, per_vertex_radius_vec3 if has_per_vertex_radius else 0, 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        self.scene.particles(vbo_info, has_per_vertex_color, color, radius, index_count, index_offset)
+        self.scene.particles(vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius, index_count, index_offset)
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

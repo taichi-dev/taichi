@@ -209,6 +209,7 @@ struct PyScene {
 
   void particles(FieldInfo vbo,
                  bool has_per_vertex_color,
+                 bool has_per_vertex_radius,
                  py::tuple color_,
                  float radius,
                  float draw_vertex_count,
@@ -217,6 +218,7 @@ struct PyScene {
     renderable_info.vbo = vbo;
     renderable_info.has_user_customized_draw = true;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.has_per_vertex_radius = has_per_vertex_radius;
     renderable_info.draw_vertex_count = (int)draw_vertex_count;
     renderable_info.draw_first_vertex = (int)draw_first_vertex;
 

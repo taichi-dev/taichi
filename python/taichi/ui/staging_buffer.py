@@ -21,7 +21,7 @@ def get_depth_ndarray(window):
         depth_ndarray_cache[window] = depth_arr
     return depth_ndarray_cache[window]
 
-
+# CHANGE
 def get_vbo_field(vertices):
     if vertices not in vbo_field_cache:
         N = vertices.shape[0]
@@ -51,7 +51,7 @@ def get_transforms_field(transforms):
     transforms_ndarray_cache[transforms] = transforms_arr
     return transforms_arr
 
-
+# CHANGE
 @kernel
 def copy_all_to_vbo(
     vbo: ti.types.ndarray(element_dim=1),

@@ -247,6 +247,10 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   static std::string expr_to_string(Expr &expr) {
+    return expr_to_string(expr.expr.get());
+  }
+
+  static std::string expr_to_string(Expression *expr) {
     std::ostringstream oss;
     ExpressionHumanFriendlyPrinter printer(&oss);
     expr->accept(&printer);

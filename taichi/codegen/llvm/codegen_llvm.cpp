@@ -878,7 +878,6 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
       llvm::BasicBlock::Create(*llvm_context, "false_block", func);
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
-  llvm_val[if_stmt->cond]->dump();
   llvm::Value *cond = builder->CreateIsNotNull(llvm_val[if_stmt->cond]);
   builder->CreateCondBr(cond, true_block, false_block);
   builder->SetInsertPoint(true_block);
@@ -1311,9 +1310,6 @@ void TaskCodeGenLLVM::visit(LocalLoadStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(LocalStoreStmt *stmt) {
-  //  irpass::print(stmt);
-  //  llvm_val[stmt->val]->dump();
-  //  llvm_val[stmt->dest]->dump();
   builder->CreateStore(llvm_val[stmt->val], llvm_val[stmt->dest]);
 }
 

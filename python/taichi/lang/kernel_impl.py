@@ -628,8 +628,8 @@ class Kernel:
             needed_list, provided_list = [], []
 
             def flatten_argpack(argpack, argpack_type):
-                for j, (name, anno) in enumerate(_needed.members.items()):
-                    if isinstance(anno, argpack_type):
+                for j, (name, anno) in enumerate(argpack_type.members.items()):
+                    if isinstance(anno, ArgPackType):
                         flatten_argpack(argpack[name], anno)
                     else:
                         needed_list.append(anno)

@@ -23,6 +23,9 @@ class ArgPack:
     only be used as kernel parameters.
 
     Args:
+        annotations (Dict[str, Union[Dict, Matrix, Struct]]): \
+            keys and types for argument pack members.
+
         entries (Dict[str, Union[Dict, Matrix, Struct]]): \
             keys and values for argument pack members.
 
@@ -172,6 +175,31 @@ class ArgPack:
         return res_dict
 
 
+class _IntermediateArgPack(ArgPack):
+    """Intermediate argument pack class for compiler internal use only.
+
+    Args:
+        annotations (Dict[str, Union[Expr, Matrix, Struct]]): keys and types for struct members.
+
+        entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
+    """
+
+    def __init__(self, annotations, *args, **kwargs):
+        # converts dicts to argument packs
+        if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
+            self._ArgPack__entries = args[0]
+        elif len(args) == 0:
+            self._ArgPack__entries = kwargs
+        else:
+            raise TaichiSyntaxError(
+                "Custom argument packs need to be initialized using either dictionary or keyword arguments"
+            )
+        if annotations.keys() != self._ArgPack__entries.keys():
+            raise TaichiSyntaxError("ArgPack annotations keys not equals to entries keys.")
+        self._ArgPack__annotations = annotations
+        self._register_members()
+
+
 class ArgPackType(CompoundType):
     def __init__(self, **kwargs):
         self.members = {}
@@ -253,6 +281,14 @@ class ArgPackType(CompoundType):
                 else:
                     entries[k] = ops.cast(pack._ArgPack__entries[k], dtype)
         return ArgPack(self.members, entries)
+
+    def from_taichi_object(self, arg_load_dict: dict):
+        d = {}
+        items = self.members.items()
+        for index, pair in enumerate(items):
+            name, dtype = pair
+            d[name] = arg_load_dict[name]
+        return _IntermediateArgPack(self.members, d)
 
     def __str__(self):
         """Python scope argpack type print support."""

@@ -167,8 +167,7 @@ TEST(FrontendTypeInference, TensorElement) {
   auto kernel = std::make_unique<Kernel>(*prog, func, "fake_kernel");
   auto *ast_builder = &kernel->context->builder();
   const std::vector<int> shape{3};
-  auto var = Expr(std::make_shared<IdExpression>(
-      ast_builder->get_next_id(), StmtOpCode::FrontendAllocaStmt));
+  auto var = Expr(std::make_shared<IdExpression>(ast_builder->get_next_id()));
   ast_builder->insert(std::make_unique<FrontendAllocaStmt>(
       std::static_pointer_cast<IdExpression>(var.expr)->id, shape,
       PrimitiveType::u32));

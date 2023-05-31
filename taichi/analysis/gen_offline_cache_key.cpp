@@ -12,6 +12,23 @@ namespace taichi::lang {
 
 namespace {
 
+enum class ExprOpCode : std::uint8_t {
+  NIL,
+#define PER_EXPRESSION(x) x,
+#include "taichi/inc/expressions.inc.h"
+#undef PER_EXPRESSION
+};
+
+enum class StmtOpCode : std::uint8_t {
+  NIL,
+  EnterBlock,
+  ExitBlock,
+  StopGrad,
+#define PER_STATEMENT(x) x,
+#include "taichi/inc/frontend_statements.inc.h"
+#undef PER_STATEMENT
+};
+
 enum class ForLoopType : std::uint8_t {
   StructForOnSNode,
   StructForOnExternalTensor,
@@ -181,7 +198,6 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(IdExpression *expr) override {
     emit(ExprOpCode::IdExpression);
     emit(expr->id);
-    emit(expr->op);
   }
 
   void visit(AtomicOpExpression *expr) override {

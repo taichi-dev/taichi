@@ -15,41 +15,7 @@
 namespace taichi::lang {
 
 class ASTBuilder;
-enum class ExprOpCode : std::uint8_t {
-  NIL,
-#define PER_EXPRESSION(x) x,
-#include "taichi/inc/expressions.inc.h"
-#undef PER_EXPRESSION
-};
 
-enum class StmtOpCode : std::uint8_t {
-  NIL,
-  EnterBlock,
-  ExitBlock,
-  StopGrad,
-#define PER_STATEMENT(x) x,
-#include "taichi/inc/frontend_statements.inc.h"
-#undef PER_STATEMENT
-};
-inline std::string to_string(StmtOpCode op) {
-  switch (op) {
-#define PER_STATEMENT(x) \
-  case StmtOpCode::x:    \
-    return #x;
-#include "taichi/inc/frontend_statements.inc.h"
-#undef PER_STATEMENT
-    case StmtOpCode::NIL:
-      return "NIL";
-    case StmtOpCode::EnterBlock:
-      return "EnterBlock";
-    case StmtOpCode::ExitBlock:
-      return "ExitBlock";
-    case StmtOpCode::StopGrad:
-      return "StopGrad";
-    default:
-      TI_NOT_IMPLEMENTED
-  }
-}
 struct ForLoopConfig {
   bool is_bit_vectorized{false};
   int num_cpu_threads{0};
@@ -711,10 +677,8 @@ class LoopUniqueExpression : public Expression {
 class IdExpression : public Expression {
  public:
   Identifier id;
-  StmtOpCode op;
 
-  explicit IdExpression(const Identifier &id, StmtOpCode op = StmtOpCode::NIL)
-      : id(id), op(op) {
+  explicit IdExpression(const Identifier &id) : id(id) {
   }
 
   void type_check(const CompileConfig *config) override {

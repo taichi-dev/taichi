@@ -167,8 +167,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   void visit(IdExpression *expr) override {
     emit("<" + expr->ret_type->to_string() + ">");
     emit(expr->id.name());
-    emit(": ");
-    emit(to_string(expr->op));
   }
 
   void visit(AtomicOpExpression *expr) override {

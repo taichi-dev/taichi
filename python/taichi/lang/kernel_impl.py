@@ -375,8 +375,10 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, ArgPackType):
             if not isinstance(arg, ArgPack):
                 raise TaichiRuntimeTypeError(f"Argument must be a argument pack, got {type(arg)}")
-            return tuple(TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
-                         for index, (name, dtype) in enumerate(anno.members.items()))
+            return tuple(
+                TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
+                for index, (name, dtype) in enumerate(anno.members.items())
+            )
         if isinstance(anno, texture_type.TextureType):
             if not isinstance(arg, taichi.lang._texture.Texture):
                 raise TaichiRuntimeTypeError(f"Argument must be a texture, got {type(arg)}")

@@ -226,14 +226,6 @@ void offload_to_executable(IRNode *ir,
     }
   }
 
-  if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
-    print("Scalarized");
-  }
-
   if (make_block_local) {
     irpass::make_block_local(ir, config, {kernel->get_name()});
     print("Make block local");
@@ -276,8 +268,26 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
+  if (config.real_matrix_scalarize) {
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
+  }
+
   irpass::demote_operations(ir, config);
   print("Operations demoted");
+
+  if (config.real_matrix_scalarize) {
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
+  }
 
   irpass::full_simplify(ir, config,
                         {lower_global_access, /*autodiff_enabled*/ false});
@@ -291,6 +301,15 @@ void offload_to_executable(IRNode *ir,
   if (is_extension_supported(config.arch, Extension::quant)) {
     irpass::optimize_bit_struct_stores(ir, config, amgr.get());
     print("Bit struct stores optimized");
+  }
+
+  if (config.real_matrix_scalarize) {
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
   }
 
   if (config.arch == Arch::cuda && config.half2_vectorization &&
@@ -356,11 +375,11 @@ void compile_function(IRNode *ir,
   }
 
   if (config.real_matrix_scalarize) {
-    irpass::scalarize(ir);
-
-    // Remove redundant MatrixInitStmt inserted during scalarization
-    irpass::die(ir);
-    print("Scalarized");
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::die(ir);
+      print("Scalarized");
+    }
   }
 
   irpass::lower_access(ir, config, {{}, true});

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import sys
@@ -520,14 +521,24 @@ def test_archive():
         for i, j in density:
             density[i, j] = 1
 
+    def sha1sum(filename):
+        with open(filename, "rb") as f:
+            data = f.read()
+            return hashlib.sha1(data).hexdigest()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
         m.add_field("density", density)
         m.add_kernel(init)
         tcm_path = f"{tmpdir}/x.tcm"
         m.archive(tcm_path)
+        first_sha = sha1sum(tcm_path)
         with zipfile.ZipFile(tcm_path, "r") as z:
             assert z.read("__version__") == bytes(".".join(str(x) for x in ti.__version__), "utf-8")
+        os.remove(tcm_path)
+        m.archive(tcm_path)
+        second_sha = sha1sum(tcm_path)
+        assert first_sha == second_sha
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

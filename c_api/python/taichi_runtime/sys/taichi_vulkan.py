@@ -117,7 +117,8 @@ def ti_create_vulkan_runtime_ext(
         device_extension_count (`ctypes.c_uint32`):
         device_extensions (`ctypes.c_void_p`):
     """
-    return _LIB.ti_create_vulkan_runtime_ext(api_version, instance_extension_count, instance_extensions, device_extension_count, device_extensions)
+    out = _LIB.ti_create_vulkan_runtime_ext(api_version, instance_extension_count, instance_extensions, device_extension_count, device_extensions)
+    return TiRuntime(out)
 
 
 _LIB.ti_import_vulkan_runtime.argtypes = [
@@ -137,7 +138,8 @@ def ti_import_vulkan_runtime(
     Parameters:
         interop_info (`TiVulkanRuntimeInteropInfo`):
     """
-    return _LIB.ti_import_vulkan_runtime(interop_info)
+    out = _LIB.ti_import_vulkan_runtime(interop_info)
+    return TiRuntime(out)
 
 
 _LIB.ti_export_vulkan_runtime.argtypes = [
@@ -160,7 +162,7 @@ def ti_export_vulkan_runtime(
         runtime (`TiRuntime`):
         interop_info (`TiVulkanRuntimeInteropInfo`):
     """
-    return _LIB.ti_export_vulkan_runtime(runtime, interop_info)
+    out = _LIB.ti_export_vulkan_runtime(runtime, interop_info)
 
 
 _LIB.ti_import_vulkan_memory.argtypes = [
@@ -183,7 +185,8 @@ def ti_import_vulkan_memory(
         runtime (`TiRuntime`):
         interop_info (`TiVulkanMemoryInteropInfo`):
     """
-    return _LIB.ti_import_vulkan_memory(runtime, interop_info)
+    out = _LIB.ti_import_vulkan_memory(runtime, interop_info)
+    return TiMemory(out)
 
 
 _LIB.ti_export_vulkan_memory.argtypes = [
@@ -209,7 +212,7 @@ def ti_export_vulkan_memory(
         memory (`TiMemory`):
         interop_info (`TiVulkanMemoryInteropInfo`):
     """
-    return _LIB.ti_export_vulkan_memory(runtime, memory, interop_info)
+    out = _LIB.ti_export_vulkan_memory(runtime, memory, interop_info)
 
 
 _LIB.ti_import_vulkan_image.argtypes = [
@@ -238,7 +241,8 @@ def ti_import_vulkan_image(
         view_type (`VkImageViewType`):
         layout (`VkImageLayout`):
     """
-    return _LIB.ti_import_vulkan_image(runtime, interop_info, view_type, layout)
+    out = _LIB.ti_import_vulkan_image(runtime, interop_info, view_type, layout)
+    return TiImage(out)
 
 
 _LIB.ti_export_vulkan_image.argtypes = [
@@ -264,4 +268,4 @@ def ti_export_vulkan_image(
         image (`TiImage`):
         interop_info (`TiVulkanImageInteropInfo`):
     """
-    return _LIB.ti_export_vulkan_image(runtime, image, interop_info)
+    out = _LIB.ti_export_vulkan_image(runtime, image, interop_info)

@@ -25,7 +25,8 @@ def tix_import_native_runtime_unity(
 
     Return value: TiRuntime
     """
-    return _LIB.tix_import_native_runtime_unity()
+    out = _LIB.tix_import_native_runtime_unity()
+    return TiRuntime(out)
 
 
 _LIB.tix_enqueue_task_async_unity.argtypes = [
@@ -46,7 +47,7 @@ def tix_enqueue_task_async_unity(
         user_data (`ctypes.c_void_p`):
         async_task (`TixAsyncTaskUnity`):
     """
-    return _LIB.tix_enqueue_task_async_unity(user_data, async_task)
+    out = _LIB.tix_enqueue_task_async_unity(user_data, async_task)
 
 
 _LIB.tix_launch_kernel_async_unity.argtypes = [
@@ -73,7 +74,7 @@ def tix_launch_kernel_async_unity(
         arg_count (`ctypes.c_uint32`):
         args (`TiArgument`):
     """
-    return _LIB.tix_launch_kernel_async_unity(runtime, kernel, arg_count, args)
+    out = _LIB.tix_launch_kernel_async_unity(runtime, kernel, arg_count, args)
 
 
 _LIB.tix_launch_compute_graph_async_unity.argtypes = [
@@ -100,7 +101,7 @@ def tix_launch_compute_graph_async_unity(
         arg_count (`ctypes.c_uint32`):
         args (`TiNamedArgument`):
     """
-    return _LIB.tix_launch_compute_graph_async_unity(runtime, compute_graph, arg_count, args)
+    out = _LIB.tix_launch_compute_graph_async_unity(runtime, compute_graph, arg_count, args)
 
 
 _LIB.tix_copy_memory_to_native_buffer_async_unity.argtypes = [
@@ -127,7 +128,7 @@ def tix_copy_memory_to_native_buffer_async_unity(
         dst_offset (`ctypes.c_uint64`):
         src (`TiMemorySlice`):
     """
-    return _LIB.tix_copy_memory_to_native_buffer_async_unity(runtime, dst, dst_offset, src)
+    out = _LIB.tix_copy_memory_to_native_buffer_async_unity(runtime, dst, dst_offset, src)
 
 
 _LIB.tix_copy_memory_device_to_host_unity.argtypes = [
@@ -154,7 +155,7 @@ def tix_copy_memory_device_to_host_unity(
         dst_offset (`ctypes.c_uint64`):
         src (`TiMemorySlice`):
     """
-    return _LIB.tix_copy_memory_device_to_host_unity(runtime, dst, dst_offset, src)
+    out = _LIB.tix_copy_memory_device_to_host_unity(runtime, dst, dst_offset, src)
 
 
 _LIB.tix_copy_memory_host_to_device_unity.argtypes = [
@@ -181,7 +182,7 @@ def tix_copy_memory_host_to_device_unity(
         src (`ctypes.c_void_p`):
         src_offset (`ctypes.c_uint64`):
     """
-    return _LIB.tix_copy_memory_host_to_device_unity(runtime, dst, src, src_offset)
+    out = _LIB.tix_copy_memory_host_to_device_unity(runtime, dst, src, src_offset)
 
 
 _LIB.tix_submit_async_unity.argtypes = [
@@ -199,4 +200,5 @@ def tix_submit_async_unity(
     Parameters:
         runtime (`TiRuntime`):
     """
-    return _LIB.tix_submit_async_unity(runtime)
+    out = _LIB.tix_submit_async_unity(runtime)
+    return ctypes.c_void_p(out)

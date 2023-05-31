@@ -34,4 +34,4 @@ def ti_export_cuda_memory(
         memory (`TiMemory`):
         interop_info (`TiCudaMemoryInteropInfo`):
     """
-    return _LIB.ti_export_cuda_memory(runtime, memory, interop_info)
+    out = _LIB.ti_export_cuda_memory(runtime, memory, interop_info)

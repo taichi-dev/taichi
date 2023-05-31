@@ -34,4 +34,4 @@ def ti_export_cpu_memory(
         memory (`TiMemory`):
         interop_info (`TiCpuMemoryInteropInfo`):
     """
-    return _LIB.ti_export_cpu_memory(runtime, memory, interop_info)
+    out = _LIB.ti_export_cpu_memory(runtime, memory, interop_info)

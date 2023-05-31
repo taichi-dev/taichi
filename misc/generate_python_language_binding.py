@@ -112,7 +112,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += [f"{get_type_name(x)} = ctypes.c_void_p"]
 
     elif ty is Enumeration:
-        out += [get_type_name(x) + " = ctypes.c_int32"]
+        out += [get_type_name(x) + " = ctypes.c_uint32"]
         for name, value in x.cases.items():
             if with_docs:
                 out += get_api_field_ref(module, x, name)
@@ -203,8 +203,12 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             ]
 
         out += [
-            f"    return _LIB.{x.name.snake_case}(" + ', '.join(str(param.name) for param in x.params) + ")"
+            f"    out = _LIB.{x.name.snake_case}(" + ', '.join(str(param.name) for param in x.params) + ")",
         ]
+        if return_value_type != "None":
+            out += [
+                f"    return {return_value_type}(out)",
+            ]
 
     else:
         raise RuntimeError(f"'{x.id}' doesn't need declaration")
@@ -379,7 +383,7 @@ def generate_module_header(module):
 
     module_name = module.name.replace("taichi/", "").replace(".h", ".py")
     print(f"processing module '{module_name}'")
-    path = f"c_api/python/taichi_runtime/{module_name}"
+    path = f"c_api/python/taichi_runtime/sys/{module_name}"
     with open(path, "w") as f:
         f.write(print_module_header(module))
 

@@ -297,7 +297,7 @@ Enumeration `TiError` (1.4.0)
 
 Errors reported by the Taichi C-API.
 """
-TiError = ctypes.c_int32
+TiError = ctypes.c_uint32
 # The Taichi C-API invocation finished gracefully.
 TI_ERROR_SUCCESS = TiError(0)
 # The invoked API, or the combination of parameters is not supported by the Taichi C-API.
@@ -329,7 +329,7 @@ Enumeration `TiArch` (1.4.0)
 
 Types of backend archs.
 """
-TiArch = ctypes.c_int32
+TiArch = ctypes.c_uint32
 TI_ARCH_RESERVED = TiArch(0)
 # Vulkan GPU backend.
 TI_ARCH_VULKAN = TiArch(1)
@@ -353,7 +353,7 @@ Enumeration `TiCapability` (1.4.0)
 
 Device capabilities.
 """
-TiCapability = ctypes.c_int32
+TiCapability = ctypes.c_uint32
 TI_CAPABILITY_RESERVED = TiCapability(0)
 TI_CAPABILITY_SPIRV_VERSION = TiCapability(1)
 TI_CAPABILITY_SPIRV_HAS_INT8 = TiCapability(2)
@@ -399,7 +399,7 @@ Enumeration `TiDataType` (1.4.0)
 
 Elementary (primitive) data types. There might be vendor-specific constraints on the available data types so it's recommended to use 32-bit data types if multi-platform distribution is desired.
 """
-TiDataType = ctypes.c_int32
+TiDataType = ctypes.c_uint32
 # 16-bit IEEE 754 half-precision floating-point number.
 TI_DATA_TYPE_F16 = TiDataType(0)
 # 32-bit IEEE 754 single-precision floating-point number.
@@ -433,7 +433,7 @@ Enumeration `TiArgumentType` (1.4.0)
 
 Types of kernel and compute graph argument.
 """
-TiArgumentType = ctypes.c_int32
+TiArgumentType = ctypes.c_uint32
 # 32-bit one's complement signed integer.
 TI_ARGUMENT_TYPE_I32 = TiArgumentType(0)
 # 32-bit IEEE 754 single-precision floating-point number.
@@ -554,7 +554,7 @@ Enumeration `TiImageDimension` (1.4.0)
 
 Dimensions of an image allocation.
 """
-TiImageDimension = ctypes.c_int32
+TiImageDimension = ctypes.c_uint32
 # The image is 1-dimensional.
 TI_IMAGE_DIMENSION_1D = TiImageDimension(0)
 # The image is 2-dimensional.
@@ -573,7 +573,7 @@ TI_IMAGE_DIMENSION_MAX_ENUM = TiImageDimension(0xffffffff)
 """
 Enumeration `TiImageLayout` (1.4.0)
 """
-TiImageLayout = ctypes.c_int32
+TiImageLayout = ctypes.c_uint32
 # Undefined layout. An image in this layout does not contain any semantical information.
 TI_IMAGE_LAYOUT_UNDEFINED = TiImageLayout(0)
 # Optimal layout for read-only access, including sampling.
@@ -604,7 +604,7 @@ Enumeration `TiFormat` (1.4.0)
 
 Texture formats. The availability of texture formats depends on runtime support.
 """
-TiFormat = ctypes.c_int32
+TiFormat = ctypes.c_uint32
 TI_FORMAT_UNKNOWN = TiFormat(0)
 TI_FORMAT_R8 = TiFormat(1)
 TI_FORMAT_RG8 = TiFormat(2)
@@ -731,7 +731,7 @@ TiImageSlice._fields_ = [
 """
 Enumeration `TiFilter`
 """
-TiFilter = ctypes.c_int32
+TiFilter = ctypes.c_uint32
 TI_FILTER_NEAREST = TiFilter(0)
 TI_FILTER_LINEAR = TiFilter(1)
 TI_FILTER_MAX_ENUM = TiFilter(0xffffffff)
@@ -740,7 +740,7 @@ TI_FILTER_MAX_ENUM = TiFilter(0xffffffff)
 """
 Enumeration `TiAddressMode`
 """
-TiAddressMode = ctypes.c_int32
+TiAddressMode = ctypes.c_uint32
 TI_ADDRESS_MODE_REPEAT = TiAddressMode(0)
 TI_ADDRESS_MODE_MIRRORED_REPEAT = TiAddressMode(1)
 TI_ADDRESS_MODE_CLAMP_TO_EDGE = TiAddressMode(2)
@@ -915,7 +915,8 @@ def ti_get_version(
 
     Return value: ctypes.c_uint32
     """
-    return _LIB.ti_get_version()
+    out = _LIB.ti_get_version()
+    return ctypes.c_uint32(out)
 
 
 _LIB.ti_get_available_archs.argtypes = [
@@ -945,7 +946,7 @@ def ti_get_available_archs(
         arch_count (`ctypes.c_uint32`):
         archs (`TiArch`):
     """
-    return _LIB.ti_get_available_archs(arch_count, archs)
+    out = _LIB.ti_get_available_archs(arch_count, archs)
 
 
 _LIB.ti_get_last_error.argtypes = [
@@ -970,7 +971,8 @@ def ti_get_last_error(
         message (`char`):
             Text buffer for the textual error message. Ignored when `message_size` is 0.
     """
-    return _LIB.ti_get_last_error(message_size, message)
+    out = _LIB.ti_get_last_error(message_size, message)
+    return TiError(out)
 
 
 _LIB.ti_set_last_error.argtypes = [
@@ -995,7 +997,7 @@ def ti_set_last_error(
         message (`ctypes.c_void_p`):
             A null-terminated string of the textual error message or `nullptr` for empty error message.
     """
-    return _LIB.ti_set_last_error(error, message)
+    out = _LIB.ti_set_last_error(error, message)
 
 
 _LIB.ti_create_runtime.argtypes = [
@@ -1020,7 +1022,8 @@ def ti_create_runtime(
         device_index (`ctypes.c_uint32`):
             The index of device in `function.create_runtime.arch` to create Taichi Runtime on.
     """
-    return _LIB.ti_create_runtime(arch, device_index)
+    out = _LIB.ti_create_runtime(arch, device_index)
+    return TiRuntime(out)
 
 
 _LIB.ti_destroy_runtime.argtypes = [
@@ -1040,7 +1043,7 @@ def ti_destroy_runtime(
     Parameters:
         runtime (`TiRuntime`):
     """
-    return _LIB.ti_destroy_runtime(runtime)
+    out = _LIB.ti_destroy_runtime(runtime)
 
 
 _LIB.ti_set_runtime_capabilities_ext.argtypes = [
@@ -1066,7 +1069,7 @@ def ti_set_runtime_capabilities_ext(
         capability_count (`ctypes.c_uint32`):
         capabilities (`TiCapabilityLevelInfo`):
     """
-    return _LIB.ti_set_runtime_capabilities_ext(runtime, capability_count, capabilities)
+    out = _LIB.ti_set_runtime_capabilities_ext(runtime, capability_count, capabilities)
 
 
 _LIB.ti_get_runtime_capabilities.argtypes = [
@@ -1094,7 +1097,7 @@ def ti_get_runtime_capabilities(
         capabilities (`TiCapabilityLevelInfo`):
             Returned capabilities.
     """
-    return _LIB.ti_get_runtime_capabilities(runtime, capability_count, capabilities)
+    out = _LIB.ti_get_runtime_capabilities(runtime, capability_count, capabilities)
 
 
 _LIB.ti_allocate_memory.argtypes = [
@@ -1117,7 +1120,8 @@ def ti_allocate_memory(
         runtime (`TiRuntime`):
         allocate_info (`TiMemoryAllocateInfo`):
     """
-    return _LIB.ti_allocate_memory(runtime, allocate_info)
+    out = _LIB.ti_allocate_memory(runtime, allocate_info)
+    return TiMemory(out)
 
 
 _LIB.ti_free_memory.argtypes = [
@@ -1140,7 +1144,7 @@ def ti_free_memory(
         runtime (`TiRuntime`):
         memory (`TiMemory`):
     """
-    return _LIB.ti_free_memory(runtime, memory)
+    out = _LIB.ti_free_memory(runtime, memory)
 
 
 _LIB.ti_map_memory.argtypes = [
@@ -1163,7 +1167,8 @@ def ti_map_memory(
         runtime (`TiRuntime`):
         memory (`TiMemory`):
     """
-    return _LIB.ti_map_memory(runtime, memory)
+    out = _LIB.ti_map_memory(runtime, memory)
+    return ctypes.c_void_p(out)
 
 
 _LIB.ti_unmap_memory.argtypes = [
@@ -1186,7 +1191,7 @@ def ti_unmap_memory(
         runtime (`TiRuntime`):
         memory (`TiMemory`):
     """
-    return _LIB.ti_unmap_memory(runtime, memory)
+    out = _LIB.ti_unmap_memory(runtime, memory)
 
 
 _LIB.ti_allocate_image.argtypes = [
@@ -1209,7 +1214,8 @@ def ti_allocate_image(
         runtime (`TiRuntime`):
         allocate_info (`TiImageAllocateInfo`):
     """
-    return _LIB.ti_allocate_image(runtime, allocate_info)
+    out = _LIB.ti_allocate_image(runtime, allocate_info)
+    return TiImage(out)
 
 
 _LIB.ti_free_image.argtypes = [
@@ -1232,7 +1238,7 @@ def ti_free_image(
         runtime (`TiRuntime`):
         image (`TiImage`):
     """
-    return _LIB.ti_free_image(runtime, image)
+    out = _LIB.ti_free_image(runtime, image)
 
 
 _LIB.ti_create_sampler.argtypes = [
@@ -1253,7 +1259,8 @@ def ti_create_sampler(
         runtime (`TiRuntime`):
         create_info (`TiSamplerCreateInfo`):
     """
-    return _LIB.ti_create_sampler(runtime, create_info)
+    out = _LIB.ti_create_sampler(runtime, create_info)
+    return TiSampler(out)
 
 
 _LIB.ti_destroy_sampler.argtypes = [
@@ -1274,7 +1281,7 @@ def ti_destroy_sampler(
         runtime (`TiRuntime`):
         sampler (`TiSampler`):
     """
-    return _LIB.ti_destroy_sampler(runtime, sampler)
+    out = _LIB.ti_destroy_sampler(runtime, sampler)
 
 
 _LIB.ti_copy_memory_device_to_device.argtypes = [
@@ -1300,7 +1307,7 @@ def ti_copy_memory_device_to_device(
         dst_memory (`TiMemorySlice`):
         src_memory (`TiMemorySlice`):
     """
-    return _LIB.ti_copy_memory_device_to_device(runtime, dst_memory, src_memory)
+    out = _LIB.ti_copy_memory_device_to_device(runtime, dst_memory, src_memory)
 
 
 _LIB.ti_copy_image_device_to_device.argtypes = [
@@ -1326,7 +1333,7 @@ def ti_copy_image_device_to_device(
         dst_image (`TiImageSlice`):
         src_image (`TiImageSlice`):
     """
-    return _LIB.ti_copy_image_device_to_device(runtime, dst_image, src_image)
+    out = _LIB.ti_copy_image_device_to_device(runtime, dst_image, src_image)
 
 
 _LIB.ti_track_image_ext.argtypes = [
@@ -1352,7 +1359,7 @@ def ti_track_image_ext(
         image (`TiImage`):
         layout (`TiImageLayout`):
     """
-    return _LIB.ti_track_image_ext(runtime, image, layout)
+    out = _LIB.ti_track_image_ext(runtime, image, layout)
 
 
 _LIB.ti_transition_image.argtypes = [
@@ -1378,7 +1385,7 @@ def ti_transition_image(
         image (`TiImage`):
         layout (`TiImageLayout`):
     """
-    return _LIB.ti_transition_image(runtime, image, layout)
+    out = _LIB.ti_transition_image(runtime, image, layout)
 
 
 _LIB.ti_launch_kernel.argtypes = [
@@ -1407,7 +1414,7 @@ def ti_launch_kernel(
         arg_count (`ctypes.c_uint32`):
         args (`TiArgument`):
     """
-    return _LIB.ti_launch_kernel(runtime, kernel, arg_count, args)
+    out = _LIB.ti_launch_kernel(runtime, kernel, arg_count, args)
 
 
 _LIB.ti_launch_compute_graph.argtypes = [
@@ -1436,7 +1443,7 @@ def ti_launch_compute_graph(
         arg_count (`ctypes.c_uint32`):
         args (`TiNamedArgument`):
     """
-    return _LIB.ti_launch_compute_graph(runtime, compute_graph, arg_count, args)
+    out = _LIB.ti_launch_compute_graph(runtime, compute_graph, arg_count, args)
 
 
 _LIB.ti_flush.argtypes = [
@@ -1456,7 +1463,7 @@ def ti_flush(
     Parameters:
         runtime (`TiRuntime`):
     """
-    return _LIB.ti_flush(runtime)
+    out = _LIB.ti_flush(runtime)
 
 
 _LIB.ti_wait.argtypes = [
@@ -1476,7 +1483,7 @@ def ti_wait(
     Parameters:
         runtime (`TiRuntime`):
     """
-    return _LIB.ti_wait(runtime)
+    out = _LIB.ti_wait(runtime)
 
 
 _LIB.ti_load_aot_module.argtypes = [
@@ -1500,7 +1507,8 @@ def ti_load_aot_module(
         runtime (`TiRuntime`):
         module_path (`ctypes.c_void_p`):
     """
-    return _LIB.ti_load_aot_module(runtime, module_path)
+    out = _LIB.ti_load_aot_module(runtime, module_path)
+    return TiAotModule(out)
 
 
 _LIB.ti_create_aot_module.argtypes = [
@@ -1527,7 +1535,8 @@ def ti_create_aot_module(
         tcm (`ctypes.c_void_p`):
         size (`ctypes.c_uint64`):
     """
-    return _LIB.ti_create_aot_module(runtime, tcm, size)
+    out = _LIB.ti_create_aot_module(runtime, tcm, size)
+    return TiAotModule(out)
 
 
 _LIB.ti_destroy_aot_module.argtypes = [
@@ -1547,7 +1556,7 @@ def ti_destroy_aot_module(
     Parameters:
         aot_module (`TiAotModule`):
     """
-    return _LIB.ti_destroy_aot_module(aot_module)
+    out = _LIB.ti_destroy_aot_module(aot_module)
 
 
 _LIB.ti_get_aot_module_kernel.argtypes = [
@@ -1571,7 +1580,8 @@ def ti_get_aot_module_kernel(
         aot_module (`TiAotModule`):
         name (`ctypes.c_void_p`):
     """
-    return _LIB.ti_get_aot_module_kernel(aot_module, name)
+    out = _LIB.ti_get_aot_module_kernel(aot_module, name)
+    return TiKernel(out)
 
 
 _LIB.ti_get_aot_module_compute_graph.argtypes = [
@@ -1595,4 +1605,5 @@ def ti_get_aot_module_compute_graph(
         aot_module (`TiAotModule`):
         name (`ctypes.c_void_p`):
     """
-    return _LIB.ti_get_aot_module_compute_graph(aot_module, name)
+    out = _LIB.ti_get_aot_module_compute_graph(aot_module, name)
+    return TiComputeGraph(out)

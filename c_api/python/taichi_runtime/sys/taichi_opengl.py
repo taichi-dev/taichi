@@ -52,7 +52,8 @@ def ti_import_opengl_runtime(
     Parameters:
         interop_info (`TiOpenglRuntimeInteropInfo`):
     """
-    return _LIB.ti_import_opengl_runtime(interop_info)
+    out = _LIB.ti_import_opengl_runtime(interop_info)
+    return TiRuntime(out)
 
 
 _LIB.ti_export_opengl_runtime.argtypes = [
@@ -73,7 +74,7 @@ def ti_export_opengl_runtime(
         runtime (`TiRuntime`):
         interop_info (`TiOpenglRuntimeInteropInfo`):
     """
-    return _LIB.ti_export_opengl_runtime(runtime, interop_info)
+    out = _LIB.ti_export_opengl_runtime(runtime, interop_info)
 
 
 _LIB.ti_import_opengl_memory.argtypes = [
@@ -94,7 +95,8 @@ def ti_import_opengl_memory(
         runtime (`TiRuntime`):
         interop_info (`TiOpenglMemoryInteropInfo`):
     """
-    return _LIB.ti_import_opengl_memory(runtime, interop_info)
+    out = _LIB.ti_import_opengl_memory(runtime, interop_info)
+    return TiMemory(out)
 
 
 _LIB.ti_export_opengl_memory.argtypes = [
@@ -118,7 +120,7 @@ def ti_export_opengl_memory(
         memory (`TiMemory`):
         interop_info (`TiOpenglMemoryInteropInfo`):
     """
-    return _LIB.ti_export_opengl_memory(runtime, memory, interop_info)
+    out = _LIB.ti_export_opengl_memory(runtime, memory, interop_info)
 
 
 _LIB.ti_import_opengl_image.argtypes = [
@@ -139,7 +141,8 @@ def ti_import_opengl_image(
         runtime (`TiRuntime`):
         interop_info (`TiOpenglImageInteropInfo`):
     """
-    return _LIB.ti_import_opengl_image(runtime, interop_info)
+    out = _LIB.ti_import_opengl_image(runtime, interop_info)
+    return TiImage(out)
 
 
 _LIB.ti_export_opengl_image.argtypes = [
@@ -163,4 +166,4 @@ def ti_export_opengl_image(
         image (`TiImage`):
         interop_info (`TiOpenglImageInteropInfo`):
     """
-    return _LIB.ti_export_opengl_image(runtime, image, interop_info)
+    out = _LIB.ti_export_opengl_image(runtime, image, interop_info)

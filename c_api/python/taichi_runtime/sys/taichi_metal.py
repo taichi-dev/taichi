@@ -70,7 +70,8 @@ def ti_import_metal_runtime(
     Parameters:
         interop_info (`TiMetalRuntimeInteropInfo`):
     """
-    return _LIB.ti_import_metal_runtime(interop_info)
+    out = _LIB.ti_import_metal_runtime(interop_info)
+    return TiRuntime(out)
 
 
 _LIB.ti_export_metal_runtime.argtypes = [
@@ -91,7 +92,7 @@ def ti_export_metal_runtime(
         runtime (`TiRuntime`):
         interop_info (`TiMetalRuntimeInteropInfo`):
     """
-    return _LIB.ti_export_metal_runtime(runtime, interop_info)
+    out = _LIB.ti_export_metal_runtime(runtime, interop_info)
 
 
 _LIB.ti_import_metal_memory.argtypes = [
@@ -112,7 +113,8 @@ def ti_import_metal_memory(
         runtime (`TiRuntime`):
         interop_info (`TiMetalMemoryInteropInfo`):
     """
-    return _LIB.ti_import_metal_memory(runtime, interop_info)
+    out = _LIB.ti_import_metal_memory(runtime, interop_info)
+    return TiMemory(out)
 
 
 _LIB.ti_export_metal_memory.argtypes = [
@@ -136,7 +138,7 @@ def ti_export_metal_memory(
         memory (`TiMemory`):
         interop_info (`TiMetalMemoryInteropInfo`):
     """
-    return _LIB.ti_export_metal_memory(runtime, memory, interop_info)
+    out = _LIB.ti_export_metal_memory(runtime, memory, interop_info)
 
 
 _LIB.ti_import_metal_image.argtypes = [
@@ -157,7 +159,8 @@ def ti_import_metal_image(
         runtime (`TiRuntime`):
         interop_info (`TiMetalImageInteropInfo`):
     """
-    return _LIB.ti_import_metal_image(runtime, interop_info)
+    out = _LIB.ti_import_metal_image(runtime, interop_info)
+    return TiImage(out)
 
 
 _LIB.ti_export_metal_image.argtypes = [
@@ -181,4 +184,4 @@ def ti_export_metal_image(
         image (`TiImage`):
         interop_info (`TiMetalImageInteropInfo`):
     """
-    return _LIB.ti_export_metal_image(runtime, image, interop_info)
+    out = _LIB.ti_export_metal_image(runtime, image, interop_info)

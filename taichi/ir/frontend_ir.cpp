@@ -1797,12 +1797,30 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   return ptr_stmt;
 }
 
-DataType get_rvalue_dtype(Expr expr) {
+DataType get_rvalue_dtype(const Expr &expr) {
   if (auto argload = expr.cast<ArgLoadExpression>()) {
     if (argload->is_ptr) {
       return argload->ret_type.ptr_removed();
     }
     return argload->ret_type;
+  }
+  if (auto id = expr.cast<IdExpression>()) {
+    return id->ret_type.ptr_removed();
+  }
+  if (auto index_expr = expr.cast<IndexExpression>()) {
+    return index_expr->ret_type.ptr_removed();
+  }
+  if (auto unary = expr.cast<UnaryOpExpression>()) {
+    if (unary->type == UnaryOpType::frexp) {
+      return unary->ret_type.ptr_removed();
+    }
+    return unary->ret_type;
+  }
+  if (auto texture_op = expr.cast<TextureOpExpression>()) {
+    if (texture_op->op == TextureOpType::kStore) {
+      return texture_op->ret_type.ptr_removed();
+    }
+    return texture_op->ret_type;
   }
   return expr->ret_type;
 }

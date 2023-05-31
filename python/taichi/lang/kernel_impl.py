@@ -624,7 +624,6 @@ class Kernel:
             _needed = self.arguments[i].annotation
             if isinstance(_needed, template):
                 continue
-            _provided = type(val)
             needed_list, provided_list = [], []
 
             def flatten_argpack(argpack, argpack_type):

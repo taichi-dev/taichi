@@ -409,7 +409,7 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // - All kernels using it are executed.
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
-    ndarrays_.erase(ndarray);
+//    ndarrays_.erase(ndarray);
   }
 }
 

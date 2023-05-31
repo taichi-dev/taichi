@@ -13,8 +13,8 @@ def test_pass_float_as_i32():
         pass
 
     with pytest.raises(
-        ValueError,
-        match=r"Argument type mismatch. Expecting i32, got <class 'float'>.",
+        ti.TaichiRuntimeTypeError,
+        match=r"Argument 0 \(type=<class 'float'>\) cannot be converted into required type i32",
     ) as e:
         foo(1.2)
 

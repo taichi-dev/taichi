@@ -646,9 +646,13 @@ class Kernel:
                     exceed_max_arg_num = True
                     break
                 # Note: do not use sth like "needed == f32". That would be slow.
-                if id(needed) in primitive_types.real_type_ids and isinstance(v, (float, int, np.floating, np.integer)):
+                if id(needed) in primitive_types.real_type_ids:
+                    if not isinstance(v, (float, int, np.floating, np.integer)):
+                        raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
                     launch_ctx.set_arg_float(actual_argument_slot, float(v))
-                elif id(needed) in primitive_types.integer_type_ids and isinstance(v, (int, np.integer)):
+                elif id(needed) in primitive_types.integer_type_ids:
+                    if not isinstance(v, (int, np.integer)):
+                        raise TaichiRuntimeTypeError.get(i, needed.to_string(), provided)
                     if is_signed(cook_dtype(needed)):
                         launch_ctx.set_arg_int(actual_argument_slot, int(v))
                     else:

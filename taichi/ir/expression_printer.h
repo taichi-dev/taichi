@@ -257,13 +257,6 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
     return oss.str();
   }
 
-  static std::string expr_to_string(Expression *expr) {
-    std::ostringstream oss;
-    ExpressionHumanFriendlyPrinter printer(&oss);
-    expr->accept(&printer);
-    return oss.str();
-  }
-
  protected:
   template <typename... Args>
   void emit(Args &&...args) {

@@ -653,13 +653,16 @@ class ASTTransformer(Builder):
                     d = {}
                     for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
                         d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j])
-                    ctx.create_variable(arg.arg,
-                                        kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))
+                    ctx.create_variable(arg.arg, kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))
                 else:
                     ctx.create_variable(
                         arg.arg,
-                        decl_and_create_variable(ctx.func.arguments[i].annotation, ctx.func.arguments[i].name,
-                                                 ctx.arg_features[i] if ctx.arg_features is not None else None))
+                        decl_and_create_variable(
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name,
+                            ctx.arg_features[i] if ctx.arg_features is not None else None,
+                        ),
+                    )
 
             impl.get_runtime().compiling_callable.finalize_params()
             # remove original args

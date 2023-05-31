@@ -773,14 +773,14 @@ void export_lang(py::module &m) {
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
       .def("get_rvalue_type",
-           [](Expr *expr) { return get_rvalue_dtype(*expr); })
+           [](Expr *expr) { return expr->get_rvalue_type(); })
       .def("is_tensor",
-           [](Expr *expr) { return get_rvalue_dtype(*expr)->is<TensorType>(); })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<TensorType>(); })
       .def("is_struct",
-           [](Expr *expr) { return get_rvalue_dtype(*expr)->is<StructType>(); })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<StructType>(); })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
-             auto tensor_type = get_rvalue_dtype(*expr)->cast<TensorType>();
+             auto tensor_type = expr->get_rvalue_type()->cast<TensorType>();
              if (tensor_type) {
                return std::optional<std::vector<int>>(tensor_type->get_shape());
              }

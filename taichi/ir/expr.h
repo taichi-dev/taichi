@@ -103,6 +103,8 @@ class Expr {
 
   DataType get_ret_type() const;
 
+  DataType get_rvalue_type() const;
+
   void type_check(const CompileConfig *config);
 };
 

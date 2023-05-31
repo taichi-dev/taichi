@@ -12,12 +12,13 @@ Reference: https://stackoverflow.com/questions/619335/a-simple-algorithm-for-gen
 Therefore, A_psd is modified from A * A^T to A * A^T + np.eye(n) to improve stability.
 """
 
+
 @pytest.mark.parametrize("dtype", [ti.f32, ti.f64])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @test_utils.test(arch=ti.x64)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
-    np_dtype = np.float32 if dtype==ti.f32 else np.float64
+    np_dtype = np.float32 if dtype == ti.f32 else np.float64
     n = 10
     A = np.random.rand(n, n)
     A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)
@@ -52,7 +53,7 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @test_utils.test(arch=ti.cpu)
 def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
-    np_dtype = np.float32 if dtype==ti.f32 else np.float64    
+    np_dtype = np.float32 if dtype == ti.f32 else np.float64
     n = 10
     A = np.random.rand(n, n)
     A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)
@@ -145,7 +146,7 @@ def test_gpu_sparse_solver():
 @pytest.mark.parametrize("solver_type", ["LLT", "LU"])
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver2(dtype, solver_type):
-    np_dtype = np.float32 if dtype==ti.f32 else np.float64    
+    np_dtype = np.float32 if dtype == ti.f32 else np.float64
     n = 10
     A = np.random.rand(n, n)
     A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)

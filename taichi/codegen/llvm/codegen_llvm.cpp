@@ -611,7 +611,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (is_signed(stmt->ret_type)) {
+    } else if (is_signed(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateSDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -658,7 +658,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #endif
   } else if (op == BinaryOpType::bit_sar) {
-    if (is_signed(stmt->lhs->element_type())) {
+    if (is_signed(stmt->lhs->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {

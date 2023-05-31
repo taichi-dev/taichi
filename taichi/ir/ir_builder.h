@@ -2,6 +2,7 @@
 
 #include "taichi/ir/ir.h"
 #include "taichi/ir/mesh.h"
+#include "taichi/ir/statements.h"
 
 namespace taichi::lang {
 
@@ -137,7 +138,7 @@ class IRBuilder {
   ConstStmt *get_float64(float64 value);
 
   template <typename T>
-  ConstStmt *get_constant(DataType dt, const T &value) {
+  Stmt *get_constant(DataType dt, const T &value) {
     return insert(Stmt::make_typed<ConstStmt>(TypedConstant(dt, value)));
   }
 

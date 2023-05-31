@@ -407,10 +407,10 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // runtime instead of this giant program and it should be freed when:
   // - Python GC signals taichi that it's no longer useful
   // - All kernels using it are executed.
-//  if (ndarrays_.count(ndarray) &&
-//      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
-//    ndarrays_.erase(ndarray);
-//  }
+  //  if (ndarrays_.count(ndarray) &&
+  //      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
+  //    ndarrays_.erase(ndarray);
+  //  }
 }
 
 Texture *Program::create_texture(BufferFormat buffer_format,

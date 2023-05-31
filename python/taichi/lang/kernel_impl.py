@@ -350,7 +350,10 @@ class TaichiCallableTemplateMapper:
             if isinstance(arg, _ti_core.Expr):
                 return arg.get_underlying_ptr_address()
             if isinstance(arg, tuple):
-                return tuple(TaichiCallableTemplateMapper.extract_arg(item, anno) for item in arg)
+                return tuple(
+                    TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
+                    for index, (name, dtype) in enumerate(anno.members.items())
+                )
             if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 raise TaichiRuntimeTypeError(
                     "Ndarray shouldn't be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead"
@@ -372,10 +375,8 @@ class TaichiCallableTemplateMapper:
         if isinstance(anno, ArgPackType):
             if not isinstance(arg, ArgPack):
                 raise TaichiRuntimeTypeError(f"Argument must be a argument pack, got {type(arg)}")
-            return tuple(
-                TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
-                for index, (name, dtype) in enumerate(anno.members.items())
-            )
+            return tuple(TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
+                         for index, (name, dtype) in enumerate(anno.members.items()))
         if isinstance(anno, texture_type.TextureType):
             if not isinstance(arg, taichi.lang._texture.Texture):
                 raise TaichiRuntimeTypeError(f"Argument must be a texture, got {type(arg)}")

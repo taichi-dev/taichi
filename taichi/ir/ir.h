@@ -225,8 +225,6 @@ class Load {
 
 class IRNode {
  public:
-  bool special = false;
-
   virtual void accept(IRVisitor *visitor) {
     TI_NOT_IMPLEMENTED
   }

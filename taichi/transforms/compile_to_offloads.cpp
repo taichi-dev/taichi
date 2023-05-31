@@ -252,8 +252,6 @@ void offload_to_executable(IRNode *ir,
   print("Remove loop_unique");
   irpass::analysis::verify(ir);
 
-  ir->special = true;
-
   if (lower_global_access) {
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Simplified before lower access");
@@ -269,8 +267,6 @@ void offload_to_executable(IRNode *ir,
     print("Access flagged III");
     irpass::analysis::verify(ir);
   }
-
-  ir->special = false;
 
   irpass::demote_operations(ir, config);
   print("Operations demoted");

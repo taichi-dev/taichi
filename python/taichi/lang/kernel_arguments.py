@@ -95,6 +95,10 @@ def decl_struct_arg(structtype, name):
     return structtype.from_taichi_object(arg_load)
 
 
+def decl_argpack_arg(argpacktype, member_dict):
+    return argpacktype.from_taichi_object(member_dict)
+
+
 def decl_sparse_matrix(dtype, name):
     value_type = cook_dtype(dtype)
     ptr_type = cook_dtype(u64)

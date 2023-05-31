@@ -303,6 +303,15 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
+  if (config.real_matrix_scalarize) {
+    if (irpass::scalarize(ir)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
+  }
+
   if (config.arch == Arch::cuda && config.half2_vectorization &&
       !get_custom_cuda_library_path().empty()) {
     irpass::vectorize_half2(ir);

@@ -7,7 +7,7 @@ namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
-    auto cond_type = get_rvalue_dtype(cond);
+    auto cond_type = cond.get_rvalue_type();
     if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type))
       throw TaichiTypeError(fmt::format(
           "`{0}` conditions must be an integer; found {1}. Consider using "
@@ -86,7 +86,7 @@ class FrontendTypeCheck : public IRVisitor {
 
       Expr const &expr = std::get<Expr>(content);
       TI_ASSERT(expr.expr != nullptr);
-      DataType data_type = get_rvalue_dtype(expr);
+      DataType data_type = expr.get_rvalue_type();
       if (data_type->is<TensorType>()) {
         data_type = DataType(data_type->as<TensorType>()->get_element_type());
       }

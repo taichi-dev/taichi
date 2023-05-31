@@ -509,28 +509,9 @@ bool simplify(IRNode *root, const CompileConfig &config) {
   return modified;
 }
 
-namespace {
-
-std::function<void(const std::string &)>
-make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
-  if (!verbose) {
-    return [](const std::string &) {};
-  }
-  return [ir, kernel_name](const std::string &pass) {
-    TI_INFO("[{}] {}:", kernel_name, pass);
-    std::cout << std::flush;
-    irpass::re_id(ir);
-    irpass::print(ir);
-    std::cout << std::flush;
-  };
-}
-
-}  // namespace
-
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
-  auto print = make_pass_printer(false && config.print_ir, "simplify", root);
   TI_AUTO_PROF;
   if (config.advanced_optimization) {
     bool first_iteration = true;
@@ -538,44 +519,32 @@ void full_simplify(IRNode *root,
       bool modified = false;
       if (extract_constant(root, config))
         modified = true;
-      print("extract_constant");
       if (unreachable_code_elimination(root))
         modified = true;
-      print("unreachable_code_elimination");
       if (binary_op_simplify(root, config))
         modified = true;
-      print("binary_op_simplify");
       if (config.constant_folding && constant_fold(root))
         modified = true;
-      print("constant_fold");
       if (die(root))
         modified = true;
-      print("die");
       if (alg_simp(root, config))
         modified = true;
-      print("alg_simp");
       if (loop_invariant_code_motion(root, config))
         modified = true;
-      print("loop_invariant_code_motion");
       if (die(root))
         modified = true;
-      print("die");
       if (simplify(root, config))
         modified = true;
-      print("simplify");
       if (die(root))
         modified = true;
-      print("die");
       if (config.opt_level > 0 && whole_kernel_cse(root))
         modified = true;
-      print("whole_kernel_cse");
       // Don't do this time-consuming optimization pass again if the IR is
       // not modified.
       if (config.opt_level > 0 && first_iteration && config.cfg_optimization &&
           cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
                            !config.real_matrix_scalarize))
         modified = true;
-      print("cfg_optimization");
       first_iteration = false;
       if (!modified)
         break;

@@ -610,14 +610,14 @@ class ASTTransformer(Builder):
                 for j, (_name, anno) in enumerate(annotation.members.items()):
                     d[_name] = decl_and_create_variable(anno, _name, arg_features[j])
                 return kernel_arguments.decl_argpack_arg(annotation, d)
-            elif isinstance(annotation, annotations.template):
+            if isinstance(annotation, annotations.template):
                 return ctx.global_vars[name]
-            elif isinstance(annotation, annotations.sparse_matrix_builder):
+            if isinstance(annotation, annotations.sparse_matrix_builder):
                 return kernel_arguments.decl_sparse_matrix(
                     to_taichi_type(arg_features),
                     name,
                 )
-            elif isinstance(annotation, ndarray_type.NdarrayType):
+            if isinstance(annotation, ndarray_type.NdarrayType):
                 return kernel_arguments.decl_ndarray_arg(
                     to_taichi_type(arg_features[0]),
                     arg_features[1],
@@ -626,21 +626,20 @@ class ASTTransformer(Builder):
                     name,
                     arg_features[4],
                 )
-            elif isinstance(annotation, texture_type.TextureType):
+            if isinstance(annotation, texture_type.TextureType):
                 return kernel_arguments.decl_texture_arg(arg_features[0], name)
-            elif isinstance(annotation, texture_type.RWTextureType):
+            if isinstance(annotation, texture_type.RWTextureType):
                 return kernel_arguments.decl_rw_texture_arg(
                     arg_features[0],
                     arg_features[1],
                     arg_features[2],
                     name,
                 )
-            elif isinstance(annotation, MatrixType):
+            if isinstance(annotation, MatrixType):
                 return kernel_arguments.decl_matrix_arg(annotation, name)
-            elif isinstance(annotation, StructType):
+            if isinstance(annotation, StructType):
                 return kernel_arguments.decl_struct_arg(annotation, name)
-            else:
-                return kernel_arguments.decl_scalar_arg(annotation, name)
+            return kernel_arguments.decl_scalar_arg(annotation, name)
 
         def transform_as_kernel():
             # Treat return type

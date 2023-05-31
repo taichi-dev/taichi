@@ -350,10 +350,7 @@ class TaichiCallableTemplateMapper:
             if isinstance(arg, _ti_core.Expr):
                 return arg.get_underlying_ptr_address()
             if isinstance(arg, tuple):
-                return tuple(
-                    TaichiCallableTemplateMapper.extract_arg(arg[name], dtype)
-                    for index, (name, dtype) in enumerate(anno.members.items())
-                )
+                return tuple(TaichiCallableTemplateMapper.extract_arg(item, anno) for item in arg)
             if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 raise TaichiRuntimeTypeError(
                     "Ndarray shouldn't be passed in via `ti.template()`, please annotate your kernel using `ti.types.ndarray(...)` instead"

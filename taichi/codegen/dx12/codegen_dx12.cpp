@@ -251,16 +251,18 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   for (int i = 0; i < offloads.size(); i++) {
     auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
-    auto *offload_stmt = offload->as<OffloadedStmt>();
-    auto new_data = compile_task(i, config, nullptr, offload_stmt);
+    auto offload_name = offload->task_name();
+
+    Block blk;
+    blk.insert(std::move(offload));
+    auto new_data = compile_task(i, config, nullptr, &blk);
 
     Result.task_dxil_source_codes.emplace_back(
         generate_dxil_from_llvm(new_data, config, kernel));
     aot::CompiledOffloadedTask task;
     // FIXME: build all fields for task.
-    task.name = fmt::format("{}_{}_{}", kernel->get_name(),
-                            offload_stmt->task_name(), i);
-    task.type = offload_stmt->task_name();
+    task.name = fmt::format("{}_{}_{}", kernel->get_name(), offload_name, i);
+    task.type = offload_name;
     Result.tasks.emplace_back(task);
   }
   // FIXME: set correct num_snode_trees.
@@ -272,9 +274,9 @@ LLVMCompiledTask KernelCodeGenDX12::compile_task(
     int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
-    OffloadedStmt *stmt) {
+    IRNode *block) {
   TaskCodeGenLLVMDX12 gen(task_codegen_id, config, get_taichi_llvm_context(),
-                          kernel, stmt);
+                          kernel, block);
   return gen.run_compilation();
 }
 #endif  // TI_WITH_LLVM

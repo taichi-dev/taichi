@@ -472,9 +472,9 @@ LLVMCompiledTask KernelCodeGenAMDGPU::compile_task(
     int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
-    OffloadedStmt *stmt) {
+    IRNode *block) {
   TaskCodeGenAMDGPU gen(task_codegen_id, config, get_taichi_llvm_context(),
-                        kernel, stmt);
+                        kernel, block);
   return gen.run_compilation();
 }
 

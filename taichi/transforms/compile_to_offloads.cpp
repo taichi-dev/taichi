@@ -252,6 +252,8 @@ void offload_to_executable(IRNode *ir,
   print("Remove loop_unique");
   irpass::analysis::verify(ir);
 
+  ir->special = true;
+
   if (lower_global_access) {
     irpass::full_simplify(ir, config, {false, /*autodiff_enabled*/ false});
     print("Simplified before lower access");
@@ -268,14 +270,7 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    if (irpass::scalarize(ir)) {
-      // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config,
-                            {lower_global_access, /*autodiff_enabled*/ false});
-      print("Scalarized");
-    }
-  }
+  ir->special = false;
 
   irpass::demote_operations(ir, config);
   print("Operations demoted");

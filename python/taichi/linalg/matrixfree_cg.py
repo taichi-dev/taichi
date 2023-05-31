@@ -54,7 +54,7 @@ def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     elif len(size) == 3:
         axes = ti.ijk
     else:
-        raise TaichiRuntimeError(f"MatrixFreeCG currently cannot support {len(size)}-D inputs.")
+        raise TaichiRuntimeError(f"MatrixFreeCG only support 1D, 2D, 3D inputs; your inputs is {len(size)}-D.")
     vector_fields_builder.dense(axes, size).place(p, r, Ap)
     vector_fields_snode_tree = vector_fields_builder.finalize()
 

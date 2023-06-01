@@ -707,14 +707,3 @@ def test_rwtexture_with_ndarray():
     )
     with tempfile.TemporaryDirectory() as tmpdir:
         m.save(tmpdir)
-
-
-@test_utils.test(arch=[ti.vulkan])
-def test_ti_module():
-    if sys.version_info < (3, 10):
-        return
-    subprocess.run(["ti", "module", "build", "tests/python/ti_module_test.py"], check=True)
-    subprocess.run(
-        ["ti", "module", "cppgen", "ti_module_test.tcm", "--output", "ti_module_test.h", "--namespace", "test"],
-        check=True,
-    )

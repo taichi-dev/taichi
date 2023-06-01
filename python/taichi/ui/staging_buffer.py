@@ -80,7 +80,7 @@ def copy_all_to_vbo(
 
 
 @kernel
-def copy_all_to_vbo_particle( # The vbo copy function used for vertices of particles and circles
+def copy_all_to_vbo_particle(  # The vbo copy function used for vertices of particles and circles
     vbo: ndarray_type(element_dim=1),
     vertex: template(),
     radius: template(),

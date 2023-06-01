@@ -609,6 +609,7 @@ def test_draw_part_of_particles():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles")
     window.destroy()
 
+
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_draw_part_of_particles_per_vertex_rad_and_col():
@@ -616,7 +617,6 @@ def test_draw_part_of_particles_per_vertex_rad_and_col():
     particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
     particles_col = ti.Vector.field(3, dtype=ti.f32, shape=N)
     particles_radii = ti.field(dtype=ti.f32, shape=N)
-
 
     @ti.kernel
     def init_points_pos(points: ti.template()):
@@ -626,13 +626,13 @@ def test_draw_part_of_particles_per_vertex_rad_and_col():
     @ti.kernel
     def init_points_col(points: ti.template()):
         for i in range(points.shape[0]):
-            points[i] = [(i + 1)/N, 0.5, (i + 1)/N]
+            points[i] = [(i + 1) / N, 0.5, (i + 1) / N]
 
     @ti.kernel
     def init_points_radii(radii: ti.template()):
         for i in range(radii.shape[0]):
-            radii[i] = (i+1) * 0.05
-    
+            radii[i] = (i + 1) * 0.05
+
     init_points_pos(particles_pos)
     init_points_radii(particles_radii)
     init_points_col(particles_col)
@@ -667,6 +667,7 @@ def test_draw_part_of_particles_per_vertex_rad_and_col():
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles_per_vertex_rad_and_col")
     window.destroy()
+
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)

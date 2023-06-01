@@ -375,7 +375,7 @@ class Scene:
                 3D location of the center of a triangle.
             color: a global color for the particles as 3 floats representing RGB
                 values. If `per_vertex_color` is provided, this is ignored.
-            radius: a global radius for the particles as a float. 
+            radius: a global radius for the particles as a float.
                 If 'per_vertex_radius' is provided, this is ignored.
             per_vertex_color: a taichi 3D vector field, where each
                 element indicates the RGB color of a particle.
@@ -390,11 +390,18 @@ class Scene:
         has_per_vertex_radius = per_vertex_radius is not None
         if index_count is None:
             index_count = centers.shape[0]
-                # per_vertex_radius_vec3[i] = Vector([per_vertex_radius[i], 0., 0.])
+            # per_vertex_radius_vec3[i] = Vector([per_vertex_radius[i], 0., 0.])
         vbo = get_vbo_field(centers)
-        copy_all_to_vbo_particle(vbo, centers, per_vertex_radius if has_per_vertex_radius else 0, per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo_particle(
+            vbo,
+            centers,
+            per_vertex_radius if has_per_vertex_radius else 0,
+            per_vertex_color if has_per_vertex_color else 0,
+        )
         vbo_info = get_field_info(vbo)
-        self.scene.particles(vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius, index_count, index_offset)
+        self.scene.particles(
+            vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius, index_count, index_offset
+        )
 
     def point_light(self, pos, color):  # pylint: disable=W0235
         """Set a point light in this scene.

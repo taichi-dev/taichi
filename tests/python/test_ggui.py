@@ -609,6 +609,64 @@ def test_draw_part_of_particles():
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles")
     window.destroy()
 
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_particles_per_vertex_rad_and_col():
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    particles_col = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    particles_radii = ti.field(dtype=ti.f32, shape=N)
+
+
+    @ti.kernel
+    def init_points_pos(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    @ti.kernel
+    def init_points_col(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [(i + 1)/N, 0.5, (i + 1)/N]
+
+    @ti.kernel
+    def init_points_radii(radii: ti.template()):
+        for i in range(radii.shape[0]):
+            radii[i] = (i+1) * 0.05
+    
+    init_points_pos(particles_pos)
+    init_points_radii(particles_radii)
+    init_points_col(particles_col)
+
+    window = ti.ui.Window("Test", (768, 768), show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.Camera()
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
+
+    def render():
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(
+            particles_pos,
+            color=(0.68, 0.26, 0.19),
+            radius=0.5,
+            per_vertex_color=particles_col,
+            per_vertex_radius=particles_radii,
+            index_offset=2,
+            index_count=6,
+        )
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles_per_vertex_rad_and_col")
+    window.destroy()
 
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)

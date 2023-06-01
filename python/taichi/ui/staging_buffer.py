@@ -21,7 +21,6 @@ def get_depth_ndarray(window):
         depth_ndarray_cache[window] = depth_arr
     return depth_ndarray_cache[window]
 
-# CHANGE
 def get_vbo_field(vertices):
     if vertices not in vbo_field_cache:
         N = vertices.shape[0]
@@ -51,7 +50,6 @@ def get_transforms_field(transforms):
     transforms_ndarray_cache[transforms] = transforms_arr
     return transforms_arr
 
-# CHANGE
 @kernel
 def copy_all_to_vbo(
     vbo: ti.types.ndarray(element_dim=1),
@@ -77,6 +75,27 @@ def copy_all_to_vbo(
             else:
                 vbo[i][8:12] = color[i]
 
+@kernel
+def copy_all_to_vbo_particle(
+    vbo: ti.types.ndarray(element_dim=1),
+    vertex: template(),
+    radius: template(),
+    color: template(),
+):
+    for i in vertex:
+        if ti.static(vertex.n == 3):
+            vbo[i][0:3] = vertex[i]
+        else:
+            vbo[i][0:2] = vertex[i]
+            vbo[i][3] = 0.0
+        if ti.static(radius != 0):
+            vbo[i][3] = radius[i]
+        if ti.static(color != 0):
+            if ti.static(color.n == 3):
+                vbo[i][8:11] = color[i]
+                vbo[i][11] = 1.0
+            else:
+                vbo[i][8:12] = color[i]
 
 @ti.kernel
 def copy_texture_to_rgba8(

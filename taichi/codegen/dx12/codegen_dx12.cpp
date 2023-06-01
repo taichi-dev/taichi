@@ -251,7 +251,7 @@ KernelCodeGenDX12::CompileResult KernelCodeGenDX12::compile() {
   for (int i = 0; i < offloads.size(); i++) {
     auto offload = irpass::analysis::clone(offloads[i].get());
     irpass::re_id(offload.get());
-    auto offload_name = offload->task_name();
+    auto offload_name = offload->as<OffloadedStmt>()->task_name();
 
     Block blk;
     blk.insert(std::move(offload));

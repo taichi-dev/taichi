@@ -321,7 +321,7 @@ TI_ERROR_INVALID_STATE = TiError(-9)
 # The AOT module is not compatible with the current runtime.
 TI_ERROR_INCOMPATIBLE_MODULE = TiError(-10)
 TI_ERROR_OUT_OF_MEMORY = TiError(-11)
-TI_ERROR_MAX_ENUM = TiError(0xffffffff)
+TI_ERROR_MAX_ENUM = TiError(0xFFFFFFFF)
 
 
 """
@@ -345,7 +345,7 @@ TI_ARCH_ARM64 = TiArch(5)
 TI_ARCH_OPENGL = TiArch(6)
 # OpenGL ES GPU backend.
 TI_ARCH_GLES = TiArch(7)
-TI_ARCH_MAX_ENUM = TiArch(0xffffffff)
+TI_ARCH_MAX_ENUM = TiArch(0xFFFFFFFF)
 
 
 """
@@ -379,7 +379,7 @@ TI_CAPABILITY_SPIRV_HAS_SUBGROUP_ARITHMETIC = TiCapability(21)
 TI_CAPABILITY_SPIRV_HAS_SUBGROUP_BALLOT = TiCapability(22)
 TI_CAPABILITY_SPIRV_HAS_NON_SEMANTIC_INFO = TiCapability(23)
 TI_CAPABILITY_SPIRV_HAS_NO_INTEGER_WRAP_DECORATION = TiCapability(24)
-TI_CAPABILITY_MAX_ENUM = TiCapability(0xffffffff)
+TI_CAPABILITY_MAX_ENUM = TiCapability(0xFFFFFFFF)
 
 
 """
@@ -387,10 +387,15 @@ Structure `TiCapabilityLevelInfo` (1.4.0)
 
 An integral device capability level. It currently is not guaranteed that a higher level value is compatible with a lower level value.
 """
-class TiCapabilityLevelInfo(ctypes.Structure): pass
+
+
+class TiCapabilityLevelInfo(ctypes.Structure):
+    pass
+
+
 TiCapabilityLevelInfo._fields_ = [
-    ('capability', TiCapability),
-    ('level', ctypes.c_uint32),
+    ("capability", TiCapability),
+    ("level", ctypes.c_uint32),
 ]
 
 
@@ -425,7 +430,7 @@ TI_DATA_TYPE_U32 = TiDataType(10)
 TI_DATA_TYPE_U64 = TiDataType(11)
 TI_DATA_TYPE_GEN = TiDataType(12)
 TI_DATA_TYPE_UNKNOWN = TiDataType(13)
-TI_DATA_TYPE_MAX_ENUM = TiDataType(0xffffffff)
+TI_DATA_TYPE_MAX_ENUM = TiDataType(0xFFFFFFFF)
 
 
 """
@@ -446,7 +451,7 @@ TI_ARGUMENT_TYPE_TEXTURE = TiArgumentType(3)
 TI_ARGUMENT_TYPE_SCALAR = TiArgumentType(4)
 # Typed tensor.
 TI_ARGUMENT_TYPE_TENSOR = TiArgumentType(5)
-TI_ARGUMENT_TYPE_MAX_ENUM = TiArgumentType(0xffffffff)
+TI_ARGUMENT_TYPE_MAX_ENUM = TiArgumentType(0xFFFFFFFF)
 
 
 """
@@ -471,18 +476,23 @@ Structure `TiMemoryAllocateInfo` (1.4.0)
 
 Parameters of a newly allocated memory.
 """
-class TiMemoryAllocateInfo(ctypes.Structure): pass
+
+
+class TiMemoryAllocateInfo(ctypes.Structure):
+    pass
+
+
 TiMemoryAllocateInfo._fields_ = [
     # Size of the allocation in bytes.
-    ('size', ctypes.c_uint64),
+    ("size", ctypes.c_uint64),
     # True if the host needs to write to the allocated memory.
-    ('host_write', TiBool),
+    ("host_write", TiBool),
     # True if the host needs to read from the allocated memory.
-    ('host_read', TiBool),
+    ("host_read", TiBool),
     # True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-    ('export_sharing', TiBool),
+    ("export_sharing", TiBool),
     # All possible usage of this memory allocation. In most cases, `bit_field.memory_usage.storage` is enough.
-    ('usage', TiMemoryUsageFlags),
+    ("usage", TiMemoryUsageFlags),
 ]
 
 
@@ -491,14 +501,19 @@ Structure `TiMemorySlice` (1.4.0)
 
 A subsection of a memory allocation. The sum of `offset` and `size` cannot exceed the size of `memory`.
 """
-class TiMemorySlice(ctypes.Structure): pass
+
+
+class TiMemorySlice(ctypes.Structure):
+    pass
+
+
 TiMemorySlice._fields_ = [
     # The subsectioned memory allocation.
-    ('memory', TiMemory),
+    ("memory", TiMemory),
     # Offset from the beginning of the allocation.
-    ('offset', ctypes.c_uint64),
+    ("offset", ctypes.c_uint64),
     # Size of the subsection.
-    ('size', ctypes.c_uint64),
+    ("size", ctypes.c_uint64),
 ]
 
 
@@ -507,12 +522,17 @@ Structure `TiNdShape` (1.4.0)
 
 Multi-dimensional size of an ND-array. Dimension sizes after `dim_count` are ignored.
 """
-class TiNdShape(ctypes.Structure): pass
+
+
+class TiNdShape(ctypes.Structure):
+    pass
+
+
 TiNdShape._fields_ = [
     # Number of dimensions.
-    ('dim_count', ctypes.c_uint32),
+    ("dim_count", ctypes.c_uint32),
     # Dimension sizes.
-    ('dims', ctypes.c_uint32 * 16),
+    ("dims", ctypes.c_uint32 * 16),
 ]
 
 
@@ -521,16 +541,21 @@ Structure `TiNdArray` (1.4.0)
 
 Multi-dimensional array of dense primitive data.
 """
-class TiNdArray(ctypes.Structure): pass
+
+
+class TiNdArray(ctypes.Structure):
+    pass
+
+
 TiNdArray._fields_ = [
     # Memory bound to the ND-array.
-    ('memory', TiMemory),
+    ("memory", TiMemory),
     # Shape of the ND-array.
-    ('shape', TiNdShape),
+    ("shape", TiNdShape),
     # Shape of the ND-array elements. It *must not* be empty for vector or matrix ND-arrays.
-    ('elem_shape', TiNdShape),
+    ("elem_shape", TiNdShape),
     # Primitive data type of the ND-array elements.
-    ('elem_type', TiDataType),
+    ("elem_type", TiDataType),
 ]
 
 
@@ -567,7 +592,7 @@ TI_IMAGE_DIMENSION_1D_ARRAY = TiImageDimension(3)
 TI_IMAGE_DIMENSION_2D_ARRAY = TiImageDimension(4)
 # The image is 2-dimensional and it has 6 layers for the faces towards +X, -X, +Y, -Y, +Z, -Z in sequence.
 TI_IMAGE_DIMENSION_CUBE = TiImageDimension(5)
-TI_IMAGE_DIMENSION_MAX_ENUM = TiImageDimension(0xffffffff)
+TI_IMAGE_DIMENSION_MAX_ENUM = TiImageDimension(0xFFFFFFFF)
 
 
 """
@@ -596,7 +621,7 @@ TI_IMAGE_LAYOUT_TRANSFER_DST = TiImageLayout(8)
 TI_IMAGE_LAYOUT_TRANSFER_SRC = TiImageLayout(9)
 # Optimal layout as a presentation source.
 TI_IMAGE_LAYOUT_PRESENT_SRC = TiImageLayout(10)
-TI_IMAGE_LAYOUT_MAX_ENUM = TiImageLayout(0xffffffff)
+TI_IMAGE_LAYOUT_MAX_ENUM = TiImageLayout(0xFFFFFFFF)
 
 
 """
@@ -649,7 +674,7 @@ TI_FORMAT_RGBA32F = TiFormat(40)
 TI_FORMAT_DEPTH16 = TiFormat(41)
 TI_FORMAT_DEPTH24STENCIL8 = TiFormat(42)
 TI_FORMAT_DEPTH32F = TiFormat(43)
-TI_FORMAT_MAX_ENUM = TiFormat(0xffffffff)
+TI_FORMAT_MAX_ENUM = TiFormat(0xFFFFFFFF)
 
 
 """
@@ -657,16 +682,21 @@ Structure `TiImageOffset` (1.4.0)
 
 Offsets of an image in X, Y, Z, and array layers.
 """
-class TiImageOffset(ctypes.Structure): pass
+
+
+class TiImageOffset(ctypes.Structure):
+    pass
+
+
 TiImageOffset._fields_ = [
     # Image offset in the X direction.
-    ('x', ctypes.c_uint32),
+    ("x", ctypes.c_uint32),
     # Image offset in the Y direction. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d` or `enumeration.image_dimension.1d_array`.
-    ('y', ctypes.c_uint32),
+    ("y", ctypes.c_uint32),
     # Image offset in the Z direction. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`, `enumeration.image_dimension.1d_array`, `enumeration.image_dimension.2d_array` or `enumeration.image_dimension.cube_array`.
-    ('z', ctypes.c_uint32),
+    ("z", ctypes.c_uint32),
     # Image offset in array layers. *Must* be 0 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or `enumeration.image_dimension.3d`.
-    ('array_layer_offset', ctypes.c_uint32),
+    ("array_layer_offset", ctypes.c_uint32),
 ]
 
 
@@ -675,16 +705,21 @@ Structure `TiImageExtent` (1.4.0)
 
 Extents of an image in X, Y, Z, and array layers.
 """
-class TiImageExtent(ctypes.Structure): pass
+
+
+class TiImageExtent(ctypes.Structure):
+    pass
+
+
 TiImageExtent._fields_ = [
     # Image extent in the X direction.
-    ('width', ctypes.c_uint32),
+    ("width", ctypes.c_uint32),
     # Image extent in the Y direction. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d` or `enumeration.image_dimension.1d_array`.
-    ('height', ctypes.c_uint32),
+    ("height", ctypes.c_uint32),
     # Image extent in the Z direction. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d`, `enumeration.image_dimension.1d_array`, `enumeration.image_dimension.2d_array` or `enumeration.image_dimension.cube_array`.
-    ('depth', ctypes.c_uint32),
+    ("depth", ctypes.c_uint32),
     # Image extent in array layers. *Must* be 1 if the image has a dimension of `enumeration.image_dimension.1d`, `enumeration.image_dimension.2d` or `enumeration.image_dimension.3d`. *Must* be 6 if the image has a dimension of `enumeration.image_dimension.cube_array`.
-    ('array_layer_count', ctypes.c_uint32),
+    ("array_layer_count", ctypes.c_uint32),
 ]
 
 
@@ -693,20 +728,25 @@ Structure `TiImageAllocateInfo` (1.4.0)
 
 Parameters of a newly allocated image.
 """
-class TiImageAllocateInfo(ctypes.Structure): pass
+
+
+class TiImageAllocateInfo(ctypes.Structure):
+    pass
+
+
 TiImageAllocateInfo._fields_ = [
     # Image dimension.
-    ('dimension', TiImageDimension),
+    ("dimension", TiImageDimension),
     # Image extent.
-    ('extent', TiImageExtent),
+    ("extent", TiImageExtent),
     # Number of mip-levels.
-    ('mip_level_count', ctypes.c_uint32),
+    ("mip_level_count", ctypes.c_uint32),
     # Image texel format.
-    ('format', TiFormat),
+    ("format", TiFormat),
     # True if the memory allocation needs to be exported to other backends (e.g., from Vulkan to CUDA).
-    ('export_sharing', TiBool),
+    ("export_sharing", TiBool),
     # All possible usages of this image allocation. In most cases, `bit_field.image_usage.storage` and `bit_field.image_usage.sampled` enough.
-    ('usage', TiImageUsageFlags),
+    ("usage", TiImageUsageFlags),
 ]
 
 
@@ -715,16 +755,21 @@ Structure `TiImageSlice` (1.4.0)
 
 A subsection of a memory allocation. The sum of `offset` and `extent` in each dimension cannot exceed the size of `image`.
 """
-class TiImageSlice(ctypes.Structure): pass
+
+
+class TiImageSlice(ctypes.Structure):
+    pass
+
+
 TiImageSlice._fields_ = [
     # The subsectioned image allocation.
-    ('image', TiImage),
+    ("image", TiImage),
     # Offset from the beginning of the allocation in each dimension.
-    ('offset', TiImageOffset),
+    ("offset", TiImageOffset),
     # Size of the subsection in each dimension.
-    ('extent', TiImageExtent),
+    ("extent", TiImageExtent),
     # The subsectioned mip-level.
-    ('mip_level', ctypes.c_uint32),
+    ("mip_level", ctypes.c_uint32),
 ]
 
 
@@ -734,7 +779,7 @@ Enumeration `TiFilter`
 TiFilter = ctypes.c_uint32
 TI_FILTER_NEAREST = TiFilter(0)
 TI_FILTER_LINEAR = TiFilter(1)
-TI_FILTER_MAX_ENUM = TiFilter(0xffffffff)
+TI_FILTER_MAX_ENUM = TiFilter(0xFFFFFFFF)
 
 
 """
@@ -744,18 +789,23 @@ TiAddressMode = ctypes.c_uint32
 TI_ADDRESS_MODE_REPEAT = TiAddressMode(0)
 TI_ADDRESS_MODE_MIRRORED_REPEAT = TiAddressMode(1)
 TI_ADDRESS_MODE_CLAMP_TO_EDGE = TiAddressMode(2)
-TI_ADDRESS_MODE_MAX_ENUM = TiAddressMode(0xffffffff)
+TI_ADDRESS_MODE_MAX_ENUM = TiAddressMode(0xFFFFFFFF)
 
 
 """
 Structure `TiSamplerCreateInfo`
 """
-class TiSamplerCreateInfo(ctypes.Structure): pass
+
+
+class TiSamplerCreateInfo(ctypes.Structure):
+    pass
+
+
 TiSamplerCreateInfo._fields_ = [
-    ('mag_filter', TiFilter),
-    ('min_filter', TiFilter),
-    ('address_mode', TiAddressMode),
-    ('max_anisotropy', ctypes.c_float),
+    ("mag_filter", TiFilter),
+    ("min_filter", TiFilter),
+    ("address_mode", TiAddressMode),
+    ("max_anisotropy", ctypes.c_float),
 ]
 
 
@@ -764,18 +814,23 @@ Structure `TiTexture` (1.4.0)
 
 Image data bound to a sampler.
 """
-class TiTexture(ctypes.Structure): pass
+
+
+class TiTexture(ctypes.Structure):
+    pass
+
+
 TiTexture._fields_ = [
     # Image bound to the texture.
-    ('image', TiImage),
+    ("image", TiImage),
     # The bound sampler that controls the sampling behavior of `structure.texture.image`.
-    ('sampler', TiSampler),
+    ("sampler", TiSampler),
     # Image Dimension.
-    ('dimension', TiImageDimension),
+    ("dimension", TiImageDimension),
     # Image extent.
-    ('extent', TiImageExtent),
+    ("extent", TiImageExtent),
     # Image texel format.
-    ('format', TiFormat),
+    ("format", TiFormat),
 ]
 
 
@@ -786,16 +841,21 @@ Scalar value represented by a power-of-two number of bits.
 
 **NOTE** The unsigned integer types merely hold the number of bits in memory and doesn't reflect any type of the underlying data. For example, a 32-bit floating-point scalar value is assigned by `*(float*)&scalar_value.x32 = 0.0f`; a 16-bit signed integer is assigned by `*(int16_t)&scalar_vaue.x16 = 1`. The actual type of the scalar is hinted via `type`.
 """
-class TiScalarValue(ctypes.Union): pass
+
+
+class TiScalarValue(ctypes.Union):
+    pass
+
+
 TiScalarValue._fields_ = [
     # Scalar value that fits into 8 bits.
-    ('x8', ctypes.c_uint8),
+    ("x8", ctypes.c_uint8),
     # Scalar value that fits into 16 bits.
-    ('x16', ctypes.c_uint16),
+    ("x16", ctypes.c_uint16),
     # Scalar value that fits into 32 bits.
-    ('x32', ctypes.c_uint32),
+    ("x32", ctypes.c_uint32),
     # Scalar value that fits into 64 bits.
-    ('x64', ctypes.c_uint64),
+    ("x64", ctypes.c_uint64),
 ]
 
 
@@ -804,10 +864,15 @@ Structure `TiScalar` (1.5.0)
 
 A typed scalar value.
 """
-class TiScalar(ctypes.Structure): pass
+
+
+class TiScalar(ctypes.Structure):
+    pass
+
+
 TiScalar._fields_ = [
-    ('type', TiDataType),
-    ('value', TiScalarValue),
+    ("type", TiDataType),
+    ("value", TiScalarValue),
 ]
 
 
@@ -816,16 +881,21 @@ Union `TiTensorValue`
 
 Tensor value represented by a power-of-two number of bits.
 """
-class TiTensorValue(ctypes.Union): pass
+
+
+class TiTensorValue(ctypes.Union):
+    pass
+
+
 TiTensorValue._fields_ = [
     # Tensor value that fits into 8 bits.
-    ('x8', ctypes.c_uint8 * 128),
+    ("x8", ctypes.c_uint8 * 128),
     # Tensor value that fits into 16 bits.
-    ('x16', ctypes.c_uint16 * 64),
+    ("x16", ctypes.c_uint16 * 64),
     # Tensor value that fits into 32 bits.
-    ('x32', ctypes.c_uint32 * 32),
+    ("x32", ctypes.c_uint32 * 32),
     # Tensor value that fits into 64 bits.
-    ('x64', ctypes.c_uint64 * 16),
+    ("x64", ctypes.c_uint64 * 16),
 ]
 
 
@@ -834,10 +904,15 @@ Structure `TiTensorValueWithLength`
 
 A tensor value with a length.
 """
-class TiTensorValueWithLength(ctypes.Structure): pass
+
+
+class TiTensorValueWithLength(ctypes.Structure):
+    pass
+
+
 TiTensorValueWithLength._fields_ = [
-    ('length', ctypes.c_uint32),
-    ('data', TiTensorValue),
+    ("length", ctypes.c_uint32),
+    ("data", TiTensorValue),
 ]
 
 
@@ -846,10 +921,15 @@ Structure `TiTensor`
 
 A typed tensor value.
 """
-class TiTensor(ctypes.Structure): pass
+
+
+class TiTensor(ctypes.Structure):
+    pass
+
+
 TiTensor._fields_ = [
-    ('type', TiDataType),
-    ('contents', TiTensorValueWithLength),
+    ("type", TiDataType),
+    ("contents", TiTensorValueWithLength),
 ]
 
 
@@ -858,20 +938,25 @@ Union `TiArgumentValue` (1.4.0)
 
 A scalar or structured argument value.
 """
-class TiArgumentValue(ctypes.Union): pass
+
+
+class TiArgumentValue(ctypes.Union):
+    pass
+
+
 TiArgumentValue._fields_ = [
     # Value of a 32-bit one's complement signed integer. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.i32`.
-    ('i32', ctypes.c_int32),
+    ("i32", ctypes.c_int32),
     # Value of a 32-bit IEEE 754 single-precision floating-poing number. This is equivalent to `union.scalar_value.x32` with `enumeration.data_type.f32`.
-    ('f32', ctypes.c_float),
+    ("f32", ctypes.c_float),
     # An ND-array to be bound.
-    ('ndarray', TiNdArray),
+    ("ndarray", TiNdArray),
     # A texture to be bound.
-    ('texture', TiTexture),
+    ("texture", TiTexture),
     # An scalar to be bound.
-    ('scalar', TiScalar),
+    ("scalar", TiScalar),
     # A tensor to be bound.
-    ('tensor', TiTensor),
+    ("tensor", TiTensor),
 ]
 
 
@@ -880,12 +965,17 @@ Structure `TiArgument` (1.4.0)
 
 An argument value to feed kernels.
 """
-class TiArgument(ctypes.Structure): pass
+
+
+class TiArgument(ctypes.Structure):
+    pass
+
+
 TiArgument._fields_ = [
     # Type of the argument.
-    ('type', TiArgumentType),
+    ("type", TiArgumentType),
     # Value of the argument.
-    ('value', TiArgumentValue),
+    ("value", TiArgumentValue),
 ]
 
 
@@ -894,23 +984,28 @@ Structure `TiNamedArgument` (1.4.0)
 
 A named argument value to feed compute graphs.
 """
-class TiNamedArgument(ctypes.Structure): pass
+
+
+class TiNamedArgument(ctypes.Structure):
+    pass
+
+
 TiNamedArgument._fields_ = [
     # Name of the argument.
-    ('name', ctypes.c_void_p),
+    ("name", ctypes.c_void_p),
     # Argument body.
-    ('argument', TiArgument),
+    ("argument", TiArgument),
 ]
 
 
-_LIB.ti_get_version.argtypes = [
-]
+_LIB.ti_get_version.argtypes = []
 _LIB.ti_get_version.restype = ctypes.c_uint32
-def ti_get_version(
-) -> ctypes.c_uint32:
+
+
+def ti_get_version() -> ctypes.c_uint32:
     """
     Function `ti_get_version` (1.4.0)
-    
+
     Get the current taichi version. It has the same value as `TI_C_API_VERSION` as defined in `taichi_core.h`.
 
     Return value: ctypes.c_uint32
@@ -920,24 +1015,26 @@ def ti_get_version(
 
 
 _LIB.ti_get_available_archs.argtypes = [
-    ctypes.c_void_p, # ctypes.c_uint32*,
-    ctypes.c_void_p, # TiArch*,
+    ctypes.c_void_p,  # ctypes.c_uint32*,
+    ctypes.c_void_p,  # TiArch*,
 ]
 _LIB.ti_get_available_archs.restype = None
+
+
 def ti_get_available_archs(
-  arch_count: ctypes.c_void_p, # ctypes.c_uint32*,
-  archs: ctypes.c_void_p, # TiArch*
+    arch_count: ctypes.c_void_p,  # ctypes.c_uint32*,
+    archs: ctypes.c_void_p,  # TiArch*
 ) -> None:
     """
     Function `ti_get_available_archs` (1.4.0)
-    
+
     Gets a list of available archs on the current platform. An arch is only available if:
-    
+
     1. The Runtime library is compiled with its support;
     2. The current platform is installed with a capable hardware or an emulation software.
-    
+
     An available arch has at least one device available, i.e., device index 0 is always available. If an arch is not available on the current platform, a call to [`ti_create_runtime`](#function-ti_create_runtime) with that arch is guaranteed failing.
-    
+
     **WARNING** Please also note that the order or returned archs is *undefined*.
 
     Return value: None
@@ -950,17 +1047,19 @@ def ti_get_available_archs(
 
 
 _LIB.ti_get_last_error.argtypes = [
-    ctypes.c_void_p, # ctypes.c_uint64*,
-    ctypes.c_void_p, # char*,
+    ctypes.c_void_p,  # ctypes.c_uint64*,
+    ctypes.c_void_p,  # char*,
 ]
 _LIB.ti_get_last_error.restype = TiError
+
+
 def ti_get_last_error(
-  message_size: ctypes.c_void_p, # ctypes.c_uint64*,
-  message: ctypes.c_void_p, # char*
+    message_size: ctypes.c_void_p,  # ctypes.c_uint64*,
+    message: ctypes.c_void_p,  # char*
 ) -> TiError:
     """
     Function `ti_get_last_error` (1.4.0)
-    
+
     Gets the last error raised by Taichi C-API invocations. Returns the semantical error code.
 
     Return value: TiError
@@ -980,13 +1079,12 @@ _LIB.ti_set_last_error.argtypes = [
     ctypes.c_void_p,
 ]
 _LIB.ti_set_last_error.restype = None
-def ti_set_last_error(
-  error: TiError,
-  message: ctypes.c_void_p
-) -> None:
+
+
+def ti_set_last_error(error: TiError, message: ctypes.c_void_p) -> None:
     """
     Function `ti_set_last_error` (1.4.0)
-    
+
     Sets the provided error as the last error raised by Taichi C-API invocations. It can be useful in extended validation procedures in Taichi C-API wrappers and helper libraries.
 
     Return value: None
@@ -1005,13 +1103,12 @@ _LIB.ti_create_runtime.argtypes = [
     ctypes.c_uint32,
 ]
 _LIB.ti_create_runtime.restype = TiRuntime
-def ti_create_runtime(
-  arch: TiArch,
-  device_index: ctypes.c_uint32
-) -> TiRuntime:
+
+
+def ti_create_runtime(arch: TiArch, device_index: ctypes.c_uint32) -> TiRuntime:
     """
     Function `ti_create_runtime` (1.4.0)
-    
+
     Creates a Taichi Runtime with the specified [`TiArch`](#enumeration-tiarch).
 
     Return value: TiRuntime
@@ -1030,12 +1127,12 @@ _LIB.ti_destroy_runtime.argtypes = [
     TiRuntime,
 ]
 _LIB.ti_destroy_runtime.restype = None
-def ti_destroy_runtime(
-  runtime: TiRuntime
-) -> None:
+
+
+def ti_destroy_runtime(runtime: TiRuntime) -> None:
     """
     Function `ti_destroy_runtime` (1.4.0)
-    
+
     Destroys a Taichi Runtime.
 
     Return value: None
@@ -1049,17 +1146,19 @@ def ti_destroy_runtime(
 _LIB.ti_set_runtime_capabilities_ext.argtypes = [
     TiRuntime,
     ctypes.c_uint32,
-    ctypes.c_void_p, # const TiCapabilityLevelInfo*,
+    ctypes.c_void_p,  # const TiCapabilityLevelInfo*,
 ]
 _LIB.ti_set_runtime_capabilities_ext.restype = None
+
+
 def ti_set_runtime_capabilities_ext(
-  runtime: TiRuntime,
-  capability_count: ctypes.c_uint32,
-  capabilities: ctypes.c_void_p, # const TiCapabilityLevelInfo*
+    runtime: TiRuntime,
+    capability_count: ctypes.c_uint32,
+    capabilities: ctypes.c_void_p,  # const TiCapabilityLevelInfo*
 ) -> None:
     """
     Function `ti_set_runtime_capabilities_ext` (1.4.0)
-    
+
     Force override the list of available capabilities in the runtime instance.
 
     Return value: None
@@ -1074,18 +1173,20 @@ def ti_set_runtime_capabilities_ext(
 
 _LIB.ti_get_runtime_capabilities.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # ctypes.c_uint32*,
-    ctypes.c_void_p, # TiCapabilityLevelInfo*,
+    ctypes.c_void_p,  # ctypes.c_uint32*,
+    ctypes.c_void_p,  # TiCapabilityLevelInfo*,
 ]
 _LIB.ti_get_runtime_capabilities.restype = None
+
+
 def ti_get_runtime_capabilities(
-  runtime: TiRuntime,
-  capability_count: ctypes.c_void_p, # ctypes.c_uint32*,
-  capabilities: ctypes.c_void_p, # TiCapabilityLevelInfo*
+    runtime: TiRuntime,
+    capability_count: ctypes.c_void_p,  # ctypes.c_uint32*,
+    capabilities: ctypes.c_void_p,  # TiCapabilityLevelInfo*
 ) -> None:
     """
     Function `ti_get_runtime_capabilities` (1.4.0)
-    
+
     Gets all capabilities available on the runtime instance.
 
     Return value: None
@@ -1102,16 +1203,18 @@ def ti_get_runtime_capabilities(
 
 _LIB.ti_allocate_memory.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiMemoryAllocateInfo*,
+    ctypes.c_void_p,  # const TiMemoryAllocateInfo*,
 ]
 _LIB.ti_allocate_memory.restype = TiMemory
+
+
 def ti_allocate_memory(
-  runtime: TiRuntime,
-  allocate_info: ctypes.c_void_p, # const TiMemoryAllocateInfo*
+    runtime: TiRuntime,
+    allocate_info: ctypes.c_void_p,  # const TiMemoryAllocateInfo*
 ) -> TiMemory:
     """
     Function `ti_allocate_memory` (1.4.0)
-    
+
     Allocates a contiguous device memory with provided parameters.
 
     Return value: TiMemory
@@ -1129,13 +1232,12 @@ _LIB.ti_free_memory.argtypes = [
     TiMemory,
 ]
 _LIB.ti_free_memory.restype = None
-def ti_free_memory(
-  runtime: TiRuntime,
-  memory: TiMemory
-) -> None:
+
+
+def ti_free_memory(runtime: TiRuntime, memory: TiMemory) -> None:
     """
     Function `ti_free_memory` (1.4.0)
-    
+
     Frees a memory allocation.
 
     Return value: None
@@ -1152,13 +1254,12 @@ _LIB.ti_map_memory.argtypes = [
     TiMemory,
 ]
 _LIB.ti_map_memory.restype = ctypes.c_void_p
-def ti_map_memory(
-  runtime: TiRuntime,
-  memory: TiMemory
-) -> ctypes.c_void_p:
+
+
+def ti_map_memory(runtime: TiRuntime, memory: TiMemory) -> ctypes.c_void_p:
     """
     Function `ti_map_memory` (1.4.0)
-    
+
     Maps a device memory to a host-addressable space. You *must* ensure that the device is not being used by any device command before the mapping.
 
     Return value: ctypes.c_void_p
@@ -1176,13 +1277,12 @@ _LIB.ti_unmap_memory.argtypes = [
     TiMemory,
 ]
 _LIB.ti_unmap_memory.restype = None
-def ti_unmap_memory(
-  runtime: TiRuntime,
-  memory: TiMemory
-) -> None:
+
+
+def ti_unmap_memory(runtime: TiRuntime, memory: TiMemory) -> None:
     """
     Function `ti_unmap_memory` (1.4.0)
-    
+
     Unmaps a device memory and makes any host-side changes about the memory visible to the device. You *must* ensure that there is no further access to the previously mapped host-addressable space.
 
     Return value: None
@@ -1196,16 +1296,18 @@ def ti_unmap_memory(
 
 _LIB.ti_allocate_image.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiImageAllocateInfo*,
+    ctypes.c_void_p,  # const TiImageAllocateInfo*,
 ]
 _LIB.ti_allocate_image.restype = TiImage
+
+
 def ti_allocate_image(
-  runtime: TiRuntime,
-  allocate_info: ctypes.c_void_p, # const TiImageAllocateInfo*
+    runtime: TiRuntime,
+    allocate_info: ctypes.c_void_p,  # const TiImageAllocateInfo*
 ) -> TiImage:
     """
     Function `ti_allocate_image` (1.4.0)
-    
+
     Allocates a device image with provided parameters.
 
     Return value: TiImage
@@ -1223,13 +1325,12 @@ _LIB.ti_free_image.argtypes = [
     TiImage,
 ]
 _LIB.ti_free_image.restype = None
-def ti_free_image(
-  runtime: TiRuntime,
-  image: TiImage
-) -> None:
+
+
+def ti_free_image(runtime: TiRuntime, image: TiImage) -> None:
     """
     Function `ti_free_image` (1.4.0)
-    
+
     Frees an image allocation.
 
     Return value: None
@@ -1243,12 +1344,14 @@ def ti_free_image(
 
 _LIB.ti_create_sampler.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiSamplerCreateInfo*,
+    ctypes.c_void_p,  # const TiSamplerCreateInfo*,
 ]
 _LIB.ti_create_sampler.restype = TiSampler
+
+
 def ti_create_sampler(
-  runtime: TiRuntime,
-  create_info: ctypes.c_void_p, # const TiSamplerCreateInfo*
+    runtime: TiRuntime,
+    create_info: ctypes.c_void_p,  # const TiSamplerCreateInfo*
 ) -> TiSampler:
     """
     Function `ti_create_sampler`
@@ -1268,10 +1371,9 @@ _LIB.ti_destroy_sampler.argtypes = [
     TiSampler,
 ]
 _LIB.ti_destroy_sampler.restype = None
-def ti_destroy_sampler(
-  runtime: TiRuntime,
-  sampler: TiSampler
-) -> None:
+
+
+def ti_destroy_sampler(runtime: TiRuntime, sampler: TiSampler) -> None:
     """
     Function `ti_destroy_sampler`
 
@@ -1286,18 +1388,20 @@ def ti_destroy_sampler(
 
 _LIB.ti_copy_memory_device_to_device.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiMemorySlice*,
-    ctypes.c_void_p, # const TiMemorySlice*,
+    ctypes.c_void_p,  # const TiMemorySlice*,
+    ctypes.c_void_p,  # const TiMemorySlice*,
 ]
 _LIB.ti_copy_memory_device_to_device.restype = None
+
+
 def ti_copy_memory_device_to_device(
-  runtime: TiRuntime,
-  dst_memory: ctypes.c_void_p, # const TiMemorySlice*,
-  src_memory: ctypes.c_void_p, # const TiMemorySlice*
+    runtime: TiRuntime,
+    dst_memory: ctypes.c_void_p,  # const TiMemorySlice*,
+    src_memory: ctypes.c_void_p,  # const TiMemorySlice*
 ) -> None:
     """
     Function `ti_copy_memory_device_to_device` (Device Command) (1.4.0)
-    
+
     Copies the data in a contiguous subsection of the device memory to another subsection. The two subsections *must not* overlap.
 
     Return value: None
@@ -1312,18 +1416,20 @@ def ti_copy_memory_device_to_device(
 
 _LIB.ti_copy_image_device_to_device.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiImageSlice*,
-    ctypes.c_void_p, # const TiImageSlice*,
+    ctypes.c_void_p,  # const TiImageSlice*,
+    ctypes.c_void_p,  # const TiImageSlice*,
 ]
 _LIB.ti_copy_image_device_to_device.restype = None
+
+
 def ti_copy_image_device_to_device(
-  runtime: TiRuntime,
-  dst_image: ctypes.c_void_p, # const TiImageSlice*,
-  src_image: ctypes.c_void_p, # const TiImageSlice*
+    runtime: TiRuntime,
+    dst_image: ctypes.c_void_p,  # const TiImageSlice*,
+    src_image: ctypes.c_void_p,  # const TiImageSlice*
 ) -> None:
     """
     Function `ti_copy_image_device_to_device` (Device Command)
-    
+
     Copies the image data in a contiguous subsection of the device image to another subsection. The two subsections *must not* overlap.
 
     Return value: None
@@ -1342,14 +1448,12 @@ _LIB.ti_track_image_ext.argtypes = [
     TiImageLayout,
 ]
 _LIB.ti_track_image_ext.restype = None
-def ti_track_image_ext(
-  runtime: TiRuntime,
-  image: TiImage,
-  layout: TiImageLayout
-) -> None:
+
+
+def ti_track_image_ext(runtime: TiRuntime, image: TiImage, layout: TiImageLayout) -> None:
     """
     Function `ti_track_image_ext` (1.4.0)
-    
+
     Tracks the device image with the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to inform Taichi that the image is transitioned to a new layout by external procedures.
 
     Return value: None
@@ -1368,14 +1472,12 @@ _LIB.ti_transition_image.argtypes = [
     TiImageLayout,
 ]
 _LIB.ti_transition_image.restype = None
-def ti_transition_image(
-  runtime: TiRuntime,
-  image: TiImage,
-  layout: TiImageLayout
-) -> None:
+
+
+def ti_transition_image(runtime: TiRuntime, image: TiImage, layout: TiImageLayout) -> None:
     """
     Function `ti_transition_image` (Device Command) (1.4.0)
-    
+
     Transitions the image to the provided image layout. Because Taichi tracks image layouts internally, it is *only* useful to enforce an image layout for external procedures to use.
 
     Return value: None
@@ -1392,18 +1494,20 @@ _LIB.ti_launch_kernel.argtypes = [
     TiRuntime,
     TiKernel,
     ctypes.c_uint32,
-    ctypes.c_void_p, # const TiArgument*,
+    ctypes.c_void_p,  # const TiArgument*,
 ]
 _LIB.ti_launch_kernel.restype = None
+
+
 def ti_launch_kernel(
-  runtime: TiRuntime,
-  kernel: TiKernel,
-  arg_count: ctypes.c_uint32,
-  args: ctypes.c_void_p, # const TiArgument*
+    runtime: TiRuntime,
+    kernel: TiKernel,
+    arg_count: ctypes.c_uint32,
+    args: ctypes.c_void_p,  # const TiArgument*
 ) -> None:
     """
     Function `ti_launch_kernel` (Device Command) (1.4.0)
-    
+
     Launches a Taichi kernel with the provided arguments. The arguments *must* have the same count and types in the same order as in the source code.
 
     Return value: None
@@ -1421,18 +1525,20 @@ _LIB.ti_launch_compute_graph.argtypes = [
     TiRuntime,
     TiComputeGraph,
     ctypes.c_uint32,
-    ctypes.c_void_p, # const TiNamedArgument*,
+    ctypes.c_void_p,  # const TiNamedArgument*,
 ]
 _LIB.ti_launch_compute_graph.restype = None
+
+
 def ti_launch_compute_graph(
-  runtime: TiRuntime,
-  compute_graph: TiComputeGraph,
-  arg_count: ctypes.c_uint32,
-  args: ctypes.c_void_p, # const TiNamedArgument*
+    runtime: TiRuntime,
+    compute_graph: TiComputeGraph,
+    arg_count: ctypes.c_uint32,
+    args: ctypes.c_void_p,  # const TiNamedArgument*
 ) -> None:
     """
     Function `ti_launch_compute_graph` (Device Command) (1.4.0)
-    
+
     Launches a Taichi compute graph with provided named arguments. The named arguments *must* have the same count, names, and types as in the source code.
 
     Return value: None
@@ -1450,12 +1556,12 @@ _LIB.ti_flush.argtypes = [
     TiRuntime,
 ]
 _LIB.ti_flush.restype = None
-def ti_flush(
-  runtime: TiRuntime
-) -> None:
+
+
+def ti_flush(runtime: TiRuntime) -> None:
     """
     Function `ti_flush` (1.4.0)
-    
+
     Submits all previously invoked device commands to the offload device for execution.
 
     Return value: None
@@ -1470,12 +1576,12 @@ _LIB.ti_wait.argtypes = [
     TiRuntime,
 ]
 _LIB.ti_wait.restype = None
-def ti_wait(
-  runtime: TiRuntime
-) -> None:
+
+
+def ti_wait(runtime: TiRuntime) -> None:
     """
     Function `ti_wait` (1.4.0)
-    
+
     Waits until all previously invoked device commands are executed. Any invoked command that has not been submitted is submitted first.
 
     Return value: None
@@ -1491,13 +1597,12 @@ _LIB.ti_load_aot_module.argtypes = [
     ctypes.c_void_p,
 ]
 _LIB.ti_load_aot_module.restype = TiAotModule
-def ti_load_aot_module(
-  runtime: TiRuntime,
-  module_path: ctypes.c_void_p
-) -> TiAotModule:
+
+
+def ti_load_aot_module(runtime: TiRuntime, module_path: ctypes.c_void_p) -> TiAotModule:
     """
     Function `ti_load_aot_module` (1.4.0)
-    
+
     Loads a pre-compiled AOT module from the file system.
     Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to load the AOT module from the specified path.
 
@@ -1517,14 +1622,12 @@ _LIB.ti_create_aot_module.argtypes = [
     ctypes.c_uint64,
 ]
 _LIB.ti_create_aot_module.restype = TiAotModule
-def ti_create_aot_module(
-  runtime: TiRuntime,
-  tcm: ctypes.c_void_p,
-  size: ctypes.c_uint64
-) -> TiAotModule:
+
+
+def ti_create_aot_module(runtime: TiRuntime, tcm: ctypes.c_void_p, size: ctypes.c_uint64) -> TiAotModule:
     """
     Function `ti_create_aot_module` (1.4.0)
-    
+
     Creates a pre-compiled AOT module from TCM data.
     Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the runtime fails to create the AOT module from TCM data.
 
@@ -1543,12 +1646,12 @@ _LIB.ti_destroy_aot_module.argtypes = [
     TiAotModule,
 ]
 _LIB.ti_destroy_aot_module.restype = None
-def ti_destroy_aot_module(
-  aot_module: TiAotModule
-) -> None:
+
+
+def ti_destroy_aot_module(aot_module: TiAotModule) -> None:
     """
     Function `ti_destroy_aot_module` (1.4.0)
-    
+
     Destroys a loaded AOT module and releases all related resources.
 
     Return value: None
@@ -1564,13 +1667,12 @@ _LIB.ti_get_aot_module_kernel.argtypes = [
     ctypes.c_void_p,
 ]
 _LIB.ti_get_aot_module_kernel.restype = TiKernel
-def ti_get_aot_module_kernel(
-  aot_module: TiAotModule,
-  name: ctypes.c_void_p
-) -> TiKernel:
+
+
+def ti_get_aot_module_kernel(aot_module: TiAotModule, name: ctypes.c_void_p) -> TiKernel:
     """
     Function `ti_get_aot_module_kernel` (1.4.0)
-    
+
     Retrieves a pre-compiled Taichi kernel from the AOT module.
     Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the module does not have a kernel of the specified name.
 
@@ -1589,13 +1691,12 @@ _LIB.ti_get_aot_module_compute_graph.argtypes = [
     ctypes.c_void_p,
 ]
 _LIB.ti_get_aot_module_compute_graph.restype = TiComputeGraph
-def ti_get_aot_module_compute_graph(
-  aot_module: TiAotModule,
-  name: ctypes.c_void_p
-) -> TiComputeGraph:
+
+
+def ti_get_aot_module_compute_graph(aot_module: TiAotModule, name: ctypes.c_void_p) -> TiComputeGraph:
     """
     Function `ti_get_aot_module_compute_graph` (1.4.0)
-    
+
     Retrieves a pre-compiled compute graph from the AOT module.
     Returns [`TI_NULL_HANDLE`](#definition-ti_null_handle) if the module does not have a compute graph of the specified name.
 

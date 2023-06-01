@@ -64,12 +64,8 @@ def get_param(x: Field):
         return f"{x.name}: {type_name}"
 
 
-
 def get_api_ref(module: Module, x: EntryBase) -> list:
-    out = [
-        '"""',
-        f"{get_title(x)}"
-    ]
+    out = ['"""', f"{get_title(x)}"]
     if x.since is not None:
         out[-1] += f" ({x.since})"
     if module.doc and x.id in module.doc.api_refs:
@@ -85,6 +81,7 @@ def get_api_field_ref(module: Module, x: EntryBase, field_sym: str) -> list:
     if module.doc and field_sym in module.doc.api_field_refs:
         return [f"# {module.doc.api_field_refs[field_sym]}"]
     return []
+
 
 def get_api_param_ref(module: Module, x: EntryBase, param_name: str) -> list:
     param_sym = f"{x.id}.{param_name}"
@@ -193,9 +190,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
                     "    Parameters:",
                 ]
                 for param in x.params:
-                    out += [
-                        f"        {param.name} (`{get_type_name(param.type)}`):"
-                    ]
+                    out += [f"        {param.name} (`{get_type_name(param.type)}`):"]
                     for line in get_api_param_ref(module, x, param.name):
                         out += [f"            {line}"]
             out += [
@@ -203,7 +198,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             ]
 
         out += [
-            f"    out = _LIB.{x.name.snake_case}(" + ', '.join(str(param.name) for param in x.params) + ")",
+            f"    out = _LIB.{x.name.snake_case}(" + ", ".join(str(param.name) for param in x.params) + ")",
         ]
         if return_value_type != "None":
             out += [
@@ -430,5 +425,3 @@ if __name__ == "__main__":
 
     for module in Module.load_all(builtin_tys):
         generate_module_header(module)
-
-

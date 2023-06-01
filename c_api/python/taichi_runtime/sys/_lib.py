@@ -7,9 +7,11 @@ CANDIDATE_NAMES = [
     "lib/libtaichi_c_api.dylib",
 ]
 
+
 def find_taichi_c_api_in_wheel():
     try:
         import taichi as ti
+
         for candidate_name in CANDIDATE_NAMES:
             try:
                 taichi_c_api_path = list(ti.__path__)[0] + "/_lib/c_api/" + candidate_name
@@ -20,6 +22,7 @@ def find_taichi_c_api_in_wheel():
     except:
         pass
     return None
+
 
 def load_taichi_c_api() -> ctypes.CDLL:
     import ctypes.util as ctypes_util
@@ -38,9 +41,7 @@ def load_taichi_c_api() -> ctypes.CDLL:
                     break
 
     if path is None:
-        raise RuntimeError(
-            "Cannot find taichi_c_api. Please set TAICHI_C_API_INSTALL_DIR environment variable."
-        )
+        raise RuntimeError("Cannot find taichi_c_api. Please set TAICHI_C_API_INSTALL_DIR environment variable.")
 
     print(f"Found taichi_c_api at {path}")
     out = ctypes.CDLL(path, ctypes.RTLD_LOCAL)

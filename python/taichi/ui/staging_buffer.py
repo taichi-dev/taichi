@@ -80,7 +80,7 @@ def copy_all_to_vbo(
 
 
 @kernel
-def copy_all_to_vbo_particle( # The vbo copy function used for vertices of particles and circles
+def copy_all_to_vbo_particle(  # The vbo copy function used for vertices of particles and circles
     vbo: ti.types.ndarray(element_dim=1),
     vertex: template(),
     radius: template(),
@@ -100,6 +100,7 @@ def copy_all_to_vbo_particle( # The vbo copy function used for vertices of parti
                 vbo[i][11] = 1.0
             else:
                 vbo[i][8:12] = color[i]
+
 
 @ti.kernel
 def copy_texture_to_rgba8(

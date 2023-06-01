@@ -141,10 +141,7 @@ class Canvas:
         indices_info = get_field_info(indices_ndarray)
         self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color, width)
 
-    def circles(self, centers, radius, color=(0.5, 0.5, 0.5), 
-                per_vertex_color=None, 
-                per_vertex_radius=None
-    ):
+    def circles(self, centers, radius, color=(0.5, 0.5, 0.5), per_vertex_color=None, per_vertex_radius=None):
         """Draw a set of 2D circles on this canvas.
 
         Args:
@@ -161,7 +158,12 @@ class Canvas:
         vbo = get_vbo_field(centers)
         has_per_vertex_color = per_vertex_color is not None
         has_per_vertex_radius = per_vertex_radius is not None
-        copy_all_to_vbo_particle(vbo, centers, per_vertex_radius if has_per_vertex_radius else 0, per_vertex_color if has_per_vertex_color else 0)
+        copy_all_to_vbo_particle(
+            vbo,
+            centers,
+            per_vertex_radius if has_per_vertex_radius else 0,
+            per_vertex_color if has_per_vertex_color else 0,
+        )
         vbo_info = get_field_info(vbo)
         self.canvas.circles(vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius)
 

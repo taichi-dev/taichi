@@ -30,8 +30,7 @@ namespace irpass {
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void eliminate_immutable_local_vars(IRNode *root);
-bool scalarize(IRNode *root);
-void vectorize_half2(IRNode *root);
+bool scalarize(IRNode *root, bool half2_optimization_enabled = false);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);

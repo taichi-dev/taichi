@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 from taichi.lang import ops
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
@@ -79,7 +80,7 @@ def copy_all_to_vbo(
 
 
 @kernel
-def copy_all_to_vbo_particle(
+def copy_all_to_vbo_particle( # The vbo copy function used for vertices of particles and circles
     vbo: ti.types.ndarray(element_dim=1),
     vertex: template(),
     radius: template(),
@@ -99,7 +100,6 @@ def copy_all_to_vbo_particle(
                 vbo[i][11] = 1.0
             else:
                 vbo[i][8:12] = color[i]
-
 
 @ti.kernel
 def copy_texture_to_rgba8(

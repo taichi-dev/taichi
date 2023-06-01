@@ -345,11 +345,13 @@ struct PyCanvas {
 
   void circles(FieldInfo vbo,
                bool has_per_vertex_color,
+               bool has_per_vertex_radius,
                py::tuple color_,
                float radius) {
     RenderableInfo renderable_info;
     renderable_info.vbo = vbo;
     renderable_info.has_per_vertex_color = has_per_vertex_color;
+    renderable_info.has_per_vertex_radius = has_per_vertex_radius;
 
     CirclesInfo info;
     info.renderable_info = renderable_info;

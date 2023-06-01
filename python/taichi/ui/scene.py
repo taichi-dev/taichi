@@ -372,7 +372,7 @@ class Scene:
 
         Args:
             centers: a taichi 3D Vector field, where each element indicate the
-                3D location of the center of a triangle.
+                3D location of the center of a particle.
             color: a global color for the particles as 3 floats representing RGB
                 values. If `per_vertex_color` is provided, this is ignored.
             radius: a global radius for the particles as a float.

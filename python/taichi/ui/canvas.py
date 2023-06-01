@@ -1,8 +1,11 @@
 from taichi._lib import core as _ti_core
 from taichi.lang import impl
 from taichi.lang._texture import Texture
+from typing import Union
+import numpy as np
+from taichi import ndarray
 
-from .staging_buffer import copy_all_to_vbo, get_indices_field, get_vbo_field, to_rgba8
+from .staging_buffer import copy_all_to_vbo, copy_all_to_vbo_particle, get_indices_field, get_vbo_field, to_rgba8
 from .utils import get_field_info
 
 
@@ -138,23 +141,29 @@ class Canvas:
         indices_info = get_field_info(indices_ndarray)
         self.canvas.lines(vbo_info, indices_info, has_per_vertex_color, color, width)
 
-    def circles(self, centers, radius, color=(0.5, 0.5, 0.5), per_vertex_color=None):
+    def circles(self, centers, radius, color=(0.5, 0.5, 0.5), 
+                per_vertex_color=None, 
+                per_vertex_radius=None
+    ):
         """Draw a set of 2D circles on this canvas.
 
         Args:
             centers: a taichi 2D Vector field, where each element indicate the \
-                3D location of a vertex.
-            radius (Number): radius of the circles in pixels.
+                2D location of the center of a vertex.
+            radius: radius of the circles in pixels.
             color: a global color for the triangles as 3 floats representing \
                 RGB values. If `per_vertex_color` is provided, this is ignored.
-            per_vertex_color (Tuple[float]): a taichi 3D vector field, where \
-                each element indicate the RGB color of a circle.
+            per_vertex_color: a taichi 3D vector field, where \
+                each element indicates the RGB color of a circle.
+            per_vertex_radius: a taichi float field, where \
+                each element indicates the radius of a circle.
         """
         vbo = get_vbo_field(centers)
         has_per_vertex_color = per_vertex_color is not None
-        copy_all_to_vbo(vbo, centers, 0, 0, per_vertex_color if has_per_vertex_color else 0)
+        has_per_vertex_radius = per_vertex_radius is not None
+        copy_all_to_vbo_particle(vbo, centers, per_vertex_radius if has_per_vertex_radius else 0, per_vertex_color if has_per_vertex_color else 0)
         vbo_info = get_field_info(vbo)
-        self.canvas.circles(vbo_info, has_per_vertex_color, color, radius)
+        self.canvas.circles(vbo_info, has_per_vertex_color, has_per_vertex_radius, color, radius)
 
     def vector_field(self, vector_field, arrow_spacing=5, scale=0.1, width=0.002, color=(0, 0, 0)):
         """Draw a vector field on this canvas.

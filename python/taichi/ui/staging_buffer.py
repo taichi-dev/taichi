@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.typing as npt
+from taichi.types import ndarray as ndarray_type
 from taichi.lang import ops
 from taichi.lang._texture import Texture
 from taichi.lang.impl import ndarray
@@ -55,7 +55,7 @@ def get_transforms_field(transforms):
 
 @kernel
 def copy_all_to_vbo(
-    vbo: ti.types.ndarray(element_dim=1),
+    vbo: ndarray_type(element_dim=1),
     vertex: template(),
     normal: template(),
     texcoords: template(),
@@ -81,7 +81,7 @@ def copy_all_to_vbo(
 
 @kernel
 def copy_all_to_vbo_particle( # The vbo copy function used for vertices of particles and circles
-    vbo: ti.types.ndarray(element_dim=1),
+    vbo: ndarray_type(element_dim=1),
     vertex: template(),
     radius: template(),
     color: template(),

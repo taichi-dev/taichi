@@ -82,15 +82,25 @@ class Runtime:
         self.destroy(quiet=True)
 
     @staticmethod
-    def create(arch: Arch, *, device_index: int = 0) -> 'Runtime':
-        handle = ti_create_runtime(TiArch(arch.value), ctypes.c_uint32(device_index))
-        check_last_error()
+    def create(arch: Arch | List[Arch], *, device_index: int = 0) -> 'Runtime':
+        if isinstance(arch, Arch):
+            arch = [arch]
+        handle= TiRuntime(0)
+        for a in arch:
+            try:
+                handle = ti_create_runtime(TiArch(a.value), ctypes.c_uint32(device_index))
+                check_last_error()
+                break
+            except:
+                continue
+        if handle.value == 0:
+            raise TaichiRuntimeError(Error.NOT_SUPPORTED, "No supported arch is found.")
         return Runtime(handle)
 
     def destroy(self, *, quiet: bool = False):
         if self._should_destroy:
             if self._handle.value == 0 and not quiet:
-                if quiet:
+                if not quiet:
                     warnings.warn("Runtime.destroy() is called on a null handle.")
             else:
                 ti_destroy_runtime(self._handle)
@@ -102,18 +112,18 @@ class Runtime:
         ti_wait(self._handle)
         check_last_error()
 
-    def copy_memory_device_to_device(self, src: 'Memory', dst: 'Memory'):
-        src2 = TiMemorySlice(
-            memory=src._handle,
-            offset=0,
-            size=src._size,
-        )
+    def copy_memory_device_to_device(self, *, dst: 'Memory', src: 'Memory'):
         dst2 = TiMemorySlice(
             memory=dst._handle,
             offset=0,
             size=dst._size,
         )
-        ti_copy_memory_device_to_device(self._handle, _p(src2), _p(dst2))
+        src2 = TiMemorySlice(
+            memory=src._handle,
+            offset=0,
+            size=src._size,
+        )
+        ti_copy_memory_device_to_device(self._handle, _p(dst2), _p(src2))
         check_last_error()
 
 
@@ -174,14 +184,16 @@ class Memory:
         if self._host_access:
             mapped = ti_map_memory(self._runtime._handle, self._handle)
             check_last_error()
+            assert mapped.value is not None
 
-            ctypes.memmove(_p(dst), mapped, self._size)
+            src = (ctypes.c_byte * self._size).from_address(mapped.value)
+            ctypes.memmove(_p(dst), _p(src), self._size)
 
             ti_unmap_memory(self._runtime._handle, self._handle)
             check_last_error()
         elif force:
             staging_buffer = Memory.allocate(self._runtime, size=self._size, host_access=True, usage=MemoryUsage.STORAGE)
-            self._runtime.copy_memory_device_to_device(self, staging_buffer)
+            self._runtime.copy_memory_device_to_device(dst=staging_buffer, src=self)
             self._runtime.wait()
             staging_buffer.read(dst)
             del staging_buffer
@@ -195,15 +207,17 @@ class Memory:
         if self._host_access:
             mapped = ti_map_memory(self._runtime._handle, self._handle)
             check_last_error()
+            assert mapped.value is not None
 
-            ctypes.memmove(mapped, _p(src), self._size)
+            dst = (ctypes.c_byte * self._size).from_address(mapped.value)
+            ctypes.memmove(_p(dst), _p(src), self._size)
 
             ti_unmap_memory(self._runtime._handle, self._handle)
             check_last_error()
         elif force:
             staging_buffer = Memory.allocate(self._runtime, size=self._size, host_access=True, usage=MemoryUsage.STORAGE)
             staging_buffer.write(src)
-            self._runtime.copy_memory_device_to_device(staging_buffer, self)
+            self._runtime.copy_memory_device_to_device(dst=self, src=staging_buffer)
             self._runtime.wait()
             del staging_buffer
         else:
@@ -307,16 +321,16 @@ class NdArray:
         return self._elem_type
 
     @staticmethod
-    def allocate(runtime: Runtime, *, shape: Iterable[int], elem_shape: Iterable[int], elem_type: DataType):
+    def allocate(runtime: Runtime, elem_type: DataType, *, shape: Iterable[int], elem_shape: Iterable[int], host_access: bool = False):
         size = reduce(lambda x, y: x * y, shape, 1) * reduce(lambda x, y: x * y, elem_shape, 1) * _DTYPE_SIZE_TABLE[elem_type.value]
-        memory = Memory.allocate(runtime, size=size, host_access=False, usage=MemoryUsage.STORAGE)
+        memory = Memory.allocate(runtime, size=size, host_access=host_access, usage=MemoryUsage.STORAGE)
         return NdArray(runtime, memory, shape=tuple(shape), elem_shape=tuple(elem_shape), elem_type=elem_type)
 
     def free(self):
         self._memory.free()
 
     @staticmethod
-    def from_numpy(runtime: Runtime, arr: npt.NDArray[Any], *, shape: Optional[Iterable[int]] = None, elem_shape: Optional[Iterable[int]] = None, elem_type: Optional[DataType] = None):
+    def from_numpy(runtime: Runtime, arr: npt.NDArray[Any], *, shape: Optional[Iterable[int]] = None, elem_shape: Optional[Iterable[int]] = None, elem_type: Optional[DataType] = None, host_access=False):
         assert isinstance(arr, np.ndarray)
 
         if elem_type is None:
@@ -333,14 +347,14 @@ class NdArray:
                 assert arr.shape[ishape] == elem_shape2[ielem_shape], f"arr.shape[{ishape}] ({arr.shape[ishape]}) != elem_shape2[{ielem_shape}] ({elem_shape2[ielem_shape]})"
 
         if shape is None:
-            shape2 = arr.shape[:-len(elem_shape2)]
+            shape2 = arr.shape[:len(arr.shape) - len(elem_shape2)]
         else:
             shape2 = tuple(shape)
             assert len(shape2) <= len(arr.shape)
             for i in range(len(shape2)):
                 assert arr.shape[i] == shape2[i]
 
-        memory = Memory.from_bytes(runtime, arr.tobytes(), host_access=False)
+        memory = Memory.from_bytes(runtime, arr.tobytes(), host_access=host_access)
         return NdArray(runtime, memory, shape=shape2, elem_shape=elem_shape2, elem_type=elem_type2)
 
     def to_numpy(self) -> npt.NDArray[Any]:
@@ -351,3 +365,111 @@ class NdArray:
         out = self.to_numpy()
         self.free()
         return out
+
+
+class ArgumentType(Enum):
+    I32 = TI_ARGUMENT_TYPE_I32.value
+    F32 = TI_ARGUMENT_TYPE_F32.value
+    NDARRAY = TI_ARGUMENT_TYPE_NDARRAY.value
+
+
+class Argument:
+    def __init__(self, value: Any, *, ty: Optional[ArgumentType] = None) -> None:
+        if isinstance(value, int):
+            ty = ArgumentType.I32
+        elif isinstance(value, float):
+            ty = ArgumentType.F32
+        elif isinstance(value, NdArray):
+            ty = ArgumentType.NDARRAY
+        else:
+            raise TaichiRuntimeError(Error.NOT_SUPPORTED, f"{type(value)} is not a valid argument type.")
+
+        if ty == ArgumentType.I32:
+            assert isinstance(value, int)
+            value = TiArgumentValue(
+                i32 = ctypes.c_int32(value),
+            )
+        elif ty == ArgumentType.F32:
+            assert isinstance(value, float)
+            value = TiArgumentValue(
+                f32 = ctypes.c_float(value),
+            )
+        elif ty == ArgumentType.NDARRAY:
+            assert isinstance(value, NdArray)
+            shape = TiNdShape(
+                dim_count = ctypes.c_uint32(len(value._shape)),
+                dims = (ctypes.c_uint32 * 16)(*[ctypes.c_uint32(x) for x in value._shape] + [0] * (16 - len(value._shape))),
+            )
+            elem_shape = TiNdShape(
+                dim_count = ctypes.c_uint32(len(value._elem_shape)),
+                dims = (ctypes.c_uint32 * 16)(*[ctypes.c_uint32(x) for x in value._elem_shape] + [0] * (16 - len(value._elem_shape))),
+            )
+            x = TiNdArray(
+                memory = value._memory._handle,
+                shape = shape,
+                elem_shape = elem_shape,
+                elem_type = value._elem_type.value,
+            )
+            value = TiArgumentValue(
+                ndarray = x,
+            )
+        else:
+            raise TaichiRuntimeError(Error.NOT_SUPPORTED, f"ArgumentType.{ty.name} is not supported.")
+
+        self._ty = ty
+        self._value = value
+
+
+class Kernel:
+    def __init__(self, aot_module: 'AotModule', name: str, handle: TiAotModule):
+        self._aot_module = aot_module
+        self._name = name
+        self._handle = handle
+
+    def __call__(self, *args: Any):
+        self.launch(*args)
+
+    def launch(self, *args: Any):
+        args2 = [arg if isinstance(arg, Argument) else Argument(arg) for arg in args]
+        args3 = [TiArgument(type=arg._ty.value, value=arg._value) for arg in args2]
+        args4 = (TiArgument * len(args3))(*args3)
+        ti_launch_kernel(self._aot_module._runtime._handle, self._handle, ctypes.c_uint32(len(args3)), _p(args4))
+        check_last_error()
+
+
+class AotModule:
+    def __init__(self, runtime: Runtime, handle: TiAotModule, *, should_destroy: bool = True):
+        self._runtime = runtime
+        self._handle = handle
+        self._should_destroy = should_destroy
+
+    def __del__(self):
+        self.destroy(quiet=True)
+
+    @staticmethod
+    def load(runtime: Runtime, path: str):
+        handle = ti_load_aot_module(runtime._handle, _p(path.encode("ascii")))
+        check_last_error()
+        return AotModule(runtime, handle)
+    
+    @staticmethod
+    def create(runtime: Runtime, tcm: bytes):
+        handle = ti_create_aot_module(runtime._handle, _p(tcm), ctypes.c_uint64(len(tcm)))
+        check_last_error()
+        return AotModule(runtime, handle)
+
+    def destroy(self, *, quiet: bool = False):
+        if self._should_destroy:
+            if self._handle.value == 0:
+                if not quiet:
+                    warnings.warn("AotModule.destroy() is called on a null handle.")
+            else:
+                ti_destroy_aot_module(self._handle)
+                check_last_error()
+                self._should_destroy = False
+                self._handle = TiAotModule(0)
+
+    def get_kernel(self, name: str) -> Kernel:
+        handle = ti_get_aot_module_kernel(self._handle, _p(name.encode("utf-8")))
+        check_last_error()
+        return Kernel(self, name, handle)

@@ -2,6 +2,7 @@
 
 #include "taichi/program/ndarray.h"
 #include "taichi/program/program.h"
+#include "fp16.h"
 
 #ifdef TI_WITH_LLVM
 #include "taichi/runtime/llvm/llvm_context.h"
@@ -168,10 +169,20 @@ TypedConstant Ndarray::read(const std::vector<int> &I) const {
   TypedConstant data(get_element_data_type());
   std::memcpy(&data.value_bits, device_arr_ptr, size);
   staging_buf_->device->unmap(*staging_buf_);
+
+  if (get_element_data_type()->is_primitive(PrimitiveTypeID::f16)) {
+    float float32 = fp16_ieee_to_fp32_value(data.val_u16);
+    data.val_f32 = float32;
+  }
   return data;
 }
 
 void Ndarray::write(const std::vector<int> &I, TypedConstant val) const {
+  if (get_element_data_type()->is_primitive(PrimitiveTypeID::f16)) {
+    uint16_t float16 = fp16_ieee_from_fp32_value(val.val_f32);
+    std::memcpy(&val.value_bits, &float16, 4);
+  }
+
   size_t index = flatten_index(total_shape_, I);
   size_t size_ = data_type_size(get_element_data_type());
   taichi::lang::Device::AllocParams alloc_params;

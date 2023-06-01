@@ -101,6 +101,7 @@ def copy_all_to_vbo_particle( # The vbo copy function used for vertices of parti
             else:
                 vbo[i][8:12] = color[i]
 
+
 @ti.kernel
 def copy_texture_to_rgba8(
     src: ti.types.texture(num_dimensions=2),

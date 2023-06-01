@@ -88,7 +88,7 @@ def test_geometry_2d():
     circle_radii_2 = ti.field(ti.f32, shape=n_circles_2)
     for i in range(n_circles_2):
         circle_positions_2[i] = ti.Vector([0.75, i * 0.1])
-        circle_radii_2[i] = (i + 1)/n_circles_2 * 0.05
+        circle_radii_2[i] = (i + 1) / n_circles_2 * 0.05
 
     def render():
         canvas.circles(circle_positions_0, radius=0.05, color=(1, 0, 0))
@@ -112,7 +112,7 @@ def test_geometry_2d():
             indices=lines_indices_1,
         )
 
-        canvas.circles(circle_positions_2, radius=0.05, color=(0,0,1), per_vertex_radius=circle_radii_2)
+        canvas.circles(circle_positions_2, radius=0.05, color=(0, 0, 1), per_vertex_radius=circle_radii_2)
 
     # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):

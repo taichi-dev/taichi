@@ -1501,6 +1501,11 @@ class MatrixType(CompoundType):
         kwargs.update({"ndim": self.ndim})
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
+    def ndarray(self, **kwargs):
+        assert kwargs.get("ndim", self.ndim) == self.ndim
+        kwargs.update({"ndim": self.ndim})
+        return Matrix.ndarray(self.n, self.m, dtype=self.dtype, **kwargs)
+
     def get_shape(self):
         if self.ndim == 1:
             return (self.n,)
@@ -1597,6 +1602,9 @@ class VectorType(MatrixType):
 
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
+
+    def ndarray(self, **kwargs):
+        return Vector.ndarray(self.n, dtype=self.dtype, **kwargs)
 
     def to_string(self):
         dtype_str = self.dtype.to_string() if self.dtype is not None else ""

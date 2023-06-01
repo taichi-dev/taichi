@@ -190,6 +190,7 @@ void UnaryOpExpression::type_check(const CompileConfig *config) {
     the same. Therefore we extract the primitive type to perform the type
     inference, and then reconstruct the TensorType once neccessary.
   */
+
   auto operand_type = operand.get_rvalue_type();
   auto operand_primitive_type = operand_type.get_element_type();
   auto ret_primitive_type = ret_type;
@@ -722,7 +723,7 @@ Stmt *make_tensor_access(Expression::FlattenContext *ctx,
                          const std::string &tb) {
   auto var_stmt = flatten_lvalue(var, ctx);
   if (!var->is_lvalue()) {
-    auto alloca_stmt = ctx->push_back<AllocaStmt>(var->ret_type.ptr_removed());
+    auto alloca_stmt = ctx->push_back<AllocaStmt>(var.get_rvalue_type());
     ctx->push_back<LocalStoreStmt>(alloca_stmt, var_stmt);
     var_stmt = alloca_stmt;
   }
@@ -914,7 +915,6 @@ void IndexExpression::flatten(FlattenContext *ctx) {
   } else if (is_ndarray()) {
     stmt = make_ndarray_access(ctx, var, indices_group[0]);
   } else if (is_tensor()) {
-    //    TI_INFO("{}", ExpressionHumanFriendlyPrinter::expr_to_string(var));
     stmt = make_tensor_access(
         ctx, var, indices_group, ret_type,
         var->ret_type.ptr_removed()->as<TensorType>()->get_shape(), tb);

@@ -269,26 +269,8 @@ void offload_to_executable(IRNode *ir,
     irpass::analysis::verify(ir);
   }
 
-  if (config.real_matrix_scalarize) {
-    if (irpass::scalarize(ir)) {
-      // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config,
-                            {lower_global_access, /*autodiff_enabled*/ false});
-      print("Scalarized");
-    }
-  }
-
   irpass::demote_operations(ir, config);
   print("Operations demoted");
-
-  if (config.real_matrix_scalarize) {
-    if (irpass::scalarize(ir)) {
-      // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::full_simplify(ir, config,
-                            {lower_global_access, /*autodiff_enabled*/ false});
-      print("Scalarized");
-    }
-  }
 
   irpass::full_simplify(ir, config,
                         {lower_global_access, /*autodiff_enabled*/ false});
@@ -304,17 +286,16 @@ void offload_to_executable(IRNode *ir,
     print("Bit struct stores optimized");
   }
 
-  if (config.arch == Arch::cuda && config.half2_vectorization &&
-      !get_custom_cuda_library_path().empty()) {
-    irpass::vectorize_half2(ir);
-
-    irpass::type_check(ir, config);
-
-    irpass::full_simplify(ir, config,
-                          {lower_global_access, /*autodiff_enabled*/ false});
-
-    irpass::flag_access(ir);
-    print("Half2 vectorized");
+  bool half2_optimization_enabled =
+      (config.arch == Arch::cuda && config.half2_vectorization &&
+       !get_custom_cuda_library_path().empty());
+  if (config.real_matrix_scalarize) {
+    if (irpass::scalarize(ir, half2_optimization_enabled)) {
+      // Remove redundant MatrixInitStmt inserted during scalarization
+      irpass::full_simplify(ir, config,
+                            {lower_global_access, /*autodiff_enabled*/ false});
+      print("Scalarized");
+    }
   }
 
   // Final field registration correctness & type checking

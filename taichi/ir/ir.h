@@ -511,7 +511,7 @@ class Block : public IRNode {
   // variables, and AllocaStmt for other variables.
   std::map<Identifier, Stmt *> local_var_to_stmt;
 
-  Block(Kernel *kernel = nullptr) {
+  explicit Block(Kernel *kernel = nullptr) {
     parent_ = kernel;
   }
 

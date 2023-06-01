@@ -422,3 +422,20 @@ def test_write_u64():
     x = ti.field(ti.u64, shape=())
     x[None] = 2**64 - 1
     assert x[None] == 2**64 - 1
+
+
+@test_utils.test(require=ti.extension.data64)
+def test_field_with_dynamic_index():
+    vel = ti.Vector.field(2, dtype=ti.f64, shape=(100, 100))
+
+    @ti.func
+    def foo(i, j, l):
+        tmp = 1.0 / vel[i, j][l]
+        return tmp
+
+    @ti.kernel
+    def collide():
+        tmp0 = foo(0, 0, 0)
+        print(tmp0)
+
+    collide()

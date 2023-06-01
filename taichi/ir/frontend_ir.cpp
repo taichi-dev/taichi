@@ -961,7 +961,7 @@ void AtomicOpExpression::type_check(const CompileConfig *config) {
   };
 
   // Broadcast val to dest if neccessary
-  auto val_dtype = get_rvalue_dtype(val);
+  auto val_dtype = val.get_rvalue_type();
   auto dest_dtype = dest->ret_type.ptr_removed();
   if (dest_dtype->is<PrimitiveType>() && val_dtype->is<TensorType>()) {
     error();
@@ -1795,16 +1795,6 @@ Stmt *flatten_rvalue(Expr ptr, Expression::FlattenContext *ctx) {
   }
 
   return ptr_stmt;
-}
-
-DataType get_rvalue_dtype(Expr expr) {
-  if (auto argload = expr.cast<ArgLoadExpression>()) {
-    if (argload->is_ptr) {
-      return argload->ret_type.ptr_removed();
-    }
-    return argload->ret_type;
-  }
-  return expr->ret_type;
 }
 
 }  // namespace taichi::lang

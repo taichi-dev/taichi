@@ -18,7 +18,6 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
 Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   app_context_ = app_context;
   swap_chain_ = swap_chain;
-  glfwGetWindowSize (window, &widthBeforeDPIScale, &heightBeforeDPIScale);
 
   create_descriptor_pool();
 
@@ -31,8 +30,11 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   if (app_context->config.show_window) {
 #ifdef ANDROID
     ImGui_ImplAndroid_Init(window);
+    widthBeforeDPIScale = (int)ANativeWindow_getWidth(window);
+    heightBeforeDPIScale = (int)ANativeWindow_getHeight(window);
 #else
     ImGui_ImplGlfw_InitForVulkan(window, true);
+    glfwGetWindowSize (window, &widthBeforeDPIScale, &heightBeforeDPIScale);
 #endif
   }
 }

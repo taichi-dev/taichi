@@ -30,37 +30,54 @@ TiMtlTexture = ctypes.c_void_p
 """
 Structure `TiMetalRuntimeInteropInfo`
 """
-class TiMetalRuntimeInteropInfo(ctypes.Structure): pass
+
+
+class TiMetalRuntimeInteropInfo(ctypes.Structure):
+    pass
+
+
 TiMetalRuntimeInteropInfo._fields_ = [
-    ('bundle', TiNsBundle),
-    ('device', TiMtlDevice),
+    ("bundle", TiNsBundle),
+    ("device", TiMtlDevice),
 ]
 
 
 """
 Structure `TiMetalMemoryInteropInfo`
 """
-class TiMetalMemoryInteropInfo(ctypes.Structure): pass
+
+
+class TiMetalMemoryInteropInfo(ctypes.Structure):
+    pass
+
+
 TiMetalMemoryInteropInfo._fields_ = [
-    ('buffer', TiMtlBuffer),
+    ("buffer", TiMtlBuffer),
 ]
 
 
 """
 Structure `TiMetalImageInteropInfo`
 """
-class TiMetalImageInteropInfo(ctypes.Structure): pass
+
+
+class TiMetalImageInteropInfo(ctypes.Structure):
+    pass
+
+
 TiMetalImageInteropInfo._fields_ = [
-    ('texture', TiMtlTexture),
+    ("texture", TiMtlTexture),
 ]
 
 
 _LIB.ti_import_metal_runtime.argtypes = [
-    ctypes.c_void_p, # const TiMetalRuntimeInteropInfo*
+    ctypes.c_void_p,  # const TiMetalRuntimeInteropInfo*
 ]
 _LIB.ti_import_metal_runtime.restype = TiRuntime
+
+
 def ti_import_metal_runtime(
-  interop_info: ctypes.c_void_p, # const TiMetalRuntimeInteropInfo*
+    interop_info: ctypes.c_void_p,  # const TiMetalRuntimeInteropInfo*
 ) -> TiRuntime:
     """
     Function `ti_import_metal_runtime`
@@ -76,12 +93,14 @@ def ti_import_metal_runtime(
 
 _LIB.ti_export_metal_runtime.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # TiMetalRuntimeInteropInfo*
+    ctypes.c_void_p,  # TiMetalRuntimeInteropInfo*
 ]
 _LIB.ti_export_metal_runtime.restype = None
+
+
 def ti_export_metal_runtime(
-  runtime: TiRuntime,
-  interop_info: ctypes.c_void_p, # TiMetalRuntimeInteropInfo*
+    runtime: TiRuntime,
+    interop_info: ctypes.c_void_p,  # TiMetalRuntimeInteropInfo*
 ) -> None:
     """
     Function `ti_export_metal_runtime`
@@ -97,12 +116,14 @@ def ti_export_metal_runtime(
 
 _LIB.ti_import_metal_memory.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiMetalMemoryInteropInfo*
+    ctypes.c_void_p,  # const TiMetalMemoryInteropInfo*
 ]
 _LIB.ti_import_metal_memory.restype = TiMemory
+
+
 def ti_import_metal_memory(
-  runtime: TiRuntime,
-  interop_info: ctypes.c_void_p, # const TiMetalMemoryInteropInfo*
+    runtime: TiRuntime,
+    interop_info: ctypes.c_void_p,  # const TiMetalMemoryInteropInfo*
 ) -> TiMemory:
     """
     Function `ti_import_metal_memory`
@@ -120,13 +141,15 @@ def ti_import_metal_memory(
 _LIB.ti_export_metal_memory.argtypes = [
     TiRuntime,
     TiMemory,
-    ctypes.c_void_p, # TiMetalMemoryInteropInfo*
+    ctypes.c_void_p,  # TiMetalMemoryInteropInfo*
 ]
 _LIB.ti_export_metal_memory.restype = None
+
+
 def ti_export_metal_memory(
-  runtime: TiRuntime,
-  memory: TiMemory,
-  interop_info: ctypes.c_void_p, # TiMetalMemoryInteropInfo*
+    runtime: TiRuntime,
+    memory: TiMemory,
+    interop_info: ctypes.c_void_p,  # TiMetalMemoryInteropInfo*
 ) -> None:
     """
     Function `ti_export_metal_memory`
@@ -143,12 +166,14 @@ def ti_export_metal_memory(
 
 _LIB.ti_import_metal_image.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # const TiMetalImageInteropInfo*
+    ctypes.c_void_p,  # const TiMetalImageInteropInfo*
 ]
 _LIB.ti_import_metal_image.restype = TiImage
+
+
 def ti_import_metal_image(
-  runtime: TiRuntime,
-  interop_info: ctypes.c_void_p, # const TiMetalImageInteropInfo*
+    runtime: TiRuntime,
+    interop_info: ctypes.c_void_p,  # const TiMetalImageInteropInfo*
 ) -> TiImage:
     """
     Function `ti_import_metal_image`
@@ -166,13 +191,15 @@ def ti_import_metal_image(
 _LIB.ti_export_metal_image.argtypes = [
     TiRuntime,
     TiImage,
-    ctypes.c_void_p, # TiMetalImageInteropInfo*
+    ctypes.c_void_p,  # TiMetalImageInteropInfo*
 ]
 _LIB.ti_export_metal_image.restype = None
+
+
 def ti_export_metal_image(
-  runtime: TiRuntime,
-  image: TiImage,
-  interop_info: ctypes.c_void_p, # TiMetalImageInteropInfo*
+    runtime: TiRuntime,
+    image: TiImage,
+    interop_info: ctypes.c_void_p,  # TiMetalImageInteropInfo*
 ) -> None:
     """
     Function `ti_export_metal_image`

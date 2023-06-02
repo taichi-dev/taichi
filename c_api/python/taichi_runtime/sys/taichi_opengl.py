@@ -6,18 +6,25 @@ from .taichi_core import *
 """
 Structure `TiOpenglRuntimeInteropInfo`
 """
-class TiOpenglRuntimeInteropInfo(ctypes.Structure): pass
+
+
+class TiOpenglRuntimeInteropInfo(ctypes.Structure):
+    pass
+
+
 TiOpenglRuntimeInteropInfo._fields_ = [
-    ('get_proc_addr', ctypes.c_void_p),
+    ("get_proc_addr", ctypes.c_void_p),
 ]
 
 
 _LIB.ti_import_opengl_runtime.argtypes = [
-    ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
+    ctypes.c_void_p,  # TiOpenglRuntimeInteropInfo*
 ]
 _LIB.ti_import_opengl_runtime.restype = TiRuntime
+
+
 def ti_import_opengl_runtime(
-  interop_info: ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
+    interop_info: ctypes.c_void_p,  # TiOpenglRuntimeInteropInfo*
 ) -> TiRuntime:
     """
     Function `ti_import_opengl_runtime`
@@ -33,12 +40,14 @@ def ti_import_opengl_runtime(
 
 _LIB.ti_export_opengl_runtime.argtypes = [
     TiRuntime,
-    ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
+    ctypes.c_void_p,  # TiOpenglRuntimeInteropInfo*
 ]
 _LIB.ti_export_opengl_runtime.restype = None
+
+
 def ti_export_opengl_runtime(
-  runtime: TiRuntime,
-  interop_info: ctypes.c_void_p, # TiOpenglRuntimeInteropInfo*
+    runtime: TiRuntime,
+    interop_info: ctypes.c_void_p,  # TiOpenglRuntimeInteropInfo*
 ) -> None:
     """
     Function `ti_export_opengl_runtime`

@@ -17,16 +17,18 @@ _LIB.ti_create_vulkan_runtime_ext.argtypes = [
     ctypes.c_void_p,
 ]
 _LIB.ti_create_vulkan_runtime_ext.restype = TiRuntime
+
+
 def ti_create_vulkan_runtime_ext(
-  api_version: ctypes.c_uint32,
-  instance_extension_count: ctypes.c_uint32,
-  instance_extensions: ctypes.c_void_p,
-  device_extension_count: ctypes.c_uint32,
-  device_extensions: ctypes.c_void_p,
+    api_version: ctypes.c_uint32,
+    instance_extension_count: ctypes.c_uint32,
+    instance_extensions: ctypes.c_void_p,
+    device_extension_count: ctypes.c_uint32,
+    device_extensions: ctypes.c_void_p,
 ) -> TiRuntime:
     """
     Function `ti_create_vulkan_runtime_ext` (1.4.0)
-    
+
     Creates a Vulkan Taichi runtime with user-controlled capability settings.
 
     Return value: TiRuntime
@@ -38,5 +40,7 @@ def ti_create_vulkan_runtime_ext(
         device_extension_count (`ctypes.c_uint32`):
         device_extensions (`ctypes.c_void_p`):
     """
-    out = _LIB.ti_create_vulkan_runtime_ext(api_version, instance_extension_count, instance_extensions, device_extension_count, device_extensions)
+    out = _LIB.ti_create_vulkan_runtime_ext(
+        api_version, instance_extension_count, instance_extensions, device_extension_count, device_extensions
+    )
     return TiRuntime(out)

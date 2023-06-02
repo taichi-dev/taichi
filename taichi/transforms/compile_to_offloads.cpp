@@ -221,7 +221,7 @@ void offload_to_executable(IRNode *ir,
   }
 
   if (make_block_local) {
-    irpass::make_block_local(ir, config, {kernel->get_name()});
+    irpass::make_block_local(ir, config, {kernel->get_name(), verbose});
     print("Make block local");
   }
 

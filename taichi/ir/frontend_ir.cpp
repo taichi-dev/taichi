@@ -962,7 +962,7 @@ void LoopUniqueExpression::flatten(FlattenContext *ctx) {
 
 void IdExpression::flatten(FlattenContext *ctx) {
   stmt = ctx->current_block->lookup_var(id);
-  if (stmt->ret_type->is_primitive(PrimitiveTypeID::unknown)) {
+  if (!ret_type->is_primitive(PrimitiveTypeID::unknown)) {
     stmt->ret_type = ret_type;
   }
 }

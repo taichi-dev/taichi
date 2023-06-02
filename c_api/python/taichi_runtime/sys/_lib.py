@@ -31,6 +31,9 @@ def load_taichi_c_api() -> ctypes.CDLL:
     path = ctypes_util.find_library("taichi_c_api")
 
     if path is None:
+        path = find_taichi_c_api_in_wheel()
+
+    if path is None:
         taichi_c_api_install_dir = environ["TAICHI_C_API_INSTALL_DIR"]
         if taichi_c_api_install_dir != None:
             taichi_c_api_install_dir = Path(taichi_c_api_install_dir)

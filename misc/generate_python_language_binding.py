@@ -41,11 +41,11 @@ def get_field(x: Field):
     type_name = get_type_name(x.type)
 
     if is_ptr:
-        return f"('{x.name}', ctypes.c_void_p) # {const_q}{type_name}*"
+        return f"('{x.name}', ctypes.c_void_p), # {const_q}{type_name}*"
     elif x.count:
-        return f"('{x.name}', {type_name} * {x.count})"
+        return f"('{x.name}', {type_name} * {x.count}),"
     else:
-        return f"('{x.name}', {type_name})"
+        return f"('{x.name}', {type_name}),"
 
 
 def get_param(x: Field):
@@ -61,7 +61,7 @@ def get_param(x: Field):
     elif x.count:
         return f"{x.name}: {type_name} * {x.count},"
     else:
-        return f"{x.name}: {type_name}"
+        return f"{x.name}: {type_name},"
 
 
 def get_api_ref(module: Module, x: EntryBase) -> list:
@@ -136,7 +136,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             if with_docs:
                 for line in get_api_field_ref(module, x, field.name):
                     out += [f"    {line}"]
-            out += [f"    {get_field(field)},"]
+            out += [f"    {get_field(field)}"]
         out += ["]"]
 
     elif ty is Union:
@@ -148,7 +148,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             if with_docs:
                 for line in get_api_field_ref(module, x, variant.name):
                     out += [f"    {line}"]
-            out += [f"    {get_field(variant)},"]
+            out += [f"    {get_field(variant)}"]
         out += ["]"]
 
     elif ty is Callback:
@@ -159,8 +159,8 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
         out += [
             f"_LIB.{x.name.snake_case}.argtypes = [",
         ]
-        for i, param in enumerate(x.params):
-            out += [f"    {get_param(param).split(': ')[1]},"]
+        for param in x.params:
+            out += [f"    {get_param(param).split(': ')[1]}"]
         out += [
             "]",
         ]
@@ -168,9 +168,7 @@ def get_declr(module: Module, x: EntryBase, with_docs=False):
             f"_LIB.{x.name.snake_case}.restype = {return_value_type}",
             "def " + x.name.snake_case + "(",
         ]
-        for i, param in enumerate(x.params):
-            if i != 0:
-                out[-1] += ","
+        for param in x.params:
             out += [f"  {get_param(param)}"]
         out += [
             ") -> " + return_value_type + ":",
@@ -398,29 +396,7 @@ if __name__ == "__main__":
         BuiltInType("const char**", "ctypes.c_void_p"),
         BuiltInType("void*", "ctypes.c_void_p"),
         BuiltInType("const void*", "ctypes.c_void_p"),
-        BuiltInType("VkInstance", "VkInstance"),
-        BuiltInType("VkPhysicalDevice", "VkPhysicalDevice"),
-        BuiltInType("VkDevice", "VkDevice"),
-        BuiltInType("VkQueue", "VkQueue"),
-        BuiltInType("VkBuffer", "VkBuffer"),
-        BuiltInType("VkBufferUsageFlags", "VkBufferUsageFlags"),
-        BuiltInType("VkEvent", "VkEvent"),
-        BuiltInType("VkImage", "VkImage"),
-        BuiltInType("VkImageType", "VkImageType"),
-        BuiltInType("VkFormat", "VkFormat"),
-        BuiltInType("VkExtent3D", "VkExtent3D"),
-        BuiltInType("VkSampleCountFlagBits", "VkSampleCountFlagBits"),
-        BuiltInType("VkImageTiling", "VkImageTiling"),
-        BuiltInType("VkImageLayout", "VkImageLayout"),
-        BuiltInType("VkImageUsageFlags", "VkImageUsageFlags"),
-        BuiltInType("VkImageViewType", "VkImageViewType"),
-        BuiltInType("PFN_vkGetInstanceProcAddr", "PFN_vkGetInstanceProcAddr"),
         BuiltInType("char", "char"),
-        BuiltInType("GLuint", "GLuint"),
-        BuiltInType("VkDeviceMemory", "VkDeviceMemory"),
-        BuiltInType("GLenum", "GLenum"),
-        BuiltInType("GLsizei", "GLsizei"),
-        BuiltInType("GLsizeiptr", "GLsizeiptr"),
     }
 
     for module in Module.load_all(builtin_tys):

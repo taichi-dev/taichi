@@ -221,7 +221,6 @@ static bool compare_types(DataType x, DataType y) {
 
 static DataType to_primitive_type(DataType d) {
   if (d->is<PointerType>()) {
-    d = d->as<PointerType>()->get_pointee_type();
     TI_ERROR("promoted_type got a pointer input.");
   }
 

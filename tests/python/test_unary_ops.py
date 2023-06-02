@@ -78,7 +78,7 @@ def test_logic_not_invalid():
 
 
 @test_utils.test(arch=[ti.cuda, ti.vulkan, ti.opengl, ti.metal])
-def _test_frexp():  # Fails in this PR, but will be fixed in the last PR of this series
+def test_frexp():
     @ti.kernel
     def get_frac(x: ti.f32) -> ti.f32:
         a, b = ti.frexp(x)

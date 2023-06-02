@@ -86,7 +86,8 @@ class FrontendAllocaStmt : public Stmt {
                      DataType element,
                      bool is_shared = false)
       : ident(lhs), is_shared(is_shared) {
-    ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
+    ret_type = TypeFactory::get_instance().get_pointer_type(
+        DataType(TypeFactory::create_tensor_type(shape, element)));
   }
 
   bool is_shared;
@@ -500,6 +501,7 @@ class ExternalTensorExpression : public Expression {
 
   void type_check(const CompileConfig *config) override {
     ret_type = dt;
+    ret_type.set_is_pointer(true);
     config_ = config;
   }
 
@@ -585,7 +587,7 @@ class MatrixExpression : public Expression {
                    std::vector<int> shape,
                    DataType element_type)
       : elements(elements) {
-    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
+    dt = TypeFactory::create_tensor_type(shape, element_type);
   }
 
   void type_check(const CompileConfig *config) override;

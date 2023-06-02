@@ -37,7 +37,8 @@ FrontendAssignStmt::FrontendAssignStmt(const Expr &lhs, const Expr &rhs)
     : lhs(lhs), rhs(rhs) {
   TI_ASSERT(lhs->is_lvalue());
   if (lhs.is<IdExpression>() && lhs->ret_type == PrimitiveType::unknown) {
-    lhs.expr->ret_type = rhs.get_rvalue_type();
+    lhs.expr->ret_type =
+        TypeFactory::get_instance().get_pointer_type(rhs.get_rvalue_type());
   }
 }
 
@@ -127,7 +128,8 @@ void FrontendForStmt::init_loop_vars(const ExprGroup &loop_vars) {
 
 void FrontendForStmt::add_loop_var(const Expr &loop_var) {
   loop_var_ids.push_back(loop_var.cast<IdExpression>()->id);
-  loop_var.expr->ret_type = PrimitiveType::i32;
+  loop_var.expr->ret_type =
+      TypeFactory::get_instance().get_pointer_type(PrimitiveType::i32);
 }
 
 FrontendFuncDefStmt::FrontendFuncDefStmt(const FrontendFuncDefStmt &o)
@@ -883,7 +885,7 @@ void IndexExpression::type_check(const CompileConfig *) {
         "Invalid IndexExpression: the source is not among field, ndarray or "
         "local tensor");
   }
-
+  ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
   for (auto &indices : indices_group) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];

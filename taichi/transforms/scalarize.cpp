@@ -1028,7 +1028,8 @@ class ScalarizePointers : public BasicStmtVisitor {
       for (size_t i = 0; i < tensor_type->get_num_elements(); i++) {
         auto scalarized_alloca_stmt =
             std::make_unique<AllocaStmt>(primitive_type);
-        scalarized_alloca_stmt->ret_type = primitive_type;
+        scalarized_alloca_stmt->ret_type =
+            TypeFactory::get_instance().get_pointer_type(primitive_type);
 
         scalarized_local_tensor_map_[stmt].push_back(
             scalarized_alloca_stmt.get());

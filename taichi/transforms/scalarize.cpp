@@ -53,9 +53,6 @@ class Scalarize : public BasicStmtVisitor {
 
       TI_ASSERT(dest_tensor_type->get_shape() == val_tensor_type->get_shape());
 
-      //      irpass::print(stmt);
-      //      irpass::print(stmt->val);
-
       TI_ASSERT(stmt->val->template is<MatrixInitStmt>());
       auto matrix_init_stmt = stmt->val->template as<MatrixInitStmt>();
 

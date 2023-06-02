@@ -509,8 +509,6 @@ void TernaryOpExpression::type_check(const CompileConfig *config) {
   TI_ASSERT_TYPE_CHECKED(op1);
   TI_ASSERT_TYPE_CHECKED(op2);
   TI_ASSERT_TYPE_CHECKED(op3);
-  //  TI_INFO("Ternary op {}",
-  //          ExpressionHumanFriendlyPrinter::expr_to_string(this));
 
   bool is_valid = true;
   bool is_tensor = false;
@@ -888,9 +886,6 @@ void IndexExpression::type_check(const CompileConfig *) {
         "local tensor");
   }
   ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
-  //  TI_INFO("IndexExpression {} type checked : {}.",
-  //          ExpressionHumanFriendlyPrinter::expr_to_string(this),
-  //          ret_type->to_string());
   for (auto &indices : indices_group) {
     for (int i = 0; i < indices.exprs.size(); i++) {
       auto &expr = indices.exprs[i];
@@ -1716,7 +1711,6 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           auto ind = Expr(std::make_shared<IndexExpression>(
               id_expr, ExprGroup(Expr(i)), expr->tb));
           ind->type_check(nullptr);
-          //          ind.expr->ret_type = tensor_type->get_element_type();
           expanded_exprs.push_back(ind);
         }
       } else {
@@ -1726,7 +1720,6 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
             auto ind = Expr(std::make_shared<IndexExpression>(
                 id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
             ind->type_check(nullptr);
-            //            ind.expr->ret_type = tensor_type->get_element_type();
             expanded_exprs.push_back(ind);
           }
         }

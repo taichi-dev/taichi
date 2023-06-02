@@ -172,8 +172,8 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
 
   void visit(AllocaStmt *stmt) override {
     // Override shared memory codegen logic for large shared memory
-    if (stmt->ret_type->is<TensorType>() && stmt->is_shared) {
-      auto tensor_type = stmt->ret_type->cast<TensorType>();
+    auto tensor_type = stmt->ret_type.ptr_removed()->cast<TensorType>();
+    if (tensor_type && stmt->is_shared) {
       size_t shared_array_bytes =
           tensor_type->get_num_elements() *
           data_type_size(tensor_type->get_element_type());

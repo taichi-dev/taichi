@@ -1514,7 +1514,7 @@ Expr ASTBuilder::expr_subscript(const Expr &expr,
                                 std::string tb) {
   TI_ASSERT(expr.is<FieldExpression>() || expr.is<MatrixFieldExpression>() ||
             expr.is<ExternalTensorExpression>() ||
-            is_tensor(expr.expr->ret_type));
+            is_tensor(expr.expr->ret_type.ptr_removed()));
 
   // IndexExpression without ret_shape is used for matrix indexing,
   // where each entry of ExprGroup is interpreted as indexing into a specific
@@ -1677,7 +1677,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         elem.expr->ret_type = struct_type->get_element_type(indices);
         expanded_exprs.push_back(elem);
       }
-    } else if (!expr->ret_type->is<TensorType>()) {
+    } else if (!expr->ret_type.ptr_removed()->is<TensorType>()) {
       expanded_exprs.push_back(expr);
     } else {
       // Expand TensorType expr
@@ -1695,7 +1695,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           return {ind0, ind1, ind2, ind3}
 
       */
-      auto tensor_type = expr->ret_type->cast<TensorType>();
+      auto tensor_type = expr->ret_type.ptr_removed()->cast<TensorType>();
 
       Expr id_expr;
       if (expr.is<IdExpression>()) {
@@ -1708,7 +1708,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
         for (int i = 0; i < shape[0]; i++) {
           auto ind = Expr(std::make_shared<IndexExpression>(
               id_expr, ExprGroup(Expr(i)), expr->tb));
-          ind.expr->ret_type = tensor_type->get_element_type();
+          ind->type_check(nullptr);
           expanded_exprs.push_back(ind);
         }
       } else {
@@ -1717,7 +1717,7 @@ std::vector<Expr> ASTBuilder::expand_exprs(const std::vector<Expr> &exprs) {
           for (int j = 0; j < shape[1]; j++) {
             auto ind = Expr(std::make_shared<IndexExpression>(
                 id_expr, ExprGroup(Expr(i), Expr(j)), expr->tb));
-            ind.expr->ret_type = tensor_type->get_element_type();
+            ind->type_check(nullptr);
             expanded_exprs.push_back(ind);
           }
         }

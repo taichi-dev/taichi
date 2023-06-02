@@ -18,6 +18,7 @@ PFN_vkVoidFunction load_vk_function_for_gui(const char *name, void *userData) {
 Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   app_context_ = app_context;
   swap_chain_ = swap_chain;
+  glfwGetWindowSize (window, &widthBeforeDPIScale, &heightBeforeDPIScale);
 
   create_descriptor_pool();
 
@@ -126,10 +127,10 @@ bool Gui::initialized() {
 }
 
 float Gui::abs_x(float x) {
-  return x * app_context_->config.width;
+  return x * widthBeforeDPIScale;
 }
 float Gui::abs_y(float y) {
-  return y * app_context_->config.height;
+  return y * heightBeforeDPIScale;
 }
 
 void Gui::begin(const std::string &name,

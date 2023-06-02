@@ -147,3 +147,26 @@ def test_kernel_continue_in_nested_if_3():
     assert x[0] == 1
     run(0)
     assert x[0] == 0
+
+
+@test_utils.test()
+def test_kernel_continue_in_simple_if():
+    img = ti.field(ti.i32, (2, 2))
+
+    @ti.kernel
+    def K():
+        for i, j in img:
+            img[i, j] = 0
+            if i > 0 or j > 0:
+                continue
+            img[i, j] = 1
+
+    img.fill(2)
+    K()
+
+    for i in range(2):
+        for j in range(2):
+            if i > 0 or j > 0:
+                assert img[i, j] == 0
+            else:
+                assert img[i, j] == 1

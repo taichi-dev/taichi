@@ -34,7 +34,7 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
     heightBeforeDPIScale = (int)ANativeWindow_getHeight(window);
 #else
     ImGui_ImplGlfw_InitForVulkan(window, true);
-    glfwGetWindowSize (window, &widthBeforeDPIScale, &heightBeforeDPIScale);
+    glfwGetWindowSize(window, &widthBeforeDPIScale, &heightBeforeDPIScale);
 #endif
   }
 }

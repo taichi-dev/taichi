@@ -337,7 +337,7 @@ class PyTaichi:
     def clear_compiled_functions(self):
         # for k in self.kernels:
         #     k.compiled_kernels.clear()
-        pass # FIXME: Call prog.clear_compiled_kernels() instead
+        pass  # FIXME: Call prog.clear_compiled_kernels() instead
 
     def finalize_fields_builder(self, builder):
         self.unfinalized_fields_builder.pop(builder)

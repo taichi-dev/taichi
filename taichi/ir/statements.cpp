@@ -1,6 +1,7 @@
 // TODO: gradually cppize statements.h
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
+#include "taichi/program/kernel.h"
 
 namespace taichi::lang {
 
@@ -46,11 +47,9 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  int ndim,
                                  const std::vector<int> &element_shape,
-                                 int element_dim,
                                  bool is_grad)
     : ExternalPtrStmt(base_ptr, indices, is_grad) {
   this->element_shape = element_shape;
-  this->element_dim = element_dim;
   this->ndim = ndim;
 }
 
@@ -99,7 +98,7 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
 
   if (origin->is<AllocaStmt>() || origin->is<GlobalTemporaryStmt>() ||
       origin->is<ExternalPtrStmt>() || origin->is<MatrixOfGlobalPtrStmt>() ||
-      origin->is<MatrixOfMatrixPtrStmt>()) {
+      origin->is<MatrixOfMatrixPtrStmt>() || origin->is<ThreadLocalPtrStmt>()) {
     auto tensor_type = origin->ret_type.ptr_removed()->cast<TensorType>();
     TI_ASSERT(tensor_type != nullptr);
     element_type() = tensor_type->get_element_type();
@@ -117,6 +116,12 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
         "(globally).")
   }
   TI_STMT_REG_FIELDS;
+}
+
+bool MatrixPtrStmt::common_statement_eliminable() const {
+  Kernel *k = get_kernel();
+  TI_ASSERT(k != nullptr);
+  return (k->autodiff_mode == AutodiffMode::kNone);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,
@@ -297,8 +302,8 @@ GetChStmt::GetChStmt(Stmt *input_ptr,
   TI_STMT_REG_FIELDS;
 }
 
-OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch)
-    : task_type(task_type), device(arch) {
+OffloadedStmt::OffloadedStmt(TaskType task_type, Arch arch, Kernel *kernel)
+    : kernel_(kernel), task_type(task_type), device(arch) {
   if (has_body()) {
     body = std::make_unique<Block>();
     body->set_parent_stmt(this);
@@ -332,7 +337,7 @@ std::string OffloadedStmt::task_type_name(TaskType tt) {
 }
 
 std::unique_ptr<Stmt> OffloadedStmt::clone() const {
-  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device);
+  auto new_stmt = std::make_unique<OffloadedStmt>(task_type, device, kernel_);
   new_stmt->snode = snode;
   new_stmt->begin_offset = begin_offset;
   new_stmt->end_offset = end_offset;

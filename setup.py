@@ -182,7 +182,7 @@ def cmake_install_manifest_filter(manifest_files):
             return True
         if basename in BLACKLISTED_FILES:
             return False
-        return f.endswith((".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp"))
+        return f.endswith((".so", "pyd", ".dll", ".bc", ".h", ".dylib", ".cmake", ".hpp", ".lib"))
 
     return [f for f in manifest_files if should_include(f)]
 
@@ -222,7 +222,7 @@ setup(
     author="Taichi developers",
     author_email="yuanmhu@gmail.com",
     url="https://github.com/taichi-dev/taichi",
-    python_requires=">=3.6,<3.12",
+    python_requires=">=3.6,<4.0",
     install_requires=[
         "numpy",
         "colorama",

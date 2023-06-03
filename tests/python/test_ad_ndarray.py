@@ -1463,3 +1463,39 @@ def test_ad_vector_arg():
     for i in range(N):
         for j in range(2):
             assert a.grad[i][j] == 2
+
+
+@test_utils.test(arch=archs_support_ndarray_ad)
+def test_hash_encoder_simple():
+    @ti.kernel
+    def hash_encoder_kernel(
+        table: ti.types.ndarray(),
+        output_embedding: ti.types.ndarray(),
+    ):
+        ti.loop_config(block_dim=256)
+        for level in range(1):
+            local_features = ti.Vector([0.0])
+
+            tmp0 = local_features[0] + table[0]
+            local_features[0] = tmp0
+
+            if level < 0:
+                # To keep this IfStmt
+                print(1111)
+
+            tmp1 = local_features[0] + table[0]
+            local_features[0] = tmp1
+
+            output_embedding[0, 0] = local_features[0]
+
+    table = ti.ndarray(shape=(1), dtype=ti.f32, needs_grad=True)
+    output_embedding = ti.ndarray(shape=(1, 1), dtype=ti.f32, needs_grad=True)
+
+    table[0] = 0.2924
+    table.grad[0] = 0.0
+    output_embedding[0, 0] = 0.7515
+    output_embedding.grad[0, 0] = 2.8942e-06
+
+    hash_encoder_kernel.grad(table, output_embedding)
+
+    assert table.grad[0] > 5.788399e-06 and table.grad[0] < 5.7884e-06

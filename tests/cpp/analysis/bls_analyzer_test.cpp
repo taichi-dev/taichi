@@ -29,7 +29,7 @@ class BLSAnalyzerTest : public ::testing::Test {
 
     for_stmt_ = std::make_unique<OffloadedStmt>(
         /*task_type=*/OffloadedTaskType::struct_for,
-        /*arch=*/Arch::x64);
+        /*arch=*/Arch::x64, nullptr);
     for_stmt_->mem_access_opt.add_flag(child_snode_,
                                        SNodeAccessFlag::block_local);
     pads_.insert(child_snode_);

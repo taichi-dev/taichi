@@ -1501,6 +1501,11 @@ class MatrixType(CompoundType):
         kwargs.update({"ndim": self.ndim})
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
+    def ndarray(self, **kwargs):
+        assert kwargs.get("ndim", self.ndim) == self.ndim
+        kwargs.update({"ndim": self.ndim})
+        return Matrix.ndarray(self.n, self.m, dtype=self.dtype, **kwargs)
+
     def get_shape(self):
         if self.ndim == 1:
             return (self.n,)
@@ -1598,6 +1603,9 @@ class VectorType(MatrixType):
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
 
+    def ndarray(self, **kwargs):
+        return Vector.ndarray(self.n, dtype=self.dtype, **kwargs)
+
     def to_string(self):
         dtype_str = self.dtype.to_string() if self.dtype is not None else ""
         return f"VectorType[{self.n}, {dtype_str}]"
@@ -1628,7 +1636,9 @@ class MatrixNdarray(Ndarray):
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+        )
 
     @property
     def element_shape(self):
@@ -1736,7 +1746,9 @@ class VectorNdarray(Ndarray):
         self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((n,), self.dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+        )
 
     @property
     def element_shape(self):

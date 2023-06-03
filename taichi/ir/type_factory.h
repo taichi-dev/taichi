@@ -26,7 +26,7 @@ class TypeFactory {
                               const std::string &layout = "none");
 
   const Type *get_ndarray_struct_type(DataType dt,
-                                      int total_dim,
+                                      int ndim,
                                       bool needs_grad = false);
 
   const Type *get_rwtexture_struct_type();

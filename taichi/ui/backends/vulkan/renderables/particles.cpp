@@ -47,6 +47,7 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     ubo.window_height = app_context_->config.height;
     ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
     ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
+    ubo.use_per_vertex_radius = info.renderable_info.has_per_vertex_radius;
 
     void *mapped{nullptr};
     RHI_VERIFY(

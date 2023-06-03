@@ -313,6 +313,22 @@ class TI_DLL_EXPORT Program {
   // Once we migrated these implementations to ProgramImpl, lower-level objects
   // could store ProgramImpl rather than Program.
 
+  void clear_compiled_kernels() {
+    compiled_kernels_.clear();
+  }
+
+  void set_compiled_kernel(
+      const std::tuple<std::uintptr_t, size_t, AutodiffMode> &key,
+      Kernel *kernel) {
+    compiled_kernels_[key] = kernel;
+  }
+
+  Kernel *get_compiled_kernel(
+      const std::tuple<std::uintptr_t, size_t, AutodiffMode> &key) {
+    auto iter = compiled_kernels_.find(key);
+    return iter != compiled_kernels_.end() ? iter->second : nullptr;
+  }
+
  private:
   CompileConfig compile_config_;
 
@@ -338,6 +354,8 @@ class TI_DLL_EXPORT Program {
   // TODO: Move ndarrays_ and textures_ to be managed by runtime
   std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
+  std::map<std::tuple<std::uintptr_t, size_t, AutodiffMode>, Kernel *>
+      compiled_kernels_;
 };
 
 }  // namespace taichi::lang

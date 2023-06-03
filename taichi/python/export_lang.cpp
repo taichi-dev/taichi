@@ -451,7 +451,10 @@ void export_lang(py::module &m) {
       .def("compile_kernel", &Program::compile_kernel,
            py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)
-      .def("get_device_caps", &Program::get_device_caps);
+      .def("get_device_caps", &Program::get_device_caps)
+      .def("set_compiled_kernel", &Program::set_compiled_kernel)
+      .def("get_compiled_kernel", &Program::get_compiled_kernel,
+           py::return_value_policy::reference);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
       .def("add_field", &AotModuleBuilder::add_field)

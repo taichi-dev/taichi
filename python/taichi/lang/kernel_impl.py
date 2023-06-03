@@ -497,7 +497,6 @@ class Kernel:
         impl.get_runtime().kernels.append(self)
         self.reset()
         self.kernel_cpp = None
-        self.compiled_kernels = {}
         self.has_print = False
 
     def ast_builder(self):
@@ -506,7 +505,6 @@ class Kernel:
 
     def reset(self):
         self.runtime = impl.get_runtime()
-        self.compiled_kernels = {}
 
     def extract_arguments(self):
         sig = inspect.signature(self.func)
@@ -557,10 +555,10 @@ class Kernel:
 
     def materialize(self, key=None, args=None, arg_features=None):
         if key is None:
-            key = (self.func, 0, self.autodiff_mode)
+            key = (id(self.func), 0, self.autodiff_mode)
         self.runtime.materialize()
 
-        if key in self.compiled_kernels:
+        if impl.get_runtime().prog.get_compiled_kernel(key) is not None:
             return
 
         kernel_name = f"{self.func.__name__}_c{self.kernel_counter}_{key[1]}"
@@ -602,9 +600,9 @@ class Kernel:
                 self.runtime.current_kernel = None
                 self.runtime.compiling_callable = None
 
+        # TODO: Merge the following two function calls into one
         taichi_kernel = impl.get_runtime().prog.create_kernel(taichi_ast_generator, kernel_name, self.autodiff_mode)
-        assert key not in self.compiled_kernels
-        self.compiled_kernels[key] = taichi_kernel
+        impl.get_runtime().prog.set_compiled_kernel(key, taichi_kernel)
 
     def launch_kernel(self, t_kernel, *args):
         assert len(args) == len(self.arguments), f"{len(self.arguments)} arguments needed but {len(args)} provided"
@@ -836,7 +834,7 @@ class Kernel:
 
     def ensure_compiled(self, *args):
         instance_id, arg_features = self.mapper.lookup(args)
-        key = (self.func, instance_id, self.autodiff_mode)
+        key = (id(self.func), instance_id, self.autodiff_mode)
         self.materialize(key=key, args=args, arg_features=arg_features)
         return key
 
@@ -870,7 +868,7 @@ class Kernel:
             _logging.warn("""opt_level = 1 is enforced to enable gradient computation.""")
             impl.current_cfg().opt_level = 1
         key = self.ensure_compiled(*args)
-        kernel_cpp = self.compiled_kernels[key]
+        kernel_cpp = impl.get_runtime().prog.get_compiled_kernel(key)
         return self.launch_kernel(kernel_cpp, *args)
 
 

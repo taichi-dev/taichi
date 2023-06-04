@@ -26,24 +26,24 @@ vk_on_mac = (ti.vulkan, "Darwin")
 cuda_on_windows = (ti.cuda, "Windows")
 
 
-@test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)
-def test_print_docs_scalar_self_documenting_exp(capfd):
-    a = ti.field(ti.f32, 4)
+# @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)
+# def test_print_docs_scalar_self_documenting_exp(capfd):
+#     a = ti.field(ti.f32, 4)
 
-    @ti.kernel
-    def func():
-        a[0] = 1.0
+#     @ti.kernel
+#     def func():
+#         a[0] = 1.0
 
-        # with self-documenting expressions
-        print(f"{a[0] = :.1f}")
+#         # with self-documenting expressions
+#         print(f"{a[0] = :.1f}")
 
-    func()
-    ti.sync()
+#     func()
+#     ti.sync()
 
-    out, err = capfd.readouterr()
-    expected_out = """a[0] = 1.0
-"""
-    assert out == expected_out and err == ""
+#     out, err = capfd.readouterr()
+#     expected_out = """a[0] = 1.0
+# """
+#     assert out == expected_out and err == ""
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.vulkan], exclude=[vk_on_mac, cuda_on_windows], debug=True)

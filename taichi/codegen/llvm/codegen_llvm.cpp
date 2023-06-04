@@ -197,7 +197,6 @@ void TaskCodeGenLLVM::emit_extra_unary(UnaryOpStmt *stmt) {
   UNARY_STD(tan)
   UNARY_STD(tanh)
   UNARY_STD(sgn)
-  UNARY_STD(logic_not)
   UNARY_STD(acos)
   UNARY_STD(asin)
   UNARY_STD(cos)
@@ -377,6 +376,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
 
     if (from == to) {
       llvm_val[stmt] = llvm_val[stmt->operand];
+    } else if (to->is_primitive(PrimitiveTypeID::u1)) {
+      llvm_val[stmt] = builder->CreateIsNotNull(input);
     } else if (is_real(from.get_element_type()) !=
                is_real(to.get_element_type())) {
       if (is_real(from.get_element_type()) &&
@@ -524,6 +525,8 @@ void TaskCodeGenLLVM::visit(UnaryOpStmt *stmt) {
     } else {
       llvm_val[stmt] = builder->CreateNeg(input, "neg");
     }
+  } else if (op == UnaryOpType::logic_not) {
+    llvm_val[stmt] = builder->CreateIsNull(input);
   }
   UNARY_INTRINSIC(round)
   UNARY_INTRINSIC(floor)
@@ -608,7 +611,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (is_signed(stmt->ret_type)) {
+    } else if (is_signed(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateSDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -618,6 +621,18 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
   } else if (op == BinaryOpType::mod) {
     llvm_val[stmt] =
         builder->CreateSRem(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
+  } else if (op == BinaryOpType::logical_and) {
+    auto *lhs = builder->CreateIsNotNull(llvm_val[stmt->lhs]);
+    auto *rhs = builder->CreateIsNotNull(llvm_val[stmt->rhs]);
+    llvm_val[stmt] = builder->CreateAnd(lhs, rhs);
+    llvm_val[stmt] = builder->CreateZExtOrTrunc(
+        llvm_val[stmt], tlctx->get_data_type(stmt->ret_type));
+  } else if (op == BinaryOpType::logical_or) {
+    auto *lhs = builder->CreateIsNotNull(llvm_val[stmt->lhs]);
+    auto *rhs = builder->CreateIsNotNull(llvm_val[stmt->rhs]);
+    llvm_val[stmt] = builder->CreateOr(lhs, rhs);
+    llvm_val[stmt] = builder->CreateZExtOrTrunc(
+        llvm_val[stmt], tlctx->get_data_type(stmt->ret_type));
   } else if (op == BinaryOpType::bit_and) {
     llvm_val[stmt] =
         builder->CreateAnd(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
@@ -643,7 +658,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #endif
   } else if (op == BinaryOpType::bit_sar) {
-    if (is_signed(stmt->lhs->element_type())) {
+    if (is_signed(stmt->lhs->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -790,8 +805,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     } else {
       TI_NOT_IMPLEMENTED
     }
-    llvm_val[stmt] =
-        builder->CreateZExt(cmp, tlctx->get_data_type(PrimitiveType::i32));
+    llvm_val[stmt] = cmp;
   } else {
     // This branch contains atan2 and pow which use runtime.cpp function for
     // **real** type. We don't have f16 support there so promoting to f32 is
@@ -851,10 +865,9 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
 
 void TaskCodeGenLLVM::visit(TernaryOpStmt *stmt) {
   TI_ASSERT(stmt->op_type == TernaryOpType::select);
-  llvm_val[stmt] = builder->CreateSelect(
-      builder->CreateTrunc(llvm_val[stmt->op1],
-                           tlctx->get_data_type(PrimitiveType::u1)),
-      llvm_val[stmt->op2], llvm_val[stmt->op3]);
+  llvm_val[stmt] =
+      builder->CreateSelect(builder->CreateIsNotNull(llvm_val[stmt->op1]),
+                            llvm_val[stmt->op2], llvm_val[stmt->op3]);
 }
 
 void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
@@ -865,9 +878,8 @@ void TaskCodeGenLLVM::visit(IfStmt *if_stmt) {
       llvm::BasicBlock::Create(*llvm_context, "false_block", func);
   llvm::BasicBlock *after_if =
       llvm::BasicBlock::Create(*llvm_context, "after_if", func);
-  builder->CreateCondBr(
-      builder->CreateICmpNE(llvm_val[if_stmt->cond], tlctx->get_constant(0)),
-      true_block, false_block);
+  llvm::Value *cond = builder->CreateIsNotNull(llvm_val[if_stmt->cond]);
+  builder->CreateCondBr(cond, true_block, false_block);
   builder->SetInsertPoint(true_block);
   if (if_stmt->true_statements) {
     if_stmt->true_statements->accept(this);
@@ -959,6 +971,9 @@ void TaskCodeGenLLVM::visit(PrintStmt *stmt) {
     if (dtype->is_primitive(PrimitiveTypeID::u8))
       return builder->CreateZExt(to_print,
                                  tlctx->get_data_type(PrimitiveType::u16));
+    if (dtype->is_primitive(PrimitiveTypeID::u1))
+      return builder->CreateZExt(to_print,
+                                 tlctx->get_data_type(PrimitiveType::i32));
     return to_print;
   };
   for (auto i = 0; i < stmt->contents.size(); ++i) {
@@ -1015,6 +1030,9 @@ void TaskCodeGenLLVM::visit(ConstStmt *stmt) {
   } else if (val.dt->is_primitive(PrimitiveTypeID::f64)) {
     llvm_val[stmt] =
         llvm::ConstantFP::get(*llvm_context, llvm::APFloat(val.val_float64()));
+  } else if (val.dt->is_primitive(PrimitiveTypeID::u1)) {
+    llvm_val[stmt] = llvm::ConstantInt::get(
+        *llvm_context, llvm::APInt(1, (uint64)val.val_uint1(), false));
   } else if (val.dt->is_primitive(PrimitiveTypeID::i8)) {
     llvm_val[stmt] = llvm::ConstantInt::get(
         *llvm_context, llvm::APInt(8, (uint64)val.val_int8(), true));
@@ -1051,8 +1069,7 @@ void TaskCodeGenLLVM::visit(WhileControlStmt *stmt) {
   BasicBlock *after_break =
       BasicBlock::Create(*llvm_context, "after_break", func);
   TI_ASSERT(current_while_after_loop);
-  auto cond =
-      builder->CreateICmpEQ(llvm_val[stmt->cond], tlctx->get_constant(0));
+  auto *cond = builder->CreateIsNull(llvm_val[stmt->cond]);
   builder->CreateCondBr(cond, current_while_after_loop, after_break);
   builder->SetInsertPoint(after_break);
 }
@@ -1129,10 +1146,6 @@ void TaskCodeGenLLVM::emit_list_gen(OffloadedStmt *listgen) {
 void TaskCodeGenLLVM::emit_gc(OffloadedStmt *stmt) {
   auto snode = stmt->snode->id;
   call("node_gc", get_runtime(), tlctx->get_constant(snode));
-}
-
-void TaskCodeGenLLVM::emit_gc_rc() {
-  call("runtime_context_gc", get_runtime());
 }
 
 void TaskCodeGenLLVM::create_increment(llvm::Value *ptr, llvm::Value *value) {
@@ -1275,7 +1288,7 @@ void TaskCodeGenLLVM::visit(ReturnStmt *stmt) {
     TI_NOT_IMPLEMENTED
   } else {
     TI_ASSERT(stmt->values.size() ==
-              current_callable->ret_type->get_num_elements());
+              current_callable->ret_type->get_flattened_num_elements());
     auto *buffer = call("RuntimeContext_get_result_buffer", get_context());
     set_struct_to_buffer(current_callable->ret_type, buffer, stmt->values);
   }
@@ -1310,7 +1323,7 @@ void TaskCodeGenLLVM::visit(AssertStmt *stmt) {
 
   std::vector<llvm::Value *> args;
   args.emplace_back(get_runtime());
-  args.emplace_back(llvm_val[stmt->cond]);
+  args.emplace_back(builder->CreateIsNotNull(llvm_val[stmt->cond]));
   args.emplace_back(builder->CreateGlobalStringPtr(stmt->text));
 
   for (int i = 0; i < stmt->args.size(); i++) {
@@ -1861,10 +1874,10 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto ptr_type = TypeFactory::get_instance().get_pointer_type(arg_type);
   auto members =
       stmt->base_ptr->ret_type.ptr_removed()->as<StructType>()->elements();
-  members[1].type = ptr_type;
-  members[2].type = ptr_type;
-  auto *struct_type = tlctx->get_data_type(
-      TypeFactory::get_instance().get_struct_type(members));
+  bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+  auto struct_type =
+      tlctx->get_data_type(TypeFactory::get_instance().get_ndarray_struct_type(
+          arg_type, stmt->ndim, needs_grad));
   auto *gep = builder->CreateGEP(
       struct_type, llvm_val.at(stmt->base_ptr),
       {tlctx->get_constant(0), tlctx->get_constant(int(stmt->is_grad) + 1)});
@@ -1875,8 +1888,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto dt = stmt->ret_type.ptr_removed();
   int num_element_indices =
       dt->is<TensorType>() ? 0 : stmt->element_shape.size();
-  const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
-                                             : ExternalArrayLayout::kSOA;
 
   /*
     ExternalPtrStmt can be divided into "outter" and "inner" parts.
@@ -1892,14 +1903,14 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     "num_indices - num_element_indices" gives how many "extra_args" to read from
   */
   int num_array_args = num_indices - num_element_indices;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+  const size_t element_shape_index_offset = num_array_args;
 
   for (int i = 0; i < num_array_args; i++) {
-    auto raw_arg =
-        builder->CreateGEP(struct_type, llvm_val[stmt->base_ptr],
-                           {tlctx->get_constant(0), tlctx->get_constant(0),
-                            tlctx->get_constant(i)});
+    auto raw_arg = builder->CreateGEP(
+        struct_type, llvm_val[stmt->base_ptr],
+        {tlctx->get_constant(0),
+         tlctx->get_constant(TypeFactory::SHAPE_POS_IN_NDARRAY),
+         tlctx->get_constant(i)});
     raw_arg =
         builder->CreateLoad(tlctx->get_data_type(PrimitiveType::i32), raw_arg);
     sizes[i] = raw_arg;
@@ -1969,16 +1980,8 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
 void TaskCodeGenLLVM::visit(ExternalTensorShapeAlongAxisStmt *stmt) {
   const auto arg_id = stmt->arg_id;
   const auto axis = stmt->axis;
-  if (auto struct_type = current_callable->args_type->get_element_type({arg_id})
-                             ->cast<StructType>()) {
-    // Is ndarray
-    llvm_val[stmt] = get_struct_arg({arg_id, 0, axis}, /*create_load=*/true);
-  } else {
-    // Is texture
-    llvm_val[stmt] =
-        call("RuntimeContext_get_extra_args", get_context(),
-             tlctx->get_constant(arg_id), tlctx->get_constant(axis));
-  }
+  llvm_val[stmt] = get_struct_arg(
+      {arg_id, TypeFactory::SHAPE_POS_IN_NDARRAY, axis}, /*create_load=*/true);
 }
 
 std::string TaskCodeGenLLVM::init_offloaded_task_function(OffloadedStmt *stmt,
@@ -2226,8 +2229,7 @@ void TaskCodeGenLLVM::create_offload_struct_for(OffloadedStmt *stmt) {
       // test whether the current voxel is active or not
       auto is_active = call(leaf_block, element.get("element"), "is_active",
                             {builder->CreateLoad(loop_index_ty, loop_index)});
-      is_active =
-          builder->CreateTrunc(is_active, llvm::Type::getInt1Ty(*llvm_context));
+      is_active = builder->CreateIsNotNull(is_active);
       exec_cond = builder->CreateAnd(exec_cond, is_active);
     }
 
@@ -2434,6 +2436,7 @@ void TaskCodeGenLLVM::visit(AdStackPushStmt *stmt) {
 }
 
 void TaskCodeGenLLVM::visit(AdStackLoadTopStmt *stmt) {
+  TI_ASSERT(stmt->return_ptr == false);
   auto stack = stmt->stack->as<AdStackAllocaStmt>();
   auto primal_ptr = call("stack_top_primal", llvm_val[stack],
                          tlctx->get_constant(stack->element_size_in_bytes()));
@@ -2777,7 +2780,7 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
     current_callable = old_callable;
   }
   llvm::Function *llvm_func = func_map[stmt->func];
-  auto *new_ctx = call("allocate_runtime_context", get_runtime());
+  auto *new_ctx = builder->CreateAlloca(get_runtime_type("RuntimeContext"));
   call("RuntimeContext_set_runtime", new_ctx, get_runtime());
   if (!stmt->func->parameter_list.empty()) {
     auto *buffer =
@@ -2796,7 +2799,6 @@ void TaskCodeGenLLVM::visit(FuncCallStmt *stmt) {
   }
   call(llvm_func, new_ctx);
   llvm_val[stmt] = result_buffer;
-  call("recycle_runtime_context", get_runtime(), new_ctx);
 }
 
 void TaskCodeGenLLVM::visit(GetElementStmt *stmt) {

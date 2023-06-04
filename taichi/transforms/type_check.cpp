@@ -88,22 +88,10 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
               stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
-      TI_ASSERT(ptr_offset_stmt->origin->is<AllocaStmt>() ||
-                ptr_offset_stmt->origin->is<GlobalTemporaryStmt>());
-      if (auto alloca_stmt = ptr_offset_stmt->origin->cast<AllocaStmt>()) {
-        auto lookup =
-            DataType(
-                alloca_stmt->ret_type->as<TensorType>()->get_element_type())
-                .ptr_removed();
-        stmt->ret_type = lookup;
-      }
-      if (auto global_temporary_stmt =
-              ptr_offset_stmt->origin->cast<GlobalTemporaryStmt>()) {
-        auto lookup = DataType(global_temporary_stmt->ret_type->as<TensorType>()
-                                   ->get_element_type())
-                          .ptr_removed();
-        stmt->ret_type = lookup;
-      }
+      auto lookup = DataType(ptr_offset_stmt->origin->ret_type->as<TensorType>()
+                                 ->get_element_type())
+                        .ptr_removed();
+      stmt->ret_type = lookup;
     } else {
       auto lookup = stmt->src->ret_type;
       stmt->ret_type = lookup;
@@ -130,6 +118,8 @@ class TypeCheck : public IRVisitor {
     } else if (stmt->op_type == SNodeOpType::allocate) {
       stmt->ret_type = PrimitiveType::gen;
       stmt->ret_type.set_is_pointer(true);
+    } else if (stmt->op_type == SNodeOpType::is_active) {
+      stmt->ret_type = PrimitiveType::u1;
     } else {
       stmt->ret_type = PrimitiveType::i32;
     }
@@ -223,6 +213,16 @@ class TypeCheck : public IRVisitor {
           stmt->op_type == UnaryOpType::exp ||
           stmt->op_type == UnaryOpType::log) {
         DataType target_dtype = config_.default_fp;
+        if (stmt->operand->ret_type->is<TensorType>()) {
+          target_dtype = TypeFactory::get_instance().create_tensor_type(
+              stmt->operand->ret_type->as<TensorType>()->get_shape(),
+              target_dtype);
+        }
+
+        cast(stmt->operand, target_dtype);
+        stmt->ret_type = target_dtype;
+      } else if (stmt->op_type == UnaryOpType::logic_not) {
+        DataType target_dtype = PrimitiveType::u1;
         if (stmt->operand->ret_type->is<TensorType>()) {
           target_dtype = TypeFactory::get_instance().create_tensor_type(
               stmt->operand->ret_type->as<TensorType>()->get_shape(),
@@ -388,7 +388,7 @@ class TypeCheck : public IRVisitor {
       error();
     }
     if (is_comparison(stmt->op_type)) {
-      stmt->ret_type = make_dt(PrimitiveType::i32);
+      stmt->ret_type = make_dt(PrimitiveType::u1);
     } else {
       stmt->ret_type = stmt->lhs->ret_type;
     }
@@ -397,8 +397,7 @@ class TypeCheck : public IRVisitor {
   void visit(TernaryOpStmt *stmt) override {
     if (stmt->op_type == TernaryOpType::select) {
       auto ret_type = promoted_type(stmt->op2->ret_type, stmt->op3->ret_type);
-      TI_ASSERT(stmt->op1->ret_type.get_element_type()->is_primitive(
-          PrimitiveTypeID::i32));
+      TI_ASSERT(is_integral(stmt->op1->ret_type.get_element_type()));
       if (ret_type != stmt->op2->ret_type) {
         auto cast_stmt = insert_type_cast_before(stmt, stmt->op2, ret_type);
         stmt->op2 = cast_stmt;
@@ -443,12 +442,7 @@ class TypeCheck : public IRVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
-    // TODO: Maybe have a type_inference() pass, which takes in the args/rets
-    // defined by the kernel. After that, type_check() pass will purely do
-    // verification, without modifying any types.
-    if (stmt->is_ptr) {
-      stmt->ret_type.set_is_pointer(true);
-    }
+    // Do nothing
   }
 
   void visit(ReturnStmt *stmt) override {

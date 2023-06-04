@@ -3,7 +3,10 @@
 layout(binding = 0) uniform UBO {
   vec3 color;
   int use_per_vertex_color;
+  int use_per_vertex_radius;
   float radius;
+  float window_width;
+  float window_height;
 }
 ubo;
 

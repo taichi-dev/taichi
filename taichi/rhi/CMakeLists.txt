@@ -113,3 +113,8 @@ target_link_libraries(${TAICHI_DEVICE_API} PUBLIC common_rhi)
 # Generate shared library
 add_library(ti_device_api_shared SHARED public_device.h)
 target_link_libraries(ti_device_api_shared PUBLIC ${TAICHI_DEVICE_API})
+
+# When building targets on Windows using Ninja + MSVC, the linker requires at least 1 object file
+# to work properly, else link.exe would complain about LNK4001 warning, and fail afterwards.
+# Adding a dummy file to workaround this.
+target_sources(ti_device_api_shared PRIVATE dummy.cpp)

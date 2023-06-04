@@ -16,11 +16,11 @@ class Scalarize : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
+  bool half2_optimization_enabled_ = false;
 
-  explicit Scalarize(IRNode *node) : immediate_modifier_(node) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
+  explicit Scalarize(IRNode *node, bool half2_optimization)
+      : immediate_modifier_(node),
+        half2_optimization_enabled_(half2_optimization) {
   }
 
   /*
@@ -135,6 +135,33 @@ class Scalarize : public BasicStmtVisitor {
       delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
 
       delayed_modifier_.erase(stmt);
+      return;
+    }
+
+    // Obtained from Autodiff
+    // $2 = adstack top(is_ptr=True)
+    // $3 = matrix ptr $2, 0
+    // $4 = local load $3
+
+    // during previous irpass::scalarize()
+    // $2 = matrix init(...)
+    // $3 = matrix ptr $2, 0
+    // $4 = local load $3
+
+    // Transform to:
+    // $4 = $2->values[0]
+    if (stmt->src->template is<MatrixPtrStmt>()) {
+      auto matrix_ptr_stmt = stmt->src->template as<MatrixPtrStmt>();
+      if (matrix_ptr_stmt->origin->template is<MatrixInitStmt>()) {
+        auto matrix_init_stmt =
+            matrix_ptr_stmt->origin->template as<MatrixInitStmt>();
+        TI_ASSERT(matrix_ptr_stmt->offset->template is<ConstStmt>());
+        auto offset_stmt = matrix_ptr_stmt->offset->template as<ConstStmt>();
+        int offset = offset_stmt->val.val_int32();
+
+        stmt->replace_usages_with(matrix_init_stmt->values[offset]);
+        delayed_modifier_.erase(stmt);
+      }
     }
   }
 
@@ -390,7 +417,90 @@ class Scalarize : public BasicStmtVisitor {
   void visit(AtomicOpStmt *stmt) override {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
     auto val_dtype = stmt->val->ret_type;
-    if (dest_dtype->is<TensorType>() || val_dtype->is<TensorType>()) {
+
+    bool half2_optimizable = half2_optimization_enabled_;
+    bool is_tensor_type = false;
+    if (dest_dtype->is<TensorType>()) {
+      is_tensor_type = true;
+      half2_optimizable &=
+          (dest_dtype.get_element_type() == PrimitiveType::f16);
+      half2_optimizable &=
+          (dest_dtype->as<TensorType>()->get_num_elements() == 2);
+    } else {
+      half2_optimizable = false;
+    }
+    is_tensor_type |= val_dtype->is<TensorType>();
+
+    if (half2_optimizable) {
+      /*
+        Before:
+          TensorType<2 x i32> old_val = AtomicStmt(TensorType<2 x i32>* dest,
+                                                   TensorType<2 x i32>  val)
+
+        After:
+          TensorType<2 x i32> old_val = AtomicStmt(TensorType<2 x i32>* dest,
+                                                   TensorType<2 x i32>  val)
+
+          TensorType(2, f16)* old_val_alloc = AllocaStmt(TensorType(2, f16))
+          LocalStoreStmt(old_val_alloc, old_val)
+
+          f16* old_val_ptr0 = MatrixPtrStmt(old_val_alloc, 0)
+          f16* old_val_ptr1 = MatrixPtrStmt(old_val_alloc, 0)
+
+          f16 old_val0 = LoadStmt(old_val_ptr0)
+          f16 old_val1 = LoadStmt(old_val_ptr1)
+
+          tmp = MatrixInitStmt(old_val0, old_val1)
+
+          stmt->replace_all_usages_with(tmp)
+      */
+      auto atomic_stmt =
+          std::make_unique<AtomicOpStmt>(stmt->op_type, stmt->dest, stmt->val);
+      atomic_stmt->ret_type = stmt->ret_type;
+
+      auto alloca_stmt = std::make_unique<AllocaStmt>(dest_dtype);
+
+      auto local_store_stmt = std::make_unique<LocalStoreStmt>(
+          alloca_stmt.get(), atomic_stmt.get());
+
+      auto zero =
+          std::make_unique<ConstStmt>(TypedConstant(PrimitiveType::i32, 0));
+      auto one =
+          std::make_unique<ConstStmt>(TypedConstant(PrimitiveType::i32, 1));
+
+      auto matrix_ptr_0 =
+          std::make_unique<MatrixPtrStmt>(alloca_stmt.get(), zero.get());
+      auto matrix_ptr_1 =
+          std::make_unique<MatrixPtrStmt>(alloca_stmt.get(), one.get());
+      matrix_ptr_0->ret_type = PrimitiveType::f16;
+      matrix_ptr_0->ret_type.set_is_pointer(true);
+      matrix_ptr_1->ret_type = PrimitiveType::f16;
+      matrix_ptr_1->ret_type.set_is_pointer(true);
+
+      auto load_stmt_0 = std::make_unique<LocalLoadStmt>(matrix_ptr_0.get());
+      auto load_stmt_1 = std::make_unique<LocalLoadStmt>(matrix_ptr_1.get());
+      load_stmt_0->ret_type = PrimitiveType::f16;
+      load_stmt_1->ret_type = PrimitiveType::f16;
+
+      auto matrix_init_stmt = std::make_unique<MatrixInitStmt>(
+          std::vector<Stmt *>{load_stmt_0.get(), load_stmt_1.get()});
+      matrix_init_stmt->ret_type = stmt->ret_type;
+
+      immediate_modifier_.replace_usages_with(stmt, matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(atomic_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(alloca_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(local_store_stmt));
+      delayed_modifier_.insert_before(stmt, std::move(zero));
+      delayed_modifier_.insert_before(stmt, std::move(one));
+      delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_0));
+      delayed_modifier_.insert_before(stmt, std::move(matrix_ptr_1));
+      delayed_modifier_.insert_before(stmt, std::move(load_stmt_0));
+      delayed_modifier_.insert_before(stmt, std::move(load_stmt_1));
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+
+      delayed_modifier_.erase(stmt);
+
+    } else if (is_tensor_type) {
       // Make sure broadcasting has been correctly applied by
       // AtomicOpExpression::type_check().
       TI_ASSERT(dest_dtype->is<TensorType>() && val_dtype->is<TensorType>());
@@ -581,10 +691,14 @@ class Scalarize : public BasicStmtVisitor {
   }
 
   void visit(ArgLoadStmt *stmt) override {
+    if (!stmt->ret_type.is_pointer()) {
+      return;
+    }
     if (stmt->ret_type.ptr_removed()->is<StructType>()) {
       return;
     }
     auto ret_type = stmt->ret_type.ptr_removed().get_element_type();
+    ret_type = TypeFactory::get_instance().get_pointer_type(ret_type);
     auto arg_load = std::make_unique<ArgLoadStmt>(
         stmt->arg_id, ret_type, stmt->is_ptr, stmt->create_load);
 
@@ -594,8 +708,231 @@ class Scalarize : public BasicStmtVisitor {
     delayed_modifier_.erase(stmt);
   }
 
+  /*
+    Split an TensorTyped-AdStack into multiple scalar-typed AdStacks.
+
+    Before:
+      TensorType<4 x i32>* stack = AdStackAllocaStmt(TensorType<4 x i32>)
+
+    After:
+      i32* stack0 = AdStackAllocaStmt(i32)
+      i32* stack1 = AdStackAllocaStmt(i32)
+      i32* stack2 = AdStackAllocaStmt(i32)
+      i32* stack3 = AdStackAllocaStmt(i32)
+
+      scalarized_ad_stack_map_[stack] = {stack0, stack1, stack2, stack3}
+  */
+  void visit(AdStackAllocaStmt *stmt) override {
+    if (stmt->dt->is<TensorType>()) {
+      auto tensor_type = stmt->dt->as<TensorType>();
+      auto element_type = tensor_type->get_element_type();
+      auto num_elements = tensor_type->get_num_elements();
+      std::vector<Stmt *> scalarized_ad_stack;
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack =
+            std::make_unique<AdStackAllocaStmt>(element_type, stmt->max_size);
+        scalar_ad_stack->ret_type = element_type;
+        scalar_ad_stack->ret_type.set_is_pointer(true);
+
+        scalarized_ad_stack.push_back(scalar_ad_stack.get());
+        delayed_modifier_.insert_before(stmt, std::move(scalar_ad_stack));
+      }
+      scalarized_ad_stack_map_[stmt] = std::move(scalarized_ad_stack);
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      AdStackPopStmt(TensorType<4 x i32>* stack)
+
+    After:
+      AdStackPopStmt(scalarized_ad_stack_map_[stack][0])
+      AdStackPopStmt(scalarized_ad_stack_map_[stack][1])
+      AdStackPopStmt(scalarized_ad_stack_map_[stack][2])
+      AdStackPopStmt(scalarized_ad_stack_map_[stack][3])
+  */
+  void visit(AdStackPopStmt *stmt) override {
+    if (stmt->stack->as<AdStackAllocaStmt>()->dt->is<TensorType>()) {
+      auto tensor_type =
+          stmt->stack->as<AdStackAllocaStmt>()->dt->as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+      TI_ASSERT(scalarized_ad_stack_map_.find(stmt->stack) !=
+                scalarized_ad_stack_map_.end());
+      auto scalarized_ad_stack = scalarized_ad_stack_map_[stmt->stack];
+      TI_ASSERT(num_elements == scalarized_ad_stack.size());
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack_pop =
+            std::make_unique<AdStackPopStmt>(scalarized_ad_stack[i]);
+        delayed_modifier_.insert_before(stmt, std::move(scalar_ad_stack_pop));
+      }
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      TensorType<4 x i32> val = MatrixInitStmt(...) // TI_ASSERT
+      AdStackPushStmt(TensorType<4 x i32>* stack, val)
+
+    After:
+      AdStackPushStmt(scalarized_ad_stack_map_[stack][0], val->values[0])
+      AdStackPushStmt(scalarized_ad_stack_map_[stack][1], val->values[1])
+      AdStackPushStmt(scalarized_ad_stack_map_[stack][2], val->values[2])
+      AdStackPushStmt(scalarized_ad_stack_map_[stack][3], val->values[3])
+  */
+  void visit(AdStackPushStmt *stmt) override {
+    if (stmt->stack->as<AdStackAllocaStmt>()->dt->is<TensorType>()) {
+      auto tensor_type =
+          stmt->stack->as<AdStackAllocaStmt>()->dt->as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+      TI_ASSERT(scalarized_ad_stack_map_.find(stmt->stack) !=
+                scalarized_ad_stack_map_.end());
+      auto scalarized_ad_stack = scalarized_ad_stack_map_[stmt->stack];
+      TI_ASSERT(num_elements == scalarized_ad_stack.size());
+
+      TI_ASSERT(stmt->v->is<MatrixInitStmt>());
+      auto matrix_init_stmt = stmt->v->as<MatrixInitStmt>();
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack_push = std::make_unique<AdStackPushStmt>(
+            scalarized_ad_stack[i], matrix_init_stmt->values[i]);
+        delayed_modifier_.insert_before(stmt, std::move(scalar_ad_stack_push));
+      }
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      val = AdStackLoadTopStmt(TensorType<4 x i32>* stack)
+
+    After:
+      val0 = AdStackLoadTopStmt(scalarized_ad_stack_map_[stack][0])
+      val1 = AdStackLoadTopStmt(scalarized_ad_stack_map_[stack][1])
+      val2 = AdStackLoadTopStmt(scalarized_ad_stack_map_[stack][2])
+      val3 = AdStackLoadTopStmt(scalarized_ad_stack_map_[stack][3])
+
+      matrix_init_stmt = MatrixInitStmt({val0, val1, val2, val3})
+
+      replace_all_usages_with(val, matrix_init_stmt)
+  */
+  void visit(AdStackLoadTopStmt *stmt) override {
+    if (stmt->stack->as<AdStackAllocaStmt>()->dt->is<TensorType>()) {
+      auto tensor_type =
+          stmt->stack->as<AdStackAllocaStmt>()->dt->as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+      auto element_type = tensor_type->get_element_type();
+      TI_ASSERT(scalarized_ad_stack_map_.find(stmt->stack) !=
+                scalarized_ad_stack_map_.end());
+      auto scalarized_ad_stack = scalarized_ad_stack_map_[stmt->stack];
+      TI_ASSERT(num_elements == scalarized_ad_stack.size());
+
+      std::vector<Stmt *> scalar_ad_stack_load_top;
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack_load_top_stmt =
+            std::make_unique<AdStackLoadTopStmt>(scalarized_ad_stack[i]);
+        scalar_ad_stack_load_top_stmt->ret_type = element_type;
+
+        scalar_ad_stack_load_top.push_back(scalar_ad_stack_load_top_stmt.get());
+        delayed_modifier_.insert_before(
+            stmt, std::move(scalar_ad_stack_load_top_stmt));
+      }
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(scalar_ad_stack_load_top);
+      matrix_init_stmt->ret_type = tensor_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      val = AdStackLoadTopAdjStmt(TensorType<4 x i32>* stack)
+
+    After:
+      val0 = AdStackLoadTopAdjStmt(scalarized_ad_stack_map_[stack][0])
+      val1 = AdStackLoadTopAdjStmt(scalarized_ad_stack_map_[stack][1])
+      val2 = AdStackLoadTopAdjStmt(scalarized_ad_stack_map_[stack][2])
+      val3 = AdStackLoadTopAdjStmt(scalarized_ad_stack_map_[stack][3])
+
+      matrix_init_stmt = MatrixInitStmt({val0, val1, val2, val3})
+
+      replace_all_usages_with(val, matrix_init_stmt)
+  */
+  void visit(AdStackLoadTopAdjStmt *stmt) override {
+    if (stmt->stack->as<AdStackAllocaStmt>()->dt->is<TensorType>()) {
+      auto tensor_type =
+          stmt->stack->as<AdStackAllocaStmt>()->dt->as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+      auto element_type = tensor_type->get_element_type();
+      TI_ASSERT(scalarized_ad_stack_map_.find(stmt->stack) !=
+                scalarized_ad_stack_map_.end());
+      auto scalarized_ad_stack = scalarized_ad_stack_map_[stmt->stack];
+      TI_ASSERT(num_elements == scalarized_ad_stack.size());
+
+      std::vector<Stmt *> scalar_ad_stack_load_top;
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack_load_top_stmt =
+            std::make_unique<AdStackLoadTopAdjStmt>(scalarized_ad_stack[i]);
+        scalar_ad_stack_load_top_stmt->ret_type = element_type;
+
+        scalar_ad_stack_load_top.push_back(scalar_ad_stack_load_top_stmt.get());
+        delayed_modifier_.insert_before(
+            stmt, std::move(scalar_ad_stack_load_top_stmt));
+      }
+      auto matrix_init_stmt =
+          std::make_unique<MatrixInitStmt>(scalar_ad_stack_load_top);
+      matrix_init_stmt->ret_type = tensor_type;
+
+      stmt->replace_usages_with(matrix_init_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(matrix_init_stmt));
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  /*
+    Before:
+      TensorType<4 x i32> val = MatrixInitStmt(...) // TI_ASSERT
+      AdStackAccAdjointStmt(TensorType<4 x i32>* stack, val)
+
+    After:
+      AdStackAccAdjointStmt(scalarized_ad_stack_map_[stack][0], val->values[0])
+      AdStackAccAdjointStmt(scalarized_ad_stack_map_[stack][1], val->values[1])
+      AdStackAccAdjointStmt(scalarized_ad_stack_map_[stack][2], val->values[2])
+      AdStackAccAdjointStmt(scalarized_ad_stack_map_[stack][3], val->values[3])
+  */
+  void visit(AdStackAccAdjointStmt *stmt) override {
+    if (stmt->stack->as<AdStackAllocaStmt>()->dt->is<TensorType>()) {
+      auto tensor_type =
+          stmt->stack->as<AdStackAllocaStmt>()->dt->as<TensorType>();
+      auto num_elements = tensor_type->get_num_elements();
+      TI_ASSERT(scalarized_ad_stack_map_.find(stmt->stack) !=
+                scalarized_ad_stack_map_.end());
+      auto scalarized_ad_stack = scalarized_ad_stack_map_[stmt->stack];
+      TI_ASSERT(num_elements == scalarized_ad_stack.size());
+
+      TI_ASSERT(stmt->v->is<MatrixInitStmt>());
+      auto matrix_init_stmt = stmt->v->as<MatrixInitStmt>();
+      for (int i = 0; i < num_elements; i++) {
+        auto scalar_ad_stack_push = std::make_unique<AdStackAccAdjointStmt>(
+            scalarized_ad_stack[i], matrix_init_stmt->values[i]);
+        delayed_modifier_.insert_before(stmt, std::move(scalar_ad_stack_push));
+      }
+      delayed_modifier_.erase(stmt);
+    }
+  }
+
+  static bool run(IRNode *node, bool half2_optimization_enabled) {
+    Scalarize pass(node, half2_optimization_enabled);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
+  std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_ad_stack_map_;
 };
 
 // The GatherScalarizableLocalPointers gathers all local TensorType allocas
@@ -637,7 +974,7 @@ class GatherScalarizableLocalPointers : public BasicStmtVisitor {
   }
 };
 
-class ScalarizeLocalPointers : public BasicStmtVisitor {
+class ScalarizePointers : public BasicStmtVisitor {
  public:
   ImmediateIRModifier immediate_modifier_;
   DelayedIRModifier delayed_modifier_;
@@ -646,13 +983,10 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
   // { original_alloca_stmt : [scalarized_alloca_stmt0, ...] }
   std::unordered_map<Stmt *, std::vector<Stmt *>> scalarized_local_tensor_map_;
 
-  explicit ScalarizeLocalPointers(
+  explicit ScalarizePointers(
       IRNode *node,
       const std::unordered_set<Stmt *> &scalarizable_allocas)
       : immediate_modifier_(node), scalarizable_allocas_(scalarizable_allocas) {
-    node->accept(this);
-
-    delayed_modifier_.modify_ir();
   }
 
   /*
@@ -704,16 +1038,16 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
     }
   }
 
-  /*
-    Before:
-      MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
-
-    After:
-      scalarized_alloca_stmt =
-    scalarized_local_tensor_map_[alloca_stmt][offset]
-      stmt->replace_all_usages_with(scalarized_alloca_stmt)
-  */
   void visit(MatrixPtrStmt *stmt) override {
+    /*
+      Before:
+        MatrixPtrStmt(TensorType<4 x i32>* alloca_stmt, int offset)
+
+      After:
+        scalarized_alloca_stmt =
+      scalarized_local_tensor_map_[alloca_stmt][offset]
+        stmt->replace_all_usages_with(scalarized_alloca_stmt)
+    */
     if (stmt->origin->is<AllocaStmt>() &&
         scalarizable_allocas_.count(stmt->origin) == 1) {
       auto alloca_stmt = stmt->origin->cast<AllocaStmt>();
@@ -735,7 +1069,69 @@ class ScalarizeLocalPointers : public BasicStmtVisitor {
 
       immediate_modifier_.replace_usages_with(stmt, new_stmt);
       delayed_modifier_.erase(stmt);
+      return;
     }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = GlobalTempStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = GlobalTempStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<GlobalTemporaryStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto global_temp_stmt = stmt->origin->as<GlobalTemporaryStmt>();
+      auto offset_0 = global_temp_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_global_temp_stmt = std::make_unique<GlobalTemporaryStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_global_temp_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_global_temp_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_global_temp_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
+    }
+
+    /*
+      Before:
+        TensorType<4 x i32>* ptr = ThreadLocalPtrStmt(offset_0)
+        i32* ptr_1 = MatrixPtrStmt(ptr, offset_1)
+
+      After:
+        i32* $1 = ThreadLocalPtrStmt(offset_0 + offset_1 * sizeof(i32))
+        replace_all_usages_with(ptr_1, $1)
+    */
+    if (stmt->origin->is<ThreadLocalPtrStmt>() &&
+        stmt->offset->is<ConstStmt>()) {
+      auto thread_local_stmt = stmt->origin->as<ThreadLocalPtrStmt>();
+      auto offset_0 = thread_local_stmt->offset;
+      auto offset_1 = stmt->offset->as<ConstStmt>()->val.val_int32();
+      auto new_offset =
+          offset_0 + offset_1 * data_type_size(stmt->ret_type.ptr_removed());
+
+      auto new_thread_local_stmt = std::make_unique<ThreadLocalPtrStmt>(
+          new_offset, stmt->ret_type.ptr_removed().get_element_type());
+      new_thread_local_stmt->ret_type.set_is_pointer(true);
+
+      stmt->replace_usages_with(new_thread_local_stmt.get());
+      delayed_modifier_.insert_before(stmt, std::move(new_thread_local_stmt));
+      delayed_modifier_.erase(stmt);
+      return;
+    }
+  }
+
+  static bool run(IRNode *node,
+                  const std::unordered_set<Stmt *> &scalarizable_allocas) {
+    ScalarizePointers pass(node, scalarizable_allocas);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
   }
 
  private:
@@ -777,10 +1173,20 @@ class ExtractLocalPointers : public BasicStmtVisitor {
   Block *top_level_;
 
   explicit ExtractLocalPointers(IRNode *root) : immediate_modifier_(root) {
-    TI_ASSERT(root->is<Block>());
-    top_level_ = root->as<Block>();
-    root->accept(this);
-    delayed_modifier_.modify_ir();
+    if (root->is<OffloadedStmt>()) {
+      top_level_ = root->as<OffloadedStmt>()->body.get();
+    } else {
+      TI_ASSERT(root->is<Block>());
+      top_level_ = root->as<Block>();
+    }
+  }
+
+  void visit(OffloadedStmt *stmt) override {
+    // Extract to OffloadStmt
+    Block *orig_top_level = top_level_;
+    top_level_ = stmt->body.get();
+    stmt->all_blocks_accept(this);
+    top_level_ = orig_top_level;
   }
 
   void visit(MatrixPtrStmt *stmt) override {
@@ -809,6 +1215,12 @@ class ExtractLocalPointers : public BasicStmtVisitor {
     }
   }
 
+  static bool run(IRNode *node) {
+    ExtractLocalPointers pass(node);
+    node->accept(&pass);
+    return pass.delayed_modifier_.modify_ir();
+  }
+
  private:
   using BasicStmtVisitor::visit;
 };
@@ -830,13 +1242,13 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
       // MatrixPtrStmt has flattened indices, linearization of which is done
       // during IndexExpression::flatten() Here we need to modify the
       // element_dim and element_shape a little bit.
-      int element_dim = -1;  // AOS Vector
       std::vector<int> element_shape = {
           std::accumulate(begin(origin->element_shape),
                           end(origin->element_shape), 1, std::multiplies<>())};
 
       auto fused = std::make_unique<ExternalPtrStmt>(
-          origin->base_ptr, indices, element_shape, element_dim);
+          origin->base_ptr, indices, origin->ndim, element_shape,
+          origin->is_grad);
       fused->ret_type = stmt->ret_type;
       // Note: Update base_ptr's ret_type so that it matches the ExternalPtrStmt
       // with flattened indices. Main goal is to keep all the hacks in a single
@@ -845,9 +1257,9 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
                          ->ret_type.ptr_removed()
                          ->as<StructType>()
                          ->elements();
-      members[1] = {stmt->ret_type, "data_ptr"};
-      members[2] = {stmt->ret_type, "grad_ptr"};
-      auto type = TypeFactory::get_instance().get_struct_type(members);
+      bool needs_grad = members.size() > TypeFactory::GRAD_PTR_POS_IN_NDARRAY;
+      auto type = TypeFactory::get_instance().get_ndarray_struct_type(
+          fused->ret_type.ptr_removed(), origin->ndim, needs_grad);
       origin->base_ptr->as<ArgLoadStmt>()->ret_type =
           TypeFactory::get_instance().get_pointer_type((Type *)type);
       stmt->replace_usages_with(fused.get());
@@ -857,22 +1269,26 @@ class MergeExternalAndMatrixPtr : public BasicStmtVisitor {
     }
   }
 
-  static void run(IRNode *node) {
+  static bool run(IRNode *node) {
     MergeExternalAndMatrixPtr pass;
     node->accept(&pass);
-    pass.modifier_.modify_ir();
+    return pass.modifier_.modify_ir();
   }
 };
 
 namespace irpass {
 
-void scalarize(IRNode *root) {
+bool scalarize(IRNode *root, bool half2_optimization_enabled) {
   TI_AUTO_PROF;
-  Scalarize scalarize_pass(root);
+  bool modified = false;
+
+  modified |= Scalarize::run(root, half2_optimization_enabled);
   auto scalarizable_allocas = GatherScalarizableLocalPointers::run(root);
-  ScalarizeLocalPointers scalarize_pointers_pass(root, scalarizable_allocas);
-  ExtractLocalPointers extract_pointers_pass(root);
-  MergeExternalAndMatrixPtr::run(root);
+  modified |= ScalarizePointers::run(root, scalarizable_allocas);
+  modified |= ExtractLocalPointers::run(root);
+  modified |= MergeExternalAndMatrixPtr::run(root);
+
+  return modified;
 }
 
 }  // namespace irpass

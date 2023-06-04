@@ -94,6 +94,10 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       value_type = tlctx->get_data_type(PrimitiveType::u16);
       value = builder->CreateZExt(value, value_type);
     }
+    if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      value_type = tlctx->get_data_type(PrimitiveType::i32);
+      value = builder->CreateZExt(value, value_type);
+    }
     return std::make_tuple(value, value_type);
   }
 
@@ -250,12 +254,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
-    } else if (op == UnaryOpType::logic_not) {
-      if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
-        llvm_val[stmt] = call("logic_not_i32", input);
-      } else {
-        TI_NOT_IMPLEMENTED
-      }
     } else if (op == UnaryOpType::frexp) {
       auto stype = tlctx->get_data_type(stmt->ret_type.ptr_removed());
       auto res = builder->CreateAlloca(stype);
@@ -288,16 +286,52 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
       } else {
         TI_NOT_IMPLEMENTED
       }
+    } else if (op == UnaryOpType::log) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // logf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_logf" : "__nv_logf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_log", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("log", input);
+      } else {
+        TI_ERROR("log() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
+    } else if (op == UnaryOpType::sin) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // sinf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_sinf" : "__nv_sinf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_sin", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("sin", input);
+      } else {
+        TI_ERROR("sin() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
+    } else if (op == UnaryOpType::cos) {
+      if (input_taichi_type->is_primitive(PrimitiveTypeID::f32)) {
+        // cosf has fast-math option
+        llvm_val[stmt] = call(
+            compile_config.fast_math ? "__nv_fast_cosf" : "__nv_cosf", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::f64)) {
+        llvm_val[stmt] = call("__nv_cos", input);
+      } else if (input_taichi_type->is_primitive(PrimitiveTypeID::i32)) {
+        llvm_val[stmt] = call("cos", input);
+      } else {
+        TI_ERROR("cos() for type {} is not supported",
+                 input_taichi_type.to_string());
+      }
     }
     UNARY_STD(exp)
-    UNARY_STD(log)
     UNARY_STD(tan)
     UNARY_STD(tanh)
     UNARY_STD(sgn)
     UNARY_STD(acos)
     UNARY_STD(asin)
-    UNARY_STD(cos)
-    UNARY_STD(sin)
     else {
       TI_P(unary_op_type_name(op));
       TI_NOT_IMPLEMENTED
@@ -556,36 +590,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     }
   }
 
-  void emit_cuda_gc_rc(OffloadedStmt *stmt) {
-    {
-      init_offloaded_task_function(stmt, "gather_list");
-      call("gc_rc_parallel_0", get_context());
-      finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config.saturating_grid_dim;
-      current_task->block_dim = 64;
-      offloaded_tasks.push_back(*current_task);
-      current_task = nullptr;
-    }
-    {
-      init_offloaded_task_function(stmt, "reinit_lists");
-      call("gc_rc_parallel_1", get_context());
-      finalize_offloaded_task_function();
-      current_task->grid_dim = 1;
-      current_task->block_dim = 1;
-      offloaded_tasks.push_back(*current_task);
-      current_task = nullptr;
-    }
-    {
-      init_offloaded_task_function(stmt, "zero_fill");
-      call("gc_rc_parallel_2", get_context());
-      finalize_offloaded_task_function();
-      current_task->grid_dim = compile_config.saturating_grid_dim;
-      current_task->block_dim = 64;
-      offloaded_tasks.push_back(*current_task);
-      current_task = nullptr;
-    }
-  }
-
   bool kernel_argument_by_val() const override {
     return true;  // on CUDA, pass the argument by value
   }
@@ -630,8 +634,6 @@ class TaskCodeGenCUDA : public TaskCodeGenLLVM {
     if (stmt->task_type == Type::gc) {
       // gc has 3 kernels, so we treat it specially
       emit_cuda_gc(stmt);
-    } else if (stmt->task_type == Type::gc_rc) {
-      emit_cuda_gc_rc(stmt);
     } else {
       init_offloaded_task_function(stmt);
       if (stmt->task_type == Type::serial) {
@@ -757,9 +759,9 @@ LLVMCompiledTask KernelCodeGenCUDA::compile_task(
     int task_codegen_id,
     const CompileConfig &config,
     std::unique_ptr<llvm::Module> &&module,
-    OffloadedStmt *stmt) {
+    IRNode *block) {
   TaskCodeGenCUDA gen(task_codegen_id, config, get_taichi_llvm_context(),
-                      kernel, stmt);
+                      kernel, block);
   return gen.run_compilation();
 }
 

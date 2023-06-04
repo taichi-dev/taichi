@@ -32,7 +32,15 @@ class AnyArray:
         return Layout.AOS
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.ptr.get_ret_type(), None)  # AnyArray can take any shape
+        return NdarrayTypeMetadata(
+            self.ptr.get_ret_type(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+        )  # AnyArray can take any shape
+
+    @property
+    @taichi_scope
+    def grad(self):
+        """Returns the gradient of this array."""
+        return AnyArray(_ti_core.make_external_tensor_grad_expr(self.ptr))
 
     @property
     @taichi_scope
@@ -43,11 +51,7 @@ class AnyArray:
             List[Int]: The result list.
         """
         dim = _ti_core.get_external_tensor_dim(self.ptr)
-        ret = [Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr, i)) for i in range(dim)]
-        element_dim = len(self.element_shape())
-        if element_dim == 0:
-            return ret
-        return ret[element_dim:] if self.layout() == Layout.SOA else ret[:-element_dim]
+        return [Expr(_ti_core.get_external_tensor_shape_along_axis(self.ptr, i)) for i in range(dim)]
 
     @taichi_scope
     def _loop_range(self):

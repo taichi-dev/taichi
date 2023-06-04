@@ -3,6 +3,7 @@ from taichi.lang.misc import get_host_arch_list
 
 import taichi as ti
 from tests import test_utils
+import numpy as np
 
 
 @test_utils.test()
@@ -144,3 +145,20 @@ def test_offset_must_throw_matrix():
         a = ti.Matrix.field(3, 3, dtype=ti.i32, shape=(32, 16, 8), offset=(32, 16))
     with pytest.raises(ti.TaichiCompilationError, match="shape cannot be None when offset is set"):
         b = ti.Matrix.field(3, 3, dtype=ti.i32, shape=None, offset=(32, 16))
+
+
+@pytest.mark.parametrize("offset", [None, (0, 0), (-1, -1), (2, 2), (-23333, -23333), (23333, 23333)])
+@test_utils.test(arch=get_host_arch_list())
+def test_field_with_offset_print(offset):
+    val = ti.field(dtype=ti.f32, shape=(3, 3), offset=offset)
+    val.fill(1.0)
+    print(val)
+
+
+@pytest.mark.parametrize("offset", [None, (0, 0), (-1, -1), (2, 2), (-23333, -23333), (23333, 23333)])
+@test_utils.test(arch=get_host_arch_list())
+def test_field_with_offset_to_numpy(offset):
+    shape = (3, 3)
+    val = ti.field(dtype=ti.f32, shape=shape, offset=offset)
+    val.fill(1.0)
+    assert np.allclose(val.to_numpy(), np.ones(shape, dtype=np.float32))

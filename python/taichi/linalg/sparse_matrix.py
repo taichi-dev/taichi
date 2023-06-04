@@ -1,4 +1,3 @@
-import warnings
 from functools import reduce
 
 import numpy as np
@@ -7,7 +6,7 @@ from taichi.lang._ndarray import Ndarray, ScalarNdarray
 from taichi.lang.exception import TaichiRuntimeError
 from taichi.lang.field import Field
 from taichi.lang.impl import get_runtime
-from taichi.types import annotations, f32
+from taichi.types import f32
 
 
 class SparseMatrix:
@@ -285,23 +284,13 @@ class SparseMatrixBuilder:
         taichi_arch = get_runtime().prog.config().arch
         if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             sm = self.ptr.build()
-            return SparseMatrix(sm=sm, dtype=dtype)
+            return SparseMatrix(sm=sm, dtype=self.dtype)
         if taichi_arch == _ti_core.Arch.cuda:
-            if dtype != f32:
+            if self.dtype != f32:
                 raise TaichiRuntimeError("CUDA sparse matrix only supports f32.")
             sm = self.ptr.build_cuda()
-            return SparseMatrix(sm=sm, dtype=dtype)
+            return SparseMatrix(sm=sm, dtype=self.dtype)
         raise TaichiRuntimeError("Sparse matrix only supports CPU and CUDA backends.")
 
 
-# TODO: remove this in 1.0 release
-class sparse_matrix_builder(annotations.sparse_matrix_builder):
-    def __init__(self):
-        warnings.warn(
-            "ti.linalg.sparse_matrix_builder is deprecated, and it will be removed in Taichi v1.6.0. "
-            "Please use ti.types.sparse_matrix_builder instead.",
-            DeprecationWarning,
-        )
-
-
-__all__ = ["SparseMatrix", "SparseMatrixBuilder", "sparse_matrix_builder"]
+__all__ = ["SparseMatrix", "SparseMatrixBuilder"]

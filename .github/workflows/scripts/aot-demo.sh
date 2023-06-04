@@ -54,7 +54,8 @@ function prepare-unity-build-env {
 
     python3 misc/generate_unity_language_binding.py
     cp c_api/unity/*.cs Taichi-UnityExample/Assets/Taichi/Generated
-    cp build/libtaichi_c_api.so Taichi-UnityExample/Assets/Plugins/Android
+    CAPI_SO_LOC=$(find . -wholename "**/cmake-build/libtaichi_c_api.so")
+    cp $CAPI_SO_LOC Taichi-UnityExample/Assets/Plugins/Android
 
     export TAICHI_REPO_DIR=$(pwd)
 

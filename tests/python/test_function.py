@@ -214,7 +214,7 @@ def test_different_argument_type():
 
 
 @pytest.mark.run_in_serial
-@test_utils.test(arch=[ti.cpu, ti.cuda])
+@test_utils.test(arch=[ti.cpu, ti.cuda], cuda_stack_limit=8192)
 def test_recursion():
     @ti.experimental.real_func
     def sum(f: ti.template(), l: ti.i32, r: ti.i32) -> ti.i32:
@@ -324,22 +324,28 @@ def test_return_in_if_in_for():
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref():
+    # FIXME:
+    #  Failed test if we put assert inside kernel. But test passes with assertion inside kernel if we insert print
+    #  statement after assert.
     @ti.experimental.real_func
     def foo(a: ti.ref(ti.f32)):
         a = 7
 
     @ti.kernel
-    def bar():
+    def bar() -> ti.f32:
         a = 5.0
         foo(a)
-        assert a == 7
+        return a
 
-    bar()
+    assert bar() == 7
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)
 def test_ref_atomic():
-    # FIXME: failed test on Pascal (and potentially older) architecture.
+    # FIXME:
+    #  1. Failed test on Pascal (and potentially older) architecture
+    #  2. Failed test if we put assert inside kernel. But test passes with assertion inside kernel if we insert print
+    #     statement after assert.
     # Please remove this guardiance when you fix this issue
     cur_arch = ti.lang.impl.get_runtime().prog.config().arch
     if cur_arch == ti.cuda and ti.lang.impl.get_cuda_compute_capability() < 70:
@@ -352,12 +358,12 @@ def test_ref_atomic():
         a += a
 
     @ti.kernel
-    def bar():
+    def bar() -> ti.f32:
         a = 5.0
         foo(a)
-        assert a == 10.0
+        return a
 
-    bar()
+    assert bar() == 10.0
 
 
 @test_utils.test(arch=[ti.cpu, ti.cuda], debug=True)

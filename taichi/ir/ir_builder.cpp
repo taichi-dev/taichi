@@ -440,8 +440,8 @@ ExternalPtrStmt *IRBuilder::create_external_ptr(
     ArgLoadStmt *ptr,
     const std::vector<Stmt *> &indices,
     bool is_grad) {
-  return insert(Stmt::make_typed<ExternalPtrStmt>(
-      ptr, indices, std::vector<int>(), 0, is_grad));
+  return insert(Stmt::make_typed<ExternalPtrStmt>(ptr, indices, indices.size(),
+                                                  std::vector<int>(), is_grad));
 }
 
 AdStackAllocaStmt *IRBuilder::create_ad_stack(const DataType &dt,
@@ -499,9 +499,8 @@ MeshPatchIndexStmt *IRBuilder::get_patch_index() {
 }
 ArgLoadStmt *IRBuilder::create_ndarray_arg_load(int arg_id,
                                                 DataType dt,
-                                                int total_dim) {
-  auto type =
-      TypeFactory::get_instance().get_ndarray_struct_type(dt, total_dim);
+                                                int ndim) {
+  auto type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim);
 
   return insert(Stmt::make_typed<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                               /*create_load=*/false));

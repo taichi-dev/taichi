@@ -15,8 +15,8 @@ void Dense_activate(Ptr meta, Ptr node, int i) {
   // Dense elements are always active
 }
 
-i32 Dense_is_active(Ptr meta, Ptr node, int i) {
-  return 1;
+u1 Dense_is_active(Ptr meta, Ptr node, int i) {
+  return true;
 }
 
 Ptr Dense_lookup_element(Ptr meta, Ptr node, int i) {

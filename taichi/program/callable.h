@@ -17,12 +17,13 @@ class TI_DLL_EXPORT CallableBase {
         false};  // This is true for both ndarray and external array args.
     std::size_t total_dim{0};  // total dim of array
     BufferFormat format{BufferFormat::unknown};
+    bool needs_grad{false};  // TODO: reorder for better alignment
 
-    TI_IO_DEF(is_array, total_dim, format, dt_);
+    TI_IO_DEF(is_array, total_dim, format, dt_, needs_grad);
 
     bool operator==(const Parameter &o) const {
       return is_array == o.is_array && total_dim == o.total_dim &&
-             format == o.format && dt_ == o.dt_;
+             format == o.format && dt_ == o.dt_ && needs_grad == o.needs_grad;
     }
 
     /* [arguments with TensorType]
@@ -43,7 +44,8 @@ class TI_DLL_EXPORT CallableBase {
                        std::size_t size_unused = 0,
                        int total_dim = 0,
                        std::vector<int> element_shape = {},
-                       BufferFormat format = BufferFormat::unknown) {
+                       BufferFormat format = BufferFormat::unknown,
+                       bool needs_grad = false) {
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
@@ -55,6 +57,7 @@ class TI_DLL_EXPORT CallableBase {
       this->is_array = is_array;
       this->total_dim = total_dim;
       this->format = format;
+      this->needs_grad = needs_grad;
     }
 
     std::vector<int> get_element_shape() const {
@@ -114,9 +117,9 @@ class TI_DLL_EXPORT Callable : public CallableBase {
                        std::vector<int> element_shape,
                        const std::string &name = "");
   int insert_ndarray_param(const DataType &dt,
-                           int total_dim,
-                           std::vector<int> element_shape,
-                           const std::string &name = "");
+                           int ndim,
+                           const std::string &name = "",
+                           bool needs_grad = false);
   int insert_texture_param(int total_dim, const std::string &name = "");
   int insert_pointer_param(const DataType &dt, const std::string &name = "");
   int insert_rw_texture_param(int total_dim,

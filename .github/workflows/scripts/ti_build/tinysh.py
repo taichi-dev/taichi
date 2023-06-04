@@ -214,8 +214,23 @@ def sudo():
     """
     if IS_WINDOWS:
         return with_options({"runas": True})
-    else:
+    elif os.geteuid() != 0:
         return prefix("sudo")
+    else:
+        return with_options({})
+
+
+def nice():
+    """
+    Wrap a command with sudo.
+    """
+    if IS_WINDOWS:
+        from .misc import warn
+
+        warn("nice is not yet implemented on Windows")
+        return with_options({})
+    else:
+        return prefix("nice")
 
 
 sh = Command()
@@ -228,3 +243,5 @@ tar = sh.tar
 bash = sh.bash
 start = sh.start.bake("/wait")
 apt = sh.sudo.apt
+powershell = Command("powershell.exe")
+pwsh = Command("pwsh.exe")

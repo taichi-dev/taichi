@@ -2,13 +2,15 @@
 
 # -- stdlib --
 from pathlib import Path
+from types import ModuleType
 from typing import Optional
-from urllib.request import urlretrieve
 import importlib
 import os
 import platform
+import re
 import subprocess
 import sys
+import sysconfig
 
 # -- third party --
 # -- own --
@@ -56,16 +58,11 @@ def restart():
         os.execl(sys.executable, sys.executable, "-S", *sys.argv)
 
 
-def fetch_pip(to):
-    v = sys.version_info
-    if v[:2] >= (3, 7):
-        url = f"https://bootstrap.pypa.io/pip/get-pip.py"
-    else:
-        url = f"https://bootstrap.pypa.io/pip/{v.major}.{v.minor}/get-pip.py"
-
-    report = lambda n, bs, sz: print(f"Fetching pip ({n*bs}/{sz}) bytes) ...", end="\r", flush=True)
-    urlretrieve(url, to, report)
-    print(f'Fetched pip!{" " * 40}')
+def _try_import(name: str) -> Optional[ModuleType]:
+    try:
+        return importlib.import_module(name)
+    except ModuleNotFoundError:
+        return None
 
 
 def ensure_dependencies(*deps: str):
@@ -73,9 +70,20 @@ def ensure_dependencies(*deps: str):
     Automatically install dependencies if they are not installed.
     """
 
-    if "site" in sys.modules:
+    pip = _try_import("pip")
+    ensurepip = _try_import("ensurepip")
+
+    if not sys.flags.no_site:
+        # First run, restart with no_site
+        if not pip and not ensurepip:
+            print(
+                "!! pip or ensurepip not found, build.py needs at least a functional pip/ensurepip to work.", flush=True
+            )
+            sys.exit(1)
+
         restart()
 
+    # Second run
     v = sys.version_info
     bootstrap_root = get_cache_home() / "bootstrap" / f"{v.major}.{v.minor}"
     bootstrap_root.mkdir(parents=True, exist_ok=True)
@@ -83,21 +91,29 @@ def ensure_dependencies(*deps: str):
 
     try:
         for dep in deps:
-            dep = dep.split("==")[0]
+            dep = re.split(r"[><=]=?", dep)[0]
             importlib.import_module(dep)
         return
     except ModuleNotFoundError:
         pass
 
     print("Installing dependencies...", flush=True)
-    pip = str(bootstrap_root / "get-pip.py")
-    fetch_pip(pip)
     py = sys.executable
-    if run(py, "-S", pip, "--no-user", f"--target={bootstrap_root}"):
-        raise Exception("Unable to install pip!")
+    pip_install = ["-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
 
-    pipcmd = [py, "-S", "-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
-    if run(*pipcmd, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
+    if ensurepip:
+        search_path = sysconfig.get_config_var("WHEEL_PKG_DIR")
+        if search_path is None:
+            search_path = ensurepip.__path__[0]
+        wheels = Path(search_path).glob("**/*.whl")
+        wheels = os.pathsep.join(map(str, wheels))
+        if run(py, "-S", *pip_install, "pip", env={"PYTHONPATH": wheels}):
+            raise Exception("Unable to install pip! (ensurepip method)")
+    else:  # pip must exist
+        if run(py, *pip_install, "pip"):
+            raise Exception("Unable to install pip! (pip method)")
+
+    if run(py, "-S", *pip_install, *deps, env={"PYTHONPATH": str(bootstrap_root)}):
         raise Exception("Unable to install dependencies!")
 
     restart()
@@ -189,12 +205,49 @@ def detect_crippled_python():
         sys.exit(1)
 
 
+def windows_enable_long_paths():
+    import winreg
+
+    key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem")
+    try:
+        enabled = winreg.QueryValueEx(key, "LongPathsEnabled") == (1, 4)
+    except FileNotFoundError:
+        enabled = False
+
+    if not enabled:
+        from .misc import info, warn
+        from .tinysh import Command, sudo
+
+        info("Enabling long paths on Windows")
+        reg = Command("reg.exe")
+        try:
+            with sudo():
+                reg.add(
+                    r"HKLM\SYSTEM\CurrentControlSet\Control\FileSystem",
+                    "/v",
+                    "LongPathsEnabled",
+                    "/t",
+                    "REG_DWORD",
+                    "/d",
+                    "1",
+                    "/f",
+                )
+        except OSError as e:
+            if e.winerror == 1223:
+                warn("Enabling long paths cancelled, you may encounter compile errors later")
+            else:
+                raise
+
+
 def early_init():
     """
     Do early initialization.
     This must be called before any other non-stdlib imports.
     """
     detect_crippled_python()
-    ensure_dependencies("tqdm", "requests", "mslex", "psutil")
+    ensure_dependencies("tqdm", "requests", "mslex", "psutil>=5.9.5")
     chdir_to_root()
     monkey_patch_environ()
+
+    if platform.system() == "Windows":
+        windows_enable_long_paths()

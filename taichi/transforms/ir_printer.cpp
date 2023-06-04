@@ -606,8 +606,7 @@ class IRPrinter : public IRVisitor {
       }
       s += ")";
     }
-    s += fmt::format(" element_dim={} layout={} is_grad={}", stmt->element_dim,
-                     (stmt->element_dim <= 0) ? "AOS" : "SOA", stmt->is_grad);
+    s += fmt::format(" layout={} is_grad={}", "AOS", stmt->is_grad);
 
     print(fmt::format("{}{} = external_ptr {}", stmt->type_hint(), stmt->name(),
                       s));
@@ -655,8 +654,6 @@ class IRPrinter : public IRVisitor {
     } else if (stmt->task_type == OffloadedTaskType::gc) {
       print("{} = offloaded garbage collect {}", stmt->name(),
             stmt->snode->get_node_type_name_hinted());
-    } else if (stmt->task_type == OffloadedTaskType::gc_rc) {
-      print("{} = offloaded garbage collect runtime context", stmt->name());
     } else {
       print("{} = offloaded {} ", stmt->name(), details);
       if (stmt->tls_prologue) {

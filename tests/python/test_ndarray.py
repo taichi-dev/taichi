@@ -3,9 +3,10 @@ import copy
 import numpy as np
 import pytest
 from taichi.lang import impl
-from taichi.lang.exception import TaichiIndexError
+from taichi.lang.exception import TaichiIndexError, TaichiTypeError
 from taichi.lang.misc import get_host_arch_list
 from taichi.lang.util import has_pytorch
+from taichi.math import vec3, ivec3
 
 import taichi as ti
 from tests import test_utils
@@ -176,14 +177,14 @@ def test_ndarray_compound_element():
     assert isinstance(b, ti.VectorNdarray)
     assert b.shape == (n, n)
     assert b.element_type.element_type() == ti.i32
-    assert b.element_type.shape() == (3,)
+    assert b.element_type.shape() == [3]
 
     matrix34 = ti.types.matrix(3, 4, float)
     c = ti.ndarray(matrix34, shape=(n, n + 1))
     assert isinstance(c, ti.MatrixNdarray)
     assert c.shape == (n, n + 1)
     assert c.element_type.element_type() == ti.f32
-    assert c.element_type.shape() == (3, 4)
+    assert c.element_type.shape() == [3, 4]
 
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
@@ -278,7 +279,7 @@ def test_ndarray_deepcopy():
     assert y[4][1, 0] == 9
 
 
-@test_utils.test(arch=[ti.cuda], ndarray_use_cached_allocator=True)
+@test_utils.test(arch=[ti.cuda])
 def test_ndarray_caching_allocator():
     n = 8
     a = ti.ndarray(ti.i32, shape=(n))
@@ -507,7 +508,14 @@ def _test_arg_not_match():
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=1, but .* is provided",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
+    ):
+        func1(x)
+
+    x = ti.Matrix.ndarray(2, 1, ti.i32, shape=(4, 7))
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
     ):
         func1(x)
 
@@ -518,9 +526,20 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim=2, but .* is provided",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,2, i32\], but .* is provided",
     ):
         func2(x)
+
+    @ti.kernel
+    def func3(a: ti.types.ndarray(dtype=ti.types.matrix(2, 1, ti.i32))):
+        pass
+
+    x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
+    with pytest.raises(
+        ValueError,
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,1, i32\], but .* is provided",
+    ):
+        func3(x)
 
     @ti.kernel
     def func5(a: ti.types.ndarray(dtype=ti.types.matrix(2, 3, dtype=ti.i32))):
@@ -529,7 +548,7 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element_dim",
+        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type",
     ):
         func5(x)
 
@@ -696,6 +715,26 @@ def test_ndarray_init_as_zero():
     v = np.zeros((6, 10), dtype=np.float32)
     assert test_utils.allclose(a.to_numpy(), v)
 
+    b = ti.ndarray(dtype=ti.math.vec2, shape=(6, 4))
+    k = np.zeros((6, 4, 2), dtype=np.float32)
+    assert test_utils.allclose(b.to_numpy(), k)
+
+    c = ti.ndarray(dtype=ti.math.mat2, shape=(6, 4))
+    m = np.zeros((6, 4, 2, 2), dtype=np.float32)
+    assert test_utils.allclose(c.to_numpy(), m)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_zero_fill():
+    dt = ti.types.vector(n=2, dtype=ti.f32)
+    arr = ti.ndarray(dtype=dt, shape=(3, 4))
+
+    arr.fill(1.0)
+
+    arr.to_numpy()
+    no = ti.ndarray(dtype=dt, shape=(3, 5))
+    assert no[0, 0][0] == 0.0
+
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_reset():
@@ -779,10 +818,23 @@ def test_matrix_ndarray_oob():
     def access_arr(input: ti.types.ndarray(), p: ti.i32, q: ti.i32, x: ti.i32, y: ti.i32) -> ti.f32:
         return input[p, q][x, y]
 
+    @ti.kernel
+    def valid_access(indices: ti.types.ndarray(dtype=ivec3, ndim=1), dummy: ti.types.ndarray(dtype=ivec3, ndim=1)):
+        for i in indices:
+            index_vec = ti.Vector([0, 0, 0])
+            for j in ti.static(range(3)):
+                index = indices[i][j]
+                index_vec[j] = index
+            dummy[i] = index_vec
+
     input = ti.ndarray(dtype=ti.math.mat2, shape=(4, 5))
+
+    indices = ti.ndarray(dtype=ivec3, shape=(10))
+    dummy = ti.ndarray(dtype=ivec3, shape=(10))
 
     # Works
     access_arr(input, 2, 3, 0, 1)
+    valid_access(indices, dummy)
 
     # element_shape
     with pytest.raises(AssertionError, match=r"Out of bound access"):
@@ -848,3 +900,103 @@ def test_read_write_f64_python_scope():
     y = ti.ndarray(dtype=ti.math.vec2, shape=2)
     y[0] = [1.0, 2.0]
     assert y[0] == [1.0, 2.0]
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_fill():
+    vec2 = ti.types.vector(2, ti.f32)
+    x_vec = ti.ndarray(vec2, (512, 512))
+    x_vec.fill(1.0)
+    assert (x_vec[2, 2] == [1.0, 1.0]).all()
+
+    x_vec.fill(vec2(2.0, 4.0))
+    assert (x_vec[3, 3] == [2.0, 4.0]).all()
+
+    mat2x2 = ti.types.matrix(2, 2, ti.f32)
+    x_mat = ti.ndarray(mat2x2, (512, 512))
+    x_mat.fill(2.0)
+    assert (x_mat[2, 2] == [[2.0, 2.0], [2.0, 2.0]]).all()
+
+    x_mat.fill(mat2x2([[2.0, 4.0], [1.0, 3.0]]))
+    assert (x_mat[3, 3] == [[2.0, 4.0], [1.0, 3.0]]).all()
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_wrong_dtype():
+    @ti.kernel
+    def test2(arr: ti.types.ndarray(dtype=ti.f32)):
+        for I in ti.grouped(arr):
+            arr[I] = 2.0
+
+    tp_ivec3 = ti.types.vector(3, ti.i32)
+
+    y = ti.ndarray(tp_ivec3, shape=(12, 4))
+    with pytest.raises(TypeError, match=r"get \[Tensor \(3\) i32\]"):
+        test2(y)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_bad_assign():
+    tp_ivec3 = ti.types.vector(3, ti.i32)
+
+    @ti.kernel
+    def test4(arr: ti.types.ndarray(dtype=tp_ivec3)):
+        for I in ti.grouped(arr):
+            arr[I] = [1, 2]
+
+    y = ti.ndarray(tp_ivec3, shape=(12, 4))
+    with pytest.raises(TaichiTypeError, match=r"cannot assign '\[Tensor \(2\) i32\]' to '\[Tensor \(3\) i32\]'"):
+        test4(y)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_bad_ndim():
+    x = ti.ndarray(ti.f32, shape=(12, 13))
+
+    @ti.kernel
+    def test5(arr: ti.types.ndarray(ndim=1)):
+        for i, j in arr:
+            arr[i, j] = 0
+
+    with pytest.raises(ValueError, match=r"required ndim=1, but 2d ndarray with shape \(12, 13\) is provided"):
+        test5(x)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_type_hint_matrix():
+    @ti.kernel
+    def test(x: ti.types.ndarray(dtype=ti.types.matrix())):
+        for I in ti.grouped(x):
+            x[I] = 1.0
+
+    x = ti.ndarray(ti.math.mat2, (3))
+    test(x)
+    assert impl.get_runtime().get_num_compiled_functions() == 1
+
+    y = ti.ndarray(ti.math.mat3, (3))
+    test(y)
+    assert impl.get_runtime().get_num_compiled_functions() == 2
+
+    z = ti.ndarray(ti.math.vec2, (3))
+    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+        test(z)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_type_hint_vector():
+    @ti.kernel
+    def test(x: ti.types.ndarray(dtype=ti.types.vector())):
+        for I in ti.grouped(x):
+            x[I] = 1.0
+
+    x = ti.ndarray(ti.math.vec3, (3))
+    test(x)
+    assert impl.get_runtime().get_num_compiled_functions() == 1
+
+    y = ti.ndarray(ti.math.vec2, (3))
+    test(y)
+    assert impl.get_runtime().get_num_compiled_functions() == 2
+
+    z = ti.ndarray(ti.math.mat2, (3))
+    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+        test(z)

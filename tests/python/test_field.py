@@ -85,6 +85,46 @@ def test_scalr_field_from_numpy(dtype, shape):
 
 
 @pytest.mark.parametrize("dtype", data_types)
+@pytest.mark.parametrize(
+    "shape, offset",
+    [
+        ((), None),
+        ((), ()),
+        (8, None),
+        (8, 0),
+        (8, 8),
+        (8, -4),
+        ((6, 12), None),
+        ((6, 12), (0, 0)),
+        ((6, 12), (-4, -4)),
+        ((6, 12), (-4, 4)),
+        ((6, 12), (4, -4)),
+        ((6, 12), (8, 8)),
+    ],
+)
+@test_utils.test(arch=get_host_arch_list())
+def test_scalr_field_from_numpy_with_offset(dtype, shape, offset):
+    import numpy as np
+
+    x = ti.field(dtype=dtype, shape=shape, offset=offset)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    arr = np.ones(shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+    def mat_equal(A, B, tol=1e-6):
+        return np.max(np.abs(A - B)) < tol
+
+    tol = 1e-5 if dtype == ti.f32 else 1e-12
+    assert mat_equal(x.to_numpy(), arr, tol=tol)
+
+
+@pytest.mark.parametrize("dtype", data_types)
 @pytest.mark.parametrize("shape", field_shapes)
 @test_utils.test(arch=get_host_arch_list())
 def test_scalr_field_from_numpy_with_mismatch_shape(dtype, shape):
@@ -249,6 +289,32 @@ def test_field_copy_from_with_mismatch_shape():
 
 
 @test_utils.test()
+@pytest.mark.parametrize(
+    "shape, x_offset, other_offset",
+    [
+        ((), (), ()),
+        (8, 4, 0),
+        (8, 0, -4),
+        (8, -4, -4),
+        (8, 8, -4),
+        ((6, 12), (0, 0), (-6, -6)),
+        ((6, 12), (-6, -6), (0, 0)),
+        ((6, 12), (-6, -6), (-6, -6)),
+    ],
+)
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32])
+def test_field_copy_from_with_offset(shape, dtype, x_offset, other_offset):
+    x = ti.field(dtype=ti.f32, shape=shape, offset=x_offset)
+    other = ti.field(dtype=dtype, shape=shape, offset=other_offset)
+    other.fill(1)
+    x.copy_from(other)
+    convert = lambda arr: arr[0] if len(arr) == 1 else arr
+    assert convert(x.shape) == shape
+    assert x.dtype == ti.f32
+    assert (x.to_numpy() == 1).all()
+
+
+@test_utils.test()
 def test_field_copy_from_with_non_filed_object():
     import numpy as np
 
@@ -356,3 +422,20 @@ def test_write_u64():
     x = ti.field(ti.u64, shape=())
     x[None] = 2**64 - 1
     assert x[None] == 2**64 - 1
+
+
+@test_utils.test(require=ti.extension.data64)
+def test_field_with_dynamic_index():
+    vel = ti.Vector.field(2, dtype=ti.f64, shape=(100, 100))
+
+    @ti.func
+    def foo(i, j, l):
+        tmp = 1.0 / vel[i, j][l]
+        return tmp
+
+    @ti.kernel
+    def collide():
+        tmp0 = foo(0, 0, 0)
+        print(tmp0)
+
+    collide()

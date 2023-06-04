@@ -78,7 +78,6 @@ class CompiledTaichiKernel {
 class TI_DLL_EXPORT GfxRuntime {
  public:
   struct Params {
-    uint64_t *host_result_buffer{nullptr};
     Device *device{nullptr};
     KernelProfilerBase *profiler{nullptr};
   };
@@ -135,8 +134,7 @@ class TI_DLL_EXPORT GfxRuntime {
 
   static std::tuple<const lang::StructType *, size_t, size_t>
   get_struct_type_with_data_layout_impl(const lang::StructType *old_ty,
-                                        const std::string &layout,
-                                        bool is_outmost);
+                                        const std::string &layout);
 
  private:
   friend class taichi::lang::gfx::SNodeTreeManager;
@@ -147,7 +145,6 @@ class TI_DLL_EXPORT GfxRuntime {
   void init_nonroot_buffers();
 
   Device *device_{nullptr};
-  uint64_t *const host_result_buffer_;
   KernelProfilerBase *profiler_;
 
   std::unique_ptr<PipelineCache> backend_cache_{nullptr};

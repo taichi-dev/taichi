@@ -31,12 +31,10 @@ class HostDeviceContextBlitter {
   HostDeviceContextBlitter(const KernelContextAttributes *ctx_attribs,
                            LaunchContextBuilder &host_ctx,
                            Device *device,
-                           uint64_t *host_result_buffer,
                            DeviceAllocation *device_args_buffer,
                            DeviceAllocation *device_ret_buffer)
       : ctx_attribs_(ctx_attribs),
         host_ctx_(host_ctx),
-        host_result_buffer_(host_result_buffer),
         device_args_buffer_(device_args_buffer),
         device_ret_buffer_(device_ret_buffer),
         device_(device) {
@@ -92,11 +90,6 @@ class HostDeviceContextBlitter {
 
     std::memcpy(device_base, host_ctx_.get_context().arg_buffer,
                 ctx_attribs_->args_bytes());
-
-    void *device_ptr =
-        (uint8_t *)device_base + ctx_attribs_->extra_args_mem_offset();
-    std::memcpy(device_ptr, host_ctx_.get_context().extra_args,
-                ctx_attribs_->extra_args_bytes());
 
     device_->unmap(*device_args_buffer_);
   }
@@ -160,46 +153,8 @@ class HostDeviceContextBlitter {
     TI_ASSERT(device_->map(*device_ret_buffer_, &device_base) ==
               RhiResult::success);
 
-#define TO_HOST(short_type, type, offset)                            \
-  if (dt->is_primitive(PrimitiveTypeID::short_type)) {               \
-    const type d = *(reinterpret_cast<type *>(device_ptr) + offset); \
-    host_result_buffer_[offset] =                                    \
-        taichi_union_cast_with_different_sizes<uint64>(d);           \
-    continue;                                                        \
-  }
-
-    for (int i = 0; i < ctx_attribs_->rets().size(); ++i) {
-      // Note that we are copying the i-th return value on Metal to the i-th
-      // *arg* on the host context.
-      const auto &ret = ctx_attribs_->rets()[i];
-      void *device_ptr = (uint8_t *)device_base + ret.offset_in_mem;
-      const auto dt = PrimitiveType::get(ret.dtype);
-      const auto num = ret.stride / data_type_size(dt);
-      for (int j = 0; j < num; ++j) {
-        // (penguinliong) Again, it's the module loader's responsibility to
-        // check the data type availability.
-        TO_HOST(i8, int8, j)
-        TO_HOST(u8, uint8, j)
-        TO_HOST(i16, int16, j)
-        TO_HOST(u16, uint16, j)
-        TO_HOST(i32, int32, j)
-        TO_HOST(u32, uint32, j)
-        TO_HOST(f32, float32, j)
-        TO_HOST(i64, int64, j)
-        TO_HOST(u64, uint64, j)
-        TO_HOST(f64, float64, j)
-        if (dt->is_primitive(PrimitiveTypeID::f16)) {
-          const float d = fp16_ieee_to_fp32_value(
-              *reinterpret_cast<uint16 *>(device_ptr) + j);
-          host_result_buffer_[j] =
-              taichi_union_cast_with_different_sizes<uint64>(d);
-          continue;
-        }
-        TI_ERROR("Device does not support return value type={}",
-                 data_type_name(PrimitiveType::get(ret.dtype)));
-      }
-    }
-#undef TO_HOST
+    void *ctx_result_buffer = host_ctx_.get_context().result_buffer;
+    std::memcpy(ctx_result_buffer, device_base, ctx_attribs_->rets_bytes());
 
     device_->unmap(*device_ret_buffer_);
 
@@ -210,21 +165,18 @@ class HostDeviceContextBlitter {
       const KernelContextAttributes *ctx_attribs,
       LaunchContextBuilder &host_ctx,
       Device *device,
-      uint64_t *host_result_buffer,
       DeviceAllocation *device_args_buffer,
       DeviceAllocation *device_ret_buffer) {
     if (ctx_attribs->empty()) {
       return nullptr;
     }
     return std::make_unique<HostDeviceContextBlitter>(
-        ctx_attribs, host_ctx, device, host_result_buffer, device_args_buffer,
-        device_ret_buffer);
+        ctx_attribs, host_ctx, device, device_args_buffer, device_ret_buffer);
   }
 
  private:
   const KernelContextAttributes *const ctx_attribs_;
   LaunchContextBuilder &host_ctx_;
-  uint64_t *const host_result_buffer_;
   DeviceAllocation *const device_args_buffer_;
   DeviceAllocation *const device_ret_buffer_;
   Device *const device_;
@@ -257,10 +209,6 @@ CompiledTaichiKernel::CompiledTaichiKernel(const Params &ti_params)
 
   args_buffer_size_ = arg_sz;
   ret_buffer_size_ = ret_sz;
-
-  if (arg_sz) {
-    args_buffer_size_ += ti_kernel_attribs_.ctx_attribs.extra_args_bytes();
-  }
 
   const auto &task_attribs = ti_kernel_attribs_.tasks_attribs;
   const auto &spirv_bins = ti_params.spirv_bins;
@@ -297,10 +245,7 @@ Pipeline *CompiledTaichiKernel::get_pipeline(int i) {
 }
 
 GfxRuntime::GfxRuntime(const Params &params)
-    : device_(params.device),
-      host_result_buffer_(params.host_result_buffer),
-      profiler_(params.profiler) {
-  TI_ASSERT(host_result_buffer_ != nullptr);
+    : device_(params.device), profiler_(params.profiler) {
   current_cmdlist_pending_since_ = high_res_clock::now();
   init_nonroot_buffers();
 
@@ -420,7 +365,7 @@ void GfxRuntime::launch_kernel(KernelHandle handle,
   // Create context blitter
   auto ctx_blitter = HostDeviceContextBlitter::maybe_make(
       &ti_kernel->ti_kernel_attribs().ctx_attribs, host_ctx, device_,
-      host_result_buffer_, args_buffer.get(), ret_buffer.get());
+      args_buffer.get(), ret_buffer.get());
 
   // `any_arrays` contain both external arrays and NDArrays
   std::unordered_map<int, DeviceAllocation> any_arrays;
@@ -802,15 +747,14 @@ std::pair<const lang::StructType *, size_t>
 GfxRuntime::get_struct_type_with_data_layout(const lang::StructType *old_ty,
                                              const std::string &layout) {
   auto [new_ty, size, align] =
-      get_struct_type_with_data_layout_impl(old_ty, layout, true);
+      get_struct_type_with_data_layout_impl(old_ty, layout);
   return {new_ty, size};
 }
 
 std::tuple<const lang::StructType *, size_t, size_t>
 GfxRuntime::get_struct_type_with_data_layout_impl(
     const lang::StructType *old_ty,
-    const std::string &layout,
-    bool is_outmost) {
+    const std::string &layout) {
   TI_TRACE("get_struct_type_with_data_layout: {}", layout);
   TI_ASSERT(layout.size() == 2);
   auto is_430 = layout[0] == '4';
@@ -824,21 +768,22 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
     size_t member_size;
     if (auto struct_type = member.type->cast<lang::StructType>()) {
       auto [new_ty, size, member_align_] =
-          get_struct_type_with_data_layout_impl(struct_type, layout, false);
+          get_struct_type_with_data_layout_impl(struct_type, layout);
       members[i].type = new_ty;
       member_align = member_align_;
       member_size = size;
     } else if (auto tensor_type = member.type->cast<lang::TensorType>()) {
-      size_t element_size = data_type_size(tensor_type->get_element_type());
+      size_t element_size = data_type_size_gfx(tensor_type->get_element_type());
       size_t num_elements = tensor_type->get_num_elements();
-      if (num_elements == 2) {
-        member_align = element_size * 2;
-      } else {
-        member_align = element_size * 4;
-      }
       if (!is_430) {
+        if (num_elements == 2) {
+          member_align = element_size * 2;
+        } else {
+          member_align = element_size * 4;
+        }
         member_size = member_align;
       } else {
+        member_align = element_size;
         member_size = tensor_type->get_num_elements() * element_size;
       }
     } else if (auto pointer_type = member.type->cast<PointerType>()) {
@@ -852,7 +797,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
       }
     } else {
       TI_ASSERT(member.type->is<PrimitiveType>());
-      member_size = data_type_size(member.type);
+      member_size = data_type_size_gfx(member.type);
       member_align = member_size;
     }
     bytes = align_up(bytes, member_align);
@@ -863,7 +808,7 @@ GfxRuntime::get_struct_type_with_data_layout_impl(
 
   if (!is_430) {
     align = align_up(align, sizeof(float) * 4);
-    bytes = align_up(bytes, is_outmost ? 4 : 4 * sizeof(float));
+    bytes = align_up(bytes, 4 * sizeof(float));
   }
   TI_TRACE("  total_bytes={}", bytes);
   return {TypeFactory::get_instance()

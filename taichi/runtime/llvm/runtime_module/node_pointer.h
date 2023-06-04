@@ -81,7 +81,7 @@ void Pointer_deactivate(Ptr meta, Ptr node, int i) {
   }
 }
 
-i32 Pointer_is_active(Ptr meta, Ptr node, int i) {
+u1 Pointer_is_active(Ptr meta, Ptr node, int i) {
   auto num_elements = Pointer_get_num_elements(meta, node);
   auto data_ptr = *(Ptr *)(node + 8 * (num_elements + i));
   return data_ptr != nullptr;

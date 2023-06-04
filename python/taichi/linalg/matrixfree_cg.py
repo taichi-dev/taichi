@@ -16,7 +16,21 @@ class LinearOperator:
         self._matvec(x, Ax)
 
 
-def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
+def MatrixFreeCG(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
+    """Matrix-free conjugate-gradient solver.
+
+    Use conjugate-gradient method to solve the linear system Ax = b, where A is implicitly
+    represented as a LinearOperator.
+
+    Args:
+        A (LinearOperator): The coefficient matrix A of the linear system.
+        b (Field): The right-hand side of the linear system.
+        x (Field): The initial guess for the solution.
+        maxiter (int): Maximum number of iterations.
+        atol: Tolerance(absolute) for convergence.
+        quiet (bool): Switch to turn on/off iteration log.
+    """
+
     if b.dtype != x.dtype:
         raise TaichiTypeError(f"Dtype mismatch b.dtype({b.dtype}) != x.dtype({x.dtype}).")
     if str(b.dtype) == "f32":
@@ -33,7 +47,15 @@ def taichi_cg_solver(A, b, x, tol=1e-6, maxiter=5000, quiet=True):
     p = ti.field(dtype=solver_dtype)
     r = ti.field(dtype=solver_dtype)
     Ap = ti.field(dtype=solver_dtype)
-    vector_fields_builder.dense(ti.ij, size).place(p, r, Ap)
+    if len(size) == 1:
+        axes = ti.i
+    elif len(size) == 2:
+        axes = ti.ij
+    elif len(size) == 3:
+        axes = ti.ijk
+    else:
+        raise TaichiRuntimeError(f"MatrixFreeCG only support 1D, 2D, 3D inputs; your inputs is {len(size)}-D.")
+    vector_fields_builder.dense(axes, size).place(p, r, Ap)
     vector_fields_snode_tree = vector_fields_builder.finalize()
 
     scalar_builder = ti.FieldsBuilder()

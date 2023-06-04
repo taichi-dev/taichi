@@ -1,13 +1,13 @@
-from taichi._lib import core as _ti_core
 from taichi.lang.enums import Layout
-from taichi.types.compound_types import CompoundType, TensorType, matrix, vector
+from taichi.types.compound_types import CompoundType, matrix, vector
 
 
 class NdarrayTypeMetadata:
-    def __init__(self, element_type, shape=None):
+    def __init__(self, element_type, shape=None, needs_grad=False):
         self.element_type = element_type
         self.shape = shape
         self.layout = Layout.AOS
+        self.needs_grad = needs_grad
 
 
 # TODO(Haidong): This is a helper function that creates a MatrixType
@@ -44,16 +44,6 @@ def _make_matrix_dtype_from_element_shape(element_dim, element_shape, primitive_
     return mat_dtype
 
 
-# FIXME(zhanlue): Use TensorType exported from pybind and then remove python-scope TensorType
-def is_tensor_type(dtype):
-    if isinstance(dtype, TensorType):
-        return True
-    if isinstance(dtype, _ti_core.DataType):
-        return _ti_core.is_tensor(dtype)
-
-    return False
-
-
 class NdarrayType:
     """Type annotation for arbitrary arrays, including external arrays (numpy ndarrays and torch tensors) and Taichi ndarrays.
 
@@ -75,6 +65,7 @@ class NdarrayType:
         element_dim=None,
         element_shape=None,
         field_dim=None,
+        needs_grad=None,
     ):
         if field_dim is not None:
             raise ValueError("The field_dim argument for ndarray type is already deprecated. Please use ndim instead.")
@@ -85,6 +76,7 @@ class NdarrayType:
 
         self.ndim = ndim
         self.layout = Layout.AOS
+        self.needs_grad = needs_grad
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
         # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import
@@ -93,23 +85,10 @@ class NdarrayType:
 
         # Check dtype match
         if isinstance(self.dtype, CompoundType):
-            # Check element shape and dim for MatrixType
-            if self.dtype.ndim > 0:
-                if not is_tensor_type(ndarray_type.element_type):
-                    raise TypeError(f"Expect TensorType element for Ndarray with element_dim: {self.dtype.ndim} > 0")
-                if self.dtype.ndim != len(ndarray_type.element_type.shape()):
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_dim={self.dtype.ndim}, but {len(ndarray_type.element_type.shape())} is provided"
-                    )
-            if self.dtype.get_shape() is not None:
-                if not is_tensor_type(ndarray_type.element_type):
-                    raise TypeError(
-                        f"Expect TensorType element for Ndarray with element_shape: {self.dtype.get_shape()}"
-                    )
-                if list(self.dtype.get_shape()) != list(ndarray_type.element_type.shape()):
-                    raise ValueError(
-                        f"Invalid argument into ti.types.ndarray() - required element_shape={self.dtype.get_shape()}, but {ndarray_type.element_type.shape()} is provided"
-                    )
+            if not self.dtype.check_matched(ndarray_type.element_type):
+                raise ValueError(
+                    f"Invalid argument into ti.types.ndarray() - required element type: {self.dtype.to_string()}, but {ndarray_type.element_type.to_string()} is provided"
+                )
         else:
             if self.dtype is not None:
                 # Check dtype match for scalar.
@@ -121,11 +100,18 @@ class NdarrayType:
         # Check ndim match
         if self.ndim is not None and ndarray_type.shape is not None and self.ndim != len(ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {ndarray_type.element_type} is provided"
+                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {len(ndarray_type.shape)}d ndarray with shape {ndarray_type.shape} is provided"
+            )
+
+        # Check needs_grad
+        if self.needs_grad is not None and self.needs_grad > ndarray_type.needs_grad:
+            # It's okay to pass a needs_grad=True ndarray at runtime to a need_grad=False arg but not vice versa.
+            raise ValueError(
+                f"Invalid argument into ti.types.ndarray() - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
             )
 
     def __repr__(self):
-        return f"NdarrayType(dtype={self.dtype}, ndim={self.ndim}, layout={self.layout})"
+        return f"NdarrayType(dtype={self.dtype}, ndim={self.ndim}, layout={self.layout}, needs_grad={self.needs_grad})"
 
     def __str__(self):
         return self.__repr__()

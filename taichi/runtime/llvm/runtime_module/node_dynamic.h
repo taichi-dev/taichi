@@ -87,9 +87,9 @@ Ptr Dynamic_allocate(Ptr meta_, Ptr node_, i32 *len) {
   return nullptr;
 }
 
-i32 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
+u1 Dynamic_is_active(Ptr meta_, Ptr node_, int i) {
   auto node = (DynamicNode *)(node_);
-  return i32(i < node->n);
+  return i < node->n;
 }
 
 Ptr Dynamic_lookup_element(Ptr meta_, Ptr node_, int i) {

@@ -193,8 +193,6 @@ void export_lang(py::module &m) {
       .def_readwrite("make_thread_local", &CompileConfig::make_thread_local)
       .def_readwrite("make_block_local", &CompileConfig::make_block_local)
       .def_readwrite("detect_read_only", &CompileConfig::detect_read_only)
-      .def_readwrite("ndarray_use_cached_allocator",
-                     &CompileConfig::ndarray_use_cached_allocator)
       .def_readwrite("real_matrix_scalarize",
                      &CompileConfig::real_matrix_scalarize)
       .def_readwrite("half2_vectorization", &CompileConfig::half2_vectorization)
@@ -468,6 +466,7 @@ void export_lang(py::module &m) {
       .def_readwrite("parent", &SNode::parent)
       .def_readonly("type", &SNode::type)
       .def_readonly("id", &SNode::id)
+      .def_readonly("offset", &SNode::index_offsets)
       .def("dense",
            (SNode & (SNode::*)(const std::vector<Axis> &,
                                const std::vector<int> &,
@@ -617,66 +616,55 @@ void export_lang(py::module &m) {
       .def("seq", &GraphBuilder::seq, py::return_value_policy::reference);
 
   py::class_<aot::CompiledGraph>(m, "CompiledGraph")
-      .def("jit_run", [](aot::CompiledGraph *self,
-                         const CompileConfig &compile_config,
-                         const py::dict &pyargs) {
-        std::unordered_map<std::string, aot::IValue> args;
-        for (auto it : pyargs) {
-          std::string arg_name = py::cast<std::string>(it.first);
-          auto tag = self->args[arg_name].tag;
-          if (tag == aot::ArgKind::kNdarray) {
-            auto &val = it.second.cast<Ndarray &>();
-            args.insert(
-                {py::cast<std::string>(it.first), aot::IValue::create(val)});
-          } else if (tag == aot::ArgKind::kTexture ||
-                     tag == aot::ArgKind::kRWTexture) {
-            auto &val = it.second.cast<Texture &>();
-            args.insert(
-                {py::cast<std::string>(it.first), aot::IValue::create(val)});
-
-          } else if (tag == aot::ArgKind::kScalar ||
-                     tag == aot::ArgKind::kMatrix) {
-            std::string arg_name = py::cast<std::string>(it.first);
-            auto expected_dtype = self->args[arg_name].dtype();
-            if (expected_dtype == PrimitiveType::i32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int64>(it.second))});
-            } else if (expected_dtype == PrimitiveType::f32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<float>(it.second))});
-            } else if (expected_dtype == PrimitiveType::f64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<double>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i16) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int16>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u32) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint32>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u64) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint64>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u16) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<uint16>(it.second))});
-            } else if (expected_dtype == PrimitiveType::u8) {
-              args.insert({arg_name,
-                           aot::IValue::create(py::cast<uint8_t>(it.second))});
-            } else if (expected_dtype == PrimitiveType::i8) {
-              args.insert(
-                  {arg_name, aot::IValue::create(py::cast<int8_t>(it.second))});
-            } else {
-              TI_NOT_IMPLEMENTED;
-            }
-          } else {
-            TI_NOT_IMPLEMENTED;
-          }
-        }
-        self->jit_run(compile_config, args);
-      });
+      .def("jit_run",
+           [](aot::CompiledGraph *self, const CompileConfig &compile_config,
+              const py::dict &pyargs) {
+             std::unordered_map<std::string, aot::IValue> args;
+             auto insert_scalar_arg = [&args](std::string arg_name,
+                                              DataType expected_dtype,
+                                              py::object pyarg) {
+               auto type_id = expected_dtype->as<PrimitiveType>()->type;
+               switch (type_id) {
+#define PER_C_TYPE(type, ctype)                                           \
+  case PrimitiveTypeID::type:                                             \
+    args.insert({arg_name, aot::IValue::create(py::cast<ctype>(pyarg))}); \
+    break;
+#include "taichi/inc/data_type_with_c_type.inc.h"
+#undef PER_C_TYPE
+                 default:
+                   TI_ERROR("Unsupported scalar type {}", type_id);
+               }
+             };
+             for (const auto &[arg_name, arg] : self->args) {
+               auto tag = arg.tag;
+               if (tag == aot::ArgKind::kMatrix) {
+                 int size = arg.element_shape[0] * arg.element_shape[1];
+                 for (int i = 0; i < size; i++) {
+                   auto name = fmt::format("{}_{}", arg_name, i);
+                   TI_ASSERT(pyargs.contains(name.c_str()));
+                   auto pyarg = pyargs[name.c_str()];
+                   insert_scalar_arg(name, arg.dtype(), pyarg);
+                 }
+                 continue;
+               }
+               TI_ASSERT(pyargs.contains(arg_name.c_str()));
+               auto pyarg = pyargs[arg_name.c_str()];
+               if (tag == aot::ArgKind::kNdarray) {
+                 auto &val = pyarg.cast<Ndarray &>();
+                 args.insert({arg_name, aot::IValue::create(val)});
+               } else if (tag == aot::ArgKind::kTexture ||
+                          tag == aot::ArgKind::kRWTexture) {
+                 auto &val = pyarg.cast<Texture &>();
+                 args.insert({arg_name, aot::IValue::create(val)});
+               } else if (tag == aot::ArgKind::kScalar) {
+                 auto expected_dtype = arg.dtype();
+                 insert_scalar_arg(arg_name, expected_dtype, pyarg);
+               } else {
+                 TI_NOT_IMPLEMENTED;
+               }
+             }
+             self->jit_run(compile_config, args);
+           });
 
   py::class_<Kernel>(m, "Kernel")
       .def("no_activate",
@@ -693,12 +681,6 @@ void export_lang(py::module &m) {
       .def("insert_ret", &Kernel::insert_ret)
       .def("finalize_rets", &Kernel::finalize_rets)
       .def("finalize_params", &Kernel::finalize_params)
-      .def("get_ret_int", &Kernel::get_ret_int)
-      .def("get_ret_uint", &Kernel::get_ret_uint)
-      .def("get_ret_float", &Kernel::get_ret_float)
-      .def("get_ret_int_tensor", &Kernel::get_ret_int_tensor)
-      .def("get_ret_uint_tensor", &Kernel::get_ret_uint_tensor)
-      .def("get_ret_float_tensor", &Kernel::get_ret_float_tensor)
       .def("make_launch_context", &Kernel::make_launch_context)
       .def(
           "ast_builder",
@@ -722,7 +704,6 @@ void export_lang(py::module &m) {
            &LaunchContextBuilder::set_arg_ndarray_with_grad)
       .def("set_arg_texture", &LaunchContextBuilder::set_arg_texture)
       .def("set_arg_rw_texture", &LaunchContextBuilder::set_arg_rw_texture)
-      .def("set_extra_arg_int", &LaunchContextBuilder::set_extra_arg_int)
       .def("get_struct_ret_int", &LaunchContextBuilder::get_struct_ret_int)
       .def("get_struct_ret_uint", &LaunchContextBuilder::get_struct_ret_uint)
       .def("get_struct_ret_float", &LaunchContextBuilder::get_struct_ret_float);
@@ -948,10 +929,15 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool>);
+
+  m.def("make_external_tensor_grad_expr",
+        Expr::make<ExternalTensorExpression, Expr *>);
 
   m.def("make_rand_expr", Expr::make<RandExpression, const DataType &>);
+
+  m.def("make_const_expr_bool",
+        Expr::make<ConstExpression, const DataType &, uint1>);
 
   m.def("make_const_expr_int",
         Expr::make<ConstExpression, const DataType &, int64>);
@@ -1007,7 +993,16 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->element_dim;
+    // FIXME: no need to make it negative since we don't support SOA
+    auto dtype = expr.cast<ExternalTensorExpression>()->dt;
+    return dtype->is<TensorType>()
+               ? -dtype->cast<TensorType>()->get_shape().size()
+               : 0;
+  });
+
+  m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
+    TI_ASSERT(expr.is<ExternalTensorExpression>());
+    return expr.cast<ExternalTensorExpression>()->needs_grad;
   });
 
   m.def("get_external_tensor_element_shape", [](const Expr &expr) {
@@ -1018,7 +1013,7 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     if (expr.is<ExternalTensorExpression>()) {
-      return expr.cast<ExternalTensorExpression>()->dim;
+      return expr.cast<ExternalTensorExpression>()->ndim;
     } else if (expr.is<TexturePtrExpression>()) {
       return expr.cast<TexturePtrExpression>()->num_dims;
     } else {

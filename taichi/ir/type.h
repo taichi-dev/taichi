@@ -281,11 +281,11 @@ class TI_DLL_EXPORT StructType : public Type {
     return elements_;
   }
 
-  int get_num_elements() const {
+  int get_flattened_num_elements() const {
     int num = 0;
     for (const auto &element : elements_) {
       if (auto struct_type = element.type->cast<StructType>()) {
-        num += struct_type->get_num_elements();
+        num += struct_type->get_flattened_num_elements();
       } else if (auto tensor_type = element.type->cast<TensorType>()) {
         num += tensor_type->get_num_elements();
       } else {
@@ -529,6 +529,7 @@ class TypedConstant {
     float64 val_f64;
     int8 val_i8;
     int16 val_i16;
+    uint1 val_u1;
     uint8 val_u8;
     uint16 val_u16;
     uint32 val_u32;
@@ -564,6 +565,9 @@ class TypedConstant {
   explicit TypedConstant(int16 x) : dt(PrimitiveType::i16), val_i16(x) {
   }
 
+  explicit TypedConstant(uint1 x) : dt(PrimitiveType::u1), val_u1(x) {
+  }
+
   explicit TypedConstant(uint8 x) : dt(PrimitiveType::u8), val_u8(x) {
   }
 
@@ -594,6 +598,8 @@ class TypedConstant {
       val_i8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
       val_i16 = value;
+    } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+      val_u1 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
       val_u8 = value;
     } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -627,6 +633,7 @@ class TypedConstant {
   float64 &val_float64();
   int8 &val_int8();
   int16 &val_int16();
+  uint1 &val_uint1();
   uint8 &val_uint8();
   uint16 &val_uint16();
   uint32 &val_uint32();

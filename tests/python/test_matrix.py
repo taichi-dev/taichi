@@ -1081,19 +1081,6 @@ def test_atomic_op_scalarize():
 
 
 @test_utils.test()
-def test_unsupported_logical_operations():
-    @ti.kernel
-    def test():
-        x = ti.Vector([1, 0])
-        y = ti.Vector([1, 1])
-
-        z = x and y
-
-    with pytest.raises(TaichiTypeError, match=r"unsupported operand type\(s\) for "):
-        test()
-
-
-@test_utils.test()
 def test_vector_transpose():
     @ti.kernel
     def foo():
@@ -1257,3 +1244,117 @@ def test_matrix_arithmatics():
             ]
         )
     ).all()
+
+
+@test_utils.test(
+    require=ti.extension.assertion,
+    debug=True,
+    check_out_of_bound=True,
+    gdb_trigger=False,
+)
+def test_matrix_oob():
+    @ti.kernel
+    def access_vec(i: ti.i32):
+        x = ti.Vector([1, 0])
+        x[i] = 42
+
+        # To keep x
+        assert x[i] == 42
+
+    @ti.kernel
+    def access_mat(i: ti.i32, j: ti.i32):
+        y = ti.Matrix([[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        y[i, j] = 42
+
+        # To keep y
+        assert y[i, j] == 42
+
+    # works
+    access_vec(1)
+    access_mat(2, 2)
+
+    # vector overflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_vec(2)
+    # vector underflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_vec(-1)
+
+    # matrix overflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(2, 3)
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(3, 0)
+    # matrix underflow
+    with pytest.raises(AssertionError, match=r"Out of bound access"):
+        access_mat(-1, 0)
+
+    # TODO: As offset information per dimension is lacking, only the accumulated index is checked. These tests will not raise even if the individual indices are incorrect.
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(0, 8)
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(-1, 10)
+    # with pytest.raises(AssertionError, match=r"Out of bound access"):
+    #    access_mat(3, -1)
+
+
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize("shape", [(8,), (6, 12)])
+@pytest.mark.parametrize("offset", [None, 0, -4, 4])
+@pytest.mark.parametrize("m, n", [(3, 4)])
+@test_utils.test(arch=get_host_arch_list())
+def test_matrix_from_numpy_with_offset(dtype, shape, offset, m, n):
+    import numpy as np
+
+    x = ti.Matrix.field(
+        dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape) if offset is not None else None
+    )
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    numpy_shape = ((shape,) if isinstance(shape, int) else shape) + (n, m)
+    arr = np.ones(numpy_shape, dtype=numpy_dtypes[dtype])
+    x.from_numpy(arr)
+
+    @ti.kernel
+    def func():
+        for I in ti.grouped(x):
+            assert all(abs(I - 1.0) < 1e-6)
+
+    func()
+
+
+@pytest.mark.parametrize("dtype", [ti.i32, ti.f32, ti.i64, ti.f64])
+@pytest.mark.parametrize("shape", [(8,), (6, 12)])
+@pytest.mark.parametrize("offset", [0, -4, 4])
+@pytest.mark.parametrize("m, n", [(3, 4)])
+@test_utils.test(arch=get_host_arch_list())
+def test_matrix_to_numpy_with_offset(dtype, shape, offset, m, n):
+    import numpy as np
+
+    x = ti.Matrix.field(dtype=dtype, m=m, n=n, shape=shape, offset=[offset] * len(shape))
+    x.fill(1.0)
+    # use the corresponding dtype for the numpy array.
+    numpy_dtypes = {
+        ti.i32: np.int32,
+        ti.f32: np.float32,
+        ti.f64: np.float64,
+        ti.i64: np.int64,
+    }
+    numpy_shape = ((shape,) if isinstance(shape, int) else shape) + (n, m)
+    arr = x.to_numpy()
+
+    assert np.allclose(arr, np.ones(numpy_shape, dtype=numpy_dtypes[dtype]))
+
+
+@test_utils.test()
+def test_matrix_dtype():
+    a = ti.types.vector(3, dtype=ti.f32)([0, 1, 2])
+    assert a.entries.dtype == np.float32
+
+    b = ti.types.matrix(2, 2, dtype=ti.i32)([[0, 1], [2, 3]])
+    assert b.entries.dtype == np.int32

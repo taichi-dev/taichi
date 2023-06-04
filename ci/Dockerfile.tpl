@@ -3,6 +3,16 @@
 # | These should be merged into the image |
 # +=======================================+
 
+SNIPPET timezone-patch
+RUN : && \
+    . /etc/os-release && \
+    if [ "$ID" = "ubuntu" ]; then \
+        sudo apt-get update && \
+        sudo -E apt-get install -y tzdata && \
+        sudo rm -rf /var/cache/apt/archives /var/lib/apt/lists; \
+    fi && \
+    sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    :
 
 # ===== END PATCHES ======
 SNIPPET mitm-ca
@@ -50,7 +60,8 @@ RUN set -x && \
     add-apt-repository -y ppa:ubuntu-toolchain-r/test && \
     add-apt-repository -y ppa:git-core/ppa && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
-    echo 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-15 main' > /etc/apt/sources.list.d/llvm-15.list && \
+    . /etc/lsb-release && \
+    echo "deb http://apt.llvm.org/$DISTRIB_CODENAME/ llvm-toolchain-$DISTRIB_CODENAME-15 main" > /etc/apt/sources.list.d/llvm-15.list && \
     apt update && \
     apt install -y build-essential clang-15 clang-tidy-15 llvm-15 lld-15 gcc-11 g++-11 curl wget sudo python3-pip git unzip && \
     python3 -m pip install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade pip && \
@@ -100,6 +111,7 @@ RUN set -x && \
     true
 
 USE dev-user
+USE timezone-patch
 BUILD build-cpu AS registry.botmaster.tgr/taichi-build-cpu:__TIME__
 
 # -------
@@ -107,6 +119,7 @@ FROM ubuntu:18.04 AS test-cpu
 USE debian-addons-test
 USE mitm-ca
 USE dev-user
+USE timezone-patch
 BUILD test-cpu AS registry.botmaster.tgr/taichi-test-cpu:__TIME__
 
 # -------
@@ -131,12 +144,14 @@ RUN set -x && \
     true
 
 # -------
-FROM rocm/dev-ubuntu-18.04:5.2 AS build-amdgpu
+FROM rocm/dev-ubuntu-20.04:5.4.3 AS build-amdgpu
+# The AMDGPU lists has bad distribution
+RUN rm /etc/apt/sources.list.d/*.list
 USE debian-addons
 USE mitm-ca
 USE gpu-build-image-deps
 USE dev-user
-RUN sudo addgroup --gid 109 render
+USE timezone-patch
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-build-amdgpu:__TIME__
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-test-amdgpu:__TIME__
 
@@ -147,10 +162,10 @@ ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons
 USE mitm-ca
 USE gpu-build-image-deps
-COPY assets/nvidia_icd.json /usr/share/vulkan/icd.d/nvidia_icd.json
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user
+USE timezone-patch
 BUILD build-cuda AS registry.botmaster.tgr/taichi-build-cuda:__TIME__
 
 # -------
@@ -159,10 +174,10 @@ FROM nvidia/cudagl:11.2.2-devel-ubuntu18.04 AS test-cuda
 ENV NVIDIA_DRIVER_CAPABILITIES compute,graphics,utility
 USE debian-addons-test
 USE mitm-ca
-COPY assets/nvidia_icd.json /usr/share/vulkan/icd.d/nvidia_icd.json
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user
+USE timezone-patch
 BUILD test-cuda AS registry.botmaster.tgr/taichi-test-cuda:__TIME__
 
 # -------
@@ -201,6 +216,7 @@ RUN set -x && \
     chown -R dev:dev /home/dev/.android && \
     true
 
+USE timezone-patch
 BUILD build-android AS registry.botmaster.tgr/taichi-build-android:__TIME__
 BUILD build-android AS registry.botmaster.tgr/taichi-test-android:__TIME__
 
@@ -261,6 +277,7 @@ FROM centos:7 AS manylinux2014
 USE manylinux2014-addons
 USE mitm-ca-centos
 USE dev-user
+USE timezone-patch
 BUILD manylinux2014 AS registry.botmaster.tgr/taichi-build-manylinux2014:__TIME__
 BUILD manylinux2014 AS registry.botmaster.tgr/taichi-test-manylinux2014:__TIME__
 
@@ -268,6 +285,7 @@ FROM nvidia/cudagl:11.2.2-devel-centos7 AS manylinux2014-cuda
 USE manylinux2014-addons
 USE mitm-ca-centos
 USE dev-user
+USE timezone-patch
 BUILD manylinux2014-cuda AS registry.botmaster.tgr/taichi-build-manylinux2014-cuda:__TIME__
 BUILD manylinux2014-cuda AS registry.botmaster.tgr/taichi-test-manylinux2014-cuda:__TIME__
 

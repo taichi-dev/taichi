@@ -333,11 +333,14 @@ class AtomicOpStmt : public Stmt,
 class ExternalPtrStmt : public Stmt {
  public:
   Stmt *base_ptr;
+
   std::vector<Stmt *> indices;
+
+  // Number of dimensions of external shape
+  int ndim;
+
+  // Shape of element type
   std::vector<int> element_shape;
-  // AOS: element_dim < 0
-  // SOA: element_dim > 0
-  int element_dim;
 
   // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
   // We use "overrided_dtype" to prevent type inference from
@@ -352,8 +355,8 @@ class ExternalPtrStmt : public Stmt {
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
+                  int ndim,
                   const std::vector<int> &element_shape,
-                  int element_dim,
                   bool is_grad = false);
 
   bool has_global_side_effect() const override {
@@ -485,6 +488,13 @@ class MatrixPtrStmt : public Stmt {
     return false;
   }
 
+  std::vector<int> get_origin_shape() const {
+    if (offset_used_as_index()) {
+      return origin->ret_type.ptr_removed()->cast<TensorType>()->get_shape();
+    }
+    TI_NOT_IMPLEMENTED;
+  }
+
   bool is_unlowered_global_ptr() const {
     return origin->is<GlobalPtrStmt>();
   }
@@ -495,6 +505,8 @@ class MatrixPtrStmt : public Stmt {
     // structure for now.
     return false;
   }
+
+  bool common_statement_eliminable() const override;
 
   TI_STMT_DEF_FIELDS(ret_type, origin, offset);
   TI_DEFINE_ACCEPT_AND_CLONE
@@ -1303,6 +1315,7 @@ class OffloadedStmt : public Stmt {
  public:
   using TaskType = OffloadedTaskType;
 
+  Kernel *kernel_;
   TaskType task_type;
   Arch device;
   SNode *snode{nullptr};
@@ -1346,15 +1359,18 @@ class OffloadedStmt : public Stmt {
   std::size_t bls_size{0};
   MemoryAccessOptions mem_access_opt;
 
-  OffloadedStmt(TaskType task_type, Arch arch);
+  OffloadedStmt(TaskType task_type, Arch arch, Kernel *kernel);
 
   std::string task_name() const;
 
   static std::string task_type_name(TaskType tt);
 
   bool has_body() const {
-    return task_type != TaskType::listgen && task_type != TaskType::gc &&
-           task_type != TaskType::gc_rc;
+    return task_type != TaskType::listgen && task_type != TaskType::gc;
+  }
+
+  Kernel *get_kernel() const override {
+    return kernel_;
   }
 
   bool is_container_statement() const override {
@@ -1658,6 +1674,7 @@ class AdStackAllocaStmt : public Stmt {
 
   AdStackAllocaStmt(const DataType &dt, std::size_t max_size)
       : dt(dt), max_size(max_size) {
+    ret_type = dt;
     TI_STMT_REG_FIELDS;
   }
 
@@ -1692,9 +1709,14 @@ class AdStackLoadTopStmt : public Stmt, public ir_traits::Load {
  public:
   Stmt *stack;
 
-  explicit AdStackLoadTopStmt(Stmt *stack) {
+  // return the pointer to the top element instead of the stack, instead of
+  // loading the value
+  bool return_ptr = false;
+
+  explicit AdStackLoadTopStmt(Stmt *stack, bool return_ptr = false) {
     TI_ASSERT(stack->is<AdStackAllocaStmt>());
     this->stack = stack;
+    this->return_ptr = return_ptr;
     TI_STMT_REG_FIELDS;
   }
 

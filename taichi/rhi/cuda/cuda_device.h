@@ -77,6 +77,7 @@ class CudaDevice : public LlvmDevice {
      * */
     bool use_preallocated{true};
     bool use_cached{false};
+    bool use_memory_pool{false};
     void *mapped{nullptr};
   };
 
@@ -126,6 +127,14 @@ class CudaDevice : public LlvmDevice {
   void memcpy_internal(DevicePtr dst, DevicePtr src, uint64_t size) override;
 
   DeviceAllocation import_memory(void *ptr, size_t size) override;
+
+  void *get_memory_addr(DeviceAllocation devalloc) override {
+    return get_alloc_info(devalloc).ptr;
+  }
+
+  std::size_t get_total_memory() override {
+    return CUDAContext::get_instance().get_total_memory();
+  }
 
   Stream *get_compute_stream() override{TI_NOT_IMPLEMENTED};
 

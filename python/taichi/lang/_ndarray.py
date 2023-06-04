@@ -27,7 +27,7 @@ class Ndarray:
         self.grad = None
 
     def get_type(self):
-        return NdarrayTypeMetadata(self.element_type, self.shape)
+        return NdarrayTypeMetadata(self.element_type, self.shape, self.grad is not None)
 
     @property
     def element_shape(self):
@@ -68,6 +68,8 @@ class Ndarray:
             val (Union[int, float]): Value to fill.
         """
         if impl.current_cfg().arch != _ti_core.Arch.cuda and impl.current_cfg().arch != _ti_core.Arch.x64:
+            self._fill_by_kernel(val)
+        elif _ti_core.is_tensor(self.element_type):
             self._fill_by_kernel(val)
         elif self.dtype == primitive_types.f32:
             impl.get_runtime().prog.fill_float(self.arr, val)

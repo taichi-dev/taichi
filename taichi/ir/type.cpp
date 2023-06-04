@@ -34,6 +34,13 @@ DataType PrimitiveType::get(PrimitiveTypeID t) {
 std::size_t DataType::hash() const {
   if (auto primitive = ptr_->cast<PrimitiveType>()) {
     return (std::size_t)primitive->type;
+  } else if (auto tensor_type = ptr_->cast<TensorType>()) {
+    std::size_t ret = 0;
+    auto tensor_shape = tensor_type->get_shape();
+    for (int i = 0; i < tensor_shape.size(); i++) {
+      ret += (i + 1) * 107 + tensor_shape[i];
+    }
+    return ret + DataType(tensor_type->get_element_type()).hash();
   } else if (auto pointer = ptr_->cast<PointerType>()) {
     return 10007 + DataType(pointer->get_pointee_type()).hash();
   } else {
@@ -359,6 +366,8 @@ std::string TypedConstant::stringify() const {
     return fmt::format("{}", val_i8);
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return fmt::format("{}", val_i16);
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return fmt::format("{}", val_u1);
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return fmt::format("{}", val_u8);
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -391,6 +400,8 @@ bool TypedConstant::equal_type_and_value(const TypedConstant &o) const {
     return val_i8 == o.val_i8;
   } else if (dt->is_primitive(PrimitiveTypeID::i16)) {
     return val_i16 == o.val_i16;
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return val_u1 == o.val_u1;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8 == o.val_u8;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
@@ -440,6 +451,11 @@ int16 &TypedConstant::val_int16() {
   return val_i16;
 }
 
+uint1 &TypedConstant::val_uint1() {
+  TI_ASSERT(get_data_type<uint1>() == dt);
+  return val_u1;
+}
+
 uint8 &TypedConstant::val_uint8() {
   TI_ASSERT(get_data_type<uint8>() == dt);
   return val_u8;
@@ -483,6 +499,8 @@ uint64 TypedConstant::val_uint() const {
     return val_u64;
   } else if (dt->is_primitive(PrimitiveTypeID::u8)) {
     return val_u8;
+  } else if (dt->is_primitive(PrimitiveTypeID::u1)) {
+    return val_u1;
   } else if (dt->is_primitive(PrimitiveTypeID::u16)) {
     return val_u16;
   } else {

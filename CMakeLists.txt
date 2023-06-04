@@ -68,7 +68,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(USE_LLD "Use lld (from llvm) linker" OFF)
 option(USE_MOLD "Use mold (A Modern Linker)" OFF)
-option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)
+option(TI_WITH_BACKTRACE "Use backward-cpp to print out C++ stack trace upon failure" OFF)  # wheel-tag: bt
+option(TI_GENERATE_PDB "Generate Program Database (PDB) files (will make compilation uncacheable)" OFF)
+option(TI_WITH_LTO "Enable Link Time Optimization (LTO) (affects Windows + MSVC for now)" OFF)  # wheel-tag: lto
 
 if(LINUX OR APPLE)
     if (NOT IOS)
@@ -107,43 +109,6 @@ if (WIN32)
   # with `0xCC` but it too breaks `LLVMTableGen` which is depended on by almost
   # every component in LLVM.
   message("CMAKE_MSVC_RUNTIME_LIBRARY: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
-endif()
-
-# Setup CLANG_EXECUTABLE
-if (CLANG_EXECUTABLE)
-  message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-  set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
-  message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
-else()
-  find_program(CLANG_EXECUTABLE NAMES clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
-  message("Clang executable found at ${CLANG_EXECUTABLE}")
-endif()
-
-if (NOT CLANG_EXECUTABLE)
-  message(FATAL_ERROR "Cannot find any clang executable.")
-endif()
-
-macro(check_clang_version)
-  execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
-  string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
-
-  message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
-
-  set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
-endmacro()
-
-if (APPLE)
-  set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
-endif()
-
-# Highest clang version that we've tested
-set(CLANG_HIGHEST_VERSION "15")
-
-check_clang_version()
-
-if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
-  message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
 endif()
 
 # No support of Python for Android build; or in any case taichi is integrated
@@ -199,14 +164,51 @@ if (TI_WITH_DX12)
 endif()
 
 if (TI_WITH_LLVM)
-  add_subdirectory(taichi/runtime/llvm/runtime_module)
+    # Setup CLANG_EXECUTABLE
+    if (CLANG_EXECUTABLE)
+      message("CLANG_EXECUTABLE defined: ${CLANG_EXECUTABLE}")
+    elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+      set (CLANG_EXECUTABLE ${CMAKE_CXX_COMPILER})
+      message("Clang executable using host compiler ${CLANG_EXECUTABLE}")
+    else()
+      find_program(CLANG_EXECUTABLE NAMES clang-15 clang-14 clang-13 clang-12 clang-11 clang-10 clang-9 clang-8 clang-7 clang)
+      message("Clang executable found at ${CLANG_EXECUTABLE}")
+    endif()
+
+    if (NOT CLANG_EXECUTABLE)
+      message(FATAL_ERROR "Cannot find any clang executable.")
+    endif()
+
+    macro(check_clang_version)
+      execute_process(COMMAND ${CLANG_EXECUTABLE} --version OUTPUT_VARIABLE CLANG_VERSION_OUTPUT)
+      string(REGEX MATCH "([0-9]+)\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION "${CLANG_VERSION_OUTPUT}")
+
+      message("${CLANG_EXECUTABLE} --version: ${CLANG_VERSION}")
+
+      set(CLANG_VERSION_MAJOR "${CMAKE_MATCH_1}")
+    endmacro()
+
+    if (APPLE)
+      set(CLANG_OSX_FLAGS "-isysroot${CMAKE_OSX_SYSROOT}")
+    endif()
+
+    # Highest clang version that we've tested
+    set(CLANG_HIGHEST_VERSION "15")
+
+    check_clang_version()
+
+    if (${CLANG_VERSION_MAJOR} VERSION_GREATER ${CLANG_HIGHEST_VERSION})
+      message(FATAL_ERROR "${CLANG_EXECUTABLE} version: ${CLANG_VERSION}, required: <=${CLANG_HIGHEST_VERSION}. Consider passing -DCLANG_EXECUTABLE=/path/to/clang to cmake to use a specific clang.")
+    endif()
+
+    add_subdirectory(taichi/runtime/llvm/runtime_module)
 endif()
 
 configure_file(taichi/common/version.h.in ${CMAKE_SOURCE_DIR}/taichi/common/version.h)
 configure_file(taichi/common/commit_hash.h.in ${CMAKE_SOURCE_DIR}/taichi/common/commit_hash.h)
 
-option(TI_WITH_C_API "build taichi runtime c-api library" ON)
-option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)
+option(TI_WITH_C_API "build taichi runtime c-api library" ON)  # wheel-tag: aot
+option(TI_WITH_STATIC_C_API "build static taichi runtime c-api library" OFF)  # wheel-tag: static_aot
 
 if(TI_WITH_STATIC_C_API)
     set(TI_WITH_C_API ${TI_WITH_STATIC_C_API})
@@ -231,7 +233,7 @@ if (TI_BUILD_RHI_EXAMPLES)
 endif()
 
 
-option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)
+option(TI_WITH_GRAPHVIZ "generate dependency graphs between targets" OFF)  # wheel-tag: viz
 if (TI_WITH_GRAPHVIZ)
   set(GRAPHVIZ_GRAPH_NAME "ti_targets")
   add_custom_target(graphviz ALL

@@ -377,6 +377,8 @@ SType IRBuilder::get_primitive_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return t_uint16_;
+  } else if (dt == PrimitiveType::u1) {
+    return t_bool_;
   } else {
     return t_uint8_;
   }
@@ -392,6 +394,8 @@ DataType IRBuilder::get_taichi_uint_type(const DataType &dt) const {
   } else if (dt == PrimitiveType::i16 || dt == PrimitiveType::u16 ||
              dt == PrimitiveType::f16) {
     return PrimitiveType::u16;
+  } else if (dt == PrimitiveType::u1) {
+    return PrimitiveType::u1;
   } else {
     return PrimitiveType::u8;
   }
@@ -555,7 +559,11 @@ SType IRBuilder::get_storage_pointer_type(const SType &value_type) {
   return get_pointer_type(value_type, storage_class);
 }
 
-SType IRBuilder::get_array_type(const SType &value_type, uint32_t num_elems) {
+SType IRBuilder::get_array_type(const SType &_value_type, uint32_t num_elems) {
+  auto value_type = _value_type;
+  if (value_type.dt->is_primitive(PrimitiveTypeID::u1)) {
+    value_type = i32_type();
+  }
   SType arr_type;
   arr_type.id = id_counter_++;
   arr_type.flag = TypeKind::kPtr;
@@ -1090,10 +1098,10 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
   Value IRBuilder::_OpName(Value a, Value b) {                             \
     TI_ASSERT(a.stype.id == b.stype.id);                                   \
     const auto &bool_type = t_bool_; /* TODO: Only scalar supported now */ \
-    if (is_integral(a.stype.dt)) {                                         \
-      return make_value(spv::OpI##_Op, bool_type, a, b);                   \
-    } else if (a.stype.id == bool_type.id) {                               \
+    if (a.stype.id == bool_type.id) {                                      \
       return make_value(spv::OpLogical##_Op, bool_type, a, b);             \
+    } else if (is_integral(a.stype.dt)) {                                  \
+      return make_value(spv::OpI##_Op, bool_type, a, b);                   \
     } else {                                                               \
       TI_ASSERT(is_real(a.stype.dt));                                      \
       return make_value(spv::OpFOrd##_Op, bool_type, a, b);                \
@@ -1102,6 +1110,27 @@ DEFINE_BUILDER_CMP_OP(ge, GreaterThanEqual);
 
 DEFINE_BUILDER_CMP_UOP(eq, Equal);
 DEFINE_BUILDER_CMP_UOP(ne, NotEqual);
+
+#define DEFINE_BUILDER_LOGICAL_OP(_OpName, _Op)                               \
+  Value IRBuilder::_OpName(Value a, Value b) {                                \
+    TI_ASSERT(a.stype.id == b.stype.id);                                      \
+    if (a.stype.id == t_bool_.id) {                                           \
+      return make_value(spv::OpLogical##_Op, t_bool_, a, b);                  \
+    } else if (is_integral(a.stype.dt)) {                                     \
+      Value val_a = make_value(spv::OpINotEqual, t_bool_, a,                  \
+                               int_immediate_number(a.stype, 0));             \
+      Value val_b = make_value(spv::OpINotEqual, t_bool_, b,                  \
+                               int_immediate_number(b.stype, 0));             \
+      Value val_ret = make_value(spv::OpLogical##_Op, t_bool_, val_a, val_b); \
+      return cast(a.stype, val_ret);                                          \
+    } else {                                                                  \
+      TI_ERROR("Logical ops on real types are not supported.");               \
+      return Value();                                                         \
+    }                                                                         \
+  }
+
+DEFINE_BUILDER_LOGICAL_OP(logical_and, And);
+DEFINE_BUILDER_LOGICAL_OP(logical_or, Or);
 
 Value IRBuilder::bit_field_extract(Value base, Value offset, Value count) {
   TI_ASSERT(is_integral(base.stype.dt));
@@ -1664,11 +1693,15 @@ Value IRBuilder::make_access_chain(const SType &out_type,
                                    Value base,
                                    const std::vector<int> &indices) {
   Value ret = new_value(out_type, ValueKind::kVariablePtr);
-  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  std::vector<Value> index_values;
   for (auto &ind : indices) {
-    ib_.add(int_immediate_number(t_int32_, ind));
+    index_values.push_back(int_immediate_number(t_int32_, ind));
   }
-  ib_.commit(&func_header_);
+  ib_.begin(spv::OpAccessChain).add_seq(out_type, ret, base);
+  for (auto &ind : index_values) {
+    ib_.add(ind);
+  }
+  ib_.commit(&function_);
   return ret;
 }
 

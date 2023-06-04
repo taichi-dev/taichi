@@ -59,17 +59,20 @@ class CheckOutOfBound : public BasicStmtVisitor {
       auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       Stmt *upper_bound{nullptr};
-      // TODO: Simplify logic here since SOA layout for ndarray is deprecated
-      if ((stmt->element_dim < 0 && i == (stmt->indices.size() - 1)) ||
-          (stmt->element_dim > 0 && i == 0)) {
-        upper_bound =
-            new_stmts.push_back<ConstStmt>(TypedConstant(flattened_element));
-      } else {
-        auto axis = stmt->element_dim <= 0 ? i : (i - stmt->element_dim);
+
+      auto ndim = stmt->ndim;
+      if (i < ndim) {
+        // Check for External Shape
+        auto axis = i;
         upper_bound = new_stmts.push_back<ExternalTensorShapeAlongAxisStmt>(
             /*axis=*/axis,
             /*arg_id=*/stmt->base_ptr->as<ArgLoadStmt>()->arg_id);
+      } else {
+        // Check for Element Shape
+        upper_bound =
+            new_stmts.push_back<ConstStmt>(TypedConstant(flattened_element));
       }
+
       auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::cmp_lt, stmt->indices[i], upper_bound);
       auto check_i = new_stmts.push_back<BinaryOpStmt>(
@@ -151,6 +154,52 @@ class CheckOutOfBound : public BasicStmtVisitor {
     msg += ")";
     msg += "\n" + stmt->tb;
 
+    new_stmts.push_back<AssertStmt>(result, msg, args);
+    modifier.insert_before(stmt, std::move(new_stmts));
+    set_done(stmt);
+  }
+
+  // TODO: As offset information per dimension is lacking, only the accumulated
+  // index is checked.
+  void visit(MatrixPtrStmt *stmt) override {
+    if (is_done(stmt) || !stmt->offset_used_as_index())
+      return;
+
+    auto const &matrix_shape = stmt->get_origin_shape();
+    int max_valid_index = 1;
+    for (int i = 0; i < matrix_shape.size(); i++) {
+      max_valid_index *= matrix_shape[i];
+    }
+    // index starts from 0, max_valid_index = size(matrix) - 1
+    max_valid_index -= 1;
+
+    auto index = stmt->offset;
+    auto new_stmts = VecStatement();
+    auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
+    Stmt *result = new_stmts.push_back<ConstStmt>(TypedConstant(true));
+
+    auto lower_bound = zero;
+    auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::cmp_ge, index, lower_bound);
+    auto upper_bound =
+        new_stmts.push_back<ConstStmt>(TypedConstant(max_valid_index));
+    auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::cmp_le, index, upper_bound);
+    auto check_i = new_stmts.push_back<BinaryOpStmt>(
+        BinaryOpType::bit_and, check_lower_bound, check_upper_bound);
+    result = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::bit_and, result,
+                                               check_i);
+
+    std::string msg =
+        fmt::format("(kernel={}) Out of bound access to a [", kernel_name);
+    for (int i = 0; i < matrix_shape.size(); i++) {
+      if (i > 0)
+        msg += ", ";
+      msg += std::to_string(matrix_shape[i]);
+    }
+    msg += "] matrix with index [%d]\n" + stmt->tb;
+
+    std::vector<Stmt *> args = {index};
     new_stmts.push_back<AssertStmt>(result, msg, args);
     modifier.insert_before(stmt, std::move(new_stmts));
     set_done(stmt);

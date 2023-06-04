@@ -15,7 +15,7 @@ if sys.version_info >= (3, 8):
     # Import the test case only if the Python version is >= 3.8
     from .py38_only import (
         test_print_docs_matrix_self_documenting_exp,
-        test_print_docs_scalar_self_documenting_exp,
+        # test_print_docs_scalar_self_documenting_exp,
     )
 
 

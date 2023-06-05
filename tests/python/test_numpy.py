@@ -38,6 +38,17 @@ def test_numpy_f64():
     with_data_type(np.float64)
 
 
+@test_utils.test(arch=ti.metal)
+def test_np_i64_metal():
+    @ti.kernel
+    def arange(x: ti.types.ndarray(ti.i64, ndim=1)):
+        for i in x:
+            x[i] = i
+
+    xx = np.array([1, 2, 3, 4, 5])  # by default it's int64
+    arange(xx)
+
+
 @test_utils.test()
 def test_numpy_i32():
     with_data_type(np.int32)

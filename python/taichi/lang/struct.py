@@ -747,6 +747,10 @@ def dataclass(cls):
     """
     # save the annotation fields for the struct
     fields = getattr(cls, "__annotations__", {})
+    # raise error if there are default values
+    for k in fields.keys():
+        if hasattr(cls, k):
+            raise TaichiSyntaxError("Default values in @dataclass is not supported.")
     # get the class methods to be attached to the struct types
     fields["__struct_methods"] = {
         attribute: getattr(cls, attribute)

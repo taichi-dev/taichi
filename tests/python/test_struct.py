@@ -154,3 +154,15 @@ def test_nested_data_class_func():
         return x.testme()
 
     assert k() == 42
+
+
+@test_utils.test()
+def test_nested_data_class_func():
+    with pytest.raises(ti.TaichiSyntaxError, match="Default values in @dataclass is not supported."):
+        @ti.dataclass
+        class Foo:
+            a: int
+            b: float = 3.14
+
+        foo = Foo()
+        print(foo)

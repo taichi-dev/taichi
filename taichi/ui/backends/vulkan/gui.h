@@ -65,8 +65,8 @@ class TI_DLL_EXPORT Gui final : public GuiBase {
   AppContext *app_context_{nullptr};
   SwapChain *swap_chain_{nullptr};
   ImGuiContext *imgui_context_{nullptr};
-  int widthBeforeDPIScale;
-  int heightBeforeDPIScale;
+  int widthBeforeDPIScale{0};
+  int heightBeforeDPIScale{0};
 
   VkRenderPass render_pass_{VK_NULL_HANDLE};
 

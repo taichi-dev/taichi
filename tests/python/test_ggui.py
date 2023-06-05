@@ -379,6 +379,7 @@ def test_set_image_with_texture():
     window.destroy()
 
 
+# NOTE: Cannot automate the test for the case of ImGui scaling on HiDPI displays. So that needs to be tested manually.
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_imgui():

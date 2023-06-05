@@ -373,7 +373,7 @@ Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
                                  ExternalArrayLayout layout,
                                  bool zero_fill) {
-  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
+  auto arr = std::make_shared<Ndarray>(this, type, shape, layout);
   if (zero_fill) {
     Arch arch = compile_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
@@ -391,7 +391,7 @@ Ndarray *Program::create_ndarray(const DataType type,
     }
   }
   auto arr_ptr = arr.get();
-  ndarrays_.insert({arr_ptr, std::move(arr)});
+  ndarrays_.insert({arr_ptr, (arr)});
   return arr_ptr;
 }
 

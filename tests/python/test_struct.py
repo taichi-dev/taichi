@@ -154,3 +154,35 @@ def test_nested_data_class_func():
         return x.testme()
 
     assert k() == 42
+
+
+@test_utils.test(arch=[ti.cpu, ti.cuda, ti.amdgpu])
+def test_struct_field_with_bool():
+    @ti.dataclass
+    class S:
+        a: ti.i16
+        b: bool
+        c: ti.i16
+
+    sf = S.field(shape=(10, 1))
+    sf[0, 0].b = False
+    sf[0, 0].a = 0xFFFF
+    sf[0, 0].c = 0xFFFF
+
+    def foo() -> S:
+        return sf[0, 0]
+
+    assert foo().a == -1
+    assert foo().c == -1
+    assert foo().b == False
+
+    sf[1, 0].a = 0x0000
+    sf[1, 0].c = 0x0000
+    sf[1, 0].b = True
+
+    def bar() -> S:
+        return sf[1, 0]
+
+    assert bar().a == 0
+    assert bar().c == 0
+    assert bar().b == True

@@ -19,6 +19,7 @@ bool cfg_optimization(
   bool result_modified = false;
   if (!real_matrix_enabled) {
     cfg->simplify_graph();
+
     if (cfg->store_to_load_forwarding(after_lower_access, autodiff_enabled)) {
       result_modified = true;
     }

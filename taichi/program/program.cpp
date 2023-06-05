@@ -408,7 +408,8 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // - Python GC signals taichi that it's no longer useful
   // - All kernels using it are executed.
   TI_INFO("ndarray count = {}", ndarrays_.count(ndarray));
-  TI_INFO("alloc_id = {}", ndarray->ndarray_alloc_.alloc_id);
+  if (ndarrays_.count(ndarray))
+    TI_INFO("alloc_id = {}", ndarray->ndarray_alloc_.alloc_id);
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
     ndarrays_.erase(ndarray);

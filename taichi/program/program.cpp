@@ -410,8 +410,10 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   TI_INFO("ndarray count = {}", ndarrays_.count(ndarray));
   if (ndarrays_.count(ndarray))
     TI_INFO("alloc_id = {}", ndarray->ndarray_alloc_.alloc_id);
-  TI_INFO("program_impl_ = {}", program_impl_.get() != nullptr);
-  TI_INFO("ndarray = {}", ndarray != nullptr);
+  TI_ASSERT(program_impl_.get() != nullptr);
+  TI_ASSERT(ndarray != nullptr);
+  TI_INFO("ndarray ptr = {}", (long long)ndarray);
+  TI_FLUSH_LOGGER;
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
     ndarrays_.erase(ndarray);

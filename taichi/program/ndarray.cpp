@@ -109,6 +109,8 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
 }
 
 Ndarray::~Ndarray() {
+  TI_INFO("Ndarray {} is released.", (long long)this);
+  TI_FLUSH_LOGGER
   if (prog_) {
     // prog_->flush();
     ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);

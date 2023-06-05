@@ -133,7 +133,7 @@ def _infer_entry_dt(entry):
     if isinstance(entry, (float, np.floating)):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
-        dt = entry.ptr.get_ret_type()
+        dt = entry.ptr.get_rvalue_type()
         if dt == ti_python_core.DataType_unknown:
             raise TaichiTypeError("Element type of the matrix cannot be inferred. Please set dt instead for now.")
         return dt
@@ -1412,7 +1412,7 @@ class MatrixType(CompoundType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert self.ndim == len(shape)
                 assert self.n == shape[0]
                 if self.ndim > 1:
@@ -1559,7 +1559,7 @@ class VectorType(MatrixType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert len(shape) == 1
                 assert self.n == shape[0]
                 return expr.Expr(arg.ptr)

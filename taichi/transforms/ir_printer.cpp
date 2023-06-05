@@ -883,6 +883,20 @@ void print(IRNode *root, std::string *output) {
   return IRPrinter::run(&expr_printer, root, output);
 }
 
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir) {
+  if (!verbose) {
+    return [](const std::string &) {};
+  }
+  return [ir, kernel_name](const std::string &pass) {
+    TI_INFO("[{}] {}:", kernel_name, pass);
+    std::cout << std::flush;
+    irpass::re_id(ir);
+    irpass::print(ir);
+    std::cout << std::flush;
+  };
+}
+
 }  // namespace irpass
 
 }  // namespace taichi::lang

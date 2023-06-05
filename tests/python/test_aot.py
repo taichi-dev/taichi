@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -37,7 +38,7 @@ def test_aot_field_range_hint():
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_bind_id():
     density = ti.field(dtype=ti.f32, shape=(8, 8))
-    density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
+    density1 = ti.ndarray(dtype=ti.math.ivec2, shape=(8, 8))
 
     @ti.kernel
     def init(x: ti.f32, density1: ti.types.ndarray(ndim=2)):
@@ -59,6 +60,17 @@ def test_aot_bind_id():
                             assert buffer_bind["binding"] != -1
                         elif buffer_bind["buffer"]["type"] == 2:  # Rets
                             assert buffer_bind["binding"] != -1
+                    args = kernel["ctx_attribs"]["arg_attribs_vec_"]
+                    assert len(args) == 2
+                    assert args[0]["is_array"] == False
+                    assert args[0]["index"] == 0
+                    assert args[0]["dtype"] == 1
+
+                    assert args[1]["is_array"] == True
+                    assert args[1]["field_dim"] == 2
+                    assert args[1]["index"] == 1
+                    assert args[1]["dtype"] == 5
+                    assert args[1]["element_shape"] == [2]
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

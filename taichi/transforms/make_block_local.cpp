@@ -11,7 +11,8 @@ namespace {
 
 void make_block_local_offload(OffloadedStmt *offload,
                               const CompileConfig &config,
-                              const std::string &kernel_name) {
+                              const std::string &kernel_name,
+                              bool verbose) {
   if (offload->task_type != OffloadedStmt::TaskType::struct_for)
     return;
 
@@ -44,7 +45,9 @@ void make_block_local_offload(OffloadedStmt *offload,
       <*i32> $16 = global ptr [S5place<i32>], index [$15] activate=true
   */
   if (irpass::scalarize(offload)) {
-    irpass::full_simplify(offload, config, {false, /*autodiff_enabled*/ false});
+    irpass::full_simplify(offload, config,
+                          {false, /*autodiff_enabled*/ false,
+                           kernel_name + ".make_block_local", verbose});
   }
 
   bool debug = config.debug;
@@ -379,11 +382,11 @@ void make_block_local(IRNode *root,
   if (auto root_block = root->cast<Block>()) {
     for (auto &offload : root_block->statements) {
       make_block_local_offload(offload->cast<OffloadedStmt>(), config,
-                               args.kernel_name);
+                               args.kernel_name, args.verbose);
     }
   } else {
     make_block_local_offload(root->as<OffloadedStmt>(), config,
-                             args.kernel_name);
+                             args.kernel_name, args.verbose);
   }
   type_check(root, config);
 }

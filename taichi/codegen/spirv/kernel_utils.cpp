@@ -59,6 +59,22 @@ KernelContextAttributes::KernelContextAttributes(
     ArgAttributes aa;
     aa.name = ka.name;
     aa.is_array = ka.is_array;
+    aa.index = arg_attribs_vec_.size();
+    if (ka.is_array && ka.get_dtype()->is<StructType>()) {
+      auto struct_type = ka.get_dtype()->as<StructType>();
+      aa.dtype = DataType(struct_type->get_element_type(
+                              {TypeFactory::DATA_PTR_POS_IN_NDARRAY}))
+                     .ptr_removed()
+                     ->as<PrimitiveType>()
+                     ->type;
+    } else if (!ka.is_array && ka.get_dtype()->is<StructType>()) {
+      // TODO: support struct arg and vector/matrix arg
+    } else {
+      aa.dtype = ka.get_dtype()->as<PrimitiveType>()->type;
+    }
+    aa.element_shape = ka.element_shape;
+    aa.field_dim = ka.total_dim - ka.element_shape.size();
+
     arg_attribs_vec_.push_back(aa);
   }
   // TODO:

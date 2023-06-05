@@ -44,7 +44,7 @@ class Scalarize : public BasicStmtVisitor {
   template <typename T>
   void scalarize_store_stmt(T *stmt) {
     auto dest_dtype = stmt->dest->ret_type.ptr_removed();
-    auto val_dtype = stmt->val->ret_type;
+    auto val_dtype = stmt->val->ret_type.ptr_removed();
     if (dest_dtype->template is<TensorType>() &&
         val_dtype->template is<TensorType>()) {
       // Needs scalarize
@@ -185,7 +185,8 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(UnaryOpStmt *stmt) override {
-    auto operand_dtype = stmt->operand->ret_type;
+    auto operand_dtype = stmt->operand->ret_type.ptr_removed();
+    auto stmt_dtype = stmt->ret_type.ptr_removed();
     if (operand_dtype->is<TensorType>()) {
       // Needs scalarize
       auto operand_tensor_type = operand_dtype->as<TensorType>();
@@ -198,7 +199,7 @@ class Scalarize : public BasicStmtVisitor {
 
       std::vector<Stmt *> matrix_init_values;
       int num_elements = operand_tensor_type->get_num_elements();
-      auto primitive_type = stmt->ret_type.get_element_type();
+      auto primitive_type = stmt_dtype.get_element_type();
       for (size_t i = 0; i < num_elements; i++) {
         auto unary_stmt = std::make_unique<UnaryOpStmt>(
             stmt->op_type, operand_matrix_init_stmt->values[i]);
@@ -246,8 +247,9 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(BinaryOpStmt *stmt) override {
-    auto lhs_dtype = stmt->lhs->ret_type;
-    auto rhs_dtype = stmt->rhs->ret_type;
+    auto lhs_dtype = stmt->lhs->ret_type.ptr_removed();
+    auto rhs_dtype = stmt->rhs->ret_type.ptr_removed();
+    auto stmt_dtype = stmt->ret_type.ptr_removed();
     if (lhs_dtype->is<TensorType>() || rhs_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // BinaryOpExpression::type_check().
@@ -270,7 +272,7 @@ class Scalarize : public BasicStmtVisitor {
       TI_ASSERT(rhs_vals.size() == lhs_vals.size());
 
       size_t num_elements = lhs_vals.size();
-      auto primitive_type = stmt->ret_type.get_element_type();
+      auto primitive_type = stmt_dtype.get_element_type();
       std::vector<Stmt *> matrix_init_values;
       for (size_t i = 0; i < num_elements; i++) {
         auto binary_stmt = std::make_unique<BinaryOpStmt>(
@@ -581,9 +583,9 @@ class Scalarize : public BasicStmtVisitor {
       stmt->replace_all_usages_with(tmp)
   */
   void visit(TernaryOpStmt *stmt) override {
-    auto cond_dtype = stmt->op1->ret_type;
-    auto op2_dtype = stmt->op2->ret_type;
-    auto op3_dtype = stmt->op3->ret_type;
+    auto cond_dtype = stmt->op1->ret_type.ptr_removed();
+    auto op2_dtype = stmt->op2->ret_type.ptr_removed();
+    auto op3_dtype = stmt->op3->ret_type.ptr_removed();
     if (cond_dtype->is<TensorType>()) {
       // Make sure broadcasting has been correctly applied by
       // TernaryOpExpression::type_check().
@@ -1026,7 +1028,8 @@ class ScalarizePointers : public BasicStmtVisitor {
       for (size_t i = 0; i < tensor_type->get_num_elements(); i++) {
         auto scalarized_alloca_stmt =
             std::make_unique<AllocaStmt>(primitive_type);
-        scalarized_alloca_stmt->ret_type = primitive_type;
+        scalarized_alloca_stmt->ret_type =
+            TypeFactory::get_instance().get_pointer_type(primitive_type);
 
         scalarized_local_tensor_map_[stmt].push_back(
             scalarized_alloca_stmt.get());

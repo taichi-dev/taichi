@@ -1000,3 +1000,17 @@ def test_type_hint_vector():
     z = ti.ndarray(ti.math.mat2, (3))
     with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
         test(z)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_pass_ndarray_to_func():
+    @ti.func
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        pass
+
+    @ti.kernel
+    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        bar(weight)
+
+    weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
+    foo(weight)

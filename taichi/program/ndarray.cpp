@@ -105,6 +105,8 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
               TypeFactory::create_tensor_type(element_shape, type),
               shape,
               layout) {
+  TI_INFO("Ndarray {} is created.", (long long)this);
+  TI_FLUSH_LOGGER
   TI_ASSERT(type->is<PrimitiveType>());
 }
 

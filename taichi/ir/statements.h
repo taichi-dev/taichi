@@ -353,16 +353,19 @@ class ExternalPtrStmt : public Stmt {
   bool overrided_dtype = false;
 
   bool is_grad = false;
+  BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   int ndim,
                   const std::vector<int> &element_shape,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   bool has_global_side_effect() const override {
     return false;

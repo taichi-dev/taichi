@@ -627,6 +627,7 @@ class ASTTransformer(Builder):
                             ctx.arg_features[i][1],
                             ctx.func.arguments[i].name,
                             ctx.arg_features[i][2],
+                            ctx.arg_features[i][3],
                         ),
                     )
                 elif isinstance(ctx.func.arguments[i].annotation, texture_type.TextureType):

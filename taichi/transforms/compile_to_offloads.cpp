@@ -74,6 +74,9 @@ void compile_to_offloads(IRNode *ir,
   print("Simplified I");
   irpass::analysis::verify(ir);
 
+  irpass::handle_external_ptr_boundary(ir, config);
+  print("External ptr boundary processed");
+
   if (is_extension_supported(config.arch, Extension::mesh)) {
     irpass::analysis::gather_meshfor_relation_types(ir);
   }

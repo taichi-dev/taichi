@@ -301,6 +301,7 @@ class ASTSerializer : public IRVisitor, public ExpressionVisitor {
   void visit(FrontendAllocaStmt *stmt) override {
     emit(StmtOpCode::FrontendAllocaStmt);
     emit(stmt->ident);
+    emit(stmt->is_shared);
   }
 
   void visit(FrontendAssertStmt *stmt) override {

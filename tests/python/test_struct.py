@@ -159,6 +159,7 @@ def test_nested_data_class_func():
 @test_utils.test()
 def test_nested_data_class_func():
     with pytest.raises(ti.TaichiSyntaxError, match="Default values in @dataclass is not supported."):
+
         @ti.dataclass
         class Foo:
             a: int

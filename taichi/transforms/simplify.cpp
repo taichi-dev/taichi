@@ -95,9 +95,6 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (block->statements[j]->is<FuncCallStmt>()) {
-                has_store = true;
-              }
               if (!irpass::analysis::gather_statements(
                        block->statements[j].get(),
                        [&](Stmt *s) {

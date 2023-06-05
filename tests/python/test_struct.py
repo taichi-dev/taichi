@@ -164,10 +164,10 @@ def test_struct_field_with_bool():
         b: bool
         c: ti.i16
 
-    sf = S.field(shape=(10,  1))
+    sf = S.field(shape=(10, 1))
     sf[0, 0].b = False
-    sf[0, 0].a = 0xffff
-    sf[0, 0].c = 0xffff
+    sf[0, 0].a = 0xFFFF
+    sf[0, 0].c = 0xFFFF
 
     def foo() -> S:
         return sf[0, 0]

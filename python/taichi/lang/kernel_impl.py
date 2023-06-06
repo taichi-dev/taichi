@@ -613,7 +613,7 @@ class Kernel:
     def launch_kernel(self, t_kernel, *args):
         assert len(args) == len(self.arguments), f"{len(self.arguments)} arguments needed but {len(args)} provided"
 
-        self.tmps = []
+        tmps = []
         callbacks = []
 
         actual_argument_slot = 0
@@ -695,7 +695,7 @@ class Kernel:
                             # TODO: A better way that avoids copying is saving strides info.
                             tmp = np.ascontiguousarray(v)
                             # Purpose: DO NOT GC |tmp|!
-                            self.tmps.append(tmp)
+                            tmps.append(tmp)
 
                             def callback(original, updated):
                                 np.copyto(original, np.asfortranarray(updated))

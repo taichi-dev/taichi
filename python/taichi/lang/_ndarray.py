@@ -243,7 +243,6 @@ class ScalarNdarray(Ndarray):
 
     def __del__(self):
         if impl is not None and impl.get_runtime() is not None and impl.get_runtime().prog is not None:
-            print(impl.get_runtime().prog)
             impl.get_runtime().prog.delete_ndarray(self.arr)
 
     @property

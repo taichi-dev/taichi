@@ -377,7 +377,6 @@ class PyTaichi:
     def create_program(self):
         if self.prog is None:
             self.prog = _ti_core.Program()
-            print("create prog =", self.prog)
 
     @staticmethod
     def materialize_root_fb(is_first_call):
@@ -481,7 +480,6 @@ class PyTaichi:
 
     def clear(self):
         if self.prog:
-            print("clear prog =", self.prog)
             self.prog.finalize()
             self.prog = None
         self._signal_handler_registry = None

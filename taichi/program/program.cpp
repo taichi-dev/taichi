@@ -370,12 +370,12 @@ std::size_t Program::get_snode_num_dynamically_allocated(SNode *snode) {
   return program_impl_->get_snode_num_dynamically_allocated(snode,
                                                             result_buffer);
 }
-std::mutex mutex;
+
 Ndarray *Program::create_ndarray(const DataType type,
                                  const std::vector<int> &shape,
                                  ExternalArrayLayout layout,
                                  bool zero_fill) {
-  auto arr = std::make_shared<Ndarray>(this, type, shape, layout);
+  auto arr = std::make_unique<Ndarray>(this, type, shape, layout);
   if (zero_fill) {
     Arch arch = compile_config().arch;
     if (arch_is_cpu(arch) || arch == Arch::cuda || arch == Arch::amdgpu) {
@@ -393,9 +393,7 @@ Ndarray *Program::create_ndarray(const DataType type,
     }
   }
   auto arr_ptr = arr.get();
-  mutex.lock();
-  ndarrays_.insert({arr_ptr, (arr)});
-  mutex.unlock();
+  ndarrays_.insert({arr_ptr, std::move(arr)});
   return arr_ptr;
 }
 
@@ -411,24 +409,10 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // runtime instead of this giant program and it should be freed when:
   // - Python GC signals taichi that it's no longer useful
   // - All kernels using it are executed.
-  mutex.lock();
-  TI_INFO("this = {}", (long long)this);
-  TI_INFO("bucket count = {}", ndarrays_.bucket_count());
-  TI_FLUSH_LOGGER
-  TI_INFO("ndarray count = {}", ndarrays_.count(ndarray));
-  if (ndarrays_.count(ndarray))
-    TI_INFO("alloc_id = {}", ndarray->ndarray_alloc_.alloc_id);
-  TI_ASSERT(program_impl_.get() != nullptr);
-  TI_ASSERT(ndarray != nullptr);
-  TI_INFO("ndarray ptr = {}", (long long)ndarray);
-  TI_INFO("used in kernel = {}",
-          program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
-  TI_FLUSH_LOGGER;
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
     ndarrays_.erase(ndarray);
   }
-  mutex.unlock();
 }
 
 Texture *Program::create_texture(BufferFormat buffer_format,

@@ -336,7 +336,7 @@ class TI_DLL_EXPORT Program {
   bool finalized_{false};
 
   // TODO: Move ndarrays_ and textures_ to be managed by runtime
-  std::unordered_map<void *, std::shared_ptr<Ndarray>> ndarrays_;
+  std::unordered_map<void *, std::unique_ptr<Ndarray>> ndarrays_;
   std::vector<std::unique_ptr<Texture>> textures_;
 };
 

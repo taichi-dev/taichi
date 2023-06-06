@@ -328,6 +328,7 @@ uint64 Program::fetch_result_uint64(int i) {
 }
 
 void Program::finalize() {
+  TI_INFO("Program finalizing...");
   if (finalized_) {
     return;
   }
@@ -410,7 +411,7 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // - Python GC signals taichi that it's no longer useful
   // - All kernels using it are executed.
   mutex.lock();
-  TI_INFO("bucker count = {}", ndarrays_.bucket_count());
+  TI_INFO("bucket count = {}", ndarrays_.bucket_count());
   TI_FLUSH_LOGGER
   TI_INFO("ndarray count = {}", ndarrays_.count(ndarray));
   if (ndarrays_.count(ndarray))
@@ -418,8 +419,7 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   TI_ASSERT(program_impl_.get() != nullptr);
   TI_ASSERT(ndarray != nullptr);
   TI_INFO("ndarray ptr = {}", (long long)ndarray);
-  TI_INFO("used in kernel = {}",
-          program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
+  TI_INFO("used in kernel = {}", program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
   TI_FLUSH_LOGGER;
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {

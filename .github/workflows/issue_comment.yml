@@ -18,6 +18,7 @@ jobs:
         commands: |
           rebase
           rerun
+          rerun-failed
 
     - name: Slash Command Dispatch - Repo - Triage
       uses: peter-evans/slash-command-dispatch@v3

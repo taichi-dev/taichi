@@ -100,7 +100,7 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
 }
 
 SparseMatrixBuilder::~SparseMatrixBuilder() {
-//  prog_->delete_ndarray(ndarray_data_base_ptr_);
+  //  prog_->delete_ndarray(ndarray_data_base_ptr_);
 }
 
 template <typename T, typename G>

@@ -1041,3 +1041,16 @@ def test_ndarray_oob_clamp():
             x2[i, j] = [i, j]
     assert test_vec_arr(x2, -1) == 1
     assert test_vec_arr(x2, 2) == 2
+
+    @ti.kernel
+    def test_mat_arr(x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32) -> ti.f32:
+        return x[1, 2][i, j]
+
+    x3 = ti.ndarray(ti.math.mat2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x3[i, j] = [[i, j], [i + 1, j + 1]]
+    assert test_mat_arr(x3, -1, 0) == 1
+    assert test_mat_arr(x3, 1, -1) == 2
+    assert test_mat_arr(x3, 2, 0) == 3
+    assert test_mat_arr(x3, 1, 2) == 3

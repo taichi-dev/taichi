@@ -28,39 +28,26 @@ class HandleExternalPtrBound : public BasicStmtVisitor {
     if (stmt->boundary == BoundaryMode::kClamp) {
       auto new_stmts = VecStatement();
       auto zero = new_stmts.push_back<ConstStmt>(TypedConstant(0));
-
       int flattened_element = 1;
       for (int i = 0; i < stmt->element_shape.size(); i++) {
         flattened_element *= stmt->element_shape[i];
       }
       for (int i = 0; i < stmt->indices.size(); i++) {
         auto lower_bound = zero;
-        auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
+        auto checked_index = new_stmts.push_back<BinaryOpStmt>(
             BinaryOpType::max, stmt->indices[i], lower_bound);
-
-        Stmt *upper_bound{nullptr};
-
-        auto ndim = stmt->ndim;
-        if (i < ndim) {
-          // Check for External Shape
-          auto axis = i;
-          upper_bound = new_stmts.push_back<ExternalTensorShapeAlongAxisStmt>(
-              /*axis=*/axis,
-              /*arg_id=*/stmt->base_ptr->as<ArgLoadStmt>()->arg_id);
-        } else {
-          // Check for Element Shape
-          upper_bound =
-              new_stmts.push_back<ConstStmt>(TypedConstant(flattened_element));
-        }
-
+        auto upper_bound =
+            new_stmts.push_back<ExternalTensorShapeAlongAxisStmt>(
+                /*axis=*/i,
+                /*arg_id=*/stmt->base_ptr->as<ArgLoadStmt>()->arg_id);
         auto one = new_stmts.push_back<ConstStmt>(TypedConstant(1));
         auto valid_upper = new_stmts.push_back<BinaryOpStmt>(BinaryOpType::sub,
                                                              upper_bound, one);
 
-        auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
-            BinaryOpType::min, check_lower_bound, valid_upper);
-        stmt->indices[i]->replace_usages_with(check_upper_bound);
-        stmt->indices[i] = check_upper_bound;
+        auto upper_bounded_checked = new_stmts.push_back<BinaryOpStmt>(
+            BinaryOpType::min, checked_index, valid_upper);
+        stmt->indices[i]->replace_usages_with(upper_bounded_checked);
+        stmt->indices[i] = upper_bounded_checked;
       }
 
       modifier.insert_before(stmt, std::move(new_stmts));
@@ -90,14 +77,14 @@ class HandleExternalPtrBound : public BasicStmtVisitor {
 
       auto lower_bound = zero;
 
-      auto check_lower_bound = new_stmts.push_back<BinaryOpStmt>(
+      auto checked_index = new_stmts.push_back<BinaryOpStmt>(
           BinaryOpType::max, index, lower_bound);
       auto upper_bound =
           new_stmts.push_back<ConstStmt>(TypedConstant(max_valid_index));
-      auto check_upper_bound = new_stmts.push_back<BinaryOpStmt>(
-          BinaryOpType::min, check_lower_bound, upper_bound);
+      auto upper_bounded_checked = new_stmts.push_back<BinaryOpStmt>(
+          BinaryOpType::min, checked_index, upper_bound);
 
-      index->replace_usages_with(check_upper_bound);
+      index->replace_usages_with(upper_bounded_checked);
       modifier.insert_before(stmt, std::move(new_stmts));
       set_done(stmt);
     }

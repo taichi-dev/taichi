@@ -211,6 +211,10 @@ jobs:
       TI_RUN_RELEASE_TESTS: '1'
 
     steps:
+      - name: Restart X Server
+        run: |
+          sudo systemctl restart xorg
+
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 
@@ -276,6 +280,10 @@ jobs:
         -DTI_BUILD_TESTS:BOOL=ON
 
     steps:
+      - name: Restart X Server
+        run: |
+          sudo systemctl restart xorg
+
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
@@ -894,6 +902,10 @@ jobs:
 
     runs-on: ${{ matrix.tags }}
     steps:
+      - name: Restart X Server
+        run: |
+          sudo systemctl restart xorg
+
       - name: Workaround checkout Needed single revision issue
         run: git submodule foreach 'git rev-parse HEAD > /dev/null 2>&1 || rm -rf $PWD' || true
 

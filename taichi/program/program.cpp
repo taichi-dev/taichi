@@ -407,19 +407,20 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   // runtime instead of this giant program and it should be freed when:
   // - Python GC signals taichi that it's no longer useful
   // - All kernels using it are executed.
+  TI_INFO("bucker count = {}", ndarrays_.bucket_count());
+  TI_FLUSH_LOGGER
   TI_INFO("ndarray count = {}", ndarrays_.count(ndarray));
   if (ndarrays_.count(ndarray))
     TI_INFO("alloc_id = {}", ndarray->ndarray_alloc_.alloc_id);
   TI_ASSERT(program_impl_.get() != nullptr);
   TI_ASSERT(ndarray != nullptr);
   TI_INFO("ndarray ptr = {}", (long long)ndarray);
-  TI_INFO("used in kernel = {}",
-          program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
+  TI_INFO("used in kernel = {}", program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
   TI_FLUSH_LOGGER;
-  //  if (ndarrays_.count(ndarray) &&
-  //      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
-  //    ndarrays_.erase(ndarray);
-  //  }
+//  if (ndarrays_.count(ndarray) &&
+//      !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {
+//    ndarrays_.erase(ndarray);
+//  }
 }
 
 Texture *Program::create_texture(BufferFormat buffer_format,

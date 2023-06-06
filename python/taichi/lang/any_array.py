@@ -33,7 +33,7 @@ class AnyArray:
 
     def get_type(self):
         return NdarrayTypeMetadata(
-            self.ptr.get_ret_type(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
+            self.ptr.get_ret_type().ptr_removed(), None, _ti_core.get_external_tensor_needs_grad(self.ptr)
         )  # AnyArray can take any shape
 
     @property

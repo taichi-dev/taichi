@@ -111,6 +111,7 @@ void export_lang(py::module &m) {
       .def("__str__", &DataType::to_string)
       .def("shape", &DataType::get_shape)
       .def("element_type", &DataType::get_element_type)
+      .def("ptr_removed", &DataType::ptr_removed)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)

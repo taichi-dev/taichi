@@ -52,7 +52,6 @@ std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
-  TI_INFO("Program initializing, this = {}", (long long)this);
 
   // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
@@ -329,7 +328,6 @@ uint64 Program::fetch_result_uint64(int i) {
 }
 
 void Program::finalize() {
-  TI_INFO("Program finalizing, this = {}", (long long)this);
   if (finalized_) {
     return;
   }

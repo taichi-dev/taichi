@@ -35,8 +35,6 @@ Ndarray::Ndarray(Program *prog,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)),
       prog_(prog) {
-  TI_INFO("Ndarray {} is created.", (long long)this);
-  TI_FLUSH_LOGGER
   // Now that we have two shapes which may be concatenated differently
   // depending on layout, total_shape_ comes handy.
   total_shape_ = shape;
@@ -73,8 +71,6 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
                                 1,
                                 std::multiplies<>())),
       element_size_(data_type_size(dtype)) {
-  TI_INFO("Ndarray {} is created.", (long long)this);
-  TI_FLUSH_LOGGER
   // When element_shape is specified but layout is not, default layout is AOS.
   auto element_shape = data_type_shape(dtype);
   if (!element_shape.empty() && layout == ExternalArrayLayout::kNull) {
@@ -113,8 +109,6 @@ Ndarray::Ndarray(DeviceAllocation &devalloc,
 }
 
 Ndarray::~Ndarray() {
-  TI_INFO("Ndarray {} is released.", (long long)this);
-  TI_FLUSH_LOGGER
   if (prog_) {
     // prog_->flush();
     ndarray_alloc_.device->dealloc_memory(ndarray_alloc_);

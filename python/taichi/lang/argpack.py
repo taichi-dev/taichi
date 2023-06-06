@@ -6,7 +6,7 @@ from taichi.lang.exception import (
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.struct import StructType
 from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
-from taichi.types import primitive_types, ndarray_type, texture_type
+from taichi.types import primitive_types, sparse_matrix_builder, ndarray_type, texture_type
 from taichi.types.compound_types import CompoundType
 
 
@@ -208,6 +208,8 @@ class ArgPackType(CompoundType):
                 self.members[k] = dtype
             elif isinstance(dtype, MatrixType):
                 self.members[k] = dtype
+            elif isinstance(dtype, sparse_matrix_builder):
+                self.members[k] = dtype
             elif isinstance(dtype, ndarray_type.NdarrayType):
                 self.members[k] = dtype
             elif isinstance(dtype, texture_type.RWTextureType):
@@ -271,6 +273,8 @@ class ArgPackType(CompoundType):
             elif isinstance(dtype, texture_type.RWTextureType):
                 entries[k] = pack._ArgPack__entries[k]
             elif isinstance(dtype, texture_type.TextureType):
+                entries[k] = pack._ArgPack__entries[k]
+            elif isinstance(dtype, sparse_matrix_builder):
                 entries[k] = pack._ArgPack__entries[k]
             else:
                 if in_python_scope():

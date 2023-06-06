@@ -399,6 +399,7 @@ class TaichiCallableTemplateMapper:
                 raise TaichiRuntimeTypeError(f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
             element_shape = ()
+            dtype = to_taichi_type(arg.dtype)
             if isinstance(anno.dtype, MatrixType):
                 if anno.ndim is not None:
                     if len(shape) != anno.dtype.ndim + anno.ndim:
@@ -421,13 +422,18 @@ class TaichiCallableTemplateMapper:
                     )
             elif anno.dtype is not None:
                 # User specified scalar dtype
+                if anno.dtype != dtype:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required array has dtype={anno.dtype.to_string()}, "
+                        f"but the argument has dtype={dtype.to_string()}"
+                    )
+
                 if anno.ndim is not None and len(shape) != anno.ndim:
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                         f"but the argument has {len(shape)} dimensions"
                     )
             needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
-            dtype = to_taichi_type(arg.dtype)
             element_type = (
                 _ti_core.get_type_factory_instance().get_tensor_type(element_shape, dtype)
                 if len(element_shape) != 0

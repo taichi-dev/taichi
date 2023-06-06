@@ -1166,12 +1166,14 @@ void export_lang(py::module &m) {
            py::arg("storage_format") = "col_major")
       .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
       .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
-      .def("create_ndarray", [&](SparseMatrixBuilder *builder, Program *prog) {
-        return builder->create_ndarray(prog);
-      })
-      .def("delete_ndarray", [&](SparseMatrixBuilder *builder, Program *prog) {
-        return builder->delete_ndarray(prog);
-      })
+      .def("create_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->create_ndarray(prog);
+           })
+      .def("delete_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->delete_ndarray(prog);
+           })
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)

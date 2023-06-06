@@ -217,6 +217,9 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check if store_stmt will ever influence the value of var
   auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
+    if (store_stmt->is<FuncCallStmt>()) {
+      return true;
+    }
     for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
       if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
         // check for aliased address with var
@@ -976,7 +979,8 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
       auto stmt = nodes[i]->block->statements[j].get();
-      if ((stmt->is<MatrixPtrStmt>() &&
+      if (stmt->is<FuncCallStmt>() ||
+          (stmt->is<MatrixPtrStmt>() &&
            stmt->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||

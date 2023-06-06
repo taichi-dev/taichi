@@ -25,7 +25,6 @@ class ArgPack:
     Args:
         annotations (Dict[str, Union[Dict, Matrix, Struct]]): \
             keys and types for argument pack members.
-
         entries (Dict[str, Union[Dict, Matrix, Struct]]): \
             keys and values for argument pack members.
 
@@ -180,7 +179,6 @@ class _IntermediateArgPack(ArgPack):
 
     Args:
         annotations (Dict[str, Union[Expr, Matrix, Struct]]): keys and types for struct members.
-
         entries (Dict[str, Union[Expr, Matrix, Struct]]): keys and values for struct members.
     """
 

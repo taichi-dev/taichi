@@ -292,5 +292,10 @@ class SparseMatrixBuilder:
             return SparseMatrix(sm=sm, dtype=dtype)
         raise TaichiRuntimeError("Sparse matrix only supports CPU and CUDA backends.")
 
+    def __del__(self):
+        # if get_runtime() is not None and get_runtime().prog is not None:
+        #     get_runtime().prog.delete_ndarray(self.arr)
+        del self.ptr
+
 
 __all__ = ["SparseMatrix", "SparseMatrixBuilder"]

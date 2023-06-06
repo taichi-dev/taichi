@@ -273,6 +273,18 @@ FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
   TI_STMT_REG_FIELDS;
 }
 
+stmt_refs FuncCallStmt::get_store_destination() const {
+  std::vector<Stmt *> ret;
+  for (auto &arg : args) {
+    if (auto ref = arg->cast<ReferenceStmt>()) {
+      ret.push_back(ref->var);
+    } else if (arg->ret_type.is_pointer()) {
+      ret.push_back(arg);
+    }
+  }
+  return ret;
+}
+
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)
     : mask(nullptr), body(std::move(body)) {
   this->body->set_parent_stmt(this);

@@ -213,7 +213,9 @@ std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
     OffloadedStmt *offload,
     bool auto_mesh_local,
     const CompileConfig &config);
-
+const std::unordered_set<Stmt *> &gather_func_store_dests(
+    Function *func,
+    ControlFlowGraph *graph);
 }  // namespace analysis
 }  // namespace irpass
 }  // namespace taichi::lang

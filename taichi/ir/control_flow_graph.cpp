@@ -9,12 +9,14 @@
 
 namespace taichi::lang {
 
-CFGNode::CFGNode(Block *block,
+CFGNode::CFGNode(ControlFlowGraph *graph,
+                 Block *block,
                  int begin_location,
                  int end_location,
                  bool is_parallel_executed,
                  CFGNode *prev_node_in_same_block)
-    : block(block),
+    : graph_(graph),
+      block(block),
       begin_location(begin_location),
       end_location(end_location),
       is_parallel_executed(is_parallel_executed),
@@ -36,7 +38,8 @@ CFGNode::CFGNode(Block *block,
   }
 }
 
-CFGNode::CFGNode() : CFGNode(nullptr, -1, -1, false, nullptr) {
+CFGNode::CFGNode(ControlFlowGraph *graph)
+    : CFGNode(graph, nullptr, -1, -1, false, nullptr) {
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {
@@ -161,8 +164,13 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // [Intra-block Search]
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    if (block->statements[i]->is<FuncCallStmt>()) {
-      return nullptr;
+    if (auto func_call = block->statements[i]->cast<FuncCallStmt>()) {
+      const auto &dests = graph_->func_store_dests.at(func_call->func);
+      for (const auto &dest : dests) {
+        if (irpass::analysis::maybe_same_address(var, dest)) {
+          return nullptr;
+        }
+      }
     }
 
     // Find previous store stmt to the same dest_addr, stop at the closest one.
@@ -216,9 +224,14 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
 
   // Check if store_stmt will ever influence the value of var
-  auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
-    if (store_stmt->is<FuncCallStmt>()) {
-      return true;
+  auto may_contain_address = [&](Stmt *store_stmt, Stmt *var) {
+    if (auto func_call = store_stmt->cast<FuncCallStmt>()) {
+      const auto &dests = graph_->func_store_dests.at(func_call->func);
+      for (const auto &dest : dests) {
+        if (irpass::analysis::maybe_same_address(var, dest)) {
+          return true;
+        }
+      }
     }
     for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
       if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
@@ -384,6 +397,7 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   for (int i = end_location - 1; i >= begin_location; i--) {
     // loop in reversed order
     auto stmt = block->statements[i].get();
+    // TODO: handle real function calls
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source
@@ -979,8 +993,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
       auto stmt = nodes[i]->block->statements[j].get();
-      if (stmt->is<FuncCallStmt>() ||
-          (stmt->is<MatrixPtrStmt>() &&
+      if ((stmt->is<MatrixPtrStmt>() &&
            stmt->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
@@ -991,6 +1004,10 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);
+      } else if (auto func_call = stmt->cast<FuncCallStmt>()) {
+        const auto &dests =
+            irpass::analysis::gather_func_store_dests(func_call->func, this);
+        nodes[start_node]->reach_gen.insert(dests.begin(), dests.end());
       }
     }
   }

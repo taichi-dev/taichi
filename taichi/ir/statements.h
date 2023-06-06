@@ -1059,7 +1059,7 @@ class MeshForStmt : public Stmt {
 /**
  * Call an inline Taichi function.
  */
-class FuncCallStmt : public Stmt {
+class FuncCallStmt : public Stmt, public ir_traits::Store {
  public:
   Function *func;
   std::vector<Stmt *> args;
@@ -1069,6 +1069,13 @@ class FuncCallStmt : public Stmt {
 
   bool has_global_side_effect() const override {
     return global_side_effect;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override;
+
+  Stmt *get_store_data() const override {
+    return nullptr;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);

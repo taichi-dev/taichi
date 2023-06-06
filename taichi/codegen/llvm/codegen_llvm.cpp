@@ -9,7 +9,6 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/program/extension.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"

@@ -258,8 +258,8 @@ class SparseMatrixBuilder:
                     max_num_triplets,
                     dtype,
                     storage_format,
-                    get_runtime().prog,
                 )
+                self.ptr.create_ndarray(get_runtime().prog)
             else:
                 raise TaichiRuntimeError("SparseMatrix only supports CPU and CUDA for now.")
 
@@ -293,9 +293,8 @@ class SparseMatrixBuilder:
         raise TaichiRuntimeError("Sparse matrix only supports CPU and CUDA backends.")
 
     def __del__(self):
-        # if get_runtime() is not None and get_runtime().prog is not None:
-        #     get_runtime().prog.delete_ndarray(self.arr)
-        del self.ptr
+        if get_runtime() is not None and get_runtime().prog is not None:
+            self.ptr.delete_ndarray(get_runtime().prog)
 
 
 __all__ = ["SparseMatrix", "SparseMatrixBuilder"]

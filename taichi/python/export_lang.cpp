@@ -421,8 +421,9 @@ void export_lang(py::module &m) {
           py::arg("dt"), py::arg("shape"),
           py::arg("layout") = ExternalArrayLayout::kNull,
           py::arg("zero_fill") = false, py::return_value_policy::reference)
-      .def("delete_ndarray",
-           [&](Program *p, Ndarray *arr) -> void { p->delete_ndarray(arr); })
+      .def("delete_ndarray", [&](Program* p, Ndarray* arr) -> void {
+        p->delete_ndarray(arr);
+      })
       .def(
           "create_texture",
           [&](Program *program, BufferFormat fmt, const std::vector<int> &shape)

@@ -52,6 +52,7 @@ std::atomic<int> Program::num_instances_;
 
 Program::Program(Arch desired_arch) : snode_rw_accessors_bank_(this) {
   TI_TRACE("Program initializing...");
+  TI_INFO("Program initializing, this = {}", (long long)this);
 
   // For performance considerations and correctness of QuantFloatType
   // operations, we force floating-point operations to flush to zero on all
@@ -328,7 +329,7 @@ uint64 Program::fetch_result_uint64(int i) {
 }
 
 void Program::finalize() {
-  TI_INFO("Program finalizing...");
+  TI_INFO("Program finalizing, this = {}", (long long)this);
   if (finalized_) {
     return;
   }
@@ -420,8 +421,7 @@ void Program::delete_ndarray(Ndarray *ndarray) {
   TI_ASSERT(program_impl_.get() != nullptr);
   TI_ASSERT(ndarray != nullptr);
   TI_INFO("ndarray ptr = {}", (long long)ndarray);
-  TI_INFO("used in kernel = {}",
-          program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
+  TI_INFO("used in kernel = {}", program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id));
   TI_FLUSH_LOGGER;
   if (ndarrays_.count(ndarray) &&
       !program_impl_->used_in_kernel(ndarray->ndarray_alloc_.alloc_id)) {

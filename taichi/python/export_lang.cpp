@@ -102,6 +102,11 @@ void export_lang(py::module &m) {
       .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
       .export_values();
 
+  py::enum_<BoundaryMode>(m, "BoundaryMode", py::arithmetic())
+      .value("UNSAFE", BoundaryMode::kUnsafe)
+      .value("CLAMP", BoundaryMode::kClamp)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -930,7 +935,8 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool,
+                   const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);

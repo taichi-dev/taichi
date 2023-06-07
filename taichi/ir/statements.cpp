@@ -35,8 +35,12 @@ bool UnaryOpStmt::same_operation(UnaryOpStmt *o) const {
 
 ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
-                                 bool is_grad)
-    : base_ptr(base_ptr), indices(indices), is_grad(is_grad) {
+                                 bool is_grad,
+                                 BoundaryMode boundary)
+    : base_ptr(base_ptr),
+      indices(indices),
+      is_grad(is_grad),
+      boundary(boundary) {
   ndim = indices.size();
   TI_ASSERT(base_ptr != nullptr);
   TI_ASSERT(base_ptr->is<ArgLoadStmt>());
@@ -47,8 +51,9 @@ ExternalPtrStmt::ExternalPtrStmt(Stmt *base_ptr,
                                  const std::vector<Stmt *> &indices,
                                  int ndim,
                                  const std::vector<int> &element_shape,
-                                 bool is_grad)
-    : ExternalPtrStmt(base_ptr, indices, is_grad) {
+                                 bool is_grad,
+                                 BoundaryMode boundary)
+    : ExternalPtrStmt(base_ptr, indices, is_grad, boundary) {
   this->element_shape = element_shape;
   this->ndim = ndim;
 }

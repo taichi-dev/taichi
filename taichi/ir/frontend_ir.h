@@ -477,17 +477,19 @@ class ExternalTensorExpression : public Expression {
   int arg_id;
   bool needs_grad{false};
   bool is_grad{false};
+  BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalTensorExpression(const DataType &dt,
                            int ndim,
                            int arg_id,
-                           bool needs_grad = false) {
-    init(dt, ndim, arg_id, needs_grad);
+                           bool needs_grad = false,
+                           BoundaryMode boundary = BoundaryMode::kUnsafe) {
+    init(dt, ndim, arg_id, needs_grad, boundary);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->boundary);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -508,11 +510,16 @@ class ExternalTensorExpression : public Expression {
  private:
   const CompileConfig *config_ = nullptr;
 
-  void init(const DataType &dt, int ndim, int arg_id, bool needs_grad) {
+  void init(const DataType &dt,
+            int ndim,
+            int arg_id,
+            bool needs_grad,
+            BoundaryMode boundary) {
     this->dt = dt;
     this->ndim = ndim;
     this->arg_id = arg_id;
     this->needs_grad = needs_grad;
+    this->boundary = boundary;
   }
 };
 

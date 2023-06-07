@@ -102,9 +102,9 @@ def decl_sparse_matrix(dtype, name):
     return SparseMatrixProxy(_ti_core.make_arg_load_expr(arg_id, ptr_type, False), value_type)
 
 
-def decl_ndarray_arg(element_type, ndim, name, needs_grad):
+def decl_ndarray_arg(element_type, ndim, name, needs_grad, boundary):
     arg_id = impl.get_runtime().compiling_callable.insert_ndarray_param(element_type, ndim, name, needs_grad)
-    return AnyArray(_ti_core.make_external_tensor_expr(element_type, ndim, arg_id, needs_grad))
+    return AnyArray(_ti_core.make_external_tensor_expr(element_type, ndim, arg_id, needs_grad, boundary))
 
 
 def decl_texture_arg(num_dimensions, name):

@@ -67,3 +67,5 @@ enum class ExternalArrayLayout { kAOS, kSOA, kNull };
 enum class AutodiffMode { kForward, kReverse, kNone, kCheckAutodiffValid };
 
 enum class SNodeGradType { kPrimal, kAdjoint, kDual, kAdjointCheckbit };
+
+enum class BoundaryMode { kUnsafe, kClamp };

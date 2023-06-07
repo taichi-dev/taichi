@@ -1014,3 +1014,43 @@ def test_pass_ndarray_to_func():
 
     weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
     foo(weight)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_oob_clamp():
+    @ti.kernel
+    def test(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[y]
+
+    x = ti.ndarray(ti.f32, shape=(3))
+    for i in range(3):
+        x[i] = i
+
+    assert test(x, -1) == 0
+    assert test(x, -2) == 0
+    assert test(x, 3) == 2
+    assert test(x, 4) == 2
+
+    @ti.kernel
+    def test_vec_arr(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[1, 2][y]
+
+    x2 = ti.ndarray(ti.math.vec2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x2[i, j] = [i, j]
+    assert test_vec_arr(x2, -1) == 1
+    assert test_vec_arr(x2, 2) == 2
+
+    @ti.kernel
+    def test_mat_arr(x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32) -> ti.f32:
+        return x[1, 2][i, j]
+
+    x3 = ti.ndarray(ti.math.mat2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x3[i, j] = [[i, j], [i + 1, j + 1]]
+    assert test_mat_arr(x3, -1, 0) == 1
+    assert test_mat_arr(x3, 1, -1) == 2
+    assert test_mat_arr(x3, 2, 0) == 3
+    assert test_mat_arr(x3, 1, 2) == 3

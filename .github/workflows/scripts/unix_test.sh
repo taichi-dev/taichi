@@ -52,6 +52,7 @@ EOF
     pushd repos
     git clone --depth=1 https://github.com/taichi-dev/quantaichi
     git clone --depth=1 https://github.com/taichi-dev/difftaichi
+    git clone --depth=1 https://github.com/taichi-dev/games201
     popd
 
     pushd repos/difftaichi

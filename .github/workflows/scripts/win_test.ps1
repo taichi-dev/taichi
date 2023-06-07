@@ -94,6 +94,7 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Push-Location repos
     Invoke git clone --depth=1 https://github.com/taichi-dev/quantaichi
     Invoke git clone --depth=1 https://github.com/taichi-dev/difftaichi
+    Invoke git clone --depth=1 https://github.com/taichi-dev/games201
     Pop-Location
     Push-Location repos/difftaichi
     Invoke pip install -r requirements.txt

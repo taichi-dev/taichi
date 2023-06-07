@@ -42,6 +42,7 @@ class ArgumentAttributes:
         # Kernels are always launched by indexed arguments and this is for
         # debugging and header generation only.
         name = j["name"] if "name" in j and len(j["name"]) > 0 else None
+        ptype = j["ptype"] if "ptype" in j else None
 
         self.dtype: int = int(dtype)
         self.element_shape: List[int] = [int(x) for x in element_shape]
@@ -52,6 +53,7 @@ class ArgumentAttributes:
         self.offset_in_mem: int = int(offset_in_mem)
         self.stride: int = int(stride)
         self.name: Optional[str] = str(name) if name is not None else None
+        self.ptype: Optional[int] = int(ptype) if ptype is not None else None
 
 
 @json_data_model

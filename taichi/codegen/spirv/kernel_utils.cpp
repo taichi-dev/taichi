@@ -74,7 +74,7 @@ KernelContextAttributes::KernelContextAttributes(
     }
     aa.element_shape = ka.element_shape;
     aa.field_dim = ka.total_dim - ka.element_shape.size();
-
+    aa.ptype = ka.ptype;
     arg_attribs_vec_.push_back(aa);
   }
   // TODO:

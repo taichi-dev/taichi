@@ -62,6 +62,15 @@ T taichi_union_cast(G g) {
   return taichi_union_cast_with_different_sizes<T>(g);
 }
 
+enum class ParameterType {
+  kScalar,
+  kNdarray,
+  kTexture,
+  kRWTexture,
+  kTensor,
+  kUnknown
+};
+
 enum class ExternalArrayLayout { kAOS, kSOA, kNull };
 
 enum class AutodiffMode { kForward, kReverse, kNone, kCheckAutodiffValid };

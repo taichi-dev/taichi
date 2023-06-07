@@ -244,14 +244,12 @@ class IRNode {
 
   template <typename T>
   T *as() {
-    TI_ASSERT(is<T>());
-    return dynamic_cast<T *>(this);
+    return static_cast<T *>(this);
   }
 
   template <typename T>
   const T *as() const {
-    TI_ASSERT(is<T>());
-    return dynamic_cast<const T *>(this);
+    return static_cast<const T *>(this);
   }
 
   template <typename T>

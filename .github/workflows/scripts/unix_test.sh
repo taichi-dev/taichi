@@ -59,9 +59,6 @@ EOF
     pip install -r requirements.txt
     popd
 
-    pip install wget
-    pip install opencv-python pycairo
-
     python3 run.py --log=DEBUG --runners 1 timelines
     popd
 fi

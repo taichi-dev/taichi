@@ -98,8 +98,6 @@ if ("$env:TI_RUN_RELEASE_TESTS" -eq "1") {
     Pop-Location
     Push-Location repos/difftaichi
     Invoke pip install -r requirements.txt
-    Invode pip install wget
-    Invoke pip install opencv-python pycairo
     Pop-Location
     Invoke python run.py --log=DEBUG --runners 1 timelines
     Pop-Location

@@ -156,6 +156,19 @@ def test_nested_data_class_func():
     assert k() == 42
 
 
+@test_utils.test()
+def test_nested_data_class_func():
+    with pytest.raises(ti.TaichiSyntaxError, match="Default value in @dataclass is not supported."):
+
+        @ti.dataclass
+        class Foo:
+            a: int
+            b: float = 3.14
+
+        foo = Foo()
+        print(foo)
+
+
 @test_utils.test(arch=[ti.cpu, ti.cuda, ti.amdgpu])
 def test_struct_field_with_bool():
     @ti.dataclass

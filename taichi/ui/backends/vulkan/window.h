@@ -54,6 +54,7 @@ class Window final : public WindowBase {
   std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time_;
 
   std::unique_ptr<Canvas> canvas_;
+//   std::unique_ptr<SceneV2> scene_;
   std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
   bool drawn_frame_{false};

@@ -50,8 +50,7 @@ void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
     ubo.use_per_vertex_radius = info.renderable_info.has_per_vertex_radius;
 
     void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_);
   }

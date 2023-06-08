@@ -45,27 +45,12 @@ struct SceneLinesInfo {
 
 class SceneBase {
  public:
-  void set_camera(const Camera &camera) {
-    camera_ = camera;
-  }
-  void lines(const SceneLinesInfo &info) {
-    scene_lines_infos_.push_back(info);
-    scene_lines_infos_.back().object_id = next_object_id_++;
-  }
-  void mesh(const MeshInfo &info) {
-    mesh_infos_.push_back(info);
-    mesh_infos_.back().object_id = next_object_id_++;
-  }
-  void particles(const ParticlesInfo &info) {
-    particles_infos_.push_back(info);
-    particles_infos_.back().object_id = next_object_id_++;
-  }
-  void point_light(glm::vec3 pos, glm::vec3 color) {
-    point_lights_.push_back({glm::vec4(pos, 1.0), glm::vec4(color, 1.0)});
-  }
-  void ambient_light(glm::vec3 color) {
-    ambient_light_color_ = color;
-  }
+  virtual void set_camera(const Camera &camera) = 0;
+  virtual void lines(const SceneLinesInfo &info) = 0;
+  virtual void mesh(const MeshInfo &info) = 0;
+  virtual void particles(const ParticlesInfo &info) = 0;
+  virtual void point_light(glm::vec3 pos, glm::vec3 color) = 0;
+  virtual void ambient_light(glm::vec3 color) = 0;
   virtual ~SceneBase() = default;
 
  protected:

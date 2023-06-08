@@ -12,6 +12,13 @@ class Scene final : public SceneBase {
   friend class Mesh;
   friend class SceneLines;
 
+  void set_camera(const Camera &camera) override;
+  void lines(const SceneLinesInfo &info) override;
+  void mesh(const MeshInfo &info) override;
+  void particles(const ParticlesInfo &info) override;
+  void point_light(glm::vec3 pos, glm::vec3 color) override;
+  void ambient_light(glm::vec3 color) override;
+
  private:
   struct SceneUniformBuffer {
     alignas(16) glm::vec3 camera_pos;

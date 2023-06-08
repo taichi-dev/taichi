@@ -10,7 +10,7 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
+void SceneLines::update_data(const SceneLinesInfo &info, const SceneBase &scene) {
   Renderable::update_data(info.renderable_info);
 
   lines_count_ =

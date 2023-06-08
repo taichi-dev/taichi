@@ -29,7 +29,7 @@ class Particles final : public Renderable {
  public:
   Particles(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const ParticlesInfo &info, const Scene &scene);
+  void update_data(const ParticlesInfo &info, const SceneBase &scene);
 
   void record_this_frame_commands(lang::CommandList *command_list) override;
 

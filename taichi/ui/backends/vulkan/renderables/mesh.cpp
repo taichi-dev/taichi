@@ -22,7 +22,7 @@ Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   Renderable::init(config, app_context);
 }
 
-void Mesh::update_data(const MeshInfo &info, const Scene &scene) {
+void Mesh::update_data(const MeshInfo &info, const SceneBase &scene) {
   num_instances_ = info.num_instances;
   start_instance_ = info.start_instance;
 

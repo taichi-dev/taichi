@@ -59,13 +59,13 @@ class TI_DLL_EXPORT Renderer {
 
   void lines(const LinesInfo &info);
 
-  void mesh(const MeshInfo &info, Scene *scene);
+  void mesh(const MeshInfo &info, SceneBase *scene);
 
-  void particles(const ParticlesInfo &info, Scene *scene);
+  void particles(const ParticlesInfo &info, SceneBase *scene);
 
-  void scene_lines(const SceneLinesInfo &info, Scene *scene);
+  void scene_lines(const SceneLinesInfo &info, SceneBase *scene);
 
-  void scene(Scene *scene);
+  void scene(SceneBase *scene);
 
   void draw_frame(Gui *gui);
 

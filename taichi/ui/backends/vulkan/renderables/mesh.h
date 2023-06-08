@@ -29,7 +29,7 @@ class Mesh final : public Renderable {
  public:
   Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const MeshInfo &info, const Scene &scene);
+  void update_data(const MeshInfo &info, const SceneBase &scene);
 
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

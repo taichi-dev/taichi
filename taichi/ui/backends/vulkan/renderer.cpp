@@ -63,27 +63,27 @@ void Renderer::circles(const CirclesInfo &info) {
   render_queue_.push_back(circles);
 }
 
-void Renderer::scene_lines(const SceneLinesInfo &info, Scene *scene) {
+void Renderer::scene_lines(const SceneLinesInfo &info, SceneBase *scene) {
   SceneLines *scene_lines =
       get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
   scene_lines->update_data(info, *scene);
   render_queue_.push_back(scene_lines);
 }
 
-void Renderer::mesh(const MeshInfo &info, Scene *scene) {
+void Renderer::mesh(const MeshInfo &info, SceneBase *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info, *scene);
   render_queue_.push_back(mesh);
 }
 
-void Renderer::particles(const ParticlesInfo &info, Scene *scene) {
+void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info, *scene);
   render_queue_.push_back(particles);
 }
 
-void Renderer::scene(Scene *scene) {
+void Renderer::scene(SceneBase *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
   }

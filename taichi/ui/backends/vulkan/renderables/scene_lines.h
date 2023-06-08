@@ -29,7 +29,7 @@ class SceneLines final : public Renderable {
  public:
   SceneLines(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const SceneLinesInfo &info, const Scene &scene);
+  void update_data(const SceneLinesInfo &info, const SceneBase &scene);
 
   void record_prepass_this_frame_commands(
       taichi::lang::CommandList *command_list) override;

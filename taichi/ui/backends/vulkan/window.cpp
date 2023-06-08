@@ -52,10 +52,6 @@ void Window::prepare_for_next_frame() {
 CanvasBase *Window::get_canvas() {
   return canvas_.get();
 }
-// maybeV2
-// SceneBaseV2 *Window::get_scene() {
-//   return scene_.get();
-// }
 
 GuiBase *Window::gui() {
   return gui_.get();

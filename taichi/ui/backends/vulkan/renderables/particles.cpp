@@ -23,7 +23,7 @@ Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   Renderable::init(config, app_context);
 }
 
-void Particles::update_data(const ParticlesInfo &info, const Scene &scene) {
+void Particles::update_data(const ParticlesInfo &info, const SceneBase &scene) {
   Renderable::update_data(info.renderable_info);
 
   // Update SSBO

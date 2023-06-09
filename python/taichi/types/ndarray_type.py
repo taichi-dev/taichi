@@ -1,4 +1,4 @@
-from taichi.lang.enums import Layout
+from taichi.lang.enums import Layout, to_boundary_enum
 from taichi.types.compound_types import CompoundType, matrix, vector
 
 
@@ -66,6 +66,7 @@ class NdarrayType:
         element_shape=None,
         field_dim=None,
         needs_grad=None,
+        boundary="unsafe",
     ):
         if field_dim is not None:
             raise ValueError("The field_dim argument for ndarray type is already deprecated. Please use ndim instead.")
@@ -77,6 +78,7 @@ class NdarrayType:
         self.ndim = ndim
         self.layout = Layout.AOS
         self.needs_grad = needs_grad
+        self.boundary = to_boundary_enum(boundary)
 
     def check_matched(self, ndarray_type: NdarrayTypeMetadata):
         # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import

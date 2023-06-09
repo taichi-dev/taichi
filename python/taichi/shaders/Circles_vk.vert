@@ -8,8 +8,10 @@ layout(location = 3) in vec4 in_color;
 layout(binding = 0) uniform UBO {
   vec3 color;
   int use_per_vertex_color;
-  float radius_w;
-  float radius_h;
+  int use_per_vertex_radius;
+  float radius;
+  float window_width;
+  float window_height;
 }
 ubo;
 
@@ -30,9 +32,10 @@ void main() {
   float y = -(in_position.y * 2.0 - 1.0);
 
   pos_2d = offsets[gl_VertexIndex % 6];
+  float radius_1d = ubo.use_per_vertex_radius == 0 ? ubo.radius : in_normal.x;
 
   gl_Position = vec4(x, y, 0.0, 1.0);
-  gl_Position.xy += pos_2d * vec2(ubo.radius_w, ubo.radius_h) * 2.0;
+  gl_Position.xy += pos_2d * vec2(radius_1d / ubo.window_width * ubo.window_height, radius_1d) * 2.0;
 
   if (ubo.use_per_vertex_color == 0) {
     selected_color = ubo.color;

@@ -715,6 +715,26 @@ def test_ndarray_init_as_zero():
     v = np.zeros((6, 10), dtype=np.float32)
     assert test_utils.allclose(a.to_numpy(), v)
 
+    b = ti.ndarray(dtype=ti.math.vec2, shape=(6, 4))
+    k = np.zeros((6, 4, 2), dtype=np.float32)
+    assert test_utils.allclose(b.to_numpy(), k)
+
+    c = ti.ndarray(dtype=ti.math.mat2, shape=(6, 4))
+    m = np.zeros((6, 4, 2, 2), dtype=np.float32)
+    assert test_utils.allclose(c.to_numpy(), m)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_zero_fill():
+    dt = ti.types.vector(n=2, dtype=ti.f32)
+    arr = ti.ndarray(dtype=dt, shape=(3, 4))
+
+    arr.fill(1.0)
+
+    arr.to_numpy()
+    no = ti.ndarray(dtype=dt, shape=(3, 5))
+    assert no[0, 0][0] == 0.0
+
 
 @test_utils.test(arch=supported_archs_taichi_ndarray)
 def test_ndarray_reset():
@@ -980,3 +1000,57 @@ def test_type_hint_vector():
     z = ti.ndarray(ti.math.mat2, (3))
     with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
         test(z)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_pass_ndarray_to_func():
+    @ti.func
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        pass
+
+    @ti.kernel
+    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        bar(weight)
+
+    weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
+    foo(weight)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_oob_clamp():
+    @ti.kernel
+    def test(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[y]
+
+    x = ti.ndarray(ti.f32, shape=(3))
+    for i in range(3):
+        x[i] = i
+
+    assert test(x, -1) == 0
+    assert test(x, -2) == 0
+    assert test(x, 3) == 2
+    assert test(x, 4) == 2
+
+    @ti.kernel
+    def test_vec_arr(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[1, 2][y]
+
+    x2 = ti.ndarray(ti.math.vec2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x2[i, j] = [i, j]
+    assert test_vec_arr(x2, -1) == 1
+    assert test_vec_arr(x2, 2) == 2
+
+    @ti.kernel
+    def test_mat_arr(x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32) -> ti.f32:
+        return x[1, 2][i, j]
+
+    x3 = ti.ndarray(ti.math.mat2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x3[i, j] = [[i, j], [i + 1, j + 1]]
+    assert test_mat_arr(x3, -1, 0) == 1
+    assert test_mat_arr(x3, 1, -1) == 2
+    assert test_mat_arr(x3, 2, 0) == 3
+    assert test_mat_arr(x3, 1, 2) == 3

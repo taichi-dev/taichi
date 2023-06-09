@@ -9,7 +9,6 @@
 #include "taichi/analysis/offline_cache_util.h"
 #include "taichi/ir/statements.h"
 #include "taichi/ir/transforms.h"
-#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/llvm/llvm_offline_cache.h"
 #include "taichi/program/extension.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
@@ -126,8 +125,9 @@ void TaskCodeGenLLVM::visit(Block *stmt_list) {
 }
 
 void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
-  if (stmt->ret_type->is<TensorType>()) {
-    auto tensor_type = stmt->ret_type->cast<TensorType>();
+  auto alloca_type = stmt->ret_type.ptr_removed();
+  if (alloca_type->is<TensorType>()) {
+    auto tensor_type = alloca_type->cast<TensorType>();
     auto type = tlctx->get_data_type(tensor_type);
     if (stmt->is_shared) {
       auto base = new llvm::GlobalVariable(
@@ -141,12 +141,10 @@ void TaskCodeGenLLVM::visit(AllocaStmt *stmt) {
       llvm_val[stmt] = create_entry_block_alloca(type);
     }
   } else {
-    llvm_val[stmt] =
-        create_entry_block_alloca(stmt->ret_type, stmt->ret_type.is_pointer());
+    llvm_val[stmt] = create_entry_block_alloca(alloca_type);
     // initialize as zero if element is not a pointer
-    if (!stmt->ret_type.is_pointer())
-      builder->CreateStore(tlctx->get_constant(stmt->ret_type, 0),
-                           llvm_val[stmt]);
+    if (!alloca_type->is<PointerType>())
+      builder->CreateStore(tlctx->get_constant(alloca_type, 0), llvm_val[stmt]);
   }
 }
 
@@ -611,7 +609,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
     if (is_real(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateFDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
-    } else if (is_signed(stmt->ret_type)) {
+    } else if (is_signed(stmt->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateSDiv(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -658,7 +656,7 @@ void TaskCodeGenLLVM::visit(BinaryOpStmt *stmt) {
         builder->CreateShl(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
 #endif
   } else if (op == BinaryOpType::bit_sar) {
-    if (is_signed(stmt->lhs->element_type())) {
+    if (is_signed(stmt->lhs->ret_type.get_element_type())) {
       llvm_val[stmt] =
           builder->CreateAShr(llvm_val[stmt->lhs], llvm_val[stmt->rhs]);
     } else {
@@ -1888,8 +1886,6 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
   auto dt = stmt->ret_type.ptr_removed();
   int num_element_indices =
       dt->is<TensorType>() ? 0 : stmt->element_shape.size();
-  const auto layout = stmt->element_dim <= 0 ? ExternalArrayLayout::kAOS
-                                             : ExternalArrayLayout::kSOA;
 
   /*
     ExternalPtrStmt can be divided into "outter" and "inner" parts.
@@ -1905,8 +1901,7 @@ void TaskCodeGenLLVM::visit(ExternalPtrStmt *stmt) {
     "num_indices - num_element_indices" gives how many "extra_args" to read from
   */
   int num_array_args = num_indices - num_element_indices;
-  const size_t element_shape_index_offset =
-      (layout == ExternalArrayLayout::kAOS) ? num_array_args : 0;
+  const size_t element_shape_index_offset = num_array_args;
 
   for (int i = 0; i < num_array_args; i++) {
     auto raw_arg = builder->CreateGEP(

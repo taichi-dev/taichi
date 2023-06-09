@@ -1,5 +1,5 @@
 #pragma once
-
+#include "taichi/inc/constants.h"
 #include "taichi/rhi/device.h"
 #include "taichi/util/lang_util.h"
 
@@ -18,12 +18,20 @@ class TI_DLL_EXPORT CallableBase {
     std::size_t total_dim{0};  // total dim of array
     BufferFormat format{BufferFormat::unknown};
     bool needs_grad{false};  // TODO: reorder for better alignment
-
-    TI_IO_DEF(is_array, total_dim, format, dt_, needs_grad);
+    std::vector<int> element_shape{};
+    ParameterType ptype{ParameterType::kUnknown};
+    TI_IO_DEF(is_array,
+              total_dim,
+              format,
+              dt_,
+              needs_grad,
+              element_shape,
+              ptype);
 
     bool operator==(const Parameter &o) const {
       return is_array == o.is_array && total_dim == o.total_dim &&
-             format == o.format && dt_ == o.dt_ && needs_grad == o.needs_grad;
+             format == o.format && dt_ == o.dt_ && needs_grad == o.needs_grad &&
+             element_shape == o.element_shape && ptype == o.ptype;
     }
 
     /* [arguments with TensorType]
@@ -46,6 +54,11 @@ class TI_DLL_EXPORT CallableBase {
                        std::vector<int> element_shape = {},
                        BufferFormat format = BufferFormat::unknown,
                        bool needs_grad = false) {
+      // TODO: Currently dt is only PrimitiveType or StructType for
+      // ndarray/texture/matrix
+      //       We should always keep it either PrimitiveType or TensorType. In
+      //       other words, `get_type_for_kernel_args` which we currently do in
+      //       Python should be delayed until finalize_params.
       if (dt->is<PrimitiveType>() && element_shape.size() > 0) {
         this->dt_ =
             taichi::lang::TypeFactory::get_instance().create_tensor_type(
@@ -53,7 +66,7 @@ class TI_DLL_EXPORT CallableBase {
       } else {
         this->dt_ = dt;
       }
-
+      this->element_shape = element_shape;
       this->is_array = is_array;
       this->total_dim = total_dim;
       this->format = format;
@@ -117,8 +130,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
                        std::vector<int> element_shape,
                        const std::string &name = "");
   int insert_ndarray_param(const DataType &dt,
-                           int total_dim,
-                           std::vector<int> element_shape,
+                           int ndim,
                            const std::string &name = "",
                            bool needs_grad = false);
   int insert_texture_param(int total_dim, const std::string &name = "");

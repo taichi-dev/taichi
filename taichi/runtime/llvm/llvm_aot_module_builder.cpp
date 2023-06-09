@@ -1,7 +1,6 @@
 #include "taichi/runtime/llvm/llvm_aot_module_builder.h"
 
 #include <algorithm>
-#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 #include "taichi/runtime/llvm/aot_graph_data.h"
 #include "taichi/codegen/llvm/compiled_kernel_data.h"

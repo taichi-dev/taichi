@@ -77,6 +77,7 @@ AliasResult alias_analysis(Stmt *var1, Stmt *var2);
 std::unique_ptr<ControlFlowGraph> build_cfg(IRNode *root);
 void check_fields_registered(IRNode *root);
 std::unique_ptr<IRNode> clone(IRNode *root);
+std::unique_ptr<Stmt> clone(Stmt *root);
 int count_statements(IRNode *root);
 
 /**
@@ -110,6 +111,7 @@ gather_uniquely_accessed_pointers(IRNode *root);
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 stmt_refs get_load_pointers(Stmt *load_stmt, bool get_aliased = false);
+stmt_refs include_aliased_stmts(stmt_refs dest);
 
 Stmt *get_store_data(Stmt *store_stmt) noexcept;
 stmt_refs get_store_destination(Stmt *store_stmt,

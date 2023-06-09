@@ -19,7 +19,11 @@ class Function;
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = type;
+    if (type->is_primitive(PrimitiveTypeID::unknown)) {
+      ret_type = type;
+    } else {
+      ret_type = TypeFactory::get_instance().get_pointer_type(type);
+    }
     TI_STMT_REG_FIELDS;
   }
 
@@ -27,7 +31,8 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
              DataType type,
              bool is_shared = false)
       : is_shared(is_shared) {
-    ret_type = TypeFactory::create_tensor_type(shape, type);
+    ret_type = TypeFactory::get_instance().get_pointer_type(
+        TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;
   }
 
@@ -341,9 +346,6 @@ class ExternalPtrStmt : public Stmt {
 
   // Shape of element type
   std::vector<int> element_shape;
-  // AOS: element_dim < 0
-  // SOA: element_dim > 0
-  int element_dim;
 
   // irpass::vectorize_half2() will override the ret_type of ExternalPtrStmt.
   // We use "overrided_dtype" to prevent type inference from
@@ -351,17 +353,19 @@ class ExternalPtrStmt : public Stmt {
   bool overrided_dtype = false;
 
   bool is_grad = false;
+  BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   int ndim,
                   const std::vector<int> &element_shape,
-                  int element_dim,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   bool has_global_side_effect() const override {
     return false;

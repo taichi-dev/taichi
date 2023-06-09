@@ -60,8 +60,6 @@ class CheckOutOfBound : public BasicStmtVisitor {
           BinaryOpType::cmp_ge, stmt->indices[i], lower_bound);
       Stmt *upper_bound{nullptr};
 
-      // SOA layout for ndarray is deprecated, assert it's AOS layout
-      TI_ASSERT(stmt->element_dim <= 0);
       auto ndim = stmt->ndim;
       if (i < ndim) {
         // Check for External Shape

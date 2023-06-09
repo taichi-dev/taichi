@@ -14,6 +14,34 @@ DataType Expr::get_ret_type() const {
   return expr->ret_type;
 }
 
+DataType Expr::get_rvalue_type() const {
+  if (auto argload = cast<ArgLoadExpression>()) {
+    if (argload->is_ptr) {
+      return argload->ret_type.ptr_removed();
+    }
+    return argload->ret_type;
+  }
+  if (auto id = cast<IdExpression>()) {
+    return id->ret_type.ptr_removed();
+  }
+  if (auto index_expr = cast<IndexExpression>()) {
+    return index_expr->ret_type.ptr_removed();
+  }
+  if (auto unary = cast<UnaryOpExpression>()) {
+    if (unary->type == UnaryOpType::frexp) {
+      return unary->ret_type.ptr_removed();
+    }
+    return unary->ret_type;
+  }
+  if (auto texture_op = cast<TextureOpExpression>()) {
+    if (texture_op->op == TextureOpType::kStore) {
+      return texture_op->ret_type.ptr_removed();
+    }
+    return texture_op->ret_type;
+  }
+  return expr->ret_type;
+}
+
 void Expr::type_check(const CompileConfig *config) {
   expr->type_check(config);
 }

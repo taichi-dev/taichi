@@ -72,6 +72,7 @@ get_area() # 201.062...
 ## Notes
 
 - Inheritance of Taichi dataclasses is not supported.
+- Default values in Taichi dataclasses are not supported.
 - While it is convenient and recommended to associate functions with a struct defined via `@ti.dataclass`, `ti.types.struct` can serve the same purpose with the help of the `__struct_methods` argument. As mentioned above, the two methods of defining a struct type produce identical output.
 
 ```python

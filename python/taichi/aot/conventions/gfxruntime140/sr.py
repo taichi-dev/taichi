@@ -47,6 +47,14 @@ class ArgumentScalar(Argument):
         self.dtype: DataType = dtype
 
 
+class ParameterType(Enum):
+    Scalar = 0
+    Ndarray = 1
+    Texture = 2
+    RwTexture = 3
+    Unknown = 4
+
+
 class NdArrayAccess(Enum):
     NoAccess = 0
     Read = 1
@@ -263,9 +271,30 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
     args = []
     for i, arg in enumerate(d.ctx_attribs.arg_attribs_vec_):
         assert i == arg.index
-        if arg.is_array:
-            # Opaque binding types.
-            if iarg2arg_ty[arg.index]:
+        ptype = ParameterType(arg.ptype)
+        if ptype is not None:
+            if ptype == ParameterType.Scalar:
+                args += [ArgumentScalar(arg.name, DataType(arg.dtype))]
+            elif ptype == ParameterType.Ndarray:
+                args += [
+                    ArgumentNdArray(
+                        arg.name,
+                        DataType(arg.dtype),
+                        arg.element_shape,
+                        arg.field_dim,
+                        NdArrayAccess(d.ctx_attribs.arr_access[i]),
+                    )
+                ]
+            elif ptype == ParameterType.Texture:
+                args += [ArgumentTexture(arg.name, arg.field_dim)]
+            elif ptype == ParameterType.RwTexture:
+                args += [ArgumentRwTexture(arg.name, ti.Format(arg.format), arg.field_dim)]
+            else:
+                assert False
+        else:
+            # TODO: Keeping this for BC but feel free to break it if necessary
+            if arg.is_array:
+                # Opaque binding types.
                 binding_ty = iarg2arg_ty[arg.index]
                 if binding_ty == OpaqueArgumentType.NdArray:
                     args += [
@@ -283,8 +312,8 @@ def from_dr_kernel(d: dr.KernelAttributes) -> Kernel:
                     args += [ArgumentRwTexture(arg.name, ti.Format(arg.format), arg.field_dim)]
                 else:
                     assert False
-        else:
-            args += [ArgumentScalar(arg.name, DataType(arg.dtype))]
+            else:
+                args += [ArgumentScalar(arg.name, DataType(arg.dtype))]
 
     assert len(d.ctx_attribs.ret_attribs_vec_) <= 1
     if len(d.ctx_attribs.ret_attribs_vec_) != 0:

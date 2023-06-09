@@ -48,25 +48,25 @@ class Expr(TaichiOperations):
         return self.ptr.is_struct()
 
     def element_type(self):
-        return self.ptr.get_ret_type().element_type()
+        return self.ptr.get_rvalue_type().element_type()
 
     def get_shape(self):
         if not self.is_tensor():
-            raise TaichiCompilationError(f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting shape of non-tensor type: {self.ptr.get_rvalue_type()}")
         return tuple(self.ptr.get_shape())
 
     @property
     def n(self):
         shape = self.get_shape()
         if len(shape) < 1:
-            raise TaichiCompilationError(f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting n of tensor type < 1D: {self.ptr.get_rvalue_type()}")
         return shape[0]
 
     @property
     def m(self):
         shape = self.get_shape()
         if len(shape) < 2:
-            raise TaichiCompilationError(f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting m of tensor type < 2D: {self.ptr.get_rvalue_type()}")
         return shape[1]
 
     def __hash__(self):

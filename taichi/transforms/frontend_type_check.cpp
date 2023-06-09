@@ -7,11 +7,12 @@ namespace taichi::lang {
 
 class FrontendTypeCheck : public IRVisitor {
   void check_cond_type(const Expr &cond, std::string stmt_name) {
-    if (!cond->ret_type->is<PrimitiveType>() || !is_integral(cond->ret_type))
+    auto cond_type = cond.get_rvalue_type();
+    if (!cond_type->is<PrimitiveType>() || !is_integral(cond_type))
       throw TaichiTypeError(fmt::format(
           "`{0}` conditions must be an integer; found {1}. Consider using "
           "`{0} x != 0` instead of `{0} x` for float values.",
-          stmt_name, cond->ret_type->to_string()));
+          stmt_name, cond_type->to_string()));
   }
 
  public:
@@ -49,8 +50,8 @@ class FrontendTypeCheck : public IRVisitor {
   }
 
   void visit(FrontendAssignStmt *stmt) override {
-    auto lhs_type = stmt->lhs->ret_type;
-    auto rhs_type = stmt->rhs->ret_type;
+    auto lhs_type = stmt->lhs->ret_type.ptr_removed();
+    auto rhs_type = stmt->rhs->ret_type.ptr_removed();
 
     auto error = [&]() {
       throw TaichiTypeError(fmt::format("{}cannot assign '{}' to '{}'",
@@ -85,7 +86,7 @@ class FrontendTypeCheck : public IRVisitor {
 
       Expr const &expr = std::get<Expr>(content);
       TI_ASSERT(expr.expr != nullptr);
-      DataType data_type = expr->ret_type;
+      DataType data_type = expr.get_rvalue_type();
       if (data_type->is<TensorType>()) {
         data_type = DataType(data_type->as<TensorType>()->get_element_type());
       }

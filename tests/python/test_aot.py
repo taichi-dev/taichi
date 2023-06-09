@@ -1,5 +1,7 @@
+import hashlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import zipfile
@@ -36,7 +38,7 @@ def test_aot_field_range_hint():
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
 def test_aot_bind_id():
     density = ti.field(dtype=ti.f32, shape=(8, 8))
-    density1 = ti.ndarray(dtype=ti.f32, shape=(8, 8))
+    density1 = ti.ndarray(dtype=ti.math.ivec2, shape=(8, 8))
 
     @ti.kernel
     def init(x: ti.f32, density1: ti.types.ndarray(ndim=2)):
@@ -58,6 +60,19 @@ def test_aot_bind_id():
                             assert buffer_bind["binding"] != -1
                         elif buffer_bind["buffer"]["type"] == 2:  # Rets
                             assert buffer_bind["binding"] != -1
+                    args = kernel["ctx_attribs"]["arg_attribs_vec_"]
+                    assert len(args) == 2
+                    assert args[0]["is_array"] == False
+                    assert args[0]["index"] == 0
+                    assert args[0]["dtype"] == 1
+                    assert args[0]["ptype"] == 0
+
+                    assert args[1]["is_array"] == True
+                    assert args[1]["field_dim"] == 2
+                    assert args[1]["index"] == 1
+                    assert args[1]["dtype"] == 5
+                    assert args[1]["element_shape"] == [2]
+                    assert args[1]["ptype"] == 1
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])
@@ -520,14 +535,24 @@ def test_archive():
         for i, j in density:
             density[i, j] = 1
 
+    def sha1sum(filename):
+        with open(filename, "rb") as f:
+            data = f.read()
+            return hashlib.sha1(data).hexdigest()
+
     with tempfile.TemporaryDirectory() as tmpdir:
         m = ti.aot.Module()
         m.add_field("density", density)
         m.add_kernel(init)
         tcm_path = f"{tmpdir}/x.tcm"
         m.archive(tcm_path)
+        first_sha = sha1sum(tcm_path)
         with zipfile.ZipFile(tcm_path, "r") as z:
             assert z.read("__version__") == bytes(".".join(str(x) for x in ti.__version__), "utf-8")
+        os.remove(tcm_path)
+        m.archive(tcm_path)
+        second_sha = sha1sum(tcm_path)
+        assert first_sha == second_sha
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

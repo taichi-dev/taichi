@@ -52,7 +52,7 @@ def reshape_list(flat_list, target_shape):
 
 
 def boundary_type_cast_warning(expression):
-    expr_dtype = expression.ptr.get_ret_type()
+    expr_dtype = expression.ptr.get_rvalue_type()
     if not is_integral(expr_dtype) or expr_dtype in [
         primitive_types.i64,
         primitive_types.u64,
@@ -109,7 +109,7 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            if var.ptr.get_ret_type() != anno:
+            if var.ptr.get_rvalue_type() != anno:
                 raise TaichiSyntaxError("Static assign cannot have type overloading")
             var._assign(value)
         return var
@@ -621,10 +621,9 @@ class ASTTransformer(Builder):
                 return kernel_arguments.decl_ndarray_arg(
                     to_taichi_type(arg_features[0]),
                     arg_features[1],
+                    name,
                     arg_features[2],
                     arg_features[3],
-                    name,
-                    arg_features[4],
                 )
             if isinstance(annotation, texture_type.TextureType):
                 return kernel_arguments.decl_texture_arg(arg_features[0], name)
@@ -713,7 +712,7 @@ class ASTTransformer(Builder):
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
                             )
 
-                        element_shape = data.ptr.get_ret_type().shape()
+                        element_shape = data.ptr.get_rvalue_type().shape()
                         if len(element_shape) != ctx.func.arguments[i].annotation.ndim:
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
@@ -1517,7 +1516,7 @@ class ASTTransformer(Builder):
             if isinstance(entry, str):
                 msg += entry
             elif isinstance(entry, _ti_core.Expr):
-                ty = entry.get_ret_type()
+                ty = entry.get_rvalue_type()
                 if ty in primitive_types.real_types:
                     msg += "%f"
                 elif ty in primitive_types.integer_types:

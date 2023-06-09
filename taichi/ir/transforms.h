@@ -30,8 +30,7 @@ namespace irpass {
 void re_id(IRNode *root);
 void flag_access(IRNode *root);
 void eliminate_immutable_local_vars(IRNode *root);
-void scalarize(IRNode *root);
-void vectorize_half2(IRNode *root);
+bool scalarize(IRNode *root, bool half2_optimization_enabled = false);
 void lower_matrix_ptr(IRNode *root);
 bool die(IRNode *root);
 bool simplify(IRNode *root, const CompileConfig &config);
@@ -55,6 +54,8 @@ void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args);
 void print(IRNode *root, std::string *output = nullptr);
+std::function<void(const std::string &)>
+make_pass_printer(bool verbose, const std::string &kernel_name, IRNode *ir);
 void frontend_type_check(IRNode *root);
 void lower_ast(IRNode *root);
 void type_check(IRNode *root, const CompileConfig &config);
@@ -67,6 +68,7 @@ void replace_all_usages_with(IRNode *root, Stmt *old_stmt, Stmt *new_stmt);
 bool check_out_of_bound(IRNode *root,
                         const CompileConfig &config,
                         const CheckOutOfBoundPass::Args &args);
+void handle_external_ptr_boundary(IRNode *root, const CompileConfig &config);
 void make_thread_local(IRNode *root, const CompileConfig &config);
 std::unique_ptr<ScratchPads> initialize_scratch_pad(OffloadedStmt *root);
 void make_block_local(IRNode *root,

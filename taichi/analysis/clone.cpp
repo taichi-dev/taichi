@@ -134,6 +134,14 @@ namespace irpass::analysis {
 std::unique_ptr<IRNode> clone(IRNode *root) {
   return IRCloner::run(root);
 }
+
+std::unique_ptr<Stmt> clone(Stmt *root) {
+  auto ret = IRCloner::run(root);
+  Stmt *stmt_ptr = dynamic_cast<Stmt *>(ret.release());
+  TI_ASSERT(stmt_ptr != nullptr);
+
+  return std::unique_ptr<Stmt>(stmt_ptr);
+}
 }  // namespace irpass::analysis
 
 }  // namespace taichi::lang

@@ -86,7 +86,8 @@ class FrontendAllocaStmt : public Stmt {
                      DataType element,
                      bool is_shared = false)
       : ident(lhs), is_shared(is_shared) {
-    ret_type = DataType(TypeFactory::create_tensor_type(shape, element));
+    ret_type = TypeFactory::get_instance().get_pointer_type(
+        DataType(TypeFactory::create_tensor_type(shape, element)));
   }
 
   bool is_shared;
@@ -472,42 +473,23 @@ class InternalFuncCallExpression : public Expression {
 class ExternalTensorExpression : public Expression {
  public:
   DataType dt;
-  int dim;
+  int ndim;
   int arg_id;
-  int element_dim;  // 0: scalar; 1: vector (SOA); 2: matrix (SOA); -1: vector
-                    // (AOS); -2: matrix (AOS)
   bool needs_grad{false};
   bool is_grad{false};
+  BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalTensorExpression(const DataType &dt,
-                           int dim,
+                           int ndim,
                            int arg_id,
-                           int element_dim,
-                           bool needs_grad = false) {
-    init(dt, dim, arg_id, element_dim, needs_grad);
-  }
-
-  ExternalTensorExpression(const DataType &dt,
-                           int dim,
-                           int arg_id,
-                           int element_dim,
-                           const std::vector<int> &element_shape,
-                           bool needs_grad = false) {
-    if (element_shape.size() == 0) {
-      init(dt, dim, arg_id, element_dim, needs_grad);
-    } else {
-      TI_ASSERT(dt->is<PrimitiveType>());
-
-      auto tensor_type =
-          taichi::lang::TypeFactory::get_instance().create_tensor_type(
-              element_shape, dt);
-      init(tensor_type, dim, arg_id, element_dim, needs_grad);
-    }
+                           bool needs_grad = false,
+                           BoundaryMode boundary = BoundaryMode::kUnsafe) {
+    init(dt, ndim, arg_id, needs_grad, boundary);
   }
 
   explicit ExternalTensorExpression(Expr *expr) : is_grad(true) {
     auto ptr = expr->cast<ExternalTensorExpression>();
-    init(ptr->dt, ptr->dim, ptr->arg_id, ptr->element_dim, ptr->needs_grad);
+    init(ptr->dt, ptr->ndim, ptr->arg_id, ptr->needs_grad, ptr->boundary);
   }
 
   void flatten(FlattenContext *ctx) override;
@@ -521,6 +503,7 @@ class ExternalTensorExpression : public Expression {
 
   void type_check(const CompileConfig *config) override {
     ret_type = dt;
+    ret_type.set_is_pointer(true);
     config_ = config;
   }
 
@@ -528,15 +511,15 @@ class ExternalTensorExpression : public Expression {
   const CompileConfig *config_ = nullptr;
 
   void init(const DataType &dt,
-            int dim,
+            int ndim,
             int arg_id,
-            int element_dim,
-            bool needs_grad) {
+            bool needs_grad,
+            BoundaryMode boundary) {
     this->dt = dt;
-    this->dim = dim;
+    this->ndim = ndim;
     this->arg_id = arg_id;
-    this->element_dim = element_dim;
     this->needs_grad = needs_grad;
+    this->boundary = boundary;
   }
 };
 
@@ -611,7 +594,7 @@ class MatrixExpression : public Expression {
                    std::vector<int> shape,
                    DataType element_type)
       : elements(elements) {
-    this->dt = DataType(TypeFactory::create_tensor_type(shape, element_type));
+    dt = TypeFactory::create_tensor_type(shape, element_type);
   }
 
   void type_check(const CompileConfig *config) override;
@@ -1108,7 +1091,5 @@ class FrontendContext {
 Stmt *flatten_lvalue(Expr expr, Expression::FlattenContext *ctx);
 
 Stmt *flatten_rvalue(Expr expr, Expression::FlattenContext *ctx);
-
-DataType get_rvalue_dtype(Expr expr);
 
 }  // namespace taichi::lang

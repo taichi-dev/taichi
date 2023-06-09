@@ -530,16 +530,16 @@ class FixCrossOffloadReferences : public BasicStmtVisitor {
     if (local_to_global_offset_.find(stmt) == local_to_global_offset_.end())
       return;
     VecStatement replacement;
-    auto ret_type = stmt->ret_type;
-    local_to_global_vector_type_[stmt] = ret_type;
+    auto alloca_type = stmt->ret_type.ptr_removed();
+    local_to_global_vector_type_[stmt] = alloca_type;
     auto ptr = replacement.push_back<GlobalTemporaryStmt>(
-        local_to_global_offset_.at(stmt), ret_type);
+        local_to_global_offset_.at(stmt), alloca_type);
     auto offloaded = stmt_to_offloaded_[stmt];
     stmt_to_offloaded_[ptr] = offloaded;
 
-    TypedConstant zero(stmt->ret_type.get_element_type());
+    TypedConstant zero(alloca_type.get_element_type());
     auto const_zero_stmt = replacement.push_back<ConstStmt>(zero);
-    if (auto tensor_type = stmt->ret_type->cast<TensorType>()) {
+    if (auto tensor_type = alloca_type->cast<TensorType>()) {
       std::vector<Stmt *> zero_values(tensor_type->get_num_elements(),
                                       const_zero_stmt);
       auto zero_matrix_init_stmt =

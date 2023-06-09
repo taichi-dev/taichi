@@ -82,6 +82,11 @@ MetalPipeline *MetalPipeline::create(const MetalDevice &device,
     // Subgroups are only supported in Metal 2.1 and up.
     options.set_msl_version(2, 1, 0);
   }
+  bool feature_64_bit_integer_math =
+      caps.contains(DeviceCapability::spirv_has_int64);
+  if (feature_64_bit_integer_math) {
+    options.set_msl_version(2, 3, 0);
+  }
 
   compiler.set_msl_options(options);
 

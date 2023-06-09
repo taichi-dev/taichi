@@ -66,20 +66,23 @@ void Renderer::circles(const CirclesInfo &info) {
 void Renderer::scene_lines(const SceneLinesInfo &info, SceneBase *scene) {
   SceneLines *scene_lines =
       get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
-  scene_lines->update_data(info, *scene);
+  scene_lines->update_data(info);
+  scene_lines->update_scene_data(*scene);
   render_queue_.push_back(scene_lines);
 }
 
 void Renderer::mesh(const MeshInfo &info, SceneBase *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
-  mesh->update_data(info, *scene);
+  mesh->update_data(info);
+  mesh->update_scene_data(*scene);
   render_queue_.push_back(mesh);
 }
 
 void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
-  particles->update_data(info, *scene);
+  particles->update_data(info);
+  particles->update_scene_data(*scene);
   render_queue_.push_back(particles);
 }
 

@@ -11,7 +11,8 @@ using namespace taichi::lang;
 
 Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
-  config.ubo_size = sizeof(UniformBufferObject);
+  config.ubo_size = sizeof(UBORenderable);
+  config.scene_ubo_size = sizeof(UBOScene);
   config.blending = true;
   config.depth = true;
   config.fragment_shader_path =
@@ -22,26 +23,11 @@ Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   Renderable::init(config, app_context);
 }
 
-void Mesh::update_data(const MeshInfo &info, const SceneBase &scene) {
+void Mesh::update_data(const MeshInfo &info) {
   num_instances_ = info.num_instances;
   start_instance_ = info.start_instance;
 
   Renderable::update_data(info.renderable_info);
-
-  // Update SSBO
-  {
-    size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
-
-    if (config_.ssbo_size != correct_ssbo_size) {
-      resize_storage_buffers(correct_ssbo_size);
-    }
-
-    void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(storage_buffer_->get_ptr(0), &mapped));
-    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
-    app_context_->device().unmap(*storage_buffer_);
-  }
 
   // Update instance transform buffer
   size_t correct_mesh_ssbo_size = 0;
@@ -69,17 +55,45 @@ void Mesh::update_data(const MeshInfo &info, const SceneBase &scene) {
 
   // Update UBO
   {
-    UniformBufferObject ubo;
-    ubo.scene = scene.current_ubo_;
+    UBORenderable ubo;
     ubo.color = info.color;
     ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
     ubo.two_sided = info.two_sided;
     ubo.has_attribute = info.mesh_attribute_info.has_attribute;
     void *mapped{nullptr};
     RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+        app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_);
+    app_context_->device().unmap(*uniform_buffer_renderable_);
+  }
+}
+
+void Mesh::update_scene_data(const SceneBase &scene) {
+
+  // Update lights SSBO
+  {
+    size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
+
+    if (config_.ssbo_size != correct_ssbo_size) {
+      resize_storage_buffers(correct_ssbo_size);
+    }
+
+    void *mapped{nullptr};
+    RHI_VERIFY(
+        app_context_->device().map(storage_buffer_->get_ptr(0), &mapped));
+    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
+    app_context_->device().unmap(*storage_buffer_);
+  }
+
+  // Update UBO
+  {
+    UBOScene ubo;
+    ubo.scene = scene.current_ubo_;
+    void *mapped{nullptr};
+    RHI_VERIFY(
+        app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
+    memcpy(mapped, &ubo, sizeof(ubo));
+    app_context_->device().unmap(*uniform_buffer_scene_);
   }
 }
 
@@ -90,9 +104,10 @@ void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
     raster_state->index_buffer(index_buffer_->get_ptr(), 32);
   }
 
-  resource_set_->buffer(0, uniform_buffer_->get_ptr(0));
-  resource_set_->rw_buffer(1, storage_buffer_->get_ptr(0));
-  resource_set_->rw_buffer(2, mesh_storage_buffer_->get_ptr(0));
+  resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
+  resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
+  resource_set_->rw_buffer(2, storage_buffer_->get_ptr(0));
+  resource_set_->rw_buffer(3, mesh_storage_buffer_->get_ptr(0));
 
   command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());

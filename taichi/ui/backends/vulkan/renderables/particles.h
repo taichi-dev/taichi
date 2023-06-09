@@ -29,17 +29,21 @@ class Particles final : public Renderable {
  public:
   Particles(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const ParticlesInfo &info, const SceneBase &scene);
+  void update_data(const ParticlesInfo &info);
+
+  void update_scene_data(const SceneBase &scene);
 
   void record_this_frame_commands(lang::CommandList *command_list) override;
 
  private:
-  struct UniformBufferObject {
-    Scene::SceneUniformBuffer scene;
+  struct UBORenderable {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
     int use_per_vertex_radius;
     float radius;
+  };
+  struct UBOScene {
+    Scene::SceneUniformBuffer scene;
     float window_width;
     float window_height;
     float tan_half_fov;

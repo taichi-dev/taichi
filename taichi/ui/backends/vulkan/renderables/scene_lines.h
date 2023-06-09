@@ -29,7 +29,9 @@ class SceneLines final : public Renderable {
  public:
   SceneLines(AppContext *app_context, VertexAttributes vbo_attrs);
 
-  void update_data(const SceneLinesInfo &info, const SceneBase &scene);
+  void update_data(const SceneLinesInfo &info);
+
+  void update_scene_data(const SceneBase &scene);
 
   void record_prepass_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
@@ -38,8 +40,7 @@ class SceneLines final : public Renderable {
       taichi::lang::CommandList *command_list) override;
 
  private:
-  struct UniformBufferObject {
-    Scene::SceneUniformBuffer scene;
+  struct UBORenderable {
     alignas(16) glm::vec3 color;
     float line_width;
     int per_vertex_color_offset;
@@ -48,6 +49,10 @@ class SceneLines final : public Renderable {
     int start_index;
     int num_vertices;
     int is_indexed;
+  };
+
+  struct UBOScene {
+    Scene::SceneUniformBuffer scene;
     float aspect_ratio;
   };
 

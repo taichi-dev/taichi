@@ -11,7 +11,8 @@ using namespace taichi::lang::vulkan;
 
 Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
-  config.ubo_size = sizeof(UniformBufferObject);
+  config.ubo_size = sizeof(UBORenderable);
+  config.scene_ubo_size = sizeof(UBOScene);
   config.depth = true;
   config.blending = true;
   config.fragment_shader_path =
@@ -23,8 +24,25 @@ Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   Renderable::init(config, app_context);
 }
 
-void Particles::update_data(const ParticlesInfo &info, const SceneBase &scene) {
+void Particles::update_data(const ParticlesInfo &info) {
   Renderable::update_data(info.renderable_info);
+
+  // Update UBO
+  {
+    UBORenderable ubo;
+    ubo.color = glm::vec4(info.color, 1);
+    ubo.radius = info.radius;
+    ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
+    ubo.use_per_vertex_radius = info.renderable_info.has_per_vertex_radius;
+
+    void *mapped{nullptr};
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
+    memcpy(mapped, &ubo, sizeof(ubo));
+    app_context_->device().unmap(*uniform_buffer_renderable_);
+  }
+}
+
+void Particles::update_scene_data(const SceneBase &scene) {
 
   // Update SSBO
   {
@@ -39,20 +57,16 @@ void Particles::update_data(const ParticlesInfo &info, const SceneBase &scene) {
 
   // Update UBO
   {
-    UniformBufferObject ubo;
+    UBOScene ubo;
     ubo.scene = scene.current_ubo_;
-    ubo.color = glm::vec4(info.color, 1);
-    ubo.radius = info.radius;
     ubo.window_width = app_context_->config.width;
     ubo.window_height = app_context_->config.height;
     ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
-    ubo.use_per_vertex_color = info.renderable_info.has_per_vertex_color;
-    ubo.use_per_vertex_radius = info.renderable_info.has_per_vertex_radius;
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_);
+    app_context_->device().unmap(*uniform_buffer_scene_);
   }
 }
 
@@ -60,8 +74,9 @@ void Particles::record_this_frame_commands(CommandList *command_list) {
   auto raster_state = app_context_->device().create_raster_resources_unique();
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(0), 0);
 
-  resource_set_->buffer(0, uniform_buffer_->get_ptr(0));
-  resource_set_->rw_buffer(1, storage_buffer_->get_ptr(0));
+  resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
+  resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
+  resource_set_->rw_buffer(2, storage_buffer_->get_ptr(0));
 
   command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());

@@ -11,25 +11,22 @@ from taichi.types.compound_types import CompoundType
 
 
 class ArgPack:
-    """The ArgPack type class.
+    """ The `ArgPack` Type Class.
 
-    An argument pack is a dictionary-like data packs that stores members as
-    (key, value) pairs. Valid data members of an argument pack can be scalars,
-    matrices or other dictionary-like structures. Compared with structs, argument
-    packs could store buffer type like NdarrayType and TextureType in Taichi.
-    However, argument packs work as a reference container rather than a data
-    container which is implemented by the ti.Struct. Also, argument packs could
-    not be nested in other types except argument pack, and argument packs could
-    only be used as kernel parameters.
+    The `ArgPack` operates as a dictionary-like data pack, storing members as (key, value) pairs. Members stored can
+    range from scalars and matrices to other dictionary-like structures. Distinguished from structs, `ArgPack` can
+    accommodate buffer types such as `NdarrayType` and `TextureType` from Taichi. However, unlike `ti.Struct` which
+    serves as a data container, `ArgPack` functions as a reference container. It's important to note that `ArgPack`
+    cannot be nested within other types except for another `ArgPack`, and can only be utilized as kernel parameters.
 
     Args:
         annotations (Dict[str, Union[Dict, Matrix, Struct]]): \
-            keys and types for argument pack members.
+            The keys and types for `ArgPack` members.
         entries (Dict[str, Union[Dict, Matrix, Struct]]): \
-            keys and values for argument pack members.
+            The keys and corresponding values for `ArgPack` members.
 
     Returns:
-        An instance of this argument pack.
+        An instance of this `ArgPack`.
 
     Example::
 

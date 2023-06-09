@@ -24,6 +24,24 @@ def test_argpack_basic():
 
 
 @test_utils.test()
+def test_argpack_multiple():
+    arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
+    arr.fill([1.0, 2.0, 3.0])
+
+    pack_type1 = ti.types.argpack(a=ti.i32, c=ti.f32)
+    pack_type2 = ti.types.argpack(a=ti.types.ndarray(dtype=ti.math.vec3, ndim=2))
+    pack1 = pack_type1(a=1, c=2.1)
+    pack2 = pack_type2(a=arr)
+
+    @ti.kernel
+    def foo(p1: pack_type1, p2: pack_type2) -> ti.f32:
+        tmp = p1.a * p1.c
+        return tmp + p2.a[1, 2][1]
+
+    assert foo(pack1, pack2) == test_utils.approx(1 * 2.1 + 2.0, rel=1e-3)
+
+
+@test_utils.test()
 def test_argpack_nested():
     arr = ti.ndarray(dtype=ti.math.vec3, shape=(4, 4))
     arr.fill([1.0, 2.0, 3.0])

@@ -263,6 +263,7 @@ class _SpecialConfig:
         self.log_level = "info"
         self.gdb_trigger = False
         self.short_circuit_operators = True
+        self.print_full_traceback = False
 
 
 def prepare_sandbox():
@@ -414,6 +415,7 @@ def init(
     env_spec.add("log_level", str)
     env_spec.add("gdb_trigger")
     env_spec.add("short_circuit_operators")
+    env_spec.add("print_full_traceback")
 
     # compiler configurations (ti.cfg):
     for key in dir(cfg):
@@ -433,6 +435,7 @@ def init(
     if not _test_mode:
         _ti_core.set_core_trigger_gdb_when_crash(spec_cfg.gdb_trigger)
         impl.get_runtime().short_circuit_operators = spec_cfg.short_circuit_operators
+        impl.get_runtime().print_full_traceback = spec_cfg.print_full_traceback
         _logging.set_logging_level(spec_cfg.log_level.lower())
 
     # select arch (backend):

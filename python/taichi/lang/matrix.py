@@ -133,7 +133,7 @@ def _infer_entry_dt(entry):
     if isinstance(entry, (float, np.floating)):
         return impl.get_runtime().default_fp
     if isinstance(entry, expr.Expr):
-        dt = entry.ptr.get_ret_type()
+        dt = entry.ptr.get_rvalue_type()
         if dt == ti_python_core.DataType_unknown:
             raise TaichiTypeError("Element type of the matrix cannot be inferred. Please set dt instead for now.")
         return dt
@@ -1412,7 +1412,7 @@ class MatrixType(CompoundType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert self.ndim == len(shape)
                 assert self.n == shape[0]
                 if self.ndim > 1:
@@ -1501,6 +1501,11 @@ class MatrixType(CompoundType):
         kwargs.update({"ndim": self.ndim})
         return Matrix.field(self.n, self.m, dtype=self.dtype, **kwargs)
 
+    def ndarray(self, **kwargs):
+        assert kwargs.get("ndim", self.ndim) == self.ndim
+        kwargs.update({"ndim": self.ndim})
+        return Matrix.ndarray(self.n, self.m, dtype=self.dtype, **kwargs)
+
     def get_shape(self):
         if self.ndim == 1:
             return (self.n,)
@@ -1554,7 +1559,7 @@ class VectorType(MatrixType):
             # Init from a real Matrix
             if isinstance(args[0], expr.Expr) and args[0].ptr.is_tensor():
                 arg = args[0]
-                shape = arg.ptr.get_ret_type().shape()
+                shape = arg.ptr.get_rvalue_type().shape()
                 assert len(shape) == 1
                 assert self.n == shape[0]
                 return expr.Expr(arg.ptr)
@@ -1598,6 +1603,9 @@ class VectorType(MatrixType):
     def field(self, **kwargs):
         return Vector.field(self.n, dtype=self.dtype, **kwargs)
 
+    def ndarray(self, **kwargs):
+        return Vector.ndarray(self.n, dtype=self.dtype, **kwargs)
+
     def to_string(self):
         dtype_str = self.dtype.to_string() if self.dtype is not None else ""
         return f"VectorType[{self.n}, {dtype_str}]"
@@ -1628,7 +1636,9 @@ class MatrixNdarray(Ndarray):
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((self.n, self.m), self.dtype)
         # TODO: we should pass in element_type, shape, layout instead.
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+        )
 
     @property
     def element_shape(self):
@@ -1736,7 +1746,9 @@ class VectorNdarray(Ndarray):
         self.layout = Layout.AOS
         self.shape = tuple(shape)
         self.element_type = _type_factory.get_tensor_type((n,), self.dtype)
-        self.arr = impl.get_runtime().prog.create_ndarray(cook_dtype(self.element_type), shape, Layout.AOS)
+        self.arr = impl.get_runtime().prog.create_ndarray(
+            cook_dtype(self.element_type), shape, Layout.AOS, zero_fill=True
+        )
 
     @property
     def element_shape(self):

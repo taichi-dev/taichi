@@ -7,8 +7,10 @@ from typing import Optional
 import importlib
 import os
 import platform
+import re
 import subprocess
 import sys
+import sysconfig
 
 # -- third party --
 # -- own --
@@ -89,7 +91,7 @@ def ensure_dependencies(*deps: str):
 
     try:
         for dep in deps:
-            dep = dep.split("==")[0]
+            dep = re.split(r"[><=]=?", dep)[0]
             importlib.import_module(dep)
         return
     except ModuleNotFoundError:
@@ -100,7 +102,10 @@ def ensure_dependencies(*deps: str):
     pip_install = ["-m", "pip", "install", "--no-user", f"--target={bootstrap_root}", "-U"]
 
     if ensurepip:
-        wheels = Path(ensurepip.__path__[0]).glob("**/*.whl")
+        search_path = sysconfig.get_config_var("WHEEL_PKG_DIR")
+        if search_path is None:
+            search_path = ensurepip.__path__[0]
+        wheels = Path(search_path).glob("**/*.whl")
         wheels = os.pathsep.join(map(str, wheels))
         if run(py, "-S", *pip_install, "pip", env={"PYTHONPATH": wheels}):
             raise Exception("Unable to install pip! (ensurepip method)")
@@ -200,12 +205,49 @@ def detect_crippled_python():
         sys.exit(1)
 
 
+def windows_enable_long_paths():
+    import winreg
+
+    key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, r"SYSTEM\CurrentControlSet\Control\FileSystem")
+    try:
+        enabled = winreg.QueryValueEx(key, "LongPathsEnabled") == (1, 4)
+    except FileNotFoundError:
+        enabled = False
+
+    if not enabled:
+        from .misc import info, warn
+        from .tinysh import Command, sudo
+
+        info("Enabling long paths on Windows")
+        reg = Command("reg.exe")
+        try:
+            with sudo():
+                reg.add(
+                    r"HKLM\SYSTEM\CurrentControlSet\Control\FileSystem",
+                    "/v",
+                    "LongPathsEnabled",
+                    "/t",
+                    "REG_DWORD",
+                    "/d",
+                    "1",
+                    "/f",
+                )
+        except OSError as e:
+            if e.winerror == 1223:
+                warn("Enabling long paths cancelled, you may encounter compile errors later")
+            else:
+                raise
+
+
 def early_init():
     """
     Do early initialization.
     This must be called before any other non-stdlib imports.
     """
     detect_crippled_python()
-    ensure_dependencies("tqdm", "requests", "mslex", "psutil")
+    ensure_dependencies("tqdm", "requests", "mslex", "psutil>=5.9.5")
     chdir_to_root()
     monkey_patch_environ()
+
+    if platform.system() == "Windows":
+        windows_enable_long_paths()

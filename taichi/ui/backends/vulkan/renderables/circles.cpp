@@ -12,10 +12,13 @@ using namespace taichi::lang::vulkan;
 void Circles::update_data(const CirclesInfo &info) {
   Renderable::update_data(info.renderable_info);
 
-  UniformBufferObject ubo{
-      info.color, (int)info.renderable_info.has_per_vertex_color,
-      info.radius / app_context_->config.width * app_context_->config.height,
-      info.radius};
+  UniformBufferObject ubo;
+  ubo.color = info.color;
+  ubo.use_per_vertex_color = (int)info.renderable_info.has_per_vertex_color;
+  ubo.use_per_vertex_radius = (int)info.renderable_info.has_per_vertex_radius;
+  ubo.radius = info.radius;
+  ubo.window_width = app_context_->config.width;
+  ubo.window_height = app_context_->config.height;
 
   void *mapped{nullptr};
   RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));

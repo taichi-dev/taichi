@@ -76,11 +76,11 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(TernaryOpExpression *expr) override {
-    emit(ternary_type_name(expr->type), '(');
+    emit(ternary_type_name(expr->type), "(op1: ");
     expr->op1->accept(this);
-    emit(' ');
+    emit(", op2: ");
     expr->op2->accept(this);
-    emit(' ');
+    emit(", op3: ");
     expr->op3->accept(this);
     emit(')');
   }
@@ -92,9 +92,8 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(ExternalTensorExpression *expr) override {
-    emit(fmt::format("{}d_ext_arr (element_dim={}, dt={}, grad={})", expr->dim,
-                     expr->element_dim, expr->dt->to_string(),
-                     expr->needs_grad));
+    emit(fmt::format("{}d_ext_arr (dt={}, grad={})", expr->ndim,
+                     expr->dt->to_string(), expr->needs_grad));
   }
 
   void visit(FieldExpression *expr) override {
@@ -126,6 +125,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(IndexExpression *expr) override {
+    emit("<" + expr->ret_type->to_string() + ">");
     expr->var->accept(this);
     emit('[');
     if (expr->ret_shape.empty()) {
@@ -165,6 +165,7 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   void visit(IdExpression *expr) override {
+    emit("<" + expr->ret_type->to_string() + ">");
     emit(expr->id.name());
   }
 
@@ -246,6 +247,10 @@ class ExpressionHumanFriendlyPrinter : public ExpressionPrinter {
   }
 
   static std::string expr_to_string(Expr &expr) {
+    return expr_to_string(expr.expr.get());
+  }
+
+  static std::string expr_to_string(Expression *expr) {
     std::ostringstream oss;
     ExpressionHumanFriendlyPrinter printer(&oss);
     expr->accept(&printer);

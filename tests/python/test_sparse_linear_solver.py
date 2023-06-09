@@ -4,15 +4,24 @@ import pytest
 import taichi as ti
 from tests import test_utils
 
+"""
+A_psd used in the tests is a random positive definite matrix with a given number of rows and columns:
+A_psd = A * A^T
+Reference: https://stackoverflow.com/questions/619335/a-simple-algorithm-for-generating-positive-semidefinite-matrices
+2023.5.31 qbao: It's observed that the matrix generated above is semi-definite, and it fails about 5% of the tests.
+Therefore, A_psd is modified from A * A^T to A * A^T + np.eye(n) to improve stability.
+"""
+
 
 @pytest.mark.parametrize("dtype", [ti.f32, ti.f64])
 @pytest.mark.parametrize("solver_type", ["LLT", "LDLT", "LU"])
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @test_utils.test(arch=ti.x64)
 def test_sparse_LLT_solver(dtype, solver_type, ordering):
+    np_dtype = ti.lang.util.to_numpy_type(dtype)
     n = 10
     A = np.random.rand(n, n)
-    A_psd = np.dot(A, A.transpose())
+    A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)
     Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=100, dtype=dtype)
     b = ti.field(dtype=dtype, shape=n)
 
@@ -44,10 +53,11 @@ def test_sparse_LLT_solver(dtype, solver_type, ordering):
 @pytest.mark.parametrize("ordering", ["AMD", "COLAMD"])
 @test_utils.test(arch=ti.cpu)
 def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
+    np_dtype = ti.lang.util.to_numpy_type(dtype)
     n = 10
     A = np.random.rand(n, n)
-    A_psd = np.dot(A, A.transpose())
-    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
+    A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300, dtype=dtype)
     b = ti.ndarray(ti.f32, shape=n)
 
     @ti.kernel
@@ -73,7 +83,6 @@ def test_sparse_solver_ndarray_vector(dtype, solver_type, ordering):
         assert x[i] == test_utils.approx(res[i], rel=1.0)
 
 
-@pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver():
     from scipy.sparse import coo_matrix
@@ -83,13 +92,9 @@ def test_gpu_sparse_solver():
         for i in range(nrows):
             b[i] = 1.0 + i / nrows
 
-    """
-    Generate a positive definite matrix with a given number of rows and columns.
-    Reference: https://stackoverflow.com/questions/619335/a-simple-algorithm-for-generating-positive-semidefinite-matrices
-    """
-    matrixSize = 10
-    A = np.random.rand(matrixSize, matrixSize)
-    A_psd = np.dot(A, A.transpose())
+    n = 10
+    A = np.random.rand(n, n)
+    A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np.float32)
 
     A_raw_coo = coo_matrix(A_psd)
     nrows, ncols = A_raw_coo.shape
@@ -122,7 +127,7 @@ def test_gpu_sparse_solver():
     x_np = np.linalg.solve(A_psd, b_np)
 
     # solve Ax=b using cusolver refectorization
-    solver = ti.linalg.SparseSolver()
+    solver = ti.linalg.SparseSolver(dtype=ti.f32)
     solver.analyze_pattern(A_ti)
     solver.factorize(A_ti)
     x_ti = solver.solve(b)
@@ -130,23 +135,23 @@ def test_gpu_sparse_solver():
     assert np.allclose(x_ti.to_numpy(), x_np, rtol=5.0e-3)
 
     # solve Ax = b using compute function
-    solver = ti.linalg.SparseSolver()
+    solver = ti.linalg.SparseSolver(dtype=ti.f32)
     solver.compute(A_ti)
     x_cti = solver.solve(b)
     ti.sync()
     assert np.allclose(x_cti.to_numpy(), x_np, rtol=5.0e-3)
 
 
-@pytest.mark.skip(reason="Flaky; Reason to be investigated. 2023.5.18 qbao")
 @pytest.mark.parametrize("dtype", [ti.f32])
 @pytest.mark.parametrize("solver_type", ["LLT", "LU"])
 @test_utils.test(arch=ti.cuda)
 def test_gpu_sparse_solver2(dtype, solver_type):
+    np_dtype = ti.lang.util.to_numpy_type(dtype)
     n = 10
     A = np.random.rand(n, n)
-    A_psd = np.dot(A, A.transpose())
-    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300)
-    b = ti.ndarray(ti.f32, shape=n)
+    A_psd = (np.dot(A, A.transpose()) + np.eye(n)).astype(np_dtype)
+    Abuilder = ti.linalg.SparseMatrixBuilder(n, n, max_num_triplets=300, dtype=dtype)
+    b = ti.ndarray(dtype, shape=n)
 
     @ti.kernel
     def fill(

@@ -42,6 +42,7 @@ class ArgumentAttributes:
         # Kernels are always launched by indexed arguments and this is for
         # debugging and header generation only.
         name = j["name"] if "name" in j and len(j["name"]) > 0 else None
+        ptype = j["ptype"] if "ptype" in j else None
 
         self.dtype: int = int(dtype)
         self.element_shape: List[int] = [int(x) for x in element_shape]
@@ -52,6 +53,7 @@ class ArgumentAttributes:
         self.offset_in_mem: int = int(offset_in_mem)
         self.stride: int = int(stride)
         self.name: Optional[str] = str(name) if name is not None else None
+        self.ptype: Optional[int] = int(ptype) if ptype is not None else None
 
 
 @json_data_model
@@ -60,14 +62,12 @@ class ContextAttributes:
         arg_attribs_vec_ = j["arg_attribs_vec_"]
         args_bytes_ = j["args_bytes_"]
         arr_access = j["arr_access"]
-        extra_args_bytes_ = j["extra_args_bytes_"]
         ret_attribs_vec_ = j["ret_attribs_vec_"]
         rets_bytes_ = j["rets_bytes_"]
 
         self.arg_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in arg_attribs_vec_]
         self.args_bytes_: int = int(args_bytes_)
         self.arr_access: List[int] = [int(x) for x in arr_access]
-        self.extra_args_bytes_: int = int(extra_args_bytes_)
         self.ret_attribs_vec_: List[ArgumentAttributes] = [ArgumentAttributes(x) for x in ret_attribs_vec_]
         self.rets_bytes_: int = int(rets_bytes_)
 

@@ -122,7 +122,7 @@ def same_shapes(*xs):
         elif isinstance(x, list):
             shapes.append(tuple(get_list_shape(x)))
         elif isinstance(x, Expr):
-            shapes.append(tuple(x.ptr.get_ret_type().shape()))
+            shapes.append(tuple(x.ptr.get_rvalue_type().shape()))
         else:
             return False, f"same_shapes() received an unexpected argument of type: {x}"
 

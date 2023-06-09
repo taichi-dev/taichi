@@ -34,6 +34,13 @@ DataType PrimitiveType::get(PrimitiveTypeID t) {
 std::size_t DataType::hash() const {
   if (auto primitive = ptr_->cast<PrimitiveType>()) {
     return (std::size_t)primitive->type;
+  } else if (auto tensor_type = ptr_->cast<TensorType>()) {
+    std::size_t ret = 0;
+    auto tensor_shape = tensor_type->get_shape();
+    for (int i = 0; i < tensor_shape.size(); i++) {
+      ret += (i + 1) * 107 + tensor_shape[i];
+    }
+    return ret + DataType(tensor_type->get_element_type()).hash();
   } else if (auto pointer = ptr_->cast<PointerType>()) {
     return 10007 + DataType(pointer->get_pointee_type()).hash();
   } else {

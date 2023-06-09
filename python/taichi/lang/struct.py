@@ -1,6 +1,7 @@
 import numbers
 from types import MethodType
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
@@ -9,6 +10,7 @@ from taichi.lang.exception import (
     TaichiSyntaxError,
     TaichiTypeError,
 )
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
@@ -34,7 +36,7 @@ class Struct:
         An instance of this struct.
 
     Example::
-
+_
         >>> vec3 = ti.types.vector(3, ti.f32)
         >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
         >>> print(a.items)
@@ -69,6 +71,7 @@ class Struct:
                 v = Struct(v)
             self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
+        self.__dtype = None
 
     @property
     def keys(self):
@@ -147,6 +150,7 @@ class Struct:
             value = Struct(value)
         for k in self.keys:
             self[k] = value[k]
+        self.__dtype = value.__dtype
 
     @staticmethod
     def _make_getter(key):
@@ -174,6 +178,7 @@ class Struct:
             raise TaichiTypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         for k, v in self.items:
             v._assign(other.__entries[k])
+        self.__dtype = other.__dtype
         return self
 
     def __len__(self):
@@ -631,11 +636,41 @@ class StructType(CompoundType):
             d[name] = data
 
         entries = Struct(d)
+        entries._Struct__dtype = self.dtype
         struct = self.cast(entries)
+        struct._Struct__dtype = self.dtype
         return struct
 
     def __instancecheck__(self, instance):
-        # TODO: implement instance check for struct
+        if not isinstance(instance, Struct):
+            return False
+        if list(self.members.keys()) != list(instance._Struct__entries.keys()):
+            return False
+        if instance._Struct__dtype is not None and instance._Struct__dtype != self.dtype:
+            return False
+        for index, (name, dtype) in enumerate(self.members.items()):
+            val = instance._members[index]
+            if isinstance(dtype, StructType):
+                if not isinstance(val, dtype):
+                    return False
+            elif isinstance(dtype, MatrixType):
+                if isinstance(val, Expr):
+                    if not val.is_tensor():
+                        return False
+                if val.get_shape() != dtype.get_shape():
+                    return False
+            elif dtype in primitive_types.integer_types:
+                if isinstance(val, Expr):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.integer_types:
+                        return False
+                elif not isinstance(val, (int, np.integer)):
+                    return False
+            elif dtype in primitive_types.real_types:
+                if isinstance(val, Expr):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.real_types:
+                        return False
+                elif not isinstance(val, (float, np.floating)):
+                    return False
         return True
 
     def from_taichi_object(self, func_ret, ret_index=()):
@@ -649,7 +684,9 @@ class StructType(CompoundType):
                 d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
         d = {}
@@ -670,7 +707,9 @@ class StructType(CompoundType):
                     raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def set_kernel_struct_args(self, struct, launch_ctx, ret_index=()):
         # TODO: move this to class Struct after we add dtype to Struct
@@ -707,7 +746,9 @@ class StructType(CompoundType):
                 else:
                     entries[k] = ops.cast(struct._Struct__entries[k], dtype)
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def filled_with_scalar(self, value):
         entries = {}
@@ -719,10 +760,18 @@ class StructType(CompoundType):
             else:
                 entries[k] = value
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def field(self, **kwargs):
         return Struct.field(self.members, self.methods, **kwargs)
+
+    def __str__(self):
+        """Python scope struct type print support."""
+        item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.members.items()])
+        item_str += f", struct_methods={self.methods}"
+        return f"<ti.StructType {item_str}>"
 
 
 def dataclass(cls):

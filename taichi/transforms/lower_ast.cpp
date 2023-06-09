@@ -68,15 +68,15 @@ class LowerAST : public IRVisitor {
     auto ident = stmt->ident;
     TI_ASSERT(block->local_var_to_stmt.find(ident) ==
               block->local_var_to_stmt.end());
-    if (stmt->ret_type->is<TensorType>()) {
-      auto tensor_type = stmt->ret_type->cast<TensorType>();
+    auto alloca_type = stmt->ret_type.ptr_removed();
+    if (auto tensor_type = alloca_type->cast<TensorType>()) {
       auto lowered = std::make_unique<AllocaStmt>(
           tensor_type->get_shape(), tensor_type->get_element_type(),
           stmt->is_shared);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     } else {
-      auto lowered = std::make_unique<AllocaStmt>(stmt->ret_type);
+      auto lowered = std::make_unique<AllocaStmt>(alloca_type);
       block->local_var_to_stmt.insert(std::make_pair(ident, lowered.get()));
       stmt->parent->replace_with(stmt, std::move(lowered));
     }
@@ -254,7 +254,7 @@ class LowerAST : public IRVisitor {
       if (stmt->external_tensor.is<ExternalTensorExpression>()) {
         auto tensor = stmt->external_tensor.cast<ExternalTensorExpression>();
         arg_id = tensor->arg_id;
-        for (int i = 0; i < tensor->dim - abs(tensor->element_dim); i++) {
+        for (int i = 0; i < tensor->ndim; i++) {
           shape.push_back(
               fctx.push_back<ExternalTensorShapeAlongAxisStmt>(i, arg_id));
         }

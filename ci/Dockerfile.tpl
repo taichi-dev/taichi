@@ -3,6 +3,16 @@
 # | These should be merged into the image |
 # +=======================================+
 
+SNIPPET timezone-patch
+RUN : && \
+    . /etc/os-release && \
+    if [ "$ID" = "ubuntu" ]; then \
+        sudo apt-get update && \
+        sudo -E apt-get install -y tzdata && \
+        sudo rm -rf /var/cache/apt/archives /var/lib/apt/lists; \
+    fi && \
+    sudo ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+    :
 
 # ===== END PATCHES ======
 SNIPPET mitm-ca
@@ -101,6 +111,7 @@ RUN set -x && \
     true
 
 USE dev-user
+USE timezone-patch
 BUILD build-cpu AS registry.botmaster.tgr/taichi-build-cpu:__TIME__
 
 # -------
@@ -108,6 +119,7 @@ FROM ubuntu:18.04 AS test-cpu
 USE debian-addons-test
 USE mitm-ca
 USE dev-user
+USE timezone-patch
 BUILD test-cpu AS registry.botmaster.tgr/taichi-test-cpu:__TIME__
 
 # -------
@@ -139,6 +151,7 @@ USE debian-addons
 USE mitm-ca
 USE gpu-build-image-deps
 USE dev-user
+USE timezone-patch
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-build-amdgpu:__TIME__
 BUILD build-amdgpu AS registry.botmaster.tgr/taichi-test-amdgpu:__TIME__
 
@@ -152,6 +165,7 @@ USE gpu-build-image-deps
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user
+USE timezone-patch
 BUILD build-cuda AS registry.botmaster.tgr/taichi-build-cuda:__TIME__
 
 # -------
@@ -163,6 +177,7 @@ USE mitm-ca
 # Remove mesa EGL driver, which interferes with the propritary NVIDIA drivers
 RUN rm -f /usr/lib/x86_64-linux-gnu/libEGL_mesa*
 USE dev-user
+USE timezone-patch
 BUILD test-cuda AS registry.botmaster.tgr/taichi-test-cuda:__TIME__
 
 # -------
@@ -201,6 +216,7 @@ RUN set -x && \
     chown -R dev:dev /home/dev/.android && \
     true
 
+USE timezone-patch
 BUILD build-android AS registry.botmaster.tgr/taichi-build-android:__TIME__
 BUILD build-android AS registry.botmaster.tgr/taichi-test-android:__TIME__
 
@@ -261,6 +277,7 @@ FROM centos:7 AS manylinux2014
 USE manylinux2014-addons
 USE mitm-ca-centos
 USE dev-user
+USE timezone-patch
 BUILD manylinux2014 AS registry.botmaster.tgr/taichi-build-manylinux2014:__TIME__
 BUILD manylinux2014 AS registry.botmaster.tgr/taichi-test-manylinux2014:__TIME__
 
@@ -268,6 +285,7 @@ FROM nvidia/cudagl:11.2.2-devel-centos7 AS manylinux2014-cuda
 USE manylinux2014-addons
 USE mitm-ca-centos
 USE dev-user
+USE timezone-patch
 BUILD manylinux2014-cuda AS registry.botmaster.tgr/taichi-build-manylinux2014-cuda:__TIME__
 BUILD manylinux2014-cuda AS registry.botmaster.tgr/taichi-test-manylinux2014-cuda:__TIME__
 

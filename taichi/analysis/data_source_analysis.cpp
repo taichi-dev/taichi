@@ -6,7 +6,9 @@ namespace taichi::lang {
 
 namespace irpass::analysis {
 
-stmt_refs get_aliased_stmts(stmt_refs dest) {
+// If there's TensorType involved,
+// then return dest together with the aliased stmts
+stmt_refs include_aliased_stmts(stmt_refs dest) {
   if (dest.size() == 1) {
     Stmt *dest_stmt = dest.begin()[0];
     if (dest_stmt->is<MatrixOfMatrixPtrStmt>()) {
@@ -34,7 +36,8 @@ stmt_refs get_load_pointers(Stmt *load_stmt, bool get_aliased) {
     // The statement has the "Load" IR Trait
     stmt_refs load_src = load_trait->get_load_pointers();
     if (get_aliased) {
-      load_src = get_aliased_stmts(load_src);
+      auto aliased_stmts = include_aliased_stmts(load_src);
+      return aliased_stmts;
     }
     return load_src;
   }
@@ -55,7 +58,8 @@ stmt_refs get_store_destination(Stmt *store_stmt, bool get_aliased) noexcept {
     // The statement has the "Store" IR Trait
     stmt_refs store_dest = store_trait->get_store_destination();
     if (get_aliased) {
-      store_dest = get_aliased_stmts(store_dest);
+      auto aliased_stmts = include_aliased_stmts(store_dest);
+      return aliased_stmts;
     }
     return store_dest;
   } else {

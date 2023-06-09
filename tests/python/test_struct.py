@@ -199,3 +199,20 @@ def test_struct_field_with_bool():
     assert bar().a == 0
     assert bar().c == 0
     assert bar().b == True
+
+
+@test_utils.test()
+def test_struct_special_element_name():
+    @ti.dataclass
+    class Foo:
+        entries: int
+        keys: int
+        items: int
+        methods: int
+
+    @ti.kernel
+    def foo() -> int:
+        x = Foo(42, 21, 23, 11)
+        return x.entries + x.keys + x.items + x.methods
+
+    assert foo() == 42 + 21 + 23 + 11

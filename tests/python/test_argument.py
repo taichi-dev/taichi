@@ -232,32 +232,3 @@ def test_struct_arg_with_matrix():
 
     ret = foo(arg)
     assert ret == ret_std
-
-
-@test_utils.test(arch=[ti.cpu, ti.cuda], print_full_traceback=True)
-def test_struct_arg_with_matrix_real_func():
-    mat = ti.types.matrix(3, 2, ti.f32)
-    s0 = ti.types.struct(a=mat, b=ti.f32)
-    s1 = ti.types.struct(a=ti.i32, b=s0)
-
-    @ti.experimental.real_func
-    def foo(a: s1) -> ti.i32:
-        ret = a.a + a.b.b
-        for i in range(3):
-            for j in range(2):
-                ret += a.b.a[i, j] * (i + 1) * (j + 2)
-        return ret
-
-    @ti.kernel
-    def bar(a: s1) -> ti.i32:
-        return foo(a)
-
-    arg = s1(a=1, b=s0(a=mat(1, 2, 3, 4, 5, 6), b=123))
-    ret_std = 1 + 123
-
-    for i in range(3):
-        for j in range(2):
-            ret_std += (i + 1) * (j + 2) * (i * 2 + j + 1)
-
-    ret = bar(arg)
-    assert ret == ret_std

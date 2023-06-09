@@ -19,12 +19,15 @@ class SparseMatrixBuilder {
                       int cols,
                       int max_num_triplets,
                       DataType dtype,
-                      const std::string &storage_format,
-                      Program *prog);
+                      const std::string &storage_format);
 
   ~SparseMatrixBuilder();
   void print_triplets_eigen();
   void print_triplets_cuda();
+
+  void create_ndarray(Program *prog);
+
+  void delete_ndarray(Program *prog);
 
   intptr_t get_ndarray_data_ptr() const;
 
@@ -44,13 +47,13 @@ class SparseMatrixBuilder {
  private:
   uint64 num_triplets_{0};
   Ndarray *ndarray_data_base_ptr_{nullptr};
+  intptr_t ndarray_data_ptr_{0};
   int rows_{0};
   int cols_{0};
   uint64 max_num_triplets_{0};
   bool built_{false};
   DataType dtype_{PrimitiveType::f32};
   std::string storage_format_{"col_major"};
-  Program *prog_{nullptr};
 };
 
 class SparseMatrix {

@@ -1170,12 +1170,20 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def(py::init<int, int, int, DataType, const std::string &, Program *>(),
+      .def(py::init<int, int, int, DataType, const std::string &>(),
            py::arg("rows"), py::arg("cols"), py::arg("max_num_triplets"),
            py::arg("dt") = PrimitiveType::f32,
-           py::arg("storage_format") = "col_major", py::arg("prog") = nullptr)
+           py::arg("storage_format") = "col_major")
       .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
       .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
+      .def("create_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->create_ndarray(prog);
+           })
+      .def("delete_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->delete_ndarray(prog);
+           })
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)

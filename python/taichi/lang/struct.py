@@ -36,7 +36,7 @@ class Struct:
         An instance of this struct.
 
     Example::
-
+_
         >>> vec3 = ti.types.vector(3, ti.f32)
         >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
         >>> print(a.items)
@@ -685,7 +685,7 @@ class StructType(CompoundType):
         d["__struct_methods"] = self.methods
 
         struct = Struct(d)
-        struct._Struct_dtype = self.dtype
+        struct._Struct__dtype = self.dtype
         return struct
 
     def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
@@ -708,7 +708,7 @@ class StructType(CompoundType):
         d["__struct_methods"] = self.methods
 
         struct = Struct(d)
-        struct._Struct_dtype = self.dtype
+        struct._Struct__dtype = self.dtype
         return struct
 
     def set_kernel_struct_args(self, struct, launch_ctx, ret_index=()):
@@ -747,7 +747,7 @@ class StructType(CompoundType):
                     entries[k] = ops.cast(struct._Struct__entries[k], dtype)
         entries["__struct_methods"] = self.methods
         struct = Struct(entries)
-        struct._Struct_dtype = self.dtype
+        struct._Struct__dtype = self.dtype
         return struct
 
     def filled_with_scalar(self, value):
@@ -761,7 +761,7 @@ class StructType(CompoundType):
                 entries[k] = value
         entries["__struct_methods"] = self.methods
         struct = Struct(entries)
-        struct._Struct_dtype = self.dtype
+        struct._Struct__dtype = self.dtype
         return struct
 
     def field(self, **kwargs):

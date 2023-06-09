@@ -11,7 +11,6 @@ class GatherFuncStoreDests : public BasicStmtVisitor {
  private:
   std::unordered_set<Stmt *> results_;
   Function *current_func_;
-  ControlFlowGraph *graph_;
   struct TarjanData {
     std::unordered_map<Function *, int> func_dfn;
     std::unordered_map<Function *, int> func_low;
@@ -21,22 +20,21 @@ class GatherFuncStoreDests : public BasicStmtVisitor {
   TarjanData &tarjan_data_;
 
   static std::unordered_set<Stmt *> run(Function *func,
-                                        ControlFlowGraph *graph,
                                         TarjanData &tarjan_data) {
     TI_ASSERT(tarjan_data.func_dfn.count(func) == 0);
     tarjan_data.func_dfn[func] = tarjan_data.func_low[func] =
         tarjan_data.func_dfn.size();
     tarjan_data.func_in_stack.insert(func);
     tarjan_data.func_stack.push(func);
-    GatherFuncStoreDests searcher(func, graph, tarjan_data);
+    GatherFuncStoreDests searcher(func, tarjan_data);
     func->ir->accept(&searcher);
     if (tarjan_data.func_low[func] == tarjan_data.func_dfn[func]) {
       while (true) {
         auto top = tarjan_data.func_stack.top();
         tarjan_data.func_stack.pop();
         tarjan_data.func_in_stack.erase(top);
-        TI_ASSERT(graph->func_store_dests.count(top) == 0);
-        graph->func_store_dests[top] = searcher.results_;
+        top->store_dests.insert(searcher.results_.begin(),
+                                searcher.results_.end());
         if (top == func) {
           break;
         }
@@ -45,26 +43,38 @@ class GatherFuncStoreDests : public BasicStmtVisitor {
     return searcher.results_;
   }
 
+  static void run(IRNode *ir, TarjanData &tarjan_data) {
+    GatherFuncStoreDests searcher(nullptr, tarjan_data);
+    ir->accept(&searcher);
+  }
+
  public:
   using BasicStmtVisitor::visit;
 
-  GatherFuncStoreDests(Function *func,
-                       ControlFlowGraph *graph,
-                       TarjanData &tarjan_data)
-      : current_func_(func), graph_(graph), tarjan_data_(tarjan_data) {
+  GatherFuncStoreDests(Function *func, TarjanData &tarjan_data)
+      : current_func_(func), tarjan_data_(tarjan_data) {
     allow_undefined_visitor = true;
     invoke_default_visitor = true;
   }
 
   void visit(Stmt *stmt) override {
+    if (!current_func_) {
+      return;
+    }
     auto result = irpass::analysis::get_store_destination(stmt);
     results_.insert(result.begin(), result.end());
   }
 
   void visit(FuncCallStmt *stmt) override {
     auto func = stmt->func;
+    if (!current_func_) {
+      if (!tarjan_data_.func_dfn.count(func)) {
+        run(func, tarjan_data_);
+      }
+      return;
+    }
     if (!tarjan_data_.func_dfn.count(func)) {
-      auto result = run(func, graph_, tarjan_data_);
+      auto result = run(func, tarjan_data_);
       results_.merge(result);
       tarjan_data_.func_low[current_func_] = std::min(
           tarjan_data_.func_low[current_func_], tarjan_data_.func_low[func]);
@@ -72,27 +82,20 @@ class GatherFuncStoreDests : public BasicStmtVisitor {
       tarjan_data_.func_low[current_func_] = std::min(
           tarjan_data_.func_low[current_func_], tarjan_data_.func_dfn[func]);
     } else {
-      const auto &dests = graph_->func_store_dests.at(func);
+      const auto &dests = func->store_dests;
       results_.insert(dests.begin(), dests.end());
     }
   }
 
-  static const std::unordered_set<Stmt *> &run(Function *func,
-                                               ControlFlowGraph *graph) {
+  static void run(IRNode *ir) {
     TarjanData tarjan_data;
-    run(func, graph, tarjan_data);
-    return graph->func_store_dests.at(func);
+    run(ir, tarjan_data);
   }
 };
 
 namespace irpass::analysis {
-const std::unordered_set<Stmt *> &gather_func_store_dests(
-    Function *func,
-    ControlFlowGraph *graph) {
-  if (graph->func_store_dests.count(func)) {
-    return graph->func_store_dests.at(func);
-  }
-  return GatherFuncStoreDests::run(func, graph);
+void gather_func_store_dests(IRNode *ir) {
+  GatherFuncStoreDests::run(ir);
 }
 
 }  // namespace irpass::analysis

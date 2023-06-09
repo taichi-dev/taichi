@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/function.h"
 
 namespace taichi::lang {
 
@@ -282,6 +283,7 @@ stmt_refs FuncCallStmt::get_store_destination() const {
       ret.push_back(arg);
     }
   }
+  ret.insert(ret.end(), func->store_dests.begin(), func->store_dests.end());
   return ret;
 }
 

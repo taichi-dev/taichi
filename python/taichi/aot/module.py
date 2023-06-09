@@ -1,3 +1,5 @@
+import datetime
+import os
 import warnings
 from contextlib import contextmanager
 from glob import glob
@@ -238,9 +240,12 @@ class Module:
         # Save first as usual.
         self.save(temp_dir)
 
+        fixed_time = datetime.datetime(2000, 12, 1).timestamp()
+
         # Package all artifacts into a zip archive and attach contend data.
         with ZipFile(tcm_path, "w") as z:
             for path in glob(f"{temp_dir}/*", recursive=True):
+                os.utime(path, (fixed_time, fixed_time))
                 z.write(path, Path.relative_to(Path(path), temp_dir))
 
         # Remove cached files

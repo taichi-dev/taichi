@@ -102,6 +102,11 @@ void export_lang(py::module &m) {
       .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
       .export_values();
 
+  py::enum_<BoundaryMode>(m, "BoundaryMode", py::arithmetic())
+      .value("UNSAFE", BoundaryMode::kUnsafe)
+      .value("CLAMP", BoundaryMode::kClamp)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -111,6 +116,7 @@ void export_lang(py::module &m) {
       .def("__str__", &DataType::to_string)
       .def("shape", &DataType::get_shape)
       .def("element_type", &DataType::get_element_type)
+      .def("ptr_removed", &DataType::ptr_removed)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -772,17 +778,17 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("get_rvalue_type",
+           [](Expr *expr) { return expr->get_rvalue_type(); })
       .def("is_tensor",
-           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<TensorType>(); })
       .def("is_struct",
-           [](Expr *expr) {
-             return expr->expr->ret_type.ptr_removed()->is<StructType>();
-           })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<StructType>(); })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
-             if (expr->expr->ret_type->is<TensorType>()) {
-               return std::optional<std::vector<int>>(
-                   expr->expr->ret_type->cast<TensorType>()->get_shape());
+             auto tensor_type = expr->get_rvalue_type()->cast<TensorType>();
+             if (tensor_type) {
+               return std::optional<std::vector<int>>(tensor_type->get_shape());
              }
              return std::nullopt;
            })
@@ -929,8 +935,8 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, int,
-                   const std::vector<int> &, bool>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool,
+                   const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
@@ -994,7 +1000,11 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_element_dim", [](const Expr &expr) {
     TI_ASSERT(expr.is<ExternalTensorExpression>());
-    return expr.cast<ExternalTensorExpression>()->element_dim;
+    // FIXME: no need to make it negative since we don't support SOA
+    auto dtype = expr.cast<ExternalTensorExpression>()->dt;
+    return dtype->is<TensorType>()
+               ? -dtype->cast<TensorType>()->get_shape().size()
+               : 0;
   });
 
   m.def("get_external_tensor_needs_grad", [](const Expr &expr) {
@@ -1010,7 +1020,7 @@ void export_lang(py::module &m) {
 
   m.def("get_external_tensor_dim", [](const Expr &expr) {
     if (expr.is<ExternalTensorExpression>()) {
-      return expr.cast<ExternalTensorExpression>()->dim;
+      return expr.cast<ExternalTensorExpression>()->ndim;
     } else if (expr.is<TexturePtrExpression>()) {
       return expr.cast<TexturePtrExpression>()->num_dims;
     } else {

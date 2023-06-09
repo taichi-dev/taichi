@@ -23,13 +23,14 @@ class TypeCheck : public IRVisitor {
                          Stmt *&val,
                          const std::string &stmt_name) {
     auto dst_type = dst->ret_type.ptr_removed();
+    auto val_type = val->ret_type.ptr_removed();
     if (is_quant(dst_type)) {
       // We force the value type to be the compute_type of the bit pointer.
       // Casting from compute_type to physical_type is handled in codegen.
       dst_type = dst_type->get_compute_type();
     }
-    if (dst_type != val->ret_type) {
-      auto promoted = promoted_type(dst_type, val->ret_type);
+    if (dst_type != val_type) {
+      auto promoted = promoted_type(dst_type, val_type);
       if (dst_type != promoted) {
         TI_WARN("[{}] {} may lose precision: {} <- {}\n{}", stmt->name(),
                 stmt_name, dst_type->to_string(), val->ret_data_type_name(),
@@ -88,13 +89,14 @@ class TypeCheck : public IRVisitor {
     TI_ASSERT(stmt->src->is<AllocaStmt>() || stmt->src->is<MatrixPtrStmt>() ||
               stmt->src->is<MatrixOfMatrixPtrStmt>());
     if (auto ptr_offset_stmt = stmt->src->cast<MatrixPtrStmt>()) {
-      auto lookup = DataType(ptr_offset_stmt->origin->ret_type->as<TensorType>()
+      auto lookup = DataType(ptr_offset_stmt->origin->ret_type.ptr_removed()
+                                 ->as<TensorType>()
                                  ->get_element_type())
                         .ptr_removed();
       stmt->ret_type = lookup;
     } else {
       auto lookup = stmt->src->ret_type;
-      stmt->ret_type = lookup;
+      stmt->ret_type = lookup.ptr_removed();
     }
   }
 

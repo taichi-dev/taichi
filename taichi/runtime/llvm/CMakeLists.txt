@@ -8,7 +8,6 @@ target_sources(llvm_runtime
     llvm_context.cpp
     llvm_aot_module_loader.cpp
     llvm_aot_module_builder.cpp
-    launch_arg_info.cpp
     snode_tree_buffer_manager.cpp
     kernel_launcher.cpp
   )

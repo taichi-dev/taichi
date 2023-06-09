@@ -38,6 +38,17 @@ def test_numpy_f64():
     with_data_type(np.float64)
 
 
+@test_utils.test(arch=ti.metal)
+def test_np_i64_metal():
+    @ti.kernel
+    def arange(x: ti.types.ndarray(ti.i64, ndim=1)):
+        for i in x:
+            x[i] = i
+
+    xx = np.array([1, 2, 3, 4, 5])  # by default it's int64
+    arange(xx)
+
+
 @test_utils.test()
 def test_numpy_i32():
     with_data_type(np.int32)
@@ -301,3 +312,15 @@ def test_numpy_ndarray_dim_check():
         match=r"Invalid argument into ti.types.ndarray\(\) - required array has ndim=2, but the argument has 4 dimensions",
     ):
         add_one_scalar(a)
+
+
+@test_utils.test()
+def test_numpy_dtype_mismatch():
+    @ti.kernel
+    def arange(x: ti.types.ndarray(ti.i32, ndim=1)):
+        for i in x:
+            x[i] = i
+
+    xx = np.array([1, 2, 3, 4, 5], dtype=np.int64)  # by default it's int64
+    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\) - required array has dtype="):
+        arange(xx)

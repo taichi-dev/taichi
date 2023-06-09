@@ -284,12 +284,12 @@ class SparseMatrixBuilder:
         taichi_arch = get_runtime().prog.config().arch
         if taichi_arch in [_ti_core.Arch.x64, _ti_core.Arch.arm64]:
             sm = self.ptr.build()
-            return SparseMatrix(sm=sm, dtype=dtype)
+            return SparseMatrix(sm=sm, dtype=self.dtype)
         if taichi_arch == _ti_core.Arch.cuda:
-            if dtype != f32:
+            if self.dtype != f32:
                 raise TaichiRuntimeError("CUDA sparse matrix only supports f32.")
             sm = self.ptr.build_cuda()
-            return SparseMatrix(sm=sm, dtype=dtype)
+            return SparseMatrix(sm=sm, dtype=self.dtype)
         raise TaichiRuntimeError("Sparse matrix only supports CPU and CUDA backends.")
 
 

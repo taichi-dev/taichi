@@ -14,6 +14,24 @@
 
 namespace taichi::lang {
 
+static std::vector<std::uint8_t> get_offline_cache_key_of_parameter_list(
+    const std::vector<CallableBase::Parameter> &parameter_list) {
+  BinaryOutputSerializer serializer;
+  serializer.initialize();
+  serializer(parameter_list);
+  serializer.finalize();
+  return serializer.data;
+}
+
+static std::vector<std::uint8_t> get_offline_cache_key_of_rets(
+    const std::vector<CallableBase::Ret> &ret_list) {
+  BinaryOutputSerializer serializer;
+  serializer.initialize();
+  serializer(ret_list);
+  serializer.finalize();
+  return serializer.data;
+}
+
 static std::vector<std::uint8_t> get_offline_cache_key_of_compile_config(
     const CompileConfig &config) {
   BinaryOutputSerializer serializer;
@@ -151,11 +169,15 @@ std::string get_hashed_offline_cache_key_of_snode(const SNode *snode) {
 std::string get_hashed_offline_cache_key(const CompileConfig &config,
                                          const DeviceCapabilityConfig &caps,
                                          Kernel *kernel) {
-  std::string kernel_ast_string;
-  if (kernel) {
+  std::vector<std::uint8_t> kernel_params_string, kernel_rets_string;
+  std::string kernel_body_string;
+  if (kernel) {  // param_list, rets, body
+    kernel_params_string =
+        get_offline_cache_key_of_parameter_list(kernel->parameter_list);
+    kernel_rets_string = get_offline_cache_key_of_rets(kernel->rets);
     std::ostringstream oss;
     gen_offline_cache_key(kernel->ir.get(), &oss);
-    kernel_ast_string = oss.str();
+    kernel_body_string = oss.str();
   }
 
   auto compile_config_key = get_offline_cache_key_of_compile_config(config);
@@ -165,7 +187,9 @@ std::string get_hashed_offline_cache_key(const CompileConfig &config,
   picosha2::hash256_one_by_one hasher;
   hasher.process(compile_config_key.begin(), compile_config_key.end());
   hasher.process(device_caps_key.begin(), device_caps_key.end());
-  hasher.process(kernel_ast_string.begin(), kernel_ast_string.end());
+  hasher.process(kernel_params_string.begin(), kernel_params_string.end());
+  hasher.process(kernel_rets_string.begin(), kernel_rets_string.end());
+  hasher.process(kernel_body_string.begin(), kernel_body_string.end());
   hasher.process(autodiff_mode.begin(), autodiff_mode.end());
   hasher.finish();
 

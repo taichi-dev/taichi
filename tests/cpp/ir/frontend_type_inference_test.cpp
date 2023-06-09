@@ -32,7 +32,9 @@ TEST(FrontendTypeInference, Id) {
   auto const_i32 = value<int32>(-(1 << 20));
   const_i32->type_check(nullptr);
   auto id_i32 = kernel->context->builder().make_var(const_i32, const_i32->tb);
-  EXPECT_EQ(id_i32->ret_type, PrimitiveType::i32);
+  EXPECT_EQ(id_i32->ret_type,
+            DataType(TypeFactory::get_instance().get_pointer_type(
+                PrimitiveType::i32)));
 }
 
 TEST(FrontendTypeInference, BinaryOp) {
@@ -139,7 +141,9 @@ TEST(FrontendTypeInference, GlobalPtr_Field) {
   index->type_check(nullptr);
   auto global_ptr = ast_builder->expr_subscript(global_var, ExprGroup(index));
   global_ptr->type_check(nullptr);
-  EXPECT_EQ(global_ptr->ret_type, PrimitiveType::u8);
+  EXPECT_EQ(global_ptr->ret_type,
+            DataType(TypeFactory::get_instance().get_pointer_type(
+                PrimitiveType::u8)));
 }
 
 TEST(FrontendTypeInference, GlobalPtr_ExternalTensor) {
@@ -172,7 +176,9 @@ TEST(FrontendTypeInference, TensorElement) {
   index->type_check(nullptr);
   auto tensor_element = Expr::make<IndexExpression>(var, ExprGroup(index));
   tensor_element->type_check(nullptr);
-  EXPECT_EQ(tensor_element->ret_type, PrimitiveType::u32);
+  EXPECT_EQ(tensor_element->ret_type,
+            DataType(TypeFactory::get_instance().get_pointer_type(
+                PrimitiveType::u32)));
 }
 
 TEST(FrontendTypeInference, AtomicOp) {

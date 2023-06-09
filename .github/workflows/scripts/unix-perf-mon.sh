@@ -17,6 +17,8 @@ export ANDROID_NDK_ROOT=/android-sdk/ndk-bundle
 python -m pip uninstall -y taichi taichi-nightly || true
 python -m pip install dist/*.whl
 
+TAG=$(git describe --exact-match --tags 2>/dev/null || true)
+
 git clone --depth=1 https://github.com/taichi-dev/taichi_benchmark
 
 cd taichi_benchmark
@@ -28,7 +30,6 @@ if [ "$GITHUB_EVENT_ACTION" == "benchmark-command" ]; then
     cd ..
     python .github/workflows/scripts/post-benchmark-to-github-pr.py /github-event.json result.json
 else
-    TAG=$(git describe --exact-match --tags 2>/dev/null || true)
     if [ ! -z "$TAG" ]; then
         MORE_TAGS="--tags type=release,release=$TAG"
     else

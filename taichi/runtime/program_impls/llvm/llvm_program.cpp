@@ -36,7 +36,8 @@ namespace taichi::lang {
 LlvmProgramImpl::LlvmProgramImpl(CompileConfig &config_,
                                  KernelProfilerBase *profiler)
     : ProgramImpl(config_),
-      compilation_workers("compile", config_.num_compile_threads) {
+      compilation_workers("compile",
+                          config_.print_ir ? 1 : config_.num_compile_threads) {
   runtime_exec_ = std::make_unique<LlvmRuntimeExecutor>(config_, profiler);
   cache_data_ = std::make_unique<LlvmOfflineCache>();
 }

@@ -39,13 +39,11 @@ def fill_ndarray_matrix(ndarray: ndarray_type.ndarray(), val: template()):
 
 @kernel
 def tensor_to_ext_arr(tensor: template(), arr: ndarray_type.ndarray()):
-    offset = static(tensor.snode.ptr.offset)
-    shape = static(tensor.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(tensor.snode.ptr.offset if len(tensor.snode.ptr.offset) != 0 else [0] * len(tensor.shape))
 
     for I in grouped(tensor):
-        arr[I - offset_new] = tensor[I]
+        arr[I - offset] = tensor[I]
 
 
 @kernel
@@ -78,8 +76,10 @@ def ndarray_matrix_to_ext_arr(
 
 @kernel
 def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
-    i_offset = static(img.snode.ptr.offset[0] if len(img.snode.ptr.offset) != 0 else 0)
-    j_offset = static(img.snode.ptr.offset[1] if len(img.snode.ptr.offset) != 0 else 0)
+    static_assert(len(img.shape) == 2)
+    offset = static(img.snode.ptr.offset if len(img.snode.ptr.offset) != 0 else [0, 0])
+    i_offset = static(offset[0])
+    j_offset = static(offset[1])
     # FIXME: Why is ``for i, j in img:`` slower than:
     for i, j in ndrange(*img.shape):
         r, g, b = 0, 0, 0
@@ -107,51 +107,43 @@ def vector_to_fast_image(img: template(), out: ndarray_type.ndarray()):
 
 @kernel
 def tensor_to_image(tensor: template(), arr: ndarray_type.ndarray()):
-    offset = static(tensor.snode.ptr.offset)
-    shape = static(tensor.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(tensor.snode.ptr.offset if len(tensor.snode.ptr.offset) != 0 else [0] * len(tensor.shape))
     for I in grouped(tensor):
         t = ops.cast(tensor[I], f32)
-        arr[I - offset_new, 0] = t
-        arr[I - offset_new, 1] = t
-        arr[I - offset_new, 2] = t
+        arr[I - offset, 0] = t
+        arr[I - offset, 1] = t
+        arr[I - offset, 2] = t
 
 
 @kernel
 def vector_to_image(mat: template(), arr: ndarray_type.ndarray()):
-    offset = static(mat.snode.ptr.offset)
-    shape = static(mat.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(mat.snode.ptr.offset if len(mat.snode.ptr.offset) != 0 else [0] * len(mat.shape))
     for I in grouped(mat):
         for p in static(range(mat.n)):
-            arr[I - offset_new, p] = ops.cast(mat[I][p], f32)
+            arr[I - offset, p] = ops.cast(mat[I][p], f32)
             if static(mat.n <= 2):
-                arr[I - offset_new, 2] = 0
+                arr[I - offset, 2] = 0
 
 
 @kernel
 def tensor_to_tensor(tensor: template(), other: template()):
-    # assumes that tensor and other have the same shape
+    static_assert(tensor.shape == other.shape)
     shape = static(tensor.shape)
-    tensor_offset = static(tensor.snode.ptr.offset)
-    tensor_offset_new = static([0] * len(shape) if len(tensor_offset) == 0 else tensor_offset)
-    other_offset = static(other.snode.ptr.offset)
-    other_offset_new = static([0] * len(shape) if len(other_offset) == 0 else other_offset)
+    tensor_offset = static(tensor.snode.ptr.offset if len(tensor.snode.ptr.offset) != 0 else [0] * len(shape))
+    other_offset = static(other.snode.ptr.offset if len(other.snode.ptr.offset) != 0 else [0] * len(shape))
 
     for I in grouped(ndrange(*shape)):
-        tensor[I + tensor_offset_new] = other[I + other_offset_new]
+        tensor[I + tensor_offset] = other[I + other_offset]
 
 
 @kernel
 def ext_arr_to_tensor(arr: ndarray_type.ndarray(), tensor: template()):
-    offset = static(tensor.snode.ptr.offset)
-    shape = static(tensor.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(tensor.snode.ptr.offset if len(tensor.snode.ptr.offset) != 0 else [0] * len(tensor.shape))
     for I in grouped(tensor):
-        tensor[I] = arr[I - offset_new]
+        tensor[I] = arr[I - offset]
 
 
 @kernel
@@ -190,46 +182,42 @@ def ext_arr_to_ndarray_matrix(
 
 @kernel
 def matrix_to_ext_arr(mat: template(), arr: ndarray_type.ndarray(), as_vector: template()):
-    offset = static(mat.snode.ptr.offset)
-    shape = static(mat.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(mat.snode.ptr.offset if len(mat.snode.ptr.offset) != 0 else [0] * len(mat.shape))
 
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(as_vector):
                     if static(getattr(mat, "ndim", 2) == 1):
-                        arr[I - offset_new, p] = mat[I][p]
+                        arr[I - offset, p] = mat[I][p]
                     else:
-                        arr[I - offset_new, p] = mat[I][p, q]
+                        arr[I - offset, p] = mat[I][p, q]
                 else:
                     if static(getattr(mat, "ndim", 2) == 1):
-                        arr[I - offset_new, p, q] = mat[I][p]
+                        arr[I - offset, p, q] = mat[I][p]
                     else:
-                        arr[I - offset_new, p, q] = mat[I][p, q]
+                        arr[I - offset, p, q] = mat[I][p, q]
 
 
 @kernel
 def ext_arr_to_matrix(arr: ndarray_type.ndarray(), mat: template(), as_vector: template()):
-    offset = static(mat.snode.ptr.offset)
-    shape = static(mat.shape)
     # default value of offset is [], replace it with [0] * len
-    offset_new = static([0] * len(shape) if len(offset) == 0 else offset)
+    offset = static(mat.snode.ptr.offset if len(mat.snode.ptr.offset) != 0 else [0] * len(mat.shape))
 
     for I in grouped(mat):
         for p in static(range(mat.n)):
             for q in static(range(mat.m)):
                 if static(getattr(mat, "ndim", 2) == 1):
                     if static(as_vector):
-                        mat[I][p] = arr[I - offset_new, p]
+                        mat[I][p] = arr[I - offset, p]
                     else:
-                        mat[I][p] = arr[I - offset_new, p, q]
+                        mat[I][p] = arr[I - offset, p, q]
                 else:
                     if static(as_vector):
-                        mat[I][p, q] = arr[I - offset_new, p]
+                        mat[I][p, q] = arr[I - offset, p]
                     else:
-                        mat[I][p, q] = arr[I - offset_new, p, q]
+                        mat[I][p, q] = arr[I - offset, p, q]
 
 
 # extract ndarray of raw vulkan memory layout to normal memory layout.
@@ -253,8 +241,9 @@ def arr_vulkan_layout_to_field_normal_layout(vk_arr: ndarray_type.ndarray(), nor
     static_assert(len(normal_field.shape) == 2)
     w = static(normal_field.shape[0])
     h = static(normal_field.shape[1])
-    i_offset = static(normal_field.snode.ptr.offset[0] if len(normal_field.snode.ptr.offset) != 0 else 0)
-    j_offset = static(normal_field.snode.ptr.offset[1] if len(normal_field.snode.ptr.offset) != 0 else 0)
+    offset = static(normal_field.snode.ptr.offset if len(normal_field.snode.ptr.offset) != 0 else [0, 0])
+    i_offset = static(offset[0])
+    j_offset = static(offset[1])
 
     for i, j in ndrange(w, h):
         normal_field[i + i_offset, j + j_offset] = vk_arr[(h - 1 - j) * w + i]

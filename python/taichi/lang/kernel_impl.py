@@ -392,13 +392,14 @@ class TaichiCallableTemplateMapper:
             if isinstance(arg, taichi.lang._ndarray.Ndarray):
                 anno.check_matched(arg.get_type())
                 needs_grad = (arg.grad is not None) if anno.needs_grad is None else anno.needs_grad
-                return arg.dtype, len(arg.shape) + len(arg.element_shape), arg.element_shape, Layout.AOS, needs_grad
+                return arg.element_type, len(arg.shape), needs_grad, anno.boundary
             # external arrays
             shape = getattr(arg, "shape", None)
             if shape is None:
                 raise TaichiRuntimeTypeError(f"Invalid argument into ti.types.ndarray(), got {arg}")
             shape = tuple(shape)
             element_shape = ()
+            dtype = to_taichi_type(arg.dtype)
             if isinstance(anno.dtype, MatrixType):
                 if anno.ndim is not None:
                     if len(shape) != anno.dtype.ndim + anno.ndim:
@@ -421,13 +422,24 @@ class TaichiCallableTemplateMapper:
                     )
             elif anno.dtype is not None:
                 # User specified scalar dtype
+                if anno.dtype != dtype:
+                    raise ValueError(
+                        f"Invalid argument into ti.types.ndarray() - required array has dtype={anno.dtype.to_string()}, "
+                        f"but the argument has dtype={dtype.to_string()}"
+                    )
+
                 if anno.ndim is not None and len(shape) != anno.ndim:
                     raise ValueError(
                         f"Invalid argument into ti.types.ndarray() - required array has ndim={anno.ndim}, "
                         f"but the argument has {len(shape)} dimensions"
                     )
             needs_grad = getattr(arg, "requires_grad", False) if anno.needs_grad is None else anno.needs_grad
-            return to_taichi_type(arg.dtype), len(shape), element_shape, Layout.AOS, needs_grad
+            element_type = (
+                _ti_core.get_type_factory_instance().get_tensor_type(element_shape, dtype)
+                if len(element_shape) != 0
+                else arg.dtype
+            )
+            return element_type, len(shape) - len(element_shape), needs_grad, anno.boundary
         if isinstance(anno, sparse_matrix_builder):
             return arg.dtype
         # Use '#' as a placeholder because other kinds of arguments are not involved in template instantiation
@@ -798,6 +810,8 @@ class Kernel:
             prog.launch_kernel(compiled_kernel_data, launch_ctx)
         except Exception as e:
             e = handle_exception_from_cpp(e)
+            if impl.get_runtime().print_full_traceback:
+                raise e
             raise e from None
 
         ret = None
@@ -935,6 +949,8 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
             try:
                 return primal(*args, **kwargs)
             except (TaichiCompilationError, TaichiRuntimeError) as e:
+                if impl.get_runtime().print_full_traceback:
+                    raise e
                 raise type(e)("\n" + str(e)) from None
 
         wrapped.grad = adjoint
@@ -994,6 +1010,8 @@ class _BoundedDifferentiableMethod:
                 return self._primal(*args, **kwargs)
             return self._primal(self._kernel_owner, *args, **kwargs)
         except (TaichiCompilationError, TaichiRuntimeError) as e:
+            if impl.get_runtime().print_full_traceback:
+                raise e
             raise type(e)("\n" + str(e)) from None
 
     def grad(self, *args, **kwargs):

@@ -30,9 +30,15 @@ Gui::Gui(AppContext *app_context, SwapChain *swap_chain, TaichiWindow *window) {
   if (app_context->config.show_window) {
 #ifdef ANDROID
     ImGui_ImplAndroid_Init(window);
+    widthBeforeDPIScale = (int)ANativeWindow_getWidth(window);
+    heightBeforeDPIScale = (int)ANativeWindow_getHeight(window);
 #else
     ImGui_ImplGlfw_InitForVulkan(window, true);
+    glfwGetWindowSize(window, &widthBeforeDPIScale, &heightBeforeDPIScale);
 #endif
+  } else {
+    widthBeforeDPIScale = app_context->config.width;
+    heightBeforeDPIScale = app_context->config.height;
   }
 }
 
@@ -126,10 +132,10 @@ bool Gui::initialized() {
 }
 
 float Gui::abs_x(float x) {
-  return x * app_context_->config.width;
+  return x * widthBeforeDPIScale;
 }
 float Gui::abs_y(float y) {
-  return y * app_context_->config.height;
+  return y * heightBeforeDPIScale;
 }
 
 void Gui::begin(const std::string &name,

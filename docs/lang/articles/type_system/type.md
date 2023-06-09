@@ -321,3 +321,15 @@ def foo():
     # If you are using ti.i32 as default_ip, this is equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
+
+## Argument Pack Type
+
+Argument packs, also known as argpacks, are user-defined data types that act as wrappers for parameters. They allow multiple parameters to be stored and used as a single parameter. One key advantage of using argpacks is their ability to buffer parameters. If you have certain parameters that remain unchanged when calling kernels, you can store them in argpacks. Taichi can then cache these argpacks, resulting in improved program performance by making it faster.
+
+Argpacks are not commonly used types. They are primarily intended as containers for parameters and cannot be used as return types or be nested within other compound types. Unlike structs, argpacks can accommodate buffer types like NdarrayType and TextureType from Taichi.
+
+:::note
+
+The `argpack` type is discussed in another document [Argumnt Pack](../advanced/argument_pack.md) in detail.
+
+:::

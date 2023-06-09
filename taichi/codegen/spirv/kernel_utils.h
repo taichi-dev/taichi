@@ -159,6 +159,7 @@ class KernelContextAttributes {
     // Only used with textures. Sampled textures always have unknown format;
     // while RW textures always have a valid format.
     BufferFormat format{BufferFormat::unknown};
+    ParameterType ptype{ParameterType::kUnknown};
 
     TI_IO_DEF(name,
               stride,
@@ -168,7 +169,8 @@ class KernelContextAttributes {
               is_array,
               element_shape,
               field_dim,
-              format);
+              format,
+              ptype);
   };
 
  public:

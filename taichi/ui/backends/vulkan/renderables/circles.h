@@ -36,8 +36,10 @@ class Circles final : public Renderable {
   struct UniformBufferObject {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;
-    float radius_w;
-    float radius_h;
+    int use_per_vertex_radius;
+    float radius;
+    float window_width;
+    float window_height;
   };
 };
 

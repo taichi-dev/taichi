@@ -82,6 +82,14 @@ def test_geometry_2d():
             lines_indices_1[line_id] = ti.Vector([i, j])
             line_id += 1
 
+    # circles with per vertex radius
+    n_circles_2 = 10
+    circle_positions_2 = ti.Vector.field(2, ti.f32, shape=n_circles_2)
+    circle_radii_2 = ti.field(ti.f32, shape=n_circles_2)
+    for i in range(n_circles_2):
+        circle_positions_2[i] = ti.Vector([0.75, i * 0.1])
+        circle_radii_2[i] = (i + 1) / n_circles_2 * 0.05
+
     def render():
         canvas.circles(circle_positions_0, radius=0.05, color=(1, 0, 0))
 
@@ -104,13 +112,15 @@ def test_geometry_2d():
             indices=lines_indices_1,
         )
 
+        canvas.circles(circle_positions_2, radius=0.05, color=(0, 0, 1), per_vertex_radius=circle_radii_2)
+
     # Render in off-line mode to check if there are errors
     for _ in range(RENDER_REPEAT):
         render()
         window.get_image_buffer_as_numpy()
 
     render()
-    verify_image(window.get_image_buffer_as_numpy(), "test_geometry_2d")
+    verify_image(window.get_image_buffer_as_numpy(), "test_geometry_2d", tolerance=0.05)
     window.destroy()
 
 
@@ -379,6 +389,7 @@ def test_set_image_with_texture():
     window.destroy()
 
 
+# NOTE: Cannot automate the test for the case of ImGui scaling on HiDPI displays. So that needs to be tested manually.
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_imgui():
@@ -492,7 +503,7 @@ def test_fetching_depth_attachment():
     window.destroy()
 
 
-@pytest.mark.parametrize("offset", [(0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
+@pytest.mark.parametrize("offset", [None, (0, 0), (-256, -256), (256, -256), (-256, 256), (256, 256), (23333, 233333)])
 @pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
 @test_utils.test(arch=supported_archs)
 def test_get_depth_buffer_with_offset(offset):
@@ -607,6 +618,65 @@ def test_draw_part_of_particles():
 
     render()
     verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles")
+    window.destroy()
+
+
+@pytest.mark.skipif(not _ti_core.GGUI_AVAILABLE, reason="GGUI Not Available")
+@test_utils.test(arch=supported_archs)
+def test_draw_part_of_particles_per_vertex_rad_and_col():
+    N = 10
+    particles_pos = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    particles_col = ti.Vector.field(3, dtype=ti.f32, shape=N)
+    particles_radii = ti.field(dtype=ti.f32, shape=N)
+
+    @ti.kernel
+    def init_points_pos(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [i for j in ti.static(range(3))]
+
+    @ti.kernel
+    def init_points_col(points: ti.template()):
+        for i in range(points.shape[0]):
+            points[i] = [(i + 1) / N, 0.5, (i + 1) / N]
+
+    @ti.kernel
+    def init_points_radii(radii: ti.template()):
+        for i in range(radii.shape[0]):
+            radii[i] = (i + 1) * 0.05
+
+    init_points_pos(particles_pos)
+    init_points_radii(particles_radii)
+    init_points_col(particles_col)
+
+    window = ti.ui.Window("Test", (768, 768), show_window=False)
+    canvas = window.get_canvas()
+    scene = ti.ui.Scene()
+    camera = ti.ui.Camera()
+    camera.position(0, 5, -10)
+    camera.lookat(3, 3, 1)
+
+    def render():
+        scene.set_camera(camera)
+        scene.ambient_light((0.8, 0.8, 0.8))
+        scene.point_light(pos=(0.5, 1.5, 1.5), color=(1, 1, 1))
+
+        scene.particles(
+            particles_pos,
+            color=(0.68, 0.26, 0.19),
+            radius=0.5,
+            per_vertex_color=particles_col,
+            per_vertex_radius=particles_radii,
+            index_offset=2,
+            index_count=6,
+        )
+        canvas.scene(scene)
+
+    for _ in range(RENDER_REPEAT):
+        render()
+        window.get_image_buffer_as_numpy()
+
+    render()
+    verify_image(window.get_image_buffer_as_numpy(), "test_draw_part_of_particles_per_vertex_rad_and_col")
     window.destroy()
 
 

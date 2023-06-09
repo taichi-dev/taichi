@@ -105,9 +105,11 @@ gather_snode_read_writes(IRNode *root);
 std::vector<Stmt *> gather_statements(IRNode *root,
                                       const std::function<bool(Stmt *)> &test);
 void gather_uniquely_accessed_bit_structs(IRNode *root, AnalysisManager *amgr);
-std::pair<std::unordered_map<const SNode *, GlobalPtrStmt *>,
-          std::unordered_map<int, ExternalPtrStmt *>>
+std::tuple<std::unordered_map<const SNode *, GlobalPtrStmt *>,
+           std::unordered_map<int, ExternalPtrStmt *>,
+           std::unordered_set<MatrixPtrStmt *>>
 gather_uniquely_accessed_pointers(IRNode *root);
+
 std::unique_ptr<std::unordered_set<AtomicOpStmt *>> gather_used_atomics(
     IRNode *root);
 stmt_refs get_load_pointers(Stmt *load_stmt, bool get_aliased = false);

@@ -31,7 +31,6 @@ class CFGNode {
  private:
   // For accelerating get_store_forwarding_data()
   std::unordered_set<Block *> parent_blocks_;
-  ControlFlowGraph *graph_;
 
  public:
   // This node corresponds to block->statements[i]
@@ -56,15 +55,14 @@ class CFGNode {
   // https://en.wikipedia.org/wiki/Live_variable_analysis
   std::unordered_set<Stmt *> live_gen, live_kill, live_in, live_out;
 
-  CFGNode(ControlFlowGraph *graph,
-          Block *block,
+  CFGNode(Block *block,
           int begin_location,
           int end_location,
           bool is_parallel_executed,
           CFGNode *prev_node_in_same_block);
 
   // An empty node
-  CFGNode(ControlFlowGraph *graph);
+  CFGNode();
 
   static void add_edge(CFGNode *from, CFGNode *to);
 
@@ -121,8 +119,7 @@ class ControlFlowGraph {
 
   template <typename... Args>
   CFGNode *push_back(Args &&...args) {
-    nodes.emplace_back(
-        std::make_unique<CFGNode>(this, std::forward<Args>(args)...));
+    nodes.emplace_back(std::make_unique<CFGNode>(std::forward<Args>(args)...));
     return nodes.back().get();
   }
 

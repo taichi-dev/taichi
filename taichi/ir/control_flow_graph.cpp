@@ -10,14 +10,12 @@
 
 namespace taichi::lang {
 
-CFGNode::CFGNode(ControlFlowGraph *graph,
-                 Block *block,
+CFGNode::CFGNode(Block *block,
                  int begin_location,
                  int end_location,
                  bool is_parallel_executed,
                  CFGNode *prev_node_in_same_block)
-    : graph_(graph),
-      block(block),
+    : block(block),
       begin_location(begin_location),
       end_location(end_location),
       is_parallel_executed(is_parallel_executed),
@@ -39,8 +37,7 @@ CFGNode::CFGNode(ControlFlowGraph *graph,
   }
 }
 
-CFGNode::CFGNode(ControlFlowGraph *graph)
-    : CFGNode(graph, nullptr, -1, -1, false, nullptr) {
+CFGNode::CFGNode() : CFGNode(nullptr, -1, -1, false, nullptr) {
 }
 
 void CFGNode::add_edge(CFGNode *from, CFGNode *to) {

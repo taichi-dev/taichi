@@ -4,6 +4,15 @@ Layout = _ti_core.Layout
 AutodiffMode = _ti_core.AutodiffMode
 SNodeGradType = _ti_core.SNodeGradType
 Format = _ti_core.Format
+BoundaryMode = _ti_core.BoundaryMode
+
+
+def to_boundary_enum(boundary):
+    if boundary == "clamp":
+        return BoundaryMode.CLAMP
+    if boundary == "unsafe":
+        return BoundaryMode.UNSAFE
+    raise ValueError(f"Invalid boundary argument: {boundary}")
 
 
 class DeviceCapability:

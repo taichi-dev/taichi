@@ -97,14 +97,15 @@ def produce_injected_args(kernel, symbolic_args=None):
             texture_shape = (2,) * anno.num_dimensions
             injected_args.append(Texture(Format.rgba8, texture_shape))
         elif isinstance(anno, MatrixType):
-            symbolic_mat_n = symbolic_args[i].element_shape[0]
-            symbolic_mat_m = symbolic_args[i].element_shape[1]
+            if symbolic_args is not None:
+                symbolic_mat_n = symbolic_args[i].element_shape[0]
+                symbolic_mat_m = symbolic_args[i].element_shape[1]
 
-            if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
-                raise RuntimeError(
-                    f"Matrix dimension mismatch, expected ({anno.n}, {anno.m}) "
-                    f"but dispatched shape ({symbolic_mat_n}, {symbolic_mat_m})."
-                )
+                if symbolic_mat_m != anno.m or symbolic_mat_n != anno.n:
+                    raise RuntimeError(
+                        f"Matrix dimension mismatch, expected ({anno.n}, {anno.m}) "
+                        f"but dispatched shape ({symbolic_mat_n}, {symbolic_mat_m})."
+                    )
             injected_args.append(Matrix([0] * anno.n * anno.m, dt=anno.dtype))
         else:
             if symbolic_args is not None:

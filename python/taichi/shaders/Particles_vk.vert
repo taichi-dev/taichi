@@ -18,6 +18,7 @@ layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;
   int use_per_vertex_color;
+  int use_per_vertex_radius;
   float radius;
   float window_width;
   float window_height;
@@ -28,6 +29,7 @@ ubo;
 layout(location = 0) out vec4 pos_camera_space;
 layout(location = 1) out vec4 selected_color;
 layout(location = 2) out vec2 pos_2d;
+layout(location = 3) out float selected_radius;
 
 const vec2 offsets[6] = {
   vec2(-1.0f, 1.0f),
@@ -41,7 +43,13 @@ const vec2 offsets[6] = {
 void main() {
   float distance = length(in_position - ubo.scene.camera_pos);
 
-  float hsize = ubo.radius / (ubo.tan_half_fov * distance);
+  if (ubo.use_per_vertex_radius == 0) {
+    selected_radius = ubo.radius;
+  } else {
+    selected_radius = in_normal.x;
+  }
+
+  float hsize = selected_radius / (ubo.tan_half_fov * distance);
 
   pos_camera_space = ubo.scene.view * vec4(in_position, 1.0);
 

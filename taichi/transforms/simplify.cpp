@@ -95,9 +95,6 @@ class BasicBlockSimplify : public IRVisitor {
                 }
                 continue;
               }
-              if (block->statements[j]->is<FuncCallStmt>()) {
-                has_store = true;
-              }
               if (!irpass::analysis::gather_statements(
                        block->statements[j].get(),
                        [&](Stmt *s) {
@@ -107,6 +104,8 @@ class BasicBlockSimplify : public IRVisitor {
                          else if (auto atomic = s->cast<AtomicOpStmt>())
                            return irpass::analysis::maybe_same_address(
                                atomic->dest, stmt->src);
+                         else if (auto func_call = s->cast<FuncCallStmt>())
+                           return true;
                          else
                            return false;
                        })
@@ -512,6 +511,8 @@ bool simplify(IRNode *root, const CompileConfig &config) {
 void full_simplify(IRNode *root,
                    const CompileConfig &config,
                    const FullSimplifyPass::Args &args) {
+  auto print =
+      make_pass_printer(args.verbose, args.kernel_name + ".simplify", root);
   TI_AUTO_PROF;
   if (config.advanced_optimization) {
     bool first_iteration = true;
@@ -519,24 +520,34 @@ void full_simplify(IRNode *root,
       bool modified = false;
       if (extract_constant(root, config))
         modified = true;
+      print("extract_constant");
       if (unreachable_code_elimination(root))
         modified = true;
+      print("unreachable_code_elimination");
       if (binary_op_simplify(root, config))
         modified = true;
+      print("binary_op_simplify");
       if (config.constant_folding && constant_fold(root))
         modified = true;
+      print("constant_fold");
       if (die(root))
         modified = true;
+      print("die");
       if (alg_simp(root, config))
         modified = true;
+      print("alg_simp");
       if (loop_invariant_code_motion(root, config))
         modified = true;
+      print("loop_invariant_code_motion");
       if (die(root))
         modified = true;
+      print("die");
       if (simplify(root, config))
         modified = true;
+      print("simplify");
       if (die(root))
         modified = true;
+      print("die");
       if (config.opt_level > 0 && whole_kernel_cse(root))
         modified = true;
       // Don't do this time-consuming optimization pass again if the IR is
@@ -545,6 +556,7 @@ void full_simplify(IRNode *root,
           cfg_optimization(root, args.after_lower_access, args.autodiff_enabled,
                            !config.real_matrix_scalarize))
         modified = true;
+      print("cfg_optimization");
       first_iteration = false;
       if (!modified)
         break;
@@ -553,10 +565,14 @@ void full_simplify(IRNode *root,
   }
   if (config.constant_folding) {
     constant_fold(root);
+    print("constant_fold");
     die(root);
+    print("die");
   }
   simplify(root, config);
+  print("simplify");
   die(root);
+  print("die");
 }
 
 }  // namespace irpass

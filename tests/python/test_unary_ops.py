@@ -142,3 +142,14 @@ def test_popcnt():
     assert test_u32(100) == 3
     assert test_u32(1000) == 6
     assert test_u32(10000) == 5
+
+
+@test_utils.test()
+def test_sign():
+    @ti.kernel
+    def foo(val: ti.f32) -> ti.f32:
+        return ti.math.sign(val)
+
+    assert foo(0.5) == 1.0
+    assert foo(-0.5) == -1.0
+    assert foo(0.0) == 0.0

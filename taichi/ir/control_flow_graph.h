@@ -7,7 +7,6 @@
 
 namespace taichi::lang {
 
-class ControlFlowGraph;
 class Function;
 /**
  * A basic block in control-flow graph.

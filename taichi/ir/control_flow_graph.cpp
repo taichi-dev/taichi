@@ -162,15 +162,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // [Intra-block Search]
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    //    if (auto func_call = block->statements[i]->cast<FuncCallStmt>()) {
-    //      const auto &dests = graph_->func_store_dests.at(func_call->func);
-    //      for (const auto &dest : dests) {
-    //        if (irpass::analysis::maybe_same_address(var, dest)) {
-    //          return nullptr;
-    //        }
-    //      }
-    //    }
-
     // Find previous store stmt to the same dest_addr, stop at the closest one.
     // store_ptr: prev-store dest_addr
     for (auto store_ptr :
@@ -223,14 +214,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check if store_stmt will ever influence the value of var
   auto may_contain_address = [&](Stmt *store_stmt, Stmt *var) {
-    //    if (auto func_call = store_stmt->cast<FuncCallStmt>()) {
-    //      const auto &dests = graph_->func_store_dests.at(func_call->func);
-    //      for (const auto &dest : dests) {
-    //        if (irpass::analysis::maybe_same_address(var, dest)) {
-    //          return true;
-    //        }
-    //      }
-    //    }
     for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
       if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
         // check for aliased address with var
@@ -395,7 +378,6 @@ void CFGNode::reaching_definition_analysis(bool after_lower_access) {
   for (int i = end_location - 1; i >= begin_location; i--) {
     // loop in reversed order
     auto stmt = block->statements[i].get();
-    // TODO: handle real function calls
     auto data_source_ptrs = irpass::analysis::get_store_destination(stmt);
     for (auto data_source_ptr : data_source_ptrs) {
       // stmt provides a data source

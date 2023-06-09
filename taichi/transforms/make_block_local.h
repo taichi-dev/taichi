@@ -10,6 +10,7 @@ class MakeBlockLocalPass : public Pass {
 
   struct Args {
     std::string kernel_name;
+    bool verbose;
   };
 };
 

@@ -12,6 +12,7 @@ layout(binding = 0) uniform UBO {
   SceneUBO scene;
   vec3 color;
   int use_per_vertex_color;
+  int use_per_vertex_radius;
   float radius;
   float window_width;
   float window_height;
@@ -34,6 +35,7 @@ layout(location = 0) out vec4 out_color;
 layout(location = 0) in vec4 pos_camera_space;
 layout(location = 1) in vec4 selected_color;
 layout(location = 2) in vec2 pos_2d;
+layout(location = 3) in float selected_radius;
 
 float project_z(float view_z) {
   vec4 projected = ubo.scene.projection * vec4(0, 0, view_z, 1);
@@ -76,13 +78,13 @@ void main() {
   vec3 coord_in_sphere = vec3(coord2D, z_in_sphere);
 
   vec3 frag_pos =
-      pos_camera_space.xyz / pos_camera_space.w + coord_in_sphere * ubo.radius;
+      pos_camera_space.xyz / pos_camera_space.w + coord_in_sphere * selected_radius;
   vec3 frag_normal = coord_in_sphere;
   vec3 color = lambertian(frag_pos, frag_normal);
   out_color = vec4(color, selected_color.a);
 
   float depth =
-      (pos_camera_space.z / pos_camera_space.w) + z_in_sphere * ubo.radius;
+      (pos_camera_space.z / pos_camera_space.w) + z_in_sphere * selected_radius;
 
   gl_FragDepth = project_z(depth);
 }

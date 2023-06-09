@@ -7,7 +7,6 @@
 #ifdef TI_WITH_LLVM
 #include "llvm/IR/Module.h"
 #include "taichi/codegen/llvm/codegen_llvm.h"
-#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/codegen/llvm/llvm_codegen_utils.h"
 #endif
 namespace taichi::lang {
@@ -63,7 +62,7 @@ class KernelCodeGen {
       int task_codegen_id,
       const CompileConfig &config,
       std::unique_ptr<llvm::Module> &&module = nullptr,
-      OffloadedStmt *stmt = nullptr) {
+      IRNode *block = nullptr) {
     TI_NOT_IMPLEMENTED
   }
 

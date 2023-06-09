@@ -446,6 +446,8 @@ class LowerMatrixPtr : public BasicStmtVisitor {
             TypedConstant(origin->dynamic_index_stride));
         auto offset = std::make_unique<BinaryOpStmt>(
             BinaryOpType::mul, stmt->offset, stride.get());
+        offset->ret_type = stmt->offset->ret_type;
+
         auto ptr_base =
             std::make_unique<GlobalPtrStmt>(origin->snodes[0], origin->indices);
         ptr_base->ret_type.set_is_pointer(true);

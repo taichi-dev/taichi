@@ -36,14 +36,14 @@ void Particles::update_data(const ParticlesInfo &info) {
     ubo.use_per_vertex_radius = info.renderable_info.has_per_vertex_radius;
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
+    RHI_VERIFY(app_context_->device().map(
+        uniform_buffer_renderable_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_renderable_);
   }
 }
 
 void Particles::update_scene_data(const SceneBase &scene) {
-
   // Update SSBO
   {
     size_t new_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
@@ -64,7 +64,8 @@ void Particles::update_scene_data(const SceneBase &scene) {
     ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
+    RHI_VERIFY(
+        app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_scene_);
   }

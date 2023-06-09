@@ -46,7 +46,8 @@ void SceneLines::update_data(const SceneLinesInfo &info) {
     ubo.is_indexed = indexed_ ? 1 : 0;
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(), &mapped));
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(),
+                                          &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_renderable_);
   }
@@ -61,7 +62,8 @@ void SceneLines::update_scene_data(const SceneBase &scene) {
         float(app_context_->config.width) / float(app_context_->config.height);
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_scene_->get_ptr(), &mapped));
+    RHI_VERIFY(
+        app_context_->device().map(uniform_buffer_scene_->get_ptr(), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_scene_);
   }

@@ -71,7 +71,8 @@ void Lines::update_data(const LinesInfo &info) {
       float(app_context_->config.width) / float(app_context_->config.height);
 
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(*uniform_buffer_renderable_);
 }

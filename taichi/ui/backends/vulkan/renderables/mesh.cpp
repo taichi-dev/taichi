@@ -61,15 +61,14 @@ void Mesh::update_data(const MeshInfo &info) {
     ubo.two_sided = info.two_sided;
     ubo.has_attribute = info.mesh_attribute_info.has_attribute;
     void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
+    RHI_VERIFY(app_context_->device().map(
+        uniform_buffer_renderable_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_->device().unmap(*uniform_buffer_renderable_);
   }
 }
 
 void Mesh::update_scene_data(const SceneBase &scene) {
-
   // Update lights SSBO
   {
     size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);

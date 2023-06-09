@@ -29,6 +29,6 @@ void Scene::ambient_light(glm::vec3 color) {
   ambient_light_color_ = color;
 }
 
-}  //namespace vulkan
+}  // namespace vulkan
 
 }  // namespace taichi::ui

@@ -16,7 +16,8 @@ using namespace taichi::lang::vulkan;
 void SetImage::update_ubo(float x_factor, float y_factor, bool transpose) {
   UniformBufferObject ubo = {x_factor, y_factor, int(transpose)};
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
   app_context_->device().unmap(*uniform_buffer_renderable_);
 }

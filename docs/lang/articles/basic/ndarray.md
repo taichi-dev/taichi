@@ -142,7 +142,7 @@ add_one(arr_np) # arr_np is updated by taichi kernel
 To feed a PyTorch tensor:
 
 ```python cont
-arr_torch = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], device='cuda:0')
+arr_torch = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=torch.float, device='cuda:0')
 add_one(arr_torch) # arr_torch is updated by taichi kernel
 ```
 

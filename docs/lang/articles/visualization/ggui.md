@@ -117,7 +117,7 @@ Note that you need to call `point_light()` for every frame. Similar to the `canv
 ```python cont
 scene.lines(vertices, width, indices, color, per_vertex_color)
 scene.mesh(vertices_3d, indices, normals, color, per_vertex_color)
-scene.particles(vertices, radius, color, per_vertex_color)
+scene.particles(vertices_3d, radius, color, per_vertex_color)
 ```
 
 The arguments `vertices`, `indices`, `per_vertex_color`, and `image` are all expected to be Taichi fields. If `per_vertex_color` is provided, `color` is ignored.
@@ -182,7 +182,7 @@ scene.lines(vertices, width, indices, color, per_vertex_color, vertex_offset=0, 
 
 scene.mesh(vertices_3d, indices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=10, index_offset=0, index_count=10, show_wireframe=True)
 
-scene.particles(vertices, radius, color, per_vertex_color, index_offset=0, index_count=10)
+scene.particles(vertices_3d, radius, color, per_vertex_color, index_offset=0, index_count=10)
 
 scene.mesh_instance(vertices_3d, indices, normals, color, per_vertex_color, vertex_offset=0, vertex_count=10, index_offset=0, index_count=10, show_wireframe=True)
 ```

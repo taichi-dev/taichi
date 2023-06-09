@@ -15,23 +15,24 @@ Stmt *insert_const(const DataType &dtype,
                    Stmt *stmt,
                    const T &value,
                    bool insert_before_me = false) {
+  auto type = dtype.ptr_removed();
   Stmt *zero = nullptr;
   if (insert_before_me)
     zero = stmt->insert_before_me(
-        Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+        Stmt::make<ConstStmt>(TypedConstant(type.get_element_type(), value)));
   else
     zero = stmt->insert_after_me(
-        Stmt::make<ConstStmt>(TypedConstant(dtype.get_element_type(), value)));
+        Stmt::make<ConstStmt>(TypedConstant(type.get_element_type(), value)));
 
-  if (dtype->is<TensorType>()) {
-    auto t_dtype = dtype->as<TensorType>();
+  if (type->is<TensorType>()) {
+    auto t_dtype = type->as<TensorType>();
     std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
     if (insert_before_me) {
       zero = zero->insert_before_me(Stmt::make<MatrixInitStmt>(values));
     } else {
       zero = zero->insert_after_me(Stmt::make<MatrixInitStmt>(values));
     }
-    zero->ret_type = dtype;
+    zero->ret_type = type;
   }
   return zero;
 }
@@ -344,7 +345,8 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
 
     if (stmt->is<AllocaStmt>()) {
       // Create a new alloc at the top of an ib to replace the old alloca
-      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
+      auto dtype = stmt->ret_type.ptr_removed();
+      auto alloc = Stmt::make<AllocaStmt>(dtype);
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
@@ -354,7 +356,6 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       // Replace the old alloca with a local store
       // and it will be replaced by a AdStackPushStmt in the following
       // ReplaceLocalVarWithStacks pass
-      auto dtype = stmt->ret_type;
 
       auto zero = insert_const(dtype, stmt, 0);
       zero->insert_after_me(Stmt::make<LocalStoreStmt>(alloc_ptr, zero));
@@ -362,7 +363,7 @@ class PromoteSSA2LocalVar : public BasicStmtVisitor {
       stmt->parent->erase(stmt);
     } else {
       // Create a alloc
-      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type);
+      auto alloc = Stmt::make<AllocaStmt>(stmt->ret_type.ptr_removed());
       auto alloc_ptr = alloc.get();
       TI_ASSERT(alloca_block_);
       alloca_block_->insert(std::move(alloc), 0);
@@ -696,7 +697,7 @@ class ReplaceLocalVarWithStacks : public BasicStmtVisitor {
   void visit(AllocaStmt *alloc) override {
     bool is_stack_needed = AdStackAllocaJudger::run(alloc);
     if (is_stack_needed) {
-      auto dtype = alloc->ret_type;
+      auto dtype = alloc->ret_type.ptr_removed();
       auto stack_alloca = Stmt::make<AdStackAllocaStmt>(dtype, ad_stack_size);
       auto stack_alloca_ptr = stack_alloca.get();
 
@@ -937,6 +938,7 @@ class ReverseOuterLoops : public BasicStmtVisitor {
 class ADTransform : public IRVisitor {
  protected:
   Stmt *constant(float32 x, DataType dtype = PrimitiveType::unknown) {
+    dtype.set_is_pointer(false);
     if (!dtype->is<TensorType>())
       return insert<ConstStmt>(TypedConstant(x));
 
@@ -1024,12 +1026,13 @@ class ADTransform : public IRVisitor {
 
   template <typename T>
   Stmt *insert_const_for_grad(const DataType &dtype, Stmt *stmt, const T &val) {
-    auto zero = insert<ConstStmt>(TypedConstant(dtype.get_element_type(), val));
-    if (dtype->is<TensorType>()) {
-      auto t_dtype = dtype->as<TensorType>();
+    auto zero = insert<ConstStmt>(
+        TypedConstant(dtype.ptr_removed().get_element_type(), val));
+    if (dtype.ptr_removed()->is<TensorType>()) {
+      auto t_dtype = dtype.ptr_removed()->as<TensorType>();
       std::vector<Stmt *> values(t_dtype->get_num_elements(), zero);
       zero = insert<MatrixInitStmt>(values);
-      zero->ret_type = dtype;
+      zero->ret_type = dtype.ptr_removed();
     }
     return zero;
   }
@@ -1209,16 +1212,16 @@ class MakeAdjoint : public ADTransform {
 
   Stmt *adjoint(Stmt *stmt) {
     DataType adjoint_dtype = stmt->ret_type.ptr_removed();
-    if (stmt->ret_type->is<TensorType>()) {
+    if (adjoint_dtype->is<TensorType>()) {
       DataType prim_dtype = PrimitiveType::f32;
-      if (is_real(stmt->ret_type.ptr_removed().get_element_type())) {
-        prim_dtype = stmt->ret_type.ptr_removed().get_element_type();
+      if (is_real(adjoint_dtype.get_element_type())) {
+        prim_dtype = adjoint_dtype.get_element_type();
       }
       adjoint_dtype = TypeFactory::get_instance().get_tensor_type(
-          stmt->ret_type->as<TensorType>()->get_shape(), prim_dtype);
+          adjoint_dtype->as<TensorType>()->get_shape(), prim_dtype);
     } else if (stmt->is<MatrixPtrStmt>()) {
       // pass
-    } else if (!is_real(stmt->ret_type) || stmt->is<ConstStmt>()) {
+    } else if (!is_real(adjoint_dtype) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
 
@@ -1482,8 +1485,9 @@ class MakeAdjoint : public ADTransform {
     // iteration should be cleared after this iteration has been done
     // 2. If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of
-    if (is_real(stmt->dest->ret_type.get_element_type())) {
-      auto dtype = stmt->dest->ret_type;
+    auto dest_type = stmt->dest->ret_type.ptr_removed();
+    if (is_real(dest_type.get_element_type())) {
+      auto dtype = dest_type;
       auto zero = insert_const_for_grad(dtype, stmt, 0);
       insert<LocalStoreStmt>(adjoint(stmt->dest), zero);
     }
@@ -1522,8 +1526,7 @@ class MakeAdjoint : public ADTransform {
                        "tensor into the kernel directly");
         auto adj_ptr =
             insert<ExternalPtrStmt>(src->base_ptr, src->indices, src->ndim,
-                                    src->element_shape, src->element_dim,
-                                    /*is_grad=*/true);
+                                    src->element_shape, /*is_grad=*/true);
         adj_ptr->ret_type = src->ret_type;
 
         if (is_ptr_offset) {
@@ -1595,10 +1598,9 @@ class MakeAdjoint : public ADTransform {
                      "Cannot automatically differentiate through a grad "
                      "tensor, if you really want to do that, pass the grad "
                      "tensor into the kernel directly");
-      adjoint_ptr =
-          insert<ExternalPtrStmt>(dest->base_ptr, dest->indices, dest->ndim,
-                                  dest->element_shape, dest->element_dim,
-                                  /*is_grad=*/true);
+      adjoint_ptr = insert<ExternalPtrStmt>(dest->base_ptr, dest->indices,
+                                            dest->ndim, dest->element_shape,
+                                            /*is_grad=*/true);
       adjoint_ptr->ret_type = dest->ret_type;
 
       if (is_ptr_offset) {
@@ -1668,8 +1670,7 @@ class MakeAdjoint : public ADTransform {
                        "tensor into the kernel directly");
         auto adjoint_ptr =
             insert<ExternalPtrStmt>(dest->base_ptr, dest->indices, dest->ndim,
-                                    dest->element_shape, dest->element_dim,
-                                    /*is_grad=*/true);
+                                    dest->element_shape, /*is_grad=*/true);
         adjoint_ptr->ret_type = dest->ret_type;
 
         if (is_ptr_offset) {
@@ -1751,7 +1752,7 @@ class MakeAdjoint : public ADTransform {
       */
       int offset = stmt->offset->as<ConstStmt>()->val.val_int32();
 
-      auto tensor_type = stmt->origin->ret_type->as<TensorType>();
+      auto tensor_type = stmt->origin->ret_type.ptr_removed()->as<TensorType>();
       int num_elements = tensor_type->get_num_elements();
 
       auto zero = insert_const_for_grad(prim_dtype, stmt, 0);
@@ -1786,7 +1787,7 @@ class MakeAdjoint : public ADTransform {
 
        accumulate($0_adj, $7)
       */
-      auto tensor_type = stmt->origin->ret_type->as<TensorType>();
+      auto tensor_type = stmt->origin->ret_type.ptr_removed()->as<TensorType>();
       auto tensor_shape = tensor_type->get_shape();
       int num_elements = tensor_type->get_num_elements();
 
@@ -1897,7 +1898,8 @@ class MakeDual : public ADTransform {
   }
 
   Stmt *dual(Stmt *stmt) {
-    if (!is_real(stmt->ret_type.get_element_type()) || stmt->is<ConstStmt>()) {
+    auto dual_type = stmt->ret_type.ptr_removed();
+    if (!is_real(dual_type.get_element_type()) || stmt->is<ConstStmt>()) {
       return constant(0);
     }
     if (dual_stmt.find(stmt) == dual_stmt.end()) {
@@ -1907,7 +1909,7 @@ class MakeDual : public ADTransform {
       // auto alloca =
       //    Stmt::make<AllocaStmt>(get_current_program().config.gradient_dt);
       // maybe it's better to use the statement data type than the default type
-      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(dual_type);
       dual_stmt[stmt] = alloca.get();
 
       // TODO: check whether there are any edge cases for the alloca_block
@@ -2077,8 +2079,8 @@ class MakeDual : public ADTransform {
     // If the alloca serves as the dest of multiple LocalStoreStmt, only the
     // last LocalStoreStmt should be taken account of, i.e, its history should
     // be cleared
-    if (is_real(stmt->dest->ret_type.get_element_type())) {
-      auto dtype = stmt->dest->ret_type;
+    auto dtype = stmt->dest->ret_type.ptr_removed();
+    if (is_real(dtype.get_element_type())) {
       auto zero = insert_const_for_grad(dtype, stmt, 0);
       insert<LocalStoreStmt>(dual(stmt->dest), zero);
     }
@@ -2203,7 +2205,7 @@ class BackupSSA : public BasicStmtVisitor {
 
   Stmt *load(Stmt *stmt) {
     if (backup_alloca.find(stmt) == backup_alloca.end()) {
-      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type);
+      auto alloca = Stmt::make<AllocaStmt>(stmt->ret_type.ptr_removed());
       auto alloca_ptr = alloca.get();
       independent_block->insert(std::move(alloca), 0);
       auto local_store = Stmt::make<LocalStoreStmt>(alloca_ptr, stmt);
@@ -2422,7 +2424,7 @@ class GloablDataAccessRuleChecker : public BasicStmtVisitor {
     snode = snode->get_adjoint_checkbit();
     auto global_ptr =
         stmt->insert_after_me(Stmt::make<GlobalPtrStmt>(snode, src->indices));
-    auto dtype = global_ptr->ret_type;
+    auto dtype = global_ptr->ret_type.ptr_removed();
     auto one = global_ptr->insert_after_me(
         Stmt::make<ConstStmt>(TypedConstant(dtype, 1)));
     one->insert_after_me(Stmt::make<GlobalStoreStmt>(global_ptr, one));

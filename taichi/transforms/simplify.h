@@ -13,6 +13,8 @@ class FullSimplifyPass : public Pass {
     // Switch off some optimization in store forwarding if there is an autodiff
     // pass after the full_simplify
     bool autodiff_enabled;
+    std::string kernel_name = "";
+    bool verbose = false;
   };
 };
 

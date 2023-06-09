@@ -810,6 +810,8 @@ class Kernel:
             prog.launch_kernel(compiled_kernel_data, launch_ctx)
         except Exception as e:
             e = handle_exception_from_cpp(e)
+            if impl.get_runtime().print_full_traceback:
+                raise e
             raise e from None
 
         ret = None
@@ -947,6 +949,8 @@ def _kernel_impl(_func, level_of_class_stackframe, verbose=False):
             try:
                 return primal(*args, **kwargs)
             except (TaichiCompilationError, TaichiRuntimeError) as e:
+                if impl.get_runtime().print_full_traceback:
+                    raise e
                 raise type(e)("\n" + str(e)) from None
 
         wrapped.grad = adjoint
@@ -1006,6 +1010,8 @@ class _BoundedDifferentiableMethod:
                 return self._primal(*args, **kwargs)
             return self._primal(self._kernel_owner, *args, **kwargs)
         except (TaichiCompilationError, TaichiRuntimeError) as e:
+            if impl.get_runtime().print_full_traceback:
+                raise e
             raise type(e)("\n" + str(e)) from None
 
     def grad(self, *args, **kwargs):

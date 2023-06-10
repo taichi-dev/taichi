@@ -1136,6 +1136,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
+        ti_unroll_limit = 8
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])
@@ -1145,7 +1146,11 @@ class ASTTransformer(Builder):
             if len(targets) != 1:
                 raise TaichiSyntaxError(f"Group for should have 1 loop target, found {len(targets)}")
             target = targets[0]
+            iter_time = 0
             for value in impl.grouped(ndrange_arg):
+                iter_time += 1
+                if iter_time > ti_unroll_limit:
+                    raise TaichiSyntaxError(f"loop unrolling only support under {ti_unroll_limit}")
                 with ctx.variable_scope_guard():
                     ctx.create_variable(target, value)
                     build_stmts(ctx, node.body)
@@ -1157,6 +1162,8 @@ class ASTTransformer(Builder):
         else:
             build_stmt(ctx, node.iter)
             targets = ASTTransformer.get_for_loop_targets(node)
+            if len(node.iter.ptr) > ti_unroll_limit:
+                raise TaichiSyntaxError(f"loop unrolling only support under {ti_unroll_limit}")
             for target_values in node.iter.ptr:
                 if not isinstance(target_values, collections.abc.Sequence) or len(targets) == 1:
                     target_values = [target_values]

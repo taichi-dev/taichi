@@ -2,6 +2,7 @@
 #include "taichi/ir/statements.h"
 #include "taichi/util/bit.h"
 #include "taichi/program/kernel.h"
+#include "taichi/program/function.h"
 
 namespace taichi::lang {
 
@@ -276,6 +277,19 @@ std::unique_ptr<Stmt> MeshForStmt::clone() const {
 FuncCallStmt::FuncCallStmt(Function *func, const std::vector<Stmt *> &args)
     : func(func), args(args) {
   TI_STMT_REG_FIELDS;
+}
+
+stmt_refs FuncCallStmt::get_store_destination() const {
+  std::vector<Stmt *> ret;
+  for (auto &arg : args) {
+    if (auto ref = arg->cast<ReferenceStmt>()) {
+      ret.push_back(ref->var);
+    } else if (arg->ret_type.is_pointer()) {
+      ret.push_back(arg);
+    }
+  }
+  ret.insert(ret.end(), func->store_dests.begin(), func->store_dests.end());
+  return ret;
 }
 
 WhileStmt::WhileStmt(std::unique_ptr<Block> &&body)

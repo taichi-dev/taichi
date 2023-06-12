@@ -14,7 +14,7 @@ Function::Function(Program *program, const FunctionKey &func_key)
 void Function::set_function_body(const std::function<void()> &func) {
   context = std::make_unique<FrontendContext>(program->compile_config().arch);
   ir = context->get_root();
-  ir_type_ = IRType::AST;
+  ir_stage_ = IRStage::AST;
 
   func();
   finalize_params();
@@ -29,7 +29,7 @@ void Function::set_function_body(const std::function<void()> &func) {
 
 void Function::set_function_body(std::unique_ptr<IRNode> func_body) {
   ir = std::move(func_body);
-  ir_type_ = IRType::InitialIR;
+  ir_stage_ = IRStage::InitialIR;
 }
 
 std::string Function::get_name() const {

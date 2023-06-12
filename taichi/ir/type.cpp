@@ -174,6 +174,24 @@ const Type *StructType::get_type() const {
   return TypeFactory::get_instance().get_struct_type(elements_, layout_);
 }
 
+std::string ArgPackType::to_string() const {
+  std::string s = fmt::format("argpack[{}]{{", layout_);
+  for (int i = 0; i < elements_.size(); i++) {
+    if (i) {
+      s += ", ";
+    }
+    s += fmt::format("{}({}, no. {}): {}", i, elements_[i].name,
+                     elements_[i].position, elements_[i].type->to_string());
+  }
+  s += "}";
+  return s;
+}
+
+const Type *ArgPackType::get_type() const {
+  return TypeFactory::get_instance().get_argpack_type(elements_);
+}
+
+
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;

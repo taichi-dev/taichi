@@ -1136,7 +1136,7 @@ class ASTTransformer(Builder):
 
     @staticmethod
     def build_static_for(ctx, node, is_grouped):
-        ti_unroll_limit = 8
+        ti_unroll_limit = impl.get_runtime().unrolling_limit
         if is_grouped:
             assert len(node.iter.args[0].args) == 1
             ndrange_arg = build_stmt(ctx, node.iter.args[0].args[0])

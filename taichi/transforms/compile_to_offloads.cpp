@@ -361,6 +361,8 @@ void compile_function(IRNode *ir,
         print("Scalarized");
       }
     }
+    irpass::demote_atomics(ir, config);
+    print("Atomics demoted");
     func->set_ir_stage(Function::IRStage::BeforeLowerAccess);
   }
 

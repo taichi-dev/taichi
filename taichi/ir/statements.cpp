@@ -126,9 +126,9 @@ MatrixPtrStmt::MatrixPtrStmt(Stmt *origin_input,
 }
 
 bool MatrixPtrStmt::common_statement_eliminable() const {
-  Kernel *k = get_kernel();
-  TI_ASSERT(k != nullptr);
-  return (k->autodiff_mode == AutodiffMode::kNone);
+  Callable *callable = get_callable();
+  TI_ASSERT(callable != nullptr);
+  return (callable->autodiff_mode == AutodiffMode::kNone);
 }
 
 SNodeOpStmt::SNodeOpStmt(SNodeOpType op_type,

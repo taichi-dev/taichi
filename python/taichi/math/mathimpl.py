@@ -720,7 +720,8 @@ def inverse(mat):  # pylint: disable=R1710
     This function is equivalent to the `inverse` function in GLSL.
 
     Args:
-        mat (:class:`taichi.Matrix`): The matrix of which to take the inverse.
+        mat (:class:`taichi.Matrix`): The matrix of which to take the inverse. \
+            Supports only 2x2, 3x3 and 4x4 matrices.
 
     Returns:
         Inverse of the input matrix.

@@ -80,10 +80,9 @@ class TypeFactory {
       hashing::Hasher<std::pair<std::vector<StructMember>, std::string>>>
       struct_types_;
   std::mutex struct_mut_;
-  std::unordered_map<
-      std::vector<ArgPackMember>,
-      std::unique_ptr<Type>,
-      hashing::Hasher<std::vector<ArgPackMember>>>
+  std::unordered_map<std::vector<ArgPackMember>,
+                     std::unique_ptr<Type>,
+                     hashing::Hasher<std::vector<ArgPackMember>>>
       argpack_types_;
   std::mutex argpack_mut_;
 

@@ -315,7 +315,8 @@ struct TI_DLL_EXPORT ArgPackMember {
   std::string name;
   size_t position{0};
   bool operator==(const ArgPackMember &other) const {
-    return type == other.type && name == other.name && position == other.position;
+    return type == other.type && name == other.name &&
+           position == other.position;
   }
   TI_IO_DEF(type, name, position)
 };
@@ -332,7 +333,6 @@ class TI_DLL_EXPORT ArgPackType : public Type {
   const std::vector<ArgPackMember> &elements() const {
     return elements_;
   }
-
 
   Type *get_compute_type() override {
     return this;

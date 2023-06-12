@@ -191,7 +191,6 @@ const Type *ArgPackType::get_type() const {
   return TypeFactory::get_instance().get_argpack_type(elements_);
 }
 
-
 bool Type::is_primitive(PrimitiveTypeID type) const {
   if (auto p = cast<PrimitiveType>()) {
     return p->type == type;

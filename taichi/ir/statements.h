@@ -1384,8 +1384,8 @@ class OffloadedStmt : public Stmt {
     return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
-  Kernel *get_kernel() const override {
-    return kernel_;
+  Callable *get_callable() const override {
+    return (Callable *)kernel_;
   }
 
   bool is_container_statement() const override {

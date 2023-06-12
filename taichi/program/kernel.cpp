@@ -34,9 +34,9 @@ Kernel::Kernel(Program &program,
 Kernel::Kernel(Program &program,
                std::unique_ptr<IRNode> &&ir,
                const std::string &primal_name,
-               AutodiffMode autodiff_mode)
-    : autodiff_mode(autodiff_mode) {
+               AutodiffMode autodiff_mode) {
   this->arch = program.compile_config().arch;
+  this->autodiff_mode = autodiff_mode;
   this->ir = std::move(ir);
   this->program = &program;
   is_accessor = false;
@@ -107,7 +107,7 @@ void Kernel::init(Program &program,
   ir = context->get_root();
 
   TI_ASSERT(ir->is<Block>());
-  ir->as<Block>()->set_parent_kernel(this);
+  ir->as<Block>()->set_parent_callable(this);
 
   ir_is_ast_ = true;
   arch = program.compile_config().arch;

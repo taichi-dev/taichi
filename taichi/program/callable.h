@@ -120,6 +120,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   Program *program{nullptr};
   std::unique_ptr<IRNode> ir{nullptr};
   std::unique_ptr<FrontendContext> context{nullptr};
+  AutodiffMode autodiff_mode{AutodiffMode::kNone};
 
   Callable();
   virtual ~Callable();

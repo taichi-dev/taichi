@@ -50,7 +50,7 @@ print(p(view_params))  # 1.0
 
 Argpacks are not commonly used types. They are primarily designed as parameter containers, which naturally impose certain limitations on their usage:
 
-- Argpacks cannot only be used as kernel parameters
+- Argpacks can only be used as kernel parameters
 - Argpacks cannot be used as return types
 - Argpacks cannot be nested in Compound Types, but can be nested in other argpacks.
 

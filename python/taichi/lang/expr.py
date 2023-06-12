@@ -148,12 +148,9 @@ def make_expr_group(*exprs, real_func_arg=False):
             exprs = mat.entries
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
-        if isinstance(i, Matrix):
-            assert real_func_arg
-            for item in i.entries:
-                expr_group.push_back(Expr(item).ptr)
-        else:
-            expr_group.push_back(Expr(i).ptr)
+        flattened = _get_flattened_ptrs(i)
+        for item in flattened:
+            expr_group.push_back(item)
     return expr_group
 
 

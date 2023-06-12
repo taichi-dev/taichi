@@ -42,6 +42,9 @@ Kernel::Kernel(Program &program,
   is_accessor = false;
   ir_is_ast_ = false;  // CHI IR
 
+  TI_ASSERT(this->ir->is<Block>());
+  this->ir->as<Block>()->set_parent_callable(this);
+
   if (autodiff_mode == AutodiffMode::kNone) {
     name = primal_name;
   } else if (autodiff_mode == AutodiffMode::kForward) {

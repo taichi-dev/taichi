@@ -457,6 +457,12 @@ void export_lang(py::module &m) {
       .def("compile_kernel", &Program::compile_kernel,
            py::return_value_policy::reference)
       .def("launch_kernel", &Program::launch_kernel)
+      .def("c_launch_kernel",
+           [](Program *self, const CompiledKernelData &compiled_kernel_data,
+              std::uintptr_t ctx_addr) {
+             auto *ctx = reinterpret_cast<LaunchContextBuilder *>(ctx_addr);
+             self->launch_kernel(compiled_kernel_data, *ctx);
+           })
       .def("get_device_caps", &Program::get_device_caps);
 
   py::class_<AotModuleBuilder>(m, "AotModuleBuilder")
@@ -565,6 +571,10 @@ void export_lang(py::module &m) {
       .def("total_shape", &Ndarray::total_shape)
       .def("element_shape", &Ndarray::get_element_shape)
       .def("element_data_type", &Ndarray::get_element_data_type)
+      .def("get_raw_ptr",
+           [](Ndarray *self) -> std::uintptr_t {
+             return reinterpret_cast<std::uintptr_t>(self);
+           })
       .def_readonly("dtype", &Ndarray::dtype)
       .def_readonly("shape", &Ndarray::shape);
 
@@ -577,7 +587,10 @@ void export_lang(py::module &m) {
   py::class_<Texture>(m, "Texture")
       .def("device_allocation_ptr", &Texture::get_device_allocation_ptr_as_int)
       .def("from_ndarray", &Texture::from_ndarray)
-      .def("from_snode", &Texture::from_snode);
+      .def("from_snode", &Texture::from_snode)
+      .def("get_raw_ptr", [](Texture *self) -> std::uintptr_t {
+        return reinterpret_cast<std::uintptr_t>(self);
+      });
 
   py::enum_<aot::ArgKind>(m, "ArgKind")
       .value("SCALAR", aot::ArgKind::kScalar)
@@ -693,7 +706,10 @@ void export_lang(py::module &m) {
           [](Kernel *self) -> ASTBuilder * {
             return &self->context->builder();
           },
-          py::return_value_policy::reference);
+          py::return_value_policy::reference)
+      .def("get_raw_ptr", [](Kernel *self) -> std::uintptr_t {
+        return reinterpret_cast<std::uintptr_t>(self);
+      });
 
   py::class_<LaunchContextBuilder>(m, "KernelLaunchContext")
       .def("set_arg_int", &LaunchContextBuilder::set_arg_int)

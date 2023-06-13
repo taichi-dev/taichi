@@ -468,11 +468,13 @@ class ASTTransformer(Builder):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
+            f"\x1b[38;5;226m"  # Yellow
             f'Calling non-taichi function "{name}". '
             f"Scope inside the function is not processed by the Taichi AST transformer. "
             f"The function may not work as expected. Proceed with caution! "
-            f"Maybe you can consider turning it into a @ti.func?",
-            UserWarning,
+            f"Maybe you can consider turning it into a @ti.func?"
+            f"\x1b[0m",  # Reset
+            SyntaxWarning,
             ctx.file,
             node.lineno + ctx.lineno_offset,
             module="taichi",
@@ -580,8 +582,8 @@ class ASTTransformer(Builder):
         if hasattr(node.func, "caller"):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
-        node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
+        node.ptr = func(*args, **keywords)
 
         if getattr(func, "_is_taichi_function", False):
             ctx.func.has_print |= func.func.has_print

@@ -23,8 +23,7 @@ void MetalProgramImpl::materialize_runtime(KernelProfilerBase *profiler,
   *result_buffer_ptr = (uint64 *)HostMemoryPool::get_instance().allocate(
       sizeof(uint64) * taichi_result_buffer_entries, 8);
 
-  device_ =
-      std::unique_ptr<metal::MetalDevice>(metal::MetalDevice::create());
+  device_ = std::unique_ptr<metal::MetalDevice>(metal::MetalDevice::create());
 
   gfx::GfxRuntime::Params params;
   params.device = device_.get();

@@ -220,16 +220,24 @@ class ArgPackType(CompoundType):
                 root_dtype = dtype.dtype
                 while isinstance(root_dtype, MatrixType):
                     root_dtype = root_dtype.dtype
-                elements.append([_ti_core.DataType(_ti_core.get_type_factory_instance().get_ndarray_struct_type(
-                    root_dtype, dtype.ndim, False)), k])
+                elements.append(
+                    [
+                        _ti_core.DataType(
+                            _ti_core.get_type_factory_instance().get_ndarray_struct_type(root_dtype, dtype.ndim, False)
+                        ),
+                        k,
+                    ]
+                )
             elif isinstance(dtype, texture_type.RWTextureType):
                 self.members[k] = dtype
-                elements.append([_ti_core.DataType(
-                    _ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k])
+                elements.append(
+                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
+                )
             elif isinstance(dtype, texture_type.TextureType):
                 self.members[k] = dtype
-                elements.append([_ti_core.DataType(
-                    _ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k])
+                elements.append(
+                    [_ti_core.DataType(_ti_core.get_type_factory_instance().get_rwtexture_struct_type()), k]
+                )
             else:
                 dtype = cook_dtype(dtype)
                 self.members[k] = dtype
@@ -313,7 +321,6 @@ class ArgPackType(CompoundType):
         pack = _IntermediateArgPack(self.members, d)
         pack._ArgPack__dtype = self.dtype
         return pack
-
 
     def __str__(self):
         """Python scope argpack type print support."""

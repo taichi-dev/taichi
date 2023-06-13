@@ -20,6 +20,7 @@
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/backends/vulkan/renderable.h"
 #include "taichi/ui/common/canvas_base.h"
+#include "taichi/ui/backends/vulkan/sceneV2.h"
 
 #include "taichi/ui/backends/vulkan/gui.h"
 #include "taichi/ui/backends/vulkan/renderer.h"

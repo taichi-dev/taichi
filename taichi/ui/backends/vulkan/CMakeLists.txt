@@ -6,6 +6,7 @@ target_sources(taichi_ui_vulkan
     app_context.cpp
     canvas.cpp
     scene.cpp
+    sceneV2.cpp
     gui.cpp
     renderable.cpp
     renderer.cpp

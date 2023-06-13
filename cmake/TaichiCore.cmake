@@ -242,6 +242,11 @@ if(TI_WITH_LLVM)
     endif()
 endif()
 
+if (TI_WITH_METAL OR TI_WITH_OPENGL OR TI_WITH_DX11 OR TI_WITH_VULKAN)
+    add_subdirectory(taichi/runtime/program_impls/gfx)
+    target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE gfx_program_impl)
+endif()
+
 if (TI_WITH_METAL)
     add_subdirectory(taichi/runtime/program_impls/metal)
     target_link_libraries(${CORE_LIBRARY_NAME} PRIVATE metal_program_impl)

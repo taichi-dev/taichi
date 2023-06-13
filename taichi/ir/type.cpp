@@ -174,7 +174,7 @@ const Type *StructType::get_type() const {
   return TypeFactory::get_instance().get_struct_type(elements_, layout_);
 }
 
-std::string ArgPack Type::to_string() const {
+std::string ArgPackType::to_string() const {
   std::string s = fmt::format("argpack[{}]{{", layout_);
   for (int i = 0; i < elements_.size(); i++) {
     if (i) {

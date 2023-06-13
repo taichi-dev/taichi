@@ -58,7 +58,6 @@ DeviceAllocation GfxProgramImpl::allocate_texture(const ImageParams &params) {
 void GfxProgramImpl::finalize() {
   runtime_.reset();
   device_.reset();
-  opengl::reset_opengl();
 }
 
 GfxProgramImpl::~GfxProgramImpl() {

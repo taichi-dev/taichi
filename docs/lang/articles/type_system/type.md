@@ -321,3 +321,7 @@ def foo():
     # If you are using ti.i32 as default_ip, this is equivalent to:
     v = ti.cast(u, ti.i32)  # ti.Vector([2, 4])
 ```
+
+## Argument Pack Type
+
+Argument packs, also known as argpacks, are user-defined data types that act as wrappers for multiple parameters. The `argpack` type is discussed in [Argument Pack](../advanced/argument_pack.md) in detail.

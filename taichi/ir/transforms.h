@@ -17,6 +17,7 @@
 #include "taichi/transforms/demote_mesh_statements.h"
 #include "taichi/transforms/simplify.h"
 #include "taichi/common/trait.h"
+#include "taichi/program/function.h"
 
 namespace taichi::lang {
 
@@ -158,10 +159,7 @@ std::unordered_map<int, ExternalPtrAccess> detect_external_ptr_access_in_task(
     OffloadedStmt *offload);
 
 // compile_to_offloads does the basic compilation to create all the offloaded
-// tasks of a Taichi kernel. It's worth pointing out that this doesn't demote
-// dense struct fors. This is a necessary workaround to prevent the async
-// engine from fusing incompatible offloaded tasks. TODO(Lin): check this
-// comment
+// tasks of a Taichi kernel.
 void compile_to_offloads(IRNode *ir,
                          const CompileConfig &config,
                          const Kernel *kernel,
@@ -190,16 +188,17 @@ void compile_to_executable(IRNode *ir,
                            bool make_thread_local = false,
                            bool make_block_local = false,
                            bool start_from_ast = true);
-// Compile a function with some basic optimizations, so that the number of
-// statements is reduced before inlining.
+// Compile a function with some basic optimizations
 void compile_function(IRNode *ir,
                       const CompileConfig &config,
                       Function *func,
                       AutodiffMode autodiff_mode,
                       bool verbose,
-                      bool start_from_ast);
+                      Function::IRStage target_stage);
 
-void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config);
+void compile_taichi_functions(IRNode *ir,
+                              const CompileConfig &compile_config,
+                              Function::IRStage target_stage);
 }  // namespace irpass
 
 }  // namespace taichi::lang

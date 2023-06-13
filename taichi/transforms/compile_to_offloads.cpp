@@ -44,7 +44,11 @@ void compile_to_offloads(IRNode *ir,
     print("Lowered");
   }
 
-  irpass::compile_taichi_functions(ir, config);
+  irpass::compile_taichi_functions(ir, config,
+                                   Function::IRStage::BeforeLowerAccess);
+  irpass::analysis::gather_func_store_dests(ir);
+  irpass::compile_taichi_functions(ir, config, Function::IRStage::OptimizedIR);
+  irpass::analysis::gather_func_store_dests(ir);
 
   irpass::eliminate_immutable_local_vars(ir);
   print("Immutable local vars eliminated");
@@ -330,54 +334,65 @@ void compile_function(IRNode *ir,
                       Function *func,
                       AutodiffMode autodiff_mode,
                       bool verbose,
-                      bool start_from_ast) {
+                      Function::IRStage target_stage) {
   TI_AUTO_PROF;
 
+  auto current_stage = func->ir_stage();
   auto print = make_pass_printer(verbose, func->get_name(), ir);
   print("Initial IR");
 
-  if (autodiff_mode == AutodiffMode::kReverse) {
-    irpass::reverse_segments(ir);
-    print("Segment reversed (for autodiff)");
-  }
-
-  if (start_from_ast) {
-    irpass::frontend_type_check(ir);
-    irpass::lower_ast(ir);
-    print("Lowered");
-  }
-
-  if (config.real_matrix_scalarize) {
-    if (irpass::scalarize(ir)) {
-      // Remove redundant MatrixInitStmt inserted during scalarization
-      irpass::die(ir);
-      print("Scalarized");
+  if (target_stage >= Function::IRStage::BeforeLowerAccess &&
+      current_stage < Function::IRStage::BeforeLowerAccess) {
+    if (autodiff_mode == AutodiffMode::kReverse) {
+      irpass::reverse_segments(ir);
+      print("Segment reversed (for autodiff)");
     }
+
+    if (current_stage < Function::IRStage::InitialIR) {
+      irpass::frontend_type_check(ir);
+      irpass::lower_ast(ir);
+      print("Lowered");
+    }
+
+    if (config.real_matrix_scalarize) {
+      if (irpass::scalarize(ir)) {
+        // Remove redundant MatrixInitStmt inserted during scalarization
+        irpass::die(ir);
+        print("Scalarized");
+      }
+    }
+    irpass::demote_atomics(ir, config);
+    print("Atomics demoted");
+    func->set_ir_stage(Function::IRStage::BeforeLowerAccess);
   }
 
-  irpass::lower_access(ir, config, {{}, true});
-  print("Access lowered");
-  irpass::analysis::verify(ir);
+  if (target_stage >= Function::IRStage::OptimizedIR &&
+      current_stage < Function::IRStage::OptimizedIR) {
+    irpass::lower_access(ir, config, {{}, true});
+    print("Access lowered");
+    irpass::analysis::verify(ir);
 
-  irpass::die(ir);
-  print("DIE");
-  irpass::analysis::verify(ir);
+    irpass::die(ir);
+    print("DIE");
+    irpass::analysis::verify(ir);
 
-  irpass::flag_access(ir);
-  print("Access flagged III");
-  irpass::analysis::verify(ir);
+    irpass::flag_access(ir);
+    print("Access flagged III");
+    irpass::analysis::verify(ir);
 
-  irpass::type_check(ir, config);
-  print("Typechecked");
+    irpass::type_check(ir, config);
+    print("Typechecked");
 
-  irpass::demote_operations(ir, config);
-  print("Operations demoted");
+    irpass::demote_operations(ir, config);
+    print("Operations demoted");
 
-  irpass::full_simplify(
-      ir, config,
-      {false, autodiff_mode != AutodiffMode::kNone, func->get_name(), verbose});
-  print("Simplified");
-  irpass::analysis::verify(ir);
+    irpass::full_simplify(ir, config,
+                          {true, autodiff_mode != AutodiffMode::kNone,
+                           func->get_name(), verbose});
+    print("Simplified");
+    irpass::analysis::verify(ir);
+    func->set_ir_stage(Function::IRStage::OptimizedIR);
+  }
 }
 
 }  // namespace irpass

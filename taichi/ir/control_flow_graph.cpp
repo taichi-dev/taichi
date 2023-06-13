@@ -6,6 +6,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/system/profiler.h"
+#include "taichi/program/function.h"
 
 namespace taichi::lang {
 
@@ -161,10 +162,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // [Intra-block Search]
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    if (block->statements[i]->is<FuncCallStmt>()) {
-      return nullptr;
-    }
-
     // Find previous store stmt to the same dest_addr, stop at the closest one.
     // store_ptr: prev-store dest_addr
     for (auto store_ptr :
@@ -216,10 +213,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
 
   // Check if store_stmt will ever influence the value of var
-  auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
-    if (store_stmt->is<FuncCallStmt>()) {
-      return true;
-    }
+  auto may_contain_address = [&](Stmt *store_stmt, Stmt *var) {
     for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
       if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
         // check for aliased address with var
@@ -698,6 +692,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     if (stmt->is<FuncCallStmt>()) {
       killed_in_this_node.clear();
       live_load_in_this_node.clear();
+      continue;
     }
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
 
@@ -979,8 +974,7 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
   for (int i = 0; i < num_nodes; i++) {
     for (int j = nodes[i]->begin_location; j < nodes[i]->end_location; j++) {
       auto stmt = nodes[i]->block->statements[j].get();
-      if (stmt->is<FuncCallStmt>() ||
-          (stmt->is<MatrixPtrStmt>() &&
+      if ((stmt->is<MatrixPtrStmt>() &&
            stmt->as<MatrixPtrStmt>()->origin->is<AllocaStmt>()) ||
           (!after_lower_access &&
            (stmt->is<GlobalPtrStmt>() || stmt->is<ExternalPtrStmt>() ||
@@ -991,6 +985,9 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);
+      } else if (auto func_call = stmt->cast<FuncCallStmt>()) {
+        const auto &dests = func_call->func->store_dests;
+        nodes[start_node]->reach_gen.insert(dests.begin(), dests.end());
       }
     }
   }

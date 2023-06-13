@@ -7,6 +7,7 @@
 
 namespace taichi::lang {
 
+class Function;
 /**
  * A basic block in control-flow graph.
  * A CFGNode contains a reference to a part of the CHI IR, or more precisely,
@@ -112,6 +113,8 @@ class ControlFlowGraph {
   std::vector<std::unique_ptr<CFGNode>> nodes;
   const int start_node = 0;
   int final_node{0};
+
+  std::unordered_map<Function *, std::unordered_set<Stmt *>> func_store_dests;
 
   template <typename... Args>
   CFGNode *push_back(Args &&...args) {

@@ -27,8 +27,6 @@ class MetalProgramImpl : public GfxProgramImpl {
   void enqueue_compute_op_lambda(
       std::function<void(Device *device, CommandList *cmdlist)> op,
       const std::vector<ComputeOpImageRef> &image_refs) override;
-
-  ~MetalProgramImpl() override;
 };
 
 }  // namespace taichi::lang

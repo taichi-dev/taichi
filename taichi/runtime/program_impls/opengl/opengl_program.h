@@ -10,7 +10,6 @@ namespace taichi::lang {
 class OpenglProgramImpl : public GfxProgramImpl {
  public:
   explicit OpenglProgramImpl(CompileConfig &config);
-  ~OpenglProgramImpl() override;
 
   void finalize() override;
 

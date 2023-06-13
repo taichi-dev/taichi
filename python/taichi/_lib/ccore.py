@@ -15,8 +15,8 @@ def _load_dll(path):
             dll = ctypes.CDLL(path, winmode=0)
         else:
             dll = ctypes.CDLL(path)
-    except OSError:
-        return None
+    except OSError as ex:
+        raise ex from None
     return dll
 
 

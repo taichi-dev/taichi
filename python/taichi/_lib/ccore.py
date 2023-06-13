@@ -21,7 +21,7 @@ def _load_dll(path):
 
 
 def load_core_exports_dll():
-    bin_path = os.path.join(package_root, "_lib", "core_exports", "bin")
+    bin_path = os.path.join(package_root, "_lib", "core_exports")
     if os.name == "nt":
         if (
             sys.version_info[0] > 3
@@ -35,7 +35,7 @@ def load_core_exports_dll():
     elif sys.platform == "darwin":
         dll_path = os.path.join(bin_path, "libtaichi_core_exports.dylib")
     else:
-        dll_path = os.path.join(bin_path, "taichi_core_exports.so")
+        dll_path = os.path.join(bin_path, "libtaichi_core_exports.so")
 
     return _load_dll(dll_path)
 

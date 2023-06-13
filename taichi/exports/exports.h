@@ -1,6 +1,7 @@
 // clang-format off
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifndef _CRT_SECURE_NO_WARNINGS

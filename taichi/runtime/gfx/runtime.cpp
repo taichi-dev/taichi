@@ -589,24 +589,19 @@ void GfxRuntime::synchronize() {
 }
 
 StreamSemaphore GfxRuntime::flush() {
-  TI_INFO("flush: 1");
   StreamSemaphore sema;
   if (current_cmdlist_) {
-    TI_INFO("flush: 1");
     sema = device_->get_compute_stream()->submit(current_cmdlist_.get());
-    TI_INFO("flush: 2");
     current_cmdlist_ = nullptr;
     ctx_buffers_.clear();
-    TI_INFO("flush: 3");
   } else {
     auto [cmdlist, res] =
         device_->get_compute_stream()->new_command_list_unique();
-    TI_INFO("flush: 4");
+    TI_INFO("flush: device_={}", device_ != nullptr);
+    TI_INFO("flush: get_compute_stream()={}", device_->get_compute_stream() != nullptr);
     TI_ASSERT(res == RhiResult::success);
     cmdlist->memory_barrier();
-    TI_INFO("flush: 5");
     sema = device_->get_compute_stream()->submit(cmdlist.get());
-    TI_INFO("flush: 6");
   }
   return sema;
 }

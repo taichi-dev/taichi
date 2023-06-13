@@ -2,7 +2,7 @@ import numbers
 from types import MethodType
 
 import numpy as np
-from taichi._lib import core as _ti_core
+from taichi._lib import core as _ti_core, ccore as _ti_ccore
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
 from taichi.lang.exception import (
@@ -721,11 +721,11 @@ class StructType(CompoundType):
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        launch_ctx.set_struct_arg_int(ret_index + (index,), struct[name])
+                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_int(launch_ctx, ret_index + (index,), struct[name])
                     else:
-                        launch_ctx.set_struct_arg_uint(ret_index + (index,), struct[name])
+                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_uint(launch_ctx, ret_index + (index,), struct[name])
                 elif dtype in primitive_types.real_types:
-                    launch_ctx.set_struct_arg_float(ret_index + (index,), struct[name])
+                    _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_float(launch_ctx, ret_index + (index,), struct[name])
                 else:
                     raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
 

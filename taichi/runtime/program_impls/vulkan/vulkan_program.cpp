@@ -155,4 +155,8 @@ void VulkanProgramImpl::finalize() {
   embedded_device_.reset();
 }
 
+VulkanProgramImpl::~VulkanProgramImpl() {
+  VulkanProgramImpl::finalize();
+}
+
 }  // namespace taichi::lang

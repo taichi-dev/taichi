@@ -7,11 +7,7 @@ from taichi._lib.utils import package_root
 
 def _load_dll(path):
     try:
-        if (
-            sys.version_info[0] > 3
-            or sys.version_info[0] == 3
-            and sys.version_info[1] >= 8
-        ):
+        if sys.version_info[0] > 3 or sys.version_info[0] == 3 and sys.version_info[1] >= 8:
             dll = ctypes.CDLL(path, winmode=0)
         else:
             dll = ctypes.CDLL(path)
@@ -23,11 +19,7 @@ def _load_dll(path):
 def load_core_exports_dll():
     bin_path = os.path.join(package_root, "_lib", "core_exports")
     if os.name == "nt":
-        if (
-            sys.version_info[0] > 3
-            or sys.version_info[0] == 3
-            and sys.version_info[1] >= 8
-        ):
+        if sys.version_info[0] > 3 or sys.version_info[0] == 3 and sys.version_info[1] >= 8:
             os.add_dll_directory(bin_path)
         else:
             os.environ["PATH"] = bin_path + os.pathsep + os.environ["PATH"]
@@ -36,6 +28,9 @@ def load_core_exports_dll():
         dll_path = os.path.join(bin_path, "libtaichi_core_exports.dylib")
     else:
         dll_path = os.path.join(bin_path, "libtaichi_core_exports.so")
+    for root, dirs, files in os.walk(os.path.join(package_root, "_lib")):
+        for f in files:
+            print(f'File in _lib/core_exports: {root}/{f}')
 
     return _load_dll(dll_path)
 
@@ -122,9 +117,7 @@ class TaichiCCore:
             ctypes.c_size_t,
             ctypes.c_uint64,
         ]
-        self._dll.tie_LaunchContextBuilder_set_arg_external_array_with_shape.restype = (
-            ctypes.c_int
-        )
+        self._dll.tie_LaunchContextBuilder_set_arg_external_array_with_shape.restype = ctypes.c_int
 
         # int tie_LaunchContextBuilder_set_arg_ndarray(TieLaunchContextBuilderHandle handle, int arg_id, TieNdarrayHandle arr);
         self._dll.tie_LaunchContextBuilder_set_arg_ndarray.argtypes = [
@@ -141,9 +134,7 @@ class TaichiCCore:
             ctypes.c_void_p,
             ctypes.c_void_p,
         ]
-        self._dll.tie_LaunchContextBuilder_set_arg_ndarray_with_grad.restype = (
-            ctypes.c_int
-        )
+        self._dll.tie_LaunchContextBuilder_set_arg_ndarray_with_grad.restype = ctypes.c_int
 
         # int tie_LaunchContextBuilder_set_arg_texture(TieLaunchContextBuilderHandle handle, int arg_id, TieTextureHandle tex);
         self._dll.tie_LaunchContextBuilder_set_arg_texture.argtypes = [
@@ -193,9 +184,7 @@ class TaichiCCore:
 
     def tie_LaunchContextBuilder_create(self, kernel_handle: int) -> int:
         handle = ctypes.c_void_p()
-        ret = self._dll.tie_LaunchContextBuilder_create(
-            kernel_handle, ctypes.byref(handle)
-        )
+        ret = self._dll.tie_LaunchContextBuilder_create(kernel_handle, ctypes.byref(handle))
         if ret != 0:  # Temp
             raise RuntimeError("Failed to create LaunchContextBuilder")
         return handle.value
@@ -215,40 +204,26 @@ class TaichiCCore:
         if ret != 0:
             raise RuntimeError("Failed to set arg uint")
 
-    def tie_LaunchContextBuilder_set_arg_float(
-        self, handle: int, arg_id: int, d: float
-    ):
+    def tie_LaunchContextBuilder_set_arg_float(self, handle: int, arg_id: int, d: float):
         ret = self._dll.tie_LaunchContextBuilder_set_arg_float(handle, arg_id, d)
         if ret != 0:
             raise RuntimeError("Failed to set arg float")
 
-    def tie_LaunchContextBuilder_set_struct_arg_int(
-        self, handle: int, arg_indices: list, i64: int
-    ):
+    def tie_LaunchContextBuilder_set_struct_arg_int(self, handle: int, arg_indices: list, i64: int):
         arg_indices = (ctypes.c_int * len(arg_indices))(*arg_indices)
-        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_int(
-            handle, arg_indices, len(arg_indices), i64
-        )
+        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_int(handle, arg_indices, len(arg_indices), i64)
         if ret != 0:
             raise RuntimeError("Failed to set struct arg int")
 
-    def tie_LaunchContextBuilder_set_struct_arg_uint(
-        self, handle: int, arg_indices: list, u64: int
-    ):
+    def tie_LaunchContextBuilder_set_struct_arg_uint(self, handle: int, arg_indices: list, u64: int):
         arg_indices = (ctypes.c_int * len(arg_indices))(*arg_indices)
-        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_uint(
-            handle, arg_indices, len(arg_indices), u64
-        )
+        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_uint(handle, arg_indices, len(arg_indices), u64)
         if ret != 0:
             raise RuntimeError("Failed to set struct arg uint")
 
-    def tie_LaunchContextBuilder_set_struct_arg_float(
-        self, handle: int, arg_indices: list, d: float
-    ):
+    def tie_LaunchContextBuilder_set_struct_arg_float(self, handle: int, arg_indices: list, d: float):
         arg_indices = (ctypes.c_int * len(arg_indices))(*arg_indices)
-        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_float(
-            handle, arg_indices, len(arg_indices), d
-        )
+        ret = self._dll.tie_LaunchContextBuilder_set_struct_arg_float(handle, arg_indices, len(arg_indices), d)
         if ret != 0:
             raise RuntimeError("Failed to set struct arg float")
 
@@ -262,32 +237,22 @@ class TaichiCCore:
         if ret != 0:
             raise RuntimeError("Failed to set arg external array with shape")
 
-    def tie_LaunchContextBuilder_set_arg_ndarray(
-        self, handle: int, arg_id: int, arr: int
-    ):
+    def tie_LaunchContextBuilder_set_arg_ndarray(self, handle: int, arg_id: int, arr: int):
         ret = self._dll.tie_LaunchContextBuilder_set_arg_ndarray(handle, arg_id, arr)
         if ret != 0:
             raise RuntimeError("Failed to set arg ndarray")
 
-    def tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
-        self, handle: int, arg_id: int, arr: int, arr_grad: int
-    ):
-        ret = self._dll.tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
-            handle, arg_id, arr, arr_grad
-        )
+    def tie_LaunchContextBuilder_set_arg_ndarray_with_grad(self, handle: int, arg_id: int, arr: int, arr_grad: int):
+        ret = self._dll.tie_LaunchContextBuilder_set_arg_ndarray_with_grad(handle, arg_id, arr, arr_grad)
         if ret != 0:
             raise RuntimeError("Failed to set arg ndarray with grad")
 
-    def tie_LaunchContextBuilder_set_arg_texture(
-        self, handle: int, arg_id: int, tex: int
-    ):
+    def tie_LaunchContextBuilder_set_arg_texture(self, handle: int, arg_id: int, tex: int):
         ret = self._dll.tie_LaunchContextBuilder_set_arg_texture(handle, arg_id, tex)
         if ret != 0:
             raise RuntimeError("Failed to set arg texture")
 
-    def tie_LaunchContextBuilder_set_arg_rw_texture(
-        self, handle: int, arg_id: int, tex: int
-    ):
+    def tie_LaunchContextBuilder_set_arg_rw_texture(self, handle: int, arg_id: int, tex: int):
         ret = self._dll.tie_LaunchContextBuilder_set_arg_rw_texture(handle, arg_id, tex)
         if ret != 0:
             raise RuntimeError("Failed to set arg rw texture")
@@ -295,9 +260,7 @@ class TaichiCCore:
     def tie_LaunchContextBuilder_get_struct_ret_int(self, handle: int, index: list):
         index = (ctypes.c_int * len(index))(*index)
         ret_i64 = ctypes.c_int64()
-        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_int(
-            handle, index, len(index), ctypes.byref(ret_i64)
-        )
+        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_int(handle, index, len(index), ctypes.byref(ret_i64))
         if ret != 0:
             raise RuntimeError("Failed to get struct ret int")
         return ret_i64.value
@@ -305,9 +268,7 @@ class TaichiCCore:
     def tie_LaunchContextBuilder_get_struct_ret_uint(self, handle: int, index: list):
         index = (ctypes.c_int * len(index))(*index)
         ret_u64 = ctypes.c_uint64()
-        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_uint(
-            handle, index, len(index), ctypes.byref(ret_u64)
-        )
+        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_uint(handle, index, len(index), ctypes.byref(ret_u64))
         if ret != 0:
             raise RuntimeError("Failed to get struct ret uint")
         return ret_u64.value
@@ -315,9 +276,7 @@ class TaichiCCore:
     def tie_LaunchContextBuilder_get_struct_ret_float(self, handle: int, index: list):
         index = (ctypes.c_int * len(index))(*index)
         ret_d = ctypes.c_double()
-        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_float(
-            handle, index, len(index), ctypes.byref(ret_d)
-        )
+        ret = self._dll.tie_LaunchContextBuilder_get_struct_ret_float(handle, index, len(index), ctypes.byref(ret_d))
         if ret != 0:
             raise RuntimeError("Failed to get struct ret float")
         return ret_d.value

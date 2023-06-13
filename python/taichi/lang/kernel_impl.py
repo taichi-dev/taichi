@@ -675,13 +675,21 @@ class Kernel:
                     v_primal = v.arr
                     v_grad = v.grad.arr if v.grad else None
                     if v_grad is None:
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray(launch_ctx, actual_argument_slot, v_primal.get_raw_ptr())
+                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray(
+                            launch_ctx, actual_argument_slot, v_primal.get_raw_ptr()
+                        )
                     else:
-                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray_with_grad(launch_ctx, actual_argument_slot, v_primal.get_raw_ptr(), v_grad.get_raw_ptr())
+                        _ti_ccore.tie_LaunchContextBuilder_set_arg_ndarray_with_grad(
+                            launch_ctx, actual_argument_slot, v_primal.get_raw_ptr(), v_grad.get_raw_ptr()
+                        )
                 elif isinstance(needed, texture_type.TextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_texture(launch_ctx, actual_argument_slot, v.tex.get_raw_ptr())
+                    _ti_ccore.tie_LaunchContextBuilder_set_arg_texture(
+                        launch_ctx, actual_argument_slot, v.tex.get_raw_ptr()
+                    )
                 elif isinstance(needed, texture_type.RWTextureType) and isinstance(v, taichi.lang._texture.Texture):
-                    _ti_ccore.tie_LaunchContextBuilder_set_arg_rw_texture(launch_ctx, actual_argument_slot, v.tex.get_raw_ptr())
+                    _ti_ccore.tie_LaunchContextBuilder_set_arg_rw_texture(
+                        launch_ctx, actual_argument_slot, v.tex.get_raw_ptr()
+                    )
                 elif isinstance(needed, ndarray_type.NdarrayType):
                     # Element shapes are already specialized in Taichi codegen.
                     # The shape information for element dims are no longer needed.

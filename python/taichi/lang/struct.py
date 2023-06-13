@@ -721,11 +721,17 @@ class StructType(CompoundType):
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_int(launch_ctx, ret_index + (index,), struct[name])
+                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_int(
+                            launch_ctx, ret_index + (index,), struct[name]
+                        )
                     else:
-                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_uint(launch_ctx, ret_index + (index,), struct[name])
+                        _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_uint(
+                            launch_ctx, ret_index + (index,), struct[name]
+                        )
                 elif dtype in primitive_types.real_types:
-                    _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_float(launch_ctx, ret_index + (index,), struct[name])
+                    _ti_ccore.tie_LaunchContextBuilder_set_struct_arg_float(
+                        launch_ctx, ret_index + (index,), struct[name]
+                    )
                 else:
                     raise TaichiRuntimeTypeError(f"Invalid argument type on index={ret_index + (index, )}")
 

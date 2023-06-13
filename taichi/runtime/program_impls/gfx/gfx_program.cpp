@@ -9,8 +9,7 @@
 
 namespace taichi::lang {
 
-GfxProgramImpl::GfxProgramImpl(CompileConfig &config)
-    : ProgramImpl(config) {
+GfxProgramImpl::GfxProgramImpl(CompileConfig &config) : ProgramImpl(config) {
 }
 
 void GfxProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
@@ -24,7 +23,7 @@ void GfxProgramImpl::compile_snode_tree_types(SNodeTree *tree) {
 }
 
 void GfxProgramImpl::materialize_snode_tree(SNodeTree *tree,
-                                               uint64 *result_buffer) {
+                                            uint64 *result_buffer) {
   snode_tree_mgr_->materialize_snode_tree(tree);
 }
 
@@ -52,8 +51,7 @@ DeviceAllocation GfxProgramImpl::allocate_memory_ndarray(
   TI_ASSERT(res == RhiResult::success);
   return alloc;
 }
-DeviceAllocation GfxProgramImpl::allocate_texture(
-    const ImageParams &params) {
+DeviceAllocation GfxProgramImpl::allocate_texture(const ImageParams &params) {
   return runtime_->create_image(params);
 }
 

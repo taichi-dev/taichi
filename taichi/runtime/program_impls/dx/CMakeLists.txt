@@ -16,3 +16,4 @@ target_include_directories(dx_program_impl
   )
 
 target_link_libraries(dx_program_impl PRIVATE compilation_manager)
+target_link_libraries(dx_program_impl PRIVATE gfx_program_impl)

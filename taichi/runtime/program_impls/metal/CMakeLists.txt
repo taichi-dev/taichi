@@ -17,4 +17,5 @@ target_include_directories(metal_program_impl
 
 target_link_libraries(metal_program_impl PRIVATE spirv_codegen)
 target_link_libraries(metal_program_impl PRIVATE gfx_runtime)
+target_link_libraries(metal_program_impl PRIVATE gfx_program_impl)
 target_link_libraries(metal_program_impl PRIVATE compilation_manager)

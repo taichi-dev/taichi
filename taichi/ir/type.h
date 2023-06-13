@@ -328,6 +328,8 @@ class TI_DLL_EXPORT ArgPackType : public Type {
       : Type(TypeKind::ArgPack), elements_(elements) {
   }
 
+  const Type *get_element_type(const std::vector<int> &indices) const;
+
   std::string to_string() const override;
 
   const std::vector<ArgPackMember> &elements() const {

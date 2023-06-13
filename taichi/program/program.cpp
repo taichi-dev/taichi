@@ -332,24 +332,30 @@ void Program::finalize() {
     return;
   }
 
+  TI_INFO("Program::~Program 1");
   synchronize();
   TI_TRACE("Program finalizing...");
 
+  TI_INFO("Program::~Program 2");
   synchronize();
   if (arch_uses_llvm(compile_config().arch)) {
     program_impl_->finalize();
   }
+  TI_INFO("Program::~Program 3");
 
   Stmt::reset_counter();
 
+  TI_INFO("Program::~Program 4");
   finalized_ = true;
   num_instances_ -= 1;
   program_impl_->dump_cache_data_to_disk();
   compile_config_ = default_compile_config;
   TI_TRACE("Program ({}) finalized_.", fmt::ptr(this));
+  TI_INFO("Program::~Program 5");
 
   // Reset memory pool
   HostMemoryPool::get_instance().reset();
+  TI_INFO("Program::~Program 6");
 }
 
 int Program::default_block_dim(const CompileConfig &config) {

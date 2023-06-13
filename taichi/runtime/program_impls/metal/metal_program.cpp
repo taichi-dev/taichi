@@ -37,7 +37,4 @@ void MetalProgramImpl::enqueue_compute_op_lambda(
   runtime_->enqueue_compute_op_lambda(op, image_refs);
 }
 
-MetalProgramImpl::~MetalProgramImpl() {
-}
-
 }  // namespace taichi::lang

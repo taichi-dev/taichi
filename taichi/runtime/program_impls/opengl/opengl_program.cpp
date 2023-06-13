@@ -29,7 +29,4 @@ void OpenglProgramImpl::finalize() {
   opengl::reset_opengl();
 }
 
-OpenglProgramImpl::~OpenglProgramImpl() {
-}
-
 }  // namespace taichi::lang

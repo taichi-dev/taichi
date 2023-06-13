@@ -4,11 +4,11 @@
 
 #include "taichi/runtime/gfx/runtime.h"
 #include "taichi/runtime/gfx/snode_tree_manager.h"
-#include "taichi/program/program_impl.h"
+#include "taichi/runtime/program_impls/gfx/gfx_program.h"
 
 namespace taichi::lang {
 
-class Dx11ProgramImpl : public ProgramImpl {
+class Dx11ProgramImpl : public GfxProgramImpl {
  public:
   Dx11ProgramImpl(CompileConfig &config);
 

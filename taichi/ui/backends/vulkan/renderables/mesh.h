@@ -30,12 +30,14 @@ class Mesh final : public Renderable {
   Mesh(AppContext *app_context, VertexAttributes vbo_attrs);
 
   void update_data(const MeshInfo &info);
-  void update_scene_data(const SceneBase &scene);
+  void update_scene_data(const SceneBase &scene, DevicePtr ssbo_ptr);
 
   void record_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
 
  private:
+  DevicePtr lights_ssbo_ptr;
+
   struct UBORenderable {
     alignas(16) glm::vec3 color;
     int use_per_vertex_color;

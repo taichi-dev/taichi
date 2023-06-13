@@ -43,18 +43,8 @@ void Particles::update_data(const ParticlesInfo &info) {
   }
 }
 
-void Particles::update_scene_data(const SceneBase &scene) {
-  // Update SSBO
-  {
-    size_t new_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
-    resize_storage_buffers(new_ssbo_size);
-
-    void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(storage_buffer_->get_ptr(), &mapped));
-    memcpy(mapped, scene.point_lights_.data(), new_ssbo_size);
-    app_context_->device().unmap(*storage_buffer_);
-  }
-
+void Particles::update_scene_data(const SceneBase &scene, DevicePtr ssbo_ptr) {
+  lights_ssbo_ptr = ssbo_ptr;
   // Update UBO
   {
     UBOScene ubo;
@@ -77,7 +67,7 @@ void Particles::record_this_frame_commands(CommandList *command_list) {
 
   resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
   resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
-  resource_set_->rw_buffer(2, storage_buffer_->get_ptr(0));
+  resource_set_->rw_buffer(2, lights_ssbo_ptr);
 
   command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());

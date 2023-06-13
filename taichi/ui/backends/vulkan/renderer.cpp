@@ -74,7 +74,7 @@ void Renderer::scene_lines(const SceneLinesInfo &info, SceneBase *scene) {
 void Renderer::mesh(const MeshInfo &info, SceneBase *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info);
-  mesh->update_scene_data(*scene);
+  mesh->update_scene_data(*scene, lights_ssbo_->get_ptr(0));
   render_queue_.push_back(mesh);
 }
 
@@ -82,14 +82,43 @@ void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info);
-  particles->update_scene_data(*scene);
+  particles->update_scene_data(*scene, lights_ssbo_->get_ptr(0));
   render_queue_.push_back(particles);
+}
+
+void Renderer::resize_lights_ssbo(int new_ssbo_size) {
+  if (lights_ssbo_ != nullptr && new_ssbo_size == lights_ssbo_size) {
+    return;
+  }
+  lights_ssbo_.reset();
+  lights_ssbo_size = new_ssbo_size;
+  if (lights_ssbo_size) {
+    auto [buf, res] = app_context_.device().allocate_memory_unique(
+        {lights_ssbo_size, /*host_write=*/true, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Storage});
+    TI_ASSERT(res == RhiResult::success);
+    lights_ssbo_ = std::move(buf);
+  }
+}
+
+void Renderer::update_lights_ssbo(SceneBase *scene) {
+  // Update SSBO
+  {
+    size_t new_ssbo_size = scene->point_lights_.size() * sizeof(PointLight);
+    resize_lights_ssbo(new_ssbo_size);
+
+    void *mapped{nullptr};
+    RHI_VERIFY(app_context_.device().map(lights_ssbo_->get_ptr(), &mapped));
+    memcpy(mapped, scene->point_lights_.data(), new_ssbo_size);
+    app_context_.device().unmap(*lights_ssbo_);
+  }
 }
 
 void Renderer::scene(SceneBase *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
   }
+  update_lights_ssbo(scene);
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
 

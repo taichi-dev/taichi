@@ -77,6 +77,8 @@ class TI_DLL_EXPORT Renderer {
   taichi::lang::StreamSemaphore get_render_complete_semaphore();
 
  private:
+  void resize_lights_ssbo(int new_ssbo_size);
+  void update_lights_ssbo(SceneBase *scene);
   glm::vec3 background_color_ = glm::vec3(0.f, 0.f, 0.f);
 
   AppContext app_context_;
@@ -84,6 +86,9 @@ class TI_DLL_EXPORT Renderer {
 
   std::vector<std::unique_ptr<Renderable>> renderables_;
   std::vector<Renderable *> render_queue_;
+
+  DeviceAllocationUnique lights_ssbo_{nullptr};
+  unsigned long long lights_ssbo_size{0};
 
   taichi::lang::StreamSemaphore render_complete_semaphore_{nullptr};
 

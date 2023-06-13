@@ -61,7 +61,8 @@ void GfxProgramImpl::finalize() {
 }
 
 GfxProgramImpl::~GfxProgramImpl() {
-  finalize();
+  // Calling virtual methods in destructors is unsafe. Use static-binding here.
+  GfxProgramImpl::finalize();
 }
 
 std::unique_ptr<KernelCompiler> GfxProgramImpl::make_kernel_compiler() {

@@ -698,9 +698,13 @@ class StructType(CompoundType):
             else:
                 if dtype in primitive_types.integer_types:
                     if is_signed(cook_dtype(dtype)):
-                        d[name] = _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_int(launch_ctx, ret_index + (index,))
+                        d[name] = _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_int(
+                            launch_ctx, ret_index + (index,)
+                        )
                     else:
-                        d[name] = _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_uint(launch_ctx, ret_index + (index,))
+                        d[name] = _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_uint(
+                            launch_ctx, ret_index + (index,)
+                        )
                 elif dtype in primitive_types.real_types:
                     d[name] = _ti_ccore.tie_LaunchContextBuilder_get_struct_ret_float(launch_ctx, ret_index + (index,))
                 else:

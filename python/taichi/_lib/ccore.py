@@ -30,7 +30,7 @@ def load_core_exports_dll():
         dll_path = os.path.join(bin_path, "libtaichi_core_exports.so")
     for root, dirs, files in os.walk(os.path.join(package_root, "_lib")):
         for f in files:
-            print(f'File in _lib/core_exports: {root}/{f}')
+            print(f"File in _lib/core_exports: {root}/{f}")
 
     return _load_dll(dll_path)
 

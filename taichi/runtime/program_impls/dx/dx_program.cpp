@@ -13,7 +13,8 @@
 
 namespace taichi::lang {
 
-Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config) : GfxProgramImpl(config) {
+Dx11ProgramImpl::Dx11ProgramImpl(CompileConfig &config)
+    : GfxProgramImpl(config) {
 }
 
 void Dx11ProgramImpl::materialize_runtime(KernelProfilerBase *profiler,

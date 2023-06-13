@@ -49,7 +49,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         } else if (stmt->dest->is<MatrixPtrStmt>() &&
                    stmt->dest->as<MatrixPtrStmt>()
                        ->origin->is<GlobalPtrStmt>()) {
-          if (loop_unique_matrix_ptr_.find(stmt->as<MatrixPtrStmt>()) ==
+          if (loop_unique_matrix_ptr_.find(stmt->dest->as<MatrixPtrStmt>()) ==
               loop_unique_matrix_ptr_.end()) {
             return;
           }
@@ -99,7 +99,7 @@ class DemoteAtomics : public BasicStmtVisitor {
         } else if (stmt->dest->is<MatrixPtrStmt>() &&
                    stmt->dest->as<MatrixPtrStmt>()
                        ->origin->is<ExternalPtrStmt>()) {
-          if (loop_unique_matrix_ptr_.find(stmt->as<MatrixPtrStmt>()) ==
+          if (loop_unique_matrix_ptr_.find(stmt->dest->as<MatrixPtrStmt>()) ==
               loop_unique_matrix_ptr_.end()) {
             return;
           }

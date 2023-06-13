@@ -29,6 +29,7 @@ class VulkanDeviceCreator;
 class VulkanProgramImpl : public GfxProgramImpl {
  public:
   explicit VulkanProgramImpl(CompileConfig &config);
+  ~VulkanProgramImpl() override;
 
   void materialize_runtime(KernelProfilerBase *profiler,
                            uint64 **result_buffer_ptr) override;

@@ -107,7 +107,6 @@ class Renderable {
   void init_buffers();
 
   virtual void create_graphics_pipeline();
-
 };
 
 }  // namespace vulkan

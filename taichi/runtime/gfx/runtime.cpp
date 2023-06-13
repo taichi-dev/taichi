@@ -595,11 +595,11 @@ StreamSemaphore GfxRuntime::flush() {
     current_cmdlist_ = nullptr;
     ctx_buffers_.clear();
   } else {
+    TI_INFO("flush: device_={}", device_ != nullptr);
+    TI_INFO("flush: get_compute_stream()={}", device_->get_compute_stream() != nullptr);
     auto [cmdlist, res] =
         device_->get_compute_stream()->new_command_list_unique();
-    TI_INFO("flush: device_={}", device_ != nullptr);
-    TI_INFO("flush: get_compute_stream()={}",
-            device_->get_compute_stream() != nullptr);
+    TI_INFO("ok");
     TI_ASSERT(res == RhiResult::success);
     cmdlist->memory_barrier();
     sema = device_->get_compute_stream()->submit(cmdlist.get());

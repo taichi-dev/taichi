@@ -80,7 +80,7 @@ class NdarrayType:
         self.needs_grad = needs_grad
         self.boundary = to_boundary_enum(boundary)
 
-    def check_matched(self, ndarray_type: NdarrayTypeMetadata):
+    def check_matched(self, ndarray_type: NdarrayTypeMetadata, arg_name: str):
         # FIXME(Haidong) Cannot use Vector/MatrixType due to circular import
         # Use the CompuoundType instead to determine the specific typs.
         # TODO Replace CompoundType with MatrixType and VectorType
@@ -89,27 +89,27 @@ class NdarrayType:
         if isinstance(self.dtype, CompoundType):
             if not self.dtype.check_matched(ndarray_type.element_type):
                 raise ValueError(
-                    f"Invalid argument into ti.types.ndarray() - required element type: {self.dtype.to_string()}, but {ndarray_type.element_type.to_string()} is provided"
+                    f"Invalid value for argument {arg_name} - required element type: {self.dtype.to_string()}, but {ndarray_type.element_type.to_string()} is provided"
                 )
         else:
             if self.dtype is not None:
                 # Check dtype match for scalar.
                 if not self.dtype == ndarray_type.element_type:
                     raise TypeError(
-                        f"Expect element type {self.dtype} for Ndarray, but get {ndarray_type.element_type}"
+                        f"Expect element type {self.dtype} for argument {arg_name}, but get {ndarray_type.element_type}"
                     )
 
         # Check ndim match
         if self.ndim is not None and ndarray_type.shape is not None and self.ndim != len(ndarray_type.shape):
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required ndim={self.ndim}, but {len(ndarray_type.shape)}d ndarray with shape {ndarray_type.shape} is provided"
+                f"Invalid value for argument {arg_name} - required ndim={self.ndim}, but {len(ndarray_type.shape)}d ndarray with shape {ndarray_type.shape} is provided"
             )
 
         # Check needs_grad
         if self.needs_grad is not None and self.needs_grad > ndarray_type.needs_grad:
             # It's okay to pass a needs_grad=True ndarray at runtime to a need_grad=False arg but not vice versa.
             raise ValueError(
-                f"Invalid argument into ti.types.ndarray() - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
+                f"Invalid value for argument {arg_name} - required needs_grad={self.needs_grad}, but {ndarray_type.needs_grad} is provided"
             )
 
     def __repr__(self):

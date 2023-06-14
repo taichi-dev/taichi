@@ -31,7 +31,7 @@ class SceneLines final : public Renderable {
 
   void update_data(const SceneLinesInfo &info);
 
-  void update_scene_data(const SceneBase &scene);
+  void update_scene_data(DevicePtr ubo_ptr);
 
   void record_prepass_this_frame_commands(
       taichi::lang::CommandList *command_list) override;
@@ -40,6 +40,8 @@ class SceneLines final : public Renderable {
       taichi::lang::CommandList *command_list) override;
 
  private:
+  DevicePtr scene_ubo_ptr;
+
   struct UBORenderable {
     alignas(16) glm::vec3 color;
     float line_width;
@@ -49,11 +51,6 @@ class SceneLines final : public Renderable {
     int start_index;
     int num_vertices;
     int is_indexed;
-  };
-
-  struct UBOScene {
-    Scene::SceneUniformBuffer scene;
-    float aspect_ratio;
   };
 
   void create_graphics_pipeline() final;

@@ -12,7 +12,6 @@ using namespace taichi::lang;
 Mesh::Mesh(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UBORenderable);
-  config.scene_ubo_size = sizeof(UBOScene);
   config.blending = true;
   config.depth = true;
   config.fragment_shader_path =
@@ -68,32 +67,9 @@ void Mesh::update_data(const MeshInfo &info) {
   }
 }
 
-void Mesh::update_scene_data(const SceneBase &scene) {
-  // Update lights SSBO
-  {
-    size_t correct_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
-
-    if (config_.ssbo_size != correct_ssbo_size) {
-      resize_storage_buffers(correct_ssbo_size);
-    }
-
-    void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(storage_buffer_->get_ptr(0), &mapped));
-    memcpy(mapped, scene.point_lights_.data(), correct_ssbo_size);
-    app_context_->device().unmap(*storage_buffer_);
-  }
-
-  // Update UBO
-  {
-    UBOScene ubo;
-    ubo.scene = scene.current_ubo_;
-    void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
-    memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_scene_);
-  }
+void Mesh::update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) {
+  lights_ssbo_ptr = ssbo_ptr;
+  scene_ubo_ptr = ubo_ptr;
 }
 
 void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
@@ -104,8 +80,8 @@ void Mesh::record_this_frame_commands(taichi::lang::CommandList *command_list) {
   }
 
   resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
-  resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
-  resource_set_->rw_buffer(2, storage_buffer_->get_ptr(0));
+  resource_set_->buffer(1, scene_ubo_ptr);
+  resource_set_->rw_buffer(2, lights_ssbo_ptr);
   resource_set_->rw_buffer(3, mesh_storage_buffer_->get_ptr(0));
 
   command_list->bind_pipeline(pipeline_);

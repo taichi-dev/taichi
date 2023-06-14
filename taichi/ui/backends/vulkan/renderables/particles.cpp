@@ -12,7 +12,6 @@ using namespace taichi::lang::vulkan;
 Particles::Particles(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UBORenderable);
-  config.scene_ubo_size = sizeof(UBOScene);
   config.depth = true;
   config.blending = true;
   config.fragment_shader_path =
@@ -43,32 +42,9 @@ void Particles::update_data(const ParticlesInfo &info) {
   }
 }
 
-void Particles::update_scene_data(const SceneBase &scene) {
-  // Update SSBO
-  {
-    size_t new_ssbo_size = scene.point_lights_.size() * sizeof(PointLight);
-    resize_storage_buffers(new_ssbo_size);
-
-    void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(storage_buffer_->get_ptr(), &mapped));
-    memcpy(mapped, scene.point_lights_.data(), new_ssbo_size);
-    app_context_->device().unmap(*storage_buffer_);
-  }
-
-  // Update UBO
-  {
-    UBOScene ubo;
-    ubo.scene = scene.current_ubo_;
-    ubo.window_width = app_context_->config.width;
-    ubo.window_height = app_context_->config.height;
-    ubo.tan_half_fov = tanf(glm::radians(scene.camera_.fov) / 2);
-
-    void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_scene_->get_ptr(0), &mapped));
-    memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_scene_);
-  }
+void Particles::update_scene_data(DevicePtr ssbo_ptr, DevicePtr ubo_ptr) {
+  lights_ssbo_ptr = ssbo_ptr;
+  scene_ubo_ptr = ubo_ptr;
 }
 
 void Particles::record_this_frame_commands(CommandList *command_list) {
@@ -76,8 +52,8 @@ void Particles::record_this_frame_commands(CommandList *command_list) {
   raster_state->vertex_buffer(vertex_buffer_->get_ptr(0), 0);
 
   resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
-  resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
-  resource_set_->rw_buffer(2, storage_buffer_->get_ptr(0));
+  resource_set_->buffer(1, scene_ubo_ptr);
+  resource_set_->rw_buffer(2, lights_ssbo_ptr);
 
   command_list->bind_pipeline(pipeline_);
   command_list->bind_raster_resources(raster_state.get());

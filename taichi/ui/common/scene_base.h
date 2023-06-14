@@ -53,22 +53,31 @@ class SceneBase {
   virtual void ambient_light(glm::vec3 color) = 0;
   virtual ~SceneBase() = default;
 
-  struct SceneUniformBuffer {
+  struct SceneData {
     alignas(16) glm::vec3 camera_pos;
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 projection;
     alignas(16) glm::vec3 ambient_light;
     int point_light_count;
   };
-  SceneUniformBuffer current_ubo_;
+  SceneData current_scene_data_;
+
+  struct UBOScene {
+    SceneData scene;
+    float window_width;
+    float window_height;
+    float tan_half_fov;
+    float aspect_ratio;
+  };
 
   void update_ubo(float aspect_ratio) {
-    current_ubo_.camera_pos = camera_.position;
-    current_ubo_.view = camera_.get_view_matrix();
-    current_ubo_.projection = camera_.get_projection_matrix(aspect_ratio);
-    current_ubo_.point_light_count = point_lights_.size();
+    current_scene_data_.camera_pos = camera_.position;
+    current_scene_data_.view = camera_.get_view_matrix();
+    current_scene_data_.projection =
+        camera_.get_projection_matrix(aspect_ratio);
+    current_scene_data_.point_light_count = point_lights_.size();
 
-    current_ubo_.ambient_light = ambient_light_color_;
+    current_scene_data_.ambient_light = ambient_light_color_;
   }
 
   Camera camera_;

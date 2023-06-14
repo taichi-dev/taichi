@@ -13,7 +13,6 @@ using namespace taichi::lang::vulkan;
 SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
   RenderableConfig config;
   config.ubo_size = sizeof(UBORenderable);
-  config.scene_ubo_size = sizeof(UBOScene);
   config.depth = true;
   config.blending = true;
   config.fragment_shader_path =
@@ -53,20 +52,8 @@ void SceneLines::update_data(const SceneLinesInfo &info) {
   }
 }
 
-void SceneLines::update_scene_data(const SceneBase &scene) {
-  // Update UBO
-  {
-    UBOScene ubo{};
-    ubo.scene = scene.current_ubo_;
-    ubo.aspect_ratio =
-        float(app_context_->config.width) / float(app_context_->config.height);
-
-    void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_->device().map(uniform_buffer_scene_->get_ptr(), &mapped));
-    memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_scene_);
-  }
+void SceneLines::update_scene_data(DevicePtr ubo_ptr) {
+  scene_ubo_ptr = ubo_ptr;
 }
 
 void SceneLines::create_graphics_pipeline() {
@@ -137,7 +124,7 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
   resource_set_->rw_buffer(2, vbo_translated_->get_ptr(0));
   resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
   resource_set_->buffer(4, uniform_buffer_renderable_->get_ptr(0));
-  resource_set_->buffer(5, uniform_buffer_scene_->get_ptr(0));
+  resource_set_->buffer(5, scene_ubo_ptr);
 
   command_list->bind_pipeline(quad_expand_pipeline_);
   command_list->bind_shader_resources(resource_set_.get());

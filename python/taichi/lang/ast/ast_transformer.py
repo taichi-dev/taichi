@@ -696,7 +696,7 @@ class ASTTransformer(Builder):
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
                             )
-                        ctx.func.arguments[i].annotation.check_matched(data.get_type())
+                        ctx.func.arguments[i].annotation.check_matched(data.get_type(), ctx.func.arguments[i].name)
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
 

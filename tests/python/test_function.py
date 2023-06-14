@@ -388,7 +388,7 @@ def test_func_ndarray_arg():
 
     assert arr[0] == [20, 20, 20]
 
-    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid argument into ti.types.ndarray()"):
+    with pytest.raises(ti.TaichiCompilationError, match=r"Invalid value for argument a"):
         test_error(arr)
 
 

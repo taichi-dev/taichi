@@ -194,7 +194,9 @@ def _process_args(self, args, kwargs):
             if self.arguments[i].annotation is inspect._empty:
                 raise TaichiSyntaxError(f"Parameter `{self.arguments[i].name}` missing.")
             else:
-                raise TaichiSyntaxError(f"Parameter `{self.arguments[i].name} : {self.arguments[i].annotation}` missing.")
+                raise TaichiSyntaxError(
+                    f"Parameter `{self.arguments[i].name} : {self.arguments[i].annotation}` missing."
+                )
 
     return ret
 

@@ -838,35 +838,7 @@ class Matrix(TaichiOperations):
         entries = []
         element_dim = ndim if ndim is not None else 2
         if isinstance(dtype, (list, tuple, np.ndarray)):
-            # set different dtype for each element in Matrix
-            # see #2135
-            if m == 1:
-                assert (
-                    len(np.shape(dtype)) == 1 and len(dtype) == n
-                ), f"Please set correct dtype list for Vector. The shape of dtype list should be ({n}, ) instead of {np.shape(dtype)}"
-                for i in range(n):
-                    entries.append(
-                        impl.create_field_member(
-                            dtype[i],
-                            name=name,
-                            needs_grad=needs_grad,
-                            needs_dual=needs_dual,
-                        )
-                    )
-            else:
-                assert (
-                    len(np.shape(dtype)) == 2 and len(dtype) == n and len(dtype[0]) == m
-                ), f"Please set correct dtype list for Matrix. The shape of dtype list should be ({n}, {m}) instead of {np.shape(dtype)}"
-                for i in range(n):
-                    for j in range(m):
-                        entries.append(
-                            impl.create_field_member(
-                                dtype[i][j],
-                                name=name,
-                                needs_grad=needs_grad,
-                                needs_dual=needs_dual,
-                            )
-                        )
+            raise TaichiSyntaxError("Matrix field does not support compound data type")
         else:
             for _ in range(n * m):
                 entries.append(impl.create_field_member(dtype, name=name, needs_grad=needs_grad, needs_dual=needs_dual))

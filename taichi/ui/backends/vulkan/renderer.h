@@ -67,6 +67,8 @@ class TI_DLL_EXPORT Renderer {
 
   void scene(SceneBase *scene);
 
+  void scene_v2(SceneBase *scene);
+
   void draw_frame(Gui *gui);
 
   const AppContext &app_context() const;

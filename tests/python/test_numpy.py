@@ -299,17 +299,17 @@ def test_numpy_ndarray_dim_check():
     np.testing.assert_allclose(d, np.ones(shape=(2, 2), dtype=np.float32))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti.types.ndarray\(\) - required element_shape=\(.*\), but the argument has element shape of \(.*\)",
+        match=r"Invalid value for argument arr - required element_shape=\(.*\), array with element shape of \(.*\)",
     ):
         add_one_mat(b)
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti.types.ndarray\(\) - required array has ndim=2 element_dim=2, but the argument has 3 dimensions",
+        match=r"Invalid value for argument arr - required array has ndim=2 element_dim=2, array with 3 dimensions is provided",
     ):
         add_one_mat(c)
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti.types.ndarray\(\) - required array has ndim=2, but the argument has 4 dimensions",
+        match=r"Invalid value for argument arr - required array has ndim=2, array with 4 dimensions is provided",
     ):
         add_one_scalar(a)
 
@@ -322,5 +322,5 @@ def test_numpy_dtype_mismatch():
             x[i] = i
 
     xx = np.array([1, 2, 3, 4, 5], dtype=np.int64)  # by default it's int64
-    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\) - required array has dtype="):
+    with pytest.raises(ValueError, match=r"Invalid value for argument x - required array has dtype="):
         arange(xx)

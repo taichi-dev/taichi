@@ -169,7 +169,10 @@ def _process_args(self, args, kwargs):
     len_args = len(args)
 
     if len_args > len(ret):
-        raise TaichiSyntaxError("Too many arguments.")
+        arg_str = ', '.join([str(arg) for arg in args])
+        expected_str = ', '.join([f'{arg.name} : {arg.annotation}' for arg in self.arguments])
+        msg = f"Too many arguments. Expected ({expected_str}), got ({arg_str})."
+        raise TaichiSyntaxError(msg)
 
     for i, arg in enumerate(args):
         ret[i] = arg
@@ -188,7 +191,7 @@ def _process_args(self, args, kwargs):
 
     for i, arg in enumerate(ret):
         if arg is inspect.Parameter.empty:
-            raise TaichiSyntaxError(f"Parameter '{self.arguments[i].name}' missing.")
+            raise TaichiSyntaxError(f"Parameter `{self.arguments[i].name} : {self.arguments[i].annotation}` missing.")
 
     return ret
 

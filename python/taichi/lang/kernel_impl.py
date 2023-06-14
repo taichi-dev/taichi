@@ -169,8 +169,8 @@ def _process_args(self, args, kwargs):
     len_args = len(args)
 
     if len_args > len(ret):
-        arg_str = ', '.join([str(arg) for arg in args])
-        expected_str = ', '.join([f'{arg.name} : {arg.annotation}' for arg in self.arguments])
+        arg_str = ", ".join([str(arg) for arg in args])
+        expected_str = ", ".join([f"{arg.name} : {arg.annotation}" for arg in self.arguments])
         msg = f"Too many arguments. Expected ({expected_str}), got ({arg_str})."
         raise TaichiSyntaxError(msg)
 

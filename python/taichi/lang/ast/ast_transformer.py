@@ -473,7 +473,7 @@ class ASTTransformer(Builder):
     def warn_if_is_external_func(ctx, node):
         func = node.func.ptr
         if not ASTTransformer.is_external_func(ctx, func):
-           return
+            return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
             f"\x1b[38;5;226m"  # Yellow
@@ -595,12 +595,12 @@ class ASTTransformer(Builder):
             node.ptr = func(*args, **keywords)
         except TypeError as e:
             module = inspect.getmodule(func)
-            error_msg = re.sub(r'\bExpr\b','Taichi Expression',str(e))
+            error_msg = re.sub(r"\bExpr\b", "Taichi Expression", str(e))
             msg = f"TypeError when calling `{func.__name__}`: {error_msg}."
             if ASTTransformer.is_external_func(ctx, node.func.ptr):
                 args_has_expr = any([isinstance(arg, Expr) for arg in args])
                 if args_has_expr and (module == math or module == np):
-                   msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"
+                    msg += f"\nDid you mean to use `ti.{func.__name__}` instead of `{module.__name__}.{func.__name__}`?"
             raise TaichiSyntaxError(msg)
 
         if getattr(func, "_is_taichi_function", False):

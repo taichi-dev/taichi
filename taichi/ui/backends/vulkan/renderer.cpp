@@ -67,14 +67,14 @@ void Renderer::scene_lines(const SceneLinesInfo &info, SceneBase *scene) {
   SceneLines *scene_lines =
       get_renderable_of_type<SceneLines>(info.renderable_info.vbo_attrs);
   scene_lines->update_data(info);
-  scene_lines->update_scene_data(*scene);
+  scene_lines->update_scene_data(scene_ubo_->get_ptr(0));
   render_queue_.push_back(scene_lines);
 }
 
 void Renderer::mesh(const MeshInfo &info, SceneBase *scene) {
   Mesh *mesh = get_renderable_of_type<Mesh>(info.renderable_info.vbo_attrs);
   mesh->update_data(info);
-  mesh->update_scene_data(*scene, lights_ssbo_->get_ptr(0));
+  mesh->update_scene_data(lights_ssbo_->get_ptr(0), scene_ubo_->get_ptr(0));
   render_queue_.push_back(mesh);
 }
 
@@ -82,7 +82,7 @@ void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info);
-  particles->update_scene_data(*scene, lights_ssbo_->get_ptr(0));
+  particles->update_scene_data(lights_ssbo_->get_ptr(0), scene_ubo_->get_ptr(0));
   render_queue_.push_back(particles);
 }
 
@@ -101,7 +101,16 @@ void Renderer::resize_lights_ssbo(int new_ssbo_size) {
   }
 }
 
-void Renderer::update_lights_ssbo(SceneBase *scene) {
+void Renderer::init_scene_ubo() {
+  scene_ubo_.reset();
+  auto [buf, res] = app_context_.device().allocate_memory_unique(
+        {sizeof(SceneBase::UBOScene), /*host_write=*/true, /*host_read=*/false,
+         /*export_sharing=*/false, AllocUsage::Uniform});
+  TI_ASSERT(res == RhiResult::success);
+  scene_ubo_ = std::move(buf);
+}
+
+void Renderer::update_scene_data(SceneBase *scene) {
   // Update SSBO
   {
     size_t new_ssbo_size = scene->point_lights_.size() * sizeof(PointLight);
@@ -112,15 +121,34 @@ void Renderer::update_lights_ssbo(SceneBase *scene) {
     memcpy(mapped, scene->point_lights_.data(), new_ssbo_size);
     app_context_.device().unmap(*lights_ssbo_);
   }
+
+  // Update UBO
+  {
+    init_scene_ubo();
+
+    SceneBase::UBOScene ubo;
+    ubo.scene = scene->current_scene_data_;
+    ubo.window_width = app_context_.config.width;
+    ubo.window_height = app_context_.config.height;
+    ubo.tan_half_fov = tanf(glm::radians(scene->camera_.fov) / 2);
+    ubo.aspect_ratio =
+        float(app_context_.config.width) / float(app_context_.config.height);
+
+    void *mapped{nullptr};
+    RHI_VERIFY(
+        app_context_.device().map(scene_ubo_->get_ptr(0), &mapped));
+    memcpy(mapped, &ubo, sizeof(ubo));
+    app_context_.device().unmap(*scene_ubo_);
+  }
 }
 
 void Renderer::scene(SceneBase *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
   }
-  update_lights_ssbo(scene);
   float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
   scene->update_ubo(aspect_ratio);
+  update_scene_data(scene);
 
   int object_count = scene->mesh_infos_.size() +
                      scene->particles_infos_.size() +

@@ -37,6 +37,10 @@ ubo_renderable;
 
 layout(binding = 1) uniform UBOScene {
   SceneUBO scene;
+  float window_width;
+  float window_height;
+  float tan_half_fov;
+  float aspect_ratio;
 }
 ubo_scene;
 

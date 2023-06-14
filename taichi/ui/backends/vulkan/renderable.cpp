@@ -44,7 +44,6 @@ void Renderable::init_buffers() {
   index_buffer_.reset();
   staging_index_buffer_.reset();
   uniform_buffer_renderable_.reset();
-  uniform_buffer_scene_.reset();
   // Vertex buffers
   create_buffer_with_staging(app_context_->device(),
                              sizeof(Vertex) * max_vertices_count,
@@ -58,20 +57,13 @@ void Renderable::init_buffers() {
                                index_buffer_, staging_index_buffer_);
   }
 
-  // Uniform buffers
+  // Uniform buffer
   if (config_.ubo_size) {
     auto [buf, res] = app_context_->device().allocate_memory_unique(
         {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
     TI_ASSERT(res == RhiResult::success);
     uniform_buffer_renderable_ = std::move(buf);
-  }
-  if (config_.scene_ubo_size) {
-    auto [buf, res] = app_context_->device().allocate_memory_unique(
-        {config_.scene_ubo_size, /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Uniform});
-    TI_ASSERT(res == RhiResult::success);
-    uniform_buffer_scene_ = std::move(buf);
   }
 }
 
@@ -215,9 +207,6 @@ void Renderable::create_graphics_pipeline() {
 void Renderable::record_this_frame_commands(CommandList *command_list) {
   if (uniform_buffer_renderable_) {
     resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
-  }
-  if (uniform_buffer_scene_) {
-    resource_set_->buffer(1, uniform_buffer_scene_->get_ptr(0));
   }
 
   auto raster_state = app_context_->device().create_raster_resources_unique();

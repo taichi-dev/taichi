@@ -39,7 +39,6 @@ struct RenderableConfig {
   int draw_index_count{0};
   int draw_first_index{0};
   size_t ubo_size{0};
-  size_t scene_ubo_size{0};
   size_t ssbo_size{0};
   bool blending{false};
 
@@ -98,7 +97,6 @@ class Renderable {
   DeviceAllocationUnique staging_index_buffer_{nullptr};
 
   DeviceAllocationUnique uniform_buffer_renderable_{nullptr};
-  DeviceAllocationUnique uniform_buffer_scene_{nullptr};
 
   bool indexed_{false};
 

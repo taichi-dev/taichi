@@ -13,7 +13,6 @@ from taichi.ui.staging_buffer import get_depth_ndarray
 from taichi import f32
 
 from .canvas import Canvas
-from .scene import SceneV2
 from .constants import PRESS, RELEASE
 from .imgui import Gui
 from .utils import check_ggui_availability
@@ -118,10 +117,6 @@ class Window:
     def get_canvas(self):
         """Returns a canvas handle. See :class`~taichi.ui.canvas.Canvas`"""
         return Canvas(self.window.get_canvas())
-
-    def get_scene(self):
-        """Returns a scene handle. See :class`~taichi.ui.scene.SceneV2`"""
-        return SceneV2(self.window.get_scene())
 
     @property
     def GUI(self):

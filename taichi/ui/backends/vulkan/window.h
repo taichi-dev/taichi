@@ -18,7 +18,6 @@
 #include "taichi/ui/backends/vulkan/swap_chain.h"
 #include "taichi/ui/backends/vulkan/app_context.h"
 #include "taichi/ui/backends/vulkan/canvas.h"
-#include "taichi/ui/backends/vulkan/sceneV2.h"
 #include "taichi/ui/backends/vulkan/renderer.h"
 #include "taichi/ui/common/window_base.h"
 #include "taichi/ui/backends/vulkan/gui.h"
@@ -38,7 +37,6 @@ class Window final : public WindowBase {
 
   void show() override;
   CanvasBase *get_canvas() override;
-  SceneBase *get_scene() override;
   GuiBase *gui() override;
 
   std::pair<uint32_t, uint32_t> get_window_shape() override;
@@ -56,7 +54,6 @@ class Window final : public WindowBase {
   std::chrono::time_point<std::chrono::high_resolution_clock> last_frame_time_;
 
   std::unique_ptr<Canvas> canvas_;
-  std::unique_ptr<SceneV2> scene_;
   std::unique_ptr<Gui> gui_;
   std::unique_ptr<Renderer> renderer_;
   bool drawn_frame_{false};

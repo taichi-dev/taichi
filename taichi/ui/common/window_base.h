@@ -38,8 +38,6 @@ class WindowBase {
 
   virtual CanvasBase *get_canvas();
 
-  virtual SceneBase *get_scene();
-
   virtual void show();
 
   virtual std::pair<uint32_t, uint32_t> get_window_shape() = 0;

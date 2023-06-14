@@ -52,10 +52,6 @@ CanvasBase *WindowBase::get_canvas() {
   return nullptr;
 }
 
-SceneBase *WindowBase::get_scene() {
-  return nullptr;
-}
-
 void WindowBase::show() {
   CHECK_WINDOW_SHOWING;
   ++frames_since_last_record_;

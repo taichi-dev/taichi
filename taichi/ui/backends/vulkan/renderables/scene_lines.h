@@ -41,7 +41,7 @@ class SceneLines final : public Renderable {
 
  private:
   DevicePtr scene_ubo_ptr;
-  
+
   struct UBORenderable {
     alignas(16) glm::vec3 color;
     float line_width;

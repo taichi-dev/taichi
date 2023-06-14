@@ -82,7 +82,8 @@ void Renderer::particles(const ParticlesInfo &info, SceneBase *scene) {
   Particles *particles =
       get_renderable_of_type<Particles>(info.renderable_info.vbo_attrs);
   particles->update_data(info);
-  particles->update_scene_data(lights_ssbo_->get_ptr(0), scene_ubo_->get_ptr(0));
+  particles->update_scene_data(lights_ssbo_->get_ptr(0),
+                               scene_ubo_->get_ptr(0));
   render_queue_.push_back(particles);
 }
 
@@ -104,8 +105,8 @@ void Renderer::resize_lights_ssbo(int new_ssbo_size) {
 void Renderer::init_scene_ubo() {
   scene_ubo_.reset();
   auto [buf, res] = app_context_.device().allocate_memory_unique(
-        {sizeof(SceneBase::UBOScene), /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Uniform});
+      {sizeof(SceneBase::UBOScene), /*host_write=*/true, /*host_read=*/false,
+       /*export_sharing=*/false, AllocUsage::Uniform});
   TI_ASSERT(res == RhiResult::success);
   scene_ubo_ = std::move(buf);
 }
@@ -135,8 +136,7 @@ void Renderer::update_scene_data(SceneBase *scene) {
         float(app_context_.config.width) / float(app_context_.config.height);
 
     void *mapped{nullptr};
-    RHI_VERIFY(
-        app_context_.device().map(scene_ubo_->get_ptr(0), &mapped));
+    RHI_VERIFY(app_context_.device().map(scene_ubo_->get_ptr(0), &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
     app_context_.device().unmap(*scene_ubo_);
   }

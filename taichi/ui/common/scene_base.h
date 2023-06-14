@@ -73,7 +73,8 @@ class SceneBase {
   void update_ubo(float aspect_ratio) {
     current_scene_data_.camera_pos = camera_.position;
     current_scene_data_.view = camera_.get_view_matrix();
-    current_scene_data_.projection = camera_.get_projection_matrix(aspect_ratio);
+    current_scene_data_.projection =
+        camera_.get_projection_matrix(aspect_ratio);
     current_scene_data_.point_light_count = point_lights_.size();
 
     current_scene_data_.ambient_light = ambient_light_color_;

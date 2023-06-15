@@ -608,7 +608,6 @@ void InternalFuncCallExpression::flatten(FlattenContext *ctx) {
 void ExternalTensorExpression::flatten(FlattenContext *ctx) {
   auto type =
       TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim, needs_grad);
-  type = TypeFactory::get_instance().get_pointer_type((Type *)type);
 
   auto ptr = Stmt::make<ArgLoadStmt>(arg_id, type, /*is_ptr=*/true,
                                      /*create_load=*/false);

@@ -502,8 +502,7 @@ class ExternalTensorExpression : public Expression {
   }
 
   void type_check(const CompileConfig *config) override {
-    ret_type = TypeFactory::get_instance().get_ndarray_struct_type(dt, ndim,
-                                                                   needs_grad);
+    ret_type = dt;
     ret_type.set_is_pointer(true);
     config_ = config;
   }

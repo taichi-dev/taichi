@@ -2820,8 +2820,6 @@ void TaskCodeGenLLVM::set_struct_to_buffer(
     int &current_element,
     std::vector<llvm::Value *> &current_index) {
   if (auto primitive_type = current_type->cast<PrimitiveType>()) {
-    TI_INFO("current type: {}, current element: {}", current_type->to_string(),
-            elements[current_element]->ret_type->to_string());
     TI_ASSERT((Type *)elements[current_element]->ret_type == current_type);
     auto *gep = builder->CreateGEP(buffer_type, buffer, current_index);
     builder->CreateStore(llvm_val[elements[current_element]], gep);

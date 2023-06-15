@@ -228,7 +228,6 @@ class Func:
             if impl.get_runtime().current_kernel.autodiff_mode != AutodiffMode.NONE:
                 raise TaichiSyntaxError("Real function in gradient kernels unsupported.")
             instance_id, arg_features = self.mapper.lookup(args)
-            print("arg features in call: ", arg_features)
             key = _ti_core.FunctionKey(self.func.__name__, self.func_id, instance_id)
             if self.compiled is None:
                 self.compiled = {}

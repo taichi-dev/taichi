@@ -12,6 +12,7 @@ from taichi._lib import core as _ti_core
 from taichi.lang import _ndarray, any_array, expr, impl, kernel_arguments, matrix, mesh
 from taichi.lang import ops as ti_ops
 from taichi.lang._ndrange import _Ndrange, ndrange
+from taichi.lang.argpack import ArgPackType
 from taichi.lang.ast.ast_transformer_utils import Builder, LoopStatus, ReturnStatus
 from taichi.lang.ast.symbol_resolver import ASTResolver
 from taichi.lang.exception import (
@@ -21,6 +22,7 @@ from taichi.lang.exception import (
     handle_exception_from_cpp,
 )
 from taichi.lang.expr import Expr, make_expr_group
+from taichi.lang.exception import TaichiRuntimeTypeError
 from taichi.lang.field import Field
 from taichi.lang.matrix import Matrix, MatrixType, Vector
 from taichi.lang.snode import append, deactivate, length
@@ -50,7 +52,7 @@ def reshape_list(flat_list, target_shape):
 
 
 def boundary_type_cast_warning(expression):
-    expr_dtype = expression.ptr.get_ret_type()
+    expr_dtype = expression.ptr.get_rvalue_type()
     if not is_integral(expr_dtype) or expr_dtype in [
         primitive_types.i64,
         primitive_types.u64,
@@ -107,7 +109,7 @@ class ASTTransformer(Builder):
             ctx.create_variable(target.id, var)
         else:
             var = build_stmt(ctx, target)
-            if var.ptr.get_ret_type() != anno:
+            if var.ptr.get_rvalue_type() != anno:
                 raise TaichiSyntaxError("Static assign cannot have type overloading")
             var._assign(value)
         return var
@@ -466,11 +468,13 @@ class ASTTransformer(Builder):
             return
         name = unparse(node.func).strip()
         warnings.warn_explicit(
+            f"\x1b[38;5;226m"  # Yellow
             f'Calling non-taichi function "{name}". '
             f"Scope inside the function is not processed by the Taichi AST transformer. "
             f"The function may not work as expected. Proceed with caution! "
-            f"Maybe you can consider turning it into a @ti.func?",
-            UserWarning,
+            f"Maybe you can consider turning it into a @ti.func?"
+            f"\x1b[0m",  # Reset
+            SyntaxWarning,
             ctx.file,
             node.lineno + ctx.lineno_offset,
             module="taichi",
@@ -578,8 +582,8 @@ class ASTTransformer(Builder):
         if hasattr(node.func, "caller"):
             node.ptr = func(node.func.caller, *args, **keywords)
             return node.ptr
-        node.ptr = func(*args, **keywords)
         ASTTransformer.warn_if_is_external_func(ctx, node)
+        node.ptr = func(*args, **keywords)
 
         if getattr(func, "_is_taichi_function", False):
             ctx.func.has_print |= func.func.has_print
@@ -600,6 +604,44 @@ class ASTTransformer(Builder):
         assert args.kw_defaults == []
         assert args.kwarg is None
 
+        def decl_and_create_variable(annotation, name, arg_features):
+            if not isinstance(annotation, primitive_types.RefType):
+                ctx.kernel_args.append(name)
+            if isinstance(annotation, ArgPackType):
+                d = {}
+                for j, (_name, anno) in enumerate(annotation.members.items()):
+                    d[_name] = decl_and_create_variable(anno, _name, arg_features[j])
+                return kernel_arguments.decl_argpack_arg(annotation, d)
+            if isinstance(annotation, annotations.template):
+                return ctx.global_vars[name]
+            if isinstance(annotation, annotations.sparse_matrix_builder):
+                return kernel_arguments.decl_sparse_matrix(
+                    to_taichi_type(arg_features),
+                    name,
+                )
+            if isinstance(annotation, ndarray_type.NdarrayType):
+                return kernel_arguments.decl_ndarray_arg(
+                    to_taichi_type(arg_features[0]),
+                    arg_features[1],
+                    name,
+                    arg_features[2],
+                    arg_features[3],
+                )
+            if isinstance(annotation, texture_type.TextureType):
+                return kernel_arguments.decl_texture_arg(arg_features[0], name)
+            if isinstance(annotation, texture_type.RWTextureType):
+                return kernel_arguments.decl_rw_texture_arg(
+                    arg_features[0],
+                    arg_features[1],
+                    arg_features[2],
+                    name,
+                )
+            if isinstance(annotation, MatrixType):
+                return kernel_arguments.decl_matrix_arg(annotation, name)
+            if isinstance(annotation, StructType):
+                return kernel_arguments.decl_struct_arg(annotation, name)
+            return kernel_arguments.decl_scalar_arg(annotation, name)
+
         def transform_as_kernel():
             # Treat return type
             if node.returns is not None:
@@ -607,58 +649,21 @@ class ASTTransformer(Builder):
             impl.get_runtime().compiling_callable.finalize_rets()
 
             for i, arg in enumerate(args.args):
-                if not isinstance(ctx.func.arguments[i].annotation, primitive_types.RefType):
-                    ctx.kernel_args.append(arg.arg)
-                if isinstance(ctx.func.arguments[i].annotation, annotations.template):
-                    ctx.create_variable(arg.arg, ctx.global_vars[arg.arg])
-                elif isinstance(ctx.func.arguments[i].annotation, annotations.sparse_matrix_builder):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_sparse_matrix(
-                            to_taichi_type(ctx.arg_features[i]),
-                            ctx.func.arguments[i].name,
-                        ),
-                    )
-                elif isinstance(ctx.func.arguments[i].annotation, ndarray_type.NdarrayType):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_ndarray_arg(
-                            to_taichi_type(ctx.arg_features[i][0]),
-                            ctx.arg_features[i][1],
-                            ctx.func.arguments[i].name,
-                            ctx.arg_features[i][2],
-                        ),
-                    )
-                elif isinstance(ctx.func.arguments[i].annotation, texture_type.TextureType):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_texture_arg(ctx.arg_features[i][0], ctx.func.arguments[i].name),
-                    )
-                elif isinstance(ctx.func.arguments[i].annotation, texture_type.RWTextureType):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_rw_texture_arg(
-                            ctx.arg_features[i][0],
-                            ctx.arg_features[i][1],
-                            ctx.arg_features[i][2],
-                            ctx.func.arguments[i].name,
-                        ),
-                    )
-                elif isinstance(ctx.func.arguments[i].annotation, MatrixType):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_matrix_arg(ctx.func.arguments[i].annotation, ctx.func.arguments[i].name),
-                    )
-                elif isinstance(ctx.func.arguments[i].annotation, StructType):
-                    ctx.create_variable(
-                        arg.arg,
-                        kernel_arguments.decl_struct_arg(ctx.func.arguments[i].annotation, ctx.func.arguments[i].name),
-                    )
+                if isinstance(ctx.func.arguments[i].annotation, ArgPackType):
+                    d = {}
+                    for j, (name, anno) in enumerate(ctx.func.arguments[i].annotation.members.items()):
+                        d[name] = decl_and_create_variable(anno, name, ctx.arg_features[i][j])
+                    ctx.create_variable(arg.arg, kernel_arguments.decl_argpack_arg(ctx.func.arguments[i].annotation, d))
                 else:
                     ctx.create_variable(
                         arg.arg,
-                        kernel_arguments.decl_scalar_arg(ctx.func.arguments[i].annotation, ctx.func.arguments[i].name),
+                        decl_and_create_variable(
+                            ctx.func.arguments[i].annotation,
+                            ctx.func.arguments[i].name,
+                            ctx.arg_features[i] if ctx.arg_features is not None else None,
+                        ),
                     )
+
             impl.get_runtime().compiling_callable.finalize_params()
             # remove original args
             node.args.args = []
@@ -691,7 +696,7 @@ class ASTTransformer(Builder):
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is not recognized."
                             )
-                        ctx.func.arguments[i].annotation.check_matched(data.get_type())
+                        ctx.func.arguments[i].annotation.check_matched(data.get_type(), ctx.func.arguments[i].name)
                         ctx.create_variable(ctx.func.arguments[i].name, data)
                         continue
 
@@ -709,7 +714,7 @@ class ASTTransformer(Builder):
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix, but got {type(data)}."
                             )
 
-                        element_shape = data.ptr.get_ret_type().shape()
+                        element_shape = data.ptr.get_rvalue_type().shape()
                         if len(element_shape) != ctx.func.arguments[i].annotation.ndim:
                             raise TaichiSyntaxError(
                                 f"Argument {arg.arg} of type {ctx.func.arguments[i].annotation} is expected to be a Matrix with ndim {ctx.func.arguments[i].annotation.ndim}, but got {len(element_shape)}."
@@ -761,21 +766,85 @@ class ASTTransformer(Builder):
                     "with a return type, e.g. def func() -> ti.f32"
                 )
             if id(ctx.func.return_type) in primitive_types.type_ids:
+                if isinstance(node.value.ptr, Expr):
+                    if (
+                        node.value.ptr.is_tensor()
+                        or node.value.ptr.is_struct()
+                        or node.value.ptr.element_type() not in primitive_types.all_types
+                    ):
+                        raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
+                elif not isinstance(node.value.ptr, (float, int, np.floating, np.integer)):
+                    raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group(ti_ops.cast(expr.Expr(node.value.ptr), ctx.func.return_type).ptr)
                 )
             elif isinstance(ctx.func.return_type, MatrixType):
                 values = node.value.ptr
                 if isinstance(values, Matrix):
+                    if len(values.get_shape()) != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                        )
+                    elif ctx.func.return_type.get_shape() != values.get_shape():
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={values.get_shape()}."
+                        )
                     values = (
                         itertools.chain.from_iterable(values.to_list()) if values.ndim == 1 else iter(values.to_list())
                     )
+                elif isinstance(values, Expr):
+                    if not values.is_tensor():
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.to_string(), node.value.ptr)
+                    elif (
+                        ctx.func.return_type.dtype in primitive_types.real_types
+                        and not values.element_type() in primitive_types.all_types
+                    ):
+                        raise TaichiRuntimeTypeError.get_ret(
+                            ctx.func.return_type.dtype.to_string(), values.element_type()
+                        )
+                    elif (
+                        ctx.func.return_type.dtype in primitive_types.integer_types
+                        and not values.element_type() in primitive_types.integer_types
+                    ):
+                        raise TaichiRuntimeTypeError.get_ret(
+                            ctx.func.return_type.dtype.to_string(), values.element_type()
+                        )
+                    elif len(values.get_shape()) != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                        )
+                    elif ctx.func.return_type.get_shape() != values.get_shape():
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={len(values.get_shape())}."
+                        )
+                    values = [values]
                 else:
+                    np_array = np.array(values)
+                    dt, shape, ndim = np_array.dtype, np_array.shape, np_array.ndim
+                    if ctx.func.return_type.dtype in primitive_types.real_types and dt not in (
+                        float,
+                        int,
+                        np.floating,
+                        np.integer,
+                    ):
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), dt)
+                    elif ctx.func.return_type.dtype in primitive_types.integer_types and dt not in (int, np.integer):
+                        raise TaichiRuntimeTypeError.get_ret(ctx.func.return_type.dtype.to_string(), dt)
+                    elif ndim != ctx.func.return_type.ndim:
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix ndim mismatch, expecting={ctx.func.return_type.ndim}, got={ndim}."
+                        )
+                    elif ctx.func.return_type.get_shape() != shape:
+                        raise TaichiRuntimeTypeError(
+                            f"Return matrix shape mismatch, expecting={ctx.func.return_type.get_shape()}, got={shape}."
+                        )
                     values = [values]
                 ctx.ast_builder.create_kernel_exprgroup_return(
                     expr.make_expr_group([ti_ops.cast(exp, ctx.func.return_type.dtype) for exp in values])
                 )
             elif isinstance(ctx.func.return_type, StructType):
+                if not isinstance(node.value.ptr, Struct) or not isinstance(node.value.ptr, ctx.func.return_type):
+                    raise TaichiRuntimeTypeError.get_ret(str(ctx.func.return_type), node.value.ptr)
                 values = node.value.ptr
                 assert isinstance(values, Struct)
                 ctx.ast_builder.create_kernel_exprgroup_return(expr.make_expr_group(expr._get_flattened_ptrs(values)))
@@ -1449,7 +1518,7 @@ class ASTTransformer(Builder):
             if isinstance(entry, str):
                 msg += entry
             elif isinstance(entry, _ti_core.Expr):
-                ty = entry.get_ret_type()
+                ty = entry.get_rvalue_type()
                 if ty in primitive_types.real_types:
                     msg += "%f"
                 elif ty in primitive_types.integer_types:

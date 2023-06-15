@@ -1,5 +1,6 @@
 docs/design/llvm_sparse_runtime.md
 docs/lang/articles/about/overview.md
+docs/lang/articles/advanced/argument_pack.md
 docs/lang/articles/advanced/data_oriented_class.md
 docs/lang/articles/advanced/dataclass.md
 docs/lang/articles/advanced/meta.md

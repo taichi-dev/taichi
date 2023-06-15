@@ -23,6 +23,7 @@ void Window::init(Program *prog, const AppConfig &config) {
   renderer_ = std::make_unique<Renderer>();
   renderer_->init(prog, glfw_window_, config);
   canvas_ = std::make_unique<Canvas>(renderer_.get());
+  // scene_ = std::make_unique<SceneV2>(renderer_.get());
   gui_ = std::make_unique<Gui>(&renderer_->app_context(),
                                &renderer_->swap_chain(), glfw_window_);
   fps_limit_ = config.fps_limit;

@@ -102,6 +102,11 @@ void export_lang(py::module &m) {
       .value("ADJOINT_CHECKBIT", SNodeGradType::kAdjointCheckbit)
       .export_values();
 
+  py::enum_<BoundaryMode>(m, "BoundaryMode", py::arithmetic())
+      .value("UNSAFE", BoundaryMode::kUnsafe)
+      .value("CLAMP", BoundaryMode::kClamp)
+      .export_values();
+
   // TODO(type): This should be removed
   py::class_<DataType>(m, "DataType")
       .def(py::init<Type *>())
@@ -111,6 +116,7 @@ void export_lang(py::module &m) {
       .def("__str__", &DataType::to_string)
       .def("shape", &DataType::get_shape)
       .def("element_type", &DataType::get_element_type)
+      .def("ptr_removed", &DataType::ptr_removed)
       .def(
           "get_ptr", [](DataType *dtype) -> Type * { return *dtype; },
           py::return_value_policy::reference)
@@ -772,17 +778,17 @@ void export_lang(py::module &m) {
           },
           py::return_value_policy::reference)
       .def("get_ret_type", &Expr::get_ret_type)
+      .def("get_rvalue_type",
+           [](Expr *expr) { return expr->get_rvalue_type(); })
       .def("is_tensor",
-           [](Expr *expr) { return expr->expr->ret_type->is<TensorType>(); })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<TensorType>(); })
       .def("is_struct",
-           [](Expr *expr) {
-             return expr->expr->ret_type.ptr_removed()->is<StructType>();
-           })
+           [](Expr *expr) { return expr->get_rvalue_type()->is<StructType>(); })
       .def("get_shape",
            [](Expr *expr) -> std::optional<std::vector<int>> {
-             if (expr->expr->ret_type->is<TensorType>()) {
-               return std::optional<std::vector<int>>(
-                   expr->expr->ret_type->cast<TensorType>()->get_shape());
+             auto tensor_type = expr->get_rvalue_type()->cast<TensorType>();
+             if (tensor_type) {
+               return std::optional<std::vector<int>>(tensor_type->get_shape());
              }
              return std::nullopt;
            })
@@ -929,7 +935,8 @@ void export_lang(py::module &m) {
   m.def("make_reference", Expr::make<ReferenceExpression, const Expr &>);
 
   m.def("make_external_tensor_expr",
-        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool>);
+        Expr::make<ExternalTensorExpression, const DataType &, int, int, bool,
+                   const BoundaryMode &>);
 
   m.def("make_external_tensor_grad_expr",
         Expr::make<ExternalTensorExpression, Expr *>);
@@ -1163,12 +1170,20 @@ void export_lang(py::module &m) {
 
   // Sparse Matrix
   py::class_<SparseMatrixBuilder>(m, "SparseMatrixBuilder")
-      .def(py::init<int, int, int, DataType, const std::string &, Program *>(),
+      .def(py::init<int, int, int, DataType, const std::string &>(),
            py::arg("rows"), py::arg("cols"), py::arg("max_num_triplets"),
            py::arg("dt") = PrimitiveType::f32,
-           py::arg("storage_format") = "col_major", py::arg("prog") = nullptr)
+           py::arg("storage_format") = "col_major")
       .def("print_triplets_eigen", &SparseMatrixBuilder::print_triplets_eigen)
       .def("print_triplets_cuda", &SparseMatrixBuilder::print_triplets_cuda)
+      .def("create_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->create_ndarray(prog);
+           })
+      .def("delete_ndarray",
+           [&](SparseMatrixBuilder *builder, Program *prog) {
+             return builder->delete_ndarray(prog);
+           })
       .def("get_ndarray_data_ptr", &SparseMatrixBuilder::get_ndarray_data_ptr)
       .def("build", &SparseMatrixBuilder::build)
       .def("build_cuda", &SparseMatrixBuilder::build_cuda)

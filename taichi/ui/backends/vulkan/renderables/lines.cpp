@@ -71,9 +71,10 @@ void Lines::update_data(const LinesInfo &info) {
       float(app_context_->config.width) / float(app_context_->config.height);
 
   void *mapped{nullptr};
-  RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(0), &mapped));
+  RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(0),
+                                        &mapped));
   memcpy(mapped, &ubo, sizeof(ubo));
-  app_context_->device().unmap(*uniform_buffer_);
+  app_context_->device().unmap(*uniform_buffer_renderable_);
 }
 
 void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
@@ -111,7 +112,7 @@ void Lines::record_prepass_this_frame_commands(CommandList *command_list) {
   }
   resource_set_->rw_buffer(2, vbo_translated_->get_ptr(0));
   resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
-  resource_set_->buffer(4, uniform_buffer_->get_ptr(0));
+  resource_set_->buffer(4, uniform_buffer_renderable_->get_ptr(0));
 
   command_list->bind_pipeline(quad_expand_pipeline_);
   command_list->bind_shader_resources(resource_set_.get());

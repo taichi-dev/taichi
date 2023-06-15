@@ -1,5 +1,5 @@
 #pragma once
-
+#include "taichi/inc/constants.h"
 #include "taichi/rhi/device.h"
 #include "taichi/util/lang_util.h"
 
@@ -19,12 +19,19 @@ class TI_DLL_EXPORT CallableBase {
     BufferFormat format{BufferFormat::unknown};
     bool needs_grad{false};  // TODO: reorder for better alignment
     std::vector<int> element_shape{};
-    TI_IO_DEF(is_array, total_dim, format, dt_, needs_grad, element_shape);
+    ParameterType ptype{ParameterType::kUnknown};
+    TI_IO_DEF(is_array,
+              total_dim,
+              format,
+              dt_,
+              needs_grad,
+              element_shape,
+              ptype);
 
     bool operator==(const Parameter &o) const {
       return is_array == o.is_array && total_dim == o.total_dim &&
              format == o.format && dt_ == o.dt_ && needs_grad == o.needs_grad &&
-             element_shape == o.element_shape;
+             element_shape == o.element_shape && ptype == o.ptype;
     }
 
     /* [arguments with TensorType]
@@ -113,6 +120,7 @@ class TI_DLL_EXPORT Callable : public CallableBase {
   Program *program{nullptr};
   std::unique_ptr<IRNode> ir{nullptr};
   std::unique_ptr<FrontendContext> context{nullptr};
+  AutodiffMode autodiff_mode{AutodiffMode::kNone};
 
   Callable();
   virtual ~Callable();

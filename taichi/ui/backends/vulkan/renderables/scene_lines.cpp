@@ -10,7 +10,20 @@ namespace vulkan {
 using namespace taichi::lang;
 using namespace taichi::lang::vulkan;
 
-void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
+SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
+  RenderableConfig config;
+  config.ubo_size = sizeof(UBORenderable);
+  config.depth = true;
+  config.blending = true;
+  config.fragment_shader_path =
+      app_context->config.package_path + "/shaders/SceneLines_vk_frag.spv";
+  config.vertex_shader_path =
+      app_context->config.package_path + "/shaders/SceneLines_vk_vert.spv";
+
+  Renderable::init(config, app_context);
+}
+
+void SceneLines::update_data(const SceneLinesInfo &info) {
   Renderable::update_data(info.renderable_info);
 
   lines_count_ =
@@ -18,8 +31,7 @@ void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
 
   // Update UBO
   {
-    UniformBufferObject ubo{};
-    ubo.scene = scene.current_ubo_;
+    UBORenderable ubo{};
     ubo.color = info.color;
     // FIXME: Why is the width in pixel units?
     ubo.line_width = info.width / float(app_context_->config.height);
@@ -31,14 +43,17 @@ void SceneLines::update_data(const SceneLinesInfo &info, const Scene &scene) {
     ubo.start_index = config_.draw_first_index;
     ubo.num_vertices = lines_count_ * 2;
     ubo.is_indexed = indexed_ ? 1 : 0;
-    ubo.aspect_ratio =
-        float(app_context_->config.width) / float(app_context_->config.height);
 
     void *mapped{nullptr};
-    RHI_VERIFY(app_context_->device().map(uniform_buffer_->get_ptr(), &mapped));
+    RHI_VERIFY(app_context_->device().map(uniform_buffer_renderable_->get_ptr(),
+                                          &mapped));
     memcpy(mapped, &ubo, sizeof(ubo));
-    app_context_->device().unmap(*uniform_buffer_);
+    app_context_->device().unmap(*uniform_buffer_renderable_);
   }
+}
+
+void SceneLines::update_scene_data(DevicePtr ubo_ptr) {
+  scene_ubo_ptr = ubo_ptr;
 }
 
 void SceneLines::create_graphics_pipeline() {
@@ -66,19 +81,6 @@ void SceneLines::create_graphics_pipeline() {
                              "/shaders/SceneLines2quad_vk_comp.spv";
     quad_expand_pipeline_ = app_context_->get_compute_pipeline(file);
   }
-}
-
-SceneLines::SceneLines(AppContext *app_context, VertexAttributes vbo_attrs) {
-  RenderableConfig config;
-  config.ubo_size = sizeof(UniformBufferObject);
-  config.depth = true;
-  config.blending = true;
-  config.fragment_shader_path =
-      app_context->config.package_path + "/shaders/SceneLines_vk_frag.spv";
-  config.vertex_shader_path =
-      app_context->config.package_path + "/shaders/SceneLines_vk_vert.spv";
-
-  Renderable::init(config, app_context);
 }
 
 void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
@@ -121,7 +123,8 @@ void SceneLines::record_prepass_this_frame_commands(CommandList *command_list) {
   }
   resource_set_->rw_buffer(2, vbo_translated_->get_ptr(0));
   resource_set_->rw_buffer(3, ibo_translated_->get_ptr(0));
-  resource_set_->buffer(4, uniform_buffer_->get_ptr(0));
+  resource_set_->buffer(4, uniform_buffer_renderable_->get_ptr(0));
+  resource_set_->buffer(5, scene_ubo_ptr);
 
   command_list->bind_pipeline(quad_expand_pipeline_);
   command_list->bind_shader_resources(resource_set_.get());

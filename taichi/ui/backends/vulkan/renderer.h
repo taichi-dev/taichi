@@ -59,13 +59,13 @@ class TI_DLL_EXPORT Renderer {
 
   void lines(const LinesInfo &info);
 
-  void mesh(const MeshInfo &info, Scene *scene);
+  void mesh(const MeshInfo &info, SceneBase *scene);
 
-  void particles(const ParticlesInfo &info, Scene *scene);
+  void particles(const ParticlesInfo &info, SceneBase *scene);
 
-  void scene_lines(const SceneLinesInfo &info, Scene *scene);
+  void scene_lines(const SceneLinesInfo &info, SceneBase *scene);
 
-  void scene(Scene *scene);
+  void scene(SceneBase *scene);
 
   void draw_frame(Gui *gui);
 
@@ -77,6 +77,9 @@ class TI_DLL_EXPORT Renderer {
   taichi::lang::StreamSemaphore get_render_complete_semaphore();
 
  private:
+  void resize_lights_ssbo(int new_ssbo_size);
+  void update_scene_data(SceneBase *scene);
+  void init_scene_ubo();
   glm::vec3 background_color_ = glm::vec3(0.f, 0.f, 0.f);
 
   AppContext app_context_;
@@ -84,6 +87,10 @@ class TI_DLL_EXPORT Renderer {
 
   std::vector<std::unique_ptr<Renderable>> renderables_;
   std::vector<Renderable *> render_queue_;
+
+  DeviceAllocationUnique lights_ssbo_{nullptr};
+  unsigned long long lights_ssbo_size{0};
+  DeviceAllocationUnique scene_ubo_{nullptr};
 
   taichi::lang::StreamSemaphore render_complete_semaphore_{nullptr};
 

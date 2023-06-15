@@ -48,25 +48,25 @@ class Expr(TaichiOperations):
         return self.ptr.is_struct()
 
     def element_type(self):
-        return self.ptr.get_ret_type().element_type()
+        return self.ptr.get_rvalue_type().element_type()
 
     def get_shape(self):
         if not self.is_tensor():
-            raise TaichiCompilationError(f"Getting shape of non-tensor type: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting shape of non-tensor type: {self.ptr.get_rvalue_type()}")
         return tuple(self.ptr.get_shape())
 
     @property
     def n(self):
         shape = self.get_shape()
         if len(shape) < 1:
-            raise TaichiCompilationError(f"Getting n of tensor type < 1D: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting n of tensor type < 1D: {self.ptr.get_rvalue_type()}")
         return shape[0]
 
     @property
     def m(self):
         shape = self.get_shape()
         if len(shape) < 2:
-            raise TaichiCompilationError(f"Getting m of tensor type < 2D: {self.ptr.get_ret_type()}")
+            raise TaichiCompilationError(f"Getting m of tensor type < 2D: {self.ptr.get_rvalue_type()}")
         return shape[1]
 
     def __hash__(self):
@@ -148,12 +148,9 @@ def make_expr_group(*exprs, real_func_arg=False):
             exprs = mat.entries
     expr_group = _ti_core.ExprGroup()
     for i in exprs:
-        if isinstance(i, Matrix):
-            assert real_func_arg
-            for item in i.entries:
-                expr_group.push_back(Expr(item).ptr)
-        else:
-            expr_group.push_back(Expr(i).ptr)
+        flattened = _get_flattened_ptrs(i)
+        for item in flattened:
+            expr_group.push_back(item)
     return expr_group
 
 

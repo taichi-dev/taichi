@@ -85,22 +85,26 @@ SparseMatrixBuilder::SparseMatrixBuilder(int rows,
                                          int cols,
                                          int max_num_triplets,
                                          DataType dtype,
-                                         const std::string &storage_format,
-                                         Program *prog)
+                                         const std::string &storage_format)
     : rows_(rows),
       cols_(cols),
       max_num_triplets_(max_num_triplets),
       dtype_(dtype),
-      storage_format_(storage_format),
-      prog_(prog) {
+      storage_format_(storage_format) {
   auto element_size = data_type_size(dtype);
   TI_ASSERT((element_size == 4 || element_size == 8));
-  ndarray_data_base_ptr_ = prog->create_ndarray(
-      dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
 }
 
-SparseMatrixBuilder::~SparseMatrixBuilder() {
-  prog_->delete_ndarray(ndarray_data_base_ptr_);
+SparseMatrixBuilder::~SparseMatrixBuilder() = default;
+
+void SparseMatrixBuilder::create_ndarray(Program *prog) {
+  ndarray_data_base_ptr_ = prog->create_ndarray(
+      dtype_, std::vector<int>{3 * (int)max_num_triplets_ + 1});
+  ndarray_data_ptr_ = prog->get_ndarray_data_ptr_as_int(ndarray_data_base_ptr_);
+}
+
+void SparseMatrixBuilder::delete_ndarray(Program *prog) {
+  prog->delete_ndarray(ndarray_data_base_ptr_);
 }
 
 template <typename T, typename G>
@@ -153,7 +157,7 @@ void SparseMatrixBuilder::print_triplets_cuda() {
 }
 
 intptr_t SparseMatrixBuilder::get_ndarray_data_ptr() const {
-  return prog_->get_ndarray_data_ptr_as_int(ndarray_data_base_ptr_);
+  return ndarray_data_ptr_;
 }
 
 template <typename T, typename G>

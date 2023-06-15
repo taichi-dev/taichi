@@ -1,6 +1,7 @@
 import numbers
 from types import MethodType
 
+import numpy as np
 from taichi._lib import core as _ti_core
 from taichi.lang import expr, impl, ops
 from taichi.lang.enums import Layout
@@ -9,6 +10,7 @@ from taichi.lang.exception import (
     TaichiSyntaxError,
     TaichiTypeError,
 )
+from taichi.lang.expr import Expr
 from taichi.lang.field import Field, ScalarField, SNodeHostAccess
 from taichi.lang.matrix import Matrix, MatrixType
 from taichi.lang.util import cook_dtype, in_python_scope, python_scope, taichi_scope
@@ -34,7 +36,7 @@ class Struct:
         An instance of this struct.
 
     Example::
-
+_
         >>> vec3 = ti.types.vector(3, ti.f32)
         >>> a = ti.Struct(v=vec3([0, 0, 0]), t=1.0)
         >>> print(a.items)
@@ -51,24 +53,25 @@ class Struct:
     def __init__(self, *args, **kwargs):
         # converts lists to matrices and dicts to structs
         if len(args) == 1 and kwargs == {} and isinstance(args[0], dict):
-            self.entries = args[0]
+            self.__entries = args[0]
         elif len(args) == 0:
-            self.entries = kwargs
+            self.__entries = kwargs
         else:
             raise TaichiSyntaxError(
                 "Custom structs need to be initialized using either dictionary or keyword arguments"
             )
-        self.methods = self.entries.pop("__struct_methods", {})
-        matrix_ndim = self.entries.pop("__matrix_ndim", {})
+        self.__methods = self.__entries.pop("__struct_methods", {})
+        matrix_ndim = self.__entries.pop("__matrix_ndim", {})
         self._register_methods()
 
-        for k, v in self.entries.items():
+        for k, v in self.__entries.items():
             if isinstance(v, (list, tuple)):
                 v = Matrix(v, ndim=matrix_ndim.get(k))
             if isinstance(v, dict):
                 v = Struct(v)
-            self.entries[k] = v if in_python_scope() else impl.expr_init(v)
+            self.__entries[k] = v if in_python_scope() else impl.expr_init(v)
         self._register_members()
+        self.__dtype = None
 
     @property
     def keys(self):
@@ -81,11 +84,19 @@ class Struct:
            >>> a.keys
            ['center', 'radius']
         """
-        return list(self.entries.keys())
+        return list(self.__entries.keys())
 
     @property
     def _members(self):
-        return list(self.entries.values())
+        return list(self.__entries.values())
+
+    @property
+    def entries(self):
+        return self.__entries
+
+    @property
+    def methods(self):
+        return self.__methods
 
     @property
     def items(self):
@@ -98,7 +109,7 @@ class Struct:
             >>> sphere.items
             dict_items([('center', 2), ('radius', 1.0)])
         """
-        return self.entries.items()
+        return self.__entries.items()
 
     def _register_members(self):
         # https://stackoverflow.com/questions/48448074/adding-a-property-to-an-existing-object-instance
@@ -109,36 +120,37 @@ class Struct:
         self.__class__ = type(new_cls_name, (cls,), properties)
 
     def _register_methods(self):
-        for name, method in self.methods.items():
+        for name, method in self.__methods.items():
             # use MethodType to pass self (this object) to the method
             setattr(self, name, MethodType(method, self))
 
     def __getitem__(self, key):
-        ret = self.entries[key]
+        ret = self.__entries[key]
         if isinstance(ret, SNodeHostAccess):
             ret = ret.accessor.getter(*ret.key)
         return ret
 
     def __setitem__(self, key, value):
-        if isinstance(self.entries[key], SNodeHostAccess):
-            self.entries[key].accessor.setter(value, *self.entries[key].key)
+        if isinstance(self.__entries[key], SNodeHostAccess):
+            self.__entries[key].accessor.setter(value, *self.__entries[key].key)
         else:
             if in_python_scope():
-                if isinstance(self.entries[key], Struct) or isinstance(self.entries[key], Matrix):
-                    self.entries[key]._set_entries(value)
+                if isinstance(self.__entries[key], Struct) or isinstance(self.__entries[key], Matrix):
+                    self.__entries[key]._set_entries(value)
                 else:
                     if isinstance(value, numbers.Number):
-                        self.entries[key] = value
+                        self.__entries[key] = value
                     else:
                         raise TypeError("A number is expected when assigning struct members")
             else:
-                self.entries[key] = value
+                self.__entries[key] = value
 
     def _set_entries(self, value):
         if isinstance(value, dict):
             value = Struct(value)
         for k in self.keys:
             self[k] = value[k]
+        self.__dtype = value.__dtype
 
     @staticmethod
     def _make_getter(key):
@@ -162,24 +174,25 @@ class Struct:
             raise TaichiTypeError("Only dict or Struct can be assigned to a Struct")
         if isinstance(other, dict):
             other = Struct(other)
-        if self.entries.keys() != other.entries.keys():
+        if self.__entries.keys() != other.__entries.keys():
             raise TaichiTypeError(f"Member mismatch between structs {self.keys}, {other.keys}")
         for k, v in self.items:
-            v._assign(other.entries[k])
+            v._assign(other.__entries[k])
+        self.__dtype = other.__dtype
         return self
 
     def __len__(self):
         """Get the number of entries in a custom struct"""
-        return len(self.entries)
+        return len(self.__entries)
 
     def __iter__(self):
-        return self.entries.values()
+        return self.__entries.values()
 
     def __str__(self):
         """Python scope struct array print support."""
         if impl.inside_kernel():
             item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.items])
-            item_str += f", struct_methods={self.methods}"
+            item_str += f", struct_methods={self.__methods}"
             return f"<ti.Struct {item_str}>"
         return str(self.to_dict())
 
@@ -202,13 +215,13 @@ class Struct:
             else v.to_list()
             if isinstance(v, Matrix)
             else v
-            for k, v in self.entries.items()
+            for k, v in self.__entries.items()
         }
         if include_methods:
-            res_dict["__struct_methods"] = self.methods
+            res_dict["__struct_methods"] = self.__methods
         if include_ndim:
             res_dict["__matrix_ndim"] = dict()
-            for k, v in self.entries.items():
+            for k, v in self.__entries.items():
                 if isinstance(v, Matrix):
                     res_dict["__matrix_ndim"][k] = v.ndim
         return res_dict
@@ -342,9 +355,9 @@ class _IntermediateStruct(Struct):
 
     def __init__(self, entries):
         assert isinstance(entries, dict)
-        self.methods = entries.pop("__struct_methods", {})
+        self._Struct__methods = entries.pop("__struct_methods", {})
         self._register_methods()
-        self.entries = entries
+        self._Struct__entries = entries
         self._register_members()
 
 
@@ -623,8 +636,42 @@ class StructType(CompoundType):
             d[name] = data
 
         entries = Struct(d)
+        entries._Struct__dtype = self.dtype
         struct = self.cast(entries)
+        struct._Struct__dtype = self.dtype
         return struct
+
+    def __instancecheck__(self, instance):
+        if not isinstance(instance, Struct):
+            return False
+        if list(self.members.keys()) != list(instance._Struct__entries.keys()):
+            return False
+        if instance._Struct__dtype is not None and instance._Struct__dtype != self.dtype:
+            return False
+        for index, (name, dtype) in enumerate(self.members.items()):
+            val = instance._members[index]
+            if isinstance(dtype, StructType):
+                if not isinstance(val, dtype):
+                    return False
+            elif isinstance(dtype, MatrixType):
+                if isinstance(val, Expr):
+                    if not val.is_tensor():
+                        return False
+                if val.get_shape() != dtype.get_shape():
+                    return False
+            elif dtype in primitive_types.integer_types:
+                if isinstance(val, Expr):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.integer_types:
+                        return False
+                elif not isinstance(val, (int, np.integer)):
+                    return False
+            elif dtype in primitive_types.real_types:
+                if isinstance(val, Expr):
+                    if val.is_tensor() or val.is_struct() or val.element_type() not in primitive_types.real_types:
+                        return False
+                elif not isinstance(val, (float, np.floating)):
+                    return False
+        return True
 
     def from_taichi_object(self, func_ret, ret_index=()):
         d = {}
@@ -637,7 +684,9 @@ class StructType(CompoundType):
                 d[name] = expr.Expr(_ti_core.make_get_element_expr(func_ret.ptr, ret_index + (index,)))
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def from_kernel_struct_ret(self, launch_ctx, ret_index=()):
         d = {}
@@ -658,7 +707,9 @@ class StructType(CompoundType):
                     raise TaichiRuntimeTypeError(f"Invalid return type on index={ret_index + (index, )}")
         d["__struct_methods"] = self.methods
 
-        return Struct(d)
+        struct = Struct(d)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def set_kernel_struct_args(self, struct, launch_ctx, ret_index=()):
         # TODO: move this to class Struct after we add dtype to Struct
@@ -680,22 +731,24 @@ class StructType(CompoundType):
 
     def cast(self, struct):
         # sanity check members
-        if self.members.keys() != struct.entries.keys():
+        if self.members.keys() != struct._Struct__entries.keys():
             raise TaichiSyntaxError("Incompatible arguments for custom struct members!")
         entries = {}
         for k, dtype in self.members.items():
             if isinstance(dtype, MatrixType):
-                entries[k] = dtype(struct.entries[k])
+                entries[k] = dtype(struct._Struct__entries[k])
             elif isinstance(dtype, CompoundType):
-                entries[k] = dtype.cast(struct.entries[k])
+                entries[k] = dtype.cast(struct._Struct__entries[k])
             else:
                 if in_python_scope():
-                    v = struct.entries[k]
+                    v = struct._Struct__entries[k]
                     entries[k] = int(v) if dtype in primitive_types.integer_types else float(v)
                 else:
-                    entries[k] = ops.cast(struct.entries[k], dtype)
+                    entries[k] = ops.cast(struct._Struct__entries[k], dtype)
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def filled_with_scalar(self, value):
         entries = {}
@@ -707,10 +760,18 @@ class StructType(CompoundType):
             else:
                 entries[k] = value
         entries["__struct_methods"] = self.methods
-        return Struct(entries)
+        struct = Struct(entries)
+        struct._Struct__dtype = self.dtype
+        return struct
 
     def field(self, **kwargs):
         return Struct.field(self.members, self.methods, **kwargs)
+
+    def __str__(self):
+        """Python scope struct type print support."""
+        item_str = ", ".join([str(k) + "=" + str(v) for k, v in self.members.items()])
+        item_str += f", struct_methods={self.methods}"
+        return f"<ti.StructType {item_str}>"
 
 
 def dataclass(cls):
@@ -747,6 +808,10 @@ def dataclass(cls):
     """
     # save the annotation fields for the struct
     fields = getattr(cls, "__annotations__", {})
+    # raise error if there are default values
+    for k in fields.keys():
+        if hasattr(cls, k):
+            raise TaichiSyntaxError("Default value in @dataclass is not supported.")
     # get the class methods to be attached to the struct types
     fields["__struct_methods"] = {
         attribute: getattr(cls, attribute)

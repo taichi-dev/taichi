@@ -11,6 +11,7 @@ Callable::~Callable() = default;
 int Callable::insert_scalar_param(const DataType &dt, const std::string &name) {
   parameter_list.emplace_back(dt->get_compute_type(), /*is_array=*/false);
   parameter_list.back().name = name;
+  parameter_list.back().ptype = ParameterType::kScalar;
   return (int)parameter_list.size() - 1;
 }
 
@@ -48,6 +49,7 @@ int Callable::insert_ndarray_param(const DataType &dt,
                               /*size=*/0, ndim + element_shape.size(),
                               element_shape, BufferFormat::unknown, needs_grad);
   parameter_list.back().name = name;
+  parameter_list.back().ptype = ParameterType::kNdarray;
   return (int)parameter_list.size() - 1;
 }
 
@@ -59,6 +61,7 @@ int Callable::insert_texture_param(int total_dim, const std::string &name) {
   parameter_list.emplace_back(type, /*is_array=*/true, 0, total_dim,
                               std::vector<int>{});
   parameter_list.back().name = name;
+  parameter_list.back().ptype = ParameterType::kTexture;
   return (int)parameter_list.size() - 1;
 }
 
@@ -77,6 +80,7 @@ int Callable::insert_rw_texture_param(int total_dim,
   parameter_list.emplace_back(type, /*is_array=*/true, 0, total_dim,
                               std::vector<int>{}, format);
   parameter_list.back().name = name;
+  parameter_list.back().ptype = ParameterType::kRWTexture;
   return (int)parameter_list.size() - 1;
 }
 

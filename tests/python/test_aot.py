@@ -65,12 +65,14 @@ def test_aot_bind_id():
                     assert args[0]["is_array"] == False
                     assert args[0]["index"] == 0
                     assert args[0]["dtype"] == 1
+                    assert args[0]["ptype"] == 0
 
                     assert args[1]["is_array"] == True
                     assert args[1]["field_dim"] == 2
                     assert args[1]["index"] == 1
                     assert args[1]["dtype"] == 5
                     assert args[1]["element_shape"] == [2]
+                    assert args[1]["ptype"] == 1
 
 
 @test_utils.test(arch=[ti.opengl, ti.vulkan])

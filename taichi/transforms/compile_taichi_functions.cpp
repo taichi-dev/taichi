@@ -10,39 +10,42 @@ class CompileTaichiFunctions : public BasicStmtVisitor {
  public:
   using BasicStmtVisitor::visit;
 
-  explicit CompileTaichiFunctions(const CompileConfig &compile_config)
-      : compile_config_(compile_config) {
+  CompileTaichiFunctions(const CompileConfig &compile_config,
+                         Function::IRStage target_stage)
+      : compile_config_(compile_config), target_stage_(target_stage) {
   }
 
   void visit(FuncCallStmt *stmt) override {
-    using IRType = Function::IRType;
     auto *func = stmt->func;
-    const auto ir_type = func->ir_type();
-    if (ir_type != IRType::OptimizedIR) {
-      TI_ASSERT(ir_type == IRType::AST || ir_type == IRType::InitialIR);
-      func->set_ir_type(IRType::OptimizedIR);
+    const auto ir_type = func->ir_stage();
+    if (ir_type < target_stage_) {
       irpass::compile_function(func->ir.get(), compile_config_, func,
                                /*autodiff_mode=*/AutodiffMode::kNone,
                                /*verbose=*/compile_config_.print_ir,
-                               /*start_from_ast=*/ir_type == IRType::AST);
+                               target_stage_);
       func->ir->accept(this);
     }
   }
 
-  static void run(IRNode *ir, const CompileConfig &compile_config) {
-    CompileTaichiFunctions ctf{compile_config};
+  static void run(IRNode *ir,
+                  const CompileConfig &compile_config,
+                  Function::IRStage target_stage) {
+    CompileTaichiFunctions ctf{compile_config, target_stage};
     ir->accept(&ctf);
   }
 
  private:
   const CompileConfig &compile_config_;
+  Function::IRStage target_stage_;
 };
 
 namespace irpass {
 
-void compile_taichi_functions(IRNode *ir, const CompileConfig &compile_config) {
+void compile_taichi_functions(IRNode *ir,
+                              const CompileConfig &compile_config,
+                              Function::IRStage target_stage) {
   TI_AUTO_PROF;
-  CompileTaichiFunctions::run(ir, compile_config);
+  CompileTaichiFunctions::run(ir, compile_config, target_stage);
 }
 
 }  // namespace irpass

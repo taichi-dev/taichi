@@ -43,7 +43,7 @@ void Renderable::init_buffers() {
   staging_vertex_buffer_.reset();
   index_buffer_.reset();
   staging_index_buffer_.reset();
-  uniform_buffer_.reset();
+  uniform_buffer_renderable_.reset();
   // Vertex buffers
   create_buffer_with_staging(app_context_->device(),
                              sizeof(Vertex) * max_vertices_count,
@@ -56,16 +56,15 @@ void Renderable::init_buffers() {
                                AllocUsage::Storage | AllocUsage::Index,
                                index_buffer_, staging_index_buffer_);
   }
+
   // Uniform buffer
   if (config_.ubo_size) {
     auto [buf, res] = app_context_->device().allocate_memory_unique(
         {config_.ubo_size, /*host_write=*/true, /*host_read=*/false,
          /*export_sharing=*/false, AllocUsage::Uniform});
     TI_ASSERT(res == RhiResult::success);
-    uniform_buffer_ = std::move(buf);
+    uniform_buffer_renderable_ = std::move(buf);
   }
-  // Storage buffer
-  resize_storage_buffers(config_.ssbo_size);
 }
 
 void Renderable::copy_helper(Program *prog,
@@ -77,7 +76,7 @@ void Renderable::copy_helper(Program *prog,
     // src is a host mapped pointer
     Device *target_device = dst.device;
 
-    // Map the staing buffer and perform memcpy
+    // Map the staging buffer and perform memcpy
     void *dst_ptr{nullptr};
     TI_ASSERT(target_device->map_range(staging, size, &dst_ptr) ==
               RhiResult::success);
@@ -206,11 +205,8 @@ void Renderable::create_graphics_pipeline() {
 }
 
 void Renderable::record_this_frame_commands(CommandList *command_list) {
-  if (uniform_buffer_) {
-    resource_set_->buffer(0, uniform_buffer_->get_ptr(0));
-  }
-  if (storage_buffer_) {
-    resource_set_->buffer(1, storage_buffer_->get_ptr(0));
+  if (uniform_buffer_renderable_) {
+    resource_set_->buffer(0, uniform_buffer_renderable_->get_ptr(0));
   }
 
   auto raster_state = app_context_->device().create_raster_resources_unique();
@@ -232,21 +228,6 @@ void Renderable::record_this_frame_commands(CommandList *command_list) {
                                config_.draw_first_index);
   } else {
     command_list->draw(config_.draw_vertex_count, config_.draw_first_vertex);
-  }
-}
-
-void Renderable::resize_storage_buffers(int new_ssbo_size) {
-  if (storage_buffer_ != nullptr && new_ssbo_size == config_.ssbo_size) {
-    return;
-  }
-  storage_buffer_.reset();
-  config_.ssbo_size = new_ssbo_size;
-  if (config_.ssbo_size) {
-    auto [buf, res] = app_context_->device().allocate_memory_unique(
-        {config_.ssbo_size, /*host_write=*/true, /*host_read=*/false,
-         /*export_sharing=*/false, AllocUsage::Storage});
-    TI_ASSERT(res == RhiResult::success);
-    storage_buffer_ = std::move(buf);
   }
 }
 

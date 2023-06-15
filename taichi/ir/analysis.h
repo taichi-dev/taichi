@@ -213,7 +213,7 @@ std::unique_ptr<MeshBLSCaches> initialize_mesh_local_attribute(
     OffloadedStmt *offload,
     bool auto_mesh_local,
     const CompileConfig &config);
-
+void gather_func_store_dests(IRNode *ir);
 }  // namespace analysis
 }  // namespace irpass
 }  // namespace taichi::lang

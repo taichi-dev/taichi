@@ -508,14 +508,14 @@ def _test_arg_not_match():
     x = ti.Matrix.ndarray(2, 3, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
+        match=r"Invalid value for argument a - required element type: VectorType\[2, i32\], but .* is provided",
     ):
         func1(x)
 
     x = ti.Matrix.ndarray(2, 1, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: VectorType\[2, i32\], but .* is provided",
+        match=r"Invalid value for argument a - required element type: VectorType\[2, i32\], but .* is provided",
     ):
         func1(x)
 
@@ -526,7 +526,7 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,2, i32\], but .* is provided",
+        match=r"Invalid value for argument a - required element type: MatrixType\[2,2, i32\], but .* is provided",
     ):
         func2(x)
 
@@ -537,7 +537,7 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type: MatrixType\[2,1, i32\], but .* is provided",
+        match=r"Invalid value for argument a - required element type: MatrixType\[2,1, i32\], but .* is provided",
     ):
         func3(x)
 
@@ -548,7 +548,7 @@ def _test_arg_not_match():
     x = ti.Vector.ndarray(2, ti.i32, shape=(4, 7))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required element type",
+        match=r"Invalid value for argument a - required element type",
     ):
         func5(x)
 
@@ -559,7 +559,7 @@ def _test_arg_not_match():
     x = ti.ndarray(ti.i32, shape=(3,))
     with pytest.raises(
         ValueError,
-        match=r"Invalid argument into ti\.types\.ndarray\(\) - required ndim",
+        match=r"Invalid value for argument a - required ndim",
     ):
         func7(x)
 
@@ -568,7 +568,7 @@ def _test_arg_not_match():
         pass
 
     x = ti.ndarray(dtype=ti.i32, shape=(16, 16))
-    with pytest.raises(TypeError, match=r"Expect element type .* for Ndarray, but get .*"):
+    with pytest.raises(TypeError, match=r"Expect element type .* for argument x, but get .*"):
         func8(x)
 
 
@@ -978,7 +978,7 @@ def test_type_hint_matrix():
     assert impl.get_runtime().get_num_compiled_functions() == 2
 
     z = ti.ndarray(ti.math.vec2, (3))
-    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+    with pytest.raises(ValueError, match=r"Invalid value for argument x"):
         test(z)
 
 
@@ -998,5 +998,75 @@ def test_type_hint_vector():
     assert impl.get_runtime().get_num_compiled_functions() == 2
 
     z = ti.ndarray(ti.math.mat2, (3))
-    with pytest.raises(ValueError, match=r"Invalid argument into ti.types.ndarray\(\)"):
+    with pytest.raises(ValueError, match=r"Invalid value for argument x"):
         test(z)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_pass_ndarray_to_func():
+    @ti.func
+    def bar(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        pass
+
+    @ti.kernel
+    def foo(weight: ti.types.ndarray(ti.f32, ndim=3)):
+        bar(weight)
+
+    weight = ti.ndarray(dtype=ti.f32, shape=(2, 2, 2))
+    foo(weight)
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_oob_clamp():
+    @ti.kernel
+    def test(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[y]
+
+    x = ti.ndarray(ti.f32, shape=(3))
+    for i in range(3):
+        x[i] = i
+
+    assert test(x, -1) == 0
+    assert test(x, -2) == 0
+    assert test(x, 3) == 2
+    assert test(x, 4) == 2
+
+    @ti.kernel
+    def test_vec_arr(x: ti.types.ndarray(boundary="clamp"), y: ti.i32) -> ti.f32:
+        return x[1, 2][y]
+
+    x2 = ti.ndarray(ti.math.vec2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x2[i, j] = [i, j]
+    assert test_vec_arr(x2, -1) == 1
+    assert test_vec_arr(x2, 2) == 2
+
+    @ti.kernel
+    def test_mat_arr(x: ti.types.ndarray(boundary="clamp"), i: ti.i32, j: ti.i32) -> ti.f32:
+        return x[1, 2][i, j]
+
+    x3 = ti.ndarray(ti.math.mat2, shape=(3, 3))
+    for i in range(3):
+        for j in range(3):
+            x3[i, j] = [[i, j], [i + 1, j + 1]]
+    assert test_mat_arr(x3, -1, 0) == 1
+    assert test_mat_arr(x3, 1, -1) == 2
+    assert test_mat_arr(x3, 2, 0) == 3
+    assert test_mat_arr(x3, 1, 2) == 3
+
+
+@test_utils.test(arch=supported_archs_taichi_ndarray)
+def test_ndarray_clamp_verify():
+    height = 3
+    width = 3
+
+    @ti.kernel
+    def test(ao: ti.types.ndarray(dtype=ti.f32, ndim=2, boundary="clamp")):
+        for y, x in ti.ndrange(height, width):
+            vis = 0.0
+            ao[y, x] = vis
+
+    ao = ti.ndarray(ti.f32, shape=(height, width))
+    test(ao)
+    assert (ao.to_numpy() == np.zeros((height, width))).all()

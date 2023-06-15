@@ -96,8 +96,7 @@ class Renderable {
   DeviceAllocationUnique staging_vertex_buffer_{nullptr};
   DeviceAllocationUnique staging_index_buffer_{nullptr};
 
-  DeviceAllocationUnique uniform_buffer_{nullptr};
-  DeviceAllocationUnique storage_buffer_{nullptr};
+  DeviceAllocationUnique uniform_buffer_renderable_{nullptr};
 
   bool indexed_{false};
 
@@ -106,8 +105,6 @@ class Renderable {
   void init_buffers();
 
   virtual void create_graphics_pipeline();
-
-  void resize_storage_buffers(int new_ssbo_size);
 };
 
 }  // namespace vulkan

@@ -27,7 +27,7 @@ def test_pass_float_as_ndarray():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Invalid argument into ti.types.ndarray\(\), got 1.2",
+        match=r"Invalid type for argument a, got 1.2",
     ):
         foo(1.2)
 
@@ -43,7 +43,7 @@ def test_random_python_class_as_ndarray():
 
     with pytest.raises(
         ti.TaichiRuntimeTypeError,
-        match=r"Invalid argument into ti.types.ndarray\(\), got",
+        match=r"Invalid type for argument a, got",
     ):
         b = Bla()
         foo(b)
@@ -89,3 +89,20 @@ def test_argument_annassign():
 
     with pytest.raises(ti.TaichiSyntaxError, match='Kernel argument "a" is immutable in the kernel') as e:
         foo(5)
+
+
+@test_utils.test()
+def test_pass_struct_mismatch():
+    sphere_type = ti.types.struct(center=ti.math.vec3, radius=float)
+    circle_type = ti.types.struct(center=ti.math.vec2, radius=float)
+
+    @ti.kernel
+    def foo(sphere: sphere_type):
+        pass
+
+    with pytest.raises(
+        ti.TaichiRuntimeTypeError,
+        match=r"Argument 0 \(type=<class 'taichi.lang.struct.Struct.*\) cannot be converted into required type <ti."
+        r"StructType center=<taichi.lang.matrix.VectorType object at .*>, radius=f32, struct_methods={}>",
+    ) as e:
+        foo(circle_type(center=ti.math.vec2([1, 2]), radius=2.33))

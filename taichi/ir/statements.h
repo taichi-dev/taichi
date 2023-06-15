@@ -19,7 +19,11 @@ class Function;
 class AllocaStmt : public Stmt, public ir_traits::Store {
  public:
   explicit AllocaStmt(DataType type) : is_shared(false) {
-    ret_type = type;
+    if (type->is_primitive(PrimitiveTypeID::unknown)) {
+      ret_type = type;
+    } else {
+      ret_type = TypeFactory::get_instance().get_pointer_type(type);
+    }
     TI_STMT_REG_FIELDS;
   }
 
@@ -27,7 +31,8 @@ class AllocaStmt : public Stmt, public ir_traits::Store {
              DataType type,
              bool is_shared = false)
       : is_shared(is_shared) {
-    ret_type = TypeFactory::create_tensor_type(shape, type);
+    ret_type = TypeFactory::get_instance().get_pointer_type(
+        TypeFactory::create_tensor_type(shape, type));
     TI_STMT_REG_FIELDS;
   }
 
@@ -348,16 +353,19 @@ class ExternalPtrStmt : public Stmt {
   bool overrided_dtype = false;
 
   bool is_grad = false;
+  BoundaryMode boundary{BoundaryMode::kUnsafe};
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   ExternalPtrStmt(Stmt *base_ptr,
                   const std::vector<Stmt *> &indices,
                   int ndim,
                   const std::vector<int> &element_shape,
-                  bool is_grad = false);
+                  bool is_grad = false,
+                  BoundaryMode boundary = BoundaryMode::kUnsafe);
 
   bool has_global_side_effect() const override {
     return false;
@@ -1054,7 +1062,7 @@ class MeshForStmt : public Stmt {
 /**
  * Call an inline Taichi function.
  */
-class FuncCallStmt : public Stmt {
+class FuncCallStmt : public Stmt, public ir_traits::Store {
  public:
   Function *func;
   std::vector<Stmt *> args;
@@ -1064,6 +1072,13 @@ class FuncCallStmt : public Stmt {
 
   bool has_global_side_effect() const override {
     return global_side_effect;
+  }
+
+  // IR Trait: Store
+  stmt_refs get_store_destination() const override;
+
+  Stmt *get_store_data() const override {
+    return nullptr;
   }
 
   TI_STMT_DEF_FIELDS(ret_type, func, args);
@@ -1369,8 +1384,8 @@ class OffloadedStmt : public Stmt {
     return task_type != TaskType::listgen && task_type != TaskType::gc;
   }
 
-  Kernel *get_kernel() const override {
-    return kernel_;
+  Callable *get_callable() const override {
+    return (Callable *)kernel_;
   }
 
   bool is_container_statement() const override {

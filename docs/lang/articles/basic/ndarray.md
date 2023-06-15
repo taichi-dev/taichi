@@ -142,7 +142,7 @@ add_one(arr_np) # arr_np is updated by taichi kernel
 To feed a PyTorch tensor:
 
 ```python cont
-arr_torch = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], device='cuda:0')
+arr_torch = torch.tensor([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=torch.float, device='cuda:0')
 add_one(arr_torch) # arr_torch is updated by taichi kernel
 ```
 
@@ -223,3 +223,12 @@ test(e) # New kernel compilation
 ```
 
 The compilation rule also applies to external arrays from NumPy or PyTorch. Changing the shape values does not trigger compilation, but changing the data type or the number of array dimensions does.
+
+
+## FAQ
+
+### How to use automatic differentiation with ndarrays?
+
+We recommend referring to [this project](https://github.com/taichi-dev/taichi-nerfs/blob/main/notebooks/autodiff.ipynb).
+
+Currently, the support for automatic differentiation in Taichi's ndarray is still incomplete. We are working on improving this functionality and will provide a more detailed tutorial as soon as possible.

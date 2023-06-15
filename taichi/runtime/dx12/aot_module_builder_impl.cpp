@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include "taichi/codegen/dx12/codegen_dx12.h"
-#include "taichi/runtime/llvm/launch_arg_info.h"
 #include "taichi/runtime/program_impls/llvm/llvm_program.h"
 
 namespace taichi::lang {

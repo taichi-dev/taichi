@@ -1,15 +1,23 @@
 #pragma once
 
+#include <unordered_set>
 #include "taichi/program/callable.h"
 #include "taichi/program/function_key.h"
 
 namespace taichi::lang {
 
 class Program;
+class Stmt;
 
 class Function : public Callable {
  public:
-  enum class IRType { None, AST, InitialIR, OptimizedIR };
+  enum class IRStage : int {
+    None = 0,
+    AST = 1,
+    InitialIR = 2,
+    BeforeLowerAccess = 3,
+    OptimizedIR = 4
+  };
 
   FunctionKey func_key;
 
@@ -28,16 +36,18 @@ class Function : public Callable {
     return ast_serialization_data_;
   }
 
-  void set_ir_type(IRType type) {
-    ir_type_ = type;
+  void set_ir_stage(IRStage type) {
+    ir_stage_ = type;
   }
 
-  IRType ir_type() const {
-    return ir_type_;
+  IRStage ir_stage() const {
+    return ir_stage_;
   }
+
+  std::unordered_set<Stmt *> store_dests;
 
  private:
-  IRType ir_type_{IRType::None};
+  IRStage ir_stage_{IRStage::None};
   std::optional<std::string> ast_serialization_data_;  // For generating AST-Key
 };
 

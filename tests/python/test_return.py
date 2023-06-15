@@ -205,3 +205,46 @@ def test_struct_ret_with_matrix():
     assert ret.b.a[1] == approx(0.2)
     assert ret.b.a[2] == approx(3)
     assert ret.b.b == 1
+
+
+@test_utils.test()
+def test_return_type_mismatch_1():
+    with pytest.raises(ti.TaichiCompilationError):
+
+        @ti.kernel
+        def foo() -> ti.i32:
+            return ti.math.vec3([1, 2, 3])
+
+        foo()
+
+
+@test_utils.test()
+def test_return_type_mismatch_2():
+    with pytest.raises(ti.TaichiCompilationError):
+
+        @ti.kernel
+        def foo() -> ti.math.vec4:
+            return ti.math.vec3([1, 2, 3])
+
+        foo()
+
+
+@test_utils.test()
+def test_return_type_mismatch_3():
+    sphere_type = ti.types.struct(center=ti.math.vec3, radius=float)
+    circle_type = ti.types.struct(center=ti.math.vec2, radius=float)
+    sphere_type_ = ti.types.struct(center=ti.math.vec3, radius=int)
+
+    @ti.kernel
+    def foo() -> sphere_type:
+        return circle_type(center=ti.math.vec2([1, 2]), radius=2)
+
+    @ti.kernel
+    def bar() -> sphere_type:
+        return sphere_type_(center=ti.math.vec3([1, 2, 3]), radius=2)
+
+    with pytest.raises(ti.TaichiCompilationError):
+        foo()
+
+    with pytest.raises(ti.TaichiCompilationError):
+        bar()

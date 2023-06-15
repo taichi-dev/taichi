@@ -6,6 +6,7 @@
 #include "taichi/ir/analysis.h"
 #include "taichi/ir/statements.h"
 #include "taichi/system/profiler.h"
+#include "taichi/program/function.h"
 
 namespace taichi::lang {
 
@@ -161,10 +162,6 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   // [Intra-block Search]
   int last_def_position = -1;
   for (int i = position - 1; i >= begin_location; i--) {
-    if (block->statements[i]->is<FuncCallStmt>()) {
-      return nullptr;
-    }
-
     // Find previous store stmt to the same dest_addr, stop at the closest one.
     // store_ptr: prev-store dest_addr
     for (auto store_ptr :
@@ -216,7 +213,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
   }
 
   // Check if store_stmt will ever influence the value of var
-  auto may_contain_address = [](Stmt *store_stmt, Stmt *var) {
+  auto may_contain_address = [&](Stmt *store_stmt, Stmt *var) {
     for (auto store_ptr : irpass::analysis::get_store_destination(store_stmt)) {
       if (var->is<MatrixPtrStmt>() && !store_ptr->is<MatrixPtrStmt>()) {
         // check for aliased address with var
@@ -247,7 +244,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
     // result: the value to store
     Stmt *result = irpass::analysis::get_store_data(
         block->statements[last_def_position].get());
-    bool is_tensor_involved = var->ret_type->is<TensorType>();
+    bool is_tensor_involved = var->ret_type.ptr_removed()->is<TensorType>();
     if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
       // In between the store stmt and current stmt,
       // if there's a third-stmt that "may" have stored a "different value" to
@@ -355,7 +352,7 @@ Stmt *CFGNode::get_store_forwarding_data(Stmt *var, int position) const {
 
   // Check for aliased address
   // There's a store to the same dest_addr before this stmt
-  bool is_tensor_involved = var->ret_type->is<TensorType>();
+  bool is_tensor_involved = var->ret_type.ptr_removed()->is<TensorType>();
   if (!(var->is<AllocaStmt>() && !is_tensor_involved)) {
     // In between the store stmt and current stmt,
     // if there's a third-stmt that "may" have stored a "different value" to
@@ -443,7 +440,8 @@ bool CFGNode::store_to_load_forwarding(bool after_lower_access,
           continue;
 
         // special case of alloca (initialized to 0)
-        auto zero = Stmt::make<ConstStmt>(TypedConstant(result->ret_type, 0));
+        auto zero = Stmt::make<ConstStmt>(
+            TypedConstant(result->ret_type.ptr_removed(), 0));
         replace_with(i, std::move(zero), true);
       } else {
         if (result->ret_type.ptr_removed()->is<TensorType>() &&
@@ -694,6 +692,7 @@ bool CFGNode::dead_store_elimination(bool after_lower_access) {
     if (stmt->is<FuncCallStmt>()) {
       killed_in_this_node.clear();
       live_load_in_this_node.clear();
+      continue;
     }
     auto store_ptrs = irpass::analysis::get_store_destination(stmt);
 
@@ -986,6 +985,9 @@ void ControlFlowGraph::reaching_definition_analysis(bool after_lower_access) {
         // TODO: unify them
         // A global pointer that may contain some data before this kernel.
         nodes[start_node]->reach_gen.insert(stmt);
+      } else if (auto func_call = stmt->cast<FuncCallStmt>()) {
+        const auto &dests = func_call->func->store_dests;
+        nodes[start_node]->reach_gen.insert(dests.begin(), dests.end());
       }
     }
   }

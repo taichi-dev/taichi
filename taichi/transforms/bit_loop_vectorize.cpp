@@ -38,9 +38,6 @@ class BitLoopVectorize : public IRVisitor {
   }
 
   void visit(GlobalLoadStmt *stmt) override {
-    auto print = irpass::make_pass_printer(true, "TESTSSSSSS", stmt->parent);
-    print("SDDDDDDD");
-
     auto ptr_type = stmt->src->ret_type->as<PointerType>();
     if (in_struct_for_loop && is_bit_vectorized) {
       if (ptr_type->get_pointee_type()->cast<QuantIntType>()) {

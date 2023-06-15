@@ -773,11 +773,7 @@ void offload(IRNode *root, const CompileConfig &config) {
   TI_AUTO_PROF;
   auto offloaded_ranges = Offloader::run(root, config);
 
-  auto print = make_pass_printer(true, "asdasdasdasd", root);
-  print("Before");
-
   type_check(root, config);
-  print("After");
 
   {
     auto stmt_to_offloaded = StmtToOffloaded::run(root);
@@ -793,9 +789,7 @@ void offload(IRNode *root, const CompileConfig &config) {
   // backends to integrate with https://github.com/taichi-dev/taichi/pull/700
   AssociateContinueScope::run(root);
 
-  print("Before II");
   type_check(root, config);
-  print("After II");
   re_id(root);
 }
 

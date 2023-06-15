@@ -135,12 +135,14 @@ class TypeCheck : public IRVisitor {
     if (stmt->is_bit_vectorized) {
       return;
     }
+    stmt->ret_type.set_is_pointer(true);
+
     if (!stmt->ret_type.ptr_removed().get_element_type()->is_primitive(
             PrimitiveTypeID::unknown)) {
       // Infer data type for alloca
       return;
     }
-    stmt->ret_type.set_is_pointer(true);
+
     if (stmt->snode) {
       stmt->ret_type =
           TypeFactory::get_instance().get_pointer_type(stmt->snode->dt);

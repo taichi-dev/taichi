@@ -142,6 +142,45 @@ void Renderer::update_scene_data(SceneBase *scene) {
   }
 }
 
+void Renderer::scene_v2(SceneBase *scene) {
+  if (scene->point_lights_.size() == 0) {
+    TI_WARN("warning, there are no light sources in the scene.\n");
+  }
+  float aspect_ratio = swap_chain_.width() / (float)swap_chain_.height();
+  scene->update_ubo(aspect_ratio);
+  update_scene_data(scene);
+
+  int object_count = scene->mesh_infos_.size() +
+                     scene->particles_infos_.size() +
+                     scene->scene_lines_infos_.size();
+  int mesh_id = 0;
+  int particles_id = 0;
+  int scene_lines_id = 0;
+  for (int i = 0; i < object_count; ++i) {
+    if (mesh_id < scene->mesh_infos_.size() &&
+        scene->mesh_infos_[mesh_id].object_id == i) {
+      mesh(scene->mesh_infos_[mesh_id], scene);
+      ++mesh_id;
+    }
+    if (particles_id < scene->particles_infos_.size() &&
+        scene->particles_infos_[particles_id].object_id == i) {
+      particles(scene->particles_infos_[particles_id], scene);
+      ++particles_id;
+    }
+    // Scene Lines
+    if (scene_lines_id < scene->scene_lines_infos_.size() &&
+        scene->scene_lines_infos_[scene_lines_id].object_id == i) {
+      scene_lines(scene->scene_lines_infos_[scene_lines_id], scene);
+      ++scene_lines_id;
+    }
+  }
+  scene->next_object_id_ = 0;
+  scene->mesh_infos_.clear();
+  scene->particles_infos_.clear();
+  scene->scene_lines_infos_.clear();
+  scene->point_lights_.clear();
+}
+
 void Renderer::scene(SceneBase *scene) {
   if (scene->point_lights_.size() == 0) {
     TI_WARN("warning, there are no light sources in the scene.\n");
